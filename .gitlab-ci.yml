@@ -1,0 +1,133 @@
+stages:
+  - validate
+  - build
+  - notify
+
+variables:
+  NODE_VERSION: "22"
+  CI: "true"
+
+default:
+  image: node:${NODE_VERSION}-alpine
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@latest --activate
+  cache:
+    key:
+      files:
+        - pnpm-lock.yaml
+    paths:
+      - .pnpm-store/
+
+install:
+  stage: .pre
+  script:
+    - pnpm install --frozen-lockfile
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 hour
+
+type-check:
+  stage: validate
+  script:
+    - pnpm tsc --noEmit
+  needs: [install]
+
+lint:
+  stage: validate
+  script:
+    - pnpm eslint --max-warnings 0
+  needs: [install]
+
+format:
+  stage: validate
+  script:
+    - pnpm prettier --check .
+  needs: [install]
+
+build:test:
+  stage: build
+  script:
+    - pnpm build:test
+  needs: [type-check, lint, format]
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 hour
+  only:
+    - dev
+    - merge_requests
+
+build:production:
+  stage: build
+  script:
+    - pnpm build:production
+  needs: [type-check, lint, format]
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 day
+  only:
+    - main
+
+notify:feishu:
+  stage: notify
+  image: python:3-alpine
+  before_script: []
+  script:
+    - |
+      python3 << 'PYEOF'
+      import json, os, urllib.request
+
+      sha     = os.environ.get("CI_COMMIT_SHA", "")[:8]
+      title   = os.environ.get("CI_COMMIT_TITLE", "")[:100]
+      author  = os.environ.get("GITLAB_USER_NAME", "unknown")
+      branch  = os.environ.get("CI_COMMIT_BRANCH", "main")
+      proj    = os.environ.get("CI_PROJECT_URL", "")
+      full_sha = os.environ.get("CI_COMMIT_SHA", "")
+      pipeline = os.environ.get("CI_PIPELINE_URL", "")
+
+      payload = {
+        "msg_type": "interactive",
+        "card": {
+          "header": {
+            "title": {"tag": "plain_text", "content": "🚀 modelgo-console-web · main 有新提交"},
+            "template": "blue"
+          },
+          "elements": [
+            {
+              "tag": "div",
+              "fields": [
+                {"is_short": True, "text": {"tag": "lark_md", "content": f"**作者**\n{author}"}},
+                {"is_short": True, "text": {"tag": "lark_md", "content": f"**分支**\n{branch}"}}
+              ]
+            },
+            {
+              "tag": "div",
+              "text": {"tag": "lark_md", "content": f"**提交信息**\n`{sha}` {title}"}
+            },
+            {
+              "tag": "action",
+              "actions": [
+                {"tag": "button", "text": {"tag": "plain_text", "content": "查看 Commit"}, "url": f"{proj}/-/commit/{full_sha}", "type": "default"},
+                {"tag": "button", "text": {"tag": "plain_text", "content": "查看 Pipeline"}, "url": pipeline, "type": "default"}
+              ]
+            }
+          ]
+        }
+      }
+
+      req = urllib.request.Request(
+        "https://open.feishu.cn/open-apis/bot/v2/hook/cff556f8-0c7c-49e6-8fcf-f770851088ad",
+        json.dumps(payload).encode(),
+        {"Content-Type": "application/json"},
+        method="POST"
+      )
+      with urllib.request.urlopen(req) as r:
+        print(r.read().decode())
+      PYEOF
+  needs: [build:production]
+  when: always
+  only:
+    - main

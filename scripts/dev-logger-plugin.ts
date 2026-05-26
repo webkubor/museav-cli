@@ -1,0 +1,105 @@
+import fs from 'fs'
+import path from 'path'
+import type { Plugin } from 'vite'
+
+const LOG_DIR = path.resolve(process.cwd(), 'log')
+const ERROR_LOG_PATH = path.join(LOG_DIR, 'dev-errors.log')
+const API_LOG_PATH = path.join(LOG_DIR, 'api-calls.log')
+const LEGACY_ERROR_LOG_PATH = path.resolve(process.cwd(), '.dev-errors.log')
+
+type DevLogPayload =
+  | {
+      kind: 'api'
+      method: string
+      path: string
+      url: string
+      ok: boolean
+      duration_ms: number
+      code?: number
+      status?: number
+      request_id?: string
+      error?: string
+    }
+  | {
+      kind: 'error'
+      line: string
+    }
+
+function writeLine(file: string, line: string) {
+  fs.appendFileSync(file, `${line}\n`)
+}
+
+function writeError(line: string) {
+  writeLine(ERROR_LOG_PATH, line)
+  writeLine(LEGACY_ERROR_LOG_PATH, line)
+}
+
+function formatApiLog(payload: Extract<DevLogPayload, { kind: 'api' }>) {
+  const status = payload.status ? ` http=${payload.status}` : ''
+  const code = payload.code !== undefined ? ` code=${payload.code}` : ''
+  const requestId = payload.request_id ? ` requestId=${payload.request_id}` : ''
+  const error = payload.error ? ` error="${payload.error}"` : ''
+  const result = payload.ok ? 'ok' : 'failed'
+  return `[api][${result}] ${payload.method.toUpperCase()} ${payload.path} ${payload.duration_ms}ms${status}${code}${requestId}${error}`
+}
+
+function parsePayload(raw: string): DevLogPayload | null {
+  try {
+    const parsed = JSON.parse(raw) as Partial<DevLogPayload>
+    if (parsed.kind === 'api' && parsed.method && parsed.path && parsed.url) {
+      return parsed as DevLogPayload
+    }
+    if (parsed.kind === 'error' && parsed.line) {
+      return parsed as DevLogPayload
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
+export function devLoggerPlugin(): Plugin {
+  return {
+    name: 'dev-logger',
+    apply: 'serve',
+    configureServer(server) {
+      fs.mkdirSync(LOG_DIR, { recursive: true })
+
+      const header = `# Dev Log — started ${new Date().toISOString()}\n\n`
+      // 每次 dev server 启动清空日志，保证 AI 看到的是本次会话的记录
+      fs.writeFileSync(ERROR_LOG_PATH, header)
+      fs.writeFileSync(API_LOG_PATH, header)
+      fs.writeFileSync(LEGACY_ERROR_LOG_PATH, header)
+
+      server.middlewares.use('/dev/log', (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405
+          res.end()
+          return
+        }
+
+        let body = ''
+        req.on('data', (chunk: Buffer) => {
+          body += chunk.toString()
+        })
+        req.on('end', () => {
+          const ts = new Date().toISOString()
+          const payload = parsePayload(body)
+
+          if (payload?.kind === 'api') {
+            const line = `[${ts}] ${formatApiLog(payload)}`
+            writeLine(API_LOG_PATH, line)
+            if (!payload.ok) writeError(line)
+          } else if (payload?.kind === 'error') {
+            writeError(`[${ts}] ${payload.line}`)
+          } else {
+            writeError(`[${ts}] ${body}`)
+          }
+
+          res.statusCode = 204
+          res.end()
+        })
+      })
+    },
+  }
+}

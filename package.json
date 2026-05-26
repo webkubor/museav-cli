@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "build:test": "tsc -b && vite build --mode test",
     "build:production": "tsc -b && vite build --mode production",
+    "check:api-contract": "node scripts/check-swagger-api.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },

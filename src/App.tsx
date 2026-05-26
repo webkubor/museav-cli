@@ -1,12 +1,41 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Providers } from '@/components/providers'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import DashboardPage from '@/pages/dashboard'
 import ApiKeysPage from '@/pages/api-keys'
 import WorkspacesPage from '@/pages/workspaces'
+import { useAuthStore } from '@/store/auth'
 
 export default function App() {
+  // 本地开发或 Mock 模式下自动初始化模拟的开发者账号及默认 Workspace，实现接口完美打通
+  useEffect(() => {
+    const { setAuth, isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) {
+      setAuth(
+        {
+          account_id: '01HV3KACCT000000000000001',
+          display_name: 'Demo User',
+          email: 'demo@modelgo.ai',
+          avatar_url: null
+        },
+        '01HV3KTNNT000000000000001',
+        [
+          {
+            tenant_id: '01HV3KTNNT000000000000001',
+            name: '默认租户空间',
+            slug: 'default-tenant',
+            type: 'personal',
+            is_default: true
+          }
+        ],
+        '01HV3KWS000000000000001'
+      )
+    }
+  }, [])
+
   return (
+
     <Providers>
       <BrowserRouter>
         <Routes>

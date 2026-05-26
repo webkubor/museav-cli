@@ -1,58 +1,65 @@
 import { useState } from 'react'
-
-import { Table, Button, Input, Select, Tag } from '@douyinfe/semi-ui'
+import { Table, Button, Input, Select, Tag, Modal, Toast } from '@douyinfe/semi-ui'
 import { IconSearch, IconPlus } from '@douyinfe/semi-icons'
-
-interface WorkspaceRecord {
-  name: string
-  id: string
-  createTime: string
-  isCurrent: boolean
-  isDefault: boolean
-}
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { listWorkspaces, createWorkspace } from '@/services/workspaces'
+import type { WorkspaceItem } from '@/types'
 
 export default function WorkspacesPage() {
+  const queryClient = useQueryClient()
   const [searchValue, setSearchValue] = useState('')
+  const [modalVisible, setModalVisible] = useState(false)
 
-  // 1:1 还原截图中的表格数据
-  const initialData: WorkspaceRecord[] = [
-    {
-      name: '默认业务空间',
-      id: 'llm-v2kmio35vgls7ilr',
-      createTime: '2026-01-21 11:49:59',
-      isCurrent: true,
-      isDefault: true
+  // 受控表单状态
+  const [name, setName] = useState('')
+  const [slug, setSlug] = useState('')
+  const [description, setDescription] = useState('')
+
+  // ─── 1. TanStack Query 真实获取工作空间接口数据 ─────────────────
+  const { data, isLoading } = useQuery({
+    queryKey: ['workspaces'],
+    queryFn: () => listWorkspaces().then(res => res.items)
+  })
+
+  // ─── 2. Mutation 真实绑定新建工作空间接口 ─────────────────────
+  const createMutation = useMutation({
+    mutationFn: (vals: { name: string; slug: string; description?: string }) => {
+      return createWorkspace({
+        name: vals.name,
+        slug: vals.slug,
+        description: vals.description,
+        kind: 'team'
+      })
     },
-    {
-      name: '开发测试空间',
-      id: 'llm-x88vjio35vgkw8ppr',
-      createTime: '2026-05-12 14:32:10',
-      isCurrent: false,
-      isDefault: false
+    onSuccess: (newWorkspace) => {
+      Toast.success(`业务空间 "${newWorkspace.name}" 创建成功`)
+      setModalVisible(false)
+      // 重置表单
+      setName('')
+      setSlug('')
+      setDescription('')
+      // 自动刷新工作区列表缓存，UI 实时渲染新节点！
+      queryClient.invalidateQueries({ queryKey: ['workspaces'] })
     },
-    {
-      name: '生产应用空间',
-      id: 'llm-y77pjio35vgrr9llv',
-      createTime: '2026-05-20 09:15:43',
-      isCurrent: false,
-      isDefault: false
+    onError: (err: any) => {
+      Toast.error(err?.message || '创建业务空间失败')
     }
-  ]
+  })
 
-  // 表格列定义 (完美契合截图中的字段与样式)
+  // 表格列定义 (完美契合截图中的字段与实体模型结构)
   const columns = [
     {
       title: '名称',
       dataIndex: 'name',
-      render: (text: string, record: WorkspaceRecord) => (
+      render: (text: string, record: WorkspaceItem) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontWeight: 500, color: '#1f2937' }}>{text}</span>
-          {record.isCurrent && (
+          {record.is_default && (
             <Tag color="blue" size="small" shape="circle" style={{ padding: '0 8px' }}>
               ● 当前
             </Tag>
           )}
-          {record.isDefault && (
+          {record.is_default && (
             <Tag color="grey" size="small" shape="circle" style={{ padding: '0 8px' }}>
               ● 默认
             </Tag>
@@ -62,16 +69,18 @@ export default function WorkspacesPage() {
     },
     {
       title: '业务空间 ID',
-      dataIndex: 'id',
+      dataIndex: 'workspace_id',
       render: (text: string) => (
         <span style={{ color: '#4b5563', fontFamily: 'monospace' }}>{text}</span>
       )
     },
     {
       title: '创建时间',
-      dataIndex: 'createTime',
+      dataIndex: 'created_at',
       render: (text: string) => (
-        <span style={{ color: '#4b5563' }}>{text}</span>
+        <span style={{ color: '#4b5563' }}>
+          {new Date(text).toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')}
+        </span>
       )
     },
     {
@@ -85,10 +94,26 @@ export default function WorkspacesPage() {
     }
   ]
 
-  // 模糊检索
-  const filteredData = initialData.filter(item => 
-    item.name.includes(searchValue) || item.id.includes(searchValue)
+  // 支持模糊搜索
+  const filteredData = (data || []).filter(item => 
+    item.name.includes(searchValue) || item.workspace_id.includes(searchValue)
   )
+
+  const handleCreateSubmit = () => {
+    if (!name.trim()) {
+      Toast.error('业务空间名称不能为空')
+      return
+    }
+    if (!slug.trim()) {
+      Toast.error('唯一标识不能为空')
+      return
+    }
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+      Toast.error('唯一标识仅支持小写字母、数字和连字符')
+      return
+    }
+    createMutation.mutate({ name, slug, description })
+  }
 
   return (
     <div>
@@ -118,8 +143,6 @@ export default function WorkspacesPage() {
           size="small"
         >
           <Select.Option value="default">默认业务空间</Select.Option>
-          <Select.Option value="test">开发测试空间</Select.Option>
-          <Select.Option value="prod">生产应用空间</Select.Option>
         </Select>
       </div>
 
@@ -139,10 +162,11 @@ export default function WorkspacesPage() {
           onChange={(val) => setSearchValue(val)}
         />
 
-        {/* 黑色药丸主动作按钮 (完美1:1还原截图) */}
+        {/* 黑色药丸主动作按钮 (触发弹出真实表单 modal) */}
         <Button
           theme="solid"
           icon={<IconPlus />}
+          onClick={() => setModalVisible(true)}
           style={{ 
             backgroundColor: '#000000', 
             color: '#ffffff',
@@ -154,7 +178,7 @@ export default function WorkspacesPage() {
             height: '36px'
           }}
         >
-          创建业务空间 (1/20)
+          创建业务空间 ({(data || []).length}/20)
         </Button>
       </div>
 
@@ -162,10 +186,48 @@ export default function WorkspacesPage() {
       <Table
         columns={columns}
         dataSource={filteredData}
+        loading={isLoading}
         pagination={false}
         bordered={false}
         style={{ marginTop: '8px' }}
       />
+
+      {/* 真实创建工作空间的表单对话框 */}
+      <Modal
+        title="创建新业务空间"
+        visible={modalVisible}
+        onOk={handleCreateSubmit}
+        onCancel={() => setModalVisible(false)}
+        confirmLoading={createMutation.isPending}
+        width={480}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '12px 0' }}>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>空间名称</div>
+            <Input 
+              value={name} 
+              onChange={val => setName(val)} 
+              placeholder="如：生产环境应用区" 
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>唯一标识 (Slug)</div>
+            <Input 
+              value={slug} 
+              onChange={val => setSlug(val)} 
+              placeholder="如：prod-app" 
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>空间描述 (选填)</div>
+            <Input 
+              value={description} 
+              onChange={val => setDescription(val)} 
+              placeholder="简述该业务空间的用途..." 
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

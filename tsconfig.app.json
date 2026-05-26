@@ -16,9 +16,11 @@
     "jsx": "react-jsx",
     "ignoreDeprecations": "6.0",
     "baseUrl": ".",
+    "noImplicitAny": false,
     "paths": {
       "@/*": ["src/*"]
     },
+
 
 
 

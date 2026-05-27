@@ -45,13 +45,13 @@ function MessageBubble({ msg }: { msg: Message }) {
         maxWidth: '80%',
         padding: '10px 14px',
         borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-        background: isUser ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' : '#f1f5f9',
-        color: isUser ? '#fff' : '#1e293b',
+        background: isUser ? '#e8edf5' : '#f8fafc',
+        color: '#1e293b',
         fontSize: 13,
         lineHeight: '1.6',
         wordBreak: 'break-word',
         whiteSpace: 'pre-wrap',
-        border: isUser ? 'none' : '1px solid #e2e8f0',
+        border: isUser ? '1px solid #d1d9e6' : '1px solid #e2e8f0',
         opacity: msg.isError ? 0.7 : 1,
       }}>
         {msg.content || (msg.role === 'agent' ? <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>思考中…</span> : '')}
@@ -69,8 +69,8 @@ function ThinkingDots() {
       {[0, 1, 2].map((i) => (
         <span key={i} style={{
           width: 6, height: 6, borderRadius: '50%',
-          backgroundColor: '#1e293b',
-          opacity: 0.4,
+          backgroundColor: '#94a3b8',
+          opacity: 0.6,
           animation: `cs-bounce 1.2s ${i * 0.2}s ease-in-out infinite`,
         }} />
       ))}
@@ -163,7 +163,7 @@ export function CustomerService() {
           width: 52,
           height: 52,
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+          background: '#ffffff',
           boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
           display: 'flex',
           alignItems: 'center',
@@ -171,11 +171,12 @@ export function CustomerService() {
           cursor: 'grab',
           userSelect: 'none',
           transition: 'box-shadow 0.2s',
-          background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
         }}
       >
         {isOpen
-          ? <IconClose style={{ color: '#fff', fontSize: 20 }} />
+          ? <IconClose style={{ color: '#64748b', fontSize: 20 }} />
           : (
             <div style={{ position: 'relative' }}>
               <img src={logoSrc} alt="CS" style={{ width: 28, height: 28, objectFit: 'contain' }} />
@@ -285,7 +286,7 @@ export function CustomerService() {
                 disabled={!inputValue.trim() || isLoading}
                 style={{
                   width: 32, height: 32, borderRadius: 8, border: 'none',
-                  background: inputValue.trim() && !isLoading ? '#1e293b' : '#e2e8f0',
+                  background: inputValue.trim() && !isLoading ? '#475569' : '#e2e8f0',
                   color: inputValue.trim() && !isLoading ? '#fff' : '#94a3b8',
                   cursor: inputValue.trim() && !isLoading ? 'pointer' : 'not-allowed',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',

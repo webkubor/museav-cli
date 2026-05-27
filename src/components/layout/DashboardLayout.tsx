@@ -12,7 +12,8 @@ import {
   IconUser,
   IconGlobe,
   IconUserGroup,
-  IconEyeOpened
+  IconEyeOpened,
+  IconApps,
 } from '@douyinfe/semi-icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { DashboardHeader } from './DashboardHeader'
@@ -29,6 +30,7 @@ export function DashboardLayout() {
   // Tenant级：切换工作区不影响这些页面
   const tenantNavItems = [
     { itemKey: 'dashboard', text: '总览', icon: <IconHome style={{ fontSize: '16px' }} /> },
+    { itemKey: 'models', text: '模型目录', icon: <IconApps style={{ fontSize: '16px' }} /> },
     {
       itemKey: 'analytics',
       text: '用量分析',
@@ -74,35 +76,26 @@ export function DashboardLayout() {
     return path
   }
 
+  const BREADCRUMB_MAP: Record<string, string[]> = {
+    dashboard:        ['首页'],
+    models:           ['首页', '模型目录'],
+    'api-keys':       ['首页', 'API Keys'],
+    usage:            ['首页', '用量分析', '用量'],
+    logs:             ['首页', '用量分析', '日志'],
+    'pay-as-you-go':  ['首页', '账单', '按量付费'],
+    'billing-orders': ['首页', '账单', '充值订单'],
+    invoices:         ['首页', '账单', '发票管理'],
+    guardrails:       ['首页', '安全护栏'],
+    observability:    ['首页', '可观测性'],
+    'invitations-mgmt': ['首页', '邀请管理'],
+    'settings/account':      ['首页', '设置', '账号'],
+    'settings/workspace':    ['首页', '设置', '工作区管理'],
+    'settings/organization': ['首页', '设置', '组织管理'],
+  }
+
   const getBreadcrumbs = () => {
     const path = location.pathname.replace(/^\//, '')
-    if (!path) return ['首页']
-    const breadcrumbs = ['首页']
-    if (path.includes('settings')) {
-      breadcrumbs.push('设置')
-      if (path.includes('workspace')) breadcrumbs.push('工作区管理')
-      else if (path.includes('account')) breadcrumbs.push('账号')
-      else if (path.includes('organization')) breadcrumbs.push('组织管理')
-    } else if (path === 'api-keys') {
-      breadcrumbs.push('API Keys')
-    } else if (path === 'logs') {
-      breadcrumbs.push('用量分析', '日志')
-    } else if (path === 'usage') {
-      breadcrumbs.push('用量分析', '用量')
-    } else if (path === 'pay-as-you-go') {
-      breadcrumbs.push('账单', '按量付费')
-    } else if (path === 'billing-orders') {
-      breadcrumbs.push('账单', '充值订单')
-    } else if (path === 'invoices') {
-      breadcrumbs.push('账单', '发票管理')
-    } else if (path === 'guardrails') {
-      breadcrumbs.push('安全护栏')
-    } else if (path === 'observability') {
-      breadcrumbs.push('可观测性')
-    } else if (path === 'invitations-mgmt') {
-      breadcrumbs.push('邀请管理')
-    }
-    return breadcrumbs
+    return BREADCRUMB_MAP[path] ?? ['首页']
   }
 
   return (

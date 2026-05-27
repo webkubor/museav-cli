@@ -13,6 +13,7 @@ import {
 import { listWorkspaceMembers } from '@/services/workspaces'
 import { listApiKeys } from '@/services/api-keys'
 import { pageItems } from '@/lib/utils'
+import { formatDateTime } from '@/lib/format-date'
 import type {
   AssignmentInput,
   GuardrailBudgetPolicy,
@@ -78,9 +79,6 @@ const PERIOD_LABEL: Record<GuardrailBudgetPolicy['period_unit'], string> = {
   month: '月',
 }
 
-function formatDT(val: string) {
-  return new Date(val).toLocaleString('zh-CN', { hour12: false })
-}
 
 // ── Main page ────────────────────────────────────────────────────────────────
 
@@ -384,8 +382,8 @@ export default function GuardrailsPage() {
               >
                 <MetaItem label="优先级" value={selected.priority ?? '默认'} />
                 <MetaItem label="默认策略" value={selected.is_default ? '是' : '否'} />
-                <MetaItem label="创建于" value={formatDT(selected.created_at)} />
-                <MetaItem label="最近更新" value={formatDT(selected.updated_at)} />
+                <MetaItem label="创建于" value={formatDateTime(selected.created_at)} />
+                <MetaItem label="最近更新" value={formatDateTime(selected.updated_at)} />
               </div>
             </div>
 

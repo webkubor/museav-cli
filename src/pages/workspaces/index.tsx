@@ -4,6 +4,7 @@ import { IconSearch, IconPlus } from '@douyinfe/semi-icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listWorkspaces, createWorkspace } from '@/services/workspaces'
 import type { WorkspaceItem } from '@/types'
+import { formatDateTime } from '@/lib/format-date'
 
 export default function WorkspacesPage() {
   const queryClient = useQueryClient()
@@ -105,7 +106,7 @@ export default function WorkspacesPage() {
       dataIndex: 'created_at',
       render: (text: string) => (
         <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>
-          {new Date(text).toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')}
+          {formatDateTime(text)}
         </span>
       )
     },

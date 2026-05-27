@@ -2,8 +2,10 @@ import { useState, useMemo } from 'react'
 import { Spin } from '@douyinfe/semi-ui'
 import { useQuery } from '@tanstack/react-query'
 import { getUsageSummary, getUsageSeries } from '@/services/usage'
+import { getLogHistogram } from '@/services/logs'
 import { useAuthStore } from '@/store/auth'
 import type { SeriesDataPoint } from '@/types'
+import { formatChartTooltipDate } from '@/lib/format-date'
 
 // ─── Types ───────────────────────────────────────────
 
@@ -70,7 +72,7 @@ function Sparkline({ data, width, height, metric }: SparklineProps) {
     )
     const labels = labelIndices.map((idx) => ({
       x: coords[idx].x,
-      text: new Date(coords[idx].ts).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }),
+      text: formatChartTooltipDate(coords[idx].ts),
     }))
 
     return { path, dots: coords, labels }
@@ -150,6 +152,82 @@ function Sparkline({ data, width, height, metric }: SparklineProps) {
           fill="var(--semi-color-text-2)"
           fontFamily="system-ui, -apple-system, sans-serif"
         >
+          {l.text}
+        </text>
+      ))}
+    </svg>
+  )
+}
+
+// ─── Histogram Bar Chart ─────────────────────────────
+
+interface HistogramChartProps {
+  buckets: { bucket_start: string; count: number }[]
+  width: number
+  height: number
+}
+
+function HistogramChart({ buckets, width, height }: HistogramChartProps) {
+  const bars = useMemo(() => {
+    if (buckets.length === 0) return { items: [], labels: [] }
+    const maxCount = Math.max(...buckets.map((b) => b.count), 1)
+    const padX = 40
+    const padTop = 12
+    const padBottom = 28
+    const innerW = width - padX * 2
+    const innerH = height - padTop - padBottom
+    const barW = Math.max(2, innerW / buckets.length - 1)
+
+    const items = buckets.map((b, i) => ({
+      x: padX + (i / buckets.length) * innerW,
+      h: (b.count / maxCount) * innerH,
+      count: b.count,
+      ts: b.bucket_start,
+    }))
+
+    const labelIndices = [0, Math.floor((buckets.length - 1) / 2), buckets.length - 1].filter(
+      (v, i, arr) => arr.indexOf(v) === i
+    )
+    const labels = labelIndices.map((idx) => ({
+      x: items[idx].x + barW / 2,
+      text: formatChartTooltipDate(buckets[idx].bucket_start),
+    }))
+
+    return { items, barW, labels, innerH, padTop }
+  }, [buckets, width, height])
+
+  if (buckets.length === 0) {
+    return (
+      <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--semi-color-text-2)', fontSize: '13px' }}>
+        暂无数据
+      </div>
+    )
+  }
+
+  const { items, barW, labels } = bars as any
+
+  return (
+    <svg width={width} height={height} style={{ display: 'block' }}>
+      {[0.25, 0.5, 0.75, 1].map((frac) => {
+        const y = 12 + frac * (height - 40)
+        return (
+          <line key={frac} x1={40} y1={y} x2={width - 40} y2={y} stroke="var(--semi-color-fill-0)" strokeWidth={1} />
+        )
+      })}
+      {items.map((bar: any, i: number) => (
+        <rect
+          key={i}
+          x={bar.x}
+          y={height - 28 - bar.h}
+          width={barW}
+          height={bar.h}
+          rx={2}
+          fill="#6366f1"
+          opacity={0.75}
+        />
+      ))}
+      {labels.map((l: any, i: number) => (
+        <text key={i} x={l.x} y={height - 6} textAnchor="middle" fontSize={11} fill="var(--semi-color-text-2)" fontFamily="system-ui, -apple-system, sans-serif">
           {l.text}
         </text>
       ))}
@@ -284,6 +362,18 @@ export default function UsagePage() {
     enabled: true,
   })
 
+  const histogramQuery = useQuery({
+    queryKey: ['log-histogram', activeWorkspaceId, range],
+    queryFn: () =>
+      getLogHistogram({
+        workspace_id: activeWorkspaceId ?? undefined,
+        from,
+        to,
+        granularity: range === '7d' ? 'hour' : 'day',
+      }),
+    enabled: true,
+  })
+
   const summary = summaryQuery.data
   const series = seriesQuery.data
 
@@ -351,6 +441,7 @@ export default function UsagePage() {
           border: '1px solid var(--semi-color-fill-0)',
           padding: '24px',
           boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
+          marginBottom: '16px',
         }}
       >
         {/* 指标切换 Tab */}
@@ -381,6 +472,38 @@ export default function UsagePage() {
               width={900}
               height={220}
               metric={metric}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* 请求分布直方图 */}
+      <div
+        style={{
+          background: 'var(--semi-color-bg-0)',
+          borderRadius: '12px',
+          border: '1px solid var(--semi-color-fill-0)',
+          padding: '24px',
+          boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
+        }}
+      >
+        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: '20px' }}>
+          请求分布
+        </div>
+        {histogramQuery.isError ? (
+          <div style={{ color: '#ef4444', fontSize: '13px', textAlign: 'center', padding: '40px 0' }}>
+            加载分布数据失败，请稍后重试。
+          </div>
+        ) : histogramQuery.isLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '160px' }}>
+            <Spin size="large" />
+          </div>
+        ) : (
+          <div style={{ width: '100%' }}>
+            <HistogramChart
+              buckets={histogramQuery.data?.buckets ?? []}
+              width={900}
+              height={160}
             />
           </div>
         )}

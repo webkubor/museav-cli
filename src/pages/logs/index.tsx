@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import { Table, Tag, Input, Select, Button, Spin, Typography } from '@douyinfe/semi-ui'
+import React, { useState } from 'react'
+import { Table, Tag, Input, Select, Button, Spin, Typography, SideSheet } from '@douyinfe/semi-ui'
 import { IconSearch } from '@douyinfe/semi-icons'
 import { useQuery } from '@tanstack/react-query'
-import { listCallLogs, getLogStats } from '@/services/logs'
+import { listCallLogs, getLogStats, getCallLog, getLogPayload } from '@/services/logs'
 import { useAuthStore } from '@/store/auth'
-import type { CallLogItem } from '@/types'
+import type { CallLogItem, CallLogDetail, LogPayload } from '@/types'
 import type { CallLogListParams } from '@/interfaces/logs'
+import { formatDateTimeWithSeconds } from '@/lib/format-date'
 
 const { Text } = Typography
 
@@ -74,6 +75,115 @@ function StatCard({
   )
 }
 
+function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: '16px' }}>
+      <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--semi-color-text-2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+        {label}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function CodeBlock({ value }: { value: string }) {
+  return (
+    <pre
+      style={{
+        margin: 0,
+        padding: '12px 14px',
+        background: 'var(--semi-color-bg-1)',
+        border: '1px solid var(--semi-color-fill-0)',
+        borderRadius: '8px',
+        fontSize: '12px',
+        color: 'var(--semi-color-text-0)',
+        fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-all',
+        overflowX: 'auto',
+        maxHeight: '260px',
+        overflowY: 'auto',
+        lineHeight: 1.6,
+      }}
+    >
+      {value}
+    </pre>
+  )
+}
+
+function LogDetailPanel({ detail, payload, payloadLoading }: { detail: CallLogDetail; payload: LogPayload | null; payloadLoading: boolean }) {
+  return (
+    <div>
+      {/* 基础信息 */}
+      <DetailRow label="Request ID">
+        <span style={{ fontFamily: 'monospace', fontSize: '12.5px', color: 'var(--semi-color-text-1)', wordBreak: 'break-all' }}>
+          {detail.request_id}
+        </span>
+      </DetailRow>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+        <DetailRow label="模型">
+          <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--semi-color-text-0)' }}>{detail.model.display_name}</span>
+        </DetailRow>
+        <DetailRow label="供应商">
+          <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>{detail.provider.name}</span>
+        </DetailRow>
+        <DetailRow label="耗时">
+          <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>
+            {detail.duration_ms >= 1000 ? `${(detail.duration_ms / 1000).toFixed(2)}s` : `${detail.duration_ms}ms`}
+          </span>
+        </DetailRow>
+        <DetailRow label="费用">
+          <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--semi-color-text-0)' }}>
+            {detail.cost.currency} {parseFloat(detail.cost.amount).toFixed(6)}
+          </span>
+        </DetailRow>
+        <DetailRow label="输入 Token">
+          <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>{detail.usage.input_tokens.toLocaleString()}</span>
+        </DetailRow>
+        <DetailRow label="输出 Token">
+          <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>{detail.usage.output_tokens.toLocaleString()}</span>
+        </DetailRow>
+      </div>
+
+      <DetailRow label="开始时间">
+        <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>
+          {formatDateTimeWithSeconds(detail.started_at)}
+        </span>
+      </DetailRow>
+
+      {detail.error && (
+        <DetailRow label="错误信息">
+          <CodeBlock value={detail.error} />
+        </DetailRow>
+      )}
+
+      {/* Payload */}
+      <div style={{ borderTop: '1px solid var(--semi-color-fill-0)', paddingTop: '20px', marginTop: '4px' }}>
+        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: '16px' }}>请求 / 响应内容</div>
+        {payloadLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}><Spin /></div>
+        ) : payload?.prompt ? (
+          <>
+            <DetailRow label="Prompt">
+              <CodeBlock value={JSON.stringify(payload.prompt.messages, null, 2)} />
+            </DetailRow>
+            {payload.completion && (
+              <DetailRow label="Completion">
+                <CodeBlock value={payload.completion.content || JSON.stringify(payload.completion.tool_calls, null, 2)} />
+              </DetailRow>
+            )}
+          </>
+        ) : (
+          <div style={{ fontSize: '13px', color: 'var(--semi-color-text-2)', padding: '12px 0' }}>
+            未开启 Input/Output Logging，无法查看原始内容。
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function LogsPage() {
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
 
@@ -82,6 +192,7 @@ export default function LogsPage() {
   const [requestIdSearch, setRequestIdSearch] = useState('')
   const [cursor, setCursor] = useState<string | null>(null)
   const [allItems, setAllItems] = useState<CallLogItem[]>([])
+  const [selectedLogId, setSelectedLogId] = useState<string | null>(null)
 
   // ─── Stats query ────────────────────────────────────────────────────
   const statsQuery = useQuery({
@@ -119,6 +230,19 @@ export default function LogsPage() {
     enabled: !!activeWorkspaceId,
   })
 
+  // ─── Detail queries ─────────────────────────────────────────────────
+  const detailQuery = useQuery({
+    queryKey: ['call-log-detail', selectedLogId],
+    queryFn: () => getCallLog(selectedLogId!),
+    enabled: !!selectedLogId,
+  })
+
+  const payloadQuery = useQuery({
+    queryKey: ['call-log-payload', detailQuery.data?.request_id],
+    queryFn: () => getLogPayload(detailQuery.data!.request_id),
+    enabled: !!detailQuery.data?.request_id,
+  })
+
   // ─── Handlers ───────────────────────────────────────────────────────
   function handlePresetChange(p: Preset) {
     setPreset(p)
@@ -153,7 +277,7 @@ export default function LogsPage() {
       width: 160,
       render: (val: string) => (
         <span style={{ color: 'var(--semi-color-text-1)', fontSize: '12.5px' }}>
-          {new Date(val).toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')}
+          {formatDateTimeWithSeconds(val)}
         </span>
       ),
     },
@@ -222,81 +346,6 @@ export default function LogsPage() {
       ),
     },
   ]
-
-  // ─── Expanded row renderer ───────────────────────────────────────────
-  function expandedRowRender(record?: CallLogItem) {
-    if (!record) return null;
-    return (
-      <div
-        style={{
-          padding: '16px 24px',
-          background: 'var(--semi-color-bg-1)',
-          borderRadius: '8px',
-          margin: '4px 0',
-        }}
-      >
-        <div style={{ display: 'flex', gap: '40px', flexWrap: 'wrap' }}>
-          <div>
-            <div style={{ fontSize: '11.5px', color: 'var(--semi-color-text-2)', fontWeight: 600, marginBottom: '4px' }}>
-              REQUEST ID
-            </div>
-            <span
-              style={{
-                fontFamily: 'monospace',
-                fontSize: '12.5px',
-                color: 'var(--semi-color-text-1)',
-                backgroundColor: 'var(--semi-color-bg-0)',
-                padding: '3px 10px',
-                borderRadius: '6px',
-                border: '1px solid var(--semi-color-border)',
-              }}
-            >
-              {record.request_id}
-            </span>
-          </div>
-
-          {record.error && (
-            <div>
-              <div style={{ fontSize: '11.5px', color: 'var(--semi-color-text-2)', fontWeight: 600, marginBottom: '4px' }}>
-                ERROR
-              </div>
-              <span
-                style={{
-                  fontFamily: 'monospace',
-                  fontSize: '12.5px',
-                  color: '#dc2626',
-                  backgroundColor: '#fef2f2',
-                  padding: '3px 10px',
-                  borderRadius: '6px',
-                  border: '1px solid #fecaca',
-                }}
-              >
-                {record.error}
-              </span>
-            </div>
-          )}
-
-          <div>
-            <div style={{ fontSize: '11.5px', color: 'var(--semi-color-text-2)', fontWeight: 600, marginBottom: '4px' }}>
-              TOKENS IN / OUT
-            </div>
-            <span style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)' }}>
-              {record.usage.input_tokens.toLocaleString()} / {record.usage.output_tokens.toLocaleString()}
-            </span>
-          </div>
-
-          <div>
-            <div style={{ fontSize: '11.5px', color: 'var(--semi-color-text-2)', fontWeight: 600, marginBottom: '4px' }}>
-              API KEY
-            </div>
-            <span style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)' }}>
-              {record.api_key.name}
-            </span>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   // ─── Stats values ────────────────────────────────────────────────────
   const totals = statsQuery.data?.totals
@@ -428,7 +477,10 @@ export default function LogsPage() {
         pagination={false}
         bordered={false}
         rowKey="call_log_id"
-        expandedRowRender={expandedRowRender}
+        onRow={(record) => ({
+          onClick: () => setSelectedLogId(record!.call_log_id),
+          style: { cursor: 'pointer' },
+        })}
         style={{ marginTop: '4px' }}
         empty={
           <div style={{ padding: '48px 0', textAlign: 'center' }}>
@@ -458,6 +510,33 @@ export default function LogsPage() {
           </Button>
         </div>
       )}
+
+      {/* 日志详情侧边抽屉 */}
+      <SideSheet
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingRight: '8px' }}>
+            <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--semi-color-text-0)' }}>调用详情</span>
+            {detailQuery.data && (
+              <StatusTag status={detailQuery.data.status} />
+            )}
+          </div>
+        }
+        visible={!!selectedLogId}
+        onCancel={() => setSelectedLogId(null)}
+        width={560}
+        placement="right"
+        closable
+        style={{ borderRadius: '0' }}
+        bodyStyle={{ padding: '24px', overflowY: 'auto' }}
+      >
+        {detailQuery.isLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+            <Spin />
+          </div>
+        ) : detailQuery.data ? (
+          <LogDetailPanel detail={detailQuery.data} payload={payloadQuery.data ?? null} payloadLoading={payloadQuery.isLoading} />
+        ) : null}
+      </SideSheet>
     </div>
   )
 }

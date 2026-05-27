@@ -22,6 +22,7 @@ import BillingOrdersPage from '@/pages/billing-orders'
 import GuardrailsPage from '@/pages/guardrails'
 import InvitationsMgmtPage from '@/pages/invitations-mgmt'
 import ObservabilityPage from '@/pages/observability'
+import ModelsPage from '@/pages/models'
 import { useAuthStore } from '@/store/auth'
 import { getSession } from '@/services/auth'
 import { getMarket } from '@/lib/market'
@@ -108,6 +109,7 @@ export default function App() {
             <Route path="guardrails" element={<GuardrailsPage />} />
             <Route path="invitations-mgmt" element={<InvitationsMgmtPage />} />
             <Route path="observability" element={<ObservabilityPage />} />
+            <Route path="models" element={<ModelsPage />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -16,6 +16,7 @@ import {
   updateTenantMemberRole,
 } from '@/services/tenants'
 import type { TenantItem } from '@/types'
+import { formatDate } from '@/lib/format-date'
 
 const { Text } = Typography
 
@@ -258,6 +259,15 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
     refetchOnWindowFocus: false,
   })
 
+  const membersQuery = useQuery({
+    queryKey: ['tenant-members', tenantId],
+    queryFn: () => listTenantMembers(tenantId),
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  })
+
+  const owner = membersQuery.data?.items.find((m) => m.role === 'tenant_owner')
+
   const tenant = tenantQuery.data
 
   const update = useMutation({
@@ -308,6 +318,17 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
             <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: '6px', fontSize: '13px', backgroundColor: 'rgba(var(--semi-color-primary-rgb, 99,102,241),0.06)', color: 'var(--semi-color-primary)', border: '1px solid rgba(var(--semi-color-primary-rgb, 99,102,241),0.2)' }}>
               {tenant.type === 'personal' ? '个人账户' : '企业组织'}
             </span>
+          </div>
+          <div>
+            <label style={labelStyle}>Owner</label>
+            {owner ? (
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--semi-color-text-0)' }}>{owner.account.display_name || '—'}</div>
+                <div style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginTop: '2px' }}>{owner.account.email}</div>
+              </div>
+            ) : (
+              <span style={{ fontSize: '14px', color: 'var(--semi-color-text-2)' }}>{membersQuery.isLoading ? '…' : '—'}</span>
+            )}
           </div>
           <div>
             <label style={labelStyle}>最大工作区数</label>
@@ -380,7 +401,7 @@ function MembersTab({ tenantId }: { tenantId: string }) {
       title: '加入时间',
       dataIndex: 'joined_at',
       render: (val: string) => (
-        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '14px' }}>{new Date(val).toLocaleDateString('zh-CN')}</span>
+        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '14px' }}>{formatDate(val)}</span>
       ),
     },
     {

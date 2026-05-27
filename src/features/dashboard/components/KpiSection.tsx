@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
 import { getBalance } from '@/services/billing'
 import { getUsageSummary } from '@/services/usage'
+import { getBillingMoneyStats } from '@/services/overview'
 
 const { Text } = Typography
 
@@ -78,8 +79,19 @@ export const KpiSection: React.FC = () => {
     staleTime: 60_000,
   })
 
+  const { data: billingStats, isLoading: billingLoading } = useQuery({
+    queryKey: ['billing', 'money-stats', activeTenantId],
+    queryFn: () => getBillingMoneyStats(activeTenantId!),
+    enabled: !!activeTenantId,
+    staleTime: 60_000,
+  })
+
   const availableBalance = balance
     ? `${balance.available.currency} ${parseFloat(balance.available.amount).toFixed(2)}`
+    : undefined
+
+  const monthlySpend = billingStats
+    ? `${billingStats.monthly_spend.currency} ${parseFloat(billingStats.monthly_spend.amount).toFixed(4)}`
     : undefined
 
   const monthlyRequests = usage
@@ -94,6 +106,7 @@ export const KpiSection: React.FC = () => {
 
   const cards = [
     { title: '可用余额', value: availableBalance, loading: balanceLoading, color: 'var(--semi-color-text-0)' },
+    { title: '本月消费', value: monthlySpend, loading: billingLoading, color: '#f59e0b' },
     { title: '本月请求数', value: monthlyRequests, loading: usageLoading, color: '#10b981' },
     { title: '本月 Token 用量', value: monthlyTokens, loading: usageLoading, color: '#3b82f6' },
   ]
@@ -101,7 +114,7 @@ export const KpiSection: React.FC = () => {
   return (
     <Row gutter={20} style={{ marginBottom: '36px' }}>
       {cards.map((card) => (
-        <Col span={8} key={card.title}>
+        <Col span={6} key={card.title}>
           <KpiCard {...card} />
         </Col>
       ))}

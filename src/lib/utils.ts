@@ -23,7 +23,7 @@ export function formatCNY(amount: number | string | null | undefined): string {
 /** 格式化大数字为带千分位的字符串，如 1234567 → "1,234,567" */
 export function formatNumber(n: number | null | undefined): string {
   if (n == null) return '—'
-  return n.toLocaleString('zh-CN')
+  return n.toLocaleString()
 }
 
 /** 截断字符串，超出部分显示省略号 */

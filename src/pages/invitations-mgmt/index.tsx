@@ -10,6 +10,7 @@ import {
   resetInviteLink,
 } from '@/services/invitations'
 import type { InvitationItem } from '@/types'
+import { formatDateTime } from '@/lib/format-date'
 
 const STATUS_STYLE: Record<InvitationItem['status'], { color: string; bg: string; border: string }> = {
   pending:  { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
@@ -31,9 +32,6 @@ const ROLE_LABEL: Record<'ws_member' | 'ws_admin', string> = {
   ws_admin:  '管理员',
 }
 
-function formatDateTime(val: string) {
-  return new Date(val).toLocaleString('zh-CN', { hour12: false })
-}
 
 export default function InvitationsMgmtPage() {
   const qc = useQueryClient()

@@ -15,15 +15,12 @@ import {
   updateLoggingConfig,
 } from '@/services/observability'
 import type { LoggingConfig, PlatformConfigField } from '@/types'
+import { formatDateTime } from '@/lib/format-date'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 type DeadLetterStatusFilter = 'all' | 'pending' | 'retrying' | 'ignored'
 
-function formatDT(val: string | null | undefined) {
-  if (!val) return '—'
-  return new Date(val).toLocaleString('zh-CN', { hour12: false })
-}
 
 function deadLetterStatusStyle(status: 'pending' | 'retrying' | 'ignored'): React.CSSProperties {
   const map: Record<string, React.CSSProperties> = {
@@ -202,7 +199,7 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
       title: '最近成功',
       dataIndex: 'last_success_at',
       render: (v: string | null) => (
-        <span style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }}>{formatDT(v)}</span>
+        <span style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }}>{formatDateTime(v)}</span>
       ),
     },
     {
@@ -454,7 +451,7 @@ function DeadLettersSection({ workspaceId }: { workspaceId: string }) {
       title: '最近尝试',
       dataIndex: 'last_attempted_at',
       render: (v: string, row: { created_at: string }) => (
-        <span style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }}>{formatDT(v || row.created_at)}</span>
+        <span style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }}>{formatDateTime(v || row.created_at)}</span>
       ),
     },
     {

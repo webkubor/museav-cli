@@ -5,7 +5,7 @@ import {
   IconLanguage,
   IconHelpCircle
 } from '@douyinfe/semi-icons'
-import { modelGoBrandIcons } from '@/config/brand-assets'
+import { modelGoLogos } from '@/config/brand-assets'
 
 const { Header } = Layout
 
@@ -47,7 +47,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           onClick={() => navigate('/')}
         >
           <img
-            src={modelGoBrandIcons.onLight}
+            src={modelGoLogos[market]}
             alt="ModelGo"
             style={{ width: '30px', height: '30px', objectFit: 'contain' }}
           />

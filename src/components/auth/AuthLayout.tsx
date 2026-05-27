@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Typography } from '@douyinfe/semi-ui'
-import { modelGoBrandIcons } from '@/config/brand-assets'
+import { modelGoLogos } from '@/config/brand-assets'
+import { getMarket } from '@/lib/market'
 
 const { Title, Text } = Typography
 
@@ -28,7 +29,7 @@ export function AuthLayout({ title, subtitle, footer, children }: AuthLayoutProp
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <img
-            src={modelGoBrandIcons.onLight}
+            src={modelGoLogos[getMarket()]}
             alt="ModelGo"
             style={{ width: '40px', height: '40px', objectFit: 'contain', margin: '0 auto 16px', display: 'block' }}
           />

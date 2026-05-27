@@ -11,6 +11,13 @@ import ForgotPasswordPage from '@/pages/forgot-password'
 import ResetPasswordPage from '@/pages/reset-password'
 import AuthCallbackPage from '@/pages/auth-callback'
 import InvitationsPage from '@/pages/invitations'
+import UsagePage from '@/pages/usage'
+import LogsPage from '@/pages/logs'
+import PayAsYouGoPage from '@/pages/pay-as-you-go'
+import TokenPlanPage from '@/pages/token-plan'
+import InvoicesPage from '@/pages/invoices'
+import AccountSettingsPage from '@/pages/settings/account'
+import AlarmsSettingsPage from '@/pages/settings/alarms'
 import { useAuthStore } from '@/store/auth'
 import { getSession } from '@/services/auth'
 import { getMarket } from '@/lib/market'
@@ -79,15 +86,15 @@ export default function App() {
             <Route path="settings">
               <Route index element={<Navigate to="workspace" replace />} />
               <Route path="workspace" element={<WorkspacesPage />} />
-              <Route path="account" element={<div style={{ padding: '8px' }}>账号设置骨架</div>} />
-              <Route path="alarms" element={<div style={{ padding: '8px' }}>告警配置骨架</div>} />
+              <Route path="account" element={<AccountSettingsPage />} />
+              <Route path="alarms" element={<AlarmsSettingsPage />} />
             </Route>
 
-            <Route path="usage" element={<div style={{ padding: '8px' }}>用量分析数据可视化</div>} />
-            <Route path="logs" element={<div style={{ padding: '8px' }}>大模型调用审计日志</div>} />
-            <Route path="pay-as-you-go" element={<div style={{ padding: '8px' }}>按量付费与额度充值</div>} />
-            <Route path="token-plan" element={<div style={{ padding: '8px' }}>Token 套餐配置</div>} />
-            <Route path="invoices" element={<div style={{ padding: '8px' }}>企业发票与开票管理</div>} />
+            <Route path="usage" element={<UsagePage />} />
+            <Route path="logs" element={<LogsPage />} />
+            <Route path="pay-as-you-go" element={<PayAsYouGoPage />} />
+            <Route path="token-plan" element={<TokenPlanPage />} />
+            <Route path="invoices" element={<InvoicesPage />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,17 +1,5 @@
-export const modelGoBrandIcons = {
-  onDark: '/brand/modelgo-app-icon-light.svg',
-  onLight: '/brand/modelgo-app-icon-dark.svg',
+export const modelGoLogos = {
+  domestic: '/brand/modelgo-cn-logo.svg',
+  cn: '/brand/modelgo-cn-logo.svg',
+  global: '/brand/modelgo-global-logo.svg',
 } as const
-
-export const modelGoFaviconLinks = [
-  {
-    url: modelGoBrandIcons.onLight,
-    type: 'image/svg+xml',
-    media: '(prefers-color-scheme: light)',
-  },
-  {
-    url: modelGoBrandIcons.onDark,
-    type: 'image/svg+xml',
-    media: '(prefers-color-scheme: dark)',
-  },
-] as const

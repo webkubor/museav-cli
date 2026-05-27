@@ -12,6 +12,7 @@ import {
 } from '@/services/guardrails'
 import { listWorkspaceMembers } from '@/services/workspaces'
 import { listApiKeys } from '@/services/api-keys'
+import { pageItems } from '@/lib/utils'
 import type {
   AssignmentInput,
   GuardrailBudgetPolicy,
@@ -194,16 +195,12 @@ export default function GuardrailsPage() {
   })
 
   function memberName(accountId: string) {
-    const raw = membersQuery.data as any
-    const list: any[] = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : [])
-    const m = list.find((m) => m.account?.account_id === accountId)
+    const m = pageItems(membersQuery.data).find((m) => m.account?.account_id === accountId)
     return m?.account?.display_name ?? accountId
   }
 
   function apiKeyName(keyId: string) {
-    const raw = apiKeysQuery.data as any
-    const list: any[] = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : [])
-    const k = list.find((k) => k.api_key_id === keyId)
+    const k = pageItems(apiKeysQuery.data).find((k) => k.api_key_id === keyId)
     return k?.name ?? keyId
   }
 

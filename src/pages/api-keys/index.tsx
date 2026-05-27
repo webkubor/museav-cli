@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listApiKeys, createApiKey, revokeApiKey } from '@/services/api-keys'
 import { useAuthStore } from '@/store/auth'
 import type { ApiKeyItem } from '@/types'
+import { pageItems } from '@/lib/utils'
 
 const { Paragraph } = Typography
 
@@ -25,12 +26,7 @@ export default function ApiKeysPage() {
   // ─── 1. TanStack Query 真实加载当前工作空间的 API Keys 列表 ──────
   const { data, isLoading } = useQuery({
     queryKey: ['api-keys', activeWorkspaceId],
-    queryFn: async () => {
-      const res = await listApiKeys(activeWorkspaceId)
-      if (Array.isArray(res)) return res
-      if (res && Array.isArray(res.items)) return res.items
-      return [] as ApiKeyItem[]
-    },
+    queryFn: () => listApiKeys(activeWorkspaceId).then(pageItems),
     enabled: !!activeWorkspaceId
   })
 
@@ -190,8 +186,7 @@ export default function ApiKeysPage() {
     }
   ]
 
-  const items: ApiKeyItem[] = Array.isArray(data) ? data : []
-  const filteredData = items.filter(item =>
+  const filteredData = (data ?? []).filter(item =>
     item.name.includes(searchValue) || (item.masked ?? '').includes(searchValue)
   )
 

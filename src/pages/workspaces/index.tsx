@@ -4,6 +4,7 @@ import { IconSearch, IconPlus } from '@douyinfe/semi-icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listWorkspaces, createWorkspace } from '@/services/workspaces'
 import type { WorkspaceItem } from '@/types'
+import { pageItems } from '@/lib/utils'
 
 export default function WorkspacesPage() {
   const queryClient = useQueryClient()
@@ -18,7 +19,7 @@ export default function WorkspacesPage() {
   // ─── 1. TanStack Query 真实获取工作空间接口数据 ─────────────────
   const { data, isLoading } = useQuery({
     queryKey: ['workspaces'],
-    queryFn: () => listWorkspaces().then(res => res.items)
+    queryFn: () => listWorkspaces().then(pageItems)
   })
 
   // ─── 2. Mutation 真实绑定新建工作空间接口 ─────────────────────

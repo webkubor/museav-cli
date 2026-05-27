@@ -45,7 +45,7 @@ function MessageBubble({ msg }: { msg: Message }) {
         maxWidth: '80%',
         padding: '10px 14px',
         borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-        background: isUser ? 'linear-gradient(135deg, var(--semi-color-primary) 0%, var(--semi-color-primary-hover) 100%)' : '#f1f5f9',
+        background: isUser ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' : '#f1f5f9',
         color: isUser ? '#fff' : '#1e293b',
         fontSize: 13,
         lineHeight: '1.6',
@@ -69,7 +69,7 @@ function ThinkingDots() {
       {[0, 1, 2].map((i) => (
         <span key={i} style={{
           width: 6, height: 6, borderRadius: '50%',
-          backgroundColor: 'var(--semi-color-primary)',
+          backgroundColor: '#1e293b',
           opacity: 0.4,
           animation: `cs-bounce 1.2s ${i * 0.2}s ease-in-out infinite`,
         }} />
@@ -163,7 +163,7 @@ export function CustomerService() {
           width: 52,
           height: 52,
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, var(--semi-color-primary) 0%, var(--semi-color-primary-hover) 100%)',
+          background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
           boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
           display: 'flex',
           alignItems: 'center',
@@ -171,6 +171,7 @@ export function CustomerService() {
           cursor: 'grab',
           userSelect: 'none',
           transition: 'box-shadow 0.2s',
+          background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
         }}
       >
         {isOpen
@@ -284,7 +285,7 @@ export function CustomerService() {
                 disabled={!inputValue.trim() || isLoading}
                 style={{
                   width: 32, height: 32, borderRadius: 8, border: 'none',
-                  background: inputValue.trim() && !isLoading ? 'var(--semi-color-primary)' : '#e2e8f0',
+                  background: inputValue.trim() && !isLoading ? '#1e293b' : '#e2e8f0',
                   color: inputValue.trim() && !isLoading ? '#fff' : '#94a3b8',
                   cursor: inputValue.trim() && !isLoading ? 'pointer' : 'not-allowed',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',

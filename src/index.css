@@ -58,17 +58,16 @@
   --semi-color-link-hover: var(--brand-mid);
   --semi-color-nav-item-text-active: var(--brand-deep);
   --semi-color-nav-item-icon-active: var(--brand-base);
-}
-  
+
   /* 文字与描边弱化（去死板黑灰） */
   --semi-color-bg-0: var(--card-bg);
   --semi-color-bg-1: var(--site-bg);
-  --semi-color-border: rgba(15, 23, 42, 0.06); /* 若有若无的线 */
+  --semi-color-border: rgba(15, 23, 42, 0.06);
   --semi-color-fill-0: rgba(15, 23, 42, 0.03);
-  --semi-color-text-0: #0f172a; /* Slate 900 */
-  --semi-color-text-1: #475569; /* Slate 600 */
-  --semi-color-text-2: #94a3b8; /* Slate 400 */
-  
+  --semi-color-text-0: #0f172a;
+  --semi-color-text-1: #475569;
+  --semi-color-text-2: #94a3b8;
+
   /* 导航项自定义 */
   --nav-item-active-bg: var(--brand-selected-bg);
 }

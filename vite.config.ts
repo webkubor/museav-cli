@@ -4,12 +4,23 @@ import path from 'path'
 import { devLoggerPlugin } from './scripts/dev-logger-plugin'
 import { version } from './package.json'
 
+// Vite 8 + rolldown 严格检查 package exports，semi-ui 未声明 CSS 导出条件，需手动 bypass
+const semiCssResolverPlugin = {
+  name: 'resolve-semi-css',
+  enforce: 'pre' as const,
+  resolveId(id: string) {
+    if (id === '@douyinfe/semi-ui/dist/css/semi.css') {
+      return path.resolve(__dirname, 'node_modules/@douyinfe/semi-ui/dist/css/semi.css')
+    }
+  },
+}
+
 export default defineConfig(({ mode }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(version),
     'process.env.NODE_ENV': JSON.stringify(mode === 'test' ? 'development' : 'production'),
   },
-  plugins: [react(), devLoggerPlugin()],
+  plugins: [semiCssResolverPlugin, react(), devLoggerPlugin()],
   build: {
     chunkSizeWarningLimit: 900,
     rollupOptions: {

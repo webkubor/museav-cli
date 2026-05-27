@@ -5,6 +5,7 @@ import {
   IconLanguage,
   IconHelpCircle
 } from '@douyinfe/semi-icons'
+import { modelGoBrandIcons } from '@/config/brand-assets'
 
 const { Header } = Layout
 
@@ -45,25 +46,11 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} 
           onClick={() => navigate('/')}
         >
-          <div 
-            className="logo-flow-light"
-            style={{
-              width: '30px',
-              height: '30px',
-              borderRadius: '8px',
-              background: 'linear-gradient(135deg, #096dd9 0%, #1890ff 50%, #00d2ff 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#ffffff',
-              fontWeight: 800,
-              fontSize: '15px',
-              boxShadow: '0 4px 12px rgba(24, 144, 255, 0.25), inset 0 1px 1px rgba(255,255,255,0.4)',
-              textShadow: '0 1px 2px rgba(0,0,0,0.1)'
-            }}
-          >
-            M
-          </div>
+          <img
+            src={modelGoBrandIcons.onLight}
+            alt="ModelGo"
+            style={{ width: '30px', height: '30px', objectFit: 'contain' }}
+          />
           <span style={{ 
             fontSize: '15px', 
             fontWeight: 700, 

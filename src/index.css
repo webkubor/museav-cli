@@ -1,6 +1,65 @@
 /* 重置默认 CSS，为 Semi Design 提供大厂极简云平台美学基础环境 */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
+/* ── 品牌色 Token ── */
+:root {
+  /* CN 靛紫（国内市场 / 词元共生） */
+  --cn-deep: #4f46e5;
+  --cn-base: #6366f1;
+  --cn-mid: #818cf8;
+  --cn-light: #a5b4fc;
+  --cn-pale: #c7d2fe;
+  --cn-glow-soft: rgba(99, 102, 241, 0.15);
+  --cn-selected-bg: #eef2ff;
+
+  /* GO 翠绿（海外市场 / ModelGo） */
+  --go-deep: #059669;
+  --go-base: #10b981;
+  --go-mid: #34d399;
+  --go-light: #6ee7b7;
+  --go-pale: #a7f3d0;
+  --go-glow-soft: rgba(16, 185, 129, 0.15);
+  --go-selected-bg: #ecfdf5;
+
+  /* 默认：国内（indigo） */
+  --brand-deep: var(--cn-deep);
+  --brand-base: var(--cn-base);
+  --brand-mid: var(--cn-mid);
+  --brand-light: var(--cn-light);
+  --brand-pale: var(--cn-pale);
+  --brand-glow-soft: var(--cn-glow-soft);
+  --brand-selected-bg: var(--cn-selected-bg);
+
+  /* Semi Design 主色注入（国内） */
+  --semi-color-primary: var(--cn-base);
+  --semi-color-primary-hover: var(--cn-mid);
+  --semi-color-primary-active: var(--cn-deep);
+  --semi-color-primary-disabled: var(--cn-light);
+  --semi-color-primary-light-default: rgba(99, 102, 241, 0.08);
+  --semi-color-primary-light-hover: rgba(99, 102, 241, 0.12);
+  --semi-color-primary-light-active: rgba(99, 102, 241, 0.16);
+}
+
+/* 海外市场切换为翠绿 */
+[data-market='global'] {
+  --brand-deep: var(--go-deep);
+  --brand-base: var(--go-base);
+  --brand-mid: var(--go-mid);
+  --brand-light: var(--go-light);
+  --brand-pale: var(--go-pale);
+  --brand-glow-soft: var(--go-glow-soft);
+  --brand-selected-bg: var(--go-selected-bg);
+
+  /* Semi Design 主色注入（海外） */
+  --semi-color-primary: var(--go-base);
+  --semi-color-primary-hover: var(--go-mid);
+  --semi-color-primary-active: var(--go-deep);
+  --semi-color-primary-disabled: var(--go-light);
+  --semi-color-primary-light-default: rgba(16, 185, 129, 0.08);
+  --semi-color-primary-light-hover: rgba(16, 185, 129, 0.12);
+  --semi-color-primary-light-active: rgba(16, 185, 129, 0.16);
+}
+
 html, body, #root {
   margin: 0;
   padding: 0;
@@ -94,10 +153,10 @@ html, body, #root {
   transform: translateX(1px) !important;
 }
 
-/* 导航选中项 Active 态：极清雅淡钴蓝背景 + 细微呼吸指示线 */
+/* 导航选中项 Active 态：品牌色背景 + 细微呼吸指示线 */
 .semi-navigation-item-selected {
-  background-color: #eff6ff !important;
-  color: #1e3a8a !important;
+  background-color: var(--brand-selected-bg) !important;
+  color: var(--brand-deep) !important;
   font-weight: 600 !important;
   position: relative !important;
 }
@@ -109,9 +168,9 @@ html, body, #root {
   top: 15%;
   height: 70%;
   width: 3px;
-  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(180deg, var(--brand-base) 0%, var(--brand-deep) 100%);
   border-radius: 4px;
-  box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+  box-shadow: 0 0 8px var(--brand-glow-soft);
   transition: all 0.3s ease;
 }
 

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Typography } from '@douyinfe/semi-ui'
+import { modelGoBrandIcons } from '@/config/brand-assets'
 
 const { Title, Text } = Typography
 
@@ -26,22 +27,11 @@ export function AuthLayout({ title, subtitle, footer, children }: AuthLayoutProp
       }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #096dd9 0%, #1890ff 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontWeight: 800,
-            fontSize: '18px',
-            margin: '0 auto 16px',
-            boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)',
-          }}>
-            M
-          </div>
+          <img
+            src={modelGoBrandIcons.onLight}
+            alt="ModelGo"
+            style={{ width: '40px', height: '40px', objectFit: 'contain', margin: '0 auto 16px', display: 'block' }}
+          />
           <Title heading={3} style={{ margin: '0 0 6px', fontWeight: 700, color: '#0f172a' }}>
             {title}
           </Title>

@@ -13,6 +13,10 @@ import AuthCallbackPage from '@/pages/auth-callback'
 import InvitationsPage from '@/pages/invitations'
 import { useAuthStore } from '@/store/auth'
 import { getSession } from '@/services/auth'
+import { getMarket } from '@/lib/market'
+
+// 注入市场标识，驱动 CSS 品牌色切换
+document.documentElement.dataset.market = getMarket()
 
 function SessionLoader() {
   const setAuth = useAuthStore((s) => s.setAuth)
@@ -43,6 +47,15 @@ function SessionLoader() {
   return null
 }
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const isLoading = useAuthStore((s) => s.isLoading)
+
+  if (isLoading) return null
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  return <>{children}</>
+}
+
 export default function App() {
   return (
     <Providers>
@@ -58,7 +71,7 @@ export default function App() {
           <Route path="/invitations" element={<InvitationsPage />} />
 
           {/* 控制台路由（需登录） */}
-          <Route path="/" element={<DashboardLayout />}>
+          <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="api-keys" element={<ApiKeysPage />} />

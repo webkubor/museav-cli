@@ -4,10 +4,10 @@ import path from 'path'
 import { devLoggerPlugin } from './scripts/dev-logger-plugin'
 import { version } from './package.json'
 
-// https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(version),
+    'process.env.NODE_ENV': JSON.stringify(mode === 'test' ? 'development' : 'production'),
   },
   plugins: [react(), devLoggerPlugin()],
   resolve: {
@@ -16,7 +16,6 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5175,
     proxy: {
       '/api': {
         target: 'https://test.modelgo.com',
@@ -24,7 +23,7 @@ export default defineConfig({
       },
     },
   },
-})
+}))
 
 
 

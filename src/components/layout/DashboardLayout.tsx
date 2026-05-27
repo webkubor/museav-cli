@@ -13,8 +13,6 @@ import {
   IconGlobe,
   IconBell
 } from '@douyinfe/semi-icons'
-import { useMarket } from '@/hooks/useMarket'
-import { getMarketConfig } from '@/config/market'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { DashboardHeader } from './DashboardHeader'
 import { DashboardSidebar } from './DashboardSidebar'
@@ -22,12 +20,9 @@ import { DashboardSidebar } from './DashboardSidebar'
 const { Content } = Layout
 
 export function DashboardLayout() {
-  const market = useMarket()
-  const { companyName } = getMarketConfig(market)
   const navigate = useNavigate()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
-  const [activeWorkspace, setActiveWorkspace] = useState('默认业务空间')
 
   const navItems = [
     { itemKey: 'dashboard', text: '首页', icon: <IconHome style={{ fontSize: '16px' }} /> },
@@ -92,13 +87,7 @@ export function DashboardLayout() {
 
   return (
     <Layout style={{ minHeight: '100vh', background: '#f8fafc' }}>
-      {/* 顶部 Header 子组件 */}
-      <DashboardHeader 
-        companyName={companyName}
-        activeWorkspace={activeWorkspace}
-        setActiveWorkspace={setActiveWorkspace}
-        navigate={navigate}
-      />
+      <DashboardHeader />
 
       <Layout>
         {/* 左侧侧边栏 Sider 子组件 */}

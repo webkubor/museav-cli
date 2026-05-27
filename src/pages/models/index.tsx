@@ -2,8 +2,49 @@ import { useState } from 'react'
 import { Spin, Input, Typography } from '@douyinfe/semi-ui'
 import { IconSearch } from '@douyinfe/semi-icons'
 import { useQuery } from '@tanstack/react-query'
+import Anthropic from '@lobehub/icons/es/Anthropic'
+import Claude from '@lobehub/icons/es/Claude'
+import OpenAI from '@lobehub/icons/es/OpenAI'
+import Gemini from '@lobehub/icons/es/Gemini'
+import Google from '@lobehub/icons/es/Google'
+import DeepSeek from '@lobehub/icons/es/DeepSeek'
+import Qwen from '@lobehub/icons/es/Qwen'
+import Mistral from '@lobehub/icons/es/Mistral'
+import Ollama from '@lobehub/icons/es/Ollama'
+import Meta from '@lobehub/icons/es/Meta'
+import Moonshot from '@lobehub/icons/es/Moonshot'
+import Minimax from '@lobehub/icons/es/Minimax'
+import ChatGLM from '@lobehub/icons/es/ChatGLM'
+import Cohere from '@lobehub/icons/es/Cohere'
+import Groq from '@lobehub/icons/es/Groq'
+import Zhipu from '@lobehub/icons/es/Zhipu'
+import Baidu from '@lobehub/icons/es/Baidu'
 import { listModels, listModelTags } from '@/services/catalog'
 import type { CatalogModelItem } from '@/types'
+
+const VENDOR_ICON: Record<string, React.ReactNode> = {
+  anthropic: <Anthropic.Color size={28} />,
+  claude:    <Claude.Color size={28} />,
+  openai:    <OpenAI.Color size={28} />,
+  chatgpt:   <OpenAI.Color size={28} />,
+  gemini:    <Gemini.Color size={28} />,
+  google:    <Google.Color size={28} />,
+  deepseek:  <DeepSeek.Color size={28} />,
+  qwen:      <Qwen.Color size={28} />,
+  mistral:   <Mistral.Color size={28} />,
+  ollama:    <Ollama.Color size={28} />,
+  meta:      <Meta.Color size={28} />,
+  llama:     <Meta.Color size={28} />,
+  moonshot:  <Moonshot.Color size={28} />,
+  kimi:      <Moonshot.Color size={28} />,
+  minimax:   <Minimax.Color size={28} />,
+  chatglm:   <ChatGLM.Color size={28} />,
+  zhipu:     <Zhipu.Color size={28} />,
+  cohere:    <Cohere.Color size={28} />,
+  groq:      <Groq.Color size={28} />,
+  baidu:     <Baidu.Color size={28} />,
+  ernie:     <Baidu.Color size={28} />,
+}
 
 const { Text } = Typography
 
@@ -76,11 +117,16 @@ function ModelCard({ model }: { model: CatalogModelItem }) {
     >
       {/* 头部：Logo + 名称 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        {model.logo_url ? (
-          <img src={model.logo_url} alt={model.vendor} style={{ width: '28px', height: '28px', borderRadius: '6px', objectFit: 'contain', flexShrink: 0 }} />
-        ) : (
-          <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'var(--semi-color-fill-0)', flexShrink: 0 }} />
-        )}
+        <div style={{ width: '28px', height: '28px', borderRadius: '6px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+          {model.logo_url
+            ? <img src={model.logo_url} alt={model.vendor} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            : (VENDOR_ICON[model.vendor?.toLowerCase() ?? ''] ?? (
+              <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'var(--semi-color-fill-0)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: 'var(--semi-color-text-2)' }}>
+                {(model.vendor ?? model.display_name).charAt(0).toUpperCase()}
+              </div>
+            ))
+          }
+        </div>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--semi-color-text-0)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {model.display_name}

@@ -780,6 +780,12 @@ function OrgManagePanel({ tenantId }: { tenantId: string }) {
   const tenant = tenantsQuery.data?.items.find((t) => t.tenant_id === tenantId)
   const canManage = tenant?.role === 'tenant_owner' || tenant?.role === 'tenant_admin'
 
+  // session 里已有 tenants（含 name），作为 listTenants 未就绪时的即时 fallback
+  const sessionTenants = useAuthStore((s) => s.tenants)
+  const tenantName = tenant?.name
+    || sessionTenants.find((t) => t.tenant_id === tenantId)?.name
+    || '…'
+
   return (
     <div>
       <div style={{
@@ -792,7 +798,7 @@ function OrgManagePanel({ tenantId }: { tenantId: string }) {
       }}>
         <span style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }}>正在管理：</span>
         <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--semi-color-text-0)' }}>
-          {tenant?.name ?? tenantId}
+          {tenantName}
         </span>
         {tenant && <RoleBadge role={tenant.role} />}
       </div>

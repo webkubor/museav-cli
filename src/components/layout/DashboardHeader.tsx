@@ -18,7 +18,7 @@ import { getMarketConfig } from '@/config/market'
 import { useAuthStore } from '@/store/auth'
 import { useLangStore } from '@/store/use-brand-store'
 import { switchTenant, logout } from '@/services/auth'
-import { createTenant } from '@/services/tenants'
+import { createTenant, listTenants } from '@/services/tenants'
 import { applyTheme, getUserTheme, saveTheme, type Theme } from '@/lib/theme'
 import { useTranslation } from 'react-i18next'
 import { listWorkspaces, createWorkspace } from '@/services/workspaces'
@@ -47,6 +47,15 @@ export const DashboardHeader: React.FC = () => {
   const [wsName, setWsName] = useState('')
   const [wsSlug, setWsSlug] = useState('')
   const [wsDesc, setWsDesc] = useState('')
+
+  // ─── 0. 获取完整的 tenant 列表（含 name），弥补 session tenants 可能缺失名称的问题
+  const { data: tenantsData } = useQuery({
+    queryKey: ['tenants'],
+    queryFn: listTenants,
+    staleTime: 60_000,
+  })
+  // 优先用 /tenants 接口数据（有 name），fallback 到 session 里的 tenants
+  const displayTenants = tenantsData?.items.length ? tenantsData.items : tenants
 
   // ─── 1. TanStack Query 异步获取当前 Tenant 下的工作空间数据 ─────────────────
   const { data: workspaces = [] } = useQuery<WorkspaceItem[]>({
@@ -433,7 +442,7 @@ export const DashboardHeader: React.FC = () => {
               <div style={{ padding: '6px 12px 4px', fontSize: '11px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
                 {t('header.organizations')}
               </div>
-              {tenants.map((tenant) => {
+              {displayTenants.map((tenant) => {
                 const displayName = tenant.name || tenant.slug || tenant.tenant_id
                 const letter = displayName.charAt(0).toUpperCase()
                 const isActive = tenant.tenant_id === activeTenantId

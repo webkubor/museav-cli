@@ -40,6 +40,29 @@
   --semi-color-primary-light-active: rgba(99, 102, 241, 0.16);
 }
 
+/* ── 暗色模式：Semi Design 通过 body[theme-mode='dark'] 激活 ── */
+body[theme-mode='dark'] {
+  /* 国内市场暗色主色（默认） */
+  --semi-color-primary: var(--cn-mid);
+  --semi-color-primary-hover: var(--cn-light);
+  --semi-color-primary-active: var(--cn-base);
+  --semi-color-primary-disabled: rgba(99, 102, 241, 0.3);
+  --semi-color-primary-light-default: rgba(99, 102, 241, 0.12);
+  --semi-color-primary-light-hover: rgba(99, 102, 241, 0.18);
+  --semi-color-primary-light-active: rgba(99, 102, 241, 0.24);
+}
+
+/* 海外市场暗色主色 */
+[data-market='global'] body[theme-mode='dark'] {
+  --semi-color-primary: var(--go-mid);
+  --semi-color-primary-hover: var(--go-light);
+  --semi-color-primary-active: var(--go-base);
+  --semi-color-primary-disabled: rgba(16, 185, 129, 0.3);
+  --semi-color-primary-light-default: rgba(16, 185, 129, 0.12);
+  --semi-color-primary-light-hover: rgba(16, 185, 129, 0.18);
+  --semi-color-primary-light-active: rgba(16, 185, 129, 0.24);
+}
+
 /* 海外市场切换为翠绿 */
 [data-market='global'] {
   --brand-deep: var(--go-deep);

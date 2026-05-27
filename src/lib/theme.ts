@@ -45,5 +45,9 @@ export function resolveTheme(theme: Theme): 'dark' | 'light' {
 
 export function applyTheme(theme: Theme) {
   const resolved = resolveTheme(theme)
-  document.documentElement.classList.toggle('light', resolved === 'light')
+  if (resolved === 'dark') {
+    document.body.setAttribute('theme-mode', 'dark')
+  } else {
+    document.body.removeAttribute('theme-mode')
+  }
 }

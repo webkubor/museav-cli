@@ -34,11 +34,9 @@ export default function WorkspacesPage() {
     onSuccess: (newWorkspace) => {
       Toast.success(`业务空间 "${newWorkspace.name}" 创建成功`)
       setModalVisible(false)
-      // 重置表单
       setName('')
       setSlug('')
       setDescription('')
-      // 自动刷新工作区列表缓存，UI 实时渲染新节点！
       queryClient.invalidateQueries({ queryKey: ['workspaces'] })
     },
     onError: (err: any) => {
@@ -53,15 +51,35 @@ export default function WorkspacesPage() {
       dataIndex: 'name',
       render: (text: string, record: WorkspaceItem) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontWeight: 500, color: '#1f2937' }}>{text}</span>
+          <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '13.5px' }}>{text}</span>
           {record.is_default && (
-            <Tag color="blue" size="small" shape="circle" style={{ padding: '0 8px' }}>
-              ● 当前
+            <Tag 
+              style={{ 
+                backgroundColor: '#eff6ff', 
+                color: '#2563eb', 
+                border: '1px solid #dbeafe',
+                fontSize: '11px',
+                fontWeight: 600,
+                padding: '1px 8px',
+                borderRadius: '12px'
+              }}
+            >
+              当前
             </Tag>
           )}
           {record.is_default && (
-            <Tag color="grey" size="small" shape="circle" style={{ padding: '0 8px' }}>
-              ● 默认
+            <Tag 
+              style={{ 
+                backgroundColor: '#f1f5f9', 
+                color: '#475569', 
+                border: '1px solid #e2e8f0',
+                fontSize: '11px',
+                fontWeight: 600,
+                padding: '1px 8px',
+                borderRadius: '12px'
+              }}
+            >
+              默认
             </Tag>
           )}
         </div>
@@ -71,14 +89,22 @@ export default function WorkspacesPage() {
       title: '业务空间 ID',
       dataIndex: 'workspace_id',
       render: (text: string) => (
-        <span style={{ color: '#4b5563', fontFamily: 'monospace' }}>{text}</span>
+        <span style={{ 
+          color: '#475569', 
+          fontFamily: 'monospace', 
+          fontSize: '12.5px',
+          backgroundColor: '#f8fafc',
+          padding: '2px 6px',
+          borderRadius: '4px',
+          border: '1px solid #f1f5f9'
+        }}>{text}</span>
       )
     },
     {
       title: '创建时间',
       dataIndex: 'created_at',
       render: (text: string) => (
-        <span style={{ color: '#4b5563' }}>
+        <span style={{ color: '#64748b', fontSize: '13px' }}>
           {new Date(text).toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')}
         </span>
       )
@@ -87,7 +113,17 @@ export default function WorkspacesPage() {
       title: '操作',
       dataIndex: 'actions',
       render: () => (
-        <span style={{ color: '#0066ff', cursor: 'pointer', fontWeight: 500 }}>
+        <span 
+          style={{ 
+            color: '#0066ff', 
+            cursor: 'pointer', 
+            fontWeight: 600,
+            fontSize: '13px',
+            transition: 'color 0.2s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#004ecb'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#0066ff'}
+        >
           编辑
         </span>
       )
@@ -118,28 +154,29 @@ export default function WorkspacesPage() {
   return (
     <div>
       {/* 头部标题与描述 */}
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 600, color: '#111827', margin: '0 0 8px 0' }}>
+      <div style={{ marginBottom: '28px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
           业务空间
         </h1>
-        <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
+        <p style={{ fontSize: '13px', color: '#64748b', margin: 0, fontWeight: 400 }}>
           管理业务空间信息、可用模型和使用限额。
         </p>
       </div>
 
-      {/* 截图中的当前业务空间 Select 栏 */}
+      {/* 截图中的当前业务空间 Select 栏：优化质感 */}
       <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
-        gap: '8px', 
-        marginBottom: '24px',
+        gap: '10px', 
+        marginBottom: '28px',
         fontSize: '13px',
-        color: '#4b5563'
+        color: '#475569',
+        fontWeight: 500
       }}>
         <span>当前业务空间</span>
         <Select 
           defaultValue="default" 
-          style={{ width: '160px' }} 
+          style={{ width: '170px', borderRadius: '8px' }} 
           size="small"
         >
           <Select.Option value="default">默认业务空间</Select.Option>
@@ -151,31 +188,48 @@ export default function WorkspacesPage() {
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        marginBottom: '20px' 
+        marginBottom: '24px' 
       }}>
-        {/* 圆角搜索框 */}
+        {/* 圆角微阴影输入框 */}
         <Input
           placeholder="按名称或业务空间 ID 搜索"
-          prefix={<IconSearch style={{ color: '#9ca3af' }} />}
-          style={{ width: '280px', borderRadius: '9999px' }}
+          prefix={<IconSearch style={{ color: '#94a3b8' }} />}
+          style={{ 
+            width: '290px', 
+            borderRadius: '9999px',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)',
+            transition: 'all 0.2s ease'
+          }}
           value={searchValue}
           onChange={(val) => setSearchValue(val)}
         />
 
-        {/* 黑色药丸主动作按钮 (触发弹出真实表单 modal) */}
+        {/* 黑色药丸主动作按钮 (触发弹出真实表单 modal，带微浮动阴影与过渡动效) */}
         <Button
           theme="solid"
           icon={<IconPlus />}
           onClick={() => setModalVisible(true)}
           style={{ 
-            backgroundColor: '#000000', 
+            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', 
             color: '#ffffff',
-            borderRadius: '9999px',
-            padding: '8px 20px',
+            borderRadius: '24px',
+            padding: '8px 24px',
             fontSize: '13px',
-            fontWeight: 500,
+            fontWeight: 600,
             border: 'none',
-            height: '36px'
+            height: '38px',
+            boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15), inset 0 1px 1px rgba(255,255,255,0.1)',
+            cursor: 'pointer',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.boxShadow = '0 6px 16px rgba(15, 23, 42, 0.22)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'none';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.15)';
           }}
         >
           创建业务空间 ({(data || []).length}/20)
@@ -189,7 +243,9 @@ export default function WorkspacesPage() {
         loading={isLoading}
         pagination={false}
         bordered={false}
-        style={{ marginTop: '8px' }}
+        style={{ 
+          marginTop: '12px',
+        }}
       />
 
       {/* 真实创建工作空间的表单对话框 */}
@@ -200,30 +256,34 @@ export default function WorkspacesPage() {
         onCancel={() => setModalVisible(false)}
         confirmLoading={createMutation.isPending}
         width={480}
+        style={{ borderRadius: '12px' }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '12px 0' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', padding: '16px 0' }}>
           <div>
-            <div style={{ fontSize: '13px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>空间名称</div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>空间名称</div>
             <Input 
               value={name} 
               onChange={val => setName(val)} 
               placeholder="如：生产环境应用区" 
+              style={{ borderRadius: '8px' }}
             />
           </div>
           <div>
-            <div style={{ fontSize: '13px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>唯一标识 (Slug)</div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>唯一标识 (Slug)</div>
             <Input 
               value={slug} 
               onChange={val => setSlug(val)} 
               placeholder="如：prod-app" 
+              style={{ borderRadius: '8px' }}
             />
           </div>
           <div>
-            <div style={{ fontSize: '13px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>空间描述 (选填)</div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>空间描述 (选填)</div>
             <Input 
               value={description} 
               onChange={val => setDescription(val)} 
               placeholder="简述该业务空间的用途..." 
+              style={{ borderRadius: '8px' }}
             />
           </div>
         </div>

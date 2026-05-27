@@ -1,13 +1,146 @@
-/* 重置默认 CSS，为 Semi Design 提供干净的基础环境 */
+/* 重置默认 CSS，为 Semi Design 提供大厂极简云平台美学基础环境 */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
 html, body, #root {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background-color: #f9fafb;
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #f8fafc;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-box-sizing {
+*, *::before, *::after {
   box-sizing: border-box;
+}
+
+/* 🚀 全局缓慢平滑流光动画 */
+@keyframes flowLight {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.logo-flow-light {
+  background-size: 300% 300% !important;
+  animation: flowLight 8s ease infinite !important;
+}
+
+/* 💻 仿真 IDE 编辑器 - CSS 语法高亮样式 */
+.code-editor-pre {
+  background-color: #090d16 !important;
+  color: #e2e8f0 !important;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  margin: 0 !important;
+  padding: 20px !important;
+  border-radius: 0 0 12px 12px !important;
+  overflow-x: auto !important;
+  border: 1px solid rgba(255, 255, 255, 0.03) !important;
+  border-top: none !important;
+}
+
+.code-keyword {
+  color: #ff79c6; /* 玫瑰桃红：控制流, import, await, const, new */
+  font-weight: 600;
+}
+
+.code-builtin {
+  color: #8be9fd; /* 湖蓝：内置对象, OpenAI */
+}
+
+.code-string {
+  color: #50fa7b; /* 荧绿：字符串凭证或URL */
+}
+
+.code-comment {
+  color: #6272a4; /* 紫灰：注释 */
+  font-style: italic;
+}
+
+.code-property {
+  color: #ffb86c; /* 橙金：对象属性, apiKey, messages */
+}
+
+.code-constant {
+  color: #bd93f9; /* 蓝紫：常量或数值 */
+}
+
+.code-punctuation {
+  color: #f8f8f2; /* 浅灰白：标点符号, {}, (), [], : */
+}
+
+/* 🧭 Semi Design Nav 导航菜单高级感深度覆写 */
+.semi-navigation-item {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border-radius: 8px !important;
+  margin: 4px 12px !important;
+  width: calc(100% - 24px) !important;
+}
+
+/* 导航项 Hover 悬浮态 */
+.semi-navigation-item:hover {
+  background-color: rgba(241, 245, 249, 0.7) !important;
+  transform: translateX(1px) !important;
+}
+
+/* 导航选中项 Active 态：极清雅淡钴蓝背景 + 细微呼吸指示线 */
+.semi-navigation-item-selected {
+  background-color: #eff6ff !important;
+  color: #1e3a8a !important;
+  font-weight: 600 !important;
+  position: relative !important;
+}
+
+.semi-navigation-item-selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 15%;
+  height: 70%;
+  width: 3px;
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+  transition: all 0.3s ease;
+}
+
+/* 覆盖 sub-nav 的展开容器样式 */
+.semi-navigation-sub {
+  background-color: transparent !important;
+}
+
+/* 优化面包屑字体字重 */
+.semi-breadcrumb-item {
+  font-weight: 500 !important;
+  letter-spacing: -0.01em;
+}
+
+/* 全局滚动条高颜值美化 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }

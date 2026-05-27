@@ -18,6 +18,7 @@ import { getMarketConfig } from '@/config/market'
 import { useAuthStore } from '@/store/auth'
 import { useLangStore } from '@/store/use-brand-store'
 import { switchTenant, logout } from '@/services/auth'
+import { createTenant } from '@/services/tenants'
 import { applyTheme, getUserTheme, saveTheme, type Theme } from '@/lib/theme'
 import { useTranslation } from 'react-i18next'
 import { listWorkspaces, createWorkspace } from '@/services/workspaces'
@@ -31,7 +32,7 @@ export const DashboardHeader: React.FC = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { t, i18n } = useTranslation()
-  const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, addTenant, setActiveWorkspaceId, clearAuth } = useAuthStore()
+  const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setActiveWorkspaceId, clearAuth } = useAuthStore()
   
   // Theme and Lang state
   const [currentTheme, setCurrentTheme] = useState<Theme>('light')
@@ -40,6 +41,7 @@ export const DashboardHeader: React.FC = () => {
   // Modal and Form States
   const [orgModalVisible, setOrgModalVisible] = useState(false)
   const [newOrgName, setNewOrgName] = useState('')
+  const [newOrgSlug, setNewOrgSlug] = useState('')
 
   const [workspaceModalVisible, setWorkspaceModalVisible] = useState(false)
   const [wsName, setWsName] = useState('')
@@ -142,11 +144,43 @@ export const DashboardHeader: React.FC = () => {
     Toast.success(newLang === 'zh' ? '已切换至 简体中文' : 'Switched to English')
   }
 
+  const createOrgMutation = useMutation({
+    mutationFn: () => createTenant({
+      name: newOrgName.trim(),
+      slug: newOrgSlug.trim(),
+      type: 'enterprise',
+    }),
+    onSuccess: async (org) => {
+      Toast.success(lang === 'zh' ? `组织「${org.name}」创建成功` : `Organization "${org.name}" created`)
+      setOrgModalVisible(false)
+      setNewOrgName('')
+      setNewOrgSlug('')
+      queryClient.invalidateQueries({ queryKey: ['tenants'] })
+      // 切换至新创建的组织
+      try {
+        await switchTenant({ tenant_id: org.tenant_id })
+        setAuth(account!, org.tenant_id, tenants, undefined)
+        setActiveWorkspaceId('')
+      } catch {
+        // 切换失败不影响创建成功的提示
+      }
+    },
+    onError: (err: any) => {
+      Toast.error(err?.message || (lang === 'zh' ? '创建失败' : 'Failed to create organization'))
+    },
+  })
+
+  function slugFromName(name: string) {
+    return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').slice(0, 32)
+  }
+
   const handleOpenOrgModal = () => {
     if (tenants.length >= 5) {
-      Toast.warning(lang === 'zh' ? '您最多只能关联 5 个组织' : 'You can associate up to 5 organizations')
+      Toast.warning(lang === 'zh' ? '最多只能创建 5 个组织' : 'You can create up to 5 organizations')
       return
     }
+    setNewOrgName('')
+    setNewOrgSlug('')
     setOrgModalVisible(true)
   }
 
@@ -155,19 +189,11 @@ export const DashboardHeader: React.FC = () => {
       Toast.error(lang === 'zh' ? '组织名称不能为空' : 'Organization name cannot be empty')
       return
     }
-    const newTenant: TenantBrief = {
-      tenant_id: `tenant-${Date.now()}`,
-      name: newOrgName.trim(),
-      slug: `slug-${Date.now()}`,
-      type: 'enterprise',
-      is_default: false
+    if (!newOrgSlug.trim()) {
+      Toast.error(lang === 'zh' ? '唯一标识不能为空' : 'Slug is required')
+      return
     }
-    addTenant(newTenant)
-    Toast.success(lang === 'zh' ? `组织 "${newOrgName}" 创建成功` : `Organization "${newOrgName}" created`)
-    setOrgModalVisible(false)
-    setNewOrgName('')
-    // 乐观地直接切换至新创建的组织
-    handleSwitchTenant(newTenant)
+    createOrgMutation.mutate()
   }
 
   const handleCreateWorkspaceSubmit = () => {
@@ -505,24 +531,41 @@ export const DashboardHeader: React.FC = () => {
         title={lang === 'zh' ? '创建组织' : 'Create Organization'}
         visible={orgModalVisible}
         onOk={handleCreateOrgSubmit}
-        onCancel={() => {
-          setOrgModalVisible(false)
-          setNewOrgName('')
-        }}
-        width={400}
+        confirmLoading={createOrgMutation.isPending}
+        onCancel={() => { setOrgModalVisible(false); setNewOrgName(''); setNewOrgSlug('') }}
+        width={420}
         style={{ borderRadius: '12px' }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px 0' }}>
-          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)' }}>
-            {lang === 'zh' ? '组织名称' : 'Organization Name'}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '12px 0' }}>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '6px' }}>
+              {lang === 'zh' ? '组织名称' : 'Organization Name'}
+            </div>
+            <Input
+              value={newOrgName}
+              onChange={(val) => {
+                setNewOrgName(val)
+                setNewOrgSlug(slugFromName(val))
+              }}
+              placeholder={lang === 'zh' ? '如：我的团队' : 'e.g. My Team'}
+              style={{ borderRadius: '8px' }}
+              autoFocus
+            />
           </div>
-          <Input
-            value={newOrgName}
-            onChange={(val) => setNewOrgName(val)}
-            placeholder={lang === 'zh' ? '请输入组织名称' : 'Enter organization name'}
-            style={{ borderRadius: '8px' }}
-            autoFocus
-          />
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '6px' }}>
+              {lang === 'zh' ? '唯一标识 (Slug)' : 'Slug'}
+            </div>
+            <Input
+              value={newOrgSlug}
+              onChange={(val) => setNewOrgSlug(val)}
+              placeholder="my-team"
+              style={{ borderRadius: '8px' }}
+            />
+            <div style={{ fontSize: '11px', color: 'var(--semi-color-text-2)', marginTop: '4px' }}>
+              {lang === 'zh' ? '仅支持小写字母、数字和连字符，自动根据名称生成' : 'Lowercase letters, numbers, hyphens only. Auto-generated from name.'}
+            </div>
+          </div>
         </div>
       </Modal>
 

@@ -99,9 +99,9 @@ function OrgListSection({
   })
 
   function handleCreate() {
-    if (!newName.trim()) return Toast.error('组织名称不能为空')
-    if (!newSlug.trim()) return Toast.error('唯一标识不能为空')
-    if (!/^[a-z0-9-]+$/.test(newSlug)) return Toast.error('唯一标识仅支持小写字母、数字和连字符')
+    if (!newName.trim()) { Toast.error('组织名称不能为空'); return }
+    if (!newSlug.trim()) { Toast.error('唯一标识不能为空'); return }
+    if (!/^[a-z0-9-]+$/.test(newSlug)) { Toast.error('唯一标识仅支持小写字母、数字和连字符'); return }
     createMutation.mutate()
   }
 
@@ -211,9 +211,9 @@ function OrgListSection({
         loading={tenantsQuery.isLoading}
         pagination={false}
         style={{ borderRadius: 0 }}
-        onRow={(record: TenantItem) => ({
+        onRow={(record: TenantItem | undefined) => ({
           style: {
-            backgroundColor: selectedId === record.tenant_id
+            backgroundColor: record && selectedId === record.tenant_id
               ? 'rgba(var(--semi-color-primary-rgb, 99,102,241), 0.04)'
               : undefined,
           },

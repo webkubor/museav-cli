@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Tag, Spin, Input, Typography } from '@douyinfe/semi-ui'
+import { Spin, Input, Typography } from '@douyinfe/semi-ui'
 import { IconSearch } from '@douyinfe/semi-icons'
 import { useQuery } from '@tanstack/react-query'
 import { listModels, listModelTags } from '@/services/catalog'
@@ -123,7 +123,7 @@ export default function ModelsPage() {
   })
 
   const allModels = modelsQuery.data?.items ?? []
-  const tags = tagsQuery.data?.tags ?? []
+  const tags = tagsQuery.data?.items ?? []
 
   const filtered = allModels.filter((m) => {
     const matchSearch = !search.trim() ||

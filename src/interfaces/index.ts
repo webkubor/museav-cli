@@ -12,10 +12,7 @@ export type {
 export type { ApiKeyListParams } from './api-keys'
 export type { AuthMailTTLResponse, CheckLoginEmailResponse } from './auth'
 export type {
-  BillingTransactionListParams,
-  InvoiceUrlResponse,
   RechargeListParams,
-  TransactionListParams,
 } from './billing'
 export type {
   CatalogModelListParams,

@@ -71,8 +71,6 @@ export type {
   RechargeOrder,
   RedeemPromoRequest,
   RedeemPromoResult,
-  TransactionItem,
-  RefundRequest,
   UsageSummary,
   SeriesDataPoint,
   UsageSeries,

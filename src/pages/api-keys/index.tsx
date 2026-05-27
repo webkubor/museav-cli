@@ -2,14 +2,17 @@ import { useState } from 'react'
 import { Table, Button, Input, Tag, Modal, Toast, Typography, Select } from '@douyinfe/semi-ui'
 import { IconSearch, IconPlus, IconCopy } from '@douyinfe/semi-icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { listApiKeys, createApiKey, revokeApiKey } from '@/services/api-keys'
 import { useAuthStore } from '@/store/auth'
 import type { ApiKeyItem } from '@/types'
 import { pageItems } from '@/lib/utils'
+import { formatDateTime } from '@/lib/format-date'
 
 const { Paragraph } = Typography
 
 export default function ApiKeysPage() {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [searchValue, setSearchValue] = useState('')
   const [createVisible, setCreateVisible] = useState(false)
@@ -39,7 +42,7 @@ export default function ApiKeysPage() {
       })
     },
     onSuccess: (newKey) => {
-      Toast.success(`密钥 "${newKey.name}" 创建成功`)
+      Toast.success(t('apiKeys.toast.createSuccess', { name: newKey.name }))
       setCreateVisible(false)
       // 捕获仅返回一次的明文 key 字符串以供用户复制
       setCreatedKeyText(newKey.key)
@@ -49,7 +52,7 @@ export default function ApiKeysPage() {
       queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
     },
     onError: (err: any) => {
-      Toast.error(err?.message || '创建密钥失败')
+      Toast.error(err?.message || t('apiKeys.toast.createError'))
     }
   })
 
@@ -57,24 +60,24 @@ export default function ApiKeysPage() {
   const revokeMutation = useMutation({
     mutationFn: (keyId: string) => revokeApiKey(activeWorkspaceId, keyId),
     onSuccess: () => {
-      Toast.success('密钥已成功撤销废弃')
+      Toast.success(t('apiKeys.toast.revokeSuccess'))
       queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
     },
     onError: (err: any) => {
-      Toast.error(err?.message || '撤销密钥失败')
+      Toast.error(err?.message || t('apiKeys.toast.revokeError'))
     }
   })
 
   const columns = [
     {
-      title: '名称',
+      title: t('apiKeys.table.name'),
       dataIndex: 'name',
       render: (text: string) => (
         <span style={{ fontWeight: 600, color: 'var(--semi-color-text-0)', fontSize: '13.5px' }}>{text}</span>
       )
     },
     {
-      title: '环境',
+      title: t('apiKeys.table.env'),
       dataIndex: 'env',
       render: (envVal: string) => (
         <Tag 
@@ -93,7 +96,7 @@ export default function ApiKeysPage() {
       )
     },
     {
-      title: 'API Key 凭证',
+      title: t('apiKeys.table.credentials'),
       dataIndex: 'masked',
       render: (text: string) => (
         <span style={{ 
@@ -109,7 +112,7 @@ export default function ApiKeysPage() {
       )
     },
     {
-      title: '状态',
+      title: t('apiKeys.table.status'),
       dataIndex: 'status',
       render: (status: string) => (
         <Tag 
@@ -122,21 +125,21 @@ export default function ApiKeysPage() {
             borderRadius: '12px'
           }}
         >
-          {status === 'active' ? '● 启用中' : '● 已禁用'}
+          {status === 'active' ? `● ${t('apiKeys.table.active')}` : `● ${t('apiKeys.table.disabled')}`}
         </Tag>
       )
     },
     {
-      title: '创建时间',
+      title: t('apiKeys.table.createdAt'),
       dataIndex: 'created_at',
       render: (text: string) => (
         <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>
-          {new Date(text).toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')}
+          {formatDateTime(text)}
         </span>
       )
     },
     {
-      title: '操作',
+      title: t('apiKeys.table.actions'),
       dataIndex: 'actions',
       render: (_text: any, record: ApiKeyItem) => (
         <div style={{ display: 'flex', gap: '16px' }}>
@@ -152,10 +155,10 @@ export default function ApiKeysPage() {
             onMouseLeave={(e) => e.currentTarget.style.color = '#0066ff'}
             onClick={() => {
               navigator.clipboard.writeText(record.prefix + '••••••••')
-              Toast.success('遮蔽凭证已复制到剪贴板')
+              Toast.success(t('apiKeys.table.copyMaskedSuccess'))
             }}
           >
-            复制
+            {t('apiKeys.table.copy')}
           </span>
           {record.status === 'active' ? (
             <span 
@@ -170,29 +173,29 @@ export default function ApiKeysPage() {
               onMouseLeave={(e) => e.currentTarget.style.color = '#ef4444'}
               onClick={() => {
                 Modal.confirm({
-                  title: '确定要废弃该密钥吗？',
-                  content: '密钥废弃后立即失效，且不可恢复，所有的网关请求将直接被阻断！',
+                  title: t('apiKeys.revokeConfirm.title'),
+                  content: t('apiKeys.revokeConfirm.content'),
                   onOk: () => revokeMutation.mutate(record.api_key_id)
                 })
               }}
             >
-              禁用
+              {t('apiKeys.table.revoke')}
             </span>
           ) : (
-            <span style={{ color: 'var(--semi-color-text-2)', cursor: 'not-allowed', fontSize: '13px' }}>已禁用</span>
+            <span style={{ color: 'var(--semi-color-text-2)', cursor: 'not-allowed', fontSize: '13px' }}>{t('apiKeys.table.disabled')}</span>
           )}
         </div>
       )
     }
   ]
 
-  const filteredData = (data ?? []).filter(item =>
+  const filteredData = pageItems(data).filter(item =>
     item.name.includes(searchValue) || (item.masked ?? '').includes(searchValue)
   )
 
   const handleCreateSubmit = () => {
     if (!name.trim()) {
-      Toast.error('密钥名称不能为空')
+      Toast.error(t('apiKeys.createModal.nameRequired'))
       return
     }
     createMutation.mutate({ name, env })
@@ -203,10 +206,10 @@ export default function ApiKeysPage() {
       {/* 头部标题与描述 */}
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
-          API Keys
+          {t('apiKeys.title')}
         </h1>
         <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0, fontWeight: 400 }}>
-          用于 OpenAI SDK 兼容接入的安全凭证，请妥善保管您的密钥凭证，切勿泄露给第三方。
+          {t('apiKeys.desc')}
         </p>
       </div>
 
@@ -219,7 +222,7 @@ export default function ApiKeysPage() {
       }}>
         {/* 圆角微阴影输入框 */}
         <Input
-          placeholder="搜索密钥名称"
+          placeholder={t('apiKeys.search')}
           prefix={<IconSearch style={{ color: 'var(--semi-color-text-2)' }} />}
           style={{
             width: '290px',
@@ -259,7 +262,7 @@ export default function ApiKeysPage() {
             e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.15)';
           }}
         >
-          创建 API Key
+          {t('apiKeys.create')}
         </Button>
       </div>
 
@@ -275,33 +278,35 @@ export default function ApiKeysPage() {
 
       {/* 创建 API Key 的表单 Dialog */}
       <Modal
-        title="创建 API Key"
+        title={t('apiKeys.createModal.title')}
         visible={createVisible}
         onOk={handleCreateSubmit}
         onCancel={() => setCreateVisible(false)}
         confirmLoading={createMutation.isPending}
         width={440}
         style={{ borderRadius: '12px' }}
+        okText={t('apiKeys.createModal.confirm')}
+        cancelText={t('apiKeys.createModal.cancel')}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', padding: '16px 0' }}>
           <div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '8px' }}>密钥名称</div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '8px' }}>{t('apiKeys.createModal.nameLabel')}</div>
             <Input 
               value={name} 
               onChange={val => setName(val)} 
-              placeholder="如：生产测试 Key" 
+              placeholder={t('apiKeys.createModal.namePlaceholder')} 
               style={{ borderRadius: '8px' }}
             />
           </div>
           <div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '8px' }}>调用环境</div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '8px' }}>{t('apiKeys.createModal.envLabel')}</div>
             <Select 
               value={env} 
               onChange={val => setEnv(val as any)} 
               style={{ width: '100%', borderRadius: '8px' }}
             >
-              <Select.Option value="live">LIVE (真实计费)</Select.Option>
-              <Select.Option value="test">TEST (沙盒测试)</Select.Option>
+              <Select.Option value="live">{t('apiKeys.createModal.live')}</Select.Option>
+              <Select.Option value="test">{t('apiKeys.createModal.test')}</Select.Option>
             </Select>
           </div>
         </div>
@@ -309,7 +314,7 @@ export default function ApiKeysPage() {
 
       {/* 绝密：创建成功后的密钥明文 Reveal 对话框 (大厂轻拟物极客暗黑风) */}
       <Modal
-        title="🔑 您的新 API Key 已就绪"
+        title={t('apiKeys.revealModal.title')}
         visible={revealVisible}
         hasFooter={false}
         onCancel={() => setRevealVisible(false)}
@@ -330,12 +335,12 @@ export default function ApiKeysPage() {
             lineHeight: '1.6',
             fontWeight: 500
           }}>
-            ⚠️ <strong>请立即妥善保存该凭证！</strong>出于安全性设计，明文 API Key <strong>仅在创建时短暂显示一次</strong>，若不慎关闭该弹窗，您将再也无法寻回明文。
+            {t('apiKeys.revealModal.warning')}
           </div>
 
           <div style={{ marginBottom: '20px' }}>
             <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', display: 'block', marginBottom: '10px' }}>
-              API Key 凭证明文：
+              {t('apiKeys.revealModal.label')}
             </span>
             <Paragraph 
               copyable={{
@@ -376,7 +381,7 @@ export default function ApiKeysPage() {
                 boxShadow: '0 4px 12px rgba(29,78,216,0.2)'
               }}
             >
-              我已复制并妥善保存
+              {t('apiKeys.revealModal.done')}
             </Button>
           </div>
         </div>

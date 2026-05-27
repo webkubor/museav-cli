@@ -434,7 +434,8 @@ export const DashboardHeader: React.FC = () => {
                 {t('header.organizations')}
               </div>
               {tenants.map((tenant) => {
-                const letter = tenant.name.charAt(0).toUpperCase()
+                const displayName = tenant.name || tenant.slug || tenant.tenant_id
+                const letter = displayName.charAt(0).toUpperCase()
                 const isActive = tenant.tenant_id === activeTenantId
                 return (
                   <Dropdown.Item
@@ -458,10 +459,10 @@ export const DashboardHeader: React.FC = () => {
                         color: isActive ? 'var(--semi-color-primary)' : 'var(--semi-color-text-1)',
                       }}>
                         {tenant.logo_url
-                          ? <img src={tenant.logo_url} alt={tenant.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ? <img src={tenant.logo_url} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           : letter}
                       </div>
-                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>{tenant.name}</span>
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>{displayName}</span>
                       <Button
                         size="small"
                         theme="borderless"

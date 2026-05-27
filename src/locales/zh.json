@@ -122,7 +122,7 @@
   },
   "billing": {
     "title": "账单管理",
-    "desc": "管理账户余额、查看交易流水并追踪充值订单状态。",
+    "desc": "管理账户余额并追踪充值订单状态。",
     "balance": {
       "title": "账户余额",
       "available": "可用余额",
@@ -130,7 +130,6 @@
       "recharge": "充值"
     },
     "tabs": {
-      "transactions": "交易流水",
       "orders": "充值订单",
       "promo": "兑换中心"
     },
@@ -150,28 +149,6 @@
       "emptyWarning": "请输入 Promo Code",
       "success": "兑换成功，到账 {{amount}} {{currency}}",
       "error": "兑换失败，请检查 Promo Code 是否有效"
-    },
-    "transactions": {
-      "search": "搜索交易描述",
-      "typeAll": "全部类型",
-      "typeRecharge": "充值",
-      "typeConsume": "消费",
-      "typeRefund": "退款",
-      "typeAdjust_credit": "手动充值",
-      "typeAdjust_debit": "手动扣款",
-      "typePromo": "优惠码",
-      "reset": "重置",
-      "loadMore": "加载更多",
-      "table": {
-        "time": "时间",
-        "type": "类型",
-        "amount": "金额",
-        "balance": "变动后余额",
-        "desc": "描述",
-        "actions": "操作",
-        "downloadInvoice": "下载发票",
-        "invoiceError": "获取发票链接失败"
-      }
     },
     "orders": {
       "empty": "暂无充值订单",

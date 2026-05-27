@@ -583,33 +583,6 @@ export interface RedeemPromoResult {
   balance_after: Money
 }
 
-// ─── Transactions ───────────────────────────────────
-
-/** 交易记录项 */
-export interface TransactionItem {
-  transaction_id: string
-  /** recharge | consume | refund | adjust_credit | adjust_debit | promo */
-  type: 'recharge' | 'consume' | 'refund' | 'adjust_credit' | 'adjust_debit' | 'promo'
-  amount: SignedMoney
-  balance_after: Money
-  happened_at: string
-  description: string
-  related: {
-    recharge_order_no: string | null
-    billing_session_id: string | null
-    workspace_id: string | null
-    api_key_id: string | null
-    model_id: string | null
-  }
-  refundable: boolean
-  invoice_url: string | null
-}
-
-/** 退款请求体 */
-export interface RefundRequest {
-  reason: string
-}
-
 // ─── Usage ──────────────────────────────────────────
 
 /** 用量汇总（三卡） */

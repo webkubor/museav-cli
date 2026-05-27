@@ -122,7 +122,7 @@
   },
   "billing": {
     "title": "Billing Management",
-    "desc": "Manage account balance, view transaction flow, and track recharge order status.",
+    "desc": "Manage account balance and track recharge order status.",
     "balance": {
       "title": "Account Balance",
       "available": "Available Balance",
@@ -130,7 +130,6 @@
       "recharge": "Top Up"
     },
     "tabs": {
-      "transactions": "Transactions",
       "orders": "Orders",
       "promo": "Redeem"
     },
@@ -150,28 +149,6 @@
       "emptyWarning": "Please enter Promo Code",
       "success": "Redeem success, credited {{amount}} {{currency}}",
       "error": "Redeem failed, please check if Promo Code is valid"
-    },
-    "transactions": {
-      "search": "Search description",
-      "typeAll": "All Types",
-      "typeRecharge": "Recharge",
-      "typeConsume": "Consume",
-      "typeRefund": "Refund",
-      "typeAdjust_credit": "Manual Credit",
-      "typeAdjust_debit": "Manual Debit",
-      "typePromo": "Promo Code",
-      "reset": "Reset",
-      "loadMore": "Load More",
-      "table": {
-        "time": "Time",
-        "type": "Type",
-        "amount": "Amount",
-        "balance": "Balance After",
-        "desc": "Description",
-        "actions": "Actions",
-        "downloadInvoice": "Download Invoice",
-        "invoiceError": "Failed to get invoice link"
-      }
     },
     "orders": {
       "empty": "No recharge orders",

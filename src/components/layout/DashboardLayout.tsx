@@ -17,6 +17,7 @@ import {
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { DashboardHeader } from './DashboardHeader'
 import { DashboardSidebar } from './DashboardSidebar'
+import { CustomerService } from '@/components/customer-service'
 
 const { Content } = Layout
 
@@ -122,6 +123,8 @@ export function DashboardLayout() {
               <Breadcrumb.Item key={idx}>{b}</Breadcrumb.Item>
             ))}
           </Breadcrumb>
+
+          <CustomerService />
 
           <Content style={{
             background: '#ffffff',

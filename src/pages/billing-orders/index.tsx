@@ -8,9 +8,9 @@ import type { RechargeOrder } from '@/types'
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: '#ffffff',
+  backgroundColor: 'var(--semi-color-bg-0)',
   borderRadius: '12px',
-  border: '1px solid #f1f5f9',
+  border: '1px solid var(--semi-color-fill-0)',
   boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
 }
 
@@ -39,7 +39,7 @@ const STATUS_COLOR: Record<OrderStatus, { color: string; bg: string; border: str
   pending: { color: '#ea580c', bg: '#fff7ed', border: '#fed7aa' },
   paid: { color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' },
   failed: { color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
-  cancelled: { color: '#94a3b8', bg: '#f8fafc', border: '#e2e8f0' },
+  cancelled: { color: 'var(--semi-color-text-2)', bg: 'var(--semi-color-bg-1)', border: 'var(--semi-color-border)' },
   refunded: { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
 }
 
@@ -93,15 +93,15 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
         alignItems: 'flex-start',
         justifyContent: 'space-between',
         gap: '16px',
-        borderBottom: '1px solid #f1f5f9',
+        borderBottom: '1px solid var(--semi-color-fill-0)',
         paddingBottom: '12px',
         marginBottom: '12px',
       }}
     >
-      <span style={{ color: '#94a3b8', fontSize: '12px', whiteSpace: 'nowrap' }}>{label}</span>
+      <span style={{ color: 'var(--semi-color-text-2)', fontSize: '12px', whiteSpace: 'nowrap' }}>{label}</span>
       <span
         style={{
-          color: '#475569',
+          color: 'var(--semi-color-text-1)',
           fontSize: '12px',
           fontFamily: 'ui-monospace, monospace',
           textAlign: 'right',
@@ -163,7 +163,7 @@ export default function BillingOrdersPage() {
       render: (text: string, record: RechargeOrder) => (
         <span
           style={{
-            color: '#334155',
+            color: 'var(--semi-color-text-1)',
             fontSize: '12px',
             fontFamily: 'ui-monospace, monospace',
             cursor: 'pointer',
@@ -185,7 +185,7 @@ export default function BillingOrdersPage() {
       dataIndex: 'channel',
       width: 110,
       render: (channel: string) => (
-        <span style={{ color: '#64748b', fontSize: '13px' }}>{channelName(channel)}</span>
+        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>{channelName(channel)}</span>
       ),
     },
     {
@@ -195,7 +195,7 @@ export default function BillingOrdersPage() {
       render: (_: string, record: RechargeOrder) => (
         <span
           style={{
-            color: '#334155',
+            color: 'var(--semi-color-text-1)',
             fontSize: '13px',
             fontFamily: 'ui-monospace, monospace',
             fontWeight: 500,
@@ -210,7 +210,7 @@ export default function BillingOrdersPage() {
       dataIndex: 'paid_at',
       width: 180,
       render: (val: string | null) => (
-        <span style={{ color: '#64748b', fontSize: '12px' }}>{formatDateTime(val)}</span>
+        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '12px' }}>{formatDateTime(val)}</span>
       ),
     },
     {
@@ -219,7 +219,7 @@ export default function BillingOrdersPage() {
       width: 100,
       render: (_: unknown, record: RechargeOrder) => {
         if (record.status !== 'pending') {
-          return <span style={{ color: '#cbd5e1', fontSize: '12px' }}>—</span>
+          return <span style={{ color: 'var(--semi-color-text-3)', fontSize: '12px' }}>—</span>
         }
         return (
           <Button
@@ -252,14 +252,14 @@ export default function BillingOrdersPage() {
           style={{
             fontSize: '24px',
             fontWeight: 700,
-            color: '#0f172a',
+            color: 'var(--semi-color-text-0)',
             margin: '0 0 6px 0',
             letterSpacing: '-0.02em',
           }}
         >
           充值订单
         </h1>
-        <p style={{ fontSize: '13px', color: '#64748b', margin: 0, fontWeight: 400 }}>
+        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0, fontWeight: 400 }}>
           查看所有充值订单记录，点击行可查看订单详情。
         </p>
       </div>
@@ -286,11 +286,11 @@ export default function BillingOrdersPage() {
               style: {
                 cursor: 'pointer',
                 backgroundColor:
-                  selectedOrderNo === (record as RechargeOrder).order_no ? '#f8fafc' : undefined,
+                  selectedOrderNo === (record as RechargeOrder).order_no ? 'var(--semi-color-bg-1)' : undefined,
               },
             })}
             empty={
-              <div style={{ padding: '64px 0', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
+              <div style={{ padding: '64px 0', textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: '14px' }}>
                 暂无充值订单
               </div>
             }
@@ -302,7 +302,7 @@ export default function BillingOrdersPage() {
                 theme="borderless"
                 loading={ordersQuery.isFetchingNextPage}
                 onClick={() => ordersQuery.fetchNextPage()}
-                style={{ color: '#475569', fontSize: '13px', fontWeight: 500 }}
+                style={{ color: 'var(--semi-color-text-1)', fontSize: '13px', fontWeight: 500 }}
               >
                 加载更多
               </Button>
@@ -316,7 +316,7 @@ export default function BillingOrdersPage() {
             style={{
               fontSize: '11px',
               fontWeight: 600,
-              color: '#94a3b8',
+              color: 'var(--semi-color-text-2)',
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
               margin: '0 0 16px 0',
@@ -349,7 +349,7 @@ export default function BillingOrdersPage() {
               )}
             </div>
           ) : (
-            <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
+            <p style={{ fontSize: '13px', color: 'var(--semi-color-text-2)', margin: 0 }}>
               点击左侧订单查看详情
             </p>
           )}

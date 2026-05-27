@@ -19,7 +19,7 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, loading, color }) => {
     <div
       style={{
         borderRadius: '14px',
-        border: '1px solid rgba(226, 232, 240, 0.7)',
+        border: '1px solid var(--semi-color-border)',
         background: 'linear-gradient(135deg, rgba(248, 250, 252, 0.4) 0%, rgba(255, 255, 255, 0.9) 100%)',
         padding: '22px 24px',
         boxShadow: '0 1px 2px rgba(0,0,0,0.01)',
@@ -35,11 +35,11 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, loading, color }) => {
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLElement).style.transform = 'none';
-        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(226, 232, 240, 0.7)';
+        (e.currentTarget as HTMLElement).style.borderColor = 'var(--semi-color-border)';
         (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 2px rgba(0,0,0,0.01)';
       }}
     >
-      <Text style={{ color: '#64748b', fontSize: '12.5px', fontWeight: 500, letterSpacing: '0.01em' }}>
+      <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '12.5px', fontWeight: 500, letterSpacing: '0.01em' }}>
         {title}
       </Text>
       <div style={{ marginTop: '10px' }}>
@@ -93,7 +93,7 @@ export const KpiSection: React.FC = () => {
     : undefined
 
   const cards = [
-    { title: '可用余额', value: availableBalance, loading: balanceLoading, color: '#0f172a' },
+    { title: '可用余额', value: availableBalance, loading: balanceLoading, color: 'var(--semi-color-text-0)' },
     { title: '本月请求数', value: monthlyRequests, loading: usageLoading, color: '#10b981' },
     { title: '本月 Token 用量', value: monthlyTokens, loading: usageLoading, color: '#3b82f6' },
   ]

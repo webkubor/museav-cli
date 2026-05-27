@@ -1,5 +1,3 @@
-import { getMarket } from './market'
-
 export type Theme = 'dark' | 'light' | 'system'
 
 const ANON_KEY = 'mg-theme'
@@ -12,14 +10,12 @@ function isValidTheme(v: string | null): v is Theme {
   return v === 'dark' || v === 'light' || v === 'system'
 }
 
-/** 初始加载时读匿名 key（userId 尚未就绪），默认优先：国内浅色(light)，国外深色(dark) */
+/** 初始加载时读匿名 key（userId 尚未就绪），无偏好默认浅色 */
 export function getSavedTheme(): Theme {
   if (typeof window === 'undefined') return 'system'
   const saved = localStorage.getItem(ANON_KEY)
   if (isValidTheme(saved)) return saved
-
-  const market = getMarket()
-  return market === 'domestic' ? 'light' : 'dark'
+  return 'light'
 }
 
 /** 读用户 theme，优先用户 key，降级匿名 key */

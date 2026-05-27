@@ -45,18 +45,18 @@ function MessageBubble({ msg }: { msg: Message }) {
         maxWidth: '80%',
         padding: '10px 14px',
         borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-        background: isUser ? '#e8edf5' : '#f8fafc',
-        color: '#1e293b',
+        background: isUser ? 'var(--semi-color-fill-1)' : 'var(--semi-color-fill-0)',
+        color: 'var(--semi-color-text-0)',
         fontSize: 13,
         lineHeight: '1.6',
         wordBreak: 'break-word',
         whiteSpace: 'pre-wrap',
-        border: isUser ? '1px solid #d1d9e6' : '1px solid #e2e8f0',
+        border: isUser ? '1px solid var(--semi-color-fill-1)' : '1px solid var(--semi-color-border)',
         opacity: msg.isError ? 0.7 : 1,
       }}>
-        {msg.content || (msg.role === 'agent' ? <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>思考中…</span> : '')}
+        {msg.content || (msg.role === 'agent' ? <span style={{ color: 'var(--semi-color-text-2)', fontStyle: 'italic' }}>思考中…</span> : '')}
       </div>
-      <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 4, padding: '0 4px' }}>
+      <span style={{ fontSize: 10, color: 'var(--semi-color-text-2)', marginTop: 4, padding: '0 4px' }}>
         {formatCsTimestamp(msg.timestamp)}
       </span>
     </div>
@@ -69,7 +69,7 @@ function ThinkingDots() {
       {[0, 1, 2].map((i) => (
         <span key={i} style={{
           width: 6, height: 6, borderRadius: '50%',
-          backgroundColor: '#94a3b8',
+          backgroundColor: 'var(--semi-color-text-2)',
           opacity: 0.6,
           animation: `cs-bounce 1.2s ${i * 0.2}s ease-in-out infinite`,
         }} />
@@ -163,7 +163,7 @@ export function CustomerService() {
           width: 52,
           height: 52,
           borderRadius: '50%',
-          background: '#ffffff',
+          background: 'var(--semi-color-bg-0)',
           boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
           display: 'flex',
           alignItems: 'center',
@@ -171,12 +171,11 @@ export function CustomerService() {
           cursor: 'grab',
           userSelect: 'none',
           transition: 'box-shadow 0.2s',
-          background: '#ffffff',
-          border: '1px solid #e2e8f0',
+          border: '1px solid var(--semi-color-border)',
         }}
       >
         {isOpen
-          ? <IconClose style={{ color: '#64748b', fontSize: 20 }} />
+          ? <IconClose style={{ color: 'var(--semi-color-text-1)', fontSize: 20 }} />
           : (
             <div style={{ position: 'relative' }}>
               <img src={logoSrc} alt="CS" style={{ width: 28, height: 28, objectFit: 'contain' }} />
@@ -184,7 +183,7 @@ export function CustomerService() {
                 position: 'absolute', right: -2, bottom: -2,
                 width: 10, height: 10, borderRadius: '50%',
                 backgroundColor: status === 'online' ? '#10b981' : status === 'connecting' ? '#f59e0b' : '#ef4444',
-                border: '2px solid #fff',
+                border: '2px solid var(--semi-color-bg-0)',
               }} />
             </div>
           )
@@ -201,8 +200,8 @@ export function CustomerService() {
           height: 560,
           zIndex: 999,
           borderRadius: 20,
-          background: '#fff',
-          border: '1px solid #e2e8f0',
+          background: 'var(--semi-color-bg-0)',
+          border: '1px solid var(--semi-color-border)',
           boxShadow: '0 20px 60px -10px rgba(15,23,42,0.2)',
           display: 'flex',
           flexDirection: 'column',
@@ -211,17 +210,17 @@ export function CustomerService() {
           {/* Header */}
           <div style={{
             padding: '16px 20px',
-            borderBottom: '1px solid #f1f5f9',
+            borderBottom: '1px solid var(--semi-color-fill-0)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            background: '#fafbfc',
+            background: 'var(--semi-color-bg-1)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <img src={logoSrc} alt="Logo" style={{ width: 28, height: 28, objectFit: 'contain' }} />
               <div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0 }}>智能客服</p>
-                <p style={{ fontSize: 11, color: '#64748b', margin: 0 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0 }}>智能客服</p>
+                <p style={{ fontSize: 11, color: 'var(--semi-color-text-1)', margin: 0 }}>
                   <StatusDot status={status} />
                   {status === 'online' ? '在线' : status === 'connecting' ? '连接中' : '离线'}
                 </p>
@@ -232,10 +231,10 @@ export function CustomerService() {
                 <Button size="small" theme="borderless" icon={<IconRefresh />} onClick={reconnect} />
               )}
               <span style={{
-                fontSize: 10, color: '#94a3b8',
+                fontSize: 10, color: 'var(--semi-color-text-2)',
                 padding: '2px 8px', borderRadius: 100,
-                background: conversationId ? '#f1f5f9' : '#eff6ff',
-                border: `1px solid ${conversationId ? '#e2e8f0' : '#bfdbfe'}`,
+                background: conversationId ? 'var(--semi-color-fill-0)' : '#eff6ff',
+                border: `1px solid ${conversationId ? 'var(--semi-color-border)' : '#bfdbfe'}`,
               }}>
                 {conversationId ? 'Resumed' : 'New'}
               </span>
@@ -247,7 +246,7 @@ export function CustomerService() {
             {messages.length === 0 && (
               <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
                 <img src={logoSrc} alt="" style={{ width: 48, height: 48, opacity: 0.2 }} />
-                <p style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>
+                <p style={{ fontSize: 12, color: 'var(--semi-color-text-2)', textAlign: 'center' }}>
                   有什么我可以帮助你的？
                 </p>
               </div>
@@ -257,13 +256,13 @@ export function CustomerService() {
           </div>
 
           {/* Input */}
-          <div style={{ padding: '12px 16px', borderTop: '1px solid #f1f5f9' }}>
+          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--semi-color-fill-0)' }}>
             <div style={{
               display: 'flex',
               alignItems: 'flex-end',
               gap: 8,
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
+              background: 'var(--semi-color-fill-0)',
+              border: '1px solid var(--semi-color-border)',
               borderRadius: 12,
               padding: '8px 12px',
             }}>
@@ -277,7 +276,7 @@ export function CustomerService() {
                 placeholder={isLoading ? '正在思考中…' : '输入消息，Enter 发送'}
                 style={{
                   flex: 1, border: 'none', outline: 'none', background: 'transparent',
-                  resize: 'none', fontSize: 13, lineHeight: '1.5', color: '#1e293b',
+                  resize: 'none', fontSize: 13, lineHeight: '1.5', color: 'var(--semi-color-text-0)',
                   maxHeight: 100, overflowY: 'auto', fontFamily: 'inherit',
                 }}
               />
@@ -286,8 +285,8 @@ export function CustomerService() {
                 disabled={!inputValue.trim() || isLoading}
                 style={{
                   width: 32, height: 32, borderRadius: 8, border: 'none',
-                  background: inputValue.trim() && !isLoading ? '#475569' : '#e2e8f0',
-                  color: inputValue.trim() && !isLoading ? '#fff' : '#94a3b8',
+                  background: inputValue.trim() && !isLoading ? 'var(--semi-color-text-1)' : 'var(--semi-color-border)',
+                  color: inputValue.trim() && !isLoading ? 'var(--semi-color-bg-0)' : 'var(--semi-color-text-2)',
                   cursor: inputValue.trim() && !isLoading ? 'pointer' : 'not-allowed',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0, transition: 'all 0.2s',

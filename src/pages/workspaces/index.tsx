@@ -4,7 +4,6 @@ import { IconSearch, IconPlus } from '@douyinfe/semi-icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listWorkspaces, createWorkspace } from '@/services/workspaces'
 import type { WorkspaceItem } from '@/types'
-import { pageItems } from '@/lib/utils'
 
 export default function WorkspacesPage() {
   const queryClient = useQueryClient()
@@ -19,7 +18,7 @@ export default function WorkspacesPage() {
   // ─── 1. TanStack Query 真实获取工作空间接口数据 ─────────────────
   const { data, isLoading } = useQuery({
     queryKey: ['workspaces'],
-    queryFn: () => listWorkspaces().then(pageItems)
+    queryFn: () => listWorkspaces().then(res => res.items || [])
   })
 
   // ─── 2. Mutation 真实绑定新建工作空间接口 ─────────────────────
@@ -52,7 +51,7 @@ export default function WorkspacesPage() {
       dataIndex: 'name',
       render: (text: string, record: WorkspaceItem) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '13.5px' }}>{text}</span>
+          <span style={{ fontWeight: 600, color: 'var(--semi-color-text-0)', fontSize: '13.5px' }}>{text}</span>
           {record.is_default && (
             <Tag 
               style={{ 
@@ -70,10 +69,10 @@ export default function WorkspacesPage() {
           )}
           {record.is_default && (
             <Tag 
-              style={{ 
-                backgroundColor: '#f1f5f9', 
-                color: '#475569', 
-                border: '1px solid #e2e8f0',
+              style={{
+                backgroundColor: 'var(--semi-color-fill-0)',
+                color: 'var(--semi-color-text-1)',
+                border: '1px solid var(--semi-color-border)',
                 fontSize: '11px',
                 fontWeight: 600,
                 padding: '1px 8px',
@@ -90,14 +89,14 @@ export default function WorkspacesPage() {
       title: '业务空间 ID',
       dataIndex: 'workspace_id',
       render: (text: string) => (
-        <span style={{ 
-          color: '#475569', 
-          fontFamily: 'monospace', 
+        <span style={{
+          color: 'var(--semi-color-text-1)',
+          fontFamily: 'monospace',
           fontSize: '12.5px',
-          backgroundColor: '#f8fafc',
+          backgroundColor: 'var(--semi-color-bg-1)',
           padding: '2px 6px',
           borderRadius: '4px',
-          border: '1px solid #f1f5f9'
+          border: '1px solid var(--semi-color-fill-0)'
         }}>{text}</span>
       )
     },
@@ -105,7 +104,7 @@ export default function WorkspacesPage() {
       title: '创建时间',
       dataIndex: 'created_at',
       render: (text: string) => (
-        <span style={{ color: '#64748b', fontSize: '13px' }}>
+        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>
           {new Date(text).toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')}
         </span>
       )
@@ -156,10 +155,10 @@ export default function WorkspacesPage() {
     <div>
       {/* 头部标题与描述 */}
       <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
           业务空间
         </h1>
-        <p style={{ fontSize: '13px', color: '#64748b', margin: 0, fontWeight: 400 }}>
+        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0, fontWeight: 400 }}>
           管理业务空间信息、可用模型和使用限额。
         </p>
       </div>
@@ -171,7 +170,7 @@ export default function WorkspacesPage() {
         gap: '10px', 
         marginBottom: '28px',
         fontSize: '13px',
-        color: '#475569',
+        color: 'var(--semi-color-text-1)',
         fontWeight: 500
       }}>
         <span>当前业务空间</span>
@@ -194,11 +193,11 @@ export default function WorkspacesPage() {
         {/* 圆角微阴影输入框 */}
         <Input
           placeholder="按名称或业务空间 ID 搜索"
-          prefix={<IconSearch style={{ color: '#94a3b8' }} />}
-          style={{ 
-            width: '290px', 
+          prefix={<IconSearch style={{ color: 'var(--semi-color-text-2)' }} />}
+          style={{
+            width: '290px',
             borderRadius: '9999px',
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--semi-color-border)',
             boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)',
             transition: 'all 0.2s ease'
           }}
@@ -212,8 +211,8 @@ export default function WorkspacesPage() {
           icon={<IconPlus />}
           onClick={() => setModalVisible(true)}
           style={{ 
-            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', 
-            color: '#ffffff',
+            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+            color: 'var(--semi-color-bg-0)',
             borderRadius: '24px',
             padding: '8px 24px',
             fontSize: '13px',
@@ -261,7 +260,7 @@ export default function WorkspacesPage() {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', padding: '16px 0' }}>
           <div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>空间名称</div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '8px' }}>空间名称</div>
             <Input 
               value={name} 
               onChange={val => setName(val)} 
@@ -270,7 +269,7 @@ export default function WorkspacesPage() {
             />
           </div>
           <div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>唯一标识 (Slug)</div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '8px' }}>唯一标识 (Slug)</div>
             <Input 
               value={slug} 
               onChange={val => setSlug(val)} 
@@ -279,7 +278,7 @@ export default function WorkspacesPage() {
             />
           </div>
           <div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>空间描述 (选填)</div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '8px' }}>空间描述 (选填)</div>
             <Input 
               value={description} 
               onChange={val => setDescription(val)} 

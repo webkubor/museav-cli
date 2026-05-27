@@ -43,7 +43,7 @@ export const ChangePasswordTab: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '480px', paddingTop: '8px' }}>
       <div>
-        <Text style={{ fontSize: '12.5px', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <Text style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           当前密码
         </Text>
         <Input
@@ -56,7 +56,7 @@ export const ChangePasswordTab: React.FC = () => {
       </div>
 
       <div>
-        <Text style={{ fontSize: '12.5px', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <Text style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           新密码
         </Text>
         <Input
@@ -69,7 +69,7 @@ export const ChangePasswordTab: React.FC = () => {
       </div>
 
       <div>
-        <Text style={{ fontSize: '12.5px', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <Text style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           确认新密码
         </Text>
         <Input

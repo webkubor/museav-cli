@@ -15,7 +15,7 @@ export default function AccountSettingsPage() {
 
   if (isLoading) {
     return (
-      <div style={{ padding: '40px', color: '#64748b', fontSize: '14px' }}>加载中...</div>
+      <div style={{ padding: '40px', color: 'var(--semi-color-text-1)', fontSize: '14px' }}>加载中...</div>
     )
   }
 
@@ -33,11 +33,11 @@ export default function AccountSettingsPage() {
       <div style={{ marginBottom: '32px' }}>
         <Title
           heading={2}
-          style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}
+          style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0, letterSpacing: '-0.02em' }}
         >
           账号设置
         </Title>
-        <Text style={{ color: '#64748b', fontSize: '13.5px', marginTop: '6px', display: 'block' }}>
+        <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '13.5px', marginTop: '6px', display: 'block' }}>
           管理你的个人信息、密码及第三方账号绑定。
         </Text>
       </div>

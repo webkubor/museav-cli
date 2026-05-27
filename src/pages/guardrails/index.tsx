@@ -23,18 +23,18 @@ import type { WorkspaceMember, ApiKeyItem } from '@/types'
 // ── Styles ──────────────────────────────────────────────────────────────────
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: '#ffffff',
+  backgroundColor: 'var(--semi-color-bg-0)',
   borderRadius: '12px',
-  border: '1px solid #f1f5f9',
+  border: '1px solid var(--semi-color-fill-0)',
   padding: '24px',
   boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
   marginBottom: '20px',
 }
 
 const listCardStyle: React.CSSProperties = {
-  backgroundColor: '#ffffff',
+  backgroundColor: 'var(--semi-color-bg-0)',
   borderRadius: '12px',
-  border: '1px solid #f1f5f9',
+  border: '1px solid var(--semi-color-fill-0)',
   boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
   overflow: 'hidden',
 }
@@ -44,13 +44,13 @@ const listCardStyle: React.CSSProperties = {
 const STATUS_COLOR: Record<GuardrailDetail['status'], string> = {
   active: '#10b981',
   inactive: '#f59e0b',
-  archived: '#94a3b8',
+  archived: 'var(--semi-color-text-2)',
 }
 
 const STATUS_BG: Record<GuardrailDetail['status'], string> = {
   active: '#ecfdf5',
   inactive: '#fffbeb',
-  archived: '#f8fafc',
+  archived: 'var(--semi-color-bg-1)',
 }
 
 const STATUS_LABEL: Record<GuardrailDetail['status'], string> = {
@@ -66,7 +66,7 @@ const ENFORCEMENT_LABEL: Record<GuardrailBudgetPolicy['enforcement_mode'], strin
 }
 
 const ENFORCEMENT_COLOR: Record<GuardrailBudgetPolicy['enforcement_mode'], string> = {
-  monitor: '#64748b',
+  monitor: 'var(--semi-color-text-1)',
   soft_limit: '#f59e0b',
   hard_limit: '#ef4444',
 }
@@ -218,10 +218,10 @@ export default function GuardrailsPage() {
         }}
       >
         <div>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0 }}>
             安全护栏
           </h1>
-          <p style={{ fontSize: '14px', color: '#64748b', margin: '6px 0 0' }}>
+          <p style={{ fontSize: '14px', color: 'var(--semi-color-text-1)', margin: '6px 0 0' }}>
             为成员或 API Key 设置用量限额和限速策略，保障资源安全。
           </p>
         </div>
@@ -244,10 +244,10 @@ export default function GuardrailsPage() {
           <div
             style={{
               padding: '14px 20px',
-              borderBottom: '1px solid #f1f5f9',
+              borderBottom: '1px solid var(--semi-color-fill-0)',
               fontSize: '11px',
               fontWeight: 700,
-              color: '#94a3b8',
+              color: 'var(--semi-color-text-2)',
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
             }}
@@ -265,7 +265,7 @@ export default function GuardrailsPage() {
               style={{
                 padding: '40px 20px',
                 textAlign: 'center',
-                color: '#94a3b8',
+                color: 'var(--semi-color-text-2)',
                 fontSize: '13px',
                 fontStyle: 'italic',
               }}
@@ -283,7 +283,7 @@ export default function GuardrailsPage() {
                     style={{
                       padding: '14px 20px',
                       cursor: 'pointer',
-                      borderBottom: '1px solid #f8fafc',
+                      borderBottom: '1px solid var(--semi-color-bg-1)',
                       backgroundColor: isActive ? '#eff6ff' : 'transparent',
                       display: 'flex',
                       alignItems: 'center',
@@ -297,7 +297,7 @@ export default function GuardrailsPage() {
                         style={{
                           fontSize: '13.5px',
                           fontWeight: 600,
-                          color: isActive ? '#2563eb' : '#1e293b',
+                          color: isActive ? '#2563eb' : 'var(--semi-color-text-0)',
                           margin: 0,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -321,7 +321,7 @@ export default function GuardrailsPage() {
                         {STATUS_LABEL[g.status]}
                       </span>
                     </div>
-                    <span style={{ color: isActive ? '#2563eb' : '#cbd5e1', fontSize: '16px' }}>
+                    <span style={{ color: isActive ? '#2563eb' : 'var(--semi-color-text-3)', fontSize: '16px' }}>
                       ›
                     </span>
                   </li>
@@ -348,12 +348,12 @@ export default function GuardrailsPage() {
               >
                 <div>
                   <h2
-                    style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: 0 }}
+                    style={{ fontSize: '18px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0 }}
                   >
                     {selected.name}
                   </h2>
                   {selected.description && (
-                    <p style={{ fontSize: '13px', color: '#64748b', margin: '6px 0 0' }}>
+                    <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: '6px 0 0' }}>
                       {selected.description}
                     </p>
                   )}
@@ -379,7 +379,7 @@ export default function GuardrailsPage() {
                   gridTemplateColumns: 'repeat(4, 1fr)',
                   gap: '24px',
                   paddingTop: '20px',
-                  borderTop: '1px solid #f1f5f9',
+                  borderTop: '1px solid var(--semi-color-fill-0)',
                 }}
               >
                 <MetaItem label="优先级" value={selected.priority ?? '默认'} />
@@ -399,7 +399,7 @@ export default function GuardrailsPage() {
                   marginBottom: '20px',
                 }}
               >
-                <p style={{ fontSize: '15px', fontWeight: 600, color: '#0f172a', margin: 0 }}>
+                <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)', margin: 0 }}>
                   绑定对象
                 </p>
                 <Button size="small" onClick={() => setAssignOpen(true)}>
@@ -412,9 +412,9 @@ export default function GuardrailsPage() {
                   style={{
                     padding: '24px',
                     textAlign: 'center',
-                    border: '1px dashed #e2e8f0',
+                    border: '1px dashed var(--semi-color-border)',
                     borderRadius: '10px',
-                    color: '#94a3b8',
+                    color: 'var(--semi-color-text-2)',
                     fontSize: '13px',
                     fontStyle: 'italic',
                   }}
@@ -432,14 +432,14 @@ export default function GuardrailsPage() {
                         gap: '6px',
                         padding: '5px 14px',
                         borderRadius: '100px',
-                        border: '1px solid #e2e8f0',
-                        backgroundColor: '#f8fafc',
+                        border: '1px solid var(--semi-color-border)',
+                        backgroundColor: 'var(--semi-color-bg-1)',
                         fontSize: '12.5px',
-                        color: '#334155',
+                        color: 'var(--semi-color-text-1)',
                         fontWeight: 500,
                       }}
                     >
-                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--semi-color-text-2)' }}>
                         {a.subject_type === 'member' ? '成员' : 'Key'}
                       </span>
                       {a.subject_type === 'member'
@@ -461,7 +461,7 @@ export default function GuardrailsPage() {
                   marginBottom: '20px',
                 }}
               >
-                <p style={{ fontSize: '15px', fontWeight: 600, color: '#0f172a', margin: 0 }}>
+                <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)', margin: 0 }}>
                   预算策略
                 </p>
                 <Button theme="solid" type="primary" size="small" onClick={() => setPolicyOpen(true)}>
@@ -474,9 +474,9 @@ export default function GuardrailsPage() {
                   style={{
                     padding: '40px',
                     textAlign: 'center',
-                    border: '1px dashed #e2e8f0',
+                    border: '1px dashed var(--semi-color-border)',
                     borderRadius: '10px',
-                    color: '#94a3b8',
+                    color: 'var(--semi-color-text-2)',
                     fontSize: '13px',
                     fontStyle: 'italic',
                   }}
@@ -507,14 +507,14 @@ export default function GuardrailsPage() {
                 justifyContent: 'center',
                 height: '360px',
                 borderRadius: '12px',
-                border: '1px solid #f1f5f9',
-                backgroundColor: '#fafafa',
+                border: '1px solid var(--semi-color-fill-0)',
+                backgroundColor: 'var(--semi-color-bg-1)',
                 textAlign: 'center',
                 padding: '48px',
               }}
             >
               <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.25 }}>🛡</div>
-              <p style={{ fontSize: '15px', color: '#94a3b8' }}>
+              <p style={{ fontSize: '15px', color: 'var(--semi-color-text-2)' }}>
                 请从左侧选择一个护栏以查看或编辑详细策略
               </p>
             </div>
@@ -565,7 +565,7 @@ function MetaItem({ label, value }: { label: string; value: string | number }) {
         style={{
           fontSize: '10px',
           fontWeight: 700,
-          color: '#94a3b8',
+          color: 'var(--semi-color-text-2)',
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
           margin: '0 0 4px',
@@ -573,7 +573,7 @@ function MetaItem({ label, value }: { label: string; value: string | number }) {
       >
         {label}
       </p>
-      <p style={{ fontSize: '13px', fontWeight: 500, color: '#1e293b', margin: 0 }}>{value}</p>
+      <p style={{ fontSize: '13px', fontWeight: 500, color: 'var(--semi-color-text-0)', margin: 0 }}>{value}</p>
     </div>
   )
 }
@@ -598,8 +598,8 @@ function PolicyCard({
         gap: '16px',
         padding: '16px 20px',
         borderRadius: '10px',
-        border: '1px solid #f1f5f9',
-        backgroundColor: '#fafafa',
+        border: '1px solid var(--semi-color-fill-0)',
+        backgroundColor: 'var(--semi-color-bg-1)',
       }}
     >
       <div style={{ minWidth: 0 }}>
@@ -623,23 +623,23 @@ function PolicyCard({
                   ? '#fef2f2'
                   : p.enforcement_mode === 'soft_limit'
                     ? '#fffbeb'
-                    : '#f8fafc',
+                    : 'var(--semi-color-bg-1)',
               color: enforcementColor,
               border: `1px solid ${
                 p.enforcement_mode === 'hard_limit'
                   ? '#fecaca'
                   : p.enforcement_mode === 'soft_limit'
                     ? '#fde68a'
-                    : '#e2e8f0'
+                    : 'var(--semi-color-border)'
               }`,
             }}
           >
             {ENFORCEMENT_LABEL[p.enforcement_mode]}
           </span>
-          <span style={{ fontSize: '13px', color: '#475569' }}>
+          <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>
             每 {p.period_length > 1 ? p.period_length : ''}
             {PERIOD_LABEL[p.period_unit]} 重置
-            <span style={{ margin: '0 8px', color: '#cbd5e1' }}>|</span>
+            <span style={{ margin: '0 8px', color: 'var(--semi-color-text-3)' }}>|</span>
             {p.aggregation_scope === 'per_member'
               ? '按成员独立计算'
               : p.aggregation_scope === 'per_api_key'
@@ -652,8 +652,8 @@ function PolicyCard({
                 padding: '2px 8px',
                 borderRadius: '100px',
                 fontSize: '11px',
-                backgroundColor: '#f1f5f9',
-                color: '#94a3b8',
+                backgroundColor: 'var(--semi-color-fill-0)',
+                color: 'var(--semi-color-text-2)',
               }}
             >
               已停用
@@ -690,7 +690,7 @@ function PolicyCard({
           border: 'none',
           backgroundColor: 'transparent',
           cursor: 'pointer',
-          color: '#cbd5e1',
+          color: 'var(--semi-color-text-3)',
           fontSize: '14px',
           lineHeight: 1,
         }}
@@ -709,14 +709,14 @@ function PolicyMeta({ label, value }: { label: string; value: string }) {
         style={{
           fontSize: '10px',
           fontWeight: 700,
-          color: '#94a3b8',
+          color: 'var(--semi-color-text-2)',
           textTransform: 'uppercase',
           letterSpacing: '0.05em',
         }}
       >
         {label}:
       </span>
-      <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>
+      <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, color: 'var(--semi-color-text-0)' }}>
         {value}
       </span>
     </div>
@@ -769,7 +769,7 @@ function CreateGuardrailModal({
               display: 'block',
               fontSize: '11px',
               fontWeight: 700,
-              color: '#64748b',
+              color: 'var(--semi-color-text-1)',
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
               marginBottom: '8px',
@@ -792,7 +792,7 @@ function CreateGuardrailModal({
               display: 'block',
               fontSize: '11px',
               fontWeight: 700,
-              color: '#64748b',
+              color: 'var(--semi-color-text-1)',
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
               marginBottom: '8px',
@@ -854,7 +854,7 @@ function AddBudgetPolicyModal({
     display: 'block',
     fontSize: '11px',
     fontWeight: 700,
-    color: '#64748b',
+    color: 'var(--semi-color-text-1)',
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
     marginBottom: '8px',
@@ -923,7 +923,7 @@ function AddBudgetPolicyModal({
             gridTemplateColumns: '1fr 1fr 1fr',
             gap: '12px',
             paddingTop: '16px',
-            borderTop: '1px solid #f1f5f9',
+            borderTop: '1px solid var(--semi-color-fill-0)',
           }}
         >
           <div>
@@ -1008,7 +1008,7 @@ function ManageAssignmentsModal({
   const sectionLabelStyle: React.CSSProperties = {
     fontSize: '11px',
     fontWeight: 700,
-    color: '#94a3b8',
+    color: 'var(--semi-color-text-2)',
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
     marginBottom: '10px',
@@ -1043,7 +1043,7 @@ function ManageAssignmentsModal({
         <div>
           <p style={sectionLabelStyle}>成员</p>
           {members.length === 0 ? (
-            <p style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>暂无成员</p>
+            <p style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', fontStyle: 'italic' }}>暂无成员</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {members.map((m) => {
@@ -1060,8 +1060,8 @@ function ManageAssignmentsModal({
                       gap: '12px',
                       padding: '10px 14px',
                       borderRadius: '8px',
-                      border: checked ? '1px solid #bfdbfe' : '1px solid #f1f5f9',
-                      backgroundColor: checked ? '#eff6ff' : '#fafafa',
+                      border: checked ? '1px solid #bfdbfe' : '1px solid var(--semi-color-fill-0)',
+                      backgroundColor: checked ? '#eff6ff' : 'var(--semi-color-bg-1)',
                       cursor: 'pointer',
                       textAlign: 'left',
                       width: '100%',
@@ -1073,7 +1073,7 @@ function ManageAssignmentsModal({
                         style={{
                           fontSize: '13px',
                           fontWeight: 600,
-                          color: '#1e293b',
+                          color: 'var(--semi-color-text-0)',
                           margin: 0,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -1085,7 +1085,7 @@ function ManageAssignmentsModal({
                       <p
                         style={{
                           fontSize: '11px',
-                          color: '#94a3b8',
+                          color: 'var(--semi-color-text-2)',
                           margin: 0,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -1101,8 +1101,8 @@ function ManageAssignmentsModal({
                         fontSize: '11px',
                         padding: '2px 8px',
                         borderRadius: '100px',
-                        backgroundColor: '#f1f5f9',
-                        color: '#64748b',
+                        backgroundColor: 'var(--semi-color-fill-0)',
+                        color: 'var(--semi-color-text-1)',
                       }}
                     >
                       {m.role}
@@ -1118,7 +1118,7 @@ function ManageAssignmentsModal({
         <div>
           <p style={sectionLabelStyle}>API Key</p>
           {apiKeys.length === 0 ? (
-            <p style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
+            <p style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', fontStyle: 'italic' }}>
               暂无 API Key
             </p>
           ) : (
@@ -1136,8 +1136,8 @@ function ManageAssignmentsModal({
                       gap: '12px',
                       padding: '10px 14px',
                       borderRadius: '8px',
-                      border: checked ? '1px solid #bfdbfe' : '1px solid #f1f5f9',
-                      backgroundColor: checked ? '#eff6ff' : '#fafafa',
+                      border: checked ? '1px solid #bfdbfe' : '1px solid var(--semi-color-fill-0)',
+                      backgroundColor: checked ? '#eff6ff' : 'var(--semi-color-bg-1)',
                       cursor: 'pointer',
                       textAlign: 'left',
                       width: '100%',
@@ -1149,7 +1149,7 @@ function ManageAssignmentsModal({
                         style={{
                           fontSize: '13px',
                           fontWeight: 600,
-                          color: '#1e293b',
+                          color: 'var(--semi-color-text-0)',
                           margin: 0,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -1162,7 +1162,7 @@ function ManageAssignmentsModal({
                         style={{
                           fontSize: '11px',
                           fontFamily: 'monospace',
-                          color: '#94a3b8',
+                          color: 'var(--semi-color-text-2)',
                           margin: 0,
                         }}
                       >
@@ -1175,8 +1175,8 @@ function ManageAssignmentsModal({
                         fontSize: '11px',
                         padding: '2px 8px',
                         borderRadius: '100px',
-                        backgroundColor: k.env === 'live' ? '#ecfdf5' : '#f8fafc',
-                        color: k.env === 'live' ? '#10b981' : '#94a3b8',
+                        backgroundColor: k.env === 'live' ? '#ecfdf5' : 'var(--semi-color-bg-1)',
+                        color: k.env === 'live' ? '#10b981' : 'var(--semi-color-text-2)',
                       }}
                     >
                       {k.env}
@@ -1200,7 +1200,7 @@ function CheckBox({ checked }: { checked: boolean }) {
         width: '16px',
         height: '16px',
         borderRadius: '4px',
-        border: checked ? '2px solid #2563eb' : '2px solid #cbd5e1',
+        border: checked ? '2px solid #2563eb' : '2px solid var(--semi-color-text-3)',
         backgroundColor: checked ? '#2563eb' : 'transparent',
         display: 'flex',
         alignItems: 'center',

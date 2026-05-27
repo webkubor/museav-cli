@@ -70,7 +70,7 @@ export default function ApiKeysPage() {
       title: '名称',
       dataIndex: 'name',
       render: (text: string) => (
-        <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '13.5px' }}>{text}</span>
+        <span style={{ fontWeight: 600, color: 'var(--semi-color-text-0)', fontSize: '13.5px' }}>{text}</span>
       )
     },
     {
@@ -97,14 +97,14 @@ export default function ApiKeysPage() {
       dataIndex: 'masked',
       render: (text: string) => (
         <span style={{ 
-          color: '#475569', 
-          fontFamily: 'monospace', 
+          color: 'var(--semi-color-text-1)',
+          fontFamily: 'monospace',
           letterSpacing: '0.04em',
           fontSize: '13px',
-          backgroundColor: '#f8fafc',
+          backgroundColor: 'var(--semi-color-bg-1)',
           padding: '2px 8px',
           borderRadius: '4px',
-          border: '1px solid #f1f5f9'
+          border: '1px solid var(--semi-color-fill-0)'
         }}>{text}</span>
       )
     },
@@ -114,9 +114,9 @@ export default function ApiKeysPage() {
       render: (status: string) => (
         <Tag 
           style={{ 
-            backgroundColor: status === 'active' ? '#f0fdf4' : '#f1f5f9', 
-            color: status === 'active' ? '#16a34a' : '#64748b', 
-            border: status === 'active' ? '1px solid #bbf7d0' : '1px solid #e2e8f0',
+            backgroundColor: status === 'active' ? '#f0fdf4' : 'var(--semi-color-fill-0)',
+            color: status === 'active' ? '#16a34a' : 'var(--semi-color-text-1)',
+            border: status === 'active' ? '1px solid #bbf7d0' : '1px solid var(--semi-color-border)',
             fontSize: '11.5px',
             fontWeight: 600,
             borderRadius: '12px'
@@ -130,7 +130,7 @@ export default function ApiKeysPage() {
       title: '创建时间',
       dataIndex: 'created_at',
       render: (text: string) => (
-        <span style={{ color: '#64748b', fontSize: '13px' }}>
+        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>
           {new Date(text).toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')}
         </span>
       )
@@ -179,7 +179,7 @@ export default function ApiKeysPage() {
               禁用
             </span>
           ) : (
-            <span style={{ color: '#94a3b8', cursor: 'not-allowed', fontSize: '13px' }}>已禁用</span>
+            <span style={{ color: 'var(--semi-color-text-2)', cursor: 'not-allowed', fontSize: '13px' }}>已禁用</span>
           )}
         </div>
       )
@@ -202,10 +202,10 @@ export default function ApiKeysPage() {
     <div>
       {/* 头部标题与描述 */}
       <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
           API Keys
         </h1>
-        <p style={{ fontSize: '13px', color: '#64748b', margin: 0, fontWeight: 400 }}>
+        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0, fontWeight: 400 }}>
           用于 OpenAI SDK 兼容接入的安全凭证，请妥善保管您的密钥凭证，切勿泄露给第三方。
         </p>
       </div>
@@ -220,11 +220,11 @@ export default function ApiKeysPage() {
         {/* 圆角微阴影输入框 */}
         <Input
           placeholder="搜索密钥名称"
-          prefix={<IconSearch style={{ color: '#94a3b8' }} />}
-          style={{ 
-            width: '290px', 
+          prefix={<IconSearch style={{ color: 'var(--semi-color-text-2)' }} />}
+          style={{
+            width: '290px',
             borderRadius: '9999px',
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--semi-color-border)',
             boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)',
             transition: 'all 0.2s ease'
           }}
@@ -238,8 +238,8 @@ export default function ApiKeysPage() {
           icon={<IconPlus />}
           onClick={() => setCreateVisible(true)}
           style={{ 
-            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', 
-            color: '#ffffff',
+            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+            color: 'var(--semi-color-bg-0)',
             borderRadius: '24px',
             padding: '8px 24px',
             fontSize: '13px',
@@ -285,7 +285,7 @@ export default function ApiKeysPage() {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', padding: '16px 0' }}>
           <div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>密钥名称</div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '8px' }}>密钥名称</div>
             <Input 
               value={name} 
               onChange={val => setName(val)} 
@@ -294,7 +294,7 @@ export default function ApiKeysPage() {
             />
           </div>
           <div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>调用环境</div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '8px' }}>调用环境</div>
             <Select 
               value={env} 
               onChange={val => setEnv(val as any)} 
@@ -334,7 +334,7 @@ export default function ApiKeysPage() {
           </div>
 
           <div style={{ marginBottom: '20px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '10px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', display: 'block', marginBottom: '10px' }}>
               API Key 凭证明文：
             </span>
             <Paragraph 
@@ -342,7 +342,7 @@ export default function ApiKeysPage() {
                 icon: <IconCopy style={{ color: '#10b981', fontSize: '16px', cursor: 'pointer' }} />
               }}
               style={{
-                backgroundColor: '#0f172a',
+                backgroundColor: 'var(--semi-color-text-0)',
                 color: '#10b981',
                 padding: '16px 20px',
                 borderRadius: '10px',
@@ -355,7 +355,7 @@ export default function ApiKeysPage() {
                 letterSpacing: '0.02em',
                 boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)',
                 margin: 0,
-                border: '1px solid #1e293b'
+                border: '1px solid var(--semi-color-text-0)'
               }}
             >
               {createdKeyText}

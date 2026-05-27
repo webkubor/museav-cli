@@ -14,7 +14,7 @@ import type { InvitationItem } from '@/types'
 const STATUS_STYLE: Record<InvitationItem['status'], { color: string; bg: string; border: string }> = {
   pending:  { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
   accepted: { color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' },
-  expired:  { color: '#94a3b8', bg: '#f8fafc', border: '#e2e8f0' },
+  expired:  { color: 'var(--semi-color-text-2)', bg: 'var(--semi-color-bg-1)', border: 'var(--semi-color-border)' },
   revoked:  { color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
 }
 
@@ -143,7 +143,7 @@ export default function InvitationsMgmtPage() {
       title: '邮箱',
       dataIndex: 'email',
       render: (text: string) => (
-        <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '13.5px' }}>{text}</span>
+        <span style={{ fontWeight: 600, color: 'var(--semi-color-text-0)', fontSize: '13.5px' }}>{text}</span>
       ),
     },
     {
@@ -152,9 +152,9 @@ export default function InvitationsMgmtPage() {
       render: (r: InvitationItem['role']) => (
         <Tag
           style={{
-            backgroundColor: '#f1f5f9',
-            color: '#475569',
-            border: '1px solid #e2e8f0',
+            backgroundColor: 'var(--semi-color-fill-0)',
+            color: 'var(--semi-color-text-1)',
+            border: '1px solid var(--semi-color-border)',
             fontSize: '11px',
             fontWeight: 600,
             borderRadius: '4px',
@@ -189,7 +189,7 @@ export default function InvitationsMgmtPage() {
       title: '过期时间',
       dataIndex: 'expires_at',
       render: (val: string) => (
-        <span style={{ color: '#64748b', fontSize: '13px' }}>{formatDateTime(val)}</span>
+        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>{formatDateTime(val)}</span>
       ),
     },
     {
@@ -212,7 +212,7 @@ export default function InvitationsMgmtPage() {
             撤销
           </span>
         ) : (
-          <span style={{ color: '#cbd5e1', fontSize: '13px' }}>—</span>
+          <span style={{ color: 'var(--semi-color-text-3)', fontSize: '13px' }}>—</span>
         ),
     },
   ]
@@ -226,14 +226,14 @@ export default function InvitationsMgmtPage() {
           style={{
             fontSize: '24px',
             fontWeight: 700,
-            color: '#0f172a',
+            color: 'var(--semi-color-text-0)',
             margin: '0 0 6px 0',
             letterSpacing: '-0.02em',
           }}
         >
           工作区邀请管理
         </h1>
-        <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0 }}>
           通过邮箱或邀请链接将成员加入当前工作区。
         </p>
       </div>
@@ -241,8 +241,8 @@ export default function InvitationsMgmtPage() {
       {/* ── 邀请链接区块 ─────────────────────────────────────────────────── */}
       <div
         style={{
-          background: '#ffffff',
-          border: '1px solid #e2e8f0',
+          background: 'var(--semi-color-bg-0)',
+          border: '1px solid var(--semi-color-border)',
           borderRadius: '12px',
           padding: '24px',
           marginBottom: '20px',
@@ -257,15 +257,15 @@ export default function InvitationsMgmtPage() {
             marginBottom: '16px',
           }}
         >
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0 }}>
             开放邀请链接
           </h3>
           <span
             style={{
               fontSize: '12px',
-              color: '#64748b',
-              background: '#f1f5f9',
-              border: '1px solid #e2e8f0',
+              color: 'var(--semi-color-text-1)',
+              background: 'var(--semi-color-fill-0)',
+              border: '1px solid var(--semi-color-border)',
               borderRadius: '999px',
               padding: '2px 10px',
             }}
@@ -279,13 +279,13 @@ export default function InvitationsMgmtPage() {
           <div
             style={{
               flex: 1,
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
+              background: 'var(--semi-color-bg-1)',
+              border: '1px solid var(--semi-color-border)',
               borderRadius: '8px',
               padding: '10px 14px',
               fontFamily: 'monospace',
               fontSize: '13px',
-              color: '#334155',
+              color: 'var(--semi-color-text-1)',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -303,7 +303,7 @@ export default function InvitationsMgmtPage() {
               background: copied
                 ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)'
                 : 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-              color: '#fff',
+              color: 'var(--semi-color-bg-0)',
               border: 'none',
               borderRadius: '8px',
               height: '40px',
@@ -326,11 +326,11 @@ export default function InvitationsMgmtPage() {
             alignItems: 'center',
             marginTop: '16px',
             paddingTop: '16px',
-            borderTop: '1px solid #f1f5f9',
+            borderTop: '1px solid var(--semi-color-fill-0)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>链接角色</span>
+            <span style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', fontWeight: 600 }}>链接角色</span>
             <Select
               value={inviteLink?.role ?? 'ws_member'}
               onChange={(v) => resetLinkMutation.mutate(v as 'ws_member' | 'ws_admin')}
@@ -347,7 +347,7 @@ export default function InvitationsMgmtPage() {
             loading={resetLinkMutation.isPending}
             disabled={!inviteLink}
             onClick={() => resetLinkMutation.mutate(inviteLink?.role ?? 'ws_member')}
-            style={{ fontSize: '12px', color: '#64748b' }}
+            style={{ fontSize: '12px', color: 'var(--semi-color-text-1)' }}
           >
             重置链接
           </Button>
@@ -357,8 +357,8 @@ export default function InvitationsMgmtPage() {
       {/* ── 邮箱邀请区块 ──────────────────────────────────────────────────── */}
       <div
         style={{
-          background: '#ffffff',
-          border: '1px solid #e2e8f0',
+          background: 'var(--semi-color-bg-0)',
+          border: '1px solid var(--semi-color-border)',
           borderRadius: '12px',
           padding: '24px',
           marginBottom: '20px',
@@ -369,7 +369,7 @@ export default function InvitationsMgmtPage() {
           style={{
             fontSize: '15px',
             fontWeight: 700,
-            color: '#0f172a',
+            color: 'var(--semi-color-text-0)',
             margin: '0 0 16px 0',
           }}
         >
@@ -388,7 +388,7 @@ export default function InvitationsMgmtPage() {
               style={{
                 fontSize: '12px',
                 fontWeight: 600,
-                color: '#94a3b8',
+                color: 'var(--semi-color-text-2)',
                 marginBottom: '6px',
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
@@ -408,7 +408,7 @@ export default function InvitationsMgmtPage() {
               style={{
                 fontSize: '12px',
                 fontWeight: 600,
-                color: '#94a3b8',
+                color: 'var(--semi-color-text-2)',
                 marginBottom: '6px',
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
@@ -432,7 +432,7 @@ export default function InvitationsMgmtPage() {
             onClick={handleSendInvites}
             style={{
               background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-              color: '#fff',
+              color: 'var(--semi-color-bg-0)',
               border: 'none',
               borderRadius: '8px',
               height: '40px',
@@ -450,8 +450,8 @@ export default function InvitationsMgmtPage() {
       {/* ── 邀请记录列表 ──────────────────────────────────────────────────── */}
       <div
         style={{
-          background: '#ffffff',
-          border: '1px solid #e2e8f0',
+          background: 'var(--semi-color-bg-0)',
+          border: '1px solid var(--semi-color-border)',
           borderRadius: '12px',
           boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
           overflow: 'hidden',
@@ -463,10 +463,10 @@ export default function InvitationsMgmtPage() {
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '18px 24px',
-            borderBottom: '1px solid #f1f5f9',
+            borderBottom: '1px solid var(--semi-color-fill-0)',
           }}
         >
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0 }}>
             邀请记录
           </h3>
           <Select
@@ -495,7 +495,7 @@ export default function InvitationsMgmtPage() {
                 style={{
                   padding: '48px 0',
                   textAlign: 'center',
-                  color: '#94a3b8',
+                  color: 'var(--semi-color-text-2)',
                   fontSize: '14px',
                 }}
               >

@@ -84,7 +84,7 @@ function Sparkline({ data, width, height, metric }: SparklineProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#94a3b8',
+          color: 'var(--semi-color-text-2)',
           fontSize: '13px',
         }}
       >
@@ -122,7 +122,7 @@ function Sparkline({ data, width, height, metric }: SparklineProps) {
             y1={y}
             x2={width - 40}
             y2={y}
-            stroke="#f1f5f9"
+            stroke="var(--semi-color-fill-0)"
             strokeWidth={1}
           />
         )
@@ -136,7 +136,7 @@ function Sparkline({ data, width, height, metric }: SparklineProps) {
 
       {/* Dots */}
       {points.dots.map((c, i) => (
-        <circle key={i} cx={c.x} cy={c.y} r={3} fill={dotColor} stroke="#fff" strokeWidth={1.5} />
+        <circle key={i} cx={c.x} cy={c.y} r={3} fill={dotColor} stroke="var(--semi-color-bg-0)" strokeWidth={1.5} />
       ))}
 
       {/* X-axis labels */}
@@ -147,7 +147,7 @@ function Sparkline({ data, width, height, metric }: SparklineProps) {
           y={height - 6}
           textAnchor="middle"
           fontSize={11}
-          fill="#94a3b8"
+          fill="var(--semi-color-text-2)"
           fontFamily="system-ui, -apple-system, sans-serif"
         >
           {l.text}
@@ -169,23 +169,23 @@ function KpiCard({ label, value, sub }: KpiCardProps) {
   return (
     <div
       style={{
-        background: '#fff',
+        background: 'var(--semi-color-bg-0)',
         borderRadius: '12px',
-        border: '1px solid #f1f5f9',
+        border: '1px solid var(--semi-color-fill-0)',
         padding: '24px',
         boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
         flex: 1,
         minWidth: 0,
       }}
     >
-      <div style={{ fontSize: '12.5px', fontWeight: 500, color: '#94a3b8', marginBottom: '10px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+      <div style={{ fontSize: '12.5px', fontWeight: 500, color: 'var(--semi-color-text-2)', marginBottom: '10px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
         {label}
       </div>
-      <div style={{ fontSize: '26px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+      <div style={{ fontSize: '26px', fontWeight: 700, color: 'var(--semi-color-text-0)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
         {value}
       </div>
       {sub && (
-        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px' }}>{sub}</div>
+        <div style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginTop: '6px' }}>{sub}</div>
       )}
     </div>
   )
@@ -206,9 +206,9 @@ function RangeBtn({ label, active, onClick }: RangeBtnProps) {
       style={{
         padding: '5px 16px',
         borderRadius: '20px',
-        border: active ? '1px solid #1e293b' : '1px solid #e2e8f0',
-        background: active ? '#0f172a' : '#fff',
-        color: active ? '#fff' : '#64748b',
+        border: active ? '1px solid #1e293b' : '1px solid var(--semi-color-border)',
+        background: active ? '#0f172a' : 'var(--semi-color-bg-0)',
+        color: active ? 'var(--semi-color-bg-0)' : 'var(--semi-color-text-1)',
         fontSize: '13px',
         fontWeight: active ? 600 : 400,
         cursor: 'pointer',
@@ -236,8 +236,8 @@ function MetricTab({ label, active, onClick }: MetricTabProps) {
         padding: '7px 20px',
         borderRadius: '8px',
         border: 'none',
-        background: active ? '#f8fafc' : 'transparent',
-        color: active ? '#0f172a' : '#64748b',
+        background: active ? 'var(--semi-color-bg-1)' : 'transparent',
+        color: active ? 'var(--semi-color-text-0)' : 'var(--semi-color-text-1)',
         fontSize: '13.5px',
         fontWeight: active ? 600 : 400,
         cursor: 'pointer',
@@ -302,14 +302,14 @@ export default function UsagePage() {
             style={{
               fontSize: '24px',
               fontWeight: 700,
-              color: '#0f172a',
+              color: 'var(--semi-color-text-0)',
               margin: '0 0 6px 0',
               letterSpacing: '-0.02em',
             }}
           >
             用量分析
           </h1>
-          <p style={{ fontSize: '13px', color: '#64748b', margin: 0, fontWeight: 400 }}>
+          <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0, fontWeight: 400 }}>
             查看 API 调用量、Token 消耗及费用趋势，帮助您精准掌握使用成本。
           </p>
         </div>
@@ -346,19 +346,19 @@ export default function UsagePage() {
       {/* 折线图区域 */}
       <div
         style={{
-          background: '#fff',
+          background: 'var(--semi-color-bg-0)',
           borderRadius: '12px',
-          border: '1px solid #f1f5f9',
+          border: '1px solid var(--semi-color-fill-0)',
           padding: '24px',
           boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
         }}
       >
         {/* 指标切换 Tab */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a' }}>
+          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--semi-color-text-0)' }}>
             {METRIC_LABELS[metric]}趋势
           </div>
-          <div style={{ display: 'flex', gap: '4px', background: '#f8fafc', padding: '3px', borderRadius: '10px' }}>
+          <div style={{ display: 'flex', gap: '4px', background: 'var(--semi-color-bg-1)', padding: '3px', borderRadius: '10px' }}>
             {(['spend', 'requests', 'tokens'] as Metric[]).map((m) => (
               <MetricTab key={m} label={METRIC_LABELS[m]} active={metric === m} onClick={() => setMetric(m)} />
             ))}

@@ -24,9 +24,9 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   navItems
 }) => {
   return (
-    <Sider style={{ 
-      backgroundColor: '#ffffff', 
-      borderRight: '1px solid rgba(241, 245, 249, 0.8)',
+    <Sider style={{
+      backgroundColor: 'var(--semi-color-bg-0)',
+      borderRight: '1px solid var(--semi-color-fill-0)',
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
     }}>
       <Nav

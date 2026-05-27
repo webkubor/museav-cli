@@ -45,9 +45,9 @@ function TopUpModal({ visible, onClose, tenantId }: {
   const btnBase: React.CSSProperties = {
     flex: 1,
     borderRadius: '8px',
-    border: '1px solid #e2e8f0',
-    background: '#fafafa',
-    color: '#64748b',
+    border: '1px solid var(--semi-color-border)',
+    background: 'var(--semi-color-fill-0)',
+    color: 'var(--semi-color-text-1)',
     fontSize: '13px',
     padding: '8px 0',
     cursor: 'pointer',
@@ -72,7 +72,7 @@ function TopUpModal({ visible, onClose, tenantId }: {
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '8px' }}>
         <div>
-          <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '10px' }}>充值金额</div>
+          <div style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', marginBottom: '10px' }}>充值金额</div>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
             {PRESETS.map((p) => (
               <button key={p} type="button" onClick={() => setAmount(p)}
@@ -82,7 +82,7 @@ function TopUpModal({ visible, onClose, tenantId }: {
             ))}
           </div>
           <div style={{ position: 'relative' }}>
-            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '14px' }}>¥</span>
+            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--semi-color-text-2)', fontSize: '14px' }}>¥</span>
             <input
               type="number"
               min="1"
@@ -94,7 +94,7 @@ function TopUpModal({ visible, onClose, tenantId }: {
                 paddingLeft: '28px',
                 paddingRight: '12px',
                 borderRadius: '8px',
-                border: '1px solid #e2e8f0',
+                border: '1px solid var(--semi-color-border)',
                 fontSize: '14px',
                 outline: 'none',
                 boxSizing: 'border-box',
@@ -105,7 +105,7 @@ function TopUpModal({ visible, onClose, tenantId }: {
         </div>
 
         <div>
-          <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '10px' }}>支付方式</div>
+          <div style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', marginBottom: '10px' }}>支付方式</div>
           <div style={{ display: 'flex', gap: '8px' }}>
             {CHANNELS.map((c) => (
               <button key={c.value} type="button" onClick={() => setChannel(c.value)}
@@ -134,9 +134,9 @@ function TopUpModal({ visible, onClose, tenantId }: {
 // ─── Styles ────────────────────────────────────────────────────────────────
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: '#ffffff',
+  backgroundColor: 'var(--semi-color-bg-0)',
   borderRadius: '12px',
-  border: '1px solid #f1f5f9',
+  border: '1px solid var(--semi-color-fill-0)',
   boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
   padding: '28px 32px',
 }
@@ -214,7 +214,7 @@ export default function PayAsYouGoPage() {
       dataIndex: 'happened_at',
       width: 180,
       render: (text: string) => (
-        <span style={{ color: '#64748b', fontSize: '13px' }}>
+        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>
           {new Date(text).toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')}
         </span>
       ),
@@ -243,7 +243,7 @@ export default function PayAsYouGoPage() {
       title: '描述',
       dataIndex: 'description',
       render: (text: string) => (
-        <span style={{ color: '#334155', fontSize: '13px' }}>{text || '—'}</span>
+        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>{text || '—'}</span>
       ),
     },
     {
@@ -251,7 +251,7 @@ export default function PayAsYouGoPage() {
       dataIndex: 'balance_after',
       width: 160,
       render: (money: TransactionItem['balance_after']) => (
-        <span style={{ color: '#475569', fontSize: '13px', fontVariantNumeric: 'tabular-nums' }}>
+        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px', fontVariantNumeric: 'tabular-nums' }}>
           {money.amount} {money.currency}
         </span>
       ),
@@ -268,14 +268,14 @@ export default function PayAsYouGoPage() {
           style={{
             fontSize: '24px',
             fontWeight: 700,
-            color: '#0f172a',
+            color: 'var(--semi-color-text-0)',
             margin: '0 0 6px 0',
             letterSpacing: '-0.02em',
           }}
         >
           按量付费
         </h1>
-        <p style={{ fontSize: '13px', color: '#64748b', margin: 0, fontWeight: 400 }}>
+        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0, fontWeight: 400 }}>
           查看账户余额、兑换优惠码，并查阅充值与消费流水记录。
         </p>
       </div>
@@ -285,7 +285,7 @@ export default function PayAsYouGoPage() {
       {/* Balance Card */}
       <div style={{ ...cardStyle, marginBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-          <div style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>账户余额</div>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)' }}>账户余额</div>
           <Button theme="solid" onClick={() => setTopUpVisible(true)} style={{ borderRadius: '8px', fontWeight: 600 }}>
             充值
           </Button>
@@ -295,14 +295,14 @@ export default function PayAsYouGoPage() {
         ) : (
           <div style={{ display: 'flex', gap: '48px', alignItems: 'flex-end' }}>
             <div>
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>
+              <div style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginBottom: '6px' }}>
                 可用余额
               </div>
               <div
                 style={{
                   fontSize: '36px',
                   fontWeight: 700,
-                  color: '#0f172a',
+                  color: 'var(--semi-color-text-0)',
                   letterSpacing: '-0.03em',
                   lineHeight: 1,
                   fontVariantNumeric: 'tabular-nums',
@@ -313,7 +313,7 @@ export default function PayAsYouGoPage() {
                   style={{
                     fontSize: '16px',
                     fontWeight: 500,
-                    color: '#64748b',
+                    color: 'var(--semi-color-text-1)',
                     marginLeft: '6px',
                   }}
                 >
@@ -325,18 +325,18 @@ export default function PayAsYouGoPage() {
               style={{
                 height: '44px',
                 width: '1px',
-                backgroundColor: '#f1f5f9',
+                backgroundColor: 'var(--semi-color-fill-0)',
               }}
             />
             <div>
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>
+              <div style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginBottom: '6px' }}>
                 冻结金额
               </div>
               <div
                 style={{
                   fontSize: '24px',
                   fontWeight: 600,
-                  color: '#64748b',
+                  color: 'var(--semi-color-text-1)',
                   letterSpacing: '-0.02em',
                   lineHeight: 1,
                   fontVariantNumeric: 'tabular-nums',
@@ -347,7 +347,7 @@ export default function PayAsYouGoPage() {
                   style={{
                     fontSize: '13px',
                     fontWeight: 500,
-                    color: '#94a3b8',
+                    color: 'var(--semi-color-text-2)',
                     marginLeft: '5px',
                   }}
                 >
@@ -361,7 +361,7 @@ export default function PayAsYouGoPage() {
 
       {/* Promo Code Card */}
       <div style={{ ...cardStyle, marginBottom: '28px' }}>
-        <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', marginBottom: '14px' }}>
+        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: '14px' }}>
           兑换优惠码
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -372,7 +372,7 @@ export default function PayAsYouGoPage() {
             style={{
               width: '320px',
               borderRadius: '9999px',
-              border: '1px solid #e2e8f0',
+              border: '1px solid var(--semi-color-border)',
             }}
             onEnterPress={handleRedeem}
           />
@@ -407,14 +407,14 @@ export default function PayAsYouGoPage() {
             marginBottom: '20px',
           }}
         >
-          <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>充值记录</div>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-0)' }}>充值记录</div>
           <Input
             placeholder="搜索"
-            prefix={<IconSearch style={{ color: '#94a3b8' }} />}
+            prefix={<IconSearch style={{ color: 'var(--semi-color-text-2)' }} />}
             style={{
               width: '220px',
               borderRadius: '9999px',
-              border: '1px solid #e2e8f0',
+              border: '1px solid var(--semi-color-border)',
             }}
             disabled
           />
@@ -437,7 +437,7 @@ export default function PayAsYouGoPage() {
               loading={txLoading}
               onClick={handleLoadMore}
               style={{
-                color: '#475569',
+                color: 'var(--semi-color-text-1)',
                 fontSize: '13px',
                 fontWeight: 500,
               }}

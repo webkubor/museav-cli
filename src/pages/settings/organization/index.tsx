@@ -18,9 +18,9 @@ const { Title, Text } = Typography
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: '#ffffff',
+  backgroundColor: 'var(--semi-color-bg-0)',
   borderRadius: '12px',
-  border: '1px solid #f1f5f9',
+  border: '1px solid var(--semi-color-fill-0)',
   padding: '28px',
   boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
   marginBottom: '24px',
@@ -29,14 +29,14 @@ const cardStyle: React.CSSProperties = {
 const cardTitleStyle: React.CSSProperties = {
   fontSize: '15px',
   fontWeight: 600,
-  color: '#0f172a',
+  color: 'var(--semi-color-text-0)',
   marginBottom: '20px',
 }
 
 const labelStyle: React.CSSProperties = {
   fontSize: '12px',
   fontWeight: 600,
-  color: '#64748b',
+  color: 'var(--semi-color-text-1)',
   display: 'block',
   marginBottom: '6px',
   textTransform: 'uppercase',
@@ -84,7 +84,7 @@ function OrgInfoTab({ tenantId }: { tenantId: string | null | undefined }) {
         <div
           style={{
             height: '128px',
-            backgroundColor: '#f1f5f9',
+            backgroundColor: 'var(--semi-color-fill-0)',
             borderRadius: '8px',
             animation: 'pulse 1.5s ease-in-out infinite',
           }}
@@ -102,11 +102,11 @@ function OrgInfoTab({ tenantId }: { tenantId: string | null | undefined }) {
           alignItems: 'center',
           justifyContent: 'center',
           borderRadius: '12px',
-          border: '1px dashed #e2e8f0',
-          backgroundColor: '#f8fafc',
+          border: '1px dashed var(--semi-color-border)',
+          backgroundColor: 'var(--semi-color-bg-1)',
         }}
       >
-        <Text style={{ color: '#94a3b8', fontSize: '14px' }}>暂无组织信息</Text>
+        <Text style={{ color: 'var(--semi-color-text-2)', fontSize: '14px' }}>暂无组织信息</Text>
       </div>
     )
   }
@@ -136,7 +136,7 @@ function OrgInfoTab({ tenantId }: { tenantId: string | null | undefined }) {
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <span style={{ fontSize: '20px', fontWeight: 500, color: '#0f172a' }}>
+            <span style={{ fontSize: '20px', fontWeight: 500, color: 'var(--semi-color-text-0)' }}>
               {tenant.name}
             </span>
             <button
@@ -164,12 +164,12 @@ function OrgInfoTab({ tenantId }: { tenantId: string | null | undefined }) {
           gridTemplateColumns: '1fr 1fr',
           gap: '24px',
           paddingTop: '16px',
-          borderTop: '1px solid #f1f5f9',
+          borderTop: '1px solid var(--semi-color-fill-0)',
         }}
       >
         <div>
           <span style={labelStyle}>Slug</span>
-          <Text style={{ fontFamily: 'monospace', fontSize: '14px', color: '#0f172a' }}>
+          <Text style={{ fontFamily: 'monospace', fontSize: '14px', color: 'var(--semi-color-text-0)' }}>
             {tenant.slug}
           </Text>
         </div>
@@ -239,10 +239,10 @@ function MembersTab({ tenantId }: { tenantId: string | null | undefined }) {
       key: 'account',
       render: (_: unknown, record: (typeof members)[number]) => (
         <div>
-          <div style={{ fontWeight: 500, color: '#0f172a', fontSize: '14px' }}>
+          <div style={{ fontWeight: 500, color: 'var(--semi-color-text-0)', fontSize: '14px' }}>
             {record.account.display_name || '—'}
           </div>
-          <div style={{ color: '#64748b', fontSize: '12px', marginTop: '2px' }}>
+          <div style={{ color: 'var(--semi-color-text-1)', fontSize: '12px', marginTop: '2px' }}>
             {record.account.email}
           </div>
         </div>
@@ -274,7 +274,7 @@ function MembersTab({ tenantId }: { tenantId: string | null | undefined }) {
       dataIndex: 'joined_at',
       key: 'joined_at',
       render: (val: string) => (
-        <span style={{ color: '#64748b', fontSize: '14px' }}>
+        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '14px' }}>
           {new Date(val).toLocaleDateString('zh-CN')}
         </span>
       ),
@@ -292,7 +292,7 @@ function MembersTab({ tenantId }: { tenantId: string | null | undefined }) {
             cursor: 'pointer',
             padding: '6px',
             borderRadius: '6px',
-            color: '#cbd5e1',
+            color: 'var(--semi-color-text-3)',
             transition: 'all 0.15s',
           }}
           onMouseEnter={(e) => {
@@ -301,7 +301,7 @@ function MembersTab({ tenantId }: { tenantId: string | null | undefined }) {
           }}
           onMouseLeave={(e) => {
             ;(e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'
-            ;(e.currentTarget as HTMLButtonElement).style.color = '#cbd5e1'
+            ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--semi-color-text-3)'
           }}
           onClick={() => removeMember.mutate(record.account.account_id)}
           disabled={record.role === 'tenant_owner'}
@@ -326,11 +326,11 @@ function MembersTab({ tenantId }: { tenantId: string | null | undefined }) {
         <span
           style={{
             fontSize: '12px',
-            color: '#64748b',
+            color: 'var(--semi-color-text-1)',
             padding: '2px 10px',
             borderRadius: '6px',
-            border: '1px solid #e2e8f0',
-            backgroundColor: '#f8fafc',
+            border: '1px solid var(--semi-color-border)',
+            backgroundColor: 'var(--semi-color-bg-1)',
           }}
         >
           {membersQuery.isLoading ? '…' : `${members.length} 位成员`}
@@ -343,7 +343,7 @@ function MembersTab({ tenantId }: { tenantId: string | null | undefined }) {
         loading={membersQuery.isLoading}
         pagination={false}
         empty={
-          <div style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
+          <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: '14px' }}>
             暂无成员
           </div>
         }
@@ -432,7 +432,7 @@ function InviteTab({ tenantId }: { tenantId: string | null | undefined }) {
         >
           <div>
             <div style={cardTitleStyle}>快速邀请链接</div>
-            <Text style={{ color: '#64748b', fontSize: '13px' }}>
+            <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>
               将此链接发送给同事，他们点击后可直接申请加入当前组织
             </Text>
           </div>
@@ -453,7 +453,7 @@ function InviteTab({ tenantId }: { tenantId: string | null | undefined }) {
               style={{
                 flex: 1,
                 height: '40px',
-                backgroundColor: '#f1f5f9',
+                backgroundColor: 'var(--semi-color-fill-0)',
                 borderRadius: '8px',
                 animation: 'pulse 1.5s ease-in-out infinite',
               }}
@@ -464,18 +464,18 @@ function InviteTab({ tenantId }: { tenantId: string | null | undefined }) {
                 flex: 1,
                 padding: '10px 14px',
                 borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                backgroundColor: '#f8fafc',
+                border: '1px solid var(--semi-color-border)',
+                backgroundColor: 'var(--semi-color-bg-1)',
                 fontFamily: 'monospace',
                 fontSize: '13px',
-                color: '#0f172a',
+                color: 'var(--semi-color-text-0)',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
               }}
             >
               {inviteLinkUrl ?? (
-                <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>
+                <span style={{ color: 'var(--semi-color-text-2)', fontStyle: 'italic' }}>
                   {window.location.origin}/invitations/&#123;token&#125;
                 </span>
               )}
@@ -496,11 +496,11 @@ function InviteTab({ tenantId }: { tenantId: string | null | undefined }) {
         </div>
 
         <div style={{ marginTop: '10px' }}>
-          <Text style={{ fontSize: '12px', color: '#94a3b8' }}>
+          <Text style={{ fontSize: '12px', color: 'var(--semi-color-text-2)' }}>
             落地页路径：
             <code
               style={{
-                backgroundColor: '#f1f5f9',
+                backgroundColor: 'var(--semi-color-fill-0)',
                 borderRadius: '4px',
                 padding: '1px 6px',
                 fontFamily: 'monospace',
@@ -535,7 +535,7 @@ function InviteTab({ tenantId }: { tenantId: string | null | undefined }) {
       <div style={cardStyle}>
         <div style={{ marginBottom: '20px' }}>
           <div style={cardTitleStyle}>邮箱邀请</div>
-          <Text style={{ color: '#64748b', fontSize: '13px' }}>直接向特定邮箱发送邀请邮件</Text>
+          <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>直接向特定邮箱发送邀请邮件</Text>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '16px' }}>
           <div style={{ flex: 1, minWidth: '280px' }}>
@@ -582,11 +582,11 @@ export default function OrganizationSettingsPage() {
       <div style={{ marginBottom: '32px' }}>
         <Title
           heading={2}
-          style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a', margin: 0 }}
+          style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0 }}
         >
           组织管理
         </Title>
-        <Text style={{ color: '#64748b', fontSize: '14px', marginTop: '6px', display: 'block' }}>
+        <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '14px', marginTop: '6px', display: 'block' }}>
           管理组织基本信息与成员邀请。
         </Text>
       </div>

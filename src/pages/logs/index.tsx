@@ -19,7 +19,7 @@ const STATUS_CONFIG: Record<
   succeeded: { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0', label: '成功' },
   failed:    { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', label: '失败' },
   rejected:  { bg: '#fff7ed', color: '#ea580c', border: '#fed7aa', label: '拒绝' },
-  accepted:  { bg: '#f8fafc', color: '#64748b', border: '#e2e8f0', label: '接受' },
+  accepted:  { bg: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-1)', border: 'var(--semi-color-border)', label: '接受' },
 }
 
 function StatusTag({ status }: { status: CallLogItem['status'] }) {
@@ -53,22 +53,22 @@ function StatCard({
   return (
     <div
       style={{
-        background: '#ffffff',
+        background: 'var(--semi-color-bg-0)',
         borderRadius: '12px',
-        border: '1px solid #f1f5f9',
+        border: '1px solid var(--semi-color-fill-0)',
         padding: '20px 24px',
         flex: 1,
         minWidth: 0,
       }}
     >
-      <div style={{ fontSize: '12.5px', color: '#64748b', fontWeight: 500, marginBottom: '10px' }}>
+      <div style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 500, marginBottom: '10px' }}>
         {label}
       </div>
-      <div style={{ fontSize: '26px', fontWeight: 700, color: '#0f172a', lineHeight: 1.1 }}>
+      <div style={{ fontSize: '26px', fontWeight: 700, color: 'var(--semi-color-text-0)', lineHeight: 1.1 }}>
         {value}
       </div>
       {sub && (
-        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>{sub}</div>
+        <div style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginTop: '4px' }}>{sub}</div>
       )}
     </div>
   )
@@ -152,7 +152,7 @@ export default function LogsPage() {
       dataIndex: 'started_at',
       width: 160,
       render: (val: string) => (
-        <span style={{ color: '#475569', fontSize: '12.5px' }}>
+        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '12.5px' }}>
           {new Date(val).toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')}
         </span>
       ),
@@ -161,7 +161,7 @@ export default function LogsPage() {
       title: '模型',
       dataIndex: 'model',
       render: (_: unknown, record: CallLogItem) => (
-        <span style={{ color: '#0f172a', fontWeight: 500, fontSize: '13px' }}>
+        <span style={{ color: 'var(--semi-color-text-0)', fontWeight: 500, fontSize: '13px' }}>
           {record.model.display_name}
         </span>
       ),
@@ -177,7 +177,7 @@ export default function LogsPage() {
       dataIndex: 'duration_ms',
       width: 90,
       render: (val: number) => (
-        <span style={{ color: '#475569', fontSize: '13px' }}>
+        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>
           {val >= 1000 ? `${(val / 1000).toFixed(2)}s` : `${val}ms`}
         </span>
       ),
@@ -187,7 +187,7 @@ export default function LogsPage() {
       dataIndex: 'usage',
       width: 100,
       render: (_: unknown, record: CallLogItem) => (
-        <span style={{ color: '#475569', fontSize: '13px' }}>
+        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>
           {record.usage.total_tokens.toLocaleString()}
         </span>
       ),
@@ -197,7 +197,7 @@ export default function LogsPage() {
       dataIndex: 'cost',
       width: 100,
       render: (_: unknown, record: CallLogItem) => (
-        <span style={{ color: '#0f172a', fontSize: '13px', fontWeight: 500 }}>
+        <span style={{ color: 'var(--semi-color-text-0)', fontSize: '13px', fontWeight: 500 }}>
           {record.cost.currency} {parseFloat(record.cost.amount).toFixed(6)}
         </span>
       ),
@@ -208,13 +208,13 @@ export default function LogsPage() {
       render: (_: unknown, record: CallLogItem) => (
         <span
           style={{
-            color: '#475569',
+            color: 'var(--semi-color-text-1)',
             fontFamily: 'monospace',
             fontSize: '12px',
-            backgroundColor: '#f8fafc',
+            backgroundColor: 'var(--semi-color-bg-1)',
             padding: '2px 8px',
             borderRadius: '4px',
-            border: '1px solid #f1f5f9',
+            border: '1px solid var(--semi-color-fill-0)',
           }}
         >
           {record.api_key.masked || record.api_key.name}
@@ -230,25 +230,25 @@ export default function LogsPage() {
       <div
         style={{
           padding: '16px 24px',
-          background: '#f8fafc',
+          background: 'var(--semi-color-bg-1)',
           borderRadius: '8px',
           margin: '4px 0',
         }}
       >
         <div style={{ display: 'flex', gap: '40px', flexWrap: 'wrap' }}>
           <div>
-            <div style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 600, marginBottom: '4px' }}>
+            <div style={{ fontSize: '11.5px', color: 'var(--semi-color-text-2)', fontWeight: 600, marginBottom: '4px' }}>
               REQUEST ID
             </div>
             <span
               style={{
                 fontFamily: 'monospace',
                 fontSize: '12.5px',
-                color: '#334155',
-                backgroundColor: '#ffffff',
+                color: 'var(--semi-color-text-1)',
+                backgroundColor: 'var(--semi-color-bg-0)',
                 padding: '3px 10px',
                 borderRadius: '6px',
-                border: '1px solid #e2e8f0',
+                border: '1px solid var(--semi-color-border)',
               }}
             >
               {record.request_id}
@@ -257,7 +257,7 @@ export default function LogsPage() {
 
           {record.error && (
             <div>
-              <div style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 600, marginBottom: '4px' }}>
+              <div style={{ fontSize: '11.5px', color: 'var(--semi-color-text-2)', fontWeight: 600, marginBottom: '4px' }}>
                 ERROR
               </div>
               <span
@@ -277,19 +277,19 @@ export default function LogsPage() {
           )}
 
           <div>
-            <div style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 600, marginBottom: '4px' }}>
+            <div style={{ fontSize: '11.5px', color: 'var(--semi-color-text-2)', fontWeight: 600, marginBottom: '4px' }}>
               TOKENS IN / OUT
             </div>
-            <span style={{ fontSize: '12.5px', color: '#334155' }}>
+            <span style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)' }}>
               {record.usage.input_tokens.toLocaleString()} / {record.usage.output_tokens.toLocaleString()}
             </span>
           </div>
 
           <div>
-            <div style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 600, marginBottom: '4px' }}>
+            <div style={{ fontSize: '11.5px', color: 'var(--semi-color-text-2)', fontWeight: 600, marginBottom: '4px' }}>
               API KEY
             </div>
-            <span style={{ fontSize: '12.5px', color: '#334155' }}>
+            <span style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)' }}>
               {record.api_key.name}
             </span>
           </div>
@@ -315,14 +315,14 @@ export default function LogsPage() {
           style={{
             fontSize: '24px',
             fontWeight: 700,
-            color: '#0f172a',
+            color: 'var(--semi-color-text-0)',
             margin: '0 0 6px 0',
             letterSpacing: '-0.02em',
           }}
         >
           调用日志
         </h1>
-        <p style={{ fontSize: '13px', color: '#64748b', margin: 0, fontWeight: 400 }}>
+        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0, fontWeight: 400 }}>
           查看工作空间内所有模型调用记录，追踪请求状态、Token 用量与费用消耗。
         </p>
       </div>
@@ -336,9 +336,9 @@ export default function LogsPage() {
             style={{
               padding: '6px 18px',
               borderRadius: '9999px',
-              border: `1px solid ${preset === p ? '#1e293b' : '#e2e8f0'}`,
-              backgroundColor: preset === p ? '#0f172a' : '#ffffff',
-              color: preset === p ? '#ffffff' : '#475569',
+              border: `1px solid ${preset === p ? 'var(--semi-color-text-0)' : 'var(--semi-color-border)'}`,
+              backgroundColor: preset === p ? 'var(--semi-color-text-0)' : 'var(--semi-color-bg-0)',
+              color: preset === p ? 'var(--semi-color-bg-0)' : 'var(--semi-color-text-1)',
               fontSize: '13px',
               fontWeight: preset === p ? 600 : 400,
               cursor: 'pointer',
@@ -397,13 +397,13 @@ export default function LogsPage() {
       >
         <Input
           placeholder="按 Request ID 搜索"
-          prefix={<IconSearch style={{ color: '#94a3b8' }} />}
+          prefix={<IconSearch style={{ color: 'var(--semi-color-text-2)' }} />}
           value={requestIdSearch}
           onChange={handleSearchChange}
           style={{
             width: '290px',
             borderRadius: '9999px',
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--semi-color-border)',
             boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
           }}
         />
@@ -432,7 +432,7 @@ export default function LogsPage() {
         style={{ marginTop: '4px' }}
         empty={
           <div style={{ padding: '48px 0', textAlign: 'center' }}>
-            <Text style={{ color: '#94a3b8', fontSize: '13px' }}>暂无调用日志</Text>
+            <Text style={{ color: 'var(--semi-color-text-2)', fontSize: '13px' }}>暂无调用日志</Text>
           </div>
         }
       />
@@ -446,11 +446,11 @@ export default function LogsPage() {
             style={{
               borderRadius: '9999px',
               padding: '8px 32px',
-              border: '1px solid #e2e8f0',
-              color: '#475569',
+              border: '1px solid var(--semi-color-border)',
+              color: 'var(--semi-color-text-1)',
               fontSize: '13px',
               fontWeight: 500,
-              backgroundColor: '#ffffff',
+              backgroundColor: 'var(--semi-color-bg-0)',
               cursor: 'pointer',
             }}
           >

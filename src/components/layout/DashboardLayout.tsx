@@ -56,7 +56,7 @@ export function DashboardLayout() {
       icon: <IconSetting style={{ fontSize: '16px' }} />,
       items: [
         { itemKey: 'settings/account', text: '账号', icon: <IconUser style={{ fontSize: '14px' }} /> },
-        { itemKey: 'settings/workspace', text: '业务空间', icon: <IconGlobe style={{ fontSize: '14px' }} /> },
+        { itemKey: 'settings/workspace', text: '工作区管理', icon: <IconGlobe style={{ fontSize: '14px' }} /> },
         { itemKey: 'settings/organization', text: '组织管理', icon: <IconUserGroup style={{ fontSize: '14px' }} /> },
         { itemKey: 'invitations-mgmt', text: '邀请管理', icon: <IconMail style={{ fontSize: '14px' }} /> },
       ]
@@ -75,7 +75,7 @@ export function DashboardLayout() {
     const breadcrumbs = ['首页']
     if (path.includes('settings')) {
       breadcrumbs.push('设置')
-      if (path.includes('workspace')) breadcrumbs.push('业务空间')
+      if (path.includes('workspace')) breadcrumbs.push('工作区管理')
       else if (path.includes('account')) breadcrumbs.push('账号')
       else if (path.includes('organization')) breadcrumbs.push('组织管理')
     } else if (path === 'api-keys') {
@@ -101,7 +101,7 @@ export function DashboardLayout() {
   }
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <Layout style={{ minHeight: '100vh', background: 'var(--semi-color-bg-1)' }}>
       <DashboardHeader />
 
       <Layout>
@@ -116,7 +116,7 @@ export function DashboardLayout() {
 
         {/* 主内容区 Content */}
         <Layout style={{ padding: '28px 36px', transition: 'all 0.3s ease' }}>
-          <Breadcrumb style={{ marginBottom: '18px', fontSize: '12px', color: '#64748b' }}>
+          <Breadcrumb style={{ marginBottom: '18px', fontSize: '12px', color: 'var(--semi-color-text-1)' }}>
             {getBreadcrumbs().map((b, idx) => (
               <Breadcrumb.Item key={idx}>{b}</Breadcrumb.Item>
             ))}
@@ -125,9 +125,9 @@ export function DashboardLayout() {
           <CustomerService />
 
           <Content style={{
-            background: '#ffffff',
+            background: 'var(--semi-color-bg-0)',
             borderRadius: '16px',
-            border: '1px solid rgba(241, 245, 249, 0.8)',
+            border: '1px solid var(--semi-color-fill-0)',
             boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.03), 0 2px 8px -1px rgba(15, 23, 42, 0.02)',
             padding: '36px',
             minHeight: '520px',

@@ -39,16 +39,16 @@ const GUIDES: GuideItem[] = [
 export const GuideSection: React.FC = () => {
   return (
     <div style={{
-      background: '#ffffff',
+      background: 'var(--semi-color-bg-0)',
       borderRadius: '14px',
-      border: '1px solid rgba(226, 232, 240, 0.7)',
+      border: '1px solid var(--semi-color-border)',
       boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.02)',
       padding: '24px',
       minHeight: '380px',
       display: 'flex',
       flexDirection: 'column'
     }}>
-      <Title heading={5} style={{ margin: '0 0 16px 0', color: '#0f172a', fontWeight: 700, letterSpacing: '-0.01em' }}>
+      <Title heading={5} style={{ margin: '0 0 16px 0', color: 'var(--semi-color-text-0)', fontWeight: 700, letterSpacing: '-0.01em' }}>
         常用向导
       </Title>
       
@@ -62,8 +62,8 @@ export const GuideSection: React.FC = () => {
               justifyContent: 'space-between',
               padding: '14px 16px',
               borderRadius: '10px',
-              backgroundColor: '#f8fafc',
-              border: '1px solid rgba(226, 232, 240, 0.5)',
+              backgroundColor: 'var(--semi-color-bg-1)',
+              border: '1px solid var(--semi-color-border)',
               cursor: 'pointer',
               transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
@@ -74,8 +74,8 @@ export const GuideSection: React.FC = () => {
               if (arrow) arrow.style.transform = 'translateX(3px)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f8fafc';
-              e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.5)';
+              e.currentTarget.style.backgroundColor = 'var(--semi-color-bg-1)';
+              e.currentTarget.style.borderColor = 'var(--semi-color-border)';
               const arrow = e.currentTarget.querySelector('.arrow-icon') as HTMLElement;
               if (arrow) arrow.style.transform = 'none';
             }}
@@ -95,10 +95,10 @@ export const GuideSection: React.FC = () => {
                 {item.badge}
               </div>
               <div>
-                <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#1e293b', letterSpacing: '-0.01em' }}>
+                <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--semi-color-text-0)', letterSpacing: '-0.01em' }}>
                   {item.title}
                 </div>
-                <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2.5px' }}>
+                <div style={{ fontSize: '11.5px', color: 'var(--semi-color-text-1)', marginTop: '2.5px' }}>
                   {item.desc}
                 </div>
               </div>
@@ -106,7 +106,7 @@ export const GuideSection: React.FC = () => {
             <IconChevronRight 
               className="arrow-icon"
               style={{ 
-                color: '#94a3b8', 
+                color: 'var(--semi-color-text-2)',
                 marginLeft: '8px',
                 transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
               }} 

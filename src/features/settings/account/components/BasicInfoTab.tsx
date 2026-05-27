@@ -50,10 +50,10 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
           </Avatar>
         )}
         <div>
-          <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '16px', letterSpacing: '-0.01em' }}>
+          <div style={{ fontWeight: 700, color: 'var(--semi-color-text-0)', fontSize: '16px', letterSpacing: '-0.01em' }}>
             {profile.display_name || '—'}
           </div>
-          <div style={{ color: '#64748b', fontSize: '13px', marginTop: '3.5px' }}>
+          <div style={{ color: 'var(--semi-color-text-1)', fontSize: '13px', marginTop: '3.5px' }}>
             {profile.email}
           </div>
         </div>
@@ -62,25 +62,25 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
       {/* 表单区域：限宽 480px，保留呼吸感的网格 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '480px' }}>
         <div>
-          <Text style={{ fontSize: '12.5px', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <Text style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             邮箱地址
           </Text>
           <Input 
             value={profile.email} 
             disabled 
             style={{ 
-              backgroundColor: '#f8fafc', 
+              backgroundColor: 'var(--semi-color-bg-1)',
               borderRadius: '8px',
-              border: '1px solid rgba(226, 232, 240, 0.8)'
+              border: '1px solid var(--semi-color-border)'
             }} 
           />
-          <span style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '6px', display: 'block' }}>
+          <span style={{ fontSize: '11.5px', color: 'var(--semi-color-text-2)', marginTop: '6px', display: 'block' }}>
             登录和接收系统通知时使用的主要邮箱，暂不支持自主修改。
           </span>
         </div>
 
         <div>
-          <Text style={{ fontSize: '12.5px', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <Text style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             显示名称
           </Text>
           <div style={{ display: 'flex', gap: '10px' }}>

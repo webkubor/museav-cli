@@ -14,11 +14,11 @@ export default function DashboardPage() {
           margin: '0 0 6px 0', 
           fontWeight: 700, 
           letterSpacing: '-0.02em',
-          color: '#0f172a' 
+          color: 'var(--semi-color-text-0)'
         }}>
           你好，开发者 👋
         </Title>
-        <Text style={{ color: '#64748b', fontSize: '13.5px', fontWeight: 400 }}>
+        <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '13.5px', fontWeight: 400 }}>
           欢迎访问 ModelGo 开发者控制台。在这里轻松管理您的密钥、监控请求量以及查看消费账单。
         </Text>
       </div>

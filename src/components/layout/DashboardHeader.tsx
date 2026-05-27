@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { Layout, Button, Dropdown, Avatar, Toast } from '@douyinfe/semi-ui'
+import { Layout, Button, Dropdown, Avatar, Toast, Modal, Input } from '@douyinfe/semi-ui'
 import {
   IconChevronDown,
   IconHelpCircle,
   IconLanguage,
   IconSun,
-  IconMoon
+  IconMoon,
+  IconPlus,
+  IconSetting,
+  IconGlobe
 } from '@douyinfe/semi-icons'
 import { useNavigate } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { modelGoLogos } from '@/config/brand-assets'
 import { getMarket, type Lang } from '@/lib/market'
 import { getMarketConfig } from '@/config/market'
@@ -16,7 +20,8 @@ import { useLangStore } from '@/store/use-brand-store'
 import { switchTenant, logout } from '@/services/auth'
 import { applyTheme, getUserTheme, saveTheme, type Theme } from '@/lib/theme'
 import { useTranslation } from 'react-i18next'
-import type { TenantBrief } from '@/types'
+import { listWorkspaces, createWorkspace } from '@/services/workspaces'
+import type { TenantBrief, WorkspaceItem } from '@/types'
 
 const { Header } = Layout
 const market = getMarket()
@@ -24,12 +29,53 @@ const { companyName } = getMarketConfig(market)
 
 export const DashboardHeader: React.FC = () => {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { t, i18n } = useTranslation()
-  const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, clearAuth } = useAuthStore()
+  const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, addTenant, setActiveWorkspaceId, clearAuth } = useAuthStore()
   
-  // Theme state
+  // Theme and Lang state
   const [currentTheme, setCurrentTheme] = useState<Theme>('light')
   const { lang, setLang } = useLangStore()
+
+  // Modal and Form States
+  const [orgModalVisible, setOrgModalVisible] = useState(false)
+  const [newOrgName, setNewOrgName] = useState('')
+
+  const [workspaceModalVisible, setWorkspaceModalVisible] = useState(false)
+  const [wsName, setWsName] = useState('')
+  const [wsSlug, setWsSlug] = useState('')
+  const [wsDesc, setWsDesc] = useState('')
+
+  // ─── 1. TanStack Query 异步获取当前 Tenant 下的工作空间数据 ─────────────────
+  const { data: workspaces = [] } = useQuery<WorkspaceItem[]>({
+    queryKey: ['workspaces', activeTenantId],
+    queryFn: () => listWorkspaces().then(res => res.items || []),
+    enabled: !!activeTenantId
+  })
+
+  // ─── 2. Mutation 创建新工作空间 ─────────────────────
+  const createWorkspaceMutation = useMutation({
+    mutationFn: (vals: { name: string; slug: string; description?: string }) => {
+      return createWorkspace({
+        name: vals.name,
+        slug: vals.slug,
+        description: vals.description,
+        kind: 'team'
+      })
+    },
+    onSuccess: (newWorkspace) => {
+      Toast.success(lang === 'zh' ? `工作区 "${newWorkspace.name}" 创建成功` : `Workspace "${newWorkspace.name}" created`)
+      setActiveWorkspaceId(newWorkspace.workspace_id)
+      setWorkspaceModalVisible(false)
+      setWsName('')
+      setWsSlug('')
+      setWsDesc('')
+      queryClient.invalidateQueries({ queryKey: ['workspaces'] })
+    },
+    onError: (err: any) => {
+      Toast.error(err?.message || (lang === 'zh' ? '创建工作区失败' : 'Failed to create workspace'))
+    }
+  })
 
   useEffect(() => {
     const activeTheme = account ? getUserTheme(account.account_id) : 'light'
@@ -38,16 +84,41 @@ export const DashboardHeader: React.FC = () => {
   }, [account])
 
   const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
+  const activeWorkspace = workspaces.find((w) => w.workspace_id === activeWorkspaceId) || workspaces.find((w) => w.is_default) || workspaces[0]
   const avatarLetter = (account?.display_name || account?.email || 'U').charAt(0).toUpperCase()
 
   async function handleSwitchTenant(tenant: TenantBrief) {
     if (tenant.tenant_id === activeTenantId) return
     try {
       await switchTenant({ tenant_id: tenant.tenant_id })
-      setAuth(account!, tenant.tenant_id, tenants, activeWorkspaceId ?? undefined)
+      setAuth(account!, tenant.tenant_id, tenants, undefined)
+      // 切换租户后将 activeWorkspace 设为空，以便自动拉取该租户下的工作区
+      setActiveWorkspaceId('')
+      Toast.success(lang === 'zh' ? `已切换至组织: ${tenant.name}` : `Switched to organization: ${tenant.name}`)
     } catch {
       Toast.error(t('switchTenantFailed') || '切换组织失败')
     }
+  }
+
+  async function handleManageTenant(tenant: TenantBrief) {
+    if (tenant.tenant_id !== activeTenantId) {
+      try {
+        await switchTenant({ tenant_id: tenant.tenant_id })
+        setAuth(account!, tenant.tenant_id, tenants, undefined)
+        setActiveWorkspaceId('')
+      } catch {
+        Toast.error(t('switchTenantFailed') || '切换组织失败')
+        return
+      }
+    }
+    navigate('/settings/organization')
+  }
+
+  function handleSwitchWorkspace(workspaceId: string) {
+    if (workspaceId === activeWorkspaceId) return
+    setActiveWorkspaceId(workspaceId)
+    const targetWs = workspaces.find((w) => w.workspace_id === workspaceId)
+    Toast.success(lang === 'zh' ? `已切换至工作区: ${targetWs?.name || workspaceId}` : `Switched to workspace: ${targetWs?.name || workspaceId}`)
   }
 
   async function handleLogout() {
@@ -72,11 +143,55 @@ export const DashboardHeader: React.FC = () => {
     Toast.success(newLang === 'zh' ? '已切换至 简体中文' : 'Switched to English')
   }
 
+  const handleOpenOrgModal = () => {
+    if (tenants.length >= 5) {
+      Toast.warning(lang === 'zh' ? '您最多只能关联 5 个组织' : 'You can associate up to 5 organizations')
+      return
+    }
+    setOrgModalVisible(true)
+  }
+
+  const handleCreateOrgSubmit = () => {
+    if (!newOrgName.trim()) {
+      Toast.error(lang === 'zh' ? '组织名称不能为空' : 'Organization name cannot be empty')
+      return
+    }
+    const newTenant: TenantBrief = {
+      tenant_id: `tenant-${Date.now()}`,
+      name: newOrgName.trim(),
+      slug: `slug-${Date.now()}`,
+      type: 'enterprise',
+      is_default: false
+    }
+    addTenant(newTenant)
+    Toast.success(lang === 'zh' ? `组织 "${newOrgName}" 创建成功` : `Organization "${newOrgName}" created`)
+    setOrgModalVisible(false)
+    setNewOrgName('')
+    // 乐观地直接切换至新创建的组织
+    handleSwitchTenant(newTenant)
+  }
+
+  const handleCreateWorkspaceSubmit = () => {
+    if (!wsName.trim()) {
+      Toast.error(lang === 'zh' ? '工作区名称不能为空' : 'Workspace name cannot be empty')
+      return
+    }
+    if (!wsSlug.trim()) {
+      Toast.error(lang === 'zh' ? '唯一标识不能为空' : 'Unique identifier (slug) cannot be empty')
+      return
+    }
+    if (!/^[a-z0-9-]+$/.test(wsSlug)) {
+      Toast.error(lang === 'zh' ? '唯一标识仅支持小写字母、数字和连字符' : 'Slug only supports lowercase letters, numbers, and hyphens')
+      return
+    }
+    createWorkspaceMutation.mutate({ name: wsName, slug: wsSlug, description: wsDesc })
+  }
+
   return (
     <Header style={{
       height: '60px',
-      background: 'rgba(255, 255, 255, 0.75)',
-      borderBottom: '1px solid rgba(226, 232, 240, 0.7)',
+      background: 'var(--semi-color-bg-0)',
+      borderBottom: '1px solid var(--semi-color-border)',
       boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.02)',
       display: 'flex',
       alignItems: 'center',
@@ -88,7 +203,7 @@ export const DashboardHeader: React.FC = () => {
       backdropFilter: 'blur(12px) saturate(190%)',
       WebkitBackdropFilter: 'blur(12px) saturate(190%)',
     }}>
-      {/* 左侧：Logo + 租户切换 */}
+      {/* 左侧：Logo + 工作区 Switcher */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
         <div
           style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
@@ -99,13 +214,13 @@ export const DashboardHeader: React.FC = () => {
             alt="ModelGo"
             style={{ width: '30px', height: '30px', objectFit: 'contain' }}
           />
-          <span style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.02em' }}>
+          <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--semi-color-text-0)', letterSpacing: '-0.02em' }}>
             {companyName}
           </span>
           <span style={{
             fontSize: '13px',
-            color: '#94a3b8',
-            borderLeft: '1px solid rgba(226, 232, 240, 0.8)',
+            color: 'var(--semi-color-text-2)',
+            borderLeft: '1px solid var(--semi-color-border)',
             paddingLeft: '10px',
             marginLeft: '2px',
             fontWeight: 500,
@@ -114,25 +229,56 @@ export const DashboardHeader: React.FC = () => {
           </span>
         </div>
 
-        {/* 租户组织切换 */}
+        {/* 工作区（业务空间）切换 Switcher Dropdown */}
         <Dropdown
           trigger="click"
           render={
-            <Dropdown.Menu style={{ width: '200px', borderRadius: '10px', padding: '6px' }}>
-              {tenants.map((tenant) => (
+            <Dropdown.Menu style={{ width: '220px', borderRadius: '10px', padding: '6px' }}>
+              <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
+                {lang === 'zh' ? '切换工作区' : 'Switch Workspace'}
+              </div>
+              {workspaces.map((ws) => (
                 <Dropdown.Item
-                  key={tenant.tenant_id}
-                  onClick={() => handleSwitchTenant(tenant)}
+                  key={ws.workspace_id}
+                  onClick={() => handleSwitchWorkspace(ws.workspace_id)}
                   style={{
                     borderRadius: '6px',
                     fontSize: '13px',
-                    fontWeight: tenant.tenant_id === activeTenantId ? 600 : 400,
-                    color: tenant.tenant_id === activeTenantId ? 'var(--semi-color-primary)' : '#334155',
+                    fontWeight: ws.workspace_id === activeWorkspaceId ? 600 : 400,
+                    color: ws.workspace_id === activeWorkspaceId ? 'var(--semi-color-primary)' : 'var(--semi-color-text-1)',
                   }}
                 >
-                  {tenant.name}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <span>{ws.name}</span>
+                    {ws.is_default && (
+                      <span style={{
+                        fontSize: '10px',
+                        color: 'var(--semi-color-text-2)',
+                        background: 'var(--semi-color-fill-0)',
+                        padding: '1px 4px',
+                        borderRadius: '3px'
+                      }}>
+                        {lang === 'zh' ? '默认' : 'Default'}
+                      </span>
+                    )}
+                  </div>
                 </Dropdown.Item>
               ))}
+              <Dropdown.Divider />
+              <Dropdown.Item
+                icon={<IconPlus style={{ fontSize: '14px' }} />}
+                onClick={() => setWorkspaceModalVisible(true)}
+                style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
+              >
+                {lang === 'zh' ? '创建工作区' : 'Create Workspace'}
+              </Dropdown.Item>
+              <Dropdown.Item
+                icon={<IconSetting style={{ fontSize: '14px' }} />}
+                onClick={() => navigate('/settings/workspace')}
+                style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
+              >
+                {lang === 'zh' ? '工作区管理' : 'Workspace Mgmt'}
+              </Dropdown.Item>
             </Dropdown.Menu>
           }
         >
@@ -140,34 +286,34 @@ export const DashboardHeader: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            backgroundColor: '#f8fafc',
+            backgroundColor: 'var(--semi-color-fill-0)',
             padding: '6px 14px',
             borderRadius: '20px',
             cursor: 'pointer',
             fontSize: '12px',
-            color: '#334155',
-            border: '1px solid rgba(226, 232, 240, 0.8)',
+            color: 'var(--semi-color-text-1)',
+            border: '1px solid var(--semi-color-border)',
             transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.backgroundColor = '#ffffff'
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--semi-color-bg-0)'
             ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(59, 130, 246, 0.5)'
             ;(e.currentTarget as HTMLElement).style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.08)'
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.backgroundColor = '#f8fafc'
-            ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(226, 232, 240, 0.8)'
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--semi-color-fill-0)'
+            ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--semi-color-border)'
             ;(e.currentTarget as HTMLElement).style.boxShadow = 'none'
           }}
           >
-            <span style={{ color: '#64748b', fontWeight: 400 }}>{t('currentOrg')}</span>
-            <span style={{ fontWeight: 600, color: '#0f172a' }}>{activeTenant?.name ?? '—'}</span>
-            <IconChevronDown style={{ fontSize: '10px', color: '#64748b' }} />
+            <span style={{ color: 'var(--semi-color-text-1)', fontWeight: 400 }}>{lang === 'zh' ? '工作区' : 'Workspace'}</span>
+            <span style={{ fontWeight: 600, color: 'var(--semi-color-text-0)' }}>{activeWorkspace?.name ?? (lang === 'zh' ? '默认工作区' : 'Default Workspace')}</span>
+            <IconChevronDown style={{ fontSize: '10px', color: 'var(--semi-color-text-1)' }} />
           </div>
         </Dropdown>
       </div>
 
-      {/* 右侧：功能控制区 + 用户头像 */}
+      {/* 右侧：功能控制区 + 组织 Switcher + 用户头像 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         {/* 1. 中英文语言切换 Dropdown */}
         <Dropdown
@@ -193,7 +339,7 @@ export const DashboardHeader: React.FC = () => {
           <Button
             theme="borderless"
             icon={<IconLanguage />}
-            style={{ color: '#475569' }}
+            style={{ color: 'var(--semi-color-text-1)' }}
             title={t('language') || '语言'}
           />
         </Dropdown>
@@ -228,7 +374,7 @@ export const DashboardHeader: React.FC = () => {
           <Button
             theme="borderless"
             icon={currentTheme === 'dark' ? <IconMoon /> : <IconSun />}
-            style={{ color: '#475569' }}
+            style={{ color: 'var(--semi-color-text-1)' }}
             title={t('theme') || '主题'}
           />
         </Dropdown>
@@ -237,22 +383,114 @@ export const DashboardHeader: React.FC = () => {
         <Button
           theme="borderless"
           icon={<IconHelpCircle />}
-          style={{ color: '#475569' }}
+          style={{ color: 'var(--semi-color-text-1)' }}
           onClick={() => window.open('https://docs.modelgo.com', '_blank')}
           title={t('help') || '帮助'}
         />
 
-        {/* 4. 用户头像 */}
+        {/* 4. 组织管理与切换 Switcher Dropdown (从左侧移至此) */}
+        <Dropdown
+          trigger="click"
+          position="bottomRight"
+          render={
+            <Dropdown.Menu style={{ width: '220px', borderRadius: '10px', padding: '6px' }}>
+              <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
+                {lang === 'zh' ? '切换组织' : 'Switch Organization'}
+              </div>
+              {tenants.map((tenant) => (
+                <Dropdown.Item
+                  key={tenant.tenant_id}
+                  onClick={() => handleSwitchTenant(tenant)}
+                  style={{
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: tenant.tenant_id === activeTenantId ? 600 : 400,
+                    color: tenant.tenant_id === activeTenantId ? 'var(--semi-color-primary)' : 'var(--semi-color-text-1)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <span>{tenant.name}</span>
+                    <Button
+                      size="small"
+                      theme="borderless"
+                      type="tertiary"
+                      icon={<IconSetting style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }} />}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleManageTenant(tenant)
+                      }}
+                      style={{ padding: '2px 4px', height: '20px' }}
+                      title={lang === 'zh' ? '管理此组织' : 'Manage this organization'}
+                    />
+                  </div>
+                </Dropdown.Item>
+              ))}
+              <Dropdown.Divider />
+              <Dropdown.Item
+                icon={<IconPlus style={{ fontSize: '14px' }} />}
+                onClick={handleOpenOrgModal}
+                style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
+              >
+                {lang === 'zh' ? '创建组织' : 'Create Organization'}
+              </Dropdown.Item>
+              <Dropdown.Item
+                icon={<IconSetting style={{ fontSize: '14px' }} />}
+                onClick={() => navigate('/settings/organization')}
+                style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
+              >
+                {lang === 'zh' ? '组织管理' : 'Organization Mgmt'}
+              </Dropdown.Item>
+              <Dropdown.Item
+                icon={<IconGlobe style={{ fontSize: '14px' }} />}
+                onClick={() => navigate('/settings/workspace')}
+                style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
+              >
+                {lang === 'zh' ? '工作区管理' : 'Workspace Mgmt'}
+              </Dropdown.Item>
+            </Dropdown.Menu>
+          }
+        >
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            backgroundColor: 'var(--semi-color-fill-0)',
+            padding: '6px 14px',
+            borderRadius: '20px',
+            cursor: 'pointer',
+            fontSize: '12px',
+            color: 'var(--semi-color-text-1)',
+            border: '1px solid var(--semi-color-border)',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--semi-color-bg-0)'
+            ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(59, 130, 246, 0.5)'
+            ;(e.currentTarget as HTMLElement).style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.08)'
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--semi-color-fill-0)'
+            ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--semi-color-border)'
+            ;(e.currentTarget as HTMLElement).style.boxShadow = 'none'
+          }}
+          >
+            <span style={{ color: 'var(--semi-color-text-1)', fontWeight: 400 }}>{lang === 'zh' ? '组织' : 'Organization'}</span>
+            <span style={{ fontWeight: 600, color: 'var(--semi-color-text-0)' }}>{activeTenant?.name ?? '—'}</span>
+            <IconChevronDown style={{ fontSize: '10px', color: 'var(--semi-color-text-1)' }} />
+          </div>
+        </Dropdown>
+
+        {/* 5. 用户头像 */}
         <Dropdown
           trigger="click"
           position="bottomRight"
           render={
             <Dropdown.Menu style={{ width: '170px', borderRadius: '10px', padding: '6px' }}>
-              <div style={{ padding: '8px 12px 6px', borderBottom: '1px solid #f1f5f9', marginBottom: '4px' }}>
-                <div style={{ fontWeight: 600, fontSize: '13px', color: '#0f172a' }}>
+              <div style={{ padding: '8px 12px 6px', borderBottom: '1px solid var(--semi-color-fill-0)', marginBottom: '4px' }}>
+                <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--semi-color-text-0)' }}>
                   {account?.display_name || '—'}
                 </div>
-                <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+                <div style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginTop: '2px' }}>
                   {account?.email}
                 </div>
               </div>
@@ -274,17 +512,103 @@ export const DashboardHeader: React.FC = () => {
         >
           <Avatar
             src={account?.avatar_url ?? undefined}
-            size="small"
+            size="default"
             style={{
               cursor: 'pointer',
-              backgroundColor: 'var(--semi-color-primary)',
-              boxShadow: '0 0 0 2px rgba(24, 144, 255, 0.15)',
+              backgroundColor: 'transparent',
+              boxShadow: '0 0 0 2px var(--semi-color-primary-light-hover)',
+            }}
+            imgAttr={{
+              style: {
+                objectFit: 'cover',
+                width: '100%',
+                height: '100%'
+              }
             }}
           >
             {avatarLetter}
           </Avatar>
         </Dropdown>
       </div>
+
+      {/* ─── Modal 1. 创建新组织 ───────────────── */}
+      <Modal
+        title={lang === 'zh' ? '创建组织' : 'Create Organization'}
+        visible={orgModalVisible}
+        onOk={handleCreateOrgSubmit}
+        onCancel={() => {
+          setOrgModalVisible(false)
+          setNewOrgName('')
+        }}
+        width={400}
+        style={{ borderRadius: '12px' }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px 0' }}>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)' }}>
+            {lang === 'zh' ? '组织名称' : 'Organization Name'}
+          </div>
+          <Input
+            value={newOrgName}
+            onChange={(val) => setNewOrgName(val)}
+            placeholder={lang === 'zh' ? '请输入组织名称' : 'Enter organization name'}
+            style={{ borderRadius: '8px' }}
+            autoFocus
+          />
+        </div>
+      </Modal>
+
+      {/* ─── Modal 2. 创建新工作区 ───────────────── */}
+      <Modal
+        title={lang === 'zh' ? '创建工作区' : 'Create Workspace'}
+        visible={workspaceModalVisible}
+        onOk={handleCreateWorkspaceSubmit}
+        onCancel={() => {
+          setWorkspaceModalVisible(false)
+          setWsName('')
+          setWsSlug('')
+          setWsDesc('')
+        }}
+        confirmLoading={createWorkspaceMutation.isPending}
+        width={440}
+        style={{ borderRadius: '12px' }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '12px 0' }}>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '6px' }}>
+              {lang === 'zh' ? '工作区名称' : 'Workspace Name'}
+            </div>
+            <Input
+              value={wsName}
+              onChange={(val) => setWsName(val)}
+              placeholder={lang === 'zh' ? '如：生产环境应用区' : 'e.g. Production Env'}
+              style={{ borderRadius: '8px' }}
+              autoFocus
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '6px' }}>
+              {lang === 'zh' ? '唯一标识 (Slug)' : 'Unique Identifier (Slug)'}
+            </div>
+            <Input
+              value={wsSlug}
+              onChange={(val) => setWsSlug(val)}
+              placeholder={lang === 'zh' ? '如：prod-app' : 'e.g. prod-app'}
+              style={{ borderRadius: '8px' }}
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '6px' }}>
+              {lang === 'zh' ? '工作区描述 (选填)' : 'Description (Optional)'}
+            </div>
+            <Input
+              value={wsDesc}
+              onChange={(val) => setWsDesc(val)}
+              placeholder={lang === 'zh' ? '简述该工作区的用途...' : 'Describe the purpose...'}
+              style={{ borderRadius: '8px' }}
+            />
+          </div>
+        </div>
+      </Modal>
     </Header>
   )
 }

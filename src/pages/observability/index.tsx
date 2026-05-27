@@ -29,7 +29,7 @@ function deadLetterStatusStyle(status: 'pending' | 'retrying' | 'ignored'): Reac
   const map: Record<string, React.CSSProperties> = {
     pending: { backgroundColor: '#fffbeb', color: '#d97706', border: '1px solid #fde68a', borderRadius: '100px', padding: '2px 10px', fontSize: '12px', fontWeight: 500 },
     retrying: { backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '100px', padding: '2px 10px', fontSize: '12px', fontWeight: 500 },
-    ignored: { backgroundColor: '#f8fafc', color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: '100px', padding: '2px 10px', fontSize: '12px', fontWeight: 500 },
+    ignored: { backgroundColor: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-2)', border: '1px solid var(--semi-color-border)', borderRadius: '100px', padding: '2px 10px', fontSize: '12px', fontWeight: 500 },
   }
   return map[status] ?? {}
 }
@@ -42,9 +42,9 @@ function deadLetterStatusLabel(status: 'pending' | 'retrying' | 'ignored') {
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: '#ffffff',
+  backgroundColor: 'var(--semi-color-bg-0)',
   borderRadius: '12px',
-  border: '1px solid #f1f5f9',
+  border: '1px solid var(--semi-color-fill-0)',
   padding: '28px',
   boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
   marginBottom: '24px',
@@ -53,7 +53,7 @@ const cardStyle: React.CSSProperties = {
 const sectionTitleStyle: React.CSSProperties = {
   fontSize: '15px',
   fontWeight: 600,
-  color: '#0f172a',
+  color: 'var(--semi-color-text-0)',
   margin: '0 0 6px',
 }
 
@@ -61,7 +61,7 @@ const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: '11px',
   fontWeight: 700,
-  color: '#64748b',
+  color: 'var(--semi-color-text-1)',
   letterSpacing: '0.08em',
   textTransform: 'uppercase',
   marginBottom: '8px',
@@ -92,7 +92,7 @@ function LoggingTab() {
 
   if (!loggingQuery.data || !activeWorkspaceId) {
     return (
-      <div style={{ ...cardStyle, maxWidth: '640px', textAlign: 'center', color: '#94a3b8', fontSize: '14px', padding: '48px' }}>
+      <div style={{ ...cardStyle, maxWidth: '640px', textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: '14px', padding: '48px' }}>
         暂无配置
       </div>
     )
@@ -140,7 +140,7 @@ function LoggingForm({
     <div style={{ ...cardStyle, maxWidth: '640px' }}>
       <div style={{ marginBottom: '24px' }}>
         <h3 style={sectionTitleStyle}>日志记录</h3>
-        <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0 }}>
           配置请求输入/输出的日志采集与广播行为。
         </p>
       </div>
@@ -148,7 +148,7 @@ function LoggingForm({
       <div
         style={{
           borderRadius: '10px',
-          border: '1px solid #f1f5f9',
+          border: '1px solid var(--semi-color-fill-0)',
           overflow: 'hidden',
           marginBottom: '24px',
         }}
@@ -160,14 +160,14 @@ function LoggingForm({
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '18px 20px',
-            borderBottom: '1px solid #f8fafc',
+            borderBottom: '1px solid var(--semi-color-bg-1)',
           }}
         >
           <div>
-            <p style={{ fontSize: '14px', fontWeight: 500, color: '#1e293b', margin: '0 0 3px' }}>
+            <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--semi-color-text-0)', margin: '0 0 3px' }}>
               输入 / 输出日志
             </p>
-            <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>
+            <p style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', margin: 0 }}>
               记录每次请求的完整输入和模型输出内容。
             </p>
           </div>
@@ -184,10 +184,10 @@ function LoggingForm({
           }}
         >
           <div>
-            <p style={{ fontSize: '14px', fontWeight: 500, color: '#1e293b', margin: '0 0 3px' }}>
+            <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--semi-color-text-0)', margin: '0 0 3px' }}>
               广播转发
             </p>
-            <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>
+            <p style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', margin: 0 }}>
               将日志实时推送到已配置的转发目标（如 Datadog、OpenTelemetry）。
             </p>
           </div>
@@ -286,13 +286,13 @@ function DestinationsTab() {
       title: '名称',
       dataIndex: 'name',
       render: (v: string) => (
-        <span style={{ fontSize: '13px', fontWeight: 500, color: '#1e293b' }}>{v}</span>
+        <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--semi-color-text-0)' }}>{v}</span>
       ),
     },
     {
       title: '平台',
       dataIndex: 'platform',
-      render: (v: string) => <span style={{ fontSize: '13px', color: '#64748b' }}>{v}</span>,
+      render: (v: string) => <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>{v}</span>,
     },
     {
       title: '状态',
@@ -302,7 +302,7 @@ function DestinationsTab() {
           style={
             v
               ? { backgroundColor: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', borderRadius: '100px', padding: '2px 10px', fontSize: '12px', fontWeight: 500 }
-              : { backgroundColor: '#f8fafc', color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: '100px', padding: '2px 10px', fontSize: '12px', fontWeight: 500 }
+              : { backgroundColor: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-2)', border: '1px solid var(--semi-color-border)', borderRadius: '100px', padding: '2px 10px', fontSize: '12px', fontWeight: 500 }
           }
         >
           {v ? '启用中' : '已暂停'}
@@ -313,7 +313,7 @@ function DestinationsTab() {
       title: '最近成功',
       dataIndex: 'last_success_at',
       render: (v: string | null) => (
-        <span style={{ fontSize: '13px', color: '#94a3b8' }}>{formatDT(v)}</span>
+        <span style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }}>{formatDT(v)}</span>
       ),
     },
     {
@@ -324,7 +324,7 @@ function DestinationsTab() {
           <Button
             size="small"
             onClick={() => toggleMutation.mutate({ forwardId: row.forward_id, enabled: !row.enabled })}
-            style={{ fontSize: '12px', color: '#64748b' }}
+            style={{ fontSize: '12px', color: 'var(--semi-color-text-1)' }}
           >
             {row.enabled ? '暂停' : '恢复'}
           </Button>
@@ -370,7 +370,7 @@ function DestinationsTab() {
 
       {/* List card */}
       <div style={{ ...cardStyle, padding: '0', overflow: 'hidden' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--semi-color-fill-0)' }}>
           <h3 style={{ ...sectionTitleStyle, margin: 0 }}>已配置的转发目标</h3>
         </div>
         {forwardsQuery.isLoading ? (
@@ -384,7 +384,7 @@ function DestinationsTab() {
             rowKey="forward_id"
             pagination={false}
             empty={
-              <div style={{ padding: '48px', textAlign: 'center', color: '#94a3b8', fontSize: '13px', fontStyle: 'italic' }}>
+              <div style={{ padding: '48px', textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: '13px', fontStyle: 'italic' }}>
                 暂无转发目标，请在上方添加
               </div>
             }
@@ -542,7 +542,7 @@ function FailuresTab() {
       title: '平台',
       dataIndex: 'platform',
       render: (v: string) => (
-        <span style={{ fontSize: '13px', fontWeight: 500, color: '#1e293b' }}>{v}</span>
+        <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--semi-color-text-0)' }}>{v}</span>
       ),
     },
     {
@@ -557,10 +557,10 @@ function FailuresTab() {
       dataIndex: 'error_message',
       render: (v: string, row: { payload_excerpt: string }) => (
         <div>
-          <p style={{ fontSize: '13px', color: '#334155', margin: '0 0 3px', maxWidth: '360px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: '0 0 3px', maxWidth: '360px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {v}
           </p>
-          <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0, maxWidth: '360px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <p style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', margin: 0, maxWidth: '360px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {row.payload_excerpt}
           </p>
         </div>
@@ -569,13 +569,13 @@ function FailuresTab() {
     {
       title: '重试次数',
       dataIndex: 'attempts',
-      render: (v: number) => <span style={{ fontSize: '13px', color: '#64748b' }}>{v}</span>,
+      render: (v: number) => <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>{v}</span>,
     },
     {
       title: '最近尝试',
       dataIndex: 'last_attempted_at',
       render: (v: string, row: { created_at: string }) => (
-        <span style={{ fontSize: '13px', color: '#94a3b8' }}>{formatDT(v || row.created_at)}</span>
+        <span style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }}>{formatDT(v || row.created_at)}</span>
       ),
     },
     {
@@ -596,7 +596,7 @@ function FailuresTab() {
               size="small"
               loading={ignoreMutation.isPending}
               onClick={() => ignoreMutation.mutate(row.dead_letter_id)}
-              style={{ fontSize: '12px', color: '#64748b' }}
+              style={{ fontSize: '12px', color: 'var(--semi-color-text-1)' }}
             >
               忽略
             </Button>
@@ -613,7 +613,7 @@ function FailuresTab() {
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '20px 24px',
-          borderBottom: '1px solid #f1f5f9',
+          borderBottom: '1px solid var(--semi-color-fill-0)',
           gap: '12px',
           flexWrap: 'wrap',
         }}
@@ -640,7 +640,7 @@ function FailuresTab() {
           style={{
             padding: '64px',
             textAlign: 'center',
-            color: '#94a3b8',
+            color: 'var(--semi-color-text-2)',
             fontSize: '13px',
             fontStyle: 'italic',
           }}
@@ -666,10 +666,10 @@ export default function ObservabilityPage() {
   return (
     <div style={{ padding: '32px', maxWidth: '1280px', margin: '0 auto' }}>
       <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0 }}>
           可观测性
         </h1>
-        <p style={{ fontSize: '14px', color: '#64748b', margin: '6px 0 0' }}>
+        <p style={{ fontSize: '14px', color: 'var(--semi-color-text-1)', margin: '6px 0 0' }}>
           管理日志记录、数据转发目标与失败事件的重试策略。
         </p>
       </div>

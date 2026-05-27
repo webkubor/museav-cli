@@ -9,9 +9,9 @@ import type { TransactionListParams } from '@/interfaces/billing'
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: '#ffffff',
+  backgroundColor: 'var(--semi-color-bg-0)',
   borderRadius: '12px',
-  border: '1px solid #f1f5f9',
+  border: '1px solid var(--semi-color-fill-0)',
   boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
   padding: '28px 32px',
 }
@@ -121,7 +121,7 @@ export default function InvoicesPage() {
       dataIndex: 'happened_at',
       width: 180,
       render: (text: string) => (
-        <span style={{ color: '#64748b', fontSize: '13px' }}>
+        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>
           {new Date(text).toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')}
         </span>
       ),
@@ -174,7 +174,7 @@ export default function InvoicesPage() {
       dataIndex: 'balance_after',
       width: 160,
       render: (money: TransactionItem['balance_after']) => (
-        <span style={{ color: '#475569', fontSize: '13px', fontVariantNumeric: 'tabular-nums' }}>
+        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px', fontVariantNumeric: 'tabular-nums' }}>
           {money.amount} {money.currency}
         </span>
       ),
@@ -183,7 +183,7 @@ export default function InvoicesPage() {
       title: '描述',
       dataIndex: 'description',
       render: (text: string) => (
-        <span style={{ color: '#334155', fontSize: '13px' }}>{text || '—'}</span>
+        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>{text || '—'}</span>
       ),
     },
     {
@@ -226,14 +226,14 @@ export default function InvoicesPage() {
           style={{
             fontSize: '24px',
             fontWeight: 700,
-            color: '#0f172a',
+            color: 'var(--semi-color-text-0)',
             margin: '0 0 6px 0',
             letterSpacing: '-0.02em',
           }}
         >
           发票管理
         </h1>
-        <p style={{ fontSize: '13px', color: '#64748b', margin: 0, fontWeight: 400 }}>
+        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0, fontWeight: 400 }}>
           查看所有交易记录，并为充值订单下载对应发票。
         </p>
       </div>
@@ -258,7 +258,7 @@ export default function InvoicesPage() {
             onChange={(val) => handleFromDate(val as string | null)}
             onClear={() => handleFromDate(null)}
           />
-          <span style={{ color: '#94a3b8', fontSize: '13px' }}>—</span>
+          <span style={{ color: 'var(--semi-color-text-2)', fontSize: '13px' }}>—</span>
           <DatePicker
             type="date"
             placeholder="结束日期"
@@ -286,7 +286,7 @@ export default function InvoicesPage() {
               setToDate('')
               handleFilterChange()
             }}
-            style={{ color: '#94a3b8', fontSize: '13px' }}
+            style={{ color: 'var(--semi-color-text-2)', fontSize: '13px' }}
           >
             重置
           </Button>
@@ -309,7 +309,7 @@ export default function InvoicesPage() {
               loading={isFetching}
               onClick={handleLoadMore}
               style={{
-                color: '#475569',
+                color: 'var(--semi-color-text-1)',
                 fontSize: '13px',
                 fontWeight: 500,
               }}

@@ -25,7 +25,10 @@ export default function ApiKeysPage() {
   // ─── 1. TanStack Query 真实加载当前工作空间的 API Keys 列表 ──────
   const { data, isLoading } = useQuery({
     queryKey: ['api-keys', activeWorkspaceId],
-    queryFn: () => listApiKeys(activeWorkspaceId).then(res => res.items),
+    queryFn: async () => {
+      const res = await listApiKeys(activeWorkspaceId)
+      return Array.isArray(res) ? res : (res.items ?? [])
+    },
     enabled: !!activeWorkspaceId
   })
 
@@ -185,8 +188,8 @@ export default function ApiKeysPage() {
     }
   ]
 
-  const filteredData = (data || []).filter(item => 
-    item.name.includes(searchValue) || item.masked.includes(searchValue)
+  const filteredData = (data ?? []).filter(item =>
+    item.name.includes(searchValue) || (item.masked ?? '').includes(searchValue)
   )
 
   const handleCreateSubmit = () => {

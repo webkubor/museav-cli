@@ -54,8 +54,16 @@ export const DashboardHeader: React.FC = () => {
     queryFn: listTenants,
     staleTime: 60_000,
   })
-  // 优先用 /tenants 接口数据（有 name），fallback 到 session 里的 tenants
-  const displayTenants = tenantsData?.items.length ? tenantsData.items : tenants
+  // 合并 API 数据与 session 数据：API 可能在特定 org 上下文中不返回 personal tenant，
+  // 用 Map 去重（以 tenant_id 为 key），session tenants 作为兜底保底 personal 始终可见
+  const displayTenants = (() => {
+    const map = new Map<string, typeof tenants[0]>()
+    tenants.forEach((t) => map.set(t.tenant_id, t))
+    if (tenantsData?.items) {
+      tenantsData.items.forEach((t) => map.set(t.tenant_id, t))
+    }
+    return Array.from(map.values())
+  })()
 
   // ─── 1. TanStack Query 异步获取当前 Tenant 下的工作空间数据 ─────────────────
   const { data: workspaces = [] } = useQuery<WorkspaceItem[]>({
@@ -102,8 +110,9 @@ export const DashboardHeader: React.FC = () => {
     try {
       await switchTenant({ tenant_id: tenant.tenant_id })
       setAuth(account!, tenant.tenant_id, tenants, undefined)
-      // 切换租户后将 activeWorkspace 设为空，以便自动拉取该租户下的工作区
       setActiveWorkspaceId('')
+      queryClient.invalidateQueries({ queryKey: ['tenants'] })
+      queryClient.invalidateQueries({ queryKey: ['workspaces'] })
       Toast.success(t('header.switchedOrg', { name: tenant.name }))
     } catch {
       Toast.error(t('switchTenantFailed') || '切换组织失败')
@@ -116,6 +125,8 @@ export const DashboardHeader: React.FC = () => {
         await switchTenant({ tenant_id: tenant.tenant_id })
         setAuth(account!, tenant.tenant_id, tenants, undefined)
         setActiveWorkspaceId('')
+        queryClient.invalidateQueries({ queryKey: ['tenants'] })
+        queryClient.invalidateQueries({ queryKey: ['workspaces'] })
       } catch {
         Toast.error(t('switchTenantFailed') || '切换组织失败')
         return

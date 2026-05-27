@@ -26,8 +26,9 @@ export function DashboardLayout() {
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
 
-  const navItems = [
-    { itemKey: 'dashboard', text: '首页', icon: <IconHome style={{ fontSize: '16px' }} /> },
+  // Tenant级：切换工作区不影响这些页面
+  const tenantNavItems = [
+    { itemKey: 'dashboard', text: '总览', icon: <IconHome style={{ fontSize: '16px' }} /> },
     {
       itemKey: 'analytics',
       text: '用量分析',
@@ -47,9 +48,6 @@ export function DashboardLayout() {
         { itemKey: 'invoices', text: '发票管理', icon: <IconMail style={{ fontSize: '14px' }} /> }
       ]
     },
-    { itemKey: 'api-keys', text: 'API Keys', icon: <IconKey style={{ fontSize: '16px' }} /> },
-    { itemKey: 'guardrails', text: '安全护栏', icon: <IconShield style={{ fontSize: '16px' }} /> },
-    { itemKey: 'observability', text: '可观测性', icon: <IconEyeOpened style={{ fontSize: '16px' }} /> },
     {
       itemKey: 'settings',
       text: '设置',
@@ -58,9 +56,16 @@ export function DashboardLayout() {
         { itemKey: 'settings/account', text: '账号', icon: <IconUser style={{ fontSize: '14px' }} /> },
         { itemKey: 'settings/workspace', text: '工作区管理', icon: <IconGlobe style={{ fontSize: '14px' }} /> },
         { itemKey: 'settings/organization', text: '组织管理', icon: <IconUserGroup style={{ fontSize: '14px' }} /> },
-        { itemKey: 'invitations-mgmt', text: '邀请管理', icon: <IconMail style={{ fontSize: '14px' }} /> },
       ]
     }
+  ]
+
+  // Workspace级：切换工作区后内容随之变化
+  const workspaceNavItems = [
+    { itemKey: 'api-keys', text: 'API Keys', icon: <IconKey style={{ fontSize: '16px' }} /> },
+    { itemKey: 'guardrails', text: '安全护栏', icon: <IconShield style={{ fontSize: '16px' }} /> },
+    { itemKey: 'observability', text: '可观测性', icon: <IconEyeOpened style={{ fontSize: '16px' }} /> },
+    { itemKey: 'invitations-mgmt', text: '邀请管理', icon: <IconMail style={{ fontSize: '16px' }} /> },
   ]
 
   const getSelectedKey = () => {
@@ -95,7 +100,7 @@ export function DashboardLayout() {
     } else if (path === 'observability') {
       breadcrumbs.push('可观测性')
     } else if (path === 'invitations-mgmt') {
-      breadcrumbs.push('设置', '邀请管理')
+      breadcrumbs.push('邀请管理')
     }
     return breadcrumbs
   }
@@ -106,16 +111,17 @@ export function DashboardLayout() {
 
       <Layout>
         {/* 左侧侧边栏 Sider 子组件 */}
-        <DashboardSidebar 
+        <DashboardSidebar
           collapsed={collapsed}
           setCollapsed={setCollapsed}
           selectedKey={getSelectedKey()}
           onSelect={(data) => navigate(`/${String(data.itemKey)}`)}
-          navItems={navItems}
+          tenantNavItems={tenantNavItems}
+          workspaceNavItems={workspaceNavItems}
         />
 
         {/* 主内容区 Content */}
-        <Layout style={{ padding: '28px 36px', transition: 'all 0.3s ease' }}>
+        <Layout style={{ padding: '28px 36px', flex: 1, transition: 'all 0.3s ease' }}>
           <Breadcrumb style={{ marginBottom: '18px', fontSize: '12px', color: 'var(--semi-color-text-1)' }}>
             {getBreadcrumbs().map((b, idx) => (
               <Breadcrumb.Item key={idx}>{b}</Breadcrumb.Item>

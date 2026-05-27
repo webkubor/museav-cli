@@ -1,13 +1,10 @@
 import { useState } from 'react'
-import { Table, Button, Input, Tag, Toast, Select } from '@douyinfe/semi-ui'
+import { Table, Tag, Toast, Select } from '@douyinfe/semi-ui'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
 import {
-  createInvitations,
   listInvitations,
   revokeInvitation,
-  getInviteLink,
-  resetInviteLink,
 } from '@/services/invitations'
 import type { InvitationItem } from '@/types'
 import { formatDateTime } from '@/lib/format-date'
@@ -37,31 +34,7 @@ export default function InvitationsMgmtPage() {
   const qc = useQueryClient()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
 
-  const [emailInput, setEmailInput] = useState('')
-  const [role, setRole] = useState<'ws_member' | 'ws_admin'>('ws_member')
   const [status, setStatus] = useState<'pending' | 'accepted' | 'expired' | 'revoked' | 'all'>('pending')
-  const [copied, setCopied] = useState(false)
-
-  // ─── Invite link ──────────────────────────────────────────────────────────
-  const inviteLinkQuery = useQuery({
-    queryKey: ['workspace-invite-link', activeWorkspaceId],
-    queryFn: () => getInviteLink(activeWorkspaceId!),
-    enabled: Boolean(activeWorkspaceId),
-    staleTime: 60_000,
-    refetchOnWindowFocus: false,
-  })
-
-  const resetLinkMutation = useMutation({
-    mutationFn: (linkRole: 'ws_member' | 'ws_admin') =>
-      resetInviteLink(activeWorkspaceId!, linkRole),
-    onSuccess: () => {
-      Toast.success('邀请链接已重置')
-      qc.invalidateQueries({ queryKey: ['workspace-invite-link', activeWorkspaceId] })
-    },
-    onError: (err: any) => {
-      Toast.error(err?.message || '重置链接失败')
-    },
-  })
 
   // ─── Invitation list ──────────────────────────────────────────────────────
   const invitationsQuery = useQuery({
@@ -70,23 +43,6 @@ export default function InvitationsMgmtPage() {
     enabled: Boolean(activeWorkspaceId),
     staleTime: 30_000,
     refetchOnWindowFocus: false,
-  })
-
-  // ─── Create invitations ───────────────────────────────────────────────────
-  const createMutation = useMutation({
-    mutationFn: (emails: string[]) =>
-      createInvitations(activeWorkspaceId!, {
-        invites: emails.map((email) => ({ email, role })),
-        expires_in_hours: 168,
-      }),
-    onSuccess: (result) => {
-      Toast.success(`已成功发送 ${result.items.length} 封邀请邮件`)
-      setEmailInput('')
-      qc.invalidateQueries({ queryKey: ['workspace-invitations', activeWorkspaceId] })
-    },
-    onError: (err: any) => {
-      Toast.error(err?.message || '发送邀请失败')
-    },
   })
 
   // ─── Revoke invitation ────────────────────────────────────────────────────
@@ -101,39 +57,7 @@ export default function InvitationsMgmtPage() {
     },
   })
 
-  // ─── Derived values ───────────────────────────────────────────────────────
-  const inviteLink = inviteLinkQuery.data
-  const inviteLinkBase = `${window.location.origin}/invitations/`
-  const inviteLinkUrl = inviteLink ? `${inviteLinkBase}${inviteLink.token}` : ''
   const invitations = invitationsQuery.data?.items ?? []
-
-  // ─── Handlers ─────────────────────────────────────────────────────────────
-  function handleCopyLink() {
-    if (!inviteLinkUrl) return
-    navigator.clipboard.writeText(inviteLinkUrl).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-      Toast.success('邀请链接已复制')
-    })
-  }
-
-  function handleSendInvites() {
-    const raw = emailInput.trim()
-    if (!raw) {
-      Toast.error('请输入邮箱地址')
-      return
-    }
-    const emails = raw
-      .split(/[,，\s]+/)
-      .map((s) => s.trim())
-      .filter(Boolean)
-    const invalid = emails.filter((e) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))
-    if (invalid.length > 0) {
-      Toast.error(`以下邮箱格式无效：${invalid.join('、')}`)
-      return
-    }
-    createMutation.mutate(emails)
-  }
 
   // ─── Table columns ────────────────────────────────────────────────────────
   const columns = [
@@ -232,208 +156,8 @@ export default function InvitationsMgmtPage() {
           工作区邀请管理
         </h1>
         <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0 }}>
-          通过邮箱或邀请链接将成员加入当前工作区。
+          查看当前工作区的成员邀请记录。
         </p>
-      </div>
-
-      {/* ── 邀请链接区块 ─────────────────────────────────────────────────── */}
-      <div
-        style={{
-          background: 'var(--semi-color-bg-0)',
-          border: '1px solid var(--semi-color-border)',
-          borderRadius: '12px',
-          padding: '24px',
-          marginBottom: '20px',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '16px',
-          }}
-        >
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0 }}>
-            开放邀请链接
-          </h3>
-          <span
-            style={{
-              fontSize: '12px',
-              color: 'var(--semi-color-text-1)',
-              background: 'var(--semi-color-fill-0)',
-              border: '1px solid var(--semi-color-border)',
-              borderRadius: '999px',
-              padding: '2px 10px',
-            }}
-          >
-            角色：{ROLE_LABEL[inviteLink?.role ?? 'ws_member']}
-          </span>
-        </div>
-
-        {/* 链接展示 + 复制按钮 */}
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <div
-            style={{
-              flex: 1,
-              background: 'var(--semi-color-bg-1)',
-              border: '1px solid var(--semi-color-border)',
-              borderRadius: '8px',
-              padding: '10px 14px',
-              fontFamily: 'monospace',
-              fontSize: '13px',
-              color: 'var(--semi-color-text-1)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {inviteLinkQuery.isLoading
-              ? '加载中…'
-              : inviteLinkUrl || `${inviteLinkBase}{token}`}
-          </div>
-          <Button
-            theme="solid"
-            disabled={!inviteLink}
-            onClick={handleCopyLink}
-            style={{
-              borderRadius: '8px',
-              height: '40px',
-              padding: '0 20px',
-              fontSize: '13px',
-              fontWeight: 600,
-              flexShrink: 0,
-            }}
-          >
-            {copied ? '已复制' : '复制链接'}
-          </Button>
-        </div>
-
-        {/* 角色切换 + 重置链接 */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginTop: '16px',
-            paddingTop: '16px',
-            borderTop: '1px solid var(--semi-color-fill-0)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', fontWeight: 600 }}>链接角色</span>
-            <Select
-              value={inviteLink?.role ?? 'ws_member'}
-              onChange={(v) => resetLinkMutation.mutate(v as 'ws_member' | 'ws_admin')}
-              disabled={!inviteLink || resetLinkMutation.isPending}
-              style={{ width: '120px' }}
-            >
-              <Select.Option value="ws_member">成员</Select.Option>
-              <Select.Option value="ws_admin">管理员</Select.Option>
-            </Select>
-          </div>
-          <Button
-            type="tertiary"
-            size="small"
-            loading={resetLinkMutation.isPending}
-            disabled={!inviteLink}
-            onClick={() => resetLinkMutation.mutate(inviteLink?.role ?? 'ws_member')}
-            style={{ fontSize: '12px', color: 'var(--semi-color-text-1)' }}
-          >
-            重置链接
-          </Button>
-        </div>
-      </div>
-
-      {/* ── 邮箱邀请区块 ──────────────────────────────────────────────────── */}
-      <div
-        style={{
-          background: 'var(--semi-color-bg-0)',
-          border: '1px solid var(--semi-color-border)',
-          borderRadius: '12px',
-          padding: '24px',
-          marginBottom: '20px',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-        }}
-      >
-        <h3
-          style={{
-            fontSize: '15px',
-            fontWeight: 700,
-            color: 'var(--semi-color-text-0)',
-            margin: '0 0 16px 0',
-          }}
-        >
-          邮箱批量邀请
-        </h3>
-        <div
-          style={{
-            display: 'flex',
-            gap: '12px',
-            alignItems: 'flex-end',
-            flexWrap: 'wrap',
-          }}
-        >
-          <div style={{ flex: 1, minWidth: '240px' }}>
-            <div
-              style={{
-                fontSize: '12px',
-                fontWeight: 600,
-                color: 'var(--semi-color-text-2)',
-                marginBottom: '6px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-              }}
-            >
-              邮箱地址
-            </div>
-            <Input
-              value={emailInput}
-              onChange={(val) => setEmailInput(val)}
-              placeholder="多个邮箱用逗号分隔"
-              style={{ borderRadius: '8px', height: '40px' }}
-            />
-          </div>
-          <div style={{ width: '160px' }}>
-            <div
-              style={{
-                fontSize: '12px',
-                fontWeight: 600,
-                color: 'var(--semi-color-text-2)',
-                marginBottom: '6px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-              }}
-            >
-              角色
-            </div>
-            <Select
-              value={role}
-              onChange={(v) => setRole(v as 'ws_member' | 'ws_admin')}
-              style={{ width: '100%' }}
-            >
-              <Select.Option value="ws_member">成员</Select.Option>
-              <Select.Option value="ws_admin">管理员</Select.Option>
-            </Select>
-          </div>
-          <Button
-            theme="solid"
-            loading={createMutation.isPending}
-            disabled={!emailInput.trim() || !activeWorkspaceId}
-            onClick={handleSendInvites}
-            style={{
-              borderRadius: '8px',
-              height: '40px',
-              padding: '0 24px',
-              fontSize: '13px',
-              fontWeight: 600,
-              flexShrink: 0,
-            }}
-          >
-            发送邀请
-          </Button>
-        </div>
       </div>
 
       {/* ── 邀请记录列表 ──────────────────────────────────────────────────── */}

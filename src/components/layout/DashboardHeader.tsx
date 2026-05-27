@@ -36,7 +36,7 @@ export const DashboardHeader: React.FC = () => {
   
   // Theme and Lang state
   const [currentTheme, setCurrentTheme] = useState<Theme>('light')
-  const { lang, setLang } = useLangStore()
+  const { setLang: setGlobalLang } = useLangStore()
 
   // Modal and Form States
   const [orgModalVisible, setOrgModalVisible] = useState(false)
@@ -66,7 +66,7 @@ export const DashboardHeader: React.FC = () => {
       })
     },
     onSuccess: (newWorkspace) => {
-      Toast.success(lang === 'zh' ? `工作区 "${newWorkspace.name}" 创建成功` : `Workspace "${newWorkspace.name}" created`)
+      Toast.success(t('header.createWorkspaceSuccess', { name: newWorkspace.name }))
       setActiveWorkspaceId(newWorkspace.workspace_id)
       setWorkspaceModalVisible(false)
       setWsName('')
@@ -75,7 +75,7 @@ export const DashboardHeader: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['workspaces'] })
     },
     onError: (err: any) => {
-      Toast.error(err?.message || (lang === 'zh' ? '创建工作区失败' : 'Failed to create workspace'))
+      Toast.error(err?.message || t('header.createWorkspaceError'))
     }
   })
 
@@ -95,7 +95,7 @@ export const DashboardHeader: React.FC = () => {
       setAuth(account!, tenant.tenant_id, tenants, undefined)
       // 切换租户后将 activeWorkspace 设为空，以便自动拉取该租户下的工作区
       setActiveWorkspaceId('')
-      Toast.success(lang === 'zh' ? `已切换至组织: ${tenant.name}` : `Switched to organization: ${tenant.name}`)
+      Toast.success(t('header.switchedOrg', { name: tenant.name }))
     } catch {
       Toast.error(t('switchTenantFailed') || '切换组织失败')
     }
@@ -119,7 +119,7 @@ export const DashboardHeader: React.FC = () => {
     if (workspaceId === activeWorkspaceId) return
     setActiveWorkspaceId(workspaceId)
     const targetWs = workspaces.find((w) => w.workspace_id === workspaceId)
-    Toast.success(lang === 'zh' ? `已切换至工作区: ${targetWs?.name || workspaceId}` : `Switched to workspace: ${targetWs?.name || workspaceId}`)
+    Toast.success(t('header.switchedWorkspace', { name: targetWs?.name || workspaceId }))
   }
 
   async function handleLogout() {
@@ -139,7 +139,7 @@ export const DashboardHeader: React.FC = () => {
   }
 
   function handleLanguageChange(newLang: Lang) {
-    setLang(newLang)
+    setGlobalLang(newLang)
     i18n.changeLanguage(newLang)
     Toast.success(newLang === 'zh' ? '已切换至 简体中文' : 'Switched to English')
   }
@@ -151,7 +151,7 @@ export const DashboardHeader: React.FC = () => {
       type: 'enterprise',
     }),
     onSuccess: async (org) => {
-      Toast.success(lang === 'zh' ? `组织「${org.name}」创建成功` : `Organization "${org.name}" created`)
+      Toast.success(t('header.createOrgSuccess', { name: org.name }))
       setOrgModalVisible(false)
       setNewOrgName('')
       setNewOrgSlug('')
@@ -166,7 +166,7 @@ export const DashboardHeader: React.FC = () => {
       }
     },
     onError: (err: any) => {
-      Toast.error(err?.message || (lang === 'zh' ? '创建失败' : 'Failed to create organization'))
+      Toast.error(err?.message || t('header.createOrgError'))
     },
   })
 
@@ -176,7 +176,7 @@ export const DashboardHeader: React.FC = () => {
 
   const handleOpenOrgModal = () => {
     if (tenants.length >= 5) {
-      Toast.warning(lang === 'zh' ? '最多只能创建 5 个组织' : 'You can create up to 5 organizations')
+      Toast.warning(t('header.maxOrgWarning'))
       return
     }
     setNewOrgName('')
@@ -186,11 +186,11 @@ export const DashboardHeader: React.FC = () => {
 
   const handleCreateOrgSubmit = () => {
     if (!newOrgName.trim()) {
-      Toast.error(lang === 'zh' ? '组织名称不能为空' : 'Organization name cannot be empty')
+      Toast.error(t('header.orgNameRequired'))
       return
     }
     if (!newOrgSlug.trim()) {
-      Toast.error(lang === 'zh' ? '唯一标识不能为空' : 'Slug is required')
+      Toast.error(t('header.orgSlugRequired'))
       return
     }
     createOrgMutation.mutate()
@@ -198,15 +198,15 @@ export const DashboardHeader: React.FC = () => {
 
   const handleCreateWorkspaceSubmit = () => {
     if (!wsName.trim()) {
-      Toast.error(lang === 'zh' ? '工作区名称不能为空' : 'Workspace name cannot be empty')
+      Toast.error(t('header.wsNameRequired'))
       return
     }
     if (!wsSlug.trim()) {
-      Toast.error(lang === 'zh' ? '唯一标识不能为空' : 'Unique identifier (slug) cannot be empty')
+      Toast.error(t('header.wsSlugRequired'))
       return
     }
     if (!/^[a-z0-9-]+$/.test(wsSlug)) {
-      Toast.error(lang === 'zh' ? '唯一标识仅支持小写字母、数字和连字符' : 'Slug only supports lowercase letters, numbers, and hyphens')
+      Toast.error(t('header.wsSlugFormatError'))
       return
     }
     createWorkspaceMutation.mutate({ name: wsName, slug: wsSlug, description: wsDesc })
@@ -250,7 +250,7 @@ export const DashboardHeader: React.FC = () => {
             marginLeft: '2px',
             fontWeight: 500,
           }}>
-            开放平台
+            {t('header.openPlatform')}
           </span>
         </div>
 
@@ -260,7 +260,7 @@ export const DashboardHeader: React.FC = () => {
           render={
             <Dropdown.Menu style={{ width: '220px', borderRadius: '10px', padding: '6px' }}>
               <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
-                {lang === 'zh' ? '切换工作区' : 'Switch Workspace'}
+                {t('header.switchWorkspace')}
               </div>
               {workspaces.map((ws) => (
                 <Dropdown.Item
@@ -283,7 +283,7 @@ export const DashboardHeader: React.FC = () => {
                         padding: '1px 4px',
                         borderRadius: '3px'
                       }}>
-                        {lang === 'zh' ? '默认' : 'Default'}
+                        {t('header.default')}
                       </span>
                     )}
                   </div>
@@ -295,14 +295,14 @@ export const DashboardHeader: React.FC = () => {
                 onClick={() => setWorkspaceModalVisible(true)}
                 style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
               >
-                {lang === 'zh' ? '创建工作区' : 'Create Workspace'}
+                {t('header.createWorkspace')}
               </Dropdown.Item>
               <Dropdown.Item
                 icon={<IconSetting style={{ fontSize: '14px' }} />}
                 onClick={() => navigate('/settings/workspace')}
                 style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
               >
-                {lang === 'zh' ? '工作区管理' : 'Workspace Mgmt'}
+                {t('header.workspaceMgmt')}
               </Dropdown.Item>
             </Dropdown.Menu>
           }
@@ -331,8 +331,8 @@ export const DashboardHeader: React.FC = () => {
             ;(e.currentTarget as HTMLElement).style.boxShadow = 'none'
           }}
           >
-            <span style={{ color: 'var(--semi-color-text-1)', fontWeight: 400 }}>{lang === 'zh' ? '工作区' : 'Workspace'}</span>
-            <span style={{ fontWeight: 600, color: 'var(--semi-color-text-0)' }}>{activeWorkspace?.name ?? (lang === 'zh' ? '默认工作区' : 'Default Workspace')}</span>
+            <span style={{ color: 'var(--semi-color-text-1)', fontWeight: 400 }}>{t('header.workspaceLabel')}</span>
+            <span style={{ fontWeight: 600, color: 'var(--semi-color-text-0)' }}>{activeWorkspace?.name ?? t('header.defaultWorkspace')}</span>
             <IconChevronDown style={{ fontSize: '10px', color: 'var(--semi-color-text-1)' }} />
           </div>
         </Dropdown>
@@ -348,15 +348,15 @@ export const DashboardHeader: React.FC = () => {
             <Dropdown.Menu style={{ width: '120px', borderRadius: '10px', padding: '6px' }}>
               <Dropdown.Item 
                 onClick={() => handleLanguageChange('zh')}
-                style={{ borderRadius: '6px', fontSize: '13px', fontWeight: lang === 'zh' ? 600 : 400 }}
+                style={{ borderRadius: '6px', fontSize: '13px', fontWeight: i18n.language === 'zh' ? 600 : 400 }}
               >
-                简体中文
+                {t('header.langZh')}
               </Dropdown.Item>
               <Dropdown.Item 
                 onClick={() => handleLanguageChange('en')}
-                style={{ borderRadius: '6px', fontSize: '13px', fontWeight: lang === 'en' ? 600 : 400 }}
+                style={{ borderRadius: '6px', fontSize: '13px', fontWeight: i18n.language === 'en' ? 600 : 400 }}
               >
-                English
+                {t('header.langEn')}
               </Dropdown.Item>
             </Dropdown.Menu>
           }
@@ -431,43 +431,60 @@ export const DashboardHeader: React.FC = () => {
 
               {/* 2. 组织列表切换与就地管理 */}
               <div style={{ padding: '6px 12px 4px', fontSize: '11px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
-                {lang === 'zh' ? '组织' : 'Organizations'}
+                {t('header.organizations')}
               </div>
-              {tenants.map((tenant) => (
-                <Dropdown.Item
-                  key={tenant.tenant_id}
-                  onClick={() => handleSwitchTenant(tenant)}
-                  style={{
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    fontWeight: tenant.tenant_id === activeTenantId ? 600 : 400,
-                    color: tenant.tenant_id === activeTenantId ? 'var(--semi-color-primary)' : 'var(--semi-color-text-1)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>{tenant.name}</span>
-                    <Button
-                      size="small"
-                      theme="borderless"
-                      type="tertiary"
-                      icon={<IconSetting style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }} />}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleManageTenant(tenant)
-                      }}
-                      style={{ padding: '2px 4px', height: '20px' }}
-                      title={lang === 'zh' ? '管理此组织' : 'Manage this organization'}
-                    />
-                  </div>
-                </Dropdown.Item>
-              ))}
+              {tenants.map((tenant) => {
+                const letter = tenant.name.charAt(0).toUpperCase()
+                const isActive = tenant.tenant_id === activeTenantId
+                return (
+                  <Dropdown.Item
+                    key={tenant.tenant_id}
+                    onClick={() => handleSwitchTenant(tenant)}
+                    style={{
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: isActive ? 600 : 400,
+                      color: isActive ? 'var(--semi-color-primary)' : 'var(--semi-color-text-1)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                      {/* 组织头像 */}
+                      <div style={{
+                        width: '22px', height: '22px', borderRadius: '6px', flexShrink: 0,
+                        overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        backgroundColor: isActive ? 'var(--semi-color-primary-light-hover)' : 'var(--semi-color-fill-0)',
+                        border: '1px solid var(--semi-color-fill-0)',
+                        fontSize: '11px', fontWeight: 700,
+                        color: isActive ? 'var(--semi-color-primary)' : 'var(--semi-color-text-1)',
+                      }}>
+                        {tenant.logo_url
+                          ? <img src={tenant.logo_url} alt={tenant.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : letter}
+                      </div>
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>{tenant.name}</span>
+                      <Button
+                        size="small"
+                        theme="borderless"
+                        type="tertiary"
+                        icon={<IconSetting style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }} />}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleManageTenant(tenant)
+                        }}
+                        style={{ padding: '2px 4px', height: '20px', flexShrink: 0 }}
+                        title={t('header.manageOrg')}
+                      />
+                    </div>
+                  </Dropdown.Item>
+                )
+              })}
 
               <Dropdown.Item
                 icon={<IconPlus style={{ fontSize: '14px' }} />}
                 onClick={handleOpenOrgModal}
                 style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
               >
-                {lang === 'zh' ? '创建组织' : 'Create Organization'}
+                {t('header.createOrg')}
               </Dropdown.Item>
 
               {/* 3. 系统快捷跳转功能 */}
@@ -477,21 +494,21 @@ export const DashboardHeader: React.FC = () => {
                 onClick={() => navigate('/settings/organization')}
                 style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
               >
-                {lang === 'zh' ? '组织设置' : 'Organization Settings'}
+                {t('header.orgSettings')}
               </Dropdown.Item>
               <Dropdown.Item
                 icon={<IconGlobe style={{ fontSize: '14px' }} />}
                 onClick={() => navigate('/settings/workspace')}
                 style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
               >
-                {lang === 'zh' ? '工作区管理' : 'Workspace Mgmt'}
+                {t('header.workspaceMgmt')}
               </Dropdown.Item>
               <Dropdown.Item
                 icon={<IconSetting style={{ fontSize: '14px' }} />}
                 onClick={() => navigate('/settings/account')}
                 style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
               >
-                {lang === 'zh' ? '设置' : 'Settings'}
+                {t('nav.settings')}
               </Dropdown.Item>
 
               {/* 4. 退出登录 */}
@@ -528,18 +545,20 @@ export const DashboardHeader: React.FC = () => {
 
       {/* ─── Modal 1. 创建新组织 ───────────────── */}
       <Modal
-        title={lang === 'zh' ? '创建组织' : 'Create Organization'}
+        title={t('header.createOrg')}
         visible={orgModalVisible}
         onOk={handleCreateOrgSubmit}
         confirmLoading={createOrgMutation.isPending}
         onCancel={() => { setOrgModalVisible(false); setNewOrgName(''); setNewOrgSlug('') }}
         width={420}
         style={{ borderRadius: '12px' }}
+        okText={t('apiKeys.createModal.confirm')}
+        cancelText={t('apiKeys.createModal.cancel')}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '12px 0' }}>
           <div>
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '6px' }}>
-              {lang === 'zh' ? '组织名称' : 'Organization Name'}
+              {t('header.orgNameLabel')}
             </div>
             <Input
               value={newOrgName}
@@ -547,14 +566,14 @@ export const DashboardHeader: React.FC = () => {
                 setNewOrgName(val)
                 setNewOrgSlug(slugFromName(val))
               }}
-              placeholder={lang === 'zh' ? '如：我的团队' : 'e.g. My Team'}
+              placeholder={t('header.orgNamePlaceholder')}
               style={{ borderRadius: '8px' }}
               autoFocus
             />
           </div>
           <div>
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '6px' }}>
-              {lang === 'zh' ? '唯一标识 (Slug)' : 'Slug'}
+              {t('header.orgSlugLabel')}
             </div>
             <Input
               value={newOrgSlug}
@@ -563,7 +582,7 @@ export const DashboardHeader: React.FC = () => {
               style={{ borderRadius: '8px' }}
             />
             <div style={{ fontSize: '11px', color: 'var(--semi-color-text-2)', marginTop: '4px' }}>
-              {lang === 'zh' ? '仅支持小写字母、数字和连字符，自动根据名称生成' : 'Lowercase letters, numbers, hyphens only. Auto-generated from name.'}
+              {t('header.orgSlugHint')}
             </div>
           </div>
         </div>
@@ -571,7 +590,7 @@ export const DashboardHeader: React.FC = () => {
 
       {/* ─── Modal 2. 创建新工作区 ───────────────── */}
       <Modal
-        title={lang === 'zh' ? '创建工作区' : 'Create Workspace'}
+        title={t('header.createWorkspace')}
         visible={workspaceModalVisible}
         onOk={handleCreateWorkspaceSubmit}
         onCancel={() => {
@@ -583,39 +602,41 @@ export const DashboardHeader: React.FC = () => {
         confirmLoading={createWorkspaceMutation.isPending}
         width={440}
         style={{ borderRadius: '12px' }}
+        okText={t('apiKeys.createModal.confirm')}
+        cancelText={t('apiKeys.createModal.cancel')}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '12px 0' }}>
           <div>
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '6px' }}>
-              {lang === 'zh' ? '工作区名称' : 'Workspace Name'}
+              {t('header.wsNameLabel')}
             </div>
             <Input
               value={wsName}
               onChange={(val) => setWsName(val)}
-              placeholder={lang === 'zh' ? '如：生产环境应用区' : 'e.g. Production Env'}
+              placeholder={t('header.wsNamePlaceholder')}
               style={{ borderRadius: '8px' }}
               autoFocus
             />
           </div>
           <div>
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '6px' }}>
-              {lang === 'zh' ? '唯一标识 (Slug)' : 'Unique Identifier (Slug)'}
+              {t('header.wsSlugLabel')}
             </div>
             <Input
               value={wsSlug}
               onChange={(val) => setWsSlug(val)}
-              placeholder={lang === 'zh' ? '如：prod-app' : 'e.g. prod-app'}
+              placeholder={t('header.wsSlugPlaceholder')}
               style={{ borderRadius: '8px' }}
             />
           </div>
           <div>
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '6px' }}>
-              {lang === 'zh' ? '工作区描述 (选填)' : 'Description (Optional)'}
+              {t('header.wsDescLabel')}
             </div>
             <Input
               value={wsDesc}
               onChange={(val) => setWsDesc(val)}
-              placeholder={lang === 'zh' ? '简述该工作区的用途...' : 'Describe the purpose...'}
+              placeholder={t('header.wsDescPlaceholder')}
               style={{ borderRadius: '8px' }}
             />
           </div>

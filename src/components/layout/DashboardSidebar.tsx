@@ -1,5 +1,6 @@
 import React from 'react'
 import { Layout, Nav } from '@douyinfe/semi-ui'
+import { useTranslation } from 'react-i18next'
 
 const { Sider } = Layout
 
@@ -29,6 +30,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   tenantNavItems,
   workspaceNavItems
 }) => {
+  const { t } = useTranslation()
   const isWorkspaceSelected = WORKSPACE_KEYS.includes(selectedKey)
 
   return (
@@ -66,7 +68,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               whiteSpace: 'nowrap',
               flexShrink: 0,
             }}>
-              工作区
+              {t('nav.sidebarWorkspace')}
             </span>
           )}
           <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--semi-color-fill-0)' }} />

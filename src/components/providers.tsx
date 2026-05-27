@@ -1,4 +1,5 @@
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { Mutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { ModelGoApiError } from '@/lib/request'
 import { appToast } from '@/lib/app-toast'
@@ -15,10 +16,6 @@ function handleGlobalError(error: unknown) {
     appToast.requestError(error)
     return
   }
-  if (import.meta.env.DEV) {
-    const line = error instanceof Error ? error.message : String(error)
-    fetch('/dev/log', { method: 'POST', body: `[global] ${line}` }).catch(() => {})
-  }
   appToast.error('请求失败，请稍后重试')
 }
 
@@ -30,7 +27,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
           onError: handleGlobalError,
         }),
         mutationCache: new MutationCache({
-          onError: handleGlobalError,
+          onError: (error, _vars, _ctx, mutation: Mutation<unknown, unknown, unknown, unknown>) => {
+            // 有自己 onError 的 mutation 自行处理，避免重复 toast
+            if (mutation.options.onError) return
+            handleGlobalError(error)
+          },
         }),
         defaultOptions: {
           queries: { staleTime: 60 * 1000, retry: 1 },

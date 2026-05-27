@@ -1,0 +1,211 @@
+{
+  "common": {
+    "playground": "体验",
+    "models": "模型",
+    "docs": "文档",
+    "language": "语言切换",
+    "help": "帮助中心",
+    "profile": "个人中心",
+    "orgSettings": "组织管理",
+    "logout": "退出登录",
+    "theme": "主题设置",
+    "themeLight": "明亮模式",
+    "themeDark": "暗黑模式",
+    "themeSystem": "系统默认",
+    "currentOrg": "当前组织",
+    "currentWorkspace": "当前工作区",
+    "defaultWorkspace": "默认工作区"
+  },
+  "nav": {
+    "home": "首页",
+    "dashboard": "总览",
+    "models": "模型目录",
+    "analytics": "用量分析",
+    "usage": "用量",
+    "logs": "日志",
+    "billing": "账单管理",
+    "payAsYouGo": "按量付费",
+    "orders": "充值订单",
+    "invoices": "发票管理",
+    "settings": "设置",
+    "account": "账号",
+    "workspace": "工作区管理",
+    "organization": "组织管理",
+    "apiKeys": "API Keys",
+    "guardrails": "安全护栏",
+    "observability": "可观测性",
+    "invitations": "邀请管理",
+    "sidebarWorkspace": "工作区"
+  },
+  "header": {
+    "openPlatform": "开放平台",
+    "switchWorkspace": "切换工作区",
+    "default": "默认",
+    "createWorkspace": "创建工作区",
+    "workspaceMgmt": "工作区管理",
+    "workspaceLabel": "工作区",
+    "defaultWorkspace": "默认工作区",
+    "langZh": "简体中文",
+    "langEn": "English",
+    "organizations": "组织",
+    "manageOrg": "管理此组织",
+    "createOrg": "创建组织",
+    "orgSettings": "组织设置",
+    "switchedOrg": "已切换至组织: {{name}}",
+    "switchedWorkspace": "已切换至工作区: {{name}}",
+    "createWorkspaceSuccess": "工作区 \"{{name}}\" 创建成功",
+    "createWorkspaceError": "创建工作区失败",
+    "createOrgSuccess": "组织「{{name}}」创建成功",
+    "createOrgError": "创建失败",
+    "maxOrgWarning": "最多只能创建 5 个组织",
+    "orgNameRequired": "组织名称不能为空",
+    "orgSlugRequired": "唯一标识不能为空",
+    "wsNameRequired": "工作区名称不能为空",
+    "wsSlugRequired": "唯一标识不能为空",
+    "wsSlugFormatError": "唯一标识仅支持小写字母、数字和连字符",
+    "orgNameLabel": "组织名称",
+    "orgNamePlaceholder": "如：我的团队",
+    "orgSlugLabel": "唯一标识 (Slug)",
+    "orgSlugHint": "仅支持小写字母、数字和连字符，自动根据名称生成",
+    "wsNameLabel": "工作区名称",
+    "wsNamePlaceholder": "如：生产环境应用区",
+    "wsSlugLabel": "唯一标识 (Slug)",
+    "wsSlugPlaceholder": "如：prod-app",
+    "wsDescLabel": "工作区描述 (选填)",
+    "wsDescPlaceholder": "简述该工作区的用途..."
+  },
+  "apiKeys": {
+    "title": "API Keys",
+    "desc": "用于 OpenAI SDK 兼容接入的安全凭证，请妥善保管您的密钥凭证，切勿泄露给第三方。",
+    "create": "创建 API Key",
+    "search": "搜索密钥名称",
+    "table": {
+      "name": "名称",
+      "env": "环境",
+      "credentials": "API Key 凭证",
+      "status": "状态",
+      "createdAt": "创建时间",
+      "actions": "操作",
+      "active": "启用中",
+      "disabled": "已禁用",
+      "copy": "复制",
+      "revoke": "禁用",
+      "copyMaskedSuccess": "遮蔽凭证已复制到剪贴板"
+    },
+    "revokeConfirm": {
+      "title": "确定要废弃该密钥吗？",
+      "content": "密钥废弃后立即失效，且不可恢复，所有的网关请求将直接被阻断！"
+    },
+    "createModal": {
+      "title": "创建 API Key",
+      "nameLabel": "密钥名称",
+      "namePlaceholder": "如：生产测试 Key",
+      "nameRequired": "密钥名称不能为空",
+      "envLabel": "调用环境",
+      "live": "LIVE (真实计费)",
+      "test": "TEST (沙盒测试)",
+      "cancel": "取消",
+      "confirm": "立即创建"
+    },
+    "revealModal": {
+      "title": "🔑 您的新 API Key 已就绪",
+      "warning": "请立即妥善保存该凭证！出于安全性设计，明文 API Key 仅在创建时短暂显示一次，若不慎关闭该弹窗，您将再也无法寻回明文。",
+      "label": "API Key 凭证明文：",
+      "done": "我已复制并妥善保存"
+    },
+    "toast": {
+      "createSuccess": "密钥 \"{{name}}\" 创建成功",
+      "createError": "创建密钥失败",
+      "revokeSuccess": "密钥已成功撤销废弃",
+      "revokeError": "撤销密钥失败"
+    }
+  },
+  "billing": {
+    "title": "账单管理",
+    "desc": "管理账户余额、查看交易流水并追踪充值订单状态。",
+    "balance": {
+      "title": "账户余额",
+      "available": "可用余额",
+      "frozen": "冻结金额",
+      "recharge": "充值"
+    },
+    "tabs": {
+      "transactions": "交易流水",
+      "orders": "充值订单",
+      "promo": "兑换中心"
+    },
+    "rechargeModal": {
+      "title": "账户充值",
+      "amount": "充值金额",
+      "customAmount": "自定义金额",
+      "method": "支付方式",
+      "submit": "前往支付 ¥{{amount}}",
+      "success": "充值订单已创建，请完成支付",
+      "error": "创建充值订单失败"
+    },
+    "promo": {
+      "title": "兑换优惠码",
+      "placeholder": "输入 Promo Code",
+      "submit": "立即兑换",
+      "emptyWarning": "请输入 Promo Code",
+      "success": "兑换成功，到账 {{amount}} {{currency}}",
+      "error": "兑换失败，请检查 Promo Code 是否有效"
+    },
+    "transactions": {
+      "search": "搜索交易描述",
+      "typeAll": "全部类型",
+      "typeRecharge": "充值",
+      "typeConsume": "消费",
+      "typeRefund": "退款",
+      "typeAdjust_credit": "手动充值",
+      "typeAdjust_debit": "手动扣款",
+      "typePromo": "优惠码",
+      "reset": "重置",
+      "loadMore": "加载更多",
+      "table": {
+        "time": "时间",
+        "type": "类型",
+        "amount": "金额",
+        "balance": "变动后余额",
+        "desc": "描述",
+        "actions": "操作",
+        "downloadInvoice": "下载发票",
+        "invoiceError": "获取发票链接失败"
+      }
+    },
+    "orders": {
+      "empty": "暂无充值订单",
+      "loadMore": "加载更多",
+      "detailTitle": "订单详情",
+      "detailPlaceholder": "点击左侧订单查看详情",
+      "cancelSuccess": "订单已取消",
+      "cancelError": "取消订单失败",
+      "table": {
+        "orderNo": "订单号",
+        "status": "状态",
+        "channel": "渠道",
+        "amount": "金额",
+        "paidAt": "支付时间",
+        "actions": "操作",
+        "cancel": "取消"
+      },
+      "detail": {
+        "orderNo": "订单号",
+        "status": "状态",
+        "amount": "金额",
+        "credited": "到账金额",
+        "channel": "支付渠道",
+        "promo": "优惠码",
+        "paidAt": "支付时间",
+        "viewInvoice": "查看发票"
+      },
+      "status": {
+        "pending": "待支付",
+        "paid": "已支付",
+        "failed": "支付失败",
+        "cancelled": "已取消",
+        "refunded": "已退款"
+      }
+    }
+  }
+}

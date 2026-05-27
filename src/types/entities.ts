@@ -120,6 +120,7 @@ export interface TenantBrief {
   /** personal | enterprise */
   type: 'personal' | 'enterprise'
   is_default: boolean
+  logo_url?: string | null
 }
 
 /** Tenant 列表项（含当前用户在该 tenant 的角色/余额） */
@@ -135,6 +136,7 @@ export interface TenantItem {
   current_workspace_count: number
   /** 余额；仅 tenant_owner / tenant_admin 可见，其他角色为 null */
   balance: Money | null
+  logo_url?: string | null
 }
 
 /** Tenant 详情（GET /tenants/{tenantId}） */
@@ -149,6 +151,7 @@ export interface TenantDetail {
   status: 'active' | 'suspended'
   created_at: string
   settings: TenantSettings
+  logo_url?: string | null
 }
 
 /** Tenant 设置 */

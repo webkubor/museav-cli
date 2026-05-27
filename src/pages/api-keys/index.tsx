@@ -130,6 +130,18 @@ export default function ApiKeysPage() {
       )
     },
     {
+      title: '近30天消费',
+      dataIndex: 'usage_30d',
+      render: (usage: ApiKeyItem['usage_30d']) => (
+        <span style={{ fontSize: '13px', color: 'var(--semi-color-text-0)', fontVariantNumeric: 'tabular-nums' }}>
+          {usage?.amount
+            ? `${usage.currency} ${parseFloat(usage.amount).toFixed(4)}`
+            : <span style={{ color: 'var(--semi-color-text-3)' }}>—</span>
+          }
+        </span>
+      )
+    },
+    {
       title: t('apiKeys.table.createdAt'),
       dataIndex: 'created_at',
       render: (text: string) => (

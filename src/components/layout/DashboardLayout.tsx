@@ -16,6 +16,7 @@ import {
   IconApps,
 } from '@douyinfe/semi-icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { DashboardHeader } from './DashboardHeader'
 import { DashboardSidebar } from './DashboardSidebar'
 import { CustomerService } from '@/components/customer-service'
@@ -23,51 +24,47 @@ import { CustomerService } from '@/components/customer-service'
 const { Content } = Layout
 
 export function DashboardLayout() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
 
   // Tenant级：切换工作区不影响这些页面
   const tenantNavItems = [
-    { itemKey: 'dashboard', text: '总览', icon: <IconHome style={{ fontSize: '16px' }} /> },
-    { itemKey: 'models', text: '模型目录', icon: <IconApps style={{ fontSize: '16px' }} /> },
+    { itemKey: 'dashboard', text: t('nav.dashboard'), icon: <IconHome style={{ fontSize: '16px' }} /> },
+    { itemKey: 'models', text: t('nav.models'), icon: <IconApps style={{ fontSize: '16px' }} /> },
     {
       itemKey: 'analytics',
-      text: '用量分析',
+      text: t('nav.analytics'),
       icon: <IconHistogram style={{ fontSize: '16px' }} />,
       items: [
-        { itemKey: 'usage', text: '用量', icon: <IconHistogram style={{ fontSize: '14px' }} /> },
-        { itemKey: 'logs', text: '日志', icon: <IconList style={{ fontSize: '14px' }} /> }
+        { itemKey: 'usage', text: t('nav.usage'), icon: <IconHistogram style={{ fontSize: '14px' }} /> },
+        { itemKey: 'logs', text: t('nav.logs'), icon: <IconList style={{ fontSize: '14px' }} /> }
       ]
     },
     {
       itemKey: 'billing',
-      text: '账单',
+      text: t('nav.billing'),
       icon: <IconCreditCard style={{ fontSize: '16px' }} />,
-      items: [
-        { itemKey: 'pay-as-you-go', text: '按量付费', icon: <IconShield style={{ fontSize: '14px' }} /> },
-        { itemKey: 'billing-orders', text: '充值订单', icon: <IconList style={{ fontSize: '14px' }} /> },
-        { itemKey: 'invoices', text: '发票管理', icon: <IconMail style={{ fontSize: '14px' }} /> }
-      ]
     },
     {
       itemKey: 'settings',
-      text: '设置',
+      text: t('nav.settings'),
       icon: <IconSetting style={{ fontSize: '16px' }} />,
       items: [
-        { itemKey: 'settings/account', text: '账号', icon: <IconUser style={{ fontSize: '14px' }} /> },
-        { itemKey: 'settings/workspace', text: '工作区管理', icon: <IconGlobe style={{ fontSize: '14px' }} /> },
-        { itemKey: 'settings/organization', text: '组织管理', icon: <IconUserGroup style={{ fontSize: '14px' }} /> },
+        { itemKey: 'settings/account', text: t('nav.account'), icon: <IconUser style={{ fontSize: '14px' }} /> },
+        { itemKey: 'settings/workspace', text: t('nav.workspace'), icon: <IconGlobe style={{ fontSize: '14px' }} /> },
+        { itemKey: 'settings/organization', text: t('nav.organization'), icon: <IconUserGroup style={{ fontSize: '14px' }} /> },
       ]
     }
   ]
 
   // Workspace级：切换工作区后内容随之变化
   const workspaceNavItems = [
-    { itemKey: 'api-keys', text: 'API Keys', icon: <IconKey style={{ fontSize: '16px' }} /> },
-    { itemKey: 'guardrails', text: '安全护栏', icon: <IconShield style={{ fontSize: '16px' }} /> },
-    { itemKey: 'observability', text: '可观测性', icon: <IconEyeOpened style={{ fontSize: '16px' }} /> },
-    { itemKey: 'invitations-mgmt', text: '邀请管理', icon: <IconMail style={{ fontSize: '16px' }} /> },
+    { itemKey: 'api-keys', text: t('nav.apiKeys'), icon: <IconKey style={{ fontSize: '16px' }} /> },
+    { itemKey: 'guardrails', text: t('nav.guardrails'), icon: <IconShield style={{ fontSize: '16px' }} /> },
+    { itemKey: 'observability', text: t('nav.observability'), icon: <IconEyeOpened style={{ fontSize: '16px' }} /> },
+    { itemKey: 'invitations-mgmt', text: t('nav.invitations'), icon: <IconMail style={{ fontSize: '16px' }} /> },
   ]
 
   const getSelectedKey = () => {
@@ -77,25 +74,23 @@ export function DashboardLayout() {
   }
 
   const BREADCRUMB_MAP: Record<string, string[]> = {
-    dashboard:        ['首页'],
-    models:           ['首页', '模型目录'],
-    'api-keys':       ['首页', 'API Keys'],
-    usage:            ['首页', '用量分析', '用量'],
-    logs:             ['首页', '用量分析', '日志'],
-    'pay-as-you-go':  ['首页', '账单', '按量付费'],
-    'billing-orders': ['首页', '账单', '充值订单'],
-    invoices:         ['首页', '账单', '发票管理'],
-    guardrails:       ['首页', '安全护栏'],
-    observability:    ['首页', '可观测性'],
-    'invitations-mgmt': ['首页', '邀请管理'],
-    'settings/account':      ['首页', '设置', '账号'],
-    'settings/workspace':    ['首页', '设置', '工作区管理'],
-    'settings/organization': ['首页', '设置', '组织管理'],
+    dashboard:        [t('nav.home')],
+    models:           [t('nav.home'), t('nav.models')],
+    'api-keys':       [t('nav.home'), t('nav.apiKeys')],
+    usage:            [t('nav.home'), t('nav.analytics'), t('nav.usage')],
+    logs:             [t('nav.home'), t('nav.analytics'), t('nav.logs')],
+    billing:          [t('nav.home'), t('nav.billing')],
+    guardrails:       [t('nav.home'), t('nav.guardrails')],
+    observability:    [t('nav.home'), t('nav.observability')],
+    'invitations-mgmt': [t('nav.home'), t('nav.invitations')],
+    'settings/account':      [t('nav.home'), t('nav.settings'), t('nav.account')],
+    'settings/workspace':    [t('nav.home'), t('nav.settings'), t('nav.workspace')],
+    'settings/organization': [t('nav.home'), t('nav.settings'), t('nav.organization')],
   }
 
   const getBreadcrumbs = () => {
     const path = location.pathname.replace(/^\//, '')
-    return BREADCRUMB_MAP[path] ?? ['首页']
+    return BREADCRUMB_MAP[path] ?? [t('nav.home')]
   }
 
   return (

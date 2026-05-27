@@ -3,7 +3,7 @@
  * 路由：/tenants、/tenants/:id
  * API：GET /tenants、GET|PATCH /tenants/:id、GET|POST|PATCH|DELETE /tenants/:id/members
  */
-import { del, get, patch, post } from '@/lib/request'
+import { del, get, patch, post, upload } from '@/lib/request'
 import type {
   TenantListResponse,
   TenantMemberListParams,
@@ -37,6 +37,13 @@ export function getTenant(tenantId: string) {
 /** 更新 tenant 基本信息或账单设置（仅 tenant_owner / tenant_admin） */
 export function updateTenant(tenantId: string, body: UpdateTenantRequest) {
   return patch<TenantDetail>(`tenants/${tenantId}`, body)
+}
+
+/** 上传 / 更换组织头像（PUT /tenants/:id/logo） */
+export function uploadTenantLogo(tenantId: string, file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return upload<{ logo_url: string }>('put', `tenants/${tenantId}/logo`, formData)
 }
 
 // ─── Tenant 成员管理 ───────────────────────────────

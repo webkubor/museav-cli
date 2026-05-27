@@ -14,11 +14,9 @@ import InvitationsPage from '@/pages/invitations'
 import DevicePage from '@/pages/device'
 import UsagePage from '@/pages/usage'
 import LogsPage from '@/pages/logs'
-import PayAsYouGoPage from '@/pages/pay-as-you-go'
-import InvoicesPage from '@/pages/invoices'
+import BillingPage from '@/pages/billing'
 import AccountSettingsPage from '@/pages/settings/account'
 import OrganizationPage from '@/pages/settings/organization'
-import BillingOrdersPage from '@/pages/billing-orders'
 import GuardrailsPage from '@/pages/guardrails'
 import InvitationsMgmtPage from '@/pages/invitations-mgmt'
 import ObservabilityPage from '@/pages/observability'
@@ -103,9 +101,7 @@ export default function App() {
 
             <Route path="usage" element={<UsagePage />} />
             <Route path="logs" element={<LogsPage />} />
-            <Route path="pay-as-you-go" element={<PayAsYouGoPage />} />
-            <Route path="invoices" element={<InvoicesPage />} />
-            <Route path="billing-orders" element={<BillingOrdersPage />} />
+            <Route path="billing" element={<BillingPage />} />
             <Route path="guardrails" element={<GuardrailsPage />} />
             <Route path="invitations-mgmt" element={<InvitationsMgmtPage />} />
             <Route path="observability" element={<ObservabilityPage />} />

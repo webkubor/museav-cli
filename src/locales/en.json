@@ -1,0 +1,211 @@
+{
+  "common": {
+    "playground": "Playground",
+    "models": "Models",
+    "docs": "Docs",
+    "language": "Language",
+    "help": "Help",
+    "profile": "Profile",
+    "orgSettings": "Organization",
+    "logout": "Sign Out",
+    "theme": "Theme",
+    "themeLight": "Light Mode",
+    "themeDark": "Dark Mode",
+    "themeSystem": "System",
+    "currentOrg": "Organization",
+    "currentWorkspace": "Workspace",
+    "defaultWorkspace": "Default Workspace"
+  },
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "models": "Model Catalog",
+    "analytics": "Analytics",
+    "usage": "Usage",
+    "logs": "Logs",
+    "billing": "Billing",
+    "payAsYouGo": "Pay-as-you-go",
+    "orders": "Orders",
+    "invoices": "Invoices",
+    "settings": "Settings",
+    "account": "Account",
+    "workspace": "Workspace Mgmt",
+    "organization": "Organization Mgmt",
+    "apiKeys": "API Keys",
+    "guardrails": "Guardrails",
+    "observability": "Observability",
+    "invitations": "Invitations",
+    "sidebarWorkspace": "WORKSPACE"
+  },
+  "header": {
+    "openPlatform": "Open Platform",
+    "switchWorkspace": "Switch Workspace",
+    "default": "Default",
+    "createWorkspace": "Create Workspace",
+    "workspaceMgmt": "Workspace Mgmt",
+    "workspaceLabel": "Workspace",
+    "defaultWorkspace": "Default Workspace",
+    "langZh": "简体中文",
+    "langEn": "English",
+    "organizations": "Organizations",
+    "manageOrg": "Manage this organization",
+    "createOrg": "Create Organization",
+    "orgSettings": "Organization Settings",
+    "switchedOrg": "Switched to organization: {{name}}",
+    "switchedWorkspace": "Switched to workspace: {{name}}",
+    "createWorkspaceSuccess": "Workspace \"{{name}}\" created successfully",
+    "createWorkspaceError": "Failed to create workspace",
+    "createOrgSuccess": "Organization \"{{name}}\" created",
+    "createOrgError": "Failed to create organization",
+    "maxOrgWarning": "You can create up to 5 organizations",
+    "orgNameRequired": "Organization name cannot be empty",
+    "orgSlugRequired": "Slug is required",
+    "wsNameRequired": "Workspace name cannot be empty",
+    "wsSlugRequired": "Unique identifier (slug) cannot be empty",
+    "wsSlugFormatError": "Slug only supports lowercase letters, numbers, and hyphens",
+    "orgNameLabel": "Organization Name",
+    "orgNamePlaceholder": "e.g. My Team",
+    "orgSlugLabel": "Slug",
+    "orgSlugHint": "Lowercase letters, numbers, hyphens only. Auto-generated from name.",
+    "wsNameLabel": "Workspace Name",
+    "wsNamePlaceholder": "e.g. Production Env",
+    "wsSlugLabel": "Unique Identifier (Slug)",
+    "wsSlugPlaceholder": "e.g. prod-app",
+    "wsDescLabel": "Description (Optional)",
+    "wsDescPlaceholder": "Describe the purpose..."
+  },
+  "apiKeys": {
+    "title": "API Keys",
+    "desc": "Security credentials for OpenAI SDK compatible access. Please keep your key credentials safe and do not disclose them to third parties.",
+    "create": "Create API Key",
+    "search": "Search key name",
+    "table": {
+      "name": "Name",
+      "env": "Environment",
+      "credentials": "API Key Credentials",
+      "status": "Status",
+      "createdAt": "Created At",
+      "actions": "Actions",
+      "active": "Active",
+      "disabled": "Disabled",
+      "copy": "Copy",
+      "revoke": "Revoke",
+      "copyMaskedSuccess": "Masked credentials copied to clipboard"
+    },
+    "revokeConfirm": {
+      "title": "Are you sure you want to revoke this key?",
+      "content": "The key will be immediately invalidated and cannot be recovered. All gateway requests will be blocked!"
+    },
+    "createModal": {
+      "title": "Create API Key",
+      "nameLabel": "Key Name",
+      "namePlaceholder": "e.g., Production Key",
+      "nameRequired": "Key name cannot be empty",
+      "envLabel": "Environment",
+      "live": "LIVE (Actual Billing)",
+      "test": "TEST (Sandbox)",
+      "cancel": "Cancel",
+      "confirm": "Create Now"
+    },
+    "revealModal": {
+      "title": "🔑 Your New API Key is Ready",
+      "warning": "Please save this credential immediately! For security reasons, the plain text API Key is only shown once upon creation. If you close this window, you will never be able to retrieve it again.",
+      "label": "Plain Text API Key:",
+      "done": "I have copied and saved it"
+    },
+    "toast": {
+      "createSuccess": "Key \"{{name}}\" created successfully",
+      "createError": "Failed to create API key",
+      "revokeSuccess": "API Key successfully revoked",
+      "revokeError": "Failed to revoke API key"
+    }
+  },
+  "billing": {
+    "title": "Billing Management",
+    "desc": "Manage account balance, view transaction flow, and track recharge order status.",
+    "balance": {
+      "title": "Account Balance",
+      "available": "Available Balance",
+      "frozen": "Frozen Amount",
+      "recharge": "Top Up"
+    },
+    "tabs": {
+      "transactions": "Transactions",
+      "orders": "Orders",
+      "promo": "Redeem"
+    },
+    "rechargeModal": {
+      "title": "Account Top Up",
+      "amount": "Top Up Amount",
+      "customAmount": "Custom Amount",
+      "method": "Payment Method",
+      "submit": "Pay ¥{{amount}}",
+      "success": "Recharge order created, please complete payment",
+      "error": "Failed to create recharge order"
+    },
+    "promo": {
+      "title": "Redeem Promo Code",
+      "placeholder": "Enter Promo Code",
+      "submit": "Redeem Now",
+      "emptyWarning": "Please enter Promo Code",
+      "success": "Redeem success, credited {{amount}} {{currency}}",
+      "error": "Redeem failed, please check if Promo Code is valid"
+    },
+    "transactions": {
+      "search": "Search description",
+      "typeAll": "All Types",
+      "typeRecharge": "Recharge",
+      "typeConsume": "Consume",
+      "typeRefund": "Refund",
+      "typeAdjust_credit": "Manual Credit",
+      "typeAdjust_debit": "Manual Debit",
+      "typePromo": "Promo Code",
+      "reset": "Reset",
+      "loadMore": "Load More",
+      "table": {
+        "time": "Time",
+        "type": "Type",
+        "amount": "Amount",
+        "balance": "Balance After",
+        "desc": "Description",
+        "actions": "Actions",
+        "downloadInvoice": "Download Invoice",
+        "invoiceError": "Failed to get invoice link"
+      }
+    },
+    "orders": {
+      "empty": "No recharge orders",
+      "loadMore": "Load More",
+      "detailTitle": "Order Details",
+      "detailPlaceholder": "Click an order on the left to view details",
+      "cancelSuccess": "Order cancelled",
+      "cancelError": "Failed to cancel order",
+      "table": {
+        "orderNo": "Order No",
+        "status": "Status",
+        "channel": "Channel",
+        "amount": "Amount",
+        "paidAt": "Paid At",
+        "actions": "Actions",
+        "cancel": "Cancel"
+      },
+      "detail": {
+        "orderNo": "Order No",
+        "status": "Status",
+        "amount": "Amount",
+        "credited": "Credited Amount",
+        "channel": "Payment Channel",
+        "promo": "Promo Code",
+        "paidAt": "Paid At",
+        "viewInvoice": "View Invoice"
+      },
+      "status": {
+        "pending": "Pending",
+        "paid": "Paid",
+        "failed": "Failed",
+        "cancelled": "Cancelled",
+        "refunded": "Refunded"
+      }
+    }
+  }
+}

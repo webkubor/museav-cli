@@ -52,12 +52,13 @@
   --semi-color-primary-active: var(--brand-deep);
   --semi-color-primary-disabled: var(--brand-light);
   --semi-color-primary-light-default: var(--brand-pale);
-  
+
   /* 强制图标与链接响应品牌色 */
   --semi-color-link: var(--brand-base);
   --semi-color-link-hover: var(--brand-mid);
   --semi-color-nav-item-text-active: var(--brand-deep);
   --semi-color-nav-item-icon-active: var(--brand-base);
+}
   
   /* 文字与描边弱化（去死板黑灰） */
   --semi-color-bg-0: var(--card-bg);
@@ -70,6 +71,18 @@
   
   /* 导航项自定义 */
   --nav-item-active-bg: var(--brand-selected-bg);
+}
+
+/* Semi 在 body 上强行声明了 --semi-color-primary（蓝色），
+   必须在 body 上显式覆盖，否则继承自 :root 的值会被 body 自有声明覆盖 */
+body {
+  --semi-color-primary: var(--brand-base);
+  --semi-color-primary-hover: var(--brand-mid);
+  --semi-color-primary-active: var(--brand-deep);
+  --semi-color-primary-disabled: var(--brand-light);
+  --semi-color-primary-light-default: var(--brand-pale);
+  --semi-color-link: var(--brand-base);
+  --semi-color-link-hover: var(--brand-mid);
 }
 
 /* 🌙 暗色模式 (Modern Dark Mode) */
@@ -96,17 +109,37 @@ body[theme-mode='dark'] {
   --brand-glow: var(--go-glow);
   --brand-selected-bg: var(--go-selected-bg);
 
-  /* 强行重刷 Semi UI 变量，确保切换生效 */
   --semi-color-primary: var(--go-base);
   --semi-color-primary-hover: var(--go-mid);
   --semi-color-primary-active: var(--go-deep);
   --semi-color-primary-disabled: var(--go-light);
   --semi-color-primary-light-default: var(--go-pale);
-
   --semi-color-link: var(--go-base);
   --semi-color-link-hover: var(--go-mid);
   --semi-color-nav-item-text-active: var(--go-deep);
   --semi-color-nav-item-icon-active: var(--go-base);
+}
+
+/* body 级覆盖——对抗 semi.css 在 body 上的蓝色声明 */
+[data-market='global'] body {
+  --semi-color-primary: var(--go-base);
+  --semi-color-primary-hover: var(--go-mid);
+  --semi-color-primary-active: var(--go-deep);
+  --semi-color-primary-disabled: var(--go-light);
+  --semi-color-primary-light-default: var(--go-pale);
+  --semi-color-link: var(--go-base);
+  --semi-color-link-hover: var(--go-mid);
+}
+
+/* 国内市场 body 级覆盖 */
+[data-market='domestic'] body {
+  --semi-color-primary: var(--cn-base);
+  --semi-color-primary-hover: var(--cn-mid);
+  --semi-color-primary-active: var(--cn-deep);
+  --semi-color-primary-disabled: var(--cn-light);
+  --semi-color-primary-light-default: var(--cn-pale);
+  --semi-color-link: var(--cn-base);
+  --semi-color-link-hover: var(--cn-mid);
 }
 
 html, body, #root {

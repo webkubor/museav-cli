@@ -6,6 +6,9 @@ import {
   IconHelpCircle
 } from '@douyinfe/semi-icons'
 import { modelGoLogos } from '@/config/brand-assets'
+import { getMarket } from '@/lib/market'
+
+const market = getMarket()
 
 const { Header } = Layout
 

@@ -11,6 +11,7 @@ import { VerificationCodeButton } from '@/components/auth/VerificationCodeButton
 import { sendEmailCode, register } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import { ModelGoApiError } from '@/lib/request'
+import { toast } from '@/lib/toast'
 
 const schema = z.object({
   display_name: z.string().min(1, '请填写名称'),
@@ -109,7 +110,9 @@ export default function SignupPage() {
       )
       navigate('/dashboard')
     } catch (e) {
-      setServerError(e instanceof ModelGoApiError ? e.message : '注册失败，请稍后重试')
+      const msg = e instanceof ModelGoApiError ? e.message : '注册失败，请稍后重试'
+      setServerError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }

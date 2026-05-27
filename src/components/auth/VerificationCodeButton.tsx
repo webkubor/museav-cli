@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@douyinfe/semi-ui'
+import { toast } from '@/lib/toast'
 
 interface Props {
   onSend: () => Promise<number | void>
@@ -33,6 +34,9 @@ export function VerificationCodeButton({ onSend, disabled }: Props) {
     try {
       const expiresIn = await onSend()
       startCountdown(typeof expiresIn === 'number' ? expiresIn : 60)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '发送失败，请稍后重试'
+      toast.error(msg)
     } finally {
       setLoading(false)
     }

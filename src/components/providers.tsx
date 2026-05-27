@@ -1,6 +1,7 @@
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { Mutation } from '@tanstack/react-query'
 import { useState } from 'react'
+import { ConfigProvider } from '@douyinfe/semi-ui'
 import { ModelGoApiError } from '@/lib/request'
 import { appToast } from '@/lib/app-toast'
 
@@ -39,5 +40,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       })
   )
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  return (
+    <ConfigProvider>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </ConfigProvider>
+  )
 }

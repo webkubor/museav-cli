@@ -59,7 +59,6 @@ export function DashboardLayout() {
         { itemKey: 'settings/workspace', text: '业务空间', icon: <IconGlobe style={{ fontSize: '14px' }} /> },
         { itemKey: 'settings/organization', text: '组织管理', icon: <IconUserGroup style={{ fontSize: '14px' }} /> },
         { itemKey: 'invitations-mgmt', text: '邀请管理', icon: <IconMail style={{ fontSize: '14px' }} /> },
-        { itemKey: 'settings/preferences', text: '偏好设置', icon: <IconSetting style={{ fontSize: '14px' }} /> },
       ]
     }
   ]
@@ -79,7 +78,6 @@ export function DashboardLayout() {
       if (path.includes('workspace')) breadcrumbs.push('业务空间')
       else if (path.includes('account')) breadcrumbs.push('账号')
       else if (path.includes('organization')) breadcrumbs.push('组织管理')
-      else if (path.includes('preferences')) breadcrumbs.push('偏好设置')
     } else if (path === 'api-keys') {
       breadcrumbs.push('API Keys')
     } else if (path === 'logs') {

@@ -21,7 +21,6 @@ import BillingOrdersPage from '@/pages/billing-orders'
 import GuardrailsPage from '@/pages/guardrails'
 import InvitationsMgmtPage from '@/pages/invitations-mgmt'
 import ObservabilityPage from '@/pages/observability'
-import PreferencesPage from '@/pages/preferences'
 import { useAuthStore } from '@/store/auth'
 import { getSession } from '@/services/auth'
 import { getMarket } from '@/lib/market'
@@ -97,7 +96,6 @@ export default function App() {
               <Route path="workspace" element={<WorkspacesPage />} />
               <Route path="account" element={<AccountSettingsPage />} />
               <Route path="organization" element={<OrganizationPage />} />
-              <Route path="preferences" element={<PreferencesPage />} />
             </Route>
 
             <Route path="usage" element={<UsagePage />} />

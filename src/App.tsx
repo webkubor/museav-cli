@@ -11,6 +11,7 @@ import ForgotPasswordPage from '@/pages/forgot-password'
 import ResetPasswordPage from '@/pages/reset-password'
 import AuthCallbackPage from '@/pages/auth-callback'
 import InvitationsPage from '@/pages/invitations'
+import DevicePage from '@/pages/device'
 import UsagePage from '@/pages/usage'
 import LogsPage from '@/pages/logs'
 import PayAsYouGoPage from '@/pages/pay-as-you-go'
@@ -84,6 +85,7 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/invitations" element={<InvitationsPage />} />
+          <Route path="/device" element={<DevicePage />} />
 
           {/* 控制台路由（需登录） */}
           <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>

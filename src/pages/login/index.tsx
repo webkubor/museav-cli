@@ -53,6 +53,8 @@ export default function LoginPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isSessionLoading = useAuthStore((s) => s.isLoading)
 
+  const redirectAfterLogin = new URLSearchParams(window.location.search).get('redirect') || '/dashboard'
+
   const [step, setStep] = useState<'email' | 'password'>('email')
   const [email, setEmail] = useState('')
   const [serverError, setServerError] = useState('')
@@ -62,7 +64,7 @@ export default function LoginPage() {
   const passwordForm = useForm<PasswordFields>({ resolver: zodResolver(passwordSchema) })
 
   useEffect(() => {
-    if (!isSessionLoading && isAuthenticated) navigate('/dashboard', { replace: true })
+    if (!isSessionLoading && isAuthenticated) navigate(redirectAfterLogin, { replace: true })
   }, [isAuthenticated, isSessionLoading, navigate])
 
   const onEmailSubmit = async (data: EmailFields) => {
@@ -99,7 +101,7 @@ export default function LoginPage() {
         result.tenants,
         result.active_workspace_id
       )
-      navigate('/dashboard')
+      navigate(redirectAfterLogin, { replace: true })
     } catch {
       setServerError('邮箱或密码错误')
     } finally {

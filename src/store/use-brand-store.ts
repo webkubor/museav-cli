@@ -21,6 +21,7 @@ export const useLangStore = create<LangState>()((set) => ({
   lang: initialLang,
   market: initialMarket,
   setLang: (lang) => {
+    localStorage.setItem('mg-lang', lang)
     set({ lang })
   },
   setMarket: (market) => {

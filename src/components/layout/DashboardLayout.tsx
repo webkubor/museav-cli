@@ -10,7 +10,9 @@ import {
   IconKey,
   IconSetting,
   IconUser,
-  IconGlobe
+  IconGlobe,
+  IconUserGroup,
+  IconEyeOpened
 } from '@douyinfe/semi-icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { DashboardHeader } from './DashboardHeader'
@@ -40,10 +42,13 @@ export function DashboardLayout() {
       icon: <IconCreditCard style={{ fontSize: '16px' }} />,
       items: [
         { itemKey: 'pay-as-you-go', text: '按量付费', icon: <IconShield style={{ fontSize: '14px' }} /> },
+        { itemKey: 'billing-orders', text: '充值订单', icon: <IconList style={{ fontSize: '14px' }} /> },
         { itemKey: 'invoices', text: '发票管理', icon: <IconMail style={{ fontSize: '14px' }} /> }
       ]
     },
     { itemKey: 'api-keys', text: 'API Keys', icon: <IconKey style={{ fontSize: '16px' }} /> },
+    { itemKey: 'guardrails', text: '安全护栏', icon: <IconShield style={{ fontSize: '16px' }} /> },
+    { itemKey: 'observability', text: '可观测性', icon: <IconEyeOpened style={{ fontSize: '16px' }} /> },
     {
       itemKey: 'settings',
       text: '设置',
@@ -51,6 +56,9 @@ export function DashboardLayout() {
       items: [
         { itemKey: 'settings/account', text: '账号', icon: <IconUser style={{ fontSize: '14px' }} /> },
         { itemKey: 'settings/workspace', text: '业务空间', icon: <IconGlobe style={{ fontSize: '14px' }} /> },
+        { itemKey: 'settings/organization', text: '组织管理', icon: <IconUserGroup style={{ fontSize: '14px' }} /> },
+        { itemKey: 'invitations-mgmt', text: '邀请管理', icon: <IconMail style={{ fontSize: '14px' }} /> },
+        { itemKey: 'settings/preferences', text: '偏好设置', icon: <IconSetting style={{ fontSize: '14px' }} /> },
       ]
     }
   ]
@@ -69,14 +77,26 @@ export function DashboardLayout() {
       breadcrumbs.push('设置')
       if (path.includes('workspace')) breadcrumbs.push('业务空间')
       else if (path.includes('account')) breadcrumbs.push('账号')
+      else if (path.includes('organization')) breadcrumbs.push('组织管理')
+      else if (path.includes('preferences')) breadcrumbs.push('偏好设置')
     } else if (path === 'api-keys') {
       breadcrumbs.push('API Keys')
     } else if (path === 'logs') {
       breadcrumbs.push('用量分析', '日志')
     } else if (path === 'usage') {
       breadcrumbs.push('用量分析', '用量')
-    } else if (path === 'billing') {
-      breadcrumbs.push('账单')
+    } else if (path === 'pay-as-you-go') {
+      breadcrumbs.push('账单', '按量付费')
+    } else if (path === 'billing-orders') {
+      breadcrumbs.push('账单', '充值订单')
+    } else if (path === 'invoices') {
+      breadcrumbs.push('账单', '发票管理')
+    } else if (path === 'guardrails') {
+      breadcrumbs.push('安全护栏')
+    } else if (path === 'observability') {
+      breadcrumbs.push('可观测性')
+    } else if (path === 'invitations-mgmt') {
+      breadcrumbs.push('设置', '邀请管理')
     }
     return breadcrumbs
   }

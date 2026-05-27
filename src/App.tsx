@@ -16,6 +16,12 @@ import LogsPage from '@/pages/logs'
 import PayAsYouGoPage from '@/pages/pay-as-you-go'
 import InvoicesPage from '@/pages/invoices'
 import AccountSettingsPage from '@/pages/settings/account'
+import OrganizationPage from '@/pages/settings/organization'
+import BillingOrdersPage from '@/pages/billing-orders'
+import GuardrailsPage from '@/pages/guardrails'
+import InvitationsMgmtPage from '@/pages/invitations-mgmt'
+import ObservabilityPage from '@/pages/observability'
+import PreferencesPage from '@/pages/preferences'
 import { useAuthStore } from '@/store/auth'
 import { getSession } from '@/services/auth'
 import { getMarket } from '@/lib/market'
@@ -90,12 +96,18 @@ export default function App() {
               <Route index element={<Navigate to="workspace" replace />} />
               <Route path="workspace" element={<WorkspacesPage />} />
               <Route path="account" element={<AccountSettingsPage />} />
+              <Route path="organization" element={<OrganizationPage />} />
+              <Route path="preferences" element={<PreferencesPage />} />
             </Route>
 
             <Route path="usage" element={<UsagePage />} />
             <Route path="logs" element={<LogsPage />} />
             <Route path="pay-as-you-go" element={<PayAsYouGoPage />} />
             <Route path="invoices" element={<InvoicesPage />} />
+            <Route path="billing-orders" element={<BillingOrdersPage />} />
+            <Route path="guardrails" element={<GuardrailsPage />} />
+            <Route path="invitations-mgmt" element={<InvitationsMgmtPage />} />
+            <Route path="observability" element={<ObservabilityPage />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

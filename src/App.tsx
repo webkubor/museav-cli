@@ -14,7 +14,6 @@ import InvitationsPage from '@/pages/invitations'
 import UsagePage from '@/pages/usage'
 import LogsPage from '@/pages/logs'
 import PayAsYouGoPage from '@/pages/pay-as-you-go'
-import TokenPlanPage from '@/pages/token-plan'
 import InvoicesPage from '@/pages/invoices'
 import AccountSettingsPage from '@/pages/settings/account'
 import { useAuthStore } from '@/store/auth'
@@ -91,7 +90,6 @@ export default function App() {
             <Route path="usage" element={<UsagePage />} />
             <Route path="logs" element={<LogsPage />} />
             <Route path="pay-as-you-go" element={<PayAsYouGoPage />} />
-            <Route path="token-plan" element={<TokenPlanPage />} />
             <Route path="invoices" element={<InvoicesPage />} />
           </Route>
 

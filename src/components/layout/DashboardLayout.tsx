@@ -41,7 +41,6 @@ export function DashboardLayout() {
       icon: <IconCreditCard style={{ fontSize: '16px' }} />,
       items: [
         { itemKey: 'pay-as-you-go', text: '按量付费', icon: <IconShield style={{ fontSize: '14px' }} /> },
-        { itemKey: 'token-plan', text: 'Token Plan', icon: <IconMail style={{ fontSize: '14px' }} /> },
         { itemKey: 'invoices', text: '发票管理', icon: <IconMail style={{ fontSize: '14px' }} /> }
       ]
     },

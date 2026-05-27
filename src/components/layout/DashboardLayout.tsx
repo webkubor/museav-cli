@@ -53,7 +53,6 @@ export function DashboardLayout() {
       items: [
         { itemKey: 'settings/account', text: '账号', icon: <IconUser style={{ fontSize: '14px' }} /> },
         { itemKey: 'settings/workspace', text: '业务空间', icon: <IconGlobe style={{ fontSize: '14px' }} /> },
-        { itemKey: 'settings/alarms', text: '告警', icon: <IconBell style={{ fontSize: '14px' }} /> }
       ]
     }
   ]
@@ -72,7 +71,6 @@ export function DashboardLayout() {
       breadcrumbs.push('设置')
       if (path.includes('workspace')) breadcrumbs.push('业务空间')
       else if (path.includes('account')) breadcrumbs.push('账号')
-      else if (path.includes('alarms')) breadcrumbs.push('告警')
     } else if (path === 'api-keys') {
       breadcrumbs.push('API Keys')
     } else if (path === 'logs') {

@@ -17,7 +17,6 @@ import PayAsYouGoPage from '@/pages/pay-as-you-go'
 import TokenPlanPage from '@/pages/token-plan'
 import InvoicesPage from '@/pages/invoices'
 import AccountSettingsPage from '@/pages/settings/account'
-import AlarmsSettingsPage from '@/pages/settings/alarms'
 import { useAuthStore } from '@/store/auth'
 import { getSession } from '@/services/auth'
 import { getMarket } from '@/lib/market'
@@ -87,7 +86,6 @@ export default function App() {
               <Route index element={<Navigate to="workspace" replace />} />
               <Route path="workspace" element={<WorkspacesPage />} />
               <Route path="account" element={<AccountSettingsPage />} />
-              <Route path="alarms" element={<AlarmsSettingsPage />} />
             </Route>
 
             <Route path="usage" element={<UsagePage />} />

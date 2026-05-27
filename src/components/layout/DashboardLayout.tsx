@@ -10,8 +10,7 @@ import {
   IconKey,
   IconSetting,
   IconUser,
-  IconGlobe,
-  IconBell
+  IconGlobe
 } from '@douyinfe/semi-icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { DashboardHeader } from './DashboardHeader'

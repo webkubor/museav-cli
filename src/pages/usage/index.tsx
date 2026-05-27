@@ -292,9 +292,6 @@ export default function UsagePage() {
     ? formatMoney(summary.total.spend.amount, summary.total.spend.currency)
     : '—'
   const kpiRequests = summary ? formatNumber(summary.total.requests) : '—'
-  const kpiTokens = summary
-    ? `${formatNumber(summary.total.tokens)} (↑${formatNumber(summary.total.input_tokens)} ↓${formatNumber(summary.total.output_tokens)})`
-    : '—'
 
   return (
     <div>

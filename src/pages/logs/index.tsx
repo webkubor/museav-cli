@@ -224,7 +224,8 @@ export default function LogsPage() {
   ]
 
   // ─── Expanded row renderer ───────────────────────────────────────────
-  function expandedRowRender(record: CallLogItem) {
+  function expandedRowRender(record?: CallLogItem) {
+    if (!record) return null;
     return (
       <div
         style={{

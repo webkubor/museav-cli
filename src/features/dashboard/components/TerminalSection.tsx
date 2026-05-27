@@ -2,14 +2,28 @@ import React, { useState } from 'react'
 import { Button, Toast } from '@douyinfe/semi-ui'
 import { IconTick, IconCopy } from '@douyinfe/semi-icons'
 import { CodeHighlight } from '@/components/ui/CodeHighlight'
-import { PLAIN_CODES } from '../constants/code-snippets'
+import { PLAIN_CODES, CLI_CODE } from '../constants/code-snippets'
+
+type Tab = 'cli' | 'python' | 'node' | 'curl'
+
+const TAB_LABELS: { key: Tab; label: string }[] = [
+  { key: 'cli', label: 'CLI' },
+  { key: 'python', label: 'main.py' },
+  { key: 'node', label: 'index.js' },
+  { key: 'curl', label: 'cURL' },
+]
+
+function getCode(tab: Tab): string {
+  if (tab === 'cli') return CLI_CODE
+  return PLAIN_CODES[tab]
+}
 
 export const TerminalSection: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'python' | 'node' | 'curl'>('python')
+  const [activeTab, setActiveTab] = useState<Tab>('cli')
   const [copied, setCopied] = useState(false)
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(PLAIN_CODES[activeTab])
+    navigator.clipboard.writeText(getCode(activeTab))
     setCopied(true)
     Toast.success('接入代码已复制到剪贴板')
     setTimeout(() => setCopied(false), 2000)
@@ -41,14 +55,10 @@ export const TerminalSection: React.FC = () => {
           
           {/* 仿真 Tab 切换 */}
           <div style={{ display: 'flex', gap: '4px', marginLeft: '20px' }}>
-            {[
-              { key: 'python', label: 'main.py' },
-              { key: 'node', label: 'index.js' },
-              { key: 'curl', label: 'cURL' }
-            ].map((tab) => (
+            {TAB_LABELS.map((tab) => (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key as any)}
+                onClick={() => setActiveTab(tab.key)}
                 style={{
                   padding: '4px 12px',
                   borderRadius: '6px',

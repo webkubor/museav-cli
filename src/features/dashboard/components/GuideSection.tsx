@@ -13,23 +13,30 @@ interface GuideItem {
 }
 
 const GUIDES: GuideItem[] = [
-  { 
-    title: '创建与管理 API Key', 
-    desc: '5分钟内获取安全高可用的 Token Key 凭证', 
+  {
+    title: '创建与管理 API Key',
+    desc: '5 分钟内获取安全高可用的 Token Key 凭证',
     badge: '🔑',
     badgeBg: '#fef3c7',
     badgeColor: '#d97706'
   },
-  { 
-    title: '绑定支付并开具发票', 
-    desc: '词元共生市场支付及财务开票安全指引', 
+  {
+    title: 'CLI 一键登录授权',
+    desc: '执行 modelgo-cli auth login，浏览器扫码确认即可',
+    badge: '⌨️',
+    badgeBg: '#f0f0ff',
+    badgeColor: '#6366f1'
+  },
+  {
+    title: '绑定支付并开具发票',
+    desc: '词元共生市场支付及财务开票安全指引',
     badge: '💳',
     badgeBg: '#dcfce7',
     badgeColor: '#15803d'
   },
-  { 
-    title: '探索高性价比国内合规模型', 
-    desc: '聚合深思、通义、千问等合规大模型路由', 
+  {
+    title: '探索高性价比国内合规模型',
+    desc: '聚合深思、通义、千问等合规大模型路由',
     badge: '🚀',
     badgeBg: '#e0f2fe',
     badgeColor: '#0369a1'

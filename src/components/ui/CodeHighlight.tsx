@@ -1,12 +1,22 @@
 import React from 'react'
 
 interface CodeHighlightProps {
-  language: 'python' | 'node' | 'curl'
+  language: 'cli' | 'python' | 'node' | 'curl'
 }
 
 export const CodeHighlight: React.FC<CodeHighlightProps> = ({ language }) => {
   return (
     <pre className="code-editor-pre">
+      {language === 'cli' && (
+        <code>
+          <span className="code-comment"># 1. 安装 CLI</span><br />
+          npm install -g <span className="code-string">modelgo-cli</span><br /><br />
+          <span className="code-comment"># 2. 浏览器授权登录（无需手动复制 API Key）</span><br />
+          modelgo-cli auth <span className="code-builtin">login</span><br /><br />
+          <span className="code-comment"># 3. 确认后即可在终端直接调用</span><br />
+          modelgo-cli run --model <span className="code-string">deepseek-chat</span> <span className="code-string">"你好！"</span>
+        </code>
+      )}
       {language === 'python' && (
         <code>
           <span className="code-keyword">import</span> openai<br /><br />

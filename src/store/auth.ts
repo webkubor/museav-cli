@@ -6,6 +6,7 @@ interface AuthState {
   activeTenantId: string | null
   activeWorkspaceId: string | null
   tenants: TenantBrief[]
+  permissions: string[]
   isAuthenticated: boolean
   isLoading: boolean
 }
@@ -15,31 +16,35 @@ interface AuthActions {
     account: AccountBrief,
     activeTenantId: string,
     tenants: TenantBrief[],
-    activeWorkspaceId?: string
+    activeWorkspaceId?: string,
+    permissions?: string[]
   ) => void
   addTenant: (tenant: TenantBrief) => void
   setActiveWorkspaceId: (workspaceId: string) => void
   clearAuth: () => void
   setLoading: (loading: boolean) => void
+  hasPermission: (permission: string) => boolean
 }
 
-export const useAuthStore = create<AuthState & AuthActions>((set) => ({
+export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   account: null,
   activeTenantId: null,
   activeWorkspaceId: null,
   tenants: [],
+  permissions: [],
   isAuthenticated: false,
   isLoading: true,
 
-  setAuth: (account, activeTenantId, tenants, activeWorkspaceId) => {
+  setAuth: (account, activeTenantId, tenants, activeWorkspaceId, permissions = []) => {
     if (activeTenantId) {
       localStorage.setItem('modelgo_active_tenant_id', activeTenantId)
     }
     set({
       account,
-      activeTenantId,
-      activeWorkspaceId: activeWorkspaceId ?? null,
+      activeTenantId: activeTenantId || null,
+      activeWorkspaceId: activeWorkspaceId || null,
       tenants,
+      permissions,
       isAuthenticated: true,
       isLoading: false,
     })
@@ -55,10 +60,13 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
       activeTenantId: null,
       activeWorkspaceId: null,
       tenants: [],
+      permissions: [],
       isAuthenticated: false,
       isLoading: false,
     })
   },
 
   setLoading: (isLoading) => set({ isLoading }),
+
+  hasPermission: (permission) => get().permissions.includes(permission),
 }))

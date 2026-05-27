@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:test": "tsc -b && vite build --mode test",
-    "build:production": "tsc -b && vite build --mode production",
+    "build:prod": "tsc -b && vite build --mode production",
     "check:api-contract": "node scripts/check-swagger-api.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -15,6 +15,8 @@
   "dependencies": {
     "@douyinfe/semi-icons": "^2.99.2",
     "@douyinfe/semi-ui": "^2.99.2",
+    "@hookform/resolvers": "^5.4.0",
+    "@lobehub/icons": "^5.8.0",
     "@tanstack/react-query": "^5.100.14",
     "clsx": "^2.1.1",
     "i18next": "^26.2.0",
@@ -22,9 +24,11 @@
     "lucide-react": "^1.16.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "react-hook-form": "^7.76.1",
     "react-i18next": "^17.0.8",
     "react-router-dom": "^7.15.1",
     "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3",
     "zustand": "^5.0.13"
   },
   "devDependencies": {
@@ -37,7 +41,6 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
-    "msw": "^2.14.6",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12"

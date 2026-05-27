@@ -2,7 +2,6 @@ import ky from 'ky'
 import type { ApiError, ApiResponse, QueryParams } from '@/types'
 import { injectHeaders } from '@/lib/request-headers'
 import { getMarket } from '@/lib/market'
-import { isMswEnabled } from '@/lib/msw-runtime'
 import { useLangStore } from '@/store/use-brand-store'
 
 const API_V1_PREFIX = 'api/v1'
@@ -16,8 +15,6 @@ function normalizeApiHost(value: string | undefined): string | null {
 }
 
 export function apiBaseUrl() {
-  if (isMswEnabled()) return ''
-
   // dev/test 工具条开启时从 store 读运行时 market，支持切换 API 域名
   const market = DEV_TOOLS_ENABLED ? useLangStore.getState().market : getMarket()
   const marketDomain =

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, Input, Modal, Select, Skeleton, Switch, Table, Tabs, Toast } from '@douyinfe/semi-ui'
+import { Button, Input, Modal, Select, Skeleton, Switch, Table, Toast } from '@douyinfe/semi-ui'
 import { useAuthStore } from '@/store/auth'
 import {
   createForward,
@@ -45,16 +45,16 @@ const cardStyle: React.CSSProperties = {
   backgroundColor: 'var(--semi-color-bg-0)',
   borderRadius: '12px',
   border: '1px solid var(--semi-color-fill-0)',
-  padding: '28px',
+  overflow: 'hidden',
   boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
-  marginBottom: '24px',
+  marginBottom: '16px',
 }
 
 const sectionTitleStyle: React.CSSProperties = {
   fontSize: '15px',
   fontWeight: 600,
   color: 'var(--semi-color-text-0)',
-  margin: '0 0 6px',
+  margin: 0,
 }
 
 const labelStyle: React.CSSProperties = {
@@ -67,167 +67,61 @@ const labelStyle: React.CSSProperties = {
   marginBottom: '8px',
 }
 
-// ─── LoggingTab ───────────────────────────────────────────────────────────────
+// ─── Toggle row ───────────────────────────────────────────────────────────────
 
-function LoggingTab() {
-  const qc = useQueryClient()
-  const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
-
-  const loggingQuery = useQuery({
-    queryKey: ['observability', 'logging', activeWorkspaceId],
-    queryFn: () => getLoggingConfig(activeWorkspaceId!),
-    enabled: Boolean(activeWorkspaceId),
-    staleTime: 30_000,
-    refetchOnWindowFocus: false,
-  })
-
-  if (loggingQuery.isLoading) {
-    return (
-      <div style={{ ...cardStyle, maxWidth: '640px' }}>
-        <Skeleton.Title style={{ width: '40%', marginBottom: '12px' }} />
-        <Skeleton.Paragraph rows={3} />
-      </div>
-    )
-  }
-
-  if (!loggingQuery.data || !activeWorkspaceId) {
-    return (
-      <div style={{ ...cardStyle, maxWidth: '640px', textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: '14px', padding: '48px' }}>
-        暂无配置
-      </div>
-    )
-  }
-
-  return (
-    <LoggingForm
-      key={activeWorkspaceId}
-      workspaceId={activeWorkspaceId}
-      config={loggingQuery.data}
-      onSaved={() => qc.invalidateQueries({ queryKey: ['observability', 'logging', activeWorkspaceId] })}
-    />
-  )
-}
-
-function LoggingForm({
-  workspaceId,
-  config,
-  onSaved,
+function ToggleRow({
+  title,
+  description,
+  checked,
+  loading,
+  onChange,
+  isFirst = false,
 }: {
-  workspaceId: string
-  config: LoggingConfig
-  onSaved: () => void
+  title: string
+  description: string
+  checked: boolean
+  loading: boolean
+  onChange: (v: boolean) => void
+  isFirst?: boolean
 }) {
-  const [loggingEnabled, setLoggingEnabled] = useState(config.input_output_logging_enabled)
-  const [broadcastEnabled, setBroadcastEnabled] = useState(config.broadcast_enabled)
-
-  const saveMutation = useMutation({
-    mutationFn: () =>
-      updateLoggingConfig(workspaceId, {
-        input_output_logging_enabled: loggingEnabled,
-        broadcast_enabled: broadcastEnabled,
-      }),
-    onSuccess: () => {
-      Toast.success('日志配置已保存')
-      onSaved()
-    },
-    onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : '保存失败'
-      Toast.error(msg)
-    },
-  })
-
   return (
-    <div style={{ ...cardStyle, maxWidth: '640px' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h3 style={sectionTitleStyle}>日志记录</h3>
-        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0 }}>
-          配置请求输入/输出的日志采集与广播行为。
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '20px 24px',
+      borderTop: isFirst ? 'none' : '1px solid var(--semi-color-fill-0)',
+      gap: '24px',
+    }}>
+      <div>
+        <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--semi-color-text-0)', margin: '0 0 3px' }}>
+          {title}
+        </p>
+        <p style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', margin: 0 }}>
+          {description}
         </p>
       </div>
-
-      <div
-        style={{
-          borderRadius: '10px',
-          border: '1px solid var(--semi-color-fill-0)',
-          overflow: 'hidden',
-          marginBottom: '24px',
-        }}
-      >
-        {/* Row 1 */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '18px 20px',
-            borderBottom: '1px solid var(--semi-color-bg-1)',
-          }}
-        >
-          <div>
-            <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--semi-color-text-0)', margin: '0 0 3px' }}>
-              输入 / 输出日志
-            </p>
-            <p style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', margin: 0 }}>
-              记录每次请求的完整输入和模型输出内容。
-            </p>
-          </div>
-          <Switch checked={loggingEnabled} onChange={(v) => setLoggingEnabled(v)} />
-        </div>
-
-        {/* Row 2 */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '18px 20px',
-          }}
-        >
-          <div>
-            <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--semi-color-text-0)', margin: '0 0 3px' }}>
-              广播转发
-            </p>
-            <p style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', margin: 0 }}>
-              将日志实时推送到已配置的转发目标（如 Datadog、OpenTelemetry）。
-            </p>
-          </div>
-          <Switch checked={broadcastEnabled} onChange={(v) => setBroadcastEnabled(v)} />
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <Button
-          theme="solid"
-          type="primary"
-          loading={saveMutation.isPending}
-          onClick={() => saveMutation.mutate()}
-        >
-          保存配置
-        </Button>
-      </div>
+      <Switch checked={checked} loading={loading} onChange={onChange} />
     </div>
   )
 }
 
-// ─── DestinationsTab ──────────────────────────────────────────────────────────
+// ─── Destinations section ─────────────────────────────────────────────────────
 
-function DestinationsTab() {
+function DestinationsSection({ workspaceId }: { workspaceId: string }) {
   const qc = useQueryClient()
-  const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const [platform, setPlatform] = useState('')
 
   const platformsQuery = useQuery({
-    queryKey: ['observability', 'platforms', activeWorkspaceId],
-    queryFn: () => listPlatforms(activeWorkspaceId!),
-    enabled: Boolean(activeWorkspaceId),
+    queryKey: ['observability', 'platforms', workspaceId],
+    queryFn: () => listPlatforms(workspaceId),
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
   })
 
   const forwardsQuery = useQuery({
-    queryKey: ['observability', 'forwards', activeWorkspaceId],
-    queryFn: () => listForwards(activeWorkspaceId!),
-    enabled: Boolean(activeWorkspaceId),
+    queryKey: ['observability', 'forwards', workspaceId],
+    queryFn: () => listForwards(workspaceId),
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   })
@@ -240,7 +134,7 @@ function DestinationsTab() {
 
   const createMutation = useMutation({
     mutationFn: (payload: { name: string; config: Record<string, string> }) =>
-      createForward(activeWorkspaceId!, {
+      createForward(workspaceId, {
         platform: selectedPlatformId,
         name: payload.name,
         config: payload.config,
@@ -248,34 +142,31 @@ function DestinationsTab() {
       }),
     onSuccess: () => {
       Toast.success('转发目标已创建')
-      qc.invalidateQueries({ queryKey: ['observability', 'forwards', activeWorkspaceId] })
+      qc.invalidateQueries({ queryKey: ['observability', 'forwards', workspaceId] })
     },
     onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : '创建失败'
-      Toast.error(msg)
+      Toast.error(err instanceof Error ? err.message : '创建失败')
     },
   })
 
   const toggleMutation = useMutation({
     mutationFn: (values: { forwardId: string; enabled: boolean }) =>
-      updateForward(activeWorkspaceId!, values.forwardId, { enabled: values.enabled }),
+      updateForward(workspaceId, values.forwardId, { enabled: values.enabled }),
     onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ['observability', 'forwards', activeWorkspaceId] }),
+      qc.invalidateQueries({ queryKey: ['observability', 'forwards', workspaceId] }),
     onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : '操作失败'
-      Toast.error(msg)
+      Toast.error(err instanceof Error ? err.message : '操作失败')
     },
   })
 
   const removeMutation = useMutation({
-    mutationFn: (forwardId: string) => deleteForward(activeWorkspaceId!, forwardId),
+    mutationFn: (forwardId: string) => deleteForward(workspaceId, forwardId),
     onSuccess: () => {
       Toast.success('转发目标已删除')
-      qc.invalidateQueries({ queryKey: ['observability', 'forwards', activeWorkspaceId] })
+      qc.invalidateQueries({ queryKey: ['observability', 'forwards', workspaceId] })
     },
     onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : '删除失败'
-      Toast.error(msg)
+      Toast.error(err instanceof Error ? err.message : '删除失败')
     },
   })
 
@@ -298,13 +189,11 @@ function DestinationsTab() {
       title: '状态',
       dataIndex: 'enabled',
       render: (v: boolean) => (
-        <span
-          style={
-            v
-              ? { backgroundColor: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', borderRadius: '100px', padding: '2px 10px', fontSize: '12px', fontWeight: 500 }
-              : { backgroundColor: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-2)', border: '1px solid var(--semi-color-border)', borderRadius: '100px', padding: '2px 10px', fontSize: '12px', fontWeight: 500 }
-          }
-        >
+        <span style={
+          v
+            ? { backgroundColor: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', borderRadius: '100px', padding: '2px 10px', fontSize: '12px', fontWeight: 500 }
+            : { backgroundColor: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-2)', border: '1px solid var(--semi-color-border)', borderRadius: '100px', padding: '2px 10px', fontSize: '12px', fontWeight: 500 }
+        }>
           {v ? '启用中' : '已暂停'}
         </span>
       ),
@@ -350,28 +239,32 @@ function DestinationsTab() {
   ]
 
   return (
-    <div>
-      {/* Create form card */}
-      <div style={cardStyle}>
-        <h3 style={{ ...sectionTitleStyle, marginBottom: '20px' }}>添加转发目标</h3>
-        <CreateForwardForm
-          key={selectedPlatformId}
-          platformItems={platformsQuery.data?.items ?? []}
-          selectedPlatformId={selectedPlatformId}
-          selectedPlatform={selectedPlatform}
-          onPlatformChange={setPlatform}
-          isSubmitting={createMutation.isPending}
-          onSubmit={(name, config) => {
-            if (!activeWorkspaceId || !selectedPlatformId || !name.trim()) return
-            createMutation.mutate({ name, config })
-          }}
-        />
+    <>
+      {/* Add destination form */}
+      <div style={{ ...cardStyle }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--semi-color-fill-0)' }}>
+          <h3 style={sectionTitleStyle}>添加转发目标</h3>
+        </div>
+        <div style={{ padding: '24px' }}>
+          <CreateForwardForm
+            key={selectedPlatformId}
+            platformItems={platformsQuery.data?.items ?? []}
+            selectedPlatformId={selectedPlatformId}
+            selectedPlatform={selectedPlatform}
+            onPlatformChange={setPlatform}
+            isSubmitting={createMutation.isPending}
+            onSubmit={(name, config) => {
+              if (!selectedPlatformId || !name.trim()) return
+              createMutation.mutate({ name, config })
+            }}
+          />
+        </div>
       </div>
 
-      {/* List card */}
-      <div style={{ ...cardStyle, padding: '0', overflow: 'hidden' }}>
+      {/* Destinations list */}
+      <div style={{ ...cardStyle }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--semi-color-fill-0)' }}>
-          <h3 style={{ ...sectionTitleStyle, margin: 0 }}>已配置的转发目标</h3>
+          <h3 style={sectionTitleStyle}>已配置的转发目标</h3>
         </div>
         {forwardsQuery.isLoading ? (
           <div style={{ padding: '24px' }}>
@@ -392,11 +285,11 @@ function DestinationsTab() {
           />
         )}
       </div>
-    </div>
+    </>
   )
 }
 
-// ─── CreateForwardForm (inlined) ──────────────────────────────────────────────
+// ─── CreateForwardForm ────────────────────────────────────────────────────────
 
 function CreateForwardForm({
   platformItems,
@@ -418,10 +311,6 @@ function CreateForwardForm({
   const [configValues, setConfigValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(fields.map((f) => [f.key, '']))
   )
-
-  function handleSubmit() {
-    onSubmit(name, configValues)
-  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -452,13 +341,11 @@ function CreateForwardForm({
       </div>
 
       {fields.length > 0 && (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: fields.length > 1 ? '1fr 1fr' : '1fr',
-            gap: '20px',
-          }}
-        >
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: fields.length > 1 ? '1fr 1fr' : '1fr',
+          gap: '20px',
+        }}>
           {fields.map((field) => (
             <div key={field.key}>
               <label style={labelStyle}>
@@ -482,7 +369,7 @@ function CreateForwardForm({
           theme="solid"
           type="primary"
           loading={isSubmitting}
-          onClick={handleSubmit}
+          onClick={() => onSubmit(name, configValues)}
           style={{ paddingLeft: '32px', paddingRight: '32px' }}
         >
           创建目标
@@ -492,46 +379,42 @@ function CreateForwardForm({
   )
 }
 
-// ─── FailuresTab ──────────────────────────────────────────────────────────────
+// ─── Dead Letters section ─────────────────────────────────────────────────────
 
-function FailuresTab() {
+function DeadLettersSection({ workspaceId }: { workspaceId: string }) {
   const qc = useQueryClient()
-  const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const [statusFilter, setStatusFilter] = useState<DeadLetterStatusFilter>('all')
 
   const deadLettersQuery = useQuery({
-    queryKey: ['observability', 'dead-letters', activeWorkspaceId, statusFilter],
+    queryKey: ['observability', 'dead-letters', workspaceId, statusFilter],
     queryFn: () =>
-      listDeadLetters(activeWorkspaceId!, {
+      listDeadLetters(workspaceId, {
         status: statusFilter === 'all' ? undefined : statusFilter,
         page_size: 20,
       }),
-    enabled: Boolean(activeWorkspaceId),
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   })
 
   const retryMutation = useMutation({
-    mutationFn: (deadLetterId: string) => retryDeadLetter(activeWorkspaceId!, deadLetterId),
+    mutationFn: (deadLetterId: string) => retryDeadLetter(workspaceId, deadLetterId),
     onSuccess: () => {
       Toast.success('已触发重试')
-      qc.invalidateQueries({ queryKey: ['observability', 'dead-letters', activeWorkspaceId] })
+      qc.invalidateQueries({ queryKey: ['observability', 'dead-letters', workspaceId] })
     },
     onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : '重试失败'
-      Toast.error(msg)
+      Toast.error(err instanceof Error ? err.message : '重试失败')
     },
   })
 
   const ignoreMutation = useMutation({
-    mutationFn: (deadLetterId: string) => deleteDeadLetter(activeWorkspaceId!, deadLetterId),
+    mutationFn: (deadLetterId: string) => deleteDeadLetter(workspaceId, deadLetterId),
     onSuccess: () => {
       Toast.success('已标记为忽略')
-      qc.invalidateQueries({ queryKey: ['observability', 'dead-letters', activeWorkspaceId] })
+      qc.invalidateQueries({ queryKey: ['observability', 'dead-letters', workspaceId] })
     },
     onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : '操作失败'
-      Toast.error(msg)
+      Toast.error(err instanceof Error ? err.message : '操作失败')
     },
   })
 
@@ -557,12 +440,8 @@ function FailuresTab() {
       dataIndex: 'error_message',
       render: (v: string, row: { payload_excerpt: string }) => (
         <div>
-          <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: '0 0 3px', maxWidth: '360px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {v}
-          </p>
-          <p style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', margin: 0, maxWidth: '360px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {row.payload_excerpt}
-          </p>
+          <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: '0 0 3px', maxWidth: '360px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v}</p>
+          <p style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', margin: 0, maxWidth: '360px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.payload_excerpt}</p>
         </div>
       ),
     },
@@ -584,46 +463,26 @@ function FailuresTab() {
       render: (_: unknown, row: { dead_letter_id: string; status: 'pending' | 'retrying' | 'ignored' }) =>
         row.status !== 'ignored' ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
-            <Button
-              size="small"
-              loading={retryMutation.isPending}
-              onClick={() => retryMutation.mutate(row.dead_letter_id)}
-              style={{ fontSize: '12px' }}
-            >
-              重试
-            </Button>
-            <Button
-              size="small"
-              loading={ignoreMutation.isPending}
-              onClick={() => ignoreMutation.mutate(row.dead_letter_id)}
-              style={{ fontSize: '12px', color: 'var(--semi-color-text-1)' }}
-            >
-              忽略
-            </Button>
+            <Button size="small" loading={retryMutation.isPending} onClick={() => retryMutation.mutate(row.dead_letter_id)} style={{ fontSize: '12px' }}>重试</Button>
+            <Button size="small" loading={ignoreMutation.isPending} onClick={() => ignoreMutation.mutate(row.dead_letter_id)} style={{ fontSize: '12px', color: 'var(--semi-color-text-1)' }}>忽略</Button>
           </div>
         ) : null,
     },
   ]
 
   return (
-    <div style={{ ...cardStyle, padding: '0', overflow: 'hidden' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '20px 24px',
-          borderBottom: '1px solid var(--semi-color-fill-0)',
-          gap: '12px',
-          flexWrap: 'wrap',
-        }}
-      >
-        <h3 style={{ ...sectionTitleStyle, margin: 0 }}>失败重试</h3>
-        <Select
-          value={statusFilter}
-          onChange={(v) => setStatusFilter(v as DeadLetterStatusFilter)}
-          style={{ width: '160px' }}
-        >
+    <div style={{ ...cardStyle }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '20px 24px',
+        borderBottom: '1px solid var(--semi-color-fill-0)',
+        gap: '12px',
+        flexWrap: 'wrap',
+      }}>
+        <h3 style={sectionTitleStyle}>失败重试</h3>
+        <Select value={statusFilter} onChange={(v) => setStatusFilter(v as DeadLetterStatusFilter)} style={{ width: '160px' }}>
           <Select.Option value="all">全部状态</Select.Option>
           <Select.Option value="pending">待重试</Select.Option>
           <Select.Option value="retrying">重试中</Select.Option>
@@ -632,29 +491,85 @@ function FailuresTab() {
       </div>
 
       {deadLettersQuery.isLoading ? (
-        <div style={{ padding: '24px' }}>
-          <Skeleton.Paragraph rows={4} />
-        </div>
+        <div style={{ padding: '24px' }}><Skeleton.Paragraph rows={4} /></div>
       ) : deadLetters.length === 0 ? (
-        <div
-          style={{
-            padding: '64px',
-            textAlign: 'center',
-            color: 'var(--semi-color-text-2)',
-            fontSize: '13px',
-            fontStyle: 'italic',
-          }}
-        >
+        <div style={{ padding: '64px', textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: '13px', fontStyle: 'italic' }}>
           暂无失败记录
         </div>
       ) : (
-        <Table
-          columns={columns}
-          dataSource={deadLetters}
-          rowKey="dead_letter_id"
-          pagination={false}
-          style={{ borderRadius: 0 }}
+        <Table columns={columns} dataSource={deadLetters} rowKey="dead_letter_id" pagination={false} style={{ borderRadius: 0 }} />
+      )}
+    </div>
+  )
+}
+
+// ─── Main content (requires loaded config) ────────────────────────────────────
+
+function ObservabilityContent({
+  workspaceId,
+  config,
+}: {
+  workspaceId: string
+  config: LoggingConfig
+}) {
+  const qc = useQueryClient()
+  const [loggingEnabled, setLoggingEnabled] = useState(config.input_output_logging_enabled)
+  const [broadcastEnabled, setBroadcastEnabled] = useState(config.broadcast_enabled)
+
+  const saveMutation = useMutation({
+    mutationFn: (patch: { input_output_logging_enabled: boolean; broadcast_enabled: boolean }) =>
+      updateLoggingConfig(workspaceId, patch),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['observability', 'logging', workspaceId] })
+    },
+    onError: (err: unknown) => {
+      Toast.error(err instanceof Error ? err.message : '保存失败')
+    },
+  })
+
+  function handleLoggingChange(v: boolean) {
+    const next = { input_output_logging_enabled: v, broadcast_enabled: v ? broadcastEnabled : false }
+    setLoggingEnabled(v)
+    if (!v) setBroadcastEnabled(false)
+    saveMutation.mutate(next)
+  }
+
+  function handleBroadcastChange(v: boolean) {
+    setBroadcastEnabled(v)
+    saveMutation.mutate({ input_output_logging_enabled: loggingEnabled, broadcast_enabled: v })
+  }
+
+  return (
+    <div style={{ maxWidth: '800px' }}>
+      {/* Section 1: Logging toggle — always visible */}
+      <div style={cardStyle}>
+        <ToggleRow
+          title="输入 / 输出日志"
+          description="记录每次请求的完整输入和模型输出内容。"
+          checked={loggingEnabled}
+          loading={saveMutation.isPending}
+          onChange={handleLoggingChange}
+          isFirst
         />
+
+        {/* Section 2: Broadcast toggle — only when logging is on */}
+        {loggingEnabled && (
+          <ToggleRow
+            title="广播转发"
+            description="将日志实时推送到已配置的转发目标（如 Datadog、OpenTelemetry）。"
+            checked={broadcastEnabled}
+            loading={saveMutation.isPending}
+            onChange={handleBroadcastChange}
+          />
+        )}
+      </div>
+
+      {/* Section 3 & 4: Destinations + Dead letters — only when broadcast is on */}
+      {loggingEnabled && broadcastEnabled && (
+        <>
+          <DestinationsSection workspaceId={workspaceId} />
+          <DeadLettersSection workspaceId={workspaceId} />
+        </>
       )}
     </div>
   )
@@ -663,34 +578,41 @@ function FailuresTab() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ObservabilityPage() {
+  const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
+
+  const loggingQuery = useQuery({
+    queryKey: ['observability', 'logging', activeWorkspaceId],
+    queryFn: () => getLoggingConfig(activeWorkspaceId!),
+    enabled: Boolean(activeWorkspaceId),
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  })
+
   return (
-    <div style={{ padding: '32px', maxWidth: '1280px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0 }}>
+    <div>
+      <div style={{ marginBottom: '28px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
           可观测性
         </h1>
-        <p style={{ fontSize: '14px', color: 'var(--semi-color-text-1)', margin: '6px 0 0' }}>
+        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0 }}>
           管理日志记录、数据转发目标与失败事件的重试策略。
         </p>
       </div>
 
-      <Tabs defaultActiveKey="logging">
-        <Tabs.TabPane tab="日志记录" itemKey="logging">
-          <div style={{ paddingTop: '24px' }}>
-            <LoggingTab />
-          </div>
-        </Tabs.TabPane>
-        <Tabs.TabPane tab="转发目标" itemKey="destinations">
-          <div style={{ paddingTop: '24px' }}>
-            <DestinationsTab />
-          </div>
-        </Tabs.TabPane>
-        <Tabs.TabPane tab="失败重试" itemKey="failures">
-          <div style={{ paddingTop: '24px' }}>
-            <FailuresTab />
-          </div>
-        </Tabs.TabPane>
-      </Tabs>
+      {loggingQuery.isLoading && (
+        <div style={{ ...cardStyle, maxWidth: '800px', padding: '28px' }}>
+          <Skeleton.Title style={{ width: '40%', marginBottom: '16px' }} />
+          <Skeleton.Paragraph rows={2} />
+        </div>
+      )}
+
+      {loggingQuery.data && activeWorkspaceId && (
+        <ObservabilityContent
+          key={activeWorkspaceId}
+          workspaceId={activeWorkspaceId}
+          config={loggingQuery.data}
+        />
+      )}
     </div>
   )
 }

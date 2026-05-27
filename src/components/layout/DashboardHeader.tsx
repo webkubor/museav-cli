@@ -523,24 +523,29 @@ export const DashboardHeader: React.FC = () => {
             </Dropdown.Menu>
           }
         >
-          <Avatar
-            src={account?.avatar_url ?? undefined}
-            size="default"
-            style={{
-              cursor: 'pointer',
-              backgroundColor: 'transparent',
+          {account?.avatar_url ? (
+            <div style={{
+              width: '36px', height: '36px', borderRadius: '50%',
+              overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
               boxShadow: '0 0 0 2px var(--semi-color-primary-light-hover)',
-            }}
-            imgAttr={{
-              style: {
-                objectFit: 'cover',
-                width: '100%',
-                height: '100%'
-              }
-            }}
-          >
-            {avatarLetter}
-          </Avatar>
+            }}>
+              <img
+                src={account.avatar_url}
+                alt={account.display_name || 'avatar'}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+            </div>
+          ) : (
+            <Avatar
+              size="default"
+              style={{
+                cursor: 'pointer',
+                boxShadow: '0 0 0 2px var(--semi-color-primary-light-hover)',
+              }}
+            >
+              {avatarLetter}
+            </Avatar>
+          )}
         </Dropdown>
       </div>
 

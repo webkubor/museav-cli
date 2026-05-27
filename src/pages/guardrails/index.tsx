@@ -194,12 +194,16 @@ export default function GuardrailsPage() {
   })
 
   function memberName(accountId: string) {
-    const m = membersQuery.data?.items.find((m) => m.account.account_id === accountId)
-    return m?.account.display_name ?? accountId
+    const raw = membersQuery.data as any
+    const list: any[] = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : [])
+    const m = list.find((m) => m.account?.account_id === accountId)
+    return m?.account?.display_name ?? accountId
   }
 
   function apiKeyName(keyId: string) {
-    const k = apiKeysQuery.data?.items.find((k) => k.api_key_id === keyId)
+    const raw = apiKeysQuery.data as any
+    const list: any[] = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : [])
+    const k = list.find((k) => k.api_key_id === keyId)
     return k?.name ?? keyId
   }
 

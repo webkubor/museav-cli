@@ -27,7 +27,9 @@ export default function ApiKeysPage() {
     queryKey: ['api-keys', activeWorkspaceId],
     queryFn: async () => {
       const res = await listApiKeys(activeWorkspaceId)
-      return Array.isArray(res) ? res : (res.items ?? [])
+      if (Array.isArray(res)) return res
+      if (res && Array.isArray(res.items)) return res.items
+      return [] as ApiKeyItem[]
     },
     enabled: !!activeWorkspaceId
   })
@@ -188,7 +190,8 @@ export default function ApiKeysPage() {
     }
   ]
 
-  const filteredData = (data ?? []).filter(item =>
+  const items: ApiKeyItem[] = Array.isArray(data) ? data : []
+  const filteredData = items.filter(item =>
     item.name.includes(searchValue) || (item.masked ?? '').includes(searchValue)
   )
 

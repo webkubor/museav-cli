@@ -1,19 +1,25 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, Input, Select, Table, Tabs, Toast, Typography } from '@douyinfe/semi-ui'
+import { Button, Input, Modal, Select, Table, Tabs, Tag, Toast, Typography } from '@douyinfe/semi-ui'
+import { IconPlus } from '@douyinfe/semi-icons'
 import { useAuthStore } from '@/store/auth'
 import {
   addTenantMembers,
+  createTenant,
   getTenant,
   getTenantInviteLink,
   listTenantMembers,
+  listTenants,
   removeTenantMember,
   resetTenantInviteLink,
   updateTenant,
   updateTenantMemberRole,
 } from '@/services/tenants'
+import type { TenantItem } from '@/types'
 
-const { Title, Text } = Typography
+const { Text } = Typography
+
+const MAX_TENANTS = 5
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
@@ -21,16 +27,9 @@ const cardStyle: React.CSSProperties = {
   backgroundColor: 'var(--semi-color-bg-0)',
   borderRadius: '12px',
   border: '1px solid var(--semi-color-fill-0)',
-  padding: '28px',
+  overflow: 'hidden',
   boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
   marginBottom: '24px',
-}
-
-const cardTitleStyle: React.CSSProperties = {
-  fontSize: '15px',
-  fontWeight: 600,
-  color: 'var(--semi-color-text-0)',
-  marginBottom: '20px',
 }
 
 const labelStyle: React.CSSProperties = {
@@ -43,17 +42,218 @@ const labelStyle: React.CSSProperties = {
   letterSpacing: '0.05em',
 }
 
-// ─── Tab: 基本信息 ────────────────────────────────────────────────────────────
+// ─── Role badge ───────────────────────────────────────────────────────────────
 
-function OrgInfoTab({ tenantId }: { tenantId: string | null | undefined }) {
+function RoleBadge({ role }: { role: TenantItem['role'] }) {
+  const map: Record<TenantItem['role'], { label: string; color: string; bg: string; border: string }> = {
+    tenant_owner: { label: 'Owner', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+    tenant_admin: { label: 'Admin', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+    tenant_member: { label: 'Member', color: 'var(--semi-color-text-1)', bg: 'var(--semi-color-bg-1)', border: 'var(--semi-color-border)' },
+  }
+  const s = map[role]
+  return (
+    <span style={{ fontSize: '11px', fontWeight: 600, color: s.color, backgroundColor: s.bg, border: `1px solid ${s.border}`, borderRadius: '100px', padding: '2px 8px' }}>
+      {s.label}
+    </span>
+  )
+}
+
+// ─── Org list section ─────────────────────────────────────────────────────────
+
+function OrgListSection({
+  selectedId,
+  onSelect,
+}: {
+  selectedId: string | null
+  onSelect: (id: string) => void
+}) {
+  const qc = useQueryClient()
+  const [createVisible, setCreateVisible] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newSlug, setNewSlug] = useState('')
+
+  const tenantsQuery = useQuery({
+    queryKey: ['tenants'],
+    queryFn: listTenants,
+    staleTime: 30_000,
+  })
+
+  const tenants = tenantsQuery.data?.items ?? []
+  const atLimit = tenants.length >= MAX_TENANTS
+
+  const createMutation = useMutation({
+    mutationFn: () => createTenant({ name: newName.trim(), slug: newSlug.trim(), type: 'enterprise' }),
+    onSuccess: (org) => {
+      Toast.success(`组织「${org.name}」已创建`)
+      setCreateVisible(false)
+      setNewName('')
+      setNewSlug('')
+      qc.invalidateQueries({ queryKey: ['tenants'] })
+      onSelect(org.tenant_id)
+    },
+    onError: (err: any) => {
+      Toast.error(err?.message || '创建失败')
+    },
+  })
+
+  function handleCreate() {
+    if (!newName.trim()) return Toast.error('组织名称不能为空')
+    if (!newSlug.trim()) return Toast.error('唯一标识不能为空')
+    if (!/^[a-z0-9-]+$/.test(newSlug)) return Toast.error('唯一标识仅支持小写字母、数字和连字符')
+    createMutation.mutate()
+  }
+
+  const columns = [
+    {
+      title: '组织名称',
+      dataIndex: 'name',
+      render: (v: string, record: TenantItem) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--semi-color-text-0)' }}>{v}</span>
+          {record.is_default && (
+            <Tag size="small" style={{ fontSize: '11px', borderRadius: '100px' }}>默认</Tag>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: '我的角色',
+      dataIndex: 'role',
+      render: (v: TenantItem['role']) => <RoleBadge role={v} />,
+    },
+    {
+      title: '类型',
+      dataIndex: 'type',
+      render: (v: string) => (
+        <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>
+          {v === 'personal' ? '个人' : '企业'}
+        </span>
+      ),
+    },
+    {
+      title: '工作区',
+      dataIndex: 'current_workspace_count',
+      render: (v: number, record: TenantItem) => (
+        <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>
+          {v} / {record.max_workspaces}
+        </span>
+      ),
+    },
+    {
+      title: '操作',
+      dataIndex: 'tenant_id',
+      render: (_: unknown, record: TenantItem) => (
+        <span
+          style={{
+            fontSize: '13px',
+            fontWeight: 600,
+            color: selectedId === record.tenant_id ? 'var(--semi-color-primary)' : '#0066ff',
+            cursor: 'pointer',
+            transition: 'color 0.2s',
+          }}
+          onClick={() => onSelect(record.tenant_id)}
+        >
+          {selectedId === record.tenant_id ? '管理中 ↓' : '管理'}
+        </span>
+      ),
+    },
+  ]
+
+  return (
+    <div style={cardStyle}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '20px 24px',
+        borderBottom: '1px solid var(--semi-color-fill-0)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)' }}>
+            我的组织
+          </span>
+          <span style={{
+            fontSize: '12px',
+            color: atLimit ? '#ef4444' : 'var(--semi-color-text-2)',
+            backgroundColor: atLimit ? '#fef2f2' : 'var(--semi-color-bg-1)',
+            border: `1px solid ${atLimit ? '#fecaca' : 'var(--semi-color-border)'}`,
+            borderRadius: '100px',
+            padding: '1px 8px',
+            fontWeight: 500,
+          }}>
+            {tenants.length} / {MAX_TENANTS}
+          </span>
+        </div>
+        <Button
+          theme="solid"
+          icon={<IconPlus />}
+          disabled={atLimit}
+          onClick={() => setCreateVisible(true)}
+          style={{
+            background: atLimit ? undefined : 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+            borderRadius: '24px',
+            fontSize: '13px',
+            fontWeight: 600,
+            border: 'none',
+            height: '36px',
+          }}
+        >
+          创建组织
+        </Button>
+      </div>
+
+      <Table
+        columns={columns}
+        dataSource={tenants}
+        rowKey="tenant_id"
+        loading={tenantsQuery.isLoading}
+        pagination={false}
+        style={{ borderRadius: 0 }}
+        onRow={(record: TenantItem) => ({
+          style: {
+            backgroundColor: selectedId === record.tenant_id
+              ? 'rgba(var(--semi-color-primary-rgb, 99,102,241), 0.04)'
+              : undefined,
+          },
+        })}
+      />
+
+      <Modal
+        title="创建新组织"
+        visible={createVisible}
+        onOk={handleCreate}
+        onCancel={() => setCreateVisible(false)}
+        confirmLoading={createMutation.isPending}
+        width={460}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', padding: '16px 0' }}>
+          <div>
+            <label style={labelStyle}>组织名称</label>
+            <Input value={newName} onChange={(v) => setNewName(v)} placeholder="如：我的团队" style={{ borderRadius: '8px' }} />
+          </div>
+          <div>
+            <label style={labelStyle}>唯一标识 (Slug)</label>
+            <Input value={newSlug} onChange={(v) => setNewSlug(v)} placeholder="如：my-team" style={{ borderRadius: '8px' }} />
+            <Text style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginTop: '4px', display: 'block' }}>
+              仅支持小写字母、数字和连字符
+            </Text>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  )
+}
+
+// ─── Org info tab ─────────────────────────────────────────────────────────────
+
+function OrgInfoTab({ tenantId }: { tenantId: string }) {
   const qc = useQueryClient()
   const [name, setName] = useState('')
   const [editing, setEditing] = useState(false)
 
   const tenantQuery = useQuery({
     queryKey: ['tenant', tenantId],
-    queryFn: () => getTenant(tenantId!),
-    enabled: Boolean(tenantId),
+    queryFn: () => getTenant(tenantId),
     staleTime: 60_000,
     refetchOnWindowFocus: false,
   })
@@ -61,173 +261,91 @@ function OrgInfoTab({ tenantId }: { tenantId: string | null | undefined }) {
   const tenant = tenantQuery.data
 
   const update = useMutation({
-    mutationFn: () => updateTenant(tenantId!, { name }),
+    mutationFn: () => updateTenant(tenantId, { name }),
     onSuccess: () => {
       Toast.success('组织名称已更新')
       qc.invalidateQueries({ queryKey: ['tenant', tenantId] })
       qc.invalidateQueries({ queryKey: ['tenants'] })
       setEditing(false)
     },
-    onError: (err: any) => {
-      Toast.error(err?.message || '更新失败，请重试')
-    },
+    onError: (err: any) => Toast.error(err?.message || '更新失败'),
   })
-
-  function startEdit() {
-    setName(tenant?.name ?? '')
-    setEditing(true)
-  }
 
   if (tenantQuery.isLoading) {
     return (
-      <div style={{ ...cardStyle, maxWidth: '640px' }}>
-        <div
-          style={{
-            height: '128px',
-            backgroundColor: 'var(--semi-color-fill-0)',
-            borderRadius: '8px',
-            animation: 'pulse 1.5s ease-in-out infinite',
-          }}
-        />
-      </div>
+      <div style={{ height: 100, backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '8px', animation: 'pulse 1.5s ease-in-out infinite' }} />
     )
   }
 
-  if (!tenant) {
-    return (
-      <div
-        style={{
-          height: '128px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: '12px',
-          border: '1px dashed var(--semi-color-border)',
-          backgroundColor: 'var(--semi-color-bg-1)',
-        }}
-      >
-        <Text style={{ color: 'var(--semi-color-text-2)', fontSize: '14px' }}>暂无组织信息</Text>
-      </div>
-    )
-  }
+  if (!tenant) return null
 
   return (
     <div style={{ ...cardStyle, maxWidth: '640px' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <span style={labelStyle}>组织名称</span>
-        {editing ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Input
-              value={name}
-              onChange={(val) => setName(val)}
-              onKeyDown={(e) => e.key === 'Enter' && update.mutate()}
-              autoFocus
-              style={{ maxWidth: '320px' }}
-            />
-            <Button
-              theme="solid"
-              loading={update.isPending}
-              disabled={update.isPending || name === tenant.name}
-              onClick={() => update.mutate()}
-            >
-              保存
-            </Button>
-            <Button onClick={() => setEditing(false)}>取消</Button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <span style={{ fontSize: '20px', fontWeight: 500, color: 'var(--semi-color-text-0)' }}>
-              {tenant.name}
-            </span>
-            <button
-              type="button"
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: 500,
-                color: 'var(--semi-color-primary)',
-              }}
-              onClick={startEdit}
-            >
-              更名
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '24px',
-          paddingTop: '16px',
-          borderTop: '1px solid var(--semi-color-fill-0)',
-        }}
-      >
-        <div>
-          <span style={labelStyle}>Slug</span>
-          <Text style={{ fontFamily: 'monospace', fontSize: '14px', color: 'var(--semi-color-text-0)' }}>
-            {tenant.slug}
-          </Text>
+      <div style={{ padding: '20px 24px' }}>
+        <div style={{ marginBottom: '20px' }}>
+          <label style={labelStyle}>组织名称</label>
+          {editing ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Input value={name} onChange={(v) => setName(v)} onKeyDown={(e) => e.key === 'Enter' && update.mutate()} autoFocus style={{ maxWidth: '320px' }} />
+              <Button theme="solid" loading={update.isPending} disabled={update.isPending || name === tenant.name} onClick={() => update.mutate()}>保存</Button>
+              <Button onClick={() => setEditing(false)}>取消</Button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <span style={{ fontSize: '20px', fontWeight: 500, color: 'var(--semi-color-text-0)' }}>{tenant.name}</span>
+              <button type="button" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '12px', fontWeight: 500, color: 'var(--semi-color-primary)' }} onClick={() => { setName(tenant.name); setEditing(true) }}>更名</button>
+            </div>
+          )}
         </div>
-        <div>
-          <span style={labelStyle}>账户类型</span>
-          <span
-            style={{
-              display: 'inline-block',
-              padding: '2px 10px',
-              borderRadius: '6px',
-              fontSize: '13px',
-              backgroundColor: 'rgba(var(--semi-color-primary-rgb, 99,102,241),0.06)',
-              color: 'var(--semi-color-primary)',
-              border: '1px solid rgba(var(--semi-color-primary-rgb, 99,102,241),0.2)',
-            }}
-          >
-            {tenant.type === 'personal' ? '个人账户' : '企业组织'}
-          </span>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', paddingTop: '16px', borderTop: '1px solid var(--semi-color-fill-0)' }}>
+          <div>
+            <label style={labelStyle}>Slug</label>
+            <span style={{ fontFamily: 'monospace', fontSize: '14px', color: 'var(--semi-color-text-0)' }}>{tenant.slug}</span>
+          </div>
+          <div>
+            <label style={labelStyle}>账户类型</label>
+            <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: '6px', fontSize: '13px', backgroundColor: 'rgba(var(--semi-color-primary-rgb, 99,102,241),0.06)', color: 'var(--semi-color-primary)', border: '1px solid rgba(var(--semi-color-primary-rgb, 99,102,241),0.2)' }}>
+              {tenant.type === 'personal' ? '个人账户' : '企业组织'}
+            </span>
+          </div>
+          <div>
+            <label style={labelStyle}>最大工作区数</label>
+            <span style={{ fontSize: '14px', color: 'var(--semi-color-text-0)' }}>{tenant.max_workspaces}</span>
+          </div>
+          <div>
+            <label style={labelStyle}>最大成员数</label>
+            <span style={{ fontSize: '14px', color: 'var(--semi-color-text-0)' }}>{tenant.max_members}</span>
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-// ─── Tab: 成员列表 ────────────────────────────────────────────────────────────
+// ─── Members tab ──────────────────────────────────────────────────────────────
 
-function MembersTab({ tenantId }: { tenantId: string | null | undefined }) {
+function MembersTab({ tenantId }: { tenantId: string }) {
   const qc = useQueryClient()
 
   const membersQuery = useQuery({
     queryKey: ['tenant-members', tenantId],
-    queryFn: () => listTenantMembers(tenantId!),
-    enabled: Boolean(tenantId),
+    queryFn: () => listTenantMembers(tenantId),
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   })
 
   const changeRole = useMutation({
     mutationFn: (values: { accountId: string; role: 'tenant_admin' | 'tenant_member' }) =>
-      updateTenantMemberRole(tenantId!, values.accountId, values.role),
-    onSuccess: () => {
-      Toast.success('角色已更新')
-      qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
-    },
-    onError: (err: any) => {
-      Toast.error(err?.message || '更新角色失败')
-    },
+      updateTenantMemberRole(tenantId, values.accountId, values.role),
+    onSuccess: () => { Toast.success('角色已更新'); qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] }) },
+    onError: (err: any) => Toast.error(err?.message || '更新角色失败'),
   })
 
   const removeMember = useMutation({
-    mutationFn: (accountId: string) => removeTenantMember(tenantId!, accountId),
-    onSuccess: () => {
-      Toast.success('成员已移除')
-      qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
-    },
-    onError: (err: any) => {
-      Toast.error(err?.message || '移除成员失败')
-    },
+    mutationFn: (accountId: string) => removeTenantMember(tenantId, accountId),
+    onSuccess: () => { Toast.success('成员已移除'); qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] }) },
+    onError: (err: any) => Toast.error(err?.message || '移除成员失败'),
   })
 
   const members = membersQuery.data?.items ?? []
@@ -236,31 +354,20 @@ function MembersTab({ tenantId }: { tenantId: string | null | undefined }) {
     {
       title: '姓名 / 邮箱',
       dataIndex: 'account',
-      key: 'account',
       render: (_: unknown, record: (typeof members)[number]) => (
         <div>
-          <div style={{ fontWeight: 500, color: 'var(--semi-color-text-0)', fontSize: '14px' }}>
-            {record.account.display_name || '—'}
-          </div>
-          <div style={{ color: 'var(--semi-color-text-1)', fontSize: '12px', marginTop: '2px' }}>
-            {record.account.email}
-          </div>
+          <div style={{ fontWeight: 500, color: 'var(--semi-color-text-0)', fontSize: '14px' }}>{record.account.display_name || '—'}</div>
+          <div style={{ color: 'var(--semi-color-text-1)', fontSize: '12px', marginTop: '2px' }}>{record.account.email}</div>
         </div>
       ),
     },
     {
       title: '角色权限',
       dataIndex: 'role',
-      key: 'role',
       render: (_: unknown, record: (typeof members)[number]) => (
         <Select
           value={record.role}
-          onChange={(value) =>
-            changeRole.mutate({
-              accountId: record.account.account_id,
-              role: value as 'tenant_admin' | 'tenant_member',
-            })
-          }
+          onChange={(value) => changeRole.mutate({ accountId: record.account.account_id, role: value as 'tenant_admin' | 'tenant_member' })}
           style={{ width: '130px' }}
           disabled={record.role === 'tenant_owner'}
         >
@@ -272,11 +379,8 @@ function MembersTab({ tenantId }: { tenantId: string | null | undefined }) {
     {
       title: '加入时间',
       dataIndex: 'joined_at',
-      key: 'joined_at',
       render: (val: string) => (
-        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '14px' }}>
-          {new Date(val).toLocaleDateString('zh-CN')}
-        </span>
+        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '14px' }}>{new Date(val).toLocaleDateString('zh-CN')}</span>
       ),
     },
     {
@@ -286,25 +390,11 @@ function MembersTab({ tenantId }: { tenantId: string | null | undefined }) {
       render: (_: unknown, record: (typeof members)[number]) => (
         <button
           type="button"
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '6px',
-            borderRadius: '6px',
-            color: 'var(--semi-color-text-3)',
-            transition: 'all 0.15s',
-          }}
-          onMouseEnter={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(239,68,68,0.08)'
-            ;(e.currentTarget as HTMLButtonElement).style.color = '#ef4444'
-          }}
-          onMouseLeave={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'
-            ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--semi-color-text-3)'
-          }}
-          onClick={() => removeMember.mutate(record.account.account_id)}
           disabled={record.role === 'tenant_owner'}
+          style={{ background: 'none', border: 'none', cursor: record.role === 'tenant_owner' ? 'not-allowed' : 'pointer', padding: '6px', borderRadius: '6px', color: 'var(--semi-color-text-3)', opacity: record.role === 'tenant_owner' ? 0.3 : 1 }}
+          onMouseEnter={(e) => { if (record.role !== 'tenant_owner') { e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.08)'; e.currentTarget.style.color = '#ef4444' } }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--semi-color-text-3)' }}
+          onClick={() => record.role !== 'tenant_owner' && removeMember.mutate(record.account.account_id)}
         >
           ✕
         </button>
@@ -314,25 +404,9 @@ function MembersTab({ tenantId }: { tenantId: string | null | undefined }) {
 
   return (
     <div style={cardStyle}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '20px',
-        }}
-      >
-        <div style={cardTitleStyle}>组织成员</div>
-        <span
-          style={{
-            fontSize: '12px',
-            color: 'var(--semi-color-text-1)',
-            padding: '2px 10px',
-            borderRadius: '6px',
-            border: '1px solid var(--semi-color-border)',
-            backgroundColor: 'var(--semi-color-bg-1)',
-          }}
-        >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--semi-color-fill-0)' }}>
+        <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)' }}>组织成员</span>
+        <span style={{ fontSize: '12px', color: 'var(--semi-color-text-1)', padding: '2px 10px', borderRadius: '6px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)' }}>
           {membersQuery.isLoading ? '…' : `${members.length} 位成员`}
         </span>
       </div>
@@ -342,19 +416,15 @@ function MembersTab({ tenantId }: { tenantId: string | null | undefined }) {
         rowKey={(record) => record?.account?.account_id || ''}
         loading={membersQuery.isLoading}
         pagination={false}
-        empty={
-          <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: '14px' }}>
-            暂无成员
-          </div>
-        }
+        style={{ borderRadius: 0 }}
       />
     </div>
   )
 }
 
-// ─── Tab: 邀请成员 ────────────────────────────────────────────────────────────
+// ─── Invite tab ───────────────────────────────────────────────────────────────
 
-function InviteTab({ tenantId }: { tenantId: string | null | undefined }) {
+function InviteTab({ tenantId }: { tenantId: string }) {
   const qc = useQueryClient()
   const [inviteEmails, setInviteEmails] = useState('')
   const [inviteRole, setInviteRole] = useState<'tenant_admin' | 'tenant_member'>('tenant_member')
@@ -362,45 +432,28 @@ function InviteTab({ tenantId }: { tenantId: string | null | undefined }) {
 
   const inviteLinkQuery = useQuery({
     queryKey: ['tenant-invite-link', tenantId],
-    queryFn: () => getTenantInviteLink(tenantId!),
-    enabled: Boolean(tenantId),
+    queryFn: () => getTenantInviteLink(tenantId),
     staleTime: 60_000,
     refetchOnWindowFocus: false,
   })
 
   const resetLink = useMutation({
-    mutationFn: () => resetTenantInviteLink(tenantId!),
-    onSuccess: () => {
-      Toast.success('邀请链接已重置')
-      qc.invalidateQueries({ queryKey: ['tenant-invite-link', tenantId] })
-    },
-    onError: (err: any) => {
-      Toast.error(err?.message || '重置失败，请重试')
-    },
+    mutationFn: () => resetTenantInviteLink(tenantId),
+    onSuccess: () => { Toast.success('邀请链接已重置'); qc.invalidateQueries({ queryKey: ['tenant-invite-link', tenantId] }) },
+    onError: (err: any) => Toast.error(err?.message || '重置失败'),
   })
 
   const addMembers = useMutation({
-    mutationFn: () =>
-      addTenantMembers(tenantId!, {
-        emails: inviteEmails
-          .split(/[\s,;]+/)
-          .map((e) => e.trim())
-          .filter(Boolean),
-        role: inviteRole,
-      }),
-    onSuccess: () => {
-      Toast.success('邀请已发出')
-      setInviteEmails('')
-      qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
-    },
-    onError: (err: any) => {
-      Toast.error(err?.message || '邀请失败，请重试')
-    },
+    mutationFn: () => addTenantMembers(tenantId, {
+      emails: inviteEmails.split(/[\s,;]+/).map((e) => e.trim()).filter(Boolean),
+      role: inviteRole,
+    }),
+    onSuccess: () => { Toast.success('邀请已发出'); setInviteEmails(''); qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] }) },
+    onError: (err: any) => Toast.error(err?.message || '邀请失败'),
   })
 
-  const inviteLink = inviteLinkQuery.data
-  const inviteLinkUrl = inviteLink
-    ? `${window.location.origin}/invitations/${inviteLink.token}`
+  const inviteLinkUrl = inviteLinkQuery.data
+    ? `${window.location.origin}/invitations/${inviteLinkQuery.data.token}`
     : null
 
   function handleCopyLink() {
@@ -412,202 +465,120 @@ function InviteTab({ tenantId }: { tenantId: string | null | undefined }) {
     })
   }
 
-  function handleInvite() {
-    if (!tenantId) return Toast.error('未选择组织')
-    if (!inviteEmails.trim()) return Toast.error('请输入成员邮箱')
-    addMembers.mutate()
-  }
-
   return (
     <div style={{ maxWidth: '640px' }}>
-      {/* 邀请链接 */}
       <div style={cardStyle}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            marginBottom: '20px',
-          }}
-        >
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--semi-color-fill-0)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
-            <div style={cardTitleStyle}>快速邀请链接</div>
-            <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>
-              将此链接发送给同事，他们点击后可直接申请加入当前组织
-            </Text>
+            <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: '4px' }}>快速邀请链接</div>
+            <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>将此链接发送给同事，他们点击后可直接申请加入</Text>
           </div>
-          <Button
-            size="small"
-            loading={resetLink.isPending}
-            disabled={!inviteLink || resetLink.isPending}
-            onClick={() => resetLink.mutate()}
-            style={{ flexShrink: 0, marginLeft: '16px' }}
-          >
-            重置链接
-          </Button>
+          <Button size="small" loading={resetLink.isPending} onClick={() => resetLink.mutate()} style={{ flexShrink: 0, marginLeft: '16px' }}>重置链接</Button>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {inviteLinkQuery.isLoading ? (
-            <div
-              style={{
-                flex: 1,
-                height: '40px',
-                backgroundColor: 'var(--semi-color-fill-0)',
-                borderRadius: '8px',
-                animation: 'pulse 1.5s ease-in-out infinite',
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                flex: 1,
-                padding: '10px 14px',
-                borderRadius: '8px',
-                border: '1px solid var(--semi-color-border)',
-                backgroundColor: 'var(--semi-color-bg-1)',
-                fontFamily: 'monospace',
-                fontSize: '13px',
-                color: 'var(--semi-color-text-0)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {inviteLinkUrl ?? (
-                <span style={{ color: 'var(--semi-color-text-2)', fontStyle: 'italic' }}>
-                  {window.location.origin}/invitations/&#123;token&#125;
-                </span>
-              )}
+        <div style={{ padding: '20px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)', fontFamily: 'monospace', fontSize: '13px', color: 'var(--semi-color-text-0)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {inviteLinkUrl ?? <span style={{ color: 'var(--semi-color-text-2)', fontStyle: 'italic' }}>加载中…</span>}
             </div>
-          )}
-          <Button
-            theme="solid"
-            disabled={!inviteLinkUrl || inviteLinkQuery.isLoading}
-            onClick={handleCopyLink}
-            style={
-              linkCopied
-                ? { borderColor: '#10b981', backgroundColor: 'transparent', color: '#10b981' }
-                : undefined
-            }
-          >
-            {linkCopied ? '已复制' : '复制链接'}
-          </Button>
-        </div>
-
-        <div style={{ marginTop: '10px' }}>
-          <Text style={{ fontSize: '12px', color: 'var(--semi-color-text-2)' }}>
-            落地页路径：
-            <code
-              style={{
-                backgroundColor: 'var(--semi-color-fill-0)',
-                borderRadius: '4px',
-                padding: '1px 6px',
-                fontFamily: 'monospace',
-                fontSize: '12px',
-              }}
-            >
-              /invitations/:token
-            </code>
-          </Text>
-          {inviteLinkQuery.isError && (
-            <button
-              type="button"
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-                marginLeft: '12px',
-                fontSize: '12px',
-                color: 'var(--semi-color-primary)',
-                textDecoration: 'underline',
-              }}
-              onClick={() => inviteLinkQuery.refetch()}
-            >
-              加载失败，点击重试
-            </button>
-          )}
+            <Button theme="solid" disabled={!inviteLinkUrl} onClick={handleCopyLink} style={linkCopied ? { borderColor: '#10b981', backgroundColor: 'transparent', color: '#10b981' } : undefined}>
+              {linkCopied ? '已复制' : '复制链接'}
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* 邮箱邀请 */}
       <div style={cardStyle}>
-        <div style={{ marginBottom: '20px' }}>
-          <div style={cardTitleStyle}>邮箱邀请</div>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--semi-color-fill-0)' }}>
+          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: '4px' }}>邮箱邀请</div>
           <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>直接向特定邮箱发送邀请邮件</Text>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '16px' }}>
+        <div style={{ padding: '20px 24px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '16px' }}>
           <div style={{ flex: 1, minWidth: '280px' }}>
-            <span style={labelStyle}>成员邮箱</span>
-            <Input
-              placeholder="example@company.com，多个用逗号分隔"
-              value={inviteEmails}
-              onChange={(val) => setInviteEmails(val)}
-              onKeyDown={(e) => e.key === 'Enter' && handleInvite()}
-            />
+            <label style={labelStyle}>成员邮箱</label>
+            <Input placeholder="example@company.com，多个用逗号分隔" value={inviteEmails} onChange={(val) => setInviteEmails(val)} onKeyDown={(e) => e.key === 'Enter' && addMembers.mutate()} />
           </div>
           <div style={{ width: '130px' }}>
-            <span style={labelStyle}>初始角色</span>
-            <Select
-              value={inviteRole}
-              onChange={(v) => setInviteRole(v as 'tenant_admin' | 'tenant_member')}
-              style={{ width: '100%' }}
-            >
+            <label style={labelStyle}>初始角色</label>
+            <Select value={inviteRole} onChange={(v) => setInviteRole(v as any)} style={{ width: '100%' }}>
               <Select.Option value="tenant_admin">Admin</Select.Option>
               <Select.Option value="tenant_member">Member</Select.Option>
             </Select>
           </div>
-          <Button
-            theme="solid"
-            loading={addMembers.isPending}
-            onClick={handleInvite}
-            style={{ flexShrink: 0 }}
-          >
-            发送邀请
-          </Button>
+          <Button theme="solid" loading={addMembers.isPending} onClick={() => addMembers.mutate()} style={{ flexShrink: 0 }}>发送邀请</Button>
         </div>
       </div>
     </div>
   )
 }
 
-// ─── Page ────────────────────────────────────────────────────────────────────
+// ─── Management panel ─────────────────────────────────────────────────────────
 
-export default function OrganizationSettingsPage() {
-  const { activeTenantId } = useAuthStore()
+function OrgManagePanel({ tenantId }: { tenantId: string }) {
+  const tenantsQuery = useQuery({ queryKey: ['tenants'], queryFn: listTenants, staleTime: 30_000 })
+  const tenant = tenantsQuery.data?.items.find((t) => t.tenant_id === tenantId)
+  const canManage = tenant?.role === 'tenant_owner' || tenant?.role === 'tenant_admin'
 
   return (
-    <div style={{ maxWidth: '800px' }}>
-      <div style={{ marginBottom: '32px' }}>
-        <Title
-          heading={2}
-          style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0 }}
-        >
-          组织管理
-        </Title>
-        <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '14px', marginTop: '6px', display: 'block' }}>
-          管理组织基本信息与成员邀请。
-        </Text>
+    <div>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        marginBottom: '20px',
+        paddingBottom: '16px',
+        borderBottom: '2px solid var(--semi-color-primary)',
+      }}>
+        <span style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }}>正在管理：</span>
+        <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--semi-color-text-0)' }}>
+          {tenant?.name ?? tenantId}
+        </span>
+        {tenant && <RoleBadge role={tenant.role} />}
       </div>
 
-      <Tabs defaultActiveKey="info" style={{ marginTop: '0' }}>
+      <Tabs defaultActiveKey="info">
         <Tabs.TabPane tab="基本信息" itemKey="info">
-          <div style={{ paddingTop: '24px' }}>
-            <OrgInfoTab tenantId={activeTenantId} />
+          <div style={{ paddingTop: '20px' }}>
+            <OrgInfoTab tenantId={tenantId} />
           </div>
         </Tabs.TabPane>
         <Tabs.TabPane tab="组织成员" itemKey="members">
-          <div style={{ paddingTop: '24px' }}>
-            <MembersTab tenantId={activeTenantId} />
+          <div style={{ paddingTop: '20px' }}>
+            <MembersTab tenantId={tenantId} />
           </div>
         </Tabs.TabPane>
-        <Tabs.TabPane tab="邀请成员" itemKey="invite">
-          <div style={{ paddingTop: '24px' }}>
-            <InviteTab tenantId={activeTenantId} />
-          </div>
-        </Tabs.TabPane>
+        {canManage && (
+          <Tabs.TabPane tab="邀请成员" itemKey="invite">
+            <div style={{ paddingTop: '20px' }}>
+              <InviteTab tenantId={tenantId} />
+            </div>
+          </Tabs.TabPane>
+        )}
       </Tabs>
+    </div>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function OrganizationSettingsPage() {
+  const { activeTenantId } = useAuthStore()
+  const [managingId, setManagingId] = useState<string | null>(activeTenantId ?? null)
+
+  return (
+    <div>
+      <div style={{ marginBottom: '28px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+          组织管理
+        </h1>
+        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0 }}>
+          一个账号最多创建 {MAX_TENANTS} 个组织，点击「管理」进入组织详情。
+        </p>
+      </div>
+
+      <OrgListSection selectedId={managingId} onSelect={setManagingId} />
+
+      {managingId && <OrgManagePanel key={managingId} tenantId={managingId} />}
     </div>
   )
 }

@@ -8,10 +8,6 @@ import {
   IconShield,
   IconMail,
   IconKey,
-  IconSetting,
-  IconUser,
-  IconGlobe,
-  IconUserGroup,
   IconEyeOpened,
   IconApps,
 } from '@douyinfe/semi-icons'
@@ -47,16 +43,6 @@ export function DashboardLayout() {
       text: t('nav.billing'),
       icon: <IconCreditCard style={{ fontSize: '16px' }} />,
     },
-    {
-      itemKey: 'settings',
-      text: t('nav.settings'),
-      icon: <IconSetting style={{ fontSize: '16px' }} />,
-      items: [
-        { itemKey: 'settings/account', text: t('nav.account'), icon: <IconUser style={{ fontSize: '14px' }} /> },
-        { itemKey: 'settings/workspace', text: t('nav.workspace'), icon: <IconGlobe style={{ fontSize: '14px' }} /> },
-        { itemKey: 'settings/organization', text: t('nav.organization'), icon: <IconUserGroup style={{ fontSize: '14px' }} /> },
-      ]
-    }
   ]
 
   // Workspace级：切换工作区后内容随之变化
@@ -106,6 +92,7 @@ export function DashboardLayout() {
           onSelect={(data) => navigate(`/${String(data.itemKey)}`)}
           tenantNavItems={tenantNavItems}
           workspaceNavItems={workspaceNavItems}
+          settingsLabel={t('nav.settings')}
         />
 
         {/* 主内容区 Content */}

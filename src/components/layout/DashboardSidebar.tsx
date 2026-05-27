@@ -1,6 +1,6 @@
 import React from 'react'
 import { Layout, Nav } from '@douyinfe/semi-ui'
-import { useTranslation } from 'react-i18next'
+import { IconSetting, IconChevronLeft, IconChevronRight } from '@douyinfe/semi-icons'
 
 const { Sider } = Layout
 
@@ -18,9 +18,11 @@ interface DashboardSidebarProps {
   onSelect: (data: { itemKey: string | number }) => void
   tenantNavItems: NavItem[]
   workspaceNavItems: NavItem[]
+  settingsLabel: string
 }
 
 const WORKSPACE_KEYS = ['api-keys', 'guardrails', 'observability', 'invitations-mgmt']
+const SETTINGS_KEYS = ['settings', 'settings/account', 'settings/workspace', 'settings/organization']
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   collapsed,
@@ -28,10 +30,23 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   selectedKey,
   onSelect,
   tenantNavItems,
-  workspaceNavItems
+  workspaceNavItems,
+  settingsLabel,
 }) => {
-  const { t } = useTranslation()
   const isWorkspaceSelected = WORKSPACE_KEYS.includes(selectedKey)
+  const isSettingsSelected = SETTINGS_KEYS.includes(selectedKey)
+
+  const rowBase: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    margin: '2px 8px',
+    padding: collapsed ? '9px 0' : '9px 12px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    justifyContent: collapsed ? 'center' : 'flex-start',
+    transition: 'background 0.15s',
+  }
 
   return (
     <Sider style={{
@@ -44,7 +59,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         <Nav
           isCollapsed={collapsed}
           items={tenantNavItems}
-          selectedKeys={isWorkspaceSelected ? [] : [selectedKey]}
+          selectedKeys={!isWorkspaceSelected && !isSettingsSelected ? [selectedKey] : []}
           onSelect={(data) => onSelect({ itemKey: data.itemKey })}
           style={{ border: 'none', paddingTop: '8px', flex: 'none' }}
         />
@@ -68,7 +83,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               whiteSpace: 'nowrap',
               flexShrink: 0,
             }}>
-              {t('nav.sidebarWorkspace')}
+              工作区
             </span>
           )}
           <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--semi-color-fill-0)' }} />
@@ -81,9 +96,46 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           selectedKeys={isWorkspaceSelected ? [selectedKey] : []}
           onSelect={(data) => onSelect({ itemKey: data.itemKey })}
           style={{ border: 'none', flex: 1 }}
-          footer={{ collapseButton: true }}
-          onCollapseChange={(col) => setCollapsed(col)}
         />
+
+        {/* 底部固定区：Settings + 折叠按钮 */}
+        <div style={{ borderTop: '1px solid var(--semi-color-fill-0)', padding: '6px 0' }}>
+          {/* Settings 行 */}
+          <div
+            role="button"
+            onClick={() => onSelect({ itemKey: 'settings/account' })}
+            style={{
+              ...rowBase,
+              backgroundColor: isSettingsSelected ? 'var(--semi-color-primary-light-default)' : undefined,
+              color: isSettingsSelected ? 'var(--semi-color-primary)' : 'var(--semi-color-text-1)',
+            }}
+          >
+            <IconSetting style={{ fontSize: '16px', flexShrink: 0 }} />
+            {!collapsed && (
+              <span style={{ fontSize: '14px', fontWeight: isSettingsSelected ? 600 : 400 }}>
+                {settingsLabel}
+              </span>
+            )}
+          </div>
+
+          {/* 折叠/展开按钮 */}
+          <div
+            role="button"
+            onClick={() => setCollapsed(!collapsed)}
+            style={{
+              ...rowBase,
+              color: 'var(--semi-color-text-2)',
+            }}
+          >
+            {collapsed
+              ? <IconChevronRight style={{ fontSize: '15px' }} />
+              : <IconChevronLeft style={{ fontSize: '15px' }} />
+            }
+            {!collapsed && (
+              <span style={{ fontSize: '13px' }}>收起侧栏</span>
+            )}
+          </div>
+        </div>
       </div>
     </Sider>
   )

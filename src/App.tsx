@@ -19,6 +19,7 @@ import AccountSettingsPage from '@/pages/settings/account'
 import { useAuthStore } from '@/store/auth'
 import { getSession } from '@/services/auth'
 import { getMarket } from '@/lib/market'
+import { applyTheme, getSavedTheme } from '@/lib/theme'
 
 // 注入市场标识，驱动 CSS 品牌色切换
 document.documentElement.dataset.market = getMarket()
@@ -62,6 +63,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  useEffect(() => {
+    applyTheme(getSavedTheme())
+  }, [])
+
   return (
     <Providers>
       <BrowserRouter>

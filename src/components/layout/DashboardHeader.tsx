@@ -1,12 +1,21 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Layout, Button, Dropdown, Avatar, Toast } from '@douyinfe/semi-ui'
-import { IconChevronDown, IconHelpCircle } from '@douyinfe/semi-icons'
+import {
+  IconChevronDown,
+  IconHelpCircle,
+  IconLanguage,
+  IconSun,
+  IconMoon
+} from '@douyinfe/semi-icons'
 import { useNavigate } from 'react-router-dom'
 import { modelGoLogos } from '@/config/brand-assets'
-import { getMarket } from '@/lib/market'
+import { getMarket, type Lang } from '@/lib/market'
 import { getMarketConfig } from '@/config/market'
 import { useAuthStore } from '@/store/auth'
+import { useLangStore } from '@/store/use-brand-store'
 import { switchTenant, logout } from '@/services/auth'
+import { applyTheme, getUserTheme, saveTheme, type Theme } from '@/lib/theme'
+import { useTranslation } from 'react-i18next'
 import type { TenantBrief } from '@/types'
 
 const { Header } = Layout
@@ -15,7 +24,18 @@ const { companyName } = getMarketConfig(market)
 
 export const DashboardHeader: React.FC = () => {
   const navigate = useNavigate()
+  const { t, i18n } = useTranslation()
   const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, clearAuth } = useAuthStore()
+  
+  // Theme state
+  const [currentTheme, setCurrentTheme] = useState<Theme>('light')
+  const { lang, setLang } = useLangStore()
+
+  useEffect(() => {
+    const activeTheme = account ? getUserTheme(account.account_id) : 'light'
+    setCurrentTheme(activeTheme)
+    applyTheme(activeTheme)
+  }, [account])
 
   const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
   const avatarLetter = (account?.display_name || account?.email || 'U').charAt(0).toUpperCase()
@@ -26,7 +46,7 @@ export const DashboardHeader: React.FC = () => {
       await switchTenant({ tenant_id: tenant.tenant_id })
       setAuth(account!, tenant.tenant_id, tenants, activeWorkspaceId ?? undefined)
     } catch {
-      Toast.error('切换组织失败')
+      Toast.error(t('switchTenantFailed') || '切换组织失败')
     }
   }
 
@@ -37,6 +57,19 @@ export const DashboardHeader: React.FC = () => {
       clearAuth()
       navigate('/login', { replace: true })
     }
+  }
+
+  function handleThemeChange(theme: Theme) {
+    setCurrentTheme(theme)
+    saveTheme(theme, account?.account_id)
+    applyTheme(theme)
+    Toast.success(`${t('theme')} -> ${theme === 'light' ? t('themeLight') : theme === 'dark' ? t('themeDark') : t('themeSystem')}`)
+  }
+
+  function handleLanguageChange(newLang: Lang) {
+    setLang(newLang)
+    i18n.changeLanguage(newLang)
+    Toast.success(newLang === 'zh' ? '已切换至 简体中文' : 'Switched to English')
   }
 
   return (
@@ -81,7 +114,7 @@ export const DashboardHeader: React.FC = () => {
           </span>
         </div>
 
-        {/* 租户切换 */}
+        {/* 租户组织切换 */}
         <Dropdown
           trigger="click"
           render={
@@ -127,22 +160,89 @@ export const DashboardHeader: React.FC = () => {
             ;(e.currentTarget as HTMLElement).style.boxShadow = 'none'
           }}
           >
-            <span style={{ color: '#64748b', fontWeight: 400 }}>当前组织</span>
+            <span style={{ color: '#64748b', fontWeight: 400 }}>{t('currentOrg')}</span>
             <span style={{ fontWeight: 600, color: '#0f172a' }}>{activeTenant?.name ?? '—'}</span>
             <IconChevronDown style={{ fontSize: '10px', color: '#64748b' }} />
           </div>
         </Dropdown>
       </div>
 
-      {/* 右侧：文档链接 + 用户头像 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+      {/* 右侧：功能控制区 + 用户头像 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        {/* 1. 中英文语言切换 Dropdown */}
+        <Dropdown
+          trigger="click"
+          position="bottomRight"
+          render={
+            <Dropdown.Menu style={{ width: '120px', borderRadius: '10px', padding: '6px' }}>
+              <Dropdown.Item 
+                onClick={() => handleLanguageChange('zh')}
+                style={{ borderRadius: '6px', fontSize: '13px', fontWeight: lang === 'zh' ? 600 : 400 }}
+              >
+                简体中文
+              </Dropdown.Item>
+              <Dropdown.Item 
+                onClick={() => handleLanguageChange('en')}
+                style={{ borderRadius: '6px', fontSize: '13px', fontWeight: lang === 'en' ? 600 : 400 }}
+              >
+                English
+              </Dropdown.Item>
+            </Dropdown.Menu>
+          }
+        >
+          <Button
+            theme="borderless"
+            icon={<IconLanguage />}
+            style={{ color: '#475569' }}
+            title={t('language') || '语言'}
+          />
+        </Dropdown>
+
+        {/* 2. 主题切换明暗双系统 Dropdown */}
+        <Dropdown
+          trigger="click"
+          position="bottomRight"
+          render={
+            <Dropdown.Menu style={{ width: '130px', borderRadius: '10px', padding: '6px' }}>
+              <Dropdown.Item 
+                onClick={() => handleThemeChange('light')}
+                style={{ borderRadius: '6px', fontSize: '13px', fontWeight: currentTheme === 'light' ? 600 : 400 }}
+              >
+                ☀️ {t('themeLight')}
+              </Dropdown.Item>
+              <Dropdown.Item 
+                onClick={() => handleThemeChange('dark')}
+                style={{ borderRadius: '6px', fontSize: '13px', fontWeight: currentTheme === 'dark' ? 600 : 400 }}
+              >
+                🌙 {t('themeDark')}
+              </Dropdown.Item>
+              <Dropdown.Item 
+                onClick={() => handleThemeChange('system')}
+                style={{ borderRadius: '6px', fontSize: '13px', fontWeight: currentTheme === 'system' ? 600 : 400 }}
+              >
+                💻 {t('themeSystem')}
+              </Dropdown.Item>
+            </Dropdown.Menu>
+          }
+        >
+          <Button
+            theme="borderless"
+            icon={currentTheme === 'dark' ? <IconMoon /> : <IconSun />}
+            style={{ color: '#475569' }}
+            title={t('theme') || '主题'}
+          />
+        </Dropdown>
+
+        {/* 3. 帮助中心链接 */}
         <Button
           theme="borderless"
           icon={<IconHelpCircle />}
           style={{ color: '#475569' }}
           onClick={() => window.open('https://docs.modelgo.com', '_blank')}
+          title={t('help') || '帮助'}
         />
 
+        {/* 4. 用户头像 */}
         <Dropdown
           trigger="click"
           position="bottomRight"
@@ -160,14 +260,14 @@ export const DashboardHeader: React.FC = () => {
                 onClick={() => navigate('/settings/account')}
                 style={{ borderRadius: '6px', fontSize: '13px' }}
               >
-                账号设置
+                {t('profile')}
               </Dropdown.Item>
               <Dropdown.Divider />
               <Dropdown.Item
                 onClick={handleLogout}
                 style={{ color: '#ef4444', borderRadius: '6px', fontSize: '13px' }}
               >
-                退出登录
+                {t('logout')}
               </Dropdown.Item>
             </Dropdown.Menu>
           }

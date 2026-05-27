@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Table, Button, Input, Tag, Modal, Toast, Typography, Select } from '@douyinfe/semi-ui'
-import { IconSearch, IconPlus, IconCopy } from '@douyinfe/semi-icons'
+import { IconSearch, IconPlus, IconCopy, IconClose } from '@douyinfe/semi-icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { listApiKeys, createApiKey, revokeApiKey } from '@/services/api-keys'
@@ -225,6 +225,80 @@ export default function ApiKeysPage() {
         </p>
       </div>
 
+      {/* 🔑 新建密钥就绪横幅 (Apple-style 顶部警示质感) */}
+      {revealVisible && (
+        <div 
+          className="card-shadow-adaptive"
+          style={{ 
+            marginBottom: '24px', 
+            padding: '20px 24px', 
+            background: 'var(--semi-color-bg-0)',
+            borderLeft: '4px solid #10b981',
+            position: 'relative',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+            <div>
+              <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--semi-color-text-0)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span role="img" aria-label="key">🔑</span> {t('apiKeys.revealModal.title')}
+              </div>
+              <div style={{ fontSize: '13px', color: '#b45309', marginTop: '6px', maxWidth: '680px', lineHeight: '1.5', fontWeight: 500 }}>
+                {t('apiKeys.revealModal.warning')}
+              </div>
+            </div>
+            <Button 
+              theme="borderless" 
+              icon={<IconClose />} 
+              onClick={() => setRevealVisible(false)}
+              style={{ color: 'var(--semi-color-text-2)' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ flex: 1 }}>
+              <Paragraph 
+                copyable={{
+                  icon: <IconCopy style={{ color: '#10b981', fontSize: '16px', cursor: 'pointer' }} />
+                }}
+                style={{
+                  backgroundColor: 'var(--semi-color-text-0)',
+                  color: '#10b981',
+                  padding: '12px 18px',
+                  borderRadius: '10px',
+                  fontFamily: 'monospace',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontWeight: 700,
+                  letterSpacing: '0.02em',
+                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)',
+                  margin: 0,
+                  border: '1px solid var(--semi-color-text-0)'
+                }}
+              >
+                {createdKeyText}
+              </Paragraph>
+            </div>
+            <Button 
+              type="primary" 
+              theme="solid" 
+              onClick={() => setRevealVisible(false)}
+              style={{ 
+                borderRadius: '10px', 
+                padding: '0 24px',
+                height: '46px',
+                fontWeight: 600,
+                background: 'linear-gradient(135deg, var(--brand-base) 0%, var(--brand-deep) 100%)',
+                border: 'none',
+              }}
+            >
+              {t('apiKeys.revealModal.done')}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* 控制台操作区域（搜索框 + 药丸动作按钮） */}
       <div style={{ 
         display: 'flex', 
@@ -247,31 +321,31 @@ export default function ApiKeysPage() {
           onChange={(val) => setSearchValue(val)}
         />
 
-        {/* 黑色药丸主动作按钮 (带微浮动阴影与过渡动效) */}
+        {/* 核心主动作按钮 (跟随品牌色变量) */}
         <Button
           theme="solid"
           icon={<IconPlus />}
           onClick={() => setCreateVisible(true)}
           style={{ 
-            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-            color: 'var(--semi-color-bg-0)',
+            background: 'linear-gradient(135deg, var(--brand-base) 0%, var(--brand-deep) 100%)',
+            color: '#ffffff',
             borderRadius: '24px',
             padding: '8px 24px',
             fontSize: '13px',
             fontWeight: 600,
             border: 'none',
             height: '38px',
-            boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15), inset 0 1px 1px rgba(255,255,255,0.1)',
+            boxShadow: '0 4px 12px var(--brand-glow), inset 0 1px 1px rgba(255,255,255,0.1)',
             cursor: 'pointer',
             transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-1px)';
-            e.currentTarget.style.boxShadow = '0 6px 16px rgba(15, 23, 42, 0.22)';
+            e.currentTarget.style.boxShadow = '0 6px 16px var(--brand-glow)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'none';
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.15)';
+            e.currentTarget.style.boxShadow = '0 4px 12px var(--brand-glow)';
           }}
         >
           {t('apiKeys.create')}
@@ -320,81 +394,6 @@ export default function ApiKeysPage() {
               <Select.Option value="live">{t('apiKeys.createModal.live')}</Select.Option>
               <Select.Option value="test">{t('apiKeys.createModal.test')}</Select.Option>
             </Select>
-          </div>
-        </div>
-      </Modal>
-
-      {/* 绝密：创建成功后的密钥明文 Reveal 对话框 (大厂轻拟物极客暗黑风) */}
-      <Modal
-        title={t('apiKeys.revealModal.title')}
-        visible={revealVisible}
-        hasFooter={false}
-        onCancel={() => setRevealVisible(false)}
-        closeOnEsc={false}
-        maskClosable={false}
-        width={500}
-        style={{ borderRadius: '16px' }}
-      >
-        <div style={{ padding: '8px 0' }}>
-          <div style={{ 
-            backgroundColor: '#fffbeb', 
-            border: '1px solid #fde68a', 
-            padding: '14px 18px', 
-            borderRadius: '10px',
-            color: '#b45309',
-            fontSize: '12.5px',
-            marginBottom: '24px',
-            lineHeight: '1.6',
-            fontWeight: 500
-          }}>
-            {t('apiKeys.revealModal.warning')}
-          </div>
-
-          <div style={{ marginBottom: '20px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', display: 'block', marginBottom: '10px' }}>
-              {t('apiKeys.revealModal.label')}
-            </span>
-            <Paragraph 
-              copyable={{
-                icon: <IconCopy style={{ color: '#10b981', fontSize: '16px', cursor: 'pointer' }} />
-              }}
-              style={{
-                backgroundColor: 'var(--semi-color-text-0)',
-                color: '#10b981',
-                padding: '16px 20px',
-                borderRadius: '10px',
-                fontFamily: 'monospace',
-                fontSize: '14.5px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontWeight: 700,
-                letterSpacing: '0.02em',
-                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)',
-                margin: 0,
-                border: '1px solid var(--semi-color-text-0)'
-              }}
-            >
-              {createdKeyText}
-            </Paragraph>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '28px' }}>
-            <Button 
-              type="primary" 
-              theme="solid" 
-              onClick={() => setRevealVisible(false)}
-              style={{ 
-                borderRadius: '20px', 
-                padding: '8px 28px',
-                fontWeight: 600,
-                background: 'linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)',
-                border: 'none',
-                boxShadow: '0 4px 12px rgba(29,78,216,0.2)'
-              }}
-            >
-              {t('apiKeys.revealModal.done')}
-            </Button>
           </div>
         </div>
       </Modal>

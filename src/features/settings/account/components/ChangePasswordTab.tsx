@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
 import { Button, Input, Toast, Typography } from '@douyinfe/semi-ui'
 import { useMutation } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { changePassword } from '@/services/account'
 
 const { Text } = Typography
 
 export const ChangePasswordTab: React.FC = () => {
+  const { t } = useTranslation()
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -14,27 +16,27 @@ export const ChangePasswordTab: React.FC = () => {
     mutationFn: () =>
       changePassword({ current_password: currentPassword, new_password: newPassword }),
     onSuccess: () => {
-      Toast.success('密码修改成功')
+      Toast.success(t('account.security.toastSuccess'))
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
     },
     onError: (err: any) => {
-      Toast.error(err?.message || '密码修改失败，请检查旧密码是否正确')
+      Toast.error(err?.message || t('account.security.toastError'))
     },
   })
 
   function handleSubmit() {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      Toast.warning('请填写所有密码字段')
+      Toast.warning(t('account.security.warningEmpty'))
       return
     }
     if (newPassword !== confirmPassword) {
-      Toast.error('两次输入的新密码不一致')
+      Toast.error(t('account.security.errorMismatch'))
       return
     }
     if (newPassword.length < 8) {
-      Toast.error('新密码长度不得少于 8 位')
+      Toast.error(t('account.security.errorLength'))
       return
     }
     mutation.mutate()
@@ -44,39 +46,39 @@ export const ChangePasswordTab: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '480px', paddingTop: '8px' }}>
       <div>
         <Text style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-          当前密码
+          {t('account.security.currentPassword')}
         </Text>
         <Input
           mode="password"
           value={currentPassword}
           onChange={(val) => setCurrentPassword(val)}
-          placeholder="请输入当前密码"
+          placeholder={t('account.security.currentPlaceholder')}
           style={{ borderRadius: '8px' }}
         />
       </div>
 
       <div>
         <Text style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-          新密码
+          {t('account.security.newPassword')}
         </Text>
         <Input
           mode="password"
           value={newPassword}
           onChange={(val) => setNewPassword(val)}
-          placeholder="密码长度至少为 8 位"
+          placeholder={t('account.security.newPlaceholder')}
           style={{ borderRadius: '8px' }}
         />
       </div>
 
       <div>
         <Text style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-          确认新密码
+          {t('account.security.confirmPassword')}
         </Text>
         <Input
           mode="password"
           value={confirmPassword}
           onChange={(val) => setConfirmPassword(val)}
-          placeholder="请再次输入新密码"
+          placeholder={t('account.security.confirmPlaceholder')}
           style={{ borderRadius: '8px' }}
         />
       </div>
@@ -92,7 +94,7 @@ export const ChangePasswordTab: React.FC = () => {
             fontWeight: 600
           }}
         >
-          保存修改
+          {t('common.save')}
         </Button>
       </div>
     </div>

@@ -38,6 +38,90 @@ function normalizePath(path: string) {
   return path.replace(/^\/+/, '')
 }
 
+// ─── 模块标签映射（URL 路径 → 中文模块名） ──────────────────────────────────
+const MODULE_LABEL_MAP: Array<[RegExp, string]> = [
+  // Auth
+  [/\/auth\/session/,              '会话检查'],
+  [/\/auth\/login/,                '登录'],
+  [/\/auth\/register/,             '注册'],
+  [/\/auth\/logout/,               '登出'],
+  [/\/auth\/email-code/,           '邮箱验证码'],
+  [/\/auth\/email\/check/,         '邮箱预检'],
+  [/\/auth\/password/,             '密码重置'],
+  [/\/auth\/oauth/,                'OAuth 授权'],
+  [/\/auth\/device/,               '设备码授权'],
+  // Account
+  [/\/account\/avatar/,            '账号头像'],
+  [/\/account\/password/,          '修改密码'],
+  [/\/account\/preferences/,       '偏好设置'],
+  [/\/account\/connect/,           '第三方绑定'],
+  [/\/account\/delete-request/,    '注销账号'],
+  [/\/account\/profile/,           '账号信息'],
+  [/\/account\/active-tenant/,     '切换组织'],
+  // Tenant 成员
+  [/\/tenants\/[^/]+\/members\/[^/]+/, '组织成员详情'],
+  [/\/tenants\/[^/]+\/members/,    '组织成员'],
+  [/\/tenants\/[^/]+\/invite-link/,'组织邀请链接'],
+  // Tenant 财务
+  [/\/tenants\/[^/]+\/balance/,    '账户余额'],
+  [/\/tenants\/[^/]+\/recharges/,  '充值订单'],
+  [/\/tenants\/[^/]+\/promo-codes/,'促销码兑换'],
+  [/\/tenants\/[^/]+\/billing\/transactions/, '账单流水'],
+  [/\/tenants\/[^/]+\/overview\/billing/, 'Dashboard 看板'],
+  [/\/tenants\/[^/]+\/logo/,       '组织头像'],
+  [/\/tenants\//,                  '组织'],
+  // Workspace
+  [/\/workspaces\/[^/]+\/api-keys\/[^/]+/, 'API Key 详情'],
+  [/\/workspaces\/[^/]+\/api-keys/,'API Keys'],
+  [/\/workspaces\/[^/]+\/members\/[^/]+/, '工作区成员详情'],
+  [/\/workspaces\/[^/]+\/members/, '工作区成员'],
+  [/\/workspaces\/[^/]+\/invite-link/, '工作区邀请链接'],
+  [/\/workspaces\/[^/]+\/invitations/, '工作区邀请'],
+  [/\/workspaces\/[^/]+\/guardrails/, '安全护栏列表'],
+  [/\/workspaces\/[^/]+\/observability\/broadcast-dead-letters/, '死信队列'],
+  [/\/workspaces\/[^/]+\/observability\/broadcast-destinations/, '推送目标'],
+  [/\/workspaces\/[^/]+\/observability\/platforms/, '可观测平台'],
+  [/\/workspaces\/[^/]+\/observability/, '可观测性'],
+  [/\/workspaces\//,               '工作区'],
+  // Guardrail
+  [/\/guardrails\/[^/]+\/budget-policies/, '预算策略'],
+  [/\/guardrails\/[^/]+\/assignments/, '护栏分配'],
+  [/\/guardrails\//,               '安全护栏'],
+  // Logs
+  [/\/model-logs\/[^/]+\/payload/, '日志 Payload'],
+  [/\/model-logs\/histogram/,      '用量直方图'],
+  [/\/model-logs\/stats/,          '调用统计'],
+  [/\/model-logs\//,               '调用日志'],
+  // Usage
+  [/\/usage\/summary/,             '用量总览'],
+  [/\/usage\/series/,              '用量趋势'],
+  // Catalog
+  [/\/catalog\/models\/[^/]+\/providers/, '模型服务商'],
+  [/\/catalog\/models\//,          '模型详情'],
+  [/\/catalog\/models/,            '模型目录'],
+  [/\/catalog\/providers/,         '服务商列表'],
+  [/\/catalog\/model-tags/,        '模型标签'],
+  [/\/catalog\/pricing/,           '定价方案'],
+  // Agent / CS
+  [/\/agent\/chat/,                '客服 AI 聊天'],
+  [/\/agent\/conversations\/[^/]+\/stop/, '停止对话'],
+  [/\/agent\/conversations\//,     '对话记录'],
+  // Invitations
+  [/\/invitations\/[^/]+\/accept/, '接受邀请'],
+  [/\/invitations\//,              '邀请'],
+  // Platform / Misc
+  [/\/platform-config/,            '平台配置'],
+  [/\/organizations/,              '创建组织'],
+  [/\/docs\//,                     '文档'],
+]
+
+function getModuleLabel(path: string): string {
+  for (const [pattern, label] of MODULE_LABEL_MAP) {
+    if (pattern.test(path)) return label
+  }
+  return ''
+}
+
 type ApiLogEntry = {
   method: string
   path: string
@@ -114,14 +198,14 @@ const client = ky.create({
       ({ request }) => {
         if (!import.meta.env.DEV) return
         const url = new URL(request.url)
+        const moduleLabel = getModuleLabel(url.pathname)
         const headers: Record<string, string> = {}
-        request.headers.forEach((v, k) => {
-          headers[k] = v
-        })
+        request.headers.forEach((v, k) => { headers[k] = v })
         console.groupCollapsed(
-          `%c${request.method}%c ${url.pathname}${url.search}`,
-          'color:#7c6af7;font-weight:bold',
-          'color:inherit'
+          `%c ${request.method} %c ${moduleLabel ? `[${moduleLabel}]` : ''} %c${url.pathname}${url.search}`,
+          'background:#7c6af7;color:#fff;font-weight:bold;border-radius:3px;padding:1px 4px',
+          'color:#f97316;font-weight:700',
+          'color:#94a3b8'
         )
         console.log('URL    ', request.url)
         console.log('Headers', headers)
@@ -175,23 +259,21 @@ export async function get<T>(path: string, params?: QueryParams): Promise<T> {
   const normalizedPath = normalizePath(path)
   const url = apiUrl(normalizedPath)
   const startedAt = nowMs()
-  if (import.meta.env.DEV) {
-    console.log('[API GET]', url, params ?? '')
-  }
   try {
     const result = await unwrap(
       client.get(url, { searchParams: searchParams(params) }).json<ApiResponse<T>>()
     )
-    devLogApiCall({
-      method: 'GET',
-      path: normalizedPath,
-      url,
-      ok: true,
-      duration_ms: durationMs(startedAt),
-      code: 0,
-    })
+    const ms = durationMs(startedAt)
+    devLogApiCall({ method: 'GET', path: normalizedPath, url, ok: true, duration_ms: ms, code: 0 })
     if (import.meta.env.DEV) {
-      console.log('[API RES]', url, result)
+      const label = getModuleLabel(normalizedPath)
+      console.log(
+        `%c ✓ GET %c ${label ? `[${label}]` : ''} %c${normalizedPath} %c${ms}ms`,
+        'color:#22c55e;font-weight:bold',
+        'color:#f97316;font-weight:700',
+        'color:#94a3b8',
+        'color:#cbd5e1'
+      )
     }
     return result
   } catch (error) {
@@ -271,14 +353,18 @@ async function requestWithJsonBody<T>(
   const startedAt = nowMs()
   try {
     const result = await unwrap(send(url))
-    devLogApiCall({
-      method,
-      path: normalizedPath,
-      url,
-      ok: true,
-      duration_ms: durationMs(startedAt),
-      code: 0,
-    })
+    const ms = durationMs(startedAt)
+    devLogApiCall({ method, path: normalizedPath, url, ok: true, duration_ms: ms, code: 0 })
+    if (import.meta.env.DEV) {
+      const label = getModuleLabel(normalizedPath)
+      console.log(
+        `%c ✓ ${method} %c ${label ? `[${label}]` : ''} %c${normalizedPath} %c${ms}ms`,
+        'color:#22c55e;font-weight:bold',
+        'color:#f97316;font-weight:700',
+        'color:#94a3b8',
+        'color:#cbd5e1'
+      )
+    }
     return result
   } catch (error) {
     if (error instanceof ModelGoApiError && error.code === 40302) {
@@ -298,13 +384,8 @@ function devLogApiError(
   startedAt: number,
   error: unknown
 ) {
-  const entry: ApiLogEntry = {
-    method,
-    path,
-    url,
-    ok: false,
-    duration_ms: durationMs(startedAt),
-  }
+  const ms = durationMs(startedAt)
+  const entry: ApiLogEntry = { method, path, url, ok: false, duration_ms: ms }
 
   if (error instanceof ModelGoApiError) {
     entry.code = error.code
@@ -318,6 +399,18 @@ function devLogApiError(
   }
 
   devLogApiCall(entry)
+
+  if (import.meta.env.DEV) {
+    const label = getModuleLabel(path)
+    const detail = entry.code ? `code:${entry.code}` : entry.status ? `http:${entry.status}` : ''
+    console.warn(
+      `%c ✗ ${method} %c ${label ? `[${label}]` : ''} %c${path} %c${detail} ${ms}ms`,
+      'color:#ef4444;font-weight:bold',
+      'color:#f97316;font-weight:700',
+      'color:#94a3b8',
+      'color:#ef4444'
+    )
+  }
 }
 
 function getHttpStatus(error: Error) {

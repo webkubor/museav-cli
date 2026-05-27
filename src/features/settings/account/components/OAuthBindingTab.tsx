@@ -1,18 +1,14 @@
 import React from 'react'
 import { Button } from '@douyinfe/semi-ui'
+import { useTranslation } from 'react-i18next'
 import type { OAuthConnection } from '@/types'
 
 interface OAuthBindingTabProps {
   connections: OAuthConnection[]
 }
 
-const PROVIDER_LABELS: Record<OAuthConnection['provider'], string> = {
-  google: 'Google 账号',
-  github: 'GitHub 账号',
-  wechat: '微信 账号',
-}
-
 export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections }) => {
+  const { t } = useTranslation()
   const PROVIDERS: OAuthConnection['provider'][] = ['google', 'github', 'wechat']
 
   const connMap = new Map<OAuthConnection['provider'], OAuthConnection>()
@@ -21,7 +17,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '520px', paddingTop: '8px' }}>
       <div style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', marginBottom: '8px', lineHeight: '1.5' }}>
-        绑定第三方社交或代码托管平台账户，支持使用对应的快捷登录入口免密码接入控制台。
+        {t('account.oauth.desc')}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -44,8 +40,8 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = 'var(--semi-color-bg-0)';
-                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.25)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.03)';
+                e.currentTarget.style.borderColor = 'var(--brand-glow)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-md)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'var(--semi-color-bg-1)';
@@ -77,20 +73,20 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   <div style={{ display: 'flex', alignItems: 'center' }}>
                     <span style={{ fontWeight: 600, color: 'var(--semi-color-text-0)', fontSize: '14.5px', letterSpacing: '-0.01em' }}>
-                      {PROVIDER_LABELS[provider]}
+                      {t(`account.oauth.${provider}`)}
                     </span>
                     {isBound ? (
                       <span style={{ 
                         fontSize: '11px', 
-                        color: '#059669', 
+                        color: 'var(--go-deep)', 
                         marginLeft: '10px',
-                        backgroundColor: '#ecfdf5',
+                        backgroundColor: 'var(--go-pale)',
                         padding: '1px 6px',
                         borderRadius: '10px',
                         fontWeight: 600,
-                        border: '1px solid #a7f3d0'
+                        border: '1px solid var(--go-light)'
                       }}>
-                        已绑定
+                        {t('account.oauth.bound')}
                       </span>
                     ) : (
                       <span style={{
@@ -103,13 +99,13 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
                         fontWeight: 500,
                         border: '1px solid var(--semi-color-border)'
                       }}>
-                        未绑定
+                        {t('account.oauth.notBound')}
                       </span>
                     )}
                   </div>
                   {isBound && conn.external_email && (
                     <span style={{ fontSize: '12px', color: 'var(--semi-color-text-2)' }}>
-                      账号邮箱: {conn.external_email}
+                      {t('account.oauth.emailLabel', { email: conn.external_email })}
                     </span>
                   )}
                 </div>
@@ -122,7 +118,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
                   fontWeight: 600 
                 }}
               >
-                {isBound ? '解绑' : '连接'}
+                {isBound ? t('account.oauth.unbind') : t('account.oauth.bind')}
               </Button>
             </div>
           )

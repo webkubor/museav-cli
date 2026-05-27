@@ -298,18 +298,12 @@ export default function InvitationsMgmtPage() {
             disabled={!inviteLink}
             onClick={handleCopyLink}
             style={{
-              background: copied
-                ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)'
-                : 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-              color: 'var(--semi-color-bg-0)',
-              border: 'none',
               borderRadius: '8px',
               height: '40px',
               padding: '0 20px',
               fontSize: '13px',
               fontWeight: 600,
               flexShrink: 0,
-              transition: 'background 0.2s ease',
             }}
           >
             {copied ? '已复制' : '复制链接'}
@@ -429,9 +423,6 @@ export default function InvitationsMgmtPage() {
             disabled={!emailInput.trim() || !activeWorkspaceId}
             onClick={handleSendInvites}
             style={{
-              background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-              color: 'var(--semi-color-bg-0)',
-              border: 'none',
               borderRadius: '8px',
               height: '40px',
               padding: '0 24px',

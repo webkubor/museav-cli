@@ -528,11 +528,13 @@ export const DashboardHeader: React.FC = () => {
               width: '36px', height: '36px', borderRadius: '50%',
               overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
               boxShadow: '0 0 0 2px var(--semi-color-primary-light-hover)',
+              backgroundColor: 'var(--semi-color-fill-0)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <img
                 src={account.avatar_url}
                 alt={account.display_name || 'avatar'}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
               />
             </div>
           ) : (

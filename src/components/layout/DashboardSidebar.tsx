@@ -1,6 +1,7 @@
 import React from 'react'
 import { Layout, Nav } from '@douyinfe/semi-ui'
 import { IconSetting, IconChevronLeft, IconChevronRight } from '@douyinfe/semi-icons'
+import { useTranslation } from 'react-i18next'
 
 const { Sider } = Layout
 
@@ -33,6 +34,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   workspaceNavItems,
   settingsLabel,
 }) => {
+  const { t } = useTranslation()
   const isWorkspaceSelected = WORKSPACE_KEYS.includes(selectedKey)
   const isSettingsSelected = SETTINGS_KEYS.includes(selectedKey)
 
@@ -83,7 +85,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               whiteSpace: 'nowrap',
               flexShrink: 0,
             }}>
-              工作区
+              {t('nav.sidebarWorkspace')}
             </span>
           )}
           <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--semi-color-fill-0)' }} />
@@ -132,7 +134,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               : <IconChevronLeft style={{ fontSize: '15px' }} />
             }
             {!collapsed && (
-              <span style={{ fontSize: '13px' }}>收起侧栏</span>
+              <span style={{ fontSize: '13px' }}>{collapsed ? t('common.expand') : t('common.collapse')}</span>
             )}
           </div>
         </div>

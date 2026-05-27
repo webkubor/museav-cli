@@ -21,6 +21,7 @@ import GuardrailsPage from '@/pages/guardrails'
 import InvitationsMgmtPage from '@/pages/invitations-mgmt'
 import ObservabilityPage from '@/pages/observability'
 import ModelsPage from '@/pages/models'
+import PlatformConfigPage from '@/pages/platform-config'
 import { useAuthStore } from '@/store/auth'
 import { getSession } from '@/services/auth'
 import { getMarket } from '@/lib/market'
@@ -106,6 +107,7 @@ export default function App() {
             <Route path="invitations-mgmt" element={<InvitationsMgmtPage />} />
             <Route path="observability" element={<ObservabilityPage />} />
             <Route path="models" element={<ModelsPage />} />
+            <Route path="platform-config" element={<PlatformConfigPage />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

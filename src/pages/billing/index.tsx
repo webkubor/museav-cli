@@ -18,11 +18,18 @@ import {
   listRecharges,
   cancelRecharge,
 } from '@/services/billing'
+import { getPlatformConfig } from '@/services/platform'
 import { useAuthStore } from '@/store/auth'
 import { isDomestic } from '@/lib/market'
 import type { RechargeOrder } from '@/types'
 
 // ─── Sub-components: TopUpModal ───────────────────────────────────────────
+
+const ALL_CHANNELS = [
+  { value: 'alipay',  label: '支付宝' },
+  { value: 'wechat',  label: '微信支付' },
+  { value: 'stripe',  label: 'Stripe' },
+]
 
 function TopUpModal({ visible, onClose, tenantId }: {
   visible: boolean
@@ -32,21 +39,32 @@ function TopUpModal({ visible, onClose, tenantId }: {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [amount, setAmount] = useState('100')
+
+  const { data: platformConfig } = useQuery({
+    queryKey: ['platform-config'],
+    queryFn: getPlatformConfig,
+    staleTime: Infinity,
+    retry: 1,
+  })
+
+  // 优先走 Swagger platform-config 接口，降级到全量
+  const CHANNELS = platformConfig?.enabled_channels?.length
+    ? ALL_CHANNELS.filter((c) => platformConfig.enabled_channels.includes(c.value))
+    : ALL_CHANNELS
+
   const [channel, setChannel] = useState<'alipay' | 'wechat' | 'stripe'>('alipay')
+  const effectiveChannel: 'alipay' | 'wechat' | 'stripe' = (
+    CHANNELS.some((c) => c.value === channel) ? channel : (CHANNELS[0]?.value ?? 'alipay')
+  ) as 'alipay' | 'wechat' | 'stripe'
 
   const PRESETS = ['10', '50', '100', '500']
-  const CHANNELS = [
-    { value: 'alipay' as const, label: '支付宝' },
-    { value: 'wechat' as const, label: '微信支付' },
-    { value: 'stripe' as const, label: 'Stripe' },
-  ]
 
   const recharge = useMutation({
     mutationFn: () =>
       createRecharge(tenantId, {
         amount,
         currency: 'CNY',
-        channel,
+        channel: effectiveChannel,
         return_url: window.location.href,
       }),
     onSuccess: (data) => {
@@ -125,8 +143,8 @@ function TopUpModal({ visible, onClose, tenantId }: {
           <div style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', marginBottom: '10px' }}>{t('billing.rechargeModal.method')}</div>
           <div style={{ display: 'flex', gap: '8px' }}>
             {CHANNELS.map((c) => (
-              <button key={c.value} type="button" onClick={() => setChannel(c.value)}
-                style={channel === c.value ? btnActive : btnBase}>
+              <button key={c.value} type="button" onClick={() => setChannel(c.value as 'alipay' | 'wechat' | 'stripe')}
+                style={effectiveChannel === c.value ? btnActive : btnBase}>
                 {c.label}
               </button>
             ))}
@@ -139,7 +157,14 @@ function TopUpModal({ visible, onClose, tenantId }: {
           loading={recharge.isPending}
           disabled={!parseFloat(amount) || parseFloat(amount) <= 0}
           onClick={() => recharge.mutate()}
-          style={{ height: '40px', fontSize: '14px', fontWeight: 600 }}
+          style={{ 
+            height: '40px', 
+            fontSize: '14px', 
+            fontWeight: 600,
+            background: 'linear-gradient(135deg, var(--brand-base) 0%, var(--brand-deep) 100%)',
+            border: 'none',
+            boxShadow: '0 4px 12px var(--brand-glow)'
+          }}
         >
           {t('billing.rechargeModal.submit', { amount })}
         </Button>
@@ -150,12 +175,6 @@ function TopUpModal({ visible, onClose, tenantId }: {
 
 // ─── Styles ────────────────────────────────────────────────────────────────
 
-const cardStyle: React.CSSProperties = {
-  backgroundColor: 'var(--semi-color-bg-0)',
-  borderRadius: '12px',
-  border: '1px solid var(--semi-color-fill-0)',
-  boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
-}
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
@@ -186,7 +205,7 @@ export default function BillingPage() {
       <TopUpModal visible={topUpVisible} onClose={() => setTopUpVisible(false)} tenantId={tenantId} />
 
       {/* Balance Section */}
-      <div style={{ ...cardStyle, padding: '28px 32px', marginBottom: '24px' }}>
+      <div className="card-shadow-adaptive" style={{ padding: '28px 32px', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)' }}>{t('billing.balance.title')}</div>
           <Button theme="solid" onClick={() => setTopUpVisible(true)} style={{ borderRadius: '8px', fontWeight: 600 }}>

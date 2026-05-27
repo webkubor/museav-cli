@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Tabs, Typography } from '@douyinfe/semi-ui'
+import { useTranslation } from 'react-i18next'
 import { getProfile } from '@/services/account'
 import { BasicInfoTab } from '@/features/settings/account/components/BasicInfoTab'
 import { ChangePasswordTab } from '@/features/settings/account/components/ChangePasswordTab'
@@ -8,6 +9,7 @@ import { OAuthBindingTab } from '@/features/settings/account/components/OAuthBin
 const { Title, Text } = Typography
 
 export default function AccountSettingsPage() {
+  const { t } = useTranslation()
   const { data: profile, isLoading, isError } = useQuery({
     queryKey: ['account-profile'],
     queryFn: getProfile,
@@ -15,14 +17,14 @@ export default function AccountSettingsPage() {
 
   if (isLoading) {
     return (
-      <div style={{ padding: '40px', color: 'var(--semi-color-text-1)', fontSize: '14px' }}>加载中...</div>
+      <div style={{ padding: '40px', color: 'var(--semi-color-text-1)', fontSize: '14px' }}>{t('common.loading')}</div>
     )
   }
 
   if (isError || !profile) {
     return (
       <div style={{ padding: '40px', color: '#ef4444', fontSize: '14px' }}>
-        加载账号信息失败，请刷新重试。
+        {t('common.errorLoadProfile')}
       </div>
     )
   }
@@ -35,26 +37,26 @@ export default function AccountSettingsPage() {
           heading={2}
           style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0, letterSpacing: '-0.02em' }}
         >
-          账号设置
+          {t('account.title')}
         </Title>
         <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '13.5px', marginTop: '6px', display: 'block' }}>
-          管理你的个人信息、密码及第三方账号绑定。
+          {t('account.desc')}
         </Text>
       </div>
 
       {/* 清雅水平 Tabs 视窗切换，彻底告别堆叠 Card 拥挤感 */}
       <Tabs defaultActiveKey="info" style={{ marginTop: '0' }}>
-        <Tabs.TabPane tab="基本资料" itemKey="info">
+        <Tabs.TabPane tab={t('account.tabs.info')} itemKey="info">
           <div style={{ paddingTop: '24px' }}>
             <BasicInfoTab profile={profile} />
           </div>
         </Tabs.TabPane>
-        <Tabs.TabPane tab="密码与安全" itemKey="security">
+        <Tabs.TabPane tab={t('account.tabs.security')} itemKey="security">
           <div style={{ paddingTop: '24px' }}>
             <ChangePasswordTab />
           </div>
         </Tabs.TabPane>
-        <Tabs.TabPane tab="第三方账号" itemKey="oauth">
+        <Tabs.TabPane tab={t('account.tabs.oauth')} itemKey="oauth">
           <div style={{ paddingTop: '24px' }}>
             <OAuthBindingTab connections={profile.connected_oauth} />
           </div>

@@ -54,11 +54,11 @@ export default function WorkspacesPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontWeight: 600, color: 'var(--semi-color-text-0)', fontSize: '13.5px' }}>{text}</span>
           {record.is_default && (
-            <Tag 
-              style={{ 
-                backgroundColor: '#eff6ff', 
-                color: '#2563eb', 
-                border: '1px solid #dbeafe',
+            <Tag
+              style={{
+                backgroundColor: 'var(--semi-color-primary-light-default)',
+                color: 'var(--semi-color-primary)',
+                border: '1px solid var(--semi-color-primary-light-active)',
                 fontSize: '11px',
                 fontWeight: 600,
                 padding: '1px 8px',
@@ -212,13 +212,10 @@ export default function WorkspacesPage() {
           icon={<IconPlus />}
           onClick={() => setModalVisible(true)}
           style={{ 
-            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-            color: 'var(--semi-color-bg-0)',
             borderRadius: '24px',
             padding: '8px 24px',
             fontSize: '13px',
             fontWeight: 600,
-            border: 'none',
             height: '38px',
             boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15), inset 0 1px 1px rgba(255,255,255,0.1)',
             cursor: 'pointer',

@@ -10,6 +10,7 @@ import {
   IconKey,
   IconEyeOpened,
   IconApps,
+  IconWrench,
 } from '@douyinfe/semi-icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -18,6 +19,8 @@ import { DashboardSidebar } from './DashboardSidebar'
 import { CustomerService } from '@/components/customer-service'
 
 const { Content } = Layout
+
+const isDevTools = import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
 
 export function DashboardLayout() {
   const { t } = useTranslation()
@@ -43,6 +46,11 @@ export function DashboardLayout() {
       text: t('nav.billing'),
       icon: <IconCreditCard style={{ fontSize: '16px' }} />,
     },
+    ...(isDevTools ? [{
+      itemKey: 'platform-config',
+      text: '平台配置',
+      icon: <IconWrench style={{ fontSize: '16px', color: '#d97706' }} />,
+    }] : []),
   ]
 
   // Workspace级：切换工作区后内容随之变化
@@ -69,6 +77,7 @@ export function DashboardLayout() {
     guardrails:       [t('nav.home'), t('nav.guardrails')],
     observability:    [t('nav.home'), t('nav.observability')],
     'invitations-mgmt': [t('nav.home'), t('nav.invitations')],
+    'platform-config':  [t('nav.home'), '平台配置'],
     'settings/account':      [t('nav.home'), t('nav.settings'), t('nav.account')],
     'settings/workspace':    [t('nav.home'), t('nav.settings'), t('nav.workspace')],
     'settings/organization': [t('nav.home'), t('nav.settings'), t('nav.organization')],

@@ -18,7 +18,7 @@ const MODALITY_LABEL: Record<string, string> = {
 
 function ModalityBadge({ modality }: { modality: string }) {
   const colors: Record<string, { bg: string; color: string; border: string }> = {
-    text:      { bg: '#eff6ff', color: '#2563eb', border: '#dbeafe' },
+    text:      { bg: 'var(--semi-color-primary-light-default)', color: 'var(--semi-color-primary)', border: 'var(--semi-color-primary-light-active)' },
     image:     { bg: '#f5f3ff', color: '#7c3aed', border: '#ede9fe' },
     audio:     { bg: '#ecfdf5', color: '#059669', border: '#a7f3d0' },
     video:     { bg: '#fff7ed', color: '#ea580c', border: '#fed7aa' },

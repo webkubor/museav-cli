@@ -1,8 +1,10 @@
 import { Button } from '@douyinfe/semi-ui'
+import { useQuery } from '@tanstack/react-query'
 import Google from '@lobehub/icons/es/Google'
 import Github from '@lobehub/icons/es/Github'
 import { useMarket } from '@/hooks/useMarket'
 import { oauthAuthorizeUrl } from '@/services/auth'
+import { getPlatformConfig } from '@/services/platform'
 
 interface Props { redirectTo: string }
 
@@ -43,8 +45,38 @@ function WechatIcon() {
   )
 }
 
+const OAUTH_ICONS: Record<string, React.ReactNode> = {
+  wechat: <WechatIcon />,
+  github: <Github size={16} />,
+  google: <Google size={16} />,
+}
+
+const OAUTH_LABELS: Record<string, string> = {
+  wechat: '微信',
+  github: 'GitHub',
+  google: 'Google',
+}
+
+const MARKET_FALLBACK: Record<string, string[]> = {
+  domestic: ['wechat', 'github'],
+  global:   ['google', 'github'],
+}
+
 export function SocialLogin({ redirectTo }: Props) {
   const market = useMarket()
+
+  const { data: platformConfig } = useQuery({
+    queryKey: ['platform-config'],
+    queryFn: getPlatformConfig,
+    staleTime: Infinity,
+    retry: 1,
+  })
+
+  // 优先用 Swagger 接口返回的启用列表，降级到市场硬编码
+  const oauthMethods = (platformConfig?.enabled_login_methods ?? MARKET_FALLBACK[market] ?? [])
+    .filter((m) => m !== 'password')
+
+  if (oauthMethods.length === 0) return null
 
   return (
     <>
@@ -55,41 +87,16 @@ export function SocialLogin({ redirectTo }: Props) {
       </div>
 
       <div style={{ display: 'flex', gap: '8px' }}>
-        {market === 'domestic' ? (
-          <>
-            <Button
-              style={btnStyle}
-              icon={<WechatIcon />}
-              onClick={() => { window.location.href = oauthAuthorizeUrl('wechat', redirectTo) }}
-            >
-              微信
-            </Button>
-            <Button
-              style={btnStyle}
-              icon={<Github size={16} />}
-              onClick={() => { window.location.href = oauthAuthorizeUrl('github', redirectTo) }}
-            >
-              GitHub
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              style={btnStyle}
-              icon={<Google size={16} />}
-              onClick={() => { window.location.href = oauthAuthorizeUrl('google', redirectTo) }}
-            >
-              Google
-            </Button>
-            <Button
-              style={btnStyle}
-              icon={<Github size={16} />}
-              onClick={() => { window.location.href = oauthAuthorizeUrl('github', redirectTo) }}
-            >
-              GitHub
-            </Button>
-          </>
-        )}
+        {oauthMethods.map((method) => (
+          <Button
+            key={method}
+            style={btnStyle}
+            icon={OAUTH_ICONS[method]}
+            onClick={() => { window.location.href = oauthAuthorizeUrl(method as any, redirectTo) }}
+          >
+            {OAUTH_LABELS[method] ?? method}
+          </Button>
+        ))}
       </div>
     </>
   )

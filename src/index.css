@@ -1,86 +1,112 @@
 /* 重置默认 CSS，为 Semi Design 提供大厂极简云平台美学基础环境 */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Outfit:wght@100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 
-/* ── 品牌色 Token ── */
+/* ── 核心设计系统 Token ── */
 :root {
-  /* CN 靛紫（国内市场 / 词元共生） */
-  --cn-deep: #4f46e5;
+  /* CN 靛紫 (Indigo Modern) */
+  --cn-deep: #4338ca;
   --cn-base: #6366f1;
   --cn-mid: #818cf8;
   --cn-light: #a5b4fc;
-  --cn-pale: #c7d2fe;
-  --cn-glow-soft: rgba(99, 102, 241, 0.15);
-  --cn-selected-bg: #eef2ff;
+  --cn-pale: #eef2ff;
+  --cn-glow: rgba(99, 102, 241, 0.12);
+  --cn-selected-bg: rgba(99, 102, 241, 0.06);
 
-  /* GO 翠绿（海外市场 / ModelGo） */
+  /* GO 翠绿 (Emerald Modern) */
   --go-deep: #059669;
   --go-base: #10b981;
   --go-mid: #34d399;
   --go-light: #6ee7b7;
-  --go-pale: #a7f3d0;
-  --go-glow-soft: rgba(16, 185, 129, 0.15);
-  --go-selected-bg: #ecfdf5;
+  --go-pale: #ecfdf5;
+  --go-glow: rgba(16, 185, 129, 0.12);
+  --go-selected-bg: rgba(16, 185, 129, 0.06);
 
-  /* 默认：国内（indigo） */
+  /* 默认：国内 */
   --brand-deep: var(--cn-deep);
   --brand-base: var(--cn-base);
   --brand-mid: var(--cn-mid);
   --brand-light: var(--cn-light);
   --brand-pale: var(--cn-pale);
-  --brand-glow-soft: var(--cn-glow-soft);
+  --brand-glow: var(--cn-glow);
   --brand-selected-bg: var(--cn-selected-bg);
 
-  /* Semi Design 主色注入（国内） */
-  --semi-color-primary: var(--cn-base);
-  --semi-color-primary-hover: var(--cn-mid);
-  --semi-color-primary-active: var(--cn-deep);
-  --semi-color-primary-disabled: var(--cn-light);
-  --semi-color-primary-light-default: rgba(99, 102, 241, 0.08);
-  --semi-color-primary-light-hover: rgba(99, 102, 241, 0.12);
-  --semi-color-primary-light-active: rgba(99, 102, 241, 0.16);
+  /* 🍏 Apple-style 高级灰背景 */
+  --site-bg: #f8fafc; /* 极浅蓝灰，降低视觉疲劳 */
+  --card-bg: #ffffff;
+  
+  /* 💎 Stripe-style 软投影 (Ambient Shadows) */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 12px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.06), 0 4px 8px -2px rgba(15, 23, 42, 0.04);
+  --shadow-focus: 0 0 0 3px var(--brand-glow);
+
+  /* 统一大圆角 */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-full: 9999px;
+
+  /* ────── Semi UI 变量强力覆写 ────── */
+  --semi-color-primary: var(--brand-base);
+  --semi-color-primary-hover: var(--brand-mid);
+  --semi-color-primary-active: var(--brand-deep);
+  --semi-color-primary-disabled: var(--brand-light);
+  --semi-color-primary-light-default: var(--brand-pale);
+  
+  /* 强制图标与链接响应品牌色 */
+  --semi-color-link: var(--brand-base);
+  --semi-color-link-hover: var(--brand-mid);
+  --semi-color-nav-item-text-active: var(--brand-deep);
+  --semi-color-nav-item-icon-active: var(--brand-base);
+  
+  /* 文字与描边弱化（去死板黑灰） */
+  --semi-color-bg-0: var(--card-bg);
+  --semi-color-bg-1: var(--site-bg);
+  --semi-color-border: rgba(15, 23, 42, 0.06); /* 若有若无的线 */
+  --semi-color-fill-0: rgba(15, 23, 42, 0.03);
+  --semi-color-text-0: #0f172a; /* Slate 900 */
+  --semi-color-text-1: #475569; /* Slate 600 */
+  --semi-color-text-2: #94a3b8; /* Slate 400 */
+  
+  /* 导航项自定义 */
+  --nav-item-active-bg: var(--brand-selected-bg);
 }
 
-/* ── 暗色模式：Semi Design 通过 body[theme-mode='dark'] 激活 ── */
+/* 🌙 暗色模式 (Modern Dark Mode) */
 body[theme-mode='dark'] {
-  /* 国内市场暗色主色（默认） */
-  --semi-color-primary: var(--cn-mid);
-  --semi-color-primary-hover: var(--cn-light);
-  --semi-color-primary-active: var(--cn-base);
-  --semi-color-primary-disabled: rgba(99, 102, 241, 0.3);
-  --semi-color-primary-light-default: rgba(99, 102, 241, 0.12);
-  --semi-color-primary-light-hover: rgba(99, 102, 241, 0.18);
-  --semi-color-primary-light-active: rgba(99, 102, 241, 0.24);
+  --site-bg: #020617; /* 深海黑蓝 */
+  --card-bg: #0f172a;
+  --semi-color-bg-0: var(--card-bg);
+  --semi-color-bg-1: var(--site-bg);
+  --semi-color-text-0: #f8fafc;
+  --semi-color-text-1: #cbd5e1;
+  --semi-color-text-2: #64748b;
+  --semi-color-border: rgba(255, 255, 255, 0.06);
+  --semi-color-fill-0: rgba(255, 255, 255, 0.04);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
-/* 海外市场暗色主色 */
-[data-market='global'] body[theme-mode='dark'] {
-  --semi-color-primary: var(--go-mid);
-  --semi-color-primary-hover: var(--go-light);
-  --semi-color-primary-active: var(--go-base);
-  --semi-color-primary-disabled: rgba(16, 185, 129, 0.3);
-  --semi-color-primary-light-default: rgba(16, 185, 129, 0.12);
-  --semi-color-primary-light-hover: rgba(16, 185, 129, 0.18);
-  --semi-color-primary-light-active: rgba(16, 185, 129, 0.24);
-}
-
-/* 海外市场切换为翠绿 */
+/* 海外市场 Token 切换 */
 [data-market='global'] {
   --brand-deep: var(--go-deep);
   --brand-base: var(--go-base);
   --brand-mid: var(--go-mid);
   --brand-light: var(--go-light);
   --brand-pale: var(--go-pale);
-  --brand-glow-soft: var(--go-glow-soft);
+  --brand-glow: var(--go-glow);
   --brand-selected-bg: var(--go-selected-bg);
 
-  /* Semi Design 主色注入（海外） */
+  /* 强行重刷 Semi UI 变量，确保切换生效 */
   --semi-color-primary: var(--go-base);
   --semi-color-primary-hover: var(--go-mid);
   --semi-color-primary-active: var(--go-deep);
   --semi-color-primary-disabled: var(--go-light);
-  --semi-color-primary-light-default: rgba(16, 185, 129, 0.08);
-  --semi-color-primary-light-hover: rgba(16, 185, 129, 0.12);
-  --semi-color-primary-light-active: rgba(16, 185, 129, 0.16);
+  --semi-color-primary-light-default: var(--go-pale);
+
+  --semi-color-link: var(--go-base);
+  --semi-color-link-hover: var(--go-mid);
+  --semi-color-nav-item-text-active: var(--go-deep);
+  --semi-color-nav-item-icon-active: var(--go-base);
 }
 
 html, body, #root {
@@ -88,15 +114,86 @@ html, body, #root {
   padding: 0;
   width: 100%;
   height: 100%;
-  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background-color: var(--semi-color-bg-1);
+  font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+  background-color: var(--site-bg);
   color: var(--semi-color-text-0);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-*, *::before, *::after {
-  box-sizing: border-box;
+/* 🍎 全局毛玻璃 & 深度感 */
+.semi-layout-header {
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  background-color: rgba(var(--semi-color-bg-0-rgb), 0.7) !important;
+}
+
+.semi-layout-sider {
+  border-right: 1px solid var(--semi-color-border) !important;
+  background-color: var(--site-bg) !important;
+}
+
+/* 💎 Stripe-style Cards 统一覆写 (精准化) */
+.semi-table-wrapper, 
+.semi-tabs-content {
+  border: 1px solid var(--semi-color-border) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* 针对页面中手动编写的卡片类容器注入阴影，但不破坏其 padding */
+.card-shadow-adaptive {
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  background-color: var(--semi-color-bg-0);
+  transition: box-shadow 0.3s ease;
+}
+
+/* 🚀 现代交互反馈 */
+.semi-button-primary {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  font-weight: 600 !important;
+}
+
+.semi-button-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--brand-glow) !important;
+}
+
+/* 🧭 Sidebar 深度美化 */
+.semi-navigation-item {
+  border-radius: var(--radius-sm) !important;
+  margin: 4px 10px !important;
+  width: calc(100% - 20px) !important;
+}
+
+.semi-navigation-item-selected {
+  background-color: var(--nav-item-active-bg) !important;
+  color: var(--brand-deep) !important;
+}
+
+.semi-navigation-item-selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20%;
+  height: 60%;
+  width: 3px;
+  background: var(--brand-base);
+  border-radius: 4px;
+}
+
+/* 滚动条极简处理 */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--semi-color-fill-0);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--semi-color-text-2);
 }
 
 /* 🚀 全局缓慢平滑流光动画 */

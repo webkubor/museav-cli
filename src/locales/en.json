@@ -14,7 +14,14 @@
     "themeSystem": "System",
     "currentOrg": "Organization",
     "currentWorkspace": "Workspace",
-    "defaultWorkspace": "Default Workspace"
+    "defaultWorkspace": "Default Workspace",
+    "loading": "Loading...",
+    "errorLoadProfile": "Failed to load account information. Please refresh.",
+    "save": "Save Changes",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "collapse": "Collapse",
+    "expand": "Expand"
   },
   "nav": {
     "home": "Home",
@@ -28,7 +35,7 @@
     "orders": "Orders",
     "invoices": "Invoices",
     "settings": "Settings",
-    "account": "Account",
+    "account": "Account Settings",
     "workspace": "Workspace Mgmt",
     "organization": "Organization Mgmt",
     "apiKeys": "API Keys",
@@ -183,6 +190,47 @@
         "cancelled": "Cancelled",
         "refunded": "Refunded"
       }
+    }
+  },
+  "account": {
+    "title": "Account Settings",
+    "desc": "Manage your personal profile, password, and third-party account bindings.",
+    "tabs": {
+      "info": "Profile",
+      "security": "Security",
+      "oauth": "Connected Accounts"
+    },
+    "info": {
+      "emailLabel": "Email Address",
+      "emailHint": "Primary email used for login and notifications. Self-editing is currently not supported.",
+      "nameLabel": "Display Name",
+      "namePlaceholder": "Enter display name",
+      "toastSuccess": "Display name saved",
+      "toastError": "Failed to save, please try again"
+    },
+    "security": {
+      "currentPassword": "Current Password",
+      "currentPlaceholder": "Enter current password",
+      "newPassword": "New Password",
+      "newPlaceholder": "At least 8 characters",
+      "confirmPassword": "Confirm New Password",
+      "confirmPlaceholder": "Repeat new password",
+      "toastSuccess": "Password changed successfully",
+      "toastError": "Failed to change password, please check current password",
+      "warningEmpty": "Please fill in all password fields",
+      "errorMismatch": "New passwords do not match",
+      "errorLength": "New password must be at least 8 characters"
+    },
+    "oauth": {
+      "desc": "Connect your social or code hosting accounts for passwordless access to the console.",
+      "google": "Google Account",
+      "github": "GitHub Account",
+      "wechat": "WeChat Account",
+      "bound": "Connected",
+      "notBound": "Not Connected",
+      "emailLabel": "Linked Email: {{email}}",
+      "unbind": "Disconnect",
+      "bind": "Connect"
     }
   }
 }

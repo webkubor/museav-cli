@@ -14,7 +14,14 @@
     "themeSystem": "系统默认",
     "currentOrg": "当前组织",
     "currentWorkspace": "当前工作区",
-    "defaultWorkspace": "默认工作区"
+    "defaultWorkspace": "默认工作区",
+    "loading": "加载中...",
+    "errorLoadProfile": "加载账号信息失败，请刷新重试。",
+    "save": "保存修改",
+    "cancel": "取消",
+    "confirm": "确定",
+    "collapse": "收起侧栏",
+    "expand": "展开侧栏"
   },
   "nav": {
     "home": "首页",
@@ -28,7 +35,7 @@
     "orders": "充值订单",
     "invoices": "发票管理",
     "settings": "设置",
-    "account": "账号",
+    "account": "账号设置",
     "workspace": "工作区管理",
     "organization": "组织管理",
     "apiKeys": "API Keys",
@@ -183,6 +190,47 @@
         "cancelled": "已取消",
         "refunded": "已退款"
       }
+    }
+  },
+  "account": {
+    "title": "账号设置",
+    "desc": "管理你的个人信息、密码及第三方账号绑定。",
+    "tabs": {
+      "info": "基本资料",
+      "security": "密码与安全",
+      "oauth": "第三方账号"
+    },
+    "info": {
+      "emailLabel": "邮箱地址",
+      "emailHint": "登录和接收系统通知时使用的主要邮箱，暂不支持自主修改。",
+      "nameLabel": "显示名称",
+      "namePlaceholder": "请输入显示名称",
+      "toastSuccess": "显示名称已保存",
+      "toastError": "保存失败，请重试"
+    },
+    "security": {
+      "currentPassword": "当前密码",
+      "currentPlaceholder": "请输入当前密码",
+      "newPassword": "新密码",
+      "newPlaceholder": "密码长度至少为 8 位",
+      "confirmPassword": "确认新密码",
+      "confirmPlaceholder": "请再次输入新密码",
+      "toastSuccess": "密码修改成功",
+      "toastError": "密码修改失败，请检查旧密码是否正确",
+      "warningEmpty": "请填写所有密码字段",
+      "errorMismatch": "两次输入的新密码不一致",
+      "errorLength": "新密码长度不得少于 8 位"
+    },
+    "oauth": {
+      "desc": "绑定第三方社交或代码托管平台账户，支持使用对应的快捷登录入口免密码接入控制台。",
+      "google": "Google 账号",
+      "github": "GitHub 账号",
+      "wechat": "微信 账号",
+      "bound": "已绑定",
+      "notBound": "未绑定",
+      "emailLabel": "账号邮箱: {{email}}",
+      "unbind": "解绑",
+      "bind": "连接"
     }
   }
 }

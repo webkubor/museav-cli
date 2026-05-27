@@ -95,7 +95,9 @@ function Sparkline({ data, width, height, metric }: SparklineProps) {
     )
   }
 
-  const lineColor = metric === 'spend' ? '#6366f1' : metric === 'requests' ? '#0ea5e9' : '#10b981'
+  const lineColor = metric === 'spend'
+    ? 'var(--semi-color-primary)'
+    : metric === 'requests' ? '#0ea5e9' : '#10b981'
   const dotColor = lineColor
   const areaId = `area-${metric}`
 
@@ -222,7 +224,7 @@ function HistogramChart({ buckets, width, height }: HistogramChartProps) {
           width={barW}
           height={bar.h}
           rx={2}
-          fill="#6366f1"
+          style={{ fill: 'var(--semi-color-primary)' }}
           opacity={0.75}
         />
       ))}

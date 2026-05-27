@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Avatar, Button, Input, Toast, Typography } from '@douyinfe/semi-ui'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { updateProfile } from '@/services/account'
 import type { AccountProfile } from '@/types'
 
@@ -11,17 +12,18 @@ interface BasicInfoTabProps {
 }
 
 export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [displayName, setDisplayName] = useState(profile.display_name)
 
   const updateMutation = useMutation({
     mutationFn: () => updateProfile({ display_name: displayName }),
     onSuccess: (updated) => {
-      Toast.success('显示名称已保存')
+      Toast.success(t('account.info.toastSuccess'))
       queryClient.setQueryData<AccountProfile>(['account-profile'], updated)
     },
     onError: (err: any) => {
-      Toast.error(err?.message || '保存失败，请重试')
+      Toast.error(err?.message || t('account.info.toastError'))
     },
   })
 
@@ -36,14 +38,14 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
           <Avatar 
             src={profile.avatar_url} 
             size="large" 
-            style={{ boxShadow: '0 0 0 3px rgba(24, 144, 255, 0.1), 0 4px 10px rgba(0,0,0,0.06)' }}
+            style={{ boxShadow: '0 0 0 3px var(--brand-glow), 0 4px 10px rgba(0,0,0,0.06)' }}
           />
         ) : (
           <Avatar 
             size="large" 
             style={{ 
               backgroundColor: 'var(--semi-color-primary)', 
-              boxShadow: '0 0 0 3px rgba(24, 144, 255, 0.1), 0 4px 10px rgba(0,0,0,0.06)' 
+              boxShadow: '0 0 0 3px var(--brand-glow), 0 4px 10px rgba(0,0,0,0.06)' 
             }}
           >
             {avatarLetter}
@@ -63,7 +65,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '480px' }}>
         <div>
           <Text style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            邮箱地址
+            {t('account.info.emailLabel')}
           </Text>
           <Input 
             value={profile.email} 
@@ -75,19 +77,19 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             }} 
           />
           <span style={{ fontSize: '11.5px', color: 'var(--semi-color-text-2)', marginTop: '6px', display: 'block' }}>
-            登录和接收系统通知时使用的主要邮箱，暂不支持自主修改。
+            {t('account.info.emailHint')}
           </span>
         </div>
 
         <div>
           <Text style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            显示名称
+            {t('account.info.nameLabel')}
           </Text>
           <div style={{ display: 'flex', gap: '10px' }}>
             <Input
               value={displayName}
               onChange={(val) => setDisplayName(val)}
-              placeholder="请输入显示名称"
+              placeholder={t('account.info.namePlaceholder')}
               style={{ flex: 1, borderRadius: '8px' }}
             />
             <Button
@@ -101,7 +103,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
                 fontWeight: 600
               }}
             >
-              保存修改
+              {t('common.save')}
             </Button>
           </div>
         </div>

@@ -49,7 +49,7 @@ const labelStyle: React.CSSProperties = {
 function RoleBadge({ role }: { role: TenantItem['role'] }) {
   const map: Record<TenantItem['role'], { label: string; color: string; bg: string; border: string }> = {
     tenant_owner: { label: 'Owner', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-    tenant_admin: { label: 'Admin', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+    tenant_admin: { label: 'Admin', color: 'var(--semi-color-primary)', bg: 'var(--semi-color-primary-light-default)', border: 'var(--semi-color-primary-light-active)' },
     tenant_member: { label: 'Member', color: 'var(--semi-color-text-1)', bg: 'var(--semi-color-bg-1)', border: 'var(--semi-color-border)' },
   }
   const s = map[role]
@@ -192,11 +192,9 @@ function OrgListSection({
           disabled={atLimit}
           onClick={() => setCreateVisible(true)}
           style={{
-            background: atLimit ? undefined : 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
             borderRadius: '24px',
             fontSize: '13px',
             fontWeight: 600,
-            border: 'none',
             height: '36px',
           }}
         >

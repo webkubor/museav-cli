@@ -83,7 +83,6 @@ export const DashboardHeader: React.FC = () => {
     applyTheme(activeTheme)
   }, [account])
 
-  const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
   const activeWorkspace = workspaces.find((w) => w.workspace_id === activeWorkspaceId) || workspaces.find((w) => w.is_default) || workspaces[0]
   const avatarLetter = (account?.display_name || account?.email || 'U').charAt(0).toUpperCase()
 
@@ -229,7 +228,7 @@ export const DashboardHeader: React.FC = () => {
           </span>
         </div>
 
-        {/* 工作区（业务空间）切换 Switcher Dropdown */}
+        {/* 工作区切换 Switcher Dropdown */}
         <Dropdown
           trigger="click"
           render={
@@ -388,14 +387,25 @@ export const DashboardHeader: React.FC = () => {
           title={t('help') || '帮助'}
         />
 
-        {/* 4. 组织管理与切换 Switcher Dropdown (从左侧移至此) */}
+        {/* 用户头像 (账户体系与组织管理一站式抽屉) */}
         <Dropdown
           trigger="click"
           position="bottomRight"
           render={
             <Dropdown.Menu style={{ width: '220px', borderRadius: '10px', padding: '6px' }}>
-              <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
-                {lang === 'zh' ? '切换组织' : 'Switch Organization'}
+              {/* 1. 账户信息头部 */}
+              <div style={{ padding: '8px 12px 6px', borderBottom: '1px solid var(--semi-color-fill-0)', marginBottom: '4px' }}>
+                <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--semi-color-text-0)' }}>
+                  {account?.display_name || '—'}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {account?.email}
+                </div>
+              </div>
+
+              {/* 2. 组织列表切换与就地管理 */}
+              <div style={{ padding: '6px 12px 4px', fontSize: '11px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
+                {lang === 'zh' ? '组织' : 'Organizations'}
               </div>
               {tenants.map((tenant) => (
                 <Dropdown.Item
@@ -409,7 +419,7 @@ export const DashboardHeader: React.FC = () => {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                    <span>{tenant.name}</span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>{tenant.name}</span>
                     <Button
                       size="small"
                       theme="borderless"
@@ -425,7 +435,7 @@ export const DashboardHeader: React.FC = () => {
                   </div>
                 </Dropdown.Item>
               ))}
-              <Dropdown.Divider />
+
               <Dropdown.Item
                 icon={<IconPlus style={{ fontSize: '14px' }} />}
                 onClick={handleOpenOrgModal}
@@ -433,12 +443,15 @@ export const DashboardHeader: React.FC = () => {
               >
                 {lang === 'zh' ? '创建组织' : 'Create Organization'}
               </Dropdown.Item>
+
+              {/* 3. 系统快捷跳转功能 */}
+              <Dropdown.Divider />
               <Dropdown.Item
                 icon={<IconSetting style={{ fontSize: '14px' }} />}
                 onClick={() => navigate('/settings/organization')}
                 style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
               >
-                {lang === 'zh' ? '组织管理' : 'Organization Mgmt'}
+                {lang === 'zh' ? '组织设置' : 'Organization Settings'}
               </Dropdown.Item>
               <Dropdown.Item
                 icon={<IconGlobe style={{ fontSize: '14px' }} />}
@@ -447,59 +460,15 @@ export const DashboardHeader: React.FC = () => {
               >
                 {lang === 'zh' ? '工作区管理' : 'Workspace Mgmt'}
               </Dropdown.Item>
-            </Dropdown.Menu>
-          }
-        >
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            backgroundColor: 'var(--semi-color-fill-0)',
-            padding: '6px 14px',
-            borderRadius: '20px',
-            cursor: 'pointer',
-            fontSize: '12px',
-            color: 'var(--semi-color-text-1)',
-            border: '1px solid var(--semi-color-border)',
-            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--semi-color-bg-0)'
-            ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(59, 130, 246, 0.5)'
-            ;(e.currentTarget as HTMLElement).style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.08)'
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--semi-color-fill-0)'
-            ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--semi-color-border)'
-            ;(e.currentTarget as HTMLElement).style.boxShadow = 'none'
-          }}
-          >
-            <span style={{ color: 'var(--semi-color-text-1)', fontWeight: 400 }}>{lang === 'zh' ? '组织' : 'Organization'}</span>
-            <span style={{ fontWeight: 600, color: 'var(--semi-color-text-0)' }}>{activeTenant?.name ?? '—'}</span>
-            <IconChevronDown style={{ fontSize: '10px', color: 'var(--semi-color-text-1)' }} />
-          </div>
-        </Dropdown>
-
-        {/* 5. 用户头像 */}
-        <Dropdown
-          trigger="click"
-          position="bottomRight"
-          render={
-            <Dropdown.Menu style={{ width: '170px', borderRadius: '10px', padding: '6px' }}>
-              <div style={{ padding: '8px 12px 6px', borderBottom: '1px solid var(--semi-color-fill-0)', marginBottom: '4px' }}>
-                <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--semi-color-text-0)' }}>
-                  {account?.display_name || '—'}
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginTop: '2px' }}>
-                  {account?.email}
-                </div>
-              </div>
               <Dropdown.Item
+                icon={<IconSetting style={{ fontSize: '14px' }} />}
                 onClick={() => navigate('/settings/account')}
-                style={{ borderRadius: '6px', fontSize: '13px' }}
+                style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
               >
-                {t('profile')}
+                {lang === 'zh' ? '设置' : 'Settings'}
               </Dropdown.Item>
+
+              {/* 4. 退出登录 */}
               <Dropdown.Divider />
               <Dropdown.Item
                 onClick={handleLogout}

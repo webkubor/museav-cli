@@ -32,7 +32,7 @@ export default function WorkspacesPage() {
       })
     },
     onSuccess: (newWorkspace) => {
-      Toast.success(`业务空间 "${newWorkspace.name}" 创建成功`)
+      Toast.success(`工作区 "${newWorkspace.name}" 创建成功`)
       setModalVisible(false)
       setName('')
       setSlug('')
@@ -40,7 +40,7 @@ export default function WorkspacesPage() {
       queryClient.invalidateQueries({ queryKey: ['workspaces'] })
     },
     onError: (err: any) => {
-      Toast.error(err?.message || '创建业务空间失败')
+      Toast.error(err?.message || '创建工作区失败')
     }
   })
 
@@ -86,7 +86,7 @@ export default function WorkspacesPage() {
       )
     },
     {
-      title: '业务空间 ID',
+      title: '工作区 ID',
       dataIndex: 'workspace_id',
       render: (text: string) => (
         <span style={{
@@ -137,7 +137,7 @@ export default function WorkspacesPage() {
 
   const handleCreateSubmit = () => {
     if (!name.trim()) {
-      Toast.error('业务空间名称不能为空')
+      Toast.error('工作区名称不能为空')
       return
     }
     if (!slug.trim()) {
@@ -156,14 +156,14 @@ export default function WorkspacesPage() {
       {/* 头部标题与描述 */}
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
-          业务空间
+          工作区
         </h1>
         <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0, fontWeight: 400 }}>
-          管理业务空间信息、可用模型和使用限额。
+          管理工作区信息、可用模型和使用限额。
         </p>
       </div>
 
-      {/* 截图中的当前业务空间 Select 栏：优化质感 */}
+      {/* 截图中的当前工作区 Select 栏：优化质感 */}
       <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
@@ -173,13 +173,13 @@ export default function WorkspacesPage() {
         color: 'var(--semi-color-text-1)',
         fontWeight: 500
       }}>
-        <span>当前业务空间</span>
+        <span>当前工作区</span>
         <Select 
           defaultValue="default" 
           style={{ width: '170px', borderRadius: '8px' }} 
           size="small"
         >
-          <Select.Option value="default">默认业务空间</Select.Option>
+          <Select.Option value="default">默认工作区</Select.Option>
         </Select>
       </div>
 
@@ -192,7 +192,7 @@ export default function WorkspacesPage() {
       }}>
         {/* 圆角微阴影输入框 */}
         <Input
-          placeholder="按名称或业务空间 ID 搜索"
+          placeholder="按名称或工作区 ID 搜索"
           prefix={<IconSearch style={{ color: 'var(--semi-color-text-2)' }} />}
           style={{
             width: '290px',
@@ -232,7 +232,7 @@ export default function WorkspacesPage() {
             e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.15)';
           }}
         >
-          创建业务空间 ({(data || []).length}/20)
+          创建工作区 ({(data || []).length}/20)
         </Button>
       </div>
 
@@ -250,7 +250,7 @@ export default function WorkspacesPage() {
 
       {/* 真实创建工作空间的表单对话框 */}
       <Modal
-        title="创建新业务空间"
+        title="创建新工作区"
         visible={modalVisible}
         onOk={handleCreateSubmit}
         onCancel={() => setModalVisible(false)}
@@ -282,7 +282,7 @@ export default function WorkspacesPage() {
             <Input 
               value={description} 
               onChange={val => setDescription(val)} 
-              placeholder="简述该业务空间的用途..." 
+              placeholder="简述该工作区的用途..." 
               style={{ borderRadius: '8px' }}
             />
           </div>

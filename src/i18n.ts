@@ -18,8 +18,8 @@ const resources = {
       themeDark: '暗黑模式',
       themeSystem: '系统默认',
       currentOrg: '当前组织',
-      currentWorkspace: '当前业务空间',
-      defaultWorkspace: '默认业务空间'
+      currentWorkspace: '当前工作区',
+      defaultWorkspace: '默认工作区'
     }
   },
   en: {

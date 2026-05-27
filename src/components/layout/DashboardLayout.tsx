@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Layout, Breadcrumb } from '@douyinfe/semi-ui'
+import { useAuthStore } from '@/store/auth'
 import {
   IconHome,
   IconHistogram,
@@ -21,6 +22,45 @@ import { CustomerService } from '@/components/customer-service'
 const { Content } = Layout
 
 const isDevTools = import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
+
+// 工作区级页面 key（切换工作区内容会变）
+const WORKSPACE_SCOPED_KEYS = new Set([
+  'api-keys', 'guardrails', 'observability', 'invitations-mgmt',
+])
+
+// 无工作区时显示的空状态提示
+function WorkspaceGuard({
+  currentKey,
+  children,
+}: {
+  currentKey: string
+  children: React.ReactNode
+}) {
+  const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
+
+  if (!activeWorkspaceId && WORKSPACE_SCOPED_KEYS.has(currentKey)) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '80px 0',
+        gap: '16px',
+      }}>
+        <div style={{ fontSize: '40px' }}>🔒</div>
+        <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--semi-color-text-0)' }}>
+          无可用工作区
+        </div>
+        <div style={{ fontSize: '13px', color: 'var(--semi-color-text-2)', textAlign: 'center', maxWidth: '320px', lineHeight: '1.6' }}>
+          当前账号尚未加入任何工作区。请联系组织管理员将你加入工作区，或前往设置创建一个新工作区。
+        </div>
+      </div>
+    )
+  }
+
+  return <>{children}</>
+}
 
 export function DashboardLayout() {
   const { t } = useTranslation()
@@ -123,7 +163,9 @@ export function DashboardLayout() {
             minHeight: '520px',
             transition: 'all 0.3s ease'
           }}>
-            <Outlet />
+            <WorkspaceGuard currentKey={getSelectedKey()}>
+              <Outlet />
+            </WorkspaceGuard>
           </Content>
         </Layout>
       </Layout>

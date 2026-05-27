@@ -83,3 +83,32 @@ export function getTenantInviteLink(tenantId: string) {
 export function resetTenantInviteLink(tenantId: string) {
   return post<TenantInviteLink>(`tenants/${tenantId}/invite-link/reset`, {})
 }
+
+// ─── Tenant 域名配置（API 待上线） ─────────────────
+
+export interface TenantDomain {
+  id: string
+  domain: string
+  auto_join: boolean
+  created_at: string
+}
+
+/** 列出组织允许自动加入的邮箱域名 */
+export function listTenantDomains(tenantId: string) {
+  return get<{ items: TenantDomain[] }>(`tenants/${tenantId}/domains`)
+}
+
+/** 添加允许域名 */
+export function addTenantDomain(tenantId: string, domain: string, autoJoin: boolean) {
+  return post<TenantDomain>(`tenants/${tenantId}/domains`, { domain, auto_join: autoJoin })
+}
+
+/** 更新域名配置（如切换 auto_join） */
+export function updateTenantDomain(tenantId: string, domainId: string, autoJoin: boolean) {
+  return patch<TenantDomain>(`tenants/${tenantId}/domains/${domainId}`, { auto_join: autoJoin })
+}
+
+/** 删除允许域名 */
+export function removeTenantDomain(tenantId: string, domainId: string) {
+  return del<null>(`tenants/${tenantId}/domains/${domainId}`)
+}

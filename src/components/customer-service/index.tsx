@@ -3,13 +3,12 @@ import { Button } from '@douyinfe/semi-ui'
 import { IconClose, IconSend, IconRefresh } from '@douyinfe/semi-icons'
 import { modelGoLogos } from '@/config/brand-assets'
 import { getMarket } from '@/lib/market'
+import { storageKeys } from '@/lib/storage'
 import { useCsChat } from './use-cs-chat'
 import type { Message, ConnectionStatus } from './use-cs-chat'
 
 const market = getMarket()
 const logoSrc = modelGoLogos[market]
-
-const POS_KEY = 'modelgo_cs_trigger_pos'
 
 function formatCsTimestamp(timestamp: number) {
   const date = new Date(timestamp)
@@ -89,7 +88,7 @@ export function CustomerService() {
   // draggable trigger state
   const [pos, setPos] = useState(() => {
     try {
-      const saved = localStorage.getItem(POS_KEY)
+      const saved = localStorage.getItem(storageKeys.csTriggerPos())
       return saved ? JSON.parse(saved) : { x: 0, y: 0 }
     } catch { return { x: 0, y: 0 } }
   })
@@ -115,7 +114,7 @@ export function CustomerService() {
       setPos(newPos)
     }
     function onMouseUp() {
-      try { localStorage.setItem(POS_KEY, JSON.stringify(pos)) } catch { /* ignore */ }
+      try { localStorage.setItem(storageKeys.csTriggerPos(), JSON.stringify(pos)) } catch { /* ignore */ }
       dragRef.current = null
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)

@@ -6,6 +6,7 @@ import {
   type Market,
   type Lang,
 } from '@/lib/market'
+import { storageKeys } from '@/lib/storage'
 
 interface LangState {
   lang: Lang
@@ -21,7 +22,7 @@ export const useLangStore = create<LangState>()((set) => ({
   lang: initialLang,
   market: initialMarket,
   setLang: (lang) => {
-    localStorage.setItem('mg-lang', lang)
+    localStorage.setItem(storageKeys.lang(), lang)
     set({ lang })
   },
   setMarket: (market) => {

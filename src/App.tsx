@@ -48,7 +48,8 @@ function SessionLoader() {
           },
           result.active_tenant_id,
           result.tenants,
-          result.active_workspace_id
+          result.active_workspace_id,
+          result.permissions ?? []
         )
       })
       .catch(() => {
@@ -62,9 +63,12 @@ function SessionLoader() {
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isLoading = useAuthStore((s) => s.isLoading)
+  const activeTenantId = useAuthStore((s) => s.activeTenantId)
 
   if (isLoading) return null
   if (!isAuthenticated) return <Navigate to="/login" replace />
+  // 已登录但无任何组织（账号被移出所有 tenant 或注册后未完成初始化）
+  if (!activeTenantId) return <Navigate to="/login?reason=no_access" replace />
   return <>{children}</>
 }
 

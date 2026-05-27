@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { apiBaseUrl } from '@/lib/request'
 import { injectHeaders } from '@/lib/request-headers'
+import { storageKeys } from '@/lib/storage'
 import type { AgentEvent } from '@/interfaces/agent'
 
 export interface Message {
@@ -27,14 +28,14 @@ function parseSSELine(line: string): AgentEvent | null {
 export function useCsChat() {
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
-      const saved = localStorage.getItem('modelgo_cs_history')
+      const saved = localStorage.getItem(storageKeys.csHistory())
       return saved ? JSON.parse(saved) : []
     } catch {
       return []
     }
   })
   const [conversationId, setConversationId] = useState<string | null>(() =>
-    localStorage.getItem('modelgo_cs_conversation_id')
+    localStorage.getItem(storageKeys.csConversationId())
   )
   const [isLoading, setIsLoading] = useState(false)
   const [status, setStatus] = useState<ConnectionStatus>('online')
@@ -43,7 +44,7 @@ export function useCsChat() {
 
   const saveMessages = useCallback((msgs: Message[]) => {
     try {
-      localStorage.setItem('modelgo_cs_history', JSON.stringify(msgs))
+      localStorage.setItem(storageKeys.csHistory(), JSON.stringify(msgs))
     } catch { /* ignore */ }
   }, [])
 
@@ -132,14 +133,14 @@ export function useCsChat() {
               const cid = event.conversation_id ?? ''
               if (cid) {
                 setConversationId(cid)
-                localStorage.setItem('modelgo_cs_conversation_id', cid)
+                localStorage.setItem(storageKeys.csConversationId(), cid)
               }
             }
             if (event.type === 'start') {
               const cid = event.conversation_id ?? ''
               if (cid) {
                 setConversationId(cid)
-                localStorage.setItem('modelgo_cs_conversation_id', cid)
+                localStorage.setItem(storageKeys.csConversationId(), cid)
               }
             }
             if (event.type === 'error') {
@@ -155,7 +156,7 @@ export function useCsChat() {
         const cid: string = json?.data?.conversation_id ?? ''
         if (cid) {
           setConversationId(cid)
-          localStorage.setItem('modelgo_cs_conversation_id', cid)
+          localStorage.setItem(storageKeys.csConversationId(), cid)
         }
         setMessages((prev) =>
           prev.map((m) => (m.id === agentMsgId ? { ...m, content: answer } : m))
@@ -197,8 +198,8 @@ export function useCsChat() {
   const clearHistory = useCallback(() => {
     setMessages([])
     setConversationId(null)
-    localStorage.removeItem('modelgo_cs_history')
-    localStorage.removeItem('modelgo_cs_conversation_id')
+    localStorage.removeItem(storageKeys.csHistory())
+    localStorage.removeItem(storageKeys.csConversationId())
   }, [])
 
   return {

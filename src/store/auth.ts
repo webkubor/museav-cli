@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { AccountBrief, TenantBrief } from '@/types'
+import { storageKeys } from '@/lib/storage'
 
 interface AuthState {
   account: AccountBrief | null
@@ -37,7 +38,9 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
 
   setAuth: (account, activeTenantId, tenants, activeWorkspaceId, permissions = []) => {
     if (activeTenantId) {
-      localStorage.setItem('modelgo_active_tenant_id', activeTenantId)
+      localStorage.setItem(storageKeys.activeTenantId(), activeTenantId)
+    } else {
+      localStorage.removeItem(storageKeys.activeTenantId())
     }
     set({
       account,
@@ -54,7 +57,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   setActiveWorkspaceId: (workspaceId) => set({ activeWorkspaceId: workspaceId }),
 
   clearAuth: () => {
-    localStorage.removeItem('modelgo_active_tenant_id')
+    localStorage.removeItem(storageKeys.activeTenantId())
     set({
       account: null,
       activeTenantId: null,

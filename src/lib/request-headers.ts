@@ -5,6 +5,8 @@
  * 新增 header 只需在这里加一行，不需要动 request.ts 的核心逻辑。
  */
 
+import { storageKeys } from '@/lib/storage'
+
 // ─── 类型定义 ────────────────────────────
 
 /**
@@ -52,7 +54,7 @@ function readCookie(name: string): string | null {
 
 function activeTenantId(): string | null {
   if (typeof window === 'undefined') return null
-  return localStorage.getItem('modelgo_active_tenant_id')
+  return localStorage.getItem(storageKeys.activeTenantId())
 }
 
 function resolveOrigin(): string | null {

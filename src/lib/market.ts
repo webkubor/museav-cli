@@ -1,3 +1,5 @@
+import { storageKeys } from '@/lib/storage'
+
 export type Market = 'domestic' | 'global'
 
 const DEFAULT_MARKET: Market = 'global'
@@ -48,8 +50,8 @@ export function getMarketDefaultLang(market: Market): Lang {
  */
 export function getInitialLang(): Lang {
   if (typeof window !== 'undefined') {
-    // 优先读取 i18next 或是我们自己保存过的语言
-    const saved = localStorage.getItem('mg-lang') || localStorage.getItem('i18nextLng')
+    // 优先读取持久化语言偏好（统一 key），兼容旧 i18next key
+    const saved = localStorage.getItem(storageKeys.lang()) || localStorage.getItem('i18nextLng')
     if (saved === 'zh' || saved === 'en') return saved
 
     // 智能匹配浏览器默认语言

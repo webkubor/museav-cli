@@ -53,11 +53,15 @@ export default function LoginPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isSessionLoading = useAuthStore((s) => s.isLoading)
 
-  const redirectAfterLogin = new URLSearchParams(window.location.search).get('redirect') || '/dashboard'
+  const searchParams = new URLSearchParams(window.location.search)
+  const redirectAfterLogin = searchParams.get('redirect') || '/dashboard'
+  const accessDenied = searchParams.get('reason') === 'no_access'
 
   const [step, setStep] = useState<'email' | 'password'>('email')
   const [email, setEmail] = useState('')
-  const [serverError, setServerError] = useState('')
+  const [serverError, setServerError] = useState(
+    accessDenied ? '你的账号当前不属于任何组织，请联系管理员邀请后再登录。' : ''
+  )
   const [loading, setLoading] = useState(false)
 
   const emailForm = useForm<EmailFields>({ resolver: zodResolver(emailSchema) })

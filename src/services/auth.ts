@@ -79,3 +79,38 @@ export function resetPassword(token: string, password: string) {
 export function verifyEmailCode(email: string, code: string) {
   return post<null>('auth/email-code/verify', { email, code })
 }
+
+// ─── Device（CLI）授权 ────────────────────────────────────────
+
+export interface DeviceAuthorizeRequest {
+  client_name?: string
+  scope?: string
+}
+
+export interface DeviceAuthorizeResult {
+  device_code: string
+  user_code: string
+  verification_uri: string
+  expires_in: number
+  interval: number
+}
+
+export interface DeviceTokenResult {
+  token: string
+  token_type: string
+}
+
+/** CLI 设备码登录初始化，返回 device_code 和展示给用户的 user_code */
+export function deviceAuthorize(body: DeviceAuthorizeRequest = {}) {
+  return post<DeviceAuthorizeResult>('auth/device/authorize', body)
+}
+
+/** 当前登录用户批准 CLI 登录（需携带 CSRF Token） */
+export function deviceApprove(user_code: string) {
+  return post<null>('auth/device/approve', { user_code })
+}
+
+/** CLI 轮询获取登录凭证，审批完成后返回 token（不设置 cookie） */
+export function deviceToken(device_code: string) {
+  return post<DeviceTokenResult>('auth/device/token', { device_code })
+}

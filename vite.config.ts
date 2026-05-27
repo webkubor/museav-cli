@@ -17,6 +17,12 @@ export default defineConfig({
   },
   server: {
     port: 5175,
+    proxy: {
+      '/api': {
+        target: 'https://test.modelgo.com',
+        changeOrigin: true,
+      },
+    },
   },
 })
 

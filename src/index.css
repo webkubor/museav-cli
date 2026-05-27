@@ -113,6 +113,7 @@ body[theme-mode='dark'] {
   --semi-color-primary-active: var(--go-deep);
   --semi-color-primary-disabled: var(--go-light);
   --semi-color-primary-light-default: var(--go-pale);
+
   --semi-color-link: var(--go-base);
   --semi-color-link-hover: var(--go-mid);
   --semi-color-nav-item-text-active: var(--go-deep);
@@ -267,7 +268,7 @@ html, body, #root {
 }
 
 .code-builtin {
-  color: #8be9fd; /* 湖蓝：内置对象, OpenAI */
+  color: #8be9fd; /*湖蓝：内置对象, OpenAI */
 }
 
 .code-string {

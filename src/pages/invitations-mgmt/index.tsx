@@ -39,7 +39,6 @@ export default function InvitationsMgmtPage() {
   const qc = useQueryClient()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
-
   const [status, setStatus] = useState<'pending' | 'accepted' | 'expired' | 'revoked' | 'all'>('pending')
 
   // ─── Invite modal state ───────────────────────────────────────────────────

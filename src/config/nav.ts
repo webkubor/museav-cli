@@ -43,6 +43,7 @@ export const navConfig: NavConfig = {
     'observability',
     'invitations-mgmt',
     'api-playground',
+    'chat-test',
   ]),
 
   tenantItems: (ctx, t, icons) => [
@@ -77,10 +78,18 @@ export const navConfig: NavConfig = {
   ],
 
   workspaceItems: (ctx, t, icons) => [
-    { itemKey: 'api-keys',        text: t('nav.apiKeys'),        icon: icons.key },
-    { itemKey: 'guardrails',      text: t('nav.guardrails'),     icon: icons.shield },
-    { itemKey: 'observability',   text: t('nav.observability'),  icon: icons.eye },
-    { itemKey: 'api-playground',  text: '接口调试',               icon: icons.terminal },
+    { itemKey: 'api-keys',      text: t('nav.apiKeys'),       icon: icons.key },
+    { itemKey: 'guardrails',    text: t('nav.guardrails'),    icon: icons.shield },
+    { itemKey: 'observability', text: t('nav.observability'), icon: icons.eye },
+    {
+      itemKey: 'sandbox',
+      text: '测试区',
+      icon: icons.terminal,
+      items: [
+        { itemKey: 'api-playground', text: '接口调试', icon: icons.list },
+        { itemKey: 'chat-test',      text: '对话测试', icon: icons.histogramSm },
+      ],
+    },
     // 邀请管理：只要不是个人账户即可见（enterprise 或未来其他非 personal 类型）
     ...(ctx.isNonPersonal ? [{
       itemKey: 'invitations-mgmt',

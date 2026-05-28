@@ -26,6 +26,7 @@ import ModelsChatPage from '@/pages/models-chat'
 import ModelsChatHistoryPage from '@/pages/models-history'
 import PlatformConfigPage from '@/pages/platform-config'
 import ApiPlaygroundPage from '@/pages/api-playground'
+import ChatTestPage from '@/pages/chat-test'
 import { useAuthStore } from '@/store/auth'
 import { getSession } from '@/services/auth'
 import { getMarket } from '@/lib/market'
@@ -130,6 +131,7 @@ export default function App() {
               <Route path="observability" element={<ObservabilityPage />} />
               <Route path="invitations-mgmt" element={<InvitationsMgmtPage />} />
               <Route path="api-playground" element={<ApiPlaygroundPage />} />
+              <Route path="chat-test" element={<ChatTestPage />} />
             </Route>
           </Route>
 

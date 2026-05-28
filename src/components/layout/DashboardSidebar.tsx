@@ -22,7 +22,7 @@ interface DashboardSidebarProps {
   settingsLabel: string
 }
 
-const WORKSPACE_KEYS = ['api-keys', 'guardrails', 'observability', 'invitations-mgmt', 'api-playground']
+const WORKSPACE_KEYS = ['api-keys', 'guardrails', 'observability', 'invitations-mgmt', 'api-playground', 'chat-test']
 const SETTINGS_KEYS = ['settings', 'settings/account', 'settings/workspace', 'settings/organization']
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({

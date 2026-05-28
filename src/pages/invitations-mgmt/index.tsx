@@ -33,6 +33,9 @@ const ROLE_LABEL: Record<'ws_member' | 'ws_admin', string> = {
 export default function InvitationsMgmtPage() {
   const qc = useQueryClient()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
+  const activeTenantId = useAuthStore((s) => s.activeTenantId)
+  const tenants = useAuthStore((s) => s.tenants)
+  const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
 
   const [status, setStatus] = useState<'pending' | 'accepted' | 'expired' | 'revoked' | 'all'>('pending')
 
@@ -155,7 +158,19 @@ export default function InvitationsMgmtPage() {
         >
           工作区邀请管理
         </h1>
-        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0 }}>
+        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {activeTenant?.name && (
+            <span style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              color: 'var(--semi-color-primary)',
+              background: 'var(--semi-color-primary-light-default)',
+              padding: '2px 8px',
+              borderRadius: '4px',
+            }}>
+              {activeTenant.name}
+            </span>
+          )}
           查看当前工作区的成员邀请记录。
         </p>
       </div>

@@ -89,6 +89,7 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/invitations" element={<InvitationsPage />} />
+          <Route path="/invitations/:token" element={<InvitationsPage />} />
           <Route path="/device" element={<DevicePage />} />
 
           {/* 控制台路由（需登录） */}

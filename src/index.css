@@ -166,13 +166,6 @@ html, body, #root {
   background-color: var(--site-bg) !important;
 }
 
-/* 💎 Stripe-style Cards 统一覆写 (精准化) */
-.semi-table-wrapper, 
-.semi-tabs-content {
-  border: 1px solid var(--semi-color-border) !important;
-  border-radius: var(--radius-md) !important;
-  box-shadow: var(--shadow-md) !important;
-}
 
 /* 针对页面中手动编写的卡片类容器注入阴影，但不破坏其 padding */
 .card-shadow-adaptive {

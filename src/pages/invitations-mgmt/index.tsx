@@ -39,6 +39,7 @@ export default function InvitationsMgmtPage() {
   const [search, setSearch] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [inviteRole, setInviteRole] = useState<'ws_member' | 'ws_admin'>('ws_member')
+  const [expiresInHours, setExpiresInHours] = useState<number>(72)
 
   const orgMembersQuery = useQuery({
     queryKey: ['tenant-members', activeTenantId],
@@ -62,13 +63,14 @@ export default function InvitationsMgmtPage() {
       const invites = members
         .filter((m) => selectedIds.has(m.account.account_id))
         .map((m) => ({ email: m.account.email, role: inviteRole }))
-      return createInvitations(activeWorkspaceId!, { invites })
+      return createInvitations(activeWorkspaceId!, { invites, expires_in_hours: expiresInHours })
     },
     onSuccess: () => {
       Toast.success('邀请已发出')
       setModalOpen(false)
       setSelectedIds(new Set())
       setSearch('')
+      setExpiresInHours(72)
       qc.invalidateQueries({ queryKey: ['workspace-invitations', activeWorkspaceId] })
     },
     onError: (err: any) => Toast.error(err?.message || '邀请失败'),
@@ -230,11 +232,22 @@ export default function InvitationsMgmtPage() {
         width={520}
         footer={
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>加入角色</span>
-              <Select value={inviteRole} onChange={(v) => setInviteRole(v as 'ws_member' | 'ws_admin')} style={{ width: '110px' }} size="small">
-                {WS_ROLE_OPTIONS.map((o) => <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>)}
-              </Select>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>角色</span>
+                <Select value={inviteRole} onChange={(v) => setInviteRole(v as 'ws_member' | 'ws_admin')} style={{ width: '110px' }} size="small">
+                  {WS_ROLE_OPTIONS.map((o) => <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>)}
+                </Select>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>有效期</span>
+                <Select value={expiresInHours} onChange={(v) => setExpiresInHours(v as number)} style={{ width: '110px' }} size="small">
+                  <Select.Option value={24}>24 小时</Select.Option>
+                  <Select.Option value={72}>3 天</Select.Option>
+                  <Select.Option value={168}>7 天</Select.Option>
+                  <Select.Option value={720}>30 天</Select.Option>
+                </Select>
+              </div>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <Button onClick={() => setModalOpen(false)}>取消</Button>

@@ -110,30 +110,52 @@ body {
   --semi-color-link-hover: var(--brand-mid);
 }
 
-/* 🌙 暗色模式 (Modern Dark Mode) */
+/* 🌙 暗色模式 (Premium Dark — Vercel/Linear 级别) */
 body[theme-mode='dark'] {
-  --site-bg: #020617; /* 深海黑蓝 */
-  --card-bg: #0f172a;
-  --semi-color-bg-0: var(--card-bg);
-  --semi-color-bg-1: var(--site-bg);
-  --semi-color-text-0: #f8fafc;
-  --semi-color-text-1: #cbd5e1;
-  --semi-color-text-2: #64748b;
-  --semi-color-border: rgba(255, 255, 255, 0.06);
+  /* ── 背景层级：浅 = 海拔更高 ── */
+  --site-bg: #111113;           /* 页面底层，warm-neutral 深灰 */
+  --card-bg: #1a1a1d;           /* 卡片 / 面板层 */
+  --semi-color-bg-0: #1a1a1d;   /* 主卡片面 */
+  --semi-color-bg-1: #111113;   /* 页面背景 */
+  --semi-color-bg-2: #242428;   /* 悬浮卡片 / Dropdown */
+  --semi-color-bg-3: #2e2e33;   /* Modal / Tooltip 顶层 */
+
+  /* ── 文字层级 ── */
+  --semi-color-text-0: #f0f0f2;   /* 主文字，暖白 ~14:1 对比 */
+  --semi-color-text-1: #a1a1aa;   /* 次要，~6:1 */
+  --semi-color-text-2: #71717a;   /* 辅助 / placeholder，~4.5:1 */
+
+  /* ── 边框与填充 ── */
+  --semi-color-border: rgba(255, 255, 255, 0.08);
   --semi-color-fill-0: rgba(255, 255, 255, 0.04);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
-  --nav-item-hover-bg: rgba(255, 255, 255, 0.045);
-  --grid-color: rgba(255, 255, 255, 0.02);
+  --semi-color-fill-1: rgba(255, 255, 255, 0.07);
+  --semi-color-fill-2: rgba(255, 255, 255, 0.11);
 
-  /* CN 靛紫 (Indigo Modern) 在暗色模式下的低对比度自适应色 */
-  --cn-pale: #1e1b4b; /* 深邃紫背景，平替明亮浅蓝色 */
-  --cn-glow: rgba(99, 102, 241, 0.25);
-  --cn-selected-bg: rgba(99, 102, 241, 0.15);
+  /* ── 阴影：深色下以边框代替投影 ── */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-focus: 0 0 0 3px var(--brand-glow);
 
-  /* GO 翠绿 (Emerald Modern) 在暗色模式下的低对比度自适应色 */
-  --go-pale: #064e3b; /* 深邃绿背景，平替明亮浅绿色 */
-  --go-glow: rgba(16, 185, 129, 0.25);
-  --go-selected-bg: rgba(16, 185, 129, 0.15);
+  /* ── 导航 ── */
+  --nav-item-hover-bg: rgba(255, 255, 255, 0.055);
+  --grid-color: rgba(255, 255, 255, 0.03);
+
+  /* ── CN 靛紫 —— 暗色下提升亮度（indigo-400 替代 indigo-500）── */
+  --cn-base: #818cf8;
+  --cn-mid: #a5b4fc;
+  --cn-deep: #6366f1;
+  --cn-pale: #1e1b4b;
+  --cn-glow: rgba(129, 140, 248, 0.18);
+  --cn-selected-bg: rgba(129, 140, 248, 0.12);
+
+  /* ── GO 翠绿 —— 暗色下提升亮度（emerald-400 替代 emerald-500）── */
+  --go-base: #34d399;
+  --go-mid: #6ee7b7;
+  --go-deep: #10b981;
+  --go-pale: #064e3b;
+  --go-glow: rgba(52, 211, 153, 0.18);
+  --go-selected-bg: rgba(52, 211, 153, 0.12);
 }
 
 /* 海外市场 Token 切换 */

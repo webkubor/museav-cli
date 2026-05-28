@@ -1,4 +1,5 @@
 import React from 'react'
+import { usePlatformConfig } from '@/hooks/use-platform-config'
 import { Button } from '@douyinfe/semi-ui'
 import { useTranslation } from 'react-i18next'
 import type { OAuthConnection } from '@/types'
@@ -9,7 +10,11 @@ interface OAuthBindingTabProps {
 
 export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections }) => {
   const { t } = useTranslation()
-  const PROVIDERS: OAuthConnection['provider'][] = ['google', 'github', 'wechat']
+  const { data: platformConfig } = usePlatformConfig()
+  const PROVIDERS = (
+    platformConfig?.enabled_login_methods?.filter((m) => m !== 'password') ??
+    ['google', 'github', 'wechat']
+  ) as OAuthConnection['provider'][]
 
   const connMap = new Map<OAuthConnection['provider'], OAuthConnection>()
   connections.forEach((c) => connMap.set(c.provider, c))

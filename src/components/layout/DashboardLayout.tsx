@@ -67,7 +67,8 @@ export function DashboardLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
-  const { tenants, activeTenantId } = useAuthStore((s) => ({ tenants: s.tenants, activeTenantId: s.activeTenantId }))
+  const tenants = useAuthStore((s) => s.tenants)
+  const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const isEnterprise = tenants.find((t) => t.tenant_id === activeTenantId)?.type === 'enterprise'
 
   // Tenant级：切换工作区不影响这些页面

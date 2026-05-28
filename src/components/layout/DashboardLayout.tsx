@@ -81,8 +81,8 @@ export function DashboardLayout() {
   const icons = {
     home:        <LuHouse        size={16} />,
     apps:        <LuLayoutGrid   size={16} />,
-    histogram:   <LuChartBar     size={16} />,
-    histogramSm: <LuChartBar     size={14} />,
+    histogram:   <LuChartBar     size={14} />,
+    histogramSm: <LuChartBar     size={12} />,
     list:        <LuList         size={14} />,
     creditCard:  <LuCreditCard   size={16} />,
     wrench:      <LuWrench       size={16} color="#d97706" />,

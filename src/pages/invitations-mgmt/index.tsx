@@ -39,6 +39,8 @@ export default function InvitationsMgmtPage() {
   const qc = useQueryClient()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
+  const tenants = useAuthStore((s) => s.tenants)
+  const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
   const [status, setStatus] = useState<'pending' | 'accepted' | 'expired' | 'revoked' | 'all'>('pending')
 
   // ─── Invite modal state ───────────────────────────────────────────────────
@@ -237,9 +239,16 @@ export default function InvitationsMgmtPage() {
       {/* 页面标题 */}
       <div style={{ marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
-            工作区邀请管理
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '0 0 6px 0' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0, letterSpacing: '-0.02em' }}>
+              工作区邀请管理
+            </h1>
+            {activeTenant?.name && (
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--semi-color-primary)', background: 'var(--semi-color-primary-light-default)', padding: '3px 10px', borderRadius: '4px', flexShrink: 0 }}>
+                {activeTenant.name}
+              </span>
+            )}
+          </div>
           <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0 }}>
             邀请组织成员加入当前工作区，或通过链接邀请外部成员。
           </p>

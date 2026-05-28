@@ -246,7 +246,7 @@ export default function GuardrailsPage() {
                       padding: '14px 20px',
                       cursor: 'pointer',
                       borderBottom: '1px solid var(--semi-color-bg-1)',
-                      backgroundColor: isActive ? '#eff6ff' : 'transparent',
+                      backgroundColor: isActive ? 'var(--cn-selected-bg)' : 'transparent',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -259,7 +259,7 @@ export default function GuardrailsPage() {
                         style={{
                           fontSize: '13.5px',
                           fontWeight: 600,
-                          color: isActive ? '#2563eb' : 'var(--semi-color-text-0)',
+                          color: isActive ? 'var(--brand-base)' : 'var(--semi-color-text-0)',
                           margin: 0,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -283,7 +283,7 @@ export default function GuardrailsPage() {
                         {GUARDRAIL_STATUS_CONFIG[g.status].label}
                       </span>
                     </div>
-                    <span style={{ color: isActive ? '#2563eb' : 'var(--semi-color-text-3)', fontSize: '16px' }}>
+                    <span style={{ color: isActive ? 'var(--brand-base)' : 'var(--semi-color-text-3)', fontSize: '16px' }}>
                       ›
                     </span>
                   </li>
@@ -582,16 +582,16 @@ function PolicyCard({
               fontWeight: 600,
               backgroundColor:
                 p.enforcement_mode === 'hard_limit'
-                  ? '#fef2f2'
+                  ? 'var(--semi-color-danger-light-default)'
                   : p.enforcement_mode === 'soft_limit'
-                    ? '#fffbeb'
+                    ? 'var(--semi-color-warning-light-default)'
                     : 'var(--semi-color-bg-1)',
               color: enforcementCfg.color,
               border: `1px solid ${
                 p.enforcement_mode === 'hard_limit'
-                  ? '#fecaca'
+                  ? 'var(--semi-color-danger-light-hover)'
                   : p.enforcement_mode === 'soft_limit'
-                    ? '#fde68a'
+                    ? 'var(--semi-color-warning-light-hover)'
                     : 'var(--semi-color-border)'
               }`,
             }}
@@ -625,12 +625,6 @@ function PolicyCard({
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
           {p.spend_limit_amount && parseFloat(p.spend_limit_amount) > 0 && (
             <PolicyMeta label="最高预算" value={`${p.currency} ${p.spend_limit_amount}`} />
-          )}
-          {p.token_limit > 0 && (
-            <PolicyMeta label="TOKEN 上限" value={p.token_limit.toLocaleString()} />
-          )}
-          {p.request_limit > 0 && (
-            <PolicyMeta label="请求上限" value={p.request_limit.toLocaleString()} />
           )}
           {p.rate_request_limit > 0 && (
             <PolicyMeta
@@ -794,8 +788,6 @@ function AddBudgetPolicyModal({
     'hard_limit'
   )
   const [spendLimit, setSpendLimit] = useState('')
-  const [tokenLimit, setTokenLimit] = useState('')
-  const [requestLimit, setRequestLimit] = useState('')
 
   function handleConfirm() {
     const body: Parameters<typeof addBudgetPolicy>[1] = {
@@ -808,8 +800,6 @@ function AddBudgetPolicyModal({
       body.spend_limit_amount = spendLimit
       body.currency = currency
     }
-    if (tokenLimit && parseInt(tokenLimit) > 0) body.token_limit = parseInt(tokenLimit)
-    if (requestLimit && parseInt(requestLimit) > 0) body.request_limit = parseInt(requestLimit)
     onConfirm(body)
   }
 
@@ -882,40 +872,17 @@ function AddBudgetPolicyModal({
 
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr 1fr',
-            gap: '12px',
             paddingTop: '16px',
             borderTop: '1px solid var(--semi-color-fill-0)',
           }}
         >
-          <div>
-            <label style={{ ...fieldLabelStyle, fontSize: '10px' }}>金额上限 ({currency})</label>
-            <Input
-              type="number"
-              value={spendLimit}
-              onChange={(v) => setSpendLimit(v)}
-              placeholder="不限"
-            />
-          </div>
-          <div>
-            <label style={{ ...fieldLabelStyle, fontSize: '10px' }}>TOKEN 上限</label>
-            <Input
-              type="number"
-              value={tokenLimit}
-              onChange={(v) => setTokenLimit(v)}
-              placeholder="不限"
-            />
-          </div>
-          <div>
-            <label style={{ ...fieldLabelStyle, fontSize: '10px' }}>请求数上限</label>
-            <Input
-              type="number"
-              value={requestLimit}
-              onChange={(v) => setRequestLimit(v)}
-              placeholder="不限"
-            />
-          </div>
+          <label style={{ ...fieldLabelStyle, fontSize: '10px' }}>金额上限 ({currency})</label>
+          <Input
+            type="number"
+            value={spendLimit}
+            onChange={(v) => setSpendLimit(v)}
+            placeholder="不限"
+          />
         </div>
       </div>
     </Modal>
@@ -1023,8 +990,8 @@ function ManageAssignmentsModal({
                       gap: '12px',
                       padding: '10px 14px',
                       borderRadius: '8px',
-                      border: checked ? '1px solid #bfdbfe' : '1px solid var(--semi-color-fill-0)',
-                      backgroundColor: checked ? '#eff6ff' : 'var(--semi-color-bg-1)',
+                      border: checked ? '1px solid var(--cn-mid)' : '1px solid var(--semi-color-fill-0)',
+                      backgroundColor: checked ? 'var(--cn-selected-bg)' : 'var(--semi-color-bg-1)',
                       cursor: 'pointer',
                       textAlign: 'left',
                       width: '100%',
@@ -1099,8 +1066,8 @@ function ManageAssignmentsModal({
                       gap: '12px',
                       padding: '10px 14px',
                       borderRadius: '8px',
-                      border: checked ? '1px solid #bfdbfe' : '1px solid var(--semi-color-fill-0)',
-                      backgroundColor: checked ? '#eff6ff' : 'var(--semi-color-bg-1)',
+                      border: checked ? '1px solid var(--cn-mid)' : '1px solid var(--semi-color-fill-0)',
+                      backgroundColor: checked ? 'var(--cn-selected-bg)' : 'var(--semi-color-bg-1)',
                       cursor: 'pointer',
                       textAlign: 'left',
                       width: '100%',
@@ -1138,8 +1105,8 @@ function ManageAssignmentsModal({
                         fontSize: '11px',
                         padding: '2px 8px',
                         borderRadius: '100px',
-                        backgroundColor: k.env === 'live' ? '#ecfdf5' : 'var(--semi-color-bg-1)',
-                        color: k.env === 'live' ? '#10b981' : 'var(--semi-color-text-2)',
+                        backgroundColor: k.env === 'live' ? 'var(--semi-color-success-light-default)' : 'var(--semi-color-bg-1)',
+                        color: k.env === 'live' ? 'var(--semi-color-success)' : 'var(--semi-color-text-2)',
                       }}
                     >
                       {k.env}
@@ -1163,8 +1130,8 @@ function CheckBox({ checked }: { checked: boolean }) {
         width: '16px',
         height: '16px',
         borderRadius: '4px',
-        border: checked ? '2px solid #2563eb' : '2px solid var(--semi-color-text-3)',
-        backgroundColor: checked ? '#2563eb' : 'transparent',
+        border: checked ? '2px solid var(--brand-base)' : '2px solid var(--semi-color-text-3)',
+        backgroundColor: checked ? 'var(--brand-base)' : 'transparent',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

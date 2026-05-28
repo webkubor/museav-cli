@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/auth'
 import { getBalance } from '@/services/billing'
 import { getUsageSummary } from '@/services/usage'
 import { getBillingMoneyStats } from '@/services/overview'
+import { useCurrency } from '@/hooks/use-platform-config'
 
 const { Text } = Typography
 
@@ -64,6 +65,7 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, loading, color }) => {
 
 export const KpiSection: React.FC = () => {
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
+  const { symbol: currencySymbol } = useCurrency()
 
   const { data: balance, isLoading: balanceLoading } = useQuery({
     queryKey: ['billing', 'balance', activeTenantId],
@@ -87,11 +89,11 @@ export const KpiSection: React.FC = () => {
   })
 
   const availableBalance = balance
-    ? `${balance.available.currency} ${parseFloat(balance.available.amount).toFixed(2)}`
+    ? `${currencySymbol}${parseFloat(balance.available.amount).toFixed(2)}`
     : undefined
 
   const monthlySpend = billingStats
-    ? `${billingStats.monthly_spend.currency} ${parseFloat(billingStats.monthly_spend.amount).toFixed(4)}`
+    ? `${currencySymbol}${parseFloat(billingStats.monthly_spend.amount).toFixed(4)}`
     : undefined
 
   const monthlyRequests = usage

@@ -20,6 +20,7 @@ import type {
   GuardrailDetail,
 } from '@/interfaces/guardrails'
 import type { WorkspaceMember, ApiKeyItem } from '@/types'
+import { GUARDRAIL_STATUS_CONFIG, ENFORCEMENT_CONFIG, PERIOD_LABEL } from '@/constants/status'
 
 // ── Styles ──────────────────────────────────────────────────────────────────
 
@@ -40,44 +41,6 @@ const listCardStyle: React.CSSProperties = {
   overflow: 'hidden',
 }
 
-// ── Label maps ───────────────────────────────────────────────────────────────
-
-const STATUS_COLOR: Record<GuardrailDetail['status'], string> = {
-  active: '#10b981',
-  inactive: '#f59e0b',
-  archived: 'var(--semi-color-text-2)',
-}
-
-const STATUS_BG: Record<GuardrailDetail['status'], string> = {
-  active: '#ecfdf5',
-  inactive: '#fffbeb',
-  archived: 'var(--semi-color-bg-1)',
-}
-
-const STATUS_LABEL: Record<GuardrailDetail['status'], string> = {
-  active: '启用中',
-  inactive: '已停用',
-  archived: '已归档',
-}
-
-const ENFORCEMENT_LABEL: Record<GuardrailBudgetPolicy['enforcement_mode'], string> = {
-  monitor: '仅监控',
-  soft_limit: '软限制',
-  hard_limit: '硬限制',
-}
-
-const ENFORCEMENT_COLOR: Record<GuardrailBudgetPolicy['enforcement_mode'], string> = {
-  monitor: 'var(--semi-color-text-1)',
-  soft_limit: '#f59e0b',
-  hard_limit: '#ef4444',
-}
-
-const PERIOD_LABEL: Record<GuardrailBudgetPolicy['period_unit'], string> = {
-  hour: '小时',
-  day: '天',
-  week: '周',
-  month: '月',
-}
 
 
 // ── Main page ────────────────────────────────────────────────────────────────
@@ -312,11 +275,11 @@ export default function GuardrailsPage() {
                           borderRadius: '100px',
                           fontSize: '11px',
                           fontWeight: 500,
-                          backgroundColor: STATUS_BG[g.status],
-                          color: STATUS_COLOR[g.status],
+                          backgroundColor: GUARDRAIL_STATUS_CONFIG[g.status].bg,
+                          color: GUARDRAIL_STATUS_CONFIG[g.status].color,
                         }}
                       >
-                        {STATUS_LABEL[g.status]}
+                        {GUARDRAIL_STATUS_CONFIG[g.status].label}
                       </span>
                     </div>
                     <span style={{ color: isActive ? '#2563eb' : 'var(--semi-color-text-3)', fontSize: '16px' }}>
@@ -585,7 +548,7 @@ function PolicyCard({
   onDelete: () => void
   isDeleting: boolean
 }) {
-  const enforcementColor = ENFORCEMENT_COLOR[p.enforcement_mode]
+  const enforcementCfg = ENFORCEMENT_CONFIG[p.enforcement_mode]
 
   return (
     <div
@@ -622,7 +585,7 @@ function PolicyCard({
                   : p.enforcement_mode === 'soft_limit'
                     ? '#fffbeb'
                     : 'var(--semi-color-bg-1)',
-              color: enforcementColor,
+              color: enforcementCfg.color,
               border: `1px solid ${
                 p.enforcement_mode === 'hard_limit'
                   ? '#fecaca'
@@ -632,7 +595,7 @@ function PolicyCard({
               }`,
             }}
           >
-            {ENFORCEMENT_LABEL[p.enforcement_mode]}
+            {enforcementCfg.label}
           </span>
           <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>
             每 {p.period_length > 1 ? p.period_length : ''}

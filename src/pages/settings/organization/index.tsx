@@ -23,6 +23,7 @@ import {
 } from '@/services/tenants'
 import type { TenantItem } from '@/types'
 import { formatDate } from '@/lib/format-date'
+import { TENANT_ROLE_CONFIG, TENANT_ROLE_OPTIONS } from '@/constants/roles'
 
 const { Text } = Typography
 
@@ -52,12 +53,7 @@ const labelStyle: React.CSSProperties = {
 // ─── Role badge ───────────────────────────────────────────────────────────────
 
 function RoleBadge({ role }: { role: TenantItem['role'] }) {
-  const map: Record<TenantItem['role'], { label: string; color: string; bg: string; border: string }> = {
-    tenant_owner: { label: 'Owner', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-    tenant_admin: { label: 'Admin', color: 'var(--semi-color-primary)', bg: 'var(--semi-color-primary-light-default)', border: 'var(--semi-color-primary-light-active)' },
-    tenant_member: { label: 'Member', color: 'var(--semi-color-text-1)', bg: 'var(--semi-color-bg-1)', border: 'var(--semi-color-border)' },
-  }
-  const s = map[role]
+  const s = TENANT_ROLE_CONFIG[role]
   return (
     <span style={{ fontSize: '11px', fontWeight: 600, color: s.color, backgroundColor: s.bg, border: `1px solid ${s.border}`, borderRadius: '100px', padding: '2px 8px' }}>
       {s.label}
@@ -470,8 +466,7 @@ function MembersTab({ tenantId }: { tenantId: string }) {
           style={{ width: '130px' }}
           disabled={record.role === 'tenant_owner'}
         >
-          <Select.Option value="tenant_admin">Admin</Select.Option>
-          <Select.Option value="tenant_member">Member</Select.Option>
+          {TENANT_ROLE_OPTIONS.map((o) => <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>)}
         </Select>
       ),
     },
@@ -600,8 +595,7 @@ function InviteTab({ tenantId }: { tenantId: string }) {
           <div style={{ width: '130px' }}>
             <label style={labelStyle}>初始角色</label>
             <Select value={inviteRole} onChange={(v) => setInviteRole(v as any)} style={{ width: '100%' }}>
-              <Select.Option value="tenant_admin">Admin</Select.Option>
-              <Select.Option value="tenant_member">Member</Select.Option>
+              {TENANT_ROLE_OPTIONS.map((o) => <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>)}
             </Select>
           </div>
           <Button theme="solid" loading={addMembers.isPending} onClick={() => addMembers.mutate()} style={{ flexShrink: 0 }}>发送邀请</Button>

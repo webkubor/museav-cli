@@ -7,24 +7,15 @@ import { useAuthStore } from '@/store/auth'
 import type { CallLogItem, CallLogDetail, LogPayload } from '@/types'
 import type { CallLogListParams } from '@/interfaces/logs'
 import { formatDateTimeWithSeconds } from '@/lib/format-date'
+import { LOG_STATUS_CONFIG } from '@/constants/status'
 
 const { Text } = Typography
 
 type Preset = '1h' | '24h' | '7d'
 type StatusFilter = 'all' | 'succeeded' | 'failed' | 'rejected'
 
-const STATUS_CONFIG: Record<
-  CallLogItem['status'],
-  { bg: string; color: string; border: string; label: string }
-> = {
-  succeeded: { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0', label: '成功' },
-  failed:    { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', label: '失败' },
-  rejected:  { bg: '#fff7ed', color: '#ea580c', border: '#fed7aa', label: '拒绝' },
-  accepted:  { bg: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-1)', border: 'var(--semi-color-border)', label: '接受' },
-}
-
 function StatusTag({ status }: { status: CallLogItem['status'] }) {
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.accepted
+  const cfg = LOG_STATUS_CONFIG[status] ?? LOG_STATUS_CONFIG.accepted
   return (
     <Tag
       style={{

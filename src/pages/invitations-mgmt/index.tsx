@@ -11,26 +11,8 @@ import {
 import { listTenantMembers } from '@/services/tenants'
 import type { InvitationItem, TenantMember } from '@/types'
 import { formatDateTime } from '@/lib/format-date'
-
-const STATUS_STYLE: Record<InvitationItem['status'], { color: string; bg: string; border: string }> = {
-  pending:  { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  accepted: { color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' },
-  expired:  { color: 'var(--semi-color-text-2)', bg: 'var(--semi-color-bg-1)', border: 'var(--semi-color-border)' },
-  revoked:  { color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
-}
-
-const STATUS_LABEL: Record<InvitationItem['status'] | 'all', string> = {
-  pending:  '待接受',
-  accepted: '已接受',
-  expired:  '已过期',
-  revoked:  '已撤销',
-  all:      '全部',
-}
-
-const ROLE_LABEL: Record<'ws_member' | 'ws_admin', string> = {
-  ws_member: '成员',
-  ws_admin:  '管理员',
-}
+import { WS_ROLE_LABEL, WS_ROLE_OPTIONS, TENANT_ROLE_LABEL } from '@/constants/roles'
+import { INVITATION_STATUS_CONFIG, INVITATION_STATUS_OPTIONS } from '@/constants/status'
 
 
 export default function InvitationsMgmtPage() {
@@ -141,7 +123,7 @@ export default function InvitationsMgmtPage() {
             borderRadius: '4px',
           }}
         >
-          {ROLE_LABEL[r]}
+          {WS_ROLE_LABEL[r]}
         </Tag>
       ),
     },
@@ -149,19 +131,19 @@ export default function InvitationsMgmtPage() {
       title: '状态',
       dataIndex: 'status',
       render: (s: InvitationItem['status']) => {
-        const style = STATUS_STYLE[s]
+        const cfg = INVITATION_STATUS_CONFIG[s]
         return (
           <Tag
             style={{
-              backgroundColor: style.bg,
-              color: style.color,
-              border: `1px solid ${style.border}`,
+              backgroundColor: cfg.bg,
+              color: cfg.color,
+              border: `1px solid ${cfg.border}`,
               fontSize: '11px',
               fontWeight: 600,
               borderRadius: '12px',
             }}
           >
-            {STATUS_LABEL[s]}
+            {cfg.label}
           </Tag>
         )
       },
@@ -234,8 +216,7 @@ export default function InvitationsMgmtPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>加入角色</span>
               <Select value={inviteRole} onChange={(v) => setInviteRole(v as 'ws_member' | 'ws_admin')} style={{ width: '110px' }} size="small">
-                <Select.Option value="ws_member">成员</Select.Option>
-                <Select.Option value="ws_admin">管理员</Select.Option>
+                {WS_ROLE_OPTIONS.map((o) => <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>)}
               </Select>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -305,7 +286,7 @@ export default function InvitationsMgmtPage() {
                     </div>
                   </div>
                   <Tag style={{ fontSize: '11px', flexShrink: 0, borderRadius: '4px' }}>
-                    {m.role === 'tenant_owner' ? '拥有者' : m.role === 'tenant_admin' ? '管理员' : '成员'}
+                    {TENANT_ROLE_LABEL[m.role]}
                   </Tag>
                 </div>
               ))
@@ -343,11 +324,7 @@ export default function InvitationsMgmtPage() {
             }
             style={{ width: '120px' }}
           >
-            <Select.Option value="pending">待接受</Select.Option>
-            <Select.Option value="accepted">已接受</Select.Option>
-            <Select.Option value="expired">已过期</Select.Option>
-            <Select.Option value="revoked">已撤销</Select.Option>
-            <Select.Option value="all">全部</Select.Option>
+            {INVITATION_STATUS_OPTIONS.map((o) => <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>)}
           </Select>
         </div>
         <div style={{ padding: '0 8px' }}>

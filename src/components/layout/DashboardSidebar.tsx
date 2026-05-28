@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useRef } from 'react'
 import { Layout, Nav } from '@douyinfe/semi-ui'
 import { IconSetting, IconChevronLeft, IconChevronRight } from '@douyinfe/semi-icons'
 import { useTranslation } from 'react-i18next'
@@ -35,8 +35,14 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   settingsLabel,
 }) => {
   const { t } = useTranslation()
+  const [hovered, setHovered] = useState(false)
+  const leaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
   const isWorkspaceSelected = WORKSPACE_KEYS.includes(selectedKey)
   const isSettingsSelected = SETTINGS_KEYS.includes(selectedKey)
+
+  const onEnter = () => { clearTimeout(leaveTimer.current); setHovered(true) }
+  const onLeave = () => { leaveTimer.current = setTimeout(() => setHovered(false), 150) }
 
   const rowBase: React.CSSProperties = {
     display: 'flex',
@@ -52,11 +58,51 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
   return (
     <Sider style={{
+      position: 'relative',
+      overflow: 'visible',
       backgroundColor: 'var(--semi-color-bg-0)',
       borderRight: '1px solid var(--semi-color-fill-0)',
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     }}>
-      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 60px)' }}>
+      {/* 右边缘折叠触发器 */}
+      <button
+        onMouseEnter={onEnter}
+        onMouseLeave={onLeave}
+        onClick={() => setCollapsed(!collapsed)}
+        title={collapsed ? t('common.expand') : t('common.collapse')}
+        style={{
+          position: 'absolute',
+          right: -12,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: 24,
+          height: 24,
+          borderRadius: '50%',
+          background: 'var(--semi-color-bg-0)',
+          border: '1px solid var(--semi-color-border)',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: hovered ? 1 : 0,
+          transition: 'opacity 0.2s',
+          zIndex: 10,
+          boxShadow: '0 1px 6px rgba(0,0,0,0.1)',
+          padding: 0,
+          color: 'var(--semi-color-text-2)',
+        }}
+      >
+        {collapsed
+          ? <IconChevronRight style={{ fontSize: '13px' }} />
+          : <IconChevronLeft style={{ fontSize: '13px' }} />
+        }
+      </button>
+
+      <div
+        onMouseEnter={onEnter}
+        onMouseLeave={onLeave}
+        style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 60px)' }}
+      >
         {/* Tenant 级导航 */}
         <Nav
           isCollapsed={collapsed}
@@ -100,9 +146,8 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           style={{ border: 'none', flex: 1 }}
         />
 
-        {/* 底部固定区：Settings + 折叠按钮 */}
-        <div style={{ borderTop: '1px solid var(--semi-color-fill-0)', padding: '6px 0' }}>
-          {/* Settings 行 */}
+        {/* 底部：Settings + 版本号 */}
+        <div style={{ borderTop: '1px solid var(--semi-color-fill-0)', padding: '6px 0 0' }}>
           <div
             role="button"
             onClick={() => onSelect({ itemKey: 'settings/account' })}
@@ -120,31 +165,12 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             )}
           </div>
 
-          {/* 折叠/展开按钮 */}
-          <div
-            role="button"
-            onClick={() => setCollapsed(!collapsed)}
-            style={{
-              ...rowBase,
-              color: 'var(--semi-color-text-2)',
-            }}
-          >
-            {collapsed
-              ? <IconChevronRight style={{ fontSize: '15px' }} />
-              : <IconChevronLeft style={{ fontSize: '15px' }} />
-            }
-            {!collapsed && (
-              <span style={{ fontSize: '13px' }}>{collapsed ? t('common.expand') : t('common.collapse')}</span>
-            )}
-          </div>
-
-          {/* 版本号 */}
           {!collapsed && (
             <div style={{
-              padding: '4px 20px 6px',
+              padding: '4px 20px 8px',
               fontSize: '11px',
               color: 'var(--semi-color-text-2)',
-              opacity: 0.5,
+              opacity: 0.45,
               userSelect: 'none',
             }}>
               v{__APP_VERSION__}

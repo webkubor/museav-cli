@@ -62,18 +62,18 @@ function resolveOrigin(): string | null {
   return window.location.hostname || null
 }
 
-// BCP 47 主语言码 → AcceptLanguageTag 映射表
-// 扩展新语言时在此加一行
-const LOCALE_MAP: Record<string, AcceptLanguageTag> = {
-  zh: 'zh-CN',
-  en: 'en-US',
-}
-
 function resolveLocale(): AcceptLanguageTag {
   if (typeof window === 'undefined') return 'en-US'
-  const raw = document.documentElement.lang || navigator.language
-  const primary = raw.split('-')[0].toLowerCase()
-  return LOCALE_MAP[primary] ?? 'en-US'
+
+  // 1. 优先从 localStorage 读取用户的应用语言偏好，实现前端默认语言与请求头对接
+  const saved = localStorage.getItem(storageKeys.lang()) || localStorage.getItem('i18nextLng')
+  if (saved) {
+    return saved.toLowerCase().includes('zh') ? 'zh-CN' : 'en-US'
+  }
+
+  // 2. 智能探测浏览器默认语言。前期仅支持中文和英文，只要包含 zh 则返回 zh-CN，其余一律默认返回 en-US
+  const browserLang = navigator.language || (navigator as any).userLanguage || ''
+  return browserLang.toLowerCase().includes('zh') ? 'zh-CN' : 'en-US'
 }
 
 /**

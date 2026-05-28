@@ -4,8 +4,8 @@ import { Button } from '@douyinfe/semi-ui'
 import { useTranslation } from 'react-i18next'
 import Google from '@lobehub/icons/es/Google'
 import Github from '@lobehub/icons/es/Github'
-import { SiWechat } from 'react-icons/si'
 import type { OAuthConnection } from '@/types'
+import { SiWechat } from 'react-icons/si'
 
 const PROVIDER_ICONS: Record<string, React.ReactNode> = {
   google: <Google size={20} />,

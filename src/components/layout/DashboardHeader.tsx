@@ -368,7 +368,7 @@ export const DashboardHeader: React.FC = () => {
             theme="borderless"
             icon={<LuLanguages />}
             style={{ color: 'var(--semi-color-text-1)' }}
-            title={t('language') || '语言'}
+            title={t('common.language') || '语言'}
           />
         </Dropdown>
 
@@ -382,19 +382,19 @@ export const DashboardHeader: React.FC = () => {
                 onClick={() => handleThemeChange('light')}
                 style={{ borderRadius: '6px', fontSize: '13px', fontWeight: currentTheme === 'light' ? 600 : 400 }}
               >
-                ☀️ {t('themeLight')}
+                ☀️ {t('common.themeLight')}
               </Dropdown.Item>
               <Dropdown.Item 
                 onClick={() => handleThemeChange('dark')}
                 style={{ borderRadius: '6px', fontSize: '13px', fontWeight: currentTheme === 'dark' ? 600 : 400 }}
               >
-                🌙 {t('themeDark')}
+                🌙 {t('common.themeDark')}
               </Dropdown.Item>
               <Dropdown.Item 
                 onClick={() => handleThemeChange('system')}
                 style={{ borderRadius: '6px', fontSize: '13px', fontWeight: currentTheme === 'system' ? 600 : 400 }}
               >
-                💻 {t('themeSystem')}
+                💻 {t('common.themeSystem')}
               </Dropdown.Item>
             </Dropdown.Menu>
           }
@@ -403,7 +403,7 @@ export const DashboardHeader: React.FC = () => {
             theme="borderless"
             icon={currentTheme === 'dark' ? <LuMoon /> : <LuSun />}
             style={{ color: 'var(--semi-color-text-1)' }}
-            title={t('theme') || '主题'}
+            title={t('common.theme') || '主题'}
           />
         </Dropdown>
 
@@ -413,7 +413,7 @@ export const DashboardHeader: React.FC = () => {
           icon={<LuCircleHelp />}
           style={{ color: 'var(--semi-color-text-1)' }}
           onClick={() => window.open('https://docs.modelgo.com', '_blank')}
-          title={t('help') || '帮助'}
+          title={t('common.help') || '帮助'}
         />
 
         {/* 用户头像 (账户体系与组织管理一站式抽屉) */}

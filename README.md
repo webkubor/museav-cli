@@ -81,8 +81,72 @@ pnpm build:production
 
 ---
 
+## 📋 任务看板 & AI Skills
+
+### GitLab QA 看板
+
+任务追踪：[https://gitlab.ops.modelgo.com/groups/qa/-/boards](https://gitlab.ops.modelgo.com/groups/qa/-/boards)
+
+使用 `cs task` 自动同步：
+```bash
+cs task start "需求描述" --agent claude --project modelgo-console-web  # 开工 → 自动创建 GitLab issue
+cs task list                                                              # 查看进行中
+cs task done                                                             # 完成 → 自动关闭 GitLab issue
+```
+
+### AI Skills 安装
+
+```bash
+npx git+ssh://git@gitlab.ops.modelgo.com/shared/ai-skills.git
+```
+
+已安装 skill 后，Claude/Codex 自动加载以下能力：
+- `gitlab-board` — 操作 GitLab QA 看板（查列、移 issue、创建）
+- `gotest` — Go 单元测试生成
+- `testmgr-api` — TestMgr REST API 管理
+
+---
+
 ## 🎨 Semi Design 页面排布与规范
 
 控制台采用 **Semi Design** 作为默认 UI 系统。在新增/开发组件时，请遵守以下设计与行数规范：
 1. **物理隔离与防“屎山”**：单组件文件代码尽量控制在 **300 行** 内。复杂的表格逻辑、弹窗表单应提取到独立子组件中，禁止在单一页面拼凑庞大 UI。
 2. **零 CSS 手写**：Semi Design 拥有极度全面的布局及样式原语，优先使用内置组件属性（例如 `<Table bordered={false}>`、`<Button theme="solid">` 等）实现极简云平台风格，尽量避免手写 ad-hoc 样式，以保证后台控制台的美学一致性。
+
+---
+
+## 💎 现代 UI 框架的折中样式抽离架构 (Tailwind @apply 规范)
+
+为了实现既有 **TailwindCSS 的高效原子编写效率**，又能保持 **React 组件 DOM 的极度干净、纯粹与高可读性**，我们全站强制采用以下折中样式抽离架构设计：
+
+### 1. 样式抽离核心准则：@apply 封装
+我们依然在项目中使用 TailwindCSS 作为核心样式原子引擎，但**严禁在组件的 HTML / JSX 标签上直接堆砌长串的 Tailwind 原子类名 (Atomic Slop)**。
+
+*   ❌ **禁止做法 (标签原子类堆砌)**：
+    ```tsx
+    <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm hover:translate-y-[-2px] transition-all duration-300">
+      ...
+    </div>
+    ```
+*   ✅ **推荐做法 (语义化 @apply 抽离)**：
+    在组件对应的 CSS 文件或全局样式中，使用 Tailwind 的 `@apply` 原语，将原子类封装进具备高度语义化的 CSS 实体类中，在组件中只写纯净、高可读的单一语义化 Class：
+    ```tsx
+    {/* JSX 保持极致清爽，逻辑与结构一眼见底 */}
+    <div className="welcome-banner-card">
+      ...
+    </div>
+    ```
+    ```css
+    /* index.css 或组件级 CSS 中进行内聚封装 */
+    .welcome-banner-card {
+      @apply flex items-center justify-between p-4 bg-white dark:bg-slate-900;
+      @apply border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm;
+      @apply hover:-translate-y-0.5 transition-all duration-300;
+    }
+    ```
+
+### 2. 本架构的核心优势
+1. **DOM 极致纯净干净**：排除了令人眼花缭乱的长串原子类，使得 HTML / JSX 的 DOM 结构和节点极其爽目，极大底降低了 Code Review 与团队协作时的心智负担。
+2. **免手写大量原生 CSS**：团队开发者依然能够完全调用 Tailwind 极其成熟、一致且强大的原子修饰符，同时支持响应式与明暗自适应。
+3. **高度解耦与易维护性**：样式的修改完全收口在 CSS 文件的语义类下，无需去 JSX 标签的属性深处大海捞针，做到了真正的“结构与表现物理隔离”。
+

@@ -18,17 +18,13 @@ import { useTranslation } from 'react-i18next'
 import { DashboardHeader } from './DashboardHeader'
 import { DashboardSidebar } from './DashboardSidebar'
 import { CustomerService } from '@/components/customer-service'
+import { navConfig } from '@/config/nav'
+import { isDomestic } from '@/lib/market'
 
 const { Content } = Layout
 
 const isDevTools = import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
 
-// 工作区级页面 key（切换工作区内容会变）
-const WORKSPACE_SCOPED_KEYS = new Set([
-  'api-keys', 'guardrails', 'observability', 'invitations-mgmt',
-])
-
-// 无工作区时显示的空状态提示
 function WorkspaceGuard({
   currentKey,
   children,
@@ -38,7 +34,7 @@ function WorkspaceGuard({
 }) {
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
 
-  if (!activeWorkspaceId && WORKSPACE_SCOPED_KEYS.has(currentKey)) {
+  if (!activeWorkspaceId && navConfig.workspaceScopedKeys.has(currentKey)) {
     return (
       <div style={{
         display: 'flex',
@@ -67,42 +63,34 @@ export function DashboardLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
+
   const tenants = useAuthStore((s) => s.tenants)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
-  const isEnterprise = tenants.find((t) => t.tenant_id === activeTenantId)?.type === 'enterprise'
+  const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
 
-  // Tenant级：切换工作区不影响这些页面
-  const tenantNavItems = [
-    { itemKey: 'dashboard', text: t('nav.dashboard'), icon: <IconHome style={{ fontSize: '16px' }} /> },
-    { itemKey: 'models', text: t('nav.models'), icon: <IconApps style={{ fontSize: '16px' }} /> },
-    {
-      itemKey: 'analytics',
-      text: t('nav.analytics'),
-      icon: <IconHistogram style={{ fontSize: '16px' }} />,
-      items: [
-        { itemKey: 'usage', text: t('nav.usage'), icon: <IconHistogram style={{ fontSize: '14px' }} /> },
-        { itemKey: 'logs', text: t('nav.logs'), icon: <IconList style={{ fontSize: '14px' }} /> }
-      ]
-    },
-    {
-      itemKey: 'billing',
-      text: t('nav.billing'),
-      icon: <IconCreditCard style={{ fontSize: '16px' }} />,
-    },
-    ...(isDevTools ? [{
-      itemKey: 'platform-config',
-      text: '接口调试',
-      icon: <IconWrench style={{ fontSize: '16px', color: '#d97706' }} />,
-    }] : []),
-  ]
+  // ─── 菜单可见性上下文（所有条件集中在 src/config/nav.ts） ───────────────
+  const navCtx = {
+    isNonPersonal: activeTenant?.type !== 'personal',
+    isDomestic: isDomestic(),
+    isDevTools,
+  }
 
-  // Workspace级：切换工作区后内容随之变化
-  const workspaceNavItems = [
-    { itemKey: 'api-keys', text: t('nav.apiKeys'), icon: <IconKey style={{ fontSize: '16px' }} /> },
-    { itemKey: 'guardrails', text: t('nav.guardrails'), icon: <IconShield style={{ fontSize: '16px' }} /> },
-    { itemKey: 'observability', text: t('nav.observability'), icon: <IconEyeOpened style={{ fontSize: '16px' }} /> },
-    ...(isEnterprise ? [{ itemKey: 'invitations-mgmt', text: t('nav.invitations'), icon: <IconMail style={{ fontSize: '16px' }} /> }] : []),
-  ]
+  const icons = {
+    home:        <IconHome        style={{ fontSize: '16px' }} />,
+    apps:        <IconApps        style={{ fontSize: '16px' }} />,
+    histogram:   <IconHistogram   style={{ fontSize: '16px' }} />,
+    histogramSm: <IconHistogram   style={{ fontSize: '14px' }} />,
+    list:        <IconList        style={{ fontSize: '14px' }} />,
+    creditCard:  <IconCreditCard  style={{ fontSize: '16px' }} />,
+    wrench:      <IconWrench      style={{ fontSize: '16px', color: '#d97706' }} />,
+    key:         <IconKey         style={{ fontSize: '16px' }} />,
+    shield:      <IconShield      style={{ fontSize: '16px' }} />,
+    eye:         <IconEyeOpened   style={{ fontSize: '16px' }} />,
+    mail:        <IconMail        style={{ fontSize: '16px' }} />,
+  }
+
+  const tenantNavItems    = navConfig.tenantItems(navCtx, t, icons)
+  const workspaceNavItems = navConfig.workspaceItems(navCtx, t, icons)
 
   const getSelectedKey = () => {
     const path = location.pathname.replace(/^\//, '')
@@ -136,7 +124,6 @@ export function DashboardLayout() {
       <DashboardHeader />
 
       <Layout>
-        {/* 左侧侧边栏 Sider 子组件 */}
         <DashboardSidebar
           collapsed={collapsed}
           setCollapsed={setCollapsed}
@@ -147,7 +134,6 @@ export function DashboardLayout() {
           settingsLabel={t('nav.settings')}
         />
 
-        {/* 主内容区 Content */}
         <Layout style={{ padding: '28px 36px', flex: 1, transition: 'all 0.3s ease' }}>
           <Breadcrumb style={{ marginBottom: '18px', fontSize: '12px', color: 'var(--semi-color-text-1)' }}>
             {getBreadcrumbs().map((b, idx) => (

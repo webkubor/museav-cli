@@ -35,7 +35,7 @@ export const DashboardHeader: React.FC = () => {
   const { t, i18n } = useTranslation()
   const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setActiveWorkspaceId, clearAuth } = useAuthStore()
   const activeTenantType = tenants.find((t) => t.tenant_id === activeTenantId)?.type ?? 'personal'
-  const isEnterprise = activeTenantType === 'enterprise'
+  const isNonPersonal = activeTenantType !== 'personal'
   
   // Theme and Lang state
   const [currentTheme, setCurrentTheme] = useState<Theme>('light')
@@ -313,7 +313,7 @@ export const DashboardHeader: React.FC = () => {
               >
                 {t('header.createWorkspace')}
               </Dropdown.Item>
-              {isEnterprise && (
+              {isNonPersonal && (
                 <Dropdown.Item
                   icon={<IconSetting style={{ fontSize: '14px' }} />}
                   onClick={() => navigate('/settings/workspace')}
@@ -510,7 +510,7 @@ export const DashboardHeader: React.FC = () => {
 
               {/* 3. 系统快捷跳转功能 */}
               <Dropdown.Divider />
-              {isEnterprise && (
+              {isNonPersonal && (
                 <Dropdown.Item
                   icon={<IconSetting style={{ fontSize: '14px' }} />}
                   onClick={() => navigate('/settings/organization')}
@@ -519,7 +519,7 @@ export const DashboardHeader: React.FC = () => {
                   {t('header.orgSettings')}
                 </Dropdown.Item>
               )}
-              {isEnterprise && (
+              {isNonPersonal && (
                 <Dropdown.Item
                   icon={<IconGlobe style={{ fontSize: '14px' }} />}
                   onClick={() => navigate('/settings/workspace')}

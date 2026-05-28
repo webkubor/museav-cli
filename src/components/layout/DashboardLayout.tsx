@@ -67,6 +67,8 @@ export function DashboardLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
+  const { tenants, activeTenantId } = useAuthStore((s) => ({ tenants: s.tenants, activeTenantId: s.activeTenantId }))
+  const isEnterprise = tenants.find((t) => t.tenant_id === activeTenantId)?.type === 'enterprise'
 
   // Tenant级：切换工作区不影响这些页面
   const tenantNavItems = [
@@ -98,7 +100,7 @@ export function DashboardLayout() {
     { itemKey: 'api-keys', text: t('nav.apiKeys'), icon: <IconKey style={{ fontSize: '16px' }} /> },
     { itemKey: 'guardrails', text: t('nav.guardrails'), icon: <IconShield style={{ fontSize: '16px' }} /> },
     { itemKey: 'observability', text: t('nav.observability'), icon: <IconEyeOpened style={{ fontSize: '16px' }} /> },
-    { itemKey: 'invitations-mgmt', text: t('nav.invitations'), icon: <IconMail style={{ fontSize: '16px' }} /> },
+    ...(isEnterprise ? [{ itemKey: 'invitations-mgmt', text: t('nav.invitations'), icon: <IconMail style={{ fontSize: '16px' }} /> }] : []),
   ]
 
   const getSelectedKey = () => {

@@ -183,6 +183,16 @@ export default function BillingPage() {
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
   const [topUpVisible, setTopUpVisible] = useState(false)
 
+  // ─── Platform config (currency) ──────────────────────────────────────────
+  const { data: platformConfig } = useQuery({
+    queryKey: ['platform-config'],
+    queryFn: getPlatformConfig,
+    staleTime: Infinity,
+    retry: 1,
+  })
+  const currency = platformConfig?.settlement_currency ?? 'CNY'
+  const currencySymbol = currency === 'USD' ? '$' : '¥'
+
   // ─── Balance Query ───────────────────────────────────────────────────────
   const { data: balance, isLoading: balanceLoading } = useQuery({
     queryKey: ['balance', tenantId],
@@ -219,20 +229,14 @@ export default function BillingPage() {
             <div>
               <div style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginBottom: '6px' }}>{t('billing.balance.available')}</div>
               <div style={{ fontSize: '36px', fontWeight: 700, color: 'var(--semi-color-text-0)', letterSpacing: '-0.03em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-                {balance?.available.amount ?? '—'}
-                <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--semi-color-text-1)', marginLeft: '6px' }}>
-                  {balance?.available.currency ?? ''}
-                </span>
+                <span style={{ fontSize: '20px', fontWeight: 500, color: 'var(--semi-color-text-1)', marginRight: '2px' }}>{currencySymbol}</span>{balance?.available.amount ?? '—'}
               </div>
             </div>
             <div style={{ height: '44px', width: '1px', backgroundColor: 'var(--semi-color-fill-0)' }} />
             <div>
               <div style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginBottom: '6px' }}>{t('billing.balance.frozen')}</div>
               <div style={{ fontSize: '24px', fontWeight: 600, color: 'var(--semi-color-text-1)', letterSpacing: '-0.02em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-                {balance?.reserved.amount ?? '—'}
-                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--semi-color-text-2)', marginLeft: '5px' }}>
-                  {balance?.reserved.currency ?? ''}
-                </span>
+                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--semi-color-text-2)', marginRight: '2px' }}>{currencySymbol}</span>{balance?.reserved.amount ?? '—'}
               </div>
             </div>
           </div>

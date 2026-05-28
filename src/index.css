@@ -70,6 +70,7 @@
 
   /* 导航项自定义 */
   --nav-item-active-bg: var(--brand-selected-bg);
+  --nav-item-hover-bg: rgba(15, 23, 42, 0.035);
 }
 
 /* Semi 在 body 上强行声明了 --semi-color-primary（蓝色），
@@ -96,6 +97,7 @@ body[theme-mode='dark'] {
   --semi-color-border: rgba(255, 255, 255, 0.06);
   --semi-color-fill-0: rgba(255, 255, 255, 0.04);
   --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --nav-item-hover-bg: rgba(255, 255, 255, 0.045);
 }
 
 /* 海外市场 Token 切换 */
@@ -187,40 +189,7 @@ html, body, #root {
   box-shadow: 0 4px 12px var(--brand-glow) !important;
 }
 
-/* 🧭 Sidebar 深度美化 */
-.semi-navigation-item {
-  border-radius: var(--radius-sm) !important;
-  margin: 4px 10px !important;
-  width: calc(100% - 20px) !important;
-}
 
-.semi-navigation-item-selected {
-  background-color: var(--nav-item-active-bg) !important;
-  color: var(--brand-deep) !important;
-}
-
-.semi-navigation-item-selected::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 20%;
-  height: 60%;
-  width: 3px;
-  background: var(--brand-base);
-  border-radius: 4px;
-}
-
-/* 滚动条极简处理 */
-::-webkit-scrollbar {
-  width: 4px;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--semi-color-fill-0);
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--semi-color-text-2);
-}
 
 /* 🚀 全局缓慢平滑流光动画 */
 @keyframes flowLight {

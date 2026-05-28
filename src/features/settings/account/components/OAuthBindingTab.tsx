@@ -2,13 +2,15 @@ import React from 'react'
 import { usePlatformConfig } from '@/hooks/use-platform-config'
 import { Button } from '@douyinfe/semi-ui'
 import { useTranslation } from 'react-i18next'
-import { SiGoogle, SiGithub, SiWechat } from 'react-icons/si'
+import Google from '@lobehub/icons/es/Google'
+import Github from '@lobehub/icons/es/Github'
+import { WechatIcon } from '@/components/icons/WechatIcon'
 import type { OAuthConnection } from '@/types'
 
 const PROVIDER_ICONS: Record<string, React.ReactNode> = {
-  google: <SiGoogle size={20} color="#4285F4" />,
-  github: <SiGithub size={20} />,
-  wechat: <SiWechat size={20} color="#07C160" />,
+  google: <Google size={20} />,
+  github: <Github size={20} />,
+  wechat: <WechatIcon size={20} />,
 }
 
 interface OAuthBindingTabProps {

@@ -11,7 +11,7 @@ import {
   addBudgetPolicy,
   deleteBudgetPolicy,
 } from '@/services/guardrails'
-import { listWorkspaceMembers } from '@/services/workspaces'
+import { listWorkspaceMembers, listWorkspaces } from '@/services/workspaces'
 import { listApiKeys } from '@/services/api-keys'
 import { pageItems } from '@/lib/utils'
 import { formatDateTime } from '@/lib/format-date'
@@ -50,6 +50,16 @@ const listCardStyle: React.CSSProperties = {
 export default function GuardrailsPage() {
   const qc = useQueryClient()
   const activeWorkspaceId = useAuthStore((state) => state.activeWorkspaceId)
+  const activeTenantId = useAuthStore((state) => state.activeTenantId)
+
+  const { data: workspaces = [] } = useQuery({
+    queryKey: ['workspaces', activeTenantId],
+    queryFn: () => listWorkspaces().then((r) => r.items || []),
+    enabled: !!activeTenantId,
+    staleTime: 60_000,
+  })
+  const myRole = workspaces.find((w) => w.workspace_id === activeWorkspaceId)?.my_role
+  const canManage = myRole === 'ws_owner' || myRole === 'ws_admin'
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [policyOpen, setPolicyOpen] = useState(false)
@@ -188,9 +198,11 @@ export default function GuardrailsPage() {
             为成员或 API Key 设置用量限额和限速策略，保障资源安全。
           </p>
         </div>
-        <Button theme="solid" type="primary" onClick={() => setCreateOpen(true)}>
-          + 新建护栏
-        </Button>
+        {canManage && (
+          <Button theme="solid" type="primary" onClick={() => setCreateOpen(true)}>
+            + 新建护栏
+          </Button>
+        )}
       </div>
 
       {/* Two-column layout */}
@@ -365,9 +377,11 @@ export default function GuardrailsPage() {
                 <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)', margin: 0 }}>
                   绑定对象
                 </p>
-                <Button size="small" onClick={() => setAssignOpen(true)}>
-                  管理
-                </Button>
+                {canManage && (
+                  <Button size="small" onClick={() => setAssignOpen(true)}>
+                    管理
+                  </Button>
+                )}
               </div>
 
               {selected.assignments.length === 0 ? (
@@ -427,9 +441,11 @@ export default function GuardrailsPage() {
                 <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)', margin: 0 }}>
                   预算策略
                 </p>
-                <Button theme="solid" type="primary" size="small" onClick={() => setPolicyOpen(true)}>
-                  + 添加策略
-                </Button>
+                {canManage && (
+                  <Button theme="solid" type="primary" size="small" onClick={() => setPolicyOpen(true)}>
+                    + 添加策略
+                  </Button>
+                )}
               </div>
 
               {selected.budget_policies.length === 0 ? (
@@ -450,6 +466,7 @@ export default function GuardrailsPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {selected.budget_policies.map((p) => (
                     <PolicyCard
+                      canManage={canManage}
                       key={p.id}
                       policy={p}
                       onDelete={() => deletePolicyMutation.mutate(p.id)}
@@ -545,10 +562,12 @@ function PolicyCard({
   policy: p,
   onDelete,
   isDeleting,
+  canManage,
 }: {
   policy: GuardrailBudgetPolicy
   onDelete: () => void
   isDeleting: boolean
+  canManage: boolean
 }) {
   const enforcementCfg = ENFORCEMENT_CONFIG[p.enforcement_mode]
 
@@ -635,26 +654,28 @@ function PolicyCard({
           )}
         </div>
       </div>
-      <button
-        type="button"
-        onClick={onDelete}
-        disabled={isDeleting}
-        style={{
-          flexShrink: 0,
-          marginTop: '2px',
-          padding: '6px 8px',
-          borderRadius: '6px',
-          border: 'none',
-          backgroundColor: 'transparent',
-          cursor: 'pointer',
-          color: 'var(--semi-color-text-3)',
-          fontSize: '14px',
-          lineHeight: 1,
-        }}
-        title="删除策略"
-      >
-        ✕
-      </button>
+      {canManage && (
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={isDeleting}
+          style={{
+            flexShrink: 0,
+            marginTop: '2px',
+            padding: '6px 8px',
+            borderRadius: '6px',
+            border: 'none',
+            backgroundColor: 'transparent',
+            cursor: 'pointer',
+            color: 'var(--semi-color-text-3)',
+            fontSize: '14px',
+            lineHeight: 1,
+          }}
+          title="删除策略"
+        >
+          ✕
+        </button>
+      )}
     </div>
   )
 }

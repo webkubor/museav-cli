@@ -20,6 +20,15 @@ async function post(body: object) {
 }
 
 const POS_KEY = 'dev-requirements-pos'
+const SIZE_KEY = 'dev-requirements-size'
+
+function loadSize(): { w: number; h: number } {
+  try {
+    const s = localStorage.getItem(SIZE_KEY)
+    if (s) return JSON.parse(s) as { w: number; h: number }
+  } catch {}
+  return { w: 480, h: 520 }
+}
 
 function loadPos(): { top: number; right: number } {
   try {
@@ -40,6 +49,7 @@ export function DevRequirements() {
   const [editingTitle, setEditingTitle] = useState('')
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const [size, setSize] = useState<{ w: number; h: number }>(loadSize)
   const inputRef = useRef<HTMLInputElement>(null)
   const panelDragging = useRef(false)
   const panelDragMoved = useRef(false)
@@ -47,6 +57,11 @@ export function DevRequirements() {
   const dragStartX = useRef(0)
   const dragStartTop = useRef(0)
   const dragStartRight = useRef(0)
+  const resizing = useRef(false)
+  const resizeStartX = useRef(0)
+  const resizeStartY = useRef(0)
+  const resizeStartW = useRef(0)
+  const resizeStartH = useRef(0)
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     panelDragging.current = true
@@ -83,6 +98,37 @@ export function DevRequirements() {
       document.removeEventListener('mouseup', onUp)
     }
   }, [])
+
+  const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    resizing.current = true
+    resizeStartX.current = e.clientX
+    resizeStartY.current = e.clientY
+    resizeStartW.current = size.w
+    resizeStartH.current = size.h
+    const onMove = (ev: MouseEvent) => {
+      if (!resizing.current) return
+      // panel is on the right side: drag left = grow width
+      const dw = resizeStartX.current - ev.clientX
+      const dh = ev.clientY - resizeStartY.current
+      const newW = Math.max(320, Math.min(800, resizeStartW.current + dw))
+      const newH = Math.max(260, Math.min(window.innerHeight * 0.9, resizeStartH.current + dh))
+      setSize({ w: newW, h: newH })
+    }
+    const onUp = () => {
+      if (!resizing.current) return
+      resizing.current = false
+      setSize((s) => {
+        try { localStorage.setItem(SIZE_KEY, JSON.stringify(s)) } catch {}
+        return s
+      })
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }, [size.w, size.h])
 
   const load = useCallback(() => {
     fetch(API)
@@ -273,8 +319,8 @@ export function DevRequirements() {
 
       {open && (
         <div style={{
-          width: 480,
-          maxHeight: '80vh',
+          width: size.w,
+          height: size.h,
           background: 'var(--semi-color-bg-1)',
           border: '1px solid var(--semi-color-border)',
           borderRadius: '8px 0 0 8px',
@@ -282,6 +328,7 @@ export function DevRequirements() {
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
+          position: 'relative',
         }}>
           {/* 头部 */}
           <div style={{
@@ -400,6 +447,29 @@ export function DevRequirements() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* 缩放把手：左下角 */}
+          <div
+            onMouseDown={handleResizeMouseDown}
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              width: 20,
+              height: 20,
+              cursor: 'sw-resize',
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'flex-start',
+              padding: '3px',
+              userSelect: 'none',
+            }}
+            title="拖拽缩放"
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M1 9L9 1M5 9L9 5M1 5L5 1" stroke="var(--semi-color-text-3)" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
           </div>
         </div>
       )}

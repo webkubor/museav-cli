@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams, useParams, Link } from 'react-router-dom'
 import { Button } from '@douyinfe/semi-ui'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { previewInvitation, acceptInvitation } from '@/services/invitations'
@@ -8,8 +8,10 @@ import type { InvitationPreview } from '@/types'
 
 export default function InvitationsPage() {
   const navigate = useNavigate()
+  const { token: tokenParam } = useParams<{ token: string }>()
   const [searchParams] = useSearchParams()
-  const token = searchParams.get('token') ?? ''
+  // 优先 path 参数（/invitations/:token），兼容旧 query string（?token=xxx）
+  const token = tokenParam ?? searchParams.get('token') ?? ''
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isSessionLoading = useAuthStore((s) => s.isLoading)
 
@@ -43,7 +45,7 @@ export default function InvitationsPage() {
 
   const handleAccept = async () => {
     if (!isAuthenticated) {
-      navigate(`/login?redirect=/invitations?token=${encodeURIComponent(token)}`)
+      navigate(`/login?redirect=${encodeURIComponent(`/invitations/${token}`)}`)
       return
     }
     setAccepting(true)

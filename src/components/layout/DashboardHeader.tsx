@@ -10,7 +10,7 @@ import {
   IconSetting,
   IconGlobe
 } from '@douyinfe/semi-icons'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { modelGoLogos } from '@/config/brand-assets'
 import { getMarket, type Lang } from '@/lib/market'
@@ -31,6 +31,7 @@ const { companyName } = getMarketConfig(market)
 
 export const DashboardHeader: React.FC = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const { t, i18n } = useTranslation()
   const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setActiveWorkspaceId, clearAuth } = useAuthStore()
@@ -148,8 +149,11 @@ export const DashboardHeader: React.FC = () => {
   function handleSwitchWorkspace(workspaceId: string) {
     if (workspaceId === activeWorkspaceId) return
     setActiveWorkspaceId(workspaceId)
-    const targetWs = workspaces.find((w) => w.workspace_id === workspaceId)
-    Toast.success(t('header.switchedWorkspace', { name: targetWs?.name || workspaceId }))
+    // 如果当前在工作区级路由，URL 同步切换
+    const wsMatch = location.pathname.match(/^\/workspace\/[^/]+\/(.+)$/)
+    if (wsMatch) {
+      navigate(`/workspace/${workspaceId}/${wsMatch[1]}`, { replace: true })
+    }
   }
 
   async function handleLogout() {

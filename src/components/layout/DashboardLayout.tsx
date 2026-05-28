@@ -66,6 +66,7 @@ export function DashboardLayout() {
 
   const tenants = useAuthStore((s) => s.tenants)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
+  const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
 
   // ─── 菜单可见性上下文（所有条件集中在 src/config/nav.ts） ───────────────
@@ -93,9 +94,11 @@ export function DashboardLayout() {
   const workspaceNavItems = navConfig.workspaceItems(navCtx, t, icons)
 
   const getSelectedKey = () => {
-    const path = location.pathname.replace(/^\//, '')
-    if (!path) return 'dashboard'
-    return path
+    const path = location.pathname
+    // 工作区级路由：/workspace/:workspaceId/<key>
+    const wsMatch = path.match(/^\/workspace\/[^/]+\/(.+)$/)
+    if (wsMatch) return wsMatch[1]
+    return path.replace(/^\//, '') || 'dashboard'
   }
 
   const BREADCRUMB_MAP: Record<string, string[]> = {
@@ -128,7 +131,14 @@ export function DashboardLayout() {
           collapsed={collapsed}
           setCollapsed={setCollapsed}
           selectedKey={getSelectedKey()}
-          onSelect={(data) => navigate(`/${String(data.itemKey)}`)}
+          onSelect={(data) => {
+            const key = String(data.itemKey)
+            if (navConfig.workspaceScopedKeys.has(key)) {
+              navigate(`/workspace/${activeWorkspaceId}/${key}`)
+            } else {
+              navigate(`/${key}`)
+            }
+          }}
           tenantNavItems={tenantNavItems}
           workspaceNavItems={workspaceNavItems}
           settingsLabel={t('nav.settings')}

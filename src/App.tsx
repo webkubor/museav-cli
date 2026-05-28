@@ -26,7 +26,6 @@ import { useAuthStore } from '@/store/auth'
 import { getSession } from '@/services/auth'
 import { getMarket } from '@/lib/market'
 import { applyTheme, getSavedTheme } from '@/lib/theme'
-import { DevRequirements } from '@/components/dev-requirements'
 
 // 注入市场标识，驱动 CSS 品牌色切换
 document.documentElement.dataset.market = getMarket()
@@ -80,7 +79,6 @@ export default function App() {
 
   return (
     <Providers>
-      {import.meta.env.DEV && <DevRequirements />}
       <BrowserRouter>
         <SessionLoader />
         <Routes>
@@ -97,8 +95,14 @@ export default function App() {
           {/* 控制台路由（需登录） */}
           <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
+
+            {/* Tenant 级 */}
             <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="api-keys" element={<ApiKeysPage />} />
+            <Route path="models" element={<ModelsPage />} />
+            <Route path="usage" element={<UsagePage />} />
+            <Route path="logs" element={<LogsPage />} />
+            <Route path="billing" element={<BillingPage />} />
+            <Route path="platform-config" element={<PlatformConfigPage />} />
 
             <Route path="settings">
               <Route index element={<Navigate to="workspace" replace />} />
@@ -107,14 +111,13 @@ export default function App() {
               <Route path="organization" element={<OrganizationPage />} />
             </Route>
 
-            <Route path="usage" element={<UsagePage />} />
-            <Route path="logs" element={<LogsPage />} />
-            <Route path="billing" element={<BillingPage />} />
-            <Route path="guardrails" element={<GuardrailsPage />} />
-            <Route path="invitations-mgmt" element={<InvitationsMgmtPage />} />
-            <Route path="observability" element={<ObservabilityPage />} />
-            <Route path="models" element={<ModelsPage />} />
-            <Route path="platform-config" element={<PlatformConfigPage />} />
+            {/* 工作区级（URL 携带 workspaceId） */}
+            <Route path="workspace/:workspaceId">
+              <Route path="api-keys" element={<ApiKeysPage />} />
+              <Route path="guardrails" element={<GuardrailsPage />} />
+              <Route path="observability" element={<ObservabilityPage />} />
+              <Route path="invitations-mgmt" element={<InvitationsMgmtPage />} />
+            </Route>
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

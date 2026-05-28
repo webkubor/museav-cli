@@ -118,7 +118,6 @@ export function DevRequirements() {
     post({ action: 'delete', id }).catch(() => load())
   }
 
-  // ── Inline edit ──────────────────────────────────────────────────────────────
   const handleEditStart = (id: string, currentTitle: string) => {
     setEditingId(id)
     setEditingTitle(currentTitle)
@@ -135,23 +134,37 @@ export function DevRequirements() {
 
   const handleEditCancel = () => setEditingId(null)
 
-  // ── Drag-to-reorder ──────────────────────────────────────────────────────────
-  const handleItemDragStart = (id: string) => setDraggingId(id)
-  const handleItemDragEnd = () => { setDraggingId(null); setDragOverId(null) }
+  const handleItemDragStart = useCallback((e: React.DragEvent, id: string) => {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', id)
+    setDraggingId(id)
+  }, [])
+
+  const handleItemDragEnd = useCallback(() => {
+    setDraggingId(null)
+    setDragOverId(null)
+  }, [])
 
   const handleItemDragOver = useCallback((e: React.DragEvent, id: string) => {
     e.preventDefault()
-    if (id !== draggingId) setDragOverId(id)
-  }, [draggingId])
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverId(id)
+  }, [])
 
-  const handleItemDrop = useCallback((targetId: string) => {
-    if (!draggingId || draggingId === targetId) {
+  const handleItemDragLeave = useCallback(() => {
+    setDragOverId(null)
+  }, [])
+
+  const handleItemDrop = useCallback((e: React.DragEvent, targetId: string) => {
+    e.preventDefault()
+    const fromId = e.dataTransfer.getData('text/plain')
+    if (!fromId || fromId === targetId) {
       setDraggingId(null)
       setDragOverId(null)
       return
     }
     setItems((prev) => {
-      const fromIdx = prev.findIndex((i) => i.id === draggingId)
+      const fromIdx = prev.findIndex((i) => i.id === fromId)
       const toIdx = prev.findIndex((i) => i.id === targetId)
       if (fromIdx === -1 || toIdx === -1) return prev
       const next = [...prev]
@@ -162,13 +175,33 @@ export function DevRequirements() {
     })
     setDraggingId(null)
     setDragOverId(null)
-  }, [draggingId, load])
+  }, [load])
 
   const pending = items.filter((i) => i.status === 'pending')
   const done = items.filter((i) => i.status === 'done')
 
+  const itemProps = {
+    hoverId,
+    editingId,
+    editingTitle,
+    draggingId,
+    dragOverId,
+    onHover: setHoverId,
+    onToggle: handleToggle,
+    onDelete: handleDelete,
+    onEditStart: handleEditStart,
+    onEditChange: setEditingTitle,
+    onEditSave: handleEditSave,
+    onEditCancel: handleEditCancel,
+    onDragStart: handleItemDragStart,
+    onDragEnd: handleItemDragEnd,
+    onDragOver: handleItemDragOver,
+    onDragLeave: handleItemDragLeave,
+    onDrop: handleItemDrop,
+  }
+
   return (
-    <div style={{ position: 'fixed', right: 0, top: pos.top, transform: 'translateY(-50%)', zIndex: 9999, display: 'flex', alignItems: 'center', gap: 0 }}>
+    <div style={{ position: 'fixed', right: 0, top: pos.top, transform: 'translateY(-50%)', zIndex: 9999, display: 'flex', alignItems: 'center' }}>
       {/* 侧边 tab */}
       <button
         onMouseDown={handleMouseDown}
@@ -176,16 +209,16 @@ export function DevRequirements() {
         style={{
           writingMode: 'vertical-rl',
           textOrientation: 'mixed',
-          padding: '10px 6px',
+          padding: '12px 7px',
           background: 'var(--semi-color-primary)',
           color: '#fff',
           border: 'none',
-          borderRadius: open ? '6px 0 0 6px' : '6px',
+          borderRadius: open ? '8px 0 0 8px' : '8px',
           cursor: 'grab',
-          fontSize: 12,
-          fontWeight: 600,
-          letterSpacing: 1,
-          opacity: 0.92,
+          fontSize: 13,
+          fontWeight: 700,
+          letterSpacing: 1.5,
+          opacity: 0.93,
           lineHeight: 1.4,
           display: 'flex',
           flexDirection: 'column',
@@ -201,59 +234,65 @@ export function DevRequirements() {
           <span style={{
             writingMode: 'horizontal-tb',
             background: 'var(--semi-color-danger)',
-            borderRadius: 8,
-            minWidth: 16,
-            height: 16,
-            lineHeight: '16px',
+            borderRadius: 10,
+            minWidth: 18,
+            height: 18,
+            lineHeight: '18px',
             textAlign: 'center',
-            fontSize: 10,
+            fontSize: 11,
             fontWeight: 700,
-            padding: '0 2px',
+            padding: '0 3px',
           }}>
             {pending.length}
           </span>
         )}
       </button>
 
-      {/* 面板主体 */}
       {open && (
         <div style={{
-          width: 320,
-          maxHeight: '70vh',
+          width: 400,
+          maxHeight: '75vh',
           background: 'var(--semi-color-bg-1)',
           border: '1px solid var(--semi-color-border)',
-          borderRadius: '6px 0 0 6px',
-          boxShadow: '-4px 0 16px rgba(0,0,0,0.12)',
+          borderRadius: '8px 0 0 8px',
+          boxShadow: '-6px 0 24px rgba(0,0,0,0.14)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
         }}>
           {/* 头部 */}
           <div style={{
-            padding: '12px 14px 10px',
+            padding: '14px 16px 12px',
             borderBottom: '1px solid var(--semi-color-border)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-            <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--semi-color-text-0)' }}>
-              需求看板
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--semi-color-text-0)' }}>需求看板</span>
               {pending.length > 0 && (
-                <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--semi-color-text-2)', fontWeight: 400 }}>
+                <span style={{
+                  fontSize: 11,
+                  color: 'var(--semi-color-primary)',
+                  background: 'var(--semi-color-primary-light-default)',
+                  padding: '1px 8px',
+                  borderRadius: 10,
+                  fontWeight: 600,
+                }}>
                   {pending.length} 待处理
                 </span>
               )}
-            </span>
+            </div>
             <button
               onClick={() => setOpen(false)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--semi-color-text-2)', fontSize: 16, lineHeight: 1, padding: 2 }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--semi-color-text-2)', fontSize: 18, lineHeight: 1, padding: '2px 4px', borderRadius: 4 }}
             >
               ×
             </button>
           </div>
 
           {/* 录入区 */}
-          <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', gap: 6, alignItems: 'center' }}>
+          <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
             <input
               ref={inputRef}
               value={title}
@@ -262,11 +301,11 @@ export function DevRequirements() {
               placeholder="+ 快速记录需求..."
               style={{
                 flex: 1,
-                padding: '5px 8px',
-                fontSize: 12,
+                padding: '7px 10px',
+                fontSize: 13,
                 background: 'var(--semi-color-bg-2)',
                 border: '1px solid var(--semi-color-border)',
-                borderRadius: 4,
+                borderRadius: 6,
                 color: 'var(--semi-color-text-0)',
                 outline: 'none',
               }}
@@ -275,12 +314,13 @@ export function DevRequirements() {
               value={priority}
               onChange={(e) => setPriority(e.target.value as Requirement['priority'])}
               style={{
-                padding: '5px 4px',
-                fontSize: 12,
+                padding: '7px 6px',
+                fontSize: 13,
                 background: 'var(--semi-color-bg-2)',
                 border: '1px solid var(--semi-color-border)',
-                borderRadius: 4,
+                borderRadius: 6,
                 color: PRIORITY_COLOR[priority],
+                fontWeight: 600,
                 outline: 'none',
                 cursor: 'pointer',
               }}
@@ -293,14 +333,15 @@ export function DevRequirements() {
               onClick={handleAdd}
               disabled={!title.trim()}
               style={{
-                padding: '5px 10px',
-                fontSize: 12,
+                padding: '7px 14px',
+                fontSize: 13,
                 fontWeight: 600,
                 background: title.trim() ? 'var(--semi-color-primary)' : 'var(--semi-color-disabled-border)',
                 color: title.trim() ? '#fff' : 'var(--semi-color-disabled-text)',
                 border: 'none',
-                borderRadius: 4,
+                borderRadius: 6,
                 cursor: title.trim() ? 'pointer' : 'default',
+                whiteSpace: 'nowrap',
               }}
             >
               添加
@@ -308,69 +349,31 @@ export function DevRequirements() {
           </div>
 
           {/* 列表 */}
-          <div style={{ overflowY: 'auto', flex: 1 }}>
+          <div style={{ overflowY: 'auto', flex: 1, padding: '4px 0' }}>
             {items.length === 0 && (
-              <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: 12 }}>
-                暂无需求条目，快速记录第一条吧
+              <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: 13 }}>
+                暂无需求条目
               </div>
             )}
 
             {pending.length > 0 && (
               <div>
-                <div style={{ padding: '6px 12px 2px', fontSize: 11, color: 'var(--semi-color-text-2)', fontWeight: 600, letterSpacing: 0.5 }}>
+                <div style={{ padding: '8px 14px 4px', fontSize: 11, color: 'var(--semi-color-text-3)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>
                   待处理 · {pending.length}
                 </div>
                 {pending.map((item) => (
-                  <ReqItem
-                    key={item.id}
-                    item={item}
-                    hovered={hoverId === item.id}
-                    isEditing={editingId === item.id}
-                    editingTitle={editingTitle}
-                    isDraggingOver={dragOverId === item.id}
-                    isDragging={draggingId === item.id}
-                    onHover={setHoverId}
-                    onToggle={handleToggle}
-                    onDelete={handleDelete}
-                    onEditStart={handleEditStart}
-                    onEditChange={setEditingTitle}
-                    onEditSave={handleEditSave}
-                    onEditCancel={handleEditCancel}
-                    onDragStart={handleItemDragStart}
-                    onDragEnd={handleItemDragEnd}
-                    onDragOver={handleItemDragOver}
-                    onDrop={handleItemDrop}
-                  />
+                  <ReqItem key={item.id} item={item} {...itemProps} />
                 ))}
               </div>
             )}
 
             {done.length > 0 && (
-              <div>
-                <div style={{ padding: '6px 12px 2px', fontSize: 11, color: 'var(--semi-color-text-2)', fontWeight: 600, letterSpacing: 0.5, marginTop: pending.length > 0 ? 4 : 0 }}>
+              <div style={{ marginTop: pending.length > 0 ? 6 : 0 }}>
+                <div style={{ padding: '8px 14px 4px', fontSize: 11, color: 'var(--semi-color-text-3)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>
                   已完成 · {done.length}
                 </div>
                 {done.map((item) => (
-                  <ReqItem
-                    key={item.id}
-                    item={item}
-                    hovered={hoverId === item.id}
-                    isEditing={editingId === item.id}
-                    editingTitle={editingTitle}
-                    isDraggingOver={dragOverId === item.id}
-                    isDragging={draggingId === item.id}
-                    onHover={setHoverId}
-                    onToggle={handleToggle}
-                    onDelete={handleDelete}
-                    onEditStart={handleEditStart}
-                    onEditChange={setEditingTitle}
-                    onEditSave={handleEditSave}
-                    onEditCancel={handleEditCancel}
-                    onDragStart={handleItemDragStart}
-                    onDragEnd={handleItemDragEnd}
-                    onDragOver={handleItemDragOver}
-                    onDrop={handleItemDrop}
-                  />
+                  <ReqItem key={item.id} item={item} {...itemProps} />
                 ))}
               </div>
             )}
@@ -381,13 +384,12 @@ export function DevRequirements() {
   )
 }
 
-interface ReqItemProps {
-  item: Requirement
-  hovered: boolean
-  isEditing: boolean
+interface SharedItemProps {
+  hoverId: string | null
+  editingId: string | null
   editingTitle: string
-  isDraggingOver: boolean
-  isDragging: boolean
+  draggingId: string | null
+  dragOverId: string | null
   onHover: (id: string | null) => void
   onToggle: (id: string) => void
   onDelete: (id: string) => void
@@ -395,18 +397,29 @@ interface ReqItemProps {
   onEditChange: (title: string) => void
   onEditSave: (id: string) => void
   onEditCancel: () => void
-  onDragStart: (id: string) => void
+  onDragStart: (e: React.DragEvent, id: string) => void
   onDragEnd: () => void
   onDragOver: (e: React.DragEvent, id: string) => void
-  onDrop: (id: string) => void
+  onDragLeave: () => void
+  onDrop: (e: React.DragEvent, id: string) => void
+}
+
+interface ReqItemProps extends SharedItemProps {
+  item: Requirement
 }
 
 function ReqItem({
-  item, hovered, isEditing, editingTitle, isDraggingOver, isDragging,
-  onHover, onToggle, onDelete, onEditStart, onEditChange, onEditSave, onEditCancel,
-  onDragStart, onDragEnd, onDragOver, onDrop,
+  item,
+  hoverId, editingId, editingTitle, draggingId, dragOverId,
+  onHover, onToggle, onDelete,
+  onEditStart, onEditChange, onEditSave, onEditCancel,
+  onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
 }: ReqItemProps) {
   const editRef = useRef<HTMLInputElement>(null)
+  const hovered = hoverId === item.id
+  const isEditing = editingId === item.id
+  const isDragging = draggingId === item.id
+  const isDragOver = dragOverId === item.id
 
   useEffect(() => {
     if (isEditing) setTimeout(() => editRef.current?.focus(), 10)
@@ -414,37 +427,38 @@ function ReqItem({
 
   return (
     <div
-      draggable
-      onDragStart={(e) => { e.stopPropagation(); onDragStart(item.id) }}
+      draggable={!isEditing}
+      onDragStart={(e) => onDragStart(e, item.id)}
       onDragEnd={onDragEnd}
       onDragOver={(e) => onDragOver(e, item.id)}
-      onDrop={(e) => { e.preventDefault(); onDrop(item.id) }}
+      onDragLeave={onDragLeave}
+      onDrop={(e) => onDrop(e, item.id)}
       onMouseEnter={() => onHover(item.id)}
       onMouseLeave={() => onHover(null)}
       style={{
-        padding: '7px 12px',
+        padding: '9px 14px',
         display: 'flex',
         alignItems: 'flex-start',
-        gap: 8,
-        background: isDraggingOver
+        gap: 10,
+        background: isDragOver
           ? 'var(--semi-color-primary-light-default)'
           : hovered
           ? 'var(--semi-color-bg-2)'
           : 'transparent',
-        opacity: isDragging ? 0.4 : 1,
-        borderTop: isDraggingOver ? '2px solid var(--semi-color-primary)' : '2px solid transparent',
-        transition: 'opacity 0.15s, background 0.1s',
+        opacity: isDragging ? 0.35 : 1,
+        borderTop: isDragOver ? '2px solid var(--semi-color-primary)' : '2px solid transparent',
+        transition: 'background 0.1s, opacity 0.15s',
       }}
     >
       {/* 拖拽把手 */}
       <span
         style={{
           flexShrink: 0,
-          fontSize: 13,
-          color: hovered ? 'var(--semi-color-text-3)' : 'transparent',
+          fontSize: 15,
+          color: hovered ? 'var(--semi-color-text-2)' : 'transparent',
           cursor: 'grab',
-          lineHeight: '16px',
-          marginTop: 1,
+          lineHeight: '20px',
+          marginTop: 0,
           userSelect: 'none',
           transition: 'color 0.15s',
         }}
@@ -459,8 +473,8 @@ function ReqItem({
         title={item.status === 'done' ? '标记为待处理' : '标记为已完成'}
         style={{
           flexShrink: 0,
-          width: 16,
-          height: 16,
+          width: 18,
+          height: 18,
           borderRadius: '50%',
           border: `2px solid ${item.status === 'done' ? 'var(--semi-color-success)' : 'var(--semi-color-border)'}`,
           background: item.status === 'done' ? 'var(--semi-color-success)' : 'transparent',
@@ -472,7 +486,7 @@ function ReqItem({
           padding: 0,
         }}
       >
-        {item.status === 'done' && <span style={{ color: '#fff', fontSize: 9, lineHeight: 1 }}>✓</span>}
+        {item.status === 'done' && <span style={{ color: '#fff', fontSize: 10, lineHeight: 1 }}>✓</span>}
       </button>
 
       {/* 文字区 */}
@@ -489,10 +503,10 @@ function ReqItem({
             }}
             style={{
               width: '100%',
-              fontSize: 12,
-              padding: '1px 4px',
+              fontSize: 13,
+              padding: '2px 6px',
               border: '1px solid var(--semi-color-primary)',
-              borderRadius: 3,
+              borderRadius: 4,
               background: 'var(--semi-color-bg-0)',
               color: 'var(--semi-color-text-0)',
               outline: 'none',
@@ -503,13 +517,12 @@ function ReqItem({
             onDoubleClick={() => onEditStart(item.id, item.title)}
             title="双击编辑"
             style={{
-              fontSize: 12,
+              fontSize: 13,
               color: item.status === 'done' ? 'var(--semi-color-text-2)' : 'var(--semi-color-text-0)',
               textDecoration: item.status === 'done' ? 'line-through' : 'none',
               wordBreak: 'break-all',
               display: 'block',
-              lineHeight: 1.5,
-              cursor: 'text',
+              lineHeight: 1.55,
             }}
           >
             {item.title}
@@ -518,8 +531,8 @@ function ReqItem({
       </div>
 
       {/* 优先级 + 删除 */}
-      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: 10, color: PRIORITY_COLOR[item.priority], fontWeight: 600 }}>
+      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, marginTop: 1 }}>
+        <span style={{ fontSize: 11, color: PRIORITY_COLOR[item.priority], fontWeight: 700 }}>
           {PRIORITY_LABEL[item.priority]}
         </span>
         {hovered && !isEditing && (
@@ -531,7 +544,7 @@ function ReqItem({
               border: 'none',
               cursor: 'pointer',
               color: 'var(--semi-color-text-2)',
-              fontSize: 13,
+              fontSize: 15,
               lineHeight: 1,
               padding: 0,
             }}

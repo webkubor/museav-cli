@@ -1,6 +1,7 @@
 import { Button } from '@douyinfe/semi-ui'
 import Google from '@lobehub/icons/es/Google'
 import Github from '@lobehub/icons/es/Github'
+import { SiWechat } from 'react-icons/si'
 import { useMarket } from '@/hooks/useMarket'
 import { oauthAuthorizeUrl } from '@/services/auth'
 import { usePlatformConfig } from '@/hooks/use-platform-config'
@@ -36,17 +37,8 @@ const btnStyle: React.CSSProperties = {
   cursor: 'pointer',
 }
 
-function WechatIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path fill="#07c160" d="M9.5 4C5.36 4 2 6.91 2 10.5c0 2.02 1.06 3.84 2.74 5.04l-.6 2.3 2.36-1.26c.64.18 1.31.28 2 .28.26 0 .52-.01.77-.04A5.54 5.54 0 0 1 9 15.5c0-3.04 2.9-5.5 6.5-5.5.24 0 .48.01.71.04C15.5 6.78 12.78 4 9.5 4zM7 8.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm5 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
-      <path fill="#07c160" d="M22 15.5c0-2.76-2.69-5-6-5s-6 2.24-6 5 2.69 5 6 5c.77 0 1.51-.13 2.18-.37L20.5 21.5l-.57-1.88C21.21 18.6 22 17.12 22 15.5zm-8.5-1a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm5 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
-    </svg>
-  )
-}
-
 const OAUTH_ICONS: Record<string, React.ReactNode> = {
-  wechat: <WechatIcon />,
+  wechat: <SiWechat size={16} color="#07C160" />,
   github: <Github size={16} />,
   google: <Google size={16} />,
 }

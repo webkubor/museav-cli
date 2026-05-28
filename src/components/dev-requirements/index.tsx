@@ -19,13 +19,57 @@ async function post(body: object) {
   return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 }
 
+const POS_KEY = 'dev-requirements-pos'
+
+function loadPos(): { top: number } {
+  try {
+    const s = localStorage.getItem(POS_KEY)
+    if (s) return JSON.parse(s) as { top: number }
+  } catch {}
+  return { top: window.innerHeight / 2 }
+}
+
 export function DevRequirements() {
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<Requirement[]>([])
   const [title, setTitle] = useState('')
   const [priority, setPriority] = useState<Requirement['priority']>('medium')
   const [hoverId, setHoverId] = useState<string | null>(null)
+  const [pos, setPos] = useState<{ top: number }>(loadPos)
   const inputRef = useRef<HTMLInputElement>(null)
+  const dragging = useRef(false)
+  const dragStartY = useRef(0)
+  const dragStartTop = useRef(0)
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    dragging.current = true
+    dragStartY.current = e.clientY
+    dragStartTop.current = pos.top
+    e.preventDefault()
+  }, [pos.top])
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!dragging.current) return
+      const dy = e.clientY - dragStartY.current
+      const newTop = Math.max(40, Math.min(window.innerHeight - 40, dragStartTop.current + dy))
+      setPos({ top: newTop })
+    }
+    const onUp = () => {
+      if (!dragging.current) return
+      dragging.current = false
+      setPos((p) => {
+        try { localStorage.setItem(POS_KEY, JSON.stringify(p)) } catch {}
+        return p
+      })
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+  }, [])
 
   const load = useCallback(() => {
     fetch(API)
@@ -74,9 +118,10 @@ export function DevRequirements() {
   const done = items.filter((i) => i.status === 'done')
 
   return (
-    <div style={{ position: 'fixed', right: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 9999, display: 'flex', alignItems: 'center', gap: 0 }}>
+    <div style={{ position: 'fixed', right: 0, top: pos.top, transform: 'translateY(-50%)', zIndex: 9999, display: 'flex', alignItems: 'center', gap: 0 }}>
       {/* 侧边 tab */}
       <button
+        onMouseDown={handleMouseDown}
         onClick={() => setOpen((v) => !v)}
         style={{
           writingMode: 'vertical-rl',
@@ -96,8 +141,9 @@ export function DevRequirements() {
           flexDirection: 'column',
           alignItems: 'center',
           gap: 4,
+          userSelect: 'none',
         }}
-        title="需求变更面板"
+        title="需求变更面板（拖拽调整位置）"
       >
         <span>需</span>
         <span>求</span>

@@ -4,6 +4,7 @@ import { IconClose, IconSend, IconRefresh } from '@douyinfe/semi-icons'
 import { modelGoLogos } from '@/config/brand-assets'
 import { getMarket } from '@/lib/market'
 import { storageKeys } from '@/lib/storage'
+import { useAuthStore } from '@/store/auth'
 import { useCsChat } from './use-cs-chat'
 import type { Message, ConnectionStatus } from './use-cs-chat'
 
@@ -79,7 +80,11 @@ function ThinkingDots() {
 
 export function CustomerService() {
   const [isOpen, setIsOpen] = useState(false)
-  const { messages, sendMessage, reconnect, status, isLoading, conversationId } = useCsChat()
+  const activeTenantId = useAuthStore((s) => s.activeTenantId)
+  const { messages, sendMessage, reconnect, status, isLoading, conversationId } = useCsChat({
+    source: 'console',
+    tenantId: activeTenantId,
+  })
 
   const [inputValue, setInputValue] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -100,6 +105,8 @@ export function CustomerService() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [messages, isLoading])
+
+  if (!activeTenantId) return null
 
   function handleMouseDown(e: React.MouseEvent) {
     dragRef.current = { startX: e.clientX, startY: e.clientY, startPosX: pos.x, startPosY: pos.y }

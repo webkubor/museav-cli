@@ -1,44 +1,29 @@
-import { Typography, Row, Col } from '@douyinfe/semi-ui'
+/**
+ * 控制台仪表盘主页面 (Dashboard)
+ * 职责：作为控制台主界面，集中展示欢迎横幅与 CLI onboarding、核心 KPI 指标看板及常用快捷开发向导
+ * 路由：/ (Dashboard 主页)
+ * API：本身无直接接口调用，通过引入各个高内聚子组件（WelcomeBanner, KpiSection, GuideSection）拼装完整面板
+ */
+
+import { WelcomeBanner } from '@/features/dashboard/components/WelcomeBanner'
 import { KpiSection } from '@/features/dashboard/components/KpiSection'
-import { TerminalSection } from '@/features/dashboard/components/TerminalSection'
 import { GuideSection } from '@/features/dashboard/components/GuideSection'
-import { useAuthStore } from '@/store/auth'
 
-const { Title, Text } = Typography
-
+/**
+ * 仪表盘控制台主页面组件
+ * 采用极雅多层级响应式结构，平铺展示核心开发总览
+ */
 export default function DashboardPage() {
-  const displayName = useAuthStore((s) => s.account?.display_name)
-  const greeting = displayName ? `你好，${displayName}` : '你好，开发者'
-
   return (
     <div>
-      {/* 欢迎头部 */}
-      <div style={{ marginBottom: '32px' }}>
-        <Title heading={2} style={{
-          margin: '0 0 6px 0',
-          fontWeight: 700,
-          letterSpacing: '-0.02em',
-          color: 'var(--semi-color-text-0)'
-        }}>
-          {greeting} 👋
-        </Title>
-        <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '13.5px', fontWeight: 400 }}>
-          欢迎访问 ModelGo 开发者控制台。在这里管理密钥、监控请求量以及查看账单。
-        </Text>
-      </div>
+      {/* 极雅晶莹欢迎横幅 (整合打招呼、工作区身份及 CLI Onboarding) */}
+      <WelcomeBanner />
 
-      {/* KPI 看板网格 */}
+      {/* 核心 KPI 统计数据看板网格 */}
       <KpiSection />
 
-      {/* 终端接入与向导排版 */}
-      <Row gutter={24}>
-        <Col span={14}>
-          <TerminalSection />
-        </Col>
-        <Col span={10}>
-          <GuideSection />
-        </Col>
-      </Row>
+      {/* 常用向导平铺 Grid 网格 */}
+      <GuideSection />
     </div>
   )
 }

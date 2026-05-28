@@ -25,7 +25,12 @@ function parseSSELine(line: string): AgentEvent | null {
   }
 }
 
-export function useCsChat() {
+export interface CsChatOptions {
+  source?: string
+  tenantId?: string | null
+}
+
+export function useCsChat(options?: CsChatOptions) {
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
       const saved = localStorage.getItem(storageKeys.csHistory())
@@ -83,9 +88,13 @@ export function useCsChat() {
       })
       injectHeaders(req)
 
+      const extraHeaders: Record<string, string> = {}
+      if (options?.source) extraHeaders['X-Source'] = options.source
+      if (options?.tenantId) extraHeaders['X-Tenant-Id'] = options.tenantId
+
       const response = await fetch(url, {
         method: 'POST',
-        headers: req.headers,
+        headers: { ...Object.fromEntries(req.headers.entries()), ...extraHeaders },
         body: JSON.stringify({
           message: content.trim(),
           ...(conversationId ? { conversation_id: conversationId } : {}),

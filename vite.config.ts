@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import SemiPlugin from '@douyinfe/semi-vite-plugin'
+import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 import { devLoggerPlugin } from './scripts/dev-logger-plugin'
 import { version } from './package.json'
@@ -27,7 +28,45 @@ export default defineConfig(({ mode }) => ({
     SemiPlugin({
       theme: '@douyinfe/semi-theme-default'
     }),
-    devLoggerPlugin()
+    devLoggerPlugin(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'brand/**'],
+      manifest: {
+        name: 'ModelGo Console',
+        short_name: 'ModelGo',
+        description: 'ModelGo AI Platform Console',
+        theme_color: '#3b82f6',
+        background_color: '#ffffff',
+        display: 'standalone',
+        icons: [
+          {
+            src: '/brand/modelgo-app-icon-dark.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any',
+          },
+          {
+            src: '/brand/modelgo-app-icon-light.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'maskable',
+          },
+        ],
+      },
+      workbox: {
+        navigateFallback: '/index.html',
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages',
+            },
+          },
+        ],
+      },
+    }),
   ],
   build: {
     chunkSizeWarningLimit: 900,

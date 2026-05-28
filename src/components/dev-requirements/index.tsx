@@ -42,11 +42,13 @@ export function DevRequirements() {
   const [dragOverId, setDragOverId] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const panelDragging = useRef(false)
+  const panelDragMoved = useRef(false)
   const dragStartY = useRef(0)
   const dragStartTop = useRef(0)
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     panelDragging.current = true
+    panelDragMoved.current = false
     dragStartY.current = e.clientY
     dragStartTop.current = pos.top
     e.preventDefault()
@@ -56,6 +58,7 @@ export function DevRequirements() {
     const onMove = (e: MouseEvent) => {
       if (!panelDragging.current) return
       const dy = e.clientY - dragStartY.current
+      if (Math.abs(dy) > 4) panelDragMoved.current = true
       const newTop = Math.max(40, Math.min(window.innerHeight - 40, dragStartTop.current + dy))
       setPos({ top: newTop })
     }
@@ -205,7 +208,7 @@ export function DevRequirements() {
       {/* 侧边 tab */}
       <button
         onMouseDown={handleMouseDown}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => { if (!panelDragMoved.current) setOpen((v) => !v) }}
         style={{
           writingMode: 'vertical-rl',
           textOrientation: 'mixed',
@@ -226,8 +229,21 @@ export function DevRequirements() {
           gap: 4,
           userSelect: 'none',
         }}
-        title="需求看板（拖拽调整上下位置）"
+        title="拖拽移动 · 点击展开"
       >
+        {/* 拖拽握柄：三条横线 */}
+        <span style={{
+          writingMode: 'horizontal-tb',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 3,
+          marginBottom: 6,
+          opacity: 0.7,
+        }}>
+          {[0,1,2].map(i => (
+            <span key={i} style={{ display: 'block', width: 14, height: 2, background: '#fff', borderRadius: 2 }} />
+          ))}
+        </span>
         <span>需</span>
         <span>求</span>
         {pending.length > 0 && (
@@ -242,6 +258,7 @@ export function DevRequirements() {
             fontSize: 11,
             fontWeight: 700,
             padding: '0 3px',
+            marginTop: 4,
           }}>
             {pending.length}
           </span>

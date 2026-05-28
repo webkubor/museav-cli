@@ -1,10 +1,9 @@
 import { Button } from '@douyinfe/semi-ui'
-import { useQuery } from '@tanstack/react-query'
 import Google from '@lobehub/icons/es/Google'
 import Github from '@lobehub/icons/es/Github'
 import { useMarket } from '@/hooks/useMarket'
 import { oauthAuthorizeUrl } from '@/services/auth'
-import { getPlatformConfig } from '@/services/platform'
+import { usePlatformConfig } from '@/hooks/use-platform-config'
 
 interface Props { redirectTo: string }
 
@@ -66,12 +65,7 @@ const MARKET_FALLBACK: Record<string, string[]> = {
 export function SocialLogin({ redirectTo }: Props) {
   const market = useMarket()
 
-  const { data: platformConfig } = useQuery({
-    queryKey: ['platform-config'],
-    queryFn: getPlatformConfig,
-    staleTime: Infinity,
-    retry: 1,
-  })
+  const { data: platformConfig } = usePlatformConfig()
 
   // 优先用 Swagger 接口返回的启用列表，降级到市场硬编码
   const oauthMethods = (platformConfig?.enabled_login_methods ?? MARKET_FALLBACK[market] ?? [])

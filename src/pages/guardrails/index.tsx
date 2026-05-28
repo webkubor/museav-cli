@@ -259,6 +259,8 @@ export default function GuardrailsPage() {
               {addPolicyFormOpen && (
                 <AddPolicyInlineForm
                   isPending={addPolicyMutation.isPending}
+                  members={pageItems(membersQuery.data)}
+                  apiKeys={pageItems(apiKeysQuery.data)}
                   onConfirm={(body) => addPolicyMutation.mutate(body)}
                   onCancel={() => setAddPolicyFormOpen(false)}
                 />
@@ -608,17 +610,27 @@ function CreateGuardrailModal({
 
 function AddPolicyInlineForm({
   isPending,
+  members,
+  apiKeys,
   onConfirm,
   onCancel,
 }: {
   isPending: boolean
+  members: WorkspaceMember[]
+  apiKeys: ApiKeyItem[]
   onConfirm: (body: Parameters<typeof addBudgetPolicy>[1]) => void
   onCancel: () => void
 }) {
   const { currency } = useCurrency()
-  const [scope, setScope] = useState<'guardrail_total' | 'per_member' | 'per_api_key'>('guardrail_total')
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([])
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([])
   const [periodUnit, setPeriodUnit] = useState<'hour' | 'day' | 'week' | 'month'>('month')
   const [spendLimit, setSpendLimit] = useState('')
+
+  const scope: 'guardrail_total' | 'per_member' | 'per_api_key' =
+    selectedMembers.length > 0 ? 'per_member' :
+    selectedKeys.length > 0 ? 'per_api_key' :
+    'guardrail_total'
 
   function handleConfirm() {
     const body: Parameters<typeof addBudgetPolicy>[1] = {
@@ -635,39 +647,97 @@ function AddPolicyInlineForm({
   }
 
   const labelStyle: React.CSSProperties = {
-    display: 'block', fontSize: '11px', fontWeight: 700,
-    color: 'var(--semi-color-text-1)', letterSpacing: '0.06em',
-    textTransform: 'uppercase', marginBottom: '6px',
+    display: 'flex', alignItems: 'center', gap: '6px',
+    fontSize: '11px', fontWeight: 700, color: 'var(--semi-color-text-2)',
+    letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: '8px',
+  }
+
+  const groupStyle: React.CSSProperties = {
+    padding: '12px 14px',
+    borderRadius: '8px',
+    border: '1px solid var(--semi-color-fill-1)',
+    backgroundColor: 'var(--semi-color-bg-0)',
+    marginBottom: '10px',
   }
 
   return (
     <div style={{ marginTop: '10px', padding: '16px', borderRadius: '10px', border: '1px dashed var(--semi-color-primary)', backgroundColor: 'var(--semi-color-primary-light-default)' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-        <div>
-          <label style={labelStyle}>聚合维度</label>
-          <Select value={scope} onChange={(v) => setScope(v as typeof scope)} style={{ width: '100%' }} size="small">
-            <Select.Option value="guardrail_total">护栏内整体</Select.Option>
-            <Select.Option value="per_member">按成员独立</Select.Option>
-            <Select.Option value="per_api_key">按 API Key 独立</Select.Option>
-          </Select>
+      <div style={groupStyle}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <span style={labelStyle}>
+            <LuUsers size={12} /> 成员 ({selectedMembers.length})
+          </span>
+          {selectedMembers.length > 0 && (
+            <button type="button" onClick={() => setSelectedMembers([])} style={{ background: 'none', border: 'none', fontSize: '11px', color: 'var(--semi-color-text-2)', cursor: 'pointer', padding: 0 }}>
+              清空
+            </button>
+          )}
         </div>
-        <div>
-          <label style={labelStyle}>重置周期</label>
+        <Select
+          multiple
+          value={selectedMembers}
+          onChange={(v) => setSelectedMembers(v as string[])}
+          placeholder="+ 添加成员"
+          style={{ width: '100%' }}
+          size="small"
+        >
+          {members.map(m => (
+            <Select.Option key={m.account?.account_id} value={m.account?.account_id}>
+              {m.account?.display_name ?? m.account?.account_id}
+            </Select.Option>
+          ))}
+        </Select>
+      </div>
+
+      <div style={groupStyle}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <span style={labelStyle}>
+            <LuKey size={12} /> API Keys ({selectedKeys.length})
+          </span>
+          {selectedKeys.length > 0 && (
+            <button type="button" onClick={() => setSelectedKeys([])} style={{ background: 'none', border: 'none', fontSize: '11px', color: 'var(--semi-color-text-2)', cursor: 'pointer', padding: 0 }}>
+              清空
+            </button>
+          )}
+        </div>
+        <Select
+          multiple
+          value={selectedKeys}
+          onChange={(v) => setSelectedKeys(v as string[])}
+          placeholder="+ 添加 API Key"
+          style={{ width: '100%' }}
+          size="small"
+        >
+          {apiKeys.map(k => (
+            <Select.Option key={k.api_key_id} value={k.api_key_id}>
+              {k.name}
+            </Select.Option>
+          ))}
+        </Select>
+      </div>
+
+      <div style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ flex: 1 }}>
           <Select value={periodUnit} onChange={(v) => setPeriodUnit(v as typeof periodUnit)} style={{ width: '100%' }} size="small">
-            <Select.Option value="hour">每小时</Select.Option>
-            <Select.Option value="day">每天</Select.Option>
-            <Select.Option value="week">每周</Select.Option>
-            <Select.Option value="month">每月</Select.Option>
+            <Select.Option value="hour">每小时重置</Select.Option>
+            <Select.Option value="day">每天重置</Select.Option>
+            <Select.Option value="week">每周重置</Select.Option>
+            <Select.Option value="month">每月重置</Select.Option>
           </Select>
         </div>
+        <div style={{ flex: 1 }}>
+          <Input type="number" value={spendLimit} onChange={(v) => setSpendLimit(v)} placeholder={`金额上限（${currency}，留空不限）`} size="small" />
+        </div>
       </div>
-      <div style={{ marginBottom: '14px' }}>
-        <label style={labelStyle}>金额上限（{currency}，留空表示不限）</label>
-        <Input type="number" value={spendLimit} onChange={(v) => setSpendLimit(v)} placeholder="不限" size="small" />
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-        <Button size="small" onClick={onCancel}>取消</Button>
-        <Button size="small" theme="solid" type="primary" loading={isPending} onClick={handleConfirm}>确认添加</Button>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: '11px', color: 'var(--semi-color-text-2)' }}>
+          聚合维度：{scope === 'per_member' ? '按成员独立计算' : scope === 'per_api_key' ? '按 API Key 独立计算' : '护栏内整体累计'}
+        </span>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Button size="small" onClick={onCancel}>取消</Button>
+          <Button size="small" theme="solid" type="primary" loading={isPending} onClick={handleConfirm}>确认添加</Button>
+        </div>
       </div>
     </div>
   )

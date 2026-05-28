@@ -9,7 +9,8 @@ import {
   createInvitations,
 } from '@/services/invitations'
 import { listTenantMembers } from '@/services/tenants'
-import type { InvitationItem, TenantMember } from '@/types'
+import { listWorkspaces } from '@/services/workspaces'
+import type { InvitationItem, TenantMember, WorkspaceItem } from '@/types'
 import { formatDateTime } from '@/lib/format-date'
 import { WS_ROLE_LABEL, WS_ROLE_OPTIONS, TENANT_ROLE_LABEL } from '@/constants/roles'
 import { INVITATION_STATUS_CONFIG, INVITATION_STATUS_OPTIONS } from '@/constants/status'
@@ -21,6 +22,16 @@ export default function InvitationsMgmtPage() {
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const tenants = useAuthStore((s) => s.tenants)
   const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
+
+  // 当前用户在此工作区的角色，ws_member 不能邀请/撤销
+  const { data: workspaces = [] } = useQuery<WorkspaceItem[]>({
+    queryKey: ['workspaces', activeTenantId],
+    queryFn: () => listWorkspaces().then((r) => r.items || []),
+    enabled: !!activeTenantId,
+    staleTime: 60_000,
+  })
+  const myRole = workspaces.find((w) => w.workspace_id === activeWorkspaceId)?.my_role
+  const canManage = myRole === 'ws_owner' || myRole === 'ws_admin'
   const [status, setStatus] = useState<'pending' | 'accepted' | 'expired' | 'revoked' | 'all'>('pending')
 
   // ─── Invite modal state ───────────────────────────────────────────────────
@@ -160,6 +171,7 @@ export default function InvitationsMgmtPage() {
       dataIndex: 'actions',
       render: (_: unknown, record: InvitationItem) =>
         record.status === 'pending' ? (
+          canManage ? (
           <span
             style={{
               color: '#ef4444',
@@ -174,6 +186,9 @@ export default function InvitationsMgmtPage() {
           >
             撤销
           </span>
+          ) : (
+            <span style={{ color: 'var(--semi-color-text-3)', fontSize: '13px' }}>—</span>
+          )
         ) : (
           <span style={{ color: 'var(--semi-color-text-3)', fontSize: '13px' }}>—</span>
         ),
@@ -200,9 +215,11 @@ export default function InvitationsMgmtPage() {
             邀请组织成员加入当前工作区。
           </p>
         </div>
-        <Button theme="solid" icon={<LuUserPlus />} onClick={handleOpenModal}>
-          邀请成员
-        </Button>
+        {canManage && (
+          <Button theme="solid" icon={<LuUserPlus />} onClick={handleOpenModal}>
+            邀请成员
+          </Button>
+        )}
       </div>
 
       {/* ── 邀请成员弹窗 ──────────────────────────────────────────────────── */}

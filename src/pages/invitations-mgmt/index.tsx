@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Button, Table, Tag, Toast, Select } from '@douyinfe/semi-ui'
+import { useState, useMemo } from 'react'
+import { Avatar, Button, Checkbox, Input, Modal, Spin, Table, Tag, Toast, Select } from '@douyinfe/semi-ui'
+import { IconSearch, IconUserAdd } from '@douyinfe/semi-icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
 import {
@@ -7,8 +8,10 @@ import {
   revokeInvitation,
   getInviteLink,
   resetInviteLink,
+  createInvitations,
 } from '@/services/invitations'
-import type { InvitationItem } from '@/types'
+import { listTenantMembers } from '@/services/tenants'
+import type { InvitationItem, TenantMember } from '@/types'
 import { formatDateTime } from '@/lib/format-date'
 
 const STATUS_STYLE: Record<InvitationItem['status'], { color: string; bg: string; border: string }> = {
@@ -35,8 +38,63 @@ const ROLE_LABEL: Record<'ws_member' | 'ws_admin', string> = {
 export default function InvitationsMgmtPage() {
   const qc = useQueryClient()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
+  const activeTenantId = useAuthStore((s) => s.activeTenantId)
 
   const [status, setStatus] = useState<'pending' | 'accepted' | 'expired' | 'revoked' | 'all'>('pending')
+
+  // ─── Invite modal state ───────────────────────────────────────────────────
+  const [modalOpen, setModalOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [inviteRole, setInviteRole] = useState<'ws_member' | 'ws_admin'>('ws_member')
+
+  const orgMembersQuery = useQuery({
+    queryKey: ['tenant-members', activeTenantId],
+    queryFn: () => listTenantMembers(activeTenantId!, { limit: 100 }),
+    enabled: Boolean(activeTenantId) && modalOpen,
+    staleTime: 60_000,
+  })
+
+  const filteredMembers = useMemo(() => {
+    const members = orgMembersQuery.data?.items ?? []
+    const q = search.trim().toLowerCase()
+    if (!q) return members
+    return members.filter(
+      (m) => m.account.display_name.toLowerCase().includes(q) || m.account.email.toLowerCase().includes(q)
+    )
+  }, [orgMembersQuery.data, search])
+
+  const sendInvitesMutation = useMutation({
+    mutationFn: () => {
+      const members = orgMembersQuery.data?.items ?? []
+      const invites = members
+        .filter((m) => selectedIds.has(m.account.account_id))
+        .map((m) => ({ email: m.account.email, role: inviteRole }))
+      return createInvitations(activeWorkspaceId!, { invites })
+    },
+    onSuccess: () => {
+      Toast.success('邀请已发出')
+      setModalOpen(false)
+      setSelectedIds(new Set())
+      setSearch('')
+      qc.invalidateQueries({ queryKey: ['workspace-invitations', activeWorkspaceId] })
+    },
+    onError: (err: any) => Toast.error(err?.message || '邀请失败'),
+  })
+
+  function toggleMember(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function handleOpenModal() {
+    setSelectedIds(new Set())
+    setSearch('')
+    setModalOpen(true)
+  }
   const [linkCopied, setLinkCopied] = useState(false)
   const [resetRole, setResetRole] = useState<'ws_member' | 'ws_admin'>('ws_member')
 
@@ -178,22 +236,110 @@ export default function InvitationsMgmtPage() {
   return (
     <div>
       {/* 页面标题 */}
-      <div style={{ marginBottom: '28px' }}>
-        <h1
-          style={{
-            fontSize: '24px',
-            fontWeight: 700,
-            color: 'var(--semi-color-text-0)',
-            margin: '0 0 6px 0',
-            letterSpacing: '-0.02em',
-          }}
-        >
-          工作区邀请管理
-        </h1>
-        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0 }}>
-          查看当前工作区的成员邀请记录。
-        </p>
+      <div style={{ marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+            工作区邀请管理
+          </h1>
+          <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0 }}>
+            邀请组织成员加入当前工作区，或通过链接邀请外部成员。
+          </p>
+        </div>
+        <Button theme="solid" icon={<IconUserAdd />} onClick={handleOpenModal}>
+          邀请成员
+        </Button>
       </div>
+
+      {/* ── 邀请成员弹窗 ──────────────────────────────────────────────────── */}
+      <Modal
+        title="邀请组织成员"
+        visible={modalOpen}
+        onCancel={() => setModalOpen(false)}
+        width={520}
+        footer={
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>加入角色</span>
+              <Select value={inviteRole} onChange={(v) => setInviteRole(v as 'ws_member' | 'ws_admin')} style={{ width: '110px' }} size="small">
+                <Select.Option value="ws_member">成员</Select.Option>
+                <Select.Option value="ws_admin">管理员</Select.Option>
+              </Select>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Button onClick={() => setModalOpen(false)}>取消</Button>
+              <Button
+                theme="solid"
+                disabled={selectedIds.size === 0}
+                loading={sendInvitesMutation.isPending}
+                onClick={() => sendInvitesMutation.mutate()}
+              >
+                发送邀请 {selectedIds.size > 0 && `(${selectedIds.size})`}
+              </Button>
+            </div>
+          </div>
+        }
+      >
+        <Input
+          prefix={<IconSearch />}
+          placeholder="搜索姓名或邮箱"
+          value={search}
+          onChange={setSearch}
+          style={{ marginBottom: '12px' }}
+        />
+        {orgMembersQuery.isLoading ? (
+          <div style={{ textAlign: 'center', padding: '40px 0' }}><Spin /></div>
+        ) : (
+          <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
+            {filteredMembers.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--semi-color-text-2)', fontSize: '14px' }}>
+                暂无匹配成员
+              </div>
+            ) : (
+              filteredMembers.map((m: TenantMember) => (
+                <div
+                  key={m.account.account_id}
+                  onClick={() => toggleMember(m.account.account_id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    background: selectedIds.has(m.account.account_id) ? 'var(--semi-color-primary-light-default)' : 'transparent',
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!selectedIds.has(m.account.account_id))
+                      e.currentTarget.style.background = 'var(--semi-color-fill-0)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = selectedIds.has(m.account.account_id)
+                      ? 'var(--semi-color-primary-light-default)'
+                      : 'transparent'
+                  }}
+                >
+                  <Checkbox checked={selectedIds.has(m.account.account_id)} onChange={() => toggleMember(m.account.account_id)} />
+                  <Avatar size="small" src={m.account.avatar_url ?? undefined} style={{ flexShrink: 0 }}>
+                    {m.account.display_name[0]}
+                  </Avatar>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--semi-color-text-0)' }}>
+                      {m.account.display_name}
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {m.account.email}
+                    </div>
+                  </div>
+                  <Tag style={{ fontSize: '11px', flexShrink: 0, borderRadius: '4px' }}>
+                    {m.role === 'tenant_owner' ? '拥有者' : m.role === 'tenant_admin' ? '管理员' : '成员'}
+                  </Tag>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </Modal>
 
       {/* ── 邀请链接 ──────────────────────────────────────────────────────── */}
       <div style={{

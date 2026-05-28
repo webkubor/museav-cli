@@ -16,33 +16,13 @@ interface KpiCardProps {
   color: string
 }
 
+import { Card } from '@/components/ui/Card'
+
 const KpiCard: React.FC<KpiCardProps> = ({ title, value, loading, color }) => {
   return (
-    <div
-      style={{
-        borderRadius: '14px',
-        border: '1px solid var(--semi-color-border)',
-        background: 'var(--semi-color-bg-1)',
-        padding: '22px 24px',
-        boxShadow: 'var(--semi-shadow-elevated)',
-        position: 'relative',
-        overflow: 'hidden',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        minHeight: '100px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center'
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
-        (e.currentTarget as HTMLElement).style.borderColor = 'var(--semi-color-primary)';
-        (e.currentTarget as HTMLElement).style.boxShadow = 'var(--semi-shadow-elevated)';
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.transform = 'none';
-        (e.currentTarget as HTMLElement).style.borderColor = 'var(--semi-color-border)';
-        (e.currentTarget as HTMLElement).style.boxShadow = 'var(--semi-shadow-elevated)';
-      }}
+    <Card
+      hoverable
+      className="p-6 min-h-[110px] flex flex-col justify-center border-none shadow-md bg-gradient-to-br from-semi-color-bg-1 to-semi-color-bg-0"
     >
       <Text style={{ color: 'var(--semi-color-text-2)', fontSize: '13px', fontWeight: 600 }}>
         {title}
@@ -52,17 +32,17 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, loading, color }) => {
           <Skeleton.Title style={{ width: '80%', height: '32px' }} />
         ) : (
           <span style={{
-            fontSize: '28px',
+            fontSize: '32px',
             fontWeight: 800,
             color: color === 'var(--semi-color-text-0)' ? 'var(--semi-color-text-0)' : color,
-            letterSpacing: '-0.02em',
+            letterSpacing: '-0.04em',
             display: 'block',
           }}>
             {value ?? '—'}
           </span>
         )}
       </div>
-    </div>
+    </Card>
   )
 }
 

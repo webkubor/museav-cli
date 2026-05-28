@@ -9,17 +9,26 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand-glow",
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-glow select-none",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-brand-base text-white hover:bg-brand-mid",
+          "border-transparent bg-brand-base text-white hover:bg-brand-mid shadow-sm",
         secondary:
-          "border-transparent bg-semi-color-fill-0 text-semi-color-text-1 hover:bg-semi-color-fill-1",
+          "border-transparent bg-semi-color-fill-1 text-semi-color-text-1 hover:bg-semi-color-fill-2",
         destructive:
-          "border-transparent bg-rose-500 text-white hover:bg-rose-600",
-        outline: "text-semi-color-text-1 border-semi-color-border",
+          "border-transparent bg-rose-500 text-white hover:bg-rose-600 shadow-sm",
+        outline: 
+          "text-semi-color-text-1 border-semi-color-border hover:bg-semi-color-fill-0",
+        success:
+          "border-transparent bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+        warning:
+          "border-transparent bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+        info:
+          "border-transparent bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+        glass:
+          "bg-white/10 dark:bg-white/5 backdrop-blur-md border-white/20 text-semi-color-text-1",
       },
     },
     defaultVariants: {
@@ -30,14 +39,19 @@ const badgeVariants = cva(
 
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
+    VariantProps<typeof badgeVariants> {
+  dot?: boolean
+}
 
 /**
  * 统一的高阶 Badge 徽章组件
  */
-function Badge({ className, variant, ...props }: BadgeProps) {
+function Badge({ className, variant, dot, children, ...props }: BadgeProps) {
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <div className={cn(badgeVariants({ variant }), className)} {...props}>
+      {dot && <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-current animate-pulse" />}
+      {children}
+    </div>
   )
 }
 

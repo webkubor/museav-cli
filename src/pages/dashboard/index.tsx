@@ -11,6 +11,8 @@ import { KpiSection } from '@/features/dashboard/components/KpiSection'
 import { GuideSection } from '@/features/dashboard/components/GuideSection'
 import { QuickAccessSection } from '@/features/dashboard/components/QuickAccessSection'
 import { TerminalSection } from '@/features/dashboard/components/TerminalSection'
+import { UsageChartSection } from '@/features/dashboard/components/UsageChartSection'
+import { RecentActivitySection } from '@/features/dashboard/components/RecentActivitySection'
 
 const { Title } = Typography
 
@@ -21,30 +23,40 @@ const { Title } = Typography
 export default function DashboardPage() {
   return (
     <div style={{ paddingBottom: '40px' }}>
-      {/* 1. 极雅晶莹欢迎横幅 */}
+      {/* 1. 欢迎横幅 */}
       <WelcomeBanner />
 
-      {/* 2. 核心 KPI 统计数据看板 */}
+      {/* 2. 核心 KPI 统计 */}
       <KpiSection />
 
-      {/* 3. 快捷功能入口 */}
+      {/* 3. 用量趋势图表 (新增) */}
+      <div style={{ marginBottom: '36px' }}>
+        <UsageChartSection />
+      </div>
+
+      {/* 4. 快捷功能入口 */}
       <QuickAccessSection />
 
-      {/* 4. 代码接入与快捷向导混合布局 */}
-      <Row gutter={24}>
-        <Col xs={24} lg={15}>
-          <Title heading={5} style={{ marginBottom: '16px', fontWeight: 700 }}>
-            接入示例
-          </Title>
-          <TerminalSection />
+      {/* 5. 调用日志与接入示例混合布局 */}
+      <Row gutter={24} style={{ marginBottom: '36px' }}>
+        <Col xs={24} lg={16}>
+          <RecentActivitySection />
         </Col>
-        <Col xs={24} lg={9}>
-          <Title heading={5} style={{ marginBottom: '16px', fontWeight: 700 }}>
-            进阶向导
-          </Title>
-          <GuideSection />
+        <Col xs={24} lg={8}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', height: '100%' }}>
+            <div style={{ flex: 1 }}>
+              <Title heading={5} style={{ marginBottom: '16px', fontWeight: 700 }}>接入示例</Title>
+              <TerminalSection />
+            </div>
+          </div>
         </Col>
       </Row>
+
+      {/* 6. 进阶向导 */}
+      <div>
+        <Title heading={5} style={{ marginBottom: '16px', fontWeight: 700 }}>进阶向导</Title>
+        <GuideSection />
+      </div>
     </div>
   )
 }

@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 
 /** Button 组件变体样式定义 */
 const buttonVariants = cva(
-  "modern-btn active:scale-[0.98]",
+  "modern-btn active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all duration-200",
   {
     variants: {
       variant: {
@@ -27,11 +27,17 @@ const buttonVariants = cva(
           "modern-btn-ghost",
         link:
           "modern-btn-link",
+        glass:
+          "bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 text-semi-color-text-0 hover:bg-white/20 dark:hover:bg-black/30 shadow-sm",
+        brand:
+          "bg-brand-base text-white hover:bg-brand-mid shadow-md shadow-brand-glow/20 border-none",
       },
       size: {
-        default: "h-10 px-4 py-2",
+        default: "h-10 px-5 py-2",
+        xs: "h-7 rounded-md px-2 text-[10px] font-bold uppercase tracking-wider",
         sm: "h-8 rounded-md px-3 text-xs",
         lg: "h-12 rounded-lg px-8 text-base",
+        xl: "h-14 rounded-xl px-10 text-lg font-bold",
         icon: "h-10 w-10",
       },
     },

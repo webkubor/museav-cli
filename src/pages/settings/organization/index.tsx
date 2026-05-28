@@ -517,6 +517,7 @@ function InviteTab({ tenantId }: { tenantId: string }) {
   const qc = useQueryClient()
   const [inviteEmails, setInviteEmails] = useState('')
   const [inviteRole, setInviteRole] = useState<'tenant_admin' | 'tenant_member'>('tenant_member')
+  const [expiresInHours, setExpiresInHours] = useState<number>(72)
   const [linkCopied, setLinkCopied] = useState(false)
 
   const inviteLinkQuery = useQuery({
@@ -536,8 +537,9 @@ function InviteTab({ tenantId }: { tenantId: string }) {
     mutationFn: () => addTenantMembers(tenantId, {
       emails: inviteEmails.split(/[\s,;]+/).map((e) => e.trim()).filter(Boolean),
       role: inviteRole,
+      expires_in_hours: expiresInHours,
     }),
-    onSuccess: () => { Toast.success('邀请已发出'); setInviteEmails(''); qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] }) },
+    onSuccess: () => { Toast.success('邀请已发出'); setInviteEmails(''); setExpiresInHours(72); qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] }) },
     onError: (err: any) => Toast.error(err?.message || '邀请失败'),
   })
 
@@ -582,18 +584,34 @@ function InviteTab({ tenantId }: { tenantId: string }) {
           <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: '4px' }}>邮箱邀请</div>
           <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>直接向特定邮箱发送邀请邮件</Text>
         </div>
-        <div style={{ padding: '20px 24px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '16px' }}>
-          <div style={{ flex: 1, minWidth: '280px' }}>
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
             <label style={labelStyle}>成员邮箱</label>
             <Input placeholder="example@company.com，多个用逗号分隔" value={inviteEmails} onChange={(val) => setInviteEmails(val)} onKeyDown={(e) => e.key === 'Enter' && addMembers.mutate()} />
           </div>
-          <div style={{ width: '130px' }}>
-            <label style={labelStyle}>初始角色</label>
-            <Select value={inviteRole} onChange={(v) => setInviteRole(v as any)} style={{ width: '100%' }}>
-              {TENANT_ROLE_OPTIONS.map((o) => <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>)}
-            </Select>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>邀请配置</label>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 12px', height: '32px', borderRadius: '8px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)', fontSize: '12px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
+                  初始角色
+                  <Select value={inviteRole} onChange={(v) => setInviteRole(v as any)} style={{ width: '100px', marginLeft: '2px' }} size="small" borderless>
+                    {TENANT_ROLE_OPTIONS.map((o) => <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>)}
+                  </Select>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 12px', height: '32px', borderRadius: '8px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)', fontSize: '12px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
+                  有效期
+                  <Select value={expiresInHours} onChange={(v) => setExpiresInHours(v as number)} style={{ width: '100px', marginLeft: '2px' }} size="small" borderless>
+                    <Select.Option value={24}>24 小时</Select.Option>
+                    <Select.Option value={72}>3 天</Select.Option>
+                    <Select.Option value={168}>7 天</Select.Option>
+                    <Select.Option value={720}>30 天</Select.Option>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            <Button theme="solid" loading={addMembers.isPending} onClick={() => addMembers.mutate()} style={{ flexShrink: 0, height: '32px' }}>发送邀请</Button>
           </div>
-          <Button theme="solid" loading={addMembers.isPending} onClick={() => addMembers.mutate()} style={{ flexShrink: 0 }}>发送邀请</Button>
         </div>
       </div>
     </div>

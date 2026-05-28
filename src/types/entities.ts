@@ -177,6 +177,7 @@ export interface AddTenantMemberRequest {
   emails: string[]
   role: 'tenant_admin' | 'tenant_member'
   target_workspace_id?: string
+  expires_in_hours?: number
 }
 
 /** 添加 Tenant 成员的逐条结果 */

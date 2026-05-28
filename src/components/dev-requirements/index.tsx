@@ -250,8 +250,8 @@ export function DevRequirements() {
 
       {open && (
         <div style={{
-          width: 400,
-          maxHeight: '75vh',
+          width: 480,
+          maxHeight: '80vh',
           background: 'var(--semi-color-bg-1)',
           border: '1px solid var(--semi-color-border)',
           borderRadius: '8px 0 0 8px',
@@ -269,7 +269,7 @@ export function DevRequirements() {
             justifyContent: 'space-between',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--semi-color-text-0)' }}>需求看板</span>
+              <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--semi-color-text-0)' }}>需求看板</span>
               {pending.length > 0 && (
                 <span style={{
                   fontSize: 11,
@@ -301,8 +301,8 @@ export function DevRequirements() {
               placeholder="+ 快速记录需求..."
               style={{
                 flex: 1,
-                padding: '7px 10px',
-                fontSize: 13,
+                padding: '8px 12px',
+                fontSize: 14,
                 background: 'var(--semi-color-bg-2)',
                 border: '1px solid var(--semi-color-border)',
                 borderRadius: 6,
@@ -314,8 +314,8 @@ export function DevRequirements() {
               value={priority}
               onChange={(e) => setPriority(e.target.value as Requirement['priority'])}
               style={{
-                padding: '7px 6px',
-                fontSize: 13,
+                padding: '8px 6px',
+                fontSize: 14,
                 background: 'var(--semi-color-bg-2)',
                 border: '1px solid var(--semi-color-border)',
                 borderRadius: 6,
@@ -333,8 +333,8 @@ export function DevRequirements() {
               onClick={handleAdd}
               disabled={!title.trim()}
               style={{
-                padding: '7px 14px',
-                fontSize: 13,
+                padding: '8px 16px',
+                fontSize: 14,
                 fontWeight: 600,
                 background: title.trim() ? 'var(--semi-color-primary)' : 'var(--semi-color-disabled-border)',
                 color: title.trim() ? '#fff' : 'var(--semi-color-disabled-text)',
@@ -427,16 +427,13 @@ function ReqItem({
 
   return (
     <div
-      draggable={!isEditing}
-      onDragStart={(e) => onDragStart(e, item.id)}
-      onDragEnd={onDragEnd}
       onDragOver={(e) => onDragOver(e, item.id)}
       onDragLeave={onDragLeave}
       onDrop={(e) => onDrop(e, item.id)}
       onMouseEnter={() => onHover(item.id)}
       onMouseLeave={() => onHover(null)}
       style={{
-        padding: '9px 14px',
+        padding: '10px 16px',
         display: 'flex',
         alignItems: 'flex-start',
         gap: 10,
@@ -452,10 +449,13 @@ function ReqItem({
     >
       {/* 拖拽把手 */}
       <span
+        draggable={!isEditing}
+        onDragStart={(e) => { e.stopPropagation(); onDragStart(e, item.id) }}
+        onDragEnd={(e) => { e.stopPropagation(); onDragEnd() }}
         style={{
           flexShrink: 0,
           fontSize: 15,
-          color: hovered ? 'var(--semi-color-text-2)' : 'transparent',
+          color: hovered ? 'var(--semi-color-text-1)' : 'var(--semi-color-text-3)',
           cursor: 'grab',
           lineHeight: '20px',
           marginTop: 0,
@@ -503,8 +503,8 @@ function ReqItem({
             }}
             style={{
               width: '100%',
-              fontSize: 13,
-              padding: '2px 6px',
+              fontSize: 14,
+              padding: '3px 6px',
               border: '1px solid var(--semi-color-primary)',
               borderRadius: 4,
               background: 'var(--semi-color-bg-0)',
@@ -517,7 +517,7 @@ function ReqItem({
             onDoubleClick={() => onEditStart(item.id, item.title)}
             title="双击编辑"
             style={{
-              fontSize: 13,
+              fontSize: 14,
               color: item.status === 'done' ? 'var(--semi-color-text-2)' : 'var(--semi-color-text-0)',
               textDecoration: item.status === 'done' ? 'line-through' : 'none',
               wordBreak: 'break-all',

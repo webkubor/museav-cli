@@ -50,7 +50,7 @@ export default function GuardrailsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
-  const [policyOpen, setPolicyOpen] = useState(false)
+  const [addPolicyFormOpen, setAddPolicyFormOpen] = useState(false)
   const [assignOpen, setAssignOpen] = useState(false)
   const [searchText, setSearchText] = useState('')
 
@@ -107,7 +107,7 @@ export default function GuardrailsPage() {
       if (!selectedId) return Promise.reject(new Error('no guardrail'))
       return addBudgetPolicy(selectedId, body)
     },
-    onSuccess: () => { Toast.success('策略已添加'); setPolicyOpen(false); qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] }) },
+    onSuccess: () => { Toast.success('策略已添加'); setAddPolicyFormOpen(false); qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] }) },
     onError: (err: unknown) => Toast.error(err instanceof Error ? err.message : '添加失败'),
   })
 
@@ -180,7 +180,7 @@ export default function GuardrailsPage() {
             guardrail={g}
             canManage={canManage}
             onOpenDetail={() => { setSelectedId(g.id); setDetailOpen(true) }}
-            onAddPolicy={() => { setSelectedId(g.id); setPolicyOpen(true) }}
+            onAddPolicy={() => { setSelectedId(g.id); setDetailOpen(true); setAddPolicyFormOpen(true) }}
             onManageAssign={() => { setSelectedId(g.id); setAssignOpen(true) }}
             onToggleStatus={() => statusMutation.mutate({ id: g.id, status: g.status === 'active' ? 'inactive' : 'active' })}
           />
@@ -245,9 +245,9 @@ export default function GuardrailsPage() {
             <div style={cardStyle}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                 <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--semi-color-text-0)', margin: 0 }}>预算策略</p>
-                {canManage && <Button theme="solid" type="primary" size="small" onClick={() => setPolicyOpen(true)}>+ 添加策略</Button>}
+                {canManage && !addPolicyFormOpen && <Button theme="solid" type="primary" size="small" onClick={() => setAddPolicyFormOpen(true)}>+ 添加策略</Button>}
               </div>
-              {selected.budget_policies.length === 0 ? (
+              {selected.budget_policies.length === 0 && !addPolicyFormOpen ? (
                 <div style={{ padding: '32px', textAlign: 'center', border: '1px dashed var(--semi-color-border)', borderRadius: '8px', color: 'var(--semi-color-text-2)', fontSize: '13px' }}>暂无预算或限流策略</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -256,13 +256,19 @@ export default function GuardrailsPage() {
                   ))}
                 </div>
               )}
+              {addPolicyFormOpen && (
+                <AddPolicyInlineForm
+                  isPending={addPolicyMutation.isPending}
+                  onConfirm={(body) => addPolicyMutation.mutate(body)}
+                  onCancel={() => setAddPolicyFormOpen(false)}
+                />
+              )}
             </div>
           </div>
         )}
       </SideSheet>
 
       <CreateGuardrailModal open={createOpen} isPending={createMutation.isPending} onConfirm={(name, description) => createMutation.mutate({ name, description })} onCancel={() => setCreateOpen(false)} />
-      {selectedId && <AddBudgetPolicyModal open={policyOpen} isPending={addPolicyMutation.isPending} onConfirm={body => addPolicyMutation.mutate(body)} onCancel={() => setPolicyOpen(false)} />}
       {selected && <ManageAssignmentsModal open={assignOpen} isPending={assignMutation.isPending} current={selected.assignments} members={membersQuery.data?.items ?? []} apiKeys={apiKeysQuery.data?.items ?? []} onConfirm={assignments => assignMutation.mutate(assignments)} onCancel={() => setAssignOpen(false)} />}
     </div>
   )
@@ -600,32 +606,25 @@ function CreateGuardrailModal({
   )
 }
 
-function AddBudgetPolicyModal({
-  open,
+function AddPolicyInlineForm({
   isPending,
   onConfirm,
   onCancel,
 }: {
-  open: boolean
   isPending: boolean
   onConfirm: (body: Parameters<typeof addBudgetPolicy>[1]) => void
   onCancel: () => void
 }) {
   const { currency } = useCurrency()
-  const [scope, setScope] = useState<'guardrail_total' | 'per_member' | 'per_api_key'>(
-    'guardrail_total'
-  )
+  const [scope, setScope] = useState<'guardrail_total' | 'per_member' | 'per_api_key'>('guardrail_total')
   const [periodUnit, setPeriodUnit] = useState<'hour' | 'day' | 'week' | 'month'>('month')
-  const [enforcement, setEnforcement] = useState<'monitor' | 'soft_limit' | 'hard_limit'>(
-    'hard_limit'
-  )
   const [spendLimit, setSpendLimit] = useState('')
 
   function handleConfirm() {
     const body: Parameters<typeof addBudgetPolicy>[1] = {
       aggregation_scope: scope,
       period_unit: periodUnit,
-      enforcement_mode: enforcement,
+      enforcement_mode: 'hard_limit',
       enabled: true,
     }
     if (spendLimit && parseFloat(spendLimit) > 0) {
@@ -635,89 +634,42 @@ function AddBudgetPolicyModal({
     onConfirm(body)
   }
 
-  const fieldLabelStyle: React.CSSProperties = {
-    display: 'block',
-    fontSize: '11px',
-    fontWeight: 700,
-    color: 'var(--semi-color-text-1)',
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-    marginBottom: '8px',
+  const labelStyle: React.CSSProperties = {
+    display: 'block', fontSize: '11px', fontWeight: 700,
+    color: 'var(--semi-color-text-1)', letterSpacing: '0.06em',
+    textTransform: 'uppercase', marginBottom: '6px',
   }
 
   return (
-    <Modal
-      title="添加预算与限流策略"
-      visible={open}
-      onCancel={onCancel}
-      footer={
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-          <Button onClick={onCancel}>取消</Button>
-          <Button theme="solid" type="primary" loading={isPending} onClick={handleConfirm}>
-            确认添加
-          </Button>
-        </div>
-      }
-      width={500}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '8px 0' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <div>
-            <label style={fieldLabelStyle}>聚合维度</label>
-            <Select
-              value={scope}
-              onChange={(v) => setScope(v as typeof scope)}
-              style={{ width: '100%' }}
-            >
-              <Select.Option value="guardrail_total">护栏内整体</Select.Option>
-              <Select.Option value="per_member">按成员独立</Select.Option>
-              <Select.Option value="per_api_key">按 API Key 独立</Select.Option>
-            </Select>
-          </div>
-          <div>
-            <label style={fieldLabelStyle}>重置周期</label>
-            <Select
-              value={periodUnit}
-              onChange={(v) => setPeriodUnit(v as typeof periodUnit)}
-              style={{ width: '100%' }}
-            >
-              <Select.Option value="hour">每小时</Select.Option>
-              <Select.Option value="day">每天</Select.Option>
-              <Select.Option value="week">每周</Select.Option>
-              <Select.Option value="month">每月</Select.Option>
-            </Select>
-          </div>
-        </div>
-
+    <div style={{ marginTop: '10px', padding: '16px', borderRadius: '10px', border: '1px dashed var(--semi-color-primary)', backgroundColor: 'var(--semi-color-primary-light-default)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
         <div>
-          <label style={fieldLabelStyle}>强制执行模式</label>
-          <Select
-            value={enforcement}
-            onChange={(v) => setEnforcement(v as typeof enforcement)}
-            style={{ width: '100%' }}
-          >
-            <Select.Option value="monitor">仅监控（记录不拦截）</Select.Option>
-            <Select.Option value="soft_limit">软限制（超额发送告警）</Select.Option>
-            <Select.Option value="hard_limit">硬限制（超额直接拒绝）</Select.Option>
+          <label style={labelStyle}>聚合维度</label>
+          <Select value={scope} onChange={(v) => setScope(v as typeof scope)} style={{ width: '100%' }} size="small">
+            <Select.Option value="guardrail_total">护栏内整体</Select.Option>
+            <Select.Option value="per_member">按成员独立</Select.Option>
+            <Select.Option value="per_api_key">按 API Key 独立</Select.Option>
           </Select>
         </div>
-
-        <div
-          style={{
-            paddingTop: '16px',
-            borderTop: '1px solid var(--semi-color-fill-0)',
-          }}
-        >
-          <label style={{ ...fieldLabelStyle, fontSize: '10px' }}>金额上限 ({currency})</label>
-          <Input
-            type="number"
-            value={spendLimit}
-            onChange={(v) => setSpendLimit(v)}
-            placeholder="不限"
-          />
+        <div>
+          <label style={labelStyle}>重置周期</label>
+          <Select value={periodUnit} onChange={(v) => setPeriodUnit(v as typeof periodUnit)} style={{ width: '100%' }} size="small">
+            <Select.Option value="hour">每小时</Select.Option>
+            <Select.Option value="day">每天</Select.Option>
+            <Select.Option value="week">每周</Select.Option>
+            <Select.Option value="month">每月</Select.Option>
+          </Select>
         </div>
       </div>
-    </Modal>
+      <div style={{ marginBottom: '14px' }}>
+        <label style={labelStyle}>金额上限（{currency}，留空表示不限）</label>
+        <Input type="number" value={spendLimit} onChange={(v) => setSpendLimit(v)} placeholder="不限" size="small" />
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+        <Button size="small" onClick={onCancel}>取消</Button>
+        <Button size="small" theme="solid" type="primary" loading={isPending} onClick={handleConfirm}>确认添加</Button>
+      </div>
+    </div>
   )
 }
 

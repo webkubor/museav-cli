@@ -23,7 +23,7 @@ import { createOrganization } from '@/services/organizations'
 import { applyTheme, getUserTheme, saveTheme, type Theme } from '@/lib/theme'
 import { useTranslation } from 'react-i18next'
 import { listWorkspaces, createWorkspace } from '@/services/workspaces'
-import type { TenantBrief, WorkspaceItem } from '@/types'
+import type { TenantBrief, TenantItem, WorkspaceItem } from '@/types'
 
 const { Header } = Layout
 const market = getMarket()
@@ -440,7 +440,8 @@ export const DashboardHeader: React.FC = () => {
                 const displayName = tenant.name || tenant.slug || tenant.tenant_id
                 const letter = displayName.charAt(0).toUpperCase()
                 const isActive = tenant.tenant_id === activeTenantId
-                const tenantRole = tenantsData?.items?.find((i) => i.tenant_id === tenant.tenant_id)?.role
+                // displayTenants merges store TenantBrief + API TenantItem; cast to access role
+                const tenantRole = (tenant as TenantItem).role
                 const roleLabel: Record<string, string> = {
                   tenant_owner: t('header.roleOwner'),
                   tenant_admin: t('header.roleAdmin'),

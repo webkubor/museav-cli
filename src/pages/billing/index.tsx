@@ -52,6 +52,9 @@ function TopUpModal({ visible, onClose, tenantId }: {
     ? ALL_CHANNELS.filter((c) => platformConfig.enabled_channels.includes(c.value))
     : ALL_CHANNELS
 
+  const currency = platformConfig?.settlement_currency ?? 'CNY'
+  const currencySymbol = currency === 'USD' ? '$' : '¥'
+
   const [channel, setChannel] = useState<'alipay' | 'wechat' | 'stripe'>('alipay')
   const effectiveChannel: 'alipay' | 'wechat' | 'stripe' = (
     CHANNELS.some((c) => c.value === channel) ? channel : (CHANNELS[0]?.value ?? 'alipay')
@@ -63,7 +66,7 @@ function TopUpModal({ visible, onClose, tenantId }: {
     mutationFn: () =>
       createRecharge(tenantId, {
         amount,
-        currency: 'CNY',
+        currency,
         channel: effectiveChannel,
         return_url: window.location.href,
       }),
@@ -112,12 +115,12 @@ function TopUpModal({ visible, onClose, tenantId }: {
             {PRESETS.map((p) => (
               <button key={p} type="button" onClick={() => setAmount(p)}
                 style={amount === p ? btnActive : btnBase}>
-                ¥{p}
+                {currencySymbol}{p}
               </button>
             ))}
           </div>
           <div style={{ position: 'relative' }}>
-            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--semi-color-text-2)', fontSize: '14px' }}>¥</span>
+            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--semi-color-text-2)', fontSize: '14px' }}>{currencySymbol}</span>
             <input
               type="number"
               min="1"

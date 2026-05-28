@@ -93,8 +93,8 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         }}
       >
         {collapsed
-          ? <LuChevronRight style={{ fontSize: '13px' }} />
-          : <LuChevronLeft style={{ fontSize: '13px' }} />
+          ? <LuChevronRight size={13} />
+          : <LuChevronLeft size={13} />
         }
       </button>
 
@@ -157,7 +157,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               color: isSettingsSelected ? 'var(--semi-color-primary)' : 'var(--semi-color-text-1)',
             }}
           >
-            <LuSettings style={{ fontSize: '16px', flexShrink: 0 }} />
+            <LuSettings size={16} style={{ flexShrink: 0 }} />
             {!collapsed && (
               <span style={{ fontSize: '14px', fontWeight: isSettingsSelected ? 600 : 400 }}>
                 {settingsLabel}

@@ -293,7 +293,7 @@ export const DashboardHeader: React.FC = () => {
               ))}
               <Dropdown.Divider />
               <Dropdown.Item
-                icon={<LuPlus style={{ fontSize: '14px' }} />}
+                icon={<LuPlus size={14} />}
                 onClick={() => setWorkspaceModalVisible(true)}
                 style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
               >
@@ -301,7 +301,7 @@ export const DashboardHeader: React.FC = () => {
               </Dropdown.Item>
               {isNonPersonal && (
                 <Dropdown.Item
-                  icon={<LuSettings style={{ fontSize: '14px' }} />}
+                  icon={<LuSettings size={14} />}
                   onClick={() => navigate('/settings/workspace')}
                   style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
                 >
@@ -336,7 +336,7 @@ export const DashboardHeader: React.FC = () => {
           }}
           >
             <span style={{ fontWeight: 600, color: 'var(--semi-color-text-0)' }}>{activeWorkspace?.name ?? t('header.defaultWorkspace')}</span>
-            <LuChevronDown style={{ fontSize: '10px', color: 'var(--semi-color-text-1)' }} />
+            <LuChevronDown size={10} style={{ color: 'var(--semi-color-text-1)' }} />
           </div>
         </Dropdown>
       </div>
@@ -505,7 +505,7 @@ export const DashboardHeader: React.FC = () => {
               })}
 
               <Dropdown.Item
-                icon={<LuPlus style={{ fontSize: '14px' }} />}
+                icon={<LuPlus size={14} />}
                 onClick={handleOpenOrgModal}
                 style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
               >
@@ -516,7 +516,7 @@ export const DashboardHeader: React.FC = () => {
               <Dropdown.Divider />
               {isNonPersonal && (
                 <Dropdown.Item
-                  icon={<LuSettings style={{ fontSize: '14px' }} />}
+                  icon={<LuSettings size={14} />}
                   onClick={() => navigate('/settings/organization')}
                   style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
                 >
@@ -525,7 +525,7 @@ export const DashboardHeader: React.FC = () => {
               )}
               {isNonPersonal && (
                 <Dropdown.Item
-                  icon={<LuGlobe style={{ fontSize: '14px' }} />}
+                  icon={<LuGlobe size={14} />}
                   onClick={() => navigate('/settings/workspace')}
                   style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
                 >
@@ -533,7 +533,7 @@ export const DashboardHeader: React.FC = () => {
                 </Dropdown.Item>
               )}
               <Dropdown.Item
-                icon={<LuSettings style={{ fontSize: '14px' }} />}
+                icon={<LuSettings size={14} />}
                 onClick={() => navigate('/settings/account')}
                 style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
               >

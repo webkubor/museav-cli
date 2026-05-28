@@ -298,7 +298,7 @@ export function CustomerService() {
                   flexShrink: 0, transition: 'all 0.2s',
                 }}
               >
-                <LuSendHorizontal style={{ fontSize: 14 }} />
+                <LuSendHorizontal size={14} />
               </button>
             </div>
           </div>

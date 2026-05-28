@@ -79,17 +79,17 @@ export function DashboardLayout() {
   }
 
   const icons = {
-    home:        <LuHouse        style={{ fontSize: '16px' }} />,
-    apps:        <LuLayoutGrid   style={{ fontSize: '16px' }} />,
-    histogram:   <LuChartBar     style={{ fontSize: '16px' }} />,
-    histogramSm: <LuChartBar     style={{ fontSize: '14px' }} />,
-    list:        <LuList         style={{ fontSize: '14px' }} />,
-    creditCard:  <LuCreditCard   style={{ fontSize: '16px' }} />,
-    wrench:      <LuWrench       style={{ fontSize: '16px', color: '#d97706' }} />,
-    key:         <LuKey          style={{ fontSize: '16px' }} />,
-    shield:      <LuShield       style={{ fontSize: '16px' }} />,
-    eye:         <LuEye          style={{ fontSize: '16px' }} />,
-    mail:        <LuMail         style={{ fontSize: '16px' }} />,
+    home:        <LuHouse        size={16} />,
+    apps:        <LuLayoutGrid   size={16} />,
+    histogram:   <LuChartBar     size={16} />,
+    histogramSm: <LuChartBar     size={14} />,
+    list:        <LuList         size={14} />,
+    creditCard:  <LuCreditCard   size={16} />,
+    wrench:      <LuWrench       size={16} color="#d97706" />,
+    key:         <LuKey          size={16} />,
+    shield:      <LuShield       size={16} />,
+    eye:         <LuEye          size={16} />,
+    mail:        <LuMail         size={16} />,
   }
 
   const tenantNavItems    = navConfig.tenantItems(navCtx, t, icons)

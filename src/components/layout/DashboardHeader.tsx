@@ -33,6 +33,8 @@ export const DashboardHeader: React.FC = () => {
   const queryClient = useQueryClient()
   const { t, i18n } = useTranslation()
   const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setActiveWorkspaceId, clearAuth } = useAuthStore()
+  const activeTenantType = tenants.find((t) => t.tenant_id === activeTenantId)?.type ?? 'personal'
+  const isEnterprise = activeTenantType === 'enterprise'
   
   // Theme and Lang state
   const [currentTheme, setCurrentTheme] = useState<Theme>('light')
@@ -317,13 +319,15 @@ export const DashboardHeader: React.FC = () => {
               >
                 {t('header.createWorkspace')}
               </Dropdown.Item>
-              <Dropdown.Item
-                icon={<IconSetting style={{ fontSize: '14px' }} />}
-                onClick={() => navigate('/settings/workspace')}
-                style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
-              >
-                {t('header.workspaceMgmt')}
-              </Dropdown.Item>
+              {isEnterprise && (
+                <Dropdown.Item
+                  icon={<IconSetting style={{ fontSize: '14px' }} />}
+                  onClick={() => navigate('/settings/workspace')}
+                  style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
+                >
+                  {t('header.workspaceMgmt')}
+                </Dropdown.Item>
+              )}
             </Dropdown.Menu>
           }
         >
@@ -483,18 +487,20 @@ export const DashboardHeader: React.FC = () => {
                           : letter}
                       </div>
                       <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>{displayName}</span>
-                      <Button
-                        size="small"
-                        theme="borderless"
-                        type="tertiary"
-                        icon={<IconSetting style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }} />}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleManageTenant(tenant)
-                        }}
-                        style={{ padding: '2px 4px', height: '20px', flexShrink: 0 }}
-                        title={t('header.manageOrg')}
-                      />
+                      {tenant.type === 'enterprise' && (
+                        <Button
+                          size="small"
+                          theme="borderless"
+                          type="tertiary"
+                          icon={<IconSetting style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }} />}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleManageTenant(tenant)
+                          }}
+                          style={{ padding: '2px 4px', height: '20px', flexShrink: 0 }}
+                          title={t('header.manageOrg')}
+                        />
+                      )}
                     </div>
                   </Dropdown.Item>
                 )
@@ -510,20 +516,24 @@ export const DashboardHeader: React.FC = () => {
 
               {/* 3. 系统快捷跳转功能 */}
               <Dropdown.Divider />
-              <Dropdown.Item
-                icon={<IconSetting style={{ fontSize: '14px' }} />}
-                onClick={() => navigate('/settings/organization')}
-                style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
-              >
-                {t('header.orgSettings')}
-              </Dropdown.Item>
-              <Dropdown.Item
-                icon={<IconGlobe style={{ fontSize: '14px' }} />}
-                onClick={() => navigate('/settings/workspace')}
-                style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
-              >
-                {t('header.workspaceMgmt')}
-              </Dropdown.Item>
+              {isEnterprise && (
+                <Dropdown.Item
+                  icon={<IconSetting style={{ fontSize: '14px' }} />}
+                  onClick={() => navigate('/settings/organization')}
+                  style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
+                >
+                  {t('header.orgSettings')}
+                </Dropdown.Item>
+              )}
+              {isEnterprise && (
+                <Dropdown.Item
+                  icon={<IconGlobe style={{ fontSize: '14px' }} />}
+                  onClick={() => navigate('/settings/workspace')}
+                  style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
+                >
+                  {t('header.workspaceMgmt')}
+                </Dropdown.Item>
+              )}
               <Dropdown.Item
                 icon={<IconSetting style={{ fontSize: '14px' }} />}
                 onClick={() => navigate('/settings/account')}

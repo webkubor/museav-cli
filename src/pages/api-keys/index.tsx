@@ -130,7 +130,7 @@ export default function ApiKeysPage() {
       )
     },
     {
-      title: '近30天消费',
+      title: '累计消费',
       dataIndex: 'usage_30d',
       render: (usage: ApiKeyItem['usage_30d']) => (
         <span style={{ fontSize: '13px', color: 'var(--semi-color-text-0)', fontVariantNumeric: 'tabular-nums' }}>

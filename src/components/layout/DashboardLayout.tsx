@@ -12,6 +12,7 @@ import {
   LuEye,
   LuLayoutGrid,
   LuWrench,
+  LuTerminal,
 } from 'react-icons/lu'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -92,6 +93,7 @@ export function DashboardLayout() {
     list:        ic(<LuList         size={14} />, 14),
     creditCard:  ic(<LuCreditCard   size={16} />),
     wrench:      ic(<LuWrench       size={16} color="#d97706" />),
+    terminal:    ic(<LuTerminal     size={16} />),
     key:         ic(<LuKey          size={16} />),
     shield:      ic(<LuShield       size={16} />),
     eye:         ic(<LuEye          size={16} />),
@@ -111,14 +113,18 @@ export function DashboardLayout() {
 
   const BREADCRUMB_MAP: Record<string, string[]> = {
     dashboard:        [t('nav.home')],
-    models:           [t('nav.home'), t('nav.models')],
+    'models/explore': [t('nav.home'), t('nav.models'), t('nav.modelExplore')],
+    'models/compare': [t('nav.home'), t('nav.models'), t('nav.modelCompare')],
+    'models/chat':    [t('nav.home'), t('nav.models'), t('nav.modelChat')],
+    'models/history': [t('nav.home'), t('nav.models'), t('nav.modelHistory')],
     'api-keys':       [t('nav.home'), t('nav.apiKeys')],
     usage:            [t('nav.home'), t('nav.analytics'), t('nav.usage')],
     logs:             [t('nav.home'), t('nav.analytics'), t('nav.logs')],
     billing:          [t('nav.home'), t('nav.billing')],
     guardrails:       [t('nav.home'), t('nav.guardrails')],
     observability:    [t('nav.home'), t('nav.observability')],
-    'invitations-mgmt': [t('nav.home'), t('nav.invitations')],
+    'invitations-mgmt':  [t('nav.home'), t('nav.invitations')],
+    'api-playground':    [t('nav.home'), '接口调试'],
     'platform-config':  [t('nav.home'), '接口调试'],
     'settings/account':      [t('nav.home'), t('nav.settings'), t('nav.account')],
     'settings/workspace':    [t('nav.home'), t('nav.settings'), t('nav.workspace')],

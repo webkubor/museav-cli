@@ -42,11 +42,22 @@ export const navConfig: NavConfig = {
     'guardrails',
     'observability',
     'invitations-mgmt',
+    'api-playground',
   ]),
 
   tenantItems: (ctx, t, icons) => [
     { itemKey: 'dashboard',    text: t('nav.dashboard'),  icon: icons.home },
-    { itemKey: 'models',       text: t('nav.models'),     icon: icons.apps },
+    {
+      itemKey: 'models',
+      text: t('nav.models'),
+      icon: icons.apps,
+      items: [
+        { itemKey: 'models/explore', text: t('nav.modelExplore'), icon: icons.apps },
+        { itemKey: 'models/compare', text: t('nav.modelCompare'), icon: icons.list },
+        { itemKey: 'models/chat',    text: t('nav.modelChat'),    icon: icons.histogramSm },
+        { itemKey: 'models/history', text: t('nav.modelHistory'), icon: icons.list },
+      ],
+    },
     {
       itemKey: 'analytics',
       text: t('nav.analytics'),
@@ -66,9 +77,10 @@ export const navConfig: NavConfig = {
   ],
 
   workspaceItems: (ctx, t, icons) => [
-    { itemKey: 'api-keys',      text: t('nav.apiKeys'),      icon: icons.key },
-    { itemKey: 'guardrails',    text: t('nav.guardrails'),   icon: icons.shield },
-    { itemKey: 'observability', text: t('nav.observability'), icon: icons.eye },
+    { itemKey: 'api-keys',        text: t('nav.apiKeys'),        icon: icons.key },
+    { itemKey: 'guardrails',      text: t('nav.guardrails'),     icon: icons.shield },
+    { itemKey: 'observability',   text: t('nav.observability'),  icon: icons.eye },
+    { itemKey: 'api-playground',  text: '接口调试',               icon: icons.terminal },
     // 邀请管理：只要不是个人账户即可见（enterprise 或未来其他非 personal 类型）
     ...(ctx.isNonPersonal ? [{
       itemKey: 'invitations-mgmt',

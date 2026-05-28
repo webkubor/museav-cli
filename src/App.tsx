@@ -21,7 +21,11 @@ import GuardrailsPage from '@/pages/guardrails'
 import InvitationsMgmtPage from '@/pages/invitations-mgmt'
 import ObservabilityPage from '@/pages/observability'
 import ModelsPage from '@/pages/models'
+import ModelsComparePage from '@/pages/models-compare'
+import ModelsChatPage from '@/pages/models-chat'
+import ModelsChatHistoryPage from '@/pages/models-history'
 import PlatformConfigPage from '@/pages/platform-config'
+import ApiPlaygroundPage from '@/pages/api-playground'
 import { useAuthStore } from '@/store/auth'
 import { getSession } from '@/services/auth'
 import { getMarket } from '@/lib/market'
@@ -100,7 +104,13 @@ export default function App() {
 
             {/* Tenant 级 */}
             <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="models" element={<ModelsPage />} />
+            <Route path="models">
+              <Route index element={<Navigate to="explore" replace />} />
+              <Route path="explore" element={<ModelsPage />} />
+              <Route path="compare" element={<ModelsComparePage />} />
+              <Route path="chat" element={<ModelsChatPage />} />
+              <Route path="history" element={<ModelsChatHistoryPage />} />
+            </Route>
             <Route path="usage" element={<UsagePage />} />
             <Route path="logs" element={<LogsPage />} />
             <Route path="billing" element={<BillingPage />} />
@@ -119,6 +129,7 @@ export default function App() {
               <Route path="guardrails" element={<GuardrailsPage />} />
               <Route path="observability" element={<ObservabilityPage />} />
               <Route path="invitations-mgmt" element={<InvitationsMgmtPage />} />
+              <Route path="api-playground" element={<ApiPlaygroundPage />} />
             </Route>
           </Route>
 

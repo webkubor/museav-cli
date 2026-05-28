@@ -26,7 +26,11 @@
   "nav": {
     "home": "Home",
     "dashboard": "Dashboard",
-    "models": "Model Catalog",
+    "models": "Model Experience",
+    "modelExplore": "Explore",
+    "modelCompare": "Compare",
+    "modelChat": "Chat",
+    "modelHistory": "History",
     "analytics": "Analytics",
     "usage": "Usage",
     "logs": "Logs",

@@ -3,7 +3,7 @@ import { Layout, Breadcrumb } from '@douyinfe/semi-ui'
 import { useAuthStore } from '@/store/auth'
 import {
   LuHouse,
-  LuChartBar,
+  LuTrendingUp,
   LuList,
   LuCreditCard,
   LuShield,
@@ -81,8 +81,8 @@ export function DashboardLayout() {
   const icons = {
     home:        <LuHouse        size={16} />,
     apps:        <LuLayoutGrid   size={16} />,
-    histogram:   <LuChartBar     size={14} />,
-    histogramSm: <LuChartBar     size={12} />,
+    histogram:   <LuTrendingUp   size={16} />,
+    histogramSm: <LuTrendingUp   size={14} />,
     list:        <LuList         size={14} />,
     creditCard:  <LuCreditCard   size={16} />,
     wrench:      <LuWrench       size={16} color="#d97706" />,

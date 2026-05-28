@@ -4,6 +4,7 @@ import SemiPlugin from '@douyinfe/semi-vite-plugin'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 import { devLoggerPlugin } from './scripts/dev-logger-plugin'
+import { devRequirementsPlugin } from './scripts/dev-requirements-plugin'
 import { version } from './package.json'
 
 // Vite 8 + rolldown 严格检查 package exports，semi-ui 未声明 CSS 导出条件，需手动 bypass
@@ -29,6 +30,7 @@ export default defineConfig(({ mode }) => ({
       theme: '@douyinfe/semi-theme-default'
     }),
     devLoggerPlugin(),
+    devRequirementsPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'brand/**'],

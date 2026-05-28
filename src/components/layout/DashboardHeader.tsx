@@ -165,13 +165,11 @@ export const DashboardHeader: React.FC = () => {
     setCurrentTheme(theme)
     saveTheme(theme, account?.account_id)
     applyTheme(theme)
-    Toast.success(`${t('theme')} -> ${theme === 'light' ? t('themeLight') : theme === 'dark' ? t('themeDark') : t('themeSystem')}`)
   }
 
   function handleLanguageChange(newLang: Lang) {
     setGlobalLang(newLang)
     i18n.changeLanguage(newLang)
-    Toast.success(newLang === 'zh' ? '已切换至 简体中文' : 'Switched to English')
   }
 
   const createOrgMutation = useMutation({
@@ -349,7 +347,6 @@ export const DashboardHeader: React.FC = () => {
             ;(e.currentTarget as HTMLElement).style.boxShadow = 'none'
           }}
           >
-            <span style={{ color: 'var(--semi-color-text-1)', fontWeight: 400 }}>{t('header.workspaceLabel')}</span>
             <span style={{ fontWeight: 600, color: 'var(--semi-color-text-0)' }}>{activeWorkspace?.name ?? t('header.defaultWorkspace')}</span>
             <IconChevronDown style={{ fontSize: '10px', color: 'var(--semi-color-text-1)' }} />
           </div>

@@ -26,6 +26,7 @@ import { useAuthStore } from '@/store/auth'
 import { getSession } from '@/services/auth'
 import { getMarket } from '@/lib/market'
 import { applyTheme, getSavedTheme } from '@/lib/theme'
+import { DevRequirements } from '@/components/dev-requirements'
 
 // 注入市场标识，驱动 CSS 品牌色切换
 document.documentElement.dataset.market = getMarket()
@@ -81,6 +82,7 @@ export default function App() {
     <Providers>
       <BrowserRouter>
         <SessionLoader />
+        {import.meta.env.DEV && <DevRequirements />}
         <Routes>
           {/* 认证路由（公开） */}
           <Route path="/login" element={<LoginPage />} />

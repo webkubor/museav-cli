@@ -78,18 +78,24 @@ export function DashboardLayout() {
     isDevTools,
   }
 
+  const ic = (node: React.ReactNode, size = 16) => (
+    <span style={{ display: 'inline-flex', width: size, height: size, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      {node}
+    </span>
+  )
+
   const icons = {
-    home:        <LuHouse        size={16} />,
-    apps:        <LuLayoutGrid   size={16} />,
-    histogram:   <LuTrendingUp   size={16} />,
-    histogramSm: <LuTrendingUp   size={14} />,
-    list:        <LuList         size={14} />,
-    creditCard:  <LuCreditCard   size={16} />,
-    wrench:      <LuWrench       size={16} color="#d97706" />,
-    key:         <LuKey          size={16} />,
-    shield:      <LuShield       size={16} />,
-    eye:         <LuEye          size={16} />,
-    mail:        <LuMail         size={16} />,
+    home:        ic(<LuHouse        size={16} />),
+    apps:        ic(<LuLayoutGrid   size={16} />),
+    histogram:   ic(<LuTrendingUp   size={16} />),
+    histogramSm: ic(<LuTrendingUp   size={14} />, 14),
+    list:        ic(<LuList         size={14} />, 14),
+    creditCard:  ic(<LuCreditCard   size={16} />),
+    wrench:      ic(<LuWrench       size={16} color="#d97706" />),
+    key:         ic(<LuKey          size={16} />),
+    shield:      ic(<LuShield       size={16} />),
+    eye:         ic(<LuEye          size={16} />),
+    mail:        ic(<LuMail         size={16} />),
   }
 
   const tenantNavItems    = navConfig.tenantItems(navCtx, t, icons)

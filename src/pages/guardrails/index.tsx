@@ -8,7 +8,6 @@ import {
   listGuardrails,
   createGuardrail,
   updateGuardrail,
-  replaceAssignments,
   addBudgetPolicy,
   deleteBudgetPolicy,
 } from '@/services/guardrails'
@@ -17,7 +16,6 @@ import { listApiKeys } from '@/services/api-keys'
 import { pageItems } from '@/lib/utils'
 import { formatDateTime } from '@/lib/format-date'
 import type {
-  AssignmentInput,
   GuardrailBudgetPolicy,
   GuardrailDetail,
 } from '@/interfaces/guardrails'
@@ -51,7 +49,6 @@ export default function GuardrailsPage() {
   const [detailOpen, setDetailOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [addPolicyFormOpen, setAddPolicyFormOpen] = useState(false)
-  const [assignOpen, setAssignOpen] = useState(false)
   const [searchText, setSearchText] = useState('')
 
   const listQuery = useQuery({
@@ -120,22 +117,6 @@ export default function GuardrailsPage() {
     onError: (err: unknown) => Toast.error(err instanceof Error ? err.message : '删除失败'),
   })
 
-  const assignMutation = useMutation({
-    mutationFn: (assignments: Parameters<typeof replaceAssignments>[1]) => {
-      if (!selectedId) return Promise.reject(new Error('no guardrail'))
-      return replaceAssignments(selectedId, assignments)
-    },
-    onSuccess: () => { Toast.success('绑定已更新'); setAssignOpen(false); qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] }) },
-    onError: (err: unknown) => Toast.error(err instanceof Error ? err.message : '更新失败'),
-  })
-
-  function memberName(accountId: string) {
-    return pageItems(membersQuery.data).find(m => m.account?.account_id === accountId)?.account?.display_name ?? accountId
-  }
-  function apiKeyName(keyId: string) {
-    return pageItems(apiKeysQuery.data).find(k => k.api_key_id === keyId)?.name ?? keyId
-  }
-
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px', gap: '16px', flexWrap: 'wrap' }}>
@@ -181,7 +162,6 @@ export default function GuardrailsPage() {
             canManage={canManage}
             onOpenDetail={() => { setSelectedId(g.id); setDetailOpen(true) }}
             onAddPolicy={() => { setSelectedId(g.id); setDetailOpen(true); setAddPolicyFormOpen(true) }}
-            onManageAssign={() => { setSelectedId(g.id); setAssignOpen(true) }}
             onToggleStatus={() => statusMutation.mutate({ id: g.id, status: g.status === 'active' ? 'inactive' : 'active' })}
           />
         ))}
@@ -225,25 +205,6 @@ export default function GuardrailsPage() {
 
             <div style={cardStyle}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--semi-color-text-0)', margin: 0 }}>绑定对象</p>
-                {canManage && <Button size="small" onClick={() => setAssignOpen(true)}>管理</Button>}
-              </div>
-              {selected.assignments.length === 0 ? (
-                <div style={{ padding: '20px', textAlign: 'center', border: '1px dashed var(--semi-color-border)', borderRadius: '8px', color: 'var(--semi-color-text-2)', fontSize: '13px' }}>暂未绑定任何成员或 API Key</div>
-              ) : (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {selected.assignments.map(a => (
-                    <span key={a.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 12px', borderRadius: '100px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)', fontSize: '12px', color: 'var(--semi-color-text-1)', fontWeight: 500 }}>
-                      <span style={{ fontSize: '10px', color: 'var(--semi-color-text-2)' }}>{a.subject_type === 'member' ? '成员' : 'Key'}</span>
-                      {a.subject_type === 'member' ? memberName(a.account_id) : apiKeyName(a.api_key_id)}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div style={cardStyle}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                 <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--semi-color-text-0)', margin: 0 }}>预算策略</p>
                 {canManage && !addPolicyFormOpen && <Button theme="solid" type="primary" size="small" onClick={() => setAddPolicyFormOpen(true)}>+ 添加策略</Button>}
               </div>
@@ -271,17 +232,15 @@ export default function GuardrailsPage() {
       </SideSheet>
 
       <CreateGuardrailModal open={createOpen} isPending={createMutation.isPending} onConfirm={(name, description) => createMutation.mutate({ name, description })} onCancel={() => setCreateOpen(false)} />
-      {selected && <ManageAssignmentsModal open={assignOpen} isPending={assignMutation.isPending} current={selected.assignments} members={membersQuery.data?.items ?? []} apiKeys={apiKeysQuery.data?.items ?? []} onConfirm={assignments => assignMutation.mutate(assignments)} onCancel={() => setAssignOpen(false)} />}
     </div>
   )
 }
 
-function GuardrailRow({ guardrail: g, canManage, onOpenDetail, onAddPolicy, onManageAssign, onToggleStatus }: {
+function GuardrailRow({ guardrail: g, canManage, onOpenDetail, onAddPolicy, onToggleStatus }: {
   guardrail: GuardrailDetail
   canManage: boolean
   onOpenDetail: () => void
   onAddPolicy: () => void
-  onManageAssign: () => void
   onToggleStatus: () => void
 }) {
   const statusCfg = GUARDRAIL_STATUS_CONFIG[g.status]
@@ -341,7 +300,6 @@ function GuardrailRow({ guardrail: g, canManage, onOpenDetail, onAddPolicy, onMa
           <Dropdown trigger="click" position="bottomRight" render={
             <Dropdown.Menu>
               <Dropdown.Item onClick={onAddPolicy}>添加预算策略</Dropdown.Item>
-              <Dropdown.Item onClick={onManageAssign}>管理成员 / API Key</Dropdown.Item>
               <Dropdown.Divider />
               <Dropdown.Item onClick={onToggleStatus}>{g.status === 'active' ? '停用护栏' : '启用护栏'}</Dropdown.Item>
             </Dropdown.Menu>
@@ -743,266 +701,3 @@ function AddPolicyInlineForm({
   )
 }
 
-function ManageAssignmentsModal({
-  open,
-  isPending,
-  current,
-  members,
-  apiKeys,
-  onConfirm,
-  onCancel,
-}: {
-  open: boolean
-  isPending: boolean
-  current: GuardrailDetail['assignments']
-  members: WorkspaceMember[]
-  apiKeys: ApiKeyItem[]
-  onConfirm: (assignments: AssignmentInput[]) => void
-  onCancel: () => void
-}) {
-  const [selectedMembers, setSelectedMembers] = useState<Set<string>>(
-    () => new Set(current.filter((a) => a.subject_type === 'member').map((a) => a.account_id))
-  )
-  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(
-    () => new Set(current.filter((a) => a.subject_type === 'api_key').map((a) => a.api_key_id))
-  )
-
-  function toggleMember(id: string) {
-    const next = new Set(selectedMembers)
-    if (next.has(id)) next.delete(id)
-    else next.add(id)
-    setSelectedMembers(next)
-  }
-
-  function toggleKey(id: string) {
-    const next = new Set(selectedKeys)
-    if (next.has(id)) next.delete(id)
-    else next.add(id)
-    setSelectedKeys(next)
-  }
-
-  function handleConfirm() {
-    const assignments: AssignmentInput[] = [
-      ...[...selectedMembers].map((id) => ({ subject_type: 'member' as const, account_id: id })),
-      ...[...selectedKeys].map((id) => ({ subject_type: 'api_key' as const, api_key_id: id })),
-    ]
-    onConfirm(assignments)
-  }
-
-  const sectionLabelStyle: React.CSSProperties = {
-    fontSize: '11px',
-    fontWeight: 700,
-    color: 'var(--semi-color-text-2)',
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-    marginBottom: '10px',
-  }
-
-  return (
-    <Modal
-      title="管理绑定对象"
-      visible={open}
-      onCancel={onCancel}
-      footer={
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-          <Button onClick={onCancel}>取消</Button>
-          <Button theme="solid" type="primary" loading={isPending} onClick={handleConfirm}>
-            保存绑定
-          </Button>
-        </div>
-      }
-      width={520}
-    >
-      <div
-        style={{
-          maxHeight: '60vh',
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '24px',
-          padding: '8px 0',
-        }}
-      >
-        {/* Members section */}
-        <div>
-          <p style={sectionLabelStyle}>成员</p>
-          {members.length === 0 ? (
-            <p style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', fontStyle: 'italic' }}>暂无成员</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {members.map((m) => {
-                const id = m.account.account_id
-                const checked = selectedMembers.has(id)
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => toggleMember(id)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      border: checked ? '1px solid var(--cn-mid)' : '1px solid var(--semi-color-fill-0)',
-                      backgroundColor: checked ? 'var(--cn-selected-bg)' : 'var(--semi-color-bg-1)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      width: '100%',
-                    }}
-                  >
-                    <CheckBox checked={checked} />
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <p
-                        style={{
-                          fontSize: '13px',
-                          fontWeight: 600,
-                          color: 'var(--semi-color-text-0)',
-                          margin: 0,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {m.account.display_name}
-                      </p>
-                      <p
-                        style={{
-                          fontSize: '11px',
-                          color: 'var(--semi-color-text-2)',
-                          margin: 0,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {m.account.email}
-                      </p>
-                    </div>
-                    <span
-                      style={{
-                        flexShrink: 0,
-                        fontSize: '11px',
-                        padding: '2px 8px',
-                        borderRadius: '100px',
-                        backgroundColor: 'var(--semi-color-fill-0)',
-                        color: 'var(--semi-color-text-1)',
-                      }}
-                    >
-                      {m.role}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* API Keys section */}
-        <div>
-          <p style={sectionLabelStyle}>API Key</p>
-          {apiKeys.length === 0 ? (
-            <p style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', fontStyle: 'italic' }}>
-              暂无 API Key
-            </p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {apiKeys.map((k) => {
-                const checked = selectedKeys.has(k.api_key_id)
-                return (
-                  <button
-                    key={k.api_key_id}
-                    type="button"
-                    onClick={() => toggleKey(k.api_key_id)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      border: checked ? '1px solid var(--cn-mid)' : '1px solid var(--semi-color-fill-0)',
-                      backgroundColor: checked ? 'var(--cn-selected-bg)' : 'var(--semi-color-bg-1)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      width: '100%',
-                    }}
-                  >
-                    <CheckBox checked={checked} />
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <p
-                        style={{
-                          fontSize: '13px',
-                          fontWeight: 600,
-                          color: 'var(--semi-color-text-0)',
-                          margin: 0,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {k.name}
-                      </p>
-                      <p
-                        style={{
-                          fontSize: '11px',
-                          fontFamily: 'monospace',
-                          color: 'var(--semi-color-text-2)',
-                          margin: 0,
-                        }}
-                      >
-                        {k.masked}
-                      </p>
-                    </div>
-                    <span
-                      style={{
-                        flexShrink: 0,
-                        fontSize: '11px',
-                        padding: '2px 8px',
-                        borderRadius: '100px',
-                        backgroundColor: k.env === 'live' ? 'var(--semi-color-success-light-default)' : 'var(--semi-color-bg-1)',
-                        color: k.env === 'live' ? 'var(--semi-color-success)' : 'var(--semi-color-text-2)',
-                      }}
-                    >
-                      {k.env}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    </Modal>
-  )
-}
-
-function CheckBox({ checked }: { checked: boolean }) {
-  return (
-    <div
-      style={{
-        flexShrink: 0,
-        width: '16px',
-        height: '16px',
-        borderRadius: '4px',
-        border: checked ? '2px solid var(--brand-base)' : '2px solid var(--semi-color-text-3)',
-        backgroundColor: checked ? 'var(--brand-base)' : 'transparent',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      {checked && (
-        <svg viewBox="0 0 10 8" style={{ width: '10px', height: '8px' }}>
-          <path
-            d="M1 4l3 3 5-6"
-            stroke="white"
-            strokeWidth="1.5"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      )}
-    </div>
-  )
-}

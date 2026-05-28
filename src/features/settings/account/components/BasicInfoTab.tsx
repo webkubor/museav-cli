@@ -35,17 +35,25 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
       {/* 头像区域：质感呼吸边缘 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
         {profile.avatar_url ? (
-          <Avatar 
-            src={profile.avatar_url} 
-            size="large" 
-            style={{ boxShadow: '0 0 0 3px var(--brand-glow), 0 4px 10px rgba(0,0,0,0.06)' }}
-          />
+          <div style={{
+            width: '64px', height: '64px', borderRadius: '50%',
+            overflow: 'hidden', flexShrink: 0,
+            boxShadow: '0 0 0 3px var(--brand-glow), 0 4px 10px rgba(0,0,0,0.06)',
+            backgroundColor: 'var(--semi-color-fill-0)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <img
+              src={profile.avatar_url}
+              alt={profile.display_name || 'avatar'}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          </div>
         ) : (
-          <Avatar 
-            size="large" 
-            style={{ 
-              backgroundColor: 'var(--semi-color-primary)', 
-              boxShadow: '0 0 0 3px var(--brand-glow), 0 4px 10px rgba(0,0,0,0.06)' 
+          <Avatar
+            size="large"
+            style={{
+              backgroundColor: 'var(--semi-color-primary)',
+              boxShadow: '0 0 0 3px var(--brand-glow), 0 4px 10px rgba(0,0,0,0.06)'
             }}
           >
             {avatarLetter}

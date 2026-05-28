@@ -106,12 +106,15 @@ export default function InvitationsMgmtPage() {
     enabled: Boolean(activeWorkspaceId),
     staleTime: 60_000,
     refetchOnWindowFocus: false,
+    retry: 0,
   })
+
+  const hasInviteLink = Boolean(inviteLinkQuery.data)
 
   const resetLinkMutation = useMutation({
     mutationFn: (role: 'ws_member' | 'ws_admin') => resetInviteLink(activeWorkspaceId!, role),
     onSuccess: () => {
-      Toast.success('邀请链接已重置')
+      Toast.success(hasInviteLink ? '邀请链接已重置' : '邀请链接已生成')
       qc.invalidateQueries({ queryKey: ['workspace-invite-link', activeWorkspaceId] })
     },
     onError: (err: any) => Toast.error(err?.message || '重置失败'),
@@ -383,8 +386,13 @@ export default function InvitationsMgmtPage() {
               <Select.Option value="ws_member">成员</Select.Option>
               <Select.Option value="ws_admin">管理员</Select.Option>
             </Select>
-            <Button size="small" loading={resetLinkMutation.isPending} onClick={() => resetLinkMutation.mutate(resetRole)}>
-              重置链接
+            <Button
+              size="small"
+              theme={hasInviteLink ? 'light' : 'solid'}
+              loading={resetLinkMutation.isPending}
+              onClick={() => resetLinkMutation.mutate(resetRole)}
+            >
+              {hasInviteLink ? '重置链接' : '生成邀请链接'}
             </Button>
           </div>
         </div>

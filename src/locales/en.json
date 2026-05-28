@@ -79,7 +79,10 @@
     "wsSlugLabel": "Unique Identifier (Slug)",
     "wsSlugPlaceholder": "e.g. prod-app",
     "wsDescLabel": "Description (Optional)",
-    "wsDescPlaceholder": "Describe the purpose..."
+    "wsDescPlaceholder": "Describe the purpose...",
+    "roleOwner": "Owner",
+    "roleAdmin": "Admin",
+    "roleMember": "Member"
   },
   "apiKeys": {
     "title": "API Keys",

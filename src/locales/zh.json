@@ -79,7 +79,10 @@
     "wsSlugLabel": "唯一标识 (Slug)",
     "wsSlugPlaceholder": "如：prod-app",
     "wsDescLabel": "工作区描述 (选填)",
-    "wsDescPlaceholder": "简述该工作区的用途..."
+    "wsDescPlaceholder": "简述该工作区的用途...",
+    "roleOwner": "所有者",
+    "roleAdmin": "管理员",
+    "roleMember": "成员"
   },
   "apiKeys": {
     "title": "API Keys",

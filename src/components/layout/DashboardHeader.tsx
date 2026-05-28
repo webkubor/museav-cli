@@ -130,29 +130,6 @@ export const DashboardHeader: React.FC = () => {
     }
   }
 
-  async function handleManageTenant(tenant: TenantBrief) {
-    if (tenant.tenant_id !== activeTenantId) {
-      try {
-        await switchTenant({ tenant_id: tenant.tenant_id })
-        setAuth(account!, tenant.tenant_id, tenants, undefined)
-        queryClient.invalidateQueries({ queryKey: ['tenants'] })
-        queryClient.invalidateQueries({ queryKey: ['workspaces'] })
-        try {
-          const wsData = await listWorkspaces()
-          const wsItems = wsData.items ?? []
-          const defaultWs = wsItems.find((w) => w.is_default) ?? wsItems[0]
-          setActiveWorkspaceId(defaultWs?.workspace_id ?? '')
-        } catch {
-          setActiveWorkspaceId('')
-        }
-      } catch {
-        Toast.error(t('switchTenantFailed') || '切换组织失败')
-        return
-      }
-    }
-    navigate('/settings/organization')
-  }
-
   function handleSwitchWorkspace(workspaceId: string) {
     if (workspaceId === activeWorkspaceId) return
     setActiveWorkspaceId(workspaceId)
@@ -463,6 +440,12 @@ export const DashboardHeader: React.FC = () => {
                 const displayName = tenant.name || tenant.slug || tenant.tenant_id
                 const letter = displayName.charAt(0).toUpperCase()
                 const isActive = tenant.tenant_id === activeTenantId
+                const tenantRole = tenantsData?.items?.find((i) => i.tenant_id === tenant.tenant_id)?.role
+                const roleLabel: Record<string, string> = {
+                  tenant_owner: t('header.roleOwner'),
+                  tenant_admin: t('header.roleAdmin'),
+                  tenant_member: t('header.roleMember'),
+                }
                 return (
                   <Dropdown.Item
                     key={tenant.tenant_id}
@@ -488,20 +471,33 @@ export const DashboardHeader: React.FC = () => {
                           ? <img src={tenant.logo_url} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           : letter}
                       </div>
-                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>{displayName}</span>
-                      {tenant.type === 'enterprise' && (
-                        <Button
-                          size="small"
-                          theme="borderless"
-                          type="tertiary"
-                          icon={<LuSettings style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }} />}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleManageTenant(tenant)
-                          }}
-                          style={{ padding: '2px 4px', height: '20px', flexShrink: 0 }}
-                          title={t('header.manageOrg')}
-                        />
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100px' }}>{displayName}</span>
+                      {tenant.type === 'enterprise' && tenantRole && (
+                        <span style={{
+                          fontSize: '10px',
+                          fontWeight: 500,
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          flexShrink: 0,
+                          backgroundColor: tenantRole === 'tenant_owner'
+                            ? 'rgba(var(--semi-color-warning-light-default-rgb), 0.15)'
+                            : tenantRole === 'tenant_admin'
+                            ? 'rgba(var(--semi-color-primary-light-default-rgb), 0.12)'
+                            : 'var(--semi-color-fill-0)',
+                          color: tenantRole === 'tenant_owner'
+                            ? 'var(--semi-color-warning)'
+                            : tenantRole === 'tenant_admin'
+                            ? 'var(--semi-color-primary)'
+                            : 'var(--semi-color-text-2)',
+                          border: '1px solid',
+                          borderColor: tenantRole === 'tenant_owner'
+                            ? 'rgba(var(--semi-color-warning-light-default-rgb), 0.3)'
+                            : tenantRole === 'tenant_admin'
+                            ? 'rgba(var(--semi-color-primary-light-default-rgb), 0.25)'
+                            : 'var(--semi-color-border)',
+                        }}>
+                          {roleLabel[tenantRole] ?? tenantRole}
+                        </span>
                       )}
                     </div>
                   </Dropdown.Item>

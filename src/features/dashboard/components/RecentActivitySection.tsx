@@ -3,11 +3,18 @@ import { Typography, Table, Badge, Empty, Skeleton } from '@douyinfe/semi-ui'
 import { useQuery } from '@tanstack/react-query'
 import { listCallLogs } from '@/services/logs'
 import { useAuthStore } from '@/store/auth'
-import { format } from 'date-fns'
 import { useNavigate, useParams } from 'react-router-dom'
 import { LuArrowUpRight } from 'react-icons/lu'
+import { Card } from '@/components/ui/Card'
 
 const { Text, Title } = Typography
+
+/** 格式化日期：MM-dd HH:mm:ss */
+function formatSimple(iso: string) {
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
 
 export const RecentActivitySection: React.FC = () => {
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
@@ -42,7 +49,7 @@ export const RecentActivitySection: React.FC = () => {
       title: '状态',
       dataIndex: 'status',
       render: (status: string) => {
-        let type: any = 'success'
+        let type: 'success' | 'danger' | 'warning' | 'default' = 'success'
         if (status === 'failed') type = 'danger'
         if (status === 'rejected') type = 'warning'
         return (
@@ -69,27 +76,20 @@ export const RecentActivitySection: React.FC = () => {
       dataIndex: 'started_at',
       render: (date: string) => (
         <Text style={{ fontSize: '12px', color: 'var(--semi-color-text-2)' }}>
-          {format(new Date(date), 'MM-dd HH:mm:ss')}
+          {formatSimple(date)}
         </Text>
       ),
     },
   ]
 
   return (
-    <div style={{
-      background: 'var(--semi-color-bg-1)',
-      borderRadius: '16px',
-      border: '1px solid var(--semi-color-border)',
-      padding: '24px',
-      boxShadow: 'var(--semi-shadow-elevated)',
-      height: '100%'
-    }}>
+    <Card className="p-6 h-full border-none shadow-md bg-semi-color-bg-1">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <Title heading={5} style={{ fontWeight: 700 }}>最近调用日志</Title>
         <Text 
           link 
           onClick={() => navigate('/logs')}
-          style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}
+          style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
         >
           查看全部 <LuArrowUpRight size={14} />
         </Text>
@@ -109,6 +109,6 @@ export const RecentActivitySection: React.FC = () => {
       ) : (
         <Empty description="暂无调用记录" />
       )}
-    </div>
+    </Card>
   )
 }

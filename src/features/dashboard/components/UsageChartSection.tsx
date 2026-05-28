@@ -3,21 +3,42 @@ import { Typography, Skeleton, Empty } from '@douyinfe/semi-ui'
 import { useQuery } from '@tanstack/react-query'
 import { getUsageSeries } from '@/services/usage'
 import { useAuthStore } from '@/store/auth'
-import { subDays, format } from 'date-fns'
+import { Card } from '@/components/ui/Card'
 
 const { Title, Text } = Typography
+
+/** 格式化日期：yyyy-MM-dd */
+function formatISODate(date: Date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+/** 格式化图表日期：MM-dd */
+function formatChartLabel(iso: string) {
+  const d = new Date(iso)
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const date = String(d.getDate()).padStart(2, '0')
+  return `${m}-${date}`
+}
 
 export const UsageChartSection: React.FC = () => {
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
 
   const { data, isLoading } = useQuery({
     queryKey: ['usage', 'series', 'requests', activeTenantId],
-    queryFn: () => getUsageSeries({
-      metric: 'requests',
-      granularity: 'day',
-      from: format(subDays(new Date(), 14), 'yyyy-MM-dd'),
-      to: format(new Date(), 'yyyy-MM-dd')
-    }),
+    queryFn: () => {
+      const to = new Date()
+      const from = new Date()
+      from.setDate(from.getDate() - 14)
+      return getUsageSeries({
+        metric: 'requests',
+        granularity: 'day',
+        from: formatISODate(from),
+        to: formatISODate(to)
+      })
+    },
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })
@@ -48,16 +69,7 @@ export const UsageChartSection: React.FC = () => {
   }, [chartPath])
 
   return (
-    <div style={{
-      background: 'var(--semi-color-bg-1)',
-      borderRadius: '16px',
-      border: '1px solid var(--semi-color-border)',
-      padding: '24px',
-      boxShadow: 'var(--semi-shadow-elevated)',
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column'
-    }}>
+    <Card className="p-6 border-none shadow-md bg-semi-color-bg-1 flex flex-col">
       <div style={{ marginBottom: '20px' }}>
         <Title heading={5} style={{ fontWeight: 700 }}>用量趋势 (最近 14 天)</Title>
         <Text style={{ fontSize: '12px', color: 'var(--semi-color-text-2)' }}>请求数 (Requests)</Text>
@@ -99,12 +111,12 @@ export const UsageChartSection: React.FC = () => {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
         <Text style={{ fontSize: '11px', color: 'var(--semi-color-text-3)' }}>
-          {data?.series?.[0] ? format(new Date(data.series[0].bucket_start), 'MM-dd') : ''}
+          {data?.series?.[0] ? formatChartLabel(data.series[0].bucket_start) : ''}
         </Text>
         <Text style={{ fontSize: '11px', color: 'var(--semi-color-text-3)' }}>
-          {data?.series?.[data.series.length - 1] ? format(new Date(data.series[data.series.length - 1].bucket_start), 'MM-dd') : ''}
+          {data?.series?.[data.series.length - 1] ? formatChartLabel(data.series[data.series.length - 1].bucket_start) : ''}
         </Text>
       </div>
-    </div>
+    </Card>
   )
 }

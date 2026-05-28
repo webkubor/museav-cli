@@ -7,7 +7,6 @@
 
 import React from 'react'
 import { Typography, Row, Col } from '@douyinfe/semi-ui'
-import { LuChevronRight } from 'react-icons/lu'
 
 const { Text } = Typography
 
@@ -72,26 +71,27 @@ export const GuideSection: React.FC = () => {
     >
       <Row gutter={[16, 16]}>
         {GUIDES.map((item, idx) => (
-          <Col span={24} key={idx}>
+          <Col xs={24} sm={12} lg={6} key={idx}>
             <div
               style={{
                 display: 'flex',
-                alignItems: 'center',
-                padding: '16px',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                padding: '20px',
                 borderRadius: '12px',
                 backgroundColor: 'var(--semi-color-bg-1)',
                 border: '1px solid var(--semi-color-border)',
                 cursor: 'pointer',
-                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                gap: '16px'
+                height: '140px',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
               }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--semi-color-bg-2)';
                 (e.currentTarget as HTMLElement).style.borderColor = 'var(--semi-color-primary)';
-                (e.currentTarget as HTMLElement).style.transform = 'translateX(4px)';
+                (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
                 (e.currentTarget as HTMLElement).style.boxShadow = 'var(--semi-shadow-elevated)';
                 const arrow = e.currentTarget.querySelector('.arrow-icon') as HTMLElement;
-                if (arrow) arrow.style.transform = 'translateX(2px)';
+                if (arrow) arrow.style.transform = 'translateX(4px)';
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--semi-color-bg-1)';
@@ -102,24 +102,27 @@ export const GuideSection: React.FC = () => {
                 if (arrow) arrow.style.transform = 'none';
               }}
             >
-              <div
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '10px',
-                  backgroundColor: item.badgeBg,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '20px',
-                  flexShrink: 0,
-                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)'
-                }}
-              >
-                {item.badge}
+              {/* 卡片顶部：胶囊图标 */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '8px',
+                    backgroundColor: item.badgeBg,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '18px',
+                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)'
+                  }}
+                >
+                  {item.badge}
+                </div>
               </div>
 
-              <div style={{ flex: 1 }}>
+              {/* 卡片底部：文本说明 */}
+              <div>
                 <div
                   style={{
                     fontSize: '14px',
@@ -136,23 +139,13 @@ export const GuideSection: React.FC = () => {
                     display: 'block',
                     fontSize: '12px',
                     color: 'var(--semi-color-text-2)',
-                    marginTop: '4px',
+                    marginTop: '6px',
                     lineHeight: 1.4
                   }}
                 >
                   {item.desc}
                 </Text>
               </div>
-
-              <LuChevronRight
-                className="arrow-icon"
-                style={{
-                  color: 'var(--semi-color-text-3)',
-                  fontSize: '16px',
-                  transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  flexShrink: 0
-                }}
-              />
             </div>
           </Col>
         ))}

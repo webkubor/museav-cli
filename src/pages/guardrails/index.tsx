@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, Input, Modal, Select, Toast, Skeleton } from '@douyinfe/semi-ui'
-
+import { Button, Input, Modal, Select, Toast, Skeleton, SideSheet, Dropdown } from '@douyinfe/semi-ui'
+import { LuSearch, LuUsers, LuKey, LuEllipsis, LuSettings, LuShield } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { useWorkspaceRole } from '@/hooks/use-workspace-role'
 import {
@@ -25,15 +25,12 @@ import type { WorkspaceMember, ApiKeyItem } from '@/types'
 import { GUARDRAIL_STATUS_CONFIG, ENFORCEMENT_CONFIG, PERIOD_LABEL } from '@/constants/status'
 import { useCurrency } from '@/hooks/use-platform-config'
 
-// ── Styles ──────────────────────────────────────────────────────────────────
-
 const cardStyle: React.CSSProperties = {
   backgroundColor: 'var(--semi-color-bg-0)',
   borderRadius: '12px',
   border: '1px solid var(--semi-color-fill-0)',
   padding: '24px',
   boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
-  marginBottom: '20px',
 }
 
 const listCardStyle: React.CSSProperties = {
@@ -44,18 +41,18 @@ const listCardStyle: React.CSSProperties = {
   overflow: 'hidden',
 }
 
-
-
-// ── Main page ────────────────────────────────────────────────────────────────
+const COL = '1fr 130px 160px 90px 90px 52px'
 
 export default function GuardrailsPage() {
   const qc = useQueryClient()
   const activeWorkspaceId = useAuthStore((state) => state.activeWorkspaceId)
   const { canManage } = useWorkspaceRole()
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [policyOpen, setPolicyOpen] = useState(false)
   const [assignOpen, setAssignOpen] = useState(false)
+  const [searchText, setSearchText] = useState('')
 
   const listQuery = useQuery({
     queryKey: ['guardrails', activeWorkspaceId],
@@ -66,7 +63,11 @@ export default function GuardrailsPage() {
   })
 
   const guardrails = listQuery.data?.items ?? []
-  const selected = guardrails.find((g) => g.id === selectedId) ?? guardrails[0] ?? null
+  const filtered = useMemo(
+    () => searchText ? guardrails.filter(g => g.name.toLowerCase().includes(searchText.toLowerCase())) : guardrails,
+    [guardrails, searchText],
+  )
+  const selected = guardrails.find(g => g.id === selectedId) ?? null
 
   const membersQuery = useQuery({
     queryKey: ['workspace-members', activeWorkspaceId],
@@ -75,7 +76,6 @@ export default function GuardrailsPage() {
     staleTime: 60_000,
     refetchOnWindowFocus: false,
   })
-
   const apiKeysQuery = useQuery({
     queryKey: ['api-keys', activeWorkspaceId],
     queryFn: () => listApiKeys(activeWorkspaceId!),
@@ -85,270 +85,137 @@ export default function GuardrailsPage() {
   })
 
   const createMutation = useMutation({
-    mutationFn: (body: { name: string; description: string }) =>
-      createGuardrail(activeWorkspaceId!, body),
+    mutationFn: (body: { name: string; description: string }) => createGuardrail(activeWorkspaceId!, body),
     onSuccess: (data) => {
       Toast.success('护栏已创建')
       setSelectedId(data.id)
+      setDetailOpen(true)
       setCreateOpen(false)
       qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
     },
-    onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : '创建失败'
-      Toast.error(msg)
-    },
+    onError: (err: unknown) => Toast.error(err instanceof Error ? err.message : '创建失败'),
   })
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: GuardrailDetail['status'] }) =>
-      updateGuardrail(id, { status }),
-    onSuccess: () => {
-      Toast.success('状态已更新')
-      qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
-    },
-    onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : '更新失败'
-      Toast.error(msg)
-    },
+    mutationFn: ({ id, status }: { id: string; status: GuardrailDetail['status'] }) => updateGuardrail(id, { status }),
+    onSuccess: () => { Toast.success('状态已更新'); qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] }) },
+    onError: (err: unknown) => Toast.error(err instanceof Error ? err.message : '更新失败'),
   })
 
   const addPolicyMutation = useMutation({
     mutationFn: (body: Parameters<typeof addBudgetPolicy>[1]) => {
-      if (!selected) return Promise.reject(new Error('no guardrail selected'))
-      return addBudgetPolicy(selected.id, body)
+      if (!selectedId) return Promise.reject(new Error('no guardrail'))
+      return addBudgetPolicy(selectedId, body)
     },
-    onSuccess: () => {
-      Toast.success('预算策略已添加')
-      setPolicyOpen(false)
-      qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
-    },
-    onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : '添加失败'
-      Toast.error(msg)
-    },
+    onSuccess: () => { Toast.success('策略已添加'); setPolicyOpen(false); qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] }) },
+    onError: (err: unknown) => Toast.error(err instanceof Error ? err.message : '添加失败'),
   })
 
   const deletePolicyMutation = useMutation({
     mutationFn: (policyId: string) => {
-      if (!selected) return Promise.reject(new Error('no guardrail selected'))
-      return deleteBudgetPolicy(selected.id, policyId)
+      if (!selectedId) return Promise.reject(new Error('no guardrail'))
+      return deleteBudgetPolicy(selectedId, policyId)
     },
-    onSuccess: () => {
-      Toast.success('预算策略已删除')
-      qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
-    },
-    onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : '删除失败'
-      Toast.error(msg)
-    },
+    onSuccess: () => { Toast.success('策略已删除'); qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] }) },
+    onError: (err: unknown) => Toast.error(err instanceof Error ? err.message : '删除失败'),
   })
 
   const assignMutation = useMutation({
     mutationFn: (assignments: Parameters<typeof replaceAssignments>[1]) => {
-      if (!selected) return Promise.reject(new Error('no guardrail selected'))
-      return replaceAssignments(selected.id, assignments)
+      if (!selectedId) return Promise.reject(new Error('no guardrail'))
+      return replaceAssignments(selectedId, assignments)
     },
-    onSuccess: () => {
-      Toast.success('绑定对象已更新')
-      setAssignOpen(false)
-      qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
-    },
-    onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : '更新失败'
-      Toast.error(msg)
-    },
+    onSuccess: () => { Toast.success('绑定已更新'); setAssignOpen(false); qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] }) },
+    onError: (err: unknown) => Toast.error(err instanceof Error ? err.message : '更新失败'),
   })
 
   function memberName(accountId: string) {
-    const m = pageItems(membersQuery.data).find((m) => m.account?.account_id === accountId)
-    return m?.account?.display_name ?? accountId
+    return pageItems(membersQuery.data).find(m => m.account?.account_id === accountId)?.account?.display_name ?? accountId
   }
-
   function apiKeyName(keyId: string) {
-    const k = pageItems(apiKeysQuery.data).find((k) => k.api_key_id === keyId)
-    return k?.name ?? keyId
+    return pageItems(apiKeysQuery.data).find(k => k.api_key_id === keyId)?.name ?? keyId
   }
 
   return (
-    <div style={{ padding: '32px', maxWidth: '1280px', margin: '0 auto' }}>
-      {/* Page header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          marginBottom: '32px',
-          gap: '16px',
-          flexWrap: 'wrap',
-        }}
-      >
+    <div>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px', gap: '16px', flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0 }}>
-            安全护栏
-          </h1>
-          <p style={{ fontSize: '14px', color: 'var(--semi-color-text-1)', margin: '6px 0 0' }}>
-            为成员或 API Key 设置用量限额和限速策略，保障资源安全。
-          </p>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0 }}>安全护栏</h1>
+          <p style={{ fontSize: '14px', color: 'var(--semi-color-text-1)', margin: '6px 0 0' }}>为成员或 API Key 设置用量限额和限速策略，保障资源安全。</p>
         </div>
         {canManage && (
-          <Button theme="solid" type="primary" onClick={() => setCreateOpen(true)}>
-            + 新建护栏
-          </Button>
+          <Button theme="solid" type="primary" onClick={() => setCreateOpen(true)}>+ 新建护栏</Button>
         )}
       </div>
 
-      {/* Two-column layout */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '280px minmax(0, 1fr)',
-          gap: '24px',
-          alignItems: 'start',
-        }}
-      >
-        {/* Left: list */}
-        <div style={listCardStyle}>
-          <div
-            style={{
-              padding: '14px 20px',
-              borderBottom: '1px solid var(--semi-color-fill-0)',
-              fontSize: '11px',
-              fontWeight: 700,
-              color: 'var(--semi-color-text-2)',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-            }}
-          >
-            已配置护栏
-          </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', marginBottom: '20px', borderRadius: '10px', border: '1px solid var(--semi-color-fill-1)', backgroundColor: 'var(--semi-color-fill-0)', fontSize: '13px', color: 'var(--semi-color-text-1)' }}>
+        <LuShield size={14} style={{ flexShrink: 0, color: 'var(--semi-color-text-2)' }} />
+        <span>组织级策略将自动继承到此工作区，并叠加应用于所有成员和 API Key。</span>
+      </div>
 
-          {listQuery.isLoading ? (
-            <div style={{ padding: '20px' }}>
-              <Skeleton.Title style={{ width: '100%', marginBottom: '12px' }} />
-              <Skeleton.Title style={{ width: '100%' }} />
-            </div>
-          ) : guardrails.length === 0 ? (
-            <div
-              style={{
-                padding: '40px 20px',
-                textAlign: 'center',
-                color: 'var(--semi-color-text-2)',
-                fontSize: '13px',
-                fontStyle: 'italic',
-              }}
-            >
-              暂无护栏
-            </div>
-          ) : (
-            <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-              {guardrails.map((g) => {
-                const isActive = selected?.id === g.id
-                return (
-                  <li
-                    key={g.id}
-                    onClick={() => setSelectedId(g.id)}
-                    style={{
-                      padding: '14px 20px',
-                      cursor: 'pointer',
-                      borderBottom: '1px solid var(--semi-color-bg-1)',
-                      backgroundColor: isActive ? 'var(--cn-selected-bg)' : 'transparent',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '8px',
-                      transition: 'background-color 0.15s',
-                    }}
-                  >
-                    <div style={{ minWidth: 0 }}>
-                      <p
-                        style={{
-                          fontSize: '13.5px',
-                          fontWeight: 600,
-                          color: isActive ? 'var(--brand-base)' : 'var(--semi-color-text-0)',
-                          margin: 0,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {g.name}
-                      </p>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          marginTop: '4px',
-                          padding: '1px 8px',
-                          borderRadius: '100px',
-                          fontSize: '11px',
-                          fontWeight: 500,
-                          backgroundColor: GUARDRAIL_STATUS_CONFIG[g.status].bg,
-                          color: GUARDRAIL_STATUS_CONFIG[g.status].color,
-                        }}
-                      >
-                        {GUARDRAIL_STATUS_CONFIG[g.status].label}
-                      </span>
-                    </div>
-                    <span style={{ color: isActive ? 'var(--brand-base)' : 'var(--semi-color-text-3)', fontSize: '16px' }}>
-                      ›
-                    </span>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
+      <div style={listCardStyle}>
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--semi-color-fill-0)' }}>
+          <Input
+            prefix={<LuSearch size={14} style={{ color: 'var(--semi-color-text-2)' }} />}
+            placeholder="按名称搜索..."
+            value={searchText}
+            onChange={v => setSearchText(v)}
+            style={{ width: '280px' }}
+          />
         </div>
 
-        {/* Right: detail */}
-        {selected ? (
-          <div>
-            {/* Basic info card */}
+        <div style={{ display: 'grid', gridTemplateColumns: COL, padding: '10px 20px', borderBottom: '1px solid var(--semi-color-fill-0)', fontSize: '11px', fontWeight: 700, color: 'var(--semi-color-text-2)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          <span>名称</span><span>状态</span><span>策略</span><span>成员</span><span>API Keys</span><span />
+        </div>
+
+        {listQuery.isLoading ? (
+          <div style={{ padding: '20px' }}><Skeleton.Title style={{ width: '100%', marginBottom: '12px' }} /><Skeleton.Title style={{ width: '80%' }} /></div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: '13px' }}>
+            {searchText ? '未找到匹配的护栏' : '暂无护栏，点击右上角新建'}
+          </div>
+        ) : filtered.map(g => (
+          <GuardrailRow
+            key={g.id}
+            guardrail={g}
+            canManage={canManage}
+            onOpenDetail={() => { setSelectedId(g.id); setDetailOpen(true) }}
+            onAddPolicy={() => { setSelectedId(g.id); setPolicyOpen(true) }}
+            onManageAssign={() => { setSelectedId(g.id); setAssignOpen(true) }}
+            onToggleStatus={() => statusMutation.mutate({ id: g.id, status: g.status === 'active' ? 'inactive' : 'active' })}
+          />
+        ))}
+
+        {!listQuery.isLoading && guardrails.length > 0 && (
+          <div style={{ padding: '12px 20px', fontSize: '12px', color: 'var(--semi-color-text-2)', borderTop: '1px solid var(--semi-color-fill-0)' }}>
+            共 {guardrails.length} 个护栏
+          </div>
+        )}
+      </div>
+
+      <SideSheet title={selected?.name ?? ''} visible={detailOpen} onCancel={() => setDetailOpen(false)} width={560}>
+        {selected && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '40px' }}>
             <div style={cardStyle}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'space-between',
-                  gap: '16px',
-                  marginBottom: '24px',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div>
-                  <h2
-                    style={{ fontSize: '18px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0 }}
-                  >
-                    {selected.name}
-                  </h2>
-                  {selected.description && (
-                    <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: '6px 0 0' }}>
-                      {selected.description}
-                    </p>
-                  )}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: selected.description ? '4px' : 0 }}>
+                    <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0 }}>{selected.name}</h2>
+                    {selected.is_default && (
+                      <span style={{ fontSize: '11px', padding: '1px 8px', borderRadius: '100px', backgroundColor: 'var(--cn-selected-bg)', color: 'var(--cn-base)', border: '1px solid var(--cn-mid)', fontWeight: 600, flexShrink: 0 }}>默认</span>
+                    )}
+                  </div>
+                  {selected.description && <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0 }}>{selected.description}</p>}
                 </div>
-                <Select
-                  value={selected.status}
-                  onChange={(v) =>
-                    statusMutation.mutate({
-                      id: selected.id,
-                      status: v as GuardrailDetail['status'],
-                    })
-                  }
-                  style={{ width: '120px' }}
-                >
-                  <Select.Option value="active">启用</Select.Option>
-                  <Select.Option value="inactive">停用</Select.Option>
-                  <Select.Option value="archived">归档</Select.Option>
-                </Select>
+                {canManage && (
+                  <Select value={selected.status} onChange={v => statusMutation.mutate({ id: selected.id, status: v as GuardrailDetail['status'] })} style={{ width: '120px', flexShrink: 0 }}>
+                    <Select.Option value="active">启用</Select.Option>
+                    <Select.Option value="inactive">停用</Select.Option>
+                    <Select.Option value="archived">归档</Select.Option>
+                  </Select>
+                )}
               </div>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(4, 1fr)',
-                  gap: '24px',
-                  paddingTop: '20px',
-                  borderTop: '1px solid var(--semi-color-fill-0)',
-                }}
-              >
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', paddingTop: '16px', borderTop: '1px solid var(--semi-color-fill-0)' }}>
                 <MetaItem label="优先级" value={selected.priority ?? '默认'} />
                 <MetaItem label="默认策略" value={selected.is_default ? '是' : '否'} />
                 <MetaItem label="创建于" value={formatDateTime(selected.created_at)} />
@@ -356,174 +223,125 @@ export default function GuardrailsPage() {
               </div>
             </div>
 
-            {/* Assignments card */}
             <div style={cardStyle}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '20px',
-                }}
-              >
-                <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)', margin: 0 }}>
-                  绑定对象
-                </p>
-                {canManage && (
-                  <Button size="small" onClick={() => setAssignOpen(true)}>
-                    管理
-                  </Button>
-                )}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--semi-color-text-0)', margin: 0 }}>绑定对象</p>
+                {canManage && <Button size="small" onClick={() => setAssignOpen(true)}>管理</Button>}
               </div>
-
               {selected.assignments.length === 0 ? (
-                <div
-                  style={{
-                    padding: '24px',
-                    textAlign: 'center',
-                    border: '1px dashed var(--semi-color-border)',
-                    borderRadius: '10px',
-                    color: 'var(--semi-color-text-2)',
-                    fontSize: '13px',
-                    fontStyle: 'italic',
-                  }}
-                >
-                  暂未绑定任何成员或 API Key
-                </div>
+                <div style={{ padding: '20px', textAlign: 'center', border: '1px dashed var(--semi-color-border)', borderRadius: '8px', color: 'var(--semi-color-text-2)', fontSize: '13px' }}>暂未绑定任何成员或 API Key</div>
               ) : (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                  {selected.assignments.map((a) => (
-                    <span
-                      key={a.id}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '5px 14px',
-                        borderRadius: '100px',
-                        border: '1px solid var(--semi-color-border)',
-                        backgroundColor: 'var(--semi-color-bg-1)',
-                        fontSize: '12.5px',
-                        color: 'var(--semi-color-text-1)',
-                        fontWeight: 500,
-                      }}
-                    >
-                      <span style={{ fontSize: '11px', color: 'var(--semi-color-text-2)' }}>
-                        {a.subject_type === 'member' ? '成员' : 'Key'}
-                      </span>
-                      {a.subject_type === 'member'
-                        ? memberName(a.account_id)
-                        : apiKeyName(a.api_key_id)}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {selected.assignments.map(a => (
+                    <span key={a.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 12px', borderRadius: '100px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)', fontSize: '12px', color: 'var(--semi-color-text-1)', fontWeight: 500 }}>
+                      <span style={{ fontSize: '10px', color: 'var(--semi-color-text-2)' }}>{a.subject_type === 'member' ? '成员' : 'Key'}</span>
+                      {a.subject_type === 'member' ? memberName(a.account_id) : apiKeyName(a.api_key_id)}
                     </span>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Budget policies card */}
             <div style={cardStyle}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '20px',
-                }}
-              >
-                <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)', margin: 0 }}>
-                  预算策略
-                </p>
-                {canManage && (
-                  <Button theme="solid" type="primary" size="small" onClick={() => setPolicyOpen(true)}>
-                    + 添加策略
-                  </Button>
-                )}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--semi-color-text-0)', margin: 0 }}>预算策略</p>
+                {canManage && <Button theme="solid" type="primary" size="small" onClick={() => setPolicyOpen(true)}>+ 添加策略</Button>}
               </div>
-
               {selected.budget_policies.length === 0 ? (
-                <div
-                  style={{
-                    padding: '40px',
-                    textAlign: 'center',
-                    border: '1px dashed var(--semi-color-border)',
-                    borderRadius: '10px',
-                    color: 'var(--semi-color-text-2)',
-                    fontSize: '13px',
-                    fontStyle: 'italic',
-                  }}
-                >
-                  暂无活跃的预算或限流策略
-                </div>
+                <div style={{ padding: '32px', textAlign: 'center', border: '1px dashed var(--semi-color-border)', borderRadius: '8px', color: 'var(--semi-color-text-2)', fontSize: '13px' }}>暂无预算或限流策略</div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {selected.budget_policies.map((p) => (
-                    <PolicyCard
-                      canManage={canManage}
-                      key={p.id}
-                      policy={p}
-                      onDelete={() => deletePolicyMutation.mutate(p.id)}
-                      isDeleting={deletePolicyMutation.isPending}
-                    />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {selected.budget_policies.map(p => (
+                    <PolicyCard key={p.id} policy={p} canManage={canManage} onDelete={() => deletePolicyMutation.mutate(p.id)} isDeleting={deletePolicyMutation.isPending} />
                   ))}
                 </div>
               )}
             </div>
           </div>
-        ) : (
-          !listQuery.isLoading && (
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '360px',
-                borderRadius: '12px',
-                border: '1px solid var(--semi-color-fill-0)',
-                backgroundColor: 'var(--semi-color-bg-1)',
-                textAlign: 'center',
-                padding: '48px',
-              }}
-            >
-              <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.25 }}>🛡</div>
-              <p style={{ fontSize: '15px', color: 'var(--semi-color-text-2)' }}>
-                请从左侧选择一个护栏以查看或编辑详细策略
-              </p>
-            </div>
-          )
         )}
+      </SideSheet>
+
+      <CreateGuardrailModal open={createOpen} isPending={createMutation.isPending} onConfirm={(name, description) => createMutation.mutate({ name, description })} onCancel={() => setCreateOpen(false)} />
+      {selectedId && <AddBudgetPolicyModal open={policyOpen} isPending={addPolicyMutation.isPending} onConfirm={body => addPolicyMutation.mutate(body)} onCancel={() => setPolicyOpen(false)} />}
+      {selected && <ManageAssignmentsModal open={assignOpen} isPending={assignMutation.isPending} current={selected.assignments} members={membersQuery.data?.items ?? []} apiKeys={apiKeysQuery.data?.items ?? []} onConfirm={assignments => assignMutation.mutate(assignments)} onCancel={() => setAssignOpen(false)} />}
+    </div>
+  )
+}
+
+function GuardrailRow({ guardrail: g, canManage, onOpenDetail, onAddPolicy, onManageAssign, onToggleStatus }: {
+  guardrail: GuardrailDetail
+  canManage: boolean
+  onOpenDetail: () => void
+  onAddPolicy: () => void
+  onManageAssign: () => void
+  onToggleStatus: () => void
+}) {
+  const statusCfg = GUARDRAIL_STATUS_CONFIG[g.status]
+  const memberCount = g.assignments.filter(a => a.subject_type === 'member').length
+  const keyCount = g.assignments.filter(a => a.subject_type === 'api_key').length
+
+  const btnStyle: React.CSSProperties = {
+    width: '32px', height: '32px', borderRadius: '6px',
+    border: '1px solid var(--semi-color-border)', backgroundColor: 'transparent',
+    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: 'var(--semi-color-text-1)', flexShrink: 0,
+  }
+
+  return (
+    <div
+      style={{ display: 'grid', gridTemplateColumns: COL, alignItems: 'center', padding: '14px 20px', borderBottom: '1px solid var(--semi-color-fill-0)', cursor: 'pointer', transition: 'background-color 0.15s' }}
+      onClick={onOpenDetail}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--semi-color-fill-0)' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent' }}
+    >
+      <div style={{ minWidth: 0, paddingRight: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: g.description ? '2px' : 0 }}>
+          <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--semi-color-text-0)' }}>{g.name}</span>
+          {g.is_default && <span style={{ fontSize: '11px', padding: '1px 8px', borderRadius: '100px', backgroundColor: 'var(--cn-selected-bg)', color: 'var(--cn-base)', border: '1px solid var(--cn-mid)', fontWeight: 600, flexShrink: 0 }}>默认</span>}
+        </div>
+        {g.description && <p style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.description}</p>}
       </div>
 
-      {/* Create guardrail modal */}
-      <CreateGuardrailModal
-        open={createOpen}
-        isPending={createMutation.isPending}
-        onConfirm={(name, description) => createMutation.mutate({ name, description })}
-        onCancel={() => setCreateOpen(false)}
-      />
+      <div>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '100px', fontSize: '12px', fontWeight: 500, backgroundColor: 'var(--semi-color-fill-0)', color: statusCfg.color, border: '1px solid var(--semi-color-fill-1)' }}>
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: statusCfg.color, flexShrink: 0 }} />
+          {statusCfg.label}
+        </span>
+      </div>
 
-      {/* Add budget policy modal */}
-      {selected && (
-        <AddBudgetPolicyModal
-          open={policyOpen}
-          isPending={addPolicyMutation.isPending}
-          onConfirm={(body) => addPolicyMutation.mutate(body)}
-          onCancel={() => setPolicyOpen(false)}
-        />
-      )}
+      <div>
+        {g.budget_policies.length === 0
+          ? <span style={{ fontSize: '12px', color: 'var(--semi-color-text-3)' }}>无策略</span>
+          : <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', padding: '3px 10px', borderRadius: '100px', backgroundColor: 'var(--semi-color-fill-0)', border: '1px solid var(--semi-color-border)', color: 'var(--semi-color-text-1)', fontWeight: 500 }}>◎ 预算 × {g.budget_policies.length}</span>
+        }
+      </div>
 
-      {/* Manage assignments modal */}
-      {selected && (
-        <ManageAssignmentsModal
-          open={assignOpen}
-          isPending={assignMutation.isPending}
-          current={selected.assignments}
-          members={membersQuery.data?.items ?? []}
-          apiKeys={apiKeysQuery.data?.items ?? []}
-          onConfirm={(assignments) => assignMutation.mutate(assignments)}
-          onCancel={() => setAssignOpen(false)}
-        />
-      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}>
+        <LuUsers size={13} style={{ flexShrink: 0 }} />
+        <span>{g.is_default ? '全部' : memberCount}</span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}>
+        <LuKey size={13} style={{ flexShrink: 0 }} />
+        <span>{g.is_default ? '全部' : keyCount}</span>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
+        {g.is_default || !canManage ? (
+          <button style={btnStyle} onClick={onOpenDetail} title="查看详情"><LuSettings size={14} /></button>
+        ) : (
+          <Dropdown trigger="click" position="bottomRight" render={
+            <Dropdown.Menu>
+              <Dropdown.Item onClick={onAddPolicy}>添加预算策略</Dropdown.Item>
+              <Dropdown.Item onClick={onManageAssign}>管理成员 / API Key</Dropdown.Item>
+              <Dropdown.Divider />
+              <Dropdown.Item onClick={onToggleStatus}>{g.status === 'active' ? '停用护栏' : '启用护栏'}</Dropdown.Item>
+            </Dropdown.Menu>
+          }>
+            <button style={btnStyle} title="更多操作"><LuEllipsis size={16} /></button>
+          </Dropdown>
+        )}
+      </div>
     </div>
   )
 }

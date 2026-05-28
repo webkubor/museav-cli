@@ -36,13 +36,17 @@ export function DevRequirements() {
   const [priority, setPriority] = useState<Requirement['priority']>('medium')
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [pos, setPos] = useState<{ top: number }>(loadPos)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingTitle, setEditingTitle] = useState('')
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const dragging = useRef(false)
+  const panelDragging = useRef(false)
   const dragStartY = useRef(0)
   const dragStartTop = useRef(0)
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    dragging.current = true
+    panelDragging.current = true
     dragStartY.current = e.clientY
     dragStartTop.current = pos.top
     e.preventDefault()
@@ -50,14 +54,14 @@ export function DevRequirements() {
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
-      if (!dragging.current) return
+      if (!panelDragging.current) return
       const dy = e.clientY - dragStartY.current
       const newTop = Math.max(40, Math.min(window.innerHeight - 40, dragStartTop.current + dy))
       setPos({ top: newTop })
     }
     const onUp = () => {
-      if (!dragging.current) return
-      dragging.current = false
+      if (!panelDragging.current) return
+      panelDragging.current = false
       setPos((p) => {
         try { localStorage.setItem(POS_KEY, JSON.stringify(p)) } catch {}
         return p
@@ -114,6 +118,52 @@ export function DevRequirements() {
     post({ action: 'delete', id }).catch(() => load())
   }
 
+  // ── Inline edit ──────────────────────────────────────────────────────────────
+  const handleEditStart = (id: string, currentTitle: string) => {
+    setEditingId(id)
+    setEditingTitle(currentTitle)
+  }
+
+  const handleEditSave = (id: string) => {
+    const trimmed = editingTitle.trim()
+    if (trimmed) {
+      setItems((prev) => prev.map((i) => (i.id === id ? { ...i, title: trimmed } : i)))
+      post({ action: 'update', id, title: trimmed }).catch(() => load())
+    }
+    setEditingId(null)
+  }
+
+  const handleEditCancel = () => setEditingId(null)
+
+  // ── Drag-to-reorder ──────────────────────────────────────────────────────────
+  const handleItemDragStart = (id: string) => setDraggingId(id)
+  const handleItemDragEnd = () => { setDraggingId(null); setDragOverId(null) }
+
+  const handleItemDragOver = useCallback((e: React.DragEvent, id: string) => {
+    e.preventDefault()
+    if (id !== draggingId) setDragOverId(id)
+  }, [draggingId])
+
+  const handleItemDrop = useCallback((targetId: string) => {
+    if (!draggingId || draggingId === targetId) {
+      setDraggingId(null)
+      setDragOverId(null)
+      return
+    }
+    setItems((prev) => {
+      const fromIdx = prev.findIndex((i) => i.id === draggingId)
+      const toIdx = prev.findIndex((i) => i.id === targetId)
+      if (fromIdx === -1 || toIdx === -1) return prev
+      const next = [...prev]
+      const [moved] = next.splice(fromIdx, 1)
+      next.splice(toIdx, 0, moved)
+      post({ action: 'reorder', ids: next.map((i) => i.id) }).catch(() => load())
+      return next
+    })
+    setDraggingId(null)
+    setDragOverId(null)
+  }, [draggingId, load])
+
   const pending = items.filter((i) => i.status === 'pending')
   const done = items.filter((i) => i.status === 'done')
 
@@ -131,7 +181,7 @@ export function DevRequirements() {
           color: '#fff',
           border: 'none',
           borderRadius: open ? '6px 0 0 6px' : '6px',
-          cursor: 'pointer',
+          cursor: 'grab',
           fontSize: 12,
           fontWeight: 600,
           letterSpacing: 1,
@@ -143,7 +193,7 @@ export function DevRequirements() {
           gap: 4,
           userSelect: 'none',
         }}
-        title="需求变更面板（拖拽调整位置）"
+        title="需求看板（拖拽调整上下位置）"
       >
         <span>需</span>
         <span>求</span>
@@ -187,7 +237,12 @@ export function DevRequirements() {
             justifyContent: 'space-between',
           }}>
             <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--semi-color-text-0)' }}>
-              需求变更 ({items.length})
+              需求看板
+              {pending.length > 0 && (
+                <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--semi-color-text-2)', fontWeight: 400 }}>
+                  {pending.length} 待处理
+                </span>
+              )}
             </span>
             <button
               onClick={() => setOpen(false)}
@@ -204,7 +259,7 @@ export function DevRequirements() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
-              placeholder="记录需求变更..."
+              placeholder="+ 快速记录需求..."
               style={{
                 flex: 1,
                 padding: '5px 8px',
@@ -248,7 +303,7 @@ export function DevRequirements() {
                 cursor: title.trim() ? 'pointer' : 'default',
               }}
             >
-              +
+              添加
             </button>
           </div>
 
@@ -256,23 +311,35 @@ export function DevRequirements() {
           <div style={{ overflowY: 'auto', flex: 1 }}>
             {items.length === 0 && (
               <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: 12 }}>
-                暂无需求，记录第一条吧
+                暂无需求条目，快速记录第一条吧
               </div>
             )}
 
             {pending.length > 0 && (
               <div>
                 <div style={{ padding: '6px 12px 2px', fontSize: 11, color: 'var(--semi-color-text-2)', fontWeight: 600, letterSpacing: 0.5 }}>
-                  待处理 ({pending.length})
+                  待处理 · {pending.length}
                 </div>
                 {pending.map((item) => (
                   <ReqItem
                     key={item.id}
                     item={item}
                     hovered={hoverId === item.id}
+                    isEditing={editingId === item.id}
+                    editingTitle={editingTitle}
+                    isDraggingOver={dragOverId === item.id}
+                    isDragging={draggingId === item.id}
                     onHover={setHoverId}
                     onToggle={handleToggle}
                     onDelete={handleDelete}
+                    onEditStart={handleEditStart}
+                    onEditChange={setEditingTitle}
+                    onEditSave={handleEditSave}
+                    onEditCancel={handleEditCancel}
+                    onDragStart={handleItemDragStart}
+                    onDragEnd={handleItemDragEnd}
+                    onDragOver={handleItemDragOver}
+                    onDrop={handleItemDrop}
                   />
                 ))}
               </div>
@@ -281,16 +348,28 @@ export function DevRequirements() {
             {done.length > 0 && (
               <div>
                 <div style={{ padding: '6px 12px 2px', fontSize: 11, color: 'var(--semi-color-text-2)', fontWeight: 600, letterSpacing: 0.5, marginTop: pending.length > 0 ? 4 : 0 }}>
-                  已完成 ({done.length})
+                  已完成 · {done.length}
                 </div>
                 {done.map((item) => (
                   <ReqItem
                     key={item.id}
                     item={item}
                     hovered={hoverId === item.id}
+                    isEditing={editingId === item.id}
+                    editingTitle={editingTitle}
+                    isDraggingOver={dragOverId === item.id}
+                    isDragging={draggingId === item.id}
                     onHover={setHoverId}
                     onToggle={handleToggle}
                     onDelete={handleDelete}
+                    onEditStart={handleEditStart}
+                    onEditChange={setEditingTitle}
+                    onEditSave={handleEditSave}
+                    onEditCancel={handleEditCancel}
+                    onDragStart={handleItemDragStart}
+                    onDragEnd={handleItemDragEnd}
+                    onDragOver={handleItemDragOver}
+                    onDrop={handleItemDrop}
                   />
                 ))}
               </div>
@@ -305,14 +384,41 @@ export function DevRequirements() {
 interface ReqItemProps {
   item: Requirement
   hovered: boolean
+  isEditing: boolean
+  editingTitle: string
+  isDraggingOver: boolean
+  isDragging: boolean
   onHover: (id: string | null) => void
   onToggle: (id: string) => void
   onDelete: (id: string) => void
+  onEditStart: (id: string, title: string) => void
+  onEditChange: (title: string) => void
+  onEditSave: (id: string) => void
+  onEditCancel: () => void
+  onDragStart: (id: string) => void
+  onDragEnd: () => void
+  onDragOver: (e: React.DragEvent, id: string) => void
+  onDrop: (id: string) => void
 }
 
-function ReqItem({ item, hovered, onHover, onToggle, onDelete }: ReqItemProps) {
+function ReqItem({
+  item, hovered, isEditing, editingTitle, isDraggingOver, isDragging,
+  onHover, onToggle, onDelete, onEditStart, onEditChange, onEditSave, onEditCancel,
+  onDragStart, onDragEnd, onDragOver, onDrop,
+}: ReqItemProps) {
+  const editRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isEditing) setTimeout(() => editRef.current?.focus(), 10)
+  }, [isEditing])
+
   return (
     <div
+      draggable
+      onDragStart={(e) => { e.stopPropagation(); onDragStart(item.id) }}
+      onDragEnd={onDragEnd}
+      onDragOver={(e) => onDragOver(e, item.id)}
+      onDrop={(e) => { e.preventDefault(); onDrop(item.id) }}
       onMouseEnter={() => onHover(item.id)}
       onMouseLeave={() => onHover(null)}
       style={{
@@ -320,10 +426,33 @@ function ReqItem({ item, hovered, onHover, onToggle, onDelete }: ReqItemProps) {
         display: 'flex',
         alignItems: 'flex-start',
         gap: 8,
-        background: hovered ? 'var(--semi-color-bg-2)' : 'transparent',
-        cursor: 'pointer',
+        background: isDraggingOver
+          ? 'var(--semi-color-primary-light-default)'
+          : hovered
+          ? 'var(--semi-color-bg-2)'
+          : 'transparent',
+        opacity: isDragging ? 0.4 : 1,
+        borderTop: isDraggingOver ? '2px solid var(--semi-color-primary)' : '2px solid transparent',
+        transition: 'opacity 0.15s, background 0.1s',
       }}
     >
+      {/* 拖拽把手 */}
+      <span
+        style={{
+          flexShrink: 0,
+          fontSize: 13,
+          color: hovered ? 'var(--semi-color-text-3)' : 'transparent',
+          cursor: 'grab',
+          lineHeight: '16px',
+          marginTop: 1,
+          userSelect: 'none',
+          transition: 'color 0.15s',
+        }}
+        title="拖拽排序"
+      >
+        ⠿
+      </span>
+
       {/* 勾选圆圈 */}
       <button
         onClick={() => onToggle(item.id)}
@@ -348,16 +477,44 @@ function ReqItem({ item, hovered, onHover, onToggle, onDelete }: ReqItemProps) {
 
       {/* 文字区 */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <span style={{
-          fontSize: 12,
-          color: item.status === 'done' ? 'var(--semi-color-text-2)' : 'var(--semi-color-text-0)',
-          textDecoration: item.status === 'done' ? 'line-through' : 'none',
-          wordBreak: 'break-all',
-          display: 'block',
-          lineHeight: 1.5,
-        }}>
-          {item.title}
-        </span>
+        {isEditing ? (
+          <input
+            ref={editRef}
+            value={editingTitle}
+            onChange={(e) => onEditChange(e.target.value)}
+            onBlur={() => onEditSave(item.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') onEditSave(item.id)
+              if (e.key === 'Escape') onEditCancel()
+            }}
+            style={{
+              width: '100%',
+              fontSize: 12,
+              padding: '1px 4px',
+              border: '1px solid var(--semi-color-primary)',
+              borderRadius: 3,
+              background: 'var(--semi-color-bg-0)',
+              color: 'var(--semi-color-text-0)',
+              outline: 'none',
+            }}
+          />
+        ) : (
+          <span
+            onDoubleClick={() => onEditStart(item.id, item.title)}
+            title="双击编辑"
+            style={{
+              fontSize: 12,
+              color: item.status === 'done' ? 'var(--semi-color-text-2)' : 'var(--semi-color-text-0)',
+              textDecoration: item.status === 'done' ? 'line-through' : 'none',
+              wordBreak: 'break-all',
+              display: 'block',
+              lineHeight: 1.5,
+              cursor: 'text',
+            }}
+          >
+            {item.title}
+          </span>
+        )}
       </div>
 
       {/* 优先级 + 删除 */}
@@ -365,7 +522,7 @@ function ReqItem({ item, hovered, onHover, onToggle, onDelete }: ReqItemProps) {
         <span style={{ fontSize: 10, color: PRIORITY_COLOR[item.priority], fontWeight: 600 }}>
           {PRIORITY_LABEL[item.priority]}
         </span>
-        {hovered && (
+        {hovered && !isEditing && (
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(item.id) }}
             title="删除"

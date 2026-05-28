@@ -17,6 +17,8 @@ type Action =
   | { action: 'add'; title: string; priority?: Requirement['priority']; note?: string }
   | { action: 'toggle'; id: string }
   | { action: 'delete'; id: string }
+  | { action: 'update'; id: string; title: string }
+  | { action: 'reorder'; ids: string[] }
 
 function read(): Requirement[] {
   if (!fs.existsSync(DATA_FILE)) return []
@@ -94,6 +96,26 @@ export function devRequirementsPlugin(): Plugin {
 
           if (payload.action === 'delete') {
             write(items.filter((item) => item.id !== payload.id))
+            res.statusCode = 200
+            res.end(JSON.stringify({ ok: true }))
+            return
+          }
+
+          if (payload.action === 'update') {
+            const updated = items.map((item) =>
+              item.id === payload.id ? { ...item, title: payload.title.trim() } : item
+            )
+            write(updated)
+            res.statusCode = 200
+            res.end(JSON.stringify(updated.find((i) => i.id === payload.id) ?? { ok: true }))
+            return
+          }
+
+          if (payload.action === 'reorder') {
+            const map = new Map(items.map((i) => [i.id, i]))
+            const ordered = payload.ids.filter((id) => map.has(id)).map((id) => map.get(id)!)
+            const rest = items.filter((i) => !payload.ids.includes(i.id))
+            write([...ordered, ...rest])
             res.statusCode = 200
             res.end(JSON.stringify({ ok: true }))
             return

@@ -9,7 +9,7 @@ import React from 'react'
 import { Typography, Row, Col } from '@douyinfe/semi-ui'
 import { LuChevronRight } from 'react-icons/lu'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 
 /** 指南条目实体定义 */
 interface GuideItem {
@@ -65,51 +65,33 @@ export const GuideSection: React.FC = () => {
   return (
     <div
       style={{
-        background: 'var(--semi-color-bg-0)',
-        borderRadius: '16px',
-        border: '1px solid var(--semi-color-border)',
-        boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.02)',
-        padding: '28px 24px',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        gap: '16px'
       }}
     >
-      <Title
-        heading={5}
-        style={{
-          margin: '0 0 20px 0',
-          color: 'var(--semi-color-text-0)',
-          fontWeight: 700,
-          fontSize: '15px',
-          letterSpacing: '-0.01em'
-        }}
-      >
-        常用快捷向导
-      </Title>
-
       <Row gutter={[16, 16]}>
         {GUIDES.map((item, idx) => (
-          <Col xs={24} sm={12} md={12} lg={6} key={idx}>
+          <Col span={24} key={idx}>
             <div
               style={{
                 display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                padding: '20px',
+                alignItems: 'center',
+                padding: '16px',
                 borderRadius: '12px',
                 backgroundColor: 'var(--semi-color-bg-1)',
                 border: '1px solid var(--semi-color-border)',
                 cursor: 'pointer',
-                height: '140px',
-                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                gap: '16px'
               }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--semi-color-bg-2)';
                 (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99, 102, 241, 0.25)';
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 16px -4px rgba(15, 23, 42, 0.06)';
+                (e.currentTarget as HTMLElement).style.transform = 'translateX(4px)';
+                (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 12px -4px rgba(15, 23, 42, 0.06)';
                 const arrow = e.currentTarget.querySelector('.arrow-icon') as HTMLElement;
-                if (arrow) arrow.style.transform = 'translateX(4px)';
+                if (arrow) arrow.style.transform = 'translateX(2px)';
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--semi-color-bg-1)';
@@ -120,38 +102,27 @@ export const GuideSection: React.FC = () => {
                 if (arrow) arrow.style.transform = 'none';
               }}
             >
-              {/* 卡片顶部：胶囊图标与箭头 */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div
-                  style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '8px',
-                    backgroundColor: item.badgeBg,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '18px',
-                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)'
-                  }}
-                >
-                  {item.badge}
-                </div>
-                <LuChevronRight
-                  className="arrow-icon"
-                  style={{
-                    color: 'var(--semi-color-text-2)',
-                    fontSize: '16px',
-                    transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                  }}
-                />
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '10px',
+                  backgroundColor: item.badgeBg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '20px',
+                  flexShrink: 0,
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)'
+                }}
+              >
+                {item.badge}
               </div>
 
-              {/* 卡片底部：文本说明 */}
-              <div>
+              <div style={{ flex: 1 }}>
                 <div
                   style={{
-                    fontSize: '13.5px',
+                    fontSize: '14px',
                     fontWeight: 700,
                     color: 'var(--semi-color-text-0)',
                     letterSpacing: '-0.01em',
@@ -163,15 +134,25 @@ export const GuideSection: React.FC = () => {
                 <Text
                   style={{
                     display: 'block',
-                    fontSize: '11.5px',
+                    fontSize: '12px',
                     color: 'var(--semi-color-text-2)',
-                    marginTop: '6px',
+                    marginTop: '4px',
                     lineHeight: 1.4
                   }}
                 >
                   {item.desc}
                 </Text>
               </div>
+
+              <LuChevronRight
+                className="arrow-icon"
+                style={{
+                  color: 'var(--semi-color-text-3)',
+                  fontSize: '16px',
+                  transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  flexShrink: 0
+                }}
+              />
             </div>
           </Col>
         ))}

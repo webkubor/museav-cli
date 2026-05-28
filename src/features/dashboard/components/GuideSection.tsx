@@ -7,7 +7,7 @@
 
 import React from 'react'
 import { Typography, Row, Col } from '@douyinfe/semi-ui'
-import { IconChevronRight } from '@douyinfe/semi-icons'
+import { LuChevronRight } from 'react-icons/lu'
 
 const { Title, Text } = Typography
 
@@ -137,7 +137,7 @@ export const GuideSection: React.FC = () => {
                 >
                   {item.badge}
                 </div>
-                <IconChevronRight
+                <LuChevronRight
                   className="arrow-icon"
                   style={{
                     color: 'var(--semi-color-text-2)',

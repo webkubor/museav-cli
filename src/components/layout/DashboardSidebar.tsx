@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react'
 import { Layout, Nav } from '@douyinfe/semi-ui'
-import { IconSetting, IconChevronLeft, IconChevronRight } from '@douyinfe/semi-icons'
+import { LuSettings, LuChevronLeft, LuChevronRight } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 
 const { Sider } = Layout
@@ -93,8 +93,8 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         }}
       >
         {collapsed
-          ? <IconChevronRight style={{ fontSize: '13px' }} />
-          : <IconChevronLeft style={{ fontSize: '13px' }} />
+          ? <LuChevronRight style={{ fontSize: '13px' }} />
+          : <LuChevronLeft style={{ fontSize: '13px' }} />
         }
       </button>
 
@@ -157,7 +157,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               color: isSettingsSelected ? 'var(--semi-color-primary)' : 'var(--semi-color-text-1)',
             }}
           >
-            <IconSetting style={{ fontSize: '16px', flexShrink: 0 }} />
+            <LuSettings style={{ fontSize: '16px', flexShrink: 0 }} />
             {!collapsed && (
               <span style={{ fontSize: '14px', fontWeight: isSettingsSelected ? 600 : 400 }}>
                 {settingsLabel}

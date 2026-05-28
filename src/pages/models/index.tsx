@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Spin, Input, Typography } from '@douyinfe/semi-ui'
-import { IconSearch } from '@douyinfe/semi-icons'
+import { LuSearch } from 'react-icons/lu'
 import { useQuery } from '@tanstack/react-query'
 import Anthropic from '@lobehub/icons/es/Anthropic'
 import Claude from '@lobehub/icons/es/Claude'
@@ -194,7 +194,7 @@ export default function ModelsPage() {
       {/* 搜索栏 */}
       <Input
         placeholder="搜索模型名称、供应商或 ID"
-        prefix={<IconSearch style={{ color: 'var(--semi-color-text-2)' }} />}
+        prefix={<LuSearch style={{ color: 'var(--semi-color-text-2)' }} />}
         value={search}
         onChange={(v) => setSearch(v)}
         style={{ width: '320px', borderRadius: '9999px', border: '1px solid var(--semi-color-border)', marginBottom: '20px' }}

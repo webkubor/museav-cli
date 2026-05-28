@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@douyinfe/semi-ui'
-import { IconClose, IconSend, IconRefresh } from '@douyinfe/semi-icons'
+import { LuX, LuSendHorizontal, LuRefreshCw } from 'react-icons/lu'
 import { modelGoLogos } from '@/config/brand-assets'
 import { getMarket } from '@/lib/market'
 import { storageKeys } from '@/lib/storage'
@@ -181,7 +181,7 @@ export function CustomerService() {
         }}
       >
         {isOpen
-          ? <IconClose style={{ color: 'var(--semi-color-text-1)', fontSize: 20 }} />
+          ? <LuX style={{ color: 'var(--semi-color-text-1)', fontSize: 20 }} />
           : (
             <div style={{ position: 'relative' }}>
               <img src={logoSrc} alt="CS" style={{ width: 28, height: 28, objectFit: 'contain' }} />
@@ -234,7 +234,7 @@ export function CustomerService() {
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               {status === 'offline' && (
-                <Button size="small" theme="borderless" icon={<IconRefresh />} onClick={reconnect} />
+                <Button size="small" theme="borderless" icon={<LuRefreshCw />} onClick={reconnect} />
               )}
               <span style={{
                 fontSize: 10, color: 'var(--semi-color-text-2)',
@@ -298,7 +298,7 @@ export function CustomerService() {
                   flexShrink: 0, transition: 'all 0.2s',
                 }}
               >
-                <IconSend style={{ fontSize: 14 }} />
+                <LuSendHorizontal style={{ fontSize: 14 }} />
               </button>
             </div>
           </div>

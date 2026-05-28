@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Avatar, Button, Checkbox, Input, Modal, Spin, Table, Tag, Toast, Select } from '@douyinfe/semi-ui'
-import { IconSearch, IconUserAdd } from '@douyinfe/semi-icons'
+import { LuSearch, LuUserPlus } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
 import {
@@ -200,7 +200,7 @@ export default function InvitationsMgmtPage() {
             邀请组织成员加入当前工作区。
           </p>
         </div>
-        <Button theme="solid" icon={<IconUserAdd />} onClick={handleOpenModal}>
+        <Button theme="solid" icon={<LuUserPlus />} onClick={handleOpenModal}>
           邀请成员
         </Button>
       </div>
@@ -234,7 +234,7 @@ export default function InvitationsMgmtPage() {
         }
       >
         <Input
-          prefix={<IconSearch />}
+          prefix={<LuSearch />}
           placeholder="搜索姓名或邮箱"
           value={search}
           onChange={setSearch}

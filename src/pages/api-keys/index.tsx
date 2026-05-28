@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Table, Button, Input, Tag, Modal, Toast, Typography, Select } from '@douyinfe/semi-ui'
-import { IconSearch, IconPlus, IconCopy, IconClose } from '@douyinfe/semi-icons'
+import { LuSearch, LuPlus, LuCopy, LuX } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { listApiKeys, createApiKey, revokeApiKey } from '@/services/api-keys'
@@ -248,7 +248,7 @@ export default function ApiKeysPage() {
             </div>
             <Button 
               theme="borderless" 
-              icon={<IconClose />} 
+              icon={<LuX />}
               onClick={() => setRevealVisible(false)}
               style={{ color: 'var(--semi-color-text-2)' }}
             />
@@ -258,7 +258,7 @@ export default function ApiKeysPage() {
             <div style={{ flex: 1 }}>
               <Paragraph 
                 copyable={{
-                  icon: <IconCopy style={{ color: '#10b981', fontSize: '16px', cursor: 'pointer' }} />
+                  icon: <LuCopy style={{ color: '#10b981', fontSize: '16px', cursor: 'pointer' }} />
                 }}
                 style={{
                   backgroundColor: 'var(--semi-color-text-0)',
@@ -309,7 +309,7 @@ export default function ApiKeysPage() {
         {/* 圆角微阴影输入框 */}
         <Input
           placeholder={t('apiKeys.search')}
-          prefix={<IconSearch style={{ color: 'var(--semi-color-text-2)' }} />}
+          prefix={<LuSearch style={{ color: 'var(--semi-color-text-2)' }} />}
           style={{
             width: '290px',
             borderRadius: '9999px',
@@ -324,7 +324,7 @@ export default function ApiKeysPage() {
         {/* 核心主动作按钮 (跟随品牌色变量) */}
         <Button
           theme="solid"
-          icon={<IconPlus />}
+          icon={<LuPlus />}
           onClick={() => setCreateVisible(true)}
           style={{ 
             background: 'linear-gradient(135deg, var(--brand-base) 0%, var(--brand-deep) 100%)',

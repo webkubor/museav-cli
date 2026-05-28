@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Table, Button, Input, Select, Tag, Modal, Toast } from '@douyinfe/semi-ui'
-import { IconSearch, IconPlus } from '@douyinfe/semi-icons'
+import { LuSearch, LuPlus } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listWorkspaces, createWorkspace } from '@/services/workspaces'
 import type { WorkspaceItem } from '@/types'
@@ -194,7 +194,7 @@ export default function WorkspacesPage() {
         {/* 圆角微阴影输入框 */}
         <Input
           placeholder="按名称或工作区 ID 搜索"
-          prefix={<IconSearch style={{ color: 'var(--semi-color-text-2)' }} />}
+          prefix={<LuSearch style={{ color: 'var(--semi-color-text-2)' }} />}
           style={{
             width: '290px',
             borderRadius: '9999px',
@@ -209,7 +209,7 @@ export default function WorkspacesPage() {
         {/* 黑色药丸主动作按钮 (触发弹出真实表单 modal，带微浮动阴影与过渡动效) */}
         <Button
           theme="solid"
-          icon={<IconPlus />}
+          icon={<LuPlus />}
           onClick={() => setModalVisible(true)}
           style={{ 
             borderRadius: '24px',

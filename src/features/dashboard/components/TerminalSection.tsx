@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Button, Toast } from '@douyinfe/semi-ui'
-import { IconTick, IconCopy } from '@douyinfe/semi-icons'
+import { LuCheck, LuCopy } from 'react-icons/lu'
 import { CodeHighlight } from '@/components/ui/CodeHighlight'
 import { PLAIN_CODES, CLI_CODE } from '../constants/code-snippets'
 
@@ -92,7 +92,7 @@ export const TerminalSection: React.FC = () => {
         <Button
           size="small"
           theme="borderless"
-          icon={copied ? <IconTick style={{ color: '#10b981' }} /> : <IconCopy style={{ color: '#94a3b8' }} />}
+          icon={copied ? <LuCheck style={{ color: '#10b981' }} /> : <LuCopy style={{ color: '#94a3b8' }} />}
           onClick={handleCopy}
           style={{
             color: copied ? '#10b981' : '#94a3b8',

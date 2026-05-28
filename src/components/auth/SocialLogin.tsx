@@ -1,7 +1,7 @@
 import { Button } from '@douyinfe/semi-ui'
 import Google from '@lobehub/icons/es/Google'
 import Github from '@lobehub/icons/es/Github'
-import { WechatIcon } from '@/components/icons/WechatIcon'
+import { SiWechat } from 'react-icons/si'
 import { useMarket } from '@/hooks/useMarket'
 import { oauthAuthorizeUrl } from '@/services/auth'
 import { usePlatformConfig } from '@/hooks/use-platform-config'
@@ -38,7 +38,7 @@ const btnStyle: React.CSSProperties = {
 }
 
 const OAUTH_ICONS: Record<string, React.ReactNode> = {
-  wechat: <WechatIcon size={16} />,
+  wechat: <SiWechat size={16} color="#07C160" />,
   github: <Github size={16} />,
   google: <Google size={16} />,
 }

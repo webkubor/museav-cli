@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button, Input, Modal, Select, Switch, Table, Tabs, Tag, Toast, Typography } from '@douyinfe/semi-ui'
-import { IconPlus } from '@douyinfe/semi-icons'
+import { LuPlus } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import {
   addTenantMembers,
@@ -189,7 +189,7 @@ function OrgListSection({
         </div>
         <Button
           theme="solid"
-          icon={<IconPlus />}
+          icon={<LuPlus />}
           disabled={atLimit}
           onClick={() => setCreateVisible(true)}
           style={{
@@ -730,7 +730,7 @@ function DomainTab({ tenantId }: { tenantId: string }) {
           </div>
           <Button
             theme="solid"
-            icon={<IconPlus />}
+            icon={<LuPlus />}
             loading={addMutation.isPending}
             onClick={handleAdd}
             style={{ flexShrink: 0, borderRadius: '8px', height: '32px' }}

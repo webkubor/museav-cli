@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Table, Tag, Input, Select, Button, Spin, Typography, SideSheet } from '@douyinfe/semi-ui'
-import { IconSearch } from '@douyinfe/semi-icons'
+import { LuSearch } from 'react-icons/lu'
 import { useQuery } from '@tanstack/react-query'
 import { listCallLogs, getLogStats, getCallLog, getLogPayload } from '@/services/logs'
 import { useAuthStore } from '@/store/auth'
@@ -439,7 +439,7 @@ export default function LogsPage() {
       >
         <Input
           placeholder="按 Request ID 搜索"
-          prefix={<IconSearch style={{ color: 'var(--semi-color-text-2)' }} />}
+          prefix={<LuSearch style={{ color: 'var(--semi-color-text-2)' }} />}
           value={requestIdSearch}
           onChange={handleSearchChange}
           style={{

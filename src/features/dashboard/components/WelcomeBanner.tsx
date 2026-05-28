@@ -7,7 +7,7 @@
 
 import React, { useState } from 'react'
 import { Typography, Button, Toast } from '@douyinfe/semi-ui'
-import { IconCopy, IconTick, IconBook } from '@douyinfe/semi-icons'
+import { LuCopy, LuCheck, LuBook } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { getMarket } from '@/lib/market'
 
@@ -192,7 +192,7 @@ export const WelcomeBanner: React.FC = () => {
         </Text>
 
         <Button
-          icon={<IconBook />}
+          icon={<LuBook />}
           theme="light"
           style={{
             borderRadius: '8px',
@@ -255,7 +255,7 @@ export const WelcomeBanner: React.FC = () => {
           <Button
             size="small"
             theme="borderless"
-            icon={copied ? <IconTick style={{ color: '#10b981' }} /> : <IconCopy style={{ color: '#64748b' }} />}
+            icon={copied ? <LuCheck style={{ color: '#10b981' }} /> : <LuCopy style={{ color: '#64748b' }} />}
             onClick={handleCopy}
             style={{
               color: copied ? '#10b981' : '#64748b',

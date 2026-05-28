@@ -2,17 +2,17 @@ import { useState } from 'react'
 import { Layout, Breadcrumb } from '@douyinfe/semi-ui'
 import { useAuthStore } from '@/store/auth'
 import {
-  IconHome,
-  IconHistogram,
-  IconList,
-  IconCreditCard,
-  IconShield,
-  IconMail,
-  IconKey,
-  IconEyeOpened,
-  IconApps,
-  IconWrench,
-} from '@douyinfe/semi-icons'
+  LuHouse,
+  LuChartBar,
+  LuList,
+  LuCreditCard,
+  LuShield,
+  LuMail,
+  LuKey,
+  LuEye,
+  LuLayoutGrid,
+  LuWrench,
+} from 'react-icons/lu'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { DashboardHeader } from './DashboardHeader'
@@ -79,17 +79,17 @@ export function DashboardLayout() {
   }
 
   const icons = {
-    home:        <IconHome        style={{ fontSize: '16px' }} />,
-    apps:        <IconApps        style={{ fontSize: '16px' }} />,
-    histogram:   <IconHistogram   style={{ fontSize: '16px' }} />,
-    histogramSm: <IconHistogram   style={{ fontSize: '14px' }} />,
-    list:        <IconList        style={{ fontSize: '14px' }} />,
-    creditCard:  <IconCreditCard  style={{ fontSize: '16px' }} />,
-    wrench:      <IconWrench      style={{ fontSize: '16px', color: '#d97706' }} />,
-    key:         <IconKey         style={{ fontSize: '16px' }} />,
-    shield:      <IconShield      style={{ fontSize: '16px' }} />,
-    eye:         <IconEyeOpened   style={{ fontSize: '16px' }} />,
-    mail:        <IconMail        style={{ fontSize: '16px' }} />,
+    home:        <LuHouse        style={{ fontSize: '16px' }} />,
+    apps:        <LuLayoutGrid   style={{ fontSize: '16px' }} />,
+    histogram:   <LuChartBar     style={{ fontSize: '16px' }} />,
+    histogramSm: <LuChartBar     style={{ fontSize: '14px' }} />,
+    list:        <LuList         style={{ fontSize: '14px' }} />,
+    creditCard:  <LuCreditCard   style={{ fontSize: '16px' }} />,
+    wrench:      <LuWrench       style={{ fontSize: '16px', color: '#d97706' }} />,
+    key:         <LuKey          style={{ fontSize: '16px' }} />,
+    shield:      <LuShield       style={{ fontSize: '16px' }} />,
+    eye:         <LuEye          style={{ fontSize: '16px' }} />,
+    mail:        <LuMail         style={{ fontSize: '16px' }} />,
   }
 
   const tenantNavItems    = navConfig.tenantItems(navCtx, t, icons)
@@ -124,8 +124,10 @@ export function DashboardLayout() {
     return BREADCRUMB_MAP[path] ?? [t('nav.home')]
   }
 
+  const isDashboardRoute = getSelectedKey() === 'dashboard'
+
   return (
-    <Layout style={{ minHeight: '100vh', background: 'var(--semi-color-bg-1)' }}>
+    <Layout style={{ minHeight: '100vh', background: 'var(--site-bg)' }}>
       <DashboardHeader />
 
       <Layout>
@@ -155,7 +157,14 @@ export function DashboardLayout() {
 
           <CustomerService />
 
-          <Content style={{
+          <Content style={isDashboardRoute ? {
+            background: 'transparent',
+            border: 'none',
+            boxShadow: 'none',
+            padding: 0,
+            minHeight: 'auto',
+            transition: 'all 0.3s ease'
+          } : {
             background: 'var(--semi-color-bg-0)',
             borderRadius: '16px',
             border: '1px solid var(--semi-color-fill-0)',

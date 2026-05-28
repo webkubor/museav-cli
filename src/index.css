@@ -264,13 +264,13 @@ html, body, #root {
 
 /* 导航项 Hover 悬浮态 */
 .semi-navigation-item:hover {
-  background-color: rgba(241, 245, 249, 0.7) !important;
+  background-color: var(--nav-item-hover-bg) !important;
   transform: translateX(1px) !important;
 }
 
 /* 导航选中项 Active 态：品牌色背景 + 细微呼吸指示线 */
 .semi-navigation-item-selected {
-  background-color: var(--brand-selected-bg) !important;
+  background-color: var(--nav-item-active-bg) !important;
   color: var(--brand-deep) !important;
   font-weight: 600 !important;
   position: relative !important;
@@ -311,10 +311,51 @@ html, body, #root {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--semi-color-text-3);
+  background: var(--semi-color-text-2) !important;
+  opacity: 0.3 !important;
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--semi-color-text-2);
+  background: var(--semi-color-text-1) !important;
+}
+
+/* ── 💎 Semi UI Table 极雅大厂化定制 ── */
+.semi-table {
+  background-color: transparent !important;
+}
+
+/* 表头微碳灰高级扁平 */
+.semi-table-thead > tr > th {
+  background-color: var(--semi-color-bg-1) !important;
+  color: var(--semi-color-text-1) !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--semi-color-border) !important;
+  padding: 14px 16px !important;
+  transition: background-color 0.2s;
+}
+
+/* 单元格清亮高透线 */
+.semi-table-tbody > tr > td {
+  padding: 16px !important;
+  border-bottom: 1px solid var(--semi-color-border) !important;
+  font-size: 13px !important;
+  color: var(--semi-color-text-1);
+}
+
+/* 悬停行极其微弱高透变色 */
+.semi-table-row:hover > td {
+  background-color: var(--semi-color-fill-0) !important;
+}
+
+/* 消除一切死板的全局外层硬边框，让列表扁平呼吸 */
+.semi-table-border {
+  border: none !important;
+}
+
+.semi-table-wrapper {
+  border: none !important;
 }

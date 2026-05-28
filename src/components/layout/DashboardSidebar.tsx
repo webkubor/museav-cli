@@ -26,7 +26,7 @@ interface DashboardSidebarProps {
 const WORKSPACE_KEYS = ['api-keys', 'guardrails', 'observability', 'invitations-mgmt', 'api-playground', 'chat-test']
 const SETTINGS_KEYS = ['settings', 'settings/account', 'settings/workspace', 'settings/organization']
 
-const SANDBOX_KEYS = ['api-playground', 'chat-test']
+const SANDBOX_KEYS = ['platform-config', 'api-playground']
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   collapsed,

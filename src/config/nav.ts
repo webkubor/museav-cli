@@ -48,7 +48,7 @@ export const navConfig: NavConfig = {
     'chat-test',
   ]),
 
-  tenantItems: (ctx, t, icons) => [
+  tenantItems: (_ctx, t, icons) => [
     { itemKey: 'dashboard',    text: t('nav.dashboard'),  icon: icons.home },
     {
       itemKey: 'models',
@@ -71,12 +71,6 @@ export const navConfig: NavConfig = {
       ],
     },
     { itemKey: 'billing', text: t('nav.billing'), icon: icons.creditCard },
-    // 内部调试入口，仅 VITE_SHOW_DEV_TOOLS=true 时可见
-    ...(ctx.isDevTools ? [{
-      itemKey: 'platform-config',
-      text: '接口调试',
-      icon: icons.wrench,
-    }] : []),
   ],
 
   workspaceItems: (ctx, t, icons) => [
@@ -92,7 +86,7 @@ export const navConfig: NavConfig = {
   ],
 
   sandboxItems: (_ctx, icons) => [
-    { itemKey: 'api-playground', text: '接口调试', icon: icons.list },
-    { itemKey: 'chat-test',      text: '对话测试', icon: icons.histogramSm },
+    { itemKey: 'platform-config', text: '接口调试', icon: icons.wrench },
+    { itemKey: 'api-playground',  text: 'API 测试', icon: icons.list },
   ],
 }

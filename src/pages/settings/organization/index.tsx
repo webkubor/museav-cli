@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, Input, Modal, Select, Switch, Table, Tabs, Tag, Toast, Typography } from '@douyinfe/semi-ui'
+import { Button, Input, Modal, Select, Table, Tabs, Tag, Toast, Typography } from '@douyinfe/semi-ui'
 import { LuPlus } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import {
@@ -15,11 +15,6 @@ import {
   updateTenant,
   updateTenantMemberRole,
   uploadTenantLogo,
-  listTenantDomains,
-  addTenantDomain,
-  updateTenantDomain,
-  removeTenantDomain,
-  type TenantDomain,
 } from '@/services/tenants'
 import type { TenantItem } from '@/types'
 import { formatDate } from '@/lib/format-date'
@@ -605,167 +600,6 @@ function InviteTab({ tenantId }: { tenantId: string }) {
   )
 }
 
-// ─── Domain tab ───────────────────────────────────────────────────────────────
-
-function DomainTab({ tenantId }: { tenantId: string }) {
-  const qc = useQueryClient()
-  const [input, setInput] = useState('')
-  const [autoJoin, setAutoJoin] = useState(true)
-
-  const domainsQuery = useQuery({
-    queryKey: ['tenant-domains', tenantId],
-    queryFn: () => listTenantDomains(tenantId),
-    staleTime: 60_000,
-    refetchOnWindowFocus: false,
-  })
-
-  const addMutation = useMutation({
-    mutationFn: () => addTenantDomain(tenantId, input.trim().toLowerCase(), autoJoin),
-    onSuccess: () => {
-      Toast.success(`域名 ${input.trim()} 已添加`)
-      setInput('')
-      qc.invalidateQueries({ queryKey: ['tenant-domains', tenantId] })
-    },
-    onError: (err: any) => Toast.error(err?.message || '添加失败'),
-  })
-
-  const toggleMutation = useMutation({
-    mutationFn: ({ id, autoJoin }: { id: string; autoJoin: boolean }) =>
-      updateTenantDomain(tenantId, id, autoJoin),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tenant-domains', tenantId] }),
-    onError: (err: any) => Toast.error(err?.message || '更新失败'),
-  })
-
-  const removeMutation = useMutation({
-    mutationFn: (id: string) => removeTenantDomain(tenantId, id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tenant-domains', tenantId] }),
-    onError: (err: any) => Toast.error(err?.message || '移除失败'),
-  })
-
-  function handleAdd() {
-    const domain = input.trim().toLowerCase()
-    if (!domain) { Toast.error('请输入域名'); return }
-    if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z]{2,})+$/.test(domain)) {
-      Toast.error('请输入合法的域名格式，如 company.com')
-      return
-    }
-    addMutation.mutate()
-  }
-
-  const domains: TenantDomain[] = domainsQuery.data?.items ?? []
-
-  const columns = [
-    {
-      title: '邮箱域名',
-      dataIndex: 'domain',
-      render: (v: string) => (
-        <span style={{ fontFamily: 'monospace', fontSize: '14px', fontWeight: 600, color: 'var(--semi-color-text-0)' }}>
-          @{v}
-        </span>
-      ),
-    },
-    {
-      title: '自动加入',
-      dataIndex: 'auto_join',
-      render: (v: boolean, record: TenantDomain) => (
-        <Switch
-          checked={v}
-          loading={toggleMutation.isPending}
-          onChange={(checked) => toggleMutation.mutate({ id: record.id, autoJoin: checked })}
-        />
-      ),
-    },
-    {
-      title: '添加时间',
-      dataIndex: 'created_at',
-      render: (v: string) => (
-        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>{formatDate(v)}</span>
-      ),
-    },
-    {
-      title: '',
-      key: 'actions',
-      width: 60,
-      render: (_: unknown, record: TenantDomain) => (
-        <button
-          type="button"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', borderRadius: '6px', color: 'var(--semi-color-text-3)' }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.08)'; e.currentTarget.style.color = '#ef4444' }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--semi-color-text-3)' }}
-          onClick={() => removeMutation.mutate(record.id)}
-        >
-          ✕
-        </button>
-      ),
-    },
-  ]
-
-  return (
-    <div style={{ maxWidth: '640px' }}>
-      {/* 说明卡 */}
-      <div style={{ ...cardStyle, marginBottom: '20px' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--semi-color-fill-0)' }}>
-          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: '4px' }}>
-            邮箱域名白名单
-          </div>
-          <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>
-            添加允许的企业邮箱域名。开启「自动加入」后，使用该域名邮箱注册的用户将直接成为组织成员，无需额外邀请。
-          </Text>
-        </div>
-        <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
-          <div style={{ flex: 1 }}>
-            <label style={labelStyle}>域名</label>
-            <Input
-              prefix={<span style={{ color: 'var(--semi-color-text-2)', fontSize: '13px', paddingLeft: '4px' }}>@</span>}
-              value={input}
-              onChange={(v) => setInput(v)}
-              placeholder="company.com"
-              onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-              style={{ borderRadius: '8px' }}
-            />
-          </div>
-          <div style={{ flexShrink: 0, paddingBottom: '1px' }}>
-            <label style={{ ...labelStyle, marginBottom: '8px' }}>自动加入</label>
-            <Switch checked={autoJoin} onChange={setAutoJoin} />
-          </div>
-          <Button
-            theme="solid"
-            icon={<LuPlus />}
-            loading={addMutation.isPending}
-            onClick={handleAdd}
-            style={{ flexShrink: 0, borderRadius: '8px', height: '32px' }}
-          >
-            添加
-          </Button>
-        </div>
-      </div>
-
-      {/* 域名列表 */}
-      <div style={cardStyle}>
-        <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--semi-color-fill-0)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--semi-color-text-0)' }}>已配置域名</span>
-          <span style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', padding: '2px 10px', borderRadius: '6px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)' }}>
-            {domainsQuery.isLoading ? '…' : `${domains.length} 个`}
-          </span>
-        </div>
-        {domains.length === 0 && !domainsQuery.isLoading ? (
-          <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: '13px' }}>
-            暂未配置任何域名
-          </div>
-        ) : (
-          <Table
-            columns={columns}
-            dataSource={domains}
-            rowKey="id"
-            loading={domainsQuery.isLoading}
-            pagination={false}
-            style={{ borderRadius: 0 }}
-          />
-        )}
-      </div>
-    </div>
-  )
-}
 
 // ─── Management panel ─────────────────────────────────────────────────────────
 
@@ -815,13 +649,7 @@ function OrgManagePanel({ tenantId }: { tenantId: string }) {
             </div>
           </Tabs.TabPane>
         )}
-        {canManage && (
-          <Tabs.TabPane tab="域名配置" itemKey="domains">
-            <div style={{ paddingTop: '20px' }}>
-              <DomainTab tenantId={tenantId} />
-            </div>
-          </Tabs.TabPane>
-        )}
+
       </Tabs>
     </div>
   )

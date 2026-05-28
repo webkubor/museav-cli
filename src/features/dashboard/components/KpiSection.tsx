@@ -22,37 +22,40 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, loading, color }) => {
       style={{
         borderRadius: '14px',
         border: '1px solid var(--semi-color-border)',
-        background: 'linear-gradient(135deg, rgba(248, 250, 252, 0.4) 0%, rgba(255, 255, 255, 0.9) 100%)',
+        background: 'var(--semi-color-bg-1)',
         padding: '22px 24px',
-        boxShadow: '0 1px 2px rgba(0,0,0,0.01)',
+        boxShadow: 'var(--semi-shadow-elevated)',
         position: 'relative',
         overflow: 'hidden',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        minHeight: '96px',
+        minHeight: '100px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)';
-        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(59, 130, 246, 0.25)';
-        (e.currentTarget as HTMLElement).style.boxShadow = '0 12px 24px -10px rgba(15, 23, 42, 0.08), 0 4px 12px -5px rgba(59, 130, 246, 0.05)';
+        (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
+        (e.currentTarget as HTMLElement).style.borderColor = 'var(--semi-color-primary)';
+        (e.currentTarget as HTMLElement).style.boxShadow = 'var(--semi-shadow-elevated)';
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLElement).style.transform = 'none';
         (e.currentTarget as HTMLElement).style.borderColor = 'var(--semi-color-border)';
-        (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 2px rgba(0,0,0,0.01)';
+        (e.currentTarget as HTMLElement).style.boxShadow = 'var(--semi-shadow-elevated)';
       }}
     >
-      <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '12.5px', fontWeight: 500, letterSpacing: '0.01em' }}>
+      <Text style={{ color: 'var(--semi-color-text-2)', fontSize: '13px', fontWeight: 600 }}>
         {title}
       </Text>
-      <div style={{ marginTop: '10px' }}>
+      <div style={{ marginTop: '8px' }}>
         {loading ? (
-          <Skeleton.Title style={{ width: '120px', height: '30px' }} />
+          <Skeleton.Title style={{ width: '80%', height: '32px' }} />
         ) : (
           <span style={{
-            fontSize: '30px',
+            fontSize: '28px',
             fontWeight: 800,
-            color: color,
-            letterSpacing: '-0.03em',
+            color: color === 'var(--semi-color-text-0)' ? 'var(--semi-color-text-0)' : color,
+            letterSpacing: '-0.02em',
             display: 'block',
           }}>
             {value ?? '—'}

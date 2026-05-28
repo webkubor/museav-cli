@@ -5,9 +5,14 @@
  * API：本身无直接接口调用，通过引入各个高内聚子组件（WelcomeBanner, KpiSection, GuideSection）拼装完整面板
  */
 
+import { Row, Col, Typography } from '@douyinfe/semi-ui'
 import { WelcomeBanner } from '@/features/dashboard/components/WelcomeBanner'
 import { KpiSection } from '@/features/dashboard/components/KpiSection'
 import { GuideSection } from '@/features/dashboard/components/GuideSection'
+import { QuickAccessSection } from '@/features/dashboard/components/QuickAccessSection'
+import { TerminalSection } from '@/features/dashboard/components/TerminalSection'
+
+const { Title } = Typography
 
 /**
  * 仪表盘控制台主页面组件
@@ -15,15 +20,31 @@ import { GuideSection } from '@/features/dashboard/components/GuideSection'
  */
 export default function DashboardPage() {
   return (
-    <div>
-      {/* 极雅晶莹欢迎横幅 (整合打招呼、工作区身份及 CLI Onboarding) */}
+    <div style={{ paddingBottom: '40px' }}>
+      {/* 1. 极雅晶莹欢迎横幅 */}
       <WelcomeBanner />
 
-      {/* 核心 KPI 统计数据看板网格 */}
+      {/* 2. 核心 KPI 统计数据看板 */}
       <KpiSection />
 
-      {/* 常用向导平铺 Grid 网格 */}
-      <GuideSection />
+      {/* 3. 快捷功能入口 */}
+      <QuickAccessSection />
+
+      {/* 4. 代码接入与快捷向导混合布局 */}
+      <Row gutter={24}>
+        <Col xs={24} lg={15}>
+          <Title heading={5} style={{ marginBottom: '16px', fontWeight: 700 }}>
+            接入示例
+          </Title>
+          <TerminalSection />
+        </Col>
+        <Col xs={24} lg={9}>
+          <Title heading={5} style={{ marginBottom: '16px', fontWeight: 700 }}>
+            进阶向导
+          </Title>
+          <GuideSection />
+        </Col>
+      </Row>
     </div>
   )
 }

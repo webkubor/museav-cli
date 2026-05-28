@@ -31,10 +31,10 @@ export const TerminalSection: React.FC = () => {
 
   return (
     <div style={{
-      background: '#ffffff',
+      background: 'var(--semi-color-bg-1)',
       borderRadius: '14px',
-      border: '1px solid rgba(226, 232, 240, 0.7)',
-      boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.02)',
+      border: '1px solid var(--semi-color-border)',
+      boxShadow: 'var(--semi-shadow-elevated)',
       overflow: 'hidden'
     }}>
       {/* IDE 窗口顶栏 */}

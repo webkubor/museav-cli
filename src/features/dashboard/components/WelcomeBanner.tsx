@@ -80,21 +80,21 @@ export const WelcomeBanner: React.FC = () => {
   return (
     <div
       style={{
-        borderRadius: '16px',
+        borderRadius: '20px',
         border: '1px solid var(--semi-color-border)',
         background: `linear-gradient(135deg, ${glowColor} 0%, rgba(255, 255, 255, 0.03) 50%, var(--semi-color-bg-0) 100%)`,
-        padding: '32px',
+        padding: '40px 48px',
         marginBottom: '36px',
-        boxShadow: '0 4px 30px rgba(0, 0, 0, 0.01)',
+        boxShadow: '0 8px 30px rgba(0, 0, 0, 0.02)',
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '32px',
+        gap: '40px',
         position: 'relative',
         overflow: 'hidden',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
       }}
     >
       {/* 背景微型修饰辉光 */}
@@ -153,12 +153,12 @@ export const WelcomeBanner: React.FC = () => {
         <Title
           heading={1}
           style={{
-            margin: '0 0 8px 0',
+            margin: '0 0 12px 0',
             fontWeight: 800,
-            fontSize: '28px',
-            letterSpacing: '-0.03em',
+            fontSize: '36px',
+            letterSpacing: '-0.04em',
             color: 'var(--semi-color-text-0)',
-            lineHeight: 1.2
+            lineHeight: 1.1
           }}
         >
           {t.greeting} 👋

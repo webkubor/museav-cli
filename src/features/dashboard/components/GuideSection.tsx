@@ -87,9 +87,9 @@ export const GuideSection: React.FC = () => {
               }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--semi-color-bg-2)';
-                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99, 102, 241, 0.25)';
+                (e.currentTarget as HTMLElement).style.borderColor = 'var(--semi-color-primary)';
                 (e.currentTarget as HTMLElement).style.transform = 'translateX(4px)';
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 12px -4px rgba(15, 23, 42, 0.06)';
+                (e.currentTarget as HTMLElement).style.boxShadow = 'var(--semi-shadow-elevated)';
                 const arrow = e.currentTarget.querySelector('.arrow-icon') as HTMLElement;
                 if (arrow) arrow.style.transform = 'translateX(2px)';
               }}

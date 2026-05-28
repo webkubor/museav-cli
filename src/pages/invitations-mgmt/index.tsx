@@ -31,7 +31,7 @@ export default function InvitationsMgmtPage() {
     staleTime: 60_000,
   })
   const myRole = workspaces.find((w) => w.workspace_id === activeWorkspaceId)?.my_role
-  const canManage = myRole === 'ws_owner' || myRole === 'ws_admin'
+  const canManage = myRole !== 'ws_member'
   const [status, setStatus] = useState<'pending' | 'accepted' | 'expired' | 'revoked' | 'all'>('pending')
 
   // ─── Invite modal state ───────────────────────────────────────────────────

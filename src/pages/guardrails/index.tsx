@@ -59,7 +59,7 @@ export default function GuardrailsPage() {
     staleTime: 60_000,
   })
   const myRole = workspaces.find((w) => w.workspace_id === activeWorkspaceId)?.my_role
-  const canManage = myRole === 'ws_owner' || myRole === 'ws_admin'
+  const canManage = myRole !== 'ws_member'
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [policyOpen, setPolicyOpen] = useState(false)

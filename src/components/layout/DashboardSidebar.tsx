@@ -137,6 +137,19 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               <span style={{ fontSize: '13px' }}>{collapsed ? t('common.expand') : t('common.collapse')}</span>
             )}
           </div>
+
+          {/* 版本号 */}
+          {!collapsed && (
+            <div style={{
+              padding: '4px 20px 6px',
+              fontSize: '11px',
+              color: 'var(--semi-color-text-2)',
+              opacity: 0.5,
+              userSelect: 'none',
+            }}>
+              v{__APP_VERSION__}
+            </div>
+          )}
         </div>
       </div>
     </Sider>

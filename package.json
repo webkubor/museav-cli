@@ -10,7 +10,10 @@
     "build:prod": "tsc -b && vite build --mode production",
     "check:api-contract": "node scripts/check-swagger-api.mjs",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "version:patch": "npm version patch --no-git-tag-version",
+    "version:minor": "npm version minor --no-git-tag-version",
+    "version:major": "npm version major --no-git-tag-version"
   },
   "dependencies": {
     "@douyinfe/semi-icons": "^2.99.2",

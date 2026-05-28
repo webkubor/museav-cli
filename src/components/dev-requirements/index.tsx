@@ -50,6 +50,7 @@ export function DevRequirements() {
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
   const [size, setSize] = useState<{ w: number; h: number }>(loadSize)
+  const [maximized, setMaximized] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const panelDragging = useRef(false)
   const panelDragMoved = useRef(false)
@@ -255,110 +256,160 @@ export function DevRequirements() {
     onDrop: handleItemDrop,
   }
 
+  const panelW = maximized ? window.innerWidth * 0.9 : size.w
+  const panelH = maximized ? window.innerHeight * 0.9 : size.h
+
   return (
-    <div style={{ position: 'fixed', right: pos.right, top: pos.top, transform: 'translateY(-50%)', zIndex: 9999, display: 'flex', alignItems: 'center' }}>
-      {/* 侧边 tab */}
-      <button
-        onMouseDown={handleMouseDown}
-        onClick={() => { if (!panelDragMoved.current) setOpen((v) => !v) }}
-        style={{
-          writingMode: 'vertical-rl',
-          textOrientation: 'mixed',
-          padding: '12px 7px',
-          background: 'var(--semi-color-primary)',
-          color: '#fff',
-          border: 'none',
-          borderRadius: open ? '8px 0 0 8px' : '8px',
-          cursor: 'grab',
-          fontSize: 13,
-          fontWeight: 700,
-          letterSpacing: 1.5,
-          opacity: 0.93,
-          lineHeight: 1.4,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 4,
-          userSelect: 'none',
-        }}
-        title="拖拽移动 · 点击展开"
-      >
-        {/* 拖拽握柄：三条横线 */}
-        <span style={{
-          writingMode: 'horizontal-tb',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 3,
-          marginBottom: 6,
-          opacity: 0.7,
-        }}>
-          {[0,1,2].map(i => (
-            <span key={i} style={{ display: 'block', width: 14, height: 2, background: '#fff', borderRadius: 2 }} />
-          ))}
-        </span>
-        <span>需</span>
-        <span>求</span>
-        {pending.length > 0 && (
+    <div style={{
+      position: 'fixed',
+      right: maximized ? '5%' : pos.right,
+      top: maximized ? '5%' : pos.top,
+      transform: maximized ? 'none' : 'translateY(-50%)',
+      zIndex: 9999,
+      display: 'flex',
+      alignItems: 'center',
+    }}>
+      {/* 收起状态：侧边小 tab */}
+      {!open && (
+        <button
+          onMouseDown={handleMouseDown}
+          onClick={() => { if (!panelDragMoved.current) setOpen(true) }}
+          style={{
+            writingMode: 'vertical-rl',
+            textOrientation: 'mixed',
+            padding: '12px 7px',
+            background: 'var(--semi-color-primary)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'grab',
+            fontSize: 13,
+            fontWeight: 700,
+            letterSpacing: 1.5,
+            opacity: 0.93,
+            lineHeight: 1.4,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 4,
+            userSelect: 'none',
+          }}
+          title="点击展开 · 拖拽移动"
+        >
           <span style={{
             writingMode: 'horizontal-tb',
-            background: 'var(--semi-color-danger)',
-            borderRadius: 10,
-            minWidth: 18,
-            height: 18,
-            lineHeight: '18px',
-            textAlign: 'center',
-            fontSize: 11,
-            fontWeight: 700,
-            padding: '0 3px',
-            marginTop: 4,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 3,
+            marginBottom: 6,
+            opacity: 0.7,
           }}>
-            {pending.length}
+            {[0,1,2].map(i => (
+              <span key={i} style={{ display: 'block', width: 14, height: 2, background: '#fff', borderRadius: 2 }} />
+            ))}
           </span>
-        )}
-      </button>
+          <span>需</span>
+          <span>求</span>
+          {pending.length > 0 && (
+            <span style={{
+              writingMode: 'horizontal-tb',
+              background: 'var(--semi-color-danger)',
+              borderRadius: 10,
+              minWidth: 18,
+              height: 18,
+              lineHeight: '18px',
+              textAlign: 'center',
+              fontSize: 11,
+              fontWeight: 700,
+              padding: '0 3px',
+              marginTop: 4,
+            }}>
+              {pending.length}
+            </span>
+          )}
+        </button>
+      )}
 
       {open && (
         <div style={{
-          width: size.w,
-          height: size.h,
+          width: panelW,
+          height: panelH,
           background: 'var(--semi-color-bg-1)',
           border: '1px solid var(--semi-color-border)',
-          borderRadius: '8px 0 0 8px',
-          boxShadow: '-6px 0 24px rgba(0,0,0,0.14)',
+          borderRadius: maximized ? '12px' : '8px 0 0 8px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
           position: 'relative',
         }}>
-          {/* 头部 */}
-          <div style={{
-            padding: '14px 16px 12px',
-            borderBottom: '1px solid var(--semi-color-border)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--semi-color-text-0)' }}>需求看板</span>
-              {pending.length > 0 && (
-                <span style={{
-                  fontSize: 11,
-                  color: 'var(--semi-color-primary)',
-                  background: 'var(--semi-color-primary-light-default)',
-                  padding: '1px 8px',
-                  borderRadius: 10,
-                  fontWeight: 600,
-                }}>
-                  {pending.length} 待处理
-                </span>
-              )}
+          {/* 顶栏：拖拽区 + 标题 + 操作按钮 */}
+          <div
+            onMouseDown={handleMouseDown}
+            style={{
+              padding: '10px 14px',
+              borderBottom: '1px solid var(--semi-color-border)',
+              display: 'flex',
+              alignItems: 'center',
+              cursor: 'grab',
+              userSelect: 'none',
+              gap: 10,
+              background: 'var(--semi-color-bg-2)',
+            }}
+          >
+            {/* grip */}
+            <span style={{ display: 'flex', flexDirection: 'column', gap: 3, opacity: 0.45, flexShrink: 0 }}>
+              {[0,1,2].map(i => (
+                <span key={i} style={{ display: 'block', width: 18, height: 2, background: 'var(--semi-color-text-0)', borderRadius: 2 }} />
+              ))}
+            </span>
+
+            {/* 标题 */}
+            <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--semi-color-text-0)', flex: 1 }}>
+              需求看板
+            </span>
+            {pending.length > 0 && (
+              <span style={{
+                fontSize: 11,
+                color: 'var(--semi-color-primary)',
+                background: 'var(--semi-color-primary-light-default)',
+                padding: '1px 8px',
+                borderRadius: 10,
+                fontWeight: 600,
+                flexShrink: 0,
+              }}>
+                {pending.length} 待处理
+              </span>
+            )}
+
+            {/* 操作按钮 */}
+            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }} onMouseDown={e => e.stopPropagation()}>
+              {/* 放大 / 还原 */}
+              <button
+                onClick={() => setMaximized(v => !v)}
+                title={maximized ? '还原' : '最大化'}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'var(--semi-color-text-2)', fontSize: 14, lineHeight: 1,
+                  padding: '3px 5px', borderRadius: 4,
+                  display: 'flex', alignItems: 'center',
+                }}
+              >
+                {maximized ? '⊡' : '⊞'}
+              </button>
+              {/* 收起 */}
+              <button
+                onClick={() => { setOpen(false); setMaximized(false) }}
+                title="收起"
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'var(--semi-color-text-2)', fontSize: 16, lineHeight: 1,
+                  padding: '2px 4px', borderRadius: 4,
+                }}
+              >
+                ×
+              </button>
             </div>
-            <button
-              onClick={() => setOpen(false)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--semi-color-text-2)', fontSize: 18, lineHeight: 1, padding: '2px 4px', borderRadius: 4 }}
-            >
-              ×
-            </button>
           </div>
 
           {/* 录入区 */}

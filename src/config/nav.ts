@@ -30,6 +30,8 @@ export interface NavConfig {
   tenantItems: (ctx: NavVisibilityContext, t: (key: string) => string, icons: NavIcons) => NavItem[]
   /** 工作区级导航（切换工作区内容随之变） */
   workspaceItems: (ctx: NavVisibilityContext, t: (key: string) => string, icons: NavIcons) => NavItem[]
+  /** 测试区导航（工作区下，单独分隔线） */
+  sandboxItems: (ctx: NavVisibilityContext, icons: NavIcons) => NavItem[]
   /** 工作区级页面 key 集合（用于 WorkspaceGuard 和高亮判断） */
   workspaceScopedKeys: ReadonlySet<string>
 }
@@ -81,20 +83,16 @@ export const navConfig: NavConfig = {
     { itemKey: 'api-keys',      text: t('nav.apiKeys'),       icon: icons.key },
     { itemKey: 'guardrails',    text: t('nav.guardrails'),    icon: icons.shield },
     { itemKey: 'observability', text: t('nav.observability'), icon: icons.eye },
-    {
-      itemKey: 'sandbox',
-      text: '测试区',
-      icon: icons.terminal,
-      items: [
-        { itemKey: 'api-playground', text: '接口调试', icon: icons.list },
-        { itemKey: 'chat-test',      text: '对话测试', icon: icons.histogramSm },
-      ],
-    },
     // 邀请管理：只要不是个人账户即可见（enterprise 或未来其他非 personal 类型）
     ...(ctx.isNonPersonal ? [{
       itemKey: 'invitations-mgmt',
       text: t('nav.invitations'),
       icon: icons.mail,
     }] : []),
+  ],
+
+  sandboxItems: (_ctx, icons) => [
+    { itemKey: 'api-playground', text: '接口调试', icon: icons.list },
+    { itemKey: 'chat-test',      text: '对话测试', icon: icons.histogramSm },
   ],
 }

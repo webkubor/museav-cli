@@ -102,6 +102,7 @@ export function DashboardLayout() {
 
   const tenantNavItems    = navConfig.tenantItems(navCtx, t, icons)
   const workspaceNavItems = navConfig.workspaceItems(navCtx, t, icons)
+  const sandboxNavItems   = navConfig.sandboxItems(navCtx, icons)
 
   const getSelectedKey = () => {
     const path = location.pathname
@@ -158,6 +159,7 @@ export function DashboardLayout() {
           }}
           tenantNavItems={tenantNavItems}
           workspaceNavItems={workspaceNavItems}
+          sandboxNavItems={sandboxNavItems}
           settingsLabel={t('nav.settings')}
         />
 

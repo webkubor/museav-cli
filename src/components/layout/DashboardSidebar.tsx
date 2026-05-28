@@ -19,11 +19,14 @@ interface DashboardSidebarProps {
   onSelect: (data: { itemKey: string | number }) => void
   tenantNavItems: NavItem[]
   workspaceNavItems: NavItem[]
+  sandboxNavItems: NavItem[]
   settingsLabel: string
 }
 
 const WORKSPACE_KEYS = ['api-keys', 'guardrails', 'observability', 'invitations-mgmt', 'api-playground', 'chat-test']
 const SETTINGS_KEYS = ['settings', 'settings/account', 'settings/workspace', 'settings/organization']
+
+const SANDBOX_KEYS = ['api-playground', 'chat-test']
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   collapsed,
@@ -32,12 +35,14 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   onSelect,
   tenantNavItems,
   workspaceNavItems,
+  sandboxNavItems,
   settingsLabel,
 }) => {
   const { t } = useTranslation()
   const [hovered, setHovered] = useState(false)
   const leaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
+  const isSandboxSelected = SANDBOX_KEYS.includes(selectedKey)
   const isWorkspaceSelected = WORKSPACE_KEYS.includes(selectedKey)
   const isSettingsSelected = SETTINGS_KEYS.includes(selectedKey)
 
@@ -141,7 +146,41 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         <Nav
           isCollapsed={collapsed}
           items={workspaceNavItems}
-          selectedKeys={isWorkspaceSelected ? [selectedKey] : []}
+          selectedKeys={isWorkspaceSelected && !isSandboxSelected ? [selectedKey] : []}
+          onSelect={(data) => onSelect({ itemKey: data.itemKey })}
+          style={{ border: 'none', flex: 'none' }}
+        />
+
+        {/* 测试区分隔线 */}
+        <div style={{
+          padding: collapsed ? '8px 0' : '8px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          overflow: 'hidden',
+        }}>
+          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--semi-color-fill-0)' }} />
+          {!collapsed && (
+            <span style={{
+              fontSize: '11px',
+              fontWeight: 600,
+              color: 'var(--semi-color-text-2)',
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}>
+              测试区
+            </span>
+          )}
+          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--semi-color-fill-0)' }} />
+        </div>
+
+        {/* 测试区导航 */}
+        <Nav
+          isCollapsed={collapsed}
+          items={sandboxNavItems}
+          selectedKeys={isSandboxSelected ? [selectedKey] : []}
           onSelect={(data) => onSelect({ itemKey: data.itemKey })}
           style={{ border: 'none', flex: 1 }}
         />

@@ -111,10 +111,15 @@ export const DashboardHeader: React.FC = () => {
     if (tenant.tenant_id === activeTenantId) return
     try {
       await switchTenant({ tenant_id: tenant.tenant_id })
+      // setAuth 同步写 localStorage，后续 listWorkspaces 请求头会携带新 tenant_id
       setAuth(account!, tenant.tenant_id, tenants, undefined)
-      setActiveWorkspaceId('')
       queryClient.invalidateQueries({ queryKey: ['tenants'] })
       queryClient.invalidateQueries({ queryKey: ['workspaces'] })
+      // 拉取新组织的工作区，自动激活默认工作区
+      const wsData = await listWorkspaces()
+      const wsItems = wsData.items ?? []
+      const defaultWs = wsItems.find((w) => w.is_default) ?? wsItems[0]
+      setActiveWorkspaceId(defaultWs?.workspace_id ?? '')
       Toast.success(t('header.switchedOrg', { name: tenant.name }))
     } catch {
       Toast.error(t('switchTenantFailed') || '切换组织失败')
@@ -126,9 +131,12 @@ export const DashboardHeader: React.FC = () => {
       try {
         await switchTenant({ tenant_id: tenant.tenant_id })
         setAuth(account!, tenant.tenant_id, tenants, undefined)
-        setActiveWorkspaceId('')
         queryClient.invalidateQueries({ queryKey: ['tenants'] })
         queryClient.invalidateQueries({ queryKey: ['workspaces'] })
+        const wsData = await listWorkspaces()
+        const wsItems = wsData.items ?? []
+        const defaultWs = wsItems.find((w) => w.is_default) ?? wsItems[0]
+        setActiveWorkspaceId(defaultWs?.workspace_id ?? '')
       } catch {
         Toast.error(t('switchTenantFailed') || '切换组织失败')
         return

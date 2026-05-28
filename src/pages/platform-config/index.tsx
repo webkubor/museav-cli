@@ -137,6 +137,77 @@ function EndpointCard({ def, state, onCall }: {
   )
 }
 
+const PERM_SECTIONS = [
+  {
+    title: '租户类型 (Tenant Type)',
+    color: '#7c3aed',
+    rows: [
+      { label: 'personal', desc: '个人账户', perms: ['侧边栏无邀请管理', 'Header 无工作区管理入口', 'Header 无组织设置'] },
+      { label: 'enterprise', desc: '企业/组织', perms: ['侧边栏显示邀请管理', 'Header 显示工作区管理', 'Header 显示组织设置'] },
+    ],
+  },
+  {
+    title: '组织角色 (Tenant Role)',
+    color: '#0284c7',
+    rows: [
+      { label: 'tenant_owner', desc: '拥有者', perms: ['查看账户余额', '邀请成员 Tab', '域名配置 Tab', '修改成员角色', '移除成员'] },
+      { label: 'tenant_admin', desc: '管理员', perms: ['查看账户余额', '邀请成员 Tab', '域名配置 Tab', '修改成员角色', '移除成员'] },
+      { label: 'tenant_member', desc: '普通成员', perms: ['余额不可见 (null)', '无邀请成员 Tab', '无域名配置 Tab', '无角色/移除操作'] },
+    ],
+  },
+  {
+    title: '工作区角色 (Workspace Role)',
+    color: '#059669',
+    rows: [
+      { label: 'ws_owner', desc: '拥有者', perms: ['可撤销任意邀请', '可修改任意成员角色'] },
+      { label: 'ws_admin', desc: '管理员', perms: ['可撤销任意邀请', '可修改任意成员角色'] },
+      { label: 'ws_member', desc: '普通成员', perms: ['仅撤销自己发出的邀请', '不可修改成员角色'] },
+    ],
+  },
+]
+
+function PermissionPanel() {
+  return (
+    <div style={{
+      border: '1px solid var(--semi-color-fill-1)',
+      borderRadius: '10px',
+      overflow: 'hidden',
+      marginBottom: '28px',
+      background: 'var(--semi-color-bg-1)',
+    }}>
+      <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--semi-color-fill-1)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--semi-color-text-2)' }}>
+          权限速查
+        </span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0 }}>
+        {PERM_SECTIONS.map((section, si) => (
+          <div key={section.title} style={{ borderRight: si < 2 ? '1px solid var(--semi-color-fill-1)' : 'none', padding: '14px 16px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: section.color, marginBottom: '10px', letterSpacing: '0.03em' }}>
+              {section.title}
+            </div>
+            {section.rows.map((row) => (
+              <div key={row.label} style={{ marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                  <code style={{ fontSize: '11px', fontWeight: 700, color: section.color, background: `${section.color}14`, border: `1px solid ${section.color}30`, padding: '1px 6px', borderRadius: '3px' }}>
+                    {row.label}
+                  </code>
+                  <span style={{ fontSize: '11px', color: 'var(--semi-color-text-2)' }}>{row.desc}</span>
+                </div>
+                <ul style={{ margin: 0, paddingLeft: '16px' }}>
+                  {row.perms.map((p) => (
+                    <li key={p} style={{ fontSize: '11px', color: 'var(--semi-color-text-1)', lineHeight: '1.7' }}>{p}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function PlatformConfigPage() {
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
 
@@ -211,6 +282,8 @@ export default function PlatformConfigPage() {
           DEV ONLY
         </Tag>
       </div>
+
+      <PermissionPanel />
 
       {groups.map((group) => (
         <div key={group} style={{ marginBottom: '24px' }}>

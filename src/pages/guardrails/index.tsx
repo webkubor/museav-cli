@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button, Input, Modal, Select, Toast, Skeleton } from '@douyinfe/semi-ui'
 
 import { useAuthStore } from '@/store/auth'
+import { useWorkspaceRole } from '@/hooks/use-workspace-role'
 import {
   listGuardrails,
   createGuardrail,
@@ -11,7 +12,7 @@ import {
   addBudgetPolicy,
   deleteBudgetPolicy,
 } from '@/services/guardrails'
-import { listWorkspaceMembers, listWorkspaces } from '@/services/workspaces'
+import { listWorkspaceMembers } from '@/services/workspaces'
 import { listApiKeys } from '@/services/api-keys'
 import { pageItems } from '@/lib/utils'
 import { formatDateTime } from '@/lib/format-date'
@@ -50,16 +51,7 @@ const listCardStyle: React.CSSProperties = {
 export default function GuardrailsPage() {
   const qc = useQueryClient()
   const activeWorkspaceId = useAuthStore((state) => state.activeWorkspaceId)
-  const activeTenantId = useAuthStore((state) => state.activeTenantId)
-
-  const { data: workspaces = [] } = useQuery({
-    queryKey: ['workspaces', activeTenantId],
-    queryFn: () => listWorkspaces().then((r) => r.items || []),
-    enabled: !!activeTenantId,
-    staleTime: 60_000,
-  })
-  const myRole = workspaces.find((w) => w.workspace_id === activeWorkspaceId)?.my_role
-  const canManage = myRole !== 'ws_member'
+  const { canManage } = useWorkspaceRole()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [policyOpen, setPolicyOpen] = useState(false)

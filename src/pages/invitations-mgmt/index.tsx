@@ -3,14 +3,14 @@ import { Avatar, Button, Checkbox, Input, Modal, Spin, Table, Tag, Toast, Select
 import { LuSearch, LuUserPlus } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
+import { useWorkspaceRole } from '@/hooks/use-workspace-role'
 import {
   listInvitations,
   revokeInvitation,
   createInvitations,
 } from '@/services/invitations'
 import { listTenantMembers } from '@/services/tenants'
-import { listWorkspaces } from '@/services/workspaces'
-import type { InvitationItem, TenantMember, WorkspaceItem } from '@/types'
+import type { InvitationItem, TenantMember } from '@/types'
 import { formatDateTime } from '@/lib/format-date'
 import { WS_ROLE_LABEL, WS_ROLE_OPTIONS, TENANT_ROLE_LABEL } from '@/constants/roles'
 import { INVITATION_STATUS_CONFIG, INVITATION_STATUS_OPTIONS } from '@/constants/status'
@@ -23,15 +23,7 @@ export default function InvitationsMgmtPage() {
   const tenants = useAuthStore((s) => s.tenants)
   const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
 
-  // 当前用户在此工作区的角色，ws_member 不能邀请/撤销
-  const { data: workspaces = [] } = useQuery<WorkspaceItem[]>({
-    queryKey: ['workspaces', activeTenantId],
-    queryFn: () => listWorkspaces().then((r) => r.items || []),
-    enabled: !!activeTenantId,
-    staleTime: 60_000,
-  })
-  const myRole = workspaces.find((w) => w.workspace_id === activeWorkspaceId)?.my_role
-  const canManage = myRole !== 'ws_member'
+  const { canManage } = useWorkspaceRole()
   const [status, setStatus] = useState<'pending' | 'accepted' | 'expired' | 'revoked' | 'all'>('pending')
 
   // ─── Invite modal state ───────────────────────────────────────────────────

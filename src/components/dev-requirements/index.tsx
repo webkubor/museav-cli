@@ -21,12 +21,12 @@ async function post(body: object) {
 
 const POS_KEY = 'dev-requirements-pos'
 
-function loadPos(): { top: number } {
+function loadPos(): { top: number; right: number } {
   try {
     const s = localStorage.getItem(POS_KEY)
-    if (s) return JSON.parse(s) as { top: number }
+    if (s) return JSON.parse(s) as { top: number; right: number }
   } catch {}
-  return { top: window.innerHeight / 2 }
+  return { top: window.innerHeight / 2, right: 0 }
 }
 
 export function DevRequirements() {
@@ -35,7 +35,7 @@ export function DevRequirements() {
   const [title, setTitle] = useState('')
   const [priority, setPriority] = useState<Requirement['priority']>('medium')
   const [hoverId, setHoverId] = useState<string | null>(null)
-  const [pos, setPos] = useState<{ top: number }>(loadPos)
+  const [pos, setPos] = useState<{ top: number; right: number }>(loadPos)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const [draggingId, setDraggingId] = useState<string | null>(null)
@@ -44,13 +44,17 @@ export function DevRequirements() {
   const panelDragging = useRef(false)
   const panelDragMoved = useRef(false)
   const dragStartY = useRef(0)
+  const dragStartX = useRef(0)
   const dragStartTop = useRef(0)
+  const dragStartRight = useRef(0)
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     panelDragging.current = true
     panelDragMoved.current = false
     dragStartY.current = e.clientY
+    dragStartX.current = e.clientX
     dragStartTop.current = pos.top
+    dragStartRight.current = pos.right
     e.preventDefault()
   }, [pos.top])
 
@@ -58,9 +62,11 @@ export function DevRequirements() {
     const onMove = (e: MouseEvent) => {
       if (!panelDragging.current) return
       const dy = e.clientY - dragStartY.current
-      if (Math.abs(dy) > 4) panelDragMoved.current = true
+      const dx = e.clientX - dragStartX.current
+      if (Math.abs(dy) > 4 || Math.abs(dx) > 4) panelDragMoved.current = true
       const newTop = Math.max(40, Math.min(window.innerHeight - 40, dragStartTop.current + dy))
-      setPos({ top: newTop })
+      const newRight = Math.max(0, Math.min(window.innerWidth - 60, dragStartRight.current - dx))
+      setPos({ top: newTop, right: newRight })
     }
     const onUp = () => {
       if (!panelDragging.current) return
@@ -204,7 +210,7 @@ export function DevRequirements() {
   }
 
   return (
-    <div style={{ position: 'fixed', right: 0, top: pos.top, transform: 'translateY(-50%)', zIndex: 9999, display: 'flex', alignItems: 'center' }}>
+    <div style={{ position: 'fixed', right: pos.right, top: pos.top, transform: 'translateY(-50%)', zIndex: 9999, display: 'flex', alignItems: 'center' }}>
       {/* 侧边 tab */}
       <button
         onMouseDown={handleMouseDown}

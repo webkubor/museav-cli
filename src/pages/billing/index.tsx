@@ -2,18 +2,15 @@ import { useState } from 'react'
 import {
   Table,
   Button,
-  Input,
   Tag,
   Toast,
   Modal,
   Spin,
-  Tabs,
 } from '@douyinfe/semi-ui'
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
   getBalance,
-  redeemPromoCode,
   createRecharge,
   listRecharges,
   cancelRecharge,
@@ -242,15 +239,7 @@ export default function BillingPage() {
         )}
       </div>
 
-      {/* Tabs Section */}
-      <Tabs type="line" style={{ marginTop: '24px' }}>
-        <Tabs.TabPane tab={t('billing.tabs.orders')} itemKey="orders">
-          <OrderTab tenantId={tenantId} />
-        </Tabs.TabPane>
-        <Tabs.TabPane tab={t('billing.tabs.promo')} itemKey="promo">
-          <PromoTab tenantId={tenantId} />
-        </Tabs.TabPane>
-      </Tabs>
+      <OrderTab tenantId={tenantId} />
     </div>
   )
 }
@@ -323,32 +312,3 @@ function OrderTab({ tenantId }: { tenantId: string }) {
   )
 }
 
-// ─── Tab 3: Promo ─────────────────────────────────────────────────────────
-
-function PromoTab({ tenantId }: { tenantId: string }) {
-  const { t } = useTranslation()
-  const qc = useQueryClient()
-  const [promoCode, setPromoCode] = useState('')
-
-  const redeem = useMutation({
-    mutationFn: () => redeemPromoCode(tenantId, { code: promoCode.trim() }),
-    onSuccess: (res) => {
-      Toast.success(t('billing.promo.success', { amount: res.credited.amount, currency: res.credited.currency }))
-      setPromoCode('')
-      qc.invalidateQueries({ queryKey: ['balance', tenantId] })
-    },
-    onError: (err: Error) => Toast.error(err.message || t('billing.promo.error')),
-  })
-
-  return (
-    <div style={{ padding: '32px', textAlign: 'center' }}>
-      <h2 style={{ fontSize: '18px', marginBottom: '8px' }}>{t('billing.promo.title')}</h2>
-      <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '20px' }}>
-        <Input placeholder={t('billing.promo.placeholder')} value={promoCode} onChange={setPromoCode} style={{ width: '320px', borderRadius: '24px' }} />
-        <Button theme="solid" loading={redeem.isPending} onClick={() => promoCode.trim() ? redeem.mutate() : Toast.warning(t('billing.promo.emptyWarning'))} style={{ borderRadius: '24px', padding: '0 24px' }}>
-          {t('billing.promo.submit')}
-        </Button>
-      </div>
-    </div>
-  )
-}

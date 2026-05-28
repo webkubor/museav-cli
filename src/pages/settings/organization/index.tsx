@@ -558,6 +558,29 @@ function InviteTab({ tenantId }: { tenantId: string }) {
 
   return (
     <div style={{ maxWidth: '640px' }}>
+      {/* ── 邀请配置（共用）──────────────────────────────── */}
+      <div style={{ ...cardStyle, padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '24px' }}>
+        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', flexShrink: 0 }}>邀请配置</span>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 12px', height: '32px', borderRadius: '8px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)', fontSize: '12px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
+            初始角色
+            <Select value={inviteRole} onChange={(v) => setInviteRole(v as any)} style={{ width: '96px', marginLeft: '2px' }} size="small" borderless>
+              {TENANT_ROLE_OPTIONS.map((o) => <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>)}
+            </Select>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 12px', height: '32px', borderRadius: '8px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)', fontSize: '12px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
+            有效期
+            <Select value={expiresInHours} onChange={(v) => setExpiresInHours(v as number)} style={{ width: '96px', marginLeft: '2px' }} size="small" borderless>
+              <Select.Option value={24}>24 小时</Select.Option>
+              <Select.Option value={72}>3 天</Select.Option>
+              <Select.Option value={168}>7 天</Select.Option>
+              <Select.Option value={720}>30 天</Select.Option>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 快速邀请链接 ──────────────────────────────────── */}
       <div style={cardStyle}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--semi-color-fill-0)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
@@ -566,7 +589,6 @@ function InviteTab({ tenantId }: { tenantId: string }) {
           </div>
           <Button size="small" loading={resetLink.isPending} onClick={() => resetLink.mutate()} style={{ flexShrink: 0, marginLeft: '16px' }}>重置链接</Button>
         </div>
-
         <div style={{ padding: '20px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)', fontFamily: 'monospace', fontSize: '13px', color: 'var(--semi-color-text-0)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -579,39 +601,18 @@ function InviteTab({ tenantId }: { tenantId: string }) {
         </div>
       </div>
 
+      {/* ── 邮箱邀请 ─────────────────────────────────────── */}
       <div style={cardStyle}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--semi-color-fill-0)' }}>
           <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: '4px' }}>邮箱邀请</div>
           <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>直接向特定邮箱发送邀请邮件</Text>
         </div>
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div>
+        <div style={{ padding: '20px 24px', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+          <div style={{ flex: 1 }}>
             <label style={labelStyle}>成员邮箱</label>
             <Input placeholder="example@company.com，多个用逗号分隔" value={inviteEmails} onChange={(val) => setInviteEmails(val)} onKeyDown={(e) => e.key === 'Enter' && addMembers.mutate()} />
           </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
-            <div style={{ flex: 1 }}>
-              <label style={labelStyle}>邀请配置</label>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 12px', height: '32px', borderRadius: '8px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)', fontSize: '12px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
-                  初始角色
-                  <Select value={inviteRole} onChange={(v) => setInviteRole(v as any)} style={{ width: '100px', marginLeft: '2px' }} size="small" borderless>
-                    {TENANT_ROLE_OPTIONS.map((o) => <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>)}
-                  </Select>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 12px', height: '32px', borderRadius: '8px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)', fontSize: '12px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
-                  有效期
-                  <Select value={expiresInHours} onChange={(v) => setExpiresInHours(v as number)} style={{ width: '100px', marginLeft: '2px' }} size="small" borderless>
-                    <Select.Option value={24}>24 小时</Select.Option>
-                    <Select.Option value={72}>3 天</Select.Option>
-                    <Select.Option value={168}>7 天</Select.Option>
-                    <Select.Option value={720}>30 天</Select.Option>
-                  </Select>
-                </div>
-              </div>
-            </div>
-            <Button theme="solid" loading={addMembers.isPending} onClick={() => addMembers.mutate()} style={{ flexShrink: 0, height: '32px' }}>发送邀请</Button>
-          </div>
+          <Button theme="solid" loading={addMembers.isPending} onClick={() => addMembers.mutate()} style={{ flexShrink: 0 }}>发送邀请</Button>
         </div>
       </div>
     </div>

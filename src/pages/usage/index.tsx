@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getUsageSummary, getUsageSeries } from '@/services/usage'
 import { getLogHistogram } from '@/services/logs'
 import { useAuthStore } from '@/store/auth'
+import { useCurrency } from '@/hooks/use-platform-config'
 import type { SeriesDataPoint } from '@/types'
 import { formatChartTooltipDate } from '@/lib/format-date'
 
@@ -21,10 +22,10 @@ function getRangeDates(range: Range): { from: string; to: string } {
   return { from, to: now.toISOString() }
 }
 
-function formatMoney(amount: string, currency: string): string {
+function formatMoney(amount: string, symbol: string): string {
   const num = parseFloat(amount)
-  if (isNaN(num)) return `${currency} 0.00`
-  return `${currency} ${num.toFixed(4)}`
+  if (isNaN(num)) return `${symbol}0.00`
+  return `${symbol}${num.toFixed(4)}`
 }
 
 function formatNumber(n: number): string {
@@ -341,6 +342,7 @@ export default function UsagePage() {
   const [metric, setMetric] = useState<Metric>('spend')
 
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
+  const { symbol: currencySymbol } = useCurrency()
 
   const { from, to } = getRangeDates(range)
 
@@ -381,7 +383,7 @@ export default function UsagePage() {
 
   // ── KPI values
   const kpiSpend = summary
-    ? formatMoney(summary.total.spend.amount, summary.total.spend.currency)
+    ? formatMoney(summary.total.spend.amount, currencySymbol)
     : '—'
   const kpiRequests = summary ? formatNumber(summary.total.requests) : '—'
 

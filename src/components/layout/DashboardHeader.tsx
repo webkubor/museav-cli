@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import { Layout, Button, Dropdown, Avatar, Toast, Modal, Input } from '@douyinfe/semi-ui'
 import {
-  IconChevronDown,
-  IconHelpCircle,
-  IconLanguage,
-  IconSun,
-  IconMoon,
-  IconPlus,
-  IconSetting,
-  IconGlobe
-} from '@douyinfe/semi-icons'
+  LuChevronDown,
+  LuCircleHelp,
+  LuLanguages,
+  LuSun,
+  LuMoon,
+  LuPlus,
+  LuSettings,
+  LuGlobe
+} from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { modelGoLogos } from '@/config/brand-assets'
@@ -112,15 +112,18 @@ export const DashboardHeader: React.FC = () => {
     if (tenant.tenant_id === activeTenantId) return
     try {
       await switchTenant({ tenant_id: tenant.tenant_id })
-      // setAuth 同步写 localStorage，后续 listWorkspaces 请求头会携带新 tenant_id
       setAuth(account!, tenant.tenant_id, tenants, undefined)
       queryClient.invalidateQueries({ queryKey: ['tenants'] })
       queryClient.invalidateQueries({ queryKey: ['workspaces'] })
-      // 拉取新组织的工作区，自动激活默认工作区
-      const wsData = await listWorkspaces()
-      const wsItems = wsData.items ?? []
-      const defaultWs = wsItems.find((w) => w.is_default) ?? wsItems[0]
-      setActiveWorkspaceId(defaultWs?.workspace_id ?? '')
+      // 个人账户可能无工作区，独立 catch 避免影响租户切换
+      try {
+        const wsData = await listWorkspaces()
+        const wsItems = wsData.items ?? []
+        const defaultWs = wsItems.find((w) => w.is_default) ?? wsItems[0]
+        setActiveWorkspaceId(defaultWs?.workspace_id ?? '')
+      } catch {
+        setActiveWorkspaceId('')
+      }
       Toast.success(t('header.switchedOrg', { name: tenant.name }))
     } catch {
       Toast.error(t('switchTenantFailed') || '切换组织失败')
@@ -134,10 +137,14 @@ export const DashboardHeader: React.FC = () => {
         setAuth(account!, tenant.tenant_id, tenants, undefined)
         queryClient.invalidateQueries({ queryKey: ['tenants'] })
         queryClient.invalidateQueries({ queryKey: ['workspaces'] })
-        const wsData = await listWorkspaces()
-        const wsItems = wsData.items ?? []
-        const defaultWs = wsItems.find((w) => w.is_default) ?? wsItems[0]
-        setActiveWorkspaceId(defaultWs?.workspace_id ?? '')
+        try {
+          const wsData = await listWorkspaces()
+          const wsItems = wsData.items ?? []
+          const defaultWs = wsItems.find((w) => w.is_default) ?? wsItems[0]
+          setActiveWorkspaceId(defaultWs?.workspace_id ?? '')
+        } catch {
+          setActiveWorkspaceId('')
+        }
       } catch {
         Toast.error(t('switchTenantFailed') || '切换组织失败')
         return
@@ -309,7 +316,7 @@ export const DashboardHeader: React.FC = () => {
               ))}
               <Dropdown.Divider />
               <Dropdown.Item
-                icon={<IconPlus style={{ fontSize: '14px' }} />}
+                icon={<LuPlus style={{ fontSize: '14px' }} />}
                 onClick={() => setWorkspaceModalVisible(true)}
                 style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
               >
@@ -317,7 +324,7 @@ export const DashboardHeader: React.FC = () => {
               </Dropdown.Item>
               {isNonPersonal && (
                 <Dropdown.Item
-                  icon={<IconSetting style={{ fontSize: '14px' }} />}
+                  icon={<LuSettings style={{ fontSize: '14px' }} />}
                   onClick={() => navigate('/settings/workspace')}
                   style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
                 >
@@ -352,7 +359,7 @@ export const DashboardHeader: React.FC = () => {
           }}
           >
             <span style={{ fontWeight: 600, color: 'var(--semi-color-text-0)' }}>{activeWorkspace?.name ?? t('header.defaultWorkspace')}</span>
-            <IconChevronDown style={{ fontSize: '10px', color: 'var(--semi-color-text-1)' }} />
+            <LuChevronDown style={{ fontSize: '10px', color: 'var(--semi-color-text-1)' }} />
           </div>
         </Dropdown>
       </div>
@@ -382,7 +389,7 @@ export const DashboardHeader: React.FC = () => {
         >
           <Button
             theme="borderless"
-            icon={<IconLanguage />}
+            icon={<LuLanguages />}
             style={{ color: 'var(--semi-color-text-1)' }}
             title={t('language') || '语言'}
           />
@@ -417,7 +424,7 @@ export const DashboardHeader: React.FC = () => {
         >
           <Button
             theme="borderless"
-            icon={currentTheme === 'dark' ? <IconMoon /> : <IconSun />}
+            icon={currentTheme === 'dark' ? <LuMoon /> : <LuSun />}
             style={{ color: 'var(--semi-color-text-1)' }}
             title={t('theme') || '主题'}
           />
@@ -426,7 +433,7 @@ export const DashboardHeader: React.FC = () => {
         {/* 3. 帮助中心链接 */}
         <Button
           theme="borderless"
-          icon={<IconHelpCircle />}
+          icon={<LuCircleHelp />}
           style={{ color: 'var(--semi-color-text-1)' }}
           onClick={() => window.open('https://docs.modelgo.com', '_blank')}
           title={t('help') || '帮助'}
@@ -487,7 +494,7 @@ export const DashboardHeader: React.FC = () => {
                           size="small"
                           theme="borderless"
                           type="tertiary"
-                          icon={<IconSetting style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }} />}
+                          icon={<LuSettings style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }} />}
                           onClick={(e) => {
                             e.stopPropagation()
                             handleManageTenant(tenant)
@@ -502,7 +509,7 @@ export const DashboardHeader: React.FC = () => {
               })}
 
               <Dropdown.Item
-                icon={<IconPlus style={{ fontSize: '14px' }} />}
+                icon={<LuPlus style={{ fontSize: '14px' }} />}
                 onClick={handleOpenOrgModal}
                 style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
               >
@@ -513,7 +520,7 @@ export const DashboardHeader: React.FC = () => {
               <Dropdown.Divider />
               {isNonPersonal && (
                 <Dropdown.Item
-                  icon={<IconSetting style={{ fontSize: '14px' }} />}
+                  icon={<LuSettings style={{ fontSize: '14px' }} />}
                   onClick={() => navigate('/settings/organization')}
                   style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
                 >
@@ -522,7 +529,7 @@ export const DashboardHeader: React.FC = () => {
               )}
               {isNonPersonal && (
                 <Dropdown.Item
-                  icon={<IconGlobe style={{ fontSize: '14px' }} />}
+                  icon={<LuGlobe style={{ fontSize: '14px' }} />}
                   onClick={() => navigate('/settings/workspace')}
                   style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
                 >
@@ -530,7 +537,7 @@ export const DashboardHeader: React.FC = () => {
                 </Dropdown.Item>
               )}
               <Dropdown.Item
-                icon={<IconSetting style={{ fontSize: '14px' }} />}
+                icon={<LuSettings style={{ fontSize: '14px' }} />}
                 onClick={() => navigate('/settings/account')}
                 style={{ borderRadius: '6px', fontSize: '13px', color: 'var(--semi-color-text-1)' }}
               >

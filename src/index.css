@@ -1,6 +1,30 @@
 /* 重置默认 CSS，为 Semi Design 提供大厂极简云平台美学基础环境 */
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Outfit:wght@100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 
+@import "tailwindcss";
+
+@theme {
+  --color-brand-base: var(--brand-base);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-mid: var(--brand-mid);
+  --color-brand-light: var(--brand-light);
+  --color-brand-pale: var(--brand-pale);
+  --color-brand-glow: var(--brand-glow);
+  --color-brand-selected-bg: var(--brand-selected-bg);
+  --color-site-bg: var(--site-bg);
+  --color-card-bg: var(--card-bg);
+  --color-grid-color: var(--grid-color);
+  
+  --radius-lg: var(--radius-lg);
+  --radius-md: var(--radius-md);
+  --radius-sm: var(--radius-sm);
+  
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-focus: var(--shadow-focus);
+}
+
 /* ── 核心设计系统 Token ── */
 :root {
   /* CN 靛紫 (Indigo Modern) */
@@ -71,6 +95,7 @@
   /* 导航项自定义 */
   --nav-item-active-bg: var(--brand-selected-bg);
   --nav-item-hover-bg: rgba(15, 23, 42, 0.035);
+  --grid-color: rgba(15, 23, 42, 0.02);
 }
 
 /* Semi 在 body 上强行声明了 --semi-color-primary（蓝色），
@@ -98,6 +123,17 @@ body[theme-mode='dark'] {
   --semi-color-fill-0: rgba(255, 255, 255, 0.04);
   --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
   --nav-item-hover-bg: rgba(255, 255, 255, 0.045);
+  --grid-color: rgba(255, 255, 255, 0.02);
+
+  /* CN 靛紫 (Indigo Modern) 在暗色模式下的低对比度自适应色 */
+  --cn-pale: #1e1b4b; /* 深邃紫背景，平替明亮浅蓝色 */
+  --cn-glow: rgba(99, 102, 241, 0.25);
+  --cn-selected-bg: rgba(99, 102, 241, 0.15);
+
+  /* GO 翠绿 (Emerald Modern) 在暗色模式下的低对比度自适应色 */
+  --go-pale: #064e3b; /* 深邃绿背景，平替明亮浅绿色 */
+  --go-glow: rgba(16, 185, 129, 0.25);
+  --go-selected-bg: rgba(16, 185, 129, 0.15);
 }
 
 /* 海外市场 Token 切换 */
@@ -154,6 +190,51 @@ html, body, #root {
   color: var(--semi-color-text-0);
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── 🍏 全局 Semi UI 输入框极雅覆写与聚焦发光 ── */
+.semi-input-wrapper {
+  background-color: var(--semi-color-bg-0) !important;
+  border: 1px solid var(--semi-color-border) !important;
+  border-radius: var(--radius-sm) !important; /* 统一 8px 大厂圆角 */
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.semi-input-wrapper:hover {
+  border-color: var(--semi-color-text-2) !important;
+}
+
+/* 获焦高亮态：淡品牌色边框 + 品牌外发光 */
+.semi-input-wrapper-focus,
+.semi-input-wrapper:focus-within {
+  border-color: var(--brand-base) !important;
+  box-shadow: 0 0 0 2.5px var(--brand-glow) !important;
+  background-color: var(--semi-color-bg-0) !important;
+}
+
+.semi-input {
+  color: var(--semi-color-text-0) !important;
+  font-size: 13.5px !important;
+  font-family: inherit !important;
+}
+
+.semi-input::placeholder {
+  color: var(--semi-color-text-2) !important;
+  opacity: 0.65;
+}
+
+/* ── 🍏 全局 Semi UI 按钮弹性 Hover ── */
+.semi-button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.semi-button-primary.semi-button-solid:hover {
+  transform: translateY(-0.5px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08) !important;
+}
+
+.semi-button-primary.semi-button-solid:active {
+  transform: translateY(0);
 }
 
 /* 🍎 全局毛玻璃 & 深度感 */
@@ -359,3 +440,375 @@ html, body, #root {
 .semi-table-wrapper {
   border: none !important;
 }
+
+/* ── 💎 登录与注册毛玻璃晶莹卡片 ── */
+.glass-auth-card {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(15, 23, 42, 0.05) !important;
+  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(15, 23, 42, 0.01) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body[theme-mode='dark'] .glass-auth-card {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 24px 48px -15px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* ── 💎 鉴权中心输入框与表单高级优化 ── */
+.modern-auth-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--semi-color-text-1) !important;
+  margin-bottom: 6px;
+}
+
+.modern-auth-input {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--semi-color-border) !important;
+  padding: 0 14px;
+  font-size: 13.5px;
+  outline: none;
+  box-sizing: border-box;
+  color: var(--semi-color-text-0) !important;
+  background-color: var(--semi-color-bg-1) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modern-auth-input::placeholder {
+  color: var(--semi-color-text-2) !important;
+  opacity: 0.7;
+}
+
+/* 输入框聚焦 (Focus) 态：淡品牌色边框 + 品牌外发光 */
+.modern-auth-input:focus {
+  border-color: var(--brand-base) !important;
+  box-shadow: 0 0 0 3px var(--brand-glow) !important;
+  background-color: var(--semi-color-bg-0) !important;
+}
+
+/* 按钮大厂极简实色美学覆写 */
+.modern-auth-btn {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  background-color: #0f172a !important; /* 大厂极雅石墨黑 */
+  border: 1px solid #0f172a !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.modern-auth-btn:hover {
+  transform: translateY(-0.5px);
+  background-color: #1e293b !important;
+  border-color: #1e293b !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
+}
+
+.modern-auth-btn:active {
+  transform: translateY(0);
+}
+
+body[theme-mode='dark'] .modern-auth-btn {
+  background-color: #ffffff !important; /* 深色模式下大厂极雅耀白 */
+  border-color: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+body[theme-mode='dark'] .modern-auth-btn:hover {
+  background-color: #f1f5f9 !important;
+  border-color: #f1f5f9 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 统一品牌渐变底色类，供 Tailwind 样式抽离架构使用 */
+.background-gradient-brand {
+  background: linear-gradient(135deg, var(--brand-base) 0%, var(--brand-deep) 100%) !important;
+}
+
+/* ── 💎 鉴权中心全新高颜值样式抽离类 ── */
+.auth-layout-container {
+  @apply min-h-screen bg-site-bg flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300;
+  background-image: radial-gradient(circle at 50% 50%, transparent 10%, var(--site-bg) 80%),
+                    linear-gradient(var(--grid-color) 1px, transparent 1px),
+                    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+  background-size: 100% 100%, 36px 36px, 36px 36px;
+}
+
+.auth-blur-orb-primary {
+  @apply absolute -bottom-[10%] -left-[10%] w-[50vw] h-[50vw] max-w-[600px] rounded-full blur-[80px] pointer-events-none z-0;
+}
+
+.auth-blur-orb-secondary {
+  @apply absolute -top-[10%] -right-[10%] w-[45vw] h-[45vw] max-w-[550px] rounded-full blur-[80px] pointer-events-none z-0;
+}
+
+.auth-layout-content {
+  @apply w-full max-w-[420px] z-10 relative;
+}
+
+/* ── 💎 鉴权中心全新高颜值样式抽离类 ── */
+.auth-redirect-link {
+  @apply text-brand-base hover:text-brand-deep font-semibold transition-colors duration-200 no-underline;
+}
+
+.auth-form-container {
+  @apply flex flex-col gap-4;
+}
+
+.auth-error-message {
+  @apply text-rose-500 text-[11.5px] mt-1.5 font-medium block tracking-tight;
+}
+
+.auth-email-preview {
+  @apply flex items-center gap-2 p-2.5 rounded-lg text-[13px] border;
+  background-color: var(--semi-color-fill-0);
+  border-color: var(--semi-color-border);
+}
+
+.auth-email-text {
+  @apply flex-1 overflow-hidden text-ellipsis font-semibold;
+  color: var(--semi-color-text-1);
+}
+
+.auth-email-modify-btn {
+  @apply bg-none border-none text-brand-base hover:text-brand-deep cursor-pointer text-xs font-semibold p-0 shrink-0 transition-colors duration-200;
+}
+
+.auth-password-header {
+  @apply flex justify-between items-center mb-1.5;
+}
+
+.auth-forgot-password-link {
+  @apply text-xs text-brand-base hover:text-brand-deep font-semibold transition-colors duration-200 no-underline;
+}
+
+/* 三方登录样式抽离 */
+.social-divider {
+  @apply flex items-center gap-3 my-5;
+}
+
+.social-divider-line {
+  @apply flex-1 h-[1px];
+  background-color: var(--semi-color-border);
+}
+
+.social-divider-text {
+  @apply text-[11px] font-bold tracking-widest uppercase;
+  color: var(--semi-color-text-2);
+}
+
+.social-btn-group {
+  @apply flex gap-2;
+}
+
+.social-btn {
+  @apply flex-1 flex items-center justify-center h-10 border rounded-lg text-xs font-semibold transition-all duration-200 !important;
+  border-color: var(--semi-color-border) !important;
+  background-color: var(--semi-color-bg-1) !important;
+  color: var(--semi-color-text-1) !important;
+}
+
+.social-btn:hover {
+  background-color: var(--semi-color-bg-2) !important;
+  color: var(--semi-color-text-0) !important;
+}
+
+/* ── 💎 通用元组件样式抽离与大厂极简现代美学（硅谷风格） ── */
+.modern-btn {
+  @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-glow disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0;
+}
+
+.modern-btn-default {
+  @apply text-white shadow-sm transition-all duration-200 !important;
+  background-color: #0f172a !important; /* 浅色大厂极雅实色黑 */
+  border: 1px solid #0f172a !important;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05) !important;
+}
+
+.modern-btn-default:hover {
+  @apply -translate-y-[0.5px] !important;
+  background-color: #1e293b !important;
+  border-color: #1e293b !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
+}
+
+body[theme-mode='dark'] .modern-btn-default {
+  background-color: #ffffff !important; /* 深色大厂极雅耀白 */
+  border-color: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+body[theme-mode='dark'] .modern-btn-default:hover {
+  background-color: #f1f5f9 !important;
+  border-color: #f1f5f9 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.modern-btn-destructive {
+  @apply bg-rose-500 text-white shadow-sm hover:bg-rose-600 active:bg-rose-700 !important;
+  border: none !important;
+}
+
+.modern-btn-outline {
+  @apply border bg-transparent transition-all duration-150 !important;
+  border-color: var(--semi-color-border) !important;
+  color: var(--semi-color-text-0) !important;
+}
+
+.modern-btn-outline:hover {
+  background-color: var(--semi-color-fill-0) !important;
+}
+
+.modern-btn-secondary {
+  @apply transition-all duration-150 !important;
+  background-color: var(--semi-color-fill-0) !important;
+  color: var(--semi-color-text-1) !important;
+}
+
+.modern-btn-secondary:hover {
+  background-color: var(--semi-color-fill-1) !important;
+  color: var(--semi-color-text-0) !important;
+}
+
+.modern-btn-ghost {
+  @apply transition-all duration-150 !important;
+  color: var(--semi-color-text-1) !important;
+}
+
+.modern-btn-ghost:hover {
+  background-color: var(--semi-color-fill-0) !important;
+  color: var(--semi-color-text-0) !important;
+}
+
+.modern-btn-link {
+  @apply underline-offset-4 hover:underline transition-all duration-150 !important;
+  color: var(--brand-base) !important;
+}
+
+.modern-btn-link:hover {
+  color: var(--brand-deep) !important;
+}
+
+/* 通用输入框极雅样式抽离 */
+.modern-input-field {
+  @apply flex h-10 w-full rounded-lg border px-3.5 py-2 text-sm outline-none transition-all duration-200 file:border-0 file:bg-transparent file:text-sm file:font-semibold disabled:cursor-not-allowed disabled:opacity-50 !important;
+  border-color: var(--semi-color-border) !important;
+  background-color: var(--semi-color-bg-1) !important;
+  color: var(--semi-color-text-0) !important;
+}
+
+.modern-input-field::placeholder {
+  color: var(--semi-color-text-2) !important;
+  opacity: 0.7;
+}
+
+.modern-input-field:hover {
+  border-color: var(--semi-color-text-2) !important;
+}
+
+.modern-input-field:focus {
+  border-color: var(--brand-base) !important;
+  box-shadow: 0 0 0 2.5px var(--brand-glow) !important;
+  background-color: var(--semi-color-bg-0) !important;
+}
+
+/* ── 💎 常用组件大厂级 UX 规范与微动效微交互 ── */
+
+/* 1. 终极平滑过渡与弹性曲线（硅谷极客动效 ease-out-expo） */
+.transition-ux {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition-duration: 350ms !important;
+}
+
+/* 2. 边缘渐变遮罩 (Scrolling Fade Edge) */
+/* 左右滚动高透朦胧淡出 (横向滚动 Table 或 Tab 导航) */
+.fade-edge-x {
+  mask-image: linear-gradient(to right, transparent, white 20px, white calc(100% - 20px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, white 20px, white calc(100% - 20px), transparent);
+}
+
+/* 上下滚动高透朦胧淡出 (纵向滚动 SideSheet 抽屉或 Select 下拉) */
+.fade-edge-y {
+  mask-image: linear-gradient(to bottom, transparent, white 20px, white calc(100% - 20px), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, white 20px, white calc(100% - 20px), transparent);
+}
+
+/* 3. 卡片微光与弹簧悬浮 (Card Spring Glow) */
+.card-glow-hover {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.card-glow-hover:hover {
+  transform: translateY(-1.5px) !important;
+  border-color: var(--brand-mid) !important;
+  box-shadow: 0 10px 25px -5px var(--brand-glow), 0 8px 16px -6px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* 4. 硅谷级微交互动效 */
+
+/* 选项卡 Tab Pane 的渐现与微缩放弹性 */
+.semi-tabs-pane {
+  animation: tabPaneEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes tabPaneEntrance {
+  from {
+    opacity: 0;
+    transform: scale(0.99) translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 表格行 (Table Row) 微平移悬停反馈 */
+.semi-table-row {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.semi-table-row:hover {
+  transform: scale(1.001) translateX(1.5px);
+  box-shadow: inset 2px 0 0 var(--brand-base);
+}
+
+/* 下拉菜单项 (Select Option) 微移高亮反馈 */
+.semi-select-option {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.semi-select-option-hover {
+  background-color: var(--semi-color-fill-0) !important;
+  padding-left: 18px !important; /* 精致向右平移 4px 反馈 (原本是 14px) */
+  color: var(--semi-color-text-0) !important;
+}
+
+/* 交互型 Badge 徽章动效 */
+.badge-interactive {
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.badge-interactive:hover {
+  transform: scale(1.04);
+  filter: brightness(0.96);
+}
+
+/* 自动为全站所有 SideSheet 抽屉的滚动体注入高级边缘渐变淡出遮罩 */
+.semi-sidesheet-body {
+  mask-image: linear-gradient(to bottom, transparent, white 20px, white calc(100% - 20px), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, white 20px, white calc(100% - 20px), transparent);
+}
+

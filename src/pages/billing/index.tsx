@@ -15,7 +15,7 @@ import {
   listRecharges,
   cancelRecharge,
 } from '@/services/billing'
-import { getPlatformConfig } from '@/services/platform'
+import { usePlatformConfig, useCurrency } from '@/hooks/use-platform-config'
 import { useAuthStore } from '@/store/auth'
 import { isDomestic } from '@/lib/market'
 import type { RechargeOrder } from '@/types'
@@ -37,20 +37,13 @@ function TopUpModal({ visible, onClose, tenantId }: {
   const queryClient = useQueryClient()
   const [amount, setAmount] = useState('100')
 
-  const { data: platformConfig } = useQuery({
-    queryKey: ['platform-config'],
-    queryFn: getPlatformConfig,
-    staleTime: Infinity,
-    retry: 1,
-  })
+  const { data: platformConfig } = usePlatformConfig()
+  const { currency, symbol: currencySymbol } = useCurrency()
 
   // 优先走 Swagger platform-config 接口，降级到全量
   const CHANNELS = platformConfig?.enabled_channels?.length
     ? ALL_CHANNELS.filter((c) => platformConfig.enabled_channels.includes(c.value))
     : ALL_CHANNELS
-
-  const currency = platformConfig?.settlement_currency ?? 'CNY'
-  const currencySymbol = currency === 'USD' ? '$' : '¥'
 
   const [channel, setChannel] = useState<'alipay' | 'wechat' | 'stripe'>('alipay')
   const effectiveChannel: 'alipay' | 'wechat' | 'stripe' = (
@@ -183,15 +176,7 @@ export default function BillingPage() {
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
   const [topUpVisible, setTopUpVisible] = useState(false)
 
-  // ─── Platform config (currency) ──────────────────────────────────────────
-  const { data: platformConfig } = useQuery({
-    queryKey: ['platform-config'],
-    queryFn: getPlatformConfig,
-    staleTime: Infinity,
-    retry: 1,
-  })
-  const currency = platformConfig?.settlement_currency ?? 'CNY'
-  const currencySymbol = currency === 'USD' ? '$' : '¥'
+  const { symbol: currencySymbol } = useCurrency()
 
   // ─── Balance Query ───────────────────────────────────────────────────────
   const { data: balance, isLoading: balanceLoading } = useQuery({

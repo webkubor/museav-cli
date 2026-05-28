@@ -8,6 +8,7 @@ import type { CallLogItem, CallLogDetail, LogPayload } from '@/types'
 import type { CallLogListParams } from '@/interfaces/logs'
 import { formatDateTimeWithSeconds } from '@/lib/format-date'
 import { LOG_STATUS_CONFIG } from '@/constants/status'
+import { useCurrency } from '@/hooks/use-platform-config'
 
 const { Text } = Typography
 
@@ -342,6 +343,7 @@ export default function LogsPage() {
   const totals = statsQuery.data?.totals
   const totalRequests = totals?.total_requests ?? 0
   const totalTokens = totals?.total_tokens ?? 0
+  const { symbol: currencySymbol } = useCurrency()
   const totalCost = totals?.total_cost
   const errorRate = totals?.error_rate ?? 0
 
@@ -412,7 +414,7 @@ export default function LogsPage() {
               label="总费用"
               value={
                 totalCost
-                  ? `${totalCost.currency} ${parseFloat(totalCost.amount).toFixed(4)}`
+                  ? `${totalCost.currency || currencySymbol}${parseFloat(totalCost.amount).toFixed(4)}`
                   : '—'
               }
               sub="已结算金额"

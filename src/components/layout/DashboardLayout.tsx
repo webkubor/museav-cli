@@ -20,6 +20,7 @@ import { DashboardSidebar } from './DashboardSidebar'
 import { CustomerService } from '@/components/customer-service'
 import { navConfig } from '@/config/nav'
 import { isDomestic } from '@/lib/market'
+import { usePlatformConfig } from '@/hooks/use-platform-config'
 
 const { Content } = Layout
 
@@ -62,6 +63,7 @@ export function DashboardLayout() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
+  usePlatformConfig() // 预热全局缓存，子组件通过 useCurrency() 零请求读取
   const [collapsed, setCollapsed] = useState(false)
 
   const tenants = useAuthStore((s) => s.tenants)

@@ -21,6 +21,7 @@ import type {
 } from '@/interfaces/guardrails'
 import type { WorkspaceMember, ApiKeyItem } from '@/types'
 import { GUARDRAIL_STATUS_CONFIG, ENFORCEMENT_CONFIG, PERIOD_LABEL } from '@/constants/status'
+import { useCurrency } from '@/hooks/use-platform-config'
 
 // ── Styles ──────────────────────────────────────────────────────────────────
 
@@ -784,6 +785,7 @@ function AddBudgetPolicyModal({
   onConfirm: (body: Parameters<typeof addBudgetPolicy>[1]) => void
   onCancel: () => void
 }) {
+  const { currency } = useCurrency()
   const [scope, setScope] = useState<'guardrail_total' | 'per_member' | 'per_api_key'>(
     'guardrail_total'
   )
@@ -804,7 +806,7 @@ function AddBudgetPolicyModal({
     }
     if (spendLimit && parseFloat(spendLimit) > 0) {
       body.spend_limit_amount = spendLimit
-      body.currency = 'CNY'
+      body.currency = currency
     }
     if (tokenLimit && parseInt(tokenLimit) > 0) body.token_limit = parseInt(tokenLimit)
     if (requestLimit && parseInt(requestLimit) > 0) body.request_limit = parseInt(requestLimit)
@@ -888,7 +890,7 @@ function AddBudgetPolicyModal({
           }}
         >
           <div>
-            <label style={{ ...fieldLabelStyle, fontSize: '10px' }}>金额上限 (CNY)</label>
+            <label style={{ ...fieldLabelStyle, fontSize: '10px' }}>金额上限 ({currency})</label>
             <Input
               type="number"
               value={spendLimit}

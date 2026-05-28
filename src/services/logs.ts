@@ -82,6 +82,7 @@ type ModelLogStatsResponse = {
     spend?: string
     requests?: number
     tokens?: number
+    currency?: string
   }
 }
 
@@ -92,7 +93,7 @@ function numberOrZero(value: number | undefined): number {
 function money(amount: string | undefined, currency: string | undefined): Money {
   return {
     amount: amount && amount.trim() ? amount : '0',
-    currency: currency && currency.trim() ? currency : 'USD',
+    currency: currency && currency.trim() ? currency : '',
   }
 }
 
@@ -238,7 +239,7 @@ function toLogStats(data: ModelLogStatsResponse): LogStats {
       error_rate: 0,
       avg_duration_ms: 0,
       total_tokens: data.totals?.tokens ?? 0,
-      total_cost: money(data.totals?.spend, 'USD'),
+      total_cost: money(data.totals?.spend, data.totals?.currency),
     },
   }
 }

@@ -18,7 +18,8 @@ import { getMarketConfig } from '@/config/market'
 import { useAuthStore } from '@/store/auth'
 import { useLangStore } from '@/store/use-brand-store'
 import { switchTenant, logout } from '@/services/auth'
-import { createTenant, listTenants } from '@/services/tenants'
+import { listTenants } from '@/services/tenants'
+import { createOrganization } from '@/services/organizations'
 import { applyTheme, getUserTheme, saveTheme, type Theme } from '@/lib/theme'
 import { useTranslation } from 'react-i18next'
 import { listWorkspaces, createWorkspace } from '@/services/workspaces'
@@ -43,7 +44,6 @@ export const DashboardHeader: React.FC = () => {
   // Modal and Form States
   const [orgModalVisible, setOrgModalVisible] = useState(false)
   const [newOrgName, setNewOrgName] = useState('')
-  const [newOrgSlug, setNewOrgSlug] = useState('')
 
   const [workspaceModalVisible, setWorkspaceModalVisible] = useState(false)
   const [wsName, setWsName] = useState('')
@@ -167,22 +167,17 @@ export const DashboardHeader: React.FC = () => {
   }
 
   const createOrgMutation = useMutation({
-    mutationFn: () => createTenant({
-      name: newOrgName.trim(),
-      slug: newOrgSlug.trim(),
-      type: 'enterprise',
-    }),
+    mutationFn: () => createOrganization({ name: newOrgName.trim() }),
     onSuccess: async (org) => {
       Toast.success(t('header.createOrgSuccess', { name: org.name }))
       setOrgModalVisible(false)
       setNewOrgName('')
-      setNewOrgSlug('')
       queryClient.invalidateQueries({ queryKey: ['tenants'] })
-      // 切换至新创建的组织
+      // 切换至新创建的组织，并激活其默认工作区
       try {
         await switchTenant({ tenant_id: org.tenant_id })
         setAuth(account!, org.tenant_id, tenants, undefined)
-        setActiveWorkspaceId('')
+        setActiveWorkspaceId(org.default_workspace_id)
       } catch {
         // 切换失败不影响创建成功的提示
       }
@@ -192,27 +187,18 @@ export const DashboardHeader: React.FC = () => {
     },
   })
 
-  function slugFromName(name: string) {
-    return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').slice(0, 32)
-  }
-
   const handleOpenOrgModal = () => {
     if (tenants.length >= 5) {
       Toast.warning(t('header.maxOrgWarning'))
       return
     }
     setNewOrgName('')
-    setNewOrgSlug('')
     setOrgModalVisible(true)
   }
 
   const handleCreateOrgSubmit = () => {
     if (!newOrgName.trim()) {
       Toast.error(t('header.orgNameRequired'))
-      return
-    }
-    if (!newOrgSlug.trim()) {
-      Toast.error(t('header.orgSlugRequired'))
       return
     }
     createOrgMutation.mutate()
@@ -587,42 +573,23 @@ export const DashboardHeader: React.FC = () => {
         visible={orgModalVisible}
         onOk={handleCreateOrgSubmit}
         confirmLoading={createOrgMutation.isPending}
-        onCancel={() => { setOrgModalVisible(false); setNewOrgName(''); setNewOrgSlug('') }}
+        onCancel={() => { setOrgModalVisible(false); setNewOrgName('') }}
         width={420}
         style={{ borderRadius: '12px' }}
         okText={t('apiKeys.createModal.confirm')}
         cancelText={t('apiKeys.createModal.cancel')}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '12px 0' }}>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '6px' }}>
-              {t('header.orgNameLabel')}
-            </div>
-            <Input
-              value={newOrgName}
-              onChange={(val) => {
-                setNewOrgName(val)
-                setNewOrgSlug(slugFromName(val))
-              }}
-              placeholder={t('header.orgNamePlaceholder')}
-              style={{ borderRadius: '8px' }}
-              autoFocus
-            />
+        <div style={{ padding: '12px 0' }}>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '6px' }}>
+            {t('header.orgNameLabel')}
           </div>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '6px' }}>
-              {t('header.orgSlugLabel')}
-            </div>
-            <Input
-              value={newOrgSlug}
-              onChange={(val) => setNewOrgSlug(val)}
-              placeholder="my-team"
-              style={{ borderRadius: '8px' }}
-            />
-            <div style={{ fontSize: '11px', color: 'var(--semi-color-text-2)', marginTop: '4px' }}>
-              {t('header.orgSlugHint')}
-            </div>
-          </div>
+          <Input
+            value={newOrgName}
+            onChange={(val) => setNewOrgName(val)}
+            placeholder={t('header.orgNamePlaceholder')}
+            style={{ borderRadius: '8px' }}
+            autoFocus
+          />
         </div>
       </Modal>
 

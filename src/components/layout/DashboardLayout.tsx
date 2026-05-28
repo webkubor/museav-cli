@@ -91,7 +91,7 @@ export function DashboardLayout() {
     },
     ...(isDevTools ? [{
       itemKey: 'platform-config',
-      text: '平台配置',
+      text: '接口调试',
       icon: <IconWrench style={{ fontSize: '16px', color: '#d97706' }} />,
     }] : []),
   ]
@@ -120,7 +120,7 @@ export function DashboardLayout() {
     guardrails:       [t('nav.home'), t('nav.guardrails')],
     observability:    [t('nav.home'), t('nav.observability')],
     'invitations-mgmt': [t('nav.home'), t('nav.invitations')],
-    'platform-config':  [t('nav.home'), '平台配置'],
+    'platform-config':  [t('nav.home'), '接口调试'],
     'settings/account':      [t('nav.home'), t('nav.settings'), t('nav.account')],
     'settings/workspace':    [t('nav.home'), t('nav.settings'), t('nav.workspace')],
     'settings/organization': [t('nav.home'), t('nav.settings'), t('nav.organization')],

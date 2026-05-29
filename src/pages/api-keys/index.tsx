@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { getMarket } from '@/lib/market'
+import { getMarketConfig } from '@/config/market'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
@@ -13,7 +15,7 @@ import {
   TableRow,
   TableCell
 } from '@/components/ui/Table'
-import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers , LuKey } from 'react-icons/lu'
+import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers, LuKey, LuCode } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { listApiKeys, createApiKey, revokeApiKey } from '@/services/api-keys'
@@ -47,6 +49,48 @@ const SCOPE_OPTIONS: { value: ScopeType; icon: React.ReactNode; label: string; d
   },
 ]
 
+
+const _market = getMarket()
+const _marketConfig = getMarketConfig(_market)
+
+type QuickTab = 'python' | 'node' | 'curl'
+
+function getQuickSnippet(tab: QuickTab, baseUrl: string): string {
+  if (tab === 'python') return `import openai
+
+client = openai.OpenAI(
+    api_key="YOUR_API_KEY",
+    base_url="${baseUrl}"
+)
+
+response = client.chat.completions.create(
+    model="deepseek-chat",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+print(response.choices[0].message.content)`
+
+  if (tab === 'node') return `import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: "YOUR_API_KEY",
+  baseURL: "${baseUrl}",
+});
+
+const res = await client.chat.completions.create({
+  model: "deepseek-chat",
+  messages: [{ role: "user", content: "Hello!" }],
+});
+console.log(res.choices[0].message.content);`
+
+  return `curl ${baseUrl}/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -d '{
+    "model": "deepseek-chat",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'`
+}
+
 export default function ApiKeysPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -55,6 +99,8 @@ export default function ApiKeysPage() {
   const [revealVisible, setRevealVisible] = useState(false)
   const [createdKeyText, setCreatedKeyText] = useState('')
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null)
+  const [quickTab, setQuickTab] = useState<QuickTab>('python')
+  const [quickCopied, setQuickCopied] = useState<string | null>(null)
 
   // 表单状态
   const [name, setName] = useState('')
@@ -163,12 +209,87 @@ export default function ApiKeysPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+
+  const baseUrl = `https://${_marketConfig.apiDomain}/v1`
+
+  function handleQuickCopy(key: string, text: string) {
+    navigator.clipboard.writeText(text)
+    setQuickCopied(key)
+    setTimeout(() => setQuickCopied(null), 2000)
+  }
+
   return (
     <div className="space-y-6">
       {/* 头部 */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-mg-text-0">{t('apiKeys.title')}</h1>
         <p className="text-sm text-mg-text-1 mt-1.5">{t('apiKeys.desc')}</p>
+      </div>
+
+
+      {/* 快速接入配置 */}
+      <div className="rounded-xl border border-mg-border overflow-hidden bg-mg-bg-0">
+        {/* 标题栏 */}
+        <div className="px-5 py-3.5 border-b border-mg-border/60 flex items-center gap-2">
+          <LuCode size={13} className="text-mg-text-2 shrink-0" />
+          <span className="text-[13px] font-semibold text-mg-text-0">快速接入</span>
+          <span className="text-[12px] text-mg-text-2 font-normal">· OpenAI 兼容格式</span>
+        </div>
+
+        {/* 配置项 */}
+        <div className="px-5 py-4 grid grid-cols-1 gap-2.5 border-b border-mg-border/60">
+          {[
+            { label: 'Base URL', value: baseUrl },
+            { label: 'Authorization', value: 'Bearer YOUR_API_KEY' },
+            { label: 'Content-Type', value: 'application/json' },
+          ].map(({ label, value }) => (
+            <div key={label} className="flex items-center gap-3 text-sm">
+              <span className="w-[130px] shrink-0 text-[12px] font-semibold text-mg-text-2 uppercase tracking-wide">{label}</span>
+              <code className="flex-1 font-mono text-[12.5px] text-mg-text-0 bg-mg-fill-0/60 px-3 py-1.5 rounded-lg border border-mg-border/40 truncate">
+                {value}
+              </code>
+              <button
+                onClick={() => handleQuickCopy(label, value)}
+                className="shrink-0 p-1.5 rounded-md text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-0/60 transition-all cursor-pointer"
+              >
+                {quickCopied === label ? <LuCheck size={13} className="text-emerald-500" /> : <LuCopy size={13} />}
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* 代码 Tab + 复制 */}
+        <div style={{ background: '#0f172a' }}>
+          <div className="flex items-center justify-between px-4 pt-3 pb-0">
+            <div className="flex gap-1">
+              {(['python', 'node', 'curl'] as QuickTab[]).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setQuickTab(tab)}
+                  className="px-3 py-1.5 rounded-md text-[11px] font-mono font-semibold transition-all cursor-pointer"
+                  style={{
+                    color: quickTab === tab ? '#38bdf8' : '#64748b',
+                    background: quickTab === tab ? '#1e293b' : 'transparent',
+                  }}
+                >
+                  {tab === 'python' ? 'Python' : tab === 'node' ? 'Node.js' : 'cURL'}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => handleQuickCopy('code', getQuickSnippet(quickTab, baseUrl))}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition-all cursor-pointer"
+              style={{ color: quickCopied === 'code' ? '#34d399' : '#64748b' }}
+            >
+              {quickCopied === 'code'
+                ? <><LuCheck size={11} /> 已复制</>
+                : <><LuCopy size={11} /> 复制</>}
+            </button>
+          </div>
+          <pre className="px-5 py-4 text-[12.5px] font-mono text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">
+            {getQuickSnippet(quickTab, baseUrl)}
+          </pre>
+        </div>
       </div>
 
       {/* 新建密钥横幅 */}

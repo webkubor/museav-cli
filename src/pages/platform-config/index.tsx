@@ -96,7 +96,7 @@ function EndpointCard({ def, state, onCall }: {
           <div className="absolute top-3 right-3 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
             200 OK
           </div>
-          <pre className="m-0 p-5 text-xs font-mono text-slate-300 overflow-x-auto max-h-[360px] leading-relaxed shadow-inner select-all w-full min-w-0">
+          <pre className="m-0 p-5 text-xs font-mono text-slate-300 overflow-auto max-h-[360px] leading-relaxed shadow-inner select-all w-full min-w-0">
             {JSON.stringify(state.data, null, 2)}
           </pre>
         </div>

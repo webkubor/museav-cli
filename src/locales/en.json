@@ -514,7 +514,35 @@
       "extraInApi": "Extra in API (Not standalone in Console)",
       "extraInFrontend": "Extra in Frontend (Interactive tools based on APIs)",
       "matched": "Aligned Modules",
-      "matchedDesc": "These modules have a clear mapping between Frontend and API."
+      "matchedDesc": "These modules have a clear mapping between Frontend and API.",
+      "gaps": {
+        "title": "Module Alignment Details (UI vs API)",
+        "guardrail": {
+          "title": "Guardrails",
+          "ui": "Focuses on creation, member/APIKey assignment, and simple hard-limit budgets.",
+          "api": "Supports granular Budget Policies with various aggregation_scope and enforcement_mode options. UI currently hardcodes these to hard_limit."
+        },
+        "observability": {
+          "title": "Observability",
+          "ui": "Focuses on toggle configuration and Destination management.",
+          "api": "Provides full Dead Letter management (list/delete/retry), which is entirely missing from the UI."
+        },
+        "billing": {
+          "title": "Billing vs Credits/Transactions",
+          "ui": "Unified under Billing management (recharges, transactions, invoices).",
+          "api": "Split into credits and transaction tags. UI successfully aggregates these for better UX."
+        },
+        "models": {
+          "title": "Models Experience",
+          "ui": "Highly productized 'Experience Center' with Explore, Compare, Chat, and History. It's a key new module in Console.",
+          "api": "Split into catalog (metadata) and agent (runtime). API also has pricing/plans and a global providers list not yet independent in the UI."
+        },
+        "apiKeys": {
+          "title": "API Keys",
+          "ui": "Basic management with name, env, and scope (Personal/Workspace/Member).",
+          "api": "API already supports spending_limit and expires_at, which are currently hidden in the product UI."
+        }
+      }
     },
     "perm": {
       "tenantType": "Tenant Type",
@@ -570,6 +598,11 @@
         "perm1": "Revoke own invitations only",
         "perm2": "Cannot change roles"
       }
+    },
+    "tab": {
+      "endpoints": "Endpoints",
+      "modules": "Modules",
+      "permissions": "Permissions"
     }
   },
   "usage": {

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { LuSettings, LuCheck, LuDollarSign, LuBox, LuKey } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { Badge } from '@/components/ui/Badge'
 import { useAuthStore } from '@/store/auth'
 import { getPlatformConfig } from '@/services/platform'
@@ -437,7 +438,7 @@ export default function PlatformConfigPage() {
   const groups = [...new Set(endpoints.map((e) => e.group))]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-mg-text-0">
@@ -452,32 +453,51 @@ export default function PlatformConfigPage() {
         </Badge>
       </div>
 
-      <ModuleComparisonPanel />
+      <Tabs defaultValue="endpoints">
+        <TabsList>
+          <TabsTrigger value="endpoints">{t('platformConfig.tab.endpoints')}</TabsTrigger>
+          <TabsTrigger value="modules">{t('platformConfig.tab.modules')}</TabsTrigger>
+          <TabsTrigger value="permissions">{t('platformConfig.tab.permissions')}</TabsTrigger>
+        </TabsList>
 
-      <DetailGapsPanel />
-
-      <PermissionPanel />
-
-      {groups.map((group) => (
-        <div key={group} className="space-y-3">
-          <div className="text-[11px] font-bold text-mg-text-2 tracking-widest uppercase mb-2">
-            {group}
+        <TabsContent value="endpoints">
+          <div className="space-y-6 pt-2">
+            {groups.map((group) => (
+              <div key={group} className="space-y-3">
+                <div className="text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">
+                  {group}
+                </div>
+                <div className="space-y-3">
+                  {endpoints.filter((e) => e.group === group).map((def) => {
+                    const key = def.path
+                    return (
+                      <EndpointCard
+                        key={key}
+                        def={def}
+                        state={states[key]}
+                        onCall={() => call(key, def.call)}
+                      />
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="space-y-3">
-            {endpoints.filter((e) => e.group === group).map((def) => {
-              const key = def.path
-              return (
-                <EndpointCard
-                  key={key}
-                  def={def}
-                  state={states[key]}
-                  onCall={() => call(key, def.call)}
-                />
-              )
-            })}
+        </TabsContent>
+
+        <TabsContent value="modules">
+          <div className="space-y-6 pt-2">
+            <ModuleComparisonPanel />
+            <DetailGapsPanel />
           </div>
-        </div>
-      ))}
+        </TabsContent>
+
+        <TabsContent value="permissions">
+          <div className="pt-2">
+            <PermissionPanel />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

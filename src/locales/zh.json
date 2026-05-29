@@ -514,7 +514,35 @@
       "extraInApi": "API 多出的模块 (未在 Console 独立体现)",
       "extraInFrontend": "前端多出的模块 (基于基础 API 封装的交互工具)",
       "matched": "已对齐模块",
-      "matchedDesc": "这些模块在前端和 API 中均有明确的对应关系。"
+      "matchedDesc": "这些模块在前端和 API 中均有明确的对应关系。",
+      "gaps": {
+        "title": "核心模块功能对齐细节 (UI vs API)",
+        "guardrail": {
+          "title": "安全护栏 (Guardrails)",
+          "ui": "侧重创建、成员/APIKey 绑定及简单硬限额预算。",
+          "api": "API 支持更细粒度的预算策略 (Budget Policies)，如不同的聚合维度 (aggregation_scope) 和执行模式 (enforcement_mode)，UI 目前仅展示并固定为 hard_limit。"
+        },
+        "observability": {
+          "title": "可观测性 (Observability)",
+          "ui": "侧重开关配置及转发目的地 (Destinations) 管理。",
+          "api": "API 拥有完整的死信队列 (Dead Letters) 处理接口 (查看/删除/重试)，该功能在当前 UI 中完全缺失。"
+        },
+        "billing": {
+          "title": "账单/计费 (Billing vs Credits)",
+          "ui": "统一归类为账单管理，包含充值、流水和发票。",
+          "api": "在 API 层拆分为 credits (余额/充值) 和 transaction (流水)，UI 完成了较好的业务聚合。"
+        },
+        "models": {
+          "title": "模型中心 (Models Experience)",
+          "ui": "高度产品化的「体验中心」，包含广场、对比、对话及历史。它是 Console 的核心新增模块。",
+          "api": "API 层级拆分为 catalog (静态目录数据) 和 agent (会话运行态)。API 还有 pricing/plans 及 providers 全局目录，UI 暂无独立入口。"
+        },
+        "apiKeys": {
+          "title": "API Keys",
+          "ui": "支持名称、环境及 Scope (个人/工作区/成员) 的基本管理。",
+          "api": "API 层面其实已支持 spending_limit (限额) 和 expires_at (过期时间)，目前在产品 UI 中被隐藏。"
+        }
+      }
     },
     "perm": {
       "tenantType": "租户类型 (Tenant Type)",
@@ -570,6 +598,11 @@
         "perm1": "仅撤销自己发出的邀请",
         "perm2": "不可修改成员角色"
       }
+    },
+    "tab": {
+      "endpoints": "接口调试",
+      "modules": "模块对照",
+      "permissions": "权限说明"
     }
   },
   "usage": {

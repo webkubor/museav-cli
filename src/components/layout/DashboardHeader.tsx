@@ -295,7 +295,7 @@ export const DashboardHeader: React.FC = () => {
       <div className="flex items-center gap-6">
         {/* Logo 展现 */}
         <div 
-          className="flex items-center gap-2.5 cursor-pointer active:scale-[0.97] transition-transform duration-150 select-none"
+          className="flex items-center gap-2 cursor-pointer active:scale-[0.97] transition-transform duration-150 select-none"
           onClick={() => navigate('/')}
         >
           {/* Icon mark with shimmer */}
@@ -303,11 +303,11 @@ export const DashboardHeader: React.FC = () => {
             <img 
               src={modelGoIcons[market]} 
               alt="ModelGo Icon" 
-              className="h-7 w-auto object-contain block"
+              className="h-5 w-auto object-contain block"
             />
           </div>
           {/* Brand name text */}
-          <span className="font-bold text-[15px] tracking-tight text-mg-text-0 leading-none">
+          <span className="font-bold text-[16px] tracking-tight text-mg-text-0 leading-none">
             {t(market === 'global' ? 'welcomeBanner.brandNameGlobal' : 'welcomeBanner.brandNameDomestic')}
           </span>
           {/* Live status green dot */}

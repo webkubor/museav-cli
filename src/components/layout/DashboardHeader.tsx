@@ -13,7 +13,7 @@ import {
 } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { modelGoLogos } from '@/config/brand-assets'
+import { modelGoIcons } from '@/config/brand-assets'
 import { getMarket, type Lang } from '@/lib/market'
 import { getMarketConfig } from '@/config/market'
 import { useAuthStore } from '@/store/auth'
@@ -295,14 +295,23 @@ export const DashboardHeader: React.FC = () => {
       <div className="flex items-center gap-6">
         {/* Logo 展现 */}
         <div 
-          className="flex items-center cursor-pointer active:scale-95 transition-transform duration-150"
+          className="flex items-center gap-2.5 cursor-pointer active:scale-[0.97] transition-transform duration-150 select-none"
           onClick={() => navigate('/')}
         >
-          <img 
-            src={modelGoLogos[market]} 
-            alt="ModelGo Logo" 
-            className="h-7 w-auto object-contain block"
-          />
+          {/* Icon mark with shimmer */}
+          <div className="logo-shimmer relative rounded-sm overflow-hidden shrink-0">
+            <img 
+              src={modelGoIcons[market]} 
+              alt="ModelGo Icon" 
+              className="h-7 w-auto object-contain block"
+            />
+          </div>
+          {/* Brand name text */}
+          <span className="font-bold text-[15px] tracking-tight text-mg-text-0 leading-none">
+            {t(market === 'global' ? 'brandNameGlobal' : 'brandNameDomestic')}
+          </span>
+          {/* Live status green dot */}
+          <span className="logo-status-dot" />
         </div>
 
         {/* 竖隔线 */}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { LuSettings, LuCheck, LuDollarSign } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -295,6 +296,74 @@ function ModuleComparisonPanel() {
   )
 }
 
+function DetailGapsPanel() {
+  const { t } = useTranslation()
+
+  const GAP_ITEMS = [
+    {
+      key: 'guardrail',
+      icon: <LuSettings className="w-3.5 h-3.5" />,
+      color: 'text-amber-500',
+      bgColor: 'bg-amber-500/10',
+    },
+    {
+      key: 'observability',
+      icon: <LuCheck className="w-3.5 h-3.5" />,
+      color: 'text-indigo-500',
+      bgColor: 'bg-indigo-500/10',
+    },
+    {
+      key: 'billing',
+      icon: <LuDollarSign className="w-3.5 h-3.5" />,
+      color: 'text-emerald-500',
+      bgColor: 'bg-emerald-500/10',
+    },
+  ]
+
+  return (
+    <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden mb-6 shadow-sm">
+      <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40">
+        <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">
+          {t('platformConfig.moduleCompare.gaps.title')}
+        </span>
+      </div>
+      <div className="divide-y divide-mg-border">
+        {GAP_ITEMS.map((item) => (
+          <div key={item.key} className="p-5 flex flex-col md:flex-row gap-6">
+            <div className="w-full md:w-1/4 flex items-start gap-3">
+              <div className={`w-8 h-8 rounded-lg ${item.bgColor} ${item.color} flex items-center justify-center shrink-0`}>
+                {item.icon}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-mg-text-0">
+                  {t(`platformConfig.moduleCompare.gaps.${item.key}.title`)}
+                </span>
+                <Badge variant="outline" className="w-fit text-[9px] mt-1 opacity-60">
+                  Feature Gap
+                </Badge>
+              </div>
+            </div>
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-1.5">
+                <div className="text-[10px] font-bold text-mg-text-2 uppercase tracking-tight">Console UI (Product)</div>
+                <p className="text-xs text-mg-text-1 leading-relaxed">
+                  {t(`platformConfig.moduleCompare.gaps.${item.key}.ui`)}
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <div className="text-[10px] font-bold text-mg-text-2 uppercase tracking-tight">Actual API (Swagger)</div>
+                <p className="text-xs text-mg-text-1 leading-relaxed">
+                  {t(`platformConfig.moduleCompare.gaps.${item.key}.api`)}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function PlatformConfigPage() {
   const { t } = useTranslation()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
@@ -372,6 +441,8 @@ export default function PlatformConfigPage() {
       </div>
 
       <ModuleComparisonPanel />
+
+      <DetailGapsPanel />
 
       <PermissionPanel />
 

@@ -3,3 +3,9 @@ export const modelGoLogos = {
   cn: '/brand/modelgo-cn-logo.svg',
   global: '/brand/modelgo-global-logo.svg',
 } as const
+
+export const modelGoIcons = {
+  domestic: '/brand/modelgo-app-icon-dark.svg',
+  cn: '/brand/modelgo-app-icon-dark.svg',
+  global: '/brand/modelgo-app-icon-dark.svg',
+} as const

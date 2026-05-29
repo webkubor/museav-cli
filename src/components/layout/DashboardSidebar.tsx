@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { LuSettings, LuChevronLeft, LuChevronRight } from 'react-icons/lu'
+import { LuSettings, LuChevronLeft, LuChevronRight, LuChevronDown } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
@@ -65,6 +65,107 @@ const SidebarNavItem: React.FC<{
 }
 
 /**
+ * 支持折叠与展开的子菜单组组件 (SidebarMenuGroup)
+ */
+const SidebarMenuGroup: React.FC<{
+  item: NavItem
+  collapsed: boolean
+  selectedKey: string
+  onSelect: (data: { itemKey: string | number }) => void
+}> = ({ item, collapsed, selectedKey, onSelect }) => {
+  const isChildSelected = item.items?.some(sub => selectedKey === sub.itemKey) ?? false
+  const [isOpen, setIsOpen] = useState(isChildSelected)
+
+  // 激活子菜单时自动展开
+  React.useEffect(() => {
+    if (isChildSelected) {
+      setIsOpen(true)
+    }
+  }, [isChildSelected, selectedKey])
+
+  if (collapsed) {
+    return (
+      <div className="flex flex-col gap-0.5">
+        <div
+          role="button"
+          className={cn(
+            "flex items-center justify-center mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer text-semi-color-text-2 hover:bg-semi-color-fill-0/50 hover:text-semi-color-text-0 active:scale-[0.97]",
+            isChildSelected && "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
+          )}
+          title={item.text}
+          onClick={() => {
+            // 点击后自动跳转到首个子项
+            if (item.items?.[0]) {
+              onSelect({ itemKey: item.items[0].itemKey })
+            }
+          }}
+        >
+          <span className={cn("text-base shrink-0 transition-colors duration-200", isChildSelected ? "text-brand-base" : "text-semi-color-text-2")}>
+            {item.icon}
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      {/* 文件夹父级 Trigger */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsOpen(!isOpen) }}
+        className={cn(
+          "flex items-center justify-between mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-200 select-none outline-none text-semi-color-text-1 hover:bg-semi-color-fill-0/50 hover:text-semi-color-text-0 active:scale-[0.97]",
+          isChildSelected && "text-brand-base font-bold"
+        )}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className={cn("text-base shrink-0 transition-colors duration-200", isChildSelected ? "text-brand-base" : "text-semi-color-text-2")}>
+            {item.icon}
+          </span>
+          <span className="text-[13.5px] truncate tracking-tight font-medium leading-none">
+            {item.text}
+          </span>
+        </div>
+        <span className="text-semi-color-text-2 shrink-0 transition-transform duration-200 ml-2">
+          {isOpen ? <LuChevronDown size={14} /> : <LuChevronRight size={14} />}
+        </span>
+      </div>
+
+      {/* 子项列表 ( Indented ) */}
+      {isOpen && item.items && (
+        <div className="flex flex-col pl-5 border-l border-semi-color-border/60 ml-7 gap-0.5 my-1 animate-in fade-in duration-200">
+          {item.items.map((sub) => {
+            const isSubSelected = selectedKey === sub.itemKey
+            return (
+              <div
+                key={sub.itemKey}
+                role="button"
+                tabIndex={0}
+                onClick={() => onSelect({ itemKey: sub.itemKey })}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect({ itemKey: sub.itemKey }) }}
+                className={cn(
+                  "flex items-center gap-3 px-3.5 py-2 rounded-lg cursor-pointer transition-all duration-150 select-none outline-none",
+                  isSubSelected
+                    ? "text-brand-base font-bold bg-brand-selected-bg/60"
+                    : "text-semi-color-text-1 hover:text-semi-color-text-0 hover:bg-semi-color-fill-0/30 active:scale-[0.98]"
+                )}
+              >
+                <span className="text-[13px] truncate tracking-tight font-medium leading-none">
+                  {sub.text}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
  * 重构后的高颜值自定义 DashboardSidebar 组件
  */
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
@@ -99,7 +200,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       className={cn(
-        "relative flex flex-col h-[calc(100vh-60px)] bg-semi-color-bg-0 border-r border-semi-color-border/60 transition-all duration-300 ease-out-expo select-none",
+        "relative flex flex-col h-[calc(100vh-60px)] bg-semi-color-bg-0 border-r border-semi-color-border/60 transition-all duration-300 ease-out select-none",
         collapsed ? "w-16" : "w-60"
       )}
     >
@@ -119,15 +220,28 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       <div className="flex flex-col flex-1 py-3 overflow-y-auto overflow-x-hidden no-scrollbar">
         {/* Tenant 级导航 */}
         <div className="flex flex-col gap-0.5">
-          {tenantNavItems.map((item) => (
-            <SidebarNavItem
-              key={item.itemKey}
-              item={item}
-              collapsed={collapsed}
-              isSelected={!isWorkspaceSelected && !isSettingsSelected && selectedKey === item.itemKey}
-              onClick={() => onSelect({ itemKey: item.itemKey })}
-            />
-          ))}
+          {tenantNavItems.map((item) => {
+            if (item.items && item.items.length > 0) {
+              return (
+                <SidebarMenuGroup
+                  key={item.itemKey}
+                  item={item}
+                  collapsed={collapsed}
+                  selectedKey={selectedKey}
+                  onSelect={onSelect}
+                />
+              )
+            }
+            return (
+              <SidebarNavItem
+                key={item.itemKey}
+                item={item}
+                collapsed={collapsed}
+                isSelected={!isWorkspaceSelected && !isSettingsSelected && selectedKey === item.itemKey}
+                onClick={() => onSelect({ itemKey: item.itemKey })}
+              />
+            )
+          })}
         </div>
 
         {/* 工作区分隔线 */}
@@ -143,15 +257,28 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
         {/* Workspace 级导航 */}
         <div className="flex flex-col gap-0.5">
-          {workspaceNavItems.map((item) => (
-            <SidebarNavItem
-              key={item.itemKey}
-              item={item}
-              collapsed={collapsed}
-              isSelected={isWorkspaceSelected && !isSandboxSelected && selectedKey === item.itemKey}
-              onClick={() => onSelect({ itemKey: item.itemKey })}
-            />
-          ))}
+          {workspaceNavItems.map((item) => {
+            if (item.items && item.items.length > 0) {
+              return (
+                <SidebarMenuGroup
+                  key={item.itemKey}
+                  item={item}
+                  collapsed={collapsed}
+                  selectedKey={selectedKey}
+                  onSelect={onSelect}
+                />
+              )
+            }
+            return (
+              <SidebarNavItem
+                key={item.itemKey}
+                item={item}
+                collapsed={collapsed}
+                isSelected={isWorkspaceSelected && !isSandboxSelected && selectedKey === item.itemKey}
+                onClick={() => onSelect({ itemKey: item.itemKey })}
+              />
+            )
+          })}
         </div>
 
         {/* 测试区分隔线 */}
@@ -167,15 +294,28 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
         {/* 测试区导航 */}
         <div className="flex flex-col gap-0.5 flex-1">
-          {sandboxNavItems.map((item) => (
-            <SidebarNavItem
-              key={item.itemKey}
-              item={item}
-              collapsed={collapsed}
-              isSelected={isSandboxSelected && selectedKey === item.itemKey}
-              onClick={() => onSelect({ itemKey: item.itemKey })}
-            />
-          ))}
+          {sandboxNavItems.map((item) => {
+            if (item.items && item.items.length > 0) {
+              return (
+                <SidebarMenuGroup
+                  key={item.itemKey}
+                  item={item}
+                  collapsed={collapsed}
+                  selectedKey={selectedKey}
+                  onSelect={onSelect}
+                />
+              )
+            }
+            return (
+              <SidebarNavItem
+                key={item.itemKey}
+                item={item}
+                collapsed={collapsed}
+                isSelected={isSandboxSelected && selectedKey === item.itemKey}
+                onClick={() => onSelect({ itemKey: item.itemKey })}
+              />
+            )
+          })}
         </div>
 
         {/* 底部设置及版本信息 */}

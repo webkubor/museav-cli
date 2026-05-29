@@ -256,7 +256,35 @@ export function DevRequirements() {
     onDrop: handleItemDrop,
   }
 
-  const panelW = maximized ? window.innerWidth * 0.9 : size.w
+  function handleExport() {
+    const now = new Date().toLocaleString('zh-CN', { hour12: false })
+    const fmt = (r: Requirement) => {
+      const pri = PRIORITY_LABEL[r.priority]
+      const date = r.createdAt ? new Date(r.createdAt).toLocaleDateString('zh-CN') : ''
+      const note = r.note ? `\n  > ${r.note}` : ''
+      const check = r.status === 'done' ? '[x]' : '[ ]'
+      return `- ${check} [${pri}] ${r.title}${date ? '  ·  ' + date : ''}${note}`
+    }
+    const lines = [
+      '# 需求看板',
+      '',
+      `> 导出时间：${now}`,
+      '',
+      `## 待处理 (${pending.length})`,
+      ...(pending.length ? pending.map(fmt) : ['_暂无_']),
+      '',
+      `## 已完成 (${done.length})`,
+      ...(done.length ? done.map(fmt) : ['_暂无_']),
+    ]
+    const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `requirements-${new Date().toISOString().slice(0, 10)}.md`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+
+    const panelW = maximized ? window.innerWidth * 0.9 : size.w
   const panelH = maximized ? window.innerHeight * 0.9 : size.h
 
   return (
@@ -384,6 +412,19 @@ export function DevRequirements() {
 
             {/* 操作按钮 */}
             <div style={{ display: 'flex', gap: 4, flexShrink: 0 }} onMouseDown={e => e.stopPropagation()}>
+              {/* 导出 */}
+              <button
+                onClick={handleExport}
+                title="导出 Markdown"
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'var(--mg-text-2)', fontSize: 13, lineHeight: 1,
+                  padding: '3px 5px', borderRadius: 4,
+                  display: 'flex', alignItems: 'center',
+                }}
+              >
+                ↓
+              </button>
               {/* 放大 / 还原 */}
               <button
                 onClick={() => setMaximized(v => !v)}

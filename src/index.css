@@ -54,43 +54,43 @@
 
 /* 国内 — CN 靛紫（浅色） */
 :root, [data-market='domestic'] {
-  --cn-deep: #4338ca;
-  --cn-base: #6366f1;
-  --cn-mid:  #818cf8;
-  --cn-light: #a5b4fc;
-  --cn-pale: #eef2ff;
-  --cn-glow: rgba(99, 102, 241, 0.12);
-  --cn-selected-bg: rgba(99, 102, 241, 0.06);
+  --cn-deep: #5433e8;
+  --cn-base: #6743fd;
+  --cn-mid:  #8b6aff;
+  --cn-light: #b8a4ff;
+  --cn-pale: #f0ecff;
+  --cn-glow: rgba(103, 67, 253, 0.14);
+  --cn-selected-bg: rgba(103, 67, 253, 0.07);
 }
 /* 国内 — CN 靛紫（深色，提升亮度） */
 [data-market='domestic'] body[theme-mode='dark'],
 body[theme-mode='dark'] {
-  --cn-deep: #6366f1;
-  --cn-base: #818cf8;
-  --cn-mid:  #a5b4fc;
-  --cn-pale: #1e1b4b;
-  --cn-glow: rgba(129, 140, 248, 0.18);
-  --cn-selected-bg: rgba(129, 140, 248, 0.12);
+  --cn-deep: #6743fd;
+  --cn-base: #8b6aff;
+  --cn-mid:  #b8a4ff;
+  --cn-pale: #1a1430;
+  --cn-glow: rgba(139, 106, 255, 0.22);
+  --cn-selected-bg: rgba(139, 106, 255, 0.14);
 }
 
 /* 国际 — GO 翠绿（浅色） */
 :root, [data-market='global'] {
-  --go-deep: #059669;
-  --go-base: #10b981;
-  --go-mid:  #34d399;
-  --go-light: #6ee7b7;
-  --go-pale: #ecfdf5;
-  --go-glow: rgba(16, 185, 129, 0.12);
-  --go-selected-bg: rgba(16, 185, 129, 0.06);
+  --go-deep: #00a86b;
+  --go-base: #00c97d;
+  --go-mid:  #00e090;
+  --go-light: #5df2b7;
+  --go-pale: #e6fff5;
+  --go-glow: rgba(0, 201, 125, 0.15);
+  --go-selected-bg: rgba(0, 201, 125, 0.08);
 }
 /* 国际 — GO 翠绿（深色，提升亮度） */
 [data-market='global'] body[theme-mode='dark'] {
-  --go-deep: #10b981;
-  --go-base: #34d399;
-  --go-mid:  #6ee7b7;
-  --go-pale: #064e3b;
-  --go-glow: rgba(52, 211, 153, 0.18);
-  --go-selected-bg: rgba(52, 211, 153, 0.12);
+  --go-deep: #00c97d;
+  --go-base: #00e090;
+  --go-mid:  #5df2b7;
+  --go-pale: #00291a;
+  --go-glow: rgba(0, 224, 144, 0.22);
+  --go-selected-bg: rgba(0, 224, 144, 0.14);
 }
 
 /* 品牌色路由 — brand-* 指向当前市场的原色 */
@@ -162,7 +162,7 @@ body[theme-mode='dark'] {
   --mg-fill-2: rgba(15, 23, 42, 0.08);
 
   /* 语义色 */
-  --mg-success: #10b981;
+  --mg-success: #00c97d;
   --mg-danger:  #ef4444;
   --mg-warning: #f59e0b;
 
@@ -199,7 +199,7 @@ body[theme-mode='dark'] {
   --mg-fill-2: rgba(255, 255, 255, 0.11);
 
   /* 语义色 */
-  --mg-success: #34d399;
+  --mg-success: #00e090;
   --mg-danger:  #f87171;
   --mg-warning: #fbbf24;
 

@@ -390,6 +390,7 @@ export const DashboardHeader: React.FC = () => {
         >
           <Button
             variant="ghost"
+            size="icon"
             icon={<LuLanguages />}
             title={t('common.language') || '语言'}
           />
@@ -423,6 +424,7 @@ export const DashboardHeader: React.FC = () => {
         >
           <Button
             variant="ghost"
+            size="icon"
             icon={currentTheme === 'dark' ? <LuMoon /> : <LuSun />}
             title={t('common.theme') || '主题'}
           />

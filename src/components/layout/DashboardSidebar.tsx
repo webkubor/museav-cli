@@ -1,9 +1,7 @@
 import React, { useState, useRef } from 'react'
-import { Layout, Nav } from '@douyinfe/semi-ui'
 import { LuSettings, LuChevronLeft, LuChevronRight } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
-
-const { Sider } = Layout
+import { cn } from '@/lib/utils'
 
 type NavItem = {
   itemKey: string
@@ -25,9 +23,50 @@ interface DashboardSidebarProps {
 
 const WORKSPACE_KEYS = ['api-keys', 'guardrails', 'observability', 'invitations-mgmt', 'api-playground', 'chat-test']
 const SETTINGS_KEYS = ['settings', 'settings/account', 'settings/workspace', 'settings/organization']
-
 const SANDBOX_KEYS = ['platform-config', 'api-playground']
 
+/**
+ * 极简高颜值自定义 Sidebar 导航单项
+ */
+const SidebarNavItem: React.FC<{
+  item: NavItem
+  collapsed: boolean
+  isSelected: boolean
+  onClick: () => void
+}> = ({ item, collapsed, isSelected, onClick }) => {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          onClick()
+        }
+      }}
+      className={cn(
+        "flex items-center gap-3 mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-200 select-none outline-none focus-visible:ring-1 focus-visible:ring-brand-glow",
+        collapsed ? "justify-center" : "justify-start",
+        isSelected
+          ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
+          : "text-semi-color-text-1 hover:bg-semi-color-fill-0/50 hover:text-semi-color-text-0 active:scale-[0.97]"
+      )}
+    >
+      <span className={cn("text-base shrink-0 transition-colors duration-200", isSelected ? "text-brand-base" : "text-semi-color-text-2")}>
+        {item.icon}
+      </span>
+      {!collapsed && (
+        <span className="text-[13.5px] truncate tracking-tight font-medium leading-none">
+          {item.text}
+        </span>
+      )}
+    </div>
+  )
+}
+
+/**
+ * 重构后的高颜值自定义 DashboardSidebar 组件
+ */
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   collapsed,
   setCollapsed,
@@ -46,177 +85,119 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const isWorkspaceSelected = WORKSPACE_KEYS.includes(selectedKey)
   const isSettingsSelected = SETTINGS_KEYS.includes(selectedKey)
 
-  const onEnter = () => { clearTimeout(leaveTimer.current); setHovered(true) }
-  const onLeave = () => { leaveTimer.current = setTimeout(() => setHovered(false), 150) }
-
-  const rowBase: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    margin: '2px 8px',
-    padding: collapsed ? '9px 0' : '9px 12px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    justifyContent: collapsed ? 'center' : 'flex-start',
-    transition: 'background 0.15s',
+  const onEnter = () => {
+    clearTimeout(leaveTimer.current)
+    setHovered(true)
+  }
+  
+  const onLeave = () => {
+    leaveTimer.current = setTimeout(() => setHovered(false), 150)
   }
 
   return (
-    <Sider style={{
-      position: 'relative',
-      overflow: 'visible',
-      backgroundColor: 'var(--semi-color-bg-0)',
-      borderRight: '1px solid var(--semi-color-fill-0)',
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    }}>
-      {/* 右边缘折叠触发器 */}
+    <aside
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+      className={cn(
+        "relative flex flex-col h-[calc(100vh-60px)] bg-semi-color-bg-0 border-r border-semi-color-border/60 transition-all duration-300 ease-out-expo select-none",
+        collapsed ? "w-16" : "w-60"
+      )}
+    >
+      {/* 右边缘微悬浮折叠触发器 */}
       <button
-        onMouseEnter={onEnter}
-        onMouseLeave={onLeave}
         onClick={() => setCollapsed(!collapsed)}
         title={collapsed ? t('common.expand') : t('common.collapse')}
-        style={{
-          position: 'absolute',
-          right: -12,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          width: 24,
-          height: 24,
-          borderRadius: '50%',
-          background: 'var(--semi-color-bg-0)',
-          border: '1px solid var(--semi-color-border)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          opacity: hovered ? 1 : 0,
-          transition: 'opacity 0.2s',
-          zIndex: 10,
-          boxShadow: '0 1px 6px rgba(0,0,0,0.1)',
-          padding: 0,
-          color: 'var(--semi-color-text-2)',
-        }}
+        className={cn(
+          "absolute right-[-11px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-semi-color-bg-0 border border-semi-color-border hover:border-brand-mid text-semi-color-text-2 hover:text-brand-base flex items-center justify-center cursor-pointer transition-all duration-200 z-50 shadow-sm",
+          hovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-[-4px] pointer-events-none"
+        )}
       >
-        {collapsed
-          ? <LuChevronRight size={13} />
-          : <LuChevronLeft size={13} />
-        }
+        {collapsed ? <LuChevronRight size={13} /> : <LuChevronLeft size={13} />}
       </button>
 
-      <div
-        onMouseEnter={onEnter}
-        onMouseLeave={onLeave}
-        style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 60px)' }}
-      >
+      {/* 主导航区 */}
+      <div className="flex flex-col flex-1 py-3 overflow-y-auto overflow-x-hidden no-scrollbar">
         {/* Tenant 级导航 */}
-        <Nav
-          isCollapsed={collapsed}
-          items={tenantNavItems}
-          selectedKeys={!isWorkspaceSelected && !isSettingsSelected ? [selectedKey] : []}
-          onSelect={(data) => onSelect({ itemKey: data.itemKey })}
-          style={{ border: 'none', paddingTop: '8px', flex: 'none' }}
-        />
+        <div className="flex flex-col gap-0.5">
+          {tenantNavItems.map((item) => (
+            <SidebarNavItem
+              key={item.itemKey}
+              item={item}
+              collapsed={collapsed}
+              isSelected={!isWorkspaceSelected && !isSettingsSelected && selectedKey === item.itemKey}
+              onClick={() => onSelect({ itemKey: item.itemKey })}
+            />
+          ))}
+        </div>
 
         {/* 工作区分隔线 */}
-        <div style={{
-          padding: collapsed ? '8px 0' : '8px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          overflow: 'hidden',
-        }}>
-          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--semi-color-fill-0)' }} />
+        <div className={cn("flex items-center gap-2 py-4 select-none", collapsed ? "px-2" : "px-4")}>
+          <div className="flex-1 h-[1px] bg-semi-color-border/40" />
           {!collapsed && (
-            <span style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              color: 'var(--semi-color-text-2)',
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}>
+            <span className="text-[10px] font-bold text-semi-color-text-2/80 tracking-wider uppercase whitespace-nowrap shrink-0">
               {t('nav.sidebarWorkspace')}
             </span>
           )}
-          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--semi-color-fill-0)' }} />
+          <div className="flex-1 h-[1px] bg-semi-color-border/40" />
         </div>
 
         {/* Workspace 级导航 */}
-        <Nav
-          isCollapsed={collapsed}
-          items={workspaceNavItems}
-          selectedKeys={isWorkspaceSelected && !isSandboxSelected ? [selectedKey] : []}
-          onSelect={(data) => onSelect({ itemKey: data.itemKey })}
-          style={{ border: 'none', flex: 'none' }}
-        />
+        <div className="flex flex-col gap-0.5">
+          {workspaceNavItems.map((item) => (
+            <SidebarNavItem
+              key={item.itemKey}
+              item={item}
+              collapsed={collapsed}
+              isSelected={isWorkspaceSelected && !isSandboxSelected && selectedKey === item.itemKey}
+              onClick={() => onSelect({ itemKey: item.itemKey })}
+            />
+          ))}
+        </div>
 
         {/* 测试区分隔线 */}
-        <div style={{
-          padding: collapsed ? '8px 0' : '8px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          overflow: 'hidden',
-        }}>
-          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--semi-color-fill-0)' }} />
+        <div className={cn("flex items-center gap-2 py-4 select-none", collapsed ? "px-2" : "px-4")}>
+          <div className="flex-1 h-[1px] bg-semi-color-border/40" />
           {!collapsed && (
-            <span style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              color: 'var(--semi-color-text-2)',
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}>
+            <span className="text-[10px] font-bold text-semi-color-text-2/80 tracking-wider uppercase whitespace-nowrap shrink-0">
               测试区
             </span>
           )}
-          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--semi-color-fill-0)' }} />
+          <div className="flex-1 h-[1px] bg-semi-color-border/40" />
         </div>
 
         {/* 测试区导航 */}
-        <Nav
-          isCollapsed={collapsed}
-          items={sandboxNavItems}
-          selectedKeys={isSandboxSelected ? [selectedKey] : []}
-          onSelect={(data) => onSelect({ itemKey: data.itemKey })}
-          style={{ border: 'none', flex: 1 }}
-        />
+        <div className="flex flex-col gap-0.5 flex-1">
+          {sandboxNavItems.map((item) => (
+            <SidebarNavItem
+              key={item.itemKey}
+              item={item}
+              collapsed={collapsed}
+              isSelected={isSandboxSelected && selectedKey === item.itemKey}
+              onClick={() => onSelect({ itemKey: item.itemKey })}
+            />
+          ))}
+        </div>
 
-        {/* 底部：Settings + 版本号 */}
-        <div style={{ borderTop: '1px solid var(--semi-color-fill-0)', padding: '6px 0 0' }}>
-          <div
-            role="button"
-            onClick={() => onSelect({ itemKey: 'settings/account' })}
-            style={{
-              ...rowBase,
-              backgroundColor: isSettingsSelected ? 'var(--semi-color-primary-light-default)' : undefined,
-              color: isSettingsSelected ? 'var(--semi-color-primary)' : 'var(--semi-color-text-1)',
+        {/* 底部设置及版本信息 */}
+        <div className="mt-auto pt-2 border-t border-semi-color-border/40">
+          <SidebarNavItem
+            item={{
+              itemKey: 'settings/account',
+              text: settingsLabel,
+              icon: <LuSettings />,
             }}
-          >
-            <LuSettings size={16} style={{ flexShrink: 0 }} />
-            {!collapsed && (
-              <span style={{ fontSize: '14px', fontWeight: isSettingsSelected ? 600 : 400 }}>
-                {settingsLabel}
-              </span>
-            )}
-          </div>
+            collapsed={collapsed}
+            isSelected={isSettingsSelected}
+            onClick={() => onSelect({ itemKey: 'settings/account' })}
+          />
 
           {!collapsed && (
-            <div style={{
-              padding: '4px 20px 8px',
-              fontSize: '11px',
-              color: 'var(--semi-color-text-2)',
-              opacity: 0.45,
-              userSelect: 'none',
-            }}>
+            <div className="px-5 pt-2 pb-1 text-[10px] font-bold tracking-wider text-semi-color-text-2/40 select-none">
               v{__APP_VERSION__}
             </div>
           )}
         </div>
       </div>
-    </Sider>
+    </aside>
   )
 }

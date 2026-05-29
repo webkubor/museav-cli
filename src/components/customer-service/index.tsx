@@ -1,5 +1,6 @@
+import { Button } from '@/components/ui/Button'
 import { useState, useEffect, useRef } from 'react'
-import { Button } from '@douyinfe/semi-ui'
+
 import { LuX, LuSendHorizontal, LuRefreshCw } from 'react-icons/lu'
 import { modelGoLogos } from '@/config/brand-assets'
 import { getMarket } from '@/lib/market'
@@ -234,7 +235,7 @@ export function CustomerService() {
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               {status === 'offline' && (
-                <Button size="small" theme="borderless" icon={<LuRefreshCw />} onClick={reconnect} />
+                <Button size="small"  variant="ghost" icon={<LuRefreshCw />} onClick={reconnect} />
               )}
               <span style={{
                 fontSize: 10, color: 'var(--semi-color-text-2)',

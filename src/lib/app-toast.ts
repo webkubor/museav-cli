@@ -11,6 +11,14 @@ export const appToast = {
     return toast.error(message, description)
   },
 
+  warning(message: string, description?: string) {
+    return toast.warning(message, description)
+  },
+
+  info(message: string, description?: string) {
+    return toast.info(message, description)
+  },
+
   requestError(error: unknown, fallback?: string) {
     return toast.error(
       getRequestErrorMessage(error, fallback),

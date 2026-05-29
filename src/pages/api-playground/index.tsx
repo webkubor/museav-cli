@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Button, Select, Tag, Toast, Typography } from '@douyinfe/semi-ui'
+import { Button } from '@/components/ui/Button'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/Select'
+import { Badge } from '@/components/ui/Badge'
 import { LuSend, LuCopy, LuRotateCcw } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { listApiKeys } from '@/services/api-keys'
 import { listModels } from '@/services/catalog'
 import { pageItems } from '@/lib/utils'
-
-const { Text } = Typography
+import { appToast } from '@/lib/app-toast'
 
 const DEFAULT_BODY = JSON.stringify(
   {
@@ -57,18 +58,18 @@ export default function ApiPlaygroundPage() {
 
   async function handleSend() {
     if (!selectedKey) {
-      Toast.warning('请先选择 API Key')
+      appToast.error('请先选择 API Key')
       return
     }
     let parsed: Record<string, unknown>
     try {
       parsed = JSON.parse(requestBody)
     } catch {
-      Toast.error('请求体不是合法 JSON')
+      appToast.error('请求体不是合法 JSON')
       return
     }
 
-    if (selectedModel) parsed.model = selectedModel
+    if (selectedModel && selectedModel !== 'none') parsed.model = selectedModel
 
     setSending(true)
     const start = Date.now()
@@ -95,7 +96,7 @@ export default function ApiPlaygroundPage() {
 
   function copyResponse() {
     if (!log) return
-    navigator.clipboard.writeText(log.response || log.error || '').then(() => Toast.success('已复制'))
+    navigator.clipboard.writeText(log.response || log.error || '').then(() => appToast.success('已复制'))
   }
 
   const curlCmd = selectedKey
@@ -103,84 +104,89 @@ export default function ApiPlaygroundPage() {
     : ''
 
   return (
-    <div>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0 }}>接口调试</h1>
-        <p style={{ fontSize: '14px', color: 'var(--semi-color-text-1)', margin: '6px 0 0' }}>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-semi-color-text-0">接口调试</h1>
+        <p className="text-sm text-semi-color-text-1 mt-1.5">
           使用工作区 API Key 直接发送测试请求，验证模型接入效果。
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', alignItems: 'start' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* 左侧：请求配置 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={panelStyle}>
-            <SectionLabel>API Key</SectionLabel>
-            <Select
-              value={selectedKey}
-              onChange={(v) => setSelectedKey(v as string)}
-              placeholder="选择 API Key"
-              style={{ width: '100%' }}
-              loading={apiKeysQuery.isLoading}
-            >
-              {apiKeys.map(k => (
-                <Select.Option key={k.api_key_id} value={k.api_key_id}>
-                  <span style={{ fontWeight: 600 }}>{k.name}</span>
-                  <span style={{ marginLeft: 8, fontFamily: 'monospace', fontSize: '12px', color: 'var(--semi-color-text-2)' }}>{k.masked}</span>
-                  <Tag size="small" style={{ marginLeft: 6 }} color={k.env === 'live' ? 'green' : 'grey'}>{k.env}</Tag>
-                </Select.Option>
-              ))}
-            </Select>
+        <div className="flex flex-col gap-6">
+          <div className="card-shadow-adaptive p-6 bg-card-bg rounded-xl border border-semi-color-border space-y-4">
+            <div>
+              <SectionLabel>API Key</SectionLabel>
+              <Select
+                value={selectedKey}
+                onValueChange={setSelectedKey}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="选择 API Key" />
+                </SelectTrigger>
+                <SelectContent>
+                  {apiKeys.map(k => (
+                    <SelectItem key={k.api_key_id} value={k.api_key_id}>
+                      {k.name} ({k.masked}) [{k.env.toUpperCase()}]
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <SectionLabel style={{ marginTop: '14px' }}>模型（可选，覆盖 body 中 model 字段）</SectionLabel>
-            <Select
-              value={selectedModel}
-              onChange={(v) => setSelectedModel(v as string)}
-              placeholder="使用 body 中的 model"
-              showClear
-              style={{ width: '100%' }}
-              loading={modelsQuery.isLoading}
-            >
-              {models.map(m => (
-                <Select.Option key={m.model_id} value={m.model_id}>
-                  {m.display_name}
-                </Select.Option>
-              ))}
-            </Select>
+            <div>
+              <SectionLabel>模型（可选，覆盖 body 中 model 字段）</SectionLabel>
+              <Select
+                value={selectedModel}
+                onValueChange={setSelectedModel}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="使用 body 中的 model" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">使用 body 中的 model</SelectItem>
+                  {models.map(m => (
+                    <SelectItem key={m.model_id} value={m.model_id}>
+                      {m.display_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <SectionLabel style={{ marginTop: '14px' }}>请求体 (JSON)</SectionLabel>
-            <textarea
-              value={requestBody}
-              onChange={(e) => setRequestBody(e.target.value)}
-              style={{
-                width: '100%',
-                minHeight: '220px',
-                fontFamily: 'monospace',
-                fontSize: '12px',
-                padding: '12px',
-                borderRadius: '8px',
-                border: '1px solid var(--semi-color-fill-1)',
-                backgroundColor: 'var(--semi-color-fill-0)',
-                color: 'var(--semi-color-text-0)',
-                resize: 'vertical',
-                outline: 'none',
-                boxSizing: 'border-box',
-                lineHeight: 1.6,
-              }}
-            />
+            <div>
+              <SectionLabel>请求体 (JSON)</SectionLabel>
+              <textarea
+                value={requestBody}
+                onChange={(e) => setRequestBody(e.target.value)}
+                className="w-full min-h-[220px] font-mono text-xs p-3.5 rounded-lg border border-semi-color-border bg-semi-color-bg-1/40 text-semi-color-text-0 resize-y outline-none focus:border-brand-base focus:shadow-focus transition-all duration-200 line-height-relaxed"
+              />
+            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
-              <Button icon={<LuRotateCcw size={14} />} onClick={() => { setRequestBody(DEFAULT_BODY); setLog(null) }}>重置</Button>
-              <Button theme="solid" type="primary" icon={<LuSend size={14} />} loading={sending} onClick={handleSend}>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button 
+                variant="outline"
+                onClick={() => { setRequestBody(DEFAULT_BODY); setLog(null) }}
+              >
+                <LuRotateCcw className="w-4 h-4 mr-1.5" />
+                重置
+              </Button>
+              <Button 
+                variant="brand" 
+                loading={sending} 
+                onClick={handleSend}
+              >
+                <LuSend className="w-4 h-4 mr-1.5" />
                 发送请求
               </Button>
             </div>
           </div>
 
           {curlCmd && (
-            <div style={panelStyle}>
+            <div className="card-shadow-adaptive p-6 bg-card-bg rounded-xl border border-semi-color-border">
               <SectionLabel>cURL 命令</SectionLabel>
-              <pre style={{ margin: 0, fontSize: '11px', fontFamily: 'monospace', color: 'var(--semi-color-text-1)', whiteSpace: 'pre-wrap', wordBreak: 'break-all', lineHeight: 1.7, background: 'var(--semi-color-fill-0)', padding: '12px', borderRadius: '6px', border: '1px solid var(--semi-color-fill-1)' }}>
+              <pre className="mt-2 text-xs font-mono text-semi-color-text-1 bg-semi-color-bg-1/40 p-4 rounded-lg border border-semi-color-border overflow-x-auto whitespace-pre-wrap break-all leading-relaxed shadow-inner">
                 {curlCmd}
               </pre>
             </div>
@@ -188,71 +194,47 @@ export default function ApiPlaygroundPage() {
         </div>
 
         {/* 右侧：响应 */}
-        <div style={panelStyle}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <SectionLabel style={{ margin: 0 }}>响应</SectionLabel>
+        <div className="card-shadow-adaptive p-6 bg-card-bg rounded-xl border border-semi-color-border flex flex-col min-h-[460px]">
+          <div className="flex items-center justify-between border-b border-semi-color-border pb-4 mb-4">
+            <span className="text-[11px] font-bold text-semi-color-text-2 tracking-widest uppercase">响应</span>
             {log && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{
-                  fontSize: '12px', padding: '2px 10px', borderRadius: '100px', fontWeight: 600,
-                  backgroundColor: log.status && log.status < 300 ? 'var(--semi-color-success-light-default)' : 'var(--semi-color-danger-light-default)',
-                  color: log.status && log.status < 300 ? 'var(--semi-color-success)' : 'var(--semi-color-danger)',
-                }}>
+              <div className="flex items-center gap-3">
+                <Badge variant={log.status && log.status < 300 ? 'success' : 'destructive'}>
                   {log.status ?? 'ERR'}
-                </span>
-                <Text style={{ fontSize: '12px', color: 'var(--semi-color-text-2)' }}>{log.duration}ms</Text>
-                <Button size="small" icon={<LuCopy size={12} />} onClick={copyResponse}>复制</Button>
+                </Badge>
+                <span className="text-xs font-mono text-semi-color-text-2">{log.duration}ms</span>
+                <Button size="sm" variant="outline" onClick={copyResponse}>
+                  <LuCopy className="w-3.5 h-3.5 mr-1" />
+                  复制
+                </Button>
               </div>
             )}
           </div>
 
-          {!log ? (
-            <div style={{ minHeight: '380px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--semi-color-border)', borderRadius: '8px', color: 'var(--semi-color-text-3)', fontSize: '13px' }}>
-              点击「发送请求」查看响应
-            </div>
-          ) : log.error ? (
-            <pre style={responseStyle}>{log.error}</pre>
-          ) : (
-            <pre style={{ ...responseStyle, color: log.status && log.status < 300 ? 'var(--semi-color-text-0)' : 'var(--semi-color-danger)' }}>
-              {log.response}
-            </pre>
-          )}
+          <div className="flex-1 flex flex-col min-h-0">
+            {!log ? (
+              <div className="flex-1 flex items-center justify-center border border-dashed border-semi-color-border rounded-lg text-sm text-semi-color-text-2">
+                点击「发送请求」查看响应
+              </div>
+            ) : log.error ? (
+              <pre className="flex-1 font-mono text-xs text-rose-500 bg-semi-color-bg-1/40 p-4 rounded-lg border border-semi-color-border overflow-y-auto whitespace-pre-wrap break-all leading-relaxed">
+                {log.error}
+              </pre>
+            ) : (
+              <pre className={`flex-1 font-mono text-xs bg-semi-color-bg-1/40 p-4 rounded-lg border border-semi-color-border overflow-y-auto whitespace-pre-wrap break-all leading-relaxed ${log.status && log.status < 300 ? 'text-semi-color-text-1' : 'text-rose-500'}`}>
+                {log.response}
+              </pre>
+            )}
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-const panelStyle: React.CSSProperties = {
-  padding: '20px',
-  borderRadius: '12px',
-  border: '1px solid var(--semi-color-fill-0)',
-  backgroundColor: 'var(--semi-color-bg-1)',
-}
-
-const responseStyle: React.CSSProperties = {
-  margin: 0,
-  minHeight: '380px',
-  fontSize: '12px',
-  fontFamily: 'monospace',
-  color: 'var(--semi-color-text-0)',
-  whiteSpace: 'pre-wrap',
-  wordBreak: 'break-all',
-  lineHeight: 1.6,
-  overflowY: 'auto',
-  background: 'var(--semi-color-fill-0)',
-  padding: '12px',
-  borderRadius: '6px',
-  border: '1px solid var(--semi-color-fill-1)',
-}
-
-function SectionLabel({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{
-      fontSize: '11px', fontWeight: 700, color: 'var(--semi-color-text-2)',
-      letterSpacing: '0.07em', textTransform: 'uppercase', margin: '0 0 6px',
-      ...style,
-    }}>
+    <p className="text-[11px] font-bold text-semi-color-text-2 tracking-widest uppercase mb-2">
       {children}
     </p>
   )

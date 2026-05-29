@@ -1,10 +1,34 @@
 import { useState } from 'react'
-import { Table, Button, Input, Select, Tag, Modal, Toast } from '@douyinfe/semi-ui'
 import { LuSearch, LuPlus } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listWorkspaces, createWorkspace } from '@/services/workspaces'
-import type { WorkspaceItem } from '@/types'
 import { formatDateTime } from '@/lib/format-date'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Badge } from '@/components/ui/Badge'
+import { toast } from 'sonner'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/Table'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/Dialog'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/Select'
 
 export default function WorkspacesPage() {
   const queryClient = useQueryClient()
@@ -33,7 +57,7 @@ export default function WorkspacesPage() {
       })
     },
     onSuccess: (newWorkspace) => {
-      Toast.success(`工作区 "${newWorkspace.name}" 创建成功`)
+      toast.success(`工作区 "${newWorkspace.name}" 创建成功`)
       setModalVisible(false)
       setName('')
       setSlug('')
@@ -41,251 +65,182 @@ export default function WorkspacesPage() {
       queryClient.invalidateQueries({ queryKey: ['workspaces'] })
     },
     onError: (err: any) => {
-      Toast.error(err?.message || '创建工作区失败')
+      toast.error(err?.message || '创建工作区失败')
     }
   })
 
-  // 表格列定义 (完美契合截图中的字段与实体模型结构)
-  const columns = [
-    {
-      title: '名称',
-      dataIndex: 'name',
-      render: (text: string, record: WorkspaceItem) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontWeight: 600, color: 'var(--semi-color-text-0)', fontSize: '13.5px' }}>{text}</span>
-          {record.is_default && (
-            <Tag
-              style={{
-                backgroundColor: 'var(--semi-color-primary-light-default)',
-                color: 'var(--semi-color-primary)',
-                border: '1px solid var(--semi-color-primary-light-active)',
-                fontSize: '11px',
-                fontWeight: 600,
-                padding: '1px 8px',
-                borderRadius: '12px'
-              }}
-            >
-              当前
-            </Tag>
-          )}
-          {record.is_default && (
-            <Tag 
-              style={{
-                backgroundColor: 'var(--semi-color-fill-0)',
-                color: 'var(--semi-color-text-1)',
-                border: '1px solid var(--semi-color-border)',
-                fontSize: '11px',
-                fontWeight: 600,
-                padding: '1px 8px',
-                borderRadius: '12px'
-              }}
-            >
-              默认
-            </Tag>
-          )}
-        </div>
-      )
-    },
-    {
-      title: '工作区 ID',
-      dataIndex: 'workspace_id',
-      render: (text: string) => (
-        <span style={{
-          color: 'var(--semi-color-text-1)',
-          fontFamily: 'monospace',
-          fontSize: '12.5px',
-          backgroundColor: 'var(--semi-color-bg-1)',
-          padding: '2px 6px',
-          borderRadius: '4px',
-          border: '1px solid var(--semi-color-fill-0)'
-        }}>{text}</span>
-      )
-    },
-    {
-      title: '创建时间',
-      dataIndex: 'created_at',
-      render: (text: string) => (
-        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>
-          {formatDateTime(text)}
-        </span>
-      )
-    },
-    {
-      title: '操作',
-      dataIndex: 'actions',
-      render: () => (
-        <span 
-          style={{ 
-            color: '#0066ff', 
-            cursor: 'pointer', 
-            fontWeight: 600,
-            fontSize: '13px',
-            transition: 'color 0.2s ease'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.color = '#004ecb'}
-          onMouseLeave={(e) => e.currentTarget.style.color = '#0066ff'}
-        >
-          编辑
-        </span>
-      )
-    }
-  ]
-
   // 支持模糊搜索
   const filteredData = (data || []).filter(item => 
-    item.name.includes(searchValue) || item.workspace_id.includes(searchValue)
+    item.name.toLowerCase().includes(searchValue.toLowerCase()) || 
+    item.workspace_id.toLowerCase().includes(searchValue.toLowerCase())
   )
 
   const handleCreateSubmit = () => {
     if (!name.trim()) {
-      Toast.error('工作区名称不能为空')
+      toast.error('工作区名称不能为空')
       return
     }
     if (!slug.trim()) {
-      Toast.error('唯一标识不能为空')
+      toast.error('唯一标识不能为空')
       return
     }
     if (!/^[a-z0-9-]+$/.test(slug)) {
-      Toast.error('唯一标识仅支持小写字母、数字和连字符')
+      toast.error('唯一标识仅支持小写字母、数字和连字符')
       return
     }
     createMutation.mutate({ name, slug, description })
   }
 
   return (
-    <div>
+    <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       {/* 头部标题与描述 */}
-      <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+      <div>
+        <h1 className="text-2xl font-bold text-semi-color-text-0 tracking-tight mb-1.5">
           工作区
         </h1>
-        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0, fontWeight: 400 }}>
+        <p className="text-[13px] text-semi-color-text-2 leading-relaxed">
           管理工作区信息、可用模型和使用限额。
         </p>
       </div>
 
-      {/* 截图中的当前工作区 Select 栏：优化质感 */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '10px', 
-        marginBottom: '28px',
-        fontSize: '13px',
-        color: 'var(--semi-color-text-1)',
-        fontWeight: 500
-      }}>
+      {/* 当前工作区展示栏 */}
+      <div className="flex items-center gap-3 text-[13px] text-semi-color-text-1 font-bold">
         <span>当前工作区</span>
-        <Select 
-          defaultValue="default" 
-          style={{ width: '170px', borderRadius: '8px' }} 
-          size="small"
-        >
-          <Select.Option value="default">默认工作区</Select.Option>
+        <Select defaultValue="default">
+          <SelectTrigger className="w-[170px]">
+            <SelectValue placeholder="选择工作区" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="default">默认工作区</SelectItem>
+          </SelectContent>
         </Select>
       </div>
 
-      {/* 控制台操作区域（搜索框 + 药丸动作按钮） */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '24px' 
-      }}>
+      {/* 控制台操作区域 */}
+      <div className="flex justify-between items-center gap-4">
         {/* 圆角微阴影输入框 */}
         <Input
           placeholder="按名称或工作区 ID 搜索"
-          prefix={<LuSearch style={{ color: 'var(--semi-color-text-2)' }} />}
-          style={{
-            width: '290px',
-            borderRadius: '9999px',
-            border: '1px solid var(--semi-color-border)',
-            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)',
-            transition: 'all 0.2s ease'
-          }}
+          prefix={<LuSearch className="opacity-50" />}
+          className="w-[290px] !rounded-full bg-semi-color-fill-0/30"
           value={searchValue}
-          onChange={(val) => setSearchValue(val)}
+          onChange={(e) => setSearchValue(e.target.value)}
         />
 
-        {/* 黑色药丸主动作按钮 (触发弹出真实表单 modal，带微浮动阴影与过渡动效) */}
+        {/* 黑色药丸主动作按钮 */}
         <Button
-          theme="solid"
-          icon={<LuPlus />}
+          variant="brand"
           onClick={() => setModalVisible(true)}
-          style={{ 
-            borderRadius: '24px',
-            padding: '8px 24px',
-            fontSize: '13px',
-            fontWeight: 600,
-            height: '38px',
-            boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15), inset 0 1px 1px rgba(255,255,255,0.1)',
-            cursor: 'pointer',
-            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-1px)';
-            e.currentTarget.style.boxShadow = '0 6px 16px rgba(15, 23, 42, 0.22)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'none';
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.15)';
-          }}
+          className="!rounded-full px-6 h-[38px] font-bold"
         >
-          创建工作区 ({(data || []).length}/20)
+          <LuPlus className="mr-1 shrink-0" /> 创建工作区 ({(data || []).length}/20)
         </Button>
       </div>
 
       {/* 极简细线条无框 Table 视图 */}
-      <Table
-        columns={columns}
-        dataSource={filteredData}
-        loading={isLoading}
-        pagination={false}
-        bordered={false}
-        style={{ 
-          marginTop: '12px',
-        }}
-      />
+      <div className="rounded-xl border border-semi-color-border/60 overflow-hidden bg-semi-color-bg-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>名称</TableHead>
+              <TableHead>工作区 ID</TableHead>
+              <TableHead>创建时间</TableHead>
+              <TableHead className="text-right">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-12 text-semi-color-text-2">
+                  <div className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5 text-brand-base" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span>正在获取数据...</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : filteredData.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-12 text-semi-color-text-2">
+                  暂无匹配的工作区数据
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredData.map((row) => (
+                <TableRow key={row.workspace_id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-semi-color-text-0 text-[13.5px]">{row.name}</span>
+                      {row.is_default && (
+                        <>
+                          <Badge variant="success" dot>当前</Badge>
+                          <Badge variant="secondary">默认</Badge>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-mono text-xs bg-semi-color-fill-0 px-2 py-0.5 rounded border border-semi-color-border/60">
+                      {row.workspace_id}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-semi-color-text-2">{formatDateTime(row.created_at)}</TableCell>
+                  <TableCell className="text-right">
+                    <span className="text-brand-base hover:text-brand-deep cursor-pointer font-bold transition-colors duration-200">
+                      编辑
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       {/* 真实创建工作空间的表单对话框 */}
-      <Modal
-        title="创建新工作区"
-        visible={modalVisible}
-        onOk={handleCreateSubmit}
-        onCancel={() => setModalVisible(false)}
-        confirmLoading={createMutation.isPending}
-        width={480}
-        style={{ borderRadius: '12px' }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', padding: '16px 0' }}>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '8px' }}>空间名称</div>
-            <Input 
-              value={name} 
-              onChange={val => setName(val)} 
-              placeholder="如：生产环境应用区" 
-              style={{ borderRadius: '8px' }}
-            />
+      <Dialog open={modalVisible} onOpenChange={setModalVisible}>
+        <DialogContent className="max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>创建新工作区</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <div className="text-xs font-bold text-semi-color-text-1">空间名称</div>
+              <Input 
+                value={name} 
+                onChange={e => setName(e.target.value)} 
+                placeholder="如：生产环境应用区" 
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <div className="text-xs font-bold text-semi-color-text-1">唯一标识 (Slug)</div>
+              <Input 
+                value={slug} 
+                onChange={e => setSlug(e.target.value)} 
+                placeholder="如：prod-app" 
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <div className="text-xs font-bold text-semi-color-text-1">空间描述 (选填)</div>
+              <Input 
+                value={description} 
+                onChange={e => setDescription(e.target.value)} 
+                placeholder="简述该工作区的用途..." 
+              />
+            </div>
           </div>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '8px' }}>唯一标识 (Slug)</div>
-            <Input 
-              value={slug} 
-              onChange={val => setSlug(val)} 
-              placeholder="如：prod-app" 
-              style={{ borderRadius: '8px' }}
-            />
-          </div>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', marginBottom: '8px' }}>空间描述 (选填)</div>
-            <Input 
-              value={description} 
-              onChange={val => setDescription(val)} 
-              placeholder="简述该工作区的用途..." 
-              style={{ borderRadius: '8px' }}
-            />
-          </div>
-        </div>
-      </Modal>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setModalVisible(false)}>
+              取消
+            </Button>
+            <Button variant="brand" loading={createMutation.isPending} onClick={handleCreateSubmit}>
+              确认创建
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

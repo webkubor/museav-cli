@@ -1,5 +1,4 @@
 import React from 'react'
-import { Typography, Row, Col } from '@douyinfe/semi-ui'
 import {
   LuBox,
   LuKey,
@@ -9,8 +8,7 @@ import {
   LuLayoutDashboard
 } from 'react-icons/lu'
 import { useNavigate, useParams } from 'react-router-dom'
-
-const { Title, Text } = Typography
+import { Card } from '@/components/ui/Card'
 
 interface QuickLink {
   title: string
@@ -20,8 +18,6 @@ interface QuickLink {
   color: string
   bgColor: string
 }
-
-import { Card } from '@/components/ui/Card'
 
 export const QuickAccessSection: React.FC = () => {
   const navigate = useNavigate()
@@ -80,42 +76,41 @@ export const QuickAccessSection: React.FC = () => {
 
   return (
     <div style={{ marginBottom: '36px' }}>
-      <Title heading={5} style={{ marginBottom: '16px', fontWeight: 700 }}>
+      <h3 style={{ marginBottom: '16px', fontWeight: 700, fontSize: '16px', color: 'var(--semi-color-text-0)' }}>
         快捷功能入口
-      </Title>
-      <Row gutter={[16, 16]}>
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {links.map((link, idx) => (
-          <Col xs={24} sm={12} md={8} lg={4} key={idx}>
-            <Card
-              hoverable
-              onClick={() => navigate(link.path)}
-              className="p-5 flex flex-col gap-3 cursor-pointer group"
-            >
-              <div style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '12px',
-                backgroundColor: link.bgColor,
-                color: link.color,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.3s ease'
-              }} className="group-hover:scale-110">
-                {link.icon}
+          <Card
+            key={idx}
+            hoverable
+            onClick={() => navigate(link.path)}
+            className="p-5 flex flex-col gap-3 cursor-pointer group"
+          >
+            <div style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: '12px',
+              backgroundColor: link.bgColor,
+              color: link.color,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.3s ease'
+            }} className="group-hover:scale-110">
+              {link.icon}
+            </div>
+            <div>
+              <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--semi-color-text-0)' }}>
+                {link.title}
               </div>
-              <div>
-                <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--semi-color-text-0)' }}>
-                  {link.title}
-                </div>
-                <Text style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginTop: '4px', display: 'block' }}>
-                  {link.desc}
-                </Text>
-              </div>
-            </Card>
-          </Col>
+              <span style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginTop: '4px', display: 'block' }}>
+                {link.desc}
+              </span>
+            </div>
+          </Card>
         ))}
-      </Row>
+      </div>
     </div>
   )
 }

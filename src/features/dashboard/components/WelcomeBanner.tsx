@@ -6,12 +6,11 @@
  */
 
 import React, { useState } from 'react'
-import { Typography, Button, Toast } from '@douyinfe/semi-ui'
 import { LuCopy, LuCheck, LuBook } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { getMarket } from '@/lib/market'
-
-const { Title, Text } = Typography
+import { Button } from '@/components/ui/Button'
+import { appToast } from '@/lib/app-toast'
 
 /**
  * 仪表盘核心欢迎 Banner 组件
@@ -40,7 +39,7 @@ export const WelcomeBanner: React.FC = () => {
   const handleCopy = () => {
     navigator.clipboard.writeText(fullCmd)
     setCopied(true)
-    Toast.success(isDomestic ? 'CLI 接入命令已复制到剪贴板' : 'CLI commands copied to clipboard')
+    appToast.success(isDomestic ? 'CLI 接入命令已复制到剪贴板' : 'CLI commands copied to clipboard')
     setTimeout(() => setCopied(false), 2000)
   }
 
@@ -150,8 +149,7 @@ export const WelcomeBanner: React.FC = () => {
           </span>
         </div>
 
-        <Title
-          heading={1}
+        <h1
           style={{
             margin: '0 0 12px 0',
             fontWeight: 800,
@@ -162,22 +160,22 @@ export const WelcomeBanner: React.FC = () => {
           }}
         >
           {t.greeting} 👋
-        </Title>
+        </h1>
         
-        <Text
+        <p
           style={{
             display: 'block',
             fontSize: '15px',
             fontWeight: 600,
             color: isDomestic ? '#4f46e5' : '#059669',
             letterSpacing: '-0.01em',
-            marginBottom: '14px'
+            margin: '0 0 14px 0'
           }}
         >
           {t.subTitle}
-        </Text>
+        </p>
 
-        <Text
+        <p
           style={{
             display: 'block',
             color: 'var(--semi-color-text-1)',
@@ -185,26 +183,19 @@ export const WelcomeBanner: React.FC = () => {
             fontWeight: 400,
             lineHeight: 1.6,
             maxWidth: '560px',
-            marginBottom: '22px'
+            margin: '0 0 22px 0'
           }}
         >
           {t.desc}
-        </Text>
+        </p>
 
         <Button
-          icon={<LuBook />}
-          theme="light"
-          style={{
-            borderRadius: '8px',
-            fontWeight: 600,
-            padding: '8px 16px',
-            backgroundColor: 'var(--semi-color-bg-1)',
-            border: '1px solid var(--semi-color-border)',
-            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)',
-            transition: 'all 0.2s'
-          }}
+          variant="outline"
+          size="sm"
+          className="rounded-[8px] font-semibold px-4 py-2 bg-semi-color-bg-1 border border-semi-color-border shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all cursor-pointer inline-flex items-center gap-2"
           onClick={() => window.open(t.docsUrl, '_blank')}
         >
+          <LuBook />
           {t.docsBtn}
         </Button>
       </div>
@@ -253,21 +244,12 @@ export const WelcomeBanner: React.FC = () => {
           </div>
 
           <Button
-            size="small"
-            theme="borderless"
-            icon={copied ? <LuCheck style={{ color: '#10b981' }} /> : <LuCopy style={{ color: '#64748b' }} />}
+            variant="ghost"
+            size="xs"
             onClick={handleCopy}
-            style={{
-              color: copied ? '#10b981' : '#64748b',
-              fontSize: '11px',
-              fontWeight: 600,
-              backgroundColor: 'rgba(255, 255, 255, 0.04)',
-              borderRadius: '6px',
-              padding: '2px 8px',
-              height: '24px',
-              transition: 'all 0.2s'
-            }}
+            className="text-[#64748b] bg-white/4 rounded-[6px] px-2 py-1 h-6 transition-all border-none flex items-center gap-1 hover:text-white"
           >
+            {copied ? <LuCheck className="text-[#10b981]" /> : <LuCopy className="text-[#64748b]" />}
             {copied ? (isDomestic ? '已复制' : 'Copied') : (isDomestic ? '复制' : 'Copy')}
           </Button>
         </div>

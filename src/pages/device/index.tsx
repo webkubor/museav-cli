@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Avatar, Typography } from '@douyinfe/semi-ui'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { useAuthStore } from '@/store/auth'
 import { deviceApprove } from '@/services/auth'
-
-const { Text, Title } = Typography
+import { Button } from '@/components/ui/Button'
 
 // user_code 格式：8~16 位大写字母和数字，允许中间带连字符，如 ABCD-EFGH
 function isValidUserCode(code: string) {
@@ -81,9 +79,9 @@ export default function DevicePage() {
     return (
       <AuthLayout title="授权链接无效">
         <div style={{ textAlign: 'center', padding: '8px 0' }}>
-          <Text style={{ color: '#64748b', fontSize: '14px' }}>
+          <span style={{ color: '#64748b', fontSize: '14px' }}>
             此链接缺少授权码，请在终端重新执行登录命令获取新的链接。
-          </Text>
+          </span>
         </div>
       </AuthLayout>
     )
@@ -93,9 +91,9 @@ export default function DevicePage() {
     return (
       <AuthLayout title="授权码无效">
         <div style={{ textAlign: 'center', padding: '8px 0' }}>
-          <Text style={{ color: '#64748b', fontSize: '14px' }}>
+          <span style={{ color: '#64748b', fontSize: '14px' }}>
             授权码格式无效或已损坏，请在终端重新执行登录命令。
-          </Text>
+          </span>
         </div>
       </AuthLayout>
     )
@@ -120,12 +118,12 @@ export default function DevicePage() {
       <AuthLayout title="授权成功">
         <div style={{ textAlign: 'center', padding: '8px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ fontSize: '40px' }}>✓</div>
-          <Text style={{ color: '#0f172a', fontSize: '15px', fontWeight: 600 }}>
+          <span style={{ color: '#0f172a', fontSize: '15px', fontWeight: 600 }}>
             ModelGo CLI 已获得登录授权
-          </Text>
-          <Text style={{ color: '#64748b', fontSize: '13px' }}>
+          </span>
+          <span style={{ color: '#64748b', fontSize: '13px' }}>
             可以回到终端继续使用了。此页面可以关闭。
-          </Text>
+          </span>
         </div>
       </AuthLayout>
     )
@@ -135,10 +133,10 @@ export default function DevicePage() {
     return (
       <AuthLayout title="授权失败">
         <div style={{ textAlign: 'center', padding: '8px 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <Text style={{ color: '#ef4444', fontSize: '14px' }}>{state.message}</Text>
+          <span style={{ color: '#ef4444', fontSize: '14px' }}>{state.message}</span>
           <Button
             onClick={() => navigate('/dashboard')}
-            style={{ borderRadius: '8px' }}
+            className="rounded-[8px]"
           >
             返回控制台
           </Button>
@@ -166,9 +164,16 @@ export default function DevicePage() {
           padding: '14px 16px', borderRadius: '10px',
           background: '#f8fafc', border: '1px solid #e2e8f0',
         }}>
-          <Avatar size="small" style={{ background: 'var(--semi-color-primary)', flexShrink: 0 }}>
+          <div
+            style={{
+              width: '32px', height: '32px', borderRadius: '50%',
+              backgroundColor: 'var(--semi-color-primary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: '12px', fontWeight: 600, flexShrink: 0
+            }}
+          >
             {initials}
-          </Avatar>
+          </div>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>
               {account?.display_name ?? '—'}
@@ -184,25 +189,26 @@ export default function DevicePage() {
           padding: '14px 16px', borderRadius: '10px',
           background: '#fffbeb', border: '1px solid #fde68a',
         }}>
-          <Text style={{ fontSize: '13px', color: '#92400e', lineHeight: '1.6' }}>
-            <strong>ModelGo CLI</strong> 正在请求登录授权。确认后，终端里的 CLI
+          <span style={{ fontSize: '13px', color: '#92400e', lineHeight: '1.6', display: 'block' }}>
+            <strong style={{ fontWeight: 600 }}>ModelGo CLI</strong> 正在请求登录授权。确认后，终端里的 CLI
             将获得与当前账号相同的访问凭证。
-          </Text>
+          </span>
         </div>
 
         {/* 授权码展示 */}
         <div style={{ textAlign: 'center' }}>
-          <Text style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '6px', display: 'block' }}>
+          <span style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '6px', display: 'block' }}>
             本次授权码
-          </Text>
-          <Title heading={4} style={{ margin: 0, letterSpacing: '0.15em', fontFamily: 'monospace', color: '#0f172a' }}>
+          </span>
+          <h4 style={{ margin: 0, letterSpacing: '0.15em', fontFamily: 'monospace', color: '#0f172a', fontSize: '18px', fontWeight: 700 }}>
             {userCode}
-          </Title>
+          </h4>
         </div>
 
         {/* 操作按钮 */}
         <div style={{ display: 'flex', gap: '10px' }}>
           <Button
+            variant="outline"
             style={{ flex: 1, height: '40px', borderRadius: '8px' }}
             disabled={isApproving}
             onClick={handleCancel}
@@ -210,18 +216,17 @@ export default function DevicePage() {
             取消
           </Button>
           <Button
-            type="primary"
+            variant="default"
             style={{ flex: 2, height: '40px', borderRadius: '8px', fontWeight: 600 }}
-            loading={isApproving}
             onClick={handleApprove}
           >
-            确认授权
+            {isApproving ? '授权中...' : '确认授权'}
           </Button>
         </div>
 
-        <Text style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
+        <span style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', display: 'block' }}>
           授权后终端 CLI 会获得登录凭证，请确认是你本人在终端操作。
-        </Text>
+        </span>
       </div>
     </AuthLayout>
   )

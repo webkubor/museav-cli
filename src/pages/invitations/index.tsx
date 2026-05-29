@@ -1,6 +1,7 @@
+import { Button } from '@/components/ui/Button'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams, useParams, Link } from 'react-router-dom'
-import { Button } from '@douyinfe/semi-ui'
+
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { previewInvitation, acceptInvitation } from '@/services/invitations'
 import { useAuthStore } from '@/store/auth'
@@ -169,7 +170,7 @@ export default function InvitationsPage() {
         )}
 
         <Button
-          type="primary"
+           variant="brand"
           loading={accepting}
           onClick={handleAccept}
           style={{ width: '100%', height: '40px', borderRadius: '8px', fontWeight: 600 }}

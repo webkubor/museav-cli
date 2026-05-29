@@ -1,11 +1,8 @@
 import React, { useMemo } from 'react'
-import { Typography, Skeleton, Empty } from '@douyinfe/semi-ui'
 import { useQuery } from '@tanstack/react-query'
 import { getUsageSeries } from '@/services/usage'
 import { useAuthStore } from '@/store/auth'
 import { Card } from '@/components/ui/Card'
-
-const { Title, Text } = Typography
 
 /** 格式化日期：yyyy-MM-dd */
 function formatISODate(date: Date) {
@@ -71,13 +68,13 @@ export const UsageChartSection: React.FC = () => {
   return (
     <Card className="p-6 border-none shadow-md bg-semi-color-bg-1 flex flex-col">
       <div style={{ marginBottom: '20px' }}>
-        <Title heading={5} style={{ fontWeight: 700 }}>用量趋势 (最近 14 天)</Title>
-        <Text style={{ fontSize: '12px', color: 'var(--semi-color-text-2)' }}>请求数 (Requests)</Text>
+        <h3 style={{ fontWeight: 700, fontSize: '16px', color: 'var(--semi-color-text-0)', margin: 0 }}>用量趋势 (最近 14 天)</h3>
+        <span style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', display: 'block', marginTop: '4px' }}>请求数 (Requests)</span>
       </div>
 
       <div style={{ flex: 1, position: 'relative', minHeight: '200px' }}>
         {isLoading ? (
-          <Skeleton active placeholder={<Skeleton.Image style={{ width: '100%', height: '200px' }} />} loading={true} />
+          <div className="animate-pulse bg-gray-200 dark:bg-gray-800 rounded w-full h-[200px]" />
         ) : data?.series && data.series.length > 0 ? (
           <svg width="100%" height="200" viewBox="0 0 800 200" preserveAspectRatio="none">
             <defs>
@@ -105,17 +102,20 @@ export const UsageChartSection: React.FC = () => {
             />
           </svg>
         ) : (
-          <Empty description="暂无数据" />
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <span className="text-2xl mb-2">📊</span>
+            <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">暂无趋势数据</p>
+          </div>
         )}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
-        <Text style={{ fontSize: '11px', color: 'var(--semi-color-text-3)' }}>
+        <span style={{ fontSize: '11px', color: 'var(--semi-color-text-3)' }}>
           {data?.series?.[0] ? formatChartLabel(data.series[0].bucket_start) : ''}
-        </Text>
-        <Text style={{ fontSize: '11px', color: 'var(--semi-color-text-3)' }}>
+        </span>
+        <span style={{ fontSize: '11px', color: 'var(--semi-color-text-3)' }}>
           {data?.series?.[data.series.length - 1] ? formatChartLabel(data.series[data.series.length - 1].bucket_start) : ''}
-        </Text>
+        </span>
       </div>
     </Card>
   )

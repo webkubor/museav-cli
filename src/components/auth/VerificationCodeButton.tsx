@@ -1,5 +1,6 @@
+import { Button } from '@/components/ui/Button'
 import { useState, useEffect, useRef } from 'react'
-import { Button } from '@douyinfe/semi-ui'
+
 import { toast } from '@/lib/toast'
 
 interface Props {

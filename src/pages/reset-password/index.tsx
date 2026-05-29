@@ -1,9 +1,10 @@
+import { Button } from '@/components/ui/Button'
 import { useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Button } from '@douyinfe/semi-ui'
+
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { PasswordStrength } from '@/components/auth/PasswordStrength'
 import { resetPassword } from '@/services/auth'
@@ -123,7 +124,7 @@ export default function ResetPasswordPage() {
             ✓
           </div>
           <Button
-            type="primary"
+             variant="brand"
             onClick={() => navigate('/login')}
             style={{ width: '100%', height: '40px', borderRadius: '8px', fontWeight: 600, marginTop: '8px' }}
           >
@@ -176,7 +177,7 @@ export default function ResetPasswordPage() {
         {serverError && <p style={errorStyle}>{serverError}</p>}
         <Button
           htmlType="submit"
-          type="primary"
+           variant="brand"
           loading={loading}
           style={{ width: '100%', height: '40px', borderRadius: '8px', fontWeight: 600 }}
         >

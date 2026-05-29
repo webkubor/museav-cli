@@ -1,6 +1,7 @@
+import { Button } from '@/components/ui/Button'
 import React from 'react'
 import { usePlatformConfig } from '@/hooks/use-platform-config'
-import { Button } from '@douyinfe/semi-ui'
+
 import { useTranslation } from 'react-i18next'
 import Google from '@lobehub/icons/es/Google'
 import Github from '@lobehub/icons/es/Github'

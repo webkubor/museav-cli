@@ -1,13 +1,11 @@
 import React from 'react'
-import { Row, Col, Typography, Skeleton } from '@douyinfe/semi-ui'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
 import { getBalance } from '@/services/billing'
 import { getUsageSummary } from '@/services/usage'
 import { getBillingMoneyStats } from '@/services/overview'
 import { useCurrency } from '@/hooks/use-platform-config'
-
-const { Text } = Typography
+import { Card } from '@/components/ui/Card'
 
 interface KpiCardProps {
   title: string
@@ -16,20 +14,18 @@ interface KpiCardProps {
   color: string
 }
 
-import { Card } from '@/components/ui/Card'
-
 const KpiCard: React.FC<KpiCardProps> = ({ title, value, loading, color }) => {
   return (
     <Card
       hoverable
       className="p-6 min-h-[110px] flex flex-col justify-center border-none shadow-md bg-gradient-to-br from-semi-color-bg-1 to-semi-color-bg-0"
     >
-      <Text style={{ color: 'var(--semi-color-text-2)', fontSize: '13px', fontWeight: 600 }}>
+      <span style={{ color: 'var(--semi-color-text-2)', fontSize: '13px', fontWeight: 600 }}>
         {title}
-      </Text>
+      </span>
       <div style={{ marginTop: '8px' }}>
         {loading ? (
-          <Skeleton.Title style={{ width: '80%', height: '32px' }} />
+          <div className="animate-pulse bg-gray-200 dark:bg-gray-800 rounded h-[32px] w-[80%]" />
         ) : (
           <span style={{
             fontSize: '32px',
@@ -97,12 +93,10 @@ export const KpiSection: React.FC = () => {
   ]
 
   return (
-    <Row gutter={20} style={{ marginBottom: '36px' }}>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-9">
       {cards.map((card) => (
-        <Col span={6} key={card.title}>
-          <KpiCard {...card} />
-        </Col>
+        <KpiCard key={card.title} {...card} />
       ))}
-    </Row>
+    </div>
   )
 }

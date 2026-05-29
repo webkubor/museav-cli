@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { Button, Toast } from '@douyinfe/semi-ui'
 import { LuCheck, LuCopy } from 'react-icons/lu'
 import { CodeHighlight } from '@/components/ui/CodeHighlight'
 import { PLAIN_CODES, CLI_CODE } from '../constants/code-snippets'
+import { Button } from '@/components/ui/Button'
+import { appToast } from '@/lib/app-toast'
 
 type Tab = 'cli' | 'python' | 'node' | 'curl'
 
@@ -25,7 +26,7 @@ export const TerminalSection: React.FC = () => {
   const handleCopy = () => {
     navigator.clipboard.writeText(getCode(activeTab))
     setCopied(true)
-    Toast.success('接入代码已复制到剪贴板')
+    appToast.success('接入代码已复制到剪贴板')
     setTimeout(() => setCopied(false), 2000)
   }
 
@@ -90,19 +91,12 @@ export const TerminalSection: React.FC = () => {
 
         {/* 右侧：复制键 */}
         <Button
-          size="small"
-          theme="borderless"
-          icon={copied ? <LuCheck style={{ color: '#10b981' }} /> : <LuCopy style={{ color: '#94a3b8' }} />}
+          variant="ghost"
+          size="xs"
           onClick={handleCopy}
-          style={{
-            color: copied ? '#10b981' : '#94a3b8',
-            fontSize: '12px',
-            fontWeight: 600,
-            backgroundColor: 'rgba(255, 255, 255, 0.04)',
-            borderRadius: '6px',
-            padding: '4px 10px'
-          }}
+          className="text-[#94a3b8] bg-white/4 rounded-[6px] px-2.5 py-1 h-7 transition-all border-none flex items-center gap-1 hover:text-white"
         >
+          {copied ? <LuCheck className="text-[#10b981]" /> : <LuCopy className="text-[#94a3b8]" />}
           {copied ? '已复制' : '复制'}
         </Button>
       </div>

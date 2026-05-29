@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Layout, Breadcrumb } from '@douyinfe/semi-ui'
 import { useAuthStore } from '@/store/auth'
 import {
   LuHouse,
@@ -22,8 +21,7 @@ import { CustomerService } from '@/components/customer-service'
 import { navConfig } from '@/config/nav'
 import { isDomestic } from '@/lib/market'
 import { usePlatformConfig } from '@/hooks/use-platform-config'
-
-const { Content } = Layout
+import { cn } from '@/lib/utils'
 
 const isDevTools = import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
 
@@ -38,19 +36,12 @@ function WorkspaceGuard({
 
   if (!activeWorkspaceId && navConfig.workspaceScopedKeys.has(currentKey)) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '80px 0',
-        gap: '16px',
-      }}>
-        <div style={{ fontSize: '40px' }}>🔒</div>
-        <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--semi-color-text-0)' }}>
+      <div className="flex flex-col items-center justify-center py-20 gap-4 select-none animate-in fade-in duration-300">
+        <div className="text-4xl">🔒</div>
+        <div className="text-base font-bold text-semi-color-text-0">
           无可用工作区
         </div>
-        <div style={{ fontSize: '13px', color: 'var(--semi-color-text-2)', textAlign: 'center', maxWidth: '320px', lineHeight: '1.6' }}>
+        <div className="text-[13px] text-semi-color-text-2 text-center max-w-[320px] leading-relaxed">
           当前账号尚未加入任何工作区。请联系组织管理员将你加入工作区，或前往设置创建一个新工作区。
         </div>
       </div>
@@ -64,7 +55,7 @@ export function DashboardLayout() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
-  usePlatformConfig() // 预热全局缓存，子组件通过 useCurrency() 零请求读取
+  usePlatformConfig()
   const [collapsed, setCollapsed] = useState(false)
 
   const tenants = useAuthStore((s) => s.tenants)
@@ -72,15 +63,14 @@ export function DashboardLayout() {
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
 
-  // ─── 菜单可见性上下文（所有条件集中在 src/config/nav.ts） ───────────────
   const navCtx = {
     isNonPersonal: activeTenant?.type !== 'personal',
     isDomestic: isDomestic(),
     isDevTools,
   }
 
-  const ic = (node: React.ReactNode, size = 16) => (
-    <span style={{ display: 'inline-flex', width: size, height: size, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+  const ic = (node: React.ReactNode) => (
+    <span className="inline-flex w-4 h-4 items-center justify-center shrink-0">
       {node}
     </span>
   )
@@ -89,10 +79,10 @@ export function DashboardLayout() {
     home:        ic(<LuHouse        size={16} />),
     apps:        ic(<LuLayoutGrid   size={16} />),
     histogram:   ic(<LuTrendingUp   size={16} />),
-    histogramSm: ic(<LuTrendingUp   size={14} />, 14),
-    list:        ic(<LuList         size={14} />, 14),
+    histogramSm: ic(<LuTrendingUp   size={14} />),
+    list:        ic(<LuList         size={14} />),
     creditCard:  ic(<LuCreditCard   size={16} />),
-    wrench:      ic(<LuWrench       size={16} color="#d97706" />),
+    wrench:      ic(<LuWrench       size={16} className="text-amber-600" />),
     terminal:    ic(<LuTerminal     size={16} />),
     key:         ic(<LuKey          size={16} />),
     shield:      ic(<LuShield       size={16} />),
@@ -106,7 +96,6 @@ export function DashboardLayout() {
 
   const getSelectedKey = () => {
     const path = location.pathname
-    // 工作区级路由：/workspace/:workspaceId/<key>
     const wsMatch = path.match(/^\/workspace\/[^/]+\/(.+)$/)
     if (wsMatch) return wsMatch[1]
     return path.replace(/^\//, '') || 'dashboard'
@@ -141,10 +130,10 @@ export function DashboardLayout() {
   const isDashboardRoute = getSelectedKey() === 'dashboard'
 
   return (
-    <Layout style={{ minHeight: '100vh', background: 'var(--site-bg)' }}>
+    <div className="min-h-screen bg-site-bg flex flex-col font-sans">
       <DashboardHeader />
 
-      <Layout>
+      <div className="flex flex-1 relative overflow-hidden">
         <DashboardSidebar
           collapsed={collapsed}
           setCollapsed={setCollapsed}
@@ -163,37 +152,40 @@ export function DashboardLayout() {
           settingsLabel={t('nav.settings')}
         />
 
-        <Layout style={{ padding: '28px 36px', flex: 1, transition: 'all 0.3s ease' }}>
-          <Breadcrumb style={{ marginBottom: '18px', fontSize: '12px', color: 'var(--semi-color-text-1)' }}>
+        <main className="flex-1 flex flex-col p-6 md:p-9 overflow-y-auto h-[calc(100vh-60px)] transition-all duration-300">
+          {/* 高阶极简自定义 Breadcrumbs */}
+          <nav className="flex items-center gap-2 mb-5 text-[11px] font-bold text-semi-color-text-2 tracking-wider uppercase select-none">
             {getBreadcrumbs().map((b, idx) => (
-              <Breadcrumb.Item key={idx}>{b}</Breadcrumb.Item>
+              <div key={idx} className="flex items-center gap-2">
+                {idx > 0 && <span className="opacity-45 text-semi-color-text-2">/</span>}
+                <span className={cn(
+                  idx === getBreadcrumbs().length - 1 
+                    ? "text-semi-color-text-0 font-bold" 
+                    : "text-semi-color-text-2/70 font-bold"
+                )}>
+                  {b}
+                </span>
+              </div>
             ))}
-          </Breadcrumb>
+          </nav>
 
           <CustomerService />
 
-          <Content style={isDashboardRoute ? {
-            background: 'transparent',
-            border: 'none',
-            boxShadow: 'none',
-            padding: 0,
-            minHeight: 'auto',
-            transition: 'all 0.3s ease'
-          } : {
-            background: 'var(--semi-color-bg-0)',
-            borderRadius: '16px',
-            border: '1px solid var(--semi-color-fill-0)',
-            boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.03), 0 2px 8px -1px rgba(15, 23, 42, 0.02)',
-            padding: '36px',
-            minHeight: '520px',
-            transition: 'all 0.3s ease'
-          }}>
+          {/* 渲染主视图区域 */}
+          <div className={cn(
+            "flex-1 transition-all duration-300",
+            isDashboardRoute ? (
+              "bg-transparent border-none shadow-none p-0"
+            ) : (
+              "bg-semi-color-bg-0 rounded-2xl border border-semi-color-border/60 shadow-sm shadow-black/2 p-6 md:p-9 min-h-[520px]"
+            )
+          )}>
             <WorkspaceGuard currentKey={getSelectedKey()}>
               <Outlet />
             </WorkspaceGuard>
-          </Content>
-        </Layout>
-      </Layout>
-    </Layout>
+          </div>
+        </main>
+      </div>
+    </div>
   )
 }

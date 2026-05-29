@@ -1,16 +1,24 @@
 import { useState, useRef, useEffect } from 'react'
 import type { KeyboardEvent } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { Button, TextArea, Toast, Spin, Typography } from '@douyinfe/semi-ui'
+import { Button } from '@/components/ui/Button'
+import { Textarea } from '@/components/ui/Textarea'
+import { appToast } from '@/lib/app-toast'
 import { LuSend, LuPlus } from 'react-icons/lu'
 import { chatAgent } from '@/services/agent'
-
-const { Text } = Typography
+import { cn } from '@/lib/utils'
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
 }
+
+const Spinner = () => (
+  <svg className="animate-spin text-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+  </svg>
+)
 
 export default function ModelsChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -31,7 +39,7 @@ export default function ModelsChatPage() {
       ])
     },
     onError: () => {
-      Toast.error('发送失败，请稍后重试')
+      appToast.error('发送失败，请稍后重试')
     },
   })
 
@@ -62,95 +70,58 @@ export default function ModelsChatPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '600px' }}>
+    <div className="flex flex-col h-[600px]">
       {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '20px',
-        flexShrink: 0,
-      }}>
+      <div className="flex items-center justify-between mb-5 shrink-0">
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: '0 0 4px 0', letterSpacing: '-0.02em' }}>
+          <h1 className="text-2xl font-bold text-[var(--semi-color-text-0)] m-0 mb-1 tracking-tight">
             对话
           </h1>
-          <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0 }}>
+          <p className="text-[13px] text-[var(--semi-color-text-1)] m-0">
             与 ModelGo Agent 进行对话。
           </p>
         </div>
         <Button
-          icon={<LuPlus size={14} />}
           onClick={handleNewConversation}
-          theme="light"
-          size="small"
+          variant="secondary"
+          size="sm"
         >
+          <LuPlus size={14} className="mr-1" />
           新对话
         </Button>
       </div>
 
       {/* Messages area */}
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '16px',
-        background: 'var(--semi-color-fill-0)',
-        borderRadius: '12px',
-        marginBottom: '16px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-      }}>
+      <div className="flex-1 overflow-y-auto p-4 bg-[var(--semi-color-fill-0)] border border-[var(--semi-color-border)] rounded-xl mb-4 flex flex-col gap-3">
         {messages.length === 0 && !chatMutation.isPending && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ color: 'var(--semi-color-text-2)', fontSize: '13px' }}>
+          <div className="flex-1 flex items-center justify-center">
+            <span className="text-[var(--semi-color-text-2)] text-[13px]">
               发送消息开始对话
-            </Text>
+            </span>
           </div>
         )}
 
         {messages.map((msg, idx) => (
           <div
             key={idx}
-            style={{
-              display: 'flex',
-              justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-            }}
+            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div style={{
-              maxWidth: '72%',
-              padding: '10px 14px',
-              borderRadius: msg.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-              background: msg.role === 'user'
-                ? 'var(--semi-color-primary)'
-                : 'var(--semi-color-bg-0)',
-              color: msg.role === 'user'
-                ? '#fff'
-                : 'var(--semi-color-text-0)',
-              fontSize: '14px',
-              lineHeight: '1.6',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-            }}>
+            <div className={cn(
+              "max-w-[72%] px-3.5 py-2.5 text-sm leading-relaxed shadow-sm whitespace-pre-wrap break-words",
+              msg.role === 'user'
+                ? "rounded-[14px_14px_4px_14px] bg-[var(--semi-color-primary)] text-white"
+                : "rounded-[14px_14px_14px_4px] bg-card-bg text-[var(--semi-color-text-0)]"
+            )}>
               {msg.content}
             </div>
           </div>
         ))}
 
         {chatMutation.isPending && (
-          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-            <div style={{
-              padding: '10px 14px',
-              borderRadius: '14px 14px 14px 4px',
-              background: 'var(--semi-color-bg-0)',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}>
-              <Spin size="small" />
-              <Text style={{ color: 'var(--semi-color-text-2)', fontSize: '13px' }}>思考中...</Text>
+          <div className="flex justify-start">
+            <div className="px-3.5 py-2.5 rounded-[14px_14px_14px_4px] bg-card-bg shadow-sm flex items-center gap-2">
+              <Spinner />
+              <span className="text-[var(--semi-color-text-2)] text-[13px]">思考中...</span>
             </div>
           </div>
         )}
@@ -159,34 +130,25 @@ export default function ModelsChatPage() {
       </div>
 
       {/* Input area */}
-      <div style={{
-        display: 'flex',
-        gap: '10px',
-        alignItems: 'flex-end',
-        flexShrink: 0,
-      }}>
-        <TextArea
+      <div className="flex gap-2.5 items-end shrink-0">
+        <Textarea
           value={input}
-          onChange={(v) => setInput(v)}
+          onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="输入消息，Enter 发送，Shift+Enter 换行..."
           rows={2}
-          style={{
-            flex: 1,
-            borderRadius: '10px',
-            resize: 'none',
-          }}
+          className="flex-1 rounded-[10px] resize-none"
           disabled={chatMutation.isPending}
         />
         <Button
-          icon={<LuSend size={16} />}
-          theme="solid"
-          type="primary"
+          variant="brand"
           onClick={handleSend}
           loading={chatMutation.isPending}
           disabled={!input.trim() || chatMutation.isPending}
-          style={{ height: '58px', width: '58px', borderRadius: '10px', padding: 0 }}
-        />
+          className="h-[58px] w-[58px] rounded-[10px] p-0 flex items-center justify-center"
+        >
+          {!chatMutation.isPending && <LuSend size={16} />}
+        </Button>
       </div>
     </div>
   )

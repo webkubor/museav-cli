@@ -202,6 +202,243 @@ body[theme-mode='dark'] {
   --semi-color-link-hover: var(--cn-mid);
 }
 
+/* ── 🍏 全局 Semi UI 输入框与多行文本域极雅覆写与聚焦发光 ── */
+.semi-input-wrapper,
+.semi-input-textarea-wrapper {
+  background-color: var(--semi-color-bg-0) !important;
+  border: 1px solid var(--semi-color-border) !important;
+  border-radius: var(--radius-sm) !important; /* 统一 8px 大厂圆角 */
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* 悬停态：边框微弱变深 */
+.semi-input-wrapper:hover,
+.semi-input-textarea-wrapper:hover {
+  border-color: rgba(15, 23, 42, 0.15) !important;
+}
+
+body[theme-mode='dark'] .semi-input-wrapper:hover,
+body[theme-mode='dark'] .semi-input-textarea-wrapper:hover {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* 获焦高亮态：双重弥散发光呼吸阴影 (Linear/Stripe 风格) */
+.semi-input-wrapper-focus,
+.semi-input-wrapper:focus-within,
+.semi-input-textarea-wrapper-focus,
+.semi-input-textarea-wrapper:focus-within {
+  border-color: var(--brand-base) !important;
+  box-shadow: 0 0 0 1px var(--brand-base), 0 0 0 3.5px var(--brand-glow), var(--shadow-sm) !important;
+  background-color: var(--semi-color-bg-0) !important;
+}
+
+.semi-input,
+.semi-input-textarea {
+  color: var(--semi-color-text-0) !important;
+  font-size: 13.5px !important;
+  font-family: inherit !important;
+}
+
+.semi-input::placeholder,
+.semi-input-textarea::placeholder {
+  color: var(--semi-color-text-2) !important;
+  opacity: 0.65;
+}
+
+/* 获焦时，前缀/后缀/清除图标联动高亮 */
+.semi-input-wrapper-focus .semi-input-prefix,
+.semi-input-wrapper:focus-within .semi-input-prefix,
+.semi-input-wrapper-focus .semi-input-suffix,
+.semi-input-wrapper:focus-within .semi-input-suffix {
+  color: var(--semi-color-text-0) !important;
+  transition: color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.semi-input-prefix,
+.semi-input-suffix {
+  color: var(--semi-color-text-2) !important;
+  transition: color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+}
+
+/* 校验失败/报错态：精致的淡红色呼吸发光 */
+.semi-input-wrapper-danger,
+.semi-input-textarea-wrapper-danger {
+  border-color: #f43f5e !important; /* rose-500 */
+}
+
+.semi-input-wrapper-danger.semi-input-wrapper-focus,
+.semi-input-wrapper-danger:focus-within,
+.semi-input-textarea-wrapper-danger.semi-input-textarea-wrapper-focus,
+.semi-input-textarea-wrapper-danger:focus-within {
+  border-color: #f43f5e !important;
+  box-shadow: 0 0 0 1px #f43f5e, 0 0 0 3.5px rgba(244, 63, 94, 0.15), var(--shadow-sm) !important;
+}
+
+/* 校验警告态：精致的淡橙色呼吸发光 */
+.semi-input-wrapper-warning,
+.semi-input-textarea-wrapper-warning {
+  border-color: #f97316 !important; /* orange-500 */
+}
+
+.semi-input-wrapper-warning.semi-input-wrapper-focus,
+.semi-input-wrapper-warning:focus-within,
+.semi-input-textarea-wrapper-warning.semi-input-textarea-wrapper-focus,
+.semi-input-textarea-wrapper-warning:focus-within {
+  border-color: #f97316 !important;
+  box-shadow: 0 0 0 1px #f97316, 0 0 0 3.5px rgba(249, 115, 22, 0.15), var(--shadow-sm) !important;
+}
+
+/* 禁用态输入框 */
+.semi-input-wrapper-disabled,
+.semi-input-textarea-wrapper-disabled {
+  background-color: var(--semi-color-fill-0) !important;
+  border-color: var(--semi-color-border) !important;
+  cursor: not-allowed !important;
+  opacity: 0.65 !important;
+  box-shadow: none !important;
+}
+
+.semi-input-wrapper-disabled .semi-input,
+.semi-input-textarea-wrapper-disabled .semi-input-textarea {
+  cursor: not-allowed !important;
+}
+
+/* ── 🍏 全局 Semi UI 按钮弹性 Hover 与物理阻尼按压反馈 ── */
+.semi-button {
+  font-family: inherit !important;
+  font-weight: 600 !important;
+  border-radius: var(--radius-sm) !important; /* 统一 8px 圆角 */
+  letter-spacing: -0.01em !important;
+  box-sizing: border-box !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  position: relative !important;
+}
+
+/* 物理触觉阻尼按压：仅在正常按钮上触发 */
+.semi-button:not(.semi-button-disabled):not(.semi-button-loading):active {
+  transform: scale(0.97) !important;
+  transition-duration: 0.1s !important;
+}
+
+/* 1. Solid Primary (品牌主按钮) */
+.semi-button-primary.semi-button-solid {
+  background-color: var(--brand-base) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05) !important;
+}
+
+.semi-button-primary.semi-button-solid:not(.semi-button-disabled):not(.semi-button-loading):hover {
+  transform: translateY(-1.5px);
+  background-color: var(--brand-mid) !important;
+  box-shadow: 0 4px 12px var(--brand-glow), 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 2. Solid Secondary/Tertiary/Default (灰白次按钮) */
+.semi-button-secondary.semi-button-solid,
+.semi-button-tertiary.semi-button-solid,
+.semi-button-default.semi-button-solid {
+  background-color: rgba(15, 23, 42, 0.035) !important;
+  border: 1px solid rgba(15, 23, 42, 0.06) !important;
+  color: var(--semi-color-text-0) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+body[theme-mode='dark'] .semi-button-secondary.semi-button-solid,
+body[theme-mode='dark'] .semi-button-tertiary.semi-button-solid,
+body[theme-mode='dark'] .semi-button-default.semi-button-solid {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.semi-button-secondary.semi-button-solid:not(.semi-button-disabled):not(.semi-button-loading):hover,
+.semi-button-tertiary.semi-button-solid:not(.semi-button-disabled):not(.semi-button-loading):hover,
+.semi-button-default.semi-button-solid:not(.semi-button-disabled):not(.semi-button-loading):hover {
+  transform: translateY(-1px);
+  background-color: rgba(15, 23, 42, 0.06) !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04) !important;
+}
+
+body[theme-mode='dark'] .semi-button-secondary.semi-button-solid:not(.semi-button-disabled):not(.semi-button-loading):hover,
+body[theme-mode='dark'] .semi-button-tertiary.semi-button-solid:not(.semi-button-disabled):not(.semi-button-loading):hover,
+body[theme-mode='dark'] .semi-button-default.semi-button-solid:not(.semi-button-disabled):not(.semi-button-loading):hover {
+  background-color: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+/* 3. Light 主题按钮 (淡品牌色底) */
+.semi-button-primary.semi-button-light {
+  background-color: var(--brand-selected-bg) !important;
+  color: var(--brand-deep) !important;
+  border: none !important;
+}
+
+.semi-button-primary.semi-button-light:not(.semi-button-disabled):not(.semi-button-loading):hover {
+  transform: translateY(-1px);
+  background-color: var(--brand-glow) !important;
+}
+
+/* 4. Danger 主题按钮 (玫瑰红) */
+.semi-button-danger.semi-button-solid {
+  background-color: #f43f5e !important; /* rose-500 */
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 1px 2px rgba(244, 63, 94, 0.1) !important;
+}
+
+.semi-button-danger.semi-button-solid:not(.semi-button-disabled):not(.semi-button-loading):hover {
+  transform: translateY(-1.5px);
+  background-color: #e11d48 !important; /* rose-600 */
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.25), 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 5. Borderless 主题按钮 (Ghost) */
+.semi-button-borderless {
+  background-color: transparent !important;
+  color: var(--semi-color-text-1) !important;
+}
+
+.semi-button-borderless:not(.semi-button-disabled):not(.semi-button-loading):hover {
+  transform: translateY(-0.5px);
+  background-color: rgba(15, 23, 42, 0.04) !important;
+  color: var(--semi-color-text-0) !important;
+}
+
+body[theme-mode='dark'] .semi-button-borderless:not(.semi-button-disabled):not(.semi-button-loading):hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* 6. Disabled 状态按钮 */
+.semi-button-disabled,
+.semi-button[disabled] {
+  cursor: not-allowed !important;
+  background-color: var(--semi-color-fill-0) !important;
+  border-color: var(--semi-color-border) !important;
+  color: var(--semi-color-text-2) !important;
+  opacity: 0.55 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* 7. Loading 状态按钮 */
+.semi-button-loading {
+  cursor: default !important;
+  transform: none !important;
+  pointer-events: none !important;
+}
+
+.semi-button-loading .semi-button-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 html, body, #root {
   margin: 0;
   padding: 0;
@@ -212,51 +449,6 @@ html, body, #root {
   color: var(--semi-color-text-0);
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ── 🍏 全局 Semi UI 输入框极雅覆写与聚焦发光 ── */
-.semi-input-wrapper {
-  background-color: var(--semi-color-bg-0) !important;
-  border: 1px solid var(--semi-color-border) !important;
-  border-radius: var(--radius-sm) !important; /* 统一 8px 大厂圆角 */
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-
-.semi-input-wrapper:hover {
-  border-color: var(--semi-color-text-2) !important;
-}
-
-/* 获焦高亮态：淡品牌色边框 + 品牌外发光 */
-.semi-input-wrapper-focus,
-.semi-input-wrapper:focus-within {
-  border-color: var(--brand-base) !important;
-  box-shadow: 0 0 0 2.5px var(--brand-glow) !important;
-  background-color: var(--semi-color-bg-0) !important;
-}
-
-.semi-input {
-  color: var(--semi-color-text-0) !important;
-  font-size: 13.5px !important;
-  font-family: inherit !important;
-}
-
-.semi-input::placeholder {
-  color: var(--semi-color-text-2) !important;
-  opacity: 0.65;
-}
-
-/* ── 🍏 全局 Semi UI 按钮弹性 Hover ── */
-.semi-button {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-
-.semi-button-primary.semi-button-solid:hover {
-  transform: translateY(-0.5px);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08) !important;
-}
-
-.semi-button-primary.semi-button-solid:active {
-  transform: translateY(0);
 }
 
 /* 🍎 全局毛玻璃 & 深度感 */
@@ -633,7 +825,8 @@ body[theme-mode='dark'] .modern-auth-btn:hover {
 }
 
 .social-btn {
-  @apply flex-1 flex items-center justify-center h-10 border rounded-lg text-xs font-semibold transition-all duration-200 !important;
+  @apply flex-1 flex items-center justify-center h-10 border rounded-lg text-xs font-semibold;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   border-color: var(--semi-color-border) !important;
   background-color: var(--semi-color-bg-1) !important;
   color: var(--semi-color-text-1) !important;
@@ -646,74 +839,98 @@ body[theme-mode='dark'] .modern-auth-btn:hover {
 
 /* ── 💎 通用元组件样式抽离与大厂极简现代美学（硅谷风格） ── */
 .modern-btn {
-  @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-glow disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0;
+  @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-glow disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 物理触觉阻尼按压 */
+.modern-btn:not(:disabled):active {
+  transform: scale(0.97) !important;
+  transition-duration: 0.1s !important;
 }
 
 .modern-btn-default {
-  @apply text-white shadow-sm transition-all duration-200 !important;
+  @apply text-white shadow-sm;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   background-color: #0f172a !important; /* 浅色大厂极雅实色黑 */
   border: 1px solid #0f172a !important;
-  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05) !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05) !important;
 }
 
 .modern-btn-default:hover {
-  @apply -translate-y-[0.5px] !important;
+  transform: translateY(-1.5px);
   background-color: #1e293b !important;
   border-color: #1e293b !important;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12), 0 1px 2px rgba(0, 0, 0, 0.05) !important;
 }
 
 body[theme-mode='dark'] .modern-btn-default {
   background-color: #ffffff !important; /* 深色大厂极雅耀白 */
   border-color: #ffffff !important;
   color: #0f172a !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
 }
 
 body[theme-mode='dark'] .modern-btn-default:hover {
   background-color: #f1f5f9 !important;
   border-color: #f1f5f9 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.1) !important;
 }
 
 .modern-btn-destructive {
-  @apply bg-rose-500 text-white shadow-sm hover:bg-rose-600 active:bg-rose-700 !important;
+  @apply bg-rose-500 text-white shadow-sm;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   border: none !important;
+  box-shadow: 0 1px 2px rgba(244, 63, 94, 0.1) !important;
+}
+
+.modern-btn-destructive:hover {
+  transform: translateY(-1.5px);
+  background-color: #e11d48 !important;
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.25), 0 1px 2px rgba(0, 0, 0, 0.05) !important;
 }
 
 .modern-btn-outline {
-  @apply border bg-transparent transition-all duration-150 !important;
+  @apply border bg-transparent;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   border-color: var(--semi-color-border) !important;
   color: var(--semi-color-text-0) !important;
 }
 
 .modern-btn-outline:hover {
+  transform: translateY(-1px);
   background-color: var(--semi-color-fill-0) !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
 }
 
 .modern-btn-secondary {
-  @apply transition-all duration-150 !important;
+  @apply transition-all;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   background-color: var(--semi-color-fill-0) !important;
   color: var(--semi-color-text-1) !important;
 }
 
 .modern-btn-secondary:hover {
+  transform: translateY(-1px);
   background-color: var(--semi-color-fill-1) !important;
   color: var(--semi-color-text-0) !important;
 }
 
 .modern-btn-ghost {
-  @apply transition-all duration-150 !important;
+  @apply transition-all;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   color: var(--semi-color-text-1) !important;
 }
 
 .modern-btn-ghost:hover {
+  transform: translateY(-0.5px);
   background-color: var(--semi-color-fill-0) !important;
   color: var(--semi-color-text-0) !important;
 }
 
 .modern-btn-link {
-  @apply underline-offset-4 hover:underline transition-all duration-150 !important;
+  @apply underline-offset-4 hover:underline;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   color: var(--brand-base) !important;
 }
 
@@ -721,12 +938,16 @@ body[theme-mode='dark'] .modern-btn-default:hover {
   color: var(--brand-deep) !important;
 }
 
-/* 通用输入框极雅样式抽离 */
-.modern-input-field {
-  @apply flex h-10 w-full rounded-lg border px-3.5 py-2 text-sm outline-none transition-all duration-200 file:border-0 file:bg-transparent file:text-sm file:font-semibold disabled:cursor-not-allowed disabled:opacity-50 !important;
+/* 通用输入框与复合输入框极雅样式抽离 */
+.modern-input-field,
+.modern-input-wrapper {
+  @apply flex h-10 w-full rounded-lg border px-3.5 py-2 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   border-color: var(--semi-color-border) !important;
   background-color: var(--semi-color-bg-1) !important;
   color: var(--semi-color-text-0) !important;
+  box-shadow: var(--shadow-sm) !important;
+  box-sizing: border-box !important;
 }
 
 .modern-input-field::placeholder {
@@ -734,14 +955,27 @@ body[theme-mode='dark'] .modern-btn-default:hover {
   opacity: 0.7;
 }
 
-.modern-input-field:hover {
-  border-color: var(--semi-color-text-2) !important;
+.modern-input-field:hover,
+.modern-input-wrapper:hover {
+  border-color: rgba(15, 23, 42, 0.15) !important;
 }
 
-.modern-input-field:focus {
+body[theme-mode='dark'] .modern-input-field:hover,
+body[theme-mode='dark'] .modern-input-wrapper:hover {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.modern-input-field:focus,
+.modern-input-wrapper:focus-within {
   border-color: var(--brand-base) !important;
-  box-shadow: 0 0 0 2.5px var(--brand-glow) !important;
+  box-shadow: 0 0 0 1px var(--brand-base), 0 0 0 3.5px var(--brand-glow), var(--shadow-sm) !important;
   background-color: var(--semi-color-bg-0) !important;
+}
+
+/* 获焦时前置/后置图标联动亮化 */
+.modern-input-wrapper:focus-within .modern-input-prefix,
+.modern-input-wrapper:focus-within .modern-input-suffix {
+  color: var(--semi-color-text-0) !important;
 }
 
 /* ── 💎 常用组件大厂级 UX 规范与微动效微交互 ── */

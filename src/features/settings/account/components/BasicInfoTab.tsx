@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
-import { Avatar, Button, Input, Toast, Typography } from '@douyinfe/semi-ui'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { updateProfile } from '@/services/account'
 import type { AccountProfile } from '@/types'
-
-const { Text } = Typography
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { appToast } from '@/lib/app-toast'
 
 interface BasicInfoTabProps {
   profile: AccountProfile
@@ -19,11 +19,11 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
   const updateMutation = useMutation({
     mutationFn: () => updateProfile({ display_name: displayName }),
     onSuccess: (updated) => {
-      Toast.success(t('account.info.toastSuccess'))
+      appToast.success(t('account.info.toastSuccess'))
       queryClient.setQueryData<AccountProfile>(['account-profile'], updated)
     },
     onError: (err: any) => {
-      Toast.error(err?.message || t('account.info.toastError'))
+      appToast.error(err?.message || t('account.info.toastError'))
     },
   })
 
@@ -49,15 +49,17 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             />
           </div>
         ) : (
-          <Avatar
-            size="large"
+          <div
             style={{
+              width: '64px', height: '64px', borderRadius: '50%',
               backgroundColor: 'var(--semi-color-primary)',
-              boxShadow: '0 0 0 3px var(--brand-glow), 0 4px 10px rgba(0,0,0,0.06)'
+              boxShadow: '0 0 0 3px var(--brand-glow), 0 4px 10px rgba(0,0,0,0.06)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: '24px', fontWeight: 700, flexShrink: 0
             }}
           >
             {avatarLetter}
-          </Avatar>
+          </div>
         )}
         <div>
           <div style={{ fontWeight: 700, color: 'var(--semi-color-text-0)', fontSize: '16px', letterSpacing: '-0.01em' }}>
@@ -72,9 +74,9 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
       {/* 表单区域：限宽 480px，保留呼吸感的网格 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '480px' }}>
         <div>
-          <Text style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <span style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             {t('account.info.emailLabel')}
-          </Text>
+          </span>
           <Input 
             value={profile.email} 
             disabled 
@@ -90,28 +92,23 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
         </div>
 
         <div>
-          <Text style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <span style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             {t('account.info.nameLabel')}
-          </Text>
+          </span>
           <div style={{ display: 'flex', gap: '10px' }}>
             <Input
               value={displayName}
-              onChange={(val) => setDisplayName(val)}
+              onChange={(e) => setDisplayName(e.target.value)}
               placeholder={t('account.info.namePlaceholder')}
               style={{ flex: 1, borderRadius: '8px' }}
             />
             <Button
-              theme="solid"
+              variant="default"
               disabled={!isDirty || updateMutation.isPending}
-              loading={updateMutation.isPending}
               onClick={() => updateMutation.mutate()}
-              style={{ 
-                borderRadius: '8px', 
-                padding: '0 20px',
-                fontWeight: 600
-              }}
+              className="rounded-[8px] px-5 font-semibold transition-all"
             >
-              {t('common.save')}
+              {updateMutation.isPending ? t('common.loading') : t('common.save')}
             </Button>
           </div>
         </div>

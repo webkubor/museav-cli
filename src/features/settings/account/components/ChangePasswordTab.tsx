@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
-import { Button, Input, Toast, Typography } from '@douyinfe/semi-ui'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { changePassword } from '@/services/account'
-
-const { Text } = Typography
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { appToast } from '@/lib/app-toast'
 
 export const ChangePasswordTab: React.FC = () => {
   const { t } = useTranslation()
@@ -16,27 +16,27 @@ export const ChangePasswordTab: React.FC = () => {
     mutationFn: () =>
       changePassword({ current_password: currentPassword, new_password: newPassword }),
     onSuccess: () => {
-      Toast.success(t('account.security.toastSuccess'))
+      appToast.success(t('account.security.toastSuccess'))
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
     },
     onError: (err: any) => {
-      Toast.error(err?.message || t('account.security.toastError'))
+      appToast.error(err?.message || t('account.security.toastError'))
     },
   })
 
   function handleSubmit() {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      Toast.warning(t('account.security.warningEmpty'))
+      appToast.warning(t('account.security.warningEmpty'))
       return
     }
     if (newPassword !== confirmPassword) {
-      Toast.error(t('account.security.errorMismatch'))
+      appToast.error(t('account.security.errorMismatch'))
       return
     }
     if (newPassword.length < 8) {
-      Toast.error(t('account.security.errorLength'))
+      appToast.error(t('account.security.errorLength'))
       return
     }
     mutation.mutate()
@@ -45,39 +45,39 @@ export const ChangePasswordTab: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '480px', paddingTop: '8px' }}>
       <div>
-        <Text style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <span style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           {t('account.security.currentPassword')}
-        </Text>
+        </span>
         <Input
-          mode="password"
+          type="password"
           value={currentPassword}
-          onChange={(val) => setCurrentPassword(val)}
+          onChange={(e) => setCurrentPassword(e.target.value)}
           placeholder={t('account.security.currentPlaceholder')}
           style={{ borderRadius: '8px' }}
         />
       </div>
 
       <div>
-        <Text style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <span style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           {t('account.security.newPassword')}
-        </Text>
+        </span>
         <Input
-          mode="password"
+          type="password"
           value={newPassword}
-          onChange={(val) => setNewPassword(val)}
+          onChange={(e) => setNewPassword(e.target.value)}
           placeholder={t('account.security.newPlaceholder')}
           style={{ borderRadius: '8px' }}
         />
       </div>
 
       <div>
-        <Text style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <span style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           {t('account.security.confirmPassword')}
-        </Text>
+        </span>
         <Input
-          mode="password"
+          type="password"
           value={confirmPassword}
-          onChange={(val) => setConfirmPassword(val)}
+          onChange={(e) => setConfirmPassword(e.target.value)}
           placeholder={t('account.security.confirmPlaceholder')}
           style={{ borderRadius: '8px' }}
         />
@@ -85,16 +85,11 @@ export const ChangePasswordTab: React.FC = () => {
 
       <div style={{ marginTop: '8px' }}>
         <Button
-          theme="solid"
-          loading={mutation.isPending}
+          variant="default"
           onClick={handleSubmit}
-          style={{ 
-            borderRadius: '8px', 
-            padding: '0 24px',
-            fontWeight: 600
-          }}
+          className="rounded-[8px] px-6 font-semibold transition-all"
         >
-          {t('common.save')}
+          {mutation.isPending ? t('common.loading') : t('common.save')}
         </Button>
       </div>
     </div>

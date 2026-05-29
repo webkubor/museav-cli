@@ -1,6 +1,4 @@
-import { Toast } from '@douyinfe/semi-ui'
-
-const DURATION_S = 4 // Semi UI 用秒
+import { toast as sonnerToast } from 'sonner'
 
 // 相同 type+content 防重复
 const recentKeys = new Set<string>()
@@ -12,30 +10,31 @@ function dedup(key: string, ttl = 4000): boolean {
   return false
 }
 
-function semiContent(title: string, description?: string) {
-  if (!description) return title
-  return `${title}\n${description}`
+function formattedContent(description?: string) {
+  return {
+    description: description || undefined,
+  }
 }
 
 export const toast = {
   success(title: string, description?: string) {
     const key = `success:${title}`
     if (dedup(key)) return
-    Toast.success({ content: semiContent(title, description), duration: DURATION_S })
+    sonnerToast.success(title, formattedContent(description))
   },
   error(title: string, description?: string) {
     const key = `error:${title}`
     if (dedup(key)) return
-    Toast.error({ content: semiContent(title, description), duration: DURATION_S })
+    sonnerToast.error(title, formattedContent(description))
   },
   warning(title: string, description?: string) {
     const key = `warning:${title}`
     if (dedup(key)) return
-    Toast.warning({ content: semiContent(title, description), duration: DURATION_S })
+    sonnerToast.warning(title, formattedContent(description))
   },
   info(title: string, description?: string) {
     const key = `info:${title}`
     if (dedup(key)) return
-    Toast.info({ content: semiContent(title, description), duration: DURATION_S })
+    sonnerToast.info(title, formattedContent(description))
   },
 }

@@ -35,3 +35,6 @@ export function addBudgetPolicy(guardrailId: string, body: AddBudgetPolicyReques
 export function deleteBudgetPolicy(guardrailId: string, budgetPolicyId: string) {
   return del<GuardrailDetail>(`guardrails/${guardrailId}/budget-policies/${budgetPolicyId}`)
 }
+export function deleteGuardrail(guardrailId: string) {
+  return del<void>(`guardrails/${guardrailId}`)
+}

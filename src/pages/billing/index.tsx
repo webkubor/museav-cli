@@ -1,12 +1,4 @@
 import { useState } from 'react'
-import {
-  Table,
-  Button,
-  Tag,
-  Toast,
-  Modal,
-  Spin,
-} from '@douyinfe/semi-ui'
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
@@ -18,7 +10,9 @@ import {
 import { usePlatformConfig, useCurrency } from '@/hooks/use-platform-config'
 import { useAuthStore } from '@/store/auth'
 import { isDomestic } from '@/lib/market'
-import type { RechargeOrder } from '@/types'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
+import { appToast } from '@/lib/app-toast'
 
 // ─── Sub-components: TopUpModal ───────────────────────────────────────────
 
@@ -28,11 +22,13 @@ const ALL_CHANNELS = [
   { value: 'stripe',  label: 'Stripe' },
 ]
 
-function TopUpModal({ visible, onClose, tenantId }: {
+interface TopUpModalProps {
   visible: boolean
   onClose: () => void
   tenantId: string
-}) {
+}
+
+function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [amount, setAmount] = useState('100')
@@ -40,7 +36,6 @@ function TopUpModal({ visible, onClose, tenantId }: {
   const { data: platformConfig } = usePlatformConfig()
   const { currency, symbol: currencySymbol } = useCurrency()
 
-  // 优先走 Swagger platform-config 接口，降级到全量
   const CHANNELS = platformConfig?.enabled_channels?.length
     ? ALL_CHANNELS.filter((c) => platformConfig.enabled_channels.includes(c.value))
     : ALL_CHANNELS
@@ -65,109 +60,85 @@ function TopUpModal({ visible, onClose, tenantId }: {
       const url = data.payment.redirect_url ?? data.payment.qr_code_url
       if (url) window.open(url, '_blank', 'noopener')
       onClose()
-      Toast.success(t('billing.rechargeModal.success'))
+      appToast.success(t('billing.rechargeModal.success'))
     },
-    onError: (err: Error) => Toast.error(err.message || t('billing.rechargeModal.error')),
+    onError: (err: Error) => appToast.error(err.message || t('billing.rechargeModal.error')),
   })
 
-  const btnBase: React.CSSProperties = {
-    flex: 1,
-    borderRadius: '8px',
-    border: '1px solid var(--semi-color-border)',
-    background: 'var(--semi-color-fill-0)',
-    color: 'var(--semi-color-text-1)',
-    fontSize: '13px',
-    padding: '8px 0',
-    cursor: 'pointer',
-    transition: 'all 0.15s',
-  }
-  const btnActive: React.CSSProperties = {
-    ...btnBase,
-    borderColor: 'var(--semi-color-primary)',
-    background: 'rgba(var(--semi-color-primary-light-default-rgb), 0.08)',
-    color: 'var(--semi-color-primary)',
-    fontWeight: 600,
-  }
+  const btnBaseClass = "flex-1 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-xs py-2 px-3 cursor-pointer transition-all text-center font-medium"
+  const btnActiveClass = "flex-1 rounded-lg border border-brand-base bg-brand-glow/10 dark:bg-brand-glow/5 text-brand-base text-xs py-2 px-3 cursor-pointer transition-all text-center font-semibold"
+
+  if (!visible) return null
 
   return (
-    <Modal
-      title={t('billing.rechargeModal.title')}
-      visible={visible}
-      onCancel={onClose}
-      footer={null}
-      width={400}
-      closeOnEsc
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '8px' }}>
-        <div>
-          <div style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', marginBottom: '10px' }}>{t('billing.rechargeModal.amount')}</div>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-            {PRESETS.map((p) => (
-              <button key={p} type="button" onClick={() => setAmount(p)}
-                style={amount === p ? btnActive : btnBase}>
-                {currencySymbol}{p}
-              </button>
-            ))}
-          </div>
-          <div style={{ position: 'relative' }}>
-            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--semi-color-text-2)', fontSize: '14px' }}>{currencySymbol}</span>
-            <input
-              type="number"
-              min="1"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              style={{
-                width: '100%',
-                height: '38px',
-                paddingLeft: '28px',
-                paddingRight: '12px',
-                borderRadius: '8px',
-                border: '1px solid var(--semi-color-border)',
-                fontSize: '14px',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-              placeholder={t('billing.rechargeModal.customAmount')}
-            />
-          </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* 遮罩 */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      
+      {/* 窗体 */}
+      <div className="relative bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl w-full max-w-[400px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+          <h2 className="text-sm font-bold text-gray-900 dark:text-white">{t('billing.rechargeModal.title')}</h2>
+          <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs font-semibold transition-colors" onClick={onClose}>✕</button>
         </div>
 
-        <div>
-          <div style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', marginBottom: '10px' }}>{t('billing.rechargeModal.method')}</div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {CHANNELS.map((c) => (
-              <button key={c.value} type="button" onClick={() => setChannel(c.value as 'alipay' | 'wechat' | 'stripe')}
-                style={effectiveChannel === c.value ? btnActive : btnBase}>
-                {c.label}
-              </button>
-            ))}
+        <div className="p-5 space-y-5">
+          <div>
+            <div className="text-xs text-gray-400 dark:text-gray-500 font-semibold mb-2.5 uppercase tracking-wider">{t('billing.rechargeModal.amount')}</div>
+            <div className="flex gap-2 mb-3">
+              {PRESETS.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setAmount(p)}
+                  className={amount === p ? btnActiveClass : btnBaseClass}
+                >
+                  {currencySymbol}{p}
+                </button>
+              ))}
+            </div>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">{currencySymbol}</span>
+              <input
+                type="number"
+                min="1"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full h-[38px] pl-7 pr-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-brand-glow focus:border-brand-base transition-all font-medium"
+                placeholder={t('billing.rechargeModal.customAmount')}
+              />
+            </div>
           </div>
-        </div>
 
-        <Button
-          theme="solid"
-          block
-          loading={recharge.isPending}
-          disabled={!parseFloat(amount) || parseFloat(amount) <= 0}
-          onClick={() => recharge.mutate()}
-          style={{ 
-            height: '40px', 
-            fontSize: '14px', 
-            fontWeight: 600,
-            background: 'linear-gradient(135deg, var(--brand-base) 0%, var(--brand-deep) 100%)',
-            border: 'none',
-            boxShadow: '0 4px 12px var(--brand-glow)'
-          }}
-        >
-          {t('billing.rechargeModal.submit', { amount })}
-        </Button>
+          <div>
+            <div className="text-xs text-gray-400 dark:text-gray-500 font-semibold mb-2.5 uppercase tracking-wider">{t('billing.rechargeModal.method')}</div>
+            <div className="flex gap-2">
+              {CHANNELS.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => setChannel(c.value as any)}
+                  className={effectiveChannel === c.value ? btnActiveClass : btnBaseClass}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <Button
+            variant="default"
+            disabled={!parseFloat(amount) || parseFloat(amount) <= 0 || recharge.isPending}
+            onClick={() => recharge.mutate()}
+            className="w-full h-10 text-xs font-semibold rounded-lg shadow-md bg-gradient-to-r from-brand-base to-brand-deep hover:opacity-95"
+          >
+            {recharge.isPending ? '提交中...' : t('billing.rechargeModal.submit', { amount })}
+          </Button>
+        </div>
       </div>
-    </Modal>
+    </div>
   )
 }
-
-// ─── Styles ────────────────────────────────────────────────────────────────
-
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
@@ -178,7 +149,6 @@ export default function BillingPage() {
 
   const { symbol: currencySymbol } = useCurrency()
 
-  // ─── Balance Query ───────────────────────────────────────────────────────
   const { data: balance, isLoading: balanceLoading } = useQuery({
     queryKey: ['balance', tenantId],
     queryFn: () => getBalance(tenantId),
@@ -200,15 +170,17 @@ export default function BillingPage() {
       <TopUpModal visible={topUpVisible} onClose={() => setTopUpVisible(false)} tenantId={tenantId} />
 
       {/* Balance Section */}
-      <div className="card-shadow-adaptive" style={{ padding: '28px 32px', marginBottom: '24px' }}>
+      <div className="card-shadow-adaptive bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl" style={{ padding: '28px 32px', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)' }}>{t('billing.balance.title')}</div>
-          <Button theme="solid" onClick={() => setTopUpVisible(true)} style={{ borderRadius: '8px', fontWeight: 600 }}>
+          <Button variant="default" onClick={() => setTopUpVisible(true)} className="rounded-lg font-semibold h-9 px-4">
             {t('billing.balance.recharge')}
           </Button>
         </div>
         {balanceLoading ? (
-          <Spin />
+          <div className="py-4 flex justify-start items-center">
+            <div className="w-6 h-6 border-2 border-gray-200 border-t-brand-base rounded-full animate-spin" />
+          </div>
         ) : (
           <div style={{ display: 'flex', gap: '48px', alignItems: 'flex-end' }}>
             <div>
@@ -251,53 +223,111 @@ function OrderTab({ tenantId }: { tenantId: string }) {
   const cancelMutation = useMutation({
     mutationFn: (orderNo: string) => cancelRecharge(tenantId, orderNo),
     onSuccess: () => {
-      Toast.success(t('billing.orders.cancelSuccess'))
+      appToast.success(t('billing.orders.cancelSuccess'))
       qc.invalidateQueries({ queryKey: ['billing', 'recharges', tenantId] })
     },
-    onError: (err: Error) => Toast.error(err.message || t('billing.orders.cancelError')),
+    onError: (err: Error) => appToast.error(err.message || t('billing.orders.cancelError')),
   })
 
   const orders = ordersQuery.data?.pages.flatMap((page) => page.items) ?? []
   const selected = orders.find((o) => o.order_no === selectedOrderNo)
-
-  const columns = [
-    { title: t('billing.orders.table.orderNo'), dataIndex: 'order_no', render: (text: string) => <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>{text}</span> },
-    { 
-      title: t('billing.orders.table.status'), 
-      dataIndex: 'status', 
-      render: (status: string) => {
-        const labels = t('billing.orders.status', { returnObjects: true }) as Record<string, string>
-        return <Tag>{labels[status] || status}</Tag>
-      }
-    },
-    { title: t('billing.orders.table.amount'), dataIndex: 'amount', render: (val: string, record: RechargeOrder) => <span style={{ fontWeight: 600 }}>{record.currency} {val}</span> },
-    { title: t('billing.orders.table.paidAt'), dataIndex: 'paid_at', render: (val: string | null) => <span>{val ? new Date(val).toLocaleString() : '—'}</span> },
-    {
-      title: t('billing.orders.table.actions'),
-      render: (_: unknown, record: RechargeOrder) => record.status === 'pending' && (
-        <Button size="small" onClick={() => cancelMutation.mutate(record.order_no)}>{t('billing.orders.table.cancel')}</Button>
-      )
-    }
-  ]
+  const labels = t('billing.orders.status', { returnObjects: true }) as Record<string, string>
 
   return (
-    <div style={{ display: 'flex', gap: '24px', padding: '16px 0' }}>
-      <div style={{ flex: 1 }}>
-        <Table columns={columns} dataSource={orders} loading={ordersQuery.isLoading} pagination={false} bordered={false} rowKey="order_no" onRow={(r) => ({ onClick: () => setSelectedOrderNo((r as RechargeOrder).order_no) })} />
-        {ordersQuery.hasNextPage && <Button theme="borderless" block onClick={() => ordersQuery.fetchNextPage()}>{t('billing.orders.loadMore')}</Button>}
+    <div style={{ display: 'flex', gap: '24px', padding: '16px 0' }} className="flex-col md:flex-row">
+      <div style={{ flex: 1 }} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm p-4">
+        <div className="overflow-x-auto w-full p-1">
+          {ordersQuery.isLoading ? (
+            <div className="py-20 flex justify-center items-center">
+              <div className="w-8 h-8 border-2 border-gray-200 border-t-brand-base rounded-full animate-spin" />
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <span className="text-3xl mb-3">📬</span>
+              <p className="text-sm text-gray-400 dark:text-gray-500 font-medium">暂无充值记录</p>
+            </div>
+          ) : (
+            <table className="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 dark:border-gray-800">
+                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">{t('billing.orders.table.orderNo')}</th>
+                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">{t('billing.orders.table.status')}</th>
+                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">{t('billing.orders.table.amount')}</th>
+                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">{t('billing.orders.table.paidAt')}</th>
+                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs w-24">{t('billing.orders.table.actions')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((record) => (
+                  <tr
+                    key={record.order_no}
+                    onClick={() => setSelectedOrderNo(record.order_no)}
+                    className={`border-b border-gray-100/50 dark:border-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer ${
+                      selectedOrderNo === record.order_no ? 'bg-brand-glow/5 dark:bg-brand-glow/3 font-semibold' : ''
+                    }`}
+                  >
+                    <td className="py-3 px-4 font-mono text-xs text-gray-600 dark:text-gray-400">
+                      {record.order_no}
+                    </td>
+                    <td className="py-3 px-4">
+                      <Badge variant="outline" className="text-[10px] py-0.5 px-2 font-medium">
+                        {labels[record.status] || record.status}
+                      </Badge>
+                    </td>
+                    <td className="py-3 px-4 text-xs font-bold text-gray-800 dark:text-gray-200">
+                      {record.currency} {record.amount}
+                    </td>
+                    <td className="py-3 px-4 text-xs text-gray-400 dark:text-gray-500">
+                      {record.paid_at ? new Date(record.paid_at).toLocaleString() : '—'}
+                    </td>
+                    <td className="py-3 px-4 text-xs" onClick={(e) => e.stopPropagation()}>
+                      {record.status === 'pending' ? (
+                        <button
+                          onClick={() => cancelMutation.mutate(record.order_no)}
+                          className="text-rose-500 hover:text-rose-600 font-bold bg-none border-none cursor-pointer transition-colors p-0 text-xs"
+                        >
+                          {t('billing.orders.table.cancel')}
+                        </button>
+                      ) : (
+                        <span className="text-gray-300 dark:text-gray-700">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        {ordersQuery.hasNextPage && (
+          <Button
+            variant="outline"
+            className="w-full mt-4 h-9 rounded-lg font-semibold text-xs border border-gray-200 hover:bg-gray-50"
+            onClick={() => ordersQuery.fetchNextPage()}
+          >
+            {t('billing.orders.loadMore')}
+          </Button>
+        )}
       </div>
-      <div style={{ width: '300px', padding: '20px', backgroundColor: 'var(--semi-color-bg-1)', borderRadius: '12px' }}>
-        <h3 style={{ margin: '0 0 16px 0', fontSize: '14px' }}>{t('billing.orders.detailTitle')}</h3>
+
+      <div style={{ width: '300px', padding: '20px', backgroundColor: 'var(--semi-color-bg-1)', borderRadius: '12px' }} className="w-full md:w-[300px] shrink-0 border border-gray-100 dark:border-gray-800">
+        <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 700 }}>{t('billing.orders.detailTitle')}</h3>
         {selected ? (
           <div style={{ fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div><span style={{ color: 'var(--semi-color-text-2)' }}>{t('billing.orders.detail.orderNo')}:</span> {selected.order_no}</div>
-            <div><span style={{ color: 'var(--semi-color-text-2)' }}>{t('billing.orders.detail.status')}:</span> {selected.status}</div>
-            <div><span style={{ color: 'var(--semi-color-text-2)' }}>{t('billing.orders.detail.amount')}:</span> {selected.currency} {selected.amount}</div>
-            {isDomestic() && selected.invoice_url && <Button block onClick={() => window.open(selected.invoice_url!, '_blank')}>{t('billing.orders.detail.viewInvoice')}</Button>}
+            <div><span style={{ color: 'var(--semi-color-text-2)', fontWeight: 500 }}>{t('billing.orders.detail.orderNo')}:</span> <span className="font-mono text-xs">{selected.order_no}</span></div>
+            <div><span style={{ color: 'var(--semi-color-text-2)', fontWeight: 500 }}>{t('billing.orders.detail.status')}:</span> <span className="font-semibold text-xs">{selected.status}</span></div>
+            <div><span style={{ color: 'var(--semi-color-text-2)', fontWeight: 500 }}>{t('billing.orders.detail.amount')}:</span> <span className="font-bold text-xs">{selected.currency} {selected.amount}</span></div>
+            {isDomestic() && selected.invoice_url && (
+              <Button
+                variant="outline"
+                className="w-full h-8 text-xs font-semibold rounded-lg mt-2"
+                onClick={() => window.open(selected.invoice_url!, '_blank')}
+              >
+                {t('billing.orders.detail.viewInvoice')}
+              </Button>
+            )}
           </div>
         ) : <p style={{ color: 'var(--semi-color-text-2)', fontSize: '13px' }}>{t('billing.orders.detailPlaceholder')}</p>}
       </div>
     </div>
   )
 }
-

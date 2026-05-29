@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 
 /** Button 组件变体样式定义 */
 const buttonVariants = cva(
-  "modern-btn active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all duration-200",
+  "modern-btn",
   {
     variants: {
       variant: {
@@ -49,21 +49,49 @@ const buttonVariants = cva(
 )
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'size' | 'type'>,
+    Omit<VariantProps<typeof buttonVariants>, 'size' | 'variant'> {
   asChild?: boolean
   loading?: boolean
+  htmlType?: "submit" | "button" | "reset" // 兼容 Semi UI 的 htmlType 属性
+  theme?: string // 兼容 Semi UI 的 theme 属性，无须特殊行为直接过滤
+  size?: "icon" | "default" | "xs" | "sm" | "lg" | "xl" | "small" | "large" | string | null // 显式扩充 size 类型以完美支持 "small" 和 "large"
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "glass" | "brand" | string | null
+  type?: "submit" | "button" | "reset" | "primary" | "secondary" | "danger" | "tertiary" | string // 兼容 Semi UI 的 type 属性
+  icon?: React.ReactNode // 兼容 Semi UI 的 icon 属性，内部自动前置拼接渲染
 }
 
 /**
  * 统一的高阶 Button 组件
  */
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, loading = false, children, disabled, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, loading = false, htmlType, theme, type, icon, children, disabled, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
+
+    // 1. 智能解析 variant (如果 type 传递了 Semi 颜色，自动映射为对应 variant)
+    let resolvedVariant = variant
+    if (!resolvedVariant) {
+      if (type === "primary") resolvedVariant = "brand"
+      else if (type === "danger") resolvedVariant = "destructive"
+      else if (type === "secondary" || type === "tertiary") resolvedVariant = "secondary"
+      else resolvedVariant = "default"
+    }
+
+    // 2. 智能解析原生按钮的 HTML type 属性
+    let resolvedHtmlType: "submit" | "button" | "reset" = "button"
+    if (htmlType) {
+      resolvedHtmlType = htmlType
+    } else if (type === "submit" || type === "button" || type === "reset") {
+      resolvedHtmlType = type
+    }
+
+    // 3. 智能解析 size="small"/"large" -> size="sm"/"lg"
+    const mappedSize = size === "small" ? "sm" : size === "large" ? "lg" : size
+
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
+        type={resolvedHtmlType}
+        className={cn(buttonVariants({ variant: resolvedVariant as any, size: mappedSize as any, className }))}
         ref={ref}
         disabled={disabled || loading}
         {...props}
@@ -91,10 +119,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
+            {icon && <span className="inline-flex mr-1.5 shrink-0">{icon}</span>}
             {children}
           </>
         ) : (
-          children
+          <>
+            {icon && <span className="inline-flex mr-1.5 shrink-0">{icon}</span>}
+            {children}
+          </>
         )}
       </Comp>
     )
@@ -103,3 +135,5 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = "Button"
 
 export { Button, buttonVariants }
+
+

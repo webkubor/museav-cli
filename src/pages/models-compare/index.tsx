@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Spin, Tag, Typography, Input } from '@douyinfe/semi-ui'
+import { Badge } from '@/components/ui/Badge'
+import { Input } from '@/components/ui/Input'
 import { LuSearch, LuPlus, LuX } from 'react-icons/lu'
 import { listModels } from '@/services/catalog'
 import type { CatalogModelItem } from '@/types'
-
-const { Text } = Typography
+import { cn } from '@/lib/utils'
 
 const MAX_COMPARE = 3
 
@@ -40,37 +40,25 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
 
   if (selected) {
     return (
-      <div style={{
-        border: '1px solid var(--semi-color-border)',
-        borderRadius: '12px',
-        padding: '16px',
-        background: 'var(--semi-color-bg-0)',
-        minHeight: '120px',
-        position: 'relative',
-      }}>
+      <div className="border border-[var(--semi-color-border)] rounded-xl p-4 bg-card-bg min-h-[120px] relative">
         <button
           onClick={onClear}
-          style={{
-            position: 'absolute', top: '10px', right: '10px',
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--semi-color-text-2)', padding: '2px',
-            display: 'flex', alignItems: 'center',
-          }}
+          className="absolute top-2.5 right-2.5 bg-none border-none cursor-pointer text-[var(--semi-color-text-2)] hover:text-[var(--semi-color-text-1)] p-0.5 flex items-center transition-colors"
         >
           <LuX size={14} />
         </button>
         {selected.logo_url && (
-          <img src={selected.logo_url} alt="" style={{ width: 28, height: 28, borderRadius: '6px', marginBottom: '8px' }} />
+          <img src={selected.logo_url} alt="" className="w-7 h-7 rounded-md mb-2 object-contain" />
         )}
-        <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--semi-color-text-0)', marginBottom: '4px' }}>
+        <div className="font-semibold text-sm text-[var(--semi-color-text-0)] mb-1">
           {selected.display_name}
         </div>
-        <div style={{ fontSize: '11px', color: 'var(--semi-color-text-2)', fontFamily: 'monospace', marginBottom: '6px' }}>
+        <div className="text-[11px] text-[var(--semi-color-text-2)] font-mono mb-1.5 truncate">
           {selected.model_id}
         </div>
-        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+        <div className="flex gap-1 flex-wrap">
           {selected.modalities.map((m) => (
-            <Tag key={m} size="small" color="blue">{m}</Tag>
+            <Badge key={m} variant="info" className="py-0.5 px-2">{m}</Badge>
           ))}
         </div>
       </div>
@@ -78,83 +66,49 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
   }
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        style={{
-          width: '100%',
-          border: '2px dashed var(--semi-color-border)',
-          borderRadius: '12px',
-          padding: '24px',
-          background: 'transparent',
-          cursor: 'pointer',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '8px',
-          color: 'var(--semi-color-text-2)',
-          transition: 'border-color 0.15s, background 0.15s',
-        }}
+        className="w-full border-2 border-dashed border-[var(--semi-color-border)] rounded-xl p-6 bg-transparent cursor-pointer flex flex-col items-center gap-2 text-[var(--semi-color-text-2)] hover:border-[var(--brand-base)] hover:text-[var(--brand-base)] hover:bg-[var(--semi-color-fill-0)]/50 transition-all duration-150"
       >
         <LuPlus size={20} />
-        <span style={{ fontSize: '13px' }}>选择模型</span>
+        <span className="text-[13px]">选择模型</span>
       </button>
 
       {open && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 6px)',
-          left: 0,
-          right: 0,
-          background: 'var(--semi-color-bg-0)',
-          border: '1px solid var(--semi-color-border)',
-          borderRadius: '10px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-          zIndex: 100,
-          maxHeight: '280px',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-        }}>
-          <div style={{ padding: '8px' }}>
-            <Input
-              prefix={<LuSearch size={14} />}
-              placeholder="搜索模型..."
-              size="small"
-              value={search}
-              onChange={onSearch}
-              autoFocus
-            />
+        <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-card-bg border border-[var(--semi-color-border)] rounded-lg shadow-lg z-50 max-h-[280px] overflow-hidden flex flex-col animate-[fadeIn_0.15s_ease-out]">
+          <div className="p-2 border-b border-[var(--semi-color-border)] bg-[var(--semi-color-fill-0)]">
+            <div className="relative w-full">
+              <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--semi-color-text-2)] w-3.5 h-3.5" />
+              <Input
+                placeholder="搜索模型..."
+                className="pl-8.5 pr-3 h-8 text-xs rounded-md"
+                value={search}
+                onChange={(e) => onSearch(e.target.value)}
+                autoFocus
+              />
+            </div>
           </div>
-          <div style={{ overflowY: 'auto', flex: 1 }}>
+          <div className="overflow-y-auto flex-1 py-1">
             {filtered.slice(0, 30).map((m) => (
               <div
                 key={m.model_id}
                 onClick={() => { onSelect(m); setOpen(false); onSearch('') }}
-                style={{
-                  padding: '8px 12px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'background 0.1s',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--semi-color-fill-0)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = '')}
+                className="px-3 py-2 cursor-pointer flex items-center gap-2 hover:bg-[var(--semi-color-fill-0)] transition-colors"
               >
-                {m.logo_url && <img src={m.logo_url} alt="" style={{ width: 20, height: 20, borderRadius: '4px', flexShrink: 0 }} />}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--semi-color-text-0)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {m.logo_url && <img src={m.logo_url} alt="" className="w-5 h-5 rounded object-contain flex-shrink-0" />}
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-medium text-[var(--semi-color-text-0)] truncate">
                     {m.display_name}
                   </div>
-                  <div style={{ fontSize: '11px', color: 'var(--semi-color-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div className="text-[11px] text-[var(--semi-color-text-2)] truncate font-mono">
                     {m.model_id}
                   </div>
                 </div>
               </div>
             ))}
             {filtered.length === 0 && (
-              <div style={{ padding: '16px', textAlign: 'center', fontSize: '13px', color: 'var(--semi-color-text-2)' }}>
+              <div className="p-4 text-center text-[13px] text-[var(--semi-color-text-2)]">
                 未找到匹配模型
               </div>
             )}
@@ -181,21 +135,28 @@ function renderCell(model: CatalogModelItem, key: string) {
   if (key === 'max_output_tokens') return formatContext(model.max_output_tokens)
   if (key === 'modalities') {
     return (
-      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-        {(model.modalities ?? []).map((m) => <Tag key={m} size="small" color="blue">{m}</Tag>)}
+      <div className="flex gap-1 flex-wrap">
+        {(model.modalities ?? []).map((m) => <Badge key={m} variant="info" className="py-0.5 px-2">{m}</Badge>)}
       </div>
     )
   }
   if (key === 'tags') {
     return (
-      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-        {(model.tags ?? []).slice(0, 4).map((t) => <Tag key={t} size="small">{t}</Tag>)}
+      <div className="flex gap-1 flex-wrap">
+        {(model.tags ?? []).slice(0, 4).map((t) => <Badge key={t} variant="secondary" className="py-0.5 px-2">{t}</Badge>)}
       </div>
     )
   }
   const val = (model as unknown as Record<string, unknown>)[key]
   return val != null ? String(val) : '—'
 }
+
+const Spinner = () => (
+  <svg className="animate-spin text-current h-6 w-6 text-[var(--brand-base)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+  </svg>
+)
 
 export default function ModelsComparePage() {
   const [slots, setSlots] = useState<Array<CatalogModelItem | null>>([null, null, null])
@@ -221,25 +182,25 @@ export default function ModelsComparePage() {
 
   return (
     <div>
-      <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+      <div className="mb-7">
+        <h1 className="text-2xl font-bold text-[var(--semi-color-text-0)] m-0 mb-1.5 tracking-tight">
           模型对比
         </h1>
-        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0 }}>
+        <p className="text-[13px] text-[var(--semi-color-text-1)] m-0">
           最多同时对比 {MAX_COMPARE} 个模型的规格与定价。
         </p>
       </div>
 
       {modelsQuery.isLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-          <Spin size="large" />
+        <div className="flex justify-center items-center h-[200px]">
+          <Spinner />
         </div>
       ) : modelsQuery.isError ? (
-        <div style={{ color: '#ef4444', fontSize: '13px', padding: '24px 0' }}>加载模型列表失败，请稍后重试。</div>
+        <div className="text-red-500 text-[13px] py-6">加载模型列表失败，请稍后重试。</div>
       ) : (
         <div>
           {/* Picker row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
+          <div className="grid grid-cols-3 gap-4 mb-8">
             {Array.from({ length: MAX_COMPARE }).map((_, idx) => (
               <ModelPicker
                 key={idx}
@@ -255,28 +216,24 @@ export default function ModelsComparePage() {
 
           {/* Comparison table */}
           {hasAny && (
-            <div style={{
-              border: '1px solid var(--semi-color-border)',
-              borderRadius: '12px',
-              overflow: 'hidden',
-            }}>
+            <div className="border border-[var(--semi-color-border)] rounded-xl overflow-hidden shadow-sm bg-card-bg">
               {/* Header */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: `180px repeat(${selectedModels.length}, 1fr)`,
-                background: 'var(--semi-color-fill-0)',
-                borderBottom: '1px solid var(--semi-color-border)',
-              }}>
-                <div style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--semi-color-text-2)' }}>
+              <div
+                className="grid items-center border-b border-[var(--semi-color-border)] bg-[var(--semi-color-fill-0)]"
+                style={{
+                  gridTemplateColumns: `180px repeat(${selectedModels.length}, 1fr)`,
+                }}
+              >
+                <div className="p-3.5 px-4 text-xs font-semibold text-[var(--semi-color-text-2)]">
                   属性
                 </div>
                 {selectedModels.map((m) => (
-                  <div key={m.model_id} style={{ padding: '12px 16px', borderLeft: '1px solid var(--semi-color-border)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {m.logo_url && <img src={m.logo_url} alt="" style={{ width: 22, height: 22, borderRadius: '4px' }} />}
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--semi-color-text-0)' }}>{m.display_name}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--semi-color-text-2)', fontFamily: 'monospace' }}>{m.vendor}</div>
+                  <div key={m.model_id} className="p-3.5 px-4 border-l border-[var(--semi-color-border)]">
+                    <div className="flex items-center gap-2">
+                      {m.logo_url && <img src={m.logo_url} alt="" className="w-5.5 h-5.5 rounded object-contain" />}
+                      <div className="min-w-0">
+                        <div className="font-bold text-[13px] text-[var(--semi-color-text-0)] truncate">{m.display_name}</div>
+                        <div className="text-[10px] text-[var(--semi-color-text-2)] font-mono truncate">{m.vendor}</div>
                       </div>
                     </div>
                   </div>
@@ -287,18 +244,20 @@ export default function ModelsComparePage() {
               {ROWS.map((row, rowIdx) => (
                 <div
                   key={row.key}
+                  className={cn(
+                    "grid items-center border-b border-[var(--semi-color-border)]",
+                    rowIdx === ROWS.length - 1 && "border-none",
+                    rowIdx % 2 === 0 ? "bg-transparent" : "bg-[var(--semi-color-fill-0)]/50"
+                  )}
                   style={{
-                    display: 'grid',
                     gridTemplateColumns: `180px repeat(${selectedModels.length}, 1fr)`,
-                    borderBottom: rowIdx < ROWS.length - 1 ? '1px solid var(--semi-color-fill-0)' : 'none',
-                    background: rowIdx % 2 === 0 ? 'transparent' : 'var(--semi-color-fill-0)',
                   }}
                 >
-                  <div style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 500, color: 'var(--semi-color-text-1)', display: 'flex', alignItems: 'center' }}>
+                  <div className="p-3.5 px-4 text-xs font-semibold text-[var(--semi-color-text-1)]">
                     {row.label}
                   </div>
                   {selectedModels.map((m) => (
-                    <div key={m.model_id} style={{ padding: '12px 16px', borderLeft: '1px solid var(--semi-color-fill-0)', fontSize: '13px', color: 'var(--semi-color-text-0)', display: 'flex', alignItems: 'center' }}>
+                    <div key={m.model_id} className="p-3.5 px-4 border-l border-[var(--semi-color-border)] text-[13px] text-[var(--semi-color-text-0)] flex items-center">
                       {renderCell(m, row.key)}
                     </div>
                   ))}
@@ -308,10 +267,10 @@ export default function ModelsComparePage() {
           )}
 
           {!hasAny && (
-            <div style={{ textAlign: 'center', padding: '48px 0' }}>
-              <Text style={{ color: 'var(--semi-color-text-2)', fontSize: '13px' }}>
+            <div className="text-center py-12">
+              <span className="text-[var(--semi-color-text-2)] text-[13px]">
                 请在上方选择至少一个模型开始对比
-              </Text>
+              </span>
             </div>
           )}
         </div>

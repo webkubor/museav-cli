@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react'
-import { Spin } from '@douyinfe/semi-ui'
 import { useQuery } from '@tanstack/react-query'
 import { getUsageSummary, getUsageSeries } from '@/services/usage'
 import { getLogHistogram } from '@/services/logs'
@@ -67,7 +66,6 @@ function Sparkline({ data, width, height, metric }: SparklineProps) {
 
     const path = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ')
 
-    // X-axis labels: show first, middle, last
     const labelIndices = [0, Math.floor((coords.length - 1) / 2), coords.length - 1].filter(
       (v, i, arr) => arr.indexOf(v) === i
     )
@@ -117,7 +115,6 @@ function Sparkline({ data, width, height, metric }: SparklineProps) {
         </linearGradient>
       </defs>
 
-      {/* Grid lines */}
       {[0.25, 0.5, 0.75, 1].map((frac) => {
         const y = 12 + frac * (height - 40)
         return (
@@ -133,18 +130,13 @@ function Sparkline({ data, width, height, metric }: SparklineProps) {
         )
       })}
 
-      {/* Area fill */}
       <path d={areaPath} fill={`url(#${areaId})`} />
-
-      {/* Line */}
       <path d={points.path} fill="none" stroke={lineColor} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
 
-      {/* Dots */}
       {points.dots.map((c, i) => (
         <circle key={i} cx={c.x} cy={c.y} r={3} fill={dotColor} stroke="var(--semi-color-bg-0)" strokeWidth={1.5} />
       ))}
 
-      {/* X-axis labels */}
       {points.labels.map((l, i) => (
         <text
           key={i}
@@ -381,7 +373,6 @@ export default function UsagePage() {
   const summary = summaryQuery.data
   const series = seriesQuery.data
 
-  // ── KPI values
   const kpiSpend = summary
     ? formatMoney(summary.total.spend.amount, currencySymbol)
     : '—'
@@ -425,7 +416,7 @@ export default function UsagePage() {
         <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
           {summaryQuery.isLoading ? (
             <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '96px' }}>
-              <Spin size="large" />
+              <div className="w-8 h-8 border-2 border-gray-200 border-t-brand-base rounded-full animate-spin" />
             </div>
           ) : (
             <>
@@ -467,7 +458,7 @@ export default function UsagePage() {
           </div>
         ) : seriesQuery.isLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-            <Spin size="large" />
+            <div className="w-8 h-8 border-2 border-gray-200 border-t-brand-base rounded-full animate-spin" />
           </div>
         ) : (
           <div style={{ width: '100%' }}>
@@ -500,7 +491,7 @@ export default function UsagePage() {
           </div>
         ) : histogramQuery.isLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '160px' }}>
-            <Spin size="large" />
+            <div className="w-8 h-8 border-2 border-gray-200 border-t-brand-base rounded-full animate-spin" />
           </div>
         ) : (
           <div style={{ width: '100%' }}>

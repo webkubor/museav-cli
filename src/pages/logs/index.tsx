@@ -1,535 +1,324 @@
-import React, { useState } from 'react'
-import { Table, Tag, Input, Select, Button, Spin, Typography, SideSheet } from '@douyinfe/semi-ui'
-import { LuSearch } from 'react-icons/lu'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { listCallLogs, getLogStats, getCallLog, getLogPayload } from '@/services/logs'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/Select'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/Sheet'
+import { Badge } from '@/components/ui/Badge'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/Table'
+import { LuSearch, LuEye, LuRefreshCw, LuCalendar } from 'react-icons/lu'
+import { IoAlertCircle } from 'react-icons/io5'
 import { useAuthStore } from '@/store/auth'
-import type { CallLogItem, CallLogDetail, LogPayload } from '@/types'
-import type { CallLogListParams } from '@/interfaces/logs'
-import { formatDateTimeWithSeconds } from '@/lib/format-date'
-import { LOG_STATUS_CONFIG } from '@/constants/status'
-import { useCurrency } from '@/hooks/use-platform-config'
+import { listCallLogs } from '@/services/logs'
+import type { CallLogItem } from '@/types'
+import { formatDateTime } from '@/lib/format-date'
 
-const { Text } = Typography
-
-type Preset = '1h' | '24h' | '7d'
-type StatusFilter = 'all' | 'succeeded' | 'failed' | 'rejected'
-
-function StatusTag({ status }: { status: CallLogItem['status'] }) {
-  const cfg = LOG_STATUS_CONFIG[status] ?? LOG_STATUS_CONFIG.accepted
-  return (
-    <Tag
-      style={{
-        backgroundColor: cfg.bg,
-        color: cfg.color,
-        border: `1px solid ${cfg.border}`,
-        fontSize: '11px',
-        fontWeight: 700,
-        padding: '1px 8px',
-        borderRadius: '12px',
-      }}
-    >
-      {cfg.label}
-    </Tag>
-  )
-}
-
-function StatCard({
-  label,
-  value,
-  sub,
-}: {
-  label: string
-  value: string | number
-  sub?: string
-}) {
-  return (
-    <div
-      style={{
-        background: 'var(--semi-color-bg-0)',
-        borderRadius: '12px',
-        border: '1px solid var(--semi-color-fill-0)',
-        padding: '20px 24px',
-        flex: 1,
-        minWidth: 0,
-      }}
-    >
-      <div style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 500, marginBottom: '10px' }}>
-        {label}
-      </div>
-      <div style={{ fontSize: '26px', fontWeight: 700, color: 'var(--semi-color-text-0)', lineHeight: 1.1 }}>
-        {value}
-      </div>
-      {sub && (
-        <div style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginTop: '4px' }}>{sub}</div>
-      )}
-    </div>
-  )
-}
-
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginBottom: '16px' }}>
-      <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--semi-color-text-2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
-        {label}
-      </div>
-      {children}
-    </div>
-  )
-}
-
-function CodeBlock({ value }: { value: string }) {
-  return (
-    <pre
-      style={{
-        margin: 0,
-        padding: '12px 14px',
-        background: 'var(--semi-color-bg-1)',
-        border: '1px solid var(--semi-color-fill-0)',
-        borderRadius: '8px',
-        fontSize: '12px',
-        color: 'var(--semi-color-text-0)',
-        fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-all',
-        overflowX: 'auto',
-        maxHeight: '260px',
-        overflowY: 'auto',
-        lineHeight: 1.6,
-      }}
-    >
-      {value}
-    </pre>
-  )
-}
-
-function LogDetailPanel({ detail, payload, payloadLoading }: { detail: CallLogDetail; payload: LogPayload | null; payloadLoading: boolean }) {
-  return (
-    <div>
-      {/* 基础信息 */}
-      <DetailRow label="Request ID">
-        <span style={{ fontFamily: 'monospace', fontSize: '12.5px', color: 'var(--semi-color-text-1)', wordBreak: 'break-all' }}>
-          {detail.request_id}
-        </span>
-      </DetailRow>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-        <DetailRow label="模型">
-          <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--semi-color-text-0)' }}>{detail.model.display_name}</span>
-        </DetailRow>
-        <DetailRow label="供应商">
-          <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>{detail.provider.name}</span>
-        </DetailRow>
-        <DetailRow label="耗时">
-          <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>
-            {detail.duration_ms >= 1000 ? `${(detail.duration_ms / 1000).toFixed(2)}s` : `${detail.duration_ms}ms`}
-          </span>
-        </DetailRow>
-        <DetailRow label="费用">
-          <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--semi-color-text-0)' }}>
-            {detail.cost.currency} {parseFloat(detail.cost.amount).toFixed(6)}
-          </span>
-        </DetailRow>
-        <DetailRow label="输入 Token">
-          <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>{detail.usage.input_tokens.toLocaleString()}</span>
-        </DetailRow>
-        <DetailRow label="输出 Token">
-          <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>{detail.usage.output_tokens.toLocaleString()}</span>
-        </DetailRow>
-      </div>
-
-      <DetailRow label="开始时间">
-        <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>
-          {formatDateTimeWithSeconds(detail.started_at)}
-        </span>
-      </DetailRow>
-
-      {detail.error && (
-        <DetailRow label="错误信息">
-          <CodeBlock value={detail.error} />
-        </DetailRow>
-      )}
-
-      {/* Payload */}
-      <div style={{ borderTop: '1px solid var(--semi-color-fill-0)', paddingTop: '20px', marginTop: '4px' }}>
-        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: '16px' }}>请求 / 响应内容</div>
-        {payloadLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}><Spin /></div>
-        ) : payload?.prompt ? (
-          <>
-            <DetailRow label="Prompt">
-              <CodeBlock value={JSON.stringify(payload.prompt.messages, null, 2)} />
-            </DetailRow>
-            {payload.completion && (
-              <DetailRow label="Completion">
-                <CodeBlock value={payload.completion.content || JSON.stringify(payload.completion.tool_calls, null, 2)} />
-              </DetailRow>
-            )}
-          </>
-        ) : (
-          <div style={{ fontSize: '13px', color: 'var(--semi-color-text-2)', padding: '12px 0' }}>
-            未开启 Input/Output Logging，无法查看原始内容。
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
+type LogStatusFilter = 'all' | 'success' | 'failed'
 
 export default function LogsPage() {
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
 
-  const [preset, setPreset] = useState<Preset>('24h')
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [requestIdSearch, setRequestIdSearch] = useState('')
-  const [cursor, setCursor] = useState<string | null>(null)
-  const [allItems, setAllItems] = useState<CallLogItem[]>([])
-  const [selectedLogId, setSelectedLogId] = useState<string | null>(null)
+  // 过滤选项
+  const [statusFilter, setStatusFilter] = useState<LogStatusFilter>('all')
+  const [searchValue, setSearchValue] = useState('')
+  const [modelFilter, setModelFilter] = useState('')
 
-  // ─── Stats query ────────────────────────────────────────────────────
-  const statsQuery = useQuery({
-    queryKey: ['log-stats', activeWorkspaceId, preset],
+  // 侧边栏抽屉展示
+  const [selectedLog, setSelectedLog] = useState<CallLogItem | null>(null)
+
+  // 接口分页
+  const [page, setPage] = useState(1)
+  const pageSize = 15
+
+  // 真实日志加载
+  const { data, isLoading, refetch, isFetching } = useQuery({
+    queryKey: ['logs', activeWorkspaceId, statusFilter, modelFilter, page],
     queryFn: () =>
-      getLogStats({
-        preset,
-        workspace_id: activeWorkspaceId ?? undefined,
+      listCallLogs({
+        workspace_id: activeWorkspaceId!,
+        status: statusFilter === 'all' ? undefined : (statusFilter === 'success' ? 'succeeded' : 'failed'),
+        model_id: modelFilter || undefined,
+        limit: pageSize * page, // 粗粒度分页兼容
       }),
-    enabled: !!activeWorkspaceId,
+    enabled: Boolean(activeWorkspaceId),
+    staleTime: 10_000,
+    refetchOnWindowFocus: false,
   })
 
-  // ─── Log list query ─────────────────────────────────────────────────
-  const params: CallLogListParams = {
-    preset,
-    workspace_id: activeWorkspaceId ?? undefined,
-    status: statusFilter === 'all' ? undefined : statusFilter,
-    request_id: requestIdSearch.trim() || undefined,
-    limit: 20,
-    cursor: cursor ?? undefined,
-  }
+  // 简易前端切片分页模拟
+  const rawLogs = data?.items ?? []
+  const filteredLogs = rawLogs
+    .filter(row => 
+      row.request_id.toLowerCase().includes(searchValue.toLowerCase()) || 
+      row.model.display_name.toLowerCase().includes(searchValue.toLowerCase())
+    )
+    .slice((page - 1) * pageSize, page * pageSize)
 
-  const logsQuery = useQuery({
-    queryKey: ['call-logs', activeWorkspaceId, preset, statusFilter, requestIdSearch, cursor],
-    queryFn: async () => {
-      const page = await listCallLogs(params)
-      if (cursor === null) {
-        // first page or filter reset
-        setAllItems(page.items)
-      } else {
-        setAllItems((prev) => [...prev, ...page.items])
-      }
-      return page
-    },
-    enabled: !!activeWorkspaceId,
-  })
+  const total = data?.items?.length ?? 0
+  const hasMore = rawLogs.length > page * pageSize
 
-  // ─── Detail queries ─────────────────────────────────────────────────
-  const detailQuery = useQuery({
-    queryKey: ['call-log-detail', selectedLogId],
-    queryFn: () => getCallLog(selectedLogId!),
-    enabled: !!selectedLogId,
-  })
-
-  const payloadQuery = useQuery({
-    queryKey: ['call-log-payload', detailQuery.data?.request_id],
-    queryFn: () => getLogPayload(detailQuery.data!.request_id),
-    enabled: !!detailQuery.data?.request_id,
-  })
-
-  // ─── Handlers ───────────────────────────────────────────────────────
-  function handlePresetChange(p: Preset) {
-    setPreset(p)
-    setCursor(null)
-    setAllItems([])
-  }
-
-  function handleStatusChange(val: StatusFilter) {
-    setStatusFilter(val)
-    setCursor(null)
-    setAllItems([])
-  }
-
-  function handleSearchChange(val: string) {
-    setRequestIdSearch(val)
-    setCursor(null)
-    setAllItems([])
-  }
-
-  function handleLoadMore() {
-    const nextCursor = logsQuery.data?.next_cursor ?? null
-    if (nextCursor) {
-      setCursor(nextCursor)
+  // 获取状态标签
+  const getStatusBadge = (row: CallLogItem) => {
+    if (row.status === 'succeeded' || row.status === 'accepted') {
+      return <Badge variant="success">Success</Badge>
     }
+    return <Badge variant="destructive">Failed</Badge>
   }
-
-  // ─── Table columns ───────────────────────────────────────────────────
-  const columns = [
-    {
-      title: '时间',
-      dataIndex: 'started_at',
-      width: 160,
-      render: (val: string) => (
-        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '12.5px' }}>
-          {formatDateTimeWithSeconds(val)}
-        </span>
-      ),
-    },
-    {
-      title: '模型',
-      dataIndex: 'model',
-      render: (_: unknown, record: CallLogItem) => (
-        <span style={{ color: 'var(--semi-color-text-0)', fontWeight: 500, fontSize: '13px' }}>
-          {record.model.display_name}
-        </span>
-      ),
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      width: 80,
-      render: (val: CallLogItem['status']) => <StatusTag status={val} />,
-    },
-    {
-      title: '耗时',
-      dataIndex: 'duration_ms',
-      width: 90,
-      render: (val: number) => (
-        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>
-          {val >= 1000 ? `${(val / 1000).toFixed(2)}s` : `${val}ms`}
-        </span>
-      ),
-    },
-    {
-      title: 'Token',
-      dataIndex: 'usage',
-      width: 100,
-      render: (_: unknown, record: CallLogItem) => (
-        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>
-          {record.usage.total_tokens.toLocaleString()}
-        </span>
-      ),
-    },
-    {
-      title: '费用',
-      dataIndex: 'cost',
-      width: 100,
-      render: (_: unknown, record: CallLogItem) => (
-        <span style={{ color: 'var(--semi-color-text-0)', fontSize: '13px', fontWeight: 500 }}>
-          {record.cost.currency} {parseFloat(record.cost.amount).toFixed(6)}
-        </span>
-      ),
-    },
-    {
-      title: 'API Key',
-      dataIndex: 'api_key',
-      render: (_: unknown, record: CallLogItem) => (
-        <span
-          style={{
-            color: 'var(--semi-color-text-1)',
-            fontFamily: 'monospace',
-            fontSize: '12px',
-            backgroundColor: 'var(--semi-color-bg-1)',
-            padding: '2px 8px',
-            borderRadius: '4px',
-            border: '1px solid var(--semi-color-fill-0)',
-          }}
-        >
-          {record.api_key.masked || record.api_key.name}
-        </span>
-      ),
-    },
-  ]
-
-  // ─── Stats values ────────────────────────────────────────────────────
-  const totals = statsQuery.data?.totals
-  const totalRequests = totals?.total_requests ?? 0
-  const totalTokens = totals?.total_tokens ?? 0
-  const { symbol: currencySymbol } = useCurrency()
-  const totalCost = totals?.total_cost
-  const errorRate = totals?.error_rate ?? 0
-
-  const hasMore = logsQuery.data?.has_more ?? false
 
   return (
-    <div>
-      {/* 页头 */}
-      <div style={{ marginBottom: '28px' }}>
-        <h1
-          style={{
-            fontSize: '24px',
-            fontWeight: 700,
-            color: 'var(--semi-color-text-0)',
-            margin: '0 0 6px 0',
-            letterSpacing: '-0.02em',
-          }}
+    <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+      {/* 头部标题与刷新 */}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-semi-color-text-0 tracking-tight mb-1.5">
+            调用日志
+          </h1>
+          <p className="text-[13px] text-semi-color-text-2 leading-relaxed">
+            实时观测工作区内的所有 API 调用历史，进行流量追踪、耗时统计与问题排查。
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          disabled={isLoading || isFetching}
+          onClick={() => refetch()}
+          className="rounded-full px-5 h-10 shrink-0 font-semibold"
         >
-          调用日志
-        </h1>
-        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0, fontWeight: 400 }}>
-          查看工作空间内所有模型调用记录，追踪请求状态、Token 用量与费用消耗。
-        </p>
+          <LuRefreshCw className={`w-4 h-4 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
+          刷新数据
+        </Button>
       </div>
 
-      {/* 时间预设切换 */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
-        {(['1h', '24h', '7d'] as Preset[]).map((p) => (
-          <button
-            key={p}
-            onClick={() => handlePresetChange(p)}
-            style={{
-              padding: '6px 18px',
-              borderRadius: '9999px',
-              border: `1px solid ${preset === p ? 'var(--semi-color-text-0)' : 'var(--semi-color-border)'}`,
-              backgroundColor: preset === p ? 'var(--semi-color-text-0)' : 'var(--semi-color-bg-0)',
-              color: preset === p ? 'var(--semi-color-bg-0)' : 'var(--semi-color-text-1)',
-              fontSize: '13px',
-              fontWeight: preset === p ? 600 : 400,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            {p === '1h' ? '近 1 小时' : p === '24h' ? '近 24 小时' : '近 7 天'}
-          </button>
-        ))}
+      {/* 综合过滤面板 */}
+      <div className="bg-semi-color-bg-0 p-5 rounded-xl border border-semi-color-border/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end shadow-sm select-none">
+        <div className="flex flex-col gap-1.5">
+          <label className="block text-[11px] font-bold text-semi-color-text-2 tracking-widest uppercase">调用状态</label>
+          <Select value={statusFilter} onValueChange={(v: any) => { setStatusFilter(v as LogStatusFilter); setPage(1) }}>
+            <SelectTrigger className="w-full bg-semi-color-fill-0/30">
+              <SelectValue placeholder="选择状态" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部请求</SelectItem>
+              <SelectItem value="success">仅成功</SelectItem>
+              <SelectItem value="failed">仅失败</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="block text-[11px] font-bold text-semi-color-text-2 tracking-widest uppercase">模型名称</label>
+          <Input
+            value={modelFilter}
+            onChange={(e) => { setModelFilter(e.target.value); setPage(1) }}
+            placeholder="如: gpt-4o-mini"
+            className="bg-semi-color-fill-0/30"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5 lg:col-span-2">
+          <label className="block text-[11px] font-bold text-semi-color-text-2 tracking-widest uppercase">关键词检索</label>
+          <Input
+            placeholder="输入 Request ID 快速检索"
+            prefix={<LuSearch className="opacity-50" />}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            className="w-full bg-semi-color-fill-0/30"
+          />
+        </div>
       </div>
 
-      {/* 统计卡片 */}
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '28px' }}>
-        {statsQuery.isLoading ? (
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '88px',
-            }}
-          >
-            <Spin />
+      {/* 极简细线条无框 Table 视图 */}
+      <div className="rounded-xl border border-semi-color-border/60 overflow-hidden bg-semi-color-bg-0">
+        {isLoading ? (
+          <div className="py-20 text-center text-xs text-semi-color-text-2">
+            <div className="flex items-center justify-center gap-2">
+              <svg className="animate-spin h-5 w-5 text-brand-base" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span>正在加载调用日志...</span>
+            </div>
+          </div>
+        ) : filteredLogs.length === 0 ? (
+          <div className="py-20 text-center text-xs italic text-semi-color-text-2">
+            未找到匹配的日志记录
           </div>
         ) : (
           <>
-            <StatCard label="总请求数" value={totalRequests.toLocaleString()} sub="次调用" />
-            <StatCard label="总 Token" value={totalTokens.toLocaleString()} sub="input + output" />
-            <StatCard
-              label="总费用"
-              value={
-                totalCost
-                  ? `${totalCost.currency || currencySymbol}${parseFloat(totalCost.amount).toFixed(4)}`
-                  : '—'
-              }
-              sub="已结算金额"
-            />
-            <StatCard
-              label="错误率"
-              value={`${(errorRate * 100).toFixed(1)}%`}
-              sub="failed + rejected"
-            />
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>请求时间</TableHead>
+                  <TableHead>Request ID</TableHead>
+                  <TableHead>模型</TableHead>
+                  <TableHead>状态码</TableHead>
+                  <TableHead>耗时</TableHead>
+                  <TableHead>Token 消耗</TableHead>
+                  <TableHead>调用密钥</TableHead>
+                  <TableHead className="text-right"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredLogs.map((row) => (
+                  <TableRow key={row.call_log_id}>
+                    <TableCell className="text-xs text-semi-color-text-1">
+                      {formatDateTime(row.started_at)}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-semi-color-text-0 max-w-[140px] truncate select-all">
+                      {row.request_id}
+                    </TableCell>
+                    <TableCell className="font-semibold text-semi-color-text-0 text-[13.5px]">
+                      {row.model.display_name}
+                    </TableCell>
+                    <TableCell>
+                      {getStatusBadge(row)}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-semi-color-text-1 tabular-nums">
+                      {row.duration_ms}ms
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-semi-color-text-1 tabular-nums">
+                      {row.usage ? (
+                        <span>
+                          {row.usage.total_tokens} <span className="text-[10px] text-semi-color-text-2">({row.usage.input_tokens}p/{row.usage.output_tokens}c)</span>
+                        </span>
+                      ) : (
+                        <span className="text-semi-color-text-2">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs text-semi-color-text-1 font-medium">
+                      {row.api_key.name || <span className="text-semi-color-text-2">—</span>}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedLog(row)}
+                        className="h-7 text-xs font-semibold"
+                      >
+                        <LuEye className="w-3.5 h-3.5 mr-1" />
+                        详情
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {/* 分页控制 */}
+            <div className="flex items-center justify-between px-5 py-4 border-t border-semi-color-border gap-4 flex-wrap select-none">
+              <span className="text-xs text-semi-color-text-2">
+                共找到 {total} 条记录
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={page <= 1}
+                  onClick={() => setPage(page - 1)}
+                  className="h-8 font-semibold"
+                >
+                  上一页
+                </Button>
+                <span className="text-xs font-mono text-semi-color-text-1 bg-semi-color-fill-0 border border-semi-color-border px-3 py-1 rounded">
+                  第 {page} 页
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!hasMore}
+                  onClick={() => setPage(page + 1)}
+                  className="h-8 font-semibold"
+                >
+                  下一页
+                </Button>
+              </div>
+            </div>
           </>
         )}
       </div>
 
-      {/* 操作栏：搜索 + 状态筛选 */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '16px',
-        }}
-      >
-        <Input
-          placeholder="按 Request ID 搜索"
-          prefix={<LuSearch style={{ color: 'var(--semi-color-text-2)' }} />}
-          value={requestIdSearch}
-          onChange={handleSearchChange}
-          style={{
-            width: '290px',
-            borderRadius: '9999px',
-            border: '1px solid var(--semi-color-border)',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
-          }}
-        />
+      {/* 极简高雅的右侧 Sheet 日志抽屉 */}
+      <Sheet open={!!selectedLog} onOpenChange={(open) => { if (!open) setSelectedLog(null) }}>
+        <SheetContent className="sm:max-w-xl overflow-y-auto no-scrollbar">
+          <SheetHeader>
+            <SheetTitle>调用日志详情</SheetTitle>
+          </SheetHeader>
+          {selectedLog && (
+            <div className="space-y-6 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="border border-semi-color-border/60 p-3.5 rounded-lg bg-semi-color-fill-0/20">
+                  <p className="text-[10px] text-semi-color-text-2 uppercase font-bold tracking-widest">状态</p>
+                  <div className="mt-1.5">{getStatusBadge(selectedLog)}</div>
+                </div>
+                <div className="border border-semi-color-border/60 p-3.5 rounded-lg bg-semi-color-fill-0/20">
+                  <p className="text-[10px] text-semi-color-text-2 uppercase font-bold tracking-widest">总耗时</p>
+                  <p className="text-base font-bold text-semi-color-text-0 font-mono mt-1">{selectedLog.duration_ms}ms</p>
+                </div>
+              </div>
 
-        <Select
-          value={statusFilter}
-          onChange={(val) => handleStatusChange(val as StatusFilter)}
-          style={{ width: '140px', borderRadius: '8px' }}
-        >
-          <Select.Option value="all">全部状态</Select.Option>
-          <Select.Option value="succeeded">succeeded</Select.Option>
-          <Select.Option value="failed">failed</Select.Option>
-          <Select.Option value="rejected">rejected</Select.Option>
-        </Select>
-      </div>
+              <div className="space-y-1 select-all">
+                <DetailRow label="Request ID" value={selectedLog.request_id} mono />
+                <DetailRow label="调用模型" value={selectedLog.model.display_name} />
+                <DetailRow label="调用时间" value={formatDateTime(selectedLog.started_at)} />
+                <DetailRow label="API Key 名称" value={selectedLog.api_key.name || '—'} />
+                <DetailRow label="Token 消耗数量" value={selectedLog.usage ? `${selectedLog.usage.total_tokens} (Prompt: ${selectedLog.usage.input_tokens} / Completion: ${selectedLog.usage.output_tokens})` : '—'} />
+              </div>
 
-      {/* 日志表格 */}
-      <Table
-        columns={columns}
-        dataSource={allItems}
-        loading={logsQuery.isLoading && cursor === null}
-        pagination={false}
-        bordered={false}
-        rowKey="call_log_id"
-        onRow={(record) => ({
-          onClick: () => setSelectedLogId(record!.call_log_id),
-          style: { cursor: 'pointer' },
-        })}
-        style={{ marginTop: '4px' }}
-        empty={
-          <div style={{ padding: '48px 0', textAlign: 'center' }}>
-            <Text style={{ color: 'var(--semi-color-text-2)', fontSize: '13px' }}>暂无调用日志</Text>
-          </div>
-        }
-      />
+              {selectedLog.error && (
+                <div className="border border-rose-500/10 bg-rose-500/[0.03] p-4 rounded-xl space-y-2 border-l-4 border-l-rose-500">
+                  <p className="text-xs font-bold text-rose-500 flex items-center gap-1.5">
+                    <IoAlertCircle className="w-4 h-4 shrink-0" />
+                    异常报错信息
+                  </p>
+                  <pre className="text-xs text-rose-600 dark:text-rose-400 font-mono break-all whitespace-pre-wrap leading-relaxed select-all">
+                    {selectedLog.error}
+                  </pre>
+                </div>
+              )}
 
-      {/* 加载更多 */}
-      {hasMore && (
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '24px' }}>
-          <Button
-            loading={logsQuery.isFetching}
-            onClick={handleLoadMore}
-            style={{
-              borderRadius: '9999px',
-              padding: '8px 32px',
-              border: '1px solid var(--semi-color-border)',
-              color: 'var(--semi-color-text-1)',
-              fontSize: '13px',
-              fontWeight: 500,
-              backgroundColor: 'var(--semi-color-bg-0)',
-              cursor: 'pointer',
-            }}
-          >
-            加载更多
-          </Button>
-        </div>
-      )}
+              <div className="space-y-4">
+                <div>
+                  <p className="text-[10px] text-semi-color-text-2 uppercase font-bold tracking-widest mb-2 flex items-center gap-1">
+                    <LuCalendar className="w-3.5 h-3.5" />
+                    请求内容 (Prompt Payload)
+                  </p>
+                  <pre className="text-[11.5px] text-slate-300 bg-slate-950 p-4 rounded-xl border border-semi-color-border/40 font-mono overflow-x-auto max-h-56 leading-relaxed select-all">
+                    {JSON.stringify(selectedLog.provider, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
+  )
+}
 
-      {/* 日志详情侧边抽屉 */}
-      <SideSheet
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingRight: '8px' }}>
-            <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--semi-color-text-0)' }}>调用详情</span>
-            {detailQuery.data && (
-              <StatusTag status={detailQuery.data.status} />
-            )}
-          </div>
-        }
-        visible={!!selectedLogId}
-        onCancel={() => setSelectedLogId(null)}
-        width={560}
-        placement="right"
-        closable
-        style={{ borderRadius: '0' }}
-        bodyStyle={{ padding: '24px', overflowY: 'auto' }}
-      >
-        {detailQuery.isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-            <Spin />
-          </div>
-        ) : detailQuery.data ? (
-          <LogDetailPanel detail={detailQuery.data} payload={payloadQuery.data ?? null} payloadLoading={payloadQuery.isLoading} />
-        ) : null}
-      </SideSheet>
+function DetailRow({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="flex justify-between items-center py-2.5 border-b border-semi-color-border/40 gap-4">
+      <span className="text-xs font-bold text-semi-color-text-2 shrink-0">{label}</span>
+      <span className={`text-xs text-semi-color-text-0 font-semibold text-right break-all max-w-[340px] select-all ${mono ? 'font-mono' : ''}`}>
+        {value}
+      </span>
     </div>
   )
 }

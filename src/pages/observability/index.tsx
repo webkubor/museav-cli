@@ -1,7 +1,21 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, Input, Modal, Select, Skeleton, Switch, Table, Toast } from '@douyinfe/semi-ui'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/Select'
+import { Switch } from '@/components/ui/Switch'
+import { Badge } from '@/components/ui/Badge'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/Table'
 import { useAuthStore } from '@/store/auth'
+import { appToast } from '@/lib/app-toast'
 import {
   createForward,
   deleteDeadLetter,
@@ -17,52 +31,7 @@ import {
 import type { LoggingConfig, PlatformConfigField } from '@/types'
 import { formatDateTime } from '@/lib/format-date'
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 type DeadLetterStatusFilter = 'all' | 'pending' | 'retrying' | 'ignored'
-
-
-function deadLetterStatusStyle(status: 'pending' | 'retrying' | 'ignored'): React.CSSProperties {
-  const map: Record<string, React.CSSProperties> = {
-    pending: { backgroundColor: '#fffbeb', color: '#d97706', border: '1px solid #fde68a', borderRadius: '100px', padding: '2px 10px', fontSize: '12px', fontWeight: 500 },
-    retrying: { backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '100px', padding: '2px 10px', fontSize: '12px', fontWeight: 500 },
-    ignored: { backgroundColor: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-2)', border: '1px solid var(--semi-color-border)', borderRadius: '100px', padding: '2px 10px', fontSize: '12px', fontWeight: 500 },
-  }
-  return map[status] ?? {}
-}
-
-function deadLetterStatusLabel(status: 'pending' | 'retrying' | 'ignored') {
-  const map: Record<string, string> = { pending: '待重试', retrying: '重试中', ignored: '已忽略' }
-  return map[status] ?? status
-}
-
-// ─── Shared styles ────────────────────────────────────────────────────────────
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: 'var(--semi-color-bg-0)',
-  borderRadius: '12px',
-  border: '1px solid var(--semi-color-fill-0)',
-  overflow: 'hidden',
-  boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
-  marginBottom: '16px',
-}
-
-const sectionTitleStyle: React.CSSProperties = {
-  fontSize: '15px',
-  fontWeight: 600,
-  color: 'var(--semi-color-text-0)',
-  margin: 0,
-}
-
-const labelStyle: React.CSSProperties = {
-  display: 'block',
-  fontSize: '11px',
-  fontWeight: 700,
-  color: 'var(--semi-color-text-1)',
-  letterSpacing: '0.08em',
-  textTransform: 'uppercase',
-  marginBottom: '8px',
-}
 
 // ─── Toggle row ───────────────────────────────────────────────────────────────
 
@@ -82,23 +51,24 @@ function ToggleRow({
   isFirst?: boolean
 }) {
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '20px 24px',
-      borderTop: isFirst ? 'none' : '1px solid var(--semi-color-fill-0)',
-      gap: '24px',
-    }}>
+    <div className={`flex items-center justify-between p-5 gap-6 ${isFirst ? '' : 'border-t border-semi-color-border'}`}>
       <div>
-        <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--semi-color-text-0)', margin: '0 0 3px' }}>
+        <p className="text-sm font-semibold text-semi-color-text-0 mb-1">
           {title}
         </p>
-        <p style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', margin: 0 }}>
+        <p className="text-xs text-semi-color-text-2">
           {description}
         </p>
       </div>
-      <Switch checked={checked} loading={loading} onChange={onChange} />
+      <div className="flex items-center gap-2">
+        {loading && (
+          <svg className="animate-spin h-4 w-4 text-brand-base" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+        )}
+        <Switch checked={checked} disabled={loading} onCheckedChange={onChange} />
+      </div>
     </div>
   )
 }
@@ -108,6 +78,7 @@ function ToggleRow({
 function DestinationsSection({ workspaceId }: { workspaceId: string }) {
   const qc = useQueryClient()
   const [platform, setPlatform] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
   const platformsQuery = useQuery({
     queryKey: ['observability', 'platforms', workspaceId],
@@ -138,11 +109,11 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
         enabled: true,
       }),
     onSuccess: () => {
-      Toast.success('转发目标已创建')
+      appToast.success('转发目标已创建')
       qc.invalidateQueries({ queryKey: ['observability', 'forwards', workspaceId] })
     },
     onError: (err: unknown) => {
-      Toast.error(err instanceof Error ? err.message : '创建失败')
+      appToast.error(err instanceof Error ? err.message : '创建失败')
     },
   })
 
@@ -152,97 +123,31 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ['observability', 'forwards', workspaceId] }),
     onError: (err: unknown) => {
-      Toast.error(err instanceof Error ? err.message : '操作失败')
+      appToast.error(err instanceof Error ? err.message : '操作失败')
     },
   })
 
   const removeMutation = useMutation({
     mutationFn: (forwardId: string) => deleteForward(workspaceId, forwardId),
     onSuccess: () => {
-      Toast.success('转发目标已删除')
+      appToast.success('转发目标已删除')
       qc.invalidateQueries({ queryKey: ['observability', 'forwards', workspaceId] })
     },
     onError: (err: unknown) => {
-      Toast.error(err instanceof Error ? err.message : '删除失败')
+      appToast.error(err instanceof Error ? err.message : '删除失败')
     },
   })
 
   const forwards = forwardsQuery.data?.items ?? []
 
-  const forwardColumns = [
-    {
-      title: '名称',
-      dataIndex: 'name',
-      render: (v: string) => (
-        <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--semi-color-text-0)' }}>{v}</span>
-      ),
-    },
-    {
-      title: '平台',
-      dataIndex: 'platform',
-      render: (v: string) => <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>{v}</span>,
-    },
-    {
-      title: '状态',
-      dataIndex: 'enabled',
-      render: (v: boolean) => (
-        <span style={
-          v
-            ? { backgroundColor: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', borderRadius: '100px', padding: '2px 10px', fontSize: '12px', fontWeight: 500 }
-            : { backgroundColor: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-2)', border: '1px solid var(--semi-color-border)', borderRadius: '100px', padding: '2px 10px', fontSize: '12px', fontWeight: 500 }
-        }>
-          {v ? '启用中' : '已暂停'}
-        </span>
-      ),
-    },
-    {
-      title: '最近成功',
-      dataIndex: 'last_success_at',
-      render: (v: string | null) => (
-        <span style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }}>{formatDateTime(v)}</span>
-      ),
-    },
-    {
-      title: '',
-      dataIndex: 'forward_id',
-      render: (_: unknown, row: { forward_id: string; enabled: boolean; name: string }) => (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
-          <Button
-            size="small"
-            onClick={() => toggleMutation.mutate({ forwardId: row.forward_id, enabled: !row.enabled })}
-            style={{ fontSize: '12px', color: 'var(--semi-color-text-1)' }}
-          >
-            {row.enabled ? '暂停' : '恢复'}
-          </Button>
-          <Button
-            size="small"
-            type="danger"
-            onClick={() => {
-              Modal.confirm({
-                title: '删除转发目标',
-                content: `确定要删除「${row.name}」吗？此操作不可撤销。`,
-                okText: '确认删除',
-                cancelText: '取消',
-                onOk: () => removeMutation.mutate(row.forward_id),
-              })
-            }}
-            style={{ fontSize: '12px' }}
-          >
-            删除
-          </Button>
-        </div>
-      ),
-    },
-  ]
-
   return (
     <>
       {/* Add destination form */}
-      <div style={{ ...cardStyle }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--semi-color-fill-0)' }}>
-          <h3 style={sectionTitleStyle}>添加转发目标</h3>
+      <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-semi-color-border overflow-hidden mb-5">
+        <div className="px-5 py-4 border-b border-semi-color-border">
+          <h3 className="text-sm font-bold text-semi-color-text-0">添加转发目标</h3>
         </div>
-        <div style={{ padding: '24px' }}>
+        <div className="p-5">
           <CreateForwardForm
             key={selectedPlatformId}
             platformItems={platformsQuery.data?.items ?? []}
@@ -259,29 +164,107 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
       </div>
 
       {/* Destinations list */}
-      <div style={{ ...cardStyle }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--semi-color-fill-0)' }}>
-          <h3 style={sectionTitleStyle}>已配置的转发目标</h3>
+      <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-semi-color-border overflow-hidden mb-5">
+        <div className="px-5 py-4 border-b border-semi-color-border">
+          <h3 className="text-sm font-bold text-semi-color-text-0">已配置的转发目标</h3>
         </div>
         {forwardsQuery.isLoading ? (
-          <div style={{ padding: '24px' }}>
-            <Skeleton.Paragraph rows={3} />
+          <div className="p-5 space-y-2 animate-pulse">
+            <div className="h-4 bg-semi-color-fill-0 rounded w-1/3" />
+            <div className="h-4 bg-semi-color-fill-0 rounded w-full" />
+            <div className="h-4 bg-semi-color-fill-0 rounded w-2/3" />
           </div>
         ) : (
-          <Table
-            columns={forwardColumns}
-            dataSource={forwards}
-            rowKey="forward_id"
-            pagination={false}
-            empty={
-              <div style={{ padding: '48px', textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: '13px', fontStyle: 'italic' }}>
-                暂无转发目标，请在上方添加
-              </div>
-            }
-            style={{ borderRadius: 0 }}
-          />
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>名称</TableHead>
+                <TableHead>平台</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>最近成功</TableHead>
+                <TableHead className="text-right"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {forwards.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-10 text-xs italic text-semi-color-text-2">
+                    暂无转发目标，请在上方添加
+                  </TableCell>
+                </TableRow>
+              ) : (
+                forwards.map((row) => (
+                  <TableRow key={row.forward_id}>
+                    <TableCell className="font-semibold text-semi-color-text-0 text-[13.5px]">
+                      {row.name}
+                    </TableCell>
+                    <TableCell className="text-xs text-semi-color-text-1">
+                      {row.platform}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={row.enabled ? 'success' : 'outline'}>
+                        {row.enabled ? '启用中' : '已暂停'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-semi-color-text-2">
+                      {formatDateTime(row.last_success_at)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => toggleMutation.mutate({ forwardId: row.forward_id, enabled: !row.enabled })}
+                          className="h-7 text-xs font-semibold"
+                        >
+                          {row.enabled ? '暂停' : '恢复'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => setDeleteTarget({ id: row.forward_id, name: row.name })}
+                          className="h-7 text-xs"
+                        >
+                          删除
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         )}
       </div>
+
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>删除转发目标</DialogTitle>
+            <DialogDescription>
+              确定要删除「{deleteTarget?.name}」吗？此操作不可撤销。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              取消
+            </Button>
+            <Button
+              variant="destructive"
+              loading={removeMutation.isPending}
+              onClick={() => {
+                if (deleteTarget) {
+                  removeMutation.mutate(deleteTarget.id, {
+                    onSuccess: () => setDeleteTarget(null)
+                  })
+                }
+              }}
+            >
+              确认删除
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
@@ -310,64 +293,61 @@ function CreateForwardForm({
   )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '20px' }}>
+    <div className="flex flex-col gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
-          <label style={labelStyle}>平台</label>
+          <label className="block text-[11px] font-bold text-semi-color-text-1 uppercase tracking-widest mb-2">平台</label>
           <Select
             value={selectedPlatformId}
-            onChange={(v) => onPlatformChange(v as string)}
-            style={{ width: '100%' }}
+            onValueChange={onPlatformChange}
           >
-            {platformItems.map((item) => (
-              <Select.Option key={item.platform} value={item.platform}>
-                {item.display_name}
-              </Select.Option>
-            ))}
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {platformItems.map((item) => (
+                <SelectItem key={item.platform} value={item.platform}>
+                  {item.display_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
         </div>
         <div>
-          <label style={labelStyle}>名称</label>
+          <label className="block text-[11px] font-bold text-semi-color-text-1 uppercase tracking-widest mb-2">名称</label>
           <Input
             value={name}
             placeholder="为此目标起一个名称"
-            onChange={(v) => setName(v)}
-            size="large"
+            onChange={(e) => setName(e.target.value)}
           />
         </div>
       </div>
 
       {fields.length > 0 && (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: fields.length > 1 ? '1fr 1fr' : '1fr',
-          gap: '20px',
-        }}>
+        <div className={`grid gap-5 ${fields.length > 1 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
           {fields.map((field) => (
             <div key={field.key}>
-              <label style={labelStyle}>
+              <label className="block text-[11px] font-bold text-semi-color-text-1 uppercase tracking-widest mb-2">
                 {field.label}
-                {field.required && <span style={{ color: '#ef4444', marginLeft: '2px' }}>*</span>}
+                {field.required && <span className="text-rose-500 ml-1">*</span>}
               </label>
               <Input
                 value={configValues[field.key] ?? ''}
                 placeholder={field.label}
-                mode={field.type === 'secret' ? 'password' : undefined}
-                onChange={(v) => setConfigValues((prev) => ({ ...prev, [field.key]: v }))}
-                size="large"
+                type={field.type === 'secret' ? 'password' : 'text'}
+                onChange={(e) => setConfigValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
               />
             </div>
           ))}
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <div className="flex justify-end pt-2">
         <Button
-          theme="solid"
-          type="primary"
+          variant="brand"
           loading={isSubmitting}
           onClick={() => onSubmit(name, configValues)}
-          style={{ paddingLeft: '32px', paddingRight: '32px' }}
+          className="px-8"
         >
           创建目标
         </Button>
@@ -396,105 +376,118 @@ function DeadLettersSection({ workspaceId }: { workspaceId: string }) {
   const retryMutation = useMutation({
     mutationFn: (deadLetterId: string) => retryDeadLetter(workspaceId, deadLetterId),
     onSuccess: () => {
-      Toast.success('已触发重试')
+      appToast.success('已触发重试')
       qc.invalidateQueries({ queryKey: ['observability', 'dead-letters', workspaceId] })
     },
     onError: (err: unknown) => {
-      Toast.error(err instanceof Error ? err.message : '重试失败')
+      appToast.error(err instanceof Error ? err.message : '重试失败')
     },
   })
 
   const ignoreMutation = useMutation({
     mutationFn: (deadLetterId: string) => deleteDeadLetter(workspaceId, deadLetterId),
     onSuccess: () => {
-      Toast.success('已标记为忽略')
+      appToast.success('已标记为忽略')
       qc.invalidateQueries({ queryKey: ['observability', 'dead-letters', workspaceId] })
     },
     onError: (err: unknown) => {
-      Toast.error(err instanceof Error ? err.message : '操作失败')
+      appToast.error(err instanceof Error ? err.message : '操作失败')
     },
   })
 
   const deadLetters = deadLettersQuery.data?.items ?? []
 
-  const columns = [
-    {
-      title: '平台',
-      dataIndex: 'platform',
-      render: (v: string) => (
-        <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--semi-color-text-0)' }}>{v}</span>
-      ),
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      render: (v: 'pending' | 'retrying' | 'ignored') => (
-        <span style={deadLetterStatusStyle(v)}>{deadLetterStatusLabel(v)}</span>
-      ),
-    },
-    {
-      title: '错误信息',
-      dataIndex: 'error_message',
-      render: (v: string, row: { payload_excerpt: string }) => (
-        <div>
-          <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: '0 0 3px', maxWidth: '360px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v}</p>
-          <p style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', margin: 0, maxWidth: '360px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.payload_excerpt}</p>
-        </div>
-      ),
-    },
-    {
-      title: '重试次数',
-      dataIndex: 'attempts',
-      render: (v: number) => <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>{v}</span>,
-    },
-    {
-      title: '最近尝试',
-      dataIndex: 'last_attempted_at',
-      render: (v: string, row: { created_at: string }) => (
-        <span style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }}>{formatDateTime(v || row.created_at)}</span>
-      ),
-    },
-    {
-      title: '',
-      dataIndex: 'dead_letter_id',
-      render: (_: unknown, row: { dead_letter_id: string; status: 'pending' | 'retrying' | 'ignored' }) =>
-        row.status !== 'ignored' ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
-            <Button size="small" loading={retryMutation.isPending} onClick={() => retryMutation.mutate(row.dead_letter_id)} style={{ fontSize: '12px' }}>重试</Button>
-            <Button size="small" loading={ignoreMutation.isPending} onClick={() => ignoreMutation.mutate(row.dead_letter_id)} style={{ fontSize: '12px', color: 'var(--semi-color-text-1)' }}>忽略</Button>
-          </div>
-        ) : null,
-    },
-  ]
-
   return (
-    <div style={{ ...cardStyle }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '20px 24px',
-        borderBottom: '1px solid var(--semi-color-fill-0)',
-        gap: '12px',
-        flexWrap: 'wrap',
-      }}>
-        <h3 style={sectionTitleStyle}>失败重试</h3>
-        <Select value={statusFilter} onChange={(v) => setStatusFilter(v as DeadLetterStatusFilter)} style={{ width: '160px' }}>
-          <Select.Option value="all">全部状态</Select.Option>
-          <Select.Option value="pending">待重试</Select.Option>
-          <Select.Option value="retrying">重试中</Select.Option>
-          <Select.Option value="ignored">已忽略</Select.Option>
-        </Select>
+    <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-semi-color-border overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-semi-color-border gap-4 flex-wrap">
+        <h3 className="text-sm font-bold text-semi-color-text-0">失败重试</h3>
+        <div className="w-40 shrink-0">
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as DeadLetterStatusFilter)}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部状态</SelectItem>
+              <SelectItem value="pending">待重试</SelectItem>
+              <SelectItem value="retrying">重试中</SelectItem>
+              <SelectItem value="ignored">已忽略</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {deadLettersQuery.isLoading ? (
-        <div style={{ padding: '24px' }}><Skeleton.Paragraph rows={4} /></div>
+        <div className="p-5 space-y-2 animate-pulse">
+          <div className="h-4 bg-semi-color-fill-0 rounded w-1/4" />
+          <div className="h-4 bg-semi-color-fill-0 rounded w-full" />
+        </div>
       ) : deadLetters.length === 0 ? (
-        <div style={{ padding: '64px', textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: '13px', fontStyle: 'italic' }}>
+        <div className="py-16 text-center text-xs italic text-semi-color-text-2">
           暂无失败记录
         </div>
       ) : (
-        <Table columns={columns} dataSource={deadLetters} rowKey="dead_letter_id" pagination={false} style={{ borderRadius: 0 }} />
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>平台</TableHead>
+              <TableHead>状态</TableHead>
+              <TableHead>错误信息</TableHead>
+              <TableHead>重试次数</TableHead>
+              <TableHead>最近尝试</TableHead>
+              <TableHead className="text-right"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {deadLetters.map((row) => (
+              <TableRow key={row.dead_letter_id}>
+                <TableCell className="font-semibold text-semi-color-text-0 text-[13.5px]">
+                  {row.platform}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={row.status === 'pending' ? 'warning' : row.status === 'retrying' ? 'secondary' : 'outline'}>
+                    {row.status === 'pending' ? '待重试' : row.status === 'retrying' ? '重试中' : '已忽略'}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="max-w-xs md:max-w-md">
+                    <p className="text-[13px] text-semi-color-text-0 font-medium truncate">{row.error_message}</p>
+                    <p className="text-xs text-semi-color-text-2 truncate mt-0.5 font-mono">{row.payload_excerpt}</p>
+                  </div>
+                </TableCell>
+                <TableCell className="text-xs text-semi-color-text-1 font-semibold">
+                  {row.attempts}
+                </TableCell>
+                <TableCell className="text-xs text-semi-color-text-2">
+                  {formatDateTime(row.last_attempted_at || row.created_at)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {row.status !== 'ignored' && (
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        loading={retryMutation.isPending} 
+                        onClick={() => retryMutation.mutate(row.dead_letter_id)} 
+                        className="h-7 text-xs font-semibold"
+                      >
+                        重试
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        loading={ignoreMutation.isPending} 
+                        onClick={() => ignoreMutation.mutate(row.dead_letter_id)} 
+                        className="h-7 text-xs text-semi-color-text-1 hover:text-semi-color-text-0 hover:bg-semi-color-fill-0 font-semibold"
+                      >
+                        忽略
+                      </Button>
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
     </div>
   )
@@ -520,7 +513,7 @@ function ObservabilityContent({
       qc.invalidateQueries({ queryKey: ['observability', 'logging', workspaceId] })
     },
     onError: (err: unknown) => {
-      Toast.error(err instanceof Error ? err.message : '保存失败')
+      appToast.error(err instanceof Error ? err.message : '保存失败')
     },
   })
 
@@ -537,9 +530,9 @@ function ObservabilityContent({
   }
 
   return (
-    <div style={{ maxWidth: '800px' }}>
+    <div className="max-w-3xl space-y-6">
       {/* Section 1: Logging toggle — always visible */}
-      <div style={cardStyle}>
+      <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-semi-color-border overflow-hidden">
         <ToggleRow
           title="输入 / 输出日志"
           description="记录每次请求的完整输入和模型输出内容。"
@@ -586,20 +579,21 @@ export default function ObservabilityPage() {
   })
 
   return (
-    <div>
-      <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-semi-color-text-0">
           可观测性
         </h1>
-        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0 }}>
+        <p className="text-sm text-semi-color-text-1 mt-1.5 font-medium">
           管理日志记录、数据转发目标与失败事件的重试策略。
         </p>
       </div>
 
       {loggingQuery.isLoading && (
-        <div style={{ ...cardStyle, maxWidth: '800px', padding: '28px' }}>
-          <Skeleton.Title style={{ width: '40%', marginBottom: '16px' }} />
-          <Skeleton.Paragraph rows={2} />
+        <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-semi-color-border p-6 max-w-3xl space-y-4 animate-pulse">
+          <div className="h-5 bg-semi-color-fill-0 rounded w-1/3" />
+          <div className="h-4 bg-semi-color-fill-0 rounded w-full" />
+          <div className="h-4 bg-semi-color-fill-0 rounded w-2/3" />
         </div>
       )}
 

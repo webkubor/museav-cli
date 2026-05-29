@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Spin, Tag, Typography } from '@douyinfe/semi-ui'
+import { Badge } from '@/components/ui/Badge'
 import { LuMessageSquare, LuChevronDown, LuChevronUp } from 'react-icons/lu'
 import { listConversations, getConversation } from '@/services/agent'
 import type { AgentConversation } from '@/interfaces/agent'
-
-const { Text } = Typography
+import { cn } from '@/lib/utils'
 
 function formatDate(iso: string) {
   const d = new Date(iso)
@@ -26,97 +25,63 @@ function ConversationRow({ conv }: ConversationRowProps) {
   })
 
   return (
-    <div style={{
-      border: '1px solid var(--semi-color-border)',
-      borderRadius: '10px',
-      overflow: 'hidden',
-      background: 'var(--semi-color-bg-0)',
-    }}>
+    <div className="border border-[var(--semi-color-border)] rounded-xl overflow-hidden bg-card-bg shadow-sm">
       {/* Row header */}
       <div
         onClick={() => setExpanded(!expanded)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          padding: '14px 16px',
-          cursor: 'pointer',
-          gap: '12px',
-          transition: 'background 0.1s',
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--semi-color-fill-0)')}
-        onMouseLeave={(e) => (e.currentTarget.style.background = '')}
+        className="flex items-center p-3.5 px-4 cursor-pointer gap-3 hover:bg-[var(--semi-color-fill-0)] transition-colors duration-150"
       >
-        <LuMessageSquare size={16} style={{ color: 'var(--semi-color-text-2)', flexShrink: 0 }} />
+        <LuMessageSquare size={16} className="text-[var(--semi-color-text-2)] shrink-0" />
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontWeight: 500,
-            fontSize: '14px',
-            color: 'var(--semi-color-text-0)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            marginBottom: '2px',
-          }}>
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-sm text-[var(--semi-color-text-0)] truncate mb-0.5">
             {conv.title || '无标题对话'}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--semi-color-text-2)' }}>
+          <div className="flex items-center gap-2 text-xs text-[var(--semi-color-text-2)]">
             <span>{formatDate(conv.created_at)}</span>
             <span>·</span>
             <span>更新于 {formatDate(conv.updated_at)}</span>
           </div>
         </div>
 
-        <Tag size="small" color="blue">{conv.message_count} 条消息</Tag>
+        <Badge variant="info" className="py-0.5 px-2.5">{conv.message_count} 条消息</Badge>
 
         {expanded
-          ? <LuChevronUp size={14} style={{ color: 'var(--semi-color-text-2)', flexShrink: 0 }} />
-          : <LuChevronDown size={14} style={{ color: 'var(--semi-color-text-2)', flexShrink: 0 }} />
+          ? <LuChevronUp size={14} className="text-[var(--semi-color-text-2)] shrink-0" />
+          : <LuChevronDown size={14} className="text-[var(--semi-color-text-2)] shrink-0" />
         }
       </div>
 
       {/* Expanded messages */}
       {expanded && (
-        <div style={{ borderTop: '1px solid var(--semi-color-fill-0)' }}>
+        <div className="border-t border-[var(--semi-color-border)]">
           {detailQuery.isLoading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '24px' }}>
-              <Spin size="small" />
+            <div className="flex justify-center p-6">
+              <Spinner />
             </div>
           ) : detailQuery.isError ? (
-            <div style={{ padding: '16px', fontSize: '13px', color: '#ef4444' }}>
+            <div className="p-4 text-[13px] text-red-500">
               加载对话消息失败
             </div>
           ) : detailQuery.data ? (
-            <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '360px', overflowY: 'auto' }}>
+            <div className="p-4 flex flex-col gap-2 max-h-[360px] overflow-y-auto">
               {detailQuery.data.messages.map((msg) => (
                 <div
                   key={msg.id}
-                  style={{
-                    display: 'flex',
-                    justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                  }}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div style={{
-                    maxWidth: '75%',
-                    padding: '8px 12px',
-                    borderRadius: msg.role === 'user' ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
-                    background: msg.role === 'user'
-                      ? 'var(--semi-color-primary)'
-                      : 'var(--semi-color-fill-0)',
-                    color: msg.role === 'user'
-                      ? '#fff'
-                      : 'var(--semi-color-text-0)',
-                    fontSize: '13px',
-                    lineHeight: '1.6',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                  }}>
+                  <div className={cn(
+                    "max-w-[75%] px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap break-words shadow-sm",
+                    msg.role === 'user'
+                      ? "rounded-[12px_12px_4px_12px] bg-[var(--semi-color-primary)] text-white"
+                      : "rounded-[12px_12px_12px_4px] bg-[var(--semi-color-fill-0)] text-[var(--semi-color-text-0)]"
+                  )}>
                     {msg.content}
                   </div>
                 </div>
               ))}
               {detailQuery.data.messages.length === 0 && (
-                <Text style={{ color: 'var(--semi-color-text-2)', fontSize: '13px' }}>暂无消息</Text>
+                <span className="text-[var(--semi-color-text-2)] text-[13px]">暂无消息</span>
               )}
             </div>
           ) : null}
@@ -125,6 +90,13 @@ function ConversationRow({ conv }: ConversationRowProps) {
     </div>
   )
 }
+
+const Spinner = () => (
+  <svg className="animate-spin text-current h-6 w-6 text-[var(--brand-base)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+  </svg>
+)
 
 export default function ModelsChatHistoryPage() {
   const conversationsQuery = useQuery({
@@ -136,30 +108,30 @@ export default function ModelsChatHistoryPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+      <div className="mb-7">
+        <h1 className="text-2xl font-bold text-[var(--semi-color-text-0)] m-0 mb-1.5 tracking-tight">
           对话历史
         </h1>
-        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0 }}>
+        <p className="text-[13px] text-[var(--semi-color-text-1)] m-0">
           浏览历史对话记录，点击展开查看完整消息。
         </p>
       </div>
 
       {conversationsQuery.isLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-          <Spin size="large" />
+        <div className="flex justify-center items-center h-[200px]">
+          <Spinner />
         </div>
       ) : conversationsQuery.isError ? (
-        <div style={{ color: '#ef4444', fontSize: '13px', padding: '24px 0' }}>加载对话历史失败，请稍后重试。</div>
+        <div className="text-red-500 text-[13px] py-6">加载对话历史失败，请稍后重试。</div>
       ) : conversations.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '64px 0' }}>
-          <LuMessageSquare size={36} style={{ color: 'var(--semi-color-text-2)', marginBottom: '12px' }} />
-          <Text style={{ color: 'var(--semi-color-text-2)', fontSize: '13px', display: 'block' }}>
+        <div className="text-center py-16">
+          <LuMessageSquare size={36} className="text-[var(--semi-color-text-2)] mx-auto mb-3" />
+          <span className="text-[var(--semi-color-text-2)] text-[13px] block">
             暂无对话历史
-          </Text>
+          </span>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="flex flex-col gap-2">
           {conversations.map((conv) => (
             <ConversationRow key={conv.id} conv={conv} />
           ))}

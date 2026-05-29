@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, Input, Modal, Select, Table, Tabs, Tag, Toast, Typography } from '@douyinfe/semi-ui'
 import { LuPlus } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import {
@@ -19,12 +18,12 @@ import {
 import type { TenantItem } from '@/types'
 import { formatDate } from '@/lib/format-date'
 import { TENANT_ROLE_CONFIG, TENANT_ROLE_OPTIONS } from '@/constants/roles'
-
-const { Text } = Typography
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Badge } from '@/components/ui/Badge'
+import { appToast } from '@/lib/app-toast'
 
 const MAX_TENANTS = 5
-
-// ─── Shared styles ────────────────────────────────────────────────────────────
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: 'var(--semi-color-bg-0)',
@@ -45,8 +44,6 @@ const labelStyle: React.CSSProperties = {
   letterSpacing: '0.05em',
 }
 
-// ─── Role badge ───────────────────────────────────────────────────────────────
-
 function RoleBadge({ role }: { role: TenantItem['role'] }) {
   const s = TENANT_ROLE_CONFIG[role]
   return (
@@ -57,14 +54,12 @@ function RoleBadge({ role }: { role: TenantItem['role'] }) {
 }
 
 // ─── Org list section ─────────────────────────────────────────────────────────
-
-function OrgListSection({
-  selectedId,
-  onSelect,
-}: {
+interface OrgListSectionProps {
   selectedId: string | null
   onSelect: (id: string) => void
-}) {
+}
+
+function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
   const qc = useQueryClient()
   const [createVisible, setCreateVisible] = useState(false)
   const [newName, setNewName] = useState('')
@@ -82,7 +77,7 @@ function OrgListSection({
   const createMutation = useMutation({
     mutationFn: () => createTenant({ name: newName.trim(), slug: newSlug.trim(), type: 'enterprise' }),
     onSuccess: (org) => {
-      Toast.success(`组织「${org.name}」已创建`)
+      appToast.success(`组织「${org.name}」已创建`)
       setCreateVisible(false)
       setNewName('')
       setNewSlug('')
@@ -90,72 +85,16 @@ function OrgListSection({
       onSelect(org.tenant_id)
     },
     onError: (err: any) => {
-      Toast.error(err?.message || '创建失败')
+      appToast.error(err?.message || '创建失败')
     },
   })
 
   function handleCreate() {
-    if (!newName.trim()) { Toast.error('组织名称不能为空'); return }
-    if (!newSlug.trim()) { Toast.error('唯一标识不能为空'); return }
-    if (!/^[a-z0-9-]+$/.test(newSlug)) { Toast.error('唯一标识仅支持小写字母、数字和连字符'); return }
+    if (!newName.trim()) { appToast.error('组织名称不能为空'); return }
+    if (!newSlug.trim()) { appToast.error('唯一标识不能为空'); return }
+    if (!/^[a-z0-9-]+$/.test(newSlug)) { appToast.error('唯一标识仅支持小写字母、数字和连字符'); return }
     createMutation.mutate()
   }
-
-  const columns = [
-    {
-      title: '组织名称',
-      dataIndex: 'name',
-      render: (v: string, record: TenantItem) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--semi-color-text-0)' }}>{v}</span>
-          {record.is_default && (
-            <Tag size="small" style={{ fontSize: '11px', borderRadius: '100px' }}>默认</Tag>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: '我的角色',
-      dataIndex: 'role',
-      render: (v: TenantItem['role']) => <RoleBadge role={v} />,
-    },
-    {
-      title: '类型',
-      dataIndex: 'type',
-      render: (v: string) => (
-        <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>
-          {v === 'personal' ? '个人' : '企业'}
-        </span>
-      ),
-    },
-    {
-      title: '工作区',
-      dataIndex: 'current_workspace_count',
-      render: (v: number, record: TenantItem) => (
-        <span style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>
-          {v} / {record.max_workspaces}
-        </span>
-      ),
-    },
-    {
-      title: '操作',
-      dataIndex: 'tenant_id',
-      render: (_: unknown, record: TenantItem) => (
-        <span
-          style={{
-            fontSize: '13px',
-            fontWeight: 600,
-            color: selectedId === record.tenant_id ? 'var(--semi-color-primary)' : '#0066ff',
-            cursor: 'pointer',
-            transition: 'color 0.2s',
-          }}
-          onClick={() => onSelect(record.tenant_id)}
-        >
-          {selectedId === record.tenant_id ? '管理中 ↓' : '管理'}
-        </span>
-      ),
-    },
-  ]
 
   return (
     <div style={cardStyle}>
@@ -183,65 +122,115 @@ function OrgListSection({
           </span>
         </div>
         <Button
-          theme="solid"
-          icon={<LuPlus />}
+          variant="default"
           disabled={atLimit}
           onClick={() => setCreateVisible(true)}
-          style={{
-            borderRadius: '24px',
-            fontSize: '13px',
-            fontWeight: 600,
-            height: '36px',
-          }}
+          className="rounded-[24px] text-xs font-semibold h-9 flex items-center gap-1"
         >
+          <LuPlus size={14} />
           创建组织
         </Button>
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={tenants}
-        rowKey="tenant_id"
-        loading={tenantsQuery.isLoading}
-        pagination={false}
-        style={{ borderRadius: 0 }}
-        onRow={(record: TenantItem | undefined) => ({
-          style: {
-            backgroundColor: record && selectedId === record.tenant_id
-              ? 'rgba(var(--semi-color-primary-rgb, 99,102,241), 0.04)'
-              : undefined,
-          },
-        })}
-      />
-
-      <Modal
-        title="创建新组织"
-        visible={createVisible}
-        onOk={handleCreate}
-        onCancel={() => setCreateVisible(false)}
-        confirmLoading={createMutation.isPending}
-        width={460}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', padding: '16px 0' }}>
-          <div>
-            <label style={labelStyle}>组织名称</label>
-            <Input value={newName} onChange={(v) => setNewName(v)} placeholder="如：我的团队" style={{ borderRadius: '8px' }} />
+      <div className="overflow-x-auto w-full p-2">
+        {tenantsQuery.isLoading ? (
+          <div className="py-12 flex justify-center items-center">
+            <div className="w-8 h-8 border-2 border-gray-200 border-t-brand-base rounded-full animate-spin" />
           </div>
-          <div>
-            <label style={labelStyle}>唯一标识 (Slug)</label>
-            <Input value={newSlug} onChange={(v) => setNewSlug(v)} placeholder="如：my-team" style={{ borderRadius: '8px' }} />
-            <Text style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginTop: '4px', display: 'block' }}>
-              仅支持小写字母、数字和连字符
-            </Text>
+        ) : (
+          <table className="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 dark:border-gray-800">
+                <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">组织名称</th>
+                <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">我的角色</th>
+                <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">类型</th>
+                <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">工作区</th>
+                <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs w-24">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tenants.map((record: TenantItem) => (
+                <tr
+                  key={record.tenant_id}
+                  className={`border-b border-gray-100/50 dark:border-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors ${
+                    selectedId === record.tenant_id ? 'bg-brand-glow/5 dark:bg-brand-glow/3' : ''
+                  }`}
+                >
+                  <td className="py-3 px-4 font-semibold text-gray-800 dark:text-gray-200 text-xs">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>{record.name}</span>
+                      {record.is_default && (
+                        <Badge variant="secondary" className="text-[10px] py-0 px-1.5 rounded-full font-bold">默认</Badge>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <RoleBadge role={record.role} />
+                  </td>
+                  <td className="py-3 px-4 text-xs text-gray-500 dark:text-gray-400">
+                    {record.type === 'personal' ? '个人' : '企业'}
+                  </td>
+                  <td className="py-3 px-4 text-xs text-gray-500 dark:text-gray-400">
+                    {record.current_workspace_count} / {record.max_workspaces}
+                  </td>
+                  <td className="py-3 px-4 text-xs">
+                    <button
+                      onClick={() => onSelect(record.tenant_id)}
+                      className={`bg-none border-none font-bold cursor-pointer transition-colors p-0 ${
+                        selectedId === record.tenant_id ? 'text-brand-base' : 'text-blue-500 hover:text-blue-600'
+                      }`}
+                    >
+                      {selectedId === record.tenant_id ? '管理中 ↓' : '管理'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* 创建新组织 Modal (手写玻璃态) */}
+      {createVisible && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setCreateVisible(false)} />
+          <div className="relative bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl w-full max-w-[460px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+              <h2 className="text-base font-bold text-gray-900 dark:text-white">创建新组织</h2>
+              <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm font-semibold transition-colors" onClick={() => setCreateVisible(false)}>✕</button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label style={labelStyle}>组织名称</label>
+                <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="如：我的团队" className="rounded-lg w-full" />
+              </div>
+              <div>
+                <label style={labelStyle}>唯一标识 (Slug)</label>
+                <Input value={newSlug} onChange={(e) => setNewSlug(e.target.value)} placeholder="如：my-team" className="rounded-lg w-full" />
+                <span className="text-xs text-gray-400 dark:text-gray-500 mt-1.5 block">
+                  仅支持小写字母、数字和连字符
+                </span>
+              </div>
+            </div>
+            <div className="p-5 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2 bg-gray-50/50 dark:bg-gray-900/50">
+              <Button variant="outline" className="h-9 px-4 rounded-lg text-xs" onClick={() => setCreateVisible(false)}>取消</Button>
+              <Button
+                variant="default"
+                className="h-9 px-4 rounded-lg text-xs font-semibold"
+                disabled={createMutation.isPending}
+                onClick={handleCreate}
+              >
+                {createMutation.isPending ? '创建中...' : '确认创建'}
+              </Button>
+            </div>
           </div>
         </div>
-      </Modal>
+      )}
     </div>
   )
 }
 
 // ─── Org info tab ─────────────────────────────────────────────────────────────
-
 function OrgInfoTab({ tenantId }: { tenantId: string }) {
   const qc = useQueryClient()
   const [name, setName] = useState('')
@@ -263,35 +252,34 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
   })
 
   const owner = membersQuery.data?.items.find((m) => m.role === 'tenant_owner')
-
   const tenant = tenantQuery.data
 
   const update = useMutation({
     mutationFn: () => updateTenant(tenantId, { name }),
     onSuccess: () => {
-      Toast.success('组织名称已更新')
+      appToast.success('组织名称已更新')
       qc.invalidateQueries({ queryKey: ['tenant', tenantId] })
       qc.invalidateQueries({ queryKey: ['tenants'] })
       setEditing(false)
     },
-    onError: (err: any) => Toast.error(err?.message || '更新失败'),
+    onError: (err: any) => appToast.error(err?.message || '更新失败'),
   })
 
   const logoMutation = useMutation({
     mutationFn: (file: File) => uploadTenantLogo(tenantId, file),
     onSuccess: () => {
-      Toast.success('组织头像已更新')
+      appToast.success('组织头像已更新')
       qc.invalidateQueries({ queryKey: ['tenant', tenantId] })
       qc.invalidateQueries({ queryKey: ['tenants'] })
     },
-    onError: (err: any) => Toast.error(err?.message || '上传失败，请重试'),
+    onError: (err: any) => appToast.error(err?.message || '上传失败，请重试'),
   })
 
   function handleLogoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > 2 * 1024 * 1024) {
-      Toast.error('图片大小不能超过 2MB')
+      appToast.error('图片大小不能超过 2MB')
       return
     }
     logoMutation.mutate(file)
@@ -300,12 +288,11 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
 
   if (tenantQuery.isLoading) {
     return (
-      <div style={{ height: 100, backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '8px', animation: 'pulse 1.5s ease-in-out infinite' }} />
+      <div className="h-28 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />
     )
   }
 
   if (!tenant) return null
-
   const logoLetter = tenant?.name.charAt(0).toUpperCase() ?? '?'
 
   return (
@@ -331,7 +318,6 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
                 ? <img src={tenant.logo_url} alt={tenant.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--semi-color-text-1)' }}>{logoLetter}</span>
               }
-              {/* 悬停遮罩 */}
               {(logoHover || logoMutation.isPending) && (
                 <div style={{
                   position: 'absolute', inset: 0, borderRadius: '14px',
@@ -365,9 +351,22 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
           <label style={labelStyle}>组织名称</label>
           {editing ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Input value={name} onChange={(v) => setName(v)} onKeyDown={(e) => e.key === 'Enter' && update.mutate()} autoFocus style={{ maxWidth: '320px' }} />
-              <Button theme="solid" loading={update.isPending} disabled={update.isPending || name === tenant.name} onClick={() => update.mutate()}>保存</Button>
-              <Button onClick={() => setEditing(false)}>取消</Button>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && update.mutate()}
+                autoFocus
+                style={{ maxWidth: '320px' }}
+              />
+              <Button
+                variant="default"
+                disabled={update.isPending || name === tenant.name}
+                onClick={() => update.mutate()}
+                className="h-9 px-4 rounded-lg font-semibold"
+              >
+                {update.isPending ? '保存中...' : '保存'}
+              </Button>
+              <Button variant="outline" className="h-9 px-4 rounded-lg text-xs" onClick={() => setEditing(false)}>取消</Button>
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -414,7 +413,6 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
 }
 
 // ─── Members tab ──────────────────────────────────────────────────────────────
-
 function MembersTab({ tenantId }: { tenantId: string }) {
   const qc = useQueryClient()
 
@@ -428,68 +426,17 @@ function MembersTab({ tenantId }: { tenantId: string }) {
   const changeRole = useMutation({
     mutationFn: (values: { accountId: string; role: 'tenant_admin' | 'tenant_member' }) =>
       updateTenantMemberRole(tenantId, values.accountId, values.role),
-    onSuccess: () => { Toast.success('角色已更新'); qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] }) },
-    onError: (err: any) => Toast.error(err?.message || '更新角色失败'),
+    onSuccess: () => { appToast.success('角色已更新'); qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] }) },
+    onError: (err: any) => appToast.error(err?.message || '更新角色失败'),
   })
 
   const removeMember = useMutation({
     mutationFn: (accountId: string) => removeTenantMember(tenantId, accountId),
-    onSuccess: () => { Toast.success('成员已移除'); qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] }) },
-    onError: (err: any) => Toast.error(err?.message || '移除成员失败'),
+    onSuccess: () => { appToast.success('成员已移除'); qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] }) },
+    onError: (err: any) => appToast.error(err?.message || '移除成员失败'),
   })
 
   const members = membersQuery.data?.items ?? []
-
-  const columns = [
-    {
-      title: '姓名 / 邮箱',
-      dataIndex: 'account',
-      render: (_: unknown, record: (typeof members)[number]) => (
-        <div>
-          <div style={{ fontWeight: 500, color: 'var(--semi-color-text-0)', fontSize: '14px' }}>{record.account.display_name || '—'}</div>
-          <div style={{ color: 'var(--semi-color-text-1)', fontSize: '12px', marginTop: '2px' }}>{record.account.email}</div>
-        </div>
-      ),
-    },
-    {
-      title: '角色权限',
-      dataIndex: 'role',
-      render: (_: unknown, record: (typeof members)[number]) => (
-        <Select
-          value={record.role}
-          onChange={(value) => changeRole.mutate({ accountId: record.account.account_id, role: value as 'tenant_admin' | 'tenant_member' })}
-          style={{ width: '130px' }}
-          disabled={record.role === 'tenant_owner'}
-        >
-          {TENANT_ROLE_OPTIONS.map((o) => <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>)}
-        </Select>
-      ),
-    },
-    {
-      title: '加入时间',
-      dataIndex: 'joined_at',
-      render: (val: string) => (
-        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '14px' }}>{formatDate(val)}</span>
-      ),
-    },
-    {
-      title: '',
-      key: 'actions',
-      width: 60,
-      render: (_: unknown, record: (typeof members)[number]) => (
-        <button
-          type="button"
-          disabled={record.role === 'tenant_owner'}
-          style={{ background: 'none', border: 'none', cursor: record.role === 'tenant_owner' ? 'not-allowed' : 'pointer', padding: '6px', borderRadius: '6px', color: 'var(--semi-color-text-3)', opacity: record.role === 'tenant_owner' ? 0.3 : 1 }}
-          onMouseEnter={(e) => { if (record.role !== 'tenant_owner') { e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.08)'; e.currentTarget.style.color = '#ef4444' } }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--semi-color-text-3)' }}
-          onClick={() => record.role !== 'tenant_owner' && removeMember.mutate(record.account.account_id)}
-        >
-          ✕
-        </button>
-      ),
-    },
-  ]
 
   return (
     <div style={cardStyle}>
@@ -499,20 +446,74 @@ function MembersTab({ tenantId }: { tenantId: string }) {
           {membersQuery.isLoading ? '…' : `${members.length} 位成员`}
         </span>
       </div>
-      <Table
-        columns={columns}
-        dataSource={members}
-        rowKey={(record) => record?.account?.account_id || ''}
-        loading={membersQuery.isLoading}
-        pagination={false}
-        style={{ borderRadius: 0 }}
-      />
+
+      <div className="overflow-x-auto w-full p-2">
+        {membersQuery.isLoading ? (
+          <div className="py-12 flex justify-center items-center">
+            <div className="w-8 h-8 border-2 border-gray-200 border-t-brand-base rounded-full animate-spin" />
+          </div>
+        ) : (
+          <table className="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 dark:border-gray-800">
+                <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">姓名 / 邮箱</th>
+                <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">角色权限</th>
+                <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">加入时间</th>
+                <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs w-16">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {members.map((record) => (
+                <tr
+                  key={record.account.account_id}
+                  className="border-b border-gray-100/50 dark:border-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
+                >
+                  <td className="py-3 px-4">
+                    <div style={{ fontWeight: 500, color: 'var(--semi-color-text-0)', fontSize: '14px' }}>{record.account.display_name || '—'}</div>
+                    <div style={{ color: 'var(--semi-color-text-1)', fontSize: '12px', marginTop: '2px' }}>{record.account.email}</div>
+                  </td>
+                  <td className="py-3 px-4">
+                    {record.role === 'tenant_owner' ? (
+                      <span className="text-xs text-gray-400 font-semibold px-2 py-1">Owner</span>
+                    ) : (
+                      <select
+                        value={record.role}
+                        onChange={(e) => changeRole.mutate({ accountId: record.account.account_id, role: e.target.value as any })}
+                        className="modern-input-field h-8 text-xs py-0 pr-8 pl-2 bg-white dark:bg-gray-800 w-[130px]"
+                      >
+                        {TENANT_ROLE_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    )}
+                  </td>
+                  <td className="py-3 px-4 text-xs text-gray-500 dark:text-gray-400">
+                    {formatDate(record.joined_at)}
+                  </td>
+                  <td className="py-3 px-4 text-xs text-center">
+                    {record.role !== 'tenant_owner' ? (
+                      <button
+                        type="button"
+                        onClick={() => removeMember.mutate(record.account.account_id)}
+                        className="text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 p-1.5 rounded-lg transition-all border-none bg-transparent cursor-pointer font-semibold"
+                      >
+                        ✕
+                      </button>
+                    ) : (
+                      <span className="text-gray-300 dark:text-gray-700">—</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   )
 }
 
 // ─── Invite tab ───────────────────────────────────────────────────────────────
-
 function InviteTab({ tenantId }: { tenantId: string }) {
   const qc = useQueryClient()
   const [inviteEmails, setInviteEmails] = useState('')
@@ -529,8 +530,8 @@ function InviteTab({ tenantId }: { tenantId: string }) {
 
   const resetLink = useMutation({
     mutationFn: () => resetTenantInviteLink(tenantId),
-    onSuccess: () => { Toast.success('邀请链接已重置'); qc.invalidateQueries({ queryKey: ['tenant-invite-link', tenantId] }) },
-    onError: (err: any) => Toast.error(err?.message || '重置失败'),
+    onSuccess: () => { appToast.success('邀请链接已重置'); qc.invalidateQueries({ queryKey: ['tenant-invite-link', tenantId] }) },
+    onError: (err: any) => appToast.error(err?.message || '重置失败'),
   })
 
   const addMembers = useMutation({
@@ -539,8 +540,8 @@ function InviteTab({ tenantId }: { tenantId: string }) {
       role: inviteRole,
       expires_in_hours: expiresInHours,
     }),
-    onSuccess: () => { Toast.success('邀请已发出'); setInviteEmails(''); setExpiresInHours(72); qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] }) },
-    onError: (err: any) => Toast.error(err?.message || '邀请失败'),
+    onSuccess: () => { appToast.success('邀请已发出'); setInviteEmails(''); setExpiresInHours(72); qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] }) },
+    onError: (err: any) => appToast.error(err?.message || '邀请失败'),
   })
 
   const inviteLinkUrl = inviteLinkQuery.data
@@ -552,30 +553,40 @@ function InviteTab({ tenantId }: { tenantId: string }) {
     navigator.clipboard.writeText(inviteLinkUrl).then(() => {
       setLinkCopied(true)
       setTimeout(() => setLinkCopied(false), 2000)
-      Toast.success('邀请链接已复制')
+      appToast.success('邀请链接已复制')
     })
   }
 
   return (
     <div style={{ maxWidth: '640px' }}>
-      {/* ── 邀请配置（共用）──────────────────────────────── */}
+      {/* ── 邀请配置 ──────────────────────────────── */}
       <div style={{ ...cardStyle, padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '24px' }}>
         <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', flexShrink: 0 }}>邀请配置</span>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 12px', height: '32px', borderRadius: '8px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)', fontSize: '12px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
             初始角色
-            <Select value={inviteRole} onChange={(v) => setInviteRole(v as any)} style={{ width: '96px', marginLeft: '2px' }} size="small" borderless>
-              {TENANT_ROLE_OPTIONS.map((o) => <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>)}
-            </Select>
+            <select
+              value={inviteRole}
+              onChange={(e) => setInviteRole(e.target.value as any)}
+              className="bg-transparent border-none outline-none font-semibold text-xs ml-1 cursor-pointer"
+            >
+              {TENANT_ROLE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 12px', height: '32px', borderRadius: '8px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)', fontSize: '12px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
             有效期
-            <Select value={expiresInHours} onChange={(v) => setExpiresInHours(v as number)} style={{ width: '96px', marginLeft: '2px' }} size="small" borderless>
-              <Select.Option value={24}>24 小时</Select.Option>
-              <Select.Option value={72}>3 天</Select.Option>
-              <Select.Option value={168}>7 天</Select.Option>
-              <Select.Option value={720}>30 天</Select.Option>
-            </Select>
+            <select
+              value={expiresInHours}
+              onChange={(e) => setExpiresInHours(Number(e.target.value))}
+              className="bg-transparent border-none outline-none font-semibold text-xs ml-1 cursor-pointer"
+            >
+              <option value={24}>24 小时</option>
+              <option value={72}>3 天</option>
+              <option value={168}>7 天</option>
+              <option value={720}>30 天</option>
+            </select>
           </div>
         </div>
       </div>
@@ -585,16 +596,23 @@ function InviteTab({ tenantId }: { tenantId: string }) {
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--semi-color-fill-0)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: '4px' }}>快速邀请链接</div>
-            <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>将此链接发送给同事，他们点击后可直接申请加入</Text>
+            <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>将此链接发送给同事，他们点击后可直接申请加入</span>
           </div>
-          <Button size="small" loading={resetLink.isPending} onClick={() => resetLink.mutate()} style={{ flexShrink: 0, marginLeft: '16px' }}>重置链接</Button>
+          <Button variant="outline" className="h-8 text-xs font-semibold px-3" onClick={() => resetLink.mutate()}>重置链接</Button>
         </div>
         <div style={{ padding: '20px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)', fontFamily: 'monospace', fontSize: '13px', color: 'var(--semi-color-text-0)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {inviteLinkUrl ?? <span style={{ color: 'var(--semi-color-text-2)', fontStyle: 'italic' }}>加载中…</span>}
             </div>
-            <Button theme="solid" disabled={!inviteLinkUrl} onClick={handleCopyLink} style={linkCopied ? { borderColor: '#10b981', backgroundColor: 'transparent', color: '#10b981' } : undefined}>
+            <Button
+              variant="default"
+              disabled={!inviteLinkUrl}
+              onClick={handleCopyLink}
+              className={`font-semibold h-10 px-5 rounded-[8px] border transition-colors ${
+                linkCopied ? 'border-emerald-500 bg-transparent text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/20' : ''
+              }`}
+            >
               {linkCopied ? '已复制' : '复制链接'}
             </Button>
           </div>
@@ -605,33 +623,32 @@ function InviteTab({ tenantId }: { tenantId: string }) {
       <div style={cardStyle}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--semi-color-fill-0)' }}>
           <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: '4px' }}>邮箱邀请</div>
-          <Text style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>直接向特定邮箱发送邀请邮件</Text>
+          <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>直接向特定邮箱发送邀请邮件</span>
         </div>
         <div style={{ padding: '20px 24px', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
           <div style={{ flex: 1 }}>
             <label style={labelStyle}>成员邮箱</label>
-            <Input placeholder="example@company.com，多个用逗号分隔" value={inviteEmails} onChange={(val) => setInviteEmails(val)} onKeyDown={(e) => e.key === 'Enter' && addMembers.mutate()} />
+            <Input placeholder="example@company.com，多个用逗号分隔" value={inviteEmails} onChange={(e) => setInviteEmails(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addMembers.mutate()} />
           </div>
-          <Button theme="solid" loading={addMembers.isPending} onClick={() => addMembers.mutate()} style={{ flexShrink: 0 }}>发送邀请</Button>
+          <Button variant="default" className="font-semibold h-10 px-5 rounded-[8px]" onClick={() => addMembers.mutate()}>发送邀请</Button>
         </div>
       </div>
     </div>
   )
 }
 
-
 // ─── Management panel ─────────────────────────────────────────────────────────
-
 function OrgManagePanel({ tenantId }: { tenantId: string }) {
   const tenantsQuery = useQuery({ queryKey: ['tenants'], queryFn: listTenants, staleTime: 30_000 })
   const tenant = tenantsQuery.data?.items.find((t) => t.tenant_id === tenantId)
   const canManage = tenant?.role === 'tenant_owner' || tenant?.role === 'tenant_admin'
 
-  // session 里已有 tenants（含 name），作为 listTenants 未就绪时的即时 fallback
   const sessionTenants = useAuthStore((s) => s.tenants)
   const tenantName = tenant?.name
     || sessionTenants.find((t) => t.tenant_id === tenantId)?.name
     || '…'
+
+  const [activeSubTab, setActiveSubTab] = useState<'info' | 'members' | 'invite'>('info')
 
   return (
     <div>
@@ -650,32 +667,51 @@ function OrgManagePanel({ tenantId }: { tenantId: string }) {
         {tenant && <RoleBadge role={tenant.role} />}
       </div>
 
-      <Tabs defaultActiveKey="info">
-        <Tabs.TabPane tab="基本信息" itemKey="info">
-          <div style={{ paddingTop: '20px' }}>
-            <OrgInfoTab tenantId={tenantId} />
-          </div>
-        </Tabs.TabPane>
-        <Tabs.TabPane tab="组织成员" itemKey="members">
-          <div style={{ paddingTop: '20px' }}>
-            <MembersTab tenantId={tenantId} />
-          </div>
-        </Tabs.TabPane>
+      <div className="border-b border-gray-100 dark:border-gray-800 flex gap-6 text-sm mb-6 bg-transparent">
+        <button
+          onClick={() => setActiveSubTab('info')}
+          className={`pb-3 font-semibold transition-all border-b-2 cursor-pointer bg-transparent border-none ${
+            activeSubTab === 'info'
+              ? 'border-brand-base text-brand-base'
+              : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+          }`}
+        >
+          基本信息
+        </button>
+        <button
+          onClick={() => setActiveSubTab('members')}
+          className={`pb-3 font-semibold transition-all border-b-2 cursor-pointer bg-transparent border-none ${
+            activeSubTab === 'members'
+              ? 'border-brand-base text-brand-base'
+              : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+          }`}
+        >
+          组织成员
+        </button>
         {canManage && (
-          <Tabs.TabPane tab="邀请成员" itemKey="invite">
-            <div style={{ paddingTop: '20px' }}>
-              <InviteTab tenantId={tenantId} />
-            </div>
-          </Tabs.TabPane>
+          <button
+            onClick={() => setActiveSubTab('invite')}
+            className={`pb-3 font-semibold transition-all border-b-2 cursor-pointer bg-transparent border-none ${
+              activeSubTab === 'invite'
+                ? 'border-brand-base text-brand-base'
+                : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+            }`}
+          >
+            邀请成员
+          </button>
         )}
+      </div>
 
-      </Tabs>
+      <div style={{ paddingTop: '8px' }}>
+        {activeSubTab === 'info' && <OrgInfoTab tenantId={tenantId} />}
+        {activeSubTab === 'members' && <MembersTab tenantId={tenantId} />}
+        {canManage && activeSubTab === 'invite' && <InviteTab tenantId={tenantId} />}
+      </div>
     </div>
   )
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
-
 export default function OrganizationSettingsPage() {
   const { activeTenantId } = useAuthStore()
   const [managingId, setManagingId] = useState<string | null>(activeTenantId ?? null)

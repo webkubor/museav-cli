@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { LuTrendingUp } from 'react-icons/lu'
 import React, { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getUsageSeries } from '@/services/usage'
@@ -105,7 +106,7 @@ export const UsageChartSection: React.FC = () => {
           </svg>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <span className="text-2xl mb-2">📊</span>
+            <LuTrendingUp size={24} className="mb-2 text-mg-text-2" />
             <p className="text-xs text-mg-text-2 font-medium">{t('dashboard.usageChart.empty')}</p>
           </div>
         )}

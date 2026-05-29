@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LuSearch, LuUserPlus } from 'react-icons/lu'
+import { LuSearch, LuUserPlus , LuInbox } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
 import { useWorkspaceRole } from '@/hooks/use-workspace-role'
@@ -287,7 +287,7 @@ export default function InvitationsMgmtPage() {
             </div>
           ) : invitations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <span className="text-3xl mb-3">📬</span>
+              <LuInbox size={28} className="mb-3 text-mg-text-2" />
               <p className="text-sm text-mg-text-2 font-medium">{t('invitations.list.empty')}</p>
             </div>
           ) : (

@@ -7,13 +7,14 @@
 
 import React from 'react'
 import { useTranslation } from 'react-i18next'
+import { LuKey, LuTerminal, LuCreditCard, LuRocket } from 'react-icons/lu'
 
 /** 指南条目实体定义 */
 interface GuideItem {
   /** i18n key prefix */
   keyPrefix: string
   /** Emoji 图标标识 */
-  badge: string
+  badge: React.ReactNode
   /** 图标背景颜色 */
   badgeBg: string
   /** 图标前景色 */
@@ -24,25 +25,25 @@ interface GuideItem {
 const GUIDES: GuideItem[] = [
   {
     keyPrefix: 'guideSection.guide0',
-    badge: '🔑',
+    badge: <LuKey size={18} />,
     badgeBg: 'rgba(245,158,11,0.10)',
     badgeColor: 'var(--mg-warning)'
   },
   {
     keyPrefix: 'guideSection.guide1',
-    badge: '⌨️',
+    badge: <LuTerminal size={18} />,
     badgeBg: 'rgba(var(--mg-primary-rgb,99,102,241),0.10)',
     badgeColor: 'var(--mg-primary)'
   },
   {
     keyPrefix: 'guideSection.guide2',
-    badge: '💳',
+    badge: <LuCreditCard size={18} />,
     badgeBg: 'rgba(16,185,129,0.10)',
     badgeColor: 'var(--mg-success)'
   },
   {
     keyPrefix: 'guideSection.guide3',
-    badge: '🚀',
+    badge: <LuRocket size={18} />,
     badgeBg: 'rgba(14,165,233,0.10)',
     badgeColor: '#0ea5e9'
   }
@@ -107,7 +108,6 @@ export const GuideSection: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '18px',
                   boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)'
                 }}
               >

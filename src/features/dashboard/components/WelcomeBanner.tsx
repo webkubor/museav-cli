@@ -163,7 +163,7 @@ export const WelcomeBanner: React.FC = () => {
             lineHeight: 1.1
           }}
         >
-          {greeting} 👋
+          {greeting}
         </h1>
 
         <p

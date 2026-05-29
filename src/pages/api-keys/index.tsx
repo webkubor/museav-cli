@@ -13,7 +13,7 @@ import {
   TableRow,
   TableCell
 } from '@/components/ui/Table'
-import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers } from 'react-icons/lu'
+import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers , LuKey } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { listApiKeys, createApiKey, revokeApiKey } from '@/services/api-keys'
@@ -177,7 +177,7 @@ export default function ApiKeysPage() {
           <div className="flex justify-between items-start mb-4">
             <div>
               <div className="text-sm font-bold text-mg-text-0 flex items-center gap-2">
-                <span>🔑</span> {t('apiKeys.revealModal.title')}
+<LuKey size={14} className="shrink-0" /> {t('apiKeys.revealModal.title')}
               </div>
               <div className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 max-w-3xl leading-relaxed font-semibold">
                 {t('apiKeys.revealModal.warning')}

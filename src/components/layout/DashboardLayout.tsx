@@ -12,6 +12,7 @@ import {
   LuLayoutGrid,
   LuWrench,
   LuTerminal,
+  LuLock,
 } from 'react-icons/lu'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -37,7 +38,7 @@ function WorkspaceGuard({
   if (!activeWorkspaceId && navConfig.workspaceScopedKeys.has(currentKey)) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4 select-none animate-in fade-in duration-300">
-        <div className="text-4xl">🔒</div>
+        <LuLock size={36} className="text-mg-text-2" />
         <div className="text-base font-bold text-mg-text-0">
           无可用工作区
         </div>

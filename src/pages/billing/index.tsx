@@ -1,3 +1,4 @@
+import { LuInbox } from 'react-icons/lu'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -243,7 +244,7 @@ function OrderTab({ tenantId }: { tenantId: string }) {
             </div>
           ) : orders.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <span className="text-3xl mb-3">📬</span>
+              <LuInbox size={28} className="mb-3 text-mg-text-2" />
               <p className="text-sm text-mg-text-2 font-medium">{t('billing.orders.empty')}</p>
             </div>
           ) : (

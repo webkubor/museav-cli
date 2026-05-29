@@ -9,7 +9,8 @@ import {
   LuPlus,
   LuSettings,
   LuGlobe,
-  LuBookOpen
+  LuBookOpen,
+  LuMonitor
 } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -402,22 +403,25 @@ export const DashboardHeader: React.FC = () => {
           render={
             <DropdownMenu style={{ width: '130px' }}>
               <DropdownItem 
+                icon={<LuSun size={13} />}
                 onClick={() => handleThemeChange('light')}
                 style={{ fontWeight: currentTheme === 'light' ? 700 : 500 }}
               >
-                ☀️ {t('common.themeLight')}
+                {t('common.themeLight')}
               </DropdownItem>
               <DropdownItem 
+                icon={<LuMoon size={13} />}
                 onClick={() => handleThemeChange('dark')}
                 style={{ fontWeight: currentTheme === 'dark' ? 700 : 500 }}
               >
-                🌙 {t('common.themeDark')}
+                {t('common.themeDark')}
               </DropdownItem>
               <DropdownItem 
+                icon={<LuMonitor size={13} />}
                 onClick={() => handleThemeChange('system')}
                 style={{ fontWeight: currentTheme === 'system' ? 700 : 500 }}
               >
-                💻 {t('common.themeSystem')}
+                {t('common.themeSystem')}
               </DropdownItem>
             </DropdownMenu>
           }

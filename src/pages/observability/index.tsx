@@ -19,20 +19,16 @@ import { useAuthStore } from '@/store/auth'
 import { appToast } from '@/lib/app-toast'
 import {
   createForward,
-  deleteDeadLetter,
   deleteForward,
   getLoggingConfig,
-  listDeadLetters,
   listForwards,
   listPlatforms,
-  retryDeadLetter,
   updateForward,
   updateLoggingConfig,
 } from '@/services/observability'
 import type { LoggingConfig, PlatformConfigField } from '@/types'
 import { formatDateTime } from '@/lib/format-date'
 
-type DeadLetterStatusFilter = 'all' | 'pending' | 'retrying' | 'ignored'
 
 // ─── Toggle row ───────────────────────────────────────────────────────────────
 
@@ -354,147 +350,6 @@ function CreateForwardForm({
   )
 }
 
-// ─── Dead Letters section ─────────────────────────────────────────────────────
-
-function DeadLettersSection({ workspaceId }: { workspaceId: string }) {
-  const { t } = useTranslation()
-  const qc = useQueryClient()
-  const [statusFilter, setStatusFilter] = useState<DeadLetterStatusFilter>('all')
-
-  const deadLettersQuery = useQuery({
-    queryKey: ['observability', 'dead-letters', workspaceId, statusFilter],
-    queryFn: () =>
-      listDeadLetters(workspaceId, {
-        status: statusFilter === 'all' ? undefined : statusFilter,
-        page_size: 20,
-      }),
-    staleTime: 30_000,
-    refetchOnWindowFocus: false,
-  })
-
-  const retryMutation = useMutation({
-    mutationFn: (deadLetterId: string) => retryDeadLetter(workspaceId, deadLetterId),
-    onSuccess: () => {
-      appToast.success(t('observability.toast.retryTriggered'))
-      qc.invalidateQueries({ queryKey: ['observability', 'dead-letters', workspaceId] })
-    },
-    onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : t('observability.toast.retryError'))
-    },
-  })
-
-  const ignoreMutation = useMutation({
-    mutationFn: (deadLetterId: string) => deleteDeadLetter(workspaceId, deadLetterId),
-    onSuccess: () => {
-      appToast.success(t('observability.toast.ignored'))
-      qc.invalidateQueries({ queryKey: ['observability', 'dead-letters', workspaceId] })
-    },
-    onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : t('observability.toast.ignoreError'))
-    },
-  })
-
-  const deadLetters = deadLettersQuery.data?.items ?? []
-
-  return (
-    <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-mg-border gap-4 flex-wrap">
-        <h3 className="text-sm font-bold text-mg-text-0">{t('observability.deadLetters.title')}</h3>
-        <div className="w-40 shrink-0">
-          <Select
-            value={statusFilter}
-            onChange={(v) => setStatusFilter(v as DeadLetterStatusFilter)}
-            className="w-full"
-          >
-            <Select.Option value="all">{t('observability.deadLetters.filterAll')}</Select.Option>
-            <Select.Option value="pending">{t('observability.deadLetters.filterPending')}</Select.Option>
-            <Select.Option value="retrying">{t('observability.deadLetters.filterRetrying')}</Select.Option>
-            <Select.Option value="ignored">{t('observability.deadLetters.filterIgnored')}</Select.Option>
-          </Select>
-        </div>
-      </div>
-
-      {deadLettersQuery.isLoading ? (
-        <div className="p-5 space-y-2 animate-pulse">
-          <div className="h-4 bg-mg-fill-0 rounded w-1/4" />
-          <div className="h-4 bg-mg-fill-0 rounded w-full" />
-        </div>
-      ) : deadLetters.length === 0 ? (
-        <div className="py-16 text-center text-xs italic text-mg-text-2">
-          {t('observability.deadLetters.empty')}
-        </div>
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('observability.deadLetters.table.platform')}</TableHead>
-              <TableHead>{t('observability.deadLetters.table.status')}</TableHead>
-              <TableHead>{t('observability.deadLetters.table.error')}</TableHead>
-              <TableHead>{t('observability.deadLetters.table.attempts')}</TableHead>
-              <TableHead>{t('observability.deadLetters.table.lastAttempt')}</TableHead>
-              <TableHead className="text-right"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {deadLetters.map((row) => (
-              <TableRow key={row.dead_letter_id}>
-                <TableCell className="font-semibold text-mg-text-0 text-[13.5px]">
-                  {row.platform}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={row.status === 'pending' ? 'warning' : row.status === 'retrying' ? 'secondary' : 'outline'}>
-                    {row.status === 'pending'
-                      ? t('observability.deadLetters.statusPending')
-                      : row.status === 'retrying'
-                        ? t('observability.deadLetters.statusRetrying')
-                        : t('observability.deadLetters.statusIgnored')}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="max-w-xs md:max-w-md">
-                    <p className="text-[13px] text-mg-text-0 font-medium truncate">{row.error_message}</p>
-                    <p className="text-xs text-mg-text-2 truncate mt-0.5 font-mono">{row.payload_excerpt}</p>
-                  </div>
-                </TableCell>
-                <TableCell className="text-xs text-mg-text-1 font-semibold">
-                  {row.attempts}
-                </TableCell>
-                <TableCell className="text-xs text-mg-text-2">
-                  {formatDateTime(row.last_attempted_at || row.created_at)}
-                </TableCell>
-                <TableCell className="text-right">
-                  {row.status !== 'ignored' && (
-                    <div className="flex justify-end gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        loading={retryMutation.isPending} 
-                        onClick={() => retryMutation.mutate(row.dead_letter_id)} 
-                        className="h-7 text-xs font-semibold"
-                      >
-                        {t('observability.deadLetters.table.retry')}
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        loading={ignoreMutation.isPending} 
-                        onClick={() => ignoreMutation.mutate(row.dead_letter_id)} 
-                        className="h-7 text-xs text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0 font-semibold"
-                      >
-                        {t('observability.deadLetters.table.ignore')}
-                      </Button>
-                    </div>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
-    </div>
-  )
-}
-
 // ─── Main content (requires loaded config) ────────────────────────────────────
 
 function ObservabilityContent({
@@ -557,12 +412,9 @@ function ObservabilityContent({
         )}
       </div>
 
-      {/* Section 3 & 4: Destinations + Dead letters — only when broadcast is on */}
+      {/* Section 3: Destinations — only when broadcast is on */}
       {loggingEnabled && broadcastEnabled && (
-        <>
-          <DestinationsSection workspaceId={workspaceId} />
-          <DeadLettersSection workspaceId={workspaceId} />
-        </>
+        <DestinationsSection workspaceId={workspaceId} />
       )}
     </div>
   )

@@ -4,22 +4,47 @@ import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
-import { 
-  Table, 
-  TableHeader, 
-  TableBody, 
-  TableHead, 
-  TableRow, 
-  TableCell 
+import { SelectItem } from '@/components/ui/Select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell
 } from '@/components/ui/Table'
-import { LuSearch, LuPlus, LuCopy, LuCheck, LuX } from 'react-icons/lu'
+import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { listApiKeys, createApiKey, revokeApiKey } from '@/services/api-keys'
+import { listWorkspaceMembers } from '@/services/workspaces'
 import { useAuthStore } from '@/store/auth'
 import { appToast } from '@/lib/app-toast'
 import { pageItems } from '@/lib/utils'
 import { formatDateTime } from '@/lib/format-date'
+
+type ScopeType = 'personal' | 'workspace' | 'member'
+
+const SCOPE_OPTIONS: { value: ScopeType; icon: React.ReactNode; label: string; desc: string }[] = [
+  {
+    value: 'personal',
+    icon: <LuUser className="w-4 h-4" />,
+    label: '个人',
+    desc: '仅供当前账户个人使用',
+  },
+  {
+    value: 'workspace',
+    icon: <LuBuilding2 className="w-4 h-4" />,
+    label: '工作区',
+    desc: '工作区服务集成使用',
+  },
+  {
+    value: 'member',
+    icon: <LuUsers className="w-4 h-4" />,
+    label: '成员',
+    desc: '代表指定成员创建密钥',
+  },
+]
 
 export default function ApiKeysPage() {
   const { t } = useTranslation()
@@ -30,45 +55,49 @@ export default function ApiKeysPage() {
   const [createdKeyText, setCreatedKeyText] = useState('')
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null)
 
-  // 受控表单状态
+  // 表单状态
   const [name, setName] = useState('')
   const [env, setEnv] = useState<'live' | 'test'>('live')
+  const [scope, setScope] = useState<ScopeType>('workspace')
+  const [memberAccountId, setMemberAccountId] = useState('')
   const [copied, setCopied] = useState(false)
 
-  // 获取全局活跃的当前 workspace_id
   const activeWorkspaceId = useAuthStore((state) => state.activeWorkspaceId) || '01HV3KWS000000000000001'
 
-  // ─── 1. TanStack Query 真实加载当前工作空间的 API Keys 列表 ──────
   const { data, isLoading } = useQuery({
     queryKey: ['api-keys', activeWorkspaceId],
     queryFn: () => listApiKeys(activeWorkspaceId).then(pageItems),
-    enabled: !!activeWorkspaceId
+    enabled: !!activeWorkspaceId,
   })
 
-  // ─── 2. Mutation 真实绑定新建 API Key 接口 ───────────────────────
+  const membersQuery = useQuery({
+    queryKey: ['workspace-members', activeWorkspaceId],
+    queryFn: () => listWorkspaceMembers(activeWorkspaceId, { page_size: 100 }),
+    enabled: !!activeWorkspaceId && createVisible,
+    staleTime: 60_000,
+  })
+
   const createMutation = useMutation({
-    mutationFn: (vals: { name: string; env?: 'live' | 'test' }) => {
-      return createApiKey(activeWorkspaceId, {
-        name: vals.name,
-        env: vals.env || 'live'
-      })
-    },
+    mutationFn: () =>
+      createApiKey(activeWorkspaceId, {
+        name: name.trim(),
+        env,
+        scope,
+        member_account_id: scope === 'member' ? memberAccountId : undefined,
+      }),
     onSuccess: (newKey) => {
       appToast.success(t('apiKeys.toast.createSuccess', { name: newKey.name }))
       setCreateVisible(false)
-      // 捕获仅返回一次的明文 key 字符串以供用户复制
       setCreatedKeyText(newKey.key)
       setRevealVisible(true)
-      setName('')
-      setEnv('live')
+      resetForm()
       queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
     },
     onError: (err: any) => {
       appToast.error(err?.message || t('apiKeys.toast.createError'))
-    }
+    },
   })
 
-  // ─── 3. Mutation 真实绑定撤销 (Revoke) API Key 接口 ─────────────
   const revokeMutation = useMutation({
     mutationFn: (keyId: string) => revokeApiKey(activeWorkspaceId, keyId),
     onSuccess: () => {
@@ -78,12 +107,25 @@ export default function ApiKeysPage() {
     },
     onError: (err: any) => {
       appToast.error(err?.message || t('apiKeys.toast.revokeError'))
-    }
+    },
   })
 
-  const filteredData = pageItems(data).filter(item =>
-    item.name.toLowerCase().includes(searchValue.toLowerCase()) || 
-    (item.masked ?? '').toLowerCase().includes(searchValue.toLowerCase())
+  function resetForm() {
+    setName('')
+    setEnv('live')
+    setScope('workspace')
+    setMemberAccountId('')
+  }
+
+  function handleOpenCreate() {
+    resetForm()
+    setCreateVisible(true)
+  }
+
+  const filteredData = pageItems(data).filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+      (item.masked ?? '').toLowerCase().includes(searchValue.toLowerCase())
   )
 
   const handleCreateSubmit = () => {
@@ -91,7 +133,11 @@ export default function ApiKeysPage() {
       appToast.error(t('apiKeys.createModal.nameRequired'))
       return
     }
-    createMutation.mutate({ name, env })
+    if (scope === 'member' && !memberAccountId) {
+      appToast.error('请选择目标成员')
+      return
+    }
+    createMutation.mutate()
   }
 
   const handleCopyText = (text: string) => {
@@ -103,17 +149,13 @@ export default function ApiKeysPage() {
 
   return (
     <div className="space-y-6">
-      {/* 头部标题与描述 */}
+      {/* 头部 */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-mg-text-0">
-          {t('apiKeys.title')}
-        </h1>
-        <p className="text-sm text-mg-text-1 mt-1.5">
-          {t('apiKeys.desc')}
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight text-mg-text-0">{t('apiKeys.title')}</h1>
+        <p className="text-sm text-mg-text-1 mt-1.5">{t('apiKeys.desc')}</p>
       </div>
 
-      {/* 🔑 新建密钥就绪横幅 (Apple-style 顶部警示质感) */}
+      {/* 新建密钥横幅 */}
       {revealVisible && (
         <div className="card-shadow-adaptive border-l-4 border-l-emerald-500 p-5 bg-card-bg relative overflow-hidden transition-all animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="flex justify-between items-start mb-4">
@@ -125,19 +167,18 @@ export default function ApiKeysPage() {
                 {t('apiKeys.revealModal.warning')}
               </div>
             </div>
-            <button 
+            <button
               onClick={() => setRevealVisible(false)}
               className="text-mg-text-2 hover:text-mg-text-0 p-1 rounded transition-colors cursor-pointer"
             >
               <LuX className="w-4 h-4" />
             </button>
           </div>
-
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
               <div className="bg-slate-900 border border-slate-800 text-emerald-400 px-4 py-3 rounded-lg font-mono text-sm flex items-center justify-between font-bold select-all tracking-wider shadow-inner">
                 <span className="truncate">{createdKeyText}</span>
-                <button 
+                <button
                   onClick={() => handleCopyText(createdKeyText)}
                   className="text-emerald-500 hover:text-emerald-400 transition-colors p-1.5 hover:bg-white/5 rounded ml-2 shrink-0 cursor-pointer"
                 >
@@ -145,20 +186,15 @@ export default function ApiKeysPage() {
                 </button>
               </div>
             </div>
-            <Button 
-              variant="brand"
-              onClick={() => setRevealVisible(false)}
-              className="h-11 rounded-lg px-6 font-semibold shrink-0"
-            >
+            <Button variant="brand" onClick={() => setRevealVisible(false)} className="h-11 rounded-lg px-6 font-semibold shrink-0">
               {t('apiKeys.revealModal.done')}
             </Button>
           </div>
         </div>
       )}
 
-      {/* 控制台操作区域（搜索框 + 药丸动作按钮） */}
+      {/* 搜索 + 创建 */}
       <div className="flex justify-between items-center gap-4">
-        {/* 圆角微阴影输入框 */}
         <div className="relative w-72">
           <LuSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-mg-text-2 w-4 h-4 pointer-events-none" />
           <Input
@@ -168,19 +204,13 @@ export default function ApiKeysPage() {
             onChange={(e) => setSearchValue(e.target.value)}
           />
         </div>
-
-        {/* 核心主动作按钮 (跟随品牌色变量) */}
-        <Button
-          variant="brand"
-          onClick={() => setCreateVisible(true)}
-          className="rounded-full px-6 h-10 shadow-lg shadow-brand-glow/20"
-        >
+        <Button variant="brand" onClick={handleOpenCreate} className="rounded-full px-6 h-10 shadow-lg shadow-brand-glow/20">
           <LuPlus className="w-4 h-4 mr-1.5" />
           {t('apiKeys.create')}
         </Button>
       </div>
 
-      {/* 声明式 Table 视图 */}
+      {/* 列表 */}
       <Table>
         <TableHeader>
           <TableRow>
@@ -196,26 +226,18 @@ export default function ApiKeysPage() {
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-10 text-mg-text-2">
-                {t('common.loading')}
-              </TableCell>
+              <TableCell colSpan={7} className="text-center py-10 text-mg-text-2">{t('common.loading')}</TableCell>
             </TableRow>
           ) : filteredData.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-10 text-mg-text-2">
-                {t('apiKeys.table.noData')}
-              </TableCell>
+              <TableCell colSpan={7} className="text-center py-10 text-mg-text-2">{t('apiKeys.table.noData')}</TableCell>
             </TableRow>
           ) : (
             filteredData.map((record) => (
               <TableRow key={record.api_key_id}>
-                <TableCell className="font-semibold text-mg-text-0 text-[13.5px]">
-                  {record.name}
-                </TableCell>
+                <TableCell className="font-semibold text-mg-text-0 text-[13.5px]">{record.name}</TableCell>
                 <TableCell>
-                  <Badge variant={record.env === 'live' ? 'success' : 'warning'}>
-                    {record.env.toUpperCase()}
-                  </Badge>
+                  <Badge variant={record.env === 'live' ? 'success' : 'warning'}>{record.env.toUpperCase()}</Badge>
                 </TableCell>
                 <TableCell>
                   <span className="font-mono text-xs bg-mg-bg-1 border border-mg-border px-2.5 py-1 rounded text-mg-text-1">
@@ -230,15 +252,12 @@ export default function ApiKeysPage() {
                 <TableCell className="font-mono text-xs text-mg-text-0 tabular-nums">
                   {record.usage_30d?.amount
                     ? `${record.usage_30d.currency} ${parseFloat(record.usage_30d.amount).toFixed(4)}`
-                    : <span className="text-mg-text-2">—</span>
-                  }
+                    : <span className="text-mg-text-2">—</span>}
                 </TableCell>
-                <TableCell className="text-xs text-mg-text-1">
-                  {formatDateTime(record.created_at)}
-                </TableCell>
+                <TableCell className="text-xs text-mg-text-1">{formatDateTime(record.created_at)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-4 text-xs font-bold">
-                    <button 
+                    <button
                       onClick={() => {
                         navigator.clipboard.writeText(record.prefix + '••••••••')
                         appToast.success(t('apiKeys.table.copyMaskedSuccess'))
@@ -248,7 +267,7 @@ export default function ApiKeysPage() {
                       {t('apiKeys.table.copy')}
                     </button>
                     {record.status === 'active' ? (
-                      <button 
+                      <button
                         onClick={() => setRevokeTarget({ id: record.api_key_id, name: record.name })}
                         className="text-rose-500 hover:text-rose-600 transition-colors cursor-pointer"
                       >
@@ -265,51 +284,104 @@ export default function ApiKeysPage() {
         </TableBody>
       </Table>
 
-      {/* 创建 API Key 的表单 Modal */}
+      {/* ── 创建 API Key 弹窗 ─────────────────────────────────────────── */}
       <Modal
         open={createVisible}
         onClose={() => setCreateVisible(false)}
         title={t('apiKeys.createModal.title')}
-        size="sm"
+        size="lg"
         footer={
           <>
             <Button variant="outline" onClick={() => setCreateVisible(false)}>
               {t('apiKeys.createModal.cancel')}
             </Button>
-            <Button
-              variant="brand"
-              loading={createMutation.isPending}
-              onClick={handleCreateSubmit}
-            >
+            <Button variant="brand" loading={createMutation.isPending} onClick={handleCreateSubmit}>
               {t('apiKeys.createModal.confirm')}
             </Button>
           </>
         }
       >
-        <div className="flex flex-col gap-5 py-2">
-          <div>
-            <label className="block text-xs font-bold text-mg-text-1 mb-2">
-              {t('apiKeys.createModal.nameLabel')}
-            </label>
-            <Input 
-              value={name} 
-              onChange={(e) => setName(e.target.value)} 
-              placeholder={t('apiKeys.createModal.namePlaceholder')} 
-            />
+        <div className="flex flex-col gap-7 py-3">
+          {/* 名称 + 环境 并排 */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-mg-text-1 mb-2">
+                {t('apiKeys.createModal.nameLabel')}
+              </label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t('apiKeys.createModal.namePlaceholder')}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-mg-text-1 mb-2">
+                {t('apiKeys.createModal.envLabel')}
+              </label>
+              <Select value={env} onChange={(val) => setEnv(val as 'live' | 'test')} className="w-full">
+                <Select.Option value="live">{t('apiKeys.createModal.live')}</Select.Option>
+                <Select.Option value="test">{t('apiKeys.createModal.test')}</Select.Option>
+              </Select>
+            </div>
           </div>
+
+          {/* 作用域选择器 */}
           <div>
-            <label className="block text-xs font-bold text-mg-text-1 mb-2">
-              {t('apiKeys.createModal.envLabel')}
-            </label>
-            <Select
-              value={env}
-              onChange={val => setEnv(val as any)}
-              className="w-full"
-            >
-              <Select.Option value="live">{t('apiKeys.createModal.live')}</Select.Option>
-              <Select.Option value="test">{t('apiKeys.createModal.test')}</Select.Option>
-            </Select>
+            <label className="block text-xs font-bold text-mg-text-1 mb-3">作用域</label>
+            <div className="grid grid-cols-3 gap-3">
+              {SCOPE_OPTIONS.map((opt) => {
+                const active = scope === opt.value
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => { setScope(opt.value); setMemberAccountId('') }}
+                    className={[
+                      'flex flex-col items-start gap-2 p-4 rounded-xl border-2 text-left transition-all duration-200',
+                      active
+                        ? 'border-brand-base bg-brand-base/5 shadow-sm'
+                        : 'border-mg-border bg-mg-bg-1/40 hover:border-mg-border/80 hover:bg-mg-fill-0',
+                    ].join(' ')}
+                  >
+                    <span className={active ? 'text-brand-base' : 'text-mg-text-2'}>
+                      {opt.icon}
+                    </span>
+                    <div>
+                      <p className={`text-[13px] font-bold leading-none mb-1 ${active ? 'text-brand-base' : 'text-mg-text-0'}`}>
+                        {opt.label}
+                      </p>
+                      <p className="text-[11px] text-mg-text-2 leading-snug">{opt.desc}</p>
+                    </div>
+                    {active && (
+                      <span className="ml-auto self-end w-2 h-2 rounded-full bg-brand-base shrink-0" />
+                    )}
+                  </button>
+                )
+              })}
+            </div>
           </div>
+
+          {/* 成员选择（仅 scope=member 时展示） */}
+          {scope === 'member' && (
+            <div>
+              <label className="block text-xs font-bold text-mg-text-1 mb-2">目标成员</label>
+              <Select
+                value={memberAccountId}
+                onChange={setMemberAccountId}
+                placeholder="请选择工作区成员"
+                className="w-full"
+              >
+                {(membersQuery.data?.items ?? []).map((m) => (
+                  <SelectItem key={m.account.account_id} value={m.account.account_id}>
+                    {m.account.display_name || m.account.email}
+                  </SelectItem>
+                ))}
+              </Select>
+              {membersQuery.data?.items.length === 0 && (
+                <p className="text-xs text-mg-text-2 mt-1.5">该工作区暂无成员</p>
+              )}
+            </div>
+          )}
         </div>
       </Modal>
 
@@ -328,11 +400,7 @@ export default function ApiKeysPage() {
             <Button
               variant="destructive"
               loading={revokeMutation.isPending}
-              onClick={() => {
-                if (revokeTarget) {
-                  revokeMutation.mutate(revokeTarget.id)
-                }
-              }}
+              onClick={() => { if (revokeTarget) revokeMutation.mutate(revokeTarget.id) }}
             >
               {t('apiKeys.table.revoke')}
             </Button>

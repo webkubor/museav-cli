@@ -1,13 +1,15 @@
-type StatusConfig = { label: string; bg: string; color: string; border: string }
+import type { BadgeVariant } from '@/components/ui/Badge'
+
+type StatusConfig = { label: string; variant: BadgeVariant }
 
 export const INVITATION_STATUS_CONFIG: Record<
   'pending' | 'accepted' | 'expired' | 'revoked',
   StatusConfig
 > = {
-  pending:  { label: '待接受', color: '#d97706',                    bg: '#fffbeb',                   border: '#fde68a' },
-  accepted: { label: '已接受', color: '#16a34a',                    bg: '#f0fdf4',                   border: '#bbf7d0' },
-  expired:  { label: '已过期', color: 'var(--mg-text-2)',   bg: 'var(--mg-bg-1)',    border: 'var(--mg-border)' },
-  revoked:  { label: '已撤销', color: '#dc2626',                    bg: '#fef2f2',                   border: '#fecaca' },
+  pending:  { label: '待接受', variant: 'warning'   },
+  accepted: { label: '已接受', variant: 'success'   },
+  expired:  { label: '已过期', variant: 'secondary' },
+  revoked:  { label: '已撤销', variant: 'danger'    },
 }
 
 export const INVITATION_STATUS_OPTIONS = [
@@ -22,18 +24,18 @@ export const GUARDRAIL_STATUS_CONFIG: Record<
   'active' | 'inactive' | 'archived',
   StatusConfig
 > = {
-  active:   { label: '启用中', color: '#10b981',                    bg: '#ecfdf5',                   border: '#6ee7b7' },
-  inactive: { label: '已停用', color: '#f59e0b',                    bg: '#fffbeb',                   border: '#fde68a' },
-  archived: { label: '已归档', color: 'var(--mg-text-2)',   bg: 'var(--mg-bg-1)',    border: 'var(--mg-border)' },
+  active:   { label: '启用中', variant: 'success'   },
+  inactive: { label: '已停用', variant: 'warning'   },
+  archived: { label: '已归档', variant: 'secondary' },
 }
 
 export const ENFORCEMENT_CONFIG: Record<
   'monitor' | 'soft_limit' | 'hard_limit',
-  { label: string; color: string }
+  { label: string; variant: BadgeVariant }
 > = {
-  monitor:    { label: '仅监控', color: 'var(--mg-text-1)' },
-  soft_limit: { label: '软限制', color: '#f59e0b' },
-  hard_limit: { label: '硬限制', color: '#ef4444' },
+  monitor:    { label: '仅监控', variant: 'secondary'   },
+  soft_limit: { label: '软限制', variant: 'warning'     },
+  hard_limit: { label: '硬限制', variant: 'destructive' },
 }
 
 export const PERIOD_LABEL: Record<'hour' | 'day' | 'week' | 'month', string> = {
@@ -47,8 +49,8 @@ export const LOG_STATUS_CONFIG: Record<
   'succeeded' | 'failed' | 'rejected' | 'accepted',
   StatusConfig
 > = {
-  succeeded: { label: '成功', bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
-  failed:    { label: '失败', bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
-  rejected:  { label: '拒绝', bg: '#fff7ed', color: '#ea580c', border: '#fed7aa' },
-  accepted:  { label: '接受', bg: 'var(--mg-bg-1)', color: 'var(--mg-text-1)', border: 'var(--mg-border)' },
+  succeeded: { label: '成功', variant: 'success'   },
+  failed:    { label: '失败', variant: 'danger'    },
+  rejected:  { label: '拒绝', variant: 'warning'   },
+  accepted:  { label: '接受', variant: 'secondary' },
 }

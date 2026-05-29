@@ -46,11 +46,7 @@ const labelStyle: React.CSSProperties = {
 
 function RoleBadge({ role }: { role: TenantItem['role'] }) {
   const s = TENANT_ROLE_CONFIG[role]
-  return (
-    <span style={{ fontSize: '11px', fontWeight: 600, color: s.color, backgroundColor: s.bg, border: `1px solid ${s.border}`, borderRadius: '100px', padding: '2px 8px' }}>
-      {s.label}
-    </span>
-  )
+  return <Badge variant={s.variant}>{s.label}</Badge>
 }
 
 // ─── Org list section ─────────────────────────────────────────────────────────

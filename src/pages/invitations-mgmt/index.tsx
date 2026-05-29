@@ -318,21 +318,9 @@ export default function InvitationsMgmtPage() {
                         </Badge>
                       </td>
                       <td className="py-3.5 px-4">
-                        <span
-                          style={{
-                            backgroundColor: cfg.bg,
-                            color: cfg.color,
-                            border: `1px solid ${cfg.border}`,
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            borderRadius: '100px',
-                            padding: '2px 8px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                          }}
-                        >
+                        <Badge variant={cfg.variant}>
                           {cfg.label}
-                        </span>
+                        </Badge>
                       </td>
                       <td className="py-3.5 px-4 text-xs text-mg-text-2">
                         {formatDateTime(record.expires_at)}

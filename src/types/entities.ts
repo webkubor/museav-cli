@@ -385,6 +385,10 @@ export interface CreateApiKeyRequest {
   env?: 'live' | 'test'
   expires_at?: string | null
   spending_limit?: SpendingLimit
+  /** 作用域：个人 / 工作区 / 成员 */
+  scope?: 'personal' | 'workspace' | 'member'
+  /** scope=member 时指定目标成员 */
+  member_account_id?: string
 }
 
 /** 创建 API Key 响应（含仅一次返回的明文 key） */

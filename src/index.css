@@ -3,6 +3,8 @@
 
 @import "tailwindcss";
 
+@custom-variant dark (&:where(body[theme-mode="dark"], body[theme-mode="dark"] *));
+
 @theme {
   --color-brand-base: var(--brand-base);
   --color-brand-deep: var(--brand-deep);
@@ -44,176 +46,171 @@
   --color-mg-warning: var(--mg-warning);
 }
 
-/* ── 核心设计系统 Token ── */
-:root {
-  /* CN 靛紫 (Indigo Modern) */
+/* ══════════════════════════════════════════════════════════════
+   轴 1 — 市场品牌色
+   domestic = CN 靛紫 | global = GO 翠绿
+   每套各写一次浅色 + 深色，换色板只改这里
+   ══════════════════════════════════════════════════════════════ */
+
+/* 国内 — CN 靛紫（浅色） */
+:root, [data-market='domestic'] {
   --cn-deep: #4338ca;
   --cn-base: #6366f1;
-  --cn-mid: #818cf8;
+  --cn-mid:  #818cf8;
   --cn-light: #a5b4fc;
   --cn-pale: #eef2ff;
   --cn-glow: rgba(99, 102, 241, 0.12);
   --cn-selected-bg: rgba(99, 102, 241, 0.06);
+}
+/* 国内 — CN 靛紫（深色，提升亮度） */
+[data-market='domestic'] body[theme-mode='dark'],
+body[theme-mode='dark'] {
+  --cn-deep: #6366f1;
+  --cn-base: #818cf8;
+  --cn-mid:  #a5b4fc;
+  --cn-pale: #1e1b4b;
+  --cn-glow: rgba(129, 140, 248, 0.18);
+  --cn-selected-bg: rgba(129, 140, 248, 0.12);
+}
 
-  /* GO 翠绿 (Emerald Modern) */
+/* 国际 — GO 翠绿（浅色） */
+:root, [data-market='global'] {
   --go-deep: #059669;
   --go-base: #10b981;
-  --go-mid: #34d399;
+  --go-mid:  #34d399;
   --go-light: #6ee7b7;
   --go-pale: #ecfdf5;
   --go-glow: rgba(16, 185, 129, 0.12);
   --go-selected-bg: rgba(16, 185, 129, 0.06);
-
-  /* 默认：国内 */
-  --brand-deep: var(--cn-deep);
-  --brand-base: var(--cn-base);
-  --brand-mid: var(--cn-mid);
-  --brand-light: var(--cn-light);
-  --brand-pale: var(--cn-pale);
-  --brand-glow: var(--cn-glow);
-  --brand-selected-bg: var(--cn-selected-bg);
-
-  /* 🍏 Apple-style 高级灰背景 */
-  --site-bg: #f8fafc; /* 极浅蓝灰，降低视觉疲劳 */
-  --card-bg: #ffffff;
-  
-  /* 💎 Stripe-style 软投影 (Ambient Shadows) */
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 4px 12px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.06), 0 4px 8px -2px rgba(15, 23, 42, 0.04);
-  --shadow-focus: 0 0 0 3px var(--brand-glow);
-
-  /* 统一大圆角 */
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 18px;
-  --radius-full: 9999px;
---mg-primary: var(--brand-base);
-  --mg-primary-hover: var(--brand-mid);
-  --mg-primary-active: var(--brand-deep);
-  --mg-primary-disabled: var(--brand-light);
-  --mg-primary-light: var(--brand-pale);
-
-  /* 强制图标与链接响应品牌色 */
-  --mg-link: var(--brand-base);
-  --mg-link-hover: var(--brand-mid);
-  --mg-nav-text-active: var(--brand-deep);
-  --mg-nav-icon-active: var(--brand-base);
-
-  /* 文字与描边弱化（去死板黑灰） */
-  --mg-bg-0: var(--card-bg);
-  --mg-bg-1: var(--site-bg);
-  --mg-border: rgba(15, 23, 42, 0.06);
-  --mg-fill-0: rgba(15, 23, 42, 0.03);
-  --mg-text-0: #0f172a;
-  --mg-text-1: #475569;
-  --mg-text-2: #94a3b8;
-  --mg-text-3: #cbd5e1;
-
-  --mg-success: #10b981;
-  --mg-danger: #ef4444;
-  --mg-warning: #f59e0b;
-
-  /* 导航项自定义 */
-  --nav-item-active-bg: var(--brand-selected-bg);
-  --nav-item-hover-bg: rgba(15, 23, 42, 0.035);
-  --grid-color: rgba(15, 23, 42, 0.02);
 }
-
-/* 🌙 暗色模式 (Premium Dark — Vercel/Linear 级别) */
-body[theme-mode='dark'] {
-  /* ── 背景层级：浅 = 海拔更高 ── */
-  --site-bg: #111113;           /* 页面底层，warm-neutral 深灰 */
-  --card-bg: #1a1a1d;           /* 卡片 / 面板层 */
-  --mg-bg-0: #1a1a1d;   /* 主卡片面 */
-  --mg-bg-1: #111113;   /* 页面背景 */
-  --mg-bg-2: #242428;   /* 悬浮卡片 / Dropdown */
-  --mg-bg-3: #2e2e33;   /* Modal / Tooltip 顶层 */
-
-  /* ── 文字层级 ── */
-  --mg-text-0: #f0f0f2;   /* 主文字，暖白 ~14:1 对比 */
-  --mg-text-1: #a1a1aa;   /* 次要，~6:1 */
-  --mg-text-2: #71717a;   /* 辅助 / placeholder，~4.5:1 */
-
-  /* ── 边框与填充 ── */
-  --mg-border: rgba(255, 255, 255, 0.08);
-  --mg-fill-0: rgba(255, 255, 255, 0.04);
-  --mg-fill-1: rgba(255, 255, 255, 0.07);
-  --mg-fill-2: rgba(255, 255, 255, 0.11);
-
-  --mg-text-3: #52525b;
-  --mg-success: #34d399;
-  --mg-danger: #f87171;
-  --mg-warning: #fbbf24;
-
-  /* ── 阴影：深色下以边框代替投影 ── */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
-  --shadow-focus: 0 0 0 3px var(--brand-glow);
-
-  /* ── 导航 ── */
-  --nav-item-hover-bg: rgba(255, 255, 255, 0.055);
-  --grid-color: rgba(255, 255, 255, 0.03);
-
-  /* ── CN 靛紫 —— 暗色下提升亮度（indigo-400 替代 indigo-500）── */
-  --cn-base: #818cf8;
-  --cn-mid: #a5b4fc;
-  --cn-deep: #6366f1;
-  --cn-pale: #1e1b4b;
-  --cn-glow: rgba(129, 140, 248, 0.18);
-  --cn-selected-bg: rgba(129, 140, 248, 0.12);
-
-  /* ── GO 翠绿 —— 暗色下提升亮度（emerald-400 替代 emerald-500）── */
-  --go-base: #34d399;
-  --go-mid: #6ee7b7;
+/* 国际 — GO 翠绿（深色，提升亮度） */
+[data-market='global'] body[theme-mode='dark'] {
   --go-deep: #10b981;
+  --go-base: #34d399;
+  --go-mid:  #6ee7b7;
   --go-pale: #064e3b;
   --go-glow: rgba(52, 211, 153, 0.18);
   --go-selected-bg: rgba(52, 211, 153, 0.12);
 }
 
-/* 海外市场 Token 切换 */
+/* 品牌色路由 — brand-* 指向当前市场的原色 */
+:root, [data-market='domestic'] {
+  --brand-deep: var(--cn-deep);
+  --brand-base: var(--cn-base);
+  --brand-mid:  var(--cn-mid);
+  --brand-light: var(--cn-light);
+  --brand-pale: var(--cn-pale);
+  --brand-glow: var(--cn-glow);
+  --brand-selected-bg: var(--cn-selected-bg);
+}
 [data-market='global'] {
   --brand-deep: var(--go-deep);
   --brand-base: var(--go-base);
-  --brand-mid: var(--go-mid);
+  --brand-mid:  var(--go-mid);
   --brand-light: var(--go-light);
   --brand-pale: var(--go-pale);
   --brand-glow: var(--go-glow);
   --brand-selected-bg: var(--go-selected-bg);
-
-  --mg-primary: var(--go-base);
-  --mg-primary-hover: var(--go-mid);
-  --mg-primary-active: var(--go-deep);
-  --mg-primary-disabled: var(--go-light);
-  --mg-primary-light: var(--go-pale);
-
-  --mg-link: var(--go-base);
-  --mg-link-hover: var(--go-mid);
-  --mg-nav-text-active: var(--go-deep);
-  --mg-nav-icon-active: var(--go-base);
 }
 
-[data-market='global'] body {
-  --mg-primary: var(--go-base);
-  --mg-primary-hover: var(--go-mid);
-  --mg-primary-active: var(--go-deep);
-  --mg-primary-disabled: var(--go-light);
-  --mg-primary-light: var(--go-pale);
-  --mg-link: var(--go-base);
-  --mg-link-hover: var(--go-mid);
+/* 主色 / 链接（跟随 brand-*，自动响应市场切换） */
+:root {
+  --mg-primary:          var(--brand-base);
+  --mg-primary-hover:    var(--brand-mid);
+  --mg-primary-active:   var(--brand-deep);
+  --mg-primary-disabled: var(--brand-light);
+  --mg-primary-light:    var(--brand-pale);
+  --mg-link:             var(--brand-base);
+  --mg-link-hover:       var(--brand-mid);
+  --mg-nav-text-active:  var(--brand-deep);
+  --mg-nav-icon-active:  var(--brand-base);
+  --nav-item-active-bg:  var(--brand-selected-bg);
+  --shadow-focus: 0 0 0 3px var(--brand-glow);
+
+  /* 圆角（静态） */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-full: 9999px;
 }
 
-/* 国内市场 body 级覆盖 */
-[data-market='domestic'] body {
-  --mg-primary: var(--cn-base);
-  --mg-primary-hover: var(--cn-mid);
-  --mg-primary-active: var(--cn-deep);
-  --mg-primary-disabled: var(--cn-light);
-  --mg-primary-light: var(--cn-pale);
-  --mg-link: var(--cn-base);
-  --mg-link-hover: var(--cn-mid);
+/* ══════════════════════════════════════════════════════════════
+   轴 2 — 明暗主题
+   浅色 / 深色相同分组、相同顺序，对照清晰
+   ══════════════════════════════════════════════════════════════ */
+
+/* 浅色（默认） */
+:root {
+  /* 背景层级 */
+  --site-bg:  #f8fafc;   /* 页面底层 */
+  --card-bg:  #ffffff;   /* 卡片面 */
+  --mg-bg-0:  #ffffff;   /* 主卡片 */
+  --mg-bg-1:  #f8fafc;   /* 页面背景 */
+  --mg-bg-2:  #f1f5f9;   /* 悬浮卡片 / Dropdown */
+  --mg-bg-3:  #e2e8f0;   /* Modal / Tooltip 顶层 */
+
+  /* 文字层级 */
+  --mg-text-0: #0f172a;  /* 主文字 */
+  --mg-text-1: #475569;  /* 次要 */
+  --mg-text-2: #94a3b8;  /* 辅助 / placeholder */
+  --mg-text-3: #cbd5e1;  /* 禁用 / 装饰 */
+
+  /* 边框与填充 */
+  --mg-border: rgba(15, 23, 42, 0.06);
+  --mg-fill-0: rgba(15, 23, 42, 0.03);
+  --mg-fill-1: rgba(15, 23, 42, 0.05);
+  --mg-fill-2: rgba(15, 23, 42, 0.08);
+
+  /* 语义色 */
+  --mg-success: #10b981;
+  --mg-danger:  #ef4444;
+  --mg-warning: #f59e0b;
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 12px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.06), 0 4px 8px -2px rgba(15, 23, 42, 0.04);
+
+  /* 导航 */
+  --nav-item-hover-bg: rgba(15, 23, 42, 0.035);
+  --grid-color: rgba(15, 23, 42, 0.02);
+}
+
+/* 深色 */
+body[theme-mode='dark'] {
+  /* 背景层级 */
+  --site-bg:  #111113;   /* 页面底层 */
+  --card-bg:  #1a1a1d;   /* 卡片面 */
+  --mg-bg-0:  #1a1a1d;   /* 主卡片 */
+  --mg-bg-1:  #111113;   /* 页面背景 */
+  --mg-bg-2:  #242428;   /* 悬浮卡片 / Dropdown */
+  --mg-bg-3:  #2e2e33;   /* Modal / Tooltip 顶层 */
+
+  /* 文字层级 */
+  --mg-text-0: #f0f0f2;  /* 主文字，暖白 ~14:1 */
+  --mg-text-1: #a1a1aa;  /* 次要，~6:1 */
+  --mg-text-2: #71717a;  /* 辅助 / placeholder，~4.5:1 */
+  --mg-text-3: #52525b;  /* 禁用 / 装饰 */
+
+  /* 边框与填充 */
+  --mg-border: rgba(255, 255, 255, 0.08);
+  --mg-fill-0: rgba(255, 255, 255, 0.04);
+  --mg-fill-1: rgba(255, 255, 255, 0.07);
+  --mg-fill-2: rgba(255, 255, 255, 0.11);
+
+  /* 语义色 */
+  --mg-success: #34d399;
+  --mg-danger:  #f87171;
+  --mg-warning: #fbbf24;
+
+  /* 阴影（深色用边框模拟层次） */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+
+  /* 导航 */
+  --nav-item-hover-bg: rgba(255, 255, 255, 0.055);
+  --grid-color: rgba(255, 255, 255, 0.03);
 }
 
 /* ── 🍏 全局 Semi UI 输入框与多行文本域极雅覆写与聚焦发光 ── */
@@ -1081,4 +1078,3 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   mask-image: linear-gradient(to bottom, transparent, white 20px, white calc(100% - 20px), transparent);
   -webkit-mask-image: linear-gradient(to bottom, transparent, white 20px, white calc(100% - 20px), transparent);
 }
-

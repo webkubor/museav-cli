@@ -1,3 +1,5 @@
+import type { BadgeVariant } from '@/components/ui/Badge'
+
 export const WS_ROLE_LABEL: Record<'ws_owner' | 'ws_admin' | 'ws_member', string> = {
   ws_owner:  '拥有者',
   ws_admin:  '管理员',
@@ -12,11 +14,11 @@ export const TENANT_ROLE_LABEL: Record<'tenant_owner' | 'tenant_admin' | 'tenant
 
 export const TENANT_ROLE_CONFIG: Record<
   'tenant_owner' | 'tenant_admin' | 'tenant_member',
-  { label: string; color: string; bg: string; border: string }
+  { label: string; variant: BadgeVariant }
 > = {
-  tenant_owner:  { label: 'Owner',  color: '#7c3aed',                            bg: '#f5f3ff',                                 border: '#ddd6fe' },
-  tenant_admin:  { label: 'Admin',  color: 'var(--mg-primary)',           bg: 'var(--mg-primary-light)', border: 'var(--mg-primary-light-active)' },
-  tenant_member: { label: 'Member', color: 'var(--mg-text-1)',            bg: 'var(--mg-bg-1)',                  border: 'var(--mg-border)' },
+  tenant_owner:  { label: 'Owner',  variant: 'purple'    },
+  tenant_admin:  { label: 'Admin',  variant: 'default'   },
+  tenant_member: { label: 'Member', variant: 'secondary' },
 }
 
 export const WS_ROLE_OPTIONS = [

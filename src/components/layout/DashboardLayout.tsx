@@ -174,7 +174,7 @@ export function DashboardLayout() {
 
           {/* 渲染主视图区域 */}
           <div className={cn(
-            "flex-1 transition-all duration-300",
+            "transition-all duration-300",
             isDashboardRoute ? (
               "bg-transparent border-none shadow-none p-0"
             ) : (

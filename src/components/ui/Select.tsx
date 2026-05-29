@@ -157,22 +157,28 @@ interface SelectProps {
   disabled?: boolean
   className?: string
   children?: React.ReactNode
+  emptyText?: string
 }
 
 interface SelectComponent extends React.FC<SelectProps> {
   Option: typeof SelectItem
 }
 
-const Select = (({ value, defaultValue, onChange, placeholder, disabled, className, children }: SelectProps) => (
-  <SelectRoot value={value} defaultValue={defaultValue} onValueChange={onChange} disabled={disabled}>
-    <SelectTrigger className={className}>
-      <SelectValue placeholder={placeholder} />
-    </SelectTrigger>
-    <SelectContent>
-      {children}
-    </SelectContent>
-  </SelectRoot>
-)) as SelectComponent
+const Select = (({ value, defaultValue, onChange, placeholder, disabled, className, children, emptyText = '暂无选项' }: SelectProps) => {
+  const isEmpty = React.Children.count(children) === 0
+  return (
+    <SelectRoot value={value} defaultValue={defaultValue} onValueChange={onChange} disabled={disabled || isEmpty}>
+      <SelectTrigger className={className}>
+        <SelectValue placeholder={isEmpty ? emptyText : placeholder} />
+      </SelectTrigger>
+      {!isEmpty && (
+        <SelectContent>
+          {children}
+        </SelectContent>
+      )}
+    </SelectRoot>
+  )
+}) as SelectComponent
 
 Select.Option = SelectItem
 

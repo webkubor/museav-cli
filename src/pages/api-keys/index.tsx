@@ -20,6 +20,7 @@ import { listApiKeys, createApiKey, revokeApiKey } from '@/services/api-keys'
 import { listWorkspaceMembers } from '@/services/workspaces'
 import { useAuthStore } from '@/store/auth'
 import { appToast } from '@/lib/app-toast'
+import { useCurrency } from '@/hooks/use-platform-config'
 import { pageItems } from '@/lib/utils'
 import { formatDateTime } from '@/lib/format-date'
 
@@ -61,6 +62,13 @@ export default function ApiKeysPage() {
   const [scope, setScope] = useState<ScopeType>('workspace')
   const [memberAccountId, setMemberAccountId] = useState('')
   const [copied, setCopied] = useState(false)
+  // 限额与过期时间（可选）
+  const [spendingEnabled, setSpendingEnabled] = useState(false)
+  const [spendingAmount, setSpendingAmount] = useState('')
+  const [spendingPeriod, setSpendingPeriod] = useState<'total' | 'monthly'>('monthly')
+  const [expiresAt, setExpiresAt] = useState('')
+
+  const { currency, symbol } = useCurrency()
 
   const activeWorkspaceId = useAuthStore((state) => state.activeWorkspaceId) || '01HV3KWS000000000000001'
 
@@ -84,6 +92,10 @@ export default function ApiKeysPage() {
         env,
         scope,
         member_account_id: scope === 'member' ? memberAccountId : undefined,
+        spending_limit: spendingEnabled && spendingAmount
+          ? { amount: spendingAmount, currency, period: spendingPeriod }
+          : undefined,
+        expires_at: expiresAt ? new Date(expiresAt).toISOString() : undefined,
       }),
     onSuccess: (newKey) => {
       appToast.success(t('apiKeys.toast.createSuccess', { name: newKey.name }))
@@ -115,6 +127,10 @@ export default function ApiKeysPage() {
     setEnv('live')
     setScope('workspace')
     setMemberAccountId('')
+    setSpendingEnabled(false)
+    setSpendingAmount('')
+    setSpendingPeriod('monthly')
+    setExpiresAt('')
   }
 
   function handleOpenCreate() {
@@ -382,6 +398,60 @@ export default function ApiKeysPage() {
               )}
             </div>
           )}
+
+          {/* 消费限额 */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-xs font-bold text-mg-text-1">消费限额</label>
+              <button
+                type="button"
+                onClick={() => setSpendingEnabled(!spendingEnabled)}
+                className={[
+                  'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none',
+                  spendingEnabled ? 'bg-brand-base' : 'bg-mg-fill-2',
+                ].join(' ')}
+              >
+                <span className={[
+                  'pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200',
+                  spendingEnabled ? 'translate-x-4' : 'translate-x-0',
+                ].join(' ')} />
+              </button>
+            </div>
+            {spendingEnabled && (
+              <div className="flex gap-3">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-mg-text-2 font-mono select-none">{symbol}</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={spendingAmount}
+                    onChange={(e) => setSpendingAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="pl-7"
+                  />
+                </div>
+                <Select value={spendingPeriod} onChange={(v) => setSpendingPeriod(v as 'total' | 'monthly')} className="w-28">
+                  <SelectItem value="monthly">每月</SelectItem>
+                  <SelectItem value="total">总计</SelectItem>
+                </Select>
+              </div>
+            )}
+          </div>
+
+          {/* 过期时间 */}
+          <div>
+            <label className="block text-xs font-bold text-mg-text-1 mb-2">
+              过期时间 <span className="text-mg-text-2 font-normal">（可选，不填则永不过期）</span>
+            </label>
+            <Input
+              type="date"
+              value={expiresAt}
+              onChange={(e) => setExpiresAt(e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+              className="w-full"
+            />
+          </div>
         </div>
       </Modal>
 

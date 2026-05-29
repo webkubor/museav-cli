@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LuSettings, LuCheck, LuDollarSign } from 'react-icons/lu'
+import { LuSettings, LuCheck, LuDollarSign, LuBox, LuKey } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -92,11 +92,11 @@ function EndpointCard({ def, state, onCall }: {
       )}
 
       {state?.status === 'success' && (
-        <div className="relative bg-slate-950">
+        <div className="relative bg-slate-950 overflow-hidden">
           <div className="absolute top-3 right-3 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
             200 OK
           </div>
-          <pre className="m-0 p-5 text-xs font-mono text-slate-300 overflow-x-auto max-h-[360px] leading-relaxed shadow-inner select-all">
+          <pre className="m-0 p-5 text-xs font-mono text-slate-300 overflow-x-auto max-h-[360px] leading-relaxed shadow-inner select-all w-full min-w-0">
             {JSON.stringify(state.data, null, 2)}
           </pre>
         </div>
@@ -301,6 +301,12 @@ function DetailGapsPanel() {
 
   const GAP_ITEMS = [
     {
+      key: 'models',
+      icon: <LuBox className="w-3.5 h-3.5" />,
+      color: 'text-violet-500',
+      bgColor: 'bg-violet-500/10',
+    },
+    {
       key: 'guardrail',
       icon: <LuSettings className="w-3.5 h-3.5" />,
       color: 'text-amber-500',
@@ -311,6 +317,12 @@ function DetailGapsPanel() {
       icon: <LuCheck className="w-3.5 h-3.5" />,
       color: 'text-indigo-500',
       bgColor: 'bg-indigo-500/10',
+    },
+    {
+      key: 'apiKeys',
+      icon: <LuKey className="w-3.5 h-3.5" />,
+      color: 'text-sky-500',
+      bgColor: 'bg-sky-500/10',
     },
     {
       key: 'billing',

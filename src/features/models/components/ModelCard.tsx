@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { CatalogModelItem } from '@/types'
 import { ModalityBadge } from './ModalityBadge'
 import { VENDOR_ICON } from './vendor-icons'
@@ -9,12 +10,13 @@ interface ModelCardProps {
 }
 
 export function ModelCard({ model, onSelect }: ModelCardProps) {
+  const { t } = useTranslation()
   return (
     <div
       className="card-glow-hover"
       style={{
-        background: 'var(--semi-color-bg-0)',
-        border: '1px solid var(--semi-color-fill-0)',
+        background: 'var(--mg-bg-0)',
+        border: '1px solid var(--mg-fill-0)',
         borderRadius: '12px',
         padding: '20px',
         display: 'flex',
@@ -30,18 +32,18 @@ export function ModelCard({ model, onSelect }: ModelCardProps) {
           {model.logo_url
             ? <img src={model.logo_url} alt={model.vendor} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             : (VENDOR_ICON[model.vendor?.toLowerCase() ?? ''] ?? (
-              <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'var(--semi-color-fill-0)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: 'var(--semi-color-text-2)' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'var(--mg-fill-0)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: 'var(--mg-text-2)' }}>
                 {getFallbackAvatarText(model.vendor ?? model.display_name)}
               </div>
             ))
           }
         </div>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--semi-color-text-0)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--mg-text-0)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {model.display_name}
           </div>
           {model.vendor && (
-            <div style={{ fontSize: '11.5px', color: 'var(--semi-color-text-2)', marginTop: '1px' }}>{model.vendor}</div>
+            <div style={{ fontSize: '11.5px', color: 'var(--mg-text-2)', marginTop: '1px' }}>{model.vendor}</div>
           )}
         </div>
       </div>
@@ -52,13 +54,13 @@ export function ModelCard({ model, onSelect }: ModelCardProps) {
       </div>
 
       {/* 参数行 */}
-      <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--semi-color-text-1)' }}>
-        <span>上下文 <b style={{ color: 'var(--semi-color-text-0)' }}>{formatContextLength(model.context_length)}</b></span>
+      <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--mg-text-1)' }}>
+        <span>{t('models.card.context')} <b style={{ color: 'var(--mg-text-0)' }}>{formatContextLength(model.context_length)}</b></span>
         {model.pricing?.input_per_1m && (
-          <span>输入 <b style={{ color: 'var(--semi-color-text-0)' }}>{formatModelPrice(model.pricing.input_per_1m, model.pricing.currency)}</b></span>
+          <span>{t('models.card.inputPrice')} <b style={{ color: 'var(--mg-text-0)' }}>{formatModelPrice(model.pricing.input_per_1m, model.pricing.currency)}</b></span>
         )}
         {model.pricing?.output_per_1m && (
-          <span>输出 <b style={{ color: 'var(--semi-color-text-0)' }}>{formatModelPrice(model.pricing.output_per_1m, model.pricing.currency)}</b></span>
+          <span>{t('models.card.outputPrice')} <b style={{ color: 'var(--mg-text-0)' }}>{formatModelPrice(model.pricing.output_per_1m, model.pricing.currency)}</b></span>
         )}
       </div>
     </div>

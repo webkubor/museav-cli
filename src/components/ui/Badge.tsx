@@ -16,11 +16,11 @@ const badgeVariants = cva(
         default:
           "border-transparent bg-brand-base text-white hover:bg-brand-mid shadow-sm",
         secondary:
-          "border-transparent bg-semi-color-fill-1 text-semi-color-text-1 hover:bg-semi-color-fill-2",
+          "border-transparent bg-mg-fill-1 text-mg-text-1 hover:bg-mg-fill-2",
         destructive:
           "border-transparent bg-rose-500 text-white hover:bg-rose-600 shadow-sm",
         outline: 
-          "text-semi-color-text-1 border-semi-color-border hover:bg-semi-color-fill-0",
+          "text-mg-text-1 border-mg-border hover:bg-mg-fill-0",
         success:
           "border-transparent bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
         warning:
@@ -28,7 +28,7 @@ const badgeVariants = cva(
         info:
           "border-transparent bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
         glass:
-          "bg-white/10 dark:bg-white/5 backdrop-blur-md border-white/20 text-semi-color-text-1",
+          "bg-white/10 dark:bg-white/5 backdrop-blur-md border-white/20 text-mg-text-1",
       },
     },
     defaultVariants: {

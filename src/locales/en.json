@@ -77,7 +77,7 @@
     "orgNameLabel": "Organization Name",
     "orgNamePlaceholder": "e.g. My Team",
     "orgSlugLabel": "Slug",
-    "orgSlugHint": "Lowercase letters, numbers, hyphens only. Auto-generated from name.",
+    "orgSlugHint": "Lowercase letters, numbers, hyphens. Auto-generated from name.",
     "wsNameLabel": "Workspace Name",
     "wsNamePlaceholder": "e.g. Production Env",
     "wsSlugLabel": "Unique Identifier (Slug)",
@@ -90,7 +90,7 @@
   },
   "apiKeys": {
     "title": "API Keys",
-    "desc": "Security credentials for OpenAI SDK compatible access. Please keep your key credentials safe and do not disclose them to third parties.",
+    "desc": "Security credentials for OpenAI SDK compatible access. Keep your keys safe.",
     "create": "Create API Key",
     "search": "Search key name",
     "table": {
@@ -104,11 +104,13 @@
       "disabled": "Disabled",
       "copy": "Copy",
       "revoke": "Revoke",
-      "copyMaskedSuccess": "Masked credentials copied to clipboard"
+      "copyMaskedSuccess": "Masked credentials copied to clipboard",
+      "totalSpend": "Total Spend",
+      "noData": "No data"
     },
     "revokeConfirm": {
-      "title": "Are you sure you want to revoke this key?",
-      "content": "The key will be immediately invalidated and cannot be recovered. All gateway requests will be blocked!"
+      "title": "Revoke this key?",
+      "content": "The key will be immediately invalidated and cannot be recovered."
     },
     "createModal": {
       "title": "Create API Key",
@@ -123,24 +125,24 @@
     },
     "revealModal": {
       "title": "🔑 Your New API Key is Ready",
-      "warning": "Please save this credential immediately! For security reasons, the plain text API Key is only shown once upon creation. If you close this window, you will never be able to retrieve it again.",
+      "warning": "Please save this credential immediately! It is only shown once.",
       "label": "Plain Text API Key:",
       "done": "I have copied and saved it"
     },
     "toast": {
       "createSuccess": "Key \"{{name}}\" created successfully",
       "createError": "Failed to create API key",
-      "revokeSuccess": "API Key successfully revoked",
+      "revokeSuccess": "API Key revoked",
       "revokeError": "Failed to revoke API key"
     }
   },
   "billing": {
-    "title": "Billing Management",
-    "desc": "Manage account balance and track recharge order status.",
+    "title": "Billing",
+    "desc": "Manage account balance and track recharge orders.",
     "balance": {
       "title": "Account Balance",
-      "available": "Available Balance",
-      "frozen": "Frozen Amount",
+      "available": "Available",
+      "frozen": "Frozen",
       "recharge": "Top Up"
     },
     "tabs": {
@@ -148,27 +150,28 @@
       "promo": "Redeem"
     },
     "rechargeModal": {
-      "title": "Account Top Up",
-      "amount": "Top Up Amount",
+      "title": "Top Up",
+      "amount": "Amount",
       "customAmount": "Custom Amount",
       "method": "Payment Method",
       "submit": "Pay ¥{{amount}}",
-      "success": "Recharge order created, please complete payment",
-      "error": "Failed to create recharge order"
+      "success": "Recharge order created",
+      "error": "Failed to create order",
+      "submitting": "Submitting..."
     },
     "promo": {
       "title": "Redeem Promo Code",
       "placeholder": "Enter Promo Code",
       "submit": "Redeem Now",
-      "emptyWarning": "Please enter Promo Code",
-      "success": "Redeem success, credited {{amount}} {{currency}}",
-      "error": "Redeem failed, please check if Promo Code is valid"
+      "emptyWarning": "Please enter a Promo Code",
+      "success": "Redeemed! Credited {{amount}} {{currency}}",
+      "error": "Redemption failed, please check the Promo Code"
     },
     "orders": {
-      "empty": "No recharge orders",
+      "empty": "No orders",
       "loadMore": "Load More",
       "detailTitle": "Order Details",
-      "detailPlaceholder": "Click an order on the left to view details",
+      "detailPlaceholder": "Click an order to view details",
       "cancelSuccess": "Order cancelled",
       "cancelError": "Failed to cancel order",
       "table": {
@@ -184,8 +187,8 @@
         "orderNo": "Order No",
         "status": "Status",
         "amount": "Amount",
-        "credited": "Credited Amount",
-        "channel": "Payment Channel",
+        "credited": "Credited",
+        "channel": "Channel",
         "promo": "Promo Code",
         "paidAt": "Paid At",
         "viewInvoice": "View Invoice"
@@ -197,23 +200,27 @@
         "cancelled": "Cancelled",
         "refunded": "Refunded"
       }
+    },
+    "paymentMethod": {
+      "alipay": "Alipay",
+      "wechat": "WeChat Pay"
     }
   },
   "account": {
     "title": "Account Settings",
-    "desc": "Manage your personal profile, password, and third-party account bindings.",
+    "desc": "Manage your profile, password, and connected accounts.",
     "tabs": {
       "info": "Profile",
       "security": "Security",
       "oauth": "Connected Accounts"
     },
     "info": {
-      "emailLabel": "Email Address",
-      "emailHint": "Primary email used for login and notifications. Self-editing is currently not supported.",
+      "emailLabel": "Email",
+      "emailHint": "Primary email for login. Cannot be changed.",
       "nameLabel": "Display Name",
       "namePlaceholder": "Enter display name",
       "toastSuccess": "Display name saved",
-      "toastError": "Failed to save, please try again"
+      "toastError": "Failed to save"
     },
     "security": {
       "currentPassword": "Current Password",
@@ -222,22 +229,609 @@
       "newPlaceholder": "At least 8 characters",
       "confirmPassword": "Confirm New Password",
       "confirmPlaceholder": "Repeat new password",
-      "toastSuccess": "Password changed successfully",
-      "toastError": "Failed to change password, please check current password",
+      "toastSuccess": "Password changed",
+      "toastError": "Failed to change password",
       "warningEmpty": "Please fill in all password fields",
-      "errorMismatch": "New passwords do not match",
-      "errorLength": "New password must be at least 8 characters"
+      "errorMismatch": "Passwords do not match",
+      "errorLength": "Password must be at least 8 characters"
     },
     "oauth": {
-      "desc": "Connect your social or code hosting accounts for passwordless access to the console.",
+      "desc": "Connect social accounts for passwordless access.",
       "google": "Google Account",
       "github": "GitHub Account",
       "wechat": "WeChat Account",
       "bound": "Connected",
       "notBound": "Not Connected",
-      "emailLabel": "Linked Email: {{email}}",
+      "emailLabel": "Email: {{email}}",
       "unbind": "Disconnect",
       "bind": "Connect"
+    }
+  },
+  "guardrails": {
+    "title": "Guardrails",
+    "desc": "Configure prompt defense rules to block injection attacks, sensitive words, and uncontrolled outputs.",
+    "create": "Create Guardrail",
+    "empty": "No guardrails. Create one to get started.",
+    "table": {
+      "name": "Name",
+      "desc": "Description",
+      "priority": "Priority",
+      "isDefault": "Default",
+      "status": "Status",
+      "createdAt": "Created At",
+      "defaultBadge": "Default",
+      "optionalBadge": "Optional",
+      "configure": "Configure",
+      "delete": "Delete"
+    },
+    "form": {
+      "nameLabel": "Name",
+      "namePlaceholder": "e.g. Prompt Injection Defense",
+      "priorityLabel": "Priority",
+      "priorityPlaceholder": "e.g. 0",
+      "descLabel": "Description (Optional)",
+      "descPlaceholder": "Brief description of this rule",
+      "isDefaultLabel": "Apply by Default",
+      "isDefaultHint": "Automatically apply to all requests"
+    },
+    "modal": {
+      "createTitle": "Create Guardrail",
+      "editTitle": "Configure Guardrail",
+      "cancel": "Cancel",
+      "saveEdit": "Save Changes",
+      "confirmCreate": "Confirm Create"
+    },
+    "deleteModal": {
+      "title": "Delete Guardrail",
+      "description": "Delete guardrail \"{{name}}\"? This cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    },
+    "toast": {
+      "createSuccess": "Guardrail created",
+      "createError": "Failed to create",
+      "updateSuccess": "Guardrail updated",
+      "updateError": "Failed to update",
+      "deleteSuccess": "Guardrail deleted",
+      "deleteError": "Failed to delete",
+      "toggleError": "Operation failed",
+      "nameRequired": "Please enter a name"
+    }
+  },
+  "logs": {
+    "title": "Call Logs",
+    "desc": "Real-time visibility into all API calls for traffic tracking and troubleshooting.",
+    "refresh": "Refresh",
+    "loading": "Loading logs...",
+    "empty": "No matching records",
+    "filter": {
+      "statusLabel": "Status",
+      "statusPlaceholder": "Select status",
+      "statusAll": "All",
+      "statusSuccess": "Success only",
+      "statusFailed": "Failed only",
+      "modelLabel": "Model",
+      "modelPlaceholder": "e.g. gpt-4o-mini",
+      "keywordLabel": "Search",
+      "keywordPlaceholder": "Search by Request ID"
+    },
+    "table": {
+      "requestTime": "Time",
+      "model": "Model",
+      "statusCode": "Status",
+      "duration": "Duration",
+      "tokens": "Tokens",
+      "apiKey": "API Key",
+      "detail": "Detail"
+    },
+    "pagination": {
+      "total": "{{count}} records",
+      "prev": "Prev",
+      "page": "Page {{page}}",
+      "next": "Next"
+    },
+    "detail": {
+      "title": "Log Detail",
+      "status": "Status",
+      "duration": "Duration",
+      "model": "Model",
+      "time": "Time",
+      "apiKeyName": "API Key",
+      "tokens": "Tokens",
+      "errorTitle": "Error",
+      "promptPayload": "Prompt Payload"
+    }
+  },
+  "observability": {
+    "title": "Observability",
+    "desc": "Manage logging, forwarding destinations, and retry policies.",
+    "logging": {
+      "title": "Input / Output Logging",
+      "desc": "Record full input and output of each request."
+    },
+    "broadcast": {
+      "title": "Broadcast Forwarding",
+      "desc": "Push logs to configured destinations (e.g. Datadog, OpenTelemetry)."
+    },
+    "destinations": {
+      "addTitle": "Add Destination",
+      "listTitle": "Configured Destinations",
+      "empty": "No destinations. Add one above.",
+      "table": {
+        "name": "Name",
+        "platform": "Platform",
+        "status": "Status",
+        "lastSuccess": "Last Success",
+        "enabled": "Enabled",
+        "paused": "Paused",
+        "pause": "Pause",
+        "resume": "Resume",
+        "delete": "Delete"
+      },
+      "deleteModal": {
+        "title": "Delete Destination",
+        "description": "Delete \"{{name}}\"? This cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete"
+      }
+    },
+    "form": {
+      "platformLabel": "Platform",
+      "nameLabel": "Name",
+      "namePlaceholder": "Give this destination a name",
+      "submit": "Create"
+    },
+    "deadLetters": {
+      "title": "Failed Retries",
+      "empty": "No failed records",
+      "filterAll": "All",
+      "filterPending": "Pending",
+      "filterRetrying": "Retrying",
+      "filterIgnored": "Ignored",
+      "statusPending": "Pending",
+      "statusRetrying": "Retrying",
+      "statusIgnored": "Ignored",
+      "table": {
+        "platform": "Platform",
+        "status": "Status",
+        "error": "Error",
+        "attempts": "Attempts",
+        "lastAttempt": "Last Attempt",
+        "retry": "Retry",
+        "ignore": "Ignore"
+      }
+    },
+    "toast": {
+      "forwardCreated": "Destination created",
+      "forwardCreateError": "Failed to create",
+      "forwardDeleted": "Destination deleted",
+      "forwardDeleteError": "Failed to delete",
+      "toggleError": "Operation failed",
+      "retryTriggered": "Retry triggered",
+      "retryError": "Retry failed",
+      "ignored": "Marked as ignored",
+      "ignoreError": "Operation failed",
+      "saveError": "Failed to save"
+    }
+  },
+  "invitations": {
+    "title": "Invitations",
+    "desc": "Invite organization members to join the current workspace.",
+    "inviteBtn": "Invite Member",
+    "modal": {
+      "title": "Invite Member",
+      "close": "✕",
+      "searchPlaceholder": "Search by name or email",
+      "noMembers": "No matching members",
+      "roleLabel": "Role",
+      "expiryLabel": "Expiry",
+      "expiry24h": "24 Hours",
+      "expiry3d": "3 Days",
+      "expiry7d": "7 Days",
+      "expiry30d": "30 Days",
+      "cancel": "Cancel",
+      "sendPending": "Sending...",
+      "send": "Send Invite {{suffix}}"
+    },
+    "list": {
+      "title": "Invitation Records",
+      "empty": "No invitations",
+      "table": {
+        "email": "Email",
+        "role": "Role",
+        "status": "Status",
+        "expiresAt": "Expires At",
+        "actions": "Actions",
+        "revoke": "Revoke"
+      }
+    },
+    "toast": {
+      "sent": "Invitation sent",
+      "sendError": "Failed to send",
+      "revoked": "Invitation revoked",
+      "revokeError": "Failed to revoke"
+    }
+  },
+  "workspaces": {
+    "title": "Workspaces",
+    "desc": "Manage workspace info, available models, and usage limits.",
+    "currentLabel": "Current Workspace",
+    "defaultOption": "Default Workspace",
+    "searchPlaceholder": "Search by name or workspace ID",
+    "createBtn": "Create Workspace ({{count}}/20)",
+    "loading": "Loading...",
+    "empty": "No matching workspaces",
+    "currentBadge": "Current",
+    "defaultBadge": "Default",
+    "table": {
+      "name": "Name",
+      "workspaceId": "Workspace ID",
+      "createdAt": "Created At",
+      "actions": "Actions",
+      "edit": "Edit"
+    },
+    "modal": {
+      "title": "Create Workspace",
+      "cancel": "Cancel",
+      "confirm": "Create",
+      "nameLabel": "Name",
+      "namePlaceholder": "e.g. Production App",
+      "slugLabel": "Slug",
+      "slugPlaceholder": "e.g. prod-app",
+      "descLabel": "Description (Optional)",
+      "descPlaceholder": "Describe the purpose..."
+    },
+    "toast": {
+      "createSuccess": "Workspace \"{{name}}\" created",
+      "createError": "Failed to create",
+      "nameRequired": "Workspace name cannot be empty",
+      "slugRequired": "Slug cannot be empty",
+      "slugFormat": "Slug only supports lowercase letters, numbers, and hyphens"
+    }
+  },
+  "platformConfig": {
+    "title": "API Debugger",
+    "desc": "Click 'Call' to send a request and view the actual response.",
+    "callBtn": "Call",
+    "recallBtn": "Recall",
+    "permPanel": {
+      "title": "Permission Reference"
+    },
+    "endpoints": {
+      "session": "Current Session",
+      "platformConfig": "Platform Config",
+      "tenants": "My Organizations",
+      "workspaces": "Workspace List",
+      "apiKeys": "API Key List",
+      "models": "Model Catalog",
+      "modelTags": "Model Tags"
+    },
+    "perm": {
+      "tenantType": "Tenant Type",
+      "tenantRole": "Organization Role",
+      "wsRole": "Workspace Role",
+      "personal": {
+        "desc": "Personal Account",
+        "perm1": "No Invitations in sidebar",
+        "perm2": "No Workspace Mgmt in Header",
+        "perm3": "No Org Settings in Header"
+      },
+      "enterprise": {
+        "desc": "Enterprise / Organization",
+        "perm1": "Invitations in sidebar",
+        "perm2": "Workspace Mgmt in Header",
+        "perm3": "Org Settings in Header"
+      },
+      "tenantOwner": {
+        "desc": "Owner",
+        "perm1": "View balance",
+        "perm2": "Invite Members tab",
+        "perm3": "Domain Config tab",
+        "perm4": "Change member roles",
+        "perm5": "Remove members"
+      },
+      "tenantAdmin": {
+        "desc": "Admin",
+        "perm1": "View balance",
+        "perm2": "Invite Members tab",
+        "perm3": "Domain Config tab",
+        "perm4": "Change member roles",
+        "perm5": "Remove members"
+      },
+      "tenantMember": {
+        "desc": "Member",
+        "perm1": "Balance hidden",
+        "perm2": "No Invite Members tab",
+        "perm3": "No Domain Config tab",
+        "perm4": "No role / remove actions"
+      },
+      "wsOwner": {
+        "desc": "Owner",
+        "perm1": "Revoke any invitation",
+        "perm2": "Change any member role"
+      },
+      "wsAdmin": {
+        "desc": "Admin",
+        "perm1": "Revoke any invitation",
+        "perm2": "Change any member role"
+      },
+      "wsMember": {
+        "desc": "Member",
+        "perm1": "Revoke own invitations only",
+        "perm2": "Cannot change roles"
+      }
+    }
+  },
+  "usage": {
+    "title": "Usage Analytics",
+    "desc": "View API calls, token usage, and cost trends.",
+    "noData": "No data",
+    "range": {
+      "7d": "Last 7 days",
+      "30d": "Last 30 days",
+      "90d": "Last 90 days"
+    },
+    "metric": {
+      "spend": "Spend",
+      "requests": "Requests",
+      "tokens": "Tokens"
+    },
+    "kpi": {
+      "spend": "Total Spend",
+      "requests": "Total Requests",
+      "tokens": "Total Tokens"
+    },
+    "chart": {
+      "trendTitle": "{{metric}} Trend",
+      "histogramTitle": "Request Distribution"
+    },
+    "error": {
+      "summary": "Failed to load summary.",
+      "series": "Failed to load trend data.",
+      "histogram": "Failed to load distribution data."
+    }
+  },
+  "chatTest": {
+    "title": "Chat Test",
+    "desc": "Select an API Key and model to test streaming chat.",
+    "placeholder": {
+      "key": "Select API Key",
+      "model": "Select Model"
+    },
+    "button": {
+      "clear": "Clear Chat",
+      "send": "Send",
+      "stop": "Stop"
+    },
+    "empty": "Select an API Key and model to start chatting",
+    "input": {
+      "placeholder": "Type a message, Enter to send, Shift+Enter for newline"
+    },
+    "toast": {
+      "noKey": "Please select an API Key",
+      "noModel": "Please select a model"
+    },
+    "footer": "Requests go directly to {{url}}/v1/chat/completions, bypassing the console backend."
+  },
+  "apiPlayground": {
+    "title": "API Playground",
+    "desc": "Test API calls with real keys and view raw request/response.",
+    "placeholder": {
+      "key": "Select API Key",
+      "model": "Select model"
+    },
+    "label": {
+      "model": "Model",
+      "requestBody": "Request Body (JSON)",
+      "response": "Response",
+      "curl": "cURL"
+    },
+    "option": {
+      "useBody": "Use model from request body"
+    },
+    "button": {
+      "send": "Send Request",
+      "reset": "Reset",
+      "copy": "Copy"
+    },
+    "empty": "Configure parameters and click Send Request",
+    "toast": {
+      "noKey": "Please select an API Key",
+      "invalidJson": "Invalid JSON in request body",
+      "copied": "Copied to clipboard"
+    }
+  },
+  "modelsCompare": {
+    "title": "Model Compare",
+    "desc": "Send the same prompt to up to {{max}} models and compare outputs.",
+    "placeholder": {
+      "search": "Search models..."
+    },
+    "button": {
+      "select": "Select Model"
+    },
+    "table": {
+      "attr": "Attribute"
+    },
+    "empty": {
+      "hint": "Select models from the left to start comparing",
+      "noMatch": "No matching models"
+    },
+    "error": {
+      "load": "Failed to load models. Please try again."
+    }
+  },
+  "modelsChat": {
+    "title": "Model Chat",
+    "desc": "Have a multi-turn conversation with a specific model.",
+    "button": {
+      "new": "New Chat"
+    },
+    "empty": "Select a conversation or create a new one",
+    "input": {
+      "placeholder": "Type a message..."
+    },
+    "thinking": "Thinking...",
+    "toast": {
+      "sendError": "Failed to send"
+    }
+  },
+  "modelsHistory": {
+    "title": "Chat History",
+    "desc": "View and continue previous model conversations.",
+    "empty": "No chat history",
+    "noTitle": "Untitled Chat",
+    "noMessages": "No messages",
+    "messageCount": "{{count}} messages",
+    "updatedAt": "Updated {{time}}",
+    "error": {
+      "load": "Failed to load history",
+      "loadDetail": "Failed to load conversation"
+    }
+  },
+  "modelsCatalog": {
+    "title": "Model Catalog",
+    "desc": "Browse all models supported by ModelGo — context length, pricing, and modalities.",
+    "placeholder.search": "Search model name, provider or ID",
+    "filter.all": "All",
+    "empty": "No matching models",
+    "error.load": "Failed to load model catalog. Please try again.",
+    "detail.title": "Model Detail",
+    "error.loadDetail": "Failed to load model detail. Please try again."
+  },
+  "dashboard": {
+    "section.integration": "Integration",
+    "section.guide": "Advanced Guide",
+    "kpi": {
+      "balance": "Available Balance",
+      "monthlySpend": "Monthly Spend",
+      "monthlyRequests": "Monthly Requests",
+      "monthlyTokens": "Monthly Tokens"
+    },
+    "recentLogs": {
+      "title": "Recent Call Logs",
+      "viewAll": "View All",
+      "requestId": "Request ID",
+      "model": "Model",
+      "status": "Status",
+      "duration": "Duration",
+      "time": "Time",
+      "empty": "No call records"
+    },
+    "usageChart": {
+      "title": "Usage Trend (Last 14 days)",
+      "requests": "Requests",
+      "empty": "No trend data",
+      "requestsLabel": "Requests"
+    }
+  },
+  "welcomeBanner": {
+    "greetingDomestic": "Hello, {{name}}",
+    "greetingGlobal": "Hello, {{name}}",
+    "greetingDefaultDomestic": "Hello, Developer",
+    "greetingDefaultGlobal": "Hello, Developer",
+    "brandNameDomestic": "Ciyuan Gongsheng",
+    "brandNameGlobal": "ModelGo",
+    "subTitleDomestic": "High-performance, compliant multi-model routing platform",
+    "subTitleGlobal": "Unified High-Performance Intelligent AI Routing Platform",
+    "descDomestic": "Welcome to the ModelGo developer console. Manage API keys, monitor usage and billing below. Use the CLI commands on the right to access multiple LLMs in under 1 minute.",
+    "descGlobal": "Welcome to the ModelGo workspace. Manage API keys, monitor requests, and check billing. Use the CLI commands on the right to auth and access models in less than a minute.",
+    "workspaceTagEnterpriseDomestic": "Enterprise Org",
+    "workspaceTagEnterpriseGlobal": "Enterprise Org",
+    "workspaceTagPersonalDomestic": "Personal Developer",
+    "workspaceTagPersonalGlobal": "Personal Developer"
+  },
+  "terminalSection": {
+    "toast.copied": "Code copied to clipboard",
+    "copied": "Copied",
+    "copy": "Copy"
+  },
+  "guideSection": {
+    "guide0.title": "Create & Manage API Keys",
+    "guide0.desc": "Get a secure, highly available Token Key in 5 minutes",
+    "guide1.title": "CLI One-Click Auth",
+    "guide1.desc": "Run modelgo-cli auth login, scan QR code in browser",
+    "guide2.title": "Bind Payment & Invoice",
+    "guide2.desc": "Secure payment and invoicing guide for CN and global markets",
+    "guide3.title": "Explore Cost-Effective Models",
+    "guide3.desc": "Aggregate top LLMs including Deepseek, Tongyi, and Qianwen"
+  },
+  "quickAccess": {
+    "sectionTitle": "Quick Access",
+    "link0.title": "Model Catalog",
+    "link0.desc": "Explore and manage available models",
+    "link1.title": "API Keys",
+    "link1.desc": "Create and manage access tokens",
+    "link2.title": "Usage Stats",
+    "link2.desc": "Monitor API calls and consumption",
+    "link3.title": "Billing",
+    "link3.desc": "Top up balance and download invoices",
+    "link4.title": "Guardrails",
+    "link4.desc": "Configure model filter rules",
+    "link5.title": "Observability",
+    "link5.desc": "View real-time call audit logs"
+  },
+  "device": {
+    "title.missingCode": "Invalid Authorization Link",
+    "title.invalidCode": "Invalid Authorization Code",
+    "title.checkingAuth": "Verifying Identity",
+    "title.success": "Authorization Successful",
+    "title.error": "Authorization Failed",
+    "title.confirm": "CLI Login Authorization",
+    "subtitle.confirm": "Please verify the details below, then click Approve",
+    "desc.missingCode": "This link is missing the authorization code. Please re-run the login command in your terminal.",
+    "desc.invalidCode": "The authorization code is invalid or corrupted. Please re-run the login command.",
+    "success.title": "ModelGo CLI has been authorized",
+    "success.desc": "You can return to your terminal. This page can be closed.",
+    "authNotice": "ModelGo CLI is requesting login authorization. After approval, the CLI will have the same access credentials as your current account.",
+    "codeLabel": "Authorization Code",
+    "button.cancel": "Cancel",
+    "button.approve": "Approve",
+    "button.approving": "Approving...",
+    "button.backToDashboard": "Back to Console",
+    "footer": "After authorization, the CLI will obtain login credentials. Please confirm it is you operating the terminal.",
+    "error.default": "Authorization failed, please try again",
+    "error.40401": "Authorization code does not exist or has expired. Please re-run the login command.",
+    "error.40901": "This authorization code has already been used.",
+    "error.40101": "Not logged in. Please refresh the page.",
+    "error.40302": "CSRF validation failed. Please refresh the page."
+  },
+  "models": {
+    "detail": {
+      "tabOverview": "Overview",
+      "tabProviders": "Providers & Availability",
+      "pricing": "Pricing",
+      "pricingInput": "Input",
+      "pricingOutput": "Output",
+      "pricingCacheRead": "Cache Read",
+      "specs": "Specs",
+      "contextLength": "Context Window",
+      "maxOutputTokens": "Max Output Tokens",
+      "zeroDataRetention": "Zero Data Retention",
+      "supported": "Supported",
+      "notSupported": "Not Supported",
+      "inRegionRouting": "In-Region Routing",
+      "releasedAt": "Released At",
+      "knowledgeCutoff": "Knowledge Cutoff",
+      "noProviders": "No providers available",
+      "providerEnabled": "Enabled",
+      "providerDisabled": "Disabled",
+      "uptime30d": "30-day Uptime",
+      "latencyP50": "P50 Latency",
+      "throughput": "Throughput"
+    },
+    "card": {
+      "context": "Context",
+      "inputPrice": "Input",
+      "outputPrice": "Output"
+    },
+    "modality": {
+      "text": "Text",
+      "image": "Image",
+      "audio": "Audio",
+      "video": "Video",
+      "embedding": "Embedding",
+      "reranker": "Reranker"
     }
   }
 }

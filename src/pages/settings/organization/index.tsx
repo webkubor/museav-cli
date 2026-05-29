@@ -26,9 +26,9 @@ import { appToast } from '@/lib/app-toast'
 const MAX_TENANTS = 5
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: 'var(--semi-color-bg-0)',
+  backgroundColor: 'var(--mg-bg-0)',
   borderRadius: '12px',
-  border: '1px solid var(--semi-color-fill-0)',
+  border: '1px solid var(--mg-fill-0)',
   overflow: 'hidden',
   boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
   marginBottom: '24px',
@@ -37,7 +37,7 @@ const cardStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = {
   fontSize: '12px',
   fontWeight: 600,
-  color: 'var(--semi-color-text-1)',
+  color: 'var(--mg-text-1)',
   display: 'block',
   marginBottom: '6px',
   textTransform: 'uppercase',
@@ -103,17 +103,17 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '20px 24px',
-        borderBottom: '1px solid var(--semi-color-fill-0)',
+        borderBottom: '1px solid var(--mg-fill-0)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)' }}>
+          <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--mg-text-0)' }}>
             我的组织
           </span>
           <span style={{
             fontSize: '12px',
-            color: atLimit ? '#ef4444' : 'var(--semi-color-text-2)',
-            backgroundColor: atLimit ? '#fef2f2' : 'var(--semi-color-bg-1)',
-            border: `1px solid ${atLimit ? '#fecaca' : 'var(--semi-color-border)'}`,
+            color: atLimit ? '#ef4444' : 'var(--mg-text-2)',
+            backgroundColor: atLimit ? '#fef2f2' : 'var(--mg-bg-1)',
+            border: `1px solid ${atLimit ? '#fecaca' : 'var(--mg-border)'}`,
             borderRadius: '100px',
             padding: '1px 8px',
             fontWeight: 500,
@@ -308,15 +308,15 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
           >
             <div style={{
               width: '72px', height: '72px', borderRadius: '16px', overflow: 'hidden',
-              position: 'relative', border: '2px solid var(--semi-color-fill-0)',
+              position: 'relative', border: '2px solid var(--mg-fill-0)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              backgroundColor: 'var(--semi-color-bg-1)',
+              backgroundColor: 'var(--mg-bg-1)',
               transition: 'border-color 0.15s',
-              borderColor: logoHover ? 'var(--semi-color-primary)' : undefined,
+              borderColor: logoHover ? 'var(--mg-primary)' : undefined,
             }}>
               {tenant?.logo_url
                 ? <img src={tenant.logo_url} alt={tenant.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--semi-color-text-1)' }}>{logoLetter}</span>
+                : <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--mg-text-1)' }}>{logoLetter}</span>
               }
               {(logoHover || logoMutation.isPending) && (
                 <div style={{
@@ -338,10 +338,10 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
             />
           </label>
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: '4px' }}>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--mg-text-0)', marginBottom: '4px' }}>
               {tenant?.name}
             </div>
-            <div style={{ fontSize: '12px', color: 'var(--semi-color-text-2)' }}>
+            <div style={{ fontSize: '12px', color: 'var(--mg-text-2)' }}>
               点击头像更换 · PNG/JPEG/WebP，最大 2MB
             </div>
           </div>
@@ -370,20 +370,20 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <span style={{ fontSize: '20px', fontWeight: 500, color: 'var(--semi-color-text-0)' }}>{tenant.name}</span>
-              <button type="button" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '12px', fontWeight: 500, color: 'var(--semi-color-primary)' }} onClick={() => { setName(tenant.name); setEditing(true) }}>更名</button>
+              <span style={{ fontSize: '20px', fontWeight: 500, color: 'var(--mg-text-0)' }}>{tenant.name}</span>
+              <button type="button" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '12px', fontWeight: 500, color: 'var(--mg-primary)' }} onClick={() => { setName(tenant.name); setEditing(true) }}>更名</button>
             </div>
           )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', paddingTop: '16px', borderTop: '1px solid var(--semi-color-fill-0)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', paddingTop: '16px', borderTop: '1px solid var(--mg-fill-0)' }}>
           <div>
             <label style={labelStyle}>Slug</label>
-            <span style={{ fontFamily: 'monospace', fontSize: '14px', color: 'var(--semi-color-text-0)' }}>{tenant.slug}</span>
+            <span style={{ fontFamily: 'monospace', fontSize: '14px', color: 'var(--mg-text-0)' }}>{tenant.slug}</span>
           </div>
           <div>
             <label style={labelStyle}>账户类型</label>
-            <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: '6px', fontSize: '13px', backgroundColor: 'rgba(var(--semi-color-primary-rgb, 99,102,241),0.06)', color: 'var(--semi-color-primary)', border: '1px solid rgba(var(--semi-color-primary-rgb, 99,102,241),0.2)' }}>
+            <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: '6px', fontSize: '13px', backgroundColor: 'rgba(var(--mg-primary-rgb, 99,102,241),0.06)', color: 'var(--mg-primary)', border: '1px solid rgba(var(--mg-primary-rgb, 99,102,241),0.2)' }}>
               {tenant.type === 'personal' ? '个人账户' : '企业组织'}
             </span>
           </div>
@@ -391,20 +391,20 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
             <label style={labelStyle}>Owner</label>
             {owner ? (
               <div>
-                <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--semi-color-text-0)' }}>{owner.account.display_name || '—'}</div>
-                <div style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginTop: '2px' }}>{owner.account.email}</div>
+                <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--mg-text-0)' }}>{owner.account.display_name || '—'}</div>
+                <div style={{ fontSize: '12px', color: 'var(--mg-text-2)', marginTop: '2px' }}>{owner.account.email}</div>
               </div>
             ) : (
-              <span style={{ fontSize: '14px', color: 'var(--semi-color-text-2)' }}>{membersQuery.isLoading ? '…' : '—'}</span>
+              <span style={{ fontSize: '14px', color: 'var(--mg-text-2)' }}>{membersQuery.isLoading ? '…' : '—'}</span>
             )}
           </div>
           <div>
             <label style={labelStyle}>最大工作区数</label>
-            <span style={{ fontSize: '14px', color: 'var(--semi-color-text-0)' }}>{tenant.max_workspaces}</span>
+            <span style={{ fontSize: '14px', color: 'var(--mg-text-0)' }}>{tenant.max_workspaces}</span>
           </div>
           <div>
             <label style={labelStyle}>最大成员数</label>
-            <span style={{ fontSize: '14px', color: 'var(--semi-color-text-0)' }}>{tenant.max_members}</span>
+            <span style={{ fontSize: '14px', color: 'var(--mg-text-0)' }}>{tenant.max_members}</span>
           </div>
         </div>
       </div>
@@ -440,9 +440,9 @@ function MembersTab({ tenantId }: { tenantId: string }) {
 
   return (
     <div style={cardStyle}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--semi-color-fill-0)' }}>
-        <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)' }}>组织成员</span>
-        <span style={{ fontSize: '12px', color: 'var(--semi-color-text-1)', padding: '2px 10px', borderRadius: '6px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--mg-fill-0)' }}>
+        <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--mg-text-0)' }}>组织成员</span>
+        <span style={{ fontSize: '12px', color: 'var(--mg-text-1)', padding: '2px 10px', borderRadius: '6px', border: '1px solid var(--mg-border)', backgroundColor: 'var(--mg-bg-1)' }}>
           {membersQuery.isLoading ? '…' : `${members.length} 位成员`}
         </span>
       </div>
@@ -469,8 +469,8 @@ function MembersTab({ tenantId }: { tenantId: string }) {
                   className="border-b border-gray-100/50 dark:border-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
                 >
                   <td className="py-3 px-4">
-                    <div style={{ fontWeight: 500, color: 'var(--semi-color-text-0)', fontSize: '14px' }}>{record.account.display_name || '—'}</div>
-                    <div style={{ color: 'var(--semi-color-text-1)', fontSize: '12px', marginTop: '2px' }}>{record.account.email}</div>
+                    <div style={{ fontWeight: 500, color: 'var(--mg-text-0)', fontSize: '14px' }}>{record.account.display_name || '—'}</div>
+                    <div style={{ color: 'var(--mg-text-1)', fontSize: '12px', marginTop: '2px' }}>{record.account.email}</div>
                   </td>
                   <td className="py-3 px-4">
                     {record.role === 'tenant_owner' ? (
@@ -561,9 +561,9 @@ function InviteTab({ tenantId }: { tenantId: string }) {
     <div style={{ maxWidth: '640px' }}>
       {/* ── 邀请配置 ──────────────────────────────── */}
       <div style={{ ...cardStyle, padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '24px' }}>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)', flexShrink: 0 }}>邀请配置</span>
+        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-1)', flexShrink: 0 }}>邀请配置</span>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 12px', height: '32px', borderRadius: '8px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)', fontSize: '12px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 12px', height: '32px', borderRadius: '8px', border: '1px solid var(--mg-border)', backgroundColor: 'var(--mg-bg-1)', fontSize: '12px', color: 'var(--mg-text-2)', fontWeight: 500 }}>
             初始角色
             <select
               value={inviteRole}
@@ -575,7 +575,7 @@ function InviteTab({ tenantId }: { tenantId: string }) {
               ))}
             </select>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 12px', height: '32px', borderRadius: '8px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)', fontSize: '12px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 12px', height: '32px', borderRadius: '8px', border: '1px solid var(--mg-border)', backgroundColor: 'var(--mg-bg-1)', fontSize: '12px', color: 'var(--mg-text-2)', fontWeight: 500 }}>
             有效期
             <select
               value={expiresInHours}
@@ -593,17 +593,17 @@ function InviteTab({ tenantId }: { tenantId: string }) {
 
       {/* ── 快速邀请链接 ──────────────────────────────────── */}
       <div style={cardStyle}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--semi-color-fill-0)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--mg-fill-0)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: '4px' }}>快速邀请链接</div>
-            <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>将此链接发送给同事，他们点击后可直接申请加入</span>
+            <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--mg-text-0)', marginBottom: '4px' }}>快速邀请链接</div>
+            <span style={{ color: 'var(--mg-text-1)', fontSize: '13px' }}>将此链接发送给同事，他们点击后可直接申请加入</span>
           </div>
           <Button variant="outline" className="h-8 text-xs font-semibold px-3" onClick={() => resetLink.mutate()}>重置链接</Button>
         </div>
         <div style={{ padding: '20px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-1)', fontFamily: 'monospace', fontSize: '13px', color: 'var(--semi-color-text-0)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {inviteLinkUrl ?? <span style={{ color: 'var(--semi-color-text-2)', fontStyle: 'italic' }}>加载中…</span>}
+            <div style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--mg-border)', backgroundColor: 'var(--mg-bg-1)', fontFamily: 'monospace', fontSize: '13px', color: 'var(--mg-text-0)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {inviteLinkUrl ?? <span style={{ color: 'var(--mg-text-2)', fontStyle: 'italic' }}>加载中…</span>}
             </div>
             <Button
               variant="default"
@@ -621,9 +621,9 @@ function InviteTab({ tenantId }: { tenantId: string }) {
 
       {/* ── 邮箱邀请 ─────────────────────────────────────── */}
       <div style={cardStyle}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--semi-color-fill-0)' }}>
-          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: '4px' }}>邮箱邀请</div>
-          <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13px' }}>直接向特定邮箱发送邀请邮件</span>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--mg-fill-0)' }}>
+          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--mg-text-0)', marginBottom: '4px' }}>邮箱邀请</div>
+          <span style={{ color: 'var(--mg-text-1)', fontSize: '13px' }}>直接向特定邮箱发送邀请邮件</span>
         </div>
         <div style={{ padding: '20px 24px', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
           <div style={{ flex: 1 }}>
@@ -658,10 +658,10 @@ function OrgManagePanel({ tenantId }: { tenantId: string }) {
         gap: '10px',
         marginBottom: '20px',
         paddingBottom: '16px',
-        borderBottom: '2px solid var(--semi-color-primary)',
+        borderBottom: '2px solid var(--mg-primary)',
       }}>
-        <span style={{ fontSize: '13px', color: 'var(--semi-color-text-2)' }}>正在管理：</span>
-        <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--semi-color-text-0)' }}>
+        <span style={{ fontSize: '13px', color: 'var(--mg-text-2)' }}>正在管理：</span>
+        <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--mg-text-0)' }}>
           {tenantName}
         </span>
         {tenant && <RoleBadge role={tenant.role} />}
@@ -719,10 +719,10 @@ export default function OrganizationSettingsPage() {
   return (
     <div>
       <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--mg-text-0)', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
           组织管理
         </h1>
-        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0 }}>
+        <p style={{ fontSize: '13px', color: 'var(--mg-text-1)', margin: 0 }}>
           一个账号最多创建 {MAX_TENANTS} 个组织，点击「管理」进入组织详情。
         </p>
       </div>

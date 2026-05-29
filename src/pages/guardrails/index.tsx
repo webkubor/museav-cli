@@ -1,8 +1,9 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog'
+import { Modal } from '@/components/ui/Modal'
 import { Switch } from '@/components/ui/Switch'
 import { Badge } from '@/components/ui/Badge'
 import {
@@ -26,6 +27,7 @@ import type { GuardrailDetail, CreateGuardrailRequest, UpdateGuardrailRequest } 
 import { formatDateTime } from '@/lib/format-date'
 
 export default function GuardrailsPage() {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
 
@@ -57,12 +59,12 @@ export default function GuardrailsPage() {
     mutationFn: (payload: CreateGuardrailRequest) =>
       createGuardrail(activeWorkspaceId!, payload),
     onSuccess: () => {
-      appToast.success('安全护栏已创建')
+      appToast.success(t('guardrails.toast.createSuccess'))
       closeModal()
       qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
     },
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : '创建失败')
+      appToast.error(err instanceof Error ? err.message : t('guardrails.toast.createError'))
     },
   })
 
@@ -70,24 +72,24 @@ export default function GuardrailsPage() {
     mutationFn: ({ id, payload }: { id: string; payload: UpdateGuardrailRequest }) =>
       updateGuardrail(id, payload),
     onSuccess: () => {
-      appToast.success('安全护栏已更新')
+      appToast.success(t('guardrails.toast.updateSuccess'))
       closeModal()
       qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
     },
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : '更新失败')
+      appToast.error(err instanceof Error ? err.message : t('guardrails.toast.updateError'))
     },
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteGuardrail(id),
     onSuccess: () => {
-      appToast.success('安全护栏已删除')
+      appToast.success(t('guardrails.toast.deleteSuccess'))
       setDeleteTarget(null)
       qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
     },
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : '删除失败')
+      appToast.error(err instanceof Error ? err.message : t('guardrails.toast.deleteError'))
     },
   })
 
@@ -98,7 +100,7 @@ export default function GuardrailsPage() {
       qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
     },
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : '操作失败')
+      appToast.error(err instanceof Error ? err.message : t('guardrails.toast.toggleError'))
     },
   })
 
@@ -127,7 +129,7 @@ export default function GuardrailsPage() {
 
   function handleSubmit() {
     if (!name.trim()) {
-      appToast.error('请输入名称')
+      appToast.error(t('guardrails.toast.nameRequired'))
       return
     }
 
@@ -155,9 +157,9 @@ export default function GuardrailsPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-start gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-semi-color-text-0">安全护栏</h1>
-          <p className="text-sm text-semi-color-text-1 mt-1.5 font-medium">
-            配置提示词防御规则，拦截恶意的提示注入、敏感词以及不受控制的模型输出。
+          <h1 className="text-2xl font-bold tracking-tight text-mg-text-0">{t('guardrails.title')}</h1>
+          <p className="text-sm text-mg-text-1 mt-1.5 font-medium">
+            {t('guardrails.desc')}
           </p>
         </div>
         <Button
@@ -166,55 +168,55 @@ export default function GuardrailsPage() {
           className="rounded-full px-5 h-10 shadow-lg shadow-brand-glow/20"
         >
           <LuPlus className="w-4 h-4 mr-1.5" />
-          创建护栏
+          {t('guardrails.create')}
         </Button>
       </div>
 
-      <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-semi-color-border overflow-hidden">
+      <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden">
         {isLoading ? (
           <div className="p-10 space-y-4 animate-pulse">
-            <div className="h-6 bg-semi-color-fill-0 rounded w-1/4" />
-            <div className="h-4 bg-semi-color-fill-0 rounded w-full" />
-            <div className="h-4 bg-semi-color-fill-0 rounded w-5/6" />
+            <div className="h-6 bg-mg-fill-0 rounded w-1/4" />
+            <div className="h-4 bg-mg-fill-0 rounded w-full" />
+            <div className="h-4 bg-mg-fill-0 rounded w-5/6" />
           </div>
         ) : guardrails.length === 0 ? (
-          <div className="py-20 text-center text-xs italic text-semi-color-text-2">
-            暂无安全护栏，点击右上角创建一个
+          <div className="py-20 text-center text-xs italic text-mg-text-2">
+            {t('guardrails.empty')}
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>名称</TableHead>
-                <TableHead>描述</TableHead>
-                <TableHead>优先级</TableHead>
-                <TableHead>默认应用</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead>创建时间</TableHead>
+                <TableHead>{t('guardrails.table.name')}</TableHead>
+                <TableHead>{t('guardrails.table.desc')}</TableHead>
+                <TableHead>{t('guardrails.table.priority')}</TableHead>
+                <TableHead>{t('guardrails.table.isDefault')}</TableHead>
+                <TableHead>{t('guardrails.table.status')}</TableHead>
+                <TableHead>{t('guardrails.table.createdAt')}</TableHead>
                 <TableHead className="text-right"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {guardrails.map((row) => (
                 <TableRow key={row.id}>
-                  <TableCell className="font-semibold text-semi-color-text-0 text-[13.5px]">
+                  <TableCell className="font-semibold text-mg-text-0 text-[13.5px]">
                     {row.name}
                   </TableCell>
-                  <TableCell className="text-xs text-semi-color-text-1 max-w-xs truncate">
-                    {row.description || <span className="text-semi-color-text-2">—</span>}
+                  <TableCell className="text-xs text-mg-text-1 max-w-xs truncate">
+                    {row.description || <span className="text-mg-text-2">—</span>}
                   </TableCell>
-                  <TableCell className="text-xs text-semi-color-text-1">
+                  <TableCell className="text-xs text-mg-text-1">
                     {row.priority}
                   </TableCell>
                   <TableCell>
                     <Badge variant={row.is_default ? 'success' : 'outline'}>
-                      {row.is_default ? '默认应用' : '可选'}
+                      {row.is_default ? t('guardrails.table.defaultBadge') : t('guardrails.table.optionalBadge')}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Switch
                       checked={row.status === 'active'}
-                      onCheckedChange={(checked) =>
+                      onChange={(checked) =>
                         toggleMutation.mutate({
                           id: row.id,
                           status: checked ? 'active' : 'inactive',
@@ -222,7 +224,7 @@ export default function GuardrailsPage() {
                       }
                     />
                   </TableCell>
-                  <TableCell className="text-xs text-semi-color-text-2">
+                  <TableCell className="text-xs text-mg-text-2">
                     {formatDateTime(row.created_at)}
                   </TableCell>
                   <TableCell className="text-right">
@@ -234,7 +236,7 @@ export default function GuardrailsPage() {
                         className="h-7 text-xs font-semibold"
                       >
                         <LuSettings className="w-3.5 h-3.5 mr-1" />
-                        配置
+                        {t('guardrails.table.configure')}
                       </Button>
                       <Button
                         size="sm"
@@ -242,7 +244,7 @@ export default function GuardrailsPage() {
                         onClick={() => setDeleteTarget({ id: row.id, name: row.name })}
                         className="h-7 text-xs"
                       >
-                        删除
+                        {t('guardrails.table.delete')}
                       </Button>
                     </div>
                   </TableCell>
@@ -253,77 +255,78 @@ export default function GuardrailsPage() {
         )}
       </div>
 
-      {/* Form Dialog */}
-      <Dialog open={modalVisible} onOpenChange={setModalVisible}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>{editingGuardrail ? '配置护栏' : '创建护栏'}</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-5 py-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-semi-color-text-1 mb-2">名称</label>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="例如：提示词注入防御"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-semi-color-text-1 mb-2">优先级</label>
-                <Input
-                  type="number"
-                  value={priority}
-                  onChange={(e) => setPriority(Number(e.target.value))}
-                  placeholder="例如：0"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-semi-color-text-1 mb-2">描述 (可选)</label>
-              <Input
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="对此安全规则进行简要描述"
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-4 rounded-lg border border-semi-color-border bg-semi-color-bg-1/40">
-              <div>
-                <label className="block text-xs font-bold text-semi-color-text-0 mb-0.5">默认应用</label>
-                <span className="text-[11px] text-semi-color-text-2">自动应用此护栏到所有模型请求</span>
-              </div>
-              <Switch checked={isDefault} onCheckedChange={setIsDefault} />
-            </div>
-          </div>
-          <DialogFooter className="mt-4">
+      {/* Form Modal */}
+      <Modal
+        open={modalVisible}
+        onClose={closeModal}
+        title={editingGuardrail ? t('guardrails.modal.editTitle') : t('guardrails.modal.createTitle')}
+        size="md"
+        footer={
+          <>
             <Button variant="outline" onClick={closeModal}>
-              取消
+              {t('guardrails.modal.cancel')}
             </Button>
             <Button
               variant="brand"
               loading={createMutation.isPending || updateMutation.isPending}
               onClick={handleSubmit}
             >
-              {editingGuardrail ? '保存修改' : '确认创建'}
+              {editingGuardrail ? t('guardrails.modal.saveEdit') : t('guardrails.modal.confirmCreate')}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-5 py-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.nameLabel')}</label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t('guardrails.form.namePlaceholder')}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.priorityLabel')}</label>
+              <Input
+                type="number"
+                value={priority}
+                onChange={(e) => setPriority(Number(e.target.value))}
+                placeholder={t('guardrails.form.priorityPlaceholder')}
+              />
+            </div>
+          </div>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>删除护栏</DialogTitle>
-            <DialogDescription>
-              确定要删除安全护栏「{deleteTarget?.name}」吗？此操作不可撤销。
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="mt-4">
+          <div>
+            <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.descLabel')}</label>
+            <Input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={t('guardrails.form.descPlaceholder')}
+            />
+          </div>
+
+          <div className="flex items-center justify-between p-4 rounded-lg border border-mg-border bg-mg-bg-1/40">
+            <div>
+              <label className="block text-xs font-bold text-mg-text-0 mb-0.5">{t('guardrails.form.isDefaultLabel')}</label>
+              <span className="text-[11px] text-mg-text-2">{t('guardrails.form.isDefaultHint')}</span>
+            </div>
+            <Switch checked={isDefault} onChange={setIsDefault} />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title={t('guardrails.deleteModal.title')}
+        description={t('guardrails.deleteModal.description', { name: deleteTarget?.name })}
+        size="sm"
+        footer={
+          <>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              取消
+              {t('guardrails.deleteModal.cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -334,11 +337,11 @@ export default function GuardrailsPage() {
                 }
               }}
             >
-              确认删除
+              {t('guardrails.deleteModal.confirm')}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      />
     </div>
   )
 }

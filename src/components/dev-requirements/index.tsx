@@ -10,9 +10,9 @@ const PRIORITY_LABEL: Record<Requirement['priority'], string> = {
 }
 
 const PRIORITY_COLOR: Record<Requirement['priority'], string> = {
-  high: 'var(--semi-color-danger)',
-  medium: 'var(--semi-color-warning)',
-  low: 'var(--semi-color-text-2)',
+  high: 'var(--mg-danger)',
+  medium: 'var(--mg-warning)',
+  low: 'var(--mg-text-2)',
 }
 
 async function post(body: object) {
@@ -278,7 +278,7 @@ export function DevRequirements() {
             writingMode: 'vertical-rl',
             textOrientation: 'mixed',
             padding: '12px 7px',
-            background: 'var(--semi-color-primary)',
+            background: 'var(--mg-primary)',
             color: '#fff',
             border: 'none',
             borderRadius: '8px',
@@ -313,7 +313,7 @@ export function DevRequirements() {
           {pending.length > 0 && (
             <span style={{
               writingMode: 'horizontal-tb',
-              background: 'var(--semi-color-danger)',
+              background: 'var(--mg-danger)',
               borderRadius: 10,
               minWidth: 18,
               height: 18,
@@ -334,8 +334,8 @@ export function DevRequirements() {
         <div style={{
           width: panelW,
           height: panelH,
-          background: 'var(--semi-color-bg-1)',
-          border: '1px solid var(--semi-color-border)',
+          background: 'var(--mg-bg-1)',
+          border: '1px solid var(--mg-border)',
           borderRadius: maximized ? '12px' : '8px 0 0 8px',
           boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
           display: 'flex',
@@ -348,31 +348,31 @@ export function DevRequirements() {
             onMouseDown={handleMouseDown}
             style={{
               padding: '10px 14px',
-              borderBottom: '1px solid var(--semi-color-border)',
+              borderBottom: '1px solid var(--mg-border)',
               display: 'flex',
               alignItems: 'center',
               cursor: 'grab',
               userSelect: 'none',
               gap: 10,
-              background: 'var(--semi-color-bg-2)',
+              background: 'var(--mg-bg-2)',
             }}
           >
             {/* grip */}
             <span style={{ display: 'flex', flexDirection: 'column', gap: 3, opacity: 0.45, flexShrink: 0 }}>
               {[0,1,2].map(i => (
-                <span key={i} style={{ display: 'block', width: 18, height: 2, background: 'var(--semi-color-text-0)', borderRadius: 2 }} />
+                <span key={i} style={{ display: 'block', width: 18, height: 2, background: 'var(--mg-text-0)', borderRadius: 2 }} />
               ))}
             </span>
 
             {/* 标题 */}
-            <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--semi-color-text-0)', flex: 1 }}>
+            <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--mg-text-0)', flex: 1 }}>
               需求看板
             </span>
             {pending.length > 0 && (
               <span style={{
                 fontSize: 11,
-                color: 'var(--semi-color-primary)',
-                background: 'var(--semi-color-primary-light-default)',
+                color: 'var(--mg-primary)',
+                background: 'var(--mg-primary-light)',
                 padding: '1px 8px',
                 borderRadius: 10,
                 fontWeight: 600,
@@ -390,7 +390,7 @@ export function DevRequirements() {
                 title={maximized ? '还原' : '最大化'}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'var(--semi-color-text-2)', fontSize: 14, lineHeight: 1,
+                  color: 'var(--mg-text-2)', fontSize: 14, lineHeight: 1,
                   padding: '3px 5px', borderRadius: 4,
                   display: 'flex', alignItems: 'center',
                 }}
@@ -403,7 +403,7 @@ export function DevRequirements() {
                 title="收起"
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'var(--semi-color-text-2)', fontSize: 16, lineHeight: 1,
+                  color: 'var(--mg-text-2)', fontSize: 16, lineHeight: 1,
                   padding: '2px 4px', borderRadius: 4,
                 }}
               >
@@ -413,7 +413,7 @@ export function DevRequirements() {
           </div>
 
           {/* 录入区 */}
-          <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--mg-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
             <input
               ref={inputRef}
               value={title}
@@ -424,10 +424,10 @@ export function DevRequirements() {
                 flex: 1,
                 padding: '8px 12px',
                 fontSize: 14,
-                background: 'var(--semi-color-bg-2)',
-                border: '1px solid var(--semi-color-border)',
+                background: 'var(--mg-bg-2)',
+                border: '1px solid var(--mg-border)',
                 borderRadius: 6,
-                color: 'var(--semi-color-text-0)',
+                color: 'var(--mg-text-0)',
                 outline: 'none',
               }}
             />
@@ -437,8 +437,8 @@ export function DevRequirements() {
               style={{
                 padding: '8px 6px',
                 fontSize: 14,
-                background: 'var(--semi-color-bg-2)',
-                border: '1px solid var(--semi-color-border)',
+                background: 'var(--mg-bg-2)',
+                border: '1px solid var(--mg-border)',
                 borderRadius: 6,
                 color: PRIORITY_COLOR[priority],
                 fontWeight: 600,
@@ -457,8 +457,8 @@ export function DevRequirements() {
                 padding: '8px 16px',
                 fontSize: 14,
                 fontWeight: 600,
-                background: title.trim() ? 'var(--semi-color-primary)' : 'var(--semi-color-disabled-border)',
-                color: title.trim() ? '#fff' : 'var(--semi-color-disabled-text)',
+                background: title.trim() ? 'var(--mg-primary)' : 'var(--mg-disabled-border)',
+                color: title.trim() ? '#fff' : 'var(--mg-disabled-text)',
                 border: 'none',
                 borderRadius: 6,
                 cursor: title.trim() ? 'pointer' : 'default',
@@ -472,14 +472,14 @@ export function DevRequirements() {
           {/* 列表 */}
           <div style={{ overflowY: 'auto', flex: 1, padding: '4px 0' }}>
             {items.length === 0 && (
-              <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: 13 }}>
+              <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--mg-text-2)', fontSize: 13 }}>
                 暂无需求条目
               </div>
             )}
 
             {pending.length > 0 && (
               <div>
-                <div style={{ padding: '8px 14px 4px', fontSize: 11, color: 'var(--semi-color-text-3)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                <div style={{ padding: '8px 14px 4px', fontSize: 11, color: 'var(--mg-text-3)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>
                   待处理 · {pending.length}
                 </div>
                 {pending.map((item) => (
@@ -490,7 +490,7 @@ export function DevRequirements() {
 
             {done.length > 0 && (
               <div style={{ marginTop: pending.length > 0 ? 6 : 0 }}>
-                <div style={{ padding: '8px 14px 4px', fontSize: 11, color: 'var(--semi-color-text-3)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                <div style={{ padding: '8px 14px 4px', fontSize: 11, color: 'var(--mg-text-3)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>
                   已完成 · {done.length}
                 </div>
                 {done.map((item) => (
@@ -519,7 +519,7 @@ export function DevRequirements() {
             title="拖拽缩放"
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <path d="M1 9L9 1M5 9L9 5M1 5L5 1" stroke="var(--semi-color-text-3)" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M1 9L9 1M5 9L9 5M1 5L5 1" stroke="var(--mg-text-3)" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </div>
         </div>
@@ -582,12 +582,12 @@ function ReqItem({
         alignItems: 'flex-start',
         gap: 10,
         background: isDragOver
-          ? 'var(--semi-color-primary-light-default)'
+          ? 'var(--mg-primary-light)'
           : hovered
-          ? 'var(--semi-color-bg-2)'
+          ? 'var(--mg-bg-2)'
           : 'transparent',
         opacity: isDragging ? 0.35 : 1,
-        borderTop: isDragOver ? '2px solid var(--semi-color-primary)' : '2px solid transparent',
+        borderTop: isDragOver ? '2px solid var(--mg-primary)' : '2px solid transparent',
         transition: 'background 0.1s, opacity 0.15s',
       }}
     >
@@ -599,7 +599,7 @@ function ReqItem({
         style={{
           flexShrink: 0,
           fontSize: 15,
-          color: hovered ? 'var(--semi-color-text-1)' : 'var(--semi-color-text-3)',
+          color: hovered ? 'var(--mg-text-1)' : 'var(--mg-text-3)',
           cursor: 'grab',
           lineHeight: '20px',
           marginTop: 0,
@@ -620,8 +620,8 @@ function ReqItem({
           width: 18,
           height: 18,
           borderRadius: '50%',
-          border: `2px solid ${item.status === 'done' ? 'var(--semi-color-success)' : 'var(--semi-color-border)'}`,
-          background: item.status === 'done' ? 'var(--semi-color-success)' : 'transparent',
+          border: `2px solid ${item.status === 'done' ? 'var(--mg-success)' : 'var(--mg-border)'}`,
+          background: item.status === 'done' ? 'var(--mg-success)' : 'transparent',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
@@ -649,10 +649,10 @@ function ReqItem({
               width: '100%',
               fontSize: 14,
               padding: '3px 6px',
-              border: '1px solid var(--semi-color-primary)',
+              border: '1px solid var(--mg-primary)',
               borderRadius: 4,
-              background: 'var(--semi-color-bg-0)',
-              color: 'var(--semi-color-text-0)',
+              background: 'var(--mg-bg-0)',
+              color: 'var(--mg-text-0)',
               outline: 'none',
             }}
           />
@@ -662,7 +662,7 @@ function ReqItem({
             title="双击编辑"
             style={{
               fontSize: 14,
-              color: item.status === 'done' ? 'var(--semi-color-text-2)' : 'var(--semi-color-text-0)',
+              color: item.status === 'done' ? 'var(--mg-text-2)' : 'var(--mg-text-0)',
               textDecoration: item.status === 'done' ? 'line-through' : 'none',
               wordBreak: 'break-all',
               display: 'block',
@@ -687,7 +687,7 @@ function ReqItem({
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: 'var(--semi-color-text-2)',
+              color: 'var(--mg-text-2)',
               fontSize: 15,
               lineHeight: 1,
               padding: 0,

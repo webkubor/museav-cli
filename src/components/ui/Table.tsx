@@ -24,7 +24,7 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b border-semi-color-border/60 bg-semi-color-fill-0/30", className)} {...props} />
+  <thead ref={ref} className={cn("[&_tr]:border-b border-mg-border/60 bg-mg-fill-0/30", className)} {...props} />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -47,7 +47,7 @@ const TableFooter = React.forwardRef<
   <tfoot
     ref={ref}
     className={cn(
-      "border-t border-semi-color-border bg-semi-color-fill-0 font-medium [&>tr]:last:border-b-0",
+      "border-t border-mg-border bg-mg-fill-0 font-medium [&>tr]:last:border-b-0",
       className
     )}
     {...props}
@@ -62,7 +62,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "border-b border-semi-color-border/40 transition-colors duration-200 hover:bg-semi-color-fill-0/50 data-[state=selected]:bg-semi-color-fill-1",
+      "border-b border-mg-border/40 transition-colors duration-200 hover:bg-mg-fill-0/50 data-[state=selected]:bg-mg-fill-1",
       className
     )}
     {...props}
@@ -77,7 +77,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-11 px-4 text-left align-middle font-bold text-semi-color-text-2 [&:has([role=checkbox])]:pr-0 select-none tracking-tight",
+      "h-11 px-4 text-left align-middle font-bold text-mg-text-2 [&:has([role=checkbox])]:pr-0 select-none tracking-tight",
       className
     )}
     {...props}
@@ -92,7 +92,7 @@ const TableCell = React.forwardRef<
   <td
     ref={ref}
     className={cn(
-      "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-[13px] text-semi-color-text-1 leading-relaxed",
+      "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-[13px] text-mg-text-1 leading-relaxed",
       className
     )}
     {...props}
@@ -106,7 +106,7 @@ const TableCaption = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <caption
     ref={ref}
-    className={cn("mt-4 text-sm text-semi-color-text-2", className)}
+    className={cn("mt-4 text-sm text-mg-text-2", className)}
     {...props}
   />
 ))

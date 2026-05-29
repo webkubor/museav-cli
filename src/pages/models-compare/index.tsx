@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { LuSearch, LuPlus, LuX } from 'react-icons/lu'
@@ -32,6 +33,7 @@ interface ModelPickerProps {
 }
 
 function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: ModelPickerProps) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
 
   const filtered = models.filter((m) =>
@@ -40,20 +42,20 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
 
   if (selected) {
     return (
-      <div className="border border-[var(--semi-color-border)] rounded-xl p-4 bg-card-bg min-h-[120px] relative">
+      <div className="border border-[var(--mg-border)] rounded-xl p-4 bg-card-bg min-h-[120px] relative">
         <button
           onClick={onClear}
-          className="absolute top-2.5 right-2.5 bg-none border-none cursor-pointer text-[var(--semi-color-text-2)] hover:text-[var(--semi-color-text-1)] p-0.5 flex items-center transition-colors"
+          className="absolute top-2.5 right-2.5 bg-none border-none cursor-pointer text-[var(--mg-text-2)] hover:text-[var(--mg-text-1)] p-0.5 flex items-center transition-colors"
         >
           <LuX size={14} />
         </button>
         {selected.logo_url && (
           <img src={selected.logo_url} alt="" className="w-7 h-7 rounded-md mb-2 object-contain" />
         )}
-        <div className="font-semibold text-sm text-[var(--semi-color-text-0)] mb-1">
+        <div className="font-semibold text-sm text-[var(--mg-text-0)] mb-1">
           {selected.display_name}
         </div>
-        <div className="text-[11px] text-[var(--semi-color-text-2)] font-mono mb-1.5 truncate">
+        <div className="text-[11px] text-[var(--mg-text-2)] font-mono mb-1.5 truncate">
           {selected.model_id}
         </div>
         <div className="flex gap-1 flex-wrap">
@@ -69,19 +71,19 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full border-2 border-dashed border-[var(--semi-color-border)] rounded-xl p-6 bg-transparent cursor-pointer flex flex-col items-center gap-2 text-[var(--semi-color-text-2)] hover:border-[var(--brand-base)] hover:text-[var(--brand-base)] hover:bg-[var(--semi-color-fill-0)]/50 transition-all duration-150"
+        className="w-full border-2 border-dashed border-[var(--mg-border)] rounded-xl p-6 bg-transparent cursor-pointer flex flex-col items-center gap-2 text-[var(--mg-text-2)] hover:border-[var(--brand-base)] hover:text-[var(--brand-base)] hover:bg-[var(--mg-fill-0)]/50 transition-all duration-150"
       >
         <LuPlus size={20} />
-        <span className="text-[13px]">选择模型</span>
+        <span className="text-[13px]">{t('modelsCompare.button.select')}</span>
       </button>
 
       {open && (
-        <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-card-bg border border-[var(--semi-color-border)] rounded-lg shadow-lg z-50 max-h-[280px] overflow-hidden flex flex-col animate-[fadeIn_0.15s_ease-out]">
-          <div className="p-2 border-b border-[var(--semi-color-border)] bg-[var(--semi-color-fill-0)]">
+        <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-card-bg border border-[var(--mg-border)] rounded-lg shadow-lg z-50 max-h-[280px] overflow-hidden flex flex-col animate-[fadeIn_0.15s_ease-out]">
+          <div className="p-2 border-b border-[var(--mg-border)] bg-[var(--mg-fill-0)]">
             <div className="relative w-full">
-              <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--semi-color-text-2)] w-3.5 h-3.5" />
+              <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--mg-text-2)] w-3.5 h-3.5" />
               <Input
-                placeholder="搜索模型..."
+                placeholder={t('modelsCompare.placeholder.search')}
                 className="pl-8.5 pr-3 h-8 text-xs rounded-md"
                 value={search}
                 onChange={(e) => onSearch(e.target.value)}
@@ -94,22 +96,22 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
               <div
                 key={m.model_id}
                 onClick={() => { onSelect(m); setOpen(false); onSearch('') }}
-                className="px-3 py-2 cursor-pointer flex items-center gap-2 hover:bg-[var(--semi-color-fill-0)] transition-colors"
+                className="px-3 py-2 cursor-pointer flex items-center gap-2 hover:bg-[var(--mg-fill-0)] transition-colors"
               >
                 {m.logo_url && <img src={m.logo_url} alt="" className="w-5 h-5 rounded object-contain flex-shrink-0" />}
                 <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-medium text-[var(--semi-color-text-0)] truncate">
+                  <div className="text-[13px] font-medium text-[var(--mg-text-0)] truncate">
                     {m.display_name}
                   </div>
-                  <div className="text-[11px] text-[var(--semi-color-text-2)] truncate font-mono">
+                  <div className="text-[11px] text-[var(--mg-text-2)] truncate font-mono">
                     {m.model_id}
                   </div>
                 </div>
               </div>
             ))}
             {filtered.length === 0 && (
-              <div className="p-4 text-center text-[13px] text-[var(--semi-color-text-2)]">
-                未找到匹配模型
+              <div className="p-4 text-center text-[13px] text-[var(--mg-text-2)]">
+                {t('modelsCompare.empty.noMatch')}
               </div>
             )}
           </div>
@@ -118,15 +120,6 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
     </div>
   )
 }
-
-const ROWS: Array<{ label: string; key: keyof CatalogModelItem | 'pricing_input' | 'pricing_output' }> = [
-  { label: '上下文长度', key: 'context_length' },
-  { label: '最大输出', key: 'max_output_tokens' },
-  { label: '模态', key: 'modalities' },
-  { label: '输入价格 / 1M tokens', key: 'pricing_input' },
-  { label: '输出价格 / 1M tokens', key: 'pricing_output' },
-  { label: '标签', key: 'tags' },
-]
 
 function renderCell(model: CatalogModelItem, key: string) {
   if (key === 'pricing_input') return formatPrice(model.pricing?.input_per_1m)
@@ -159,6 +152,7 @@ const Spinner = () => (
 )
 
 export default function ModelsComparePage() {
+  const { t } = useTranslation()
   const [slots, setSlots] = useState<Array<CatalogModelItem | null>>([null, null, null])
   const [searches, setSearches] = useState(['', '', ''])
 
@@ -180,14 +174,23 @@ export default function ModelsComparePage() {
   const selectedModels = slots.filter((s): s is CatalogModelItem => s !== null)
   const hasAny = selectedModels.length > 0
 
+  const ROWS: Array<{ labelKey: string; key: keyof CatalogModelItem | 'pricing_input' | 'pricing_output' }> = [
+    { labelKey: 'modelsCompare.row.contextLength', key: 'context_length' },
+    { labelKey: 'modelsCompare.row.maxOutput', key: 'max_output_tokens' },
+    { labelKey: 'modelsCompare.row.modalities', key: 'modalities' },
+    { labelKey: 'modelsCompare.row.inputPrice', key: 'pricing_input' },
+    { labelKey: 'modelsCompare.row.outputPrice', key: 'pricing_output' },
+    { labelKey: 'modelsCompare.row.tags', key: 'tags' },
+  ]
+
   return (
     <div>
       <div className="mb-7">
-        <h1 className="text-2xl font-bold text-[var(--semi-color-text-0)] m-0 mb-1.5 tracking-tight">
-          模型对比
+        <h1 className="text-2xl font-bold text-[var(--mg-text-0)] m-0 mb-1.5 tracking-tight">
+          {t('modelsCompare.title')}
         </h1>
-        <p className="text-[13px] text-[var(--semi-color-text-1)] m-0">
-          最多同时对比 {MAX_COMPARE} 个模型的规格与定价。
+        <p className="text-[13px] text-[var(--mg-text-1)] m-0">
+          {t('modelsCompare.desc', { max: MAX_COMPARE })}
         </p>
       </div>
 
@@ -196,7 +199,7 @@ export default function ModelsComparePage() {
           <Spinner />
         </div>
       ) : modelsQuery.isError ? (
-        <div className="text-red-500 text-[13px] py-6">加载模型列表失败，请稍后重试。</div>
+        <div className="text-[var(--mg-danger)] text-[13px] py-6">{t('modelsCompare.error.load')}</div>
       ) : (
         <div>
           {/* Picker row */}
@@ -216,24 +219,24 @@ export default function ModelsComparePage() {
 
           {/* Comparison table */}
           {hasAny && (
-            <div className="border border-[var(--semi-color-border)] rounded-xl overflow-hidden shadow-sm bg-card-bg">
+            <div className="border border-[var(--mg-border)] rounded-xl overflow-hidden shadow-sm bg-card-bg">
               {/* Header */}
               <div
-                className="grid items-center border-b border-[var(--semi-color-border)] bg-[var(--semi-color-fill-0)]"
+                className="grid items-center border-b border-[var(--mg-border)] bg-[var(--mg-fill-0)]"
                 style={{
                   gridTemplateColumns: `180px repeat(${selectedModels.length}, 1fr)`,
                 }}
               >
-                <div className="p-3.5 px-4 text-xs font-semibold text-[var(--semi-color-text-2)]">
-                  属性
+                <div className="p-3.5 px-4 text-xs font-semibold text-[var(--mg-text-2)]">
+                  {t('modelsCompare.table.attr')}
                 </div>
                 {selectedModels.map((m) => (
-                  <div key={m.model_id} className="p-3.5 px-4 border-l border-[var(--semi-color-border)]">
+                  <div key={m.model_id} className="p-3.5 px-4 border-l border-[var(--mg-border)]">
                     <div className="flex items-center gap-2">
                       {m.logo_url && <img src={m.logo_url} alt="" className="w-5.5 h-5.5 rounded object-contain" />}
                       <div className="min-w-0">
-                        <div className="font-bold text-[13px] text-[var(--semi-color-text-0)] truncate">{m.display_name}</div>
-                        <div className="text-[10px] text-[var(--semi-color-text-2)] font-mono truncate">{m.vendor}</div>
+                        <div className="font-bold text-[13px] text-[var(--mg-text-0)] truncate">{m.display_name}</div>
+                        <div className="text-[10px] text-[var(--mg-text-2)] font-mono truncate">{m.vendor}</div>
                       </div>
                     </div>
                   </div>
@@ -245,19 +248,19 @@ export default function ModelsComparePage() {
                 <div
                   key={row.key}
                   className={cn(
-                    "grid items-center border-b border-[var(--semi-color-border)]",
+                    "grid items-center border-b border-[var(--mg-border)]",
                     rowIdx === ROWS.length - 1 && "border-none",
-                    rowIdx % 2 === 0 ? "bg-transparent" : "bg-[var(--semi-color-fill-0)]/50"
+                    rowIdx % 2 === 0 ? "bg-transparent" : "bg-[var(--mg-fill-0)]/50"
                   )}
                   style={{
                     gridTemplateColumns: `180px repeat(${selectedModels.length}, 1fr)`,
                   }}
                 >
-                  <div className="p-3.5 px-4 text-xs font-semibold text-[var(--semi-color-text-1)]">
-                    {row.label}
+                  <div className="p-3.5 px-4 text-xs font-semibold text-[var(--mg-text-1)]">
+                    {t(row.labelKey)}
                   </div>
                   {selectedModels.map((m) => (
-                    <div key={m.model_id} className="p-3.5 px-4 border-l border-[var(--semi-color-border)] text-[13px] text-[var(--semi-color-text-0)] flex items-center">
+                    <div key={m.model_id} className="p-3.5 px-4 border-l border-[var(--mg-border)] text-[13px] text-[var(--mg-text-0)] flex items-center">
                       {renderCell(m, row.key)}
                     </div>
                   ))}
@@ -268,8 +271,8 @@ export default function ModelsComparePage() {
 
           {!hasAny && (
             <div className="text-center py-12">
-              <span className="text-[var(--semi-color-text-2)] text-[13px]">
-                请在上方选择至少一个模型开始对比
+              <span className="text-[var(--mg-text-2)] text-[13px]">
+                {t('modelsCompare.empty.hint')}
               </span>
             </div>
           )}

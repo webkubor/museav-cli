@@ -5,6 +5,7 @@
  * API：本身无直接接口调用，通过引入各个高内聚子组件（WelcomeBanner, KpiSection, GuideSection）拼装完整面板
  */
 
+import { useTranslation } from 'react-i18next'
 import { WelcomeBanner } from '@/features/dashboard/components/WelcomeBanner'
 import { KpiSection } from '@/features/dashboard/components/KpiSection'
 import { GuideSection } from '@/features/dashboard/components/GuideSection'
@@ -18,6 +19,8 @@ import { RecentActivitySection } from '@/features/dashboard/components/RecentAct
  * 采用极雅多层级响应式结构，平铺展示核心开发总览
  */
 export default function DashboardPage() {
+  const { t } = useTranslation()
+
   return (
     <div style={{ paddingBottom: '40px' }}>
       {/* 1. 欢迎横幅 */}
@@ -42,7 +45,7 @@ export default function DashboardPage() {
         <div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', height: '100%' }}>
             <div style={{ flex: 1 }}>
-              <h3 style={{ marginBottom: '16px', fontWeight: 700, fontSize: '16px', color: 'var(--semi-color-text-0)', margin: 0 }}>接入示例</h3>
+              <h3 style={{ marginBottom: '16px', fontWeight: 700, fontSize: '16px', color: 'var(--mg-text-0)', margin: 0 }}>{t('dashboard.section.integration')}</h3>
               <TerminalSection />
             </div>
           </div>
@@ -51,7 +54,7 @@ export default function DashboardPage() {
 
       {/* 6. 进阶向导 */}
       <div>
-        <h3 style={{ marginBottom: '16px', fontWeight: 700, fontSize: '16px', color: 'var(--semi-color-text-0)', margin: 0 }}>进阶向导</h3>
+        <h3 style={{ marginBottom: '16px', fontWeight: 700, fontSize: '16px', color: 'var(--mg-text-0)', margin: 0 }}>{t('dashboard.section.guide')}</h3>
         <GuideSection />
       </div>
     </div>

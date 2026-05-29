@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { LuCheck, LuCopy } from 'react-icons/lu'
 import { CodeHighlight } from '@/components/ui/CodeHighlight'
 import { PLAIN_CODES, CLI_CODE } from '../constants/code-snippets'
@@ -20,21 +21,22 @@ function getCode(tab: Tab): string {
 }
 
 export const TerminalSection: React.FC = () => {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<Tab>('cli')
   const [copied, setCopied] = useState(false)
 
   const handleCopy = () => {
     navigator.clipboard.writeText(getCode(activeTab))
     setCopied(true)
-    appToast.success('接入代码已复制到剪贴板')
+    appToast.success(t('terminalSection.toast.copied'))
     setTimeout(() => setCopied(false), 2000)
   }
 
   return (
     <div style={{
-      background: 'var(--semi-color-bg-1)',
+      background: 'var(--mg-bg-1)',
       borderRadius: '14px',
-      border: '1px solid var(--semi-color-border)',
+      border: '1px solid var(--mg-border)',
       boxShadow: 'var(--semi-shadow-elevated)',
       overflow: 'hidden'
     }}>
@@ -53,7 +55,7 @@ export const TerminalSection: React.FC = () => {
           <span style={{ width: '11px', height: '11px', borderRadius: '50%', backgroundColor: '#ff5f56', display: 'inline-block' }}></span>
           <span style={{ width: '11px', height: '11px', borderRadius: '50%', backgroundColor: '#ffbd2e', display: 'inline-block' }}></span>
           <span style={{ width: '11px', height: '11px', borderRadius: '50%', backgroundColor: '#27c93f', display: 'inline-block' }}></span>
-          
+
           {/* 仿真 Tab 切换 */}
           <div style={{ display: 'flex', gap: '4px', marginLeft: '20px' }}>
             {TAB_LABELS.map((tab) => (
@@ -96,8 +98,8 @@ export const TerminalSection: React.FC = () => {
           onClick={handleCopy}
           className="text-[#94a3b8] bg-white/4 rounded-[6px] px-2.5 py-1 h-7 transition-all border-none flex items-center gap-1 hover:text-white"
         >
-          {copied ? <LuCheck className="text-[#10b981]" /> : <LuCopy className="text-[#94a3b8]" />}
-          {copied ? '已复制' : '复制'}
+          {copied ? <LuCheck className="text-[var(--mg-success)]" /> : <LuCopy className="text-[#94a3b8]" />}
+          {copied ? t('terminalSection.copied') : t('terminalSection.copy')}
         </Button>
       </div>
 

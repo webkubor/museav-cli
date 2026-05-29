@@ -1,20 +1,10 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/Select'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/Sheet'
+import Select from '@/components/ui/Select'
+import { SideSheet } from '@/components/ui/SideSheet'
 import { Badge } from '@/components/ui/Badge'
 import {
   Table,
@@ -34,6 +24,7 @@ import { formatDateTime } from '@/lib/format-date'
 type LogStatusFilter = 'all' | 'success' | 'failed'
 
 export default function LogsPage() {
+  const { t } = useTranslation()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
 
   // 过滤选项
@@ -88,11 +79,11 @@ export default function LogsPage() {
       {/* 头部标题与刷新 */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-semi-color-text-0 tracking-tight mb-1.5">
-            调用日志
+          <h1 className="text-2xl font-bold text-mg-text-0 tracking-tight mb-1.5">
+            {t('logs.title')}
           </h1>
-          <p className="text-[13px] text-semi-color-text-2 leading-relaxed">
-            实时观测工作区内的所有 API 调用历史，进行流量追踪、耗时统计与问题排查。
+          <p className="text-[13px] text-mg-text-2 leading-relaxed">
+            {t('logs.desc')}
           </p>
         </div>
         <Button
@@ -102,108 +93,108 @@ export default function LogsPage() {
           className="rounded-full px-5 h-10 shrink-0 font-semibold"
         >
           <LuRefreshCw className={`w-4 h-4 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
-          刷新数据
+          {t('logs.refresh')}
         </Button>
       </div>
 
       {/* 综合过滤面板 */}
-      <div className="bg-semi-color-bg-0 p-5 rounded-xl border border-semi-color-border/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end shadow-sm select-none">
+      <div className="bg-mg-bg-0 p-5 rounded-xl border border-mg-border/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end shadow-sm select-none">
         <div className="flex flex-col gap-1.5">
-          <label className="block text-[11px] font-bold text-semi-color-text-2 tracking-widest uppercase">调用状态</label>
-          <Select value={statusFilter} onValueChange={(v: any) => { setStatusFilter(v as LogStatusFilter); setPage(1) }}>
-            <SelectTrigger className="w-full bg-semi-color-fill-0/30">
-              <SelectValue placeholder="选择状态" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部请求</SelectItem>
-              <SelectItem value="success">仅成功</SelectItem>
-              <SelectItem value="failed">仅失败</SelectItem>
-            </SelectContent>
+          <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">{t('logs.filter.statusLabel')}</label>
+          <Select
+            value={statusFilter}
+            onChange={(v) => { setStatusFilter(v as LogStatusFilter); setPage(1) }}
+            placeholder={t('logs.filter.statusPlaceholder')}
+            className="w-full bg-mg-fill-0/30"
+          >
+            <Select.Option value="all">{t('logs.filter.statusAll')}</Select.Option>
+            <Select.Option value="success">{t('logs.filter.statusSuccess')}</Select.Option>
+            <Select.Option value="failed">{t('logs.filter.statusFailed')}</Select.Option>
           </Select>
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="block text-[11px] font-bold text-semi-color-text-2 tracking-widest uppercase">模型名称</label>
+          <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">{t('logs.filter.modelLabel')}</label>
           <Input
             value={modelFilter}
             onChange={(e) => { setModelFilter(e.target.value); setPage(1) }}
-            placeholder="如: gpt-4o-mini"
-            className="bg-semi-color-fill-0/30"
+            placeholder={t('logs.filter.modelPlaceholder')}
+            className="bg-mg-fill-0/30"
           />
         </div>
 
         <div className="flex flex-col gap-1.5 lg:col-span-2">
-          <label className="block text-[11px] font-bold text-semi-color-text-2 tracking-widest uppercase">关键词检索</label>
+          <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">{t('logs.filter.keywordLabel')}</label>
           <Input
-            placeholder="输入 Request ID 快速检索"
+            placeholder={t('logs.filter.keywordPlaceholder')}
             prefix={<LuSearch className="opacity-50" />}
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
-            className="w-full bg-semi-color-fill-0/30"
+            className="w-full bg-mg-fill-0/30"
           />
         </div>
       </div>
 
       {/* 极简细线条无框 Table 视图 */}
-      <div className="rounded-xl border border-semi-color-border/60 overflow-hidden bg-semi-color-bg-0">
+      <div className="rounded-xl border border-mg-border/60 overflow-hidden bg-mg-bg-0">
         {isLoading ? (
-          <div className="py-20 text-center text-xs text-semi-color-text-2">
+          <div className="py-20 text-center text-xs text-mg-text-2">
             <div className="flex items-center justify-center gap-2">
               <svg className="animate-spin h-5 w-5 text-brand-base" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
-              <span>正在加载调用日志...</span>
+              <span>{t('logs.loading')}</span>
             </div>
           </div>
         ) : filteredLogs.length === 0 ? (
-          <div className="py-20 text-center text-xs italic text-semi-color-text-2">
-            未找到匹配的日志记录
+          <div className="py-20 text-center text-xs italic text-mg-text-2">
+            {t('logs.empty')}
           </div>
         ) : (
           <>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>请求时间</TableHead>
+                  <TableHead>{t('logs.table.requestTime')}</TableHead>
                   <TableHead>Request ID</TableHead>
-                  <TableHead>模型</TableHead>
-                  <TableHead>状态码</TableHead>
-                  <TableHead>耗时</TableHead>
-                  <TableHead>Token 消耗</TableHead>
-                  <TableHead>调用密钥</TableHead>
+                  <TableHead>{t('logs.table.model')}</TableHead>
+                  <TableHead>{t('logs.table.statusCode')}</TableHead>
+                  <TableHead>{t('logs.table.duration')}</TableHead>
+                  <TableHead>{t('logs.table.tokens')}</TableHead>
+                  <TableHead>{t('logs.table.apiKey')}</TableHead>
                   <TableHead className="text-right"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredLogs.map((row) => (
                   <TableRow key={row.call_log_id}>
-                    <TableCell className="text-xs text-semi-color-text-1">
+                    <TableCell className="text-xs text-mg-text-1">
                       {formatDateTime(row.started_at)}
                     </TableCell>
-                    <TableCell className="font-mono text-xs text-semi-color-text-0 max-w-[140px] truncate select-all">
+                    <TableCell className="font-mono text-xs text-mg-text-0 max-w-[140px] truncate select-all">
                       {row.request_id}
                     </TableCell>
-                    <TableCell className="font-semibold text-semi-color-text-0 text-[13.5px]">
+                    <TableCell className="font-semibold text-mg-text-0 text-[13.5px]">
                       {row.model.display_name}
                     </TableCell>
                     <TableCell>
                       {getStatusBadge(row)}
                     </TableCell>
-                    <TableCell className="font-mono text-xs text-semi-color-text-1 tabular-nums">
+                    <TableCell className="font-mono text-xs text-mg-text-1 tabular-nums">
                       {row.duration_ms}ms
                     </TableCell>
-                    <TableCell className="font-mono text-xs text-semi-color-text-1 tabular-nums">
+                    <TableCell className="font-mono text-xs text-mg-text-1 tabular-nums">
                       {row.usage ? (
                         <span>
-                          {row.usage.total_tokens} <span className="text-[10px] text-semi-color-text-2">({row.usage.input_tokens}p/{row.usage.output_tokens}c)</span>
+                          {row.usage.total_tokens} <span className="text-[10px] text-mg-text-2">({row.usage.input_tokens}p/{row.usage.output_tokens}c)</span>
                         </span>
                       ) : (
-                        <span className="text-semi-color-text-2">—</span>
+                        <span className="text-mg-text-2">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-xs text-semi-color-text-1 font-medium">
-                      {row.api_key.name || <span className="text-semi-color-text-2">—</span>}
+                    <TableCell className="text-xs text-mg-text-1 font-medium">
+                      {row.api_key.name || <span className="text-mg-text-2">—</span>}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -213,7 +204,7 @@ export default function LogsPage() {
                         className="h-7 text-xs font-semibold"
                       >
                         <LuEye className="w-3.5 h-3.5 mr-1" />
-                        详情
+                        {t('logs.table.detail')}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -222,9 +213,9 @@ export default function LogsPage() {
             </Table>
 
             {/* 分页控制 */}
-            <div className="flex items-center justify-between px-5 py-4 border-t border-semi-color-border gap-4 flex-wrap select-none">
-              <span className="text-xs text-semi-color-text-2">
-                共找到 {total} 条记录
+            <div className="flex items-center justify-between px-5 py-4 border-t border-mg-border gap-4 flex-wrap select-none">
+              <span className="text-xs text-mg-text-2">
+                {t('logs.pagination.total', { count: total })}
               </span>
               <div className="flex items-center gap-2">
                 <Button
@@ -234,10 +225,10 @@ export default function LogsPage() {
                   onClick={() => setPage(page - 1)}
                   className="h-8 font-semibold"
                 >
-                  上一页
+                  {t('logs.pagination.prev')}
                 </Button>
-                <span className="text-xs font-mono text-semi-color-text-1 bg-semi-color-fill-0 border border-semi-color-border px-3 py-1 rounded">
-                  第 {page} 页
+                <span className="text-xs font-mono text-mg-text-1 bg-mg-fill-0 border border-mg-border px-3 py-1 rounded">
+                  {t('logs.pagination.page', { page })}
                 </span>
                 <Button
                   size="sm"
@@ -246,7 +237,7 @@ export default function LogsPage() {
                   onClick={() => setPage(page + 1)}
                   className="h-8 font-semibold"
                 >
-                  下一页
+                  {t('logs.pagination.next')}
                 </Button>
               </div>
             </div>
@@ -254,69 +245,69 @@ export default function LogsPage() {
         )}
       </div>
 
-      {/* 极简高雅的右侧 Sheet 日志抽屉 */}
-      <Sheet open={!!selectedLog} onOpenChange={(open) => { if (!open) setSelectedLog(null) }}>
-        <SheetContent className="sm:max-w-xl overflow-y-auto no-scrollbar">
-          <SheetHeader>
-            <SheetTitle>调用日志详情</SheetTitle>
-          </SheetHeader>
-          {selectedLog && (
-            <div className="space-y-6 mt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="border border-semi-color-border/60 p-3.5 rounded-lg bg-semi-color-fill-0/20">
-                  <p className="text-[10px] text-semi-color-text-2 uppercase font-bold tracking-widest">状态</p>
-                  <div className="mt-1.5">{getStatusBadge(selectedLog)}</div>
-                </div>
-                <div className="border border-semi-color-border/60 p-3.5 rounded-lg bg-semi-color-fill-0/20">
-                  <p className="text-[10px] text-semi-color-text-2 uppercase font-bold tracking-widest">总耗时</p>
-                  <p className="text-base font-bold text-semi-color-text-0 font-mono mt-1">{selectedLog.duration_ms}ms</p>
-                </div>
+      {/* 右侧日志详情抽屉 */}
+      <SideSheet
+        open={!!selectedLog}
+        onClose={() => setSelectedLog(null)}
+        title={t('logs.detail.title')}
+        className="sm:max-w-xl overflow-y-auto no-scrollbar"
+      >
+        {selectedLog && (
+          <div className="space-y-6 mt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="border border-mg-border/60 p-3.5 rounded-lg bg-mg-fill-0/20">
+                <p className="text-[10px] text-mg-text-2 uppercase font-bold tracking-widest">{t('logs.detail.status')}</p>
+                <div className="mt-1.5">{getStatusBadge(selectedLog)}</div>
               </div>
-
-              <div className="space-y-1 select-all">
-                <DetailRow label="Request ID" value={selectedLog.request_id} mono />
-                <DetailRow label="调用模型" value={selectedLog.model.display_name} />
-                <DetailRow label="调用时间" value={formatDateTime(selectedLog.started_at)} />
-                <DetailRow label="API Key 名称" value={selectedLog.api_key.name || '—'} />
-                <DetailRow label="Token 消耗数量" value={selectedLog.usage ? `${selectedLog.usage.total_tokens} (Prompt: ${selectedLog.usage.input_tokens} / Completion: ${selectedLog.usage.output_tokens})` : '—'} />
-              </div>
-
-              {selectedLog.error && (
-                <div className="border border-rose-500/10 bg-rose-500/[0.03] p-4 rounded-xl space-y-2 border-l-4 border-l-rose-500">
-                  <p className="text-xs font-bold text-rose-500 flex items-center gap-1.5">
-                    <IoAlertCircle className="w-4 h-4 shrink-0" />
-                    异常报错信息
-                  </p>
-                  <pre className="text-xs text-rose-600 dark:text-rose-400 font-mono break-all whitespace-pre-wrap leading-relaxed select-all">
-                    {selectedLog.error}
-                  </pre>
-                </div>
-              )}
-
-              <div className="space-y-4">
-                <div>
-                  <p className="text-[10px] text-semi-color-text-2 uppercase font-bold tracking-widest mb-2 flex items-center gap-1">
-                    <LuCalendar className="w-3.5 h-3.5" />
-                    请求内容 (Prompt Payload)
-                  </p>
-                  <pre className="text-[11.5px] text-slate-300 bg-slate-950 p-4 rounded-xl border border-semi-color-border/40 font-mono overflow-x-auto max-h-56 leading-relaxed select-all">
-                    {JSON.stringify(selectedLog.provider, null, 2)}
-                  </pre>
-                </div>
+              <div className="border border-mg-border/60 p-3.5 rounded-lg bg-mg-fill-0/20">
+                <p className="text-[10px] text-mg-text-2 uppercase font-bold tracking-widest">{t('logs.detail.duration')}</p>
+                <p className="text-base font-bold text-mg-text-0 font-mono mt-1">{selectedLog.duration_ms}ms</p>
               </div>
             </div>
-          )}
-        </SheetContent>
-      </Sheet>
+
+            <div className="space-y-1 select-all">
+              <DetailRow label="Request ID" value={selectedLog.request_id} mono />
+              <DetailRow label={t('logs.detail.model')} value={selectedLog.model.display_name} />
+              <DetailRow label={t('logs.detail.time')} value={formatDateTime(selectedLog.started_at)} />
+              <DetailRow label={t('logs.detail.apiKeyName')} value={selectedLog.api_key.name || '—'} />
+              <DetailRow label={t('logs.detail.tokens')} value={selectedLog.usage ? `${selectedLog.usage.total_tokens} (Prompt: ${selectedLog.usage.input_tokens} / Completion: ${selectedLog.usage.output_tokens})` : '—'} />
+            </div>
+
+            {selectedLog.error && (
+              <div className="border border-rose-500/10 bg-rose-500/[0.03] p-4 rounded-xl space-y-2 border-l-4 border-l-rose-500">
+                <p className="text-xs font-bold text-rose-500 flex items-center gap-1.5">
+                  <IoAlertCircle className="w-4 h-4 shrink-0" />
+                  {t('logs.detail.errorTitle')}
+                </p>
+                <pre className="text-xs text-rose-600 dark:text-rose-400 font-mono break-all whitespace-pre-wrap leading-relaxed select-all">
+                  {selectedLog.error}
+                </pre>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] text-mg-text-2 uppercase font-bold tracking-widest mb-2 flex items-center gap-1">
+                  <LuCalendar className="w-3.5 h-3.5" />
+                  {t('logs.detail.promptPayload')}
+                </p>
+                <pre className="text-[11.5px] text-slate-300 bg-slate-950 p-4 rounded-xl border border-mg-border/40 font-mono overflow-x-auto max-h-56 leading-relaxed select-all">
+                  {JSON.stringify(selectedLog.provider, null, 2)}
+                </pre>
+              </div>
+            </div>
+          </div>
+        )}
+      </SideSheet>
     </div>
   )
 }
 
 function DetailRow({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="flex justify-between items-center py-2.5 border-b border-semi-color-border/40 gap-4">
-      <span className="text-xs font-bold text-semi-color-text-2 shrink-0">{label}</span>
-      <span className={`text-xs text-semi-color-text-0 font-semibold text-right break-all max-w-[340px] select-all ${mono ? 'font-mono' : ''}`}>
+    <div className="flex justify-between items-center py-2.5 border-b border-mg-border/40 gap-4">
+      <span className="text-xs font-bold text-mg-text-2 shrink-0">{label}</span>
+      <span className={`text-xs text-mg-text-0 font-semibold text-right break-all max-w-[340px] select-all ${mono ? 'font-mono' : ''}`}>
         {value}
       </span>
     </div>

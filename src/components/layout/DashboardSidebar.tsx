@@ -49,10 +49,10 @@ const SidebarNavItem: React.FC<{
         collapsed ? "justify-center" : "justify-start",
         isSelected
           ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
-          : "text-semi-color-text-1 hover:bg-semi-color-fill-0/50 hover:text-semi-color-text-0 active:scale-[0.97]"
+          : "text-mg-text-1 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.97]"
       )}
     >
-      <span className={cn("text-base shrink-0 transition-colors duration-200", isSelected ? "text-brand-base" : "text-semi-color-text-2")}>
+      <span className={cn("text-base shrink-0 transition-colors duration-200", isSelected ? "text-brand-base" : "text-mg-text-2")}>
         {item.icon}
       </span>
       {!collapsed && (
@@ -89,7 +89,7 @@ const SidebarMenuGroup: React.FC<{
         <div
           role="button"
           className={cn(
-            "flex items-center justify-center mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer text-semi-color-text-2 hover:bg-semi-color-fill-0/50 hover:text-semi-color-text-0 active:scale-[0.97]",
+            "flex items-center justify-center mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer text-mg-text-2 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.97]",
             isChildSelected && "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
           )}
           title={item.text}
@@ -100,7 +100,7 @@ const SidebarMenuGroup: React.FC<{
             }
           }}
         >
-          <span className={cn("text-base shrink-0 transition-colors duration-200", isChildSelected ? "text-brand-base" : "text-semi-color-text-2")}>
+          <span className={cn("text-base shrink-0 transition-colors duration-200", isChildSelected ? "text-brand-base" : "text-mg-text-2")}>
             {item.icon}
           </span>
         </div>
@@ -117,26 +117,26 @@ const SidebarMenuGroup: React.FC<{
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsOpen(!isOpen) }}
         className={cn(
-          "flex items-center justify-between mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-200 select-none outline-none text-semi-color-text-1 hover:bg-semi-color-fill-0/50 hover:text-semi-color-text-0 active:scale-[0.97]",
+          "flex items-center justify-between mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-200 select-none outline-none text-mg-text-1 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.97]",
           isChildSelected && "text-brand-base font-bold"
         )}
       >
         <div className="flex items-center gap-3 min-w-0">
-          <span className={cn("text-base shrink-0 transition-colors duration-200", isChildSelected ? "text-brand-base" : "text-semi-color-text-2")}>
+          <span className={cn("text-base shrink-0 transition-colors duration-200", isChildSelected ? "text-brand-base" : "text-mg-text-2")}>
             {item.icon}
           </span>
           <span className="text-[13.5px] truncate tracking-tight font-medium leading-none">
             {item.text}
           </span>
         </div>
-        <span className="text-semi-color-text-2 shrink-0 transition-transform duration-200 ml-2">
+        <span className="text-mg-text-2 shrink-0 transition-transform duration-200 ml-2">
           {isOpen ? <LuChevronDown size={14} /> : <LuChevronRight size={14} />}
         </span>
       </div>
 
       {/* 子项列表 ( Indented ) */}
       {isOpen && item.items && (
-        <div className="flex flex-col pl-5 border-l border-semi-color-border/60 ml-7 gap-0.5 my-1 animate-in fade-in duration-200">
+        <div className="flex flex-col pl-5 border-l border-mg-border/60 ml-7 gap-0.5 my-1 animate-in fade-in duration-200">
           {item.items.map((sub) => {
             const isSubSelected = selectedKey === sub.itemKey
             return (
@@ -150,7 +150,7 @@ const SidebarMenuGroup: React.FC<{
                   "flex items-center gap-3 px-3.5 py-2 rounded-lg cursor-pointer transition-all duration-150 select-none outline-none",
                   isSubSelected
                     ? "text-brand-base font-bold bg-brand-selected-bg/60"
-                    : "text-semi-color-text-1 hover:text-semi-color-text-0 hover:bg-semi-color-fill-0/30 active:scale-[0.98]"
+                    : "text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/30 active:scale-[0.98]"
                 )}
               >
                 <span className="text-[13px] truncate tracking-tight font-medium leading-none">
@@ -200,7 +200,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       className={cn(
-        "relative flex flex-col h-[calc(100vh-60px)] bg-semi-color-bg-0 border-r border-semi-color-border/60 transition-all duration-300 ease-out select-none",
+        "relative flex flex-col h-[calc(100vh-60px)] bg-mg-bg-0 border-r border-mg-border/60 transition-all duration-300 ease-out select-none",
         collapsed ? "w-16" : "w-60"
       )}
     >
@@ -209,7 +209,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         onClick={() => setCollapsed(!collapsed)}
         title={collapsed ? t('common.expand') : t('common.collapse')}
         className={cn(
-          "absolute right-[-11px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-semi-color-bg-0 border border-semi-color-border hover:border-brand-mid text-semi-color-text-2 hover:text-brand-base flex items-center justify-center cursor-pointer transition-all duration-200 z-50 shadow-sm",
+          "absolute right-[-11px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-mg-bg-0 border border-mg-border hover:border-brand-mid text-mg-text-2 hover:text-brand-base flex items-center justify-center cursor-pointer transition-all duration-200 z-50 shadow-sm",
           hovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-[-4px] pointer-events-none"
         )}
       >
@@ -246,13 +246,13 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
         {/* 工作区分隔线 */}
         <div className={cn("flex items-center gap-2 py-4 select-none", collapsed ? "px-2" : "px-4")}>
-          <div className="flex-1 h-[1px] bg-semi-color-border/40" />
+          <div className="flex-1 h-[1px] bg-mg-border/40" />
           {!collapsed && (
-            <span className="text-[10px] font-bold text-semi-color-text-2/80 tracking-wider uppercase whitespace-nowrap shrink-0">
+            <span className="text-[10px] font-bold text-mg-text-2/80 tracking-wider uppercase whitespace-nowrap shrink-0">
               {t('nav.sidebarWorkspace')}
             </span>
           )}
-          <div className="flex-1 h-[1px] bg-semi-color-border/40" />
+          <div className="flex-1 h-[1px] bg-mg-border/40" />
         </div>
 
         {/* Workspace 级导航 */}
@@ -283,13 +283,13 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
         {/* 测试区分隔线 */}
         <div className={cn("flex items-center gap-2 py-4 select-none", collapsed ? "px-2" : "px-4")}>
-          <div className="flex-1 h-[1px] bg-semi-color-border/40" />
+          <div className="flex-1 h-[1px] bg-mg-border/40" />
           {!collapsed && (
-            <span className="text-[10px] font-bold text-semi-color-text-2/80 tracking-wider uppercase whitespace-nowrap shrink-0">
+            <span className="text-[10px] font-bold text-mg-text-2/80 tracking-wider uppercase whitespace-nowrap shrink-0">
               测试区
             </span>
           )}
-          <div className="flex-1 h-[1px] bg-semi-color-border/40" />
+          <div className="flex-1 h-[1px] bg-mg-border/40" />
         </div>
 
         {/* 测试区导航 */}
@@ -319,7 +319,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         </div>
 
         {/* 底部设置及版本信息 */}
-        <div className="mt-auto pt-2 border-t border-semi-color-border/40">
+        <div className="mt-auto pt-2 border-t border-mg-border/40">
           <SidebarNavItem
             item={{
               itemKey: 'settings/account',
@@ -332,7 +332,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           />
 
           {!collapsed && (
-            <div className="px-5 pt-2 pb-1 text-[10px] font-bold tracking-wider text-semi-color-text-2/40 select-none">
+            <div className="px-5 pt-2 pb-1 text-[10px] font-bold tracking-wider text-mg-text-2/40 select-none">
               v{__APP_VERSION__}
             </div>
           )}

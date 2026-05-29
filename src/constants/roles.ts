@@ -15,8 +15,8 @@ export const TENANT_ROLE_CONFIG: Record<
   { label: string; color: string; bg: string; border: string }
 > = {
   tenant_owner:  { label: 'Owner',  color: '#7c3aed',                            bg: '#f5f3ff',                                 border: '#ddd6fe' },
-  tenant_admin:  { label: 'Admin',  color: 'var(--semi-color-primary)',           bg: 'var(--semi-color-primary-light-default)', border: 'var(--semi-color-primary-light-active)' },
-  tenant_member: { label: 'Member', color: 'var(--semi-color-text-1)',            bg: 'var(--semi-color-bg-1)',                  border: 'var(--semi-color-border)' },
+  tenant_admin:  { label: 'Admin',  color: 'var(--mg-primary)',           bg: 'var(--mg-primary-light)', border: 'var(--mg-primary-light-active)' },
+  tenant_member: { label: 'Member', color: 'var(--mg-text-1)',            bg: 'var(--mg-bg-1)',                  border: 'var(--mg-border)' },
 }
 
 export const WS_ROLE_OPTIONS = [

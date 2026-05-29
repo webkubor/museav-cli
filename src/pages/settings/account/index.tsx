@@ -19,7 +19,7 @@ export default function AccountSettingsPage() {
 
   if (isLoading) {
     return (
-      <div style={{ padding: '40px', color: 'var(--semi-color-text-1)', fontSize: '14px' }}>
+      <div style={{ padding: '40px', color: 'var(--mg-text-1)', fontSize: '14px' }}>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 border-2 border-gray-200 border-t-brand-base rounded-full animate-spin" />
           {t('common.loading')}
@@ -41,11 +41,11 @@ export default function AccountSettingsPage() {
       {/* 头部标题与说明 */}
       <div style={{ marginBottom: '32px' }}>
         <h1
-          style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0, letterSpacing: '-0.02em' }}
+          style={{ fontSize: '24px', fontWeight: 700, color: 'var(--mg-text-0)', margin: 0, letterSpacing: '-0.02em' }}
         >
           {t('account.title')}
         </h1>
-        <span style={{ color: 'var(--semi-color-text-1)', fontSize: '13.5px', marginTop: '6px', display: 'block' }}>
+        <span style={{ color: 'var(--mg-text-1)', fontSize: '13.5px', marginTop: '6px', display: 'block' }}>
           {t('account.desc')}
         </span>
       </div>

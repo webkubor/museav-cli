@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { LuMessageSquare, LuChevronDown, LuChevronUp } from 'react-icons/lu'
 import { listConversations, getConversation } from '@/services/agent'
@@ -16,6 +17,7 @@ interface ConversationRowProps {
 }
 
 function ConversationRow({ conv }: ConversationRowProps) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
 
   const detailQuery = useQuery({
@@ -25,43 +27,43 @@ function ConversationRow({ conv }: ConversationRowProps) {
   })
 
   return (
-    <div className="border border-[var(--semi-color-border)] rounded-xl overflow-hidden bg-card-bg shadow-sm">
+    <div className="border border-[var(--mg-border)] rounded-xl overflow-hidden bg-card-bg shadow-sm">
       {/* Row header */}
       <div
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center p-3.5 px-4 cursor-pointer gap-3 hover:bg-[var(--semi-color-fill-0)] transition-colors duration-150"
+        className="flex items-center p-3.5 px-4 cursor-pointer gap-3 hover:bg-[var(--mg-fill-0)] transition-colors duration-150"
       >
-        <LuMessageSquare size={16} className="text-[var(--semi-color-text-2)] shrink-0" />
+        <LuMessageSquare size={16} className="text-[var(--mg-text-2)] shrink-0" />
 
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-sm text-[var(--semi-color-text-0)] truncate mb-0.5">
-            {conv.title || '无标题对话'}
+          <div className="font-semibold text-sm text-[var(--mg-text-0)] truncate mb-0.5">
+            {conv.title || t('modelsHistory.noTitle')}
           </div>
-          <div className="flex items-center gap-2 text-xs text-[var(--semi-color-text-2)]">
+          <div className="flex items-center gap-2 text-xs text-[var(--mg-text-2)]">
             <span>{formatDate(conv.created_at)}</span>
             <span>·</span>
-            <span>更新于 {formatDate(conv.updated_at)}</span>
+            <span>{t('modelsHistory.updatedAt', { time: formatDate(conv.updated_at) })}</span>
           </div>
         </div>
 
-        <Badge variant="info" className="py-0.5 px-2.5">{conv.message_count} 条消息</Badge>
+        <Badge variant="info" className="py-0.5 px-2.5">{t('modelsHistory.messageCount', { count: conv.message_count })}</Badge>
 
         {expanded
-          ? <LuChevronUp size={14} className="text-[var(--semi-color-text-2)] shrink-0" />
-          : <LuChevronDown size={14} className="text-[var(--semi-color-text-2)] shrink-0" />
+          ? <LuChevronUp size={14} className="text-[var(--mg-text-2)] shrink-0" />
+          : <LuChevronDown size={14} className="text-[var(--mg-text-2)] shrink-0" />
         }
       </div>
 
       {/* Expanded messages */}
       {expanded && (
-        <div className="border-t border-[var(--semi-color-border)]">
+        <div className="border-t border-[var(--mg-border)]">
           {detailQuery.isLoading ? (
             <div className="flex justify-center p-6">
               <Spinner />
             </div>
           ) : detailQuery.isError ? (
-            <div className="p-4 text-[13px] text-red-500">
-              加载对话消息失败
+            <div className="p-4 text-[13px] text-[var(--mg-danger)]">
+              {t('modelsHistory.error.loadDetail')}
             </div>
           ) : detailQuery.data ? (
             <div className="p-4 flex flex-col gap-2 max-h-[360px] overflow-y-auto">
@@ -73,15 +75,15 @@ function ConversationRow({ conv }: ConversationRowProps) {
                   <div className={cn(
                     "max-w-[75%] px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap break-words shadow-sm",
                     msg.role === 'user'
-                      ? "rounded-[12px_12px_4px_12px] bg-[var(--semi-color-primary)] text-white"
-                      : "rounded-[12px_12px_12px_4px] bg-[var(--semi-color-fill-0)] text-[var(--semi-color-text-0)]"
+                      ? "rounded-[12px_12px_4px_12px] bg-[var(--mg-primary)] text-white"
+                      : "rounded-[12px_12px_12px_4px] bg-[var(--mg-fill-0)] text-[var(--mg-text-0)]"
                   )}>
                     {msg.content}
                   </div>
                 </div>
               ))}
               {detailQuery.data.messages.length === 0 && (
-                <span className="text-[var(--semi-color-text-2)] text-[13px]">暂无消息</span>
+                <span className="text-[var(--mg-text-2)] text-[13px]">{t('modelsHistory.noMessages')}</span>
               )}
             </div>
           ) : null}
@@ -99,6 +101,7 @@ const Spinner = () => (
 )
 
 export default function ModelsChatHistoryPage() {
+  const { t } = useTranslation()
   const conversationsQuery = useQuery({
     queryKey: ['agent', 'conversations'],
     queryFn: () => listConversations({ page: 1, page_size: 50 }),
@@ -109,11 +112,11 @@ export default function ModelsChatHistoryPage() {
   return (
     <div>
       <div className="mb-7">
-        <h1 className="text-2xl font-bold text-[var(--semi-color-text-0)] m-0 mb-1.5 tracking-tight">
-          对话历史
+        <h1 className="text-2xl font-bold text-[var(--mg-text-0)] m-0 mb-1.5 tracking-tight">
+          {t('modelsHistory.title')}
         </h1>
-        <p className="text-[13px] text-[var(--semi-color-text-1)] m-0">
-          浏览历史对话记录，点击展开查看完整消息。
+        <p className="text-[13px] text-[var(--mg-text-1)] m-0">
+          {t('modelsHistory.desc')}
         </p>
       </div>
 
@@ -122,12 +125,12 @@ export default function ModelsChatHistoryPage() {
           <Spinner />
         </div>
       ) : conversationsQuery.isError ? (
-        <div className="text-red-500 text-[13px] py-6">加载对话历史失败，请稍后重试。</div>
+        <div className="text-[var(--mg-danger)] text-[13px] py-6">{t('modelsHistory.error.load')}</div>
       ) : conversations.length === 0 ? (
         <div className="text-center py-16">
-          <LuMessageSquare size={36} className="text-[var(--semi-color-text-2)] mx-auto mb-3" />
-          <span className="text-[var(--semi-color-text-2)] text-[13px] block">
-            暂无对话历史
+          <LuMessageSquare size={36} className="text-[var(--mg-text-2)] mx-auto mb-3" />
+          <span className="text-[var(--mg-text-2)] text-[13px] block">
+            {t('modelsHistory.empty')}
           </span>
         </div>
       ) : (

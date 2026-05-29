@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog'
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/Select'
+import { Modal } from '@/components/ui/Modal'
+import Select from '@/components/ui/Select'
 import { Switch } from '@/components/ui/Switch'
 import { Badge } from '@/components/ui/Badge'
 import {
@@ -51,12 +52,12 @@ function ToggleRow({
   isFirst?: boolean
 }) {
   return (
-    <div className={`flex items-center justify-between p-5 gap-6 ${isFirst ? '' : 'border-t border-semi-color-border'}`}>
+    <div className={`flex items-center justify-between p-5 gap-6 ${isFirst ? '' : 'border-t border-mg-border'}`}>
       <div>
-        <p className="text-sm font-semibold text-semi-color-text-0 mb-1">
+        <p className="text-sm font-semibold text-mg-text-0 mb-1">
           {title}
         </p>
-        <p className="text-xs text-semi-color-text-2">
+        <p className="text-xs text-mg-text-2">
           {description}
         </p>
       </div>
@@ -67,7 +68,7 @@ function ToggleRow({
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
         )}
-        <Switch checked={checked} disabled={loading} onCheckedChange={onChange} />
+        <Switch checked={checked} disabled={loading} onChange={onChange} />
       </div>
     </div>
   )
@@ -76,6 +77,7 @@ function ToggleRow({
 // ─── Destinations section ─────────────────────────────────────────────────────
 
 function DestinationsSection({ workspaceId }: { workspaceId: string }) {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const [platform, setPlatform] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
@@ -109,11 +111,11 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
         enabled: true,
       }),
     onSuccess: () => {
-      appToast.success('转发目标已创建')
+      appToast.success(t('observability.toast.forwardCreated'))
       qc.invalidateQueries({ queryKey: ['observability', 'forwards', workspaceId] })
     },
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : '创建失败')
+      appToast.error(err instanceof Error ? err.message : t('observability.toast.forwardCreateError'))
     },
   })
 
@@ -123,18 +125,18 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ['observability', 'forwards', workspaceId] }),
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : '操作失败')
+      appToast.error(err instanceof Error ? err.message : t('observability.toast.toggleError'))
     },
   })
 
   const removeMutation = useMutation({
     mutationFn: (forwardId: string) => deleteForward(workspaceId, forwardId),
     onSuccess: () => {
-      appToast.success('转发目标已删除')
+      appToast.success(t('observability.toast.forwardDeleted'))
       qc.invalidateQueries({ queryKey: ['observability', 'forwards', workspaceId] })
     },
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : '删除失败')
+      appToast.error(err instanceof Error ? err.message : t('observability.toast.forwardDeleteError'))
     },
   })
 
@@ -143,9 +145,9 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
   return (
     <>
       {/* Add destination form */}
-      <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-semi-color-border overflow-hidden mb-5">
-        <div className="px-5 py-4 border-b border-semi-color-border">
-          <h3 className="text-sm font-bold text-semi-color-text-0">添加转发目标</h3>
+      <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden mb-5">
+        <div className="px-5 py-4 border-b border-mg-border">
+          <h3 className="text-sm font-bold text-mg-text-0">{t('observability.destinations.addTitle')}</h3>
         </div>
         <div className="p-5">
           <CreateForwardForm
@@ -164,49 +166,49 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
       </div>
 
       {/* Destinations list */}
-      <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-semi-color-border overflow-hidden mb-5">
-        <div className="px-5 py-4 border-b border-semi-color-border">
-          <h3 className="text-sm font-bold text-semi-color-text-0">已配置的转发目标</h3>
+      <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden mb-5">
+        <div className="px-5 py-4 border-b border-mg-border">
+          <h3 className="text-sm font-bold text-mg-text-0">{t('observability.destinations.listTitle')}</h3>
         </div>
         {forwardsQuery.isLoading ? (
           <div className="p-5 space-y-2 animate-pulse">
-            <div className="h-4 bg-semi-color-fill-0 rounded w-1/3" />
-            <div className="h-4 bg-semi-color-fill-0 rounded w-full" />
-            <div className="h-4 bg-semi-color-fill-0 rounded w-2/3" />
+            <div className="h-4 bg-mg-fill-0 rounded w-1/3" />
+            <div className="h-4 bg-mg-fill-0 rounded w-full" />
+            <div className="h-4 bg-mg-fill-0 rounded w-2/3" />
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>名称</TableHead>
-                <TableHead>平台</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead>最近成功</TableHead>
+                <TableHead>{t('observability.destinations.table.name')}</TableHead>
+                <TableHead>{t('observability.destinations.table.platform')}</TableHead>
+                <TableHead>{t('observability.destinations.table.status')}</TableHead>
+                <TableHead>{t('observability.destinations.table.lastSuccess')}</TableHead>
                 <TableHead className="text-right"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {forwards.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-10 text-xs italic text-semi-color-text-2">
-                    暂无转发目标，请在上方添加
+                  <TableCell colSpan={5} className="text-center py-10 text-xs italic text-mg-text-2">
+                    {t('observability.destinations.empty')}
                   </TableCell>
                 </TableRow>
               ) : (
                 forwards.map((row) => (
                   <TableRow key={row.forward_id}>
-                    <TableCell className="font-semibold text-semi-color-text-0 text-[13.5px]">
+                    <TableCell className="font-semibold text-mg-text-0 text-[13.5px]">
                       {row.name}
                     </TableCell>
-                    <TableCell className="text-xs text-semi-color-text-1">
+                    <TableCell className="text-xs text-mg-text-1">
                       {row.platform}
                     </TableCell>
                     <TableCell>
                       <Badge variant={row.enabled ? 'success' : 'outline'}>
-                        {row.enabled ? '启用中' : '已暂停'}
+                        {row.enabled ? t('observability.destinations.table.enabled') : t('observability.destinations.table.paused')}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs text-semi-color-text-2">
+                    <TableCell className="text-xs text-mg-text-2">
                       {formatDateTime(row.last_success_at)}
                     </TableCell>
                     <TableCell className="text-right">
@@ -217,7 +219,7 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
                           onClick={() => toggleMutation.mutate({ forwardId: row.forward_id, enabled: !row.enabled })}
                           className="h-7 text-xs font-semibold"
                         >
-                          {row.enabled ? '暂停' : '恢复'}
+                          {row.enabled ? t('observability.destinations.table.pause') : t('observability.destinations.table.resume')}
                         </Button>
                         <Button
                           size="sm"
@@ -225,7 +227,7 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
                           onClick={() => setDeleteTarget({ id: row.forward_id, name: row.name })}
                           className="h-7 text-xs"
                         >
-                          删除
+                          {t('observability.destinations.table.delete')}
                         </Button>
                       </div>
                     </TableCell>
@@ -237,17 +239,16 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
         )}
       </div>
 
-      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>删除转发目标</DialogTitle>
-            <DialogDescription>
-              确定要删除「{deleteTarget?.name}」吗？此操作不可撤销。
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="mt-4">
+      <Modal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title={t('observability.destinations.deleteModal.title')}
+        description={t('observability.destinations.deleteModal.description', { name: deleteTarget?.name })}
+        size="sm"
+        footer={
+          <>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              取消
+              {t('observability.destinations.deleteModal.cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -260,11 +261,11 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
                 }
               }}
             >
-              确认删除
+              {t('observability.destinations.deleteModal.confirm')}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      />
     </>
   )
 }
@@ -286,6 +287,7 @@ function CreateForwardForm({
   isSubmitting: boolean
   onSubmit: (name: string, config: Record<string, string>) => void
 }) {
+  const { t } = useTranslation()
   const fields = selectedPlatform?.config_schema.fields ?? []
   const [name, setName] = useState('')
   const [configValues, setConfigValues] = useState<Record<string, string>>(() =>
@@ -296,28 +298,24 @@ function CreateForwardForm({
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
-          <label className="block text-[11px] font-bold text-semi-color-text-1 uppercase tracking-widest mb-2">平台</label>
+          <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">{t('observability.form.platformLabel')}</label>
           <Select
             value={selectedPlatformId}
-            onValueChange={onPlatformChange}
+            onChange={onPlatformChange}
+            className="w-full"
           >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {platformItems.map((item) => (
-                <SelectItem key={item.platform} value={item.platform}>
-                  {item.display_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
+            {platformItems.map((item) => (
+              <Select.Option key={item.platform} value={item.platform}>
+                {item.display_name}
+              </Select.Option>
+            ))}
           </Select>
         </div>
         <div>
-          <label className="block text-[11px] font-bold text-semi-color-text-1 uppercase tracking-widest mb-2">名称</label>
+          <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">{t('observability.form.nameLabel')}</label>
           <Input
             value={name}
-            placeholder="为此目标起一个名称"
+            placeholder={t('observability.form.namePlaceholder')}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
@@ -327,7 +325,7 @@ function CreateForwardForm({
         <div className={`grid gap-5 ${fields.length > 1 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
           {fields.map((field) => (
             <div key={field.key}>
-              <label className="block text-[11px] font-bold text-semi-color-text-1 uppercase tracking-widest mb-2">
+              <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">
                 {field.label}
                 {field.required && <span className="text-rose-500 ml-1">*</span>}
               </label>
@@ -349,7 +347,7 @@ function CreateForwardForm({
           onClick={() => onSubmit(name, configValues)}
           className="px-8"
         >
-          创建目标
+          {t('observability.form.submit')}
         </Button>
       </div>
     </div>
@@ -359,6 +357,7 @@ function CreateForwardForm({
 // ─── Dead Letters section ─────────────────────────────────────────────────────
 
 function DeadLettersSection({ workspaceId }: { workspaceId: string }) {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const [statusFilter, setStatusFilter] = useState<DeadLetterStatusFilter>('all')
 
@@ -376,88 +375,91 @@ function DeadLettersSection({ workspaceId }: { workspaceId: string }) {
   const retryMutation = useMutation({
     mutationFn: (deadLetterId: string) => retryDeadLetter(workspaceId, deadLetterId),
     onSuccess: () => {
-      appToast.success('已触发重试')
+      appToast.success(t('observability.toast.retryTriggered'))
       qc.invalidateQueries({ queryKey: ['observability', 'dead-letters', workspaceId] })
     },
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : '重试失败')
+      appToast.error(err instanceof Error ? err.message : t('observability.toast.retryError'))
     },
   })
 
   const ignoreMutation = useMutation({
     mutationFn: (deadLetterId: string) => deleteDeadLetter(workspaceId, deadLetterId),
     onSuccess: () => {
-      appToast.success('已标记为忽略')
+      appToast.success(t('observability.toast.ignored'))
       qc.invalidateQueries({ queryKey: ['observability', 'dead-letters', workspaceId] })
     },
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : '操作失败')
+      appToast.error(err instanceof Error ? err.message : t('observability.toast.ignoreError'))
     },
   })
 
   const deadLetters = deadLettersQuery.data?.items ?? []
 
   return (
-    <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-semi-color-border overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-semi-color-border gap-4 flex-wrap">
-        <h3 className="text-sm font-bold text-semi-color-text-0">失败重试</h3>
+    <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-mg-border gap-4 flex-wrap">
+        <h3 className="text-sm font-bold text-mg-text-0">{t('observability.deadLetters.title')}</h3>
         <div className="w-40 shrink-0">
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as DeadLetterStatusFilter)}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部状态</SelectItem>
-              <SelectItem value="pending">待重试</SelectItem>
-              <SelectItem value="retrying">重试中</SelectItem>
-              <SelectItem value="ignored">已忽略</SelectItem>
-            </SelectContent>
+          <Select
+            value={statusFilter}
+            onChange={(v) => setStatusFilter(v as DeadLetterStatusFilter)}
+            className="w-full"
+          >
+            <Select.Option value="all">{t('observability.deadLetters.filterAll')}</Select.Option>
+            <Select.Option value="pending">{t('observability.deadLetters.filterPending')}</Select.Option>
+            <Select.Option value="retrying">{t('observability.deadLetters.filterRetrying')}</Select.Option>
+            <Select.Option value="ignored">{t('observability.deadLetters.filterIgnored')}</Select.Option>
           </Select>
         </div>
       </div>
 
       {deadLettersQuery.isLoading ? (
         <div className="p-5 space-y-2 animate-pulse">
-          <div className="h-4 bg-semi-color-fill-0 rounded w-1/4" />
-          <div className="h-4 bg-semi-color-fill-0 rounded w-full" />
+          <div className="h-4 bg-mg-fill-0 rounded w-1/4" />
+          <div className="h-4 bg-mg-fill-0 rounded w-full" />
         </div>
       ) : deadLetters.length === 0 ? (
-        <div className="py-16 text-center text-xs italic text-semi-color-text-2">
-          暂无失败记录
+        <div className="py-16 text-center text-xs italic text-mg-text-2">
+          {t('observability.deadLetters.empty')}
         </div>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>平台</TableHead>
-              <TableHead>状态</TableHead>
-              <TableHead>错误信息</TableHead>
-              <TableHead>重试次数</TableHead>
-              <TableHead>最近尝试</TableHead>
+              <TableHead>{t('observability.deadLetters.table.platform')}</TableHead>
+              <TableHead>{t('observability.deadLetters.table.status')}</TableHead>
+              <TableHead>{t('observability.deadLetters.table.error')}</TableHead>
+              <TableHead>{t('observability.deadLetters.table.attempts')}</TableHead>
+              <TableHead>{t('observability.deadLetters.table.lastAttempt')}</TableHead>
               <TableHead className="text-right"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {deadLetters.map((row) => (
               <TableRow key={row.dead_letter_id}>
-                <TableCell className="font-semibold text-semi-color-text-0 text-[13.5px]">
+                <TableCell className="font-semibold text-mg-text-0 text-[13.5px]">
                   {row.platform}
                 </TableCell>
                 <TableCell>
                   <Badge variant={row.status === 'pending' ? 'warning' : row.status === 'retrying' ? 'secondary' : 'outline'}>
-                    {row.status === 'pending' ? '待重试' : row.status === 'retrying' ? '重试中' : '已忽略'}
+                    {row.status === 'pending'
+                      ? t('observability.deadLetters.statusPending')
+                      : row.status === 'retrying'
+                        ? t('observability.deadLetters.statusRetrying')
+                        : t('observability.deadLetters.statusIgnored')}
                   </Badge>
                 </TableCell>
                 <TableCell>
                   <div className="max-w-xs md:max-w-md">
-                    <p className="text-[13px] text-semi-color-text-0 font-medium truncate">{row.error_message}</p>
-                    <p className="text-xs text-semi-color-text-2 truncate mt-0.5 font-mono">{row.payload_excerpt}</p>
+                    <p className="text-[13px] text-mg-text-0 font-medium truncate">{row.error_message}</p>
+                    <p className="text-xs text-mg-text-2 truncate mt-0.5 font-mono">{row.payload_excerpt}</p>
                   </div>
                 </TableCell>
-                <TableCell className="text-xs text-semi-color-text-1 font-semibold">
+                <TableCell className="text-xs text-mg-text-1 font-semibold">
                   {row.attempts}
                 </TableCell>
-                <TableCell className="text-xs text-semi-color-text-2">
+                <TableCell className="text-xs text-mg-text-2">
                   {formatDateTime(row.last_attempted_at || row.created_at)}
                 </TableCell>
                 <TableCell className="text-right">
@@ -470,16 +472,16 @@ function DeadLettersSection({ workspaceId }: { workspaceId: string }) {
                         onClick={() => retryMutation.mutate(row.dead_letter_id)} 
                         className="h-7 text-xs font-semibold"
                       >
-                        重试
+                        {t('observability.deadLetters.table.retry')}
                       </Button>
                       <Button 
                         size="sm" 
                         variant="ghost" 
                         loading={ignoreMutation.isPending} 
                         onClick={() => ignoreMutation.mutate(row.dead_letter_id)} 
-                        className="h-7 text-xs text-semi-color-text-1 hover:text-semi-color-text-0 hover:bg-semi-color-fill-0 font-semibold"
+                        className="h-7 text-xs text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0 font-semibold"
                       >
-                        忽略
+                        {t('observability.deadLetters.table.ignore')}
                       </Button>
                     </div>
                   )}
@@ -502,6 +504,7 @@ function ObservabilityContent({
   workspaceId: string
   config: LoggingConfig
 }) {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const [loggingEnabled, setLoggingEnabled] = useState(config.input_output_logging_enabled)
   const [broadcastEnabled, setBroadcastEnabled] = useState(config.broadcast_enabled)
@@ -513,7 +516,7 @@ function ObservabilityContent({
       qc.invalidateQueries({ queryKey: ['observability', 'logging', workspaceId] })
     },
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : '保存失败')
+      appToast.error(err instanceof Error ? err.message : t('observability.toast.saveError'))
     },
   })
 
@@ -532,10 +535,10 @@ function ObservabilityContent({
   return (
     <div className="max-w-3xl space-y-6">
       {/* Section 1: Logging toggle — always visible */}
-      <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-semi-color-border overflow-hidden">
+      <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden">
         <ToggleRow
-          title="输入 / 输出日志"
-          description="记录每次请求的完整输入和模型输出内容。"
+          title={t('observability.logging.title')}
+          description={t('observability.logging.desc')}
           checked={loggingEnabled}
           loading={saveMutation.isPending}
           onChange={handleLoggingChange}
@@ -545,8 +548,8 @@ function ObservabilityContent({
         {/* Section 2: Broadcast toggle — only when logging is on */}
         {loggingEnabled && (
           <ToggleRow
-            title="广播转发"
-            description="将日志实时推送到已配置的转发目标（如 Datadog、OpenTelemetry）。"
+            title={t('observability.broadcast.title')}
+            description={t('observability.broadcast.desc')}
             checked={broadcastEnabled}
             loading={saveMutation.isPending}
             onChange={handleBroadcastChange}
@@ -568,6 +571,7 @@ function ObservabilityContent({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ObservabilityPage() {
+  const { t } = useTranslation()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
 
   const loggingQuery = useQuery({
@@ -581,19 +585,19 @@ export default function ObservabilityPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-semi-color-text-0">
-          可观测性
+        <h1 className="text-2xl font-bold tracking-tight text-mg-text-0">
+          {t('observability.title')}
         </h1>
-        <p className="text-sm text-semi-color-text-1 mt-1.5 font-medium">
-          管理日志记录、数据转发目标与失败事件的重试策略。
+        <p className="text-sm text-mg-text-1 mt-1.5 font-medium">
+          {t('observability.desc')}
         </p>
       </div>
 
       {loggingQuery.isLoading && (
-        <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-semi-color-border p-6 max-w-3xl space-y-4 animate-pulse">
-          <div className="h-5 bg-semi-color-fill-0 rounded w-1/3" />
-          <div className="h-4 bg-semi-color-fill-0 rounded w-full" />
-          <div className="h-4 bg-semi-color-fill-0 rounded w-2/3" />
+        <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border p-6 max-w-3xl space-y-4 animate-pulse">
+          <div className="h-5 bg-mg-fill-0 rounded w-1/3" />
+          <div className="h-4 bg-mg-fill-0 rounded w-full" />
+          <div className="h-4 bg-mg-fill-0 rounded w-2/3" />
         </div>
       )}
 

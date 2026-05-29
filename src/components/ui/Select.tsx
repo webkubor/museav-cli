@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
  * 职责：替代原有的 Select 组件，支持优雅的定位、带品牌轮廓高亮的获焦边框以及平滑渐变
  */
 
-const Select = SelectPrimitive.Root
+const SelectRoot = SelectPrimitive.Root
 
 const SelectGroup = SelectPrimitive.Group
 
@@ -21,7 +21,7 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-10 w-full items-center justify-between rounded-lg border border-semi-color-border bg-semi-color-bg-1 px-3.5 py-2 text-sm outline-none transition-all duration-200 placeholder:text-semi-color-text-2/70 text-semi-color-text-0 hover:border-brand-mid/50 focus:border-brand-base focus:ring-2 focus:ring-brand-glow disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      "flex h-10 w-full items-center justify-between rounded-lg border border-mg-border bg-mg-bg-1 px-3.5 py-2 text-sm outline-none transition-all duration-200 placeholder:text-mg-text-2/70 text-mg-text-0 hover:border-brand-mid/50 focus:border-brand-base focus:ring-2 focus:ring-brand-glow disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
       className
     )}
     {...props}
@@ -41,7 +41,7 @@ const SelectScrollUpButton = React.forwardRef<
   <SelectPrimitive.ScrollUpButton
     ref={ref}
     className={cn(
-      "flex cursor-default items-center justify-center py-1 text-semi-color-text-2",
+      "flex cursor-default items-center justify-center py-1 text-mg-text-2",
       className
     )}
     {...props}
@@ -58,7 +58,7 @@ const SelectScrollDownButton = React.forwardRef<
   <SelectPrimitive.ScrollDownButton
     ref={ref}
     className={cn(
-      "flex cursor-default items-center justify-center py-1 text-semi-color-text-2",
+      "flex cursor-default items-center justify-center py-1 text-mg-text-2",
       className
     )}
     {...props}
@@ -77,7 +77,7 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-xl border border-semi-color-border bg-semi-color-bg-0 text-semi-color-text-0 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-xl border border-mg-border bg-mg-bg-0 text-mg-text-0 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
         position === "popper" &&
           "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
         className
@@ -107,7 +107,7 @@ const SelectLabel = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Label
     ref={ref}
-    className={cn("py-1.5 pl-8 pr-2 text-[11px] font-bold tracking-wider uppercase text-semi-color-text-2", className)}
+    className={cn("py-1.5 pl-8 pr-2 text-[11px] font-bold tracking-wider uppercase text-mg-text-2", className)}
     {...props}
   />
 ))
@@ -120,20 +120,17 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-lg py-2 pl-8 pr-2 text-[13px] text-semi-color-text-1 outline-none transition-colors duration-150 focus:bg-semi-color-fill-0 focus:text-semi-color-text-0 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex w-full cursor-default select-none items-center rounded-lg py-2 pl-8 pr-2 text-[13px] text-mg-text-1 outline-none transition-colors duration-150 focus:bg-mg-fill-0 focus:text-mg-text-0 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}
     {...props}
   >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center text-brand-base">
-      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
-    </span>
-
     <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
         <IoCheckmark className="h-4 w-4 text-brand-base" />
       </SelectPrimitive.ItemIndicator>
     </span>
+    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
   </SelectPrimitive.Item>
 ))
 SelectItem.displayName = SelectPrimitive.Item.displayName
@@ -144,14 +141,45 @@ const SelectSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Separator
     ref={ref}
-    className={cn("-mx-1 my-1 h-[1px] bg-semi-color-border/60", className)}
+    className={cn("-mx-1 my-1 h-[1px] bg-mg-border/60", className)}
     {...props}
   />
 ))
 SelectSeparator.displayName = SelectPrimitive.Separator.displayName
 
+// ── Wrapped Select component ─────────────────────────────────────────────────
+
+interface SelectProps {
+  value?: string
+  defaultValue?: string
+  onChange?: (value: string) => void
+  placeholder?: string
+  disabled?: boolean
+  className?: string
+  children?: React.ReactNode
+}
+
+interface SelectComponent extends React.FC<SelectProps> {
+  Option: typeof SelectItem
+}
+
+const Select = (({ value, defaultValue, onChange, placeholder, disabled, className, children }: SelectProps) => (
+  <SelectRoot value={value} defaultValue={defaultValue} onValueChange={onChange} disabled={disabled}>
+    <SelectTrigger className={className}>
+      <SelectValue placeholder={placeholder} />
+    </SelectTrigger>
+    <SelectContent>
+      {children}
+    </SelectContent>
+  </SelectRoot>
+)) as SelectComponent
+
+Select.Option = SelectItem
+
+export default Select
+
 export {
-  Select,
+  SelectRoot,
   SelectGroup,
   SelectValue,
   SelectTrigger,
@@ -162,3 +190,6 @@ export {
   SelectScrollUpButton,
   SelectScrollDownButton,
 }
+
+// Named re-export for backward-compat: `import { Select, ... } from '...'`
+export { Select }

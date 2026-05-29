@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import type { KeyboardEvent } from 'react'
 import { useMutation } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Textarea'
 import { appToast } from '@/lib/app-toast'
@@ -21,6 +22,7 @@ const Spinner = () => (
 )
 
 export default function ModelsChatPage() {
+  const { t } = useTranslation()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [conversationId, setConversationId] = useState<string | undefined>(undefined)
@@ -39,7 +41,7 @@ export default function ModelsChatPage() {
       ])
     },
     onError: () => {
-      appToast.error('发送失败，请稍后重试')
+      appToast.error(t('modelsChat.toast.sendError'))
     },
   })
 
@@ -74,11 +76,11 @@ export default function ModelsChatPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5 shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--semi-color-text-0)] m-0 mb-1 tracking-tight">
-            对话
+          <h1 className="text-2xl font-bold text-[var(--mg-text-0)] m-0 mb-1 tracking-tight">
+            {t('modelsChat.title')}
           </h1>
-          <p className="text-[13px] text-[var(--semi-color-text-1)] m-0">
-            与 ModelGo Agent 进行对话。
+          <p className="text-[13px] text-[var(--mg-text-1)] m-0">
+            {t('modelsChat.desc')}
           </p>
         </div>
         <Button
@@ -87,16 +89,16 @@ export default function ModelsChatPage() {
           size="sm"
         >
           <LuPlus size={14} className="mr-1" />
-          新对话
+          {t('modelsChat.button.new')}
         </Button>
       </div>
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-4 bg-[var(--semi-color-fill-0)] border border-[var(--semi-color-border)] rounded-xl mb-4 flex flex-col gap-3">
+      <div className="flex-1 overflow-y-auto p-4 bg-[var(--mg-fill-0)] border border-[var(--mg-border)] rounded-xl mb-4 flex flex-col gap-3">
         {messages.length === 0 && !chatMutation.isPending && (
           <div className="flex-1 flex items-center justify-center">
-            <span className="text-[var(--semi-color-text-2)] text-[13px]">
-              发送消息开始对话
+            <span className="text-[var(--mg-text-2)] text-[13px]">
+              {t('modelsChat.empty')}
             </span>
           </div>
         )}
@@ -109,8 +111,8 @@ export default function ModelsChatPage() {
             <div className={cn(
               "max-w-[72%] px-3.5 py-2.5 text-sm leading-relaxed shadow-sm whitespace-pre-wrap break-words",
               msg.role === 'user'
-                ? "rounded-[14px_14px_4px_14px] bg-[var(--semi-color-primary)] text-white"
-                : "rounded-[14px_14px_14px_4px] bg-card-bg text-[var(--semi-color-text-0)]"
+                ? "rounded-[14px_14px_4px_14px] bg-[var(--mg-primary)] text-white"
+                : "rounded-[14px_14px_14px_4px] bg-card-bg text-[var(--mg-text-0)]"
             )}>
               {msg.content}
             </div>
@@ -121,7 +123,7 @@ export default function ModelsChatPage() {
           <div className="flex justify-start">
             <div className="px-3.5 py-2.5 rounded-[14px_14px_14px_4px] bg-card-bg shadow-sm flex items-center gap-2">
               <Spinner />
-              <span className="text-[var(--semi-color-text-2)] text-[13px]">思考中...</span>
+              <span className="text-[var(--mg-text-2)] text-[13px]">{t('modelsChat.thinking')}</span>
             </div>
           </div>
         )}
@@ -135,7 +137,7 @@ export default function ModelsChatPage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="输入消息，Enter 发送，Shift+Enter 换行..."
+          placeholder={t('modelsChat.input.placeholder')}
           rows={2}
           className="flex-1 rounded-[10px] resize-none"
           disabled={chatMutation.isPending}

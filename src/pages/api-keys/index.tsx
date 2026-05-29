@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog'
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/Select'
+import { Modal } from '@/components/ui/Modal'
+import Select from '@/components/ui/Select'
 import { 
   Table, 
   TableHeader, 
@@ -105,10 +105,10 @@ export default function ApiKeysPage() {
     <div className="space-y-6">
       {/* 头部标题与描述 */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-semi-color-text-0">
+        <h1 className="text-2xl font-bold tracking-tight text-mg-text-0">
           {t('apiKeys.title')}
         </h1>
-        <p className="text-sm text-semi-color-text-1 mt-1.5">
+        <p className="text-sm text-mg-text-1 mt-1.5">
           {t('apiKeys.desc')}
         </p>
       </div>
@@ -118,7 +118,7 @@ export default function ApiKeysPage() {
         <div className="card-shadow-adaptive border-l-4 border-l-emerald-500 p-5 bg-card-bg relative overflow-hidden transition-all animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <div className="text-sm font-bold text-semi-color-text-0 flex items-center gap-2">
+              <div className="text-sm font-bold text-mg-text-0 flex items-center gap-2">
                 <span>🔑</span> {t('apiKeys.revealModal.title')}
               </div>
               <div className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 max-w-3xl leading-relaxed font-semibold">
@@ -127,7 +127,7 @@ export default function ApiKeysPage() {
             </div>
             <button 
               onClick={() => setRevealVisible(false)}
-              className="text-semi-color-text-2 hover:text-semi-color-text-0 p-1 rounded transition-colors cursor-pointer"
+              className="text-mg-text-2 hover:text-mg-text-0 p-1 rounded transition-colors cursor-pointer"
             >
               <LuX className="w-4 h-4" />
             </button>
@@ -160,10 +160,10 @@ export default function ApiKeysPage() {
       <div className="flex justify-between items-center gap-4">
         {/* 圆角微阴影输入框 */}
         <div className="relative w-72">
-          <LuSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-semi-color-text-2 w-4 h-4 pointer-events-none" />
+          <LuSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-mg-text-2 w-4 h-4 pointer-events-none" />
           <Input
             placeholder={t('apiKeys.search')}
-            className="pl-10 rounded-full bg-semi-color-bg-1/40 hover:bg-semi-color-bg-1/80 focus:bg-card-bg"
+            className="pl-10 rounded-full bg-mg-bg-1/40 hover:bg-mg-bg-1/80 focus:bg-card-bg"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />
@@ -188,7 +188,7 @@ export default function ApiKeysPage() {
             <TableHead>{t('apiKeys.table.env')}</TableHead>
             <TableHead>{t('apiKeys.table.credentials')}</TableHead>
             <TableHead>{t('apiKeys.table.status')}</TableHead>
-            <TableHead>累计消费</TableHead>
+            <TableHead>{t('apiKeys.table.totalSpend')}</TableHead>
             <TableHead>{t('apiKeys.table.createdAt')}</TableHead>
             <TableHead className="text-right">{t('apiKeys.table.actions')}</TableHead>
           </TableRow>
@@ -196,20 +196,20 @@ export default function ApiKeysPage() {
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-10 text-semi-color-text-2">
-                加载中...
+              <TableCell colSpan={7} className="text-center py-10 text-mg-text-2">
+                {t('common.loading')}
               </TableCell>
             </TableRow>
           ) : filteredData.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-10 text-semi-color-text-2">
-                无数据
+              <TableCell colSpan={7} className="text-center py-10 text-mg-text-2">
+                {t('apiKeys.table.noData')}
               </TableCell>
             </TableRow>
           ) : (
             filteredData.map((record) => (
               <TableRow key={record.api_key_id}>
-                <TableCell className="font-semibold text-semi-color-text-0 text-[13.5px]">
+                <TableCell className="font-semibold text-mg-text-0 text-[13.5px]">
                   {record.name}
                 </TableCell>
                 <TableCell>
@@ -218,7 +218,7 @@ export default function ApiKeysPage() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <span className="font-mono text-xs bg-semi-color-bg-1 border border-semi-color-border px-2.5 py-1 rounded text-semi-color-text-1">
+                  <span className="font-mono text-xs bg-mg-bg-1 border border-mg-border px-2.5 py-1 rounded text-mg-text-1">
                     {record.masked}
                   </span>
                 </TableCell>
@@ -227,13 +227,13 @@ export default function ApiKeysPage() {
                     {record.status === 'active' ? t('apiKeys.table.active') : t('apiKeys.table.disabled')}
                   </Badge>
                 </TableCell>
-                <TableCell className="font-mono text-xs text-semi-color-text-0 tabular-nums">
+                <TableCell className="font-mono text-xs text-mg-text-0 tabular-nums">
                   {record.usage_30d?.amount
                     ? `${record.usage_30d.currency} ${parseFloat(record.usage_30d.amount).toFixed(4)}`
-                    : <span className="text-semi-color-text-2">—</span>
+                    : <span className="text-mg-text-2">—</span>
                   }
                 </TableCell>
-                <TableCell className="text-xs text-semi-color-text-1">
+                <TableCell className="text-xs text-mg-text-1">
                   {formatDateTime(record.created_at)}
                 </TableCell>
                 <TableCell className="text-right">
@@ -255,7 +255,7 @@ export default function ApiKeysPage() {
                         {t('apiKeys.table.revoke')}
                       </button>
                     ) : (
-                      <span className="text-semi-color-text-2 cursor-not-allowed">{t('apiKeys.table.disabled')}</span>
+                      <span className="text-mg-text-2 cursor-not-allowed">{t('apiKeys.table.disabled')}</span>
                     )}
                   </div>
                 </TableCell>
@@ -265,42 +265,14 @@ export default function ApiKeysPage() {
         </TableBody>
       </Table>
 
-      {/* 创建 API Key 的表单 Dialog */}
-      <Dialog open={createVisible} onOpenChange={setCreateVisible}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>{t('apiKeys.createModal.title')}</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-5 py-2">
-            <div>
-              <label className="block text-xs font-bold text-semi-color-text-1 mb-2">
-                {t('apiKeys.createModal.nameLabel')}
-              </label>
-              <Input 
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
-                placeholder={t('apiKeys.createModal.namePlaceholder')} 
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-semi-color-text-1 mb-2">
-                {t('apiKeys.createModal.envLabel')}
-              </label>
-              <Select 
-                value={env} 
-                onValueChange={val => setEnv(val as any)} 
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="live">{t('apiKeys.createModal.live')}</SelectItem>
-                  <SelectItem value="test">{t('apiKeys.createModal.test')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter className="mt-4">
+      {/* 创建 API Key 的表单 Modal */}
+      <Modal
+        open={createVisible}
+        onClose={() => setCreateVisible(false)}
+        title={t('apiKeys.createModal.title')}
+        size="sm"
+        footer={
+          <>
             <Button variant="outline" onClick={() => setCreateVisible(false)}>
               {t('apiKeys.createModal.cancel')}
             </Button>
@@ -311,20 +283,45 @@ export default function ApiKeysPage() {
             >
               {t('apiKeys.createModal.confirm')}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-5 py-2">
+          <div>
+            <label className="block text-xs font-bold text-mg-text-1 mb-2">
+              {t('apiKeys.createModal.nameLabel')}
+            </label>
+            <Input 
+              value={name} 
+              onChange={(e) => setName(e.target.value)} 
+              placeholder={t('apiKeys.createModal.namePlaceholder')} 
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-mg-text-1 mb-2">
+              {t('apiKeys.createModal.envLabel')}
+            </label>
+            <Select
+              value={env}
+              onChange={val => setEnv(val as any)}
+              className="w-full"
+            >
+              <Select.Option value="live">{t('apiKeys.createModal.live')}</Select.Option>
+              <Select.Option value="test">{t('apiKeys.createModal.test')}</Select.Option>
+            </Select>
+          </div>
+        </div>
+      </Modal>
 
-      {/* 撤销确认 Dialog */}
-      <Dialog open={!!revokeTarget} onOpenChange={(open) => { if (!open) setRevokeTarget(null) }}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>{t('apiKeys.revokeConfirm.title')}</DialogTitle>
-            <DialogDescription>
-              {t('apiKeys.revokeConfirm.content')}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="mt-4">
+      {/* 撤销确认 Modal */}
+      <Modal
+        open={!!revokeTarget}
+        onClose={() => setRevokeTarget(null)}
+        title={t('apiKeys.revokeConfirm.title')}
+        description={t('apiKeys.revokeConfirm.content')}
+        size="sm"
+        footer={
+          <>
             <Button variant="outline" onClick={() => setRevokeTarget(null)}>
               {t('apiKeys.createModal.cancel')}
             </Button>
@@ -337,11 +334,11 @@ export default function ApiKeysPage() {
                 }
               }}
             >
-              确认撤销
+              {t('apiKeys.table.revoke')}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      />
     </div>
   )
 }

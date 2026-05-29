@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { listCallLogs } from '@/services/logs'
 import { useAuthStore } from '@/store/auth'
@@ -15,6 +16,7 @@ function formatSimple(iso: string) {
 }
 
 export const RecentActivitySection: React.FC = () => {
+  const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const { workspaceId } = useParams()
   const navigate = useNavigate()
@@ -27,14 +29,14 @@ export const RecentActivitySection: React.FC = () => {
   })
 
   return (
-    <Card className="p-6 h-full border-none shadow-md bg-semi-color-bg-1">
+    <Card className="p-6 h-full border-none shadow-md bg-mg-bg-1">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h3 style={{ fontWeight: 700, fontSize: '16px', color: 'var(--semi-color-text-0)', margin: 0 }}>最近调用日志</h3>
+        <h3 style={{ fontWeight: 700, fontSize: '16px', color: 'var(--mg-text-0)', margin: 0 }}>{t('dashboard.recentLogs.title')}</h3>
         <button
           onClick={() => navigate('/logs')}
           className="text-xs bg-none border-none text-brand-base hover:text-brand-deep cursor-pointer font-semibold p-0 flex items-center gap-1 transition-colors"
         >
-          查看全部 <LuArrowUpRight size={14} />
+          {t('dashboard.recentLogs.viewAll')} <LuArrowUpRight size={14} />
         </button>
       </div>
 
@@ -51,12 +53,12 @@ export const RecentActivitySection: React.FC = () => {
           <table className="w-full text-left border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-100 dark:border-gray-800">
-                <th className="py-2.5 px-3 font-semibold text-gray-400 dark:text-gray-500 text-xs">请求 ID</th>
-                <th className="py-2.5 px-3 font-semibold text-gray-400 dark:text-gray-500 text-xs">模型</th>
-                <th className="py-2.5 px-3 font-semibold text-gray-400 dark:text-gray-500 text-xs">状态</th>
-                <th className="py-2.5 px-3 font-semibold text-gray-400 dark:text-gray-500 text-xs">耗时</th>
+                <th className="py-2.5 px-3 font-semibold text-gray-400 dark:text-gray-500 text-xs">{t('dashboard.recentLogs.requestId')}</th>
+                <th className="py-2.5 px-3 font-semibold text-gray-400 dark:text-gray-500 text-xs">{t('dashboard.recentLogs.model')}</th>
+                <th className="py-2.5 px-3 font-semibold text-gray-400 dark:text-gray-500 text-xs">{t('dashboard.recentLogs.status')}</th>
+                <th className="py-2.5 px-3 font-semibold text-gray-400 dark:text-gray-500 text-xs">{t('dashboard.recentLogs.duration')}</th>
                 <th className="py-2.5 px-3 font-semibold text-gray-400 dark:text-gray-500 text-xs">Token</th>
-                <th className="py-2.5 px-3 font-semibold text-gray-400 dark:text-gray-500 text-xs">时间</th>
+                <th className="py-2.5 px-3 font-semibold text-gray-400 dark:text-gray-500 text-xs">{t('dashboard.recentLogs.time')}</th>
               </tr>
             </thead>
             <tbody>
@@ -93,7 +95,7 @@ export const RecentActivitySection: React.FC = () => {
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <span className="text-2xl mb-2">📭</span>
-          <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">暂无调用记录</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">{t('dashboard.recentLogs.empty')}</p>
         </div>
       )}
     </Card>

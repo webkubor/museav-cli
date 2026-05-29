@@ -39,7 +39,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             width: '64px', height: '64px', borderRadius: '50%',
             overflow: 'hidden', flexShrink: 0,
             boxShadow: '0 0 0 3px var(--brand-glow), 0 4px 10px rgba(0,0,0,0.06)',
-            backgroundColor: 'var(--semi-color-fill-0)',
+            backgroundColor: 'var(--mg-fill-0)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <img
@@ -52,7 +52,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
           <div
             style={{
               width: '64px', height: '64px', borderRadius: '50%',
-              backgroundColor: 'var(--semi-color-primary)',
+              backgroundColor: 'var(--mg-primary)',
               boxShadow: '0 0 0 3px var(--brand-glow), 0 4px 10px rgba(0,0,0,0.06)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#fff', fontSize: '24px', fontWeight: 700, flexShrink: 0
@@ -62,10 +62,10 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
           </div>
         )}
         <div>
-          <div style={{ fontWeight: 700, color: 'var(--semi-color-text-0)', fontSize: '16px', letterSpacing: '-0.01em' }}>
+          <div style={{ fontWeight: 700, color: 'var(--mg-text-0)', fontSize: '16px', letterSpacing: '-0.01em' }}>
             {profile.display_name || '—'}
           </div>
-          <div style={{ color: 'var(--semi-color-text-1)', fontSize: '13px', marginTop: '3.5px' }}>
+          <div style={{ color: 'var(--mg-text-1)', fontSize: '13px', marginTop: '3.5px' }}>
             {profile.email}
           </div>
         </div>
@@ -74,25 +74,25 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
       {/* 表单区域：限宽 480px，保留呼吸感的网格 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '480px' }}>
         <div>
-          <span style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <span style={{ fontSize: '12.5px', color: 'var(--mg-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             {t('account.info.emailLabel')}
           </span>
           <Input 
             value={profile.email} 
             disabled 
             style={{ 
-              backgroundColor: 'var(--semi-color-bg-1)',
+              backgroundColor: 'var(--mg-bg-1)',
               borderRadius: '8px',
-              border: '1px solid var(--semi-color-border)'
+              border: '1px solid var(--mg-border)'
             }} 
           />
-          <span style={{ fontSize: '11.5px', color: 'var(--semi-color-text-2)', marginTop: '6px', display: 'block' }}>
+          <span style={{ fontSize: '11.5px', color: 'var(--mg-text-2)', marginTop: '6px', display: 'block' }}>
             {t('account.info.emailHint')}
           </span>
         </div>
 
         <div>
-          <span style={{ fontSize: '12.5px', color: 'var(--semi-color-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <span style={{ fontSize: '12.5px', color: 'var(--mg-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             {t('account.info.nameLabel')}
           </span>
           <div style={{ display: 'flex', gap: '10px' }}>

@@ -21,7 +21,7 @@ interface Props {
 
 const OAUTH_ICONS: Record<string, React.ReactNode> = {
   wechat: <SiWechat size={16} className="mr-1 text-[#07C160]" />,
-  github: <Github size={16} className="text-semi-color-text-0 mr-1" />,
+  github: <Github size={16} className="text-mg-text-0 mr-1" />,
   google: <Google size={16} className="mr-1" />,
 }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { useAuthStore } from '@/store/auth'
 import { deviceApprove } from '@/services/auth'
@@ -20,6 +21,7 @@ type PageState =
   | { kind: 'error'; message: string }
 
 export default function DevicePage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const account = useAuthStore((s) => s.account)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -60,11 +62,11 @@ export default function DevicePage() {
       setState({ kind: 'success' })
     } catch (err: unknown) {
       const code = (err as { code?: number })?.code
-      let message = '授权失败，请重试'
-      if (code === 40401) message = '授权码不存在或已过期，请重新在终端执行登录命令'
-      else if (code === 40901) message = '此授权码已被使用'
-      else if (code === 40101) message = '当前未登录，请刷新页面后重试'
-      else if (code === 40302) message = 'CSRF 校验失败，请刷新页面后重试'
+      let message = t('device.error.default')
+      if (code === 40401) message = t('device.error.40401')
+      else if (code === 40901) message = t('device.error.40901')
+      else if (code === 40101) message = t('device.error.40101')
+      else if (code === 40302) message = t('device.error.40302')
       setState({ kind: 'error', message })
     }
   }
@@ -77,10 +79,10 @@ export default function DevicePage() {
 
   if (state.kind === 'missing_code') {
     return (
-      <AuthLayout title="授权链接无效">
+      <AuthLayout title={t('device.title.missingCode')}>
         <div style={{ textAlign: 'center', padding: '8px 0' }}>
           <span style={{ color: '#64748b', fontSize: '14px' }}>
-            此链接缺少授权码，请在终端重新执行登录命令获取新的链接。
+            {t('device.desc.missingCode')}
           </span>
         </div>
       </AuthLayout>
@@ -89,10 +91,10 @@ export default function DevicePage() {
 
   if (state.kind === 'invalid_code') {
     return (
-      <AuthLayout title="授权码无效">
+      <AuthLayout title={t('device.title.invalidCode')}>
         <div style={{ textAlign: 'center', padding: '8px 0' }}>
           <span style={{ color: '#64748b', fontSize: '14px' }}>
-            授权码格式无效或已损坏，请在终端重新执行登录命令。
+            {t('device.desc.invalidCode')}
           </span>
         </div>
       </AuthLayout>
@@ -101,7 +103,7 @@ export default function DevicePage() {
 
   if (state.kind === 'checking_auth') {
     return (
-      <AuthLayout title="正在验证身份">
+      <AuthLayout title={t('device.title.checkingAuth')}>
         <div style={{ textAlign: 'center', padding: '16px 0' }}>
           <div style={{
             width: '32px', height: '32px', border: '3px solid #e2e8f0',
@@ -115,14 +117,14 @@ export default function DevicePage() {
 
   if (state.kind === 'success') {
     return (
-      <AuthLayout title="授权成功">
+      <AuthLayout title={t('device.title.success')}>
         <div style={{ textAlign: 'center', padding: '8px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ fontSize: '40px' }}>✓</div>
           <span style={{ color: '#0f172a', fontSize: '15px', fontWeight: 600 }}>
-            ModelGo CLI 已获得登录授权
+            {t('device.success.title')}
           </span>
           <span style={{ color: '#64748b', fontSize: '13px' }}>
-            可以回到终端继续使用了。此页面可以关闭。
+            {t('device.success.desc')}
           </span>
         </div>
       </AuthLayout>
@@ -131,14 +133,14 @@ export default function DevicePage() {
 
   if (state.kind === 'error') {
     return (
-      <AuthLayout title="授权失败">
+      <AuthLayout title={t('device.title.error')}>
         <div style={{ textAlign: 'center', padding: '8px 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <span style={{ color: '#ef4444', fontSize: '14px' }}>{state.message}</span>
+          <span style={{ color: 'var(--mg-danger)', fontSize: '14px' }}>{state.message}</span>
           <Button
             onClick={() => navigate('/dashboard')}
             className="rounded-[8px]"
           >
-            返回控制台
+            {t('device.button.backToDashboard')}
           </Button>
         </div>
       </AuthLayout>
@@ -153,8 +155,8 @@ export default function DevicePage() {
 
   return (
     <AuthLayout
-      title="CLI 登录授权"
-      subtitle="请确认以下信息，然后点击授权"
+      title={t('device.title.confirm')}
+      subtitle={t('device.subtitle.confirm')}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
@@ -167,7 +169,7 @@ export default function DevicePage() {
           <div
             style={{
               width: '32px', height: '32px', borderRadius: '50%',
-              backgroundColor: 'var(--semi-color-primary)',
+              backgroundColor: 'var(--mg-primary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#fff', fontSize: '12px', fontWeight: 600, flexShrink: 0
             }}
@@ -190,15 +192,14 @@ export default function DevicePage() {
           background: '#fffbeb', border: '1px solid #fde68a',
         }}>
           <span style={{ fontSize: '13px', color: '#92400e', lineHeight: '1.6', display: 'block' }}>
-            <strong style={{ fontWeight: 600 }}>ModelGo CLI</strong> 正在请求登录授权。确认后，终端里的 CLI
-            将获得与当前账号相同的访问凭证。
+            <strong style={{ fontWeight: 600 }}>ModelGo CLI</strong> {t('device.authNotice')}
           </span>
         </div>
 
         {/* 授权码展示 */}
         <div style={{ textAlign: 'center' }}>
           <span style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '6px', display: 'block' }}>
-            本次授权码
+            {t('device.codeLabel')}
           </span>
           <h4 style={{ margin: 0, letterSpacing: '0.15em', fontFamily: 'monospace', color: '#0f172a', fontSize: '18px', fontWeight: 700 }}>
             {userCode}
@@ -213,19 +214,19 @@ export default function DevicePage() {
             disabled={isApproving}
             onClick={handleCancel}
           >
-            取消
+            {t('device.button.cancel')}
           </Button>
           <Button
             variant="default"
             style={{ flex: 2, height: '40px', borderRadius: '8px', fontWeight: 600 }}
             onClick={handleApprove}
           >
-            {isApproving ? '授权中...' : '确认授权'}
+            {isApproving ? t('device.button.approving') : t('device.button.approve')}
           </Button>
         </div>
 
         <span style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', display: 'block' }}>
-          授权后终端 CLI 会获得登录凭证，请确认是你本人在终端操作。
+          {t('device.footer')}
         </span>
       </div>
     </AuthLayout>

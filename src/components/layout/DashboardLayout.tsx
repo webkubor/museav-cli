@@ -38,10 +38,10 @@ function WorkspaceGuard({
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4 select-none animate-in fade-in duration-300">
         <div className="text-4xl">🔒</div>
-        <div className="text-base font-bold text-semi-color-text-0">
+        <div className="text-base font-bold text-mg-text-0">
           无可用工作区
         </div>
-        <div className="text-[13px] text-semi-color-text-2 text-center max-w-[320px] leading-relaxed">
+        <div className="text-[13px] text-mg-text-2 text-center max-w-[320px] leading-relaxed">
           当前账号尚未加入任何工作区。请联系组织管理员将你加入工作区，或前往设置创建一个新工作区。
         </div>
       </div>
@@ -154,14 +154,14 @@ export function DashboardLayout() {
 
         <main className="flex-1 flex flex-col p-6 md:p-9 overflow-y-auto h-[calc(100vh-60px)] transition-all duration-300">
           {/* 高阶极简自定义 Breadcrumbs */}
-          <nav className="flex items-center gap-2 mb-5 text-[11px] font-bold text-semi-color-text-2 tracking-wider uppercase select-none">
+          <nav className="flex items-center gap-2 mb-5 text-[11px] font-bold text-mg-text-2 tracking-wider uppercase select-none">
             {getBreadcrumbs().map((b, idx) => (
               <div key={idx} className="flex items-center gap-2">
-                {idx > 0 && <span className="opacity-45 text-semi-color-text-2">/</span>}
+                {idx > 0 && <span className="opacity-45 text-mg-text-2">/</span>}
                 <span className={cn(
                   idx === getBreadcrumbs().length - 1 
-                    ? "text-semi-color-text-0 font-bold" 
-                    : "text-semi-color-text-2/70 font-bold"
+                    ? "text-mg-text-0 font-bold" 
+                    : "text-mg-text-2/70 font-bold"
                 )}>
                   {b}
                 </span>
@@ -177,7 +177,7 @@ export function DashboardLayout() {
             isDashboardRoute ? (
               "bg-transparent border-none shadow-none p-0"
             ) : (
-              "bg-semi-color-bg-0 rounded-2xl border border-semi-color-border/60 shadow-sm shadow-black/2 p-6 md:p-9 min-h-[520px]"
+              "bg-mg-bg-0 rounded-2xl border border-mg-border/60 shadow-sm shadow-black/2 p-6 md:p-9 min-h-[520px]"
             )
           )}>
             <WorkspaceGuard currentKey={getSelectedKey()}>

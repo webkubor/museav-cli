@@ -31,7 +31,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '520px', paddingTop: '8px' }}>
-      <div style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', marginBottom: '8px', lineHeight: '1.5' }}>
+      <div style={{ fontSize: '13px', color: 'var(--mg-text-1)', marginBottom: '8px', lineHeight: '1.5' }}>
         {t('account.oauth.desc')}
       </div>
 
@@ -49,18 +49,18 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
                 justifyContent: 'space-between',
                 padding: '16px 20px',
                 borderRadius: '10px',
-                border: '1px solid var(--semi-color-border)',
-                backgroundColor: 'var(--semi-color-bg-1)',
+                border: '1px solid var(--mg-border)',
+                backgroundColor: 'var(--mg-bg-1)',
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--semi-color-bg-0)';
+                e.currentTarget.style.backgroundColor = 'var(--mg-bg-0)';
                 e.currentTarget.style.borderColor = 'var(--brand-glow)';
                 e.currentTarget.style.boxShadow = 'var(--shadow-md)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--semi-color-bg-1)';
-                e.currentTarget.style.borderColor = 'var(--semi-color-border)';
+                e.currentTarget.style.backgroundColor = 'var(--mg-bg-1)';
+                e.currentTarget.style.borderColor = 'var(--mg-border)';
                 e.currentTarget.style.boxShadow = 'none';
               }}
             >
@@ -71,7 +71,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 600, color: 'var(--semi-color-text-0)', fontSize: '14.5px', letterSpacing: '-0.01em' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--mg-text-0)', fontSize: '14.5px', letterSpacing: '-0.01em' }}>
                       {t(`account.oauth.${provider}`)}
                     </span>
                     {isBound ? (
@@ -90,20 +90,20 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
                     ) : (
                       <span style={{
                         fontSize: '11px',
-                        color: 'var(--semi-color-text-2)',
+                        color: 'var(--mg-text-2)',
                         marginLeft: '10px',
-                        backgroundColor: 'var(--semi-color-fill-0)',
+                        backgroundColor: 'var(--mg-fill-0)',
                         padding: '1px 6px',
                         borderRadius: '10px',
                         fontWeight: 500,
-                        border: '1px solid var(--semi-color-border)'
+                        border: '1px solid var(--mg-border)'
                       }}>
                         {t('account.oauth.notBound')}
                       </span>
                     )}
                   </div>
                   {isBound && conn.external_email && (
-                    <span style={{ fontSize: '12px', color: 'var(--semi-color-text-2)' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--mg-text-2)' }}>
                       {t('account.oauth.emailLabel', { email: conn.external_email })}
                     </span>
                   )}

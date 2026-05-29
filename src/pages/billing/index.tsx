@@ -132,7 +132,7 @@ function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
             onClick={() => recharge.mutate()}
             className="w-full h-10 text-xs font-semibold rounded-lg shadow-md bg-gradient-to-r from-brand-base to-brand-deep hover:opacity-95"
           >
-            {recharge.isPending ? '提交中...' : t('billing.rechargeModal.submit', { amount })}
+            {recharge.isPending ? t('billing.rechargeModal.submitting') : t('billing.rechargeModal.submit', { amount })}
           </Button>
         </div>
       </div>
@@ -159,10 +159,10 @@ export default function BillingPage() {
     <div>
       {/* Header */}
       <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--mg-text-0)', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
           {t('billing.title')}
         </h1>
-        <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0, fontWeight: 400 }}>
+        <p style={{ fontSize: '13px', color: 'var(--mg-text-1)', margin: 0, fontWeight: 400 }}>
           {t('billing.desc')}
         </p>
       </div>
@@ -172,7 +172,7 @@ export default function BillingPage() {
       {/* Balance Section */}
       <div className="card-shadow-adaptive bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl" style={{ padding: '28px 32px', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--semi-color-text-1)' }}>{t('billing.balance.title')}</div>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-1)' }}>{t('billing.balance.title')}</div>
           <Button variant="default" onClick={() => setTopUpVisible(true)} className="rounded-lg font-semibold h-9 px-4">
             {t('billing.balance.recharge')}
           </Button>
@@ -184,16 +184,16 @@ export default function BillingPage() {
         ) : (
           <div style={{ display: 'flex', gap: '48px', alignItems: 'flex-end' }}>
             <div>
-              <div style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginBottom: '6px' }}>{t('billing.balance.available')}</div>
-              <div style={{ fontSize: '36px', fontWeight: 700, color: 'var(--semi-color-text-0)', letterSpacing: '-0.03em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-                <span style={{ fontSize: '20px', fontWeight: 500, color: 'var(--semi-color-text-1)', marginRight: '2px' }}>{currencySymbol}</span>{balance?.available.amount ?? '—'}
+              <div style={{ fontSize: '12px', color: 'var(--mg-text-2)', marginBottom: '6px' }}>{t('billing.balance.available')}</div>
+              <div style={{ fontSize: '36px', fontWeight: 700, color: 'var(--mg-text-0)', letterSpacing: '-0.03em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                <span style={{ fontSize: '20px', fontWeight: 500, color: 'var(--mg-text-1)', marginRight: '2px' }}>{currencySymbol}</span>{balance?.available.amount ?? '—'}
               </div>
             </div>
-            <div style={{ height: '44px', width: '1px', backgroundColor: 'var(--semi-color-fill-0)' }} />
+            <div style={{ height: '44px', width: '1px', backgroundColor: 'var(--mg-fill-0)' }} />
             <div>
-              <div style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginBottom: '6px' }}>{t('billing.balance.frozen')}</div>
-              <div style={{ fontSize: '24px', fontWeight: 600, color: 'var(--semi-color-text-1)', letterSpacing: '-0.02em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--semi-color-text-2)', marginRight: '2px' }}>{currencySymbol}</span>{balance?.reserved.amount ?? '—'}
+              <div style={{ fontSize: '12px', color: 'var(--mg-text-2)', marginBottom: '6px' }}>{t('billing.balance.frozen')}</div>
+              <div style={{ fontSize: '24px', fontWeight: 600, color: 'var(--mg-text-1)', letterSpacing: '-0.02em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--mg-text-2)', marginRight: '2px' }}>{currencySymbol}</span>{balance?.reserved.amount ?? '—'}
               </div>
             </div>
           </div>
@@ -244,7 +244,7 @@ function OrderTab({ tenantId }: { tenantId: string }) {
           ) : orders.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <span className="text-3xl mb-3">📬</span>
-              <p className="text-sm text-gray-400 dark:text-gray-500 font-medium">暂无充值记录</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 font-medium">{t('billing.orders.empty')}</p>
             </div>
           ) : (
             <table className="w-full text-left border-collapse text-sm">
@@ -309,13 +309,13 @@ function OrderTab({ tenantId }: { tenantId: string }) {
         )}
       </div>
 
-      <div style={{ width: '300px', padding: '20px', backgroundColor: 'var(--semi-color-bg-1)', borderRadius: '12px' }} className="w-full md:w-[300px] shrink-0 border border-gray-100 dark:border-gray-800">
+      <div style={{ width: '300px', padding: '20px', backgroundColor: 'var(--mg-bg-1)', borderRadius: '12px' }} className="w-full md:w-[300px] shrink-0 border border-gray-100 dark:border-gray-800">
         <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 700 }}>{t('billing.orders.detailTitle')}</h3>
         {selected ? (
           <div style={{ fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div><span style={{ color: 'var(--semi-color-text-2)', fontWeight: 500 }}>{t('billing.orders.detail.orderNo')}:</span> <span className="font-mono text-xs">{selected.order_no}</span></div>
-            <div><span style={{ color: 'var(--semi-color-text-2)', fontWeight: 500 }}>{t('billing.orders.detail.status')}:</span> <span className="font-semibold text-xs">{selected.status}</span></div>
-            <div><span style={{ color: 'var(--semi-color-text-2)', fontWeight: 500 }}>{t('billing.orders.detail.amount')}:</span> <span className="font-bold text-xs">{selected.currency} {selected.amount}</span></div>
+            <div><span style={{ color: 'var(--mg-text-2)', fontWeight: 500 }}>{t('billing.orders.detail.orderNo')}:</span> <span className="font-mono text-xs">{selected.order_no}</span></div>
+            <div><span style={{ color: 'var(--mg-text-2)', fontWeight: 500 }}>{t('billing.orders.detail.status')}:</span> <span className="font-semibold text-xs">{selected.status}</span></div>
+            <div><span style={{ color: 'var(--mg-text-2)', fontWeight: 500 }}>{t('billing.orders.detail.amount')}:</span> <span className="font-bold text-xs">{selected.currency} {selected.amount}</span></div>
             {isDomestic() && selected.invoice_url && (
               <Button
                 variant="outline"
@@ -326,7 +326,7 @@ function OrderTab({ tenantId }: { tenantId: string }) {
               </Button>
             )}
           </div>
-        ) : <p style={{ color: 'var(--semi-color-text-2)', fontSize: '13px' }}>{t('billing.orders.detailPlaceholder')}</p>}
+        ) : <p style={{ color: 'var(--mg-text-2)', fontSize: '13px' }}>{t('billing.orders.detailPlaceholder')}</p>}
       </div>
     </div>
   )

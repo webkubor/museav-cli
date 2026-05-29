@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { useAuthStore } from '@/store/auth'
@@ -48,9 +49,11 @@ function EndpointCard({ def, state, onCall }: {
   state: EndpointState | undefined
   onCall: () => void
 }) {
+  const { t } = useTranslation()
+
   return (
-    <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-semi-color-border overflow-hidden mb-3">
-      <div className="flex items-center gap-3 px-5 py-3 border-b border-semi-color-border/40">
+    <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden mb-3">
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-mg-border/40">
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono shrink-0 select-none ${
           def.method === 'GET' 
             ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' 
@@ -58,12 +61,12 @@ function EndpointCard({ def, state, onCall }: {
         }`}>
           {def.method}
         </span>
-        <code className="text-xs font-mono text-semi-color-text-0 flex-1 truncate select-all">
+        <code className="text-xs font-mono text-mg-text-0 flex-1 truncate select-all">
           {def.path}
         </code>
-        <span className="text-xs text-semi-color-text-2 shrink-0 font-medium">{def.label}</span>
+        <span className="text-xs text-mg-text-2 shrink-0 font-medium">{def.label}</span>
         {state?.duration != null && (
-          <span className="text-[10px] font-mono text-semi-color-text-2 shrink-0">
+          <span className="text-[10px] font-mono text-mg-text-2 shrink-0">
             {state.duration}ms
           </span>
         )}
@@ -74,7 +77,7 @@ function EndpointCard({ def, state, onCall }: {
           onClick={onCall}
           className="font-mono text-xs shrink-0 h-7"
         >
-          {state?.status === 'success' ? '重新调用' : '调用'}
+          {state?.status === 'success' ? t('platformConfig.recallBtn') : t('platformConfig.callBtn')}
         </Button>
       </div>
 
@@ -110,54 +113,56 @@ function EndpointCard({ def, state, onCall }: {
   )
 }
 
-const PERM_SECTIONS = [
-  {
-    title: '租户类型 (Tenant Type)',
-    color: 'text-violet-500 dark:text-violet-400',
-    colorBg: 'bg-violet-500/10 border-violet-500/20',
-    borderColor: 'border-violet-500/10',
-    rows: [
-      { label: 'personal', desc: '个人账户', perms: ['侧边栏无邀请管理', 'Header 无工作区管理入口', 'Header 无组织设置'] },
-      { label: 'enterprise', desc: '企业/组织', perms: ['侧边栏显示邀请管理', 'Header 显示工作区管理', 'Header 显示组织设置'] },
-    ],
-  },
-  {
-    title: '组织角色 (Tenant Role)',
-    color: 'text-sky-500 dark:text-sky-400',
-    colorBg: 'bg-sky-500/10 border-sky-500/20',
-    borderColor: 'border-sky-500/10',
-    rows: [
-      { label: 'tenant_owner', desc: '拥有者', perms: ['查看账户余额', '邀请成员 Tab', '域名配置 Tab', '修改成员角色', '移除成员'] },
-      { label: 'tenant_admin', desc: '管理员', perms: ['查看账户余额', '邀请成员 Tab', '域名配置 Tab', '修改成员角色', '移除成员'] },
-      { label: 'tenant_member', desc: '普通成员', perms: ['余额不可见 (null)', '无邀请成员 Tab', '无域名配置 Tab', '无角色/移除操作'] },
-    ],
-  },
-  {
-    title: '工作区角色 (Workspace Role)',
-    color: 'text-emerald-500 dark:text-emerald-400',
-    colorBg: 'bg-emerald-500/10 border-emerald-500/20',
-    borderColor: 'border-emerald-500/10',
-    rows: [
-      { label: 'ws_owner', desc: '拥有者', perms: ['可撤销任意邀请', '可修改任意成员角色'] },
-      { label: 'ws_admin', desc: '管理员', perms: ['可撤销任意邀请', '可修改任意成员角色'] },
-      { label: 'ws_member', desc: '普通成员', perms: ['仅撤销自己发出的邀请', '不可修改成员角色'] },
-    ],
-  },
-]
-
 function PermissionPanel() {
+  const { t } = useTranslation()
+
+  const PERM_SECTIONS = [
+    {
+      titleKey: 'platformConfig.perm.tenantType',
+      color: 'text-violet-500 dark:text-violet-400',
+      colorBg: 'bg-violet-500/10 border-violet-500/20',
+      borderColor: 'border-violet-500/10',
+      rows: [
+        { label: 'personal', descKey: 'platformConfig.perm.personal.desc', perms: ['platformConfig.perm.personal.perm1', 'platformConfig.perm.personal.perm2', 'platformConfig.perm.personal.perm3'] },
+        { label: 'enterprise', descKey: 'platformConfig.perm.enterprise.desc', perms: ['platformConfig.perm.enterprise.perm1', 'platformConfig.perm.enterprise.perm2', 'platformConfig.perm.enterprise.perm3'] },
+      ],
+    },
+    {
+      titleKey: 'platformConfig.perm.tenantRole',
+      color: 'text-sky-500 dark:text-sky-400',
+      colorBg: 'bg-sky-500/10 border-sky-500/20',
+      borderColor: 'border-sky-500/10',
+      rows: [
+        { label: 'tenant_owner', descKey: 'platformConfig.perm.tenantOwner.desc', perms: ['platformConfig.perm.tenantOwner.perm1', 'platformConfig.perm.tenantOwner.perm2', 'platformConfig.perm.tenantOwner.perm3', 'platformConfig.perm.tenantOwner.perm4', 'platformConfig.perm.tenantOwner.perm5'] },
+        { label: 'tenant_admin', descKey: 'platformConfig.perm.tenantAdmin.desc', perms: ['platformConfig.perm.tenantAdmin.perm1', 'platformConfig.perm.tenantAdmin.perm2', 'platformConfig.perm.tenantAdmin.perm3', 'platformConfig.perm.tenantAdmin.perm4', 'platformConfig.perm.tenantAdmin.perm5'] },
+        { label: 'tenant_member', descKey: 'platformConfig.perm.tenantMember.desc', perms: ['platformConfig.perm.tenantMember.perm1', 'platformConfig.perm.tenantMember.perm2', 'platformConfig.perm.tenantMember.perm3', 'platformConfig.perm.tenantMember.perm4'] },
+      ],
+    },
+    {
+      titleKey: 'platformConfig.perm.wsRole',
+      color: 'text-emerald-500 dark:text-emerald-400',
+      colorBg: 'bg-emerald-500/10 border-emerald-500/20',
+      borderColor: 'border-emerald-500/10',
+      rows: [
+        { label: 'ws_owner', descKey: 'platformConfig.perm.wsOwner.desc', perms: ['platformConfig.perm.wsOwner.perm1', 'platformConfig.perm.wsOwner.perm2'] },
+        { label: 'ws_admin', descKey: 'platformConfig.perm.wsAdmin.desc', perms: ['platformConfig.perm.wsAdmin.perm1', 'platformConfig.perm.wsAdmin.perm2'] },
+        { label: 'ws_member', descKey: 'platformConfig.perm.wsMember.desc', perms: ['platformConfig.perm.wsMember.perm1', 'platformConfig.perm.wsMember.perm2'] },
+      ],
+    },
+  ]
+
   return (
-    <div className="card-shadow-adaptive border border-semi-color-border bg-card-bg rounded-xl overflow-hidden mb-6 shadow-sm">
-      <div className="px-5 py-3 border-b border-semi-color-border bg-semi-color-bg-1/40 flex items-center">
-        <span className="text-[11px] font-bold tracking-widest text-semi-color-text-2 uppercase">
-          权限速查
+    <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden mb-6 shadow-sm">
+      <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center">
+        <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">
+          {t('platformConfig.permPanel.title')}
         </span>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-semi-color-border">
+      <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-mg-border">
         {PERM_SECTIONS.map((section) => (
-          <div key={section.title} className="p-5 flex flex-col gap-4">
+          <div key={section.titleKey} className="p-5 flex flex-col gap-4">
             <div className={`text-[11px] font-bold tracking-wider ${section.color}`}>
-              {section.title}
+              {t(section.titleKey)}
             </div>
             <div className="space-y-4">
               {section.rows.map((row) => (
@@ -166,11 +171,11 @@ function PermissionPanel() {
                     <code className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded border ${section.color} ${section.colorBg}`}>
                       {row.label}
                     </code>
-                    <span className="text-xs text-semi-color-text-2">{row.desc}</span>
+                    <span className="text-xs text-mg-text-2">{t(row.descKey)}</span>
                   </div>
                   <ul className="list-disc pl-4 space-y-1">
                     {row.perms.map((p) => (
-                      <li key={p} className="text-xs text-semi-color-text-1 leading-relaxed">{p}</li>
+                      <li key={p} className="text-xs text-mg-text-1 leading-relaxed">{t(p)}</li>
                     ))}
                   </ul>
                 </div>
@@ -184,54 +189,55 @@ function PermissionPanel() {
 }
 
 export default function PlatformConfigPage() {
+  const { t } = useTranslation()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
 
   const endpoints: EndpointDef[] = [
     {
       group: 'Auth',
-      label: '当前会话',
+      label: t('platformConfig.endpoints.session'),
       method: 'GET',
       path: '/api/v1/auth/session',
       call: getSession,
     },
     {
       group: 'Platform',
-      label: '平台配置',
+      label: t('platformConfig.endpoints.platformConfig'),
       method: 'GET',
       path: '/api/v1/platform-config',
       call: getPlatformConfig,
     },
     {
       group: 'Tenant',
-      label: '我的组织列表',
+      label: t('platformConfig.endpoints.tenants'),
       method: 'GET',
       path: '/api/v1/tenants',
       call: listTenants,
     },
     {
       group: 'Workspace',
-      label: '工作区列表',
+      label: t('platformConfig.endpoints.workspaces'),
       method: 'GET',
       path: '/api/v1/workspaces',
       call: listWorkspaces,
     },
     ...(activeWorkspaceId ? [{
       group: 'API Keys',
-      label: 'API Key 列表',
+      label: t('platformConfig.endpoints.apiKeys'),
       method: 'GET' as const,
       path: `/api/v1/workspaces/${activeWorkspaceId}/api-keys`,
       call: () => listApiKeys(activeWorkspaceId),
     }] : []),
     {
       group: 'Catalog',
-      label: '模型目录',
+      label: t('platformConfig.endpoints.models'),
       method: 'GET',
       path: '/api/v1/catalog/models',
       call: () => listModels({ limit: 10 }),
     },
     {
       group: 'Catalog',
-      label: '模型标签',
+      label: t('platformConfig.endpoints.modelTags'),
       method: 'GET',
       path: '/api/v1/catalog/model-tags',
       call: listModelTags,
@@ -246,11 +252,11 @@ export default function PlatformConfigPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-semi-color-text-0">
-            接口调试
+          <h1 className="text-2xl font-bold tracking-tight text-mg-text-0">
+            {t('platformConfig.title')}
           </h1>
-          <p className="text-sm text-semi-color-text-1 mt-1.5">
-            点击「调用」发起请求，查看接口实际返回的数据。
+          <p className="text-sm text-mg-text-1 mt-1.5">
+            {t('platformConfig.desc')}
           </p>
         </div>
         <Badge variant="warning" className="uppercase font-bold tracking-wide text-[10px] select-none h-6 px-2.5">
@@ -262,7 +268,7 @@ export default function PlatformConfigPage() {
 
       {groups.map((group) => (
         <div key={group} className="space-y-3">
-          <div className="text-[11px] font-bold text-semi-color-text-2 tracking-widest uppercase mb-2">
+          <div className="text-[11px] font-bold text-mg-text-2 tracking-widest uppercase mb-2">
             {group}
           </div>
           <div className="space-y-3">

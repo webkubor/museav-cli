@@ -1,10 +1,6 @@
+import { useTranslation } from 'react-i18next'
 import { Input } from '@/components/ui/Input'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/Sheet'
+import { SideSheet } from '@/components/ui/SideSheet'
 import { LuSearch } from 'react-icons/lu'
 import { useModels } from '@/features/models/hooks/useModels'
 import { ModelCard } from '@/features/models/components/ModelCard'
@@ -19,6 +15,7 @@ const Spinner = () => (
 )
 
 export default function ModelsPage() {
+  const { t } = useTranslation()
   const {
     search,
     setSearch,
@@ -36,19 +33,19 @@ export default function ModelsPage() {
   return (
     <div>
       <div className="mb-7">
-        <h1 className="text-2xl font-bold text-[var(--semi-color-text-0)] m-0 mb-1.5 tracking-tight">
-          模型目录
+        <h1 className="text-2xl font-bold text-[var(--mg-text-0)] m-0 mb-1.5 tracking-tight">
+          {t('modelsCatalog.title')}
         </h1>
-        <p className="text-[13px] text-[var(--semi-color-text-1)] m-0">
-          浏览 ModelGo 支持的全部模型，查看上下文长度、价格与可用模态。
+        <p className="text-[13px] text-[var(--mg-text-1)] m-0">
+          {t('modelsCatalog.desc')}
         </p>
       </div>
 
       {/* 搜索栏 */}
       <div className="relative w-[320px] mb-5">
-        <LuSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--semi-color-text-2)] w-4 h-4" />
+        <LuSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--mg-text-2)] w-4 h-4" />
         <Input
-          placeholder="搜索模型名称、供应商 or ID"
+          placeholder={t('modelsCatalog.placeholder.search')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-9 pr-4 rounded-full"
@@ -63,11 +60,11 @@ export default function ModelsPage() {
             className={cn(
               "px-3.5 py-1 rounded-full text-[12.5px] cursor-pointer transition-all duration-150 border",
               !activeTag
-                ? "border-[var(--semi-color-text-0)] bg-[var(--semi-color-text-0)] text-card-bg font-semibold"
-                : "border-[var(--semi-color-border)] hover:border-[var(--semi-color-text-2)] bg-transparent text-[var(--semi-color-text-1)]"
+                ? "border-[var(--mg-text-0)] bg-[var(--mg-text-0)] text-card-bg font-semibold"
+                : "border-[var(--mg-border)] hover:border-[var(--mg-text-2)] bg-transparent text-[var(--mg-text-1)]"
             )}
           >
-            全部
+            {t('modelsCatalog.filter.all')}
           </button>
           {tags.filter((t) => t.enabled).sort((a, b) => a.sort_order - b.sort_order).map((tag) => {
             const isActive = activeTag === tag.code
@@ -78,8 +75,8 @@ export default function ModelsPage() {
                 className={cn(
                   "px-3.5 py-1 rounded-full text-[12.5px] cursor-pointer transition-all duration-150 border",
                   isActive
-                    ? "border-[var(--semi-color-text-0)] bg-[var(--semi-color-text-0)] text-card-bg font-semibold"
-                    : "border-[var(--semi-color-border)] hover:border-[var(--semi-color-text-2)] bg-transparent text-[var(--semi-color-text-1)]"
+                    ? "border-[var(--mg-text-0)] bg-[var(--mg-text-0)] text-card-bg font-semibold"
+                    : "border-[var(--mg-border)] hover:border-[var(--mg-text-2)] bg-transparent text-[var(--mg-text-1)]"
                 )}
               >
                 {tag.name_zh || tag.name_en}
@@ -95,10 +92,10 @@ export default function ModelsPage() {
           <Spinner />
         </div>
       ) : modelsQuery.isError ? (
-        <div className="text-red-500 text-[13px] py-6">加载模型目录失败，请稍后重试。</div>
+        <div className="text-[var(--mg-danger)] text-[13px] py-6">{t('modelsCatalog.error.load')}</div>
       ) : filteredModels.length === 0 ? (
         <div className="text-center py-12">
-          <span className="text-[var(--semi-color-text-2)] text-[13px]">未找到匹配的模型</span>
+          <span className="text-[var(--mg-text-2)] text-[13px]">{t('modelsCatalog.empty')}</span>
         </div>
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
@@ -109,35 +106,36 @@ export default function ModelsPage() {
       )}
 
       {/* 模型详情右侧抽屉 */}
-      <Sheet open={!!selectedId} onOpenChange={(open) => !open && setSelectedId(null)}>
-        <SheetContent className="w-full sm:max-w-[560px] p-6 flex flex-col overflow-y-auto">
-          <SheetHeader className="mb-4">
-            <SheetTitle>
-              <div className="flex items-center gap-2">
-                <span className="text-[15px] font-bold text-[var(--semi-color-text-0)]">模型详情</span>
-                {detailQuery.data && (
-                  <span className="text-[11px] text-[var(--semi-color-text-2)] bg-[var(--semi-color-fill-0)] px-2 py-0.5 rounded-full font-medium">
-                    {detailQuery.data.model_id}
-                  </span>
-                )}
-              </div>
-            </SheetTitle>
-          </SheetHeader>
-          <div className="flex-1">
-            {detailQuery.isLoading || providersQuery.isLoading ? (
-              <div className="flex justify-center items-center h-[200px]">
-                <Spinner />
-              </div>
-            ) : detailQuery.isError ? (
-              <div className="text-red-500 text-[13px] py-6 text-center">
-                加载模型详情失败，请稍后重试。
-              </div>
-            ) : detailQuery.data ? (
-              <ModelDetailPanel detail={detailQuery.data} providers={providersQuery.data?.items ?? []} />
-            ) : null}
-          </div>
-        </SheetContent>
-      </Sheet>
+      <SideSheet
+        open={!!selectedId}
+        onClose={() => setSelectedId(null)}
+        width={560}
+        title={
+          detailQuery.data ? (
+            <div className="flex items-center gap-2">
+              <span className="text-[15px] font-bold text-[var(--mg-text-0)]">{t('modelsCatalog.detail.title')}</span>
+              <span className="text-[11px] text-[var(--mg-text-2)] bg-[var(--mg-fill-0)] px-2 py-0.5 rounded-full font-medium">
+                {detailQuery.data.model_id}
+              </span>
+            </div>
+          ) : t('modelsCatalog.detail.title')
+        }
+        className="p-6 flex flex-col overflow-y-auto"
+      >
+        <div className="flex-1 mt-4">
+          {detailQuery.isLoading || providersQuery.isLoading ? (
+            <div className="flex justify-center items-center h-[200px]">
+              <Spinner />
+            </div>
+          ) : detailQuery.isError ? (
+            <div className="text-[var(--mg-danger)] text-[13px] py-6 text-center">
+              {t('modelsCatalog.error.loadDetail')}
+            </div>
+          ) : detailQuery.data ? (
+            <ModelDetailPanel detail={detailQuery.data} providers={providersQuery.data?.items ?? []} />
+          ) : null}
+        </div>
+      </SideSheet>
     </div>
   )
 }

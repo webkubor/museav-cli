@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { getUsageSummary, getUsageSeries } from '@/services/usage'
 import { getLogHistogram } from '@/services/logs'
@@ -40,9 +41,10 @@ interface SparklineProps {
   width: number
   height: number
   metric: Metric
+  noDataLabel: string
 }
 
-function Sparkline({ data, width, height, metric }: SparklineProps) {
+function Sparkline({ data, width, height, metric, noDataLabel }: SparklineProps) {
   const points = useMemo(() => {
     if (data.length === 0) return { path: '', dots: [], labels: [] }
 
@@ -85,18 +87,18 @@ function Sparkline({ data, width, height, metric }: SparklineProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'var(--semi-color-text-2)',
+          color: 'var(--mg-text-2)',
           fontSize: '13px',
         }}
       >
-        暂无数据
+        {noDataLabel}
       </div>
     )
   }
 
   const lineColor = metric === 'spend'
-    ? 'var(--semi-color-primary)'
-    : metric === 'requests' ? '#0ea5e9' : '#10b981'
+    ? 'var(--mg-primary)'
+    : metric === 'requests' ? '#0ea5e9' : 'var(--mg-success)'
   const dotColor = lineColor
   const areaId = `area-${metric}`
 
@@ -124,7 +126,7 @@ function Sparkline({ data, width, height, metric }: SparklineProps) {
             y1={y}
             x2={width - 40}
             y2={y}
-            stroke="var(--semi-color-fill-0)"
+            stroke="var(--mg-fill-0)"
             strokeWidth={1}
           />
         )
@@ -134,7 +136,7 @@ function Sparkline({ data, width, height, metric }: SparklineProps) {
       <path d={points.path} fill="none" stroke={lineColor} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
 
       {points.dots.map((c, i) => (
-        <circle key={i} cx={c.x} cy={c.y} r={3} fill={dotColor} stroke="var(--semi-color-bg-0)" strokeWidth={1.5} />
+        <circle key={i} cx={c.x} cy={c.y} r={3} fill={dotColor} stroke="var(--mg-bg-0)" strokeWidth={1.5} />
       ))}
 
       {points.labels.map((l, i) => (
@@ -144,7 +146,7 @@ function Sparkline({ data, width, height, metric }: SparklineProps) {
           y={height - 6}
           textAnchor="middle"
           fontSize={11}
-          fill="var(--semi-color-text-2)"
+          fill="var(--mg-text-2)"
           fontFamily="system-ui, -apple-system, sans-serif"
         >
           {l.text}
@@ -160,9 +162,10 @@ interface HistogramChartProps {
   buckets: { bucket_start: string; count: number }[]
   width: number
   height: number
+  noDataLabel: string
 }
 
-function HistogramChart({ buckets, width, height }: HistogramChartProps) {
+function HistogramChart({ buckets, width, height, noDataLabel }: HistogramChartProps) {
   const bars = useMemo(() => {
     if (buckets.length === 0) return { items: [], labels: [] }
     const maxCount = Math.max(...buckets.map((b) => b.count), 1)
@@ -193,8 +196,8 @@ function HistogramChart({ buckets, width, height }: HistogramChartProps) {
 
   if (buckets.length === 0) {
     return (
-      <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--semi-color-text-2)', fontSize: '13px' }}>
-        暂无数据
+      <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mg-text-2)', fontSize: '13px' }}>
+        {noDataLabel}
       </div>
     )
   }
@@ -206,7 +209,7 @@ function HistogramChart({ buckets, width, height }: HistogramChartProps) {
       {[0.25, 0.5, 0.75, 1].map((frac) => {
         const y = 12 + frac * (height - 40)
         return (
-          <line key={frac} x1={40} y1={y} x2={width - 40} y2={y} stroke="var(--semi-color-fill-0)" strokeWidth={1} />
+          <line key={frac} x1={40} y1={y} x2={width - 40} y2={y} stroke="var(--mg-fill-0)" strokeWidth={1} />
         )
       })}
       {items.map((bar: any, i: number) => (
@@ -217,12 +220,12 @@ function HistogramChart({ buckets, width, height }: HistogramChartProps) {
           width={barW}
           height={bar.h}
           rx={2}
-          style={{ fill: 'var(--semi-color-primary)' }}
+          style={{ fill: 'var(--mg-primary)' }}
           opacity={0.75}
         />
       ))}
       {labels.map((l: any, i: number) => (
-        <text key={i} x={l.x} y={height - 6} textAnchor="middle" fontSize={11} fill="var(--semi-color-text-2)" fontFamily="system-ui, -apple-system, sans-serif">
+        <text key={i} x={l.x} y={height - 6} textAnchor="middle" fontSize={11} fill="var(--mg-text-2)" fontFamily="system-ui, -apple-system, sans-serif">
           {l.text}
         </text>
       ))}
@@ -242,23 +245,23 @@ function KpiCard({ label, value, sub }: KpiCardProps) {
   return (
     <div
       style={{
-        background: 'var(--semi-color-bg-0)',
+        background: 'var(--mg-bg-0)',
         borderRadius: '12px',
-        border: '1px solid var(--semi-color-fill-0)',
+        border: '1px solid var(--mg-fill-0)',
         padding: '24px',
         boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
         flex: 1,
         minWidth: 0,
       }}
     >
-      <div style={{ fontSize: '12.5px', fontWeight: 500, color: 'var(--semi-color-text-2)', marginBottom: '10px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+      <div style={{ fontSize: '12.5px', fontWeight: 500, color: 'var(--mg-text-2)', marginBottom: '10px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
         {label}
       </div>
-      <div style={{ fontSize: '26px', fontWeight: 700, color: 'var(--semi-color-text-0)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+      <div style={{ fontSize: '26px', fontWeight: 700, color: 'var(--mg-text-0)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
         {value}
       </div>
       {sub && (
-        <div style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', marginTop: '6px' }}>{sub}</div>
+        <div style={{ fontSize: '12px', color: 'var(--mg-text-2)', marginTop: '6px' }}>{sub}</div>
       )}
     </div>
   )
@@ -279,9 +282,9 @@ function RangeBtn({ label, active, onClick }: RangeBtnProps) {
       style={{
         padding: '5px 16px',
         borderRadius: '20px',
-        border: active ? '1px solid #1e293b' : '1px solid var(--semi-color-border)',
-        background: active ? '#0f172a' : 'var(--semi-color-bg-0)',
-        color: active ? 'var(--semi-color-bg-0)' : 'var(--semi-color-text-1)',
+        border: active ? '1px solid #1e293b' : '1px solid var(--mg-border)',
+        background: active ? '#0f172a' : 'var(--mg-bg-0)',
+        color: active ? 'var(--mg-bg-0)' : 'var(--mg-text-1)',
         fontSize: '13px',
         fontWeight: active ? 600 : 400,
         cursor: 'pointer',
@@ -309,8 +312,8 @@ function MetricTab({ label, active, onClick }: MetricTabProps) {
         padding: '7px 20px',
         borderRadius: '8px',
         border: 'none',
-        background: active ? 'var(--semi-color-bg-1)' : 'transparent',
-        color: active ? 'var(--semi-color-text-0)' : 'var(--semi-color-text-1)',
+        background: active ? 'var(--mg-bg-1)' : 'transparent',
+        color: active ? 'var(--mg-text-0)' : 'var(--mg-text-1)',
         fontSize: '13.5px',
         fontWeight: active ? 600 : 400,
         cursor: 'pointer',
@@ -325,16 +328,26 @@ function MetricTab({ label, active, onClick }: MetricTabProps) {
 
 // ─── Page ─────────────────────────────────────────────
 
-const RANGE_LABELS: Record<Range, string> = { '7d': '近 7 天', '30d': '近 30 天', '90d': '近 90 天' }
-const METRIC_LABELS: Record<Metric, string> = { spend: '消费', requests: '请求数', tokens: 'Token' }
 const GRANULARITY_MAP: Record<Range, 'day' | 'day' | 'day'> = { '7d': 'day', '30d': 'day', '90d': 'day' }
 
 export default function UsagePage() {
+  const { t } = useTranslation()
   const [range, setRange] = useState<Range>('7d')
   const [metric, setMetric] = useState<Metric>('spend')
 
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const { symbol: currencySymbol } = useCurrency()
+
+  const RANGE_LABELS: Record<Range, string> = {
+    '7d': t('usage.range.7d'),
+    '30d': t('usage.range.30d'),
+    '90d': t('usage.range.90d'),
+  }
+  const METRIC_LABELS: Record<Metric, string> = {
+    spend: t('usage.metric.spend'),
+    requests: t('usage.metric.requests'),
+    tokens: t('usage.metric.tokens'),
+  }
 
   const { from, to } = getRangeDates(range)
 
@@ -387,15 +400,15 @@ export default function UsagePage() {
             style={{
               fontSize: '24px',
               fontWeight: 700,
-              color: 'var(--semi-color-text-0)',
+              color: 'var(--mg-text-0)',
               margin: '0 0 6px 0',
               letterSpacing: '-0.02em',
             }}
           >
-            用量分析
+            {t('usage.title')}
           </h1>
-          <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0, fontWeight: 400 }}>
-            查看 API 调用量、Token 消耗及费用趋势，帮助您精准掌握使用成本。
+          <p style={{ fontSize: '13px', color: 'var(--mg-text-1)', margin: 0, fontWeight: 400 }}>
+            {t('usage.desc')}
           </p>
         </div>
 
@@ -409,8 +422,8 @@ export default function UsagePage() {
 
       {/* KPI 卡片行 */}
       {summaryQuery.isError ? (
-        <div style={{ color: '#ef4444', fontSize: '13px', marginBottom: '24px' }}>
-          加载用量汇总失败，请稍后重试。
+        <div style={{ color: 'var(--mg-danger)', fontSize: '13px', marginBottom: '24px' }}>
+          {t('usage.error.summary')}
         </div>
       ) : (
         <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
@@ -420,9 +433,13 @@ export default function UsagePage() {
             </div>
           ) : (
             <>
-              <KpiCard label="总消费" value={kpiSpend} />
-              <KpiCard label="总请求数" value={kpiRequests} />
-              <KpiCard label="总 Token 数" value={summary ? formatNumber(summary.total.tokens) : '—'} sub={summary ? `输入 ${formatNumber(summary.total.input_tokens)} · 输出 ${formatNumber(summary.total.output_tokens)}` : undefined} />
+              <KpiCard label={t('usage.kpi.spend')} value={kpiSpend} />
+              <KpiCard label={t('usage.kpi.requests')} value={kpiRequests} />
+              <KpiCard
+                label={t('usage.kpi.tokens')}
+                value={summary ? formatNumber(summary.total.tokens) : '—'}
+                sub={summary ? `${t('usage.metric.requests').toLowerCase()} ${formatNumber(summary.total.input_tokens)} · ${formatNumber(summary.total.output_tokens)}` : undefined}
+              />
             </>
           )}
         </div>
@@ -431,9 +448,9 @@ export default function UsagePage() {
       {/* 折线图区域 */}
       <div
         style={{
-          background: 'var(--semi-color-bg-0)',
+          background: 'var(--mg-bg-0)',
           borderRadius: '12px',
-          border: '1px solid var(--semi-color-fill-0)',
+          border: '1px solid var(--mg-fill-0)',
           padding: '24px',
           boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
           marginBottom: '16px',
@@ -441,10 +458,10 @@ export default function UsagePage() {
       >
         {/* 指标切换 Tab */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--semi-color-text-0)' }}>
-            {METRIC_LABELS[metric]}趋势
+          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--mg-text-0)' }}>
+            {t('usage.chart.trendTitle', { metric: METRIC_LABELS[metric] })}
           </div>
-          <div style={{ display: 'flex', gap: '4px', background: 'var(--semi-color-bg-1)', padding: '3px', borderRadius: '10px' }}>
+          <div style={{ display: 'flex', gap: '4px', background: 'var(--mg-bg-1)', padding: '3px', borderRadius: '10px' }}>
             {(['spend', 'requests', 'tokens'] as Metric[]).map((m) => (
               <MetricTab key={m} label={METRIC_LABELS[m]} active={metric === m} onClick={() => setMetric(m)} />
             ))}
@@ -453,8 +470,8 @@ export default function UsagePage() {
 
         {/* 图表内容 */}
         {seriesQuery.isError ? (
-          <div style={{ color: '#ef4444', fontSize: '13px', textAlign: 'center', padding: '40px 0' }}>
-            加载趋势数据失败，请稍后重试。
+          <div style={{ color: 'var(--mg-danger)', fontSize: '13px', textAlign: 'center', padding: '40px 0' }}>
+            {t('usage.error.series')}
           </div>
         ) : seriesQuery.isLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
@@ -467,27 +484,28 @@ export default function UsagePage() {
               width={900}
               height={220}
               metric={metric}
+              noDataLabel={t('usage.noData')}
             />
           </div>
         )}
       </div>
 
-      {/* 请求分布直方图 */}
+      {/* {t('usage.chart.histogramTitle')}直方图 */}
       <div
         style={{
-          background: 'var(--semi-color-bg-0)',
+          background: 'var(--mg-bg-0)',
           borderRadius: '12px',
-          border: '1px solid var(--semi-color-fill-0)',
+          border: '1px solid var(--mg-fill-0)',
           padding: '24px',
           boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
         }}
       >
-        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: '20px' }}>
-          请求分布
+        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--mg-text-0)', marginBottom: '20px' }}>
+          {t('usage.chart.histogramTitle')}
         </div>
         {histogramQuery.isError ? (
-          <div style={{ color: '#ef4444', fontSize: '13px', textAlign: 'center', padding: '40px 0' }}>
-            加载分布数据失败，请稍后重试。
+          <div style={{ color: 'var(--mg-danger)', fontSize: '13px', textAlign: 'center', padding: '40px 0' }}>
+            {t('usage.error.histogram')}
           </div>
         ) : histogramQuery.isLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '160px' }}>
@@ -499,6 +517,7 @@ export default function UsagePage() {
               buckets={histogramQuery.data?.buckets ?? []}
               width={900}
               height={160}
+              noDataLabel={t('usage.noData')}
             />
           </div>
         )}

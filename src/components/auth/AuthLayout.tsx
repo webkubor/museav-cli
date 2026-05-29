@@ -58,11 +58,11 @@ export function AuthLayout({ title, subtitle, footer, children }: AuthLayoutProp
             alt="ModelGo"
             className="w-11 h-11 object-contain mx-auto mb-4 transition-transform duration-300"
           />
-          <h1 className="m-0 font-extrabold text-[22px] tracking-tight text-semi-color-text-0 leading-tight">
+          <h1 className="m-0 font-extrabold text-[22px] tracking-tight text-mg-text-0 leading-tight">
             {title}
           </h1>
           {subtitle && (
-            <p className="text-semi-color-text-2 text-xs font-semibold mt-1.5 mb-0">
+            <p className="text-mg-text-2 text-xs font-semibold mt-1.5 mb-0">
               {subtitle}
             </p>
           )}
@@ -75,7 +75,7 @@ export function AuthLayout({ title, subtitle, footer, children }: AuthLayoutProp
 
         {/* 页脚 */}
         {footer && (
-          <div className="text-center mt-[22px] text-[12.5px] font-semibold text-semi-color-text-2 tracking-tight">
+          <div className="text-center mt-[22px] text-[12.5px] font-semibold text-mg-text-2 tracking-tight">
             {footer}
           </div>
         )}

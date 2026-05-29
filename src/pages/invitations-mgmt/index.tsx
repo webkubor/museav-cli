@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { LuSearch, LuUserPlus } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
@@ -19,6 +20,7 @@ import { Badge } from '@/components/ui/Badge'
 import { appToast } from '@/lib/app-toast'
 
 export default function InvitationsMgmtPage() {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
@@ -60,14 +62,14 @@ export default function InvitationsMgmtPage() {
       return createInvitations(activeWorkspaceId!, { invites, expires_in_hours: expiresInHours })
     },
     onSuccess: () => {
-      appToast.success('邀请已发出')
+      appToast.success(t('invitations.toast.sent'))
       setModalOpen(false)
       setSelectedIds(new Set())
       setSearch('')
       setExpiresInHours(72)
       qc.invalidateQueries({ queryKey: ['workspace-invitations', activeWorkspaceId] })
     },
-    onError: (err: any) => appToast.error(err?.message || '邀请失败'),
+    onError: (err: any) => appToast.error(err?.message || t('invitations.toast.sendError')),
   })
 
   function toggleMember(id: string) {
@@ -97,11 +99,11 @@ export default function InvitationsMgmtPage() {
   const revokeMutation = useMutation({
     mutationFn: revokeInvitation,
     onSuccess: () => {
-      appToast.success('邀请已撤销')
+      appToast.success(t('invitations.toast.revoked'))
       qc.invalidateQueries({ queryKey: ['workspace-invitations', activeWorkspaceId] })
     },
     onError: (err: any) => {
-      appToast.error(err?.message || '撤销邀请失败')
+      appToast.error(err?.message || t('invitations.toast.revokeError'))
     },
   })
 
@@ -113,28 +115,28 @@ export default function InvitationsMgmtPage() {
       <div style={{ marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '0 0 6px 0' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--semi-color-text-0)', margin: 0, letterSpacing: '-0.02em' }}>
-              工作区邀请管理
+            <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--mg-text-0)', margin: 0, letterSpacing: '-0.02em' }}>
+              {t('invitations.title')}
             </h1>
             {activeTenant?.name && (
-              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--semi-color-primary)', background: 'var(--semi-color-primary-light-default)', padding: '3px 10px', borderRadius: '4px', flexShrink: 0 }}>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mg-primary)', background: 'var(--mg-primary-light)', padding: '3px 10px', borderRadius: '4px', flexShrink: 0 }}>
                 {activeTenant.name}
               </span>
             )}
           </div>
-          <p style={{ fontSize: '13px', color: 'var(--semi-color-text-1)', margin: 0 }}>
-            邀请组织成员加入当前工作区。
+          <p style={{ fontSize: '13px', color: 'var(--mg-text-1)', margin: 0 }}>
+            {t('invitations.desc')}
           </p>
         </div>
         {canManage && (
           <Button variant="default" className="rounded-lg font-semibold flex items-center gap-1.5 h-10 px-4" onClick={handleOpenModal}>
             <LuUserPlus size={16} />
-            邀请成员
+            {t('invitations.inviteBtn')}
           </Button>
         )}
       </div>
 
-      {/* ── 邀请成员弹窗（极雅玻璃态 Modal） ──────────────────────────────────── */}
+      {/* ── 邀请成员弹窗 ──────────────────────────────────── */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* 背景遮罩 */}
@@ -144,8 +146,8 @@ export default function InvitationsMgmtPage() {
           <div className="relative bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl w-full max-w-[520px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
             {/* Header */}
             <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-              <h2 className="text-base font-bold text-gray-900 dark:text-white">邀请组织成员</h2>
-              <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm font-semibold transition-colors" onClick={() => setModalOpen(false)}>✕</button>
+              <h2 className="text-base font-bold text-gray-900 dark:text-white">{t('invitations.modal.title')}</h2>
+              <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm font-semibold transition-colors" onClick={() => setModalOpen(false)}>{t('invitations.modal.close')}</button>
             </div>
 
             {/* Body */}
@@ -154,7 +156,7 @@ export default function InvitationsMgmtPage() {
                 <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                 <Input
                   className="pl-9 h-10 rounded-lg w-full"
-                  placeholder="搜索姓名或邮箱"
+                  placeholder={t('invitations.modal.searchPlaceholder')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -168,7 +170,7 @@ export default function InvitationsMgmtPage() {
                 <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-1">
                   {filteredMembers.length === 0 ? (
                     <div className="text-center py-12 text-sm text-gray-400 dark:text-gray-500">
-                      暂无匹配成员
+                      {t('invitations.modal.noMembers')}
                     </div>
                   ) : (
                     filteredMembers.map((m: TenantMember) => (
@@ -219,7 +221,7 @@ export default function InvitationsMgmtPage() {
             <div className="p-5 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">角色</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">{t('invitations.modal.roleLabel')}</span>
                   <select
                     value={inviteRole}
                     onChange={(e) => setInviteRole(e.target.value as any)}
@@ -231,29 +233,31 @@ export default function InvitationsMgmtPage() {
                   </select>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">有效期</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">{t('invitations.modal.expiryLabel')}</span>
                   <select
                     value={expiresInHours}
                     onChange={(e) => setExpiresInHours(Number(e.target.value))}
                     className="modern-input-field h-8 text-xs py-0 pr-8 pl-2 bg-white dark:bg-gray-800"
                   >
-                    <option value={24}>24 小时</option>
-                    <option value={72}>3 天</option>
-                    <option value={168}>7 天</option>
-                    <option value={720}>30 天</option>
+                    <option value={24}>{t('invitations.modal.expiry24h')}</option>
+                    <option value={72}>{t('invitations.modal.expiry3d')}</option>
+                    <option value={168}>{t('invitations.modal.expiry7d')}</option>
+                    <option value={720}>{t('invitations.modal.expiry30d')}</option>
                   </select>
                 </div>
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" className="h-9 px-4 rounded-lg text-xs" onClick={() => setModalOpen(false)}>取消</Button>
+                <Button variant="outline" className="h-9 px-4 rounded-lg text-xs" onClick={() => setModalOpen(false)}>{t('invitations.modal.cancel')}</Button>
                 <Button
                   variant="default"
                   className="h-9 px-4 rounded-lg text-xs font-semibold"
                   disabled={selectedIds.size === 0 || sendInvitesMutation.isPending}
                   onClick={() => sendInvitesMutation.mutate()}
                 >
-                  {sendInvitesMutation.isPending ? '发送中...' : `发送邀请 ${selectedIds.size > 0 ? `(${selectedIds.size})` : ''}`}
+                  {sendInvitesMutation.isPending
+                    ? t('invitations.modal.sendPending')
+                    : t('invitations.modal.send', { suffix: selectedIds.size > 0 ? `(${selectedIds.size})` : '' })}
                 </Button>
               </div>
             </div>
@@ -261,10 +265,10 @@ export default function InvitationsMgmtPage() {
         </div>
       )}
 
-      {/* ── 邀请记录列表（精美的 Stripe 样式 Table） ──────────────────────────────────── */}
+      {/* ── 邀请记录列表 ──────────────────────────────────── */}
       <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
         <div className="flex justify-between items-center p-5 border-b border-gray-100 dark:border-gray-800">
-          <h3 className="text-base font-bold text-gray-900 dark:text-white">邀请记录</h3>
+          <h3 className="text-base font-bold text-gray-900 dark:text-white">{t('invitations.list.title')}</h3>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as any)}
@@ -284,17 +288,17 @@ export default function InvitationsMgmtPage() {
           ) : invitations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <span className="text-3xl mb-3">📬</span>
-              <p className="text-sm text-gray-400 dark:text-gray-500 font-medium">暂无邀请记录</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 font-medium">{t('invitations.list.empty')}</p>
             </div>
           ) : (
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-gray-800">
-                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">邮箱</th>
-                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">角色</th>
-                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">状态</th>
-                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">过期时间</th>
-                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs w-20">操作</th>
+                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">{t('invitations.list.table.email')}</th>
+                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">{t('invitations.list.table.role')}</th>
+                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">{t('invitations.list.table.status')}</th>
+                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">{t('invitations.list.table.expiresAt')}</th>
+                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs w-20">{t('invitations.list.table.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -341,7 +345,7 @@ export default function InvitationsMgmtPage() {
                               onClick={() => revokeMutation.mutate(record.invitation_id)}
                               className="text-rose-500 hover:text-rose-600 bg-none border-none cursor-pointer font-bold transition-all p-0"
                             >
-                              撤销
+                              {t('invitations.list.table.revoke')}
                             </button>
                           ) : (
                             <span className="text-gray-300 dark:text-gray-700">—</span>

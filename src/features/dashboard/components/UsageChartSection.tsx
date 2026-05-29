@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import React, { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getUsageSeries } from '@/services/usage'
@@ -21,6 +22,7 @@ function formatChartLabel(iso: string) {
 }
 
 export const UsageChartSection: React.FC = () => {
+  const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
 
   const { data, isLoading } = useQuery({
@@ -66,10 +68,10 @@ export const UsageChartSection: React.FC = () => {
   }, [chartPath])
 
   return (
-    <Card className="p-6 border-none shadow-md bg-semi-color-bg-1 flex flex-col">
+    <Card className="p-6 border-none shadow-md bg-mg-bg-1 flex flex-col">
       <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ fontWeight: 700, fontSize: '16px', color: 'var(--semi-color-text-0)', margin: 0 }}>用量趋势 (最近 14 天)</h3>
-        <span style={{ fontSize: '12px', color: 'var(--semi-color-text-2)', display: 'block', marginTop: '4px' }}>请求数 (Requests)</span>
+        <h3 style={{ fontWeight: 700, fontSize: '16px', color: 'var(--mg-text-0)', margin: 0 }}>{t('dashboard.usageChart.title')}</h3>
+        <span style={{ fontSize: '12px', color: 'var(--mg-text-2)', display: 'block', marginTop: '4px' }}>{t('dashboard.usageChart.requestsLabel')}</span>
       </div>
 
       <div style={{ flex: 1, position: 'relative', minHeight: '200px' }}>
@@ -79,14 +81,14 @@ export const UsageChartSection: React.FC = () => {
           <svg width="100%" height="200" viewBox="0 0 800 200" preserveAspectRatio="none">
             <defs>
               <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--semi-color-primary)" stopOpacity="0.2" />
-                <stop offset="100%" stopColor="var(--semi-color-primary)" stopOpacity="0" />
+                <stop offset="0%" stopColor="var(--mg-primary)" stopOpacity="0.2" />
+                <stop offset="100%" stopColor="var(--mg-primary)" stopOpacity="0" />
               </linearGradient>
             </defs>
             {/* 网格线 */}
-            <line x1="0" y1="180" x2="800" y2="180" stroke="var(--semi-color-border)" strokeDasharray="4 4" />
-            <line x1="0" y1="100" x2="800" y2="100" stroke="var(--semi-color-border)" strokeDasharray="4 4" opacity="0.5" />
-            <line x1="0" y1="20" x2="800" y2="20" stroke="var(--semi-color-border)" strokeDasharray="4 4" opacity="0.3" />
+            <line x1="0" y1="180" x2="800" y2="180" stroke="var(--mg-border)" strokeDasharray="4 4" />
+            <line x1="0" y1="100" x2="800" y2="100" stroke="var(--mg-border)" strokeDasharray="4 4" opacity="0.5" />
+            <line x1="0" y1="20" x2="800" y2="20" stroke="var(--mg-border)" strokeDasharray="4 4" opacity="0.3" />
             
             {/* 渐变填充 */}
             <path d={areaPath} fill="url(#chartGradient)" />
@@ -95,7 +97,7 @@ export const UsageChartSection: React.FC = () => {
             <path 
               d={chartPath} 
               fill="none" 
-              stroke="var(--semi-color-primary)" 
+              stroke="var(--mg-primary)" 
               strokeWidth="3" 
               strokeLinecap="round" 
               strokeLinejoin="round" 
@@ -104,16 +106,16 @@ export const UsageChartSection: React.FC = () => {
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <span className="text-2xl mb-2">📊</span>
-            <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">暂无趋势数据</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">{t('dashboard.usageChart.empty')}</p>
           </div>
         )}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
-        <span style={{ fontSize: '11px', color: 'var(--semi-color-text-3)' }}>
+        <span style={{ fontSize: '11px', color: 'var(--mg-text-3)' }}>
           {data?.series?.[0] ? formatChartLabel(data.series[0].bucket_start) : ''}
         </span>
-        <span style={{ fontSize: '11px', color: 'var(--semi-color-text-3)' }}>
+        <span style={{ fontSize: '11px', color: 'var(--mg-text-3)' }}>
           {data?.series?.[data.series.length - 1] ? formatChartLabel(data.series[data.series.length - 1].bucket_start) : ''}
         </span>
       </div>

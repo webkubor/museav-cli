@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
 import { getBalance } from '@/services/billing'
@@ -18,9 +19,9 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, loading, color }) => {
   return (
     <Card
       hoverable
-      className="p-6 min-h-[110px] flex flex-col justify-center border-none shadow-md bg-gradient-to-br from-semi-color-bg-1 to-semi-color-bg-0"
+      className="p-6 min-h-[110px] flex flex-col justify-center border-none shadow-md bg-gradient-to-br from-mg-bg-1 to-mg-bg-0"
     >
-      <span style={{ color: 'var(--semi-color-text-2)', fontSize: '13px', fontWeight: 600 }}>
+      <span style={{ color: 'var(--mg-text-2)', fontSize: '13px', fontWeight: 600 }}>
         {title}
       </span>
       <div style={{ marginTop: '8px' }}>
@@ -30,7 +31,7 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, loading, color }) => {
           <span style={{
             fontSize: '32px',
             fontWeight: 800,
-            color: color === 'var(--semi-color-text-0)' ? 'var(--semi-color-text-0)' : color,
+            color: color === 'var(--mg-text-0)' ? 'var(--mg-text-0)' : color,
             letterSpacing: '-0.04em',
             display: 'block',
           }}>
@@ -43,6 +44,7 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, loading, color }) => {
 }
 
 export const KpiSection: React.FC = () => {
+  const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const { symbol: currencySymbol } = useCurrency()
 
@@ -86,10 +88,10 @@ export const KpiSection: React.FC = () => {
     : undefined
 
   const cards = [
-    { title: '可用余额', value: availableBalance, loading: balanceLoading, color: 'var(--semi-color-text-0)' },
-    { title: '本月消费', value: monthlySpend, loading: billingLoading, color: '#f59e0b' },
-    { title: '本月请求数', value: monthlyRequests, loading: usageLoading, color: '#10b981' },
-    { title: '本月 Token 用量', value: monthlyTokens, loading: usageLoading, color: '#3b82f6' },
+    { title: t('dashboard.kpi.balance'), value: availableBalance, loading: balanceLoading, color: 'var(--mg-text-0)' },
+    { title: t('dashboard.kpi.monthlySpend'), value: monthlySpend, loading: billingLoading, color: 'var(--mg-warning)' },
+    { title: t('dashboard.kpi.monthlyRequests'), value: monthlyRequests, loading: usageLoading, color: 'var(--mg-success)' },
+    { title: t('dashboard.kpi.monthlyTokens'), value: monthlyTokens, loading: usageLoading, color: 'var(--mg-primary)' },
   ]
 
   return (

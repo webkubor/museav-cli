@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { LuCopy, LuCheck, LuBook } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { getMarket } from '@/lib/market'
@@ -17,6 +18,7 @@ import { appToast } from '@/lib/app-toast'
  * 整合打招呼、工作区标签与 CLI 一键 Onboarding 安装
  */
 export const WelcomeBanner: React.FC = () => {
+  const { t } = useTranslation()
   const displayName = useAuthStore((s) => s.account?.display_name)
   const tenants = useAuthStore((s) => s.tenants)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
@@ -39,49 +41,49 @@ export const WelcomeBanner: React.FC = () => {
   const handleCopy = () => {
     navigator.clipboard.writeText(fullCmd)
     setCopied(true)
-    appToast.success(isDomestic ? 'CLI 接入命令已复制到剪贴板' : 'CLI commands copied to clipboard')
+    appToast.success(isDomestic ? t('welcomeBanner.toast.copiedDomestic') : t('welcomeBanner.toast.copiedGlobal'))
     setTimeout(() => setCopied(false), 2000)
   }
 
   // 国际化文案自适应
-  const t = {
-    greeting: displayName
-      ? isDomestic
-        ? `你好，${displayName}`
-        : `Hello, ${displayName}`
-      : isDomestic
-      ? '你好，开发者'
-      : 'Hello, Developer',
-    brandName: isDomestic ? '词元共生' : 'ModelGo',
-    subTitle: isDomestic
-      ? '高性能、高合规的多模型路由聚合平台'
-      : 'Unified High-Performance Intelligent AI Routing Platform',
-    desc: isDomestic
-      ? '欢迎访问 ModelGo 开发者控制台。在下方管理 API 密钥、监控用量和账单。使用右侧 CLI 命令行即可在 1 分钟内免密接入与调用多款大语言模型。'
-      : 'Welcome to the ModelGo workspace. Manage API keys, monitor requests, and check billing. Use the CLI commands on the right to auth and access models in less than a minute.',
-    workspaceTag: isEnterprise
-      ? isDomestic
-        ? '企业级组织'
-        : 'Enterprise Org'
-      : isDomestic
-      ? '个人开发者'
-      : 'Personal Acc',
-    docsBtn: isDomestic ? '开发文档' : 'Developer Docs',
-    docsUrl: isDomestic ? 'https://doc.modelgo.com' : 'https://doc.modelgo.ai',
-    terminalTitle: 'bash — installation & login'
-  }
+  const greeting = displayName
+    ? isDomestic
+      ? t('welcomeBanner.greetingDomestic', { name: displayName })
+      : t('welcomeBanner.greetingGlobal', { name: displayName })
+    : isDomestic
+    ? t('welcomeBanner.greetingDefaultDomestic')
+    : t('welcomeBanner.greetingDefaultGlobal')
+
+  const brandName = isDomestic ? t('welcomeBanner.brandNameDomestic') : t('welcomeBanner.brandNameGlobal')
+  const subTitle = isDomestic ? t('welcomeBanner.subTitleDomestic') : t('welcomeBanner.subTitleGlobal')
+  const desc = isDomestic ? t('welcomeBanner.descDomestic') : t('welcomeBanner.descGlobal')
+  const workspaceTag = isEnterprise
+    ? isDomestic
+      ? t('welcomeBanner.workspaceTagEnterpriseDomestic')
+      : t('welcomeBanner.workspaceTagEnterpriseGlobal')
+    : isDomestic
+    ? t('welcomeBanner.workspaceTagPersonalDomestic')
+    : t('welcomeBanner.workspaceTagPersonalGlobal')
+  const docsBtn = isDomestic ? t('welcomeBanner.docsBtnDomestic') : t('welcomeBanner.docsBtnGlobal')
+  const docsUrl = isDomestic ? 'https://doc.modelgo.com' : 'https://doc.modelgo.ai'
+  const terminalTitle = t('welcomeBanner.terminalTitle')
+  const cliComment1 = isDomestic ? t('welcomeBanner.cliComment1Domestic') : t('welcomeBanner.cliComment1Global')
+  const cliComment2 = isDomestic ? t('welcomeBanner.cliComment2Domestic') : t('welcomeBanner.cliComment2Global')
+  const copyLabel = isDomestic ? t('welcomeBanner.copy') : t('welcomeBanner.copyGlobal')
+  const copiedLabel = isDomestic ? t('welcomeBanner.copied') : t('welcomeBanner.copiedGlobal')
 
   // 动态主题渐变色
   const glowColor = isDomestic ? 'rgba(99, 102, 241, 0.08)' : 'rgba(16, 185, 129, 0.08)'
   const accentBorder = isDomestic ? 'rgba(99, 102, 241, 0.15)' : 'rgba(16, 185, 129, 0.15)'
   const accentGlow = isDomestic ? 'rgba(99, 102, 241, 0.2)' : 'rgba(16, 185, 129, 0.2)'
+  const subTitleColor = isDomestic ? '#4f46e5' : '#059669'
 
   return (
     <div
       style={{
         borderRadius: '20px',
-        border: '1px solid var(--semi-color-border)',
-        background: `linear-gradient(135deg, ${glowColor} 0%, rgba(255, 255, 255, 0.03) 50%, var(--semi-color-bg-0) 100%)`,
+        border: '1px solid var(--mg-border)',
+        background: `linear-gradient(135deg, ${glowColor} 0%, rgba(255, 255, 255, 0.03) 50%, var(--mg-bg-0) 100%)`,
         padding: '40px 48px',
         marginBottom: '36px',
         boxShadow: '0 8px 30px rgba(0, 0, 0, 0.02)',
@@ -127,25 +129,25 @@ export const WelcomeBanner: React.FC = () => {
               backgroundColor: isEnterprise
                 ? 'rgba(59, 130, 246, 0.08)'
                 : 'rgba(100, 116, 139, 0.08)',
-              color: isEnterprise ? '#3b82f6' : 'var(--semi-color-text-2)',
-              border: `1px solid ${isEnterprise ? 'rgba(59, 130, 246, 0.15)' : 'var(--semi-color-border)'}`,
+              color: isEnterprise ? '#3b82f6' : 'var(--mg-text-2)',
+              border: `1px solid ${isEnterprise ? 'rgba(59, 130, 246, 0.15)' : 'var(--mg-border)'}`,
               display: 'inline-flex',
               alignItems: 'center',
               boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)'
             }}
           >
-            {t.workspaceTag}
+            {workspaceTag}
           </span>
           <span
             style={{
               width: '4px',
               height: '4px',
               borderRadius: '50%',
-              backgroundColor: 'var(--semi-color-border)'
+              backgroundColor: 'var(--mg-border)'
             }}
           />
-          <span style={{ fontSize: '11.5px', color: 'var(--semi-color-text-2)', fontWeight: 500 }}>
-            {t.brandName} Control Center
+          <span style={{ fontSize: '11.5px', color: 'var(--mg-text-2)', fontWeight: 500 }}>
+            {brandName} Control Center
           </span>
         </div>
 
@@ -155,30 +157,30 @@ export const WelcomeBanner: React.FC = () => {
             fontWeight: 800,
             fontSize: '36px',
             letterSpacing: '-0.04em',
-            color: 'var(--semi-color-text-0)',
+            color: 'var(--mg-text-0)',
             lineHeight: 1.1
           }}
         >
-          {t.greeting} 👋
+          {greeting} 👋
         </h1>
-        
+
         <p
           style={{
             display: 'block',
             fontSize: '15px',
             fontWeight: 600,
-            color: isDomestic ? '#4f46e5' : '#059669',
+            color: subTitleColor,
             letterSpacing: '-0.01em',
             margin: '0 0 14px 0'
           }}
         >
-          {t.subTitle}
+          {subTitle}
         </p>
 
         <p
           style={{
             display: 'block',
-            color: 'var(--semi-color-text-1)',
+            color: 'var(--mg-text-1)',
             fontSize: '13px',
             fontWeight: 400,
             lineHeight: 1.6,
@@ -186,17 +188,17 @@ export const WelcomeBanner: React.FC = () => {
             margin: '0 0 22px 0'
           }}
         >
-          {t.desc}
+          {desc}
         </p>
 
         <Button
           variant="outline"
           size="sm"
-          className="rounded-[8px] font-semibold px-4 py-2 bg-semi-color-bg-1 border border-semi-color-border shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all cursor-pointer inline-flex items-center gap-2"
-          onClick={() => window.open(t.docsUrl, '_blank')}
+          className="rounded-[8px] font-semibold px-4 py-2 bg-mg-bg-1 border border-mg-border shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all cursor-pointer inline-flex items-center gap-2"
+          onClick={() => window.open(docsUrl, '_blank')}
         >
           <LuBook />
-          {t.docsBtn}
+          {docsBtn}
         </Button>
       </div>
 
@@ -239,7 +241,7 @@ export const WelcomeBanner: React.FC = () => {
             <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#ffbd2e', display: 'inline-block' }} />
             <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#27c93f', display: 'inline-block' }} />
             <span style={{ fontSize: '11px', color: '#64748b', fontFamily: 'SFMono-Regular, Consolas, Monaco, monospace', marginLeft: '12px', fontWeight: 600 }}>
-              {t.terminalTitle}
+              {terminalTitle}
             </span>
           </div>
 
@@ -249,8 +251,8 @@ export const WelcomeBanner: React.FC = () => {
             onClick={handleCopy}
             className="text-[#64748b] bg-white/4 rounded-[6px] px-2 py-1 h-6 transition-all border-none flex items-center gap-1 hover:text-white"
           >
-            {copied ? <LuCheck className="text-[#10b981]" /> : <LuCopy className="text-[#64748b]" />}
-            {copied ? (isDomestic ? '已复制' : 'Copied') : (isDomestic ? '复制' : 'Copy')}
+            {copied ? <LuCheck className="text-[var(--mg-success)]" /> : <LuCopy className="text-[#64748b]" />}
+            {copied ? copiedLabel : copyLabel}
           </Button>
         </div>
 
@@ -268,12 +270,12 @@ export const WelcomeBanner: React.FC = () => {
           }}
         >
           <code>
-            <span style={{ color: '#475569' }}># 1. {isDomestic ? '安装命令行接入工具' : 'Install ModelGo CLI'}</span>
+            <span style={{ color: '#475569' }}># 1. {cliComment1}</span>
             <br />
             <span style={{ color: '#38bdf8' }}>npm</span> install -g <span style={{ color: '#34d399' }}>modelgo-cli</span>
             <br />
             <br />
-            <span style={{ color: '#475569' }}># 2. {isDomestic ? '快捷浏览器登录授权' : 'Auth & login via browser'}</span>
+            <span style={{ color: '#475569' }}># 2. {cliComment2}</span>
             <br />
             <span style={{ color: '#34d399' }}>modelgo-cli</span> auth <span style={{ color: '#f59e0b' }}>login</span>
           </code>

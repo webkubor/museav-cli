@@ -74,7 +74,7 @@ const HeaderDropdown: React.FC<{
       {open && (
         <div 
           className={cn(
-            "absolute z-50 mt-2 bg-semi-color-bg-0 border border-semi-color-border/60 rounded-xl shadow-xl shadow-black/5 backdrop-blur-md p-1.5 min-w-[140px] animate-in fade-in-50 zoom-in-95 duration-150 origin-top-right",
+            "absolute z-50 mt-2 bg-mg-bg-0 border border-mg-border/60 rounded-xl shadow-xl shadow-black/5 backdrop-blur-md p-1.5 min-w-[140px] animate-in fade-in-50 zoom-in-95 duration-150 origin-top-right",
             position === 'bottomRight' ? "right-0" : "left-0"
           )}
         >
@@ -99,16 +99,16 @@ const DropdownItem: React.FC<{
     <div
       role="button"
       onClick={onClick}
-      className="flex items-center gap-2 px-3 py-2.5 text-[13px] rounded-lg text-semi-color-text-1 hover:bg-semi-color-fill-0/60 hover:text-semi-color-text-0 active:scale-[0.98] transition-all duration-150 cursor-pointer select-none font-semibold leading-none outline-none"
+      className="flex items-center gap-2 px-3 py-2.5 text-[13px] rounded-lg text-mg-text-1 hover:bg-mg-fill-0/60 hover:text-mg-text-0 active:scale-[0.98] transition-all duration-150 cursor-pointer select-none font-semibold leading-none outline-none"
       style={style}
     >
-      {icon && <span className="text-semi-color-text-2 shrink-0">{icon}</span>}
+      {icon && <span className="text-mg-text-2 shrink-0">{icon}</span>}
       <span className="flex-1 truncate">{children}</span>
     </div>
   )
 }
 
-const DropdownDivider = () => <div className="h-[1px] bg-semi-color-border/40 my-1 mx-1" />
+const DropdownDivider = () => <div className="h-[1px] bg-mg-border/40 my-1 mx-1" />
 
 /**
  * 重构后的 DashboardHeader
@@ -290,7 +290,7 @@ export const DashboardHeader: React.FC = () => {
   }
 
   return (
-    <header className="h-[60px] border-b border-semi-color-border/60 bg-semi-color-bg-0 px-6 flex items-center justify-between z-40 relative select-none">
+    <header className="h-[60px] border-b border-mg-border/60 bg-mg-bg-0 px-6 flex items-center justify-between z-40 relative select-none">
       {/* 左侧：Logo & 工作区选择器 */}
       <div className="flex items-center gap-6">
         {/* Logo 展现 */}
@@ -306,7 +306,7 @@ export const DashboardHeader: React.FC = () => {
         </div>
 
         {/* 竖隔线 */}
-        <div className="w-[1px] h-4 bg-semi-color-border/40" />
+        <div className="w-[1px] h-4 bg-mg-border/40" />
 
         {/* 极雅工作区切换选择 Dropdown */}
         <HeaderDropdown
@@ -318,14 +318,14 @@ export const DashboardHeader: React.FC = () => {
                   onClick={() => handleSwitchWorkspace(ws.workspace_id)}
                   style={{
                     fontWeight: ws.workspace_id === activeWorkspaceId ? 700 : 500,
-                    color: ws.workspace_id === activeWorkspaceId ? 'var(--brand-base)' : 'var(--semi-color-text-1)',
+                    color: ws.workspace_id === activeWorkspaceId ? 'var(--brand-base)' : 'var(--mg-text-1)',
                     backgroundColor: ws.workspace_id === activeWorkspaceId ? 'var(--brand-selected-bg)' : undefined,
                   }}
                 >
                   <div className="flex items-center justify-between w-full">
                     <span>{ws.name}</span>
                     {ws.is_default && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-semi-color-fill-1 text-semi-color-text-2 font-bold tracking-wide uppercase scale-90">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-mg-fill-1 text-mg-text-2 font-bold tracking-wide uppercase scale-90">
                         {t('header.defaultTag')}
                       </span>
                     )}
@@ -350,9 +350,9 @@ export const DashboardHeader: React.FC = () => {
             </DropdownMenu>
           }
         >
-          <div className="flex items-center gap-2 bg-semi-color-fill-0/50 hover:bg-semi-color-bg-0 hover:border-brand-mid/50 px-3.5 py-1.5 rounded-full border border-semi-color-border text-xs text-semi-color-text-1 transition-all duration-200 hover:shadow-sm">
-            <span className="font-bold text-semi-color-text-0">{activeWorkspace?.name ?? t('header.defaultWorkspace')}</span>
-            <LuChevronDown size={10} className="text-semi-color-text-2" />
+          <div className="flex items-center gap-2 bg-mg-fill-0/50 hover:bg-mg-bg-0 hover:border-brand-mid/50 px-3.5 py-1.5 rounded-full border border-mg-border text-xs text-mg-text-1 transition-all duration-200 hover:shadow-sm">
+            <span className="font-bold text-mg-text-0">{activeWorkspace?.name ?? t('header.defaultWorkspace')}</span>
+            <LuChevronDown size={10} className="text-mg-text-2" />
           </div>
         </HeaderDropdown>
       </div>
@@ -433,17 +433,17 @@ export const DashboardHeader: React.FC = () => {
           render={
             <DropdownMenu style={{ width: '230px' }}>
               {/* 账户信息头部 */}
-              <div className="px-3.5 py-2.5 border-b border-semi-color-border/40 mb-1 select-none">
-                <div className="font-bold text-sm text-semi-color-text-0 leading-none truncate">
+              <div className="px-3.5 py-2.5 border-b border-mg-border/40 mb-1 select-none">
+                <div className="font-bold text-sm text-mg-text-0 leading-none truncate">
                   {account?.display_name || '—'}
                 </div>
-                <div className="text-[11.5px] text-semi-color-text-2 mt-1 truncate">
+                <div className="text-[11.5px] text-mg-text-2 mt-1 truncate">
                   {account?.email}
                 </div>
               </div>
 
               {/* 组织列表 */}
-              <div className="px-3.5 py-1 text-[10px] font-bold tracking-wider text-semi-color-text-2/80 uppercase select-none">
+              <div className="px-3.5 py-1 text-[10px] font-bold tracking-wider text-mg-text-2/80 uppercase select-none">
                 {t('header.organizations')}
               </div>
               
@@ -463,7 +463,7 @@ export const DashboardHeader: React.FC = () => {
                     onClick={() => handleSwitchTenant(tenant)}
                     style={{
                       fontWeight: isActive ? 700 : 500,
-                      color: isActive ? 'var(--brand-base)' : 'var(--semi-color-text-1)',
+                      color: isActive ? 'var(--brand-base)' : 'var(--mg-text-1)',
                       backgroundColor: isActive ? 'var(--brand-selected-bg)' : undefined,
                     }}
                   >
@@ -471,13 +471,13 @@ export const DashboardHeader: React.FC = () => {
                       {/* 组织头像 */}
                       <Avatar className="h-6 w-6 border-none">
                         {tenant.logo_url && <AvatarImage src={tenant.logo_url} />}
-                        <AvatarFallback className="text-[10px] bg-semi-color-fill-1 text-semi-color-text-1 font-bold">
+                        <AvatarFallback className="text-[10px] bg-mg-fill-1 text-mg-text-1 font-bold">
                           {letter}
                         </AvatarFallback>
                       </Avatar>
                       <span className="flex-1 truncate max-w-[100px]">{displayName}</span>
                       {tenant.type === 'enterprise' && tenantRole && (
-                        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded border bg-semi-color-fill-0 border-semi-color-border text-semi-color-text-2 scale-90 shrink-0">
+                        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded border bg-mg-fill-0 border-mg-border text-mg-text-2 scale-90 shrink-0">
                           {roleLabel[tenantRole] ?? tenantRole}
                         </span>
                       )}
@@ -545,7 +545,7 @@ export const DashboardHeader: React.FC = () => {
             <DialogTitle>{t('header.createOrg')}</DialogTitle>
           </DialogHeader>
           <div className="py-4 flex flex-col gap-2">
-            <div className="text-xs font-bold text-semi-color-text-1">
+            <div className="text-xs font-bold text-mg-text-1">
               {t('header.orgNameLabel')}
             </div>
             <Input
@@ -574,7 +574,7 @@ export const DashboardHeader: React.FC = () => {
           </DialogHeader>
           <div className="py-4 flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <div className="text-xs font-bold text-semi-color-text-1">
+              <div className="text-xs font-bold text-mg-text-1">
                 {t('header.wsNameLabel')}
               </div>
               <Input
@@ -585,7 +585,7 @@ export const DashboardHeader: React.FC = () => {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <div className="text-xs font-bold text-semi-color-text-1">
+              <div className="text-xs font-bold text-mg-text-1">
                 {t('header.wsSlugLabel')}
               </div>
               <Input
@@ -595,7 +595,7 @@ export const DashboardHeader: React.FC = () => {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <div className="text-xs font-bold text-semi-color-text-1">
+              <div className="text-xs font-bold text-mg-text-1">
                 {t('header.wsDescLabel')}
               </div>
               <Input

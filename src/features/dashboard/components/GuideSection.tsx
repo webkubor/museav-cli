@@ -6,13 +6,12 @@
  */
 
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 
 /** 指南条目实体定义 */
 interface GuideItem {
-  /** 向导标题 */
-  title: string
-  /** 向导简短描述 */
-  desc: string
+  /** i18n key prefix */
+  keyPrefix: string
   /** Emoji 图标标识 */
   badge: string
   /** 图标背景颜色 */
@@ -24,29 +23,25 @@ interface GuideItem {
 // 常用接入向导静态数据
 const GUIDES: GuideItem[] = [
   {
-    title: '创建与管理 API Key',
-    desc: '5 分钟内获取安全高可用的 Token Key 凭证',
+    keyPrefix: 'guideSection.guide0',
     badge: '🔑',
     badgeBg: '#fef3c7',
     badgeColor: '#d97706'
   },
   {
-    title: 'CLI 一键登录授权',
-    desc: '执行 modelgo-cli auth login，浏览器扫码确认',
+    keyPrefix: 'guideSection.guide1',
     badge: '⌨️',
     badgeBg: '#f0f0ff',
-    badgeColor: '#6366f1'
+    badgeColor: 'var(--mg-primary)'
   },
   {
-    title: '绑定支付并开具发票',
-    desc: '国内/海外双市场支付及财务开票安全指引',
+    keyPrefix: 'guideSection.guide2',
     badge: '💳',
     badgeBg: '#dcfce7',
     badgeColor: '#15803d'
   },
   {
-    title: '探索高性价比合规模型',
-    desc: '聚合深思、通义、千问等高性价比大模型路由',
+    keyPrefix: 'guideSection.guide3',
     badge: '🚀',
     badgeBg: '#e0f2fe',
     badgeColor: '#0369a1'
@@ -58,6 +53,8 @@ const GUIDES: GuideItem[] = [
  * 大屏展示为 4 列，响应式适配中小屏与移动端
  */
 export const GuideSection: React.FC = () => {
+  const { t } = useTranslation()
+
   return (
     <div
       style={{
@@ -76,23 +73,23 @@ export const GuideSection: React.FC = () => {
               justifyContent: 'space-between',
               padding: '20px',
               borderRadius: '12px',
-              backgroundColor: 'var(--semi-color-bg-1)',
-              border: '1px solid var(--semi-color-border)',
+              backgroundColor: 'var(--mg-bg-1)',
+              border: '1px solid var(--mg-border)',
               cursor: 'pointer',
               height: '140px',
               transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--semi-color-bg-2)';
-              (e.currentTarget as HTMLElement).style.borderColor = 'var(--semi-color-primary)';
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--mg-bg-2)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'var(--mg-primary)';
               (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
               (e.currentTarget as HTMLElement).style.boxShadow = 'var(--semi-shadow-elevated)';
               const arrow = e.currentTarget.querySelector('.arrow-icon') as HTMLElement;
               if (arrow) arrow.style.transform = 'translateX(4px)';
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--semi-color-bg-1)';
-              (e.currentTarget as HTMLElement).style.borderColor = 'var(--semi-color-border)';
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--mg-bg-1)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'var(--mg-border)';
               (e.currentTarget as HTMLElement).style.transform = 'none';
               (e.currentTarget as HTMLElement).style.boxShadow = 'none';
               const arrow = e.currentTarget.querySelector('.arrow-icon') as HTMLElement;
@@ -124,23 +121,23 @@ export const GuideSection: React.FC = () => {
                 style={{
                   fontSize: '14px',
                   fontWeight: 700,
-                  color: 'var(--semi-color-text-0)',
+                  color: 'var(--mg-text-0)',
                   letterSpacing: '-0.01em',
                   lineHeight: 1.3
                 }}
               >
-                {item.title}
+                {t(`${item.keyPrefix}.title`)}
               </div>
               <span
                 style={{
                   display: 'block',
                   fontSize: '12px',
-                  color: 'var(--semi-color-text-2)',
+                  color: 'var(--mg-text-2)',
                   marginTop: '6px',
                   lineHeight: 1.4
                 }}
               >
-                {item.desc}
+                {t(`${item.keyPrefix}.desc`)}
               </span>
             </div>
           </div>

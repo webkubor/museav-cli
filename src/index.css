@@ -23,6 +23,25 @@
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
   --shadow-focus: var(--shadow-focus);
+  /* ModelGo 设计 Token — 文字/背景/边框/填充 */
+  --color-mg-text-0: var(--mg-text-0);
+  --color-mg-text-1: var(--mg-text-1);
+  --color-mg-text-2: var(--mg-text-2);
+  --color-mg-text-3: var(--mg-text-3);
+  --color-mg-bg-0: var(--mg-bg-0);
+  --color-mg-bg-1: var(--mg-bg-1);
+  --color-mg-bg-2: var(--mg-bg-2);
+  --color-mg-border: var(--mg-border);
+  --color-mg-fill-0: var(--mg-fill-0);
+  --color-mg-fill-1: var(--mg-fill-1);
+  --color-mg-fill-2: var(--mg-fill-2);
+  --color-mg-primary: var(--mg-primary);
+  --color-mg-primary-hover: var(--mg-primary-hover);
+  --color-mg-primary-light: var(--mg-primary-light);
+  --color-mg-link: var(--mg-link);
+  --color-mg-success: var(--mg-success);
+  --color-mg-danger: var(--mg-danger);
+  --color-mg-warning: var(--mg-warning);
 }
 
 /* ── 核心设计系统 Token ── */
@@ -69,28 +88,26 @@
   --radius-md: 14px;
   --radius-lg: 18px;
   --radius-full: 9999px;
-
-  /* ────── Semi UI 变量强力覆写 ────── */
-  --semi-color-primary: var(--brand-base);
-  --semi-color-primary-hover: var(--brand-mid);
-  --semi-color-primary-active: var(--brand-deep);
-  --semi-color-primary-disabled: var(--brand-light);
-  --semi-color-primary-light-default: var(--brand-pale);
+--mg-primary: var(--brand-base);
+  --mg-primary-hover: var(--brand-mid);
+  --mg-primary-active: var(--brand-deep);
+  --mg-primary-disabled: var(--brand-light);
+  --mg-primary-light: var(--brand-pale);
 
   /* 强制图标与链接响应品牌色 */
-  --semi-color-link: var(--brand-base);
-  --semi-color-link-hover: var(--brand-mid);
-  --semi-color-nav-item-text-active: var(--brand-deep);
-  --semi-color-nav-item-icon-active: var(--brand-base);
+  --mg-link: var(--brand-base);
+  --mg-link-hover: var(--brand-mid);
+  --mg-nav-text-active: var(--brand-deep);
+  --mg-nav-icon-active: var(--brand-base);
 
   /* 文字与描边弱化（去死板黑灰） */
-  --semi-color-bg-0: var(--card-bg);
-  --semi-color-bg-1: var(--site-bg);
-  --semi-color-border: rgba(15, 23, 42, 0.06);
-  --semi-color-fill-0: rgba(15, 23, 42, 0.03);
-  --semi-color-text-0: #0f172a;
-  --semi-color-text-1: #475569;
-  --semi-color-text-2: #94a3b8;
+  --mg-bg-0: var(--card-bg);
+  --mg-bg-1: var(--site-bg);
+  --mg-border: rgba(15, 23, 42, 0.06);
+  --mg-fill-0: rgba(15, 23, 42, 0.03);
+  --mg-text-0: #0f172a;
+  --mg-text-1: #475569;
+  --mg-text-2: #94a3b8;
 
   /* 导航项自定义 */
   --nav-item-active-bg: var(--brand-selected-bg);
@@ -98,38 +115,26 @@
   --grid-color: rgba(15, 23, 42, 0.02);
 }
 
-/* Semi 在 body 上强行声明了 --semi-color-primary（蓝色），
-   必须在 body 上显式覆盖，否则继承自 :root 的值会被 body 自有声明覆盖 */
-body {
-  --semi-color-primary: var(--brand-base);
-  --semi-color-primary-hover: var(--brand-mid);
-  --semi-color-primary-active: var(--brand-deep);
-  --semi-color-primary-disabled: var(--brand-light);
-  --semi-color-primary-light-default: var(--brand-pale);
-  --semi-color-link: var(--brand-base);
-  --semi-color-link-hover: var(--brand-mid);
-}
-
 /* 🌙 暗色模式 (Premium Dark — Vercel/Linear 级别) */
 body[theme-mode='dark'] {
   /* ── 背景层级：浅 = 海拔更高 ── */
   --site-bg: #111113;           /* 页面底层，warm-neutral 深灰 */
   --card-bg: #1a1a1d;           /* 卡片 / 面板层 */
-  --semi-color-bg-0: #1a1a1d;   /* 主卡片面 */
-  --semi-color-bg-1: #111113;   /* 页面背景 */
-  --semi-color-bg-2: #242428;   /* 悬浮卡片 / Dropdown */
-  --semi-color-bg-3: #2e2e33;   /* Modal / Tooltip 顶层 */
+  --mg-bg-0: #1a1a1d;   /* 主卡片面 */
+  --mg-bg-1: #111113;   /* 页面背景 */
+  --mg-bg-2: #242428;   /* 悬浮卡片 / Dropdown */
+  --mg-bg-3: #2e2e33;   /* Modal / Tooltip 顶层 */
 
   /* ── 文字层级 ── */
-  --semi-color-text-0: #f0f0f2;   /* 主文字，暖白 ~14:1 对比 */
-  --semi-color-text-1: #a1a1aa;   /* 次要，~6:1 */
-  --semi-color-text-2: #71717a;   /* 辅助 / placeholder，~4.5:1 */
+  --mg-text-0: #f0f0f2;   /* 主文字，暖白 ~14:1 对比 */
+  --mg-text-1: #a1a1aa;   /* 次要，~6:1 */
+  --mg-text-2: #71717a;   /* 辅助 / placeholder，~4.5:1 */
 
   /* ── 边框与填充 ── */
-  --semi-color-border: rgba(255, 255, 255, 0.08);
-  --semi-color-fill-0: rgba(255, 255, 255, 0.04);
-  --semi-color-fill-1: rgba(255, 255, 255, 0.07);
-  --semi-color-fill-2: rgba(255, 255, 255, 0.11);
+  --mg-border: rgba(255, 255, 255, 0.08);
+  --mg-fill-0: rgba(255, 255, 255, 0.04);
+  --mg-fill-1: rgba(255, 255, 255, 0.07);
+  --mg-fill-2: rgba(255, 255, 255, 0.11);
 
   /* ── 阴影：深色下以边框代替投影 ── */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
@@ -168,45 +173,44 @@ body[theme-mode='dark'] {
   --brand-glow: var(--go-glow);
   --brand-selected-bg: var(--go-selected-bg);
 
-  --semi-color-primary: var(--go-base);
-  --semi-color-primary-hover: var(--go-mid);
-  --semi-color-primary-active: var(--go-deep);
-  --semi-color-primary-disabled: var(--go-light);
-  --semi-color-primary-light-default: var(--go-pale);
+  --mg-primary: var(--go-base);
+  --mg-primary-hover: var(--go-mid);
+  --mg-primary-active: var(--go-deep);
+  --mg-primary-disabled: var(--go-light);
+  --mg-primary-light: var(--go-pale);
 
-  --semi-color-link: var(--go-base);
-  --semi-color-link-hover: var(--go-mid);
-  --semi-color-nav-item-text-active: var(--go-deep);
-  --semi-color-nav-item-icon-active: var(--go-base);
+  --mg-link: var(--go-base);
+  --mg-link-hover: var(--go-mid);
+  --mg-nav-text-active: var(--go-deep);
+  --mg-nav-icon-active: var(--go-base);
 }
 
-/* body 级覆盖——对抗 semi.css 在 body 上的蓝色声明 */
 [data-market='global'] body {
-  --semi-color-primary: var(--go-base);
-  --semi-color-primary-hover: var(--go-mid);
-  --semi-color-primary-active: var(--go-deep);
-  --semi-color-primary-disabled: var(--go-light);
-  --semi-color-primary-light-default: var(--go-pale);
-  --semi-color-link: var(--go-base);
-  --semi-color-link-hover: var(--go-mid);
+  --mg-primary: var(--go-base);
+  --mg-primary-hover: var(--go-mid);
+  --mg-primary-active: var(--go-deep);
+  --mg-primary-disabled: var(--go-light);
+  --mg-primary-light: var(--go-pale);
+  --mg-link: var(--go-base);
+  --mg-link-hover: var(--go-mid);
 }
 
 /* 国内市场 body 级覆盖 */
 [data-market='domestic'] body {
-  --semi-color-primary: var(--cn-base);
-  --semi-color-primary-hover: var(--cn-mid);
-  --semi-color-primary-active: var(--cn-deep);
-  --semi-color-primary-disabled: var(--cn-light);
-  --semi-color-primary-light-default: var(--cn-pale);
-  --semi-color-link: var(--cn-base);
-  --semi-color-link-hover: var(--cn-mid);
+  --mg-primary: var(--cn-base);
+  --mg-primary-hover: var(--cn-mid);
+  --mg-primary-active: var(--cn-deep);
+  --mg-primary-disabled: var(--cn-light);
+  --mg-primary-light: var(--cn-pale);
+  --mg-link: var(--cn-base);
+  --mg-link-hover: var(--cn-mid);
 }
 
 /* ── 🍏 全局 Semi UI 输入框与多行文本域极雅覆写与聚焦发光 ── */
 .semi-input-wrapper,
 .semi-input-textarea-wrapper {
-  background-color: var(--semi-color-bg-0) !important;
-  border: 1px solid var(--semi-color-border) !important;
+  background-color: var(--mg-bg-0) !important;
+  border: 1px solid var(--mg-border) !important;
   border-radius: var(--radius-sm) !important; /* 统一 8px 大厂圆角 */
   padding-left: 12px !important;
   padding-right: 12px !important;
@@ -232,19 +236,19 @@ body[theme-mode='dark'] .semi-input-textarea-wrapper:hover {
 .semi-input-textarea-wrapper:focus-within {
   border-color: var(--brand-base) !important;
   box-shadow: 0 0 0 1px var(--brand-base), 0 0 0 3.5px var(--brand-glow), var(--shadow-sm) !important;
-  background-color: var(--semi-color-bg-0) !important;
+  background-color: var(--mg-bg-0) !important;
 }
 
 .semi-input,
 .semi-input-textarea {
-  color: var(--semi-color-text-0) !important;
+  color: var(--mg-text-0) !important;
   font-size: 13.5px !important;
   font-family: inherit !important;
 }
 
 .semi-input::placeholder,
 .semi-input-textarea::placeholder {
-  color: var(--semi-color-text-2) !important;
+  color: var(--mg-text-2) !important;
   opacity: 0.65;
 }
 
@@ -253,13 +257,13 @@ body[theme-mode='dark'] .semi-input-textarea-wrapper:hover {
 .semi-input-wrapper:focus-within .semi-input-prefix,
 .semi-input-wrapper-focus .semi-input-suffix,
 .semi-input-wrapper:focus-within .semi-input-suffix {
-  color: var(--semi-color-text-0) !important;
+  color: var(--mg-text-0) !important;
   transition: color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .semi-input-prefix,
 .semi-input-suffix {
-  color: var(--semi-color-text-2) !important;
+  color: var(--mg-text-2) !important;
   transition: color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   display: inline-flex;
   align-items: center;
@@ -296,8 +300,8 @@ body[theme-mode='dark'] .semi-input-textarea-wrapper:hover {
 /* 禁用态输入框 */
 .semi-input-wrapper-disabled,
 .semi-input-textarea-wrapper-disabled {
-  background-color: var(--semi-color-fill-0) !important;
-  border-color: var(--semi-color-border) !important;
+  background-color: var(--mg-fill-0) !important;
+  border-color: var(--mg-border) !important;
   cursor: not-allowed !important;
   opacity: 0.65 !important;
   box-shadow: none !important;
@@ -345,7 +349,7 @@ body[theme-mode='dark'] .semi-input-textarea-wrapper:hover {
 .semi-button-default.semi-button-solid {
   background-color: rgba(15, 23, 42, 0.035) !important;
   border: 1px solid rgba(15, 23, 42, 0.06) !important;
-  color: var(--semi-color-text-0) !important;
+  color: var(--mg-text-0) !important;
   box-shadow: var(--shadow-sm) !important;
 }
 
@@ -401,13 +405,13 @@ body[theme-mode='dark'] .semi-button-default.semi-button-solid:not(.semi-button-
 /* 5. Borderless 主题按钮 (Ghost) */
 .semi-button-borderless {
   background-color: transparent !important;
-  color: var(--semi-color-text-1) !important;
+  color: var(--mg-text-1) !important;
 }
 
 .semi-button-borderless:not(.semi-button-disabled):not(.semi-button-loading):hover {
   transform: translateY(-0.5px);
   background-color: rgba(15, 23, 42, 0.04) !important;
-  color: var(--semi-color-text-0) !important;
+  color: var(--mg-text-0) !important;
 }
 
 body[theme-mode='dark'] .semi-button-borderless:not(.semi-button-disabled):not(.semi-button-loading):hover {
@@ -418,9 +422,9 @@ body[theme-mode='dark'] .semi-button-borderless:not(.semi-button-disabled):not(.
 .semi-button-disabled,
 .semi-button[disabled] {
   cursor: not-allowed !important;
-  background-color: var(--semi-color-fill-0) !important;
-  border-color: var(--semi-color-border) !important;
-  color: var(--semi-color-text-2) !important;
+  background-color: var(--mg-fill-0) !important;
+  border-color: var(--mg-border) !important;
+  color: var(--mg-text-2) !important;
   opacity: 0.55 !important;
   transform: none !important;
   box-shadow: none !important;
@@ -446,7 +450,7 @@ html, body, #root {
   height: 100%;
   font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
   background-color: var(--site-bg);
-  color: var(--semi-color-text-0);
+  color: var(--mg-text-0);
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -455,21 +459,21 @@ html, body, #root {
 .semi-layout-header {
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  background-color: rgba(var(--semi-color-bg-0-rgb), 0.7) !important;
+  background-color: rgba(var(--mg-bg-0-rgb), 0.7) !important;
 }
 
 .semi-layout-sider {
-  border-right: 1px solid var(--semi-color-border) !important;
+  border-right: 1px solid var(--mg-border) !important;
   background-color: var(--site-bg) !important;
 }
 
 
 /* 针对页面中手动编写的卡片类容器注入阴影，但不破坏其 padding */
 .card-shadow-adaptive {
-  border: 1px solid var(--semi-color-border);
+  border: 1px solid var(--mg-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
-  background-color: var(--semi-color-bg-0);
+  background-color: var(--mg-bg-0);
   transition: box-shadow 0.3s ease;
 }
 
@@ -606,13 +610,13 @@ html, body, #root {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--semi-color-text-2) !important;
+  background: var(--mg-text-2) !important;
   opacity: 0.3 !important;
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--semi-color-text-1) !important;
+  background: var(--mg-text-1) !important;
 }
 
 /* ── 💎 Semi UI Table 极雅大厂化定制 ── */
@@ -622,13 +626,13 @@ html, body, #root {
 
 /* 表头微碳灰高级扁平 */
 .semi-table-thead > tr > th {
-  background-color: var(--semi-color-bg-1) !important;
-  color: var(--semi-color-text-1) !important;
+  background-color: var(--mg-bg-1) !important;
+  color: var(--mg-text-1) !important;
   font-weight: 700 !important;
   font-size: 12px !important;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  border-bottom: 1px solid var(--semi-color-border) !important;
+  border-bottom: 1px solid var(--mg-border) !important;
   padding: 14px 16px !important;
   transition: background-color 0.2s;
 }
@@ -636,14 +640,14 @@ html, body, #root {
 /* 单元格清亮高透线 */
 .semi-table-tbody > tr > td {
   padding: 16px !important;
-  border-bottom: 1px solid var(--semi-color-border) !important;
+  border-bottom: 1px solid var(--mg-border) !important;
   font-size: 13px !important;
-  color: var(--semi-color-text-1);
+  color: var(--mg-text-1);
 }
 
 /* 悬停行极其微弱高透变色 */
 .semi-table-row:hover > td {
-  background-color: var(--semi-color-fill-0) !important;
+  background-color: var(--mg-fill-0) !important;
 }
 
 /* 消除一切死板的全局外层硬边框，让列表扁平呼吸 */
@@ -676,7 +680,7 @@ body[theme-mode='dark'] .glass-auth-card {
   display: block;
   font-size: 13px;
   font-weight: 600;
-  color: var(--semi-color-text-1) !important;
+  color: var(--mg-text-1) !important;
   margin-bottom: 6px;
 }
 
@@ -684,18 +688,18 @@ body[theme-mode='dark'] .glass-auth-card {
   width: 100%;
   height: 40px;
   border-radius: 8px;
-  border: 1px solid var(--semi-color-border) !important;
+  border: 1px solid var(--mg-border) !important;
   padding: 0 14px;
   font-size: 13.5px;
   outline: none;
   box-sizing: border-box;
-  color: var(--semi-color-text-0) !important;
-  background-color: var(--semi-color-bg-1) !important;
+  color: var(--mg-text-0) !important;
+  background-color: var(--mg-bg-1) !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .modern-auth-input::placeholder {
-  color: var(--semi-color-text-2) !important;
+  color: var(--mg-text-2) !important;
   opacity: 0.7;
 }
 
@@ -703,7 +707,7 @@ body[theme-mode='dark'] .glass-auth-card {
 .modern-auth-input:focus {
   border-color: var(--brand-base) !important;
   box-shadow: 0 0 0 3px var(--brand-glow) !important;
-  background-color: var(--semi-color-bg-0) !important;
+  background-color: var(--mg-bg-0) !important;
 }
 
 /* 按钮大厂极简实色美学覆写 */
@@ -784,13 +788,13 @@ body[theme-mode='dark'] .modern-auth-btn:hover {
 
 .auth-email-preview {
   @apply flex items-center gap-2 p-2.5 rounded-lg text-[13px] border;
-  background-color: var(--semi-color-fill-0);
-  border-color: var(--semi-color-border);
+  background-color: var(--mg-fill-0);
+  border-color: var(--mg-border);
 }
 
 .auth-email-text {
   @apply flex-1 overflow-hidden text-ellipsis font-semibold;
-  color: var(--semi-color-text-1);
+  color: var(--mg-text-1);
 }
 
 .auth-email-modify-btn {
@@ -812,12 +816,12 @@ body[theme-mode='dark'] .modern-auth-btn:hover {
 
 .social-divider-line {
   @apply flex-1 h-[1px];
-  background-color: var(--semi-color-border);
+  background-color: var(--mg-border);
 }
 
 .social-divider-text {
   @apply text-[11px] font-bold tracking-widest uppercase;
-  color: var(--semi-color-text-2);
+  color: var(--mg-text-2);
 }
 
 .social-btn-group {
@@ -827,14 +831,14 @@ body[theme-mode='dark'] .modern-auth-btn:hover {
 .social-btn {
   @apply flex-1 flex items-center justify-center h-10 border rounded-lg text-xs font-semibold;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  border-color: var(--semi-color-border) !important;
-  background-color: var(--semi-color-bg-1) !important;
-  color: var(--semi-color-text-1) !important;
+  border-color: var(--mg-border) !important;
+  background-color: var(--mg-bg-1) !important;
+  color: var(--mg-text-1) !important;
 }
 
 .social-btn:hover {
-  background-color: var(--semi-color-bg-2) !important;
-  color: var(--semi-color-text-0) !important;
+  background-color: var(--mg-bg-2) !important;
+  color: var(--mg-text-0) !important;
 }
 
 /* ── 💎 通用元组件样式抽离与大厂极简现代美学（硅谷风格） ── */
@@ -893,39 +897,39 @@ body[theme-mode='dark'] .modern-btn-default:hover {
 .modern-btn-outline {
   @apply border bg-transparent;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  border-color: var(--semi-color-border) !important;
-  color: var(--semi-color-text-0) !important;
+  border-color: var(--mg-border) !important;
+  color: var(--mg-text-0) !important;
 }
 
 .modern-btn-outline:hover {
   transform: translateY(-1px);
-  background-color: var(--semi-color-fill-0) !important;
+  background-color: var(--mg-fill-0) !important;
   border-color: rgba(15, 23, 42, 0.12) !important;
 }
 
 .modern-btn-secondary {
   @apply transition-all;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  background-color: var(--semi-color-fill-0) !important;
-  color: var(--semi-color-text-1) !important;
+  background-color: var(--mg-fill-0) !important;
+  color: var(--mg-text-1) !important;
 }
 
 .modern-btn-secondary:hover {
   transform: translateY(-1px);
-  background-color: var(--semi-color-fill-1) !important;
-  color: var(--semi-color-text-0) !important;
+  background-color: var(--mg-fill-1) !important;
+  color: var(--mg-text-0) !important;
 }
 
 .modern-btn-ghost {
   @apply transition-all;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  color: var(--semi-color-text-1) !important;
+  color: var(--mg-text-1) !important;
 }
 
 .modern-btn-ghost:hover {
   transform: translateY(-0.5px);
-  background-color: var(--semi-color-fill-0) !important;
-  color: var(--semi-color-text-0) !important;
+  background-color: var(--mg-fill-0) !important;
+  color: var(--mg-text-0) !important;
 }
 
 .modern-btn-link {
@@ -943,15 +947,15 @@ body[theme-mode='dark'] .modern-btn-default:hover {
 .modern-input-wrapper {
   @apply flex h-10 w-full rounded-lg border px-3.5 py-2 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  border-color: var(--semi-color-border) !important;
-  background-color: var(--semi-color-bg-1) !important;
-  color: var(--semi-color-text-0) !important;
+  border-color: var(--mg-border) !important;
+  background-color: var(--mg-bg-1) !important;
+  color: var(--mg-text-0) !important;
   box-shadow: var(--shadow-sm) !important;
   box-sizing: border-box !important;
 }
 
 .modern-input-field::placeholder {
-  color: var(--semi-color-text-2) !important;
+  color: var(--mg-text-2) !important;
   opacity: 0.7;
 }
 
@@ -969,13 +973,13 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
 .modern-input-wrapper:focus-within {
   border-color: var(--brand-base) !important;
   box-shadow: 0 0 0 1px var(--brand-base), 0 0 0 3.5px var(--brand-glow), var(--shadow-sm) !important;
-  background-color: var(--semi-color-bg-0) !important;
+  background-color: var(--mg-bg-0) !important;
 }
 
 /* 获焦时前置/后置图标联动亮化 */
 .modern-input-wrapper:focus-within .modern-input-prefix,
 .modern-input-wrapper:focus-within .modern-input-suffix {
-  color: var(--semi-color-text-0) !important;
+  color: var(--mg-text-0) !important;
 }
 
 /* ── 💎 常用组件大厂级 UX 规范与微动效微交互 ── */
@@ -1046,9 +1050,9 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
 }
 
 .semi-select-option-hover {
-  background-color: var(--semi-color-fill-0) !important;
+  background-color: var(--mg-fill-0) !important;
   padding-left: 18px !important; /* 精致向右平移 4px 反馈 (原本是 14px) */
-  color: var(--semi-color-text-0) !important;
+  color: var(--mg-text-0) !important;
 }
 
 /* 交互型 Badge 徽章动效 */

@@ -15,7 +15,7 @@ import {
   TableRow,
   TableCell
 } from '@/components/ui/Table'
-import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers, LuKey, LuCode } from 'react-icons/lu'
+import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers, LuKey, LuCode, LuChevronDown } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { listApiKeys, createApiKey, revokeApiKey } from '@/services/api-keys'
@@ -99,6 +99,7 @@ export default function ApiKeysPage() {
   const [revealVisible, setRevealVisible] = useState(false)
   const [createdKeyText, setCreatedKeyText] = useState('')
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null)
+  const [quickOpen, setQuickOpen] = useState(false)
   const [quickTab, setQuickTab] = useState<QuickTab>('python')
   const [quickCopied, setQuickCopied] = useState<string | null>(null)
 
@@ -229,15 +230,24 @@ export default function ApiKeysPage() {
 
       {/* 快速接入配置 */}
       <div className="rounded-xl border border-mg-border overflow-hidden bg-mg-bg-0">
-        {/* 标题栏 */}
-        <div className="px-5 py-3.5 border-b border-mg-border/60 flex items-center gap-2">
+        {/* 标题栏 — 点击展开/收起 */}
+        <div
+          className="px-5 py-3.5 flex items-center gap-2 cursor-pointer select-none hover:bg-mg-fill-0/40 transition-colors"
+          onClick={() => setQuickOpen(o => !o)}
+        >
           <LuCode size={13} className="text-mg-text-2 shrink-0" />
           <span className="text-[13px] font-semibold text-mg-text-0">快速接入</span>
           <span className="text-[12px] text-mg-text-2 font-normal">· OpenAI 兼容格式</span>
+          <LuChevronDown
+            size={13}
+            className="ml-auto text-mg-text-2 transition-transform duration-200 shrink-0"
+            style={{ transform: quickOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+          />
         </div>
 
-        {/* 配置项 */}
-        <div className="px-5 py-4 grid grid-cols-1 gap-2.5 border-b border-mg-border/60">
+        {quickOpen && (
+        <>{/* 配置项 */}
+        <div className="border-t border-mg-border/60 px-5 py-4 grid grid-cols-1 gap-2.5 border-b border-mg-border/60">
           {[
             { label: 'Base URL', value: baseUrl },
             { label: 'Authorization', value: 'Bearer YOUR_API_KEY' },
@@ -290,6 +300,8 @@ export default function ApiKeysPage() {
             {getQuickSnippet(quickTab, baseUrl)}
           </pre>
         </div>
+        </>
+        )}
       </div>
 
       {/* 新建密钥横幅 */}

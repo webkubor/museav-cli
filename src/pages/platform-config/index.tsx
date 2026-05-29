@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { LuSettings, LuCheck, LuDollarSign, LuBox, LuKey } from 'react-icons/lu'
+import { LuSettings, LuCheck, LuDollarSign, LuBox, LuKey, LuUsers } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { Badge } from '@/components/ui/Badge'
 import { useAuthStore } from '@/store/auth'
 import { getPlatformConfig } from '@/services/platform'
+import { apiBaseUrl } from '@/lib/request'
 import { getSession } from '@/services/auth'
 import { listTenants } from '@/services/tenants'
 import { listWorkspaces } from '@/services/workspaces'
@@ -308,6 +309,18 @@ function DetailGapsPanel() {
       bgColor: 'bg-violet-500/10',
     },
     {
+      key: 'organization',
+      icon: <LuUsers className="w-3.5 h-3.5" />,
+      color: 'text-rose-500',
+      bgColor: 'bg-rose-500/10',
+    },
+    {
+      key: 'apiKeys',
+      icon: <LuKey className="w-3.5 h-3.5" />,
+      color: 'text-sky-500',
+      bgColor: 'bg-sky-500/10',
+    },
+    {
       key: 'guardrail',
       icon: <LuSettings className="w-3.5 h-3.5" />,
       color: 'text-amber-500',
@@ -318,12 +331,6 @@ function DetailGapsPanel() {
       icon: <LuCheck className="w-3.5 h-3.5" />,
       color: 'text-indigo-500',
       bgColor: 'bg-indigo-500/10',
-    },
-    {
-      key: 'apiKeys',
-      icon: <LuKey className="w-3.5 h-3.5" />,
-      color: 'text-sky-500',
-      bgColor: 'bg-sky-500/10',
     },
     {
       key: 'billing',
@@ -373,6 +380,96 @@ function DetailGapsPanel() {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+
+function CustomRequestPanel() {
+  const [method, setMethod] = useState<'GET' | 'POST'>('GET')
+  const [url, setUrl] = useState('')
+  const [state, setState] = useState<EndpointState>({ status: 'idle', data: null, error: null, duration: null })
+
+  async function handleSend() {
+    if (!url.trim()) return
+    const resolved = url.startsWith('http') ? url : `${apiBaseUrl()}${url.startsWith('/') ? '' : '/'}${url}`
+    setState({ status: 'loading', data: null, error: null, duration: null })
+    const t0 = Date.now()
+    try {
+      const res = await fetch(resolved, {
+        method,
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      const data = await res.json().catch(() => res.text())
+      setState({ status: 'success', data, error: null, duration: Date.now() - t0 })
+    } catch (e) {
+      setState({ status: 'error', data: null, error: (e as Error).message, duration: Date.now() - t0 })
+    }
+  }
+
+  return (
+    <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden mb-6">
+      <div className="flex items-center gap-2 p-3 border-b border-mg-border/40 bg-mg-bg-1/30">
+        {/* Method toggle */}
+        {(['GET', 'POST'] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setMethod(m)}
+            className={[
+              'text-[11px] font-bold font-mono px-2.5 py-1 rounded-md border transition-all duration-150 shrink-0',
+              method === m
+                ? m === 'GET'
+                  ? 'bg-blue-500/15 border-blue-500/30 text-blue-500'
+                  : 'bg-amber-500/15 border-amber-500/30 text-amber-500'
+                : 'border-mg-border text-mg-text-2 hover:border-mg-border/80',
+            ].join(' ')}
+          >
+            {m}
+          </button>
+        ))}
+
+        {/* URL input */}
+        <input
+          className="flex-1 bg-transparent text-sm font-mono text-mg-text-0 placeholder:text-mg-text-2/60 outline-none border-none min-w-0"
+          placeholder="粘贴路径或完整 URL，例如 /api/v1/auth/session"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleSend() }}
+          spellCheck={false}
+        />
+
+        {state.duration != null && (
+          <span className="text-[10px] font-mono text-mg-text-2 shrink-0">{state.duration}ms</span>
+        )}
+
+        <button
+          type="button"
+          onClick={handleSend}
+          disabled={state.status === 'loading' || !url.trim()}
+          className="shrink-0 px-4 h-8 rounded-lg text-xs font-bold bg-brand-base text-white hover:bg-brand-deep transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {state.status === 'loading' ? '...' : 'Send'}
+        </button>
+      </div>
+
+      {state.status === 'success' && (
+        <div className="relative bg-slate-950 overflow-hidden">
+          <div className="absolute top-3 right-3 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded z-10">
+            OK
+          </div>
+          <pre className="m-0 p-5 text-xs font-mono text-slate-300 overflow-auto max-h-[400px] w-full min-w-0 leading-relaxed select-all">
+            {JSON.stringify(state.data, null, 2)}
+          </pre>
+        </div>
+      )}
+      {state.status === 'error' && (
+        <div className="px-5 py-3.5 bg-rose-500/5 border-t border-rose-500/10 flex items-center gap-3">
+          <span className="text-[10px] font-bold text-rose-600 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded">ERROR</span>
+          <span className="text-xs font-mono text-rose-500 break-all">{state.error}</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -462,6 +559,7 @@ export default function PlatformConfigPage() {
 
         <TabsContent value="endpoints">
           <div className="space-y-6 pt-2">
+            <CustomRequestPanel />
             {groups.map((group) => (
               <div key={group} className="space-y-3">
                 <div className="text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">

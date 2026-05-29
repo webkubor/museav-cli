@@ -76,7 +76,7 @@ export const UsageChartSection: React.FC = () => {
 
       <div style={{ flex: 1, position: 'relative', minHeight: '200px' }}>
         {isLoading ? (
-          <div className="animate-pulse bg-gray-200 dark:bg-gray-800 rounded w-full h-[200px]" />
+          <div className="animate-pulse bg-mg-fill-2 rounded w-full h-[200px]" />
         ) : data?.series && data.series.length > 0 ? (
           <svg width="100%" height="200" viewBox="0 0 800 200" preserveAspectRatio="none">
             <defs>
@@ -106,7 +106,7 @@ export const UsageChartSection: React.FC = () => {
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <span className="text-2xl mb-2">📊</span>
-            <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">{t('dashboard.usageChart.empty')}</p>
+            <p className="text-xs text-mg-text-2 font-medium">{t('dashboard.usageChart.empty')}</p>
           </div>
         )}
       </div>

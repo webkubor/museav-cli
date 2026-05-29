@@ -111,9 +111,9 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
           </span>
           <span style={{
             fontSize: '12px',
-            color: atLimit ? '#ef4444' : 'var(--mg-text-2)',
-            backgroundColor: atLimit ? '#fef2f2' : 'var(--mg-bg-1)',
-            border: `1px solid ${atLimit ? '#fecaca' : 'var(--mg-border)'}`,
+            color: atLimit ? 'var(--mg-danger)' : 'var(--mg-text-2)',
+            backgroundColor: atLimit ? 'rgba(239,68,68,0.08)' : 'var(--mg-bg-1)',
+            border: `1px solid ${atLimit ? 'rgba(239,68,68,0.3)' : 'var(--mg-border)'}`,
             borderRadius: '100px',
             padding: '1px 8px',
             fontWeight: 500,
@@ -135,16 +135,16 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
       <div className="overflow-x-auto w-full p-2">
         {tenantsQuery.isLoading ? (
           <div className="py-12 flex justify-center items-center">
-            <div className="w-8 h-8 border-2 border-gray-200 border-t-brand-base rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
           </div>
         ) : (
           <table className="w-full text-left border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-100 dark:border-gray-800">
-                <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">组织名称</th>
-                <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">我的角色</th>
-                <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">类型</th>
-                <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">工作区</th>
+              <tr className="border-b border-mg-border">
+                <th className="py-3 px-4 font-semibold text-mg-text-2 text-xs">组织名称</th>
+                <th className="py-3 px-4 font-semibold text-mg-text-2 text-xs">我的角色</th>
+                <th className="py-3 px-4 font-semibold text-mg-text-2 text-xs">类型</th>
+                <th className="py-3 px-4 font-semibold text-mg-text-2 text-xs">工作区</th>
                 <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs w-24">操作</th>
               </tr>
             </thead>
@@ -156,7 +156,7 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
                     selectedId === record.tenant_id ? 'bg-brand-glow/5 dark:bg-brand-glow/3' : ''
                   }`}
                 >
-                  <td className="py-3 px-4 font-semibold text-gray-800 dark:text-gray-200 text-xs">
+                  <td className="py-3 px-4 font-semibold text-mg-text-0 text-xs">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span>{record.name}</span>
                       {record.is_default && (
@@ -167,10 +167,10 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
                   <td className="py-3 px-4">
                     <RoleBadge role={record.role} />
                   </td>
-                  <td className="py-3 px-4 text-xs text-gray-500 dark:text-gray-400">
+                  <td className="py-3 px-4 text-xs text-mg-text-1">
                     {record.type === 'personal' ? '个人' : '企业'}
                   </td>
-                  <td className="py-3 px-4 text-xs text-gray-500 dark:text-gray-400">
+                  <td className="py-3 px-4 text-xs text-mg-text-1">
                     {record.current_workspace_count} / {record.max_workspaces}
                   </td>
                   <td className="py-3 px-4 text-xs">
@@ -194,10 +194,10 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
       {createVisible && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setCreateVisible(false)} />
-          <div className="relative bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl w-full max-w-[460px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-              <h2 className="text-base font-bold text-gray-900 dark:text-white">创建新组织</h2>
-              <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm font-semibold transition-colors" onClick={() => setCreateVisible(false)}>✕</button>
+          <div className="relative bg-card-bg border border-mg-border rounded-2xl w-full max-w-[460px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-5 border-b border-mg-border flex justify-between items-center bg-mg-fill-0">
+              <h2 className="text-base font-bold text-mg-text-0">创建新组织</h2>
+              <button className="text-mg-text-2 hover:text-mg-text-0 text-sm font-semibold transition-colors" onClick={() => setCreateVisible(false)}>✕</button>
             </div>
             <div className="p-5 space-y-4">
               <div>
@@ -207,12 +207,12 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
               <div>
                 <label style={labelStyle}>唯一标识 (Slug)</label>
                 <Input value={newSlug} onChange={(e) => setNewSlug(e.target.value)} placeholder="如：my-team" className="rounded-lg w-full" />
-                <span className="text-xs text-gray-400 dark:text-gray-500 mt-1.5 block">
+                <span className="text-xs text-mg-text-2 mt-1.5 block">
                   仅支持小写字母、数字和连字符
                 </span>
               </div>
             </div>
-            <div className="p-5 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2 bg-gray-50/50 dark:bg-gray-900/50">
+            <div className="p-5 border-t border-mg-border flex justify-end gap-2 bg-mg-fill-0">
               <Button variant="outline" className="h-9 px-4 rounded-lg text-xs" onClick={() => setCreateVisible(false)}>取消</Button>
               <Button
                 variant="default"
@@ -288,7 +288,7 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
 
   if (tenantQuery.isLoading) {
     return (
-      <div className="h-28 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />
+      <div className="h-28 bg-mg-fill-2 rounded-xl animate-pulse" />
     )
   }
 
@@ -450,15 +450,15 @@ function MembersTab({ tenantId }: { tenantId: string }) {
       <div className="overflow-x-auto w-full p-2">
         {membersQuery.isLoading ? (
           <div className="py-12 flex justify-center items-center">
-            <div className="w-8 h-8 border-2 border-gray-200 border-t-brand-base rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
           </div>
         ) : (
           <table className="w-full text-left border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-100 dark:border-gray-800">
-                <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">姓名 / 邮箱</th>
-                <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">角色权限</th>
-                <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">加入时间</th>
+              <tr className="border-b border-mg-border">
+                <th className="py-3 px-4 font-semibold text-mg-text-2 text-xs">姓名 / 邮箱</th>
+                <th className="py-3 px-4 font-semibold text-mg-text-2 text-xs">角色权限</th>
+                <th className="py-3 px-4 font-semibold text-mg-text-2 text-xs">加入时间</th>
                 <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs w-16">操作</th>
               </tr>
             </thead>
@@ -466,7 +466,7 @@ function MembersTab({ tenantId }: { tenantId: string }) {
               {members.map((record) => (
                 <tr
                   key={record.account.account_id}
-                  className="border-b border-gray-100/50 dark:border-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
+                  className="border-b border-mg-border hover:bg-mg-fill-0 transition-colors"
                 >
                   <td className="py-3 px-4">
                     <div style={{ fontWeight: 500, color: 'var(--mg-text-0)', fontSize: '14px' }}>{record.account.display_name || '—'}</div>
@@ -474,12 +474,12 @@ function MembersTab({ tenantId }: { tenantId: string }) {
                   </td>
                   <td className="py-3 px-4">
                     {record.role === 'tenant_owner' ? (
-                      <span className="text-xs text-gray-400 font-semibold px-2 py-1">Owner</span>
+                      <span className="text-xs text-mg-text-2 font-semibold px-2 py-1">Owner</span>
                     ) : (
                       <select
                         value={record.role}
                         onChange={(e) => changeRole.mutate({ accountId: record.account.account_id, role: e.target.value as any })}
-                        className="modern-input-field h-8 text-xs py-0 pr-8 pl-2 bg-white dark:bg-gray-800 w-[130px]"
+                        className="modern-input-field h-8 text-xs py-0 pr-8 pl-2 bg-mg-bg-0 w-[130px]"
                       >
                         {TENANT_ROLE_OPTIONS.map((o) => (
                           <option key={o.value} value={o.value}>{o.label}</option>
@@ -487,7 +487,7 @@ function MembersTab({ tenantId }: { tenantId: string }) {
                       </select>
                     )}
                   </td>
-                  <td className="py-3 px-4 text-xs text-gray-500 dark:text-gray-400">
+                  <td className="py-3 px-4 text-xs text-mg-text-1">
                     {formatDate(record.joined_at)}
                   </td>
                   <td className="py-3 px-4 text-xs text-center">
@@ -495,12 +495,12 @@ function MembersTab({ tenantId }: { tenantId: string }) {
                       <button
                         type="button"
                         onClick={() => removeMember.mutate(record.account.account_id)}
-                        className="text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 p-1.5 rounded-lg transition-all border-none bg-transparent cursor-pointer font-semibold"
+                        className="text-mg-text-2 hover:text-mg-danger hover:bg-rose-50 dark:hover:bg-rose-950/20 p-1.5 rounded-lg transition-all border-none bg-transparent cursor-pointer font-semibold"
                       >
                         ✕
                       </button>
                     ) : (
-                      <span className="text-gray-300 dark:text-gray-700">—</span>
+                      <span className="text-mg-text-3">—</span>
                     )}
                   </td>
                 </tr>
@@ -667,13 +667,13 @@ function OrgManagePanel({ tenantId }: { tenantId: string }) {
         {tenant && <RoleBadge role={tenant.role} />}
       </div>
 
-      <div className="border-b border-gray-100 dark:border-gray-800 flex gap-6 text-sm mb-6 bg-transparent">
+      <div className="border-b border-mg-border flex gap-6 text-sm mb-6 bg-transparent">
         <button
           onClick={() => setActiveSubTab('info')}
           className={`pb-3 font-semibold transition-all border-b-2 cursor-pointer bg-transparent border-none ${
             activeSubTab === 'info'
               ? 'border-brand-base text-brand-base'
-              : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+              : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
           }`}
         >
           基本信息
@@ -683,7 +683,7 @@ function OrgManagePanel({ tenantId }: { tenantId: string }) {
           className={`pb-3 font-semibold transition-all border-b-2 cursor-pointer bg-transparent border-none ${
             activeSubTab === 'members'
               ? 'border-brand-base text-brand-base'
-              : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+              : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
           }`}
         >
           组织成员
@@ -694,7 +694,7 @@ function OrgManagePanel({ tenantId }: { tenantId: string }) {
             className={`pb-3 font-semibold transition-all border-b-2 cursor-pointer bg-transparent border-none ${
               activeSubTab === 'invite'
                 ? 'border-brand-base text-brand-base'
-                : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+                : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
             }`}
           >
             邀请成员

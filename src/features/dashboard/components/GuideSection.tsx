@@ -25,26 +25,26 @@ const GUIDES: GuideItem[] = [
   {
     keyPrefix: 'guideSection.guide0',
     badge: '🔑',
-    badgeBg: '#fef3c7',
-    badgeColor: '#d97706'
+    badgeBg: 'rgba(245,158,11,0.10)',
+    badgeColor: 'var(--mg-warning)'
   },
   {
     keyPrefix: 'guideSection.guide1',
     badge: '⌨️',
-    badgeBg: '#f0f0ff',
+    badgeBg: 'rgba(var(--mg-primary-rgb,99,102,241),0.10)',
     badgeColor: 'var(--mg-primary)'
   },
   {
     keyPrefix: 'guideSection.guide2',
     badge: '💳',
-    badgeBg: '#dcfce7',
-    badgeColor: '#15803d'
+    badgeBg: 'rgba(16,185,129,0.10)',
+    badgeColor: 'var(--mg-success)'
   },
   {
     keyPrefix: 'guideSection.guide3',
     badge: '🚀',
-    badgeBg: '#e0f2fe',
-    badgeColor: '#0369a1'
+    badgeBg: 'rgba(14,165,233,0.10)',
+    badgeColor: '#0ea5e9'
   }
 ]
 
@@ -83,7 +83,7 @@ export const GuideSection: React.FC = () => {
               (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--mg-bg-2)';
               (e.currentTarget as HTMLElement).style.borderColor = 'var(--mg-primary)';
               (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
-              (e.currentTarget as HTMLElement).style.boxShadow = 'var(--semi-shadow-elevated)';
+              (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-md)';
               const arrow = e.currentTarget.querySelector('.arrow-icon') as HTMLElement;
               if (arrow) arrow.style.transform = 'translateX(4px)';
             }}

@@ -108,6 +108,11 @@
   --mg-text-0: #0f172a;
   --mg-text-1: #475569;
   --mg-text-2: #94a3b8;
+  --mg-text-3: #cbd5e1;
+
+  --mg-success: #10b981;
+  --mg-danger: #ef4444;
+  --mg-warning: #f59e0b;
 
   /* 导航项自定义 */
   --nav-item-active-bg: var(--brand-selected-bg);
@@ -135,6 +140,11 @@ body[theme-mode='dark'] {
   --mg-fill-0: rgba(255, 255, 255, 0.04);
   --mg-fill-1: rgba(255, 255, 255, 0.07);
   --mg-fill-2: rgba(255, 255, 255, 0.11);
+
+  --mg-text-3: #52525b;
+  --mg-success: #34d399;
+  --mg-danger: #f87171;
+  --mg-warning: #fbbf24;
 
   /* ── 阴影：深色下以边框代替投影 ── */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);

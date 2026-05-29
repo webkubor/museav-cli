@@ -65,7 +65,7 @@ function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
     onError: (err: Error) => appToast.error(err.message || t('billing.rechargeModal.error')),
   })
 
-  const btnBaseClass = "flex-1 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-xs py-2 px-3 cursor-pointer transition-all text-center font-medium"
+  const btnBaseClass = "flex-1 rounded-lg border border-mg-border bg-mg-fill-0 text-mg-text-1 hover:text-mg-text-0 text-xs py-2 px-3 cursor-pointer transition-all text-center font-medium"
   const btnActiveClass = "flex-1 rounded-lg border border-brand-base bg-brand-glow/10 dark:bg-brand-glow/5 text-brand-base text-xs py-2 px-3 cursor-pointer transition-all text-center font-semibold"
 
   if (!visible) return null
@@ -76,15 +76,15 @@ function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       
       {/* 窗体 */}
-      <div className="relative bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl w-full max-w-[400px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-          <h2 className="text-sm font-bold text-gray-900 dark:text-white">{t('billing.rechargeModal.title')}</h2>
-          <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs font-semibold transition-colors" onClick={onClose}>✕</button>
+      <div className="relative bg-card-bg border border-mg-border rounded-2xl w-full max-w-[400px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="p-5 border-b border-mg-border flex justify-between items-center bg-mg-fill-0">
+          <h2 className="text-sm font-bold text-mg-text-0">{t('billing.rechargeModal.title')}</h2>
+          <button className="text-mg-text-2 hover:text-mg-text-0 text-xs font-semibold transition-colors" onClick={onClose}>✕</button>
         </div>
 
         <div className="p-5 space-y-5">
           <div>
-            <div className="text-xs text-gray-400 dark:text-gray-500 font-semibold mb-2.5 uppercase tracking-wider">{t('billing.rechargeModal.amount')}</div>
+            <div className="text-xs text-mg-text-2 font-semibold mb-2.5 uppercase tracking-wider">{t('billing.rechargeModal.amount')}</div>
             <div className="flex gap-2 mb-3">
               {PRESETS.map((p) => (
                 <button
@@ -98,20 +98,20 @@ function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
               ))}
             </div>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">{currencySymbol}</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-mg-text-2 text-sm font-medium">{currencySymbol}</span>
               <input
                 type="number"
                 min="1"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full h-[38px] pl-7 pr-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-brand-glow focus:border-brand-base transition-all font-medium"
+                className="w-full h-[38px] pl-7 pr-3 rounded-lg border border-mg-border bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-brand-glow focus:border-brand-base transition-all font-medium"
                 placeholder={t('billing.rechargeModal.customAmount')}
               />
             </div>
           </div>
 
           <div>
-            <div className="text-xs text-gray-400 dark:text-gray-500 font-semibold mb-2.5 uppercase tracking-wider">{t('billing.rechargeModal.method')}</div>
+            <div className="text-xs text-mg-text-2 font-semibold mb-2.5 uppercase tracking-wider">{t('billing.rechargeModal.method')}</div>
             <div className="flex gap-2">
               {CHANNELS.map((c) => (
                 <button
@@ -170,7 +170,7 @@ export default function BillingPage() {
       <TopUpModal visible={topUpVisible} onClose={() => setTopUpVisible(false)} tenantId={tenantId} />
 
       {/* Balance Section */}
-      <div className="card-shadow-adaptive bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl" style={{ padding: '28px 32px', marginBottom: '24px' }}>
+      <div className="card-shadow-adaptive bg-card-bg border border-mg-border rounded-2xl" style={{ padding: '28px 32px', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-1)' }}>{t('billing.balance.title')}</div>
           <Button variant="default" onClick={() => setTopUpVisible(true)} className="rounded-lg font-semibold h-9 px-4">
@@ -179,7 +179,7 @@ export default function BillingPage() {
         </div>
         {balanceLoading ? (
           <div className="py-4 flex justify-start items-center">
-            <div className="w-6 h-6 border-2 border-gray-200 border-t-brand-base rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
           </div>
         ) : (
           <div style={{ display: 'flex', gap: '48px', alignItems: 'flex-end' }}>
@@ -235,25 +235,25 @@ function OrderTab({ tenantId }: { tenantId: string }) {
 
   return (
     <div style={{ display: 'flex', gap: '24px', padding: '16px 0' }} className="flex-col md:flex-row">
-      <div style={{ flex: 1 }} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm p-4">
+      <div style={{ flex: 1 }} className="bg-card-bg border border-mg-border rounded-2xl overflow-hidden shadow-sm p-4">
         <div className="overflow-x-auto w-full p-1">
           {ordersQuery.isLoading ? (
             <div className="py-20 flex justify-center items-center">
-              <div className="w-8 h-8 border-2 border-gray-200 border-t-brand-base rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
             </div>
           ) : orders.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <span className="text-3xl mb-3">📬</span>
-              <p className="text-sm text-gray-400 dark:text-gray-500 font-medium">{t('billing.orders.empty')}</p>
+              <p className="text-sm text-mg-text-2 font-medium">{t('billing.orders.empty')}</p>
             </div>
           ) : (
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-100 dark:border-gray-800">
-                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">{t('billing.orders.table.orderNo')}</th>
-                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">{t('billing.orders.table.status')}</th>
-                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">{t('billing.orders.table.amount')}</th>
-                  <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs">{t('billing.orders.table.paidAt')}</th>
+                <tr className="border-b border-mg-border">
+                  <th className="py-3 px-4 font-semibold text-mg-text-2 text-xs">{t('billing.orders.table.orderNo')}</th>
+                  <th className="py-3 px-4 font-semibold text-mg-text-2 text-xs">{t('billing.orders.table.status')}</th>
+                  <th className="py-3 px-4 font-semibold text-mg-text-2 text-xs">{t('billing.orders.table.amount')}</th>
+                  <th className="py-3 px-4 font-semibold text-mg-text-2 text-xs">{t('billing.orders.table.paidAt')}</th>
                   <th className="py-3 px-4 font-semibold text-gray-400 dark:text-gray-500 text-xs w-24">{t('billing.orders.table.actions')}</th>
                 </tr>
               </thead>

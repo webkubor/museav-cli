@@ -21,7 +21,7 @@ export default function AccountSettingsPage() {
     return (
       <div style={{ padding: '40px', color: 'var(--mg-text-1)', fontSize: '14px' }}>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 border-2 border-gray-200 border-t-brand-base rounded-full animate-spin" />
+          <div className="w-4 h-4 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
           {t('common.loading')}
         </div>
       </div>
@@ -30,7 +30,7 @@ export default function AccountSettingsPage() {
 
   if (isError || !profile) {
     return (
-      <div style={{ padding: '40px', color: '#ef4444', fontSize: '14px' }}>
+      <div style={{ padding: '40px', color: 'var(--mg-danger)', fontSize: '14px' }}>
         {t('common.errorLoadProfile')}
       </div>
     )
@@ -51,13 +51,13 @@ export default function AccountSettingsPage() {
       </div>
 
       {/* 清雅水平 Tabs 视窗切换，彻底告别堆叠 Card 拥挤感 */}
-      <div className="border-b border-gray-100 dark:border-gray-800 flex gap-6 text-sm mb-6 bg-transparent">
+      <div className="border-b border-mg-border flex gap-6 text-sm mb-6 bg-transparent">
         <button
           onClick={() => setActiveTab('info')}
           className={`pb-3 font-semibold transition-all border-b-2 cursor-pointer bg-transparent border-none ${
             activeTab === 'info'
               ? 'border-brand-base text-brand-base'
-              : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+              : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
           }`}
         >
           {t('account.tabs.info')}
@@ -67,7 +67,7 @@ export default function AccountSettingsPage() {
           className={`pb-3 font-semibold transition-all border-b-2 cursor-pointer bg-transparent border-none ${
             activeTab === 'security'
               ? 'border-brand-base text-brand-base'
-              : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+              : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
           }`}
         >
           {t('account.tabs.security')}
@@ -77,7 +77,7 @@ export default function AccountSettingsPage() {
           className={`pb-3 font-semibold transition-all border-b-2 cursor-pointer bg-transparent border-none ${
             activeTab === 'oauth'
               ? 'border-brand-base text-brand-base'
-              : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+              : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
           }`}
         >
           {t('account.tabs.oauth')}

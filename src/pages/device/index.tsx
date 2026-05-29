@@ -81,7 +81,7 @@ export default function DevicePage() {
     return (
       <AuthLayout title={t('device.title.missingCode')}>
         <div style={{ textAlign: 'center', padding: '8px 0' }}>
-          <span style={{ color: '#64748b', fontSize: '14px' }}>
+          <span style={{ color: 'var(--mg-text-2)', fontSize: '14px' }}>
             {t('device.desc.missingCode')}
           </span>
         </div>
@@ -106,8 +106,8 @@ export default function DevicePage() {
       <AuthLayout title={t('device.title.checkingAuth')}>
         <div style={{ textAlign: 'center', padding: '16px 0' }}>
           <div style={{
-            width: '32px', height: '32px', border: '3px solid #e2e8f0',
-            borderTopColor: '#1890ff', borderRadius: '50%',
+            width: '32px', height: '32px', border: '3px solid var(--mg-border)',
+            borderTopColor: 'var(--mg-primary)', borderRadius: '50%',
             animation: 'spin 0.8s linear infinite', margin: '0 auto',
           }} />
         </div>
@@ -120,10 +120,10 @@ export default function DevicePage() {
       <AuthLayout title={t('device.title.success')}>
         <div style={{ textAlign: 'center', padding: '8px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ fontSize: '40px' }}>✓</div>
-          <span style={{ color: '#0f172a', fontSize: '15px', fontWeight: 600 }}>
+          <span style={{ color: 'var(--mg-text-0)', fontSize: '15px', fontWeight: 600 }}>
             {t('device.success.title')}
           </span>
-          <span style={{ color: '#64748b', fontSize: '13px' }}>
+          <span style={{ color: 'var(--mg-text-2)', fontSize: '13px' }}>
             {t('device.success.desc')}
           </span>
         </div>
@@ -164,7 +164,7 @@ export default function DevicePage() {
         <div style={{
           display: 'flex', alignItems: 'center', gap: '12px',
           padding: '14px 16px', borderRadius: '10px',
-          background: '#f8fafc', border: '1px solid #e2e8f0',
+          background: 'var(--mg-bg-1)', border: '1px solid var(--mg-border)',
         }}>
           <div
             style={{
@@ -177,10 +177,10 @@ export default function DevicePage() {
             {initials}
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-0)' }}>
               {account?.display_name ?? '—'}
             </div>
-            <div style={{ fontSize: '12px', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: '12px', color: 'var(--mg-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {account?.email ?? '—'}
             </div>
           </div>
@@ -189,19 +189,19 @@ export default function DevicePage() {
         {/* 授权说明 */}
         <div style={{
           padding: '14px 16px', borderRadius: '10px',
-          background: '#fffbeb', border: '1px solid #fde68a',
+          background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
         }}>
-          <span style={{ fontSize: '13px', color: '#92400e', lineHeight: '1.6', display: 'block' }}>
+          <span style={{ fontSize: '13px', color: 'var(--mg-warning)', lineHeight: '1.6', display: 'block' }}>
             <strong style={{ fontWeight: 600 }}>ModelGo CLI</strong> {t('device.authNotice')}
           </span>
         </div>
 
         {/* 授权码展示 */}
         <div style={{ textAlign: 'center' }}>
-          <span style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '6px', display: 'block' }}>
+          <span style={{ fontSize: '12px', color: 'var(--mg-text-2)', marginBottom: '6px', display: 'block' }}>
             {t('device.codeLabel')}
           </span>
-          <h4 style={{ margin: 0, letterSpacing: '0.15em', fontFamily: 'monospace', color: '#0f172a', fontSize: '18px', fontWeight: 700 }}>
+          <h4 style={{ margin: 0, letterSpacing: '0.15em', fontFamily: 'monospace', color: 'var(--mg-text-0)', fontSize: '18px', fontWeight: 700 }}>
             {userCode}
           </h4>
         </div>
@@ -225,7 +225,7 @@ export default function DevicePage() {
           </Button>
         </div>
 
-        <span style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', display: 'block' }}>
+        <span style={{ fontSize: '12px', color: 'var(--mg-text-2)', textAlign: 'center', display: 'block' }}>
           {t('device.footer')}
         </span>
       </div>

@@ -64,7 +64,7 @@ export default function InvitationsPage() {
   if (loading) {
     return (
       <AuthLayout title="正在加载邀请…">
-        <div style={{ textAlign: 'center', padding: '24px 0', color: '#64748b', fontSize: '14px' }}>
+        <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--mg-text-2)', fontSize: '14px' }}>
           加载中…
         </div>
       </AuthLayout>
@@ -76,12 +76,12 @@ export default function InvitationsPage() {
       <AuthLayout
         title="邀请无效"
         footer={
-          <Link to="/login" style={{ color: '#1890ff', textDecoration: 'none' }}>
+          <Link to="/login" style={{ color: 'var(--mg-link)', textDecoration: 'none' }}>
             返回登录
           </Link>
         }
       >
-        <p style={{ textAlign: 'center', fontSize: '14px', color: '#64748b' }}>
+        <p style={{ textAlign: 'center', fontSize: '14px', color: 'var(--mg-text-2)' }}>
           {loadError || '邀请链接无效或已过期'}
         </p>
       </AuthLayout>
@@ -93,11 +93,11 @@ export default function InvitationsPage() {
       title="你被邀请加入"
       footer={
         !isAuthenticated && !isSessionLoading ? (
-          <span style={{ fontSize: '13px', color: '#64748b' }}>
+          <span style={{ fontSize: '13px', color: 'var(--mg-text-2)' }}>
             还没有账号？{' '}
             <Link
               to={`/signup?invitation=${encodeURIComponent(token)}`}
-              style={{ color: '#1890ff', textDecoration: 'none' }}
+              style={{ color: 'var(--mg-link)', textDecoration: 'none' }}
             >
               免费注册
             </Link>
@@ -110,24 +110,24 @@ export default function InvitationsPage() {
         <div
           style={{
             padding: '16px',
-            background: '#f8fafc',
+            background: 'var(--mg-bg-1)',
             borderRadius: '10px',
-            border: '1px solid #f1f5f9',
+            border: '1px solid var(--mg-border)',
           }}
         >
-          <div style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--mg-text-0)', marginBottom: '4px' }}>
             {preview.workspace.name}
           </div>
-          <div style={{ fontSize: '12px', color: '#64748b' }}>
+          <div style={{ fontSize: '12px', color: 'var(--mg-text-2)' }}>
             {preview.tenant.name} · {preview.role === 'ws_admin' ? '管理员' : '成员'}
           </div>
           {preview.invited_by && (
-            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '8px' }}>
-              由 <strong style={{ color: '#64748b' }}>{preview.invited_by.display_name}</strong> 邀请
+            <div style={{ fontSize: '12px', color: 'var(--mg-text-2)', marginTop: '8px' }}>
+              由 <strong style={{ color: 'var(--mg-text-1)' }}>{preview.invited_by.display_name}</strong> 邀请
             </div>
           )}
           {preview.email && (
-            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--mg-text-2)', marginTop: '2px' }}>
               邀请邮箱：{preview.email}
             </div>
           )}
@@ -137,7 +137,7 @@ export default function InvitationsPage() {
         {preview.workspaces && preview.workspaces.length > 1 && (
           <div>
             <label
-              style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}
+              style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-1)', marginBottom: '6px' }}
             >
               选择加入的工作区
             </label>
@@ -148,11 +148,11 @@ export default function InvitationsPage() {
                 width: '100%',
                 height: '40px',
                 borderRadius: '8px',
-                border: '1px solid #e2e8f0',
+                border: '1px solid var(--mg-border)',
                 padding: '0 12px',
                 fontSize: '14px',
-                color: '#0f172a',
-                background: '#fff',
+                color: 'var(--mg-text-0)',
+                background: 'var(--mg-bg-0)',
                 outline: 'none',
               }}
             >
@@ -166,7 +166,7 @@ export default function InvitationsPage() {
         )}
 
         {serverError && (
-          <p style={{ fontSize: '12px', color: '#f43f5e', margin: 0 }}>{serverError}</p>
+          <p style={{ fontSize: '12px', color: 'var(--mg-danger)', margin: 0 }}>{serverError}</p>
         )}
 
         <Button

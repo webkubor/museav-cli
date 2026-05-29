@@ -75,22 +75,22 @@ body[theme-mode='dark'] {
 
 /* 国际 — GO 翠绿（浅色） */
 :root, [data-market='global'] {
-  --go-deep: #00a86b;
-  --go-base: #00c97d;
-  --go-mid:  #00e090;
-  --go-light: #5df2b7;
-  --go-pale: #e6fff5;
-  --go-glow: rgba(0, 201, 125, 0.15);
-  --go-selected-bg: rgba(0, 201, 125, 0.08);
+  --go-deep: #00b377;
+  --go-base: #00d68f;
+  --go-mid:  #00eda0;
+  --go-light: #5df5be;
+  --go-pale: #e0fff3;
+  --go-glow: rgba(0, 214, 143, 0.18);
+  --go-selected-bg: rgba(0, 214, 143, 0.09);
 }
 /* 国际 — GO 翠绿（深色，提升亮度） */
 [data-market='global'] body[theme-mode='dark'] {
-  --go-deep: #00c97d;
-  --go-base: #00e090;
-  --go-mid:  #5df2b7;
-  --go-pale: #00291a;
-  --go-glow: rgba(0, 224, 144, 0.22);
-  --go-selected-bg: rgba(0, 224, 144, 0.14);
+  --go-deep: #00d68f;
+  --go-base: #00eda0;
+  --go-mid:  #5df5be;
+  --go-pale: #002b1d;
+  --go-glow: rgba(0, 237, 160, 0.25);
+  --go-selected-bg: rgba(0, 237, 160, 0.15);
 }
 
 /* 品牌色路由 — brand-* 指向当前市场的原色 */
@@ -162,7 +162,7 @@ body[theme-mode='dark'] {
   --mg-fill-2: rgba(15, 23, 42, 0.08);
 
   /* 语义色 */
-  --mg-success: #00c97d;
+  --mg-success: #00d68f;
   --mg-danger:  #ef4444;
   --mg-warning: #f59e0b;
 
@@ -199,7 +199,7 @@ body[theme-mode='dark'] {
   --mg-fill-2: rgba(255, 255, 255, 0.11);
 
   /* 语义色 */
-  --mg-success: #00e090;
+  --mg-success: #00eda0;
   --mg-danger:  #f87171;
   --mg-warning: #fbbf24;
 
@@ -947,6 +947,39 @@ body[theme-mode='dark'] .modern-btn-default:hover {
 
 .modern-btn-link:hover {
   color: var(--brand-deep) !important;
+}
+
+/* Brand 主色调按钮 — 渐变 + 光晕 + 上浮 */
+.modern-btn-brand {
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  border: none !important;
+  background: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand-base) 55%, var(--brand-mid) 100%) !important;
+  box-shadow: 0 2px 8px var(--brand-glow), 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.modern-btn-brand::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.modern-btn-brand:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--brand-glow), 0 3px 8px rgba(0, 0, 0, 0.12) !important;
+  filter: brightness(1.06) saturate(1.1);
+}
+
+.modern-btn-brand:not(:disabled):active {
+  transform: translateY(0) scale(0.97) !important;
+  filter: brightness(0.97);
 }
 
 /* 通用输入框与复合输入框极雅样式抽离 */

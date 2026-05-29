@@ -30,7 +30,7 @@ const buttonVariants = cva(
         glass:
           "bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 text-mg-text-0 hover:bg-white/20 dark:hover:bg-black/30 shadow-sm",
         brand:
-          "bg-brand-base text-white hover:bg-brand-mid shadow-md shadow-brand-glow/20 border-none",
+          "modern-btn-brand",
       },
       size: {
         default: "h-10 px-5 py-2",

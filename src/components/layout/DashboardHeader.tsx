@@ -3,13 +3,13 @@ import { Input } from '@/components/ui/Input'
 import React, { useState, useEffect, useRef } from 'react'
 import {
   LuChevronDown,
-  LuCircleHelp,
   LuLanguages,
   LuSun,
   LuMoon,
   LuPlus,
   LuSettings,
-  LuGlobe
+  LuGlobe,
+  LuBookOpen
 } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -37,7 +37,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar'
 
 const market = getMarket()
-getMarketConfig(market)
+const marketConfig = getMarketConfig(market)
 
 /**
  * 极简高颜值自定义 Dropdown 组件 (平替 Semi Dropdown)
@@ -428,13 +428,28 @@ export const DashboardHeader: React.FC = () => {
           />
         </HeaderDropdown>
 
-        {/* 3. 帮助中心 */}
-        <Button
-          variant="ghost"
-          icon={<LuCircleHelp />}
-          onClick={() => window.open('https://docs.modelgo.com', '_blank')}
-          title={t('common.help') || '帮助'}
-        />
+        {/* 3. 官网 & 文档外链 */}
+        <div className="flex items-center gap-0.5">
+          <a
+            href={`https://${marketConfig.domain}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/60 transition-all duration-150 select-none"
+          >
+            <LuGlobe size={13} className="shrink-0" />
+            <span>{t('common.website')}</span>
+          </a>
+          <a
+            href={marketConfig.docsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/60 transition-all duration-150 select-none"
+          >
+            <LuBookOpen size={13} className="shrink-0" />
+            <span>{t('common.docs')}</span>
+          </a>
+        </div>
+        <div className="w-[1px] h-4 bg-mg-border/40" />
 
         {/* 4. 用户头像一站式 Dropdown */}
         <HeaderDropdown

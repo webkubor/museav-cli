@@ -374,7 +374,8 @@ export interface ApiKeyItem {
   owner: Pick<AccountBrief, 'account_id' | 'display_name' | 'email'>
   expires_at: string | null
   last_used_at: string | null
-  usage_30d: Money
+  /** All-time cumulative settled spend, labelled with the platform settlement currency (USD international / CNY china). */
+  total_spend: Money
   limit: SpendingLimit
   created_at: string
 }

@@ -188,6 +188,113 @@ function PermissionPanel() {
   )
 }
 
+function ModuleComparisonPanel() {
+  const { t } = useTranslation()
+
+  const MATCHED_MODULES = [
+    { fe: '概览 (Dashboard)', api: 'overview' },
+    { fe: '模型中心 (Models: Explore, Compare, Chat)', api: 'catalog / agent' },
+    { fe: '账单/计费 (Billing)', api: 'credits / transaction' },
+    { fe: '用量统计 (Usage)', api: 'usage' },
+    { fe: '调用日志 (Logs)', api: 'logs' },
+    { fe: '可观测性 (Observability)', api: 'observability' },
+    { fe: '安全护栏 (Guardrails)', api: 'guardrail' },
+    { fe: 'API Keys', api: 'apikey' },
+    { fe: '组织管理 (Organization)', api: 'tenant / organization' },
+    { fe: '工作区管理 (Workspace)', api: 'workspace' },
+    { fe: '成员邀请 (Invitations)', api: 'invitation' },
+    { fe: '账号设置/偏好 (Account/Preferences)', api: 'account / preference' },
+    { fe: '认证/鉴权 (Auth)', api: 'auth' },
+    { fe: '接口调试 (Platform Config)', api: 'platform' },
+  ]
+
+  const EXTRA_IN_API = [
+    { name: 'docs', desc: '文档站 API (Console 内暂无独立页面)' },
+    { name: 'health', desc: '健康检查 (系统内部使用)' },
+  ]
+
+  const EXTRA_IN_FRONTEND = [
+    { name: 'api-playground', desc: '交互式接口测试工具' },
+    { name: 'chat-test', desc: '对话测试工具 (基于 agent API)' },
+    { name: 'device', desc: 'CLI 设备流授权页面 (基于 auth API)' },
+  ]
+
+  return (
+    <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden mb-6 shadow-sm">
+      <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center justify-between">
+        <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">
+          {t('platformConfig.moduleCompare.title')}
+        </span>
+        <Badge variant="outline" className="text-[10px] opacity-70">
+          v1.2 Matcher
+        </Badge>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-mg-border">
+        {/* 已对齐模块 */}
+        <div className="p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-4 bg-emerald-500 rounded-full" />
+            <span className="text-xs font-bold text-mg-text-0">{t('platformConfig.moduleCompare.matched')}</span>
+            <span className="text-[10px] text-mg-text-2 font-normal italic">
+              ({t('platformConfig.moduleCompare.matchedDesc')})
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+            {MATCHED_MODULES.map((m) => (
+              <div key={m.fe} className="flex flex-col gap-0.5 pb-2 border-b border-mg-border/30 last:border-0 sm:last:border-b">
+                <span className="text-[11px] font-medium text-mg-text-1 truncate">{m.fe}</span>
+                <code className="text-[9px] font-mono text-brand-base/80 uppercase tracking-tight">
+                  {m.api}
+                </code>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 差异对比 */}
+        <div className="p-0 divide-y divide-mg-border">
+          {/* API 多出 */}
+          <div className="p-5 space-y-3">
+            <div className="flex items-center gap-2 text-rose-500">
+              <div className="w-1.5 h-4 bg-rose-500 rounded-full" />
+              <span className="text-xs font-bold">{t('platformConfig.moduleCompare.extraInApi')}</span>
+            </div>
+            <div className="space-y-2">
+              {EXTRA_IN_API.map((m) => (
+                <div key={m.name} className="flex items-center gap-3">
+                  <code className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-rose-500/10 text-rose-600 border border-rose-500/10">
+                    {m.name}
+                  </code>
+                  <span className="text-[11px] text-mg-text-2">{m.desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 前端多出 */}
+          <div className="p-5 space-y-3">
+            <div className="flex items-center gap-2 text-blue-500">
+              <div className="w-1.5 h-4 bg-blue-500 rounded-full" />
+              <span className="text-xs font-bold">{t('platformConfig.moduleCompare.extraInFrontend')}</span>
+            </div>
+            <div className="space-y-2">
+              {EXTRA_IN_FRONTEND.map((m) => (
+                <div key={m.name} className="flex items-center gap-3">
+                  <code className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 border border-blue-500/10">
+                    {m.name}
+                  </code>
+                  <span className="text-[11px] text-mg-text-2">{m.desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function PlatformConfigPage() {
   const { t } = useTranslation()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
@@ -263,6 +370,8 @@ export default function PlatformConfigPage() {
           DEV ONLY
         </Badge>
       </div>
+
+      <ModuleComparisonPanel />
 
       <PermissionPanel />
 

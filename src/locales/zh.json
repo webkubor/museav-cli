@@ -506,6 +506,16 @@
       "models": "模型目录",
       "modelTags": "模型标签"
     },
+    "moduleCompare": {
+      "title": "前端交互模块 vs 实际 API 模块",
+      "frontendModules": "前端交互模块",
+      "apiModules": "实际 API 模块",
+      "difference": "差异对比",
+      "extraInApi": "API 多出的模块 (未在 Console 独立体现)",
+      "extraInFrontend": "前端多出的模块 (基于基础 API 封装的交互工具)",
+      "matched": "已对齐模块",
+      "matchedDesc": "这些模块在前端和 API 中均有明确的对应关系。"
+    },
     "perm": {
       "tenantType": "租户类型 (Tenant Type)",
       "tenantRole": "组织角色 (Tenant Role)",

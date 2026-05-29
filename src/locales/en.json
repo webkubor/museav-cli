@@ -506,6 +506,16 @@
       "models": "Model Catalog",
       "modelTags": "Model Tags"
     },
+    "moduleCompare": {
+      "title": "Frontend vs Actual API Modules",
+      "frontendModules": "Frontend Modules",
+      "apiModules": "Actual API Modules",
+      "difference": "Differences",
+      "extraInApi": "Extra in API (Not standalone in Console)",
+      "extraInFrontend": "Extra in Frontend (Interactive tools based on APIs)",
+      "matched": "Aligned Modules",
+      "matchedDesc": "These modules have a clear mapping between Frontend and API."
+    },
     "perm": {
       "tenantType": "Tenant Type",
       "tenantRole": "Organization Role",

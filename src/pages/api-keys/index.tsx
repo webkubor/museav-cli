@@ -397,8 +397,8 @@ export default function ApiKeysPage() {
                   </Badge>
                 </TableCell>
                 <TableCell className="font-mono text-xs text-mg-text-0 tabular-nums">
-                  {record.usage_30d?.amount
-                    ? `${record.usage_30d.currency} ${parseFloat(record.usage_30d.amount).toFixed(4)}`
+                  {record.total_spend?.amount
+                    ? `${record.total_spend.currency} ${parseFloat(record.total_spend.amount).toFixed(4)}`
                     : <span className="text-mg-text-2">—</span>}
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-1">{formatDateTime(record.created_at)}</TableCell>

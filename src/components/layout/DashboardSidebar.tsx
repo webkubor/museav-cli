@@ -136,7 +136,7 @@ const SidebarMenuGroup: React.FC<{
 
       {/* 子项列表 ( Indented ) */}
       {isOpen && item.items && (
-        <div className="flex flex-col pl-5 border-l border-mg-border/60 ml-7 gap-0.5 my-1 animate-in fade-in duration-200">
+        <div className="flex flex-col pl-5 border-l-2 border-mg-border/50 ml-7 gap-1 my-1.5 animate-in fade-in duration-200">
           {item.items.map((sub) => {
             const isSubSelected = selectedKey === sub.itemKey
             return (
@@ -147,7 +147,7 @@ const SidebarMenuGroup: React.FC<{
                 onClick={() => onSelect({ itemKey: sub.itemKey })}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect({ itemKey: sub.itemKey }) }}
                 className={cn(
-                  "flex items-center gap-3 px-3.5 py-2 rounded-lg cursor-pointer transition-all duration-150 select-none outline-none",
+                  "flex items-center gap-3 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-150 select-none outline-none",
                   isSubSelected
                     ? "text-brand-base font-bold bg-brand-selected-bg/60"
                     : "text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/30 active:scale-[0.98]"
@@ -219,7 +219,10 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       {/* 主导航区 */}
       <div className="flex flex-col flex-1 py-3 overflow-y-auto overflow-x-hidden no-scrollbar">
         {/* Tenant 级导航 */}
-        <div className="flex flex-col gap-0.5">
+        <div className="relative flex flex-col gap-0.5">
+          {!collapsed && tenantNavItems.length > 1 && (
+            <div className="absolute left-[30px] top-[22px] bottom-[22px] w-px bg-mg-border/35 pointer-events-none" />
+          )}
           {tenantNavItems.map((item) => {
             if (item.items && item.items.length > 0) {
               return (
@@ -256,7 +259,10 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         </div>
 
         {/* Workspace 级导航 */}
-        <div className="flex flex-col gap-0.5">
+        <div className="relative flex flex-col gap-0.5">
+          {!collapsed && workspaceNavItems.length > 1 && (
+            <div className="absolute left-[30px] top-[22px] bottom-[22px] w-px bg-mg-border/35 pointer-events-none" />
+          )}
           {workspaceNavItems.map((item) => {
             if (item.items && item.items.length > 0) {
               return (
@@ -293,7 +299,10 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         </div>
 
         {/* 测试区导航 */}
-        <div className="flex flex-col gap-0.5 flex-1">
+        <div className="relative flex flex-col gap-0.5 flex-1">
+          {!collapsed && sandboxNavItems.length > 1 && (
+            <div className="absolute left-[30px] top-[22px] bottom-[22px] w-px bg-mg-border/35 pointer-events-none" />
+          )}
           {sandboxNavItems.map((item) => {
             if (item.items && item.items.length > 0) {
               return (

@@ -539,8 +539,13 @@
         },
         "apiKeys": {
           "title": "API Keys",
-          "ui": "支持名称、环境及 Scope (个人/工作区/成员) 的基本管理。",
-          "api": "API 层面其实已支持 spending_limit (限额) 和 expires_at (过期时间)，目前在产品 UI 中被隐藏。"
+          "ui": "支持 Scope (个人/工作区/成员) 区分。成员 Scope 需要指定目标 account_id。",
+          "api": "API (Swagger v1.2) 完全缺失 scope 和 member_account_id 字段定义。此外还支持 spending_limit (限额) 和 expires_at (过期时间)，目前在产品 UI 中隐藏。"
+        },
+        "organization": {
+          "title": "组织与成员 (Org & Members)",
+          "ui": "需要展示组织下成员总数。在工作区邀请成员时，需要展示组织内「可邀请」的成员列表。",
+          "api": "API (TenantItem) 缺少 member_count 字段。完全缺失「工作区上下文下的组织成员」过滤接口，目前 UI 只能通过邮箱手动邀请。"
         }
       }
     },

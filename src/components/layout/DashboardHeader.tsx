@@ -307,7 +307,7 @@ export const DashboardHeader: React.FC = () => {
             />
           </div>
           {/* Brand name text */}
-          <span className="font-bold text-[16px] tracking-tight text-mg-text-0 leading-none">
+          <span className="font-bold text-[16px] tracking-tight text-brand-base leading-none">
             {t(market === 'global' ? 'welcomeBanner.brandNameGlobal' : 'welcomeBanner.brandNameDomestic')}
           </span>
           {/* Live status green dot */}

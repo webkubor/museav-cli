@@ -7,5 +7,5 @@ export const modelGoLogos = {
 export const modelGoIcons = {
   domestic: '/brand/modelgo-app-icon-dark.svg',
   cn: '/brand/modelgo-app-icon-dark.svg',
-  global: '/brand/modelgo-app-icon-dark.svg',
+  global: '/brand/modelgo-global-logo.svg',
 } as const

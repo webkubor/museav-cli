@@ -539,8 +539,13 @@
         },
         "apiKeys": {
           "title": "API Keys",
-          "ui": "Basic management with name, env, and scope (Personal/Workspace/Member).",
-          "api": "API already supports spending_limit and expires_at, which are currently hidden in the product UI."
+          "ui": "Supports Scope (Personal/Workspace/Member). Member scope requires a target account_id.",
+          "api": "API (Swagger v1.2) is missing scope and member_account_id definitions. It does support spending_limit and expires_at, which are currently hidden in UI."
+        },
+        "organization": {
+          "title": "Org & Members",
+          "ui": "Needs total member count per org. When inviting to workspace, needs a list of 'eligible' org members.",
+          "api": "API (TenantItem) lacks member_count. Missing filtered 'org members for workspace' endpoint; UI currently defaults to manual email invites."
         }
       }
     },

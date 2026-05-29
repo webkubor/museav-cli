@@ -431,7 +431,7 @@ export const DashboardHeader: React.FC = () => {
         {/* 3. 官网 & 文档外链 */}
         <div className="flex items-center gap-0.5">
           <a
-            href={`https://${marketConfig.domain}`}
+            href={marketConfig.siteUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/60 transition-all duration-150 select-none"

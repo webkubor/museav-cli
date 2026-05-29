@@ -13,8 +13,8 @@ export interface MarketConfig {
   locales: string[]
   /** 默认 locale */
   defaultLocale: string
-  /** 支持的支付方式 */
-  payment: string[]
+  /** 官网入口 URL */
+  siteUrl: string
   /** 控制台入口 URL */
   consoleUrl: string
   /** 开发者文档站 URL */
@@ -29,7 +29,7 @@ const configs: Record<Market, MarketConfig> = {
     icp: import.meta.env.VITE_ICP ?? null,
     locales: ['zh'],
     defaultLocale: 'zh',
-    payment: ['支付宝', '微信支付', '对公转账'],
+    siteUrl: import.meta.env.VITE_SITE_URL ?? 'https://modelgo.com',
     consoleUrl: import.meta.env.VITE_DOMESTIC_CONSOLE ?? 'https://console.modelgo.com',
     docsUrl: import.meta.env.VITE_DOMESTIC_DOCS ?? 'https://doc.modelgo.com',
   },
@@ -41,7 +41,7 @@ const configs: Record<Market, MarketConfig> = {
     icp: null,
     locales: ['zh', 'en'],
     defaultLocale: 'en',
-    payment: ['Stripe'],
+    siteUrl: import.meta.env.VITE_SITE_URL ?? 'https://modelgo.ai',
     consoleUrl: import.meta.env.VITE_GLOBAL_CONSOLE ?? 'https://console.modelgo.ai',
     docsUrl: import.meta.env.VITE_GLOBAL_DOCS ?? 'https://doc.modelgo.ai',
   },

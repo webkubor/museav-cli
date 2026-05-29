@@ -104,7 +104,7 @@ pnpm check:api-contract
 | :--- | :--- |
 | `VITE_MARKET` | 本地/测试构建强制指定市场（`domestic` \| `global`） |
 | `VITE_API_URL` | 显式覆盖 API Base URL（本地/测试用，生产留空） |
-| `VITE_SITE_URL` | 站点根 URL |
+| `VITE_SITE_URL` | 官网根 URL |
 | `VITE_DOMESTIC_API_DOMAIN` | 国内 API 域名（不含 `https://`） |
 | `VITE_DOMESTIC_CONSOLE` | 国内客户中心地址 |
 | `VITE_DOMESTIC_DOCS` | 国内说明文档地址 |
@@ -118,9 +118,10 @@ pnpm check:api-contract
 | 变量 | 本地开发 | 测试构建 | 生产构建 |
 | :--- | :--- | :--- | :--- |
 | `VITE_API_URL` | 空（手动配置） | `https://test.modelgo.com` | 空（运行时推断） |
+| `VITE_SITE_URL` | `https://test.modelgo.com` | `https://test.modelgo.com` | 空（按市场回退到正式官网） |
 | `VITE_DOMESTIC_CONSOLE` | `https://console.test.modelgo.com` | `https://console.test.modelgo.com` | `https://console.modelgo.com` |
 | `VITE_DOMESTIC_DOCS` | `https://modelgo-docs-cn.pages.dev` | `https://modelgo-docs-cn.pages.dev` | `https://doc.modelgo.com` |
-| `VITE_GLOBAL_CONSOLE` | `https://console.test.modelgo.ai` | `https://console.test.modelgo.ai` | `https://console.modelgo.ai` |
+| `VITE_GLOBAL_CONSOLE` | `https://console.test.modelgo.com` | `https://console.test.modelgo.com` | `https://console.modelgo.ai` |
 | `VITE_GLOBAL_DOCS` | `https://modelgo-docs-global.pages.dev` | `https://modelgo-docs-global.pages.dev` | `https://doc.modelgo.ai` |
 
 ---

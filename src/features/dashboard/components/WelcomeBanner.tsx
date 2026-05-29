@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next'
 import { LuCopy, LuCheck, LuBook } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { getMarket } from '@/lib/market'
+import { getMarketConfig } from '@/config/market'
 import { Button } from '@/components/ui/Button'
 import { appToast } from '@/lib/app-toast'
 
@@ -26,6 +27,7 @@ export const WelcomeBanner: React.FC = () => {
   // 智能探测当前市场与语言
   const market = getMarket()
   const isDomestic = market === 'domestic'
+  const marketConfig = getMarketConfig(market)
 
   // 智能匹配当前活跃的租户实体与其类型
   const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
@@ -65,7 +67,7 @@ export const WelcomeBanner: React.FC = () => {
     ? t('welcomeBanner.workspaceTagPersonalDomestic')
     : t('welcomeBanner.workspaceTagPersonalGlobal')
   const docsBtn = isDomestic ? t('welcomeBanner.docsBtnDomestic') : t('welcomeBanner.docsBtnGlobal')
-  const docsUrl = isDomestic ? 'https://doc.modelgo.com' : 'https://doc.modelgo.ai'
+  const docsUrl = marketConfig.docsUrl
   const terminalTitle = t('welcomeBanner.terminalTitle')
   const cliComment1 = isDomestic ? t('welcomeBanner.cliComment1Domestic') : t('welcomeBanner.cliComment1Global')
   const cliComment2 = isDomestic ? t('welcomeBanner.cliComment2Domestic') : t('welcomeBanner.cliComment2Global')

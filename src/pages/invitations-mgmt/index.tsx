@@ -152,10 +152,10 @@ export default function InvitationsMgmtPage() {
 
             {/* Body */}
             <div className="p-5 overflow-y-auto flex-1">
-              <div className="relative mb-4">
-                <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-mg-text-2" size={16} />
+              <div className="mb-4">
                 <Input
-                  className="pl-9 h-10 rounded-lg w-full"
+                  prefix={<LuSearch className="w-4 h-4" />}
+                  className="h-10 rounded-lg w-full"
                   placeholder={t('invitations.modal.searchPlaceholder')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}

@@ -211,15 +211,13 @@ export default function ApiKeysPage() {
 
       {/* 搜索 + 创建 */}
       <div className="flex justify-between items-center gap-4">
-        <div className="relative w-72">
-          <LuSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-mg-text-2 w-4 h-4 pointer-events-none" />
-          <Input
-            placeholder={t('apiKeys.search')}
-            className="pl-10 rounded-full bg-mg-bg-1/40 hover:bg-mg-bg-1/80 focus:bg-card-bg"
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-          />
-        </div>
+        <Input
+          prefix={<LuSearch className="w-4 h-4" />}
+          placeholder={t('apiKeys.search')}
+          className="w-72 rounded-full bg-mg-bg-1/40 hover:bg-mg-bg-1/80 focus:bg-card-bg"
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+        />
         <Button variant="brand" onClick={handleOpenCreate} className="rounded-full px-6 h-10 shadow-lg shadow-brand-glow/20">
           <LuPlus className="w-4 h-4 mr-1.5" />
           {t('apiKeys.create')}

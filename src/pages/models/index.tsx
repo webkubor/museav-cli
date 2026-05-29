@@ -42,13 +42,13 @@ export default function ModelsPage() {
       </div>
 
       {/* 搜索栏 */}
-      <div className="relative w-[320px] mb-5">
-        <LuSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--mg-text-2)] w-4 h-4" />
+      <div className="w-[320px] mb-5">
         <Input
+          prefix={<LuSearch className="w-4 h-4" />}
           placeholder={t('modelsCatalog.placeholder.search')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 pr-4 rounded-full"
+          className="rounded-full"
         />
       </div>
 

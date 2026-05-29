@@ -80,11 +80,11 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
       {open && (
         <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-card-bg border border-[var(--mg-border)] rounded-lg shadow-lg z-50 max-h-[280px] overflow-hidden flex flex-col animate-[fadeIn_0.15s_ease-out]">
           <div className="p-2 border-b border-[var(--mg-border)] bg-[var(--mg-fill-0)]">
-            <div className="relative w-full">
-              <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--mg-text-2)] w-3.5 h-3.5" />
+            <div className="w-full">
               <Input
+                prefix={<LuSearch className="w-3.5 h-3.5" />}
                 placeholder={t('modelsCompare.placeholder.search')}
-                className="pl-8.5 pr-3 h-8 text-xs rounded-md"
+                className="h-8 text-xs rounded-md"
                 value={search}
                 onChange={(e) => onSearch(e.target.value)}
                 autoFocus

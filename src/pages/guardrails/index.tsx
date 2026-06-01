@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/Table'
 import { LuPlus, LuSettings, LuUsers, LuKey, LuDollarSign, LuX, LuCheck } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
+import { TagInput } from '@/components/ui/TagInput'
+import { listModels } from '@/services/catalog'
 import { appToast } from '@/lib/app-toast'
 import {
   createGuardrail,
@@ -61,8 +63,15 @@ export default function GuardrailsPage() {
   const [description, setDescription] = useState('')
   const [isDefault, setIsDefault] = useState(false)
   const [priority, setPriority] = useState<number>(0)
-  const [modelWhitelist, setModelWhitelist] = useState('')
-  const [ipWhitelist, setIpWhitelist] = useState('')
+  const [modelWhitelist, setModelWhitelist] = useState<string[]>([])
+  const [ipWhitelist, setIpWhitelist] = useState<string[]>([])
+
+  const modelsQuery = useQuery({
+    queryKey: ['catalog-models-all'],
+    queryFn: () => listModels({ limit: 200 }),
+    staleTime: 120_000,
+  })
+  const modelSuggestions = (modelsQuery.data as any)?.items?.map((m: any) => m.model_id as string) ?? []
   const [detailId, setDetailId] = useState<string | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [sheetTab, setSheetTab] = useState<'info' | 'scope' | 'budget'>('info')
@@ -188,7 +197,7 @@ export default function GuardrailsPage() {
     setIsCreating(true)
     setDetailId(null)
     setName(''); setDescription(''); setIsDefault(false); setPriority(0)
-    setModelWhitelist(''); setIpWhitelist('')
+    setModelWhitelist([]); setIpWhitelist([])
     setSheetTab('info')
     setDetailOpen(true)
   }
@@ -205,17 +214,15 @@ export default function GuardrailsPage() {
     setName(d.name); setDescription(d.description ?? '')
     setIsDefault(d.is_default); setPriority(d.priority)
     const meta = (d as any).metadata ?? {}
-    setModelWhitelist(Array.isArray(meta.model_whitelist) ? meta.model_whitelist.join(', ') : '')
-    setIpWhitelist(Array.isArray(meta.ip_whitelist) ? meta.ip_whitelist.join('\n') : '')
+    setModelWhitelist(Array.isArray(meta.model_whitelist) ? meta.model_whitelist : [])
+    setIpWhitelist(Array.isArray(meta.ip_whitelist) ? meta.ip_whitelist : [])
   }
 
   function handleSubmit() {
     if (!name.trim()) { appToast.error(t('guardrails.toast.nameRequired')); return }
-    const models = modelWhitelist.split(/[,，\n]/).map((s) => s.trim()).filter(Boolean)
-    const ips = ipWhitelist.split(/[\n,，]/).map((s) => s.trim()).filter(Boolean)
     const metadata: Record<string, unknown> = {}
-    if (models.length > 0) metadata.model_whitelist = models
-    if (ips.length > 0) metadata.ip_whitelist = ips
+    if (modelWhitelist.length > 0) metadata.model_whitelist = modelWhitelist
+    if (ipWhitelist.length > 0) metadata.ip_whitelist = ipWhitelist
     const payload: CreateGuardrailRequest = {
       name: name.trim(),
       description: description.trim() || undefined,
@@ -455,6 +462,7 @@ export default function GuardrailsPage() {
                 isDefault={isDefault} onIsDefaultChange={setIsDefault}
                 modelWhitelist={modelWhitelist} onModelWhitelistChange={setModelWhitelist}
                 ipWhitelist={ipWhitelist} onIpWhitelistChange={setIpWhitelist}
+                modelSuggestions={modelSuggestions}
               />
               <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-mg-border/50">
                 <Button variant="outline" onClick={() => setDetailOpen(false)}>{t('common.cancel')}</Button>
@@ -663,15 +671,18 @@ function GuardrailFormFields({
   isDefault, onIsDefaultChange,
   modelWhitelist, onModelWhitelistChange,
   ipWhitelist, onIpWhitelistChange,
+  modelSuggestions,
 }: {
   name: string; onNameChange: (v: string) => void
   description: string; onDescriptionChange: (v: string) => void
   priority: number; onPriorityChange: (v: number) => void
   isDefault: boolean; onIsDefaultChange: (v: boolean) => void
-  modelWhitelist: string; onModelWhitelistChange: (v: string) => void
-  ipWhitelist: string; onIpWhitelistChange: (v: string) => void
+  modelWhitelist: string[]; onModelWhitelistChange: (v: string[]) => void
+  ipWhitelist: string[]; onIpWhitelistChange: (v: string[]) => void
+  modelSuggestions?: string[]
 }) {
   const { t } = useTranslation()
+  const ipValidator = (v: string) => /^[\d.:/a-fA-F]+$/.test(v)
   return (
     <div className="flex flex-col gap-5 py-2">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -688,27 +699,28 @@ function GuardrailFormFields({
         <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.descLabel')}</label>
         <Input value={description} onChange={(e) => onDescriptionChange(e.target.value)} placeholder={t('guardrails.form.descPlaceholder')} />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.modelWhitelistLabel')}</label>
-          <Input
-            value={modelWhitelist}
-            onChange={(e) => onModelWhitelistChange(e.target.value)}
-            placeholder={t('guardrails.form.modelWhitelistPlaceholder')}
-          />
-          <span className="text-[10px] text-mg-text-2 mt-1.5 block">{t('guardrails.form.modelWhitelistHint')}</span>
-        </div>
-        <div>
-          <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.ipWhitelistLabel')}</label>
-          <textarea
-            value={ipWhitelist}
-            onChange={(e) => onIpWhitelistChange(e.target.value)}
-            placeholder={t('guardrails.form.ipWhitelistPlaceholder')}
-            rows={3}
-            className="w-full rounded-lg border border-mg-border bg-mg-bg-0 text-sm text-mg-text-0 px-3 py-2 outline-none focus:border-brand-base transition-colors resize-none font-mono"
-          />
-          <span className="text-[10px] text-mg-text-2 mt-1.5 block">{t('guardrails.form.ipWhitelistHint')}</span>
-        </div>
+      {/* 模型白名单 — 下拉多选 */}
+      <div>
+        <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.modelWhitelistLabel')}</label>
+        <TagInput
+          value={modelWhitelist}
+          onChange={onModelWhitelistChange}
+          suggestions={modelSuggestions}
+          placeholder={t('guardrails.form.modelWhitelistPlaceholder')}
+          hint={t('guardrails.form.modelWhitelistHint')}
+        />
+      </div>
+      {/* IP 白名单 — 自由输入标签 */}
+      <div>
+        <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.ipWhitelistLabel')}</label>
+        <TagInput
+          value={ipWhitelist}
+          onChange={onIpWhitelistChange}
+          allowFreeText
+          validator={ipValidator}
+          placeholder={t('guardrails.form.ipWhitelistPlaceholder')}
+          hint={t('guardrails.form.ipWhitelistHint')}
+        />
       </div>
       <div className="flex items-center justify-between p-4 rounded-lg border border-mg-border bg-mg-bg-1/40">
         <div>

@@ -280,11 +280,11 @@
       "descLabel": "Description (Optional)",
       "descPlaceholder": "Brief description of this rule",
       "modelWhitelistLabel": "Model Whitelist",
-      "modelWhitelistPlaceholder": "gpt-4o, deepseek-chat, claude-sonnet-4-20250514",
-      "modelWhitelistHint": "Comma-separated. Only allow these models. Leave empty for no restriction.",
+      "modelWhitelistPlaceholder": "Type or select models from dropdown",
+      "modelWhitelistHint": "Select from dropdown or type model ID, press Enter to add. Leave empty for no restriction.",
       "ipWhitelistLabel": "IP Whitelist",
-      "ipWhitelistPlaceholder": "192.168.1.0/24\n10.0.0.1\n2001:db8::/32",
-      "ipWhitelistHint": "One IP or CIDR per line. Only allow these sources. Leave empty for no restriction.",
+      "ipWhitelistPlaceholder": "Type IP or CIDR, press Enter to add",
+      "ipWhitelistHint": "Press Enter to add. Supports IPv4/IPv6/CIDR. Leave empty for no restriction.",
       "isDefaultLabel": "Apply by Default",
       "isDefaultHint": "Automatically apply to all requests"
     },
@@ -536,7 +536,13 @@
     "callBtn": "Call",
     "recallBtn": "Recall",
     "permPanel": {
-      "title": "Permission Reference"
+      "title": "Permission Reference",
+      "idList": "Permission ID List",
+      "copyBtn": "Copy for Backend/Product",
+      "tenantMatrix": "Organization Role Matrix",
+      "wsMatrix": "Workspace Role Matrix",
+      "permLogic": "Final Permissions = Org Role ∪ Workspace Role (Union)",
+      "personalNotice": "Personal Tenant: owner has billing perms (with invoices), but no organization or invitation management."
     },
     "endpoints": {
       "session": "Current Session",
@@ -554,39 +560,49 @@
       "difference": "Differences",
       "extraInApi": "Extra in API (Not standalone in Console)",
       "extraInFrontend": "Extra in Frontend (Interactive tools based on APIs)",
+      "docsDesc": "Docs API (No standalone page in Console yet)",
+      "healthDesc": "Health Check (Internal use)",
+      "playgroundDesc": "Interactive API testing tool",
+      "chatTestDesc": "Chat testing tool (based on agent API)",
+      "deviceDesc": "CLI Device Flow auth page (based on auth API)",
       "matched": "Aligned Modules",
       "matchedDesc": "These modules have a clear mapping between Frontend and API.",
       "gaps": {
         "title": "Module Alignment Details (UI vs API)",
         "guardrail": {
           "title": "Guardrails",
-          "ui": "Focuses on creation, member/APIKey assignment, and simple hard-limit spend budgets.",
-          "api": "Over-engineered: API supports token/request rate limits, monitor modes, and complex aggregation scopes. UI prioritizes simplicity and only implements spend hard limits."
+          "ui": "Supports IP/Model Whitelists and reverse binding for API Keys.",
+          "api": "Over-engineered: API supports token/request rate limits, monitor modes, and complex aggregation scopes. UI prioritizes simplicity and only implements spend hard limits. Ensure PATCH /guardrails/:id supports whitelists and POST /assignments supports reverse binding."
         },
         "observability": {
           "title": "Observability",
           "ui": "Supports toggle configuration, Destination management, and Dead Letter (failed retry) management.",
-          "api": "API provides full Dead Letter management; UI aligned in v1.3."
+          "api": "Involved APIs: GET|PATCH /workspaces/:id/observability/settings, GET|POST|PATCH|DELETE /broadcast-destinations, GET /broadcast-dead-letters, POST /broadcast-dead-letters/:id/retry."
         },
         "billing": {
           "title": "Billing vs Credits/Transactions",
-          "ui": "Unified under Billing management (recharges, transactions, invoices).",
-          "api": "Split into credits and transaction tags. UI successfully aggregates these for better UX."
+          "ui": "Unified under Billing management (recharges, transactions, invoices). Needs to focus on decimal precision for amount output (Requirement #66).",
+          "api": "Involved APIs: GET /tenants/:id/balance, POST /tenants/:id/recharges, GET /tenants/:id/recharges, PATCH /recharges/:order_no/cancel."
         },
         "models": {
           "title": "Models Experience",
-          "ui": "Highly productized 'Experience Center' with Explore, Compare, Chat, and History. It's a key new module in Console.",
-          "api": "Split into catalog (metadata) and agent (runtime). API also has pricing/plans and a global providers list not yet independent in the UI."
+          "ui": "Highly productized 'Experience Center' with Explore, Compare, Chat, and History. Requirement #63 involves significant UX optimizations here.",
+          "api": "Involved APIs: GET /catalog/models, GET /catalog/model-tags, GET /agent/sessions, POST /agent/chat."
         },
         "apiKeys": {
           "title": "API Keys",
-          "ui": "Supports Scope (Personal/Workspace/Member), spending_limit, and expires_at configuration.",
-          "api": "Swagger v1.2 still lacks some field definitions, but UI is fully aligned via extended implementation."
+          "ui": "Supports Scope (Personal/Workspace/Member) (Requirement #14), spending_limit, and expires_at configuration.",
+          "api": "Involved APIs: GET|POST /workspaces/:id/api-keys, PATCH|DELETE /api-keys/:id. Ensure support for scope field and member_account_id binding."
         },
         "organization": {
           "title": "Org & Members",
-          "ui": "Needs total member count per org. When inviting to workspace, needs a list of 'eligible' org members.",
-          "api": "Missing APIs: TenantItem lacks member_count. Also missing a filtered 'non-workspace org members' endpoint; UI defaults to manual email invites."
+          "ui": "Needs total member count per org. Requirement #1780294522906 notes that org logo cannot be changed.",
+          "api": "Missing APIs: POST /tenants/:id/avatar (Org avatar upload). TenantItem lacks member_count. Also missing a filtered 'non-workspace org members' endpoint."
+        },
+        "invitation": {
+          "title": "Invitations",
+          "ui": "Supports default workspace selection in invitation config (Requirement #70).",
+          "api": "POST /invitations must support workspace_id and auto_join fields."
         }
       }
     },
@@ -648,7 +664,8 @@
     "tab": {
       "endpoints": "Endpoints",
       "modules": "Modules",
-      "permissions": "Permissions"
+      "permissions": "Permissions",
+      "requirements": "Requirements"
     }
   },
   "usage": {

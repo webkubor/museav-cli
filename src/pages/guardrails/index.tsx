@@ -717,6 +717,7 @@ function GuardrailFormFields({
           value={ipWhitelist}
           onChange={onIpWhitelistChange}
           allowFreeText
+          tagVariant="mono"
           validator={ipValidator}
           placeholder={t('guardrails.form.ipWhitelistPlaceholder')}
           hint={t('guardrails.form.ipWhitelistHint')}

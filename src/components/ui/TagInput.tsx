@@ -10,6 +10,7 @@ interface TagInputProps {
   allowFreeText?: boolean
   validator?: (value: string) => boolean
   className?: string
+  tagVariant?: 'brand' | 'mono'
 }
 
 export function TagInput({
@@ -21,16 +22,18 @@ export function TagInput({
   allowFreeText = true,
   validator,
   className,
+  tagVariant = 'brand',
 }: TagInputProps) {
+  const hasSuggestions = suggestions && suggestions.length > 0
   const [input, setInput] = useState('')
   const [open, setOpen] = useState(false)
   const [focusIdx, setFocusIdx] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const filtered = suggestions?.filter(
-    (s) => !value.includes(s) && s.toLowerCase().includes(input.toLowerCase())
-  ) ?? []
+  const filtered = hasSuggestions
+    ? suggestions.filter((s) => !value.includes(s) && s.toLowerCase().includes(input.toLowerCase()))
+    : []
 
   const addTag = useCallback((tag: string) => {
     const trimmed = tag.trim()
@@ -39,7 +42,8 @@ export function TagInput({
     onChange([...value, trimmed])
     setInput('')
     setFocusIdx(-1)
-  }, [value, onChange, validator])
+    if (!hasSuggestions) setOpen(false)
+  }, [value, onChange, validator, hasSuggestions])
 
   const removeTag = useCallback((tag: string) => {
     onChange(value.filter((v) => v !== tag))
@@ -48,7 +52,7 @@ export function TagInput({
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault()
-      if (focusIdx >= 0 && filtered[focusIdx]) {
+      if (hasSuggestions && focusIdx >= 0 && filtered[focusIdx]) {
         addTag(filtered[focusIdx])
       } else if (allowFreeText && input.trim()) {
         addTag(input)
@@ -59,32 +63,26 @@ export function TagInput({
       removeTag(value[value.length - 1])
       return
     }
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setFocusIdx((i) => Math.min(i + 1, filtered.length - 1))
-      return
+    if (hasSuggestions) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); setFocusIdx((i) => Math.min(i + 1, filtered.length - 1)) }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setFocusIdx((i) => Math.max(i - 1, 0)) }
     }
-    if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setFocusIdx((i) => Math.max(i - 1, 0))
-      return
-    }
-    if (e.key === 'Escape') {
-      setOpen(false)
-    }
+    if (e.key === 'Escape') setOpen(false)
   }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const showDropdown = open && filtered.length > 0
+  const showDropdown = hasSuggestions && open && filtered.length > 0
+
+  const tagClass = tagVariant === 'mono'
+    ? 'bg-mg-fill-0 text-mg-text-0 border-mg-border'
+    : 'bg-brand-base/10 text-brand-base border-brand-base/20'
 
   return (
     <div ref={containerRef} className={`relative ${className ?? ''}`}>
@@ -93,10 +91,7 @@ export function TagInput({
         onClick={() => inputRef.current?.focus()}
       >
         {value.map((tag) => (
-          <span
-            key={tag}
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-brand-base/10 text-brand-base border border-brand-base/20"
-          >
+          <span key={tag} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold border ${tagClass}`}>
             <code className="font-mono">{tag}</code>
             <button
               type="button"
@@ -111,13 +106,16 @@ export function TagInput({
           <input
             ref={inputRef}
             value={input}
-            onChange={(e) => { setInput(e.target.value); setOpen(true); setFocusIdx(-1) }}
-            onFocus={() => setOpen(true)}
+            onChange={(e) => {
+              setInput(e.target.value)
+              if (hasSuggestions) { setOpen(true); setFocusIdx(-1) }
+            }}
+            onFocus={() => { if (hasSuggestions) setOpen(true) }}
             onKeyDown={handleKeyDown}
             placeholder={value.length === 0 ? placeholder : ''}
-            className="flex-1 bg-transparent text-sm text-mg-text-0 outline-none placeholder:text-mg-text-2/60 min-w-0"
+            className="flex-1 bg-transparent text-sm text-mg-text-0 outline-none placeholder:text-mg-text-2/60 min-w-0 font-mono"
           />
-          {suggestions && suggestions.length > 0 && (
+          {hasSuggestions && (
             <button
               type="button"
               onClick={() => { setOpen((o) => !o); inputRef.current?.focus() }}

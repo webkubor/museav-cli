@@ -78,6 +78,7 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const [platform, setPlatform] = useState('')
+  const [formOpen, setFormOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
   const platformsQuery = useQuery({
@@ -151,26 +152,34 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
 
   return (
     <>
-      {/* Add destination form */}
+      {/* Add destination form — 默认收起 */}
       <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden mb-5">
-        <div className="px-5 py-4 border-b border-mg-border">
+        <div
+          className="px-5 py-3.5 flex items-center justify-between cursor-pointer select-none hover:bg-mg-fill-0/30 transition-colors"
+          onClick={() => setFormOpen((o) => !o)}
+        >
           <h3 className="text-sm font-bold text-mg-text-0">{t('observability.destinations.addTitle')}</h3>
+          <svg width="14" height="14" viewBox="0 0 14 14" className={`text-mg-text-2 transition-transform duration-200 ${formOpen ? 'rotate-180' : ''}`}>
+            <path d="M3 5.5L7 9.5L11 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+          </svg>
         </div>
-        <div className="p-5">
-          <CreateForwardForm
-            key={selectedPlatformId}
-            platformItems={platformsQuery.data?.items ?? []}
-            selectedPlatformId={selectedPlatformId}
-            selectedPlatform={selectedPlatform}
-            onPlatformChange={setPlatform}
-            isSubmitting={createMutation.isPending}
-            workspaceId={workspaceId}
-            onSubmit={(payload) => {
-              if (!selectedPlatformId || !payload.name.trim()) return
-              createMutation.mutate(payload)
-            }}
-          />
-        </div>
+        {formOpen && (
+          <div className="p-5 border-t border-mg-border/60">
+            <CreateForwardForm
+              key={selectedPlatformId}
+              platformItems={platformsQuery.data?.items ?? []}
+              selectedPlatformId={selectedPlatformId}
+              selectedPlatform={selectedPlatform}
+              onPlatformChange={setPlatform}
+              isSubmitting={createMutation.isPending}
+              workspaceId={workspaceId}
+              onSubmit={(payload) => {
+                if (!selectedPlatformId || !payload.name.trim()) return
+                createMutation.mutate(payload)
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Destinations list */}

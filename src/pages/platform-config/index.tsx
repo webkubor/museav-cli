@@ -12,6 +12,9 @@ import { listTenants } from '@/services/tenants'
 import { listWorkspaces } from '@/services/workspaces'
 import { listModels, listModelTags } from '@/services/catalog'
 import { listApiKeys } from '@/services/api-keys'
+import { PERMS } from '@/config/permissions'
+import type { Permission } from '@/config/permissions'
+import { TENANT_PERM_MATRIX, WS_PERM_MATRIX } from '@/config/permissionMatrix'
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
@@ -116,76 +119,287 @@ function EndpointCard({ def, state, onCall }: {
   )
 }
 
-function PermissionPanel() {
-  const { t } = useTranslation()
+function PermTagList({ perms, highlight }: { perms: Permission[]; highlight?: Permission[] }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {perms.map((p) => {
+        const isDomesticOnly = highlight?.includes(p)
+        return (
+          <code
+            key={p}
+            className={[
+              'text-[10px] font-mono px-1.5 py-0.5 rounded border',
+              isDomesticOnly
+                ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
+                : 'bg-mg-bg-1 border-mg-border text-mg-text-1',
+            ].join(' ')}
+          >
+            {p}
+          </code>
+        )
+      })}
+    </div>
+  )
+}
 
-  const PERM_SECTIONS = [
-    {
-      titleKey: 'platformConfig.perm.tenantType',
-      color: 'text-violet-500 dark:text-violet-400',
-      colorBg: 'bg-violet-500/10 border-violet-500/20',
-      borderColor: 'border-violet-500/10',
-      rows: [
-        { label: 'personal', descKey: 'platformConfig.perm.personal.desc', perms: ['platformConfig.perm.personal.perm1', 'platformConfig.perm.personal.perm2', 'platformConfig.perm.personal.perm3'] },
-        { label: 'enterprise', descKey: 'platformConfig.perm.enterprise.desc', perms: ['platformConfig.perm.enterprise.perm1', 'platformConfig.perm.enterprise.perm2', 'platformConfig.perm.enterprise.perm3'] },
-      ],
-    },
-    {
-      titleKey: 'platformConfig.perm.tenantRole',
-      color: 'text-sky-500 dark:text-sky-400',
-      colorBg: 'bg-sky-500/10 border-sky-500/20',
-      borderColor: 'border-sky-500/10',
-      rows: [
-        { label: 'tenant_owner', descKey: 'platformConfig.perm.tenantOwner.desc', perms: ['platformConfig.perm.tenantOwner.perm1', 'platformConfig.perm.tenantOwner.perm2', 'platformConfig.perm.tenantOwner.perm3', 'platformConfig.perm.tenantOwner.perm4', 'platformConfig.perm.tenantOwner.perm5'] },
-        { label: 'tenant_admin', descKey: 'platformConfig.perm.tenantAdmin.desc', perms: ['platformConfig.perm.tenantAdmin.perm1', 'platformConfig.perm.tenantAdmin.perm2', 'platformConfig.perm.tenantAdmin.perm3', 'platformConfig.perm.tenantAdmin.perm4', 'platformConfig.perm.tenantAdmin.perm5'] },
-        { label: 'tenant_member', descKey: 'platformConfig.perm.tenantMember.desc', perms: ['platformConfig.perm.tenantMember.perm1', 'platformConfig.perm.tenantMember.perm2', 'platformConfig.perm.tenantMember.perm3', 'platformConfig.perm.tenantMember.perm4'] },
-      ],
-    },
-    {
-      titleKey: 'platformConfig.perm.wsRole',
-      color: 'text-emerald-500 dark:text-emerald-400',
-      colorBg: 'bg-emerald-500/10 border-emerald-500/20',
-      borderColor: 'border-emerald-500/10',
-      rows: [
-        { label: 'ws_owner', descKey: 'platformConfig.perm.wsOwner.desc', perms: ['platformConfig.perm.wsOwner.perm1', 'platformConfig.perm.wsOwner.perm2'] },
-        { label: 'ws_admin', descKey: 'platformConfig.perm.wsAdmin.desc', perms: ['platformConfig.perm.wsAdmin.perm1', 'platformConfig.perm.wsAdmin.perm2'] },
-        { label: 'ws_member', descKey: 'platformConfig.perm.wsMember.desc', perms: ['platformConfig.perm.wsMember.perm1', 'platformConfig.perm.wsMember.perm2'] },
-      ],
-    },
-  ]
+interface MenuPermRow {
+  key: string
+  label: string
+  scope: 'tenant' | 'workspace' | 'settings'
+  menuPerm: Permission | null
+  actions: Permission[]
+}
+
+const MENU_PERM_MAP: MenuPermRow[] = [
+  { key: 'dashboard',        label: '仪表盘',    scope: 'tenant',    menuPerm: PERMS.DASHBOARD_VIEW,     actions: [] },
+  { key: 'models/explore',   label: '模型探索',   scope: 'tenant',    menuPerm: PERMS.MODELS_VIEW,        actions: [] },
+  { key: 'models/compare',   label: '模型对比',   scope: 'tenant',    menuPerm: PERMS.MODELS_VIEW,        actions: [] },
+  { key: 'models/chat',      label: '模型对话',   scope: 'tenant',    menuPerm: PERMS.MODELS_VIEW,        actions: [] },
+  { key: 'models/history',   label: '历史记录',   scope: 'tenant',    menuPerm: PERMS.MODELS_VIEW,        actions: [] },
+  { key: 'usage',            label: '用量分析',   scope: 'tenant',    menuPerm: PERMS.ANALYTICS_VIEW,     actions: [] },
+  { key: 'logs',             label: '调用日志',   scope: 'tenant',    menuPerm: PERMS.LOGS_VIEW,          actions: [] },
+  { key: 'billing',          label: '账单',      scope: 'tenant',    menuPerm: PERMS.BILLING_VIEW,       actions: [PERMS.BILLING_INVOICE_VIEW, PERMS.BILLING_RECHARGE_CREATE, PERMS.BILLING_RECHARGE_CANCEL] },
+  { key: 'api-keys',         label: 'API Keys',  scope: 'workspace', menuPerm: PERMS.API_KEYS_VIEW,      actions: [PERMS.API_KEYS_CREATE, PERMS.API_KEYS_REVOKE] },
+  { key: 'guardrails',       label: '配额管理 / Guardrails',  scope: 'workspace', menuPerm: PERMS.GUARDRAILS_VIEW,    actions: [PERMS.GUARDRAILS_CREATE, PERMS.GUARDRAILS_EDIT, PERMS.GUARDRAILS_DELETE, PERMS.GUARDRAILS_ASSIGNMENT_EDIT, PERMS.GUARDRAILS_BUDGET_EDIT] },
+  { key: 'observability',    label: '可观测性 / Observability', scope: 'workspace', menuPerm: PERMS.OBSERVABILITY_VIEW, actions: [PERMS.OBSERVABILITY_LOGGING_EDIT, PERMS.OBSERVABILITY_FORWARD_MANAGE] },
+  { key: 'invitations-mgmt', label: '邀请管理 / Invitations',   scope: 'workspace', menuPerm: PERMS.INVITATIONS_VIEW,   actions: [PERMS.INVITATIONS_MANAGE] },
+  { key: 'settings/org',     label: '企业管理 / Organization',  scope: 'settings',  menuPerm: null,                     actions: [PERMS.ORG_SETTINGS_EDIT, PERMS.ORG_MEMBERS_MANAGE, PERMS.ORG_INVITE_MANAGE] },
+]
+
+const SCOPE_STYLE: Record<string, { text: string; bg: string }> = {
+  tenant:    { text: 'text-indigo-500', bg: 'bg-indigo-500/10 border-indigo-500/20' },
+  workspace: { text: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+  settings:  { text: 'text-slate-500', bg: 'bg-slate-500/10 border-slate-500/20' },
+}
+
+function MenuPermissionMap() {
+  const [copied, setCopied] = useState(false)
+
+  function handleCopy() {
+    const header = '菜单 key\t菜单名\t归属\t菜单权限 ID\t页面/操作权限 ID'
+    const rows = MENU_PERM_MAP.map((r) =>
+      [r.key, r.label, r.scope, r.menuPerm ?? '—', r.actions.join(', ') || '—'].join('\t')
+    )
+    navigator.clipboard.writeText([header, ...rows].join('\n')).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
 
   return (
-    <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden mb-6 shadow-sm">
-      <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center">
-        <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">
-          {t('platformConfig.permPanel.title')}
-        </span>
+    <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
+      <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center justify-between">
+        <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">菜单 — 权限 ID 映射表</span>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="text-[11px] font-bold px-3 py-1 rounded-lg border border-mg-border text-mg-text-1 hover:border-brand-base hover:text-brand-base transition-colors duration-150"
+        >
+          {copied ? '✓ 已复制' : '复制为表格'}
+        </button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-mg-border">
-        {PERM_SECTIONS.map((section) => (
-          <div key={section.titleKey} className="p-5 flex flex-col gap-4">
-            <div className={`text-[11px] font-bold tracking-wider ${section.color}`}>
-              {t(section.titleKey)}
-            </div>
-            <div className="space-y-4">
-              {section.rows.map((row) => (
-                <div key={row.label} className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <code className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded border ${section.color} ${section.colorBg}`}>
-                      {row.label}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b border-mg-border bg-mg-bg-1/20">
+              <th className="px-5 py-2.5 text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">菜单 Key</th>
+              <th className="px-5 py-2.5 text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">菜单名</th>
+              <th className="px-5 py-2.5 text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">归属</th>
+              <th className="px-5 py-2.5 text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">菜单权限</th>
+              <th className="px-5 py-2.5 text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">页面/操作权限</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-mg-border/50">
+            {MENU_PERM_MAP.map((row) => {
+              const scope = SCOPE_STYLE[row.scope]
+              return (
+                <tr key={row.key} className="hover:bg-mg-bg-1/30 transition-colors">
+                  <td className="px-5 py-2.5">
+                    <code className="text-[11px] font-mono font-bold text-mg-text-0">{row.key}</code>
+                  </td>
+                  <td className="px-5 py-2.5 text-xs text-mg-text-1">{row.label}</td>
+                  <td className="px-5 py-2.5">
+                    <code className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded border ${scope.text} ${scope.bg}`}>
+                      {row.scope}
                     </code>
-                    <span className="text-xs text-mg-text-2">{t(row.descKey)}</span>
-                  </div>
-                  <ul className="list-disc pl-4 space-y-1">
-                    {row.perms.map((p) => (
-                      <li key={p} className="text-xs text-mg-text-1 leading-relaxed">{t(p)}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+                  </td>
+                  <td className="px-5 py-2.5">
+                    {row.menuPerm
+                      ? <code className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-mg-bg-1 border border-mg-border text-mg-text-1">{row.menuPerm}</code>
+                      : <span className="text-[10px] text-mg-text-2">—</span>
+                    }
+                  </td>
+                  <td className="px-5 py-2.5">
+                    {row.actions.length > 0
+                      ? <div className="flex flex-wrap gap-1">{row.actions.map((a) => (
+                          <code key={a} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400">{a}</code>
+                        ))}</div>
+                      : <span className="text-[10px] text-mg-text-2">—</span>
+                    }
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function PermissionPanel() {
+  const [copied, setCopied] = useState(false)
+
+  const MENU_PERMS: Permission[] = [
+    PERMS.DASHBOARD_VIEW, PERMS.MODELS_VIEW, PERMS.ANALYTICS_VIEW, PERMS.LOGS_VIEW,
+    PERMS.BILLING_VIEW, PERMS.API_KEYS_VIEW, PERMS.GUARDRAILS_VIEW,
+    PERMS.OBSERVABILITY_VIEW, PERMS.INVITATIONS_VIEW,
+  ]
+  const PAGE_PERMS: Permission[] = [
+    PERMS.BILLING_INVOICE_VIEW, PERMS.BILLING_RECHARGE_CREATE, PERMS.BILLING_RECHARGE_CANCEL,
+  ]
+  const ACTION_PERMS: Permission[] = [
+    PERMS.API_KEYS_CREATE, PERMS.API_KEYS_REVOKE,
+    PERMS.GUARDRAILS_CREATE, PERMS.GUARDRAILS_EDIT, PERMS.GUARDRAILS_DELETE,
+    PERMS.GUARDRAILS_ASSIGNMENT_EDIT, PERMS.GUARDRAILS_BUDGET_EDIT,
+    PERMS.OBSERVABILITY_LOGGING_EDIT, PERMS.OBSERVABILITY_FORWARD_MANAGE,
+    PERMS.INVITATIONS_MANAGE,
+    PERMS.ORG_SETTINGS_EDIT, PERMS.ORG_MEMBERS_MANAGE, PERMS.ORG_INVITE_MANAGE,
+  ]
+
+  const TENANT_ROLES = ['tenant_owner', 'tenant_admin', 'tenant_member'] as const
+  const WS_ROLES = ['ws_owner', 'ws_admin', 'ws_member'] as const
+
+  function buildCopyText() {
+    const lines: string[] = ['# ModelGo 权限清单', '', '## 权限 ID 注册表', '']
+    lines.push('### 菜单级')
+    MENU_PERMS.forEach((p) => lines.push(`  - ${p}`))
+    lines.push('', '### 页面/区块级')
+    PAGE_PERMS.forEach((p) => lines.push(`  - ${p}`))
+    lines.push('', '### 按钮/操作级')
+    ACTION_PERMS.forEach((p) => lines.push(`  - ${p}`))
+
+    lines.push('', '## 组织角色权限矩阵（enterprise）', '')
+    TENANT_ROLES.forEach((role) => {
+      const d = TENANT_PERM_MATRIX.domestic.enterprise[role]
+      const g = TENANT_PERM_MATRIX.global.enterprise[role]
+      const shared = d.filter((p) => g.includes(p))
+      const domOnly = d.filter((p) => !g.includes(p))
+      lines.push(`### ${role}`)
+      lines.push(`  共有: ${shared.join(', ')}`)
+      if (domOnly.length) lines.push(`  domestic only: ${domOnly.join(', ')}`)
+      lines.push('')
+    })
+
+    lines.push('## 工作区角色权限矩阵', '')
+    WS_ROLES.forEach((role) => {
+      lines.push(`### ${role}`)
+      lines.push(`  ${WS_PERM_MATRIX[role].join(', ')}`)
+      lines.push('')
+    })
+
+    lines.push('## 备注')
+    lines.push('- personal 租户：owner 获得 billing 权限（国内含 invoice），无 org 管理与邀请管理菜单')
+    lines.push('- 最终权限 = 组织角色权限 ∪ 工作区角色权限')
+    return lines.join('\n')
+  }
+
+  function handleCopy() {
+    navigator.clipboard.writeText(buildCopyText()).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Permission Registry */}
+      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
+        <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center justify-between">
+          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">权限 ID 清单</span>
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="text-[11px] font-bold px-3 py-1 rounded-lg border border-mg-border text-mg-text-1 hover:border-brand-base hover:text-brand-base transition-colors duration-150"
+          >
+            {copied ? '✓ 已复制' : '一键复制（交给后端/产品）'}
+          </button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-mg-border p-5 gap-5 md:gap-0">
+          {([
+            { label: '菜单级', perms: MENU_PERMS, color: 'text-violet-500', bg: 'bg-violet-500/10 border-violet-500/20' },
+            { label: '页面/区块级', perms: PAGE_PERMS, color: 'text-sky-500', bg: 'bg-sky-500/10 border-sky-500/20' },
+            { label: '按钮/操作级', perms: ACTION_PERMS, color: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/20' },
+          ] as const).map(({ label, perms, color, bg }) => (
+            <div key={label} className="md:px-5 first:md:pl-0 last:md:pr-0 space-y-3">
+              <div className={`text-[11px] font-bold tracking-wider ${color}`}>{label}</div>
+              <div className="flex flex-wrap gap-1.5">
+                {(perms as readonly Permission[]).map((p) => (
+                  <code key={p} className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${bg} ${color}`}>{p}</code>
+                ))}
+              </div>
             </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tenant Matrix */}
+      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
+        <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center gap-3">
+          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">组织角色权限矩阵</span>
+          <code className="text-[10px] text-mg-text-2 font-mono opacity-60">enterprise · domestic vs global</code>
+        </div>
+        <div className="divide-y divide-mg-border">
+          {TENANT_ROLES.map((role) => {
+            const domestic = TENANT_PERM_MATRIX.domestic.enterprise[role]
+            const global   = TENANT_PERM_MATRIX.global.enterprise[role]
+            const shared     = domestic.filter((p) => global.includes(p))
+            const domOnly    = domestic.filter((p) => !global.includes(p))
+            return (
+              <div key={role} className="p-5 grid grid-cols-1 md:grid-cols-[200px_1fr] gap-3">
+                <code className="text-[11px] font-bold font-mono px-2.5 py-1 rounded border bg-sky-500/10 border-sky-500/20 text-sky-500 w-fit h-fit shrink-0">
+                  {role}
+                </code>
+                <div className="space-y-2">
+                  <PermTagList perms={shared} />
+                  {domOnly.length > 0 && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[9px] font-bold text-amber-500 uppercase tracking-wider shrink-0">domestic only</span>
+                      <PermTagList perms={domOnly} highlight={domOnly} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+          <div className="px-5 py-3 bg-mg-bg-1/30">
+            <span className="text-[11px] text-mg-text-2">
+              personal 租户：owner 获得 billing 权限（国内含 invoice），<strong>无</strong> org 管理权限与邀请管理菜单。
+            </span>
           </div>
-        ))}
+        </div>
+      </div>
+
+      {/* Workspace Matrix */}
+      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
+        <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40">
+          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">工作区角色权限矩阵</span>
+        </div>
+        <div className="divide-y divide-mg-border">
+          {WS_ROLES.map((role) => (
+            <div key={role} className="p-5 grid grid-cols-1 md:grid-cols-[200px_1fr] gap-3">
+              <code className="text-[11px] font-bold font-mono px-2.5 py-1 rounded border bg-emerald-500/10 border-emerald-500/20 text-emerald-500 w-fit h-fit shrink-0">
+                {role}
+              </code>
+              <PermTagList perms={WS_PERM_MATRIX[role]} />
+            </div>
+          ))}
+          <div className="px-5 py-3 bg-mg-bg-1/30">
+            <span className="text-[11px] text-mg-text-2">
+              最终权限 = 组织角色权限 ∪ 工作区角色权限（取并集）
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -591,7 +805,8 @@ export default function PlatformConfigPage() {
         </TabsContent>
 
         <TabsContent value="permissions">
-          <div className="pt-2">
+          <div className="space-y-4 pt-2">
+            <MenuPermissionMap />
             <PermissionPanel />
           </div>
         </TabsContent>

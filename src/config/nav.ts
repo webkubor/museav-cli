@@ -1,10 +1,13 @@
 import type React from 'react'
+import { PERMS } from './permissions'
+import type { Permission } from './permissions'
 
 export type NavItem = {
   itemKey: string
   text: string
   icon: React.ReactNode
   items?: NavItem[]
+  permission?: Permission
 }
 
 /**
@@ -49,40 +52,37 @@ export const navConfig: NavConfig = {
   ]),
 
   tenantItems: (_ctx, t, icons) => [
-    { itemKey: 'dashboard',    text: t('nav.dashboard'),  icon: icons.home },
+    { itemKey: 'dashboard',    text: t('nav.dashboard'),  icon: icons.home,       permission: PERMS.DASHBOARD_VIEW },
     {
       itemKey: 'models',
       text: t('nav.models'),
       icon: icons.apps,
+      permission: PERMS.MODELS_VIEW,
       items: [
-        { itemKey: 'models/explore', text: t('nav.modelExplore'), icon: icons.apps },
-        { itemKey: 'models/compare', text: t('nav.modelCompare'), icon: icons.list },
-        { itemKey: 'models/chat',    text: t('nav.modelChat'),    icon: icons.histogramSm },
-        { itemKey: 'models/history', text: t('nav.modelHistory'), icon: icons.list },
+        { itemKey: 'models/explore', text: t('nav.modelExplore'), icon: icons.apps,        permission: PERMS.MODELS_VIEW },
+        { itemKey: 'models/compare', text: t('nav.modelCompare'), icon: icons.list,        permission: PERMS.MODELS_VIEW },
+        { itemKey: 'models/chat',    text: t('nav.modelChat'),    icon: icons.histogramSm, permission: PERMS.MODELS_VIEW },
+        { itemKey: 'models/history', text: t('nav.modelHistory'), icon: icons.list,        permission: PERMS.MODELS_VIEW },
       ],
     },
     {
       itemKey: 'analytics',
       text: t('nav.analytics'),
       icon: icons.histogram,
+      permission: PERMS.ANALYTICS_VIEW,
       items: [
-        { itemKey: 'usage', text: t('nav.usage'), icon: icons.histogramSm },
-        { itemKey: 'logs',  text: t('nav.logs'),  icon: icons.list },
+        { itemKey: 'usage', text: t('nav.usage'), icon: icons.histogramSm, permission: PERMS.ANALYTICS_VIEW },
+        { itemKey: 'logs',  text: t('nav.logs'),  icon: icons.list,        permission: PERMS.LOGS_VIEW },
       ],
     },
-    { itemKey: 'billing', text: t('nav.billing'), icon: icons.creditCard },
+    { itemKey: 'billing', text: t('nav.billing'), icon: icons.creditCard, permission: PERMS.BILLING_VIEW },
   ],
 
-  workspaceItems: (ctx, t, icons) => [
-    { itemKey: 'api-keys',      text: t('nav.apiKeys'),       icon: icons.key },
-    { itemKey: 'guardrails',    text: t('nav.guardrails'),    icon: icons.shield },
-    { itemKey: 'observability', text: t('nav.observability'), icon: icons.eye },
-    // 邀请管理：只要不是个人账户即可见（enterprise 或未来其他非 personal 类型）
-    ...(ctx.isNonPersonal ? [{
-      itemKey: 'invitations-mgmt',
-      text: t('nav.invitations'),
-      icon: icons.mail,
-    }] : []),
+  workspaceItems: (_ctx, t, icons) => [
+    { itemKey: 'api-keys',         text: t('nav.apiKeys'),       icon: icons.key,    permission: PERMS.API_KEYS_VIEW },
+    { itemKey: 'guardrails',       text: t('nav.guardrails'),    icon: icons.shield, permission: PERMS.GUARDRAILS_VIEW },
+    { itemKey: 'observability',    text: t('nav.observability'), icon: icons.eye,    permission: PERMS.OBSERVABILITY_VIEW },
+    { itemKey: 'invitations-mgmt', text: t('nav.invitations'),   icon: icons.mail,   permission: PERMS.INVITATIONS_VIEW },
   ],
 
   sandboxItems: (_ctx, icons) => [

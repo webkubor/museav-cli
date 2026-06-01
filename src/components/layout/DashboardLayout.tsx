@@ -20,8 +20,10 @@ import { DashboardHeader } from './DashboardHeader'
 import { DashboardSidebar } from './DashboardSidebar'
 import { CustomerService } from '@/components/customer-service'
 import { navConfig } from '@/config/nav'
+import type { NavItem } from '@/config/nav'
 import { isDomestic } from '@/lib/market'
 import { usePlatformConfig } from '@/hooks/use-platform-config'
+import { usePermissions } from '@/hooks/use-permissions'
 import { cn } from '@/lib/utils'
 
 const isDevTools = import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
@@ -64,11 +66,24 @@ export function DashboardLayout() {
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
 
+  const { hasPermission } = usePermissions()
+
   const navCtx = {
     isNonPersonal: activeTenant?.type !== 'personal',
     isDomestic: isDomestic(),
     isDevTools,
   }
+
+  const filterNavItems = (items: NavItem[]): NavItem[] =>
+    items.reduce<NavItem[]>((acc, item) => {
+      if (item.permission && !hasPermission(item.permission)) return acc
+      if (item.items) {
+        const children = filterNavItems(item.items)
+        if (children.length === 0) return acc
+        return [...acc, { ...item, items: children }]
+      }
+      return [...acc, item]
+    }, [])
 
   const ic = (node: React.ReactNode) => (
     <span className="inline-flex w-4 h-4 items-center justify-center shrink-0">
@@ -91,8 +106,8 @@ export function DashboardLayout() {
     mail:        ic(<LuMail         size={16} />),
   }
 
-  const tenantNavItems    = navConfig.tenantItems(navCtx, t, icons)
-  const workspaceNavItems = navConfig.workspaceItems(navCtx, t, icons)
+  const tenantNavItems    = filterNavItems(navConfig.tenantItems(navCtx, t, icons))
+  const workspaceNavItems = filterNavItems(navConfig.workspaceItems(navCtx, t, icons))
   const sandboxNavItems   = navConfig.sandboxItems(navCtx, icons)
 
   const getSelectedKey = () => {

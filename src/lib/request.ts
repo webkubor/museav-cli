@@ -74,6 +74,41 @@ function devLogApiCall(entry: ApiLogEntry) {
   }).catch(() => {})
 }
 
+function devConsoleLog(
+  ok: boolean,
+  method: string,
+  path: string,
+  ms: number,
+  data?: unknown,
+  errorInfo?: { code?: number; status?: number; message?: string },
+) {
+  if (!import.meta.env.DEV) return
+  const label = getModuleLabel(path)
+  const tag = label ? `[${label}] ` : ''
+  if (ok) {
+    console.groupCollapsed(
+      `%c ✓ ${method} %c${tag}%c${path} %c${ms}ms`,
+      'color:#22c55e;font-weight:bold',
+      'color:#f97316;font-weight:700',
+      'color:#94a3b8',
+      'color:#cbd5e1',
+    )
+    console.log('Response', data)
+    console.groupEnd()
+  } else {
+    const detail = errorInfo?.code ? `code:${errorInfo.code}` : errorInfo?.status ? `http:${errorInfo.status}` : ''
+    console.groupCollapsed(
+      `%c ✗ ${method} %c${tag}%c${path} %c${detail} ${ms}ms`,
+      'color:#ef4444;font-weight:bold',
+      'color:#f97316;font-weight:700',
+      'color:#94a3b8',
+      'color:#ef4444',
+    )
+    if (errorInfo?.message) console.log('Error', errorInfo.message)
+    console.groupEnd()
+  }
+}
+
 function searchParams(params?: QueryParams) {
   if (!params) return undefined
   return Object.fromEntries(
@@ -113,22 +148,6 @@ const client = ky.create({
   hooks: {
     beforeRequest: [
       ({ request }) => injectHeaders(request),
-      ({ request }) => {
-        if (!import.meta.env.DEV) return
-        const url = new URL(request.url)
-        const moduleLabel = getModuleLabel(url.pathname)
-        const headers: Record<string, string> = {}
-        request.headers.forEach((v, k) => { headers[k] = v })
-        console.groupCollapsed(
-          `%c ${request.method} %c ${moduleLabel ? `[${moduleLabel}]` : ''} %c${url.pathname}${url.search}`,
-          'background:#7c6af7;color:#fff;font-weight:bold;border-radius:3px;padding:1px 4px',
-          'color:#f97316;font-weight:700',
-          'color:#94a3b8'
-        )
-        console.log('URL    ', request.url)
-        console.log('Headers', headers)
-        console.groupEnd()
-      },
     ],
     afterResponse: [
       async function handleBusinessError({ request, response }) {
@@ -183,16 +202,7 @@ export async function get<T>(path: string, params?: QueryParams): Promise<T> {
     )
     const ms = durationMs(startedAt)
     devLogApiCall({ method: 'GET', path: normalizedPath, url, ok: true, duration_ms: ms, code: 0 })
-    if (import.meta.env.DEV) {
-      const label = getModuleLabel(normalizedPath)
-      console.log(
-        `%c ✓ GET %c ${label ? `[${label}]` : ''} %c${normalizedPath} %c${ms}ms`,
-        'color:#22c55e;font-weight:bold',
-        'color:#f97316;font-weight:700',
-        'color:#94a3b8',
-        'color:#cbd5e1'
-      )
-    }
+    devConsoleLog(true, 'GET', normalizedPath, ms, result)
     return result
   } catch (error) {
     if (error instanceof ModelGoApiError) error.path = normalizedPath
@@ -273,16 +283,7 @@ async function requestWithJsonBody<T>(
     const result = await unwrap(send(url))
     const ms = durationMs(startedAt)
     devLogApiCall({ method, path: normalizedPath, url, ok: true, duration_ms: ms, code: 0 })
-    if (import.meta.env.DEV) {
-      const label = getModuleLabel(normalizedPath)
-      console.log(
-        `%c ✓ ${method} %c ${label ? `[${label}]` : ''} %c${normalizedPath} %c${ms}ms`,
-        'color:#22c55e;font-weight:bold',
-        'color:#f97316;font-weight:700',
-        'color:#94a3b8',
-        'color:#cbd5e1'
-      )
-    }
+    devConsoleLog(true, method, normalizedPath, ms, result)
     return result
   } catch (error) {
     if (error instanceof ModelGoApiError && error.code === 40302) {
@@ -317,18 +318,11 @@ function devLogApiError(
   }
 
   devLogApiCall(entry)
-
-  if (import.meta.env.DEV) {
-    const label = getModuleLabel(path)
-    const detail = entry.code ? `code:${entry.code}` : entry.status ? `http:${entry.status}` : ''
-    console.warn(
-      `%c ✗ ${method} %c ${label ? `[${label}]` : ''} %c${path} %c${detail} ${ms}ms`,
-      'color:#ef4444;font-weight:bold',
-      'color:#f97316;font-weight:700',
-      'color:#94a3b8',
-      'color:#ef4444'
-    )
-  }
+  devConsoleLog(false, method, path, ms, undefined, {
+    code: entry.code,
+    status: entry.status,
+    message: entry.error,
+  })
 }
 
 function getHttpStatus(error: Error) {

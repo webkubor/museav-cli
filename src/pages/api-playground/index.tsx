@@ -9,7 +9,6 @@ import { LuSend, LuCopy, LuRotateCcw, LuKey, LuEye, LuEyeOff } from 'react-icons
 import { listModels } from '@/services/catalog'
 import { pageItems } from '@/lib/utils'
 import { appToast } from '@/lib/app-toast'
-import { apiBaseUrl } from '@/lib/request'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { getMarket } from '@/lib/market'
 import { getMarketConfig } from '@/config/market'
@@ -96,7 +95,8 @@ export default function ApiPlaygroundPage() {
 
   const market = getMarket()
   const marketConfig = getMarketConfig(market)
-  const host = marketConfig.apiDomain ? `https://${marketConfig.apiDomain}` : apiBaseUrl()
+  const gatewayDomain = import.meta.env.VITE_API_GATEWAY_DOMAIN || marketConfig.apiDomain
+  const host = `https://${gatewayDomain}`
   const baseUrl = protocol === 'openai' 
     ? `${host.replace(/\/+$/, '')}/v1` 
     : host.replace(/\/+$/, '')

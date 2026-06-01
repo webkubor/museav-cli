@@ -568,41 +568,41 @@
       "matched": "Aligned Modules",
       "matchedDesc": "These modules have a clear mapping between Frontend and API.",
       "gaps": {
-        "title": "Module Alignment Details (UI vs API)",
+        "title": "Module Alignment Details (UI Prototype vs Actual API)",
         "guardrail": {
           "title": "Guardrails",
-          "ui": "Supports IP/Model Whitelists and reverse binding for API Keys.",
-          "api": "Over-engineered: API supports token/request rate limits, monitor modes, and complex aggregation scopes. UI prioritizes simplicity and only implements spend hard limits. Ensure PATCH /guardrails/:id supports whitelists and POST /assignments supports reverse binding."
+          "ui": "UI Prototype only needs: Name, Target (Member/Key), Spend Budget (with period). IP/Model whitelist display implemented.",
+          "api": "API is heavily over-engineered: supports token/request rate limits, monitor modes, and multiple aggregation scopes. These complexities are explicitly hidden in the UI. PATCH must reliably support whitelists."
         },
         "observability": {
           "title": "Observability",
-          "ui": "Supports toggle configuration, Destination management, and Dead Letter (failed retry) management.",
-          "api": "Involved APIs: GET|PATCH /workspaces/:id/observability/settings, GET|POST|PATCH|DELETE /broadcast-destinations, GET /broadcast-dead-letters, POST /broadcast-dead-letters/:id/retry."
+          "ui": "UI Prototype focuses on: Toggle and Destination management.",
+          "api": "API provides full Dead Letter management; however, UI does not currently need to expose these low-level retry logs. API functionality > UI."
         },
         "billing": {
-          "title": "Billing vs Credits/Transactions",
-          "ui": "Unified under Billing management (recharges, transactions, invoices). Needs to focus on decimal precision for amount output (Requirement #66).",
-          "api": "Involved APIs: GET /tenants/:id/balance, POST /tenants/:id/recharges, GET /tenants/:id/recharges, PATCH /recharges/:order_no/cancel."
+          "title": "Billing",
+          "ui": "UI Prototype aggregates Balance, Transactions, and Invoices. Must enforce strict decimal precision (Requirement #66).",
+          "api": "Split into Credits and Transaction tags. UI handles business aggregation. Missing a unified precision control parameter."
         },
         "models": {
-          "title": "Models Experience",
-          "ui": "Highly productized 'Experience Center' with Explore, Compare, Chat, and History. Requirement #63 involves significant UX optimizations here.",
-          "api": "Involved APIs: GET /catalog/models, GET /catalog/model-tags, GET /agent/sessions, POST /agent/chat."
+          "title": "Models",
+          "ui": "UI Prototype is a highly integrated 'Experience Center'.",
+          "api": "Split into Catalog (metadata) and Agent (runtime). Lacks a one-stop aggregated API like the UI, requiring multiple frontend calls. Significant optimizations in Requirement #63."
         },
         "apiKeys": {
           "title": "API Keys",
-          "ui": "Supports Scope (Personal/Workspace/Member) (Requirement #14), spending_limit, and expires_at configuration.",
-          "api": "Involved APIs: GET|POST /workspaces/:id/api-keys, PATCH|DELETE /api-keys/:id. Ensure support for scope field and member_account_id binding."
+          "ui": "UI Prototype has implemented: Scope (Personal/Workspace/Member), limits, and expiration. Requirement #14.",
+          "api": "Swagger v1.2 is severely outdated: missing scope, spending_limit, and expires_at fields. API should align with UI definitions ASAP."
         },
         "organization": {
           "title": "Org & Members",
-          "ui": "Needs total member count per org. Requirement #1780294522906 notes that org logo cannot be changed.",
-          "api": "Missing APIs: POST /tenants/:id/avatar (Org avatar upload). TenantItem lacks member_count. Also missing a filtered 'non-workspace org members' endpoint."
+          "ui": "UI Prototype needs: Logo upload (Requirement #1780294522906), total member count, and member filtering from the full org list.",
+          "api": "Major API gaps: Missing POST /tenants/:id/avatar; TenantItem lacks member_count; missing filtered 'non-project org members' endpoint."
         },
         "invitation": {
           "title": "Invitations",
-          "ui": "Supports default workspace selection in invitation config (Requirement #70).",
-          "api": "POST /invitations must support workspace_id and auto_join fields."
+          "ui": "Supports default workspace selection (Requirement #70).",
+          "api": "POST /invitations must reliably support workspace_id and auto_join. Current API support status is unclear."
         }
       }
     },

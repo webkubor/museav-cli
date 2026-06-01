@@ -177,7 +177,7 @@ export default function DevicePage() {
   }
 
   // confirming | approving
-  const { userCode, tenants } = state
+  const { tenants } = state
   const isApproving = state.kind === 'approving'
   const isZh = i18n.language?.startsWith('zh')
   const initials = account?.display_name

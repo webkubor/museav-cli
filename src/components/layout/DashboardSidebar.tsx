@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { LuSettings, LuChevronLeft, LuChevronRight, LuChevronDown, LuGlobe } from 'react-icons/lu'
+import { LuSettings, LuChevronLeft, LuChevronRight, LuGlobe } from 'react-icons/lu'
 
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
@@ -46,18 +46,24 @@ const SidebarNavItem: React.FC<{
         }
       }}
       className={cn(
-        "flex items-center gap-3 mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-200 select-none outline-none focus-visible:ring-1 focus-visible:ring-brand-glow",
+        "group flex items-center gap-3 mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-300 select-none outline-none focus-visible:ring-1 focus-visible:ring-brand-glow",
         collapsed ? "justify-center" : "justify-start",
         isSelected
           ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
-          : "text-mg-text-1 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.97] hover:translate-x-[2px]"
+          : "text-mg-text-1 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.96] hover:translate-x-[2px]"
       )}
     >
-      <span className={cn("text-base shrink-0 transition-colors duration-200", isSelected ? "text-brand-base" : "text-mg-text-2")}>
+      <span className={cn(
+        "text-base shrink-0 transition-all duration-300 ease-out",
+        isSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:scale-115 group-hover:rotate-[8deg]"
+      )}>
         {item.icon}
       </span>
       {!collapsed && (
-        <span className="text-[15px] truncate tracking-tight font-medium leading-none">
+        <span className={cn(
+          "text-[15px] truncate tracking-tight font-medium leading-none transition-transform duration-300 ease-out",
+          isSelected ? "translate-x-0.5" : "group-hover:translate-x-0.5"
+        )}>
           {item.text}
         </span>
       )}
@@ -90,7 +96,7 @@ const SidebarMenuGroup: React.FC<{
         <div
           role="button"
           className={cn(
-            "flex items-center justify-center mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer text-mg-text-2 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.97]",
+            "group flex items-center justify-center mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer text-mg-text-2 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.96] transition-all duration-300",
             isChildSelected && "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
           )}
           title={item.text}
@@ -101,7 +107,10 @@ const SidebarMenuGroup: React.FC<{
             }
           }}
         >
-          <span className={cn("text-base shrink-0 transition-colors duration-200", isChildSelected ? "text-brand-base" : "text-mg-text-2")}>
+          <span className={cn(
+            "text-base shrink-0 transition-all duration-300 ease-out",
+            isChildSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:scale-115 group-hover:rotate-[8deg]"
+          )}>
             {item.icon}
           </span>
         </div>
@@ -118,20 +127,26 @@ const SidebarMenuGroup: React.FC<{
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsOpen(!isOpen) }}
         className={cn(
-          "flex items-center justify-between mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-200 select-none outline-none text-mg-text-1 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.97]",
+          "group flex items-center justify-between mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-300 select-none outline-none text-mg-text-1 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.98]",
           isChildSelected && "text-brand-base font-bold"
         )}
       >
         <div className="flex items-center gap-3 min-w-0">
-          <span className={cn("text-base shrink-0 transition-colors duration-200", isChildSelected ? "text-brand-base" : "text-mg-text-2")}>
+          <span className={cn(
+            "text-base shrink-0 transition-all duration-300 ease-out",
+            isChildSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:scale-115 group-hover:rotate-[8deg]"
+          )}>
             {item.icon}
           </span>
           <span className="text-[15px] truncate tracking-tight font-medium leading-none">
             {item.text}
           </span>
         </div>
-        <span className="text-mg-text-2 shrink-0 transition-transform duration-200 ml-2">
-          {isOpen ? <LuChevronDown size={14} /> : <LuChevronRight size={14} />}
+        <span className={cn(
+          "text-mg-text-2 shrink-0 transition-all duration-300 ml-2",
+          isOpen ? "rotate-90 text-brand-base" : "group-hover:text-mg-text-0"
+        )}>
+          <LuChevronRight size={14} />
         </span>
       </div>
 
@@ -269,11 +284,13 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         onClick={() => setCollapsed(!collapsed)}
         title={collapsed ? t('common.expand') : t('common.collapse')}
         className={cn(
-          "absolute right-[-11px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-mg-bg-0 border border-mg-border hover:border-brand-mid text-mg-text-2 hover:text-brand-base flex items-center justify-center cursor-pointer transition-all duration-200 z-50 shadow-sm",
+          "absolute right-[-11px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-mg-bg-0 border border-mg-border hover:border-brand-mid text-mg-text-2 hover:text-brand-base flex items-center justify-center cursor-pointer transition-all duration-300 z-50 shadow-sm active:scale-90",
           hovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-[-4px] pointer-events-none"
         )}
       >
-        {collapsed ? <LuChevronRight size={13} /> : <LuChevronLeft size={13} />}
+        <div className="transition-transform duration-300 group-hover:scale-110">
+          {collapsed ? <LuChevronRight size={13} /> : <LuChevronLeft size={13} />}
+        </div>
       </button>
 
       {/* 主导航区 */}

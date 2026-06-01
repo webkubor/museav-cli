@@ -11,13 +11,14 @@ export interface Requirement {
   status: 'pending' | 'done'
   createdAt: string
   note?: string
+  gitlabIid?: number
 }
 
 type Action =
-  | { action: 'add'; title: string; priority?: Requirement['priority']; note?: string }
+  | { action: 'add'; title: string; priority?: Requirement['priority']; note?: string; gitlabIid?: number }
   | { action: 'toggle'; id: string }
   | { action: 'delete'; id: string }
-  | { action: 'update'; id: string; title: string }
+  | { action: 'update'; id: string; title: string; gitlabIid?: number }
   | { action: 'reorder'; ids: string[] }
 
 function read(): Requirement[] {
@@ -75,6 +76,7 @@ export function devRequirementsPlugin(): Plugin {
               status: 'pending',
               createdAt: new Date().toISOString(),
               note: payload.note,
+              gitlabIid: payload.gitlabIid,
             }
             write([...items, item])
             res.statusCode = 201
@@ -103,7 +105,9 @@ export function devRequirementsPlugin(): Plugin {
 
           if (payload.action === 'update') {
             const updated = items.map((item) =>
-              item.id === payload.id ? { ...item, title: payload.title.trim() } : item
+              item.id === payload.id
+                ? { ...item, title: payload.title.trim(), gitlabIid: payload.gitlabIid ?? item.gitlabIid }
+                : item
             )
             write(updated)
             res.statusCode = 200

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import type { Requirement } from '../../../scripts/dev-requirements-plugin'
 
 const API = '/dev/requirements'
+const GITLAB_ISSUE_URL = 'https://gitlab.ops.modelgo.com/qa/ai-quality-platform/-/issues'
 
 const PRIORITY_LABEL: Record<Requirement['priority'], string> = {
   high: '高',
@@ -42,6 +43,7 @@ export function DevRequirements() {
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<Requirement[]>([])
   const [title, setTitle] = useState('')
+  const [gitlabIid, setGitlabIid] = useState('')
   const [priority, setPriority] = useState<Requirement['priority']>('medium')
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [pos, setPos] = useState<{ top: number; right: number }>(loadPos)
@@ -148,16 +150,19 @@ export function DevRequirements() {
   const handleAdd = () => {
     const trimmed = title.trim()
     if (!trimmed) return
+    const iid = gitlabIid.trim() ? parseInt(gitlabIid.trim(), 10) : undefined
     const optimistic: Requirement = {
       id: `pending-${Date.now()}`,
       title: trimmed,
       priority,
       status: 'pending',
       createdAt: new Date().toISOString(),
+      gitlabIid: iid && !isNaN(iid) ? iid : undefined,
     }
     setItems((prev) => [...prev, optimistic])
     setTitle('')
-    post({ action: 'add', title: trimmed, priority }).then(load).catch(() => {})
+    setGitlabIid('')
+    post({ action: 'add', title: trimmed, priority, gitlabIid: optimistic.gitlabIid }).then(load).catch(() => {})
   }
 
   const handleToggle = (id: string) => {
@@ -472,6 +477,26 @@ export function DevRequirements() {
                 outline: 'none',
               }}
             />
+            <input
+              value={gitlabIid}
+              onChange={(e) => setGitlabIid(e.target.value.replace(/\D/g, ''))}
+              placeholder="#"
+              title="GitLab Issue ID（选填）"
+              style={{
+                width: 52,
+                padding: '8px 6px',
+                fontSize: 13,
+                fontFamily: 'monospace',
+                fontWeight: 600,
+                background: 'var(--mg-bg-2)',
+                border: '1px solid var(--mg-border)',
+                borderRadius: 6,
+                color: gitlabIid ? 'var(--mg-primary)' : 'var(--mg-text-2)',
+                outline: 'none',
+                textAlign: 'center',
+                flexShrink: 0,
+              }}
+            />
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as Requirement['priority'])}
@@ -715,8 +740,27 @@ function ReqItem({
         )}
       </div>
 
-      {/* 优先级 + 删除 */}
+      {/* GitLab + 优先级 + 删除 */}
       <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, marginTop: 1 }}>
+        {item.gitlabIid && (
+          <a
+            href={`${GITLAB_ISSUE_URL}/${item.gitlabIid}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            title={`GitLab #${item.gitlabIid}`}
+            style={{
+              fontSize: 11, fontWeight: 700, fontFamily: 'monospace',
+              color: 'var(--mg-primary)',
+              background: 'var(--mg-primary-light)',
+              padding: '1px 6px', borderRadius: 4,
+              textDecoration: 'none',
+              lineHeight: '16px',
+            }}
+          >
+            #{item.gitlabIid}
+          </a>
+        )}
         <span style={{ fontSize: 11, color: PRIORITY_COLOR[item.priority], fontWeight: 700 }}>
           {PRIORITY_LABEL[item.priority]}
         </span>

@@ -24,26 +24,26 @@ export interface MarketConfig {
 const configs: Record<Market, MarketConfig> = {
   domestic: {
     domain: 'modelgo.com',
-    apiDomain: import.meta.env.VITE_DOMESTIC_API_DOMAIN ?? 'api.modelgo.com',
+    apiDomain: import.meta.env.VITE_DOMESTIC_API_DOMAIN || 'api.modelgo.com',
     companyName: '词元共生',
-    icp: import.meta.env.VITE_ICP ?? null,
+    icp: import.meta.env.VITE_ICP || null,
     locales: ['zh'],
     defaultLocale: 'zh',
-    siteUrl: import.meta.env.VITE_SITE_URL ?? 'https://modelgo.com',
-    consoleUrl: import.meta.env.VITE_DOMESTIC_CONSOLE ?? 'https://console.modelgo.com',
-    docsUrl: import.meta.env.VITE_DOMESTIC_DOCS ?? 'https://doc.modelgo.com',
+    siteUrl: import.meta.env.VITE_SITE_URL || 'https://modelgo.com',
+    consoleUrl: import.meta.env.VITE_DOMESTIC_CONSOLE || 'https://console.modelgo.com',
+    docsUrl: import.meta.env.VITE_DOMESTIC_DOCS || 'https://doc.modelgo.com',
   },
 
   global: {
     domain: 'modelgo.ai',
-    apiDomain: import.meta.env.VITE_GLOBAL_API_DOMAIN ?? 'api.modelgo.ai',
+    apiDomain: import.meta.env.VITE_GLOBAL_API_DOMAIN || 'api.modelgo.ai',
     companyName: 'ModelGo',
     icp: null,
     locales: ['zh', 'en'],
     defaultLocale: 'en',
-    siteUrl: import.meta.env.VITE_SITE_URL ?? 'https://modelgo.ai',
-    consoleUrl: import.meta.env.VITE_GLOBAL_CONSOLE ?? 'https://console.modelgo.ai',
-    docsUrl: import.meta.env.VITE_GLOBAL_DOCS ?? 'https://doc.modelgo.ai',
+    siteUrl: import.meta.env.VITE_SITE_URL || 'https://modelgo.ai',
+    consoleUrl: import.meta.env.VITE_GLOBAL_CONSOLE || 'https://console.modelgo.ai',
+    docsUrl: import.meta.env.VITE_GLOBAL_DOCS || 'https://doc.modelgo.ai',
   },
 }
 

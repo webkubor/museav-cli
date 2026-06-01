@@ -46,7 +46,7 @@
     "apiKeys": "API Keys",
     "guardrails": "Guardrails",
     "observability": "Observability",
-    "invitations": "Invitations",
+    "invitations": "Members",
     "sidebarWorkspace": "WORKSPACE"
   },
   "header": {
@@ -423,17 +423,27 @@
     }
   },
   "invitations": {
-    "title": "Invitations",
-    "desc": "Invite organization members to join the current workspace.",
+    "title": "Members",
+    "desc": "Assign organization members to workspaces and manage roles.",
     "inviteBtn": "Invite Member",
-    "orgMembers": {
-      "title": "Organization Members",
-      "searchPlaceholder": "Search by name or email...",
-      "empty": "No members in this organization",
-      "joined": "Joined",
-      "pending": "Invited",
-      "notJoined": "Not joined",
-      "invite": "Invite"
+    "assign": {
+      "desc": "Assign organization members to workspaces and manage their roles.",
+      "orgPool": "Organization",
+      "wsMembers": "Workspace",
+      "searchPlaceholder": "Search name or email...",
+      "orgEmpty": "No members in this organization",
+      "wsEmpty": "No members yet, add from the left",
+      "selectWs": "Select a workspace above",
+      "current": "current",
+      "inWs": "In",
+      "add": "Add",
+      "remove": "Remove from workspace",
+      "memberCount": "members",
+      "addSuccess": "Added to workspace",
+      "addError": "Failed to add",
+      "removeSuccess": "Removed from workspace",
+      "removeError": "Failed to remove",
+      "roleError": "Failed to change role"
     },
     "modal": {
       "title": "Invite Member",

@@ -46,7 +46,7 @@
     "apiKeys": "API Keys",
     "guardrails": "配额管理",
     "observability": "可观测性",
-    "invitations": "邀请管理",
+    "invitations": "成员管理",
     "sidebarWorkspace": "项目"
   },
   "header": {
@@ -423,17 +423,27 @@
     }
   },
   "invitations": {
-    "title": "项目邀请管理",
-    "desc": "邀请企业成员加入当前项目。",
+    "title": "成员管理",
+    "desc": "将企业成员分配到项目中，管理角色与权限。",
     "inviteBtn": "邀请成员",
-    "orgMembers": {
-      "title": "企业成员",
-      "searchPlaceholder": "按姓名或邮箱搜索企业成员...",
-      "empty": "当前企业暂无成员",
-      "joined": "已加入",
-      "pending": "邀请中",
-      "notJoined": "未加入",
-      "invite": "邀请"
+    "assign": {
+      "desc": "将企业成员分配到不同的项目中，管理项目内的角色权限。",
+      "orgPool": "企业成员",
+      "wsMembers": "项目成员",
+      "searchPlaceholder": "搜索姓名或邮箱...",
+      "orgEmpty": "当前企业暂无成员",
+      "wsEmpty": "该项目暂无成员，从左侧添加",
+      "selectWs": "请在上方选择一个项目",
+      "current": "当前",
+      "inWs": "已在",
+      "add": "加入",
+      "remove": "移出项目",
+      "memberCount": "人",
+      "addSuccess": "已加入项目",
+      "addError": "添加失败",
+      "removeSuccess": "已从项目移出",
+      "removeError": "移出失败",
+      "roleError": "角色修改失败"
     },
     "modal": {
       "title": "邀请企业成员",

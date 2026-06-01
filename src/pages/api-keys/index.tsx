@@ -174,7 +174,8 @@ export default function ApiKeysPage() {
   }
 
 
-  const baseUrl = `https://${_marketConfig.apiDomain}/v1`
+  const gatewayDomain = import.meta.env.VITE_API_GATEWAY_DOMAIN || _marketConfig.apiDomain
+  const baseUrl = `https://${gatewayDomain}/v1`
 
   function handleQuickCopy(key: string, text: string) {
     navigator.clipboard.writeText(text)
@@ -224,7 +225,7 @@ export default function ApiKeysPage() {
               },
               {
                 label: ANTHROPIC_LABEL,
-                value: `https://${_marketConfig.apiDomain}`,
+                value: `https://${gatewayDomain}`,
                 agents: ['Anthropic SDK', 'Claude API', 'Amazon Bedrock'],
                 icon: <Anthropic.Avatar size={32} />,
               },

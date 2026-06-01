@@ -426,6 +426,15 @@
     "title": "Invitations",
     "desc": "Invite organization members to join the current workspace.",
     "inviteBtn": "Invite Member",
+    "orgMembers": {
+      "title": "Organization Members",
+      "searchPlaceholder": "Search by name or email...",
+      "empty": "No members in this organization",
+      "joined": "Joined",
+      "pending": "Invited",
+      "notJoined": "Not joined",
+      "invite": "Invite"
+    },
     "modal": {
       "title": "Invite Member",
       "close": "✕",

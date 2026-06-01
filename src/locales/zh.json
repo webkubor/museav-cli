@@ -426,6 +426,15 @@
     "title": "项目邀请管理",
     "desc": "邀请企业成员加入当前项目。",
     "inviteBtn": "邀请成员",
+    "orgMembers": {
+      "title": "企业成员",
+      "searchPlaceholder": "按姓名或邮箱搜索企业成员...",
+      "empty": "当前企业暂无成员",
+      "joined": "已加入",
+      "pending": "邀请中",
+      "notJoined": "未加入",
+      "invite": "邀请"
+    },
     "modal": {
       "title": "邀请企业成员",
       "close": "✕",

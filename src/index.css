@@ -1198,3 +1198,17 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   margin-top: 6px;
   margin-bottom: 6px;
 }
+
+/* ── 客服聊天 Markdown ─────────────────────────── */
+.cs-markdown { font-size: 13px; line-height: 1.6; }
+.cs-markdown p { margin: 0 0 8px; }
+.cs-markdown p:last-child { margin-bottom: 0; }
+.cs-markdown ul, .cs-markdown ol { margin: 4px 0 8px; padding-left: 18px; }
+.cs-markdown li { margin-bottom: 2px; }
+.cs-markdown code { font-size: 12px; padding: 1px 5px; border-radius: 4px; background: var(--mg-fill-1); font-family: monospace; }
+.cs-markdown pre { margin: 6px 0; padding: 10px 12px; border-radius: 8px; background: #0f172a; overflow-x: auto; }
+.cs-markdown pre code { padding: 0; background: none; color: #e2e8f0; font-size: 12px; }
+.cs-markdown a { color: var(--brand-base); text-decoration: underline; }
+.cs-markdown h1, .cs-markdown h2, .cs-markdown h3 { font-size: 13px; font-weight: 700; margin: 8px 0 4px; }
+.cs-markdown blockquote { margin: 4px 0; padding-left: 10px; border-left: 3px solid var(--mg-border); color: var(--mg-text-2); }
+.cs-markdown hr { border: none; border-top: 1px solid var(--mg-border); margin: 8px 0; }

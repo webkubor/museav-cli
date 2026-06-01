@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/Button'
 import { useState, useEffect, useRef } from 'react'
 
+import Markdown from 'react-markdown'
 import { LuX, LuSendHorizontal, LuRefreshCw } from 'react-icons/lu'
 import { modelGoLogos } from '@/config/brand-assets'
 import { getMarket } from '@/lib/market'
@@ -51,11 +52,17 @@ function MessageBubble({ msg }: { msg: Message }) {
         fontSize: 13,
         lineHeight: '1.6',
         wordBreak: 'break-word',
-        whiteSpace: 'pre-wrap',
+        whiteSpace: isUser ? 'pre-wrap' : undefined,
         border: isUser ? '1px solid var(--mg-fill-1)' : '1px solid var(--mg-border)',
         opacity: msg.isError ? 0.7 : 1,
       }}>
-        {msg.content || (msg.role === 'agent' ? <span style={{ color: 'var(--mg-text-2)', fontStyle: 'italic' }}>思考中…</span> : '')}
+        {msg.content
+          ? (isUser
+            ? msg.content
+            : <div className="cs-markdown"><Markdown>{msg.content}</Markdown></div>
+          )
+          : (msg.role === 'agent' ? <span style={{ color: 'var(--mg-text-2)', fontStyle: 'italic' }}>思考中…</span> : '')
+        }
       </div>
       <span style={{ fontSize: 10, color: 'var(--mg-text-2)', marginTop: 4, padding: '0 4px' }}>
         {formatCsTimestamp(msg.timestamp)}

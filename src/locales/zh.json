@@ -279,6 +279,12 @@
       "priorityPlaceholder": "例如：0",
       "descLabel": "描述 (可选)",
       "descPlaceholder": "对此安全规则进行简要描述",
+      "modelWhitelistLabel": "模型白名单",
+      "modelWhitelistPlaceholder": "gpt-4o, deepseek-chat, claude-sonnet-4-20250514",
+      "modelWhitelistHint": "逗号分隔，仅允许调用这些模型。留空表示不限制。",
+      "ipWhitelistLabel": "IP 白名单",
+      "ipWhitelistPlaceholder": "192.168.1.0/24\n10.0.0.1\n2001:db8::/32",
+      "ipWhitelistHint": "每行一个 IP 或 CIDR，仅允许这些来源访问。留空表示不限制。",
       "isDefaultLabel": "默认应用",
       "isDefaultHint": "自动应用此配额到所有模型请求"
     },
@@ -554,13 +560,13 @@
         "title": "核心模块功能对齐细节 (UI vs API)",
         "guardrail": {
           "title": "配额管理 (Guardrails)",
-          "ui": "侧重创建、成员/APIKey 绑定及简单硬限额预算。",
-          "api": "API 支持更细粒度的预算策略 (Budget Policies)，如不同的聚合维度 (aggregation_scope) 和执行模式 (enforcement_mode)，UI 目前仅展示并固定为 hard_limit。"
+          "ui": "侧重于创建、成员/APIKey 绑定以及简单的硬限额预算 (Hard Limit)。",
+          "api": "API 存在过度设计：支持基于 Token/次数的速率限制、监控模式 (Monitor) 以及多种聚合维度。UI 暂不需要这些复杂性，仅保留金额硬限额。"
         },
         "observability": {
           "title": "可观测性 (Observability)",
-          "ui": "侧重开关配置及转发目的地 (Destinations) 管理。",
-          "api": "API 拥有完整的死信队列 (Dead Letters) 处理接口 (查看/删除/重试)，该功能在当前 UI 中完全缺失。"
+          "ui": "支持开关配置、转发目的地管理及死信队列 (Dead Letters) 的查看与重试。",
+          "api": "API 拥有完整的死信队列处理接口，UI 已在 v1.3 完成功能对齐。"
         },
         "billing": {
           "title": "账单/计费 (Billing vs Credits)",
@@ -574,15 +580,16 @@
         },
         "apiKeys": {
           "title": "API Keys",
-          "ui": "支持 Scope (个人/项目/成员) 区分。成员 Scope 需要指定目标 account_id。",
-          "api": "API (Swagger v1.2) 完全缺失 scope 和 member_account_id 字段定义。此外还支持 spending_limit (限额) 和 expires_at (过期时间)，目前在产品 UI 中隐藏。"
+          "ui": "支持 Scope (个人/项目/成员) 区分，支持限额 (spending_limit) 和过期时间 (expires_at) 配置。",
+          "api": "Swagger v1.2 仍缺失部分字段定义，但 UI 已通过扩展字段完成功能对齐。"
         },
         "organization": {
           "title": "企业与成员 (Org & Members)",
           "ui": "需要展示企业下成员总数。在项目邀请成员时，需要展示企业内「可邀请」的成员列表。",
-          "api": "API (TenantItem) 缺少 member_count 字段。完全缺失「项目上下文下的企业成员」过滤接口，目前 UI 只能通过邮箱手动邀请。"
+          "api": "API 缺失关键字段：TenantItem 缺少 member_count。同时也缺失「项目上下文下的企业成员」过滤接口，目前 UI 只能通过邮箱手动邀请。"
         }
       }
+
     },
     "perm": {
       "tenantType": "租户类型 (Tenant Type)",

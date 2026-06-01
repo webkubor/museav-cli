@@ -63,6 +63,8 @@ export default function GuardrailsPage() {
   const [description, setDescription] = useState('')
   const [isDefault, setIsDefault] = useState(false)
   const [priority, setPriority] = useState<number>(0)
+  const [modelWhitelist, setModelWhitelist] = useState('')
+  const [ipWhitelist, setIpWhitelist] = useState('')
 
   // ── 详情 SideSheet ──────────────────────────────────────────────────────
   const [detailId, setDetailId] = useState<string | null>(null)
@@ -187,6 +189,7 @@ export default function GuardrailsPage() {
   function openCreate() {
     setEditingGuardrail(null)
     setName(''); setDescription(''); setIsDefault(false); setPriority(0)
+    setModelWhitelist(''); setIpWhitelist('')
     setModalVisible(true)
   }
 
@@ -194,6 +197,9 @@ export default function GuardrailsPage() {
     setEditingGuardrail(g)
     setName(g.name); setDescription(g.description ?? '')
     setIsDefault(g.is_default); setPriority(g.priority)
+    const meta = (g as any).metadata ?? {}
+    setModelWhitelist(Array.isArray(meta.model_whitelist) ? meta.model_whitelist.join(', ') : '')
+    setIpWhitelist(Array.isArray(meta.ip_whitelist) ? meta.ip_whitelist.join('\n') : '')
     setModalVisible(true)
   }
 
@@ -207,11 +213,17 @@ export default function GuardrailsPage() {
 
   function handleSubmit() {
     if (!name.trim()) { appToast.error(t('guardrails.toast.nameRequired')); return }
+    const models = modelWhitelist.split(/[,，\n]/).map((s) => s.trim()).filter(Boolean)
+    const ips = ipWhitelist.split(/[\n,，]/).map((s) => s.trim()).filter(Boolean)
+    const metadata: Record<string, unknown> = {}
+    if (models.length > 0) metadata.model_whitelist = models
+    if (ips.length > 0) metadata.ip_whitelist = ips
     const payload: CreateGuardrailRequest = {
       name: name.trim(),
       description: description.trim() || undefined,
       is_default: isDefault,
       priority,
+      ...(Object.keys(metadata).length > 0 ? { metadata } : {}),
     }
     if (editingGuardrail) {
       updateMutation.mutate({ id: editingGuardrail.id, payload })
@@ -582,6 +594,28 @@ export default function GuardrailsPage() {
           <div>
             <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.descLabel')}</label>
             <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('guardrails.form.descPlaceholder')} />
+          </div>
+          {/* 模型白名单 */}
+          <div>
+            <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.modelWhitelistLabel')}</label>
+            <Input
+              value={modelWhitelist}
+              onChange={(e) => setModelWhitelist(e.target.value)}
+              placeholder={t('guardrails.form.modelWhitelistPlaceholder')}
+            />
+            <span className="text-[10px] text-mg-text-2 mt-1.5 block">{t('guardrails.form.modelWhitelistHint')}</span>
+          </div>
+          {/* IP 白名单 */}
+          <div>
+            <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.ipWhitelistLabel')}</label>
+            <textarea
+              value={ipWhitelist}
+              onChange={(e) => setIpWhitelist(e.target.value)}
+              placeholder={t('guardrails.form.ipWhitelistPlaceholder')}
+              rows={3}
+              className="w-full rounded-lg border border-mg-border bg-mg-bg-0 text-sm text-mg-text-0 px-3 py-2 outline-none focus:border-brand-base transition-colors resize-none font-mono"
+            />
+            <span className="text-[10px] text-mg-text-2 mt-1.5 block">{t('guardrails.form.ipWhitelistHint')}</span>
           </div>
           <div className="flex items-center justify-between p-4 rounded-lg border border-mg-border bg-mg-bg-1/40">
             <div>

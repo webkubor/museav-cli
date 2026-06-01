@@ -279,6 +279,12 @@
       "priorityPlaceholder": "e.g. 0",
       "descLabel": "Description (Optional)",
       "descPlaceholder": "Brief description of this rule",
+      "modelWhitelistLabel": "Model Whitelist",
+      "modelWhitelistPlaceholder": "gpt-4o, deepseek-chat, claude-sonnet-4-20250514",
+      "modelWhitelistHint": "Comma-separated. Only allow these models. Leave empty for no restriction.",
+      "ipWhitelistLabel": "IP Whitelist",
+      "ipWhitelistPlaceholder": "192.168.1.0/24\n10.0.0.1\n2001:db8::/32",
+      "ipWhitelistHint": "One IP or CIDR per line. Only allow these sources. Leave empty for no restriction.",
       "isDefaultLabel": "Apply by Default",
       "isDefaultHint": "Automatically apply to all requests"
     },
@@ -554,13 +560,13 @@
         "title": "Module Alignment Details (UI vs API)",
         "guardrail": {
           "title": "Guardrails",
-          "ui": "Focuses on creation, member/APIKey assignment, and simple hard-limit budgets.",
-          "api": "Supports granular Budget Policies with various aggregation_scope and enforcement_mode options. UI currently hardcodes these to hard_limit."
+          "ui": "Focuses on creation, member/APIKey assignment, and simple hard-limit spend budgets.",
+          "api": "Over-engineered: API supports token/request rate limits, monitor modes, and complex aggregation scopes. UI prioritizes simplicity and only implements spend hard limits."
         },
         "observability": {
           "title": "Observability",
-          "ui": "Focuses on toggle configuration and Destination management.",
-          "api": "Provides full Dead Letter management (list/delete/retry), which is entirely missing from the UI."
+          "ui": "Supports toggle configuration, Destination management, and Dead Letter (failed retry) management.",
+          "api": "API provides full Dead Letter management; UI aligned in v1.3."
         },
         "billing": {
           "title": "Billing vs Credits/Transactions",
@@ -574,13 +580,13 @@
         },
         "apiKeys": {
           "title": "API Keys",
-          "ui": "Supports Scope (Personal/Workspace/Member). Member scope requires a target account_id.",
-          "api": "API (Swagger v1.2) is missing scope and member_account_id definitions. It does support spending_limit and expires_at, which are currently hidden in UI."
+          "ui": "Supports Scope (Personal/Workspace/Member), spending_limit, and expires_at configuration.",
+          "api": "Swagger v1.2 still lacks some field definitions, but UI is fully aligned via extended implementation."
         },
         "organization": {
           "title": "Org & Members",
           "ui": "Needs total member count per org. When inviting to workspace, needs a list of 'eligible' org members.",
-          "api": "API (TenantItem) lacks member_count. Missing filtered 'org members for workspace' endpoint; UI currently defaults to manual email invites."
+          "api": "Missing APIs: TenantItem lacks member_count. Also missing a filtered 'non-workspace org members' endpoint; UI defaults to manual email invites."
         }
       }
     },

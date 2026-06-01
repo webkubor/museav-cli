@@ -132,7 +132,6 @@ export function DashboardLayout() {
     guardrails:       [t('nav.home'), t('nav.guardrails')],
     observability:    [t('nav.home'), t('nav.observability')],
     'invitations-mgmt':  [t('nav.home'), t('nav.invitations')],
-    'api-playground':    [t('nav.home'), '测试区', '接口调试'],
     'chat-test':         [t('nav.home'), '测试区', '对话测试'],
     'platform-config':  [t('nav.home'), '接口调试'],
     'settings/account':      [t('nav.home'), t('nav.settings'), t('nav.account')],

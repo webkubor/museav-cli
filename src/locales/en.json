@@ -719,34 +719,6 @@
     },
     "footer": "Requests go directly to {{url}}/v1/chat/completions, bypassing the console backend."
   },
-  "apiPlayground": {
-    "title": "API Playground",
-    "desc": "Test API calls with real keys and view raw request/response.",
-    "placeholder": {
-      "key": "Select API Key",
-      "model": "Select model"
-    },
-    "label": {
-      "model": "Model",
-      "requestBody": "Request Body (JSON)",
-      "response": "Response",
-      "curl": "cURL"
-    },
-    "option": {
-      "useBody": "Use model from request body"
-    },
-    "button": {
-      "send": "Send Request",
-      "reset": "Reset",
-      "copy": "Copy"
-    },
-    "empty": "Configure parameters and click Send Request",
-    "toast": {
-      "noKey": "Please select an API Key",
-      "invalidJson": "Invalid JSON in request body",
-      "copied": "Copied to clipboard"
-    }
-  },
   "modelsCompare": {
     "title": "Model Compare",
     "desc": "Send the same prompt to up to {{max}} models and compare outputs.",

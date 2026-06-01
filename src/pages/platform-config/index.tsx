@@ -438,7 +438,6 @@ function ModuleComparisonPanel() {
   ]
 
   const EXTRA_IN_FRONTEND = [
-    { name: 'api-playground', desc: t('platformConfig.moduleCompare.playgroundDesc') },
     { name: 'chat-test', desc: t('platformConfig.moduleCompare.chatTestDesc') },
     { name: 'device', desc: t('platformConfig.moduleCompare.deviceDesc') },
   ]

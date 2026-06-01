@@ -21,9 +21,9 @@ interface DashboardSidebarProps {
   settingsLabel: string
 }
 
-const WORKSPACE_KEYS = ['api-keys', 'guardrails', 'observability', 'invitations-mgmt', 'api-playground', 'chat-test']
+const WORKSPACE_KEYS = ['api-keys', 'guardrails', 'observability', 'invitations-mgmt', 'chat-test']
 const SETTINGS_KEYS = ['settings', 'settings/account', 'settings/workspace', 'settings/organization']
-const SANDBOX_KEYS = ['platform-config', 'api-playground']
+const SANDBOX_KEYS = ['platform-config']
 
 /**
  * 极简高颜值自定义 Sidebar 导航单项

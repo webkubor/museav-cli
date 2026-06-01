@@ -606,7 +606,6 @@
         }
       }
     },
-
     "perm": {
       "tenantType": "租户类型 (Tenant Type)",
       "tenantRole": "企业角色 (Tenant Role)",
@@ -719,34 +718,6 @@
       "noModel": "请先选择模型"
     },
     "footer": "请求直接发往 {{url}}/v1/chat/completions，响应不经过控制台后端。"
-  },
-  "apiPlayground": {
-    "title": "API 调试台",
-    "desc": "使用真实 API Key 测试调用，查看完整请求与响应详情。",
-    "placeholder": {
-      "key": "选择 API Key",
-      "model": "选择模型"
-    },
-    "label": {
-      "model": "模型",
-      "requestBody": "请求体 (JSON)",
-      "response": "响应结果",
-      "curl": "cURL 命令"
-    },
-    "option": {
-      "useBody": "使用请求体中的模型"
-    },
-    "button": {
-      "send": "发送请求",
-      "reset": "重置",
-      "copy": "复制"
-    },
-    "empty": "配置参数后点击发送请求",
-    "toast": {
-      "noKey": "请先选择 API Key",
-      "invalidJson": "请求体 JSON 格式不正确",
-      "copied": "已复制到剪贴板"
-    }
   },
   "modelsCompare": {
     "title": "模型对比",

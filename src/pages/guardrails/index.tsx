@@ -504,6 +504,9 @@ export default function GuardrailsPage() {
               </div>
             </section>
 
+            {/* 白名单 */}
+            <GuardrailWhitelistView metadata={(detail as any).metadata} />
+
             {/* 预算 — 内联编辑 */}
             <section>
               <div className="flex items-center justify-between mb-3">
@@ -570,7 +573,7 @@ export default function GuardrailsPage() {
         open={modalVisible}
         onClose={closeModal}
         title={editingGuardrail ? t('guardrails.modal.editTitle') : t('guardrails.modal.createTitle')}
-        size="md"
+        size="lg"
         footer={
           <>
             <Button variant="outline" onClick={closeModal}>{t('guardrails.modal.cancel')}</Button>
@@ -580,51 +583,14 @@ export default function GuardrailsPage() {
           </>
         }
       >
-        <div className="flex flex-col gap-5 py-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.nameLabel')}</label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('guardrails.form.namePlaceholder')} />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.priorityLabel')}</label>
-              <Input type="number" value={priority} onChange={(e) => setPriority(Number(e.target.value))} placeholder={t('guardrails.form.priorityPlaceholder')} />
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.descLabel')}</label>
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('guardrails.form.descPlaceholder')} />
-          </div>
-          {/* 模型白名单 */}
-          <div>
-            <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.modelWhitelistLabel')}</label>
-            <Input
-              value={modelWhitelist}
-              onChange={(e) => setModelWhitelist(e.target.value)}
-              placeholder={t('guardrails.form.modelWhitelistPlaceholder')}
-            />
-            <span className="text-[10px] text-mg-text-2 mt-1.5 block">{t('guardrails.form.modelWhitelistHint')}</span>
-          </div>
-          {/* IP 白名单 */}
-          <div>
-            <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.ipWhitelistLabel')}</label>
-            <textarea
-              value={ipWhitelist}
-              onChange={(e) => setIpWhitelist(e.target.value)}
-              placeholder={t('guardrails.form.ipWhitelistPlaceholder')}
-              rows={3}
-              className="w-full rounded-lg border border-mg-border bg-mg-bg-0 text-sm text-mg-text-0 px-3 py-2 outline-none focus:border-brand-base transition-colors resize-none font-mono"
-            />
-            <span className="text-[10px] text-mg-text-2 mt-1.5 block">{t('guardrails.form.ipWhitelistHint')}</span>
-          </div>
-          <div className="flex items-center justify-between p-4 rounded-lg border border-mg-border bg-mg-bg-1/40">
-            <div>
-              <label className="block text-xs font-bold text-mg-text-0 mb-0.5">{t('guardrails.form.isDefaultLabel')}</label>
-              <span className="text-[11px] text-mg-text-2">{t('guardrails.form.isDefaultHint')}</span>
-            </div>
-            <Switch checked={isDefault} onChange={setIsDefault} />
-          </div>
-        </div>
+        <GuardrailFormFields
+          name={name} onNameChange={setName}
+          description={description} onDescriptionChange={setDescription}
+          priority={priority} onPriorityChange={setPriority}
+          isDefault={isDefault} onIsDefaultChange={setIsDefault}
+          modelWhitelist={modelWhitelist} onModelWhitelistChange={setModelWhitelist}
+          ipWhitelist={ipWhitelist} onIpWhitelistChange={setIpWhitelist}
+        />
       </Modal>
 
       {/* 添加成员 Modal */}
@@ -698,5 +664,115 @@ export default function GuardrailsPage() {
         }
       />
     </div>
+  )
+}
+
+// ─── 公共：表单字段组件（创建/编辑复用） ──────────────────────────────────────
+
+function GuardrailFormFields({
+  name, onNameChange,
+  description, onDescriptionChange,
+  priority, onPriorityChange,
+  isDefault, onIsDefaultChange,
+  modelWhitelist, onModelWhitelistChange,
+  ipWhitelist, onIpWhitelistChange,
+}: {
+  name: string; onNameChange: (v: string) => void
+  description: string; onDescriptionChange: (v: string) => void
+  priority: number; onPriorityChange: (v: number) => void
+  isDefault: boolean; onIsDefaultChange: (v: boolean) => void
+  modelWhitelist: string; onModelWhitelistChange: (v: string) => void
+  ipWhitelist: string; onIpWhitelistChange: (v: string) => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="flex flex-col gap-5 py-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.nameLabel')}<span className="text-rose-500 ml-1">*</span></label>
+          <Input value={name} onChange={(e) => onNameChange(e.target.value)} placeholder={t('guardrails.form.namePlaceholder')} />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.priorityLabel')}</label>
+          <Input type="number" value={priority} onChange={(e) => onPriorityChange(Number(e.target.value))} placeholder={t('guardrails.form.priorityPlaceholder')} />
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.descLabel')}</label>
+        <Input value={description} onChange={(e) => onDescriptionChange(e.target.value)} placeholder={t('guardrails.form.descPlaceholder')} />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.modelWhitelistLabel')}</label>
+          <Input
+            value={modelWhitelist}
+            onChange={(e) => onModelWhitelistChange(e.target.value)}
+            placeholder={t('guardrails.form.modelWhitelistPlaceholder')}
+          />
+          <span className="text-[10px] text-mg-text-2 mt-1.5 block">{t('guardrails.form.modelWhitelistHint')}</span>
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.ipWhitelistLabel')}</label>
+          <textarea
+            value={ipWhitelist}
+            onChange={(e) => onIpWhitelistChange(e.target.value)}
+            placeholder={t('guardrails.form.ipWhitelistPlaceholder')}
+            rows={3}
+            className="w-full rounded-lg border border-mg-border bg-mg-bg-0 text-sm text-mg-text-0 px-3 py-2 outline-none focus:border-brand-base transition-colors resize-none font-mono"
+          />
+          <span className="text-[10px] text-mg-text-2 mt-1.5 block">{t('guardrails.form.ipWhitelistHint')}</span>
+        </div>
+      </div>
+      <div className="flex items-center justify-between p-4 rounded-lg border border-mg-border bg-mg-bg-1/40">
+        <div>
+          <label className="block text-xs font-bold text-mg-text-0 mb-0.5">{t('guardrails.form.isDefaultLabel')}</label>
+          <span className="text-[11px] text-mg-text-2">{t('guardrails.form.isDefaultHint')}</span>
+        </div>
+        <Switch checked={isDefault} onChange={onIsDefaultChange} />
+      </div>
+    </div>
+  )
+}
+
+// ─── 公共：白名单只读展示（SideSheet 详情复用） ──────────────────────────────
+
+function GuardrailWhitelistView({ metadata }: { metadata?: Record<string, unknown> }) {
+  const { t } = useTranslation()
+  const models = Array.isArray(metadata?.model_whitelist) ? (metadata.model_whitelist as string[]) : []
+  const ips = Array.isArray(metadata?.ip_whitelist) ? (metadata.ip_whitelist as string[]) : []
+
+  if (models.length === 0 && ips.length === 0) return null
+
+  return (
+    <>
+      {models.length > 0 && (
+        <section>
+          <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider mb-3">
+            {t('guardrails.form.modelWhitelistLabel')}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {models.map((m) => (
+              <code key={m} className="text-[11px] font-mono px-2 py-0.5 rounded bg-mg-fill-0 border border-mg-border text-mg-text-0">
+                {m}
+              </code>
+            ))}
+          </div>
+        </section>
+      )}
+      {ips.length > 0 && (
+        <section>
+          <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider mb-3">
+            {t('guardrails.form.ipWhitelistLabel')}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {ips.map((ip) => (
+              <code key={ip} className="text-[11px] font-mono px-2 py-0.5 rounded bg-mg-fill-0 border border-mg-border text-mg-text-0">
+                {ip}
+              </code>
+            ))}
+          </div>
+        </section>
+      )}
+    </>
   )
 }

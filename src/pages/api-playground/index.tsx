@@ -96,7 +96,7 @@ export default function ApiPlaygroundPage() {
 
   const market = getMarket()
   const marketConfig = getMarketConfig(market)
-  const host = apiBaseUrl() || `https://${marketConfig.apiDomain}`
+  const host = marketConfig.apiDomain ? `https://${marketConfig.apiDomain}` : apiBaseUrl()
   const baseUrl = protocol === 'openai' 
     ? `${host.replace(/\/+$/, '')}/v1` 
     : host.replace(/\/+$/, '')

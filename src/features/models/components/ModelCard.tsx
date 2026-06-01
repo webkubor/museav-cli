@@ -23,6 +23,8 @@ export function ModelCard({ model, onSelect }: ModelCardProps) {
         flexDirection: 'column',
         gap: '12px',
         cursor: onSelect ? 'pointer' : 'default',
+        overflow: 'hidden',
+        minWidth: 0,
       }}
       onClick={() => onSelect?.(model.id)}
     >
@@ -54,7 +56,7 @@ export function ModelCard({ model, onSelect }: ModelCardProps) {
       </div>
 
       {/* 参数行 */}
-      <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--mg-text-1)' }}>
+      <div style={{ display: 'flex', gap: '8px 16px', fontSize: '12px', color: 'var(--mg-text-1)', flexWrap: 'wrap' }}>
         <span>{t('models.card.context')} <b style={{ color: 'var(--mg-text-0)' }}>{formatContextLength(model.context_length)}</b></span>
         {model.pricing?.input_per_1m && (
           <span>{t('models.card.inputPrice')} <b style={{ color: 'var(--mg-text-0)' }}>{formatModelPrice(model.pricing.input_per_1m, model.pricing.currency)}</b></span>

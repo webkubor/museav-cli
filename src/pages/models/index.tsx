@@ -98,7 +98,7 @@ export default function ModelsPage() {
           <span className="text-[var(--mg-text-2)] text-[13px]">{t('modelsCatalog.empty')}</span>
         </div>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
           {filteredModels.map((model) => (
             <ModelCard key={model.model_id} model={model} onSelect={setSelectedId} />
           ))}

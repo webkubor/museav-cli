@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams, useParams, Link } from 'react-router-dom'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { previewInvitation, acceptInvitation } from '@/services/invitations'
 import { useAuthStore } from '@/store/auth'
+import { toLoginWithRedirect } from '@/lib/redirect'
 import type { InvitationPreview } from '@/types'
 
 export default function InvitationsPage() {
@@ -46,7 +47,7 @@ export default function InvitationsPage() {
 
   const handleAccept = async () => {
     if (!isAuthenticated) {
-      navigate(`/login?redirect=${encodeURIComponent(`/invitations/${token}`)}`)
+      navigate(toLoginWithRedirect(`/invitations/${token}`))
       return
     }
     setAccepting(true)

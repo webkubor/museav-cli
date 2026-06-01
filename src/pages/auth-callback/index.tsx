@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { getSession } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
+import { getRedirectTarget } from '@/lib/redirect'
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
   const setAuth = useAuthStore((s) => s.setAuth)
   const setLoading = useAuthStore((s) => s.setLoading)
   const called = useRef(false)
@@ -14,7 +14,7 @@ export default function AuthCallbackPage() {
     if (called.current) return
     called.current = true
 
-    const redirect = searchParams.get('redirect') ?? '/dashboard'
+    const redirect = getRedirectTarget()
 
     setLoading(true)
     getSession()

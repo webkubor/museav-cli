@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth'
 import { deviceApprove } from '@/services/auth'
 import { listTenants } from '@/services/tenants'
 import { Button } from '@/components/ui/Button'
+import { toLoginWithRedirect } from '@/lib/redirect'
 import type { TenantItem } from '@/types'
 
 function isValidUserCode(code: string) {
@@ -55,8 +56,7 @@ export default function DevicePage() {
       return
     }
     if (!isAuthenticated) {
-      const redirect = `/device?user_code=${encodeURIComponent(rawCode)}`
-      navigate(`/login?redirect=${encodeURIComponent(redirect)}`, { replace: true })
+      navigate(toLoginWithRedirect(`/device?user_code=${encodeURIComponent(rawCode)}`), { replace: true })
       return
     }
     loadTenants(rawCode.toUpperCase())

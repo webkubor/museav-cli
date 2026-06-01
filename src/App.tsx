@@ -29,6 +29,7 @@ import { useAuthStore } from '@/store/auth'
 import { getSession } from '@/services/auth'
 import { getMarket } from '@/lib/market'
 import { applyTheme, getSavedTheme } from '@/lib/theme'
+import { toLoginWithRedirect } from '@/lib/redirect'
 import { DevRequirements } from '@/components/dev-requirements'
 
 import { Toaster } from 'sonner'
@@ -76,13 +77,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isLoading = useAuthStore((s) => s.isLoading)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
-  const currentUrl = window.location.pathname + window.location.search
 
   if (isLoading) return null
-  if (!isAuthenticated) {
-    const loginUrl = `/login?redirect=${encodeURIComponent(currentUrl)}`
-    return <Navigate to={loginUrl} replace />
-  }
+  if (!isAuthenticated) return <Navigate to={toLoginWithRedirect()} replace />
   if (!activeTenantId) return <Navigate to="/login?reason=no_access" replace />
   return <>{children}</>
 }

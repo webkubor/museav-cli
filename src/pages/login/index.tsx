@@ -16,6 +16,7 @@ import { AuthLayout } from '@/components/auth/AuthLayout'
 import { SocialLogin } from '@/components/auth/SocialLogin'
 import { checkLoginEmail, login } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
+import { getRedirectTarget } from '@/lib/redirect'
 
 const emailSchema = z.object({
   email: z.string().email('请填写有效的邮箱'),
@@ -37,8 +38,8 @@ export default function LoginPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isSessionLoading = useAuthStore((s) => s.isLoading)
 
+  const redirectAfterLogin = getRedirectTarget()
   const searchParams = new URLSearchParams(window.location.search)
-  const redirectAfterLogin = searchParams.get('redirect') || '/dashboard'
   const accessDenied = searchParams.get('reason') === 'no_access'
 
   const [step, setStep] = useState<'email' | 'password'>('email')

@@ -9,20 +9,22 @@ import { formatContextLength, formatModelPrice, getFallbackAvatarText, formatNum
 interface ModelDetailPanelProps {
   detail: CatalogModelDetail
   providers: ProviderForModel[]
+  vendorHint?: string
 }
 
-export function ModelDetailPanel({ detail, providers }: ModelDetailPanelProps) {
+export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailPanelProps) {
   const { t } = useTranslation()
+  const vendor = detail.vendor || vendorHint || ''
   return (
     <div className="flex flex-col gap-5">
       {/* 头部面板 */}
       <div className="flex items-start gap-4 border-b border-[var(--mg-border)] pb-5">
         <div className="w-12 h-12 rounded-[10px] shrink-0 flex items-center justify-center overflow-hidden border border-[var(--mg-border)] bg-card-bg">
           {detail.logo_url
-            ? <img src={detail.logo_url} alt={detail.vendor} className="w-full h-full object-contain" />
-            : (VENDOR_ICON[detail.vendor?.toLowerCase() ?? ''] ?? (
+            ? <img src={detail.logo_url} alt={vendor} className="w-full h-full object-contain" />
+            : (VENDOR_ICON[vendor.toLowerCase()] ?? (
               <div className="w-12 h-12 rounded-[10px] bg-[var(--mg-fill-0)] flex items-center justify-center text-lg font-bold text-[var(--mg-text-2)]">
-                {getFallbackAvatarText(detail.vendor ?? detail.display_name)}
+                {getFallbackAvatarText(vendor || detail.display_name)}
               </div>
             ))
           }
@@ -31,13 +33,25 @@ export function ModelDetailPanel({ detail, providers }: ModelDetailPanelProps) {
           <h2 className="text-[17px] font-bold text-[var(--mg-text-0)] mb-1.5 leading-tight">
             {detail.display_name}
           </h2>
+          {detail.model_id && (
+            <code className="text-[11px] font-mono text-[var(--mg-text-2)] bg-[var(--mg-fill-0)] px-1.5 py-0.5 rounded mb-1 inline-block">
+              {detail.model_id}
+            </code>
+          )}
           <div className="flex items-center gap-2 flex-wrap">
-            {detail.vendor && (
-              <span className="text-xs text-[var(--mg-text-2)]">{detail.vendor}</span>
+            {vendor && (
+              <span className="text-xs text-[var(--mg-text-2)]">{vendor}</span>
             )}
             <div className="flex gap-1">
               {detail.modalities.map((m) => <ModalityBadge key={m} modality={m} />)}
             </div>
+            {(detail as any).tags?.length > 0 && (
+              <div className="flex gap-1 flex-wrap">
+                {(detail as any).tags.map((tag: string) => (
+                  <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--mg-fill-0)] text-[var(--mg-text-2)] border border-[var(--mg-border)]">{tag}</span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

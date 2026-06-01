@@ -132,7 +132,11 @@ export default function ModelsPage() {
               {t('modelsCatalog.error.loadDetail')}
             </div>
           ) : detailQuery.data ? (
-            <ModelDetailPanel detail={detailQuery.data} providers={providersQuery.data?.items ?? []} />
+            <ModelDetailPanel
+              detail={detailQuery.data}
+              providers={providersQuery.data?.items ?? []}
+              vendorHint={filteredModels.find((m) => m.model_id === selectedId)?.vendor}
+            />
           ) : null}
         </div>
       </SideSheet>

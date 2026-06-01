@@ -27,8 +27,8 @@
   "nav": {
     "home": "Home",
     "dashboard": "Dashboard",
-    "models": "Model Experience",
-    "playground": "Playground",
+    "models": "Model Hub",
+    "playground": "Chat",
     "modelExplore": "Explore",
     "modelCompare": "Compare",
     "modelChat": "Chat",

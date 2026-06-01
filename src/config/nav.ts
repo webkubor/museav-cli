@@ -53,10 +53,26 @@ export const navConfig: NavConfig = {
 
   tenantItems: (_ctx, t, icons) => [
     { itemKey: 'dashboard',    text: t('nav.dashboard'),  icon: icons.home,       permission: PERMS.DASHBOARD_VIEW },
-    { itemKey: 'models/explore', text: t('nav.modelExplore'), icon: icons.apps,        permission: PERMS.MODELS_VIEW },
-    { itemKey: 'models/compare', text: t('nav.modelCompare'), icon: icons.list,        permission: PERMS.MODELS_VIEW },
-    { itemKey: 'models/chat',    text: t('nav.modelChat'),    icon: icons.message,     permission: PERMS.MODELS_VIEW },
-    { itemKey: 'models/history', text: t('nav.modelHistory'), icon: icons.list,        permission: PERMS.MODELS_VIEW },
+    {
+      itemKey: 'models',
+      text: t('nav.models'),
+      icon: icons.apps,
+      permission: PERMS.MODELS_VIEW,
+      items: [
+        { itemKey: 'models/explore', text: t('nav.modelExplore'), icon: icons.apps,        permission: PERMS.MODELS_VIEW },
+        { itemKey: 'models/compare', text: t('nav.modelCompare'), icon: icons.list,        permission: PERMS.MODELS_VIEW },
+      ],
+    },
+    {
+      itemKey: 'playground',
+      text: t('nav.playground'),
+      icon: icons.message,
+      permission: PERMS.MODELS_VIEW,
+      items: [
+        { itemKey: 'models/chat',    text: t('nav.modelChat'),    icon: icons.histogramSm, permission: PERMS.MODELS_VIEW },
+        { itemKey: 'models/history', text: t('nav.modelHistory'), icon: icons.list,        permission: PERMS.MODELS_VIEW },
+      ],
+    },
     {
       itemKey: 'analytics',
       text: t('nav.analytics'),

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { LuSettings, LuChevronLeft, LuChevronRight, LuChevronDown } from 'react-icons/lu'
+import { LuSettings, LuChevronLeft, LuChevronRight, LuChevronDown, LuGlobe } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
@@ -56,7 +56,7 @@ const SidebarNavItem: React.FC<{
         {item.icon}
       </span>
       {!collapsed && (
-        <span className="text-[13.5px] truncate tracking-tight font-medium leading-none">
+        <span className="text-[15px] truncate tracking-tight font-medium leading-none">
           {item.text}
         </span>
       )}
@@ -125,7 +125,7 @@ const SidebarMenuGroup: React.FC<{
           <span className={cn("text-base shrink-0 transition-colors duration-200", isChildSelected ? "text-brand-base" : "text-mg-text-2")}>
             {item.icon}
           </span>
-          <span className="text-[13.5px] truncate tracking-tight font-medium leading-none">
+          <span className="text-[15px] truncate tracking-tight font-medium leading-none">
             {item.text}
           </span>
         </div>
@@ -161,7 +161,7 @@ const SidebarMenuGroup: React.FC<{
                       : "text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/30 active:scale-[0.98] hover:translate-x-[2px]"
                   )}
                 >
-                  <span className="text-[13px] truncate tracking-tight font-medium leading-none">
+                  <span className="text-[14px] truncate tracking-tight font-medium leading-none">
                     {sub.text}
                   </span>
                 </div>
@@ -170,6 +170,56 @@ const SidebarMenuGroup: React.FC<{
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+/**
+ * 侧边栏底部信息：高颜值系统状态面板（版本、时区、实时时间）
+ */
+const SidebarFooterInfo: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
+  const [time, setTime] = useState(new Date())
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  if (collapsed) return null
+
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const city = tz.split('/').pop()?.replace(/_/g, ' ') || 'Local'
+  const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+
+  return (
+    <div className="mx-3 mt-2 mb-6 p-3.5 rounded-2xl bg-mg-fill-0/20 border border-mg-border/30 flex flex-col gap-3 group transition-all duration-500 hover:bg-mg-fill-0/40 hover:border-brand-base/20 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[9px] font-bold text-mg-text-3 uppercase tracking-widest leading-none">System Version</span>
+          <span className="text-[11px] font-black font-mono text-mg-text-0 tracking-tight">
+            v{__APP_VERSION__}
+          </span>
+        </div>
+        <div className="w-8 h-8 rounded-xl bg-mg-bg-1 border border-mg-border/50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+        </div>
+      </div>
+
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-mg-border/50 to-transparent" />
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="p-1 rounded-md bg-mg-bg-1 text-mg-text-2 group-hover:text-brand-base transition-colors">
+            <LuGlobe size={11} />
+          </div>
+          <span className="text-[10px] font-bold text-mg-text-2 uppercase truncate group-hover:text-mg-text-1" title={tz}>
+            {city}
+          </span>
+        </div>
+        <div className="font-mono text-[11px] font-bold text-brand-base tabular-nums">
+          {timeStr}
+        </div>
+      </div>
     </div>
   )
 }
@@ -260,7 +310,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         <div className={cn("flex items-center gap-2 py-4 select-none", collapsed ? "px-2" : "px-4")}>
           <div className="flex-1 h-[1px] bg-mg-border/40" />
           {!collapsed && (
-            <span className="text-[10px] font-bold text-mg-text-2/80 tracking-wider uppercase whitespace-nowrap shrink-0">
+            <span className="text-[11px] font-bold text-mg-text-2/80 tracking-wider uppercase whitespace-nowrap shrink-0">
               {t('nav.sidebarWorkspace')}
             </span>
           )}
@@ -300,7 +350,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         <div className={cn("flex items-center gap-2 py-4 select-none", collapsed ? "px-2" : "px-4")}>
           <div className="flex-1 h-[1px] bg-mg-border/40" />
           {!collapsed && (
-            <span className="text-[10px] font-bold text-mg-text-2/80 tracking-wider uppercase whitespace-nowrap shrink-0">
+            <span className="text-[11px] font-bold text-mg-text-2/80 tracking-wider uppercase whitespace-nowrap shrink-0">
               测试区
             </span>
           )}
@@ -349,11 +399,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             onClick={() => onSelect({ itemKey: 'settings/account' })}
           />
 
-          {!collapsed && (
-            <div className="px-5 pt-2 pb-1 text-[10px] font-bold tracking-wider text-mg-text-2/40 select-none">
-              v{__APP_VERSION__}
-            </div>
-          )}
+          <SidebarFooterInfo collapsed={collapsed} />
         </div>
       </div>
     </aside>

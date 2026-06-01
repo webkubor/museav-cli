@@ -450,7 +450,7 @@ function ModuleComparisonPanel() {
           {t('platformConfig.moduleCompare.title')}
         </span>
         <Badge variant="outline" className="text-[10px] opacity-70">
-          v1.3 Matcher
+          v1.4 Matcher
         </Badge>
       </div>
 

@@ -11,7 +11,7 @@ import { Select, SelectItem } from '@/components/ui/Select'
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from '@/components/ui/Table'
-import { LuPlus, LuSettings, LuUsers, LuKey, LuDollarSign, LuX } from 'react-icons/lu'
+import { LuPlus, LuSettings, LuUsers, LuKey, LuDollarSign } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { TagInput } from '@/components/ui/TagInput'
 import { listModels } from '@/services/catalog'
@@ -78,10 +78,6 @@ export default function GuardrailsPage() {
   const [isCreating, setIsCreating] = useState(false)
 
   // ── 添加成员/APIKey 弹窗 ────────────────────────────────────────────────
-  const [addMemberOpen, setAddMemberOpen] = useState(false)
-  const [addMemberValue, setAddMemberValue] = useState('')
-  const [addApiKeyOpen, setAddApiKeyOpen] = useState(false)
-  const [addApiKeyValue, setAddApiKeyValue] = useState('')
 
   // ── 预算内联编辑状态 ────────────────────────────────────────────────────
   const [budgetAmount, setBudgetAmount] = useState('')
@@ -242,56 +238,6 @@ export default function GuardrailsPage() {
       : { subject_type: 'api_key', api_key_id: a.api_key_id }
   }
 
-  function handleRemoveMember(accountId: string) {
-    if (!detail) return
-    assignMutation.mutate({
-      id: detail.id,
-      assignments: detail.assignments.filter(a => !(a.subject_type === 'member' && a.account_id === accountId)).map(toInput),
-    })
-  }
-
-  function handleClearMembers() {
-    if (!detail) return
-    assignMutation.mutate({
-      id: detail.id,
-      assignments: detail.assignments.filter(a => a.subject_type !== 'member').map(toInput),
-    })
-  }
-
-  function handleAddMember() {
-    if (!addMemberValue || !detail) return
-    assignMutation.mutate({
-      id: detail.id,
-      assignments: [...detail.assignments.map(toInput), { subject_type: 'member', account_id: addMemberValue }],
-    })
-    setAddMemberOpen(false); setAddMemberValue('')
-  }
-
-  function handleRemoveApiKey(apiKeyId: string) {
-    if (!detail) return
-    assignMutation.mutate({
-      id: detail.id,
-      assignments: detail.assignments.filter(a => !(a.subject_type === 'api_key' && a.api_key_id === apiKeyId)).map(toInput),
-    })
-  }
-
-  function handleClearApiKeys() {
-    if (!detail) return
-    assignMutation.mutate({
-      id: detail.id,
-      assignments: detail.assignments.filter(a => a.subject_type !== 'api_key').map(toInput),
-    })
-  }
-
-  function handleAddApiKey() {
-    if (!addApiKeyValue || !detail) return
-    assignMutation.mutate({
-      id: detail.id,
-      assignments: [...detail.assignments.map(toInput), { subject_type: 'api_key', api_key_id: addApiKeyValue }],
-    })
-    setAddApiKeyOpen(false); setAddApiKeyValue('')
-  }
-
 
 
   function handleSaveBudget() {
@@ -318,13 +264,6 @@ export default function GuardrailsPage() {
 
   const membersMap = new Map((membersQuery.data?.items ?? []).map(m => [m.account.account_id, m.account]))
   const apiKeysMap = new Map((apiKeysQuery.data?.items ?? []).map(k => [k.api_key_id, k]))
-
-  const availableMembers = (membersQuery.data?.items ?? []).filter(
-    m => !memberAssignments.find(a => a.account_id === m.account.account_id)
-  )
-  const availableApiKeys = (apiKeysQuery.data?.items ?? []).filter(
-    k => !apiKeyAssignments.find(a => a.api_key_id === k.api_key_id)
-  )
 
   const detailRow = guardrails.find(g => g.id === detailId)
 
@@ -497,56 +436,76 @@ export default function GuardrailsPage() {
               </div>
             ) : detail ? (
               <div className="space-y-7">
-                {/* 成员 */}
+                {/* 成员 — 下拉多选 */}
                 <section>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider">
-                      <LuUsers className="w-3.5 h-3.5" /> 成员 ({memberAssignments.length})
-                    </div>
-                    {memberAssignments.length > 0 && (
-                      <button onClick={handleClearMembers} className="text-[11px] text-mg-text-2 hover:text-mg-danger transition-colors cursor-pointer">清空</button>
-                    )}
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider mb-3">
+                    <LuUsers className="w-3.5 h-3.5" /> 成员
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {memberAssignments.map((a) => {
+                  <TagInput
+                    value={memberAssignments.map((a) => {
                       const acc = membersMap.get(a.account_id)
-                      return (
-                        <span key={a.account_id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-mg-fill-1 text-mg-text-0 border border-mg-border">
-                          {acc?.display_name || acc?.email || a.account_id}
-                          <button onClick={() => handleRemoveMember(a.account_id)} className="ml-0.5 text-mg-text-2 hover:text-mg-danger transition-colors cursor-pointer"><LuX className="w-3 h-3" /></button>
-                        </span>
-                      )
+                      return acc?.display_name || acc?.email || a.account_id
                     })}
-                    <button onClick={() => { setAddMemberValue(''); setAddMemberOpen(true) }} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-dashed border-mg-border text-mg-text-2 hover:border-brand-base hover:text-brand-base transition-colors cursor-pointer">
-                      <LuPlus className="w-3 h-3" /> 添加成员
-                    </button>
-                  </div>
+                    onChange={(names) => {
+                      if (!detail) return
+                      const nameToId = new Map<string, string>()
+                      for (const m of membersQuery.data?.items ?? []) {
+                        nameToId.set(m.account.display_name, m.account.account_id)
+                        nameToId.set(m.account.email, m.account.account_id)
+                      }
+                      for (const a of detail.assignments) {
+                        if (a.subject_type === 'member') {
+                          const acc = membersMap.get(a.account_id)
+                          if (acc) { nameToId.set(acc.display_name, a.account_id); nameToId.set(acc.email, a.account_id) }
+                        }
+                      }
+                      const memberIds = names.map((n) => nameToId.get(n)).filter(Boolean) as string[]
+                      const keyAssigns = apiKeyAssignments.map(toInput)
+                      const memberAssigns: AssignmentInput[] = memberIds.map((id) => ({ subject_type: 'member', account_id: id }))
+                      assignMutation.mutate({ id: detail.id, assignments: [...memberAssigns, ...keyAssigns] })
+                    }}
+                    suggestions={(membersQuery.data?.items ?? [])
+                      .filter((m) => !memberAssignments.some((a) => a.account_id === m.account.account_id))
+                      .map((m) => m.account.display_name || m.account.email)
+                    }
+                    placeholder="从下拉选择成员"
+                  />
                 </section>
 
-                {/* API Keys */}
+                {/* API Keys — 下拉多选 */}
                 <section>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider">
-                      <LuKey className="w-3.5 h-3.5" /> API Keys ({apiKeyAssignments.length})
-                    </div>
-                    {apiKeyAssignments.length > 0 && (
-                      <button onClick={handleClearApiKeys} className="text-[11px] text-mg-text-2 hover:text-mg-danger transition-colors cursor-pointer">清空</button>
-                    )}
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider mb-3">
+                    <LuKey className="w-3.5 h-3.5" /> API Keys
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {apiKeyAssignments.map((a) => {
+                  <TagInput
+                    value={apiKeyAssignments.map((a) => {
                       const key = apiKeysMap.get(a.api_key_id)
-                      return (
-                        <span key={a.api_key_id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-mg-fill-1 text-mg-text-0 border border-mg-border">
-                          {key?.name || a.api_key_id}
-                          <button onClick={() => handleRemoveApiKey(a.api_key_id)} className="ml-0.5 text-mg-text-2 hover:text-mg-danger transition-colors cursor-pointer"><LuX className="w-3 h-3" /></button>
-                        </span>
-                      )
+                      return key?.name || a.api_key_id
                     })}
-                    <button onClick={() => { setAddApiKeyValue(''); setAddApiKeyOpen(true) }} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-dashed border-mg-border text-mg-text-2 hover:border-brand-base hover:text-brand-base transition-colors cursor-pointer">
-                      <LuPlus className="w-3 h-3" /> 添加 Key
-                    </button>
-                  </div>
+                    onChange={(names) => {
+                      if (!detail) return
+                      const nameToId = new Map<string, string>()
+                      for (const k of apiKeysQuery.data?.items ?? []) {
+                        nameToId.set(k.name, k.api_key_id)
+                        nameToId.set(k.api_key_id, k.api_key_id)
+                      }
+                      for (const a of detail.assignments) {
+                        if (a.subject_type === 'api_key') {
+                          const key = apiKeysMap.get(a.api_key_id)
+                          if (key) nameToId.set(key.name, a.api_key_id)
+                        }
+                      }
+                      const keyIds = names.map((n) => nameToId.get(n)).filter(Boolean) as string[]
+                      const memberAssigns = memberAssignments.map(toInput)
+                      const keyAssigns: AssignmentInput[] = keyIds.map((id) => ({ subject_type: 'api_key', api_key_id: id }))
+                      assignMutation.mutate({ id: detail.id, assignments: [...memberAssigns, ...keyAssigns] })
+                    }}
+                    suggestions={(apiKeysQuery.data?.items ?? [])
+                      .filter((k: any) => k.status === 'active' && !apiKeyAssignments.some((a) => a.api_key_id === k.api_key_id))
+                      .map((k: any) => k.name as string)
+                    }
+                    placeholder="从下拉选择 API Key"
+                  />
                 </section>
               </div>
             ) : null
@@ -605,60 +564,6 @@ export default function GuardrailsPage() {
           )}
         </div>
       </SideSheet>
-
-      {/* 添加成员 Modal */}
-      <Modal
-        open={addMemberOpen}
-        onClose={() => setAddMemberOpen(false)}
-        title="添加成员"
-        size="sm"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setAddMemberOpen(false)}>取消</Button>
-            <Button variant="brand" disabled={!addMemberValue} onClick={handleAddMember}>添加</Button>
-          </>
-        }
-      >
-        <div className="py-3">
-          <label className="block text-xs font-bold text-mg-text-1 mb-2">选择成员</label>
-          <Select value={addMemberValue} onChange={setAddMemberValue} placeholder="请选择工作区成员">
-            {availableMembers.map((m) => (
-              <SelectItem key={m.account.account_id} value={m.account.account_id}>
-                {m.account.display_name || m.account.email}
-              </SelectItem>
-            ))}
-          </Select>
-          {availableMembers.length === 0 && (
-            <p className="text-xs text-mg-text-2 mt-2">所有成员已全部绑定</p>
-          )}
-        </div>
-      </Modal>
-
-      {/* 添加 API Key Modal */}
-      <Modal
-        open={addApiKeyOpen}
-        onClose={() => setAddApiKeyOpen(false)}
-        title="添加 API Key"
-        size="sm"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setAddApiKeyOpen(false)}>取消</Button>
-            <Button variant="brand" disabled={!addApiKeyValue} onClick={handleAddApiKey}>添加</Button>
-          </>
-        }
-      >
-        <div className="py-3">
-          <label className="block text-xs font-bold text-mg-text-1 mb-2">选择 API Key</label>
-          <Select value={addApiKeyValue} onChange={setAddApiKeyValue} placeholder="请选择 API Key">
-            {availableApiKeys.map((k) => (
-              <SelectItem key={k.api_key_id} value={k.api_key_id}>{k.name}</SelectItem>
-            ))}
-          </Select>
-          {availableApiKeys.length === 0 && (
-            <p className="text-xs text-mg-text-2 mt-2">所有 API Key 已全部绑定</p>
-          )}
-        </div>
-      </Modal>
 
       {/* 删除确认 Modal */}
       <Modal

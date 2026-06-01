@@ -33,7 +33,7 @@ import type {
   AddBudgetPolicyRequest,
   AssignmentInput,
 } from '@/interfaces/guardrails'
-import { GUARDRAIL_STATUS_CONFIG, PERIOD_LABEL } from '@/constants/status'
+import { PERIOD_LABEL } from '@/constants/status'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { formatDateTime } from '@/lib/format-date'
 
@@ -55,9 +55,7 @@ export default function GuardrailsPage() {
     refetchOnWindowFocus: false,
   })
 
-  // ── 创建/编辑 Modal ─────────────────────────────────────────────────────
-  const [modalVisible, setModalVisible] = useState(false)
-  const [editingGuardrail, setEditingGuardrail] = useState<GuardrailDetail | null>(null)
+  // ── 抽屉（创建+编辑+详情统一） ─────────────────────────────────────────
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -65,10 +63,10 @@ export default function GuardrailsPage() {
   const [priority, setPriority] = useState<number>(0)
   const [modelWhitelist, setModelWhitelist] = useState('')
   const [ipWhitelist, setIpWhitelist] = useState('')
-
-  // ── 详情 SideSheet ──────────────────────────────────────────────────────
   const [detailId, setDetailId] = useState<string | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
+  const [sheetTab, setSheetTab] = useState<'info' | 'scope' | 'budget'>('info')
+  const [isCreating, setIsCreating] = useState(false)
 
   // ── 添加成员/APIKey 弹窗 ────────────────────────────────────────────────
   const [addMemberOpen, setAddMemberOpen] = useState(false)
@@ -144,9 +142,10 @@ export default function GuardrailsPage() {
       createGuardrail(activeWorkspaceId!, payload),
     onSuccess: (created) => {
       appToast.success(t('guardrails.toast.createSuccess'))
-      closeModal()
       qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
-      openDetail(created.id)
+      setIsCreating(false)
+      setDetailId(created.id)
+      setSheetTab('scope')
     },
     onError: (err: unknown) =>
       appToast.error(err instanceof Error ? err.message : t('guardrails.toast.createError')),
@@ -157,7 +156,6 @@ export default function GuardrailsPage() {
       updateGuardrail(id, payload),
     onSuccess: () => {
       appToast.success(t('guardrails.toast.updateSuccess'))
-      closeModal()
       qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
       qc.invalidateQueries({ queryKey: ['guardrail-detail', detailId] })
     },
@@ -187,28 +185,28 @@ export default function GuardrailsPage() {
 
   // ── 辅助函数 ────────────────────────────────────────────────────────────
   function openCreate() {
-    setEditingGuardrail(null)
+    setIsCreating(true)
+    setDetailId(null)
     setName(''); setDescription(''); setIsDefault(false); setPriority(0)
     setModelWhitelist(''); setIpWhitelist('')
-    setModalVisible(true)
+    setSheetTab('info')
+    setDetailOpen(true)
   }
-
-  function openEdit(g: GuardrailDetail) {
-    setEditingGuardrail(g)
-    setName(g.name); setDescription(g.description ?? '')
-    setIsDefault(g.is_default); setPriority(g.priority)
-    const meta = (g as any).metadata ?? {}
-    setModelWhitelist(Array.isArray(meta.model_whitelist) ? meta.model_whitelist.join(', ') : '')
-    setIpWhitelist(Array.isArray(meta.ip_whitelist) ? meta.ip_whitelist.join('\n') : '')
-    setModalVisible(true)
-  }
-
-  function closeModal() { setModalVisible(false); setEditingGuardrail(null) }
 
   function openDetail(id: string) {
+    setIsCreating(false)
     setDetailId(id)
-    setDetailOpen(true)
+    setSheetTab('info')
     setBudgetEditing(false)
+    setDetailOpen(true)
+  }
+
+  function syncFormFromDetail(d: GuardrailDetail) {
+    setName(d.name); setDescription(d.description ?? '')
+    setIsDefault(d.is_default); setPriority(d.priority)
+    const meta = (d as any).metadata ?? {}
+    setModelWhitelist(Array.isArray(meta.model_whitelist) ? meta.model_whitelist.join(', ') : '')
+    setIpWhitelist(Array.isArray(meta.ip_whitelist) ? meta.ip_whitelist.join('\n') : '')
   }
 
   function handleSubmit() {
@@ -225,8 +223,8 @@ export default function GuardrailsPage() {
       priority,
       ...(Object.keys(metadata).length > 0 ? { metadata } : {}),
     }
-    if (editingGuardrail) {
-      updateMutation.mutate({ id: editingGuardrail.id, payload })
+    if (!isCreating && detailId) {
+      updateMutation.mutate({ id: detailId, payload })
     } else {
       createMutation.mutate(payload)
     }
@@ -399,9 +397,6 @@ export default function GuardrailsPage() {
                           <LuSettings className="w-3.5 h-3.5 mr-1" />
                           {t('guardrails.table.configure')}
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => openEdit(row)} className="h-7 text-xs">
-                          编辑
-                        </Button>
                         <Button size="sm" variant="destructive" onClick={() => setDeleteTarget({ id: row.id, name: row.name })} className="h-7 text-xs">
                           {t('guardrails.table.delete')}
                         </Button>
@@ -416,182 +411,174 @@ export default function GuardrailsPage() {
       </div>
 
       {/* 详情 SideSheet */}
-      <SideSheet open={detailOpen} onClose={() => setDetailOpen(false)} title={detailRow?.name ?? '护栏配置'} width={480}>
-        {detailLoading ? (
-          <div className="p-6 space-y-4 animate-pulse">
-            <div className="h-5 bg-mg-fill-0 rounded w-1/2" />
-            <div className="h-4 bg-mg-fill-0 rounded w-full" />
-            <div className="h-4 bg-mg-fill-0 rounded w-3/4" />
-          </div>
-        ) : detail ? (
-          <div className="p-6 space-y-7">
-            {/* 状态标签 */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant={GUARDRAIL_STATUS_CONFIG[detail.status].variant}>
-                {GUARDRAIL_STATUS_CONFIG[detail.status].label}
-              </Badge>
-              {detail.is_default && <Badge variant="success">默认</Badge>}
-              {detail.description && <p className="text-xs text-mg-text-2 w-full mt-1">{detail.description}</p>}
-            </div>
-
-            {/* 成员 */}
-            <section>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider">
-                  <LuUsers className="w-3.5 h-3.5" />
-                  成员 ({memberAssignments.length})
-                </div>
-                {memberAssignments.length > 0 && (
-                  <button onClick={handleClearMembers} className="text-[11px] text-mg-text-2 hover:text-mg-danger transition-colors">
-                    Clear all
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {memberAssignments.map((a) => {
-                  const acc = membersMap.get(a.account_id)
-                  const label = acc?.display_name || acc?.email || a.account_id
-                  return (
-                    <span key={a.account_id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-mg-fill-1 text-mg-text-0 border border-mg-border">
-                      {label}
-                      <button onClick={() => handleRemoveMember(a.account_id)} className="ml-0.5 text-mg-text-2 hover:text-mg-danger transition-colors">
-                        <LuX className="w-3 h-3" />
-                      </button>
-                    </span>
-                  )
-                })}
-                <button
-                  onClick={() => { setAddMemberValue(''); setAddMemberOpen(true) }}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-dashed border-mg-border text-mg-text-2 hover:border-brand-base hover:text-brand-base transition-colors"
-                >
-                  <LuPlus className="w-3 h-3" /> Add
-                </button>
-              </div>
-            </section>
-
-            {/* API Keys */}
-            <section>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider">
-                  <LuKey className="w-3.5 h-3.5" />
-                  API Keys ({apiKeyAssignments.length})
-                </div>
-                {apiKeyAssignments.length > 0 && (
-                  <button onClick={handleClearApiKeys} className="text-[11px] text-mg-text-2 hover:text-mg-danger transition-colors">
-                    Clear all
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {apiKeyAssignments.map((a) => {
-                  const key = apiKeysMap.get(a.api_key_id)
-                  const label = key?.name || a.api_key_id
-                  return (
-                    <span key={a.api_key_id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-mg-fill-1 text-mg-text-0 border border-mg-border">
-                      {label}
-                      <button onClick={() => handleRemoveApiKey(a.api_key_id)} className="ml-0.5 text-mg-text-2 hover:text-mg-danger transition-colors">
-                        <LuX className="w-3 h-3" />
-                      </button>
-                    </span>
-                  )
-                })}
-                <button
-                  onClick={() => { setAddApiKeyValue(''); setAddApiKeyOpen(true) }}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-dashed border-mg-border text-mg-text-2 hover:border-brand-base hover:text-brand-base transition-colors"
-                >
-                  <LuPlus className="w-3 h-3" /> Add
-                </button>
-              </div>
-            </section>
-
-            {/* 白名单 */}
-            <GuardrailWhitelistView metadata={(detail as any).metadata} />
-
-            {/* 预算 — 内联编辑 */}
-            <section>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider">
-                  <LuDollarSign className="w-3.5 h-3.5" />
-                  预算
-                </div>
-                {!budgetEditing && (
-                  <button onClick={startBudgetEdit} className="text-[11px] text-mg-text-2 hover:text-brand-base transition-colors">
-                    {budget ? '修改' : '设置'}
-                  </button>
-                )}
-              </div>
-
-              {budgetEditing ? (
-                /* 内联编辑表单 */
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    value={budgetAmount}
-                    onChange={(e) => setBudgetAmount(e.target.value)}
-                    placeholder="金额"
-                    className="h-8 text-xs w-28"
-                  />
-                  <Select value={budgetPeriodUnit} onChange={(v) => setBudgetPeriodUnit(v as typeof budgetPeriodUnit)} className="h-8 text-xs w-24">
-                    {(Object.entries(PERIOD_LABEL) as [typeof budgetPeriodUnit, string][]).map(([k, label]) => (
-                      <SelectItem key={k} value={k}>每{label}</SelectItem>
-                    ))}
-                  </Select>
-                  <Button size="sm" variant="brand" className="h-8 px-3" loading={setBudgetMutation.isPending} onClick={handleSaveBudget}>
-                    <LuCheck className="w-3.5 h-3.5" />
-                  </Button>
-                  <button onClick={() => setBudgetEditing(false)} className="text-mg-text-2 hover:text-mg-text-0 transition-colors">
-                    <LuX className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : budget ? (
-                /* 已设置预算 */
-                <div className="flex items-center justify-between p-3 rounded-lg border border-mg-border bg-mg-fill-0">
-                  <p className="text-sm font-semibold text-mg-text-0">
-                    Credit limit:{' '}
-                    <span className="text-brand-base">
-                      {currencySymbol}{parseFloat(budget.spend_limit_amount).toLocaleString()} / {PERIOD_LABEL[budget.period_unit]}
-                    </span>
-                  </p>
-                  <button
-                    onClick={() => removeBudgetMutation.mutate({ guardrailId: detail.id, policyId: budget.id })}
-                    className="text-mg-text-2 hover:text-mg-danger transition-colors"
-                  >
-                    <LuX className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ) : (
-                /* 未设置 */
-                <p className="text-xs text-mg-text-2 italic">未设置预算</p>
-              )}
-            </section>
-          </div>
-        ) : null}
-      </SideSheet>
-
-      {/* 创建/编辑 Modal */}
-      <Modal
-        open={modalVisible}
-        onClose={closeModal}
-        title={editingGuardrail ? t('guardrails.modal.editTitle') : t('guardrails.modal.createTitle')}
-        size="lg"
-        footer={
-          <>
-            <Button variant="outline" onClick={closeModal}>{t('guardrails.modal.cancel')}</Button>
-            <Button variant="brand" loading={createMutation.isPending || updateMutation.isPending} onClick={handleSubmit}>
-              {editingGuardrail ? t('guardrails.modal.saveEdit') : t('guardrails.modal.confirmCreate')}
-            </Button>
-          </>
-        }
+      {/* 统一配置抽屉（新建 + 编辑 + 详情） */}
+      <SideSheet
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        title={isCreating ? t('guardrails.modal.createTitle') : (detailRow?.name ?? t('guardrails.modal.editTitle'))}
+        width={600}
       >
-        <GuardrailFormFields
-          name={name} onNameChange={setName}
-          description={description} onDescriptionChange={setDescription}
-          priority={priority} onPriorityChange={setPriority}
-          isDefault={isDefault} onIsDefaultChange={setIsDefault}
-          modelWhitelist={modelWhitelist} onModelWhitelistChange={setModelWhitelist}
-          ipWhitelist={ipWhitelist} onIpWhitelistChange={setIpWhitelist}
-        />
-      </Modal>
+        {/* Tab 导航 */}
+        {!isCreating && (
+          <div className="flex border-b border-mg-border px-6 pt-1">
+            {([
+              { key: 'info', label: '基本信息' },
+              { key: 'scope', label: '作用范围' },
+              { key: 'budget', label: '预算' },
+            ] as const).map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => {
+                  setSheetTab(tab.key)
+                  if (tab.key === 'info' && detail) syncFormFromDetail(detail)
+                }}
+                className={`px-4 py-2.5 text-xs font-bold transition-colors border-b-2 -mb-px cursor-pointer ${
+                  sheetTab === tab.key
+                    ? 'border-brand-base text-brand-base'
+                    : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="p-6 overflow-y-auto flex-1">
+          {/* ── Tab: 基本信息（创建/编辑共用） ── */}
+          {(isCreating || sheetTab === 'info') && (
+            <div>
+              <GuardrailFormFields
+                name={name} onNameChange={setName}
+                description={description} onDescriptionChange={setDescription}
+                priority={priority} onPriorityChange={setPriority}
+                isDefault={isDefault} onIsDefaultChange={setIsDefault}
+                modelWhitelist={modelWhitelist} onModelWhitelistChange={setModelWhitelist}
+                ipWhitelist={ipWhitelist} onIpWhitelistChange={setIpWhitelist}
+              />
+              <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-mg-border/50">
+                <Button variant="outline" onClick={() => setDetailOpen(false)}>{t('common.cancel')}</Button>
+                <Button
+                  variant="brand"
+                  loading={createMutation.isPending || updateMutation.isPending}
+                  onClick={handleSubmit}
+                >
+                  {isCreating ? t('guardrails.modal.confirmCreate') : t('guardrails.modal.saveEdit')}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Tab: 作用范围（成员 + API Key） ── */}
+          {!isCreating && sheetTab === 'scope' && (
+            detailLoading ? (
+              <div className="space-y-4 animate-pulse">
+                <div className="h-5 bg-mg-fill-0 rounded w-1/2" />
+                <div className="h-4 bg-mg-fill-0 rounded w-full" />
+              </div>
+            ) : detail ? (
+              <div className="space-y-7">
+                {/* 成员 */}
+                <section>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider">
+                      <LuUsers className="w-3.5 h-3.5" /> 成员 ({memberAssignments.length})
+                    </div>
+                    {memberAssignments.length > 0 && (
+                      <button onClick={handleClearMembers} className="text-[11px] text-mg-text-2 hover:text-mg-danger transition-colors cursor-pointer">清空</button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {memberAssignments.map((a) => {
+                      const acc = membersMap.get(a.account_id)
+                      return (
+                        <span key={a.account_id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-mg-fill-1 text-mg-text-0 border border-mg-border">
+                          {acc?.display_name || acc?.email || a.account_id}
+                          <button onClick={() => handleRemoveMember(a.account_id)} className="ml-0.5 text-mg-text-2 hover:text-mg-danger transition-colors cursor-pointer"><LuX className="w-3 h-3" /></button>
+                        </span>
+                      )
+                    })}
+                    <button onClick={() => { setAddMemberValue(''); setAddMemberOpen(true) }} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-dashed border-mg-border text-mg-text-2 hover:border-brand-base hover:text-brand-base transition-colors cursor-pointer">
+                      <LuPlus className="w-3 h-3" /> 添加成员
+                    </button>
+                  </div>
+                </section>
+
+                {/* API Keys */}
+                <section>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider">
+                      <LuKey className="w-3.5 h-3.5" /> API Keys ({apiKeyAssignments.length})
+                    </div>
+                    {apiKeyAssignments.length > 0 && (
+                      <button onClick={handleClearApiKeys} className="text-[11px] text-mg-text-2 hover:text-mg-danger transition-colors cursor-pointer">清空</button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {apiKeyAssignments.map((a) => {
+                      const key = apiKeysMap.get(a.api_key_id)
+                      return (
+                        <span key={a.api_key_id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-mg-fill-1 text-mg-text-0 border border-mg-border">
+                          {key?.name || a.api_key_id}
+                          <button onClick={() => handleRemoveApiKey(a.api_key_id)} className="ml-0.5 text-mg-text-2 hover:text-mg-danger transition-colors cursor-pointer"><LuX className="w-3 h-3" /></button>
+                        </span>
+                      )
+                    })}
+                    <button onClick={() => { setAddApiKeyValue(''); setAddApiKeyOpen(true) }} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-dashed border-mg-border text-mg-text-2 hover:border-brand-base hover:text-brand-base transition-colors cursor-pointer">
+                      <LuPlus className="w-3 h-3" /> 添加 Key
+                    </button>
+                  </div>
+                </section>
+              </div>
+            ) : null
+          )}
+
+          {/* ── Tab: 预算 ── */}
+          {!isCreating && sheetTab === 'budget' && (
+            detailLoading ? (
+              <div className="space-y-4 animate-pulse">
+                <div className="h-5 bg-mg-fill-0 rounded w-1/3" />
+              </div>
+            ) : detail ? (
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider">
+                    <LuDollarSign className="w-3.5 h-3.5" /> 预算策略
+                  </div>
+                  {!budgetEditing && (
+                    <button onClick={startBudgetEdit} className="text-[11px] text-mg-text-2 hover:text-brand-base transition-colors cursor-pointer">
+                      {budget ? '修改' : '设置'}
+                    </button>
+                  )}
+                </div>
+                {budgetEditing ? (
+                  <div className="flex items-center gap-2">
+                    <Input type="number" value={budgetAmount} onChange={(e) => setBudgetAmount(e.target.value)} placeholder="输入限额金额" className="h-8 text-xs w-28" />
+                    <Select value={budgetPeriodUnit} onChange={(v) => setBudgetPeriodUnit(v as typeof budgetPeriodUnit)} className="h-8 text-xs w-24">
+                      {(Object.entries(PERIOD_LABEL) as [typeof budgetPeriodUnit, string][]).map(([k, label]) => (
+                        <SelectItem key={k} value={k}>每{label}</SelectItem>
+                      ))}
+                    </Select>
+                    <Button size="sm" variant="brand" className="h-8 px-3" loading={setBudgetMutation.isPending} onClick={handleSaveBudget}>
+                      <LuCheck className="w-3.5 h-3.5" />
+                    </Button>
+                    <button onClick={() => setBudgetEditing(false)} className="text-mg-text-2 hover:text-mg-text-0 transition-colors cursor-pointer"><LuX className="w-4 h-4" /></button>
+                  </div>
+                ) : budget ? (
+                  <div className="flex items-center justify-between p-3 rounded-lg border border-mg-border bg-mg-fill-0">
+                    <p className="text-sm font-semibold text-mg-text-0">
+                      消费上限：<span className="text-brand-base">{currencySymbol}{parseFloat(budget.spend_limit_amount).toLocaleString()} / {PERIOD_LABEL[budget.period_unit]}</span>
+                    </p>
+                    <button onClick={() => removeBudgetMutation.mutate({ guardrailId: detail.id, policyId: budget.id })} className="text-mg-text-2 hover:text-mg-danger transition-colors cursor-pointer"><LuX className="w-3.5 h-3.5" /></button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-mg-text-2 italic">未设置预算策略，点击右上角「设置」添加</p>
+                )}
+              </section>
+            ) : null
+          )}
+        </div>
+      </SideSheet>
 
       {/* 添加成员 Modal */}
       <Modal
@@ -731,48 +718,5 @@ function GuardrailFormFields({
         <Switch checked={isDefault} onChange={onIsDefaultChange} />
       </div>
     </div>
-  )
-}
-
-// ─── 公共：白名单只读展示（SideSheet 详情复用） ──────────────────────────────
-
-function GuardrailWhitelistView({ metadata }: { metadata?: Record<string, unknown> }) {
-  const { t } = useTranslation()
-  const models = Array.isArray(metadata?.model_whitelist) ? (metadata.model_whitelist as string[]) : []
-  const ips = Array.isArray(metadata?.ip_whitelist) ? (metadata.ip_whitelist as string[]) : []
-
-  if (models.length === 0 && ips.length === 0) return null
-
-  return (
-    <>
-      {models.length > 0 && (
-        <section>
-          <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider mb-3">
-            {t('guardrails.form.modelWhitelistLabel')}
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {models.map((m) => (
-              <code key={m} className="text-[11px] font-mono px-2 py-0.5 rounded bg-mg-fill-0 border border-mg-border text-mg-text-0">
-                {m}
-              </code>
-            ))}
-          </div>
-        </section>
-      )}
-      {ips.length > 0 && (
-        <section>
-          <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider mb-3">
-            {t('guardrails.form.ipWhitelistLabel')}
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {ips.map((ip) => (
-              <code key={ip} className="text-[11px] font-mono px-2 py-0.5 rounded bg-mg-fill-0 border border-mg-border text-mg-text-0">
-                {ip}
-              </code>
-            ))}
-          </div>
-        </section>
-      )}
-    </>
   )
 }

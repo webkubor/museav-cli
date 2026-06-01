@@ -15,7 +15,7 @@ import {
   TableRow,
   TableCell
 } from '@/components/ui/Table'
-import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers, LuKey, LuCode, LuChevronDown } from 'react-icons/lu'
+import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers, LuKey, LuCode, LuChevronDown, LuZap, LuArrowRight } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { listApiKeys, createApiKey, revokeApiKey } from '@/services/api-keys'
@@ -190,49 +190,98 @@ export default function ApiKeysPage() {
 
 
       {/* 快速接入配置 */}
-      <div className="rounded-xl border border-mg-border overflow-hidden bg-mg-bg-0">
-        {/* 标题栏 — 点击展开/收起 */}
+      <div className="rounded-2xl border border-mg-border overflow-hidden bg-mg-bg-0 shadow-sm">
+        {/* 标题栏 */}
         <div
-          className="px-5 py-3.5 flex items-center gap-2 cursor-pointer select-none hover:bg-mg-fill-0/40 transition-colors"
+          className="px-5 py-3.5 flex items-center gap-2.5 cursor-pointer select-none hover:bg-mg-fill-0/30 transition-colors"
           onClick={() => setQuickOpen(o => !o)}
         >
-          <LuCode size={13} className="text-mg-text-2 shrink-0" />
-          <span className="text-[13px] font-semibold text-mg-text-0">Agent 快速接入</span>
-          <span className="text-[12px] text-mg-text-2 font-normal">· 填入 Base URL 即可</span>
+          <div className="w-7 h-7 rounded-lg bg-brand-base/10 flex items-center justify-center shrink-0">
+            <LuZap size={14} className="text-brand-base" />
+          </div>
+          <div className="flex-1">
+            <span className="text-[13px] font-bold text-mg-text-0">Agent 快速接入</span>
+            <span className="text-[11px] text-mg-text-2 font-normal ml-2">复制 Base URL 到你的 Agent 设置</span>
+          </div>
           <LuChevronDown
-            size={13}
-            className="ml-auto text-mg-text-2 transition-transform duration-200 shrink-0"
+            size={14}
+            className="text-mg-text-2 transition-transform duration-200 shrink-0"
             style={{ transform: quickOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
           />
         </div>
 
         {quickOpen && (
-        <div className="border-t border-mg-border/60 px-5 py-4 flex flex-col gap-3">
-          {[
-            { label: OPENAI_LABEL, value: baseUrl, hint: 'Cursor · Claude Code · Cline · OpenAI SDK' },
-            { label: ANTHROPIC_LABEL, value: `https://${_marketConfig.apiDomain}`, hint: 'Anthropic SDK · AWS Bedrock 兼容' },
-          ].map(({ label, value, hint }) => (
-            <div key={label} className="flex items-center gap-3 rounded-xl bg-mg-fill-0/40 border border-mg-border/40 px-4 py-3 hover:border-mg-border/80 transition-colors">
-              <div className="flex flex-col gap-0.5 min-w-[120px] shrink-0">
-                <span className="text-[12px] font-bold text-mg-text-0">{label}</span>
-                <span className="text-[10px] text-mg-text-2 leading-tight">{hint}</span>
+        <div className="border-t border-mg-border/60">
+          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-mg-border/60">
+            {[
+              {
+                label: OPENAI_LABEL,
+                value: baseUrl,
+                agents: ['Cursor', 'Claude Code', 'Cline', 'Windsurf'],
+                color: 'emerald',
+                icon: <LuCode size={16} />,
+              },
+              {
+                label: ANTHROPIC_LABEL,
+                value: `https://${_marketConfig.apiDomain}`,
+                agents: ['Anthropic SDK', 'Claude API', 'Amazon Bedrock'],
+                color: 'amber',
+                icon: <LuKey size={16} />,
+              },
+            ].map(({ label, value, agents, color, icon }) => (
+              <div key={label} className="p-5 flex flex-col gap-3">
+                {/* 协议标识 */}
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    color === 'emerald' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'
+                  }`}>
+                    {icon}
+                  </div>
+                  <div>
+                    <div className="text-[13px] font-bold text-mg-text-0">{label}</div>
+                  </div>
+                </div>
+
+                {/* Base URL 复制行 */}
+                <div
+                  onClick={() => handleQuickCopy(label, value)}
+                  className={`group flex items-center gap-2 rounded-lg px-3.5 py-2.5 cursor-pointer transition-all duration-200 border ${
+                    quickCopied === label
+                      ? 'bg-emerald-500/5 border-emerald-500/30'
+                      : 'bg-mg-bg-1/60 border-mg-border/50 hover:border-brand-base/40 hover:bg-brand-base/3'
+                  }`}
+                >
+                  <code className="flex-1 font-mono text-[13px] font-semibold text-mg-text-0 truncate select-all">
+                    {value}
+                  </code>
+                  <span className={`shrink-0 text-[11px] font-bold flex items-center gap-1 transition-colors ${
+                    quickCopied === label ? 'text-emerald-500' : 'text-mg-text-2 group-hover:text-brand-base'
+                  }`}>
+                    {quickCopied === label
+                      ? <><LuCheck size={12} /> 已复制</>
+                      : <><LuCopy size={12} /> 复制</>}
+                  </span>
+                </div>
+
+                {/* 适用 Agent 标签 */}
+                <div className="flex flex-wrap gap-1.5">
+                  {agents.map((a) => (
+                    <span key={a} className="text-[10px] font-semibold text-mg-text-2 bg-mg-fill-0/80 border border-mg-border/40 rounded-md px-2 py-0.5">
+                      {a}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <code className="flex-1 font-mono text-[13px] font-semibold text-mg-text-0 truncate select-all">
-                {value}
-              </code>
-              <button
-                onClick={() => handleQuickCopy(label, value)}
-                className="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold border border-mg-border text-mg-text-1 hover:border-brand-base hover:text-brand-base transition-colors cursor-pointer flex items-center gap-1.5"
-              >
-                {quickCopied === label
-                  ? <><LuCheck size={12} className="text-emerald-500" /> 已复制</>
-                  : <><LuCopy size={12} /> 复制</>}
-              </button>
-            </div>
-          ))}
-          <p className="text-[11px] text-mg-text-2 mt-0.5 px-1">
-            在 Agent 或 SDK 的设置中填入上方 Base URL + 你的 API Key 即可接入。
-          </p>
+            ))}
+          </div>
+
+          {/* 底部提示 */}
+          <div className="px-5 py-3 border-t border-mg-border/40 bg-mg-bg-1/30 flex items-center gap-2">
+            <LuArrowRight size={12} className="text-brand-base shrink-0" />
+            <span className="text-[11px] text-mg-text-2">
+              将 Base URL 和 API Key 填入 Agent 配置即可接入全部模型，无需额外代码。
+            </span>
+          </div>
         </div>
         )}
       </div>

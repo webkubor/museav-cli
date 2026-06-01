@@ -15,7 +15,9 @@ import {
   TableRow,
   TableCell
 } from '@/components/ui/Table'
-import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers, LuKey, LuCode, LuChevronDown, LuZap, LuArrowRight } from 'react-icons/lu'
+import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers, LuKey, LuChevronDown, LuZap, LuArrowRight } from 'react-icons/lu'
+import OpenAI from '@lobehub/icons/es/OpenAI'
+import Anthropic from '@lobehub/icons/es/Anthropic'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { listApiKeys, createApiKey, revokeApiKey } from '@/services/api-keys'
@@ -218,28 +220,20 @@ export default function ApiKeysPage() {
                 label: OPENAI_LABEL,
                 value: baseUrl,
                 agents: ['Cursor', 'Claude Code', 'Cline', 'Windsurf'],
-                color: 'emerald',
-                icon: <LuCode size={16} />,
+                icon: <OpenAI.Avatar size={32} />,
               },
               {
                 label: ANTHROPIC_LABEL,
                 value: `https://${_marketConfig.apiDomain}`,
                 agents: ['Anthropic SDK', 'Claude API', 'Amazon Bedrock'],
-                color: 'amber',
-                icon: <LuKey size={16} />,
+                icon: <Anthropic.Avatar size={32} />,
               },
-            ].map(({ label, value, agents, color, icon }) => (
+            ].map(({ label, value, agents, icon }) => (
               <div key={label} className="p-5 flex flex-col gap-3">
                 {/* 协议标识 */}
-                <div className="flex items-center gap-2.5">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                    color === 'emerald' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'
-                  }`}>
-                    {icon}
-                  </div>
-                  <div>
-                    <div className="text-[13px] font-bold text-mg-text-0">{label}</div>
-                  </div>
+                <div className="flex items-center gap-3">
+                  <div className="shrink-0">{icon}</div>
+                  <div className="text-[13px] font-bold text-mg-text-0">{label}</div>
                 </div>
 
                 {/* Base URL 复制行 */}

@@ -147,21 +147,53 @@ pnpm build:production
 
 ### GitLab QA 看板
 
-[https://gitlab.ops.modelgo.com/groups/qa/-/boards](https://gitlab.ops.modelgo.com/groups/qa/-/boards)
+线上地址：[https://gitlab.ops.modelgo.com/groups/qa/-/boards](https://gitlab.ops.modelgo.com/groups/qa/-/boards)
 
-```bash
-cs task start "需求描述" --agent claude --project modelgo-console-web
-cs task list
-cs task done
-```
+Group: `qa`（ID 8） · Board: `Development`（ID 2） · 默认项目: `ai-quality-platform`（ID 1）
 
-### AI Skills 安装
+| 看板列 | GitLab Label | 说明 |
+| :--- | :--- | :--- |
+| 待处理 | `已认领` | 已分配但未开始 |
+| 进行中 | `进行中` | 开发/修复中 |
+| 待验证 | `待验证` | 等待 QA 验收 |
+| 已完成 | `已完成` | 验收通过，关闭 |
+
+业务标签：`BUG`（缺陷）、`TASK`（需求）、`前端就绪`（前端已完成待后端/QA）
+
+> 控制台 `platform-config` 页面的需求看板与此 GitLab Board 对应，issue 状态同步。
+
+### AI Skills 安装与更新
 
 ```bash
 npx git+ssh://git@gitlab.ops.modelgo.com/shared/ai-skills.git
 ```
 
-已安装后，Claude/Codex 自动加载：`gitlab-board`、`gotest`、`testmgr-api`
+安装后 Claude/Codex 自动加载以下 skill：
+
+| Skill | 用途 |
+| :--- | :--- |
+| `gitlab-board` | 查看/创建/移动 GitLab QA 看板 issue |
+| `gotest` | Go 单元测试生成 |
+| `testmgr-api` | TestMgr API 查询 |
+
+常用操作（通过 `gitlab-board` skill）：
+
+```bash
+# 查看所有 open issues
+glab api "groups/qa/issues?state=opened&per_page=100" --hostname gitlab.ops.modelgo.com
+
+# 创建 issue
+glab api -X POST "projects/1/issues" --hostname gitlab.ops.modelgo.com \
+  --field "title=[Console] 需求标题" --field "labels=TASK,已认领"
+
+# 移动 issue 到「进行中」
+glab api -X PUT "projects/1/issues/{iid}" --hostname gitlab.ops.modelgo.com \
+  --field "labels=TASK,进行中"
+
+# 完成并关闭
+glab api -X PUT "projects/1/issues/{iid}" --hostname gitlab.ops.modelgo.com \
+  --field "labels=TASK,已完成" --field "state_event=close"
+```
 
 ---
 

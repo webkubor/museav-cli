@@ -74,17 +74,30 @@ function devLogApiCall(entry: ApiLogEntry) {
   }).catch(() => {})
 }
 
-function devConsoleLog(
-  ok: boolean,
-  method: string,
-  path: string,
-  ms: number,
-  data?: unknown,
-  errorInfo?: { code?: number; status?: number; message?: string },
-) {
+const _lastHeaders = new Map<string, Record<string, string>>()
+
+function captureHeaders(request: Request) {
+  if (!import.meta.env.DEV) return
+  const headers: Record<string, string> = {}
+  request.headers.forEach((v, k) => { headers[k] = v })
+  _lastHeaders.set(`${request.method} ${new URL(request.url).pathname}`, headers)
+}
+
+interface DevLogOpts {
+  url?: string
+  response?: unknown
+  requestBody?: unknown
+  error?: { code?: number; status?: number; message?: string }
+}
+
+function devConsoleLog(ok: boolean, method: string, path: string, ms: number, opts?: DevLogOpts) {
   if (!import.meta.env.DEV) return
   const label = getModuleLabel(path)
   const tag = label ? `[${label}] ` : ''
+  const headerKey = `${method} /api/v1/${path}`
+  const headers = _lastHeaders.get(headerKey)
+  _lastHeaders.delete(headerKey)
+
   if (ok) {
     console.groupCollapsed(
       `%c ✓ ${method} %c${tag}%c${path} %c${ms}ms`,
@@ -93,10 +106,8 @@ function devConsoleLog(
       'color:#94a3b8',
       'color:#cbd5e1',
     )
-    console.log('Response', data)
-    console.groupEnd()
   } else {
-    const detail = errorInfo?.code ? `code:${errorInfo.code}` : errorInfo?.status ? `http:${errorInfo.status}` : ''
+    const detail = opts?.error?.code ? `code:${opts.error.code}` : opts?.error?.status ? `http:${opts.error.status}` : ''
     console.groupCollapsed(
       `%c ✗ ${method} %c${tag}%c${path} %c${detail} ${ms}ms`,
       'color:#ef4444;font-weight:bold',
@@ -104,9 +115,13 @@ function devConsoleLog(
       'color:#94a3b8',
       'color:#ef4444',
     )
-    if (errorInfo?.message) console.log('Error', errorInfo.message)
-    console.groupEnd()
   }
+  if (opts?.url) console.log('URL      ', opts.url)
+  if (headers) console.log('Headers  ', headers)
+  if (opts?.requestBody !== undefined) console.log('Request  ', opts.requestBody)
+  if (ok && opts?.response !== undefined) console.log('Response ', opts.response)
+  if (!ok && opts?.error?.message) console.log('Error    ', opts.error.message)
+  console.groupEnd()
 }
 
 function searchParams(params?: QueryParams) {
@@ -148,6 +163,7 @@ const client = ky.create({
   hooks: {
     beforeRequest: [
       ({ request }) => injectHeaders(request),
+      ({ request }) => captureHeaders(request),
     ],
     afterResponse: [
       async function handleBusinessError({ request, response }) {
@@ -202,7 +218,7 @@ export async function get<T>(path: string, params?: QueryParams): Promise<T> {
     )
     const ms = durationMs(startedAt)
     devLogApiCall({ method: 'GET', path: normalizedPath, url, ok: true, duration_ms: ms, code: 0 })
-    devConsoleLog(true, 'GET', normalizedPath, ms, result)
+    devConsoleLog(true, 'GET', normalizedPath, ms, { url, response: result, requestBody: params })
     return result
   } catch (error) {
     if (error instanceof ModelGoApiError) error.path = normalizedPath
@@ -212,25 +228,25 @@ export async function get<T>(path: string, params?: QueryParams): Promise<T> {
 }
 
 export async function post<T>(path: string, body: unknown): Promise<T> {
-  return requestWithJsonBody('POST', path, (url) =>
+  return requestWithJsonBody('POST', path, body, (url) =>
     client.post(url, { json: body }).json<ApiResponse<T>>()
   )
 }
 
 export async function patch<T>(path: string, body: unknown): Promise<T> {
-  return requestWithJsonBody('PATCH', path, (url) =>
+  return requestWithJsonBody('PATCH', path, body, (url) =>
     client.patch(url, { json: body }).json<ApiResponse<T>>()
   )
 }
 
 export async function put<T>(path: string, body: unknown): Promise<T> {
-  return requestWithJsonBody('PUT', path, (url) =>
+  return requestWithJsonBody('PUT', path, body, (url) =>
     client.put(url, { json: body }).json<ApiResponse<T>>()
   )
 }
 
 export async function del<T>(path: string, body?: unknown): Promise<T> {
-  return requestWithJsonBody('DELETE', path, (url) =>
+  return requestWithJsonBody('DELETE', path, body, (url) =>
     client.delete(url, body !== undefined ? { json: body } : undefined).json<ApiResponse<T>>()
   )
 }
@@ -274,6 +290,7 @@ export async function upload<T>(
 async function requestWithJsonBody<T>(
   method: string,
   path: string,
+  body: unknown,
   send: (url: string) => Promise<ApiResponse<T>>
 ) {
   const normalizedPath = normalizePath(path)
@@ -283,7 +300,7 @@ async function requestWithJsonBody<T>(
     const result = await unwrap(send(url))
     const ms = durationMs(startedAt)
     devLogApiCall({ method, path: normalizedPath, url, ok: true, duration_ms: ms, code: 0 })
-    devConsoleLog(true, method, normalizedPath, ms, result)
+    devConsoleLog(true, method, normalizedPath, ms, { url, response: result, requestBody: body })
     return result
   } catch (error) {
     if (error instanceof ModelGoApiError && error.code === 40302) {
@@ -318,10 +335,9 @@ function devLogApiError(
   }
 
   devLogApiCall(entry)
-  devConsoleLog(false, method, path, ms, undefined, {
-    code: entry.code,
-    status: entry.status,
-    message: entry.error,
+  devConsoleLog(false, method, path, ms, {
+    url,
+    error: { code: entry.code, status: entry.status, message: entry.error },
   })
 }
 

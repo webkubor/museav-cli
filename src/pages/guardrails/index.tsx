@@ -426,6 +426,19 @@ export default function GuardrailsPage() {
         title={isCreating ? t('guardrails.modal.createTitle') : (detailRow?.name ?? t('guardrails.modal.editTitle'))}
         width={600}
       >
+        {/* 状态切换 */}
+        {!isCreating && detail && (
+          <div className="flex items-center justify-between px-6 py-3 border-b border-mg-border/50">
+            <span className="text-xs text-mg-text-2">
+              {detail.status === 'active' ? '已启用' : '已停用'}
+            </span>
+            <Switch
+              checked={detail.status === 'active'}
+              onChange={(checked) => toggleMutation.mutate({ id: detail.id, status: checked ? 'active' : 'inactive' })}
+            />
+          </div>
+        )}
+
         {/* Tab 导航 */}
         {!isCreating && (
           <div className="flex border-b border-mg-border px-6 pt-1">

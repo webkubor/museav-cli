@@ -360,7 +360,6 @@ export default function GuardrailsPage() {
             </TableHeader>
             <TableBody>
               {guardrails.map((row) => {
-                const statusCfg = GUARDRAIL_STATUS_CONFIG[row.status]
                 return (
                   <TableRow key={row.id}>
                     <TableCell className="font-semibold text-mg-text-0 text-[13.5px]">{row.name}</TableCell>
@@ -374,15 +373,12 @@ export default function GuardrailsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={row.status === 'active'}
-                          onChange={(checked) =>
-                            toggleMutation.mutate({ id: row.id, status: checked ? 'active' : 'inactive' })
-                          }
-                        />
-                        <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
-                      </div>
+                      <Switch
+                        checked={row.status === 'active'}
+                        onChange={(checked) =>
+                          toggleMutation.mutate({ id: row.id, status: checked ? 'active' : 'inactive' })
+                        }
+                      />
                     </TableCell>
                     <TableCell className="text-xs text-mg-text-2">{formatDateTime(row.created_at)}</TableCell>
                     <TableCell className="text-right">

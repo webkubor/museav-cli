@@ -85,6 +85,7 @@
     "wsSlugPlaceholder": "如：prod-app",
     "wsDescLabel": "项目描述 (选填)",
     "wsDescPlaceholder": "简述该项目的用途...",
+    "personalTag": "个人",
     "roleOwner": "所有者",
     "roleAdmin": "管理员",
     "roleMember": "成员"

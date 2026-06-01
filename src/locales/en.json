@@ -85,6 +85,7 @@
     "wsSlugPlaceholder": "e.g. prod-app",
     "wsDescLabel": "Description (Optional)",
     "wsDescPlaceholder": "Describe the purpose...",
+    "personalTag": "Personal",
     "roleOwner": "Owner",
     "roleAdmin": "Admin",
     "roleMember": "Member"

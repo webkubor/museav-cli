@@ -506,11 +506,15 @@ export const DashboardHeader: React.FC = () => {
                         </AvatarFallback>
                       </Avatar>
                       <span className="flex-1 truncate max-w-[100px]">{displayName}</span>
-                      {tenant.type === 'enterprise' && tenantRole && (
+                      {tenant.type === 'personal' ? (
+                        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded border bg-mg-fill-0 border-mg-border text-mg-text-2 scale-90 shrink-0">
+                          {t('header.personalTag')}
+                        </span>
+                      ) : tenantRole ? (
                         <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded border bg-mg-fill-0 border-mg-border text-mg-text-2 scale-90 shrink-0">
                           {roleLabel[tenantRole] ?? tenantRole}
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </DropdownItem>
                 )

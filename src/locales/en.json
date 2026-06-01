@@ -222,7 +222,11 @@
       "nameLabel": "Display Name",
       "namePlaceholder": "Enter display name",
       "toastSuccess": "Display name saved",
-      "toastError": "Failed to save"
+      "toastError": "Failed to save",
+      "avatarSuccess": "Avatar updated",
+      "avatarError": "Failed to upload avatar",
+      "avatarTooLarge": "Image must be under 2MB",
+      "avatarChange": "Change"
     },
     "security": {
       "currentPassword": "Current Password",

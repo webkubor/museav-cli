@@ -21,6 +21,7 @@ import { TENANT_ROLE_CONFIG, TENANT_ROLE_OPTIONS } from '@/constants/roles'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
+import { AvatarUpload } from '@/components/ui/AvatarUpload'
 import { appToast } from '@/lib/app-toast'
 
 const MAX_TENANTS = 5
@@ -231,7 +232,6 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
   const qc = useQueryClient()
   const [name, setName] = useState('')
   const [editing, setEditing] = useState(false)
-  const [logoHover, setLogoHover] = useState(false)
 
   const tenantQuery = useQuery({
     queryKey: ['tenant', tenantId],
@@ -264,23 +264,12 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
   const logoMutation = useMutation({
     mutationFn: (file: File) => uploadTenantLogo(tenantId, file),
     onSuccess: () => {
-      appToast.success('组织头像已更新')
+      appToast.success('企业头像已更新')
       qc.invalidateQueries({ queryKey: ['tenant', tenantId] })
       qc.invalidateQueries({ queryKey: ['tenants'] })
     },
     onError: (err: any) => appToast.error(err?.message || '上传失败，请重试'),
   })
-
-  function handleLogoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 2 * 1024 * 1024) {
-      appToast.error('图片大小不能超过 2MB')
-      return
-    }
-    logoMutation.mutate(file)
-    e.target.value = ''
-  }
 
   if (tenantQuery.isLoading) {
     return (
@@ -289,50 +278,19 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
   }
 
   if (!tenant) return null
-  const logoLetter = tenant?.name.charAt(0).toUpperCase() ?? '?'
 
   return (
     <div style={{ ...cardStyle, maxWidth: '640px' }}>
       <div style={{ padding: '20px 24px' }}>
-        {/* 组织头像 */}
+        {/* 企业头像 */}
         <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <label
-            htmlFor="org-logo-upload"
-            style={{ cursor: logoMutation.isPending ? 'wait' : 'pointer', flexShrink: 0 }}
-            onMouseEnter={() => setLogoHover(true)}
-            onMouseLeave={() => setLogoHover(false)}
-          >
-            <div style={{
-              width: '72px', height: '72px', borderRadius: '16px', overflow: 'hidden',
-              position: 'relative', border: '2px solid var(--mg-fill-0)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              backgroundColor: 'var(--mg-bg-1)',
-              transition: 'border-color 0.15s',
-              borderColor: logoHover ? 'var(--mg-primary)' : undefined,
-            }}>
-              {tenant?.logo_url
-                ? <img src={tenant.logo_url} alt={tenant.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--mg-text-1)' }}>{logoLetter}</span>
-              }
-              {(logoHover || logoMutation.isPending) && (
-                <div style={{
-                  position: 'absolute', inset: 0, borderRadius: '14px',
-                  backgroundColor: 'rgba(0,0,0,0.45)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '11px', fontWeight: 600, color: '#fff', letterSpacing: '0.02em',
-                }}>
-                  {logoMutation.isPending ? '上传中…' : '更换'}
-                </div>
-              )}
-            </div>
-            <input
-              id="org-logo-upload"
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/gif"
-              style={{ display: 'none' }}
-              onChange={handleLogoFileChange}
-            />
-          </label>
+          <AvatarUpload
+            src={tenant.logo_url}
+            fallback={tenant.name.charAt(0).toUpperCase()}
+            size={72}
+            loading={logoMutation.isPending}
+            onUpload={(file) => logoMutation.mutate(file)}
+          />
           <div>
             <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--mg-text-0)', marginBottom: '4px' }}>
               {tenant?.name}

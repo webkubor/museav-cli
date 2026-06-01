@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { updateProfile } from '@/services/account'
+import { updateProfile, uploadAvatar } from '@/services/account'
+import { useAuthStore } from '@/store/auth'
 import type { AccountProfile } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { AvatarUpload } from '@/components/ui/AvatarUpload'
 import { appToast } from '@/lib/app-toast'
 
 interface BasicInfoTabProps {
@@ -16,14 +18,29 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
   const queryClient = useQueryClient()
   const [displayName, setDisplayName] = useState(profile.display_name)
 
+  const avatarMutation = useMutation({
+    mutationFn: (file: File) => uploadAvatar(file),
+    onSuccess: (res) => {
+      appToast.success(t('account.info.avatarSuccess'))
+      queryClient.setQueryData<AccountProfile>(['account-profile'], (prev) =>
+        prev ? { ...prev, avatar_url: res.avatar_url } : prev
+      )
+      const account = useAuthStore.getState().account
+      if (account) {
+        useAuthStore.setState({ account: { ...account, avatar_url: res.avatar_url } })
+      }
+    },
+    onError: (err: unknown) => appToast.error((err as Error)?.message || t('account.info.avatarError')),
+  })
+
   const updateMutation = useMutation({
     mutationFn: () => updateProfile({ display_name: displayName }),
     onSuccess: (updated) => {
       appToast.success(t('account.info.toastSuccess'))
       queryClient.setQueryData<AccountProfile>(['account-profile'], updated)
     },
-    onError: (err: any) => {
-      appToast.error(err?.message || t('account.info.toastError'))
+    onError: (err: unknown) => {
+      appToast.error((err as Error)?.message || t('account.info.toastError'))
     },
   })
 
@@ -32,35 +49,15 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', paddingTop: '8px' }}>
-      {/* 头像区域：质感呼吸边缘 */}
+      {/* 头像 + 基本信息 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-        {profile.avatar_url ? (
-          <div style={{
-            width: '64px', height: '64px', borderRadius: '50%',
-            overflow: 'hidden', flexShrink: 0,
-            boxShadow: '0 0 0 3px var(--brand-glow), 0 4px 10px rgba(0,0,0,0.06)',
-            backgroundColor: 'var(--mg-fill-0)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <img
-              src={profile.avatar_url}
-              alt={profile.display_name || 'avatar'}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
-          </div>
-        ) : (
-          <div
-            style={{
-              width: '64px', height: '64px', borderRadius: '50%',
-              backgroundColor: 'var(--mg-primary)',
-              boxShadow: '0 0 0 3px var(--brand-glow), 0 4px 10px rgba(0,0,0,0.06)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontSize: '24px', fontWeight: 700, flexShrink: 0
-            }}
-          >
-            {avatarLetter}
-          </div>
-        )}
+        <AvatarUpload
+          src={profile.avatar_url}
+          fallback={avatarLetter}
+          size={64}
+          loading={avatarMutation.isPending}
+          onUpload={(file) => avatarMutation.mutate(file)}
+        />
         <div>
           <div style={{ fontWeight: 700, color: 'var(--mg-text-0)', fontSize: '16px', letterSpacing: '-0.01em' }}>
             {profile.display_name || '—'}
@@ -71,20 +68,16 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
         </div>
       </div>
 
-      {/* 表单区域：限宽 480px，保留呼吸感的网格 */}
+      {/* 表单 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '480px' }}>
         <div>
           <span style={{ fontSize: '12.5px', color: 'var(--mg-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             {t('account.info.emailLabel')}
           </span>
-          <Input 
-            value={profile.email} 
-            disabled 
-            style={{ 
-              backgroundColor: 'var(--mg-bg-1)',
-              borderRadius: '8px',
-              border: '1px solid var(--mg-border)'
-            }} 
+          <Input
+            value={profile.email}
+            disabled
+            style={{ backgroundColor: 'var(--mg-bg-1)', borderRadius: '8px', border: '1px solid var(--mg-border)' }}
           />
           <span style={{ fontSize: '11.5px', color: 'var(--mg-text-2)', marginTop: '6px', display: 'block' }}>
             {t('account.info.emailHint')}

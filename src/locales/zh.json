@@ -222,7 +222,11 @@
       "nameLabel": "显示名称",
       "namePlaceholder": "请输入显示名称",
       "toastSuccess": "显示名称已保存",
-      "toastError": "保存失败，请重试"
+      "toastError": "保存失败，请重试",
+      "avatarSuccess": "头像已更新",
+      "avatarError": "头像上传失败",
+      "avatarTooLarge": "图片大小不能超过 2MB",
+      "avatarChange": "更换"
     },
     "security": {
       "currentPassword": "当前密码",

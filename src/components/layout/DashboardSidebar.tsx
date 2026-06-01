@@ -83,13 +83,6 @@ const SidebarMenuGroup: React.FC<{
   const isChildSelected = item.items?.some(sub => selectedKey === sub.itemKey) ?? false
   const [isOpen, setIsOpen] = useState(isChildSelected)
 
-  // 激活子菜单时自动展开
-  React.useEffect(() => {
-    if (isChildSelected) {
-      setIsOpen(true)
-    }
-  }, [isChildSelected, selectedKey])
-
   if (collapsed) {
     return (
       <div className="flex flex-col gap-0.5">

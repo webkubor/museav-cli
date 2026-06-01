@@ -150,6 +150,7 @@ export function DashboardLayout() {
   return (
     <div className="min-h-screen bg-site-bg flex flex-col font-sans">
       <DashboardHeader />
+      <div className="shimmer-line" />
 
       <div className="flex flex-1 relative overflow-hidden">
         <DashboardSidebar

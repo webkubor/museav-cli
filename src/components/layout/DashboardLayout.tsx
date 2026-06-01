@@ -13,6 +13,7 @@ import {
   LuWrench,
   LuTerminal,
   LuLock,
+  LuMessageSquare,
 } from 'react-icons/lu'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -104,6 +105,7 @@ export function DashboardLayout() {
     shield:      ic(<LuShield       size={16} />),
     eye:         ic(<LuEye          size={16} />),
     mail:        ic(<LuMail         size={16} />),
+    message:     ic(<LuMessageSquare size={16} />),
   }
 
   const tenantNavItems    = filterNavItems(navConfig.tenantItems(navCtx, t, icons))
@@ -121,8 +123,8 @@ export function DashboardLayout() {
     dashboard:        [t('nav.home')],
     'models/explore': [t('nav.home'), t('nav.models'), t('nav.modelExplore')],
     'models/compare': [t('nav.home'), t('nav.models'), t('nav.modelCompare')],
-    'models/chat':    [t('nav.home'), t('nav.models'), t('nav.modelChat')],
-    'models/history': [t('nav.home'), t('nav.models'), t('nav.modelHistory')],
+    'models/chat':    [t('nav.home'), t('nav.playground'), t('nav.modelChat')],
+    'models/history': [t('nav.home'), t('nav.playground'), t('nav.modelHistory')],
     'api-keys':       [t('nav.home'), t('nav.apiKeys')],
     usage:            [t('nav.home'), t('nav.analytics'), t('nav.usage')],
     logs:             [t('nav.home'), t('nav.analytics'), t('nav.logs')],

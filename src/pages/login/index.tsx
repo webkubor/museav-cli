@@ -38,7 +38,7 @@ export default function LoginPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isSessionLoading = useAuthStore((s) => s.isLoading)
 
-  const redirectAfterLogin = getRedirectTarget()
+  const [redirectAfterLogin] = useState(() => getRedirectTarget())
   const searchParams = new URLSearchParams(window.location.search)
   const accessDenied = searchParams.get('reason') === 'no_access'
 

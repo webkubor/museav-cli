@@ -536,7 +536,13 @@
     "callBtn": "调用",
     "recallBtn": "重新调用",
     "permPanel": {
-      "title": "权限速查"
+      "title": "权限速查",
+      "idList": "权限 ID 清单",
+      "copyBtn": "一键复制 (交给后端/产品)",
+      "tenantMatrix": "组织角色权限矩阵",
+      "wsMatrix": "项目角色权限矩阵",
+      "permLogic": "最终权限 = 组织角色权限 ∪ 项目角色权限 (取并集)",
+      "personalNotice": "personal 租户：owner 获得 billing 权限 (国内含 invoice)，无企业管理与邀请管理功能。"
     },
     "endpoints": {
       "session": "当前会话",
@@ -554,43 +560,53 @@
       "difference": "差异对比",
       "extraInApi": "API 多出的模块 (未在 Console 独立体现)",
       "extraInFrontend": "前端多出的模块 (基于基础 API 封装的交互工具)",
+      "docsDesc": "文档站 API (Console 内暂无独立页面)",
+      "healthDesc": "健康检查 (系统内部使用)",
+      "playgroundDesc": "交互式接口测试工具",
+      "chatTestDesc": "对话测试工具 (基于 agent API)",
+      "deviceDesc": "CLI 设备流授权页面 (基于 auth API)",
       "matched": "已对齐模块",
       "matchedDesc": "这些模块在前端和 API 中均有明确的对应关系。",
       "gaps": {
         "title": "核心模块功能对齐细节 (UI vs API)",
         "guardrail": {
           "title": "配额管理 (Guardrails)",
-          "ui": "侧重于创建、成员/APIKey 绑定以及简单的硬限额预算 (Hard Limit)。",
-          "api": "API 存在过度设计：支持基于 Token/次数的速率限制、监控模式 (Monitor) 以及多种聚合维度。UI 暂不需要这些复杂性，仅保留金额硬限额。"
+          "ui": "支持 IP/模型白名单配置，支持 API Key 反向绑定护栏规则。",
+          "api": "API 存在过度设计：支持基于 Token/次数的速率限制、监控模式以及多种聚合维度。同时需确保 PATCH /guardrails/:id 支持 ip_whitelist/model_whitelist，POST /guardrails/:id/assignments 支持反向绑定。"
         },
         "observability": {
           "title": "可观测性 (Observability)",
           "ui": "支持开关配置、转发目的地管理及死信队列 (Dead Letters) 的查看与重试。",
-          "api": "API 拥有完整的死信队列处理接口，UI 已在 v1.3 完成功能对齐。"
+          "api": "涉及接口：GET|PATCH /workspaces/:id/observability/settings, GET|POST|PATCH|DELETE /broadcast-destinations, GET /broadcast-dead-letters, POST /broadcast-dead-letters/:id/retry。"
         },
         "billing": {
           "title": "账单/计费 (Billing vs Credits)",
-          "ui": "统一归类为账单管理，包含充值、流水和发票。",
-          "api": "在 API 层拆分为 credits (余额/充值) 和 transaction (流水)，UI 完成了较好的业务聚合。"
+          "ui": "统一归类为账单管理，包含充值、流水和发票。需关注金额输出统一约束小数点精度 (Requirement #66)。",
+          "api": "涉及接口：GET /tenants/:id/balance, POST /tenants/:id/recharges, GET /tenants/:id/recharges, PATCH /recharges/:order_no/cancel。"
         },
         "models": {
           "title": "模型中心 (Models Experience)",
-          "ui": "高度产品化的「体验中心」，包含广场、对比、对话及历史。它是 Console 的核心新增模块。",
-          "api": "API 层级拆分为 catalog (静态目录数据) 和 agent (会话运行态)。API 还有 pricing/plans 及 providers 全局目录，UI 暂无独立入口。"
+          "ui": "高度产品化的「体验中心」，包含广场、对比、对话及历史。Requirement #63 涉及该模块的大量体验优化。",
+          "api": "涉及接口：GET /catalog/models, GET /catalog/model-tags, GET /agent/sessions, POST /agent/chat。"
         },
         "apiKeys": {
           "title": "API Keys",
-          "ui": "支持 Scope (个人/项目/成员) 区分，支持限额 (spending_limit) 和过期时间 (expires_at) 配置。",
-          "api": "Swagger v1.2 仍缺失部分字段定义，但 UI 已通过扩展字段完成功能对齐。"
+          "ui": "支持 Scope (个人/项目/成员) 区分 (Requirement #14)，支持限额 (spending_limit) 和过期时间 (expires_at) 配置。",
+          "api": "涉及接口：GET|POST /workspaces/:id/api-keys, PATCH|DELETE /api-keys/:id。需确保支持 scope 字段及 member_account_id 绑定。"
         },
         "organization": {
           "title": "企业与成员 (Org & Members)",
-          "ui": "需要展示企业下成员总数。在项目邀请成员时，需要展示企业内「可邀请」的成员列表。",
-          "api": "API 缺失关键字段：TenantItem 缺少 member_count。同时也缺失「项目上下文下的企业成员」过滤接口，目前 UI 只能通过邮箱手动邀请。"
+          "ui": "需要展示企业下成员总数。Requirement #1780294522906 提到组织 Logo 不支持更换。",
+          "api": "缺失接口：POST /tenants/:id/avatar (组织头像上传)。TenantItem 仍缺少 member_count。缺失「项目上下文下的企业成员」过滤接口。"
+        },
+        "invitation": {
+          "title": "成员邀请 (Invitations)",
+          "ui": "邀请配置支持默认加入工作区 (Requirement #70)。",
+          "api": "POST /invitations 需确保支持 workspace_id 和 auto_join 配置。"
         }
       }
-
     },
+
     "perm": {
       "tenantType": "租户类型 (Tenant Type)",
       "tenantRole": "企业角色 (Tenant Role)",
@@ -649,7 +665,8 @@
     "tab": {
       "endpoints": "接口调试",
       "modules": "模块对照",
-      "permissions": "权限说明"
+      "permissions": "权限速查",
+      "requirements": "需求看板"
     }
   },
   "usage": {

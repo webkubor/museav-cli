@@ -248,6 +248,7 @@ function MenuPermissionMap() {
 }
 
 function PermissionPanel() {
+  const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
 
   const MENU_PERMS: Permission[] = [
@@ -316,20 +317,22 @@ function PermissionPanel() {
       {/* Permission Registry */}
       <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
         <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center justify-between">
-          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">权限 ID 清单</span>
+          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">
+            {t('platformConfig.permPanel.idList')}
+          </span>
           <button
             type="button"
             onClick={handleCopy}
             className="text-[11px] font-bold px-3 py-1 rounded-lg border border-mg-border text-mg-text-1 hover:border-brand-base hover:text-brand-base transition-colors duration-150"
           >
-            {copied ? '✓ 已复制' : '一键复制（交给后端/产品）'}
+            {copied ? `✓ ${t('common.copied')}` : t('platformConfig.permPanel.copyBtn')}
           </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-mg-border p-5 gap-5 md:gap-0">
           {([
-            { label: '菜单级', perms: MENU_PERMS, color: 'text-violet-500', bg: 'bg-violet-500/10 border-violet-500/20' },
-            { label: '页面/区块级', perms: PAGE_PERMS, color: 'text-sky-500', bg: 'bg-sky-500/10 border-sky-500/20' },
-            { label: '按钮/操作级', perms: ACTION_PERMS, color: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/20' },
+            { label: t('platformConfig.perm.menuLevel'), perms: MENU_PERMS, color: 'text-violet-500', bg: 'bg-violet-500/10 border-violet-500/20' },
+            { label: t('platformConfig.perm.pageLevel'), perms: PAGE_PERMS, color: 'text-sky-500', bg: 'bg-sky-500/10 border-sky-500/20' },
+            { label: t('platformConfig.perm.actionLevel'), perms: ACTION_PERMS, color: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/20' },
           ] as const).map(({ label, perms, color, bg }) => (
             <div key={label} className="md:px-5 first:md:pl-0 last:md:pr-0 space-y-3">
               <div className={`text-[11px] font-bold tracking-wider ${color}`}>{label}</div>
@@ -346,7 +349,9 @@ function PermissionPanel() {
       {/* Tenant Matrix */}
       <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
         <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center gap-3">
-          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">组织角色权限矩阵</span>
+          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">
+            {t('platformConfig.permPanel.tenantMatrix')}
+          </span>
           <code className="text-[10px] text-mg-text-2 font-mono opacity-60">enterprise · domestic vs global</code>
         </div>
         <div className="divide-y divide-mg-border">
@@ -374,7 +379,7 @@ function PermissionPanel() {
           })}
           <div className="px-5 py-3 bg-mg-bg-1/30">
             <span className="text-[11px] text-mg-text-2">
-              personal 租户：owner 获得 billing 权限（国内含 invoice），<strong>无</strong> org 管理权限与邀请管理菜单。
+              {t('platformConfig.permPanel.personalNotice')}
             </span>
           </div>
         </div>
@@ -383,11 +388,13 @@ function PermissionPanel() {
       {/* Workspace Matrix */}
       <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
         <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40">
-          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">工作区角色权限矩阵</span>
+          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">
+            {t('platformConfig.permPanel.wsMatrix')}
+          </span>
         </div>
         <div className="divide-y divide-mg-border">
           {WS_ROLES.map((role) => (
-            <div key={role} className="p-5 grid grid-cols-1 md:grid-cols-[200px_1fr] gap-3">
+            <div key={role} className="p-5 grid grid-cols-1 md:md:grid-cols-[200px_1fr] gap-3">
               <code className="text-[11px] font-bold font-mono px-2.5 py-1 rounded border bg-emerald-500/10 border-emerald-500/20 text-emerald-500 w-fit h-fit shrink-0">
                 {role}
               </code>
@@ -396,7 +403,7 @@ function PermissionPanel() {
           ))}
           <div className="px-5 py-3 bg-mg-bg-1/30">
             <span className="text-[11px] text-mg-text-2">
-              最终权限 = 组织角色权限 ∪ 工作区角色权限（取并集）
+              {t('platformConfig.permPanel.permLogic')}
             </span>
           </div>
         </div>
@@ -426,14 +433,14 @@ function ModuleComparisonPanel() {
   ]
 
   const EXTRA_IN_API = [
-    { name: 'docs', desc: '文档站 API (Console 内暂无独立页面)' },
-    { name: 'health', desc: '健康检查 (系统内部使用)' },
+    { name: 'docs', desc: t('platformConfig.moduleCompare.docsDesc') },
+    { name: 'health', desc: t('platformConfig.moduleCompare.healthDesc') },
   ]
 
   const EXTRA_IN_FRONTEND = [
-    { name: 'api-playground', desc: '交互式接口测试工具' },
-    { name: 'chat-test', desc: '对话测试工具 (基于 agent API)' },
-    { name: 'device', desc: 'CLI 设备流授权页面 (基于 auth API)' },
+    { name: 'api-playground', desc: t('platformConfig.moduleCompare.playgroundDesc') },
+    { name: 'chat-test', desc: t('platformConfig.moduleCompare.chatTestDesc') },
+    { name: 'device', desc: t('platformConfig.moduleCompare.deviceDesc') },
   ]
 
   return (
@@ -443,7 +450,7 @@ function ModuleComparisonPanel() {
           {t('platformConfig.moduleCompare.title')}
         </span>
         <Badge variant="outline" className="text-[10px] opacity-70">
-          v1.2 Matcher
+          v1.3 Matcher
         </Badge>
       </div>
 
@@ -769,6 +776,7 @@ export default function PlatformConfigPage() {
           <TabsTrigger value="endpoints">{t('platformConfig.tab.endpoints')}</TabsTrigger>
           <TabsTrigger value="modules">{t('platformConfig.tab.modules')}</TabsTrigger>
           <TabsTrigger value="permissions">{t('platformConfig.tab.permissions')}</TabsTrigger>
+          <TabsTrigger value="requirements">{t('platformConfig.tab.requirements')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="endpoints">
@@ -808,6 +816,36 @@ export default function PlatformConfigPage() {
           <div className="space-y-4 pt-2">
             <MenuPermissionMap />
             <PermissionPanel />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="requirements">
+          <div className="pt-2">
+            <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm p-8 text-center">
+              <h3 className="text-lg font-bold text-mg-text-0 mb-2">需求看板 (Requirement Board)</h3>
+              <p className="text-sm text-mg-text-2 mb-6">点击屏幕右侧的悬浮按钮「需求」来管理实时卡片。</p>
+              <div className="max-w-md mx-auto bg-mg-bg-1/50 rounded-lg p-4 text-left border border-mg-border/40">
+                <div className="text-[11px] font-bold text-mg-text-3 uppercase mb-3">当前核心未完成任务</div>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
+                    <Badge variant="outline" className="shrink-0 text-[10px]">#66</Badge>
+                    <span className="text-xs text-mg-text-1 leading-relaxed">金额输出统一约束小数点精度 (各币种对齐)</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Badge variant="outline" className="shrink-0 text-[10px]">#14</Badge>
+                    <span className="text-xs text-mg-text-1 leading-relaxed">API Key 支持 Scope (个人/项目/成员) 区分与绑定</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Badge variant="outline" className="shrink-0 text-[10px]">#68</Badge>
+                    <span className="text-xs text-mg-text-1 leading-relaxed">护栏详情内支持 API Key 反向绑定规则</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Badge variant="outline" className="shrink-0 text-[10px]">#72945</Badge>
+                    <span className="text-xs text-mg-text-1 leading-relaxed">组织 Logo 上传接口补齐与更换功能实现</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
         </TabsContent>
       </Tabs>

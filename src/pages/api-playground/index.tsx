@@ -10,8 +10,7 @@ import { listModels } from '@/services/catalog'
 import { pageItems } from '@/lib/utils'
 import { appToast } from '@/lib/app-toast'
 import { Checkbox } from '@/components/ui/Checkbox'
-import { getMarket } from '@/lib/market'
-import { getMarketConfig } from '@/config/market'
+import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 
 const OPENAI_DEFAULT_BODY = JSON.stringify(
   {
@@ -93,13 +92,8 @@ export default function ApiPlaygroundPage() {
     }
   }, [selectedKey, saveToLocal])
 
-  const market = getMarket()
-  const marketConfig = getMarketConfig(market)
-  const gatewayDomain = import.meta.env.VITE_API_GATEWAY_DOMAIN || marketConfig.apiDomain
-  const host = `https://${gatewayDomain}`
-  const baseUrl = protocol === 'openai' 
-    ? `${host.replace(/\/+$/, '')}/v1` 
-    : host.replace(/\/+$/, '')
+  const endpoint = protocol === 'openai' ? GATEWAY_ENDPOINTS[0] : GATEWAY_ENDPOINTS[1]
+  const baseUrl = endpoint.baseUrl
 
   function handleProtocolChange(val: string) {
     const nextProto = val as 'openai' | 'anthropic'

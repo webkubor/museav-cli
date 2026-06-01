@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { getMarket } from '@/lib/market'
-import { getMarketConfig } from '@/config/market'
+import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
@@ -52,11 +51,6 @@ const SCOPE_OPTIONS: { value: ScopeType; icon: React.ReactNode; label: string; d
 ]
 
 
-const _market = getMarket()
-const _marketConfig = getMarketConfig(_market)
-
-const OPENAI_LABEL = 'OpenAI 兼容'
-const ANTHROPIC_LABEL = 'Anthropic 兼容'
 
 export default function ApiKeysPage() {
   const { t } = useTranslation()
@@ -174,9 +168,6 @@ export default function ApiKeysPage() {
   }
 
 
-  const gatewayDomain = import.meta.env.VITE_API_GATEWAY_DOMAIN || _marketConfig.apiDomain
-  const baseUrl = `https://${gatewayDomain}/v1`
-
   function handleQuickCopy(key: string, text: string) {
     navigator.clipboard.writeText(text)
     setQuickCopied(key)
@@ -218,18 +209,16 @@ export default function ApiKeysPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-mg-border/60">
             {[
               {
-                label: OPENAI_LABEL,
-                value: baseUrl,
+                ...GATEWAY_ENDPOINTS[0],
                 agents: ['Cursor', 'Claude Code', 'Cline', 'Windsurf'],
                 icon: <OpenAI.Avatar size={32} />,
               },
               {
-                label: ANTHROPIC_LABEL,
-                value: `https://${gatewayDomain}`,
+                ...GATEWAY_ENDPOINTS[1],
                 agents: ['Anthropic SDK', 'Claude API', 'Amazon Bedrock'],
                 icon: <Anthropic.Avatar size={32} />,
               },
-            ].map(({ label, value, agents, icon }) => (
+            ].map(({ label, baseUrl: value, agents, icon }) => (
               <div key={label} className="p-5 flex flex-col gap-3">
                 {/* 协议标识 */}
                 <div className="flex items-center gap-3">

@@ -329,21 +329,6 @@ export default function DevicePage() {
           </div>
         )}
 
-        {/* ③ 授权码 */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          padding: '8px 0',
-        }}>
-          <span style={{ fontSize: '11px', color: 'var(--mg-text-2)' }}>
-            {t('device.codeLabel')}
-          </span>
-          <code style={{
-            letterSpacing: '0.12em', fontFamily: 'monospace',
-            color: 'var(--mg-text-0)', fontSize: '15px', fontWeight: 700,
-          }}>
-            {userCode}
-          </code>
-        </div>
 
         {/* ④ 操作按钮 */}
         <div style={{ display: 'flex', gap: '10px' }}>

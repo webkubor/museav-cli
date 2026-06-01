@@ -182,112 +182,170 @@ export default function DevicePage() {
   const isZh = i18n.language?.startsWith('zh')
   const initials = account?.display_name
     ?.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2) ?? '?'
+  const selectedTenant = tenants.find((t) => t.tenant_id === selectedTenantId)
 
   return (
     <AuthLayout
       title={t('device.title.confirm')}
       subtitle={t('device.subtitle.confirm')}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-        {/* 当前账号 */}
+        {/* ① 叙事摘要：谁 → 做什么 → 到哪 */}
         <div style={{
-          display: 'flex', alignItems: 'center', gap: '12px',
           padding: '14px 16px', borderRadius: '10px',
           background: 'var(--mg-bg-1)', border: '1px solid var(--mg-border)',
         }}>
-          <div style={{
-            width: '32px', height: '32px', borderRadius: '50%',
-            backgroundColor: 'var(--mg-primary)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontSize: '12px', fontWeight: 600, flexShrink: 0,
-          }}>
-            {initials}
+          {/* 当前账号行 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '28px', height: '28px', borderRadius: '50%',
+              backgroundColor: 'var(--mg-primary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: '11px', fontWeight: 600, flexShrink: 0,
+            }}>
+              {initials}
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-0)' }}>
+                {account?.display_name ?? '—'}
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--mg-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {account?.email ?? '—'}
+              </div>
+            </div>
+            <span style={{
+              fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px',
+              background: 'rgba(34,197,94,0.1)', color: 'rgb(22,163,74)', border: '1px solid rgba(34,197,94,0.2)',
+              letterSpacing: '0.03em', flexShrink: 0,
+            }}>
+              {t('device.badge.loggedIn')}
+            </span>
           </div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-0)' }}>
-              {account?.display_name ?? '—'}
-            </div>
-            <div style={{ fontSize: '12px', color: 'var(--mg-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {account?.email ?? '—'}
-            </div>
+
+          {/* 连接指示 */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '8px 0 4px 14px',
+          }}>
+            <div style={{
+              width: '1px', height: '14px', background: 'var(--mg-border)', flexShrink: 0,
+            }} />
+            <span style={{ fontSize: '11px', color: 'var(--mg-text-2)' }}>
+              {t('device.flow.arrow')}
+            </span>
+          </div>
+
+          {/* 目标企业 */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            padding: '8px 10px', borderRadius: '8px',
+            background: selectedTenant ? 'rgba(99,102,241,0.05)' : 'transparent',
+            border: selectedTenant ? '1px solid rgba(99,102,241,0.15)' : '1px dashed var(--mg-border)',
+            minHeight: '38px',
+          }}>
+            {selectedTenant ? (
+              <>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-0)' }}>
+                  {selectedTenant.name}
+                </span>
+                <span style={{
+                  fontSize: '10px', fontWeight: 600, padding: '1px 6px', borderRadius: '4px',
+                  background: selectedTenant.type === 'enterprise' ? 'rgba(99,102,241,0.1)' : 'rgba(107,114,128,0.1)',
+                  color: selectedTenant.type === 'enterprise' ? 'rgb(79,70,229)' : 'rgb(107,114,128)',
+                  border: `1px solid ${selectedTenant.type === 'enterprise' ? 'rgba(99,102,241,0.2)' : 'rgba(107,114,128,0.2)'}`,
+                }}>
+                  {selectedTenant.type === 'enterprise'
+                    ? (isZh ? '企业' : 'Enterprise')
+                    : (isZh ? '个人' : 'Personal')}
+                </span>
+              </>
+            ) : (
+              <span style={{ fontSize: '12px', color: 'var(--mg-text-2)', fontStyle: 'italic' }}>
+                {t('device.tenant.placeholder')}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* 租户选择器 */}
-        <div>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mg-text-2)', marginBottom: '8px' }}>
-            {t('device.tenant.label')}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {tenants.map((tenant) => {
-              const selected = selectedTenantId === tenant.tenant_id
-              const roleLabel = ROLE_LABELS[tenant.role]
-              return (
-                <button
-                  key={tenant.tenant_id}
-                  type="button"
-                  disabled={isApproving}
-                  onClick={() => setSelectedTenantId(tenant.tenant_id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '10px',
-                    padding: '12px 14px', borderRadius: '10px',
-                    background: selected ? 'var(--mg-bg-1)' : 'transparent',
-                    border: `1.5px solid ${selected ? 'var(--mg-primary)' : 'var(--mg-border)'}`,
-                    cursor: isApproving ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.15s ease',
-                    textAlign: 'left', width: '100%',
-                    opacity: isApproving ? 0.6 : 1,
-                  }}
-                >
-                  {/* radio indicator */}
-                  <div style={{
-                    width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0,
-                    border: `2px solid ${selected ? 'var(--mg-primary)' : 'var(--mg-border)'}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    {selected && (
-                      <div style={{
-                        width: '8px', height: '8px', borderRadius: '50%',
-                        backgroundColor: 'var(--mg-primary)',
-                      }} />
-                    )}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-0)' }}>
-                        {tenant.name}
-                      </span>
-                      {tenant.is_default && (
-                        <span style={{
-                          fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px',
-                          background: 'var(--mg-primary)', color: '#fff', lineHeight: '16px',
-                        }}>
-                          {t('header.default')}
-                        </span>
+        {/* ② 企业选择器 */}
+        {tenants.length > 1 && (
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--mg-text-2)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {t('device.tenant.label')}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              {tenants.map((tenant) => {
+                const selected = selectedTenantId === tenant.tenant_id
+                const roleLabel = ROLE_LABELS[tenant.role]
+                return (
+                  <button
+                    key={tenant.tenant_id}
+                    type="button"
+                    disabled={isApproving}
+                    onClick={() => setSelectedTenantId(tenant.tenant_id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '10px 12px', borderRadius: '8px',
+                      background: selected ? 'var(--mg-bg-1)' : 'transparent',
+                      border: `1.5px solid ${selected ? 'var(--mg-primary)' : 'var(--mg-border)'}`,
+                      cursor: isApproving ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.15s ease',
+                      textAlign: 'left', width: '100%',
+                      opacity: isApproving ? 0.6 : 1,
+                    }}
+                  >
+                    <div style={{
+                      width: '14px', height: '14px', borderRadius: '50%', flexShrink: 0,
+                      border: `2px solid ${selected ? 'var(--mg-primary)' : 'var(--mg-border)'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {selected && (
+                        <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: 'var(--mg-primary)' }} />
                       )}
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--mg-text-2)', marginTop: '2px' }}>
-                      {tenant.slug} · {roleLabel ? (isZh ? roleLabel.zh : roleLabel.en) : tenant.role}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-0)' }}>
+                          {tenant.name}
+                        </span>
+                        {tenant.is_default && (
+                          <span style={{
+                            fontSize: '9px', fontWeight: 700, padding: '1px 5px', borderRadius: '3px',
+                            background: 'var(--mg-primary)', color: '#fff', lineHeight: '14px',
+                          }}>
+                            {t('header.default')}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--mg-text-2)', marginTop: '1px' }}>
+                        {tenant.slug} · {roleLabel ? (isZh ? roleLabel.zh : roleLabel.en) : tenant.role}
+                      </div>
                     </div>
-                  </div>
-                </button>
-              )
-            })}
+                  </button>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* 授权码展示 */}
-        <div style={{ textAlign: 'center' }}>
-          <span style={{ fontSize: '12px', color: 'var(--mg-text-2)', marginBottom: '6px', display: 'block' }}>
+        {/* ③ 授权码 */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+          padding: '8px 0',
+        }}>
+          <span style={{ fontSize: '11px', color: 'var(--mg-text-2)' }}>
             {t('device.codeLabel')}
           </span>
-          <h4 style={{ margin: 0, letterSpacing: '0.15em', fontFamily: 'monospace', color: 'var(--mg-text-0)', fontSize: '18px', fontWeight: 700 }}>
+          <code style={{
+            letterSpacing: '0.12em', fontFamily: 'monospace',
+            color: 'var(--mg-text-0)', fontSize: '15px', fontWeight: 700,
+          }}>
             {userCode}
-          </h4>
+          </code>
         </div>
 
-        {/* 操作按钮 */}
+        {/* ④ 操作按钮 */}
         <div style={{ display: 'flex', gap: '10px' }}>
           <Button
             variant="outline"
@@ -307,7 +365,7 @@ export default function DevicePage() {
           </Button>
         </div>
 
-        <span style={{ fontSize: '12px', color: 'var(--mg-text-2)', textAlign: 'center', display: 'block' }}>
+        <span style={{ fontSize: '11px', color: 'var(--mg-text-2)', textAlign: 'center', display: 'block' }}>
           {t('device.footer')}
         </span>
       </div>

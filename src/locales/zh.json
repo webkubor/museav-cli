@@ -226,7 +226,8 @@
       "avatarSuccess": "头像已更新",
       "avatarError": "头像上传失败",
       "avatarTooLarge": "图片大小不能超过 2MB",
-      "avatarChange": "更换"
+      "avatarChange": "更换",
+      "avatarCropTitle": "裁剪头像"
     },
     "security": {
       "currentPassword": "当前密码",

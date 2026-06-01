@@ -226,7 +226,8 @@
       "avatarSuccess": "Avatar updated",
       "avatarError": "Failed to upload avatar",
       "avatarTooLarge": "Image must be under 2MB",
-      "avatarChange": "Change"
+      "avatarChange": "Change",
+      "avatarCropTitle": "Crop Avatar"
     },
     "security": {
       "currentPassword": "Current Password",

@@ -24,7 +24,7 @@ export interface MarketConfig {
 const configs: Record<Market, MarketConfig> = {
   domestic: {
     domain: 'modelgo.com',
-    apiDomain: import.meta.env.VITE_DOMESTIC_API_DOMAIN || 'api.modelgo.com',
+    apiDomain: import.meta.env.VITE_DOMESTIC_API_DOMAIN || (import.meta.env.DEV ? 'test.modelgo.com' : 'api.modelgo.com'),
     companyName: '词元共生',
     icp: import.meta.env.VITE_ICP || null,
     locales: ['zh'],
@@ -36,7 +36,7 @@ const configs: Record<Market, MarketConfig> = {
 
   global: {
     domain: 'modelgo.ai',
-    apiDomain: import.meta.env.VITE_GLOBAL_API_DOMAIN || 'api.modelgo.ai',
+    apiDomain: import.meta.env.VITE_GLOBAL_API_DOMAIN || (import.meta.env.DEV ? 'test.modelgo.ai' : 'api.modelgo.ai'),
     companyName: 'ModelGo',
     icp: null,
     locales: ['zh', 'en'],

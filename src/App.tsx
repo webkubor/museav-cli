@@ -38,13 +38,16 @@ import { Toaster } from 'sonner'
 // 注入市场标识，驱动 CSS 品牌色切换
 document.documentElement.dataset.market = getMarket()
 
+let isFetchingSession = false
+
 function SessionLoader() {
   const setAuth = useAuthStore((s) => s.setAuth)
   const setLoading = useAuthStore((s) => s.setLoading)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   useEffect(() => {
-    if (isAuthenticated) return
+    if (isAuthenticated || isFetchingSession) return
+    isFetchingSession = true
     getSession()
       .then((result) => {
         setAuth(
@@ -62,6 +65,9 @@ function SessionLoader() {
       })
       .catch(() => {
         setLoading(false)
+      })
+      .finally(() => {
+        isFetchingSession = false
       })
   }, [])
 

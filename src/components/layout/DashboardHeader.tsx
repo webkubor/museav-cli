@@ -101,6 +101,7 @@ export const DashboardHeader: React.FC = () => {
     queryKey: ['tenants'],
     queryFn: listTenants,
     staleTime: 60_000,
+    initialData: tenants.length > 0 ? () => ({ items: tenants }) : undefined,
   })
 
   const displayTenants = (() => {

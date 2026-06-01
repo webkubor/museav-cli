@@ -40,6 +40,7 @@ type Action =
   | { action: 'sync' }
   | { action: 'claim'; id: string }
   | { action: 'push'; id: string }
+  | { action: 'finish'; id: string }
 
 function read(): Requirement[] {
   if (!fs.existsSync(DATA_FILE)) return []
@@ -150,6 +151,24 @@ function pushToGitlab(items: Requirement[], localId: string): Requirement[] {
   )
 }
 
+function finishIssue(items: Requirement[], localId: string): Requirement[] {
+  const item = items.find((i) => i.id === localId)
+  if (!item) throw new Error('not_found')
+
+  if (item.gitlabIid) {
+    const issue = glabJson<GitLabIssue>(`"projects/${GITLAB_PROJECT_ID}/issues/${item.gitlabIid}"`)
+    const bizLabels = issue.labels.filter((l) => !STATUS_LABELS.includes(l))
+    const newLabels = [...bizLabels, '已完成'].join(',')
+    glab(`-X PUT "projects/${GITLAB_PROJECT_ID}/issues/${item.gitlabIid}" --field "labels=${newLabels}" --field "state_event=close"`)
+  }
+
+  return items.map((i) =>
+    i.id === localId
+      ? { ...i, status: 'done' as const, gitlabLabels: [...(i.gitlabLabels?.filter((l) => !STATUS_LABELS.includes(l)) ?? []), '已完成'] }
+      : i
+  )
+}
+
 export function devRequirementsPlugin(): Plugin {
   return {
     name: 'dev-requirements',
@@ -205,6 +224,19 @@ export function devRequirementsPlugin(): Plugin {
           if (payload.action === 'push') {
             try {
               const updated = pushToGitlab(items, payload.id)
+              write(updated)
+              res.statusCode = 200
+              res.end(JSON.stringify(updated.find((i) => i.id === payload.id)))
+            } catch (e) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ error: (e as Error).message }))
+            }
+            return
+          }
+
+          if (payload.action === 'finish') {
+            try {
+              const updated = finishIssue(items, payload.id)
               write(updated)
               res.statusCode = 200
               res.end(JSON.stringify(updated.find((i) => i.id === payload.id)))

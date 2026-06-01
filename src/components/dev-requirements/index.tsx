@@ -269,6 +269,7 @@ export function DevRequirements() {
     onDrop: handleItemDrop,
     onClaim: handleClaim,
     onPush: handlePush,
+    onFinish: handleFinish,
   }
 
   function handleExport() {
@@ -318,6 +319,11 @@ export function DevRequirements() {
     post({ action: 'push', id })
       .then(() => load())
       .catch(() => {})
+  }
+
+  function handleFinish(id: string) {
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, status: 'done' as const } : i)))
+    post({ action: 'finish', id }).then(load).catch(() => load())
   }
 
     const panelW = maximized ? window.innerWidth * 0.9 : size.w
@@ -661,6 +667,7 @@ interface SharedItemProps {
   onDrop: (e: React.DragEvent, id: string) => void
   onClaim: (id: string) => void
   onPush: (id: string) => void
+  onFinish: (id: string) => void
 }
 
 interface ReqItemProps extends SharedItemProps {
@@ -673,7 +680,7 @@ function ReqItem({
   onHover, onToggle, onDelete,
   onEditStart, onEditChange, onEditSave, onEditCancel,
   onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
-  onClaim, onPush,
+  onClaim, onPush, onFinish,
 }: ReqItemProps) {
   const editRef = useRef<HTMLInputElement>(null)
   const hovered = hoverId === item.id
@@ -825,35 +832,48 @@ function ReqItem({
             @{item.assignee}
           </span>
         )}
-        {/* 认领 / 推送 */}
+        {/* 认领 / 推送 / 完成 */}
         {hovered && !isEditing && item.status !== 'done' && (
-          item.gitlabIid ? (
-            !item.assignee || item.assignee !== 'webkubor' ? (
+          <>
+            {item.gitlabIid ? (
+              !item.assignee || item.assignee !== 'webkubor' ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onClaim(item.id) }}
+                  title="认领此任务（分配给我 + 标记已认领）"
+                  style={{
+                    fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3,
+                    color: '#fff', background: 'var(--mg-primary)', border: 'none',
+                    cursor: 'pointer', lineHeight: '16px',
+                  }}
+                >
+                  认领
+                </button>
+              ) : null
+            ) : (
               <button
-                onClick={(e) => { e.stopPropagation(); onClaim(item.id) }}
-                title="认领此任务（分配给我 + 标记已认领）"
+                onClick={(e) => { e.stopPropagation(); onPush(item.id) }}
+                title="推送到 GitLab 并认领"
                 style={{
                   fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3,
-                  color: '#fff', background: 'var(--mg-primary)', border: 'none',
-                  cursor: 'pointer', lineHeight: '16px',
+                  color: 'var(--mg-primary)', background: 'var(--mg-primary-light)',
+                  border: `1px solid var(--mg-primary)`, cursor: 'pointer', lineHeight: '14px',
                 }}
               >
-                认领
+                推送
               </button>
-            ) : null
-          ) : (
+            )}
             <button
-              onClick={(e) => { e.stopPropagation(); onPush(item.id) }}
-              title="推送到 GitLab 并认领"
+              onClick={(e) => { e.stopPropagation(); onFinish(item.id) }}
+              title="标记完成（同步关闭 GitLab Issue）"
               style={{
                 fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3,
-                color: 'var(--mg-primary)', background: 'var(--mg-primary-light)',
-                border: `1px solid var(--mg-primary)`, cursor: 'pointer', lineHeight: '14px',
+                color: '#fff', background: '#22c55e', border: 'none',
+                cursor: 'pointer', lineHeight: '16px',
               }}
             >
-              推送
+              完成
             </button>
-          )
+          </>
         )}
         <span style={{ fontSize: 11, color: PRIORITY_COLOR[item.priority], fontWeight: 700 }}>
           {PRIORITY_LABEL[item.priority]}

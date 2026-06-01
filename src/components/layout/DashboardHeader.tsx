@@ -462,63 +462,82 @@ export const DashboardHeader: React.FC = () => {
           position="bottomRight"
           render={
             <DropdownMenu style={{ width: '230px' }}>
-              {/* 账户信息头部 */}
-              <div className="px-3.5 py-2.5 border-b border-mg-border/40 mb-1 select-none">
-                <div className="font-bold text-sm text-mg-text-0 leading-none truncate">
-                  {account?.display_name || '—'}
-                </div>
-                <div className="text-[11.5px] text-mg-text-2 mt-1 truncate">
-                  {account?.email}
-                </div>
-              </div>
-
-              {/* 组织列表 */}
-              <div className="px-3.5 py-1 text-[10px] font-bold tracking-wider text-mg-text-2/80 uppercase select-none">
-                {t('header.organizations')}
-              </div>
-              
-              {displayTenants.map((tenant) => {
-                const displayName = tenant.name || tenant.slug || tenant.tenant_id
-                const letter = displayName.charAt(0).toUpperCase()
-                const isActive = tenant.tenant_id === activeTenantId
-                const tenantRole = (tenant as TenantItem).role
-                const roleLabel: Record<string, string> = {
-                  tenant_owner: t('header.roleOwner'),
-                  tenant_admin: t('header.roleAdmin'),
-                  tenant_member: t('header.roleMember'),
-                }
+              {/* 账户信息 + 个人账户 */}
+              {(() => {
+                const personalTenant = displayTenants.find((t) => t.type === 'personal')
+                const isPersonalActive = personalTenant?.tenant_id === activeTenantId
                 return (
-                  <DropdownItem
-                    key={tenant.tenant_id}
-                    onClick={() => handleSwitchTenant(tenant)}
+                  <div
+                    className="px-3.5 py-2.5 border-b border-mg-border/40 mb-1 select-none cursor-pointer hover:bg-mg-fill-0/40 transition-colors rounded-t-lg"
+                    onClick={() => personalTenant && handleSwitchTenant(personalTenant)}
                     style={{
-                      fontWeight: isActive ? 700 : 500,
-                      color: isActive ? 'var(--brand-base)' : 'var(--mg-text-1)',
-                      backgroundColor: isActive ? 'var(--brand-selected-bg)' : undefined,
+                      backgroundColor: isPersonalActive ? 'var(--brand-selected-bg)' : undefined,
                     }}
                   >
-                    <div className="flex items-center gap-2.5 w-full">
-                      {/* 组织头像 */}
-                      <Avatar className="h-6 w-6 border-none">
-                        {tenant.logo_url && <AvatarImage src={tenant.logo_url} />}
-                        <AvatarFallback className="text-[10px] bg-mg-fill-1 text-mg-text-1 font-bold">
-                          {letter}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="flex-1 truncate max-w-[100px]">{displayName}</span>
-                      {tenant.type === 'personal' ? (
-                        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded border bg-mg-fill-0 border-mg-border text-mg-text-2 scale-90 shrink-0">
-                          {t('header.personalTag')}
-                        </span>
-                      ) : tenantRole ? (
-                        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded border bg-mg-fill-0 border-mg-border text-mg-text-2 scale-90 shrink-0">
-                          {roleLabel[tenantRole] ?? tenantRole}
-                        </span>
-                      ) : null}
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0">
+                        <div className="font-bold text-sm text-mg-text-0 leading-none truncate"
+                          style={{ color: isPersonalActive ? 'var(--brand-base)' : undefined }}
+                        >
+                          {account?.display_name || '—'}
+                        </div>
+                        <div className="text-[11.5px] text-mg-text-2 mt-1 truncate">
+                          {account?.email}
+                        </div>
+                      </div>
+                      <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded border bg-mg-fill-0 border-mg-border text-mg-text-2 scale-90 shrink-0">
+                        {t('header.personalTag')}
+                      </span>
                     </div>
-                  </DropdownItem>
+                  </div>
                 )
-              })}
+              })()}
+
+              {/* 企业列表（仅 enterprise） */}
+              {displayTenants.some((t) => t.type === 'enterprise') && (
+                <>
+                  <div className="px-3.5 py-1 text-[10px] font-bold tracking-wider text-mg-text-2/80 uppercase select-none">
+                    {t('header.organizations')}
+                  </div>
+                  {displayTenants.filter((t) => t.type === 'enterprise').map((tenant) => {
+                    const displayName = tenant.name || tenant.slug || tenant.tenant_id
+                    const letter = displayName.charAt(0).toUpperCase()
+                    const isActive = tenant.tenant_id === activeTenantId
+                    const tenantRole = (tenant as TenantItem).role
+                    const roleLabel: Record<string, string> = {
+                      tenant_owner: t('header.roleOwner'),
+                      tenant_admin: t('header.roleAdmin'),
+                      tenant_member: t('header.roleMember'),
+                    }
+                    return (
+                      <DropdownItem
+                        key={tenant.tenant_id}
+                        onClick={() => handleSwitchTenant(tenant)}
+                        style={{
+                          fontWeight: isActive ? 700 : 500,
+                          color: isActive ? 'var(--brand-base)' : 'var(--mg-text-1)',
+                          backgroundColor: isActive ? 'var(--brand-selected-bg)' : undefined,
+                        }}
+                      >
+                        <div className="flex items-center gap-2.5 w-full">
+                          <Avatar className="h-6 w-6 border-none">
+                            {tenant.logo_url && <AvatarImage src={tenant.logo_url} />}
+                            <AvatarFallback className="text-[10px] bg-mg-fill-1 text-mg-text-1 font-bold">
+                              {letter}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="flex-1 truncate max-w-[100px]">{displayName}</span>
+                          {tenantRole && (
+                            <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded border bg-mg-fill-0 border-mg-border text-mg-text-2 scale-90 shrink-0">
+                              {roleLabel[tenantRole] ?? tenantRole}
+                            </span>
+                          )}
+                        </div>
+                      </DropdownItem>
+                    )
+                  })}
+                </>
+              )}
 
               <DropdownItem
                 icon={<LuPlus size={14} />}

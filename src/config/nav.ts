@@ -60,14 +60,6 @@ export const navConfig: NavConfig = {
       items: [
         { itemKey: 'models/explore', text: t('nav.modelExplore'), icon: icons.apps,        permission: PERMS.MODELS_VIEW },
         { itemKey: 'models/compare', text: t('nav.modelCompare'), icon: icons.list,        permission: PERMS.MODELS_VIEW },
-      ],
-    },
-    {
-      itemKey: 'playground',
-      text: t('nav.playground'),
-      icon: icons.message,
-      permission: PERMS.MODELS_VIEW,
-      items: [
         { itemKey: 'models/chat',    text: t('nav.modelChat'),    icon: icons.histogramSm, permission: PERMS.MODELS_VIEW },
       ],
     },

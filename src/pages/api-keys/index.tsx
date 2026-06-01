@@ -53,43 +53,8 @@ const SCOPE_OPTIONS: { value: ScopeType; icon: React.ReactNode; label: string; d
 const _market = getMarket()
 const _marketConfig = getMarketConfig(_market)
 
-type QuickTab = 'python' | 'node' | 'curl'
-
-function getQuickSnippet(tab: QuickTab, baseUrl: string): string {
-  if (tab === 'python') return `import openai
-
-client = openai.OpenAI(
-    api_key="YOUR_API_KEY",
-    base_url="${baseUrl}"
-)
-
-response = client.chat.completions.create(
-    model="deepseek-chat",
-    messages=[{"role": "user", "content": "Hello!"}]
-)
-print(response.choices[0].message.content)`
-
-  if (tab === 'node') return `import OpenAI from "openai";
-
-const client = new OpenAI({
-  apiKey: "YOUR_API_KEY",
-  baseURL: "${baseUrl}",
-});
-
-const res = await client.chat.completions.create({
-  model: "deepseek-chat",
-  messages: [{ role: "user", content: "Hello!" }],
-});
-console.log(res.choices[0].message.content);`
-
-  return `curl ${baseUrl}/chat/completions \\
-  -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
-  -d '{
-    "model": "deepseek-chat",
-    "messages": [{"role": "user", "content": "Hello!"}]
-  }'`
-}
+const OPENAI_LABEL = 'OpenAI 兼容'
+const ANTHROPIC_LABEL = 'Anthropic 兼容'
 
 export default function ApiKeysPage() {
   const { t } = useTranslation()
@@ -100,7 +65,6 @@ export default function ApiKeysPage() {
   const [createdKeyText, setCreatedKeyText] = useState('')
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null)
   const [quickOpen, setQuickOpen] = useState(false)
-  const [quickTab, setQuickTab] = useState<QuickTab>('python')
   const [quickCopied, setQuickCopied] = useState<string | null>(null)
 
   // 表单状态
@@ -233,8 +197,8 @@ export default function ApiKeysPage() {
           onClick={() => setQuickOpen(o => !o)}
         >
           <LuCode size={13} className="text-mg-text-2 shrink-0" />
-          <span className="text-[13px] font-semibold text-mg-text-0">快速接入</span>
-          <span className="text-[12px] text-mg-text-2 font-normal">· OpenAI 兼容格式</span>
+          <span className="text-[13px] font-semibold text-mg-text-0">Agent 快速接入</span>
+          <span className="text-[12px] text-mg-text-2 font-normal">· 填入 Base URL 即可</span>
           <LuChevronDown
             size={13}
             className="ml-auto text-mg-text-2 transition-transform duration-200 shrink-0"
@@ -243,61 +207,33 @@ export default function ApiKeysPage() {
         </div>
 
         {quickOpen && (
-        <>{/* 配置项 */}
-        <div className="border-t border-mg-border/60 px-5 py-4 grid grid-cols-1 gap-2.5 border-b border-mg-border/60">
+        <div className="border-t border-mg-border/60 px-5 py-4 flex flex-col gap-3">
           {[
-            { label: 'Base URL', value: baseUrl },
-            { label: 'Authorization', value: 'Bearer YOUR_API_KEY' },
-            { label: 'Content-Type', value: 'application/json' },
-          ].map(({ label, value }) => (
-            <div key={label} className="flex items-center gap-3 text-sm">
-              <span className="w-[130px] shrink-0 text-[12px] font-semibold text-mg-text-2 uppercase tracking-wide">{label}</span>
-              <code className="flex-1 font-mono text-[12.5px] text-mg-text-0 bg-mg-fill-0/60 px-3 py-1.5 rounded-lg border border-mg-border/40 truncate">
+            { label: OPENAI_LABEL, value: baseUrl, hint: 'Cursor · Claude Code · Cline · OpenAI SDK' },
+            { label: ANTHROPIC_LABEL, value: `https://${_marketConfig.apiDomain}`, hint: 'Anthropic SDK · AWS Bedrock 兼容' },
+          ].map(({ label, value, hint }) => (
+            <div key={label} className="flex items-center gap-3 rounded-xl bg-mg-fill-0/40 border border-mg-border/40 px-4 py-3 hover:border-mg-border/80 transition-colors">
+              <div className="flex flex-col gap-0.5 min-w-[120px] shrink-0">
+                <span className="text-[12px] font-bold text-mg-text-0">{label}</span>
+                <span className="text-[10px] text-mg-text-2 leading-tight">{hint}</span>
+              </div>
+              <code className="flex-1 font-mono text-[13px] font-semibold text-mg-text-0 truncate select-all">
                 {value}
               </code>
               <button
                 onClick={() => handleQuickCopy(label, value)}
-                className="shrink-0 p-1.5 rounded-md text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-0/60 transition-all cursor-pointer"
+                className="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold border border-mg-border text-mg-text-1 hover:border-brand-base hover:text-brand-base transition-colors cursor-pointer flex items-center gap-1.5"
               >
-                {quickCopied === label ? <LuCheck size={13} className="text-emerald-500" /> : <LuCopy size={13} />}
+                {quickCopied === label
+                  ? <><LuCheck size={12} className="text-emerald-500" /> 已复制</>
+                  : <><LuCopy size={12} /> 复制</>}
               </button>
             </div>
           ))}
+          <p className="text-[11px] text-mg-text-2 mt-0.5 px-1">
+            在 Agent 或 SDK 的设置中填入上方 Base URL + 你的 API Key 即可接入。
+          </p>
         </div>
-
-        {/* 代码 Tab + 复制 */}
-        <div style={{ background: '#0f172a' }}>
-          <div className="flex items-center justify-between px-4 pt-3 pb-0">
-            <div className="flex gap-1">
-              {(['python', 'node', 'curl'] as QuickTab[]).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setQuickTab(tab)}
-                  className="px-3 py-1.5 rounded-md text-[11px] font-mono font-semibold transition-all cursor-pointer"
-                  style={{
-                    color: quickTab === tab ? '#38bdf8' : '#64748b',
-                    background: quickTab === tab ? '#1e293b' : 'transparent',
-                  }}
-                >
-                  {tab === 'python' ? 'Python' : tab === 'node' ? 'Node.js' : 'cURL'}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => handleQuickCopy('code', getQuickSnippet(quickTab, baseUrl))}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition-all cursor-pointer"
-              style={{ color: quickCopied === 'code' ? '#34d399' : '#64748b' }}
-            >
-              {quickCopied === 'code'
-                ? <><LuCheck size={11} /> 已复制</>
-                : <><LuCopy size={11} /> 复制</>}
-            </button>
-          </div>
-          <pre className="px-5 py-4 text-[12.5px] font-mono text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">
-            {getQuickSnippet(quickTab, baseUrl)}
-          </pre>
-        </div>
-        </>
         )}
       </div>
 

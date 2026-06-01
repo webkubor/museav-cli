@@ -124,7 +124,6 @@ export function DashboardLayout() {
     'models/explore': [t('nav.home'), t('nav.models'), t('nav.modelExplore')],
     'models/compare': [t('nav.home'), t('nav.models'), t('nav.modelCompare')],
     'models/chat':    [t('nav.home'), t('nav.playground'), t('nav.modelChat')],
-    'models/history': [t('nav.home'), t('nav.playground'), t('nav.modelHistory')],
     'api-keys':       [t('nav.home'), t('nav.apiKeys')],
     usage:            [t('nav.home'), t('nav.analytics'), t('nav.usage')],
     logs:             [t('nav.home'), t('nav.analytics'), t('nav.logs')],

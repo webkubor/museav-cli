@@ -745,6 +745,7 @@
     "button": {
       "new": "New Chat"
     },
+    "history": "History",
     "empty": "Select a conversation or create a new one",
     "input": {
       "placeholder": "Type a message..."

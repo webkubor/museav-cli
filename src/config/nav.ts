@@ -69,7 +69,6 @@ export const navConfig: NavConfig = {
       permission: PERMS.MODELS_VIEW,
       items: [
         { itemKey: 'models/chat',    text: t('nav.modelChat'),    icon: icons.histogramSm, permission: PERMS.MODELS_VIEW },
-        { itemKey: 'models/history', text: t('nav.modelHistory'), icon: icons.list,        permission: PERMS.MODELS_VIEW },
       ],
     },
     {

@@ -745,6 +745,7 @@
     "button": {
       "new": "新建对话"
     },
+    "history": "对话记录",
     "empty": "选择一个会话或新建对话",
     "input": {
       "placeholder": "输入消息..."

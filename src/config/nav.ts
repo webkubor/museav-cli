@@ -47,7 +47,6 @@ export const navConfig: NavConfig = {
     'guardrails',
     'observability',
     'invitations-mgmt',
-    'api-playground',
     'chat-test',
   ]),
 
@@ -95,6 +94,5 @@ export const navConfig: NavConfig = {
 
   sandboxItems: (_ctx, icons) => [
     { itemKey: 'platform-config', text: '接口调试', icon: icons.wrench },
-    { itemKey: 'api-playground',  text: 'API 测试', icon: icons.list },
   ],
 }

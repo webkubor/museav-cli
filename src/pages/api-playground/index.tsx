@@ -1,21 +1,34 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
+import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
-import { LuSend, LuCopy, LuRotateCcw } from 'react-icons/lu'
-import { useAuthStore } from '@/store/auth'
-import { listApiKeys } from '@/services/api-keys'
+import { LuSend, LuCopy, LuRotateCcw, LuKey, LuEye, LuEyeOff } from 'react-icons/lu'
 import { listModels } from '@/services/catalog'
 import { pageItems } from '@/lib/utils'
 import { appToast } from '@/lib/app-toast'
+import { apiBaseUrl } from '@/lib/request'
+import { Checkbox } from '@/components/ui/Checkbox'
+import { getMarket } from '@/lib/market'
+import { getMarketConfig } from '@/config/market'
 
-const DEFAULT_BODY = JSON.stringify(
+const OPENAI_DEFAULT_BODY = JSON.stringify(
   {
     model: 'gpt-4o-mini',
     messages: [{ role: 'user', content: 'Hello!' }],
     temperature: 0.7,
+    max_tokens: 256,
+  },
+  null,
+  2
+)
+
+const ANTHROPIC_DEFAULT_BODY = JSON.stringify(
+  {
+    model: 'claude-3-5-sonnet',
+    messages: [{ role: 'user', content: 'Hello!' }],
     max_tokens: 256,
   },
   null,
@@ -32,31 +45,119 @@ interface RequestLog {
 }
 
 export default function ApiPlaygroundPage() {
-  const { t } = useTranslation()
-  const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
+  const { t, i18n } = useTranslation()
 
-  const apiKeysQuery = useQuery({
-    queryKey: ['api-keys', activeWorkspaceId],
-    queryFn: () => listApiKeys(activeWorkspaceId!),
-    enabled: !!activeWorkspaceId,
-    staleTime: 60_000,
-  })
   const modelsQuery = useQuery({
     queryKey: ['catalog-models'],
     queryFn: () => listModels({ limit: 100 }),
     staleTime: 5 * 60_000,
   })
 
-  const apiKeys = pageItems(apiKeysQuery.data).filter(k => k.status === 'active')
   const models = pageItems(modelsQuery.data)
 
   const [selectedKey, setSelectedKey] = useState<string>('')
   const [selectedModel, setSelectedModel] = useState<string>('')
-  const [requestBody, setRequestBody] = useState(DEFAULT_BODY)
+  const [requestBody, setRequestBody] = useState(OPENAI_DEFAULT_BODY)
   const [sending, setSending] = useState(false)
   const [log, setLog] = useState<RequestLog | null>(null)
 
-  const baseUrl = window.location.origin.replace('console.', 'api.')
+  const [showKey, setShowKey] = useState(false)
+  const [saveToLocal, setSaveToLocal] = useState(true)
+  const [protocol, setProtocol] = useState<'openai' | 'anthropic'>('openai')
+
+  // 0. 本地缓存 API Key 的生命周期管理逻辑
+  useEffect(() => {
+    const flag = localStorage.getItem('mg_playground_save_flag')
+    const shouldSave = flag === null ? true : flag === 'true'
+    setSaveToLocal(shouldSave)
+    
+    if (shouldSave) {
+      const savedKey = localStorage.getItem('mg_playground_key')
+      if (savedKey) {
+        setSelectedKey(savedKey)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem('mg_playground_save_flag', String(saveToLocal))
+    if (saveToLocal) {
+      if (selectedKey) {
+        localStorage.setItem('mg_playground_key', selectedKey)
+      } else {
+        localStorage.removeItem('mg_playground_key')
+      }
+    } else {
+      localStorage.removeItem('mg_playground_key')
+    }
+  }, [selectedKey, saveToLocal])
+
+  const market = getMarket()
+  const marketConfig = getMarketConfig(market)
+  const host = apiBaseUrl() || `https://${marketConfig.apiDomain}`
+  const baseUrl = protocol === 'openai' 
+    ? `${host.replace(/\/+$/, '')}/v1` 
+    : host.replace(/\/+$/, '')
+
+  function handleProtocolChange(val: string) {
+    const nextProto = val as 'openai' | 'anthropic'
+    setProtocol(nextProto)
+    if (nextProto === 'openai') {
+      setRequestBody(OPENAI_DEFAULT_BODY)
+      const found = models.find(m => m.model_id.toLowerCase().includes('gpt'))
+      if (found) {
+        setSelectedModel(found.model_id)
+      } else if (models.length > 0) {
+        setSelectedModel(models[0].model_id)
+      }
+    } else {
+      setRequestBody(ANTHROPIC_DEFAULT_BODY)
+      const found = models.find(m => m.model_id.toLowerCase().includes('claude'))
+      if (found) {
+        setSelectedModel(found.model_id)
+      } else if (models.length > 0) {
+        setSelectedModel(models[0].model_id)
+      }
+    }
+  }
+
+  // 1. 模型列表加载成功后，自动将第一个模型设为默认选择模型
+  useEffect(() => {
+    if (models.length > 0 && !selectedModel) {
+      setSelectedModel(models[0].model_id)
+    }
+  }, [models, selectedModel])
+
+  // 2. 双向绑定：监听下拉框所选模型的改变，同步替换 JSON 请求体中的 model 字段
+  useEffect(() => {
+    if (!selectedModel || selectedModel === 'none') return
+    try {
+      const parsed = JSON.parse(requestBody)
+      if (parsed && parsed.model !== selectedModel) {
+        parsed.model = selectedModel
+        setRequestBody(JSON.stringify(parsed, null, 2))
+      }
+    } catch {
+      // 忽略用户正在输入时的无效 JSON
+    }
+  }, [selectedModel])
+
+  // 3. 双向绑定：监听 JSON 请求体的修改，反向自动同步下拉框的模型选项
+  useEffect(() => {
+    try {
+      const parsed = JSON.parse(requestBody)
+      if (parsed && typeof parsed.model === 'string') {
+        const found = models.find(m => m.model_id === parsed.model)
+        if (found && selectedModel !== parsed.model) {
+          setSelectedModel(parsed.model)
+        } else if (!found && selectedModel !== 'none') {
+          setSelectedModel('none')
+        }
+      }
+    } catch {
+      // 忽略用户正在输入时的无效 JSON
+    }
+  }, [requestBody, models, selectedModel])
 
   async function handleSend() {
     if (!selectedKey) {
@@ -76,7 +177,10 @@ export default function ApiPlaygroundPage() {
     setSending(true)
     const start = Date.now()
     try {
-      const res = await fetch(`${baseUrl}/v1/chat/completions`, {
+      const targetUrl = protocol === 'openai'
+        ? `${baseUrl.replace(/\/+$/, '')}/chat/completions`
+        : `${baseUrl.replace(/\/+$/, '')}/v1/messages`
+      const res = await fetch(targetUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -101,9 +205,7 @@ export default function ApiPlaygroundPage() {
     navigator.clipboard.writeText(log.response || log.error || '').then(() => appToast.success(t('apiPlayground.toast.copied')))
   }
 
-  const curlCmd = selectedKey
-    ? `curl -X POST ${baseUrl}/v1/chat/completions \\\n  -H "Authorization: Bearer ${selectedKey}" \\\n  -H "Content-Type: application/json" \\\n  -d '${requestBody.replace(/\n/g, ' ')}''`
-    : ''
+
 
   return (
     <div className="space-y-6">
@@ -119,19 +221,77 @@ export default function ApiPlaygroundPage() {
         <div className="flex flex-col gap-6">
           <div className="card-shadow-adaptive p-6 bg-card-bg rounded-xl border border-mg-border space-y-4">
             <div>
-              <SectionLabel>API Key</SectionLabel>
+              <SectionLabel>{i18n.language.startsWith('zh') ? "接口协议规范" : "Protocol Specification"}</SectionLabel>
               <Select
-                value={selectedKey}
-                onChange={setSelectedKey}
-                placeholder={t('apiPlayground.placeholder.key')}
+                value={protocol}
+                onChange={handleProtocolChange}
                 className="w-full"
               >
-                {apiKeys.map(k => (
-                  <Select.Option key={k.api_key_id} value={k.api_key_id}>
-                    {k.name} ({k.masked}) [{k.env.toUpperCase()}]
-                  </Select.Option>
-                ))}
+                <Select.Option value="openai">OpenAI 兼容协议 (v1/chat/completions)</Select.Option>
+                <Select.Option value="anthropic">Anthropic 兼容协议 (v1/messages)</Select.Option>
               </Select>
+            </div>
+
+            <div>
+              <SectionLabel>Base URL</SectionLabel>
+              <Input
+                readOnly
+                value={baseUrl ? `${baseUrl.replace(/\/+$/, '')}` : '—'}
+                className="w-full font-mono text-xs bg-mg-bg-1/20 text-mg-text-2 cursor-default select-all"
+                suffix={
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      const val = baseUrl ? `${baseUrl.replace(/\/+$/, '')}` : ''
+                      if (val) {
+                        navigator.clipboard.writeText(val).then(() => appToast.success(t('apiPlayground.toast.copied') || '已复制'))
+                      }
+                    }}
+                    className="text-mg-text-2 hover:text-mg-text-0 focus:outline-none transition-colors duration-150 cursor-pointer shrink-0 p-0.5"
+                  >
+                    <LuCopy size={14} />
+                  </button>
+                }
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <SectionLabel>API Key</SectionLabel>
+                <div 
+                  className="flex items-center gap-1.5 cursor-pointer select-none"
+                  onClick={() => setSaveToLocal(!saveToLocal)}
+                >
+                  <Checkbox 
+                    checked={saveToLocal}
+                    onCheckedChange={(checked) => setSaveToLocal(checked === true)}
+                  />
+                  <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wide">
+                    {i18n.language.startsWith('zh') ? "本地缓存" : "Save Local"}
+                  </span>
+                </div>
+              </div>
+              <Input
+                type={showKey ? "text" : "password"}
+                value={selectedKey}
+                onChange={(e) => setSelectedKey(e.target.value)}
+                placeholder={i18n.language.startsWith('zh') ? "请输入你的 API Key (sk-...)" : "Enter your API Key (sk-...)"}
+                prefix={<LuKey size={14} />}
+                suffix={
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowKey(!showKey)
+                    }}
+                    className="text-mg-text-2 hover:text-mg-text-0 focus:outline-none transition-colors duration-150 cursor-pointer shrink-0 p-0.5"
+                  >
+                    {showKey ? <LuEyeOff size={15} /> : <LuEye size={15} />}
+                  </button>
+                }
+                className="w-full"
+              />
             </div>
 
             <div>
@@ -163,7 +323,7 @@ export default function ApiPlaygroundPage() {
             <div className="flex justify-end gap-3 pt-2">
               <Button
                 variant="outline"
-                onClick={() => { setRequestBody(DEFAULT_BODY); setLog(null) }}
+                onClick={() => { setRequestBody(protocol === 'openai' ? OPENAI_DEFAULT_BODY : ANTHROPIC_DEFAULT_BODY); setLog(null) }}
               >
                 <LuRotateCcw className="w-4 h-4 mr-1.5" />
                 {t('apiPlayground.button.reset')}
@@ -178,15 +338,6 @@ export default function ApiPlaygroundPage() {
               </Button>
             </div>
           </div>
-
-          {curlCmd && (
-            <div className="card-shadow-adaptive p-6 bg-card-bg rounded-xl border border-mg-border">
-              <SectionLabel>{t('apiPlayground.label.curl')}</SectionLabel>
-              <pre className="mt-2 text-xs font-mono text-mg-text-1 bg-mg-bg-1/40 p-4 rounded-lg border border-mg-border overflow-x-auto whitespace-pre-wrap break-all leading-relaxed shadow-inner">
-                {curlCmd}
-              </pre>
-            </div>
-          )}
         </div>
 
         {/* 右侧：响应 */}

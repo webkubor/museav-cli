@@ -33,6 +33,8 @@ import { getMarket } from '@/lib/market'
 import { applyTheme, getSavedTheme } from '@/lib/theme'
 import { DevRequirements } from '@/components/dev-requirements'
 
+import { Toaster } from 'sonner'
+
 // 注入市场标识，驱动 CSS 品牌色切换
 document.documentElement.dataset.market = getMarket()
 
@@ -85,6 +87,7 @@ export default function App() {
 
   return (
     <Providers>
+      <Toaster richColors position="top-right" closeButton />
       <BrowserRouter>
         <SessionLoader />
         {import.meta.env.DEV && <DevRequirements />}

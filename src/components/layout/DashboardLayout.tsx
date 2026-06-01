@@ -144,6 +144,8 @@ export function DashboardLayout() {
   }
 
   const isDashboardRoute = getSelectedKey() === 'dashboard'
+  const FLAT_ROUTES = ['logs', 'usage', 'observability', 'billing', 'platform-config', 'settings/organization']
+  const isFlatRoute = FLAT_ROUTES.includes(getSelectedKey())
 
   return (
     <div className="min-h-screen bg-site-bg flex flex-col font-sans">
@@ -189,11 +191,11 @@ export function DashboardLayout() {
 
           {/* 渲染主视图区域 */}
           <div className={cn(
-            "transition-all duration-300",
-            isDashboardRoute ? (
+            "transition-all duration-300 shrink-0",
+            isDashboardRoute || isFlatRoute ? (
               "bg-transparent border-none shadow-none p-0"
             ) : (
-              "bg-mg-bg-0 rounded-2xl border border-mg-border/60 shadow-sm shadow-black/2 p-6 md:p-9 min-h-[520px]"
+              "bg-mg-bg-0 rounded-2xl border border-mg-border/60 shadow-sm shadow-black/2 p-6 md:p-9 min-h-[520px] mb-8"
             )
           )}>
             <WorkspaceGuard currentKey={getSelectedKey()}>

@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   LuChevronDown,
   LuLanguages,
@@ -36,80 +36,16 @@ import {
   DialogFooter,
 } from '@/components/ui/Dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/DropdownMenu'
 
 const market = getMarket()
 const marketConfig = getMarketConfig(market)
-
-/**
- * 极简高颜值自定义 Dropdown 组件 (平替 Semi Dropdown)
- */
-const HeaderDropdown: React.FC<{
-  render: React.ReactNode
-  trigger?: 'click' | 'hover'
-  position?: 'bottomLeft' | 'bottomRight'
-  children: React.ReactNode
-}> = ({ render, position = 'bottomRight', children }) => {
-  const [open, setOpen] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    window.addEventListener('click', handleOutsideClick)
-    return () => window.removeEventListener('click', handleOutsideClick)
-  }, [open])
-
-  return (
-    <div ref={containerRef} className="relative inline-block text-left">
-      <div 
-        onClick={() => setOpen(!open)}
-        className="cursor-pointer flex items-center"
-      >
-        {children}
-      </div>
-
-      {open && (
-        <div 
-          className={cn(
-            "absolute z-50 mt-2 bg-mg-bg-0 border border-mg-border/60 rounded-xl shadow-xl shadow-black/5 backdrop-blur-md p-1.5 min-w-[140px] animate-in fade-in-50 zoom-in-95 duration-150 origin-top-right",
-            position === 'bottomRight' ? "right-0" : "left-0"
-          )}
-        >
-          {render}
-        </div>
-      )}
-    </div>
-  )
-}
-
-const DropdownMenu: React.FC<{ children: React.ReactNode; style?: React.CSSProperties }> = ({ children, style }) => {
-  return <div className="flex flex-col gap-0.5" style={style}>{children}</div>
-}
-
-const DropdownItem: React.FC<{
-  icon?: React.ReactNode
-  onClick?: () => void
-  style?: React.CSSProperties
-  children: React.ReactNode
-}> = ({ icon, onClick, style, children }) => {
-  return (
-    <div
-      role="button"
-      onClick={onClick}
-      className="flex items-center gap-2 px-3 py-2.5 text-[13px] rounded-lg text-mg-text-1 hover:bg-mg-fill-0/60 hover:text-mg-text-0 active:scale-[0.98] transition-all duration-150 cursor-pointer select-none font-semibold leading-none outline-none"
-      style={style}
-    >
-      {icon && <span className="text-mg-text-2 shrink-0">{icon}</span>}
-      <span className="flex-1 truncate">{children}</span>
-    </div>
-  )
-}
-
-const DropdownDivider = () => <div className="h-[1px] bg-mg-border/40 my-1 mx-1" />
 
 /**
  * 重构后的 DashboardHeader
@@ -125,6 +61,33 @@ export const DashboardHeader: React.FC = () => {
   
   const [currentTheme, setCurrentTheme] = useState<Theme>('light')
   const { setLang: setGlobalLang } = useLangStore()
+  
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    let mainEl = document.querySelector('main')
+    const handleScroll = () => {
+      if (mainEl) {
+        setScrolled(mainEl.scrollTop > 15)
+      }
+    }
+    
+    if (mainEl) {
+      mainEl.addEventListener('scroll', handleScroll)
+    } else {
+      const timer = setTimeout(() => {
+        mainEl = document.querySelector('main')
+        if (mainEl) {
+          mainEl.addEventListener('scroll', handleScroll)
+        }
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+
+    return () => {
+      if (mainEl) mainEl.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
 
   const [orgModalVisible, setOrgModalVisible] = useState(false)
   const [newOrgName, setNewOrgName] = useState('')
@@ -291,7 +254,11 @@ export const DashboardHeader: React.FC = () => {
   }
 
   return (
-    <header className="h-[60px] border-b border-mg-border/60 bg-mg-bg-0 px-6 flex items-center justify-between z-40 relative select-none">
+    <header className={cn(
+      "h-[60px] border-b px-6 flex items-center justify-between z-40 relative select-none transition-all duration-300 ease-out",
+      "bg-[rgba(var(--mg-bg-0-rgb),0.85)] border-mg-border/80 backdrop-blur-md",
+      scrolled && "bg-[rgba(var(--mg-bg-0-rgb),0.92)] border-mg-border shadow-sm shadow-black/3"
+    )}>
       {/* 左侧：Logo & 工作区选择器 */}
       <div className="flex items-center gap-6">
         {/* Logo 展现 */}
@@ -315,124 +282,119 @@ export const DashboardHeader: React.FC = () => {
           <span className="logo-status-dot" />
         </div>
 
-        {/* 竖隔线 */}
-        <div className="w-[1px] h-4 bg-mg-border/40" />
+        {/* 一级菜单流光分隔竖线：高颜值主题色流动渐变 */}
+        <div className="w-[1.5px] h-4 sidebar-flow-line pointer-events-none rounded-full" />
 
         {/* 极雅工作区切换选择 Dropdown */}
-        <HeaderDropdown
-          render={
-            <DropdownMenu style={{ width: '200px' }}>
-              {workspaces.map((ws) => (
-                <DropdownItem
-                  key={ws.workspace_id}
-                  onClick={() => handleSwitchWorkspace(ws.workspace_id)}
-                  style={{
-                    fontWeight: ws.workspace_id === activeWorkspaceId ? 700 : 500,
-                    color: ws.workspace_id === activeWorkspaceId ? 'var(--brand-base)' : 'var(--mg-text-1)',
-                    backgroundColor: ws.workspace_id === activeWorkspaceId ? 'var(--brand-selected-bg)' : undefined,
-                  }}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <span>{ws.name}</span>
-                    {ws.is_default && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-mg-fill-1 text-mg-text-2 font-bold tracking-wide uppercase scale-90">
-                        {t('header.defaultTag')}
-                      </span>
-                    )}
-                  </div>
-                </DropdownItem>
-              ))}
-              <DropdownDivider />
-              <DropdownItem
-                icon={<LuPlus size={14} />}
-                onClick={() => setWorkspaceModalVisible(true)}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <div className="flex items-center gap-2 bg-mg-fill-0/50 hover:bg-mg-bg-0 hover:border-brand-mid/50 px-3.5 py-1.5 rounded-full border border-mg-border text-xs text-mg-text-1 transition-all duration-200 hover:shadow-sm cursor-pointer">
+              <span className="font-bold text-mg-text-0">{activeWorkspace?.name ?? t('header.defaultWorkspace')}</span>
+              <LuChevronDown size={10} className="text-mg-text-2" />
+            </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[200px]">
+            {workspaces.map((ws) => (
+              <DropdownMenuItem
+                key={ws.workspace_id}
+                onClick={() => handleSwitchWorkspace(ws.workspace_id)}
+                style={{
+                  fontWeight: ws.workspace_id === activeWorkspaceId ? 700 : 500,
+                  color: ws.workspace_id === activeWorkspaceId ? 'var(--brand-base)' : 'var(--mg-text-1)',
+                  backgroundColor: ws.workspace_id === activeWorkspaceId ? 'var(--brand-selected-bg)' : undefined,
+                }}
               >
-                {t('header.createWorkspace')}
-              </DropdownItem>
-              {isNonPersonal && (
-                <DropdownItem
-                  icon={<LuSettings size={14} />}
-                  onClick={() => navigate('/settings/workspace')}
-                >
-                  {t('header.workspaceMgmt')}
-                </DropdownItem>
-              )}
-            </DropdownMenu>
-          }
-        >
-          <div className="flex items-center gap-2 bg-mg-fill-0/50 hover:bg-mg-bg-0 hover:border-brand-mid/50 px-3.5 py-1.5 rounded-full border border-mg-border text-xs text-mg-text-1 transition-all duration-200 hover:shadow-sm">
-            <span className="font-bold text-mg-text-0">{activeWorkspace?.name ?? t('header.defaultWorkspace')}</span>
-            <LuChevronDown size={10} className="text-mg-text-2" />
-          </div>
-        </HeaderDropdown>
+                <div className="flex items-center justify-between w-full">
+                  <span>{ws.name}</span>
+                  {ws.is_default && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-mg-fill-1 text-mg-text-2 font-bold tracking-wide uppercase scale-90">
+                      {t('header.defaultTag')}
+                    </span>
+                  )}
+                </div>
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => setWorkspaceModalVisible(true)}
+            >
+              <LuPlus size={14} className="mr-2 text-mg-text-2 shrink-0" />
+              <span>{t('header.createWorkspace')}</span>
+            </DropdownMenuItem>
+            {isNonPersonal && (
+              <DropdownMenuItem
+                onClick={() => navigate('/settings/workspace')}
+              >
+                <LuSettings size={14} className="mr-2 text-mg-text-2 shrink-0" />
+                <span>{t('header.workspaceMgmt')}</span>
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* 右侧：功能控制区 + 组织 Switcher + 用户头像 */}
       <div className="flex items-center gap-4">
         {/* 1. 中英文语言切换 Dropdown */}
-        <HeaderDropdown
-          position="bottomRight"
-          render={
-            <DropdownMenu style={{ width: '120px' }}>
-              <DropdownItem 
-                onClick={() => handleLanguageChange('zh')}
-                style={{ fontWeight: i18n.language === 'zh' ? 700 : 500 }}
-              >
-                {t('header.langZh')}
-              </DropdownItem>
-              <DropdownItem 
-                onClick={() => handleLanguageChange('en')}
-                style={{ fontWeight: i18n.language === 'en' ? 700 : 500 }}
-              >
-                {t('header.langEn')}
-              </DropdownItem>
-            </DropdownMenu>
-          }
-        >
-          <Button
-            variant="ghost"
-            size="icon"
-            icon={<LuLanguages />}
-            title={t('common.language') || '语言'}
-          />
-        </HeaderDropdown>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              icon={<LuLanguages />}
+              title={t('common.language') || '语言'}
+            />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[120px]">
+            <DropdownMenuItem 
+              onClick={() => handleLanguageChange('zh')}
+              style={{ fontWeight: i18n.language === 'zh' ? 700 : 500 }}
+            >
+              {t('header.langZh')}
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => handleLanguageChange('en')}
+              style={{ fontWeight: i18n.language === 'en' ? 700 : 500 }}
+            >
+              {t('header.langEn')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* 2. 主题切换明暗双系统 Dropdown */}
-        <HeaderDropdown
-          position="bottomRight"
-          render={
-            <DropdownMenu style={{ width: '130px' }}>
-              <DropdownItem 
-                icon={<LuSun size={13} />}
-                onClick={() => handleThemeChange('light')}
-                style={{ fontWeight: currentTheme === 'light' ? 700 : 500 }}
-              >
-                {t('common.themeLight')}
-              </DropdownItem>
-              <DropdownItem 
-                icon={<LuMoon size={13} />}
-                onClick={() => handleThemeChange('dark')}
-                style={{ fontWeight: currentTheme === 'dark' ? 700 : 500 }}
-              >
-                {t('common.themeDark')}
-              </DropdownItem>
-              <DropdownItem 
-                icon={<LuMonitor size={13} />}
-                onClick={() => handleThemeChange('system')}
-                style={{ fontWeight: currentTheme === 'system' ? 700 : 500 }}
-              >
-                {t('common.themeSystem')}
-              </DropdownItem>
-            </DropdownMenu>
-          }
-        >
-          <Button
-            variant="ghost"
-            size="icon"
-            icon={currentTheme === 'dark' ? <LuMoon /> : <LuSun />}
-            title={t('common.theme') || '主题'}
-          />
-        </HeaderDropdown>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              icon={currentTheme === 'dark' ? <LuMoon /> : <LuSun />}
+              title={t('common.theme') || '主题'}
+            />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[130px]">
+            <DropdownMenuItem 
+              onClick={() => handleThemeChange('light')}
+              style={{ fontWeight: currentTheme === 'light' ? 700 : 500 }}
+            >
+              <LuSun size={13} className="mr-2 text-mg-text-2 shrink-0" />
+              <span>{t('common.themeLight')}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => handleThemeChange('dark')}
+              style={{ fontWeight: currentTheme === 'dark' ? 700 : 500 }}
+            >
+              <LuMoon size={13} className="mr-2 text-mg-text-2 shrink-0" />
+              <span>{t('common.themeDark')}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => handleThemeChange('system')}
+              style={{ fontWeight: currentTheme === 'system' ? 700 : 500 }}
+            >
+              <LuMonitor size={13} className="mr-2 text-mg-text-2 shrink-0" />
+              <span>{t('common.themeSystem')}</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* 3. 官网 & 文档外链 */}
         <div className="flex items-center gap-0.5">
@@ -455,140 +417,139 @@ export const DashboardHeader: React.FC = () => {
             <span>{t('common.docs')}</span>
           </a>
         </div>
-        <div className="w-[1px] h-4 bg-mg-border/40" />
+        {/* 一级菜单流光分隔竖线：高颜值主题色流动渐变 */}
+        <div className="w-[1.5px] h-4 sidebar-flow-line pointer-events-none rounded-full" />
 
         {/* 4. 用户头像一站式 Dropdown */}
-        <HeaderDropdown
-          position="bottomRight"
-          render={
-            <DropdownMenu style={{ width: '230px' }}>
-              {/* 账户信息 + 个人账户 */}
-              {(() => {
-                const personalTenant = displayTenants.find((t) => t.type === 'personal')
-                const isPersonalActive = personalTenant?.tenant_id === activeTenantId
-                return (
-                  <div
-                    className="px-3.5 py-2.5 border-b border-mg-border/40 mb-1 select-none cursor-pointer hover:bg-mg-fill-0/40 transition-colors rounded-t-lg"
-                    onClick={() => personalTenant && handleSwitchTenant(personalTenant)}
-                    style={{
-                      backgroundColor: isPersonalActive ? 'var(--brand-selected-bg)' : undefined,
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="min-w-0">
-                        <div className="font-bold text-sm text-mg-text-0 leading-none truncate"
-                          style={{ color: isPersonalActive ? 'var(--brand-base)' : undefined }}
-                        >
-                          {account?.display_name || '—'}
-                        </div>
-                        <div className="text-[11.5px] text-mg-text-2 mt-1 truncate">
-                          {account?.email}
-                        </div>
-                      </div>
-                      <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded border bg-mg-fill-0 border-mg-border text-mg-text-2 scale-90 shrink-0">
-                        {t('header.personalTag')}
-                      </span>
-                    </div>
-                  </div>
-                )
-              })()}
-
-              {/* 企业列表（仅 enterprise） */}
-              {displayTenants.some((t) => t.type === 'enterprise') && (
-                <>
-                  <div className="px-3.5 py-1 text-[10px] font-bold tracking-wider text-mg-text-2/80 uppercase select-none">
-                    {t('header.organizations')}
-                  </div>
-                  {displayTenants.filter((t) => t.type === 'enterprise').map((tenant) => {
-                    const displayName = tenant.name || tenant.slug || tenant.tenant_id
-                    const letter = displayName.charAt(0).toUpperCase()
-                    const isActive = tenant.tenant_id === activeTenantId
-                    const tenantRole = (tenant as TenantItem).role
-                    const roleLabel: Record<string, string> = {
-                      tenant_owner: t('header.roleOwner'),
-                      tenant_admin: t('header.roleAdmin'),
-                      tenant_member: t('header.roleMember'),
-                    }
-                    return (
-                      <DropdownItem
-                        key={tenant.tenant_id}
-                        onClick={() => handleSwitchTenant(tenant)}
-                        style={{
-                          fontWeight: isActive ? 700 : 500,
-                          color: isActive ? 'var(--brand-base)' : 'var(--mg-text-1)',
-                          backgroundColor: isActive ? 'var(--brand-selected-bg)' : undefined,
-                        }}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Avatar className="cursor-pointer active:scale-95 border-2 border-brand-light/30 shadow-sm transition-transform duration-150">
+              {account?.avatar_url && <AvatarImage src={account.avatar_url} alt={account.display_name} />}
+              <AvatarFallback className="bg-brand-pale text-brand-base font-bold text-sm">
+                {avatarLetter}
+              </AvatarFallback>
+            </Avatar>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[230px]">
+            {/* 账户信息 + 个人账户 */}
+            {(() => {
+              const personalTenant = displayTenants.find((t) => t.type === 'personal')
+              const isPersonalActive = personalTenant?.tenant_id === activeTenantId
+              return (
+                <div
+                  className="px-3.5 py-2.5 border-b border-mg-border/40 mb-1 select-none cursor-pointer hover:bg-mg-fill-0/40 transition-colors rounded-t-lg"
+                  onClick={() => personalTenant && handleSwitchTenant(personalTenant)}
+                  style={{
+                    backgroundColor: isPersonalActive ? 'var(--brand-selected-bg)' : undefined,
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0">
+                      <div className="font-bold text-sm text-mg-text-0 leading-none truncate"
+                        style={{ color: isPersonalActive ? 'var(--brand-base)' : undefined }}
                       >
-                        <div className="flex items-center gap-2.5 w-full">
-                          <Avatar className="h-6 w-6 border-none">
-                            {tenant.logo_url && <AvatarImage src={tenant.logo_url} />}
-                            <AvatarFallback className="text-[10px] bg-mg-fill-1 text-mg-text-1 font-bold">
-                              {letter}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="flex-1 truncate max-w-[100px]">{displayName}</span>
-                          {tenantRole && (
-                            <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded border bg-mg-fill-0 border-mg-border text-mg-text-2 scale-90 shrink-0">
-                              {roleLabel[tenantRole] ?? tenantRole}
-                            </span>
-                          )}
-                        </div>
-                      </DropdownItem>
-                    )
-                  })}
-                </>
-              )}
+                        {account?.display_name || '—'}
+                      </div>
+                      <div className="text-[11.5px] text-mg-text-2 mt-1 truncate">
+                        {account?.email}
+                      </div>
+                    </div>
+                    <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded border bg-mg-fill-0 border-mg-border text-mg-text-2 scale-90 shrink-0">
+                      {t('header.personalTag')}
+                    </span>
+                  </div>
+                </div>
+              )
+            })()}
 
-              <DropdownItem
-                icon={<LuPlus size={14} />}
-                onClick={handleOpenOrgModal}
-              >
-                {t('header.createOrg')}
-              </DropdownItem>
+            {/* 企业列表（仅 enterprise） */}
+            {displayTenants.some((t) => t.type === 'enterprise') && (
+              <>
+                <div className="px-3.5 py-1 text-[10px] font-bold tracking-wider text-mg-text-2/80 uppercase select-none">
+                  {t('header.organizations')}
+                </div>
+                {displayTenants.filter((t) => t.type === 'enterprise').map((tenant) => {
+                  const displayName = tenant.name || tenant.slug || tenant.tenant_id
+                  const letter = displayName.charAt(0).toUpperCase()
+                  const isActive = tenant.tenant_id === activeTenantId
+                  const tenantRole = (tenant as TenantItem).role
+                  const roleLabel: Record<string, string> = {
+                    tenant_owner: t('header.roleOwner'),
+                    tenant_admin: t('header.roleAdmin'),
+                    tenant_member: t('header.roleMember'),
+                  }
+                  return (
+                    <DropdownMenuItem
+                      key={tenant.tenant_id}
+                      onClick={() => handleSwitchTenant(tenant)}
+                      style={{
+                        fontWeight: isActive ? 700 : 500,
+                        color: isActive ? 'var(--brand-base)' : 'var(--mg-text-1)',
+                        backgroundColor: isActive ? 'var(--brand-selected-bg)' : undefined,
+                      }}
+                    >
+                      <div className="flex items-center gap-2.5 w-full">
+                        <Avatar className="h-6 w-6 border-none">
+                          {tenant.logo_url && <AvatarImage src={tenant.logo_url} />}
+                          <AvatarFallback className="text-[10px] bg-mg-fill-1 text-mg-text-1 font-bold">
+                            {letter}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="flex-1 truncate max-w-[100px]">{displayName}</span>
+                        {tenantRole && (
+                          <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded border bg-mg-fill-0 border-mg-border text-mg-text-2 scale-90 shrink-0">
+                            {roleLabel[tenantRole] ?? tenantRole}
+                          </span>
+                        )}
+                      </div>
+                    </DropdownMenuItem>
+                  )
+                })}
+              </>
+            )}
 
-              {/* 系统快捷菜单 */}
-              <DropdownDivider />
-              {isNonPersonal && (
-                <DropdownItem
-                  icon={<LuSettings size={14} />}
-                  onClick={() => navigate('/settings/organization')}
-                >
-                  {t('header.orgSettings')}
-                </DropdownItem>
-              )}
-              {isNonPersonal && (
-                <DropdownItem
-                  icon={<LuGlobe size={14} />}
-                  onClick={() => navigate('/settings/workspace')}
-                >
-                  {t('header.workspaceMgmt')}
-                </DropdownItem>
-              )}
-              <DropdownItem
-                icon={<LuSettings size={14} />}
-                onClick={() => navigate('/settings/account')}
-              >
-                {t('nav.settings')}
-              </DropdownItem>
+            <DropdownMenuItem
+              onClick={handleOpenOrgModal}
+            >
+              <LuPlus size={14} className="mr-2 text-mg-text-2 shrink-0" />
+              <span>{t('header.createOrg')}</span>
+            </DropdownMenuItem>
 
-              {/* 退出登录 */}
-              <DropdownDivider />
-              <DropdownItem
-                onClick={handleLogout}
-                style={{ color: '#ef4444' }}
+            {/* 系统快捷菜单 */}
+            <DropdownMenuSeparator />
+            {isNonPersonal && (
+              <DropdownMenuItem
+                onClick={() => navigate('/settings/organization')}
               >
-                {t('logout')}
-              </DropdownItem>
-            </DropdownMenu>
-          }
-        >
-          <Avatar className="cursor-pointer active:scale-95 border-2 border-brand-light/30 shadow-sm transition-transform duration-150">
-            {account?.avatar_url && <AvatarImage src={account.avatar_url} alt={account.display_name} />}
-            <AvatarFallback className="bg-brand-pale text-brand-base font-bold text-sm">
-              {avatarLetter}
-            </AvatarFallback>
-          </Avatar>
-        </HeaderDropdown>
+                <LuSettings size={14} className="mr-2 text-mg-text-2 shrink-0" />
+                <span>{t('header.orgSettings')}</span>
+              </DropdownMenuItem>
+            )}
+            {isNonPersonal && (
+              <DropdownMenuItem
+                onClick={() => navigate('/settings/workspace')}
+              >
+                <LuGlobe size={14} className="mr-2 text-mg-text-2 shrink-0" />
+                <span>{t('header.workspaceMgmt')}</span>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem
+              onClick={() => navigate('/settings/account')}
+            >
+              <LuSettings size={14} className="mr-2 text-mg-text-2 shrink-0" />
+              <span>{t('nav.settings')}</span>
+            </DropdownMenuItem>
+
+            {/* 退出登录 */}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleLogout}
+              style={{ color: '#ef4444' }}
+            >
+              <span>{t('logout')}</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* ─── Dialog 1. 创建新组织 ───────────────── */}

@@ -145,6 +145,7 @@ body[theme-mode='dark'] {
   --site-bg:  #f8fafc;   /* 页面底层 */
   --card-bg:  #ffffff;   /* 卡片面 */
   --mg-bg-0:  #ffffff;   /* 主卡片 */
+  --mg-bg-0-rgb: 255, 255, 255;
   --mg-bg-1:  #f8fafc;   /* 页面背景 */
   --mg-bg-2:  #f1f5f9;   /* 悬浮卡片 / Dropdown */
   --mg-bg-3:  #e2e8f0;   /* Modal / Tooltip 顶层 */
@@ -182,6 +183,7 @@ body[theme-mode='dark'] {
   --site-bg:  #111113;   /* 页面底层 */
   --card-bg:  #1a1a1d;   /* 卡片面 */
   --mg-bg-0:  #1a1a1d;   /* 主卡片 */
+  --mg-bg-0-rgb: 26, 26, 29;
   --mg-bg-1:  #111113;   /* 页面背景 */
   --mg-bg-2:  #242428;   /* 悬浮卡片 / Dropdown */
   --mg-bg-3:  #2e2e33;   /* Modal / Tooltip 顶层 */
@@ -1153,4 +1155,46 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   background: #22c55e;
   animation: logo-dot-pulse 2.4s ease-in-out infinite;
   flex-shrink: 0;
+}
+
+/* ── 🚀 侧边栏一级串联竖线流光过渡 (垂直极速流光) ── */
+@keyframes verticalFlow {
+  0% {
+    background-position: 50% 0%;
+  }
+  100% {
+    background-position: 50% 100%;
+  }
+}
+
+.sidebar-flow-line {
+  background: linear-gradient(180deg, 
+    color-mix(in oklch, var(--brand-base) 8%, transparent) 0%, 
+    var(--brand-glow) 20%, 
+    var(--brand-base) 50%, 
+    var(--brand-glow) 80%, 
+    color-mix(in oklch, var(--brand-base) 8%, transparent) 100%
+  );
+  background-size: 100% 400%;
+  animation: verticalFlow 10s linear infinite;
+  box-shadow: 0 0 3px var(--brand-glow);
+  opacity: 0.7;
+}
+
+/* ── 🚀 侧边栏子菜单物理高度折叠滑入收缩 (Vercel Style Accordion) ── */
+.sidebar-submenu-container {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 250ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease, margin 200ms ease;
+  opacity: 0;
+  overflow: hidden;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.sidebar-submenu-container.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  margin-top: 6px;
+  margin-bottom: 6px;
 }

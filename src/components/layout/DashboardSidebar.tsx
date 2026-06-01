@@ -49,7 +49,7 @@ const SidebarNavItem: React.FC<{
         collapsed ? "justify-center" : "justify-start",
         isSelected
           ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
-          : "text-mg-text-1 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.97]"
+          : "text-mg-text-1 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.97] hover:translate-x-[2px]"
       )}
     >
       <span className={cn("text-base shrink-0 transition-colors duration-200", isSelected ? "text-brand-base" : "text-mg-text-2")}>
@@ -134,31 +134,40 @@ const SidebarMenuGroup: React.FC<{
         </span>
       </div>
 
-      {/* 子项列表 ( Indented ) */}
-      {isOpen && item.items && (
-        <div className="flex flex-col pl-5 border-l-2 border-mg-border/50 ml-7 gap-1 my-1.5 animate-in fade-in duration-200">
-          {item.items.map((sub) => {
-            const isSubSelected = selectedKey === sub.itemKey
-            return (
-              <div
-                key={sub.itemKey}
-                role="button"
-                tabIndex={0}
-                onClick={() => onSelect({ itemKey: sub.itemKey })}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect({ itemKey: sub.itemKey }) }}
-                className={cn(
-                  "flex items-center gap-3 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-150 select-none outline-none",
-                  isSubSelected
-                    ? "text-brand-base font-bold bg-brand-selected-bg/60"
-                    : "text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/30 active:scale-[0.98]"
-                )}
-              >
-                <span className="text-[13px] truncate tracking-tight font-medium leading-none">
-                  {sub.text}
-                </span>
-              </div>
-            )
-          })}
+      {/* 子项列表 ( Indented ) - 物理高度弹性折叠 */}
+      {item.items && (
+        <div 
+          className={cn(
+            "sidebar-submenu-container",
+            isOpen && "open"
+          )}
+        >
+          <div className="min-h-0 flex flex-col pl-4 ml-7 gap-1 relative">
+            {/* 展开时才显示的、高颜值流动渐变指示竖线：起点终点完美契合子菜单首尾 */}
+            <div className="absolute left-0 top-2.5 bottom-2.5 w-[1.5px] sidebar-flow-line pointer-events-none rounded-full" />
+            {item.items.map((sub) => {
+              const isSubSelected = selectedKey === sub.itemKey
+              return (
+                <div
+                  key={sub.itemKey}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onSelect({ itemKey: sub.itemKey })}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect({ itemKey: sub.itemKey }) }}
+                  className={cn(
+                    "flex items-center gap-3 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-150 select-none outline-none",
+                    isSubSelected
+                      ? "text-brand-base font-bold bg-brand-selected-bg/60"
+                      : "text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/30 active:scale-[0.98] hover:translate-x-[2px]"
+                  )}
+                >
+                  <span className="text-[13px] truncate tracking-tight font-medium leading-none">
+                    {sub.text}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>

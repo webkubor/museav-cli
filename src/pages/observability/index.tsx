@@ -26,6 +26,8 @@ import {
   updateForward,
   updateLoggingConfig,
 } from '@/services/observability'
+import { listApiKeys } from '@/services/api-keys'
+import { pageItems } from '@/lib/utils'
 import type { LoggingConfig, PlatformConfigField } from '@/types'
 import { formatDateTime } from '@/lib/format-date'
 
@@ -99,12 +101,21 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
   )
 
   const createMutation = useMutation({
-    mutationFn: (payload: { name: string; config: Record<string, string> }) =>
+    mutationFn: (payload: {
+      name: string
+      config: Record<string, string>
+      sampling_rate?: number
+      api_key_ids?: string[]
+      privacy_mode_enabled?: boolean
+    }) =>
       createForward(workspaceId, {
         platform: selectedPlatformId,
         name: payload.name,
         config: payload.config,
         enabled: true,
+        sampling_rate: payload.sampling_rate,
+        api_key_ids: payload.api_key_ids,
+        privacy_mode_enabled: payload.privacy_mode_enabled,
       }),
     onSuccess: () => {
       appToast.success(t('observability.toast.forwardCreated'))
@@ -153,9 +164,10 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
             selectedPlatform={selectedPlatform}
             onPlatformChange={setPlatform}
             isSubmitting={createMutation.isPending}
-            onSubmit={(name, config) => {
-              if (!selectedPlatformId || !name.trim()) return
-              createMutation.mutate({ name, config })
+            workspaceId={workspaceId}
+            onSubmit={(payload) => {
+              if (!selectedPlatformId || !payload.name.trim()) return
+              createMutation.mutate(payload)
             }}
           />
         </div>
@@ -268,12 +280,21 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
 
 // ─── CreateForwardForm ────────────────────────────────────────────────────────
 
+interface CreateFormPayload {
+  name: string
+  config: Record<string, string>
+  sampling_rate?: number
+  api_key_ids?: string[]
+  privacy_mode_enabled?: boolean
+}
+
 function CreateForwardForm({
   platformItems,
   selectedPlatformId,
   selectedPlatform,
   onPlatformChange,
   isSubmitting,
+  workspaceId,
   onSubmit,
 }: {
   platformItems: { platform: string; display_name: string }[]
@@ -281,7 +302,8 @@ function CreateForwardForm({
   selectedPlatform: { config_schema: { fields: PlatformConfigField[] } } | undefined
   onPlatformChange: (id: string) => void
   isSubmitting: boolean
-  onSubmit: (name: string, config: Record<string, string>) => void
+  workspaceId: string
+  onSubmit: (payload: CreateFormPayload) => void
 }) {
   const { t } = useTranslation()
   const fields = selectedPlatform?.config_schema.fields ?? []
@@ -289,17 +311,42 @@ function CreateForwardForm({
   const [configValues, setConfigValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(fields.map((f) => [f.key, '']))
   )
+  const [samplingRate, setSamplingRate] = useState('100')
+  const [privacyMode, setPrivacyMode] = useState(false)
+  const [selectedKeyIds, setSelectedKeyIds] = useState<string[]>([])
+
+  const apiKeysQuery = useQuery({
+    queryKey: ['api-keys', workspaceId],
+    queryFn: () => listApiKeys(workspaceId).then(pageItems),
+    enabled: !!workspaceId,
+    staleTime: 60_000,
+  })
+  const apiKeys = apiKeysQuery.data ?? []
+
+  function toggleKey(keyId: string) {
+    setSelectedKeyIds((prev) =>
+      prev.includes(keyId) ? prev.filter((k) => k !== keyId) : [...prev, keyId]
+    )
+  }
+
+  function handleSubmit() {
+    const rate = parseInt(samplingRate, 10)
+    onSubmit({
+      name,
+      config: configValues,
+      sampling_rate: isNaN(rate) ? 1 : rate / 100,
+      api_key_ids: selectedKeyIds.length > 0 ? selectedKeyIds : undefined,
+      privacy_mode_enabled: privacyMode || undefined,
+    })
+  }
 
   return (
     <div className="flex flex-col gap-5">
+      {/* 平台 + 名称 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
           <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">{t('observability.form.platformLabel')}</label>
-          <Select
-            value={selectedPlatformId}
-            onChange={onPlatformChange}
-            className="w-full"
-          >
+          <Select value={selectedPlatformId} onChange={onPlatformChange} className="w-full">
             {platformItems.map((item) => (
               <Select.Option key={item.platform} value={item.platform}>
                 {item.display_name}
@@ -311,12 +358,13 @@ function CreateForwardForm({
           <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">{t('observability.form.nameLabel')}</label>
           <Input
             value={name}
-            placeholder={t('observability.form.namePlaceholder')}
+            placeholder="例如：生产环境 Datadog 主通道"
             onChange={(e) => setName(e.target.value)}
           />
         </div>
       </div>
 
+      {/* 平台配置字段 */}
       {fields.length > 0 && (
         <div className={`grid gap-5 ${fields.length > 1 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
           {fields.map((field) => (
@@ -327,7 +375,7 @@ function CreateForwardForm({
               </label>
               <Input
                 value={configValues[field.key] ?? ''}
-                placeholder={field.label}
+                placeholder={field.type === 'secret' ? '粘贴密钥，提交后不再明文显示' : `填写 ${field.label}，参考平台文档获取`}
                 type={field.type === 'secret' ? 'password' : 'text'}
                 onChange={(e) => setConfigValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
               />
@@ -336,11 +384,75 @@ function CreateForwardForm({
         </div>
       )}
 
+      {/* 采样率 + 隐私模式 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">
+            {t('observability.form.samplingRate')}
+          </label>
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              min="1"
+              max="100"
+              value={samplingRate}
+              placeholder="1~100，数值越小转发越少"
+              onChange={(e) => setSamplingRate(e.target.value)}
+              className="flex-1"
+            />
+            <span className="text-xs font-bold text-mg-text-2 shrink-0">%</span>
+          </div>
+          <p className="text-[10px] text-mg-text-2 mt-1.5">{t('observability.form.samplingHint')}</p>
+        </div>
+        <div>
+          <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">
+            {t('observability.form.privacyMode')}
+          </label>
+          <div className="flex items-center gap-3 mt-1">
+            <Switch checked={privacyMode} onChange={setPrivacyMode} />
+            <span className="text-xs text-mg-text-2">{t('observability.form.privacyHint')}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* API Key 绑定 */}
+      <div>
+        <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">
+          {t('observability.form.apiKeyFilter')}
+        </label>
+        <p className="text-[10px] text-mg-text-2 mb-2.5">{t('observability.form.apiKeyFilterHint')}</p>
+        {apiKeys.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {apiKeys.filter((k) => k.status === 'active').map((key) => {
+              const selected = selectedKeyIds.includes(key.api_key_id)
+              return (
+                <button
+                  key={key.api_key_id}
+                  type="button"
+                  onClick={() => toggleKey(key.api_key_id)}
+                  className={[
+                    'px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-all cursor-pointer',
+                    selected
+                      ? 'border-brand-base bg-brand-base/5 text-brand-base'
+                      : 'border-mg-border bg-mg-bg-1/40 text-mg-text-1 hover:border-mg-border/80',
+                  ].join(' ')}
+                >
+                  {key.name}
+                  <code className="ml-1.5 text-[10px] text-mg-text-2 font-mono">{key.masked?.slice(0, 12)}</code>
+                </button>
+              )
+            })}
+          </div>
+        ) : (
+          <span className="text-xs text-mg-text-2">{t('observability.form.noApiKeys')}</span>
+        )}
+      </div>
+
       <div className="flex justify-end pt-2">
         <Button
           variant="brand"
           loading={isSubmitting}
-          onClick={() => onSubmit(name, configValues)}
+          onClick={handleSubmit}
           className="px-8"
         >
           {t('observability.form.submit')}

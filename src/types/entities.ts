@@ -499,6 +499,10 @@ export interface ForwardItem {
   }
   last_success_at: string | null
   last_error: string | null
+  api_key_ids: string[]
+  privacy_mode_enabled: boolean
+  sampling_rate: number
+  status: string
 }
 
 /** 创建 / 更新 Destination 请求体 */
@@ -506,10 +510,10 @@ export interface CreateForwardRequest {
   platform: string
   name: string
   config: Record<string, string>
-  scope?: {
-    workspace_ids: string[]
-  }
   enabled?: boolean
+  api_key_ids?: string[]
+  privacy_mode_enabled?: boolean
+  sampling_rate?: number
 }
 
 /** 死信对象 */

@@ -13,8 +13,17 @@ export interface ApiForwardItem {
   enabled: boolean
   config: Record<string, unknown>
   workspace_id: string
+  tenant_id: string
   last_success_at: string | null
   last_error: string | null
+  api_key_ids: string[] | null
+  privacy_mode_enabled: boolean
+  sampling_rate: number
+  status: string
+  endpoint_url: string | null
+  protocol: string | null
+  config_version: number
+  headers_set: boolean
 }
 
 export interface ApiDeadLetter {

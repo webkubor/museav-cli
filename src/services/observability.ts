@@ -44,6 +44,10 @@ function toForward(item: ApiForwardItem): ForwardItem {
     scope: { workspace_ids: [item.workspace_id] },
     last_success_at: item.last_success_at,
     last_error: item.last_error,
+    api_key_ids: item.api_key_ids ?? [],
+    privacy_mode_enabled: item.privacy_mode_enabled,
+    sampling_rate: item.sampling_rate,
+    status: item.status,
   }
 }
 
@@ -106,7 +110,9 @@ export function createForward(workspaceId: string, body: CreateForwardRequest) {
     name: body.name,
     config: body.config,
     enabled: body.enabled,
-    sampling_rate: 1,
+    sampling_rate: body.sampling_rate ?? 1,
+    api_key_ids: body.api_key_ids,
+    privacy_mode_enabled: body.privacy_mode_enabled,
   }).then(toForward)
 }
 
@@ -122,6 +128,9 @@ export function updateForward(
       name: body.name,
       config: body.config,
       enabled: body.enabled,
+      sampling_rate: body.sampling_rate,
+      api_key_ids: body.api_key_ids,
+      privacy_mode_enabled: body.privacy_mode_enabled,
     }
   ).then(toForward)
 }

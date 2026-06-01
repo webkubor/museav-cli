@@ -380,6 +380,13 @@
       "platformLabel": "Platform",
       "nameLabel": "Name",
       "namePlaceholder": "Give this destination a name",
+      "samplingRate": "Sampling Rate",
+      "samplingHint": "100% forwards everything; lower values reduce traffic costs",
+      "privacyMode": "Privacy Mode",
+      "privacyHint": "Redact input/output content before forwarding",
+      "apiKeyFilter": "API Key Filter",
+      "apiKeyFilterHint": "Leave empty to forward all keys; select to forward only chosen keys",
+      "noApiKeys": "No API keys available in this workspace",
       "submit": "Create"
     },
     "deadLetters": {

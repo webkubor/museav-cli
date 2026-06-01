@@ -29,6 +29,7 @@ async function post(body: object) {
 
 const POS_KEY = 'dev-requirements-pos'
 const SIZE_KEY = 'dev-requirements-size'
+const ONLY_PENDING_KEY = 'dev-requirements-only-pending'
 
 function loadSize(): { w: number; h: number } {
   try {
@@ -49,6 +50,13 @@ function loadPos(): { top: number; right: number } {
 export function DevRequirements() {
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<Requirement[]>([])
+  const [onlyPending, setOnlyPending] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(ONLY_PENDING_KEY) === 'true'
+    } catch {
+      return false
+    }
+  })
   const [title, setTitle] = useState('')
   const [gitlabIid, setGitlabIid] = useState('')
   const [priority, setPriority] = useState<Requirement['priority']>('medium')
@@ -347,13 +355,13 @@ export function DevRequirements() {
           style={{
             writingMode: 'vertical-rl',
             textOrientation: 'mixed',
-            padding: '12px 7px',
+            padding: '14px 8px',
             background: 'var(--mg-primary)',
             color: '#fff',
             border: 'none',
             borderRadius: '8px',
             cursor: 'grab',
-            fontSize: 13,
+            fontSize: 15,
             fontWeight: 700,
             letterSpacing: 1.5,
             opacity: 0.93,
@@ -385,13 +393,13 @@ export function DevRequirements() {
               writingMode: 'horizontal-tb',
               background: 'var(--mg-danger)',
               borderRadius: 10,
-              minWidth: 18,
-              height: 18,
-              lineHeight: '18px',
+              minWidth: 20,
+              height: 20,
+              lineHeight: '20px',
               textAlign: 'center',
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 700,
-              padding: '0 3px',
+              padding: '0 4px',
               marginTop: 4,
             }}>
               {pending.length}
@@ -417,7 +425,7 @@ export function DevRequirements() {
           <div
             onMouseDown={handleMouseDown}
             style={{
-              padding: '10px 14px',
+              padding: '12px 14px',
               borderBottom: '1px solid var(--mg-border)',
               display: 'flex',
               alignItems: 'center',
@@ -435,16 +443,16 @@ export function DevRequirements() {
             </span>
 
             {/* 标题 */}
-            <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--mg-text-0)', flex: 1 }}>
+            <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--mg-text-0)', flex: 1 }}>
               需求看板
             </span>
             {pending.length > 0 && (
               <span style={{
-                fontSize: 11,
+                fontSize: 13,
                 color: 'var(--mg-primary)',
                 background: 'var(--mg-primary-light)',
-                padding: '1px 8px',
-                borderRadius: 10,
+                padding: '2px 10px',
+                borderRadius: 12,
                 fontWeight: 600,
                 flexShrink: 0,
               }}>
@@ -453,7 +461,7 @@ export function DevRequirements() {
             )}
 
             {/* 操作按钮 */}
-            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }} onMouseDown={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }} onMouseDown={e => e.stopPropagation()}>
               {/* 同步 GitLab */}
               <button
                 onClick={handleSync}
@@ -461,8 +469,8 @@ export function DevRequirements() {
                 title="从 GitLab 同步"
                 style={{
                   background: 'none', border: 'none', cursor: syncing ? 'wait' : 'pointer',
-                  color: syncing ? 'var(--mg-primary)' : 'var(--mg-text-2)', fontSize: 12, lineHeight: 1,
-                  padding: '3px 6px', borderRadius: 4, fontWeight: 600,
+                  color: syncing ? 'var(--mg-primary)' : 'var(--mg-text-2)', fontSize: 13, lineHeight: 1,
+                  padding: '4px 6px', borderRadius: 4, fontWeight: 600,
                   display: 'flex', alignItems: 'center', gap: 3,
                   opacity: syncing ? 0.6 : 1,
                 }}
@@ -476,8 +484,8 @@ export function DevRequirements() {
                 title="导出 Markdown"
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'var(--mg-text-2)', fontSize: 13, lineHeight: 1,
-                  padding: '3px 5px', borderRadius: 4,
+                  color: 'var(--mg-text-2)', fontSize: 15, lineHeight: 1,
+                  padding: '4px 6px', borderRadius: 4,
                   display: 'flex', alignItems: 'center',
                 }}
               >
@@ -489,8 +497,8 @@ export function DevRequirements() {
                 title={maximized ? '还原' : '最大化'}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'var(--mg-text-2)', fontSize: 14, lineHeight: 1,
-                  padding: '3px 5px', borderRadius: 4,
+                  color: 'var(--mg-text-2)', fontSize: 16, lineHeight: 1,
+                  padding: '4px 6px', borderRadius: 4,
                   display: 'flex', alignItems: 'center',
                 }}
               >
@@ -502,7 +510,7 @@ export function DevRequirements() {
                 title="收起"
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'var(--mg-text-2)', fontSize: 16, lineHeight: 1,
+                  color: 'var(--mg-text-2)', fontSize: 20, lineHeight: 1,
                   padding: '2px 4px', borderRadius: 4,
                 }}
               >
@@ -512,7 +520,7 @@ export function DevRequirements() {
           </div>
 
           {/* 录入区 */}
-          <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--mg-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ padding: '14px 14px', borderBottom: '1px solid var(--mg-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
             <input
               ref={inputRef}
               value={title}
@@ -521,8 +529,8 @@ export function DevRequirements() {
               placeholder="+ 快速记录需求..."
               style={{
                 flex: 1,
-                padding: '8px 12px',
-                fontSize: 14,
+                padding: '10px 14px',
+                fontSize: 16,
                 background: 'var(--mg-bg-2)',
                 border: '1px solid var(--mg-border)',
                 borderRadius: 6,
@@ -536,9 +544,9 @@ export function DevRequirements() {
               placeholder="#"
               title="GitLab Issue ID（选填）"
               style={{
-                width: 52,
-                padding: '8px 6px',
-                fontSize: 13,
+                width: 60,
+                padding: '10px 6px',
+                fontSize: 15,
                 fontFamily: 'monospace',
                 fontWeight: 600,
                 background: 'var(--mg-bg-2)',
@@ -554,8 +562,8 @@ export function DevRequirements() {
               value={priority}
               onChange={(e) => setPriority(e.target.value as Requirement['priority'])}
               style={{
-                padding: '8px 6px',
-                fontSize: 14,
+                padding: '10px 6px',
+                fontSize: 16,
                 background: 'var(--mg-bg-2)',
                 border: '1px solid var(--mg-border)',
                 borderRadius: 6,
@@ -573,8 +581,8 @@ export function DevRequirements() {
               onClick={handleAdd}
               disabled={!title.trim()}
               style={{
-                padding: '8px 16px',
-                fontSize: 14,
+                padding: '10px 20px',
+                fontSize: 16,
                 fontWeight: 600,
                 background: title.trim() ? 'var(--mg-primary)' : 'var(--mg-disabled-border)',
                 color: title.trim() ? '#fff' : 'var(--mg-disabled-text)',
@@ -588,17 +596,92 @@ export function DevRequirements() {
             </button>
           </div>
 
+          {/* 状态分类过滤条 */}
+          <div style={{
+            padding: '8px 14px',
+            borderBottom: '1px solid var(--mg-border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'var(--mg-bg-2)',
+          }}>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                onClick={() => {
+                  setOnlyPending(false)
+                  try { localStorage.setItem(ONLY_PENDING_KEY, 'false') } catch {}
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: !onlyPending ? 'var(--mg-primary)' : 'var(--mg-text-2)',
+                  fontWeight: !onlyPending ? 700 : 500,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  padding: '4px 8px',
+                  borderRadius: 4,
+                  backgroundColor: !onlyPending ? 'var(--mg-primary-light)' : 'transparent',
+                  transition: 'all 0.15s',
+                }}
+              >
+                全部 ({items.length})
+              </button>
+              <button
+                onClick={() => {
+                  setOnlyPending(true)
+                  try { localStorage.setItem(ONLY_PENDING_KEY, 'true') } catch {}
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: onlyPending ? 'var(--mg-primary)' : 'var(--mg-text-2)',
+                  fontWeight: onlyPending ? 700 : 500,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  padding: '4px 8px',
+                  borderRadius: 4,
+                  backgroundColor: onlyPending ? 'var(--mg-primary-light)' : 'transparent',
+                  transition: 'all 0.15s',
+                }}
+              >
+                未完成 ({pending.length})
+              </button>
+            </div>
+            
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              cursor: 'pointer',
+              fontSize: 14,
+              color: 'var(--mg-text-2)',
+              userSelect: 'none',
+            }}>
+              <input
+                type="checkbox"
+                checked={onlyPending}
+                onChange={(e) => {
+                  const next = e.target.checked
+                  setOnlyPending(next)
+                  try { localStorage.setItem(ONLY_PENDING_KEY, String(next)) } catch {}
+                }}
+                style={{ cursor: 'pointer', accentColor: 'var(--mg-primary)', width: 15, height: 15 }}
+              />
+              <span>只看未完成</span>
+            </label>
+          </div>
+
           {/* 列表 */}
           <div style={{ overflowY: 'auto', flex: 1, padding: '4px 0' }}>
             {items.length === 0 && (
-              <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--mg-text-2)', fontSize: 13 }}>
+              <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--mg-text-2)', fontSize: 15 }}>
                 暂无需求条目
               </div>
             )}
 
             {pending.length > 0 && (
               <div>
-                <div style={{ padding: '8px 14px 4px', fontSize: 11, color: 'var(--mg-text-3)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                <div style={{ padding: '8px 14px 4px', fontSize: 13, color: 'var(--mg-text-3)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>
                   待处理 · {pending.length}
                 </div>
                 {pending.map((item) => (
@@ -607,9 +690,9 @@ export function DevRequirements() {
               </div>
             )}
 
-            {done.length > 0 && (
+            {done.length > 0 && !onlyPending && (
               <div style={{ marginTop: pending.length > 0 ? 6 : 0 }}>
-                <div style={{ padding: '8px 14px 4px', fontSize: 11, color: 'var(--mg-text-3)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                <div style={{ padding: '8px 14px 4px', fontSize: 13, color: 'var(--mg-text-3)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>
                   已完成 · {done.length}
                 </div>
                 {done.map((item) => (
@@ -721,10 +804,10 @@ function ReqItem({
         onDragEnd={(e) => { e.stopPropagation(); onDragEnd() }}
         style={{
           flexShrink: 0,
-          fontSize: 15,
+          fontSize: 18,
           color: hovered ? 'var(--mg-text-1)' : 'var(--mg-text-3)',
           cursor: 'grab',
-          lineHeight: '20px',
+          lineHeight: '22px',
           marginTop: 0,
           userSelect: 'none',
           transition: 'color 0.15s',
@@ -740,8 +823,8 @@ function ReqItem({
         title={item.status === 'done' ? '标记为待处理' : '标记为已完成'}
         style={{
           flexShrink: 0,
-          width: 18,
-          height: 18,
+          width: 22,
+          height: 22,
           borderRadius: '50%',
           border: `2px solid ${item.status === 'done' ? 'var(--mg-success)' : 'var(--mg-border)'}`,
           background: item.status === 'done' ? 'var(--mg-success)' : 'transparent',
@@ -753,7 +836,7 @@ function ReqItem({
           padding: 0,
         }}
       >
-        {item.status === 'done' && <span style={{ color: '#fff', fontSize: 10, lineHeight: 1 }}>✓</span>}
+        {item.status === 'done' && <span style={{ color: '#fff', fontSize: 12, lineHeight: 1 }}>✓</span>}
       </button>
 
       {/* 文字区 */}
@@ -770,8 +853,8 @@ function ReqItem({
             }}
             style={{
               width: '100%',
-              fontSize: 14,
-              padding: '3px 6px',
+              fontSize: 16,
+              padding: '4px 8px',
               border: '1px solid var(--mg-primary)',
               borderRadius: 4,
               background: 'var(--mg-bg-0)',
@@ -784,12 +867,12 @@ function ReqItem({
             onDoubleClick={() => onEditStart(item.id, item.title)}
             title="双击编辑"
             style={{
-              fontSize: 14,
+              fontSize: 16,
               color: item.status === 'done' ? 'var(--mg-text-2)' : 'var(--mg-text-0)',
               textDecoration: item.status === 'done' ? 'line-through' : 'none',
               wordBreak: 'break-all',
               display: 'block',
-              lineHeight: 1.55,
+              lineHeight: 1.6,
             }}
           >
             {item.title}
@@ -798,7 +881,7 @@ function ReqItem({
       </div>
 
       {/* GitLab + 状态 + 负责人 + 认领 + 优先级 + 删除 */}
-      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, marginTop: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, marginTop: 2, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         {/* GitLab issue link */}
         {item.gitlabIid && (
           <a
@@ -808,9 +891,9 @@ function ReqItem({
             onClick={(e) => e.stopPropagation()}
             title={`GitLab #${item.gitlabIid}`}
             style={{
-              fontSize: 11, fontWeight: 700, fontFamily: 'monospace',
+              fontSize: 13, fontWeight: 700, fontFamily: 'monospace',
               color: 'var(--mg-primary)', background: 'var(--mg-primary-light)',
-              padding: '1px 6px', borderRadius: 4, textDecoration: 'none', lineHeight: '16px',
+              padding: '2px 8px', borderRadius: 4, textDecoration: 'none', lineHeight: '18px',
             }}
           >
             #{item.gitlabIid}
@@ -819,7 +902,7 @@ function ReqItem({
         {/* GitLab 状态标签 */}
         {item.gitlabLabels?.filter((l) => GL_STATUS_COLOR[l]).map((label) => (
           <span key={label} style={{
-            fontSize: 10, fontWeight: 700, padding: '1px 5px', borderRadius: 3, lineHeight: '14px',
+            fontSize: 12, fontWeight: 700, padding: '2px 6px', borderRadius: 3, lineHeight: '16px',
             color: GL_STATUS_COLOR[label], background: `${GL_STATUS_COLOR[label]}18`,
             border: `1px solid ${GL_STATUS_COLOR[label]}30`,
           }}>
@@ -828,7 +911,7 @@ function ReqItem({
         ))}
         {/* 负责人 */}
         {item.assignee && (
-          <span style={{ fontSize: 10, color: 'var(--mg-text-2)', fontWeight: 600 }}>
+          <span style={{ fontSize: 12, color: 'var(--mg-text-2)', fontWeight: 600 }}>
             @{item.assignee}
           </span>
         )}
@@ -841,9 +924,9 @@ function ReqItem({
                   onClick={(e) => { e.stopPropagation(); onClaim(item.id) }}
                   title="认领此任务（分配给我 + 标记已认领）"
                   style={{
-                    fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3,
+                    fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 3,
                     color: '#fff', background: 'var(--mg-primary)', border: 'none',
-                    cursor: 'pointer', lineHeight: '16px',
+                    cursor: 'pointer', lineHeight: '18px',
                   }}
                 >
                   认领
@@ -854,9 +937,9 @@ function ReqItem({
                 onClick={(e) => { e.stopPropagation(); onPush(item.id) }}
                 title="推送到 GitLab 并认领"
                 style={{
-                  fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3,
+                  fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 3,
                   color: 'var(--mg-primary)', background: 'var(--mg-primary-light)',
-                  border: `1px solid var(--mg-primary)`, cursor: 'pointer', lineHeight: '14px',
+                  border: `1px solid var(--mg-primary)`, cursor: 'pointer', lineHeight: '16px',
                 }}
               >
                 推送
@@ -866,23 +949,23 @@ function ReqItem({
               onClick={(e) => { e.stopPropagation(); onFinish(item.id) }}
               title="标记完成（同步关闭 GitLab Issue）"
               style={{
-                fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3,
+                fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 3,
                 color: '#fff', background: '#22c55e', border: 'none',
-                cursor: 'pointer', lineHeight: '16px',
+                cursor: 'pointer', lineHeight: '18px',
               }}
             >
               完成
             </button>
           </>
         )}
-        <span style={{ fontSize: 11, color: PRIORITY_COLOR[item.priority], fontWeight: 700 }}>
+        <span style={{ fontSize: 13, color: PRIORITY_COLOR[item.priority], fontWeight: 700 }}>
           {PRIORITY_LABEL[item.priority]}
         </span>
         {hovered && !isEditing && (
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(item.id) }}
             title="删除"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--mg-text-2)', fontSize: 15, lineHeight: 1, padding: 0 }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--mg-text-2)', fontSize: 18, lineHeight: 1, padding: 0 }}
           >
             ×
           </button>

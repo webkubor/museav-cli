@@ -16,6 +16,13 @@ const PRIORITY_COLOR: Record<Requirement['priority'], string> = {
   low: 'var(--mg-text-2)',
 }
 
+const GL_STATUS_COLOR: Record<string, string> = {
+  '已认领': '#6366f1',
+  '进行中': '#f59e0b',
+  '待验证': '#3b82f6',
+  '已完成': '#22c55e',
+}
+
 async function post(body: object) {
   return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 }
@@ -47,6 +54,7 @@ export function DevRequirements() {
   const [priority, setPriority] = useState<Requirement['priority']>('medium')
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [pos, setPos] = useState<{ top: number; right: number }>(loadPos)
+  const [syncing, setSyncing] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const [draggingId, setDraggingId] = useState<string | null>(null)
@@ -259,6 +267,8 @@ export function DevRequirements() {
     onDragOver: handleItemDragOver,
     onDragLeave: handleItemDragLeave,
     onDrop: handleItemDrop,
+    onClaim: handleClaim,
+    onPush: handlePush,
   }
 
   function handleExport() {
@@ -287,6 +297,27 @@ export function DevRequirements() {
     a.download = `requirements-${new Date().toISOString().slice(0, 10)}.md`
     a.click()
     URL.revokeObjectURL(a.href)
+  }
+
+  function handleSync() {
+    setSyncing(true)
+    post({ action: 'sync' })
+      .then((r) => r.json())
+      .then((data: Requirement[]) => { if (Array.isArray(data)) setItems(data) })
+      .catch(() => {})
+      .finally(() => setSyncing(false))
+  }
+
+  function handleClaim(id: string) {
+    post({ action: 'claim', id })
+      .then(() => load())
+      .catch(() => {})
+  }
+
+  function handlePush(id: string) {
+    post({ action: 'push', id })
+      .then(() => load())
+      .catch(() => {})
   }
 
     const panelW = maximized ? window.innerWidth * 0.9 : size.w
@@ -417,6 +448,22 @@ export function DevRequirements() {
 
             {/* 操作按钮 */}
             <div style={{ display: 'flex', gap: 4, flexShrink: 0 }} onMouseDown={e => e.stopPropagation()}>
+              {/* 同步 GitLab */}
+              <button
+                onClick={handleSync}
+                disabled={syncing}
+                title="从 GitLab 同步"
+                style={{
+                  background: 'none', border: 'none', cursor: syncing ? 'wait' : 'pointer',
+                  color: syncing ? 'var(--mg-primary)' : 'var(--mg-text-2)', fontSize: 12, lineHeight: 1,
+                  padding: '3px 6px', borderRadius: 4, fontWeight: 600,
+                  display: 'flex', alignItems: 'center', gap: 3,
+                  opacity: syncing ? 0.6 : 1,
+                }}
+              >
+                <span style={{ display: 'inline-block', animation: syncing ? 'spin 1s linear infinite' : 'none' }}>↻</span>
+                {syncing ? '同步中' : '同步'}
+              </button>
               {/* 导出 */}
               <button
                 onClick={handleExport}
@@ -612,6 +659,8 @@ interface SharedItemProps {
   onDragOver: (e: React.DragEvent, id: string) => void
   onDragLeave: () => void
   onDrop: (e: React.DragEvent, id: string) => void
+  onClaim: (id: string) => void
+  onPush: (id: string) => void
 }
 
 interface ReqItemProps extends SharedItemProps {
@@ -624,6 +673,7 @@ function ReqItem({
   onHover, onToggle, onDelete,
   onEditStart, onEditChange, onEditSave, onEditCancel,
   onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
+  onClaim, onPush,
 }: ReqItemProps) {
   const editRef = useRef<HTMLInputElement>(null)
   const hovered = hoverId === item.id
@@ -740,8 +790,9 @@ function ReqItem({
         )}
       </div>
 
-      {/* GitLab + 优先级 + 删除 */}
-      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, marginTop: 1 }}>
+      {/* GitLab + 状态 + 负责人 + 认领 + 优先级 + 删除 */}
+      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, marginTop: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        {/* GitLab issue link */}
         {item.gitlabIid && (
           <a
             href={`${GITLAB_ISSUE_URL}/${item.gitlabIid}`}
@@ -751,15 +802,58 @@ function ReqItem({
             title={`GitLab #${item.gitlabIid}`}
             style={{
               fontSize: 11, fontWeight: 700, fontFamily: 'monospace',
-              color: 'var(--mg-primary)',
-              background: 'var(--mg-primary-light)',
-              padding: '1px 6px', borderRadius: 4,
-              textDecoration: 'none',
-              lineHeight: '16px',
+              color: 'var(--mg-primary)', background: 'var(--mg-primary-light)',
+              padding: '1px 6px', borderRadius: 4, textDecoration: 'none', lineHeight: '16px',
             }}
           >
             #{item.gitlabIid}
           </a>
+        )}
+        {/* GitLab 状态标签 */}
+        {item.gitlabLabels?.filter((l) => GL_STATUS_COLOR[l]).map((label) => (
+          <span key={label} style={{
+            fontSize: 10, fontWeight: 700, padding: '1px 5px', borderRadius: 3, lineHeight: '14px',
+            color: GL_STATUS_COLOR[label], background: `${GL_STATUS_COLOR[label]}18`,
+            border: `1px solid ${GL_STATUS_COLOR[label]}30`,
+          }}>
+            {label}
+          </span>
+        ))}
+        {/* 负责人 */}
+        {item.assignee && (
+          <span style={{ fontSize: 10, color: 'var(--mg-text-2)', fontWeight: 600 }}>
+            @{item.assignee}
+          </span>
+        )}
+        {/* 认领 / 推送 */}
+        {hovered && !isEditing && item.status !== 'done' && (
+          item.gitlabIid ? (
+            !item.assignee || item.assignee !== 'webkubor' ? (
+              <button
+                onClick={(e) => { e.stopPropagation(); onClaim(item.id) }}
+                title="认领此任务（分配给我 + 标记已认领）"
+                style={{
+                  fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3,
+                  color: '#fff', background: 'var(--mg-primary)', border: 'none',
+                  cursor: 'pointer', lineHeight: '16px',
+                }}
+              >
+                认领
+              </button>
+            ) : null
+          ) : (
+            <button
+              onClick={(e) => { e.stopPropagation(); onPush(item.id) }}
+              title="推送到 GitLab 并认领"
+              style={{
+                fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3,
+                color: 'var(--mg-primary)', background: 'var(--mg-primary-light)',
+                border: `1px solid var(--mg-primary)`, cursor: 'pointer', lineHeight: '14px',
+              }}
+            >
+              推送
+            </button>
+          )
         )}
         <span style={{ fontSize: 11, color: PRIORITY_COLOR[item.priority], fontWeight: 700 }}>
           {PRIORITY_LABEL[item.priority]}
@@ -768,15 +862,7 @@ function ReqItem({
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(item.id) }}
             title="删除"
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--mg-text-2)',
-              fontSize: 15,
-              lineHeight: 1,
-              padding: 0,
-            }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--mg-text-2)', fontSize: 15, lineHeight: 1, padding: 0 }}
           >
             ×
           </button>

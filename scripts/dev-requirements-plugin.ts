@@ -1,8 +1,12 @@
 import fs from 'fs'
 import path from 'path'
+import { execSync } from 'child_process'
 import type { Plugin } from 'vite'
 
 const DATA_FILE = path.resolve(process.cwd(), '.requirements.json')
+const GITLAB_HOST = 'gitlab.ops.modelgo.com'
+const GITLAB_PROJECT_ID = 1
+const GITLAB_USER_ID = 8
 
 export interface Requirement {
   id: string
@@ -12,7 +16,20 @@ export interface Requirement {
   createdAt: string
   note?: string
   gitlabIid?: number
+  gitlabLabels?: string[]
+  assignee?: string
 }
+
+interface GitLabIssue {
+  iid: number
+  title: string
+  state: string
+  labels: string[]
+  assignee: { username: string } | null
+  created_at: string
+}
+
+const STATUS_LABELS = ['已认领', '进行中', '待验证', '已完成']
 
 type Action =
   | { action: 'add'; title: string; priority?: Requirement['priority']; note?: string; gitlabIid?: number }
@@ -20,6 +37,9 @@ type Action =
   | { action: 'delete'; id: string }
   | { action: 'update'; id: string; title: string; gitlabIid?: number }
   | { action: 'reorder'; ids: string[] }
+  | { action: 'sync' }
+  | { action: 'claim'; id: string }
+  | { action: 'push'; id: string }
 
 function read(): Requirement[] {
   if (!fs.existsSync(DATA_FILE)) return []
@@ -40,6 +60,94 @@ function readBody(req: import('http').IncomingMessage): Promise<string> {
     req.on('data', (chunk: Buffer) => { body += chunk.toString() })
     req.on('end', () => resolve(body))
   })
+}
+
+function glab(cmd: string): string {
+  return execSync(`glab api ${cmd} --hostname ${GITLAB_HOST}`, {
+    encoding: 'utf-8',
+    timeout: 15_000,
+  })
+}
+
+function glabJson<T>(cmd: string): T {
+  return JSON.parse(glab(cmd)) as T
+}
+
+function gitlabStatusToPriority(labels: string[]): Requirement['priority'] {
+  if (labels.some((l) => l === 'BUG')) return 'high'
+  return 'medium'
+}
+
+function gitlabStatusToLocal(issue: GitLabIssue): Requirement['status'] {
+  if (issue.state === 'closed' || issue.labels.includes('已完成')) return 'done'
+  return 'pending'
+}
+
+function syncFromGitlab(items: Requirement[]): Requirement[] {
+  const issues = glabJson<GitLabIssue[]>('"groups/qa/issues?per_page=100"')
+  const iidMap = new Map(items.filter((i) => i.gitlabIid).map((i) => [i.gitlabIid!, i]))
+
+  const merged = [...items]
+
+  for (const issue of issues) {
+    const existing = iidMap.get(issue.iid)
+    if (existing) {
+      const idx = merged.indexOf(existing)
+      merged[idx] = {
+        ...existing,
+        title: issue.title.replace(/^\[Console需求\]\s*/, '').replace(/^\[cs:claude\]\s*/, ''),
+        status: gitlabStatusToLocal(issue),
+        gitlabLabels: issue.labels,
+        assignee: issue.assignee?.username ?? undefined,
+      }
+    } else {
+      merged.push({
+        id: `gl-${issue.iid}`,
+        title: issue.title.replace(/^\[Console需求\]\s*/, '').replace(/^\[cs:claude\]\s*/, ''),
+        priority: gitlabStatusToPriority(issue.labels),
+        status: gitlabStatusToLocal(issue),
+        createdAt: issue.created_at,
+        gitlabIid: issue.iid,
+        gitlabLabels: issue.labels,
+        assignee: issue.assignee?.username ?? undefined,
+      })
+    }
+  }
+
+  return merged
+}
+
+function claimIssue(items: Requirement[], localId: string): Requirement[] {
+  const item = items.find((i) => i.id === localId)
+  if (!item?.gitlabIid) throw new Error('no_gitlab_link')
+
+  const issue = glabJson<GitLabIssue>(`"projects/${GITLAB_PROJECT_ID}/issues/${item.gitlabIid}"`)
+  const bizLabels = issue.labels.filter((l) => !STATUS_LABELS.includes(l))
+  const newLabels = [...bizLabels, '已认领'].join(',')
+
+  glab(`-X PUT "projects/${GITLAB_PROJECT_ID}/issues/${item.gitlabIid}" --field "assignee_id=${GITLAB_USER_ID}" --field "labels=${newLabels}"`)
+
+  return items.map((i) =>
+    i.id === localId
+      ? { ...i, assignee: 'webkubor', gitlabLabels: [...bizLabels, '已认领'] }
+      : i
+  )
+}
+
+function pushToGitlab(items: Requirement[], localId: string): Requirement[] {
+  const item = items.find((i) => i.id === localId)
+  if (!item) throw new Error('not_found')
+  if (item.gitlabIid) throw new Error('already_linked')
+
+  const created = glabJson<GitLabIssue>(
+    `-X POST "projects/${GITLAB_PROJECT_ID}/issues" --field "title=[Console需求] ${item.title}" --field "labels=TASK,已认领" --field "assignee_id=${GITLAB_USER_ID}"`
+  )
+
+  return items.map((i) =>
+    i.id === localId
+      ? { ...i, gitlabIid: created.iid, gitlabLabels: created.labels, assignee: 'webkubor' }
+      : i
+  )
 }
 
 export function devRequirementsPlugin(): Plugin {
@@ -67,6 +175,45 @@ export function devRequirementsPlugin(): Plugin {
           }
 
           const items = read()
+
+          if (payload.action === 'sync') {
+            try {
+              const merged = syncFromGitlab(items)
+              write(merged)
+              res.statusCode = 200
+              res.end(JSON.stringify(merged))
+            } catch (e) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ error: (e as Error).message }))
+            }
+            return
+          }
+
+          if (payload.action === 'claim') {
+            try {
+              const updated = claimIssue(items, payload.id)
+              write(updated)
+              res.statusCode = 200
+              res.end(JSON.stringify(updated.find((i) => i.id === payload.id)))
+            } catch (e) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ error: (e as Error).message }))
+            }
+            return
+          }
+
+          if (payload.action === 'push') {
+            try {
+              const updated = pushToGitlab(items, payload.id)
+              write(updated)
+              res.statusCode = 200
+              res.end(JSON.stringify(updated.find((i) => i.id === payload.id)))
+            } catch (e) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ error: (e as Error).message }))
+            }
+            return
+          }
 
           if (payload.action === 'add') {
             const item: Requirement = {

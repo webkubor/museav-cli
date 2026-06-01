@@ -11,7 +11,7 @@ import { Select, SelectItem } from '@/components/ui/Select'
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from '@/components/ui/Table'
-import { LuPlus, LuSettings, LuUsers, LuKey, LuDollarSign, LuX, LuCheck } from 'react-icons/lu'
+import { LuPlus, LuSettings, LuUsers, LuKey, LuDollarSign, LuX } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { TagInput } from '@/components/ui/TagInput'
 import { listModels } from '@/services/catalog'
@@ -84,7 +84,6 @@ export default function GuardrailsPage() {
   const [addApiKeyValue, setAddApiKeyValue] = useState('')
 
   // ── 预算内联编辑状态 ────────────────────────────────────────────────────
-  const [budgetEditing, setBudgetEditing] = useState(false)
   const [budgetAmount, setBudgetAmount] = useState('')
   const [budgetPeriodUnit, setBudgetPeriodUnit] = useState<'hour' | 'day' | 'week' | 'month'>('month')
 
@@ -129,7 +128,7 @@ export default function GuardrailsPage() {
     },
     onSuccess: () => {
       appToast.success('预算已保存')
-      setBudgetEditing(false)
+
       qc.invalidateQueries({ queryKey: ['guardrail-detail', detailId] })
     },
     onError: (err: unknown) =>
@@ -207,7 +206,6 @@ export default function GuardrailsPage() {
     setIsCreating(false)
     setDetailId(id)
     setSheetTab('info')
-    setBudgetEditing(false)
     setDetailOpen(true)
   }
 
@@ -294,12 +292,7 @@ export default function GuardrailsPage() {
     setAddApiKeyOpen(false); setAddApiKeyValue('')
   }
 
-  function startBudgetEdit() {
-    const existing = detail?.budget_policies?.[0]
-    setBudgetAmount(existing ? parseFloat(existing.spend_limit_amount).toFixed(0) : '')
-    setBudgetPeriodUnit(existing?.period_unit ?? 'month')
-    setBudgetEditing(true)
-  }
+
 
   function handleSaveBudget() {
     if (!budgetAmount || !detail) return
@@ -452,6 +445,11 @@ export default function GuardrailsPage() {
                 onClick={() => {
                   setSheetTab(tab.key)
                   if (tab.key === 'info' && detail) syncFormFromDetail(detail)
+                  if (tab.key === 'budget' && detail) {
+                    const bp = detail.budget_policies?.[0]
+                    setBudgetAmount(bp?.spend_limit_amount ?? '')
+                    setBudgetPeriodUnit((bp?.period_unit as typeof budgetPeriodUnit) ?? 'month')
+                  }
                 }}
                 className={`px-4 py-2.5 text-xs font-bold transition-colors border-b-2 -mb-px cursor-pointer ${
                   sheetTab === tab.key
@@ -561,39 +559,46 @@ export default function GuardrailsPage() {
                 <div className="h-5 bg-mg-fill-0 rounded w-1/3" />
               </div>
             ) : detail ? (
-              <section>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider">
-                    <LuDollarSign className="w-3.5 h-3.5" /> 预算策略
-                  </div>
-                  {!budgetEditing && (
-                    <button onClick={startBudgetEdit} className="text-[11px] text-mg-text-2 hover:text-brand-base transition-colors cursor-pointer">
-                      {budget ? '修改' : '设置'}
+              <section className="space-y-4">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider">
+                  <LuDollarSign className="w-3.5 h-3.5" /> 预算策略
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={budgetAmount}
+                    onChange={(e) => setBudgetAmount(e.target.value)}
+                    placeholder="输入限额金额"
+                    className="h-9 text-xs flex-1"
+                  />
+                  <Select value={budgetPeriodUnit} onChange={(v) => setBudgetPeriodUnit(v as typeof budgetPeriodUnit)} className="h-9 text-xs w-28">
+                    {(Object.entries(PERIOD_LABEL) as [typeof budgetPeriodUnit, string][]).map(([k, label]) => (
+                      <SelectItem key={k} value={k}>每{label}</SelectItem>
+                    ))}
+                  </Select>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Button
+                    variant="brand"
+                    className="h-9 px-5 text-xs font-semibold"
+                    loading={setBudgetMutation.isPending}
+                    onClick={handleSaveBudget}
+                  >
+                    保存预算
+                  </Button>
+                  {budget && (
+                    <button
+                      onClick={() => removeBudgetMutation.mutate({ guardrailId: detail.id, policyId: budget.id })}
+                      className="text-[11px] text-mg-text-2 hover:text-rose-500 transition-colors cursor-pointer"
+                    >
+                      清除预算
                     </button>
                   )}
                 </div>
-                {budgetEditing ? (
-                  <div className="flex items-center gap-2">
-                    <Input type="number" value={budgetAmount} onChange={(e) => setBudgetAmount(e.target.value)} placeholder="输入限额金额" className="h-8 text-xs w-28" />
-                    <Select value={budgetPeriodUnit} onChange={(v) => setBudgetPeriodUnit(v as typeof budgetPeriodUnit)} className="h-8 text-xs w-24">
-                      {(Object.entries(PERIOD_LABEL) as [typeof budgetPeriodUnit, string][]).map(([k, label]) => (
-                        <SelectItem key={k} value={k}>每{label}</SelectItem>
-                      ))}
-                    </Select>
-                    <Button size="sm" variant="brand" className="h-8 px-3" loading={setBudgetMutation.isPending} onClick={handleSaveBudget}>
-                      <LuCheck className="w-3.5 h-3.5" />
-                    </Button>
-                    <button onClick={() => setBudgetEditing(false)} className="text-mg-text-2 hover:text-mg-text-0 transition-colors cursor-pointer"><LuX className="w-4 h-4" /></button>
+                {budget && (
+                  <div className="p-3 rounded-lg border border-mg-border bg-mg-fill-0/50 text-xs text-mg-text-1">
+                    当前生效：<span className="font-semibold text-brand-base">{currencySymbol}{parseFloat(budget.spend_limit_amount).toLocaleString()} / {PERIOD_LABEL[budget.period_unit]}</span>
                   </div>
-                ) : budget ? (
-                  <div className="flex items-center justify-between p-3 rounded-lg border border-mg-border bg-mg-fill-0">
-                    <p className="text-sm font-semibold text-mg-text-0">
-                      消费上限：<span className="text-brand-base">{currencySymbol}{parseFloat(budget.spend_limit_amount).toLocaleString()} / {PERIOD_LABEL[budget.period_unit]}</span>
-                    </p>
-                    <button onClick={() => removeBudgetMutation.mutate({ guardrailId: detail.id, policyId: budget.id })} className="text-mg-text-2 hover:text-mg-danger transition-colors cursor-pointer"><LuX className="w-3.5 h-3.5" /></button>
-                  </div>
-                ) : (
-                  <p className="text-xs text-mg-text-2 italic">未设置预算策略，点击右上角「设置」添加</p>
                 )}
               </section>
             ) : null

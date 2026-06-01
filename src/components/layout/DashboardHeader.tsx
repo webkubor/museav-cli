@@ -184,10 +184,11 @@ export const DashboardHeader: React.FC = () => {
   async function handleLogout() {
     try {
       await logout()
-    } finally {
-      clearAuth()
-      navigate('/login', { replace: true })
+    } catch {
+      // 即使后端 logout 失败也继续清理前端状态
     }
+    clearAuth()
+    navigate('/login', { replace: true })
   }
 
   function handleThemeChange(theme: Theme) {

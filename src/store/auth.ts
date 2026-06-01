@@ -10,6 +10,7 @@ interface AuthState {
   permissions: string[]
   isAuthenticated: boolean
   isLoading: boolean
+  loggedOut: boolean
 }
 
 interface AuthActions {
@@ -35,6 +36,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   permissions: [],
   isAuthenticated: false,
   isLoading: true,
+  loggedOut: false,
 
   setAuth: (account, activeTenantId, tenants, activeWorkspaceId, permissions = []) => {
     if (activeTenantId) {
@@ -50,6 +52,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
       permissions,
       isAuthenticated: true,
       isLoading: false,
+      loggedOut: false,
     })
   },
 
@@ -66,6 +69,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
       permissions: [],
       isAuthenticated: false,
       isLoading: false,
+      loggedOut: true,
     })
   },
 

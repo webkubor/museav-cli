@@ -1,7 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import { Input } from '@/components/ui/Input'
 import { SideSheet } from '@/components/ui/SideSheet'
-import { LuSearch } from 'react-icons/lu'
+import { LuSearch, LuGitCompareArrows } from 'react-icons/lu'
+import { useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/Button'
 import { useModels } from '@/features/models/hooks/useModels'
 import { ModelCard } from '@/features/models/components/ModelCard'
 import { ModelDetailPanel } from '@/features/models/components/ModelDetailPanel'
@@ -16,6 +18,7 @@ const Spinner = () => (
 
 export default function ModelsPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const {
     search,
     setSearch,
@@ -41,15 +44,19 @@ export default function ModelsPage() {
         </p>
       </div>
 
-      {/* 搜索栏 */}
-      <div className="w-[320px] mb-5">
+      {/* 搜索栏 + 对比入口 */}
+      <div className="flex items-center gap-3 mb-5">
         <Input
           prefix={<LuSearch className="w-4 h-4" />}
           placeholder={t('modelsCatalog.placeholder.search')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="rounded-full"
+          className="rounded-full w-[320px]"
         />
+        <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-semibold shrink-0" onClick={() => navigate('/models/compare')}>
+          <LuGitCompareArrows size={14} className="mr-1.5" />
+          {t('nav.modelCompare')}
+        </Button>
       </div>
 
       {/* 标签筛选 */}

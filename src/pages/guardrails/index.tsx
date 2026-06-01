@@ -165,6 +165,7 @@ export default function GuardrailsPage() {
       updateGuardrail(id, payload),
     onSuccess: () => {
       appToast.success(t('guardrails.toast.updateSuccess'))
+      setDetailOpen(false)
       qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
       qc.invalidateQueries({ queryKey: ['guardrail-detail', detailId] })
     },

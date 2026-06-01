@@ -173,10 +173,7 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
               onPlatformChange={setPlatform}
               isSubmitting={createMutation.isPending}
               workspaceId={workspaceId}
-              onSubmit={(payload) => {
-                if (!selectedPlatformId || !payload.name.trim()) return
-                createMutation.mutate(payload)
-              }}
+              onSubmit={(payload) => createMutation.mutate(payload)}
             />
           </div>
         )}
@@ -323,6 +320,7 @@ function CreateForwardForm({
   const [samplingRate, setSamplingRate] = useState('100')
   const [privacyMode, setPrivacyMode] = useState(false)
   const [selectedKeyIds, setSelectedKeyIds] = useState<string[]>([])
+  const [errors, setErrors] = useState<Record<string, boolean>>({})
 
   const apiKeysQuery = useQuery({
     queryKey: ['api-keys', workspaceId],
@@ -339,9 +337,38 @@ function CreateForwardForm({
   }
 
   function handleSubmit() {
+    const newErrors: Record<string, boolean> = {}
+    const missing: string[] = []
+
+    if (!selectedPlatformId) {
+      newErrors['platform'] = true
+      missing.push(t('observability.form.platformLabel'))
+    }
+    if (!name.trim()) {
+      newErrors['name'] = true
+      missing.push(t('observability.form.nameLabel'))
+    }
+    for (const field of fields) {
+      if (field.required && !configValues[field.key]?.trim()) {
+        newErrors[field.key] = true
+        missing.push(field.label)
+      }
+    }
     const rate = parseInt(samplingRate, 10)
+    if (samplingRate.trim() && (isNaN(rate) || rate < 1 || rate > 100)) {
+      newErrors['samplingRate'] = true
+      missing.push(t('observability.form.samplingRate'))
+    }
+
+    setErrors(newErrors)
+
+    if (missing.length > 0) {
+      appToast.error(t('observability.form.validationError', { fields: missing.join('、') }))
+      return
+    }
+
     onSubmit({
-      name,
+      name: name.trim(),
       config: configValues,
       sampling_rate: isNaN(rate) ? 1 : rate / 100,
       api_key_ids: selectedKeyIds.length > 0 ? selectedKeyIds : undefined,
@@ -364,11 +391,15 @@ function CreateForwardForm({
           </Select>
         </div>
         <div>
-          <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">{t('observability.form.nameLabel')}</label>
+          <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">
+            {t('observability.form.nameLabel')}
+            <span className="text-rose-500 ml-1">*</span>
+          </label>
           <Input
             value={name}
             placeholder="例如：生产环境 Datadog 主通道"
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: false })) }}
+            className={errors['name'] ? 'border-rose-500 focus:border-rose-500' : ''}
           />
         </div>
       </div>
@@ -386,7 +417,11 @@ function CreateForwardForm({
                 value={configValues[field.key] ?? ''}
                 placeholder={field.type === 'secret' ? '粘贴密钥，提交后不再明文显示' : `填写 ${field.label}，参考平台文档获取`}
                 type={field.type === 'secret' ? 'password' : 'text'}
-                onChange={(e) => setConfigValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                onChange={(e) => {
+                  setConfigValues((prev) => ({ ...prev, [field.key]: e.target.value }))
+                  setErrors((p) => ({ ...p, [field.key]: false }))
+                }}
+                className={errors[field.key] ? 'border-rose-500 focus:border-rose-500' : ''}
               />
             </div>
           ))}
@@ -406,8 +441,8 @@ function CreateForwardForm({
               max="100"
               value={samplingRate}
               placeholder="1~100，数值越小转发越少"
-              onChange={(e) => setSamplingRate(e.target.value)}
-              className="flex-1"
+              onChange={(e) => { setSamplingRate(e.target.value); setErrors((p) => ({ ...p, samplingRate: false })) }}
+              className={`flex-1 ${errors['samplingRate'] ? 'border-rose-500 focus:border-rose-500' : ''}`}
             />
             <span className="text-xs font-bold text-mg-text-2 shrink-0">%</span>
           </div>

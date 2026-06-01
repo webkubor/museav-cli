@@ -393,7 +393,8 @@
       "apiKeyFilter": "API Key Filter",
       "apiKeyFilterHint": "Leave empty to forward all keys; select to forward only chosen keys",
       "noApiKeys": "No API keys available in this workspace",
-      "submit": "Create"
+      "submit": "Create",
+      "validationError": "Required fields missing: {{fields}}"
     },
     "deadLetters": {
       "title": "Failed Retries",

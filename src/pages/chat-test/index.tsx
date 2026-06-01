@@ -11,6 +11,9 @@ import { listApiKeys } from '@/services/api-keys'
 import { listModels } from '@/services/catalog'
 import { pageItems } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { apiBaseUrl } from '@/lib/request'
+import { getMarket } from '@/lib/market'
+import { getMarketConfig } from '@/config/market'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -45,7 +48,10 @@ export default function ChatTestPage() {
   const abortRef = useRef<AbortController | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  const baseUrl = window.location.origin.replace('console.', 'api.')
+  const market = getMarket()
+  const marketConfig = getMarketConfig(market)
+  const host = apiBaseUrl() || `https://${marketConfig.apiDomain}`
+  const baseUrl = host.replace(/\/+$/, '')
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })

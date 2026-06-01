@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
@@ -63,6 +63,8 @@ export default function ApiPlaygroundPage() {
 
   const [showKey, setShowKey] = useState(false)
   const [saveToLocal, setSaveToLocal] = useState(true)
+  const [streamEnabled, setStreamEnabled] = useState(true)
+  const abortRef = useRef<AbortController | null>(null)
   const [protocol, setProtocol] = useState<'openai' | 'anthropic'>('openai')
 
   // 0. 本地缓存 API Key 的生命周期管理逻辑
@@ -176,10 +178,20 @@ export default function ApiPlaygroundPage() {
 
     setSending(true)
     const start = Date.now()
+    const ctrl = new AbortController()
+    abortRef.current = ctrl
+
     try {
       const targetUrl = protocol === 'openai'
         ? `${baseUrl.replace(/\/+$/, '')}/chat/completions`
         : `${baseUrl.replace(/\/+$/, '')}/v1/messages`
+
+      if (streamEnabled) {
+        parsed.stream = true
+      } else {
+        parsed.stream = false
+      }
+
       const res = await fetch(targetUrl, {
         method: 'POST',
         headers: {
@@ -187,16 +199,137 @@ export default function ApiPlaygroundPage() {
           Authorization: `Bearer ${selectedKey}`,
         },
         body: JSON.stringify(parsed),
+        signal: ctrl.signal,
       })
-      const duration = Date.now() - start
-      const text = await res.text()
-      let pretty = text
-      try { pretty = JSON.stringify(JSON.parse(text), null, 2) } catch { /* keep raw */ }
-      setLog({ ts: Date.now(), status: res.status, duration, body: JSON.stringify(parsed, null, 2), response: pretty })
+
+      if (!res.ok) {
+        const text = await res.text()
+        let pretty = text
+        try { pretty = JSON.stringify(JSON.parse(text), null, 2) } catch { /* keep raw */ }
+        setLog({
+          ts: Date.now(),
+          status: res.status,
+          duration: Date.now() - start,
+          body: JSON.stringify(parsed, null, 2),
+          response: pretty
+        })
+        return
+      }
+
+      if (streamEnabled && res.body) {
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        let responseText = ''
+
+        setLog({
+          ts: Date.now(),
+          status: res.status,
+          duration: 0,
+          body: JSON.stringify(parsed, null, 2),
+          response: 'Connecting...'
+        })
+
+        let buffer = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          const combined = buffer + chunk
+          const lines = combined.split('\n')
+
+          buffer = lines.pop() || ''
+
+          for (const line of lines) {
+            const trimmed = line.trim()
+            if (!trimmed) continue
+            if (trimmed === 'data: [DONE]') continue
+
+            if (trimmed.startsWith('data: ')) {
+              const dataStr = trimmed.slice(6)
+              try {
+                const dataJson = JSON.parse(dataStr)
+                if (protocol === 'openai') {
+                  const delta = dataJson.choices?.[0]?.delta?.content ?? ''
+                  responseText += delta
+                } else {
+                  if (dataJson.type === 'content_block_delta') {
+                    responseText += dataJson.delta?.text ?? ''
+                  } else if (dataJson.delta?.text) {
+                    responseText += dataJson.delta.text
+                  }
+                }
+                setLog(prev => prev ? {
+                  ...prev,
+                  duration: Date.now() - start,
+                  response: responseText
+                } : null)
+              } catch {
+                // 忽略非完整 JSON 行
+              }
+            }
+          }
+        }
+
+        if (buffer && buffer.trim().startsWith('data: ')) {
+          const trimmed = buffer.trim()
+          if (trimmed !== 'data: [DONE]') {
+            const dataStr = trimmed.slice(6)
+            try {
+              const dataJson = JSON.parse(dataStr)
+              if (protocol === 'openai') {
+                responseText += dataJson.choices?.[0]?.delta?.content ?? ''
+              } else {
+                if (dataJson.type === 'content_block_delta') {
+                  responseText += dataJson.delta?.text ?? ''
+                } else if (dataJson.delta?.text) {
+                  responseText += dataJson.delta.text
+                }
+              }
+            } catch {}
+          }
+        }
+
+        setLog(prev => prev ? {
+          ...prev,
+          duration: Date.now() - start,
+          response: responseText || 'No stream response content returned.'
+        } : null)
+
+      } else {
+        const duration = Date.now() - start
+        const text = await res.text()
+        let pretty = text
+        try { pretty = JSON.stringify(JSON.parse(text), null, 2) } catch { /* keep raw */ }
+        setLog({
+          ts: Date.now(),
+          status: res.status,
+          duration,
+          body: JSON.stringify(parsed, null, 2),
+          response: pretty
+        })
+      }
     } catch (e) {
-      setLog({ ts: Date.now(), status: null, duration: Date.now() - start, body: JSON.stringify(parsed, null, 2), response: '', error: String(e) })
+      if ((e as Error).name !== 'AbortError') {
+        setLog({
+          ts: Date.now(),
+          status: null,
+          duration: Date.now() - start,
+          body: JSON.stringify(parsed, null, 2),
+          response: '',
+          error: String(e)
+        })
+      } else {
+        setLog(prev => prev ? {
+          ...prev,
+          duration: Date.now() - start,
+          response: prev.response + '\n\n[Request interrupted by user.]'
+        } : null)
+      }
     } finally {
       setSending(false)
+      abortRef.current = null
     }
   }
 
@@ -259,17 +392,32 @@ export default function ApiPlaygroundPage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <SectionLabel>API Key</SectionLabel>
-                <div 
-                  className="flex items-center gap-1.5 cursor-pointer select-none"
-                  onClick={() => setSaveToLocal(!saveToLocal)}
-                >
-                  <Checkbox 
-                    checked={saveToLocal}
-                    onCheckedChange={(checked) => setSaveToLocal(checked === true)}
-                  />
-                  <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wide">
-                    {i18n.language.startsWith('zh') ? "本地缓存" : "Save Local"}
-                  </span>
+                <div className="flex items-center gap-4">
+                  <div 
+                    className="flex items-center gap-1.5 cursor-pointer select-none"
+                    onClick={() => setSaveToLocal(!saveToLocal)}
+                  >
+                    <Checkbox 
+                      checked={saveToLocal}
+                      onCheckedChange={(checked) => setSaveToLocal(checked === true)}
+                    />
+                    <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wide">
+                      {i18n.language.startsWith('zh') ? "本地缓存" : "Save Local"}
+                    </span>
+                  </div>
+
+                  <div 
+                    className="flex items-center gap-1.5 cursor-pointer select-none"
+                    onClick={() => setStreamEnabled(!streamEnabled)}
+                  >
+                    <Checkbox 
+                      checked={streamEnabled}
+                      onCheckedChange={(checked) => setStreamEnabled(checked === true)}
+                    />
+                    <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wide">
+                      {i18n.language.startsWith('zh') ? "流式输出" : "Stream"}
+                    </span>
+                  </div>
                 </div>
               </div>
               <Input
@@ -328,14 +476,22 @@ export default function ApiPlaygroundPage() {
                 <LuRotateCcw className="w-4 h-4 mr-1.5" />
                 {t('apiPlayground.button.reset')}
               </Button>
-              <Button
-                variant="brand"
-                loading={sending}
-                onClick={handleSend}
-              >
-                <LuSend className="w-4 h-4 mr-1.5" />
-                {t('apiPlayground.button.send')}
-              </Button>
+              {sending ? (
+                <Button
+                  variant="destructive"
+                  onClick={() => abortRef.current?.abort()}
+                >
+                  {t('chatTest.button.stop') || '停止'}
+                </Button>
+              ) : (
+                <Button
+                  variant="brand"
+                  onClick={handleSend}
+                >
+                  <LuSend className="w-4 h-4 mr-1.5" />
+                  {t('apiPlayground.button.send')}
+                </Button>
+              )}
             </div>
           </div>
         </div>

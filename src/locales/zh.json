@@ -393,7 +393,8 @@
       "apiKeyFilter": "指定 API Key",
       "apiKeyFilterHint": "不选则转发所有 Key 的日志；选择后仅转发勾选 Key 的请求",
       "noApiKeys": "当前项目暂无可用 API Key",
-      "submit": "创建目标"
+      "submit": "创建目标",
+      "validationError": "请填写必填项：{{fields}}"
     },
     "deadLetters": {
       "title": "失败重试",

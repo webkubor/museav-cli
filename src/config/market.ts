@@ -21,10 +21,26 @@ export interface MarketConfig {
   docsUrl: string
 }
 
+const isTestOrDev = (): boolean => {
+  if (import.meta.env.DEV) return true
+  if (import.meta.env.MODE === 'test') return true
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname.toLowerCase()
+    return (
+      hostname.includes('test.modelgo.com') ||
+      hostname.includes('localhost') ||
+      hostname.includes('127.0.0.1')
+    )
+  }
+  return false
+}
+
 const configs: Record<Market, MarketConfig> = {
   domestic: {
     domain: 'modelgo.com',
-    apiDomain: import.meta.env.VITE_DOMESTIC_API_DOMAIN || (import.meta.env.DEV ? 'test.modelgo.com' : 'api.modelgo.com'),
+    apiDomain: isTestOrDev()
+      ? 'test.modelgo.com'
+      : (import.meta.env.VITE_DOMESTIC_API_DOMAIN || 'api.modelgo.com'),
     companyName: '词元共生',
     icp: import.meta.env.VITE_ICP || null,
     locales: ['zh'],
@@ -36,7 +52,9 @@ const configs: Record<Market, MarketConfig> = {
 
   global: {
     domain: 'modelgo.ai',
-    apiDomain: import.meta.env.VITE_GLOBAL_API_DOMAIN || (import.meta.env.DEV ? 'test.modelgo.ai' : 'api.modelgo.ai'),
+    apiDomain: isTestOrDev()
+      ? 'test.modelgo.com'
+      : (import.meta.env.VITE_GLOBAL_API_DOMAIN || 'api.modelgo.ai'),
     companyName: 'ModelGo',
     icp: null,
     locales: ['zh', 'en'],

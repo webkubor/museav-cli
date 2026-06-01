@@ -105,9 +105,9 @@ export function deviceAuthorize(body: DeviceAuthorizeRequest = {}) {
   return post<DeviceAuthorizeResult>('auth/device/authorize', body)
 }
 
-/** 当前登录用户批准 CLI 登录（需携带 CSRF Token） */
-export function deviceApprove(user_code: string) {
-  return post<null>('auth/device/approve', { user_code })
+/** 当前登录用户批准 CLI 登录并绑定到指定租户（需携带 CSRF Token） */
+export function deviceApprove(user_code: string, tenant_id: string) {
+  return post<null>('auth/device/approve', { user_code, tenant_id })
 }
 
 /** CLI 轮询获取登录凭证，审批完成后返回 token（不设置 cookie） */

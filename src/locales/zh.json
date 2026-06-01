@@ -847,6 +847,8 @@
     "success.desc": "可以回到终端继续使用了。此页面可以关闭。",
     "authNotice": "ModelGo CLI 正在请求登录授权。确认后，终端里的 CLI 将获得与当前账号相同的访问凭证。",
     "codeLabel": "本次授权码",
+    "tenant.loading": "正在加载企业列表...",
+    "tenant.label": "选择要登录的企业",
     "button.cancel": "取消",
     "button.approve": "确认授权",
     "button.approving": "授权中...",

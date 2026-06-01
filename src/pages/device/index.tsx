@@ -4,9 +4,10 @@ import { useTranslation } from 'react-i18next'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { useAuthStore } from '@/store/auth'
 import { deviceApprove } from '@/services/auth'
+import { listTenants } from '@/services/tenants'
 import { Button } from '@/components/ui/Button'
+import type { TenantItem } from '@/types'
 
-// user_code 格式：8~16 位大写字母和数字，允许中间带连字符，如 ABCD-EFGH
 function isValidUserCode(code: string) {
   return /^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code) || /^[A-Z0-9]{8,16}$/.test(code)
 }
@@ -15,13 +16,20 @@ type PageState =
   | { kind: 'missing_code' }
   | { kind: 'invalid_code' }
   | { kind: 'checking_auth' }
-  | { kind: 'confirming'; userCode: string }
-  | { kind: 'approving'; userCode: string }
+  | { kind: 'loading_tenants'; userCode: string }
+  | { kind: 'confirming'; userCode: string; tenants: TenantItem[] }
+  | { kind: 'approving'; userCode: string; tenants: TenantItem[] }
   | { kind: 'success' }
   | { kind: 'error'; message: string }
 
+const ROLE_LABELS: Record<string, { zh: string; en: string }> = {
+  tenant_owner:  { zh: '拥有者', en: 'Owner' },
+  tenant_admin:  { zh: '管理员', en: 'Admin' },
+  tenant_member: { zh: '成员',   en: 'Member' },
+}
+
 export default function DevicePage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const account = useAuthStore((s) => s.account)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -31,6 +39,7 @@ export default function DevicePage() {
   const rawCode = params.get('user_code') ?? ''
 
   const [state, setState] = useState<PageState>({ kind: 'checking_auth' })
+  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!rawCode) {
@@ -50,29 +59,52 @@ export default function DevicePage() {
       navigate(`/login?redirect=${encodeURIComponent(redirect)}`, { replace: true })
       return
     }
-    setState({ kind: 'confirming', userCode: rawCode.toUpperCase() })
+    loadTenants(rawCode.toUpperCase())
   }, [isLoading, isAuthenticated, rawCode])
 
-  async function handleApprove() {
-    if (state.kind !== 'confirming') return
-    const { userCode } = state
-    setState({ kind: 'approving', userCode })
+  async function loadTenants(userCode: string) {
+    setState({ kind: 'loading_tenants', userCode })
     try {
-      await deviceApprove(userCode)
-      setState({ kind: 'success' })
-    } catch (err: unknown) {
-      const code = (err as { code?: number })?.code
-      let message = t('device.error.default')
-      if (code === 40401) message = t('device.error.40401')
-      else if (code === 40901) message = t('device.error.40901')
-      else if (code === 40101) message = t('device.error.40101')
-      else if (code === 40302) message = t('device.error.40302')
-      setState({ kind: 'error', message })
+      const res = await listTenants()
+      const tenants = res.items ?? []
+      const defaultTenant = tenants.find((t) => t.is_default) ?? tenants[0]
+      if (defaultTenant) setSelectedTenantId(defaultTenant.tenant_id)
+      setState({ kind: 'confirming', userCode, tenants })
+    } catch {
+      setState({ kind: 'error', message: t('device.error.default') })
     }
   }
 
-  function handleCancel() {
-    navigate('/dashboard', { replace: true })
+  async function handleApprove() {
+    if (state.kind !== 'confirming' || !selectedTenantId) return
+    const { userCode, tenants } = state
+    setState({ kind: 'approving', userCode, tenants })
+    try {
+      await deviceApprove(userCode, selectedTenantId)
+      setState({ kind: 'success' })
+    } catch (err: unknown) {
+      const code = (err as { code?: number })?.code
+      if (code === 40401 || code === 40901) {
+        setState({ kind: 'error', message: t(`device.error.${code}`) })
+        return
+      }
+      if (code === 40101) {
+        const redirect = `/device?user_code=${encodeURIComponent(userCode)}`
+        navigate(`/login?redirect=${encodeURIComponent(redirect)}`, { replace: true })
+        return
+      }
+      if (code === 40302) {
+        setState({ kind: 'error', message: t('device.error.40302') })
+        return
+      }
+      const msg = (err as { msg?: string })?.msg
+      if (msg?.includes('TENANT_NOT_MEMBER')) {
+        setSelectedTenantId(null)
+        loadTenants(userCode)
+        return
+      }
+      setState({ kind: 'error', message: t('device.error.default') })
+    }
   }
 
   // ── 渲染 ──────────────────────────────────────────────
@@ -93,7 +125,7 @@ export default function DevicePage() {
     return (
       <AuthLayout title={t('device.title.invalidCode')}>
         <div style={{ textAlign: 'center', padding: '8px 0' }}>
-          <span style={{ color: '#64748b', fontSize: '14px' }}>
+          <span style={{ color: 'var(--mg-text-2)', fontSize: '14px' }}>
             {t('device.desc.invalidCode')}
           </span>
         </div>
@@ -101,9 +133,9 @@ export default function DevicePage() {
     )
   }
 
-  if (state.kind === 'checking_auth') {
+  if (state.kind === 'checking_auth' || state.kind === 'loading_tenants') {
     return (
-      <AuthLayout title={t('device.title.checkingAuth')}>
+      <AuthLayout title={state.kind === 'checking_auth' ? t('device.title.checkingAuth') : t('device.tenant.loading')}>
         <div style={{ textAlign: 'center', padding: '16px 0' }}>
           <div style={{
             width: '32px', height: '32px', border: '3px solid var(--mg-border)',
@@ -136,10 +168,7 @@ export default function DevicePage() {
       <AuthLayout title={t('device.title.error')}>
         <div style={{ textAlign: 'center', padding: '8px 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <span style={{ color: 'var(--mg-danger)', fontSize: '14px' }}>{state.message}</span>
-          <Button
-            onClick={() => navigate('/dashboard')}
-            className="rounded-[8px]"
-          >
+          <Button onClick={() => navigate('/dashboard')} className="rounded-[8px]">
             {t('device.button.backToDashboard')}
           </Button>
         </div>
@@ -148,8 +177,9 @@ export default function DevicePage() {
   }
 
   // confirming | approving
-  const userCode = state.kind === 'confirming' ? state.userCode : state.userCode
+  const { userCode, tenants } = state
   const isApproving = state.kind === 'approving'
+  const isZh = i18n.language?.startsWith('zh')
   const initials = account?.display_name
     ?.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2) ?? '?'
 
@@ -166,14 +196,12 @@ export default function DevicePage() {
           padding: '14px 16px', borderRadius: '10px',
           background: 'var(--mg-bg-1)', border: '1px solid var(--mg-border)',
         }}>
-          <div
-            style={{
-              width: '32px', height: '32px', borderRadius: '50%',
-              backgroundColor: 'var(--mg-primary)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontSize: '12px', fontWeight: 600, flexShrink: 0
-            }}
-          >
+          <div style={{
+            width: '32px', height: '32px', borderRadius: '50%',
+            backgroundColor: 'var(--mg-primary)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontSize: '12px', fontWeight: 600, flexShrink: 0,
+          }}>
             {initials}
           </div>
           <div style={{ minWidth: 0 }}>
@@ -186,14 +214,67 @@ export default function DevicePage() {
           </div>
         </div>
 
-        {/* 授权说明 */}
-        <div style={{
-          padding: '14px 16px', borderRadius: '10px',
-          background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
-        }}>
-          <span style={{ fontSize: '13px', color: 'var(--mg-warning)', lineHeight: '1.6', display: 'block' }}>
-            <strong style={{ fontWeight: 600 }}>ModelGo CLI</strong> {t('device.authNotice')}
-          </span>
+        {/* 租户选择器 */}
+        <div>
+          <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mg-text-2)', marginBottom: '8px' }}>
+            {t('device.tenant.label')}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {tenants.map((tenant) => {
+              const selected = selectedTenantId === tenant.tenant_id
+              const roleLabel = ROLE_LABELS[tenant.role]
+              return (
+                <button
+                  key={tenant.tenant_id}
+                  type="button"
+                  disabled={isApproving}
+                  onClick={() => setSelectedTenantId(tenant.tenant_id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '12px 14px', borderRadius: '10px',
+                    background: selected ? 'var(--mg-bg-1)' : 'transparent',
+                    border: `1.5px solid ${selected ? 'var(--mg-primary)' : 'var(--mg-border)'}`,
+                    cursor: isApproving ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.15s ease',
+                    textAlign: 'left', width: '100%',
+                    opacity: isApproving ? 0.6 : 1,
+                  }}
+                >
+                  {/* radio indicator */}
+                  <div style={{
+                    width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0,
+                    border: `2px solid ${selected ? 'var(--mg-primary)' : 'var(--mg-border)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {selected && (
+                      <div style={{
+                        width: '8px', height: '8px', borderRadius: '50%',
+                        backgroundColor: 'var(--mg-primary)',
+                      }} />
+                    )}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-0)' }}>
+                        {tenant.name}
+                      </span>
+                      {tenant.is_default && (
+                        <span style={{
+                          fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px',
+                          background: 'var(--mg-primary)', color: '#fff', lineHeight: '16px',
+                        }}>
+                          {t('header.default')}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--mg-text-2)', marginTop: '2px' }}>
+                      {tenant.slug} · {roleLabel ? (isZh ? roleLabel.zh : roleLabel.en) : tenant.role}
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         {/* 授权码展示 */}
@@ -212,13 +293,14 @@ export default function DevicePage() {
             variant="outline"
             style={{ flex: 1, height: '40px', borderRadius: '8px' }}
             disabled={isApproving}
-            onClick={handleCancel}
+            onClick={() => navigate('/dashboard', { replace: true })}
           >
             {t('device.button.cancel')}
           </Button>
           <Button
             variant="default"
             style={{ flex: 2, height: '40px', borderRadius: '8px', fontWeight: 600 }}
+            disabled={!selectedTenantId}
             onClick={handleApprove}
           >
             {isApproving ? t('device.button.approving') : t('device.button.approve')}

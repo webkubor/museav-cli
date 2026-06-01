@@ -834,6 +834,8 @@
     "success.desc": "You can return to your terminal. This page can be closed.",
     "authNotice": "ModelGo CLI is requesting login authorization. After approval, the CLI will have the same access credentials as your current account.",
     "codeLabel": "Authorization Code",
+    "tenant.loading": "Loading organizations...",
+    "tenant.label": "Select organization to sign in",
     "button.cancel": "Cancel",
     "button.approve": "Approve",
     "button.approving": "Approving...",

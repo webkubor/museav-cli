@@ -459,7 +459,6 @@ export default function GuardrailsPage() {
                 name={name} onNameChange={setName}
                 description={description} onDescriptionChange={setDescription}
                 priority={priority} onPriorityChange={setPriority}
-                isDefault={isDefault} onIsDefaultChange={setIsDefault}
                 modelWhitelist={modelWhitelist} onModelWhitelistChange={setModelWhitelist}
                 ipWhitelist={ipWhitelist} onIpWhitelistChange={setIpWhitelist}
                 modelSuggestions={modelSuggestions}
@@ -668,7 +667,6 @@ function GuardrailFormFields({
   name, onNameChange,
   description, onDescriptionChange,
   priority, onPriorityChange,
-  isDefault, onIsDefaultChange,
   modelWhitelist, onModelWhitelistChange,
   ipWhitelist, onIpWhitelistChange,
   modelSuggestions,
@@ -676,7 +674,6 @@ function GuardrailFormFields({
   name: string; onNameChange: (v: string) => void
   description: string; onDescriptionChange: (v: string) => void
   priority: number; onPriorityChange: (v: number) => void
-  isDefault: boolean; onIsDefaultChange: (v: boolean) => void
   modelWhitelist: string[]; onModelWhitelistChange: (v: string[]) => void
   ipWhitelist: string[]; onIpWhitelistChange: (v: string[]) => void
   modelSuggestions?: string[]
@@ -722,13 +719,6 @@ function GuardrailFormFields({
           placeholder={t('guardrails.form.ipWhitelistPlaceholder')}
           hint={t('guardrails.form.ipWhitelistHint')}
         />
-      </div>
-      <div className="flex items-center justify-between p-4 rounded-lg border border-mg-border bg-mg-bg-1/40">
-        <div>
-          <label className="block text-xs font-bold text-mg-text-0 mb-0.5">{t('guardrails.form.isDefaultLabel')}</label>
-          <span className="text-[11px] text-mg-text-2">{t('guardrails.form.isDefaultHint')}</span>
-        </div>
-        <Switch checked={isDefault} onChange={onIsDefaultChange} />
       </div>
     </div>
   )

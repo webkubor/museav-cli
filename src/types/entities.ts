@@ -383,7 +383,6 @@ export interface ApiKeyItem {
 /** 创建 API Key 请求体 */
 export interface CreateApiKeyRequest {
   name: string
-  env?: 'live' | 'test'
   expires_at?: string | null
   spending_limit?: SpendingLimit
   /** 作用域：个人 / 工作区 / 成员 */

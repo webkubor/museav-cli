@@ -105,7 +105,6 @@ export default function ApiKeysPage() {
 
   // 表单状态
   const [name, setName] = useState('')
-  const [env, setEnv] = useState<'live' | 'test'>('live')
   const [scope, setScope] = useState<ScopeType>('workspace')
   const [memberAccountId, setMemberAccountId] = useState('')
   const [copied, setCopied] = useState(false)
@@ -136,7 +135,6 @@ export default function ApiKeysPage() {
     mutationFn: () =>
       createApiKey(activeWorkspaceId, {
         name: name.trim(),
-        env,
         scope,
         member_account_id: scope === 'member' ? memberAccountId : undefined,
         spending_limit: spendingEnabled && spendingAmount
@@ -171,7 +169,6 @@ export default function ApiKeysPage() {
 
   function resetForm() {
     setName('')
-    setEnv('live')
     setScope('workspace')
     setMemberAccountId('')
     setSpendingEnabled(false)
@@ -362,7 +359,6 @@ export default function ApiKeysPage() {
         <TableHeader>
           <TableRow>
             <TableHead>{t('apiKeys.table.name')}</TableHead>
-            <TableHead>{t('apiKeys.table.env')}</TableHead>
             <TableHead>{t('apiKeys.table.credentials')}</TableHead>
             <TableHead>{t('apiKeys.table.status')}</TableHead>
             <TableHead>{t('apiKeys.table.totalSpend')}</TableHead>
@@ -373,19 +369,16 @@ export default function ApiKeysPage() {
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-10 text-mg-text-2">{t('common.loading')}</TableCell>
+              <TableCell colSpan={6} className="text-center py-10 text-mg-text-2">{t('common.loading')}</TableCell>
             </TableRow>
           ) : filteredData.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-10 text-mg-text-2">{t('apiKeys.table.noData')}</TableCell>
+              <TableCell colSpan={6} className="text-center py-10 text-mg-text-2">{t('apiKeys.table.noData')}</TableCell>
             </TableRow>
           ) : (
             filteredData.map((record) => (
               <TableRow key={record.api_key_id}>
                 <TableCell className="font-semibold text-mg-text-0 text-[13.5px]">{record.name}</TableCell>
-                <TableCell>
-                  <Badge variant={record.env === 'live' ? 'success' : 'warning'}>{record.env.toUpperCase()}</Badge>
-                </TableCell>
                 <TableCell>
                   <span className="font-mono text-xs bg-mg-bg-1 border border-mg-border px-2.5 py-1 rounded text-mg-text-1">
                     {record.masked}
@@ -449,27 +442,16 @@ export default function ApiKeysPage() {
         }
       >
         <div className="flex flex-col gap-7 py-3">
-          {/* 名称 + 环境 并排 */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-mg-text-1 mb-2">
-                {t('apiKeys.createModal.nameLabel')}
-              </label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t('apiKeys.createModal.namePlaceholder')}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-mg-text-1 mb-2">
-                {t('apiKeys.createModal.envLabel')}
-              </label>
-              <Select value={env} onChange={(val) => setEnv(val as 'live' | 'test')} className="w-full">
-                <Select.Option value="live">{t('apiKeys.createModal.live')}</Select.Option>
-                <Select.Option value="test">{t('apiKeys.createModal.test')}</Select.Option>
-              </Select>
-            </div>
+          {/* 名称 */}
+          <div>
+            <label className="block text-xs font-bold text-mg-text-1 mb-2">
+              {t('apiKeys.createModal.nameLabel')}
+            </label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t('apiKeys.createModal.namePlaceholder')}
+            />
           </div>
 
           {/* 作用域选择器 */}

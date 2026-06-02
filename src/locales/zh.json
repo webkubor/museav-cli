@@ -146,7 +146,13 @@
       "title": "账户余额",
       "available": "可用余额",
       "frozen": "冻结金额",
-      "recharge": "充值"
+      "recharge": "充值",
+      "health": "额度状态",
+      "healthSufficient": "额度充足",
+      "healthLow": "额度偏低",
+      "healthDepleted": "已欠费",
+      "exactBalance": "精确余额 {{amount}}",
+      "walletCard": "ModelGo 开发者虚拟钱包"
     },
     "tabs": {
       "orders": "充值订单",
@@ -194,7 +200,9 @@
         "channel": "支付渠道",
         "promo": "优惠码",
         "paidAt": "支付时间",
-        "viewInvoice": "查看发票"
+        "viewInvoice": "查看发票",
+        "receiptTitle": "交易电子收据",
+        "receiptFooter": "感谢您使用 ModelGo 开发者服务"
       },
       "status": {
         "pending": "待支付",

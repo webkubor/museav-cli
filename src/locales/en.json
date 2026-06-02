@@ -144,9 +144,15 @@
     "desc": "Manage account balance and track recharge orders.",
     "balance": {
       "title": "Account Balance",
-      "available": "Available",
-      "frozen": "Frozen",
-      "recharge": "Top Up"
+      "available": "Available Balance",
+      "frozen": "Frozen Balance",
+      "recharge": "Top Up",
+      "health": "Balance Health",
+      "healthSufficient": "Sufficient",
+      "healthLow": "Low Balance",
+      "healthDepleted": "Overdue",
+      "exactBalance": "Exact: {{amount}}",
+      "walletCard": "ModelGo Developer Wallet"
     },
     "tabs": {
       "orders": "Orders",
@@ -194,7 +200,9 @@
         "channel": "Channel",
         "promo": "Promo Code",
         "paidAt": "Paid At",
-        "viewInvoice": "View Invoice"
+        "viewInvoice": "View Invoice",
+        "receiptTitle": "Electronic Receipt",
+        "receiptFooter": "Thank you for using ModelGo Developer Services"
       },
       "status": {
         "pending": "Pending",

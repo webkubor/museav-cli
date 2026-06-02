@@ -37,6 +37,7 @@ export default function LoginPage() {
   const setAuth = useAuthStore((s) => s.setAuth)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isSessionLoading = useAuthStore((s) => s.isLoading)
+  const activeTenantId = useAuthStore((s) => s.activeTenantId)
 
   const [redirectAfterLogin] = useState(() => getRedirectTarget())
   const searchParams = new URLSearchParams(window.location.search)
@@ -52,9 +53,14 @@ export default function LoginPage() {
   const emailForm = useForm<EmailFields>({ resolver: zodResolver(emailSchema) })
   const passwordForm = useForm<PasswordFields>({ resolver: zodResolver(passwordSchema) })
 
+  // 必须与 ProtectedRoute 的判定完全一致（已登录 AND 有 activeTenantId），
+  // 否则「已登录但无组织」的账号会被这里弹回 /dashboard，而 ProtectedRoute 又
+  // 把它弹回 /login?reason=no_access —— 两个守卫互弹形成无限循环。
   useEffect(() => {
-    if (!isSessionLoading && isAuthenticated) navigate(redirectAfterLogin, { replace: true })
-  }, [isAuthenticated, isSessionLoading, navigate, redirectAfterLogin])
+    if (!isSessionLoading && isAuthenticated && activeTenantId) {
+      navigate(redirectAfterLogin, { replace: true })
+    }
+  }, [isAuthenticated, isSessionLoading, activeTenantId, navigate, redirectAfterLogin])
 
   const onEmailSubmit = async (data: EmailFields) => {
     setLoading(true)
@@ -90,7 +96,13 @@ export default function LoginPage() {
         result.tenants,
         result.active_workspace_id
       )
-      navigate(redirectAfterLogin, { replace: true })
+      // 仅在确有组织时进入后台；无组织账号留在 /login 提示，避免进入
+      // ProtectedRoute 的 no_access 弹跳。
+      if (result.active_tenant_id) {
+        navigate(redirectAfterLogin, { replace: true })
+      } else {
+        setServerError('你的账号当前不属于任何组织，请联系管理员邀请后再登录。')
+      }
     } catch {
       setServerError('邮箱或密码错误')
     } finally {

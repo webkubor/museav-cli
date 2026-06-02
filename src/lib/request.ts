@@ -4,6 +4,7 @@ import { injectHeaders } from '@/lib/request-headers'
 import { getMarket } from '@/lib/market'
 import { useLangStore } from '@/store/use-brand-store'
 import { getModuleLabel } from '@/lib/api-labels'
+import { useAuthStore } from '@/store/auth'
 
 const API_V1_PREFIX = 'api/v1'
 const DEV_TOOLS_ENABLED = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
@@ -175,8 +176,13 @@ const client = ky.create({
             await response.clone().json()
 
           if (body.code === 40101 && typeof window !== 'undefined') {
+            // 未登录：清掉内存鉴权态，交给 ProtectedRoute 做 SPA 跳转。
+            // 绝不能用 window.location.href（硬刷新会重置 SessionLoader 的
+            // isFetchingSession 与 isLoading，配合 /login 守卫形成
+            // /login <-> /dashboard 全页无限刷新）。
             if (request.url.includes('/auth/session')) return
-            window.location.href = '/login'
+            if (window.location.pathname === '/login') return
+            useAuthStore.getState().clearAuth()
             return
           }
 

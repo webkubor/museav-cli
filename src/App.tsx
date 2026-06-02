@@ -43,10 +43,9 @@ function SessionLoader() {
   const setAuth = useAuthStore((s) => s.setAuth)
   const setLoading = useAuthStore((s) => s.setLoading)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const loggedOut = useAuthStore((s) => s.loggedOut)
 
   useEffect(() => {
-    if (isAuthenticated || isFetchingSession || loggedOut || sessionStorage.getItem('mg:logged_out')) return
+    if (isAuthenticated || isFetchingSession) return
     isFetchingSession = true
     getSession()
       .then((result) => {

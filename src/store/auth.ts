@@ -10,7 +10,6 @@ interface AuthState {
   permissions: string[]
   isAuthenticated: boolean
   isLoading: boolean
-  loggedOut: boolean
 }
 
 interface AuthActions {
@@ -36,7 +35,6 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   permissions: [],
   isAuthenticated: false,
   isLoading: true,
-  loggedOut: false,
 
   setAuth: (account, activeTenantId, tenants, activeWorkspaceId, permissions = []) => {
     if (activeTenantId) {
@@ -52,9 +50,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
       permissions,
       isAuthenticated: true,
       isLoading: false,
-      loggedOut: false,
     })
-    sessionStorage.removeItem('mg:logged_out')
   },
 
   addTenant: (tenant) => set((s) => ({ tenants: [...s.tenants, tenant] })),
@@ -64,10 +60,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
     localStorage.removeItem(storageKeys.activeTenantId())
     localStorage.removeItem(storageKeys.csHistory())
     localStorage.removeItem(storageKeys.csConversationId())
-    // 清除非 httpOnly 的 CSRF cookie
     document.cookie = 'modelgo_csrf=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'
-    // 标记已退出，防止刷新后 SessionLoader 凭残留 cookie 自动恢复
-    sessionStorage.setItem('mg:logged_out', '1')
     set({
       account: null,
       activeTenantId: null,
@@ -76,7 +69,6 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
       permissions: [],
       isAuthenticated: false,
       isLoading: false,
-      loggedOut: true,
     })
   },
 

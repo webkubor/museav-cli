@@ -13,7 +13,7 @@ export interface ExperienceMessage {
 }
 
 export const previewImages: Record<CategoryKey, string> = {
-  all: '/modelgo/model-experience-card.png',
+  all: '/modelgo/model-experience-all.png',
   text: '/modelgo/model-experience-text.png',
   image: '/modelgo/model-experience-image.png',
   video: '/modelgo/model-experience-video.png',

@@ -12,6 +12,7 @@ import { TENANT_ROLE_LABEL, WS_ROLE_LABEL, WS_ROLE_OPTIONS } from '@/constants/r
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import Select from '@/components/ui/Select'
 import { appToast } from '@/lib/app-toast'
 import { pageItems } from '@/lib/utils'
 
@@ -187,18 +188,17 @@ export default function InvitationsMgmtPage() {
             <LuUsers size={14} className="text-mg-text-2" />
             <span className="text-[13px] font-bold text-mg-text-0">{t('invitations.assign.wsMembers')}</span>
             {/* 工作区选择器 */}
-            <select
+            <Select
               value={selectedWsId}
-              onChange={(e) => setSelectedWsId(e.target.value)}
-              className="ml-auto h-7 text-[11px] rounded-md border border-mg-border bg-mg-bg-0 text-mg-text-0 px-2 outline-none cursor-pointer font-semibold"
+              onChange={setSelectedWsId}
+              className="ml-auto h-7 text-[11px] w-36 rounded-md"
             >
               {workspaces.map((ws) => (
-                <option key={ws.workspace_id} value={ws.workspace_id}>
-                  {ws.name}
-                  {ws.workspace_id === activeWorkspaceId ? ` (${t('invitations.assign.current')})` : ''}
-                </option>
+                <Select.Option key={ws.workspace_id} value={ws.workspace_id}>
+                  {ws.name}{ws.workspace_id === activeWorkspaceId ? ` (${t('invitations.assign.current')})` : ''}
+                </Select.Option>
               ))}
-            </select>
+            </Select>
           </div>
           <div className="flex-1 overflow-y-auto">
             {!selectedWsId ? (
@@ -226,15 +226,15 @@ export default function InvitationsMgmtPage() {
                     </div>
                     {/* 角色选择 */}
                     {canManage && m.role !== 'ws_owner' ? (
-                      <select
+                      <Select
                         value={m.role}
-                        onChange={(e) => roleMutation.mutate({ accountId: m.account.account_id, role: e.target.value as 'ws_admin' | 'ws_member' })}
-                        className="h-6 text-[10px] rounded border border-mg-border bg-mg-bg-0 text-mg-text-1 px-1 outline-none cursor-pointer"
+                        onChange={(role) => roleMutation.mutate({ accountId: m.account.account_id, role: role as 'ws_admin' | 'ws_member' })}
+                        className="h-6 text-[10px] w-20 rounded"
                       >
                         {WS_ROLE_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
+                          <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>
                         ))}
-                      </select>
+                      </Select>
                     ) : (
                       <Badge variant={m.role === 'ws_owner' ? 'purple' : 'outline'} className="text-[9px] shrink-0">
                         {WS_ROLE_LABEL[m.role]}

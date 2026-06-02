@@ -746,10 +746,10 @@ export default function OrganizationSettingsPage() {
     <div className="space-y-6">
       <div className="space-y-1">
         <h1 className="text-2xl font-bold text-mg-text-0 tracking-tight">
-          组织管理
+          企业管理
         </h1>
         <p className="text-xs text-mg-text-2 mt-1">
-          一个账号最多创建 {MAX_TENANTS} 个组织。在左侧选择需要管理的组织，可在右侧进行信息维护、成员管理与成员邀请。
+          一个账号最多创建 {MAX_TENANTS} 个企业。在左侧选择需要管理的企业，可在右侧进行信息维护、成员管理与成员邀请。
         </p>
       </div>
 

@@ -413,7 +413,7 @@ function PermissionPanel() {
 
 function RoleSettingsPanel() {
   const TENANT_TYPES = [
-    { type: 'personal', label: '个人账户', desc: '个人开发者，无组织管理，直接使用所有功能' },
+    { type: 'personal', label: '个人账户', desc: '个人开发者，无企业管理，直接使用所有功能' },
     { type: 'enterprise', label: '企业', desc: '多成员协作，有组织角色和项目角色分层管理' },
   ]
 

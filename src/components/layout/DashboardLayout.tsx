@@ -46,7 +46,7 @@ function WorkspaceGuard({
           无可用工作区
         </div>
         <div className="text-[13px] text-mg-text-2 text-center max-w-[320px] leading-relaxed">
-          当前账号尚未加入任何工作区。请联系组织管理员将你加入工作区，或前往设置创建一个新工作区。
+          当前账号尚未加入任何工作区。请联系企业管理员将你加入工作区，或前往设置创建一个新工作区。
         </div>
       </div>
     )

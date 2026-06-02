@@ -47,17 +47,11 @@ export function VerificationCodeButton({ onSend, disabled }: Props) {
 
   return (
     <Button
+      variant="secondary"
+      className="auth-code-button"
       loading={loading}
       disabled={disabled || isCounting}
       onClick={handleClick}
-      style={{
-        flexShrink: 0,
-        height: '40px',
-        borderRadius: '8px',
-        fontSize: '13px',
-        whiteSpace: 'nowrap',
-        minWidth: '96px',
-      }}
     >
       {isCounting ? `${countdown}s 后重试` : '发送验证码'}
     </Button>

@@ -8,7 +8,6 @@
 import type { ReactNode } from 'react'
 import { modelGoLogos } from '@/config/brand-assets'
 import { getMarket } from '@/lib/market'
-import { AuthBackgroundVisual } from './AuthBackgroundVisual'
 
 interface AuthLayoutProps {
   /** 鉴权卡片大标题 */
@@ -19,14 +18,12 @@ interface AuthLayoutProps {
   footer?: ReactNode
   /** 子页面表单结构 */
   children: ReactNode
-  /** 鉴权背景视觉语义 */
-  visual?: 'login' | 'signup'
 }
 
 /**
  * 鉴权公共高品质科技网格氛围骨架 (Tailwind 语义抽离架构)
  */
-export function AuthLayout({ title, subtitle, footer, children, visual = 'login' }: AuthLayoutProps) {
+export function AuthLayout({ title, subtitle, footer, children }: AuthLayoutProps) {
   const market = getMarket()
   const isDomestic = market === 'domestic'
 
@@ -53,40 +50,33 @@ export function AuthLayout({ title, subtitle, footer, children, visual = 'login'
       />
 
       {/* 核心内容包裹 */}
-      <div className="auth-layout-stage">
-        <div className="auth-layout-content">
+      <div className="auth-layout-content">
+        <div className="glass-auth-card">
           {/* 顶部 Logo 与文案 */}
-          <div className="text-center mb-7">
+          <div className="auth-brand-header">
             <img
               src={modelGoLogos[market]}
               alt="ModelGo"
-              className="w-11 h-11 object-contain mx-auto mb-4 transition-transform duration-300"
+              className="auth-brand-logo"
             />
-            <h1 className="m-0 font-extrabold text-[22px] tracking-tight text-mg-text-0 leading-tight">
+            <h1 className="auth-title">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-mg-text-2 text-xs font-semibold mt-1.5 mb-0">
+              <p className="auth-subtitle">
                 {subtitle}
               </p>
             )}
           </div>
 
-          {/* 晶莹毛玻璃登录主体卡 */}
-          <div className="glass-auth-card rounded-[18px] p-8">
-            {children}
-          </div>
+          {children}
 
           {/* 页脚 */}
           {footer && (
-            <div className="text-center mt-[22px] text-[12.5px] font-semibold text-mg-text-2 tracking-tight">
+            <div className="auth-footer">
               {footer}
             </div>
           )}
-        </div>
-
-        <div className="auth-visual-pane">
-          <AuthBackgroundVisual variant={visual} />
         </div>
       </div>
     </div>

@@ -114,7 +114,6 @@ export default function LoginPage() {
 
   return (
     <AuthLayout
-      visual="login"
       title="欢迎回来"
       subtitle="登录到你的 ModelGo 账号"
       footer={
@@ -153,6 +152,8 @@ export default function LoginPage() {
           
           <Button
             type="submit"
+            variant="brand"
+            size="lg"
             loading={loading}
           >
             继续
@@ -203,6 +204,8 @@ export default function LoginPage() {
           
           <Button
             type="submit"
+            variant="brand"
+            size="lg"
             loading={loading}
           >
             登录

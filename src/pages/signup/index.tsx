@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
@@ -22,34 +23,6 @@ const schema = z.object({
 })
 
 type Fields = z.infer<typeof schema>
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  height: '40px',
-  borderRadius: '8px',
-  border: '1px solid #e2e8f0',
-  padding: '0 12px',
-  fontSize: '14px',
-  outline: 'none',
-  boxSizing: 'border-box',
-  color: '#0f172a',
-  background: '#fff',
-  flex: 1,
-}
-
-const labelStyle: React.CSSProperties = {
-  display: 'block',
-  fontSize: '13px',
-  fontWeight: 600,
-  color: '#374151',
-  marginBottom: '6px',
-}
-
-const errorStyle: React.CSSProperties = {
-  fontSize: '12px',
-  color: '#f43f5e',
-  marginTop: '4px',
-}
 
 export default function SignupPage() {
   const navigate = useNavigate()
@@ -123,90 +96,84 @@ export default function SignupPage() {
 
   return (
     <AuthLayout
-      visual="signup"
       title="创建账号"
       subtitle="免费开始，按用量付费"
       footer={
         <span>
           已有账号？{' '}
-          <Link to="/login" style={{ color: '#1890ff', textDecoration: 'none' }}>
+          <Link to="/login" className="auth-redirect-link">
             登录
           </Link>
         </span>
       }
     >
       <form
-        className="auth-fade-in"
+        className="auth-form-container auth-fade-in"
         onSubmit={handleSubmit(onSubmit)}
-        style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
       >
         <div>
-          <label style={labelStyle}>名称</label>
-          <input
+          <label className="modern-auth-label">名称</label>
+          <Input
             {...field('display_name')}
             placeholder="你的名字或昵称"
             autoComplete="name"
-            style={inputStyle}
           />
-          {errors.display_name && <p style={errorStyle}>{errors.display_name.message}</p>}
+          {errors.display_name && <p className="auth-error-message">{errors.display_name.message}</p>}
         </div>
 
         <div>
-          <label style={labelStyle}>邮箱</label>
-          <input
+          <label className="modern-auth-label">邮箱</label>
+          <Input
             {...field('email')}
             type="email"
             placeholder="you@example.com"
             autoComplete="email"
-            style={inputStyle}
           />
-          {errors.email && <p style={errorStyle}>{errors.email.message}</p>}
+          {errors.email && <p className="auth-error-message">{errors.email.message}</p>}
         </div>
 
         <div>
-          <label style={labelStyle}>验证码</label>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input
+          <label className="modern-auth-label">验证码</label>
+          <div className="auth-code-row">
+            <Input
               {...field('email_code')}
               placeholder="6 位数字"
               maxLength={6}
-              style={inputStyle}
               autoComplete="one-time-code"
             />
             <VerificationCodeButton onSend={handleSendCode} disabled={!emailValue} />
           </div>
-          {errors.email_code && <p style={errorStyle}>{errors.email_code.message}</p>}
+          {errors.email_code && <p className="auth-error-message">{errors.email_code.message}</p>}
         </div>
 
         <div>
-          <label style={labelStyle}>密码</label>
-          <input
+          <label className="modern-auth-label">密码</label>
+          <Input
             {...field('password')}
             type="password"
             placeholder="至少 8 位"
             autoComplete="new-password"
-            style={inputStyle}
           />
           <PasswordStrength password={passwordValue} />
-          {errors.password && <p style={errorStyle}>{errors.password.message}</p>}
+          {errors.password && <p className="auth-error-message">{errors.password.message}</p>}
         </div>
 
-        {serverError && <p style={errorStyle}>{serverError}</p>}
+        {serverError && <p className="auth-error-message">{serverError}</p>}
 
         <Button
           htmlType="submit"
-           variant="brand"
+          variant="brand"
+          size="lg"
           loading={loading}
-          style={{ width: '100%', height: '40px', borderRadius: '8px', fontWeight: 600 }}
         >
           免费注册
         </Button>
 
-        <p style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8', margin: 0 }}>
+        <p className="auth-policy-text">
           注册即代表同意{' '}
-          <Link to="/legal/terms" style={{ color: '#94a3b8' }}>服务条款</Link>
+          <Link to="/legal/terms" className="auth-muted-link">服务条款</Link>
           {' '}与{' '}
-          <Link to="/legal/privacy" style={{ color: '#94a3b8' }}>隐私政策</Link>
+          <Link to="/legal/privacy" className="auth-muted-link">隐私政策</Link>
         </p>
 
         <SocialLogin redirectTo={redirectTo} />

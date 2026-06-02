@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { SocialLogin } from '@/components/auth/SocialLogin'
-import { checkLoginEmail, login } from '@/services/auth'
+import { checkLoginEmail, login, getSession } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import { getRedirectTarget } from '@/lib/redirect'
 
@@ -84,21 +84,21 @@ export default function LoginPage() {
     setLoading(true)
     setServerError('')
     try {
-      const result = await login({ email, password: data.password })
+      await login({ email, password: data.password })
+      const session = await getSession()
       setAuth(
         {
-          account_id: result.account.account_id,
-          display_name: result.account.display_name,
-          email: result.account.email,
-          avatar_url: result.account.avatar_url,
+          account_id: session.account.account_id,
+          display_name: session.account.display_name,
+          email: session.account.email,
+          avatar_url: session.account.avatar_url,
         },
-        result.active_tenant_id,
-        result.tenants,
-        result.active_workspace_id
+        session.active_tenant_id,
+        session.tenants,
+        session.active_workspace_id,
+        session.permissions ?? []
       )
-      // 仅在确有组织时进入后台；无组织账号留在 /login 提示，避免进入
-      // ProtectedRoute 的 no_access 弹跳。
-      if (result.active_tenant_id) {
+      if (session.active_tenant_id) {
         navigate(redirectAfterLogin, { replace: true })
       } else {
         setServerError('你的账号当前不属于任何组织，请联系管理员邀请后再登录。')

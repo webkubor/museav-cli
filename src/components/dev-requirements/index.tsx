@@ -893,8 +893,8 @@ function ReqItem({
             #{item.gitlabIid}
           </a>
         )}
-        {/* GitLab 状态标签 */}
-        {item.gitlabLabels?.filter((l) => GL_STATUS_COLOR[l]).map((label) => (
+        {/* GitLab 状态标签（有 assignee 时隐藏「已认领」，用按钮状态替代） */}
+        {item.gitlabLabels?.filter((l) => GL_STATUS_COLOR[l] && !(l === '已认领' && item.assignee)).map((label) => (
           <span key={label} style={{
             fontSize: 12, fontWeight: 700, padding: '2px 6px', borderRadius: 3, lineHeight: '16px',
             color: GL_STATUS_COLOR[label], background: `${GL_STATUS_COLOR[label]}18`,

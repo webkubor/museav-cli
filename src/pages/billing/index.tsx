@@ -614,9 +614,9 @@ export default function BillingPage() {
           {/* Action Row: TopUp Trigger & Promo Code Redemption Form */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-4 border-t border-mg-border/30">
             <Button
-              variant="default"
+              variant="brand"
               onClick={() => setTopUpVisible(true)}
-              className="rounded-xl font-bold h-10 px-6 shrink-0 bg-gradient-to-r from-brand-base to-brand-deep hover:opacity-95 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-md shadow-brand-glow/10"
+              className="rounded-xl h-10 px-6 shrink-0"
             >
               {t('billing.balance.recharge')}
             </Button>

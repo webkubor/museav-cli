@@ -1,0 +1,71 @@
+/* ── 推荐模型卡片 ───────────────────────────────────────────────────── */
+.models-experience-featured {
+  position: relative;
+  min-height: 252px;
+  padding: 0;
+  border: 1px solid var(--mg-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--mg-bg-2);
+  cursor: pointer;
+  text-align: left;
+  transform: translateZ(0);
+}
+
+.models-experience-featured img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.models-experience-featured:hover img {
+  transform: scale(1.035);
+}
+
+.models-experience-featured-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 4%, color-mix(in srgb, var(--mg-bg-1) 82%, transparent) 100%);
+}
+
+.models-experience-featured-content {
+  position: absolute;
+  inset: auto 16px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  color: var(--mg-text-0);
+}
+
+.models-experience-featured-content h2 {
+  margin: 0;
+  color: var(--mg-text-0);
+  font-size: 19px;
+  font-weight: 820;
+  letter-spacing: 0;
+}
+
+.models-experience-featured-content > div:first-child {
+  color: var(--mg-text-1);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.models-experience-featured-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.models-experience-featured-metrics span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mg-bg-0) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mg-border) 70%, transparent);
+  color: var(--mg-text-1);
+  font-size: 11px;
+  font-weight: 700;
+}

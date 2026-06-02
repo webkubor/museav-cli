@@ -20,142 +20,36 @@ import {
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
-import { ModalityBadge } from '@/features/models/components/ModalityBadge'
-import { VENDOR_ICON } from '@/features/models/components/vendor-icons'
 import { useModels } from '@/features/models/hooks/useModels'
 import { appToast } from '@/lib/app-toast'
-import { cn, formatContextLength, formatModelPrice, getFallbackAvatarText } from '@/lib/utils'
+import { cn, formatContextLength, formatModelPrice } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
-
-type CategoryKey = 'all' | 'text' | 'image' | 'video' | 'code' | 'reasoning' | 'multimodal'
-type ChatRole = 'user' | 'assistant'
-
-interface ExperienceMessage {
-  role: ChatRole
-  content: string
-  meta?: string
-}
-
-const previewImage = '/modelgo/model-experience-card.png'
-
-const copy = {
-  zh: {
-    warning: '您的余额不足，目标模型的免费试用额度消耗完后将无法继续体验，请及时充值。',
-    recharge: '去充值',
-    title: '模型体验',
-    desc: '选择模型，立即测试输出效果、成本与接口参数',
-    tokenPlan: '获取 Token Plan',
-    compare: '模型对比',
-    search: '搜索模型、厂商、能力...',
-    featured: '精选模型',
-    allModels: '全部模型',
-    current: '当前体验模型',
-    apiId: 'API ID',
-    context: '上下文',
-    price: '价格',
-    quota: '免费额度',
-    input: '输入 Prompt，Enter 发送，Shift+Enter 换行...',
-    send: '发送',
-    clear: '清空',
-    params: '参数',
-    note: '本次体验会消耗免费额度，超出后按 Token Plan 计费。',
-    empty: '没有匹配的模型',
-    loading: '正在加载模型...',
-    error: '模型列表加载失败，请稍后重试',
-    copied: '模型 ID 已复制',
-    testNow: '立即体验',
-    categories: {
-      all: '全部',
-      text: '文本',
-      image: '图像',
-      video: '视频',
-      code: '代码',
-      reasoning: '推理',
-      multimodal: '多模态',
-    },
-  },
-  en: {
-    warning: 'Your balance is low. Once the free trial quota is used, this model experience may stop.',
-    recharge: 'Recharge',
-    title: 'Model Experience',
-    desc: 'Select a model and test output quality, cost, and API parameters.',
-    tokenPlan: 'Get Token Plan',
-    compare: 'Compare Models',
-    search: 'Search models, providers, capabilities...',
-    featured: 'Featured',
-    allModels: 'All models',
-    current: 'Active model',
-    apiId: 'API ID',
-    context: 'Context',
-    price: 'Price',
-    quota: 'Free quota',
-    input: 'Enter a prompt. Enter to send, Shift+Enter for new line...',
-    send: 'Send',
-    clear: 'Clear',
-    params: 'Parameters',
-    note: 'This experience consumes free quota. Overage is billed by Token Plan.',
-    empty: 'No matching models',
-    loading: 'Loading models...',
-    error: 'Failed to load models. Please try again later.',
-    copied: 'Model ID copied',
-    testNow: 'Try now',
-    categories: {
-      all: 'All',
-      text: 'Text',
-      image: 'Image',
-      video: 'Video',
-      code: 'Code',
-      reasoning: 'Reasoning',
-      multimodal: 'Multimodal',
-    },
-  },
-} as const
-
-const categories: CategoryKey[] = ['all', 'text', 'image', 'video', 'code', 'reasoning', 'multimodal']
-
-const initialMessages: ExperienceMessage[] = [
-  {
-    role: 'user',
-    content: '帮我比较三个适合企业知识库问答的模型，重点看成本、上下文长度和稳定性。',
-  },
-  {
-    role: 'assistant',
-    content:
-      '建议优先看三类组合：\n\n1. 长上下文主力模型：适合企业知识库检索增强后的复杂问答。\n2. 高性价比轻量模型：适合 FAQ、摘要、分类等高频低成本任务。\n3. 推理模型：适合复杂决策、代码分析和多步骤规划。\n\n如果你的流量主要来自客服和运营场景，可以先用轻量模型承接 70% 请求，再把复杂问题路由到推理模型。',
-    meta: '延迟 824ms · 预估 ¥0.0021',
-  },
-]
-
-function matchesCategory(model: CatalogModelItem, category: CategoryKey) {
-  if (category === 'all') return true
-  if (category === 'multimodal') return model.modalities.length > 1
-  if (category === 'code') return model.tags.some((tag) => tag.toLowerCase().includes('code'))
-  if (category === 'reasoning') return model.tags.some((tag) => /reason|think|推理/i.test(tag))
-  return model.modalities.includes(category)
-}
-
-function vendorNode(model: CatalogModelItem, size: 'sm' | 'lg' = 'sm') {
-  const icon = VENDOR_ICON[model.vendor?.toLowerCase() ?? '']
-  const box = size === 'lg' ? 'h-11 w-11 rounded-xl' : 'h-8 w-8 rounded-lg'
-  if (model.logo_url) return <img src={model.logo_url} alt={model.vendor ?? model.display_name} className={cn(box, 'object-contain bg-mg-bg-0')} />
-  return icon ?? (
-    <span className={cn(box, 'inline-flex items-center justify-center bg-mg-fill-0 text-mg-text-2 font-bold')}>
-      {getFallbackAvatarText(model.vendor ?? model.display_name)}
-    </span>
-  )
-}
-
-function quotaPercent(model: CatalogModelItem) {
-  if (model.status === 'disabled') return 0
-  if (model.zero_data_retention) return 100
-  return model.providers_count ? Math.min(100, 64 + model.providers_count * 7) : 86
-}
+import {
+  categories,
+  initialMessages,
+  matchesCategory,
+  modalityBadges,
+  modelExperienceCopy,
+  previewImages,
+  quotaPercent,
+  vendorNode,
+  type CategoryKey,
+  type ExperienceMessage,
+} from './model-experience-data'
+import './styles/model-experience-layout.css'
+import './styles/model-picker.css'
+import './styles/model-featured-card.css'
+import './styles/model-list.css'
+import './styles/model-chat.css'
+import './styles/model-composer.css'
+import './styles/model-params.css'
+import './styles/model-experience-responsive.css'
 
 export default function ModelsPage() {
   const { i18n } = useTranslation()
   const navigate = useNavigate()
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  const text = i18n.language.startsWith('zh') ? copy.zh : copy.en
+  const text = i18n.language.startsWith('zh') ? modelExperienceCopy.zh : modelExperienceCopy.en
   const [category, setCategory] = useState<CategoryKey>('all')
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<ExperienceMessage[]>(initialMessages)
@@ -174,11 +68,12 @@ export default function ModelsPage() {
     () => filteredModels.filter((model) => matchesCategory(model, category)),
     [category, filteredModels],
   )
-  const allModels = modelsQuery.data?.items ?? []
+  const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
   const selectedModel = allModels.find((model) => model.id === selectedId) ?? visibleModels[0] ?? allModels[0]
   const provider = providersQuery.data?.items?.[0]
   const detail = detailQuery.data
   const progress = selectedModel ? quotaPercent(selectedModel) : 0
+  const previewImage = previewImages[category]
 
   useEffect(() => {
     if (!selectedId && allModels[0]) setSelectedId(allModels[0].id)
@@ -274,7 +169,7 @@ export default function ModelsPage() {
                 </div>
                 <h2>{selectedModel.display_name}</h2>
                 <div className="flex gap-1.5 flex-wrap">
-                  {selectedModel.modalities.slice(0, 3).map((modality) => <ModalityBadge key={modality} modality={modality} />)}
+                  {modalityBadges(selectedModel)}
                 </div>
                 <div className="models-experience-featured-metrics">
                   <span>{formatContextLength(selectedModel.context_length)} {text.context}</span>
@@ -396,12 +291,44 @@ export default function ModelsPage() {
           </div>
 
           <aside className="models-experience-params">
-            <div><LuSettings2 size={14} />{text.params}</div>
-            <label>temperature <strong>0.7</strong></label>
-            <label>max tokens <strong>{selectedModel?.max_output_tokens || 4096}</strong></label>
-            <label>top_p <strong>0.9</strong></label>
-            <label><LuCircleCheck size={13} /> stream <strong>on</strong></label>
-            <button type="button" onClick={() => setMessages(initialMessages)}><LuRefreshCw size={13} /></button>
+            <div className="models-experience-params-header">
+              <LuSettings2 size={14} />
+              <span>{text.params}</span>
+            </div>
+
+            <div className="models-experience-params-list">
+              <div className="models-experience-param-item">
+                <span className="param-label">temperature</span>
+                <strong className="param-value">0.7</strong>
+              </div>
+              <div className="models-experience-param-item">
+                <span className="param-label">max tokens</span>
+                <strong className="param-value">{selectedModel?.max_output_tokens || 4096}</strong>
+              </div>
+              <div className="models-experience-param-item">
+                <span className="param-label">top_p</span>
+                <strong className="param-value">0.9</strong>
+              </div>
+              <div className="models-experience-param-item is-switch">
+                <span className="param-label flex items-center gap-1.5">
+                  <LuCircleCheck size={13} className="text-mg-success" />
+                  stream
+                </span>
+                <strong className="param-value badge-success">on</strong>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="models-experience-reset-btn"
+              onClick={() => {
+                setMessages(initialMessages)
+                appToast.success(i18n.language.startsWith('zh') ? '对话历史已重置' : 'Conversation reset')
+              }}
+            >
+              <LuRefreshCw size={13} className="reset-icon" />
+              <span>{i18n.language.startsWith('zh') ? '重置对话' : 'Reset Chat'}</span>
+            </button>
           </aside>
         </section>
       </div>

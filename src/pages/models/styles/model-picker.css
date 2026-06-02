@@ -1,0 +1,55 @@
+/* ── 模型选择器 ─────────────────────────────────────────────────────── */
+.models-experience-picker {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 14px;
+  gap: 13px;
+}
+
+.models-experience-search {
+  width: 100%;
+  border-radius: 8px !important;
+}
+
+.models-experience-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.models-experience-categories button {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--mg-border);
+  background: var(--mg-fill-0);
+  color: var(--mg-text-1);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+
+.models-experience-categories button:hover,
+.models-experience-categories button.is-active {
+  border-color: var(--brand-base);
+  color: var(--brand-base);
+  background: color-mix(in srgb, var(--brand-base) 12%, var(--mg-bg-0));
+}
+
+.models-experience-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--mg-text-0);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.models-experience-count {
+  color: var(--mg-text-2);
+  font-size: 11px;
+  font-weight: 700;
+}

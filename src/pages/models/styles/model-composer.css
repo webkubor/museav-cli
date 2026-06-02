@@ -1,0 +1,46 @@
+/* ── 模型输入器 ─────────────────────────────────────────────────────── */
+.models-experience-composer {
+  margin: 0 272px 16px 18px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--brand-base) 42%, var(--mg-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--mg-bg-0) 92%, transparent);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+}
+
+.models-experience-composer textarea {
+  min-height: 74px;
+  max-height: 168px;
+  resize: none;
+  border: 0;
+  background: transparent;
+  padding: 2px 2px 8px;
+  box-shadow: none;
+}
+
+.models-experience-composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 9px;
+  border-top: 1px solid var(--mg-border);
+}
+
+.models-experience-active-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--mg-text-1);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.models-experience-composer p {
+  margin: 9px 0 0;
+  color: var(--mg-text-2);
+  text-align: center;
+  font-size: 11px;
+  font-weight: 620;
+}

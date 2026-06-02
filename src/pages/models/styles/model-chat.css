@@ -1,0 +1,143 @@
+/* ── 模型对话体验区 ─────────────────────────────────────────────────── */
+.models-experience-chat {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto minmax(220px, 1fr) auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.models-experience-modelbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--mg-border);
+}
+
+.models-experience-modelbar-title {
+  color: var(--mg-text-0);
+  font-size: 17px;
+  font-weight: 820;
+}
+
+.models-experience-modelbar-sub {
+  max-width: 640px;
+  margin-top: 2px;
+  color: var(--mg-text-2);
+  font-size: 12px;
+  font-weight: 590;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.models-experience-chips {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.models-experience-chips span,
+.models-experience-chips button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 27px;
+  max-width: 260px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1px solid var(--mg-border);
+  background: var(--mg-fill-0);
+  color: var(--mg-text-1);
+  font-size: 11px;
+  font-weight: 720;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.models-experience-chips button {
+  cursor: pointer;
+}
+
+.models-experience-quota {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--mg-border);
+  color: var(--mg-text-2);
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.models-experience-quota div {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--mg-fill-0);
+  overflow: hidden;
+}
+
+.models-experience-quota i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand-base), var(--brand-mid));
+}
+
+.models-experience-quota strong {
+  color: var(--mg-text-1);
+}
+
+.models-experience-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  padding: 18px 272px 18px 18px;
+}
+
+.models-experience-message {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.models-experience-message.is-user {
+  justify-content: flex-end;
+}
+
+.models-experience-message-bubble {
+  max-width: min(720px, 82%);
+  padding: 13px 15px;
+  border-radius: 8px;
+  border: 1px solid var(--mg-border);
+  background: var(--mg-bg-0);
+  color: var(--mg-text-1);
+  font-size: 13px;
+  line-height: 1.72;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
+}
+
+.models-experience-message.is-user .models-experience-message-bubble {
+  border-color: color-mix(in srgb, var(--brand-base) 42%, var(--mg-border));
+  background: color-mix(in srgb, var(--brand-base) 15%, var(--mg-bg-0));
+  color: var(--mg-text-0);
+}
+
+.models-experience-message-bubble p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.models-experience-message-bubble span {
+  display: block;
+  margin-top: 10px;
+  color: var(--mg-text-2);
+  font-size: 11px;
+  font-weight: 700;
+}

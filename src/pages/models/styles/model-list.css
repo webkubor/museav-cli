@@ -1,0 +1,78 @@
+/* ── 模型列表 ───────────────────────────────────────────────────────── */
+.models-experience-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  overflow-y: auto;
+  padding-right: 2px;
+  min-height: 0;
+}
+
+.models-experience-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 58px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--mg-text-1);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.models-experience-row:hover,
+.models-experience-row.is-active {
+  border-color: color-mix(in srgb, var(--brand-base) 46%, var(--mg-border));
+  background: color-mix(in srgb, var(--brand-base) 8%, var(--mg-bg-0));
+}
+
+.models-experience-row:active {
+  transform: scale(0.99);
+}
+
+.models-experience-row-name,
+.models-experience-row-meta {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.models-experience-row-name {
+  color: var(--mg-text-0);
+  font-size: 13px;
+  font-weight: 780;
+}
+
+.models-experience-row-meta {
+  margin-top: 2px;
+  color: var(--mg-text-2);
+  font-size: 11px;
+  font-weight: 620;
+}
+
+.models-experience-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--mg-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mg-success) 14%, transparent);
+  flex: none;
+}
+
+.models-experience-state {
+  display: grid;
+  place-items: center;
+  min-height: 120px;
+  color: var(--mg-text-2);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.models-experience-state.is-error {
+  color: var(--mg-danger);
+}

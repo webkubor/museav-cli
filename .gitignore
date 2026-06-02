@@ -24,3 +24,10 @@ dist-ssr
 *.sw?
 .requirements.json
 .antigravitycli/
+
+# Browser automation / temporary screenshots
+.playwright-mcp/
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp

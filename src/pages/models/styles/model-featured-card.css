@@ -4,24 +4,106 @@
   min-height: 252px;
   padding: 0;
   border: 1px solid var(--mg-border);
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
   background: var(--mg-bg-2);
   cursor: pointer;
   text-align: left;
   transform: translateZ(0);
+  transition: border-color 0.45s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.models-experience-featured img {
+/* 默认的科技发光投影效果，在 hover 时强化 */
+.models-experience-featured:hover {
+  border-color: color-mix(in srgb, var(--brand-base) 60%, var(--mg-border));
+  box-shadow: 0 12px 35px -10px color-mix(in srgb, var(--brand-base) 20%, transparent),
+              0 0 20px 2px color-mix(in srgb, var(--brand-base) 8%, transparent);
+}
+
+/* 针对不同分类激活时，赋予精选卡片不同的流光边框色与投影 */
+.models-experience-featured.cat-text {
+  border-color: color-mix(in srgb, #2f80ed 40%, var(--mg-border));
+}
+.models-experience-featured.cat-text:hover {
+  border-color: #2f80ed;
+  box-shadow: 0 12px 35px -10px color-mix(in srgb, #2f80ed 25%, transparent),
+              0 0 20px 2px color-mix(in srgb, #2f80ed 12%, transparent);
+}
+
+.models-experience-featured.cat-image {
+  border-color: color-mix(in srgb, #9b51e0 40%, var(--mg-border));
+}
+.models-experience-featured.cat-image:hover {
+  border-color: #9b51e0;
+  box-shadow: 0 12px 35px -10px color-mix(in srgb, #9b51e0 25%, transparent),
+              0 0 20px 2px color-mix(in srgb, #9b51e0 12%, transparent);
+}
+
+.models-experience-featured.cat-video {
+  border-color: color-mix(in srgb, #eb5757 40%, var(--mg-border));
+}
+.models-experience-featured.cat-video:hover {
+  border-color: #eb5757;
+  box-shadow: 0 12px 35px -10px color-mix(in srgb, #eb5757 25%, transparent),
+              0 0 20px 2px color-mix(in srgb, #eb5757 12%, transparent);
+}
+
+.models-experience-featured.cat-code {
+  border-color: color-mix(in srgb, #27ae60 40%, var(--mg-border));
+}
+.models-experience-featured.cat-code:hover {
+  border-color: #27ae60;
+  box-shadow: 0 12px 35px -10px color-mix(in srgb, #27ae60 25%, transparent),
+              0 0 20px 2px color-mix(in srgb, #27ae60 12%, transparent);
+}
+
+.models-experience-featured.cat-reasoning {
+  border-color: color-mix(in srgb, #f2c94c 40%, var(--mg-border));
+}
+.models-experience-featured.cat-reasoning:hover {
+  border-color: #f2c94c;
+  box-shadow: 0 12px 35px -10px color-mix(in srgb, #f2c94c 25%, transparent),
+              0 0 20px 2px color-mix(in srgb, #f2c94c 12%, transparent);
+}
+
+.models-experience-featured.cat-multimodal {
+  border-color: color-mix(in srgb, #e28743 40%, var(--mg-border));
+}
+.models-experience-featured.cat-multimodal:hover {
+  border-color: #e28743;
+  box-shadow: 0 12px 35px -10px color-mix(in srgb, #e28743 25%, transparent),
+              0 0 20px 2px color-mix(in srgb, #e28743 12%, transparent);
+}
+
+/* 背景图片的优雅跨淡入淡出 (Cross-fade) 与多重缓动过渡 */
+.featured-bg-img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  transition: opacity 0.65s cubic-bezier(0.25, 1, 0.5, 1),
+              transform 0.75s cubic-bezier(0.25, 1, 0.5, 1),
+              filter 0.65s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-.models-experience-featured:hover img {
+.featured-bg-img.is-active {
+  opacity: 1;
+  transform: scale(1);
+  filter: blur(0px) brightness(1);
+  z-index: 1;
+}
+
+.featured-bg-img.is-inactive {
+  opacity: 0;
+  transform: scale(1.06);
+  filter: blur(8px) brightness(0.8);
+  z-index: 0;
+}
+
+/* 当卡片被 hover 时，当前激活的图片进行微缩放，产生深度视差感 */
+.models-experience-featured:hover .featured-bg-img.is-active {
   transform: scale(1.035);
 }
 

@@ -73,7 +73,6 @@ export default function ModelsPage() {
   const provider = providersQuery.data?.items?.[0]
   const detail = detailQuery.data
   const progress = selectedModel ? quotaPercent(selectedModel) : 0
-  const previewImage = previewImages[category]
 
   useEffect(() => {
     if (!selectedId && allModels[0]) setSelectedId(allModels[0].id)
@@ -159,8 +158,22 @@ export default function ModelsPage() {
           </div>
 
           {selectedModel && (
-            <button type="button" className="models-experience-featured" onClick={() => selectModel(selectedModel, true)}>
-              <img src={previewImage} alt="" />
+            <button
+              type="button"
+              className={cn('models-experience-featured', `cat-${category}`)}
+              onClick={() => selectModel(selectedModel, true)}
+            >
+              {categories.map((cat) => (
+                <img
+                  key={cat}
+                  src={previewImages[cat]}
+                  alt=""
+                  className={cn(
+                    'featured-bg-img',
+                    category === cat ? 'is-active' : 'is-inactive'
+                  )}
+                />
+              ))}
               <div className="models-experience-featured-shade" />
               <div className="models-experience-featured-content">
                 <div className="flex items-center gap-2">

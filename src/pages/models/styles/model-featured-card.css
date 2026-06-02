@@ -111,6 +111,7 @@
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, transparent 4%, color-mix(in srgb, var(--mg-bg-1) 82%, transparent) 100%);
+  z-index: 2;
 }
 
 .models-experience-featured-content {
@@ -120,6 +121,7 @@
   flex-direction: column;
   gap: 9px;
   color: var(--mg-text-0);
+  z-index: 3;
 }
 
 .models-experience-featured-content h2 {

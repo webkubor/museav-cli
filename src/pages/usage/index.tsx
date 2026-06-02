@@ -1,6 +1,12 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
+import {
+  ResponsiveContainer,
+  AreaChart, Area,
+  BarChart, Bar,
+  XAxis, CartesianGrid, Tooltip,
+} from 'recharts'
 import { getUsageSummary, getUsageSeries } from '@/services/usage'
 import { getLogHistogram } from '@/services/logs'
 import { useAuthStore } from '@/store/auth'
@@ -40,214 +46,155 @@ function formatNumber(n: number): string {
   return String(n)
 }
 
-// ─── SVG Sparkline ───────────────────────────────────
+// ─── Chart Colors ─────────────────────────────────────
+
+const METRIC_COLOR: Record<Metric, string> = {
+  spend: 'var(--mg-primary)',
+  requests: '#0ea5e9',
+  tokens: 'var(--mg-success)',
+}
+
+const TOOLTIP_STYLE = {
+  background: 'var(--mg-bg-1)',
+  border: '1px solid var(--mg-border)',
+  borderRadius: '8px',
+  padding: '8px 12px',
+  fontSize: '12px',
+  boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+} as const
+
+// ─── Sparkline (Recharts Area) ────────────────────────
 
 interface SparklineProps {
   data: SeriesDataPoint[]
-  width: number
-  height: number
   metric: Metric
   noDataLabel: string
+  currencySymbol: string
 }
 
-function Sparkline({ data, width, height, metric, noDataLabel }: SparklineProps) {
-  const points = useMemo(() => {
-    if (data.length === 0) return { path: '', dots: [], labels: [] }
-
-    const values = data.map((d) => parseFloat(d.value) || 0)
-    const minVal = Math.min(...values)
-    const maxVal = Math.max(...values)
-    const range = maxVal - minVal || 1
-
-    const padX = 40
-    const padTop = 12
-    const padBottom = 28
-    const innerW = width - padX * 2
-    const innerH = height - padTop - padBottom
-
-    const coords = values.map((v, i) => ({
-      x: padX + (i / Math.max(values.length - 1, 1)) * innerW,
-      y: padTop + ((maxVal - v) / range) * innerH,
-      v,
-      ts: data[i].bucket_start,
-    }))
-
-    const path = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ')
-
-    const labelIndices = [0, Math.floor((coords.length - 1) / 2), coords.length - 1].filter(
-      (v, i, arr) => arr.indexOf(v) === i
-    )
-    const labels = labelIndices.map((idx) => ({
-      x: coords[idx].x,
-      text: formatChartTooltipDate(coords[idx].ts),
-    }))
-
-    return { path, dots: coords, labels }
-  }, [data, width, height])
-
-  if (data.length === 0) {
-    return (
-      <div
-        style={{
-          height,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'var(--mg-text-2)',
-          fontSize: '13px',
-        }}
-      >
-        {noDataLabel}
-      </div>
-    )
-  }
-
-  const lineColor = metric === 'spend'
-    ? 'var(--mg-primary)'
-    : metric === 'requests' ? '#0ea5e9' : 'var(--mg-success)'
-  const dotColor = lineColor
-  const areaId = `area-${metric}`
-
-  const firstPt = points.dots[0]
-  const lastPt = points.dots[points.dots.length - 1]
-  const areaPath =
-    points.path +
-    ` L ${lastPt.x.toFixed(1)} ${height - 28} L ${firstPt.x.toFixed(1)} ${height - 28} Z`
-
+function SparklineTooltip({ active, payload, metric, currencySymbol }: any) {
+  if (!active || !payload?.length) return null
+  const d = payload[0].payload
+  const val = parseFloat(d.value) || 0
+  const formatted =
+    metric === 'spend'
+      ? `${currencySymbol}${val.toFixed(4)}`
+      : `${formatNumber(Math.round(val))}${metric === 'tokens' ? ' tokens' : ' 次'}`
   return (
-    <svg 
-      width="100%" 
-      height={height} 
-      viewBox={`0 0 ${width} ${height}`} 
-      preserveAspectRatio="none" 
-      style={{ display: 'block' }}
-    >
-      <defs>
-        <linearGradient id={areaId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={lineColor} stopOpacity="0.18" />
-          <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-
-      {[0.25, 0.5, 0.75, 1].map((frac) => {
-        const y = 12 + frac * (height - 40)
-        return (
-          <line
-            key={frac}
-            x1={40}
-            y1={y}
-            x2={width - 40}
-            y2={y}
-            stroke="var(--mg-fill-0)"
-            strokeWidth={1}
-          />
-        )
-      })}
-
-      <path d={areaPath} fill={`url(#${areaId})`} />
-      <path d={points.path} fill="none" stroke={lineColor} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-
-      {points.dots.map((c, i) => (
-        <circle key={i} cx={c.x} cy={c.y} r={3} fill={dotColor} stroke="var(--mg-bg-0)" strokeWidth={1.5} />
-      ))}
-
-      {points.labels.map((l, i) => (
-        <text
-          key={i}
-          x={l.x}
-          y={height - 6}
-          textAnchor="middle"
-          fontSize={11}
-          fill="var(--mg-text-2)"
-          fontFamily="system-ui, -apple-system, sans-serif"
-        >
-          {l.text}
-        </text>
-      ))}
-    </svg>
+    <div style={TOOLTIP_STYLE}>
+      <div style={{ fontWeight: 700, color: METRIC_COLOR[metric as Metric], marginBottom: '2px' }}>
+        {formatted}
+      </div>
+      <div style={{ color: 'var(--mg-text-2)', fontSize: '11px' }}>
+        {formatChartTooltipDate(d.bucket_start)}
+      </div>
+    </div>
   )
 }
 
-// ─── Histogram Bar Chart ─────────────────────────────
-
-interface HistogramChartProps {
-  buckets: { bucket_start: string; count: number }[]
-  width: number
-  height: number
-  noDataLabel: string
-}
-
-function HistogramChart({ buckets, width, height, noDataLabel }: HistogramChartProps) {
-  const bars = useMemo(() => {
-    if (buckets.length === 0) return { items: [], labels: [] }
-    const maxCount = Math.max(...buckets.map((b) => b.count), 1)
-    const padX = 40
-    const padTop = 12
-    const padBottom = 28
-    const innerW = width - padX * 2
-    const innerH = height - padTop - padBottom
-    const barW = Math.max(2, innerW / buckets.length - 1)
-
-    const items = buckets.map((b, i) => ({
-      x: padX + (i / buckets.length) * innerW,
-      h: (b.count / maxCount) * innerH,
-      count: b.count,
-      ts: b.bucket_start,
-    }))
-
-    const labelIndices = [0, Math.floor((buckets.length - 1) / 2), buckets.length - 1].filter(
-      (v, i, arr) => arr.indexOf(v) === i
-    )
-    const labels = labelIndices.map((idx) => ({
-      x: items[idx].x + barW / 2,
-      text: formatChartTooltipDate(buckets[idx].bucket_start),
-    }))
-
-    return { items, barW, labels, innerH, padTop }
-  }, [buckets, width, height])
-
-  if (buckets.length === 0) {
+function Sparkline({ data, metric, noDataLabel, currencySymbol }: SparklineProps) {
+  if (data.length === 0) {
     return (
-      <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mg-text-2)', fontSize: '13px' }}>
+      <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mg-text-2)', fontSize: '13px' }}>
         {noDataLabel}
       </div>
     )
   }
 
-  const { items, barW, labels } = bars as any
+  const color = METRIC_COLOR[metric]
+  const gradientId = `grad-${metric}`
 
   return (
-    <svg 
-      width="100%" 
-      height={height} 
-      viewBox={`0 0 ${width} ${height}`} 
-      preserveAspectRatio="none" 
-      style={{ display: 'block' }}
-    >
-      {[0.25, 0.5, 0.75, 1].map((frac) => {
-        const y = 12 + frac * (height - 40)
-        return (
-          <line key={frac} x1={40} y1={y} x2={width - 40} y2={y} stroke="var(--mg-fill-0)" strokeWidth={1} />
-        )
-      })}
-      {items.map((bar: any, i: number) => (
-        <rect
-          key={i}
-          x={bar.x}
-          y={height - 28 - bar.h}
-          width={barW}
-          height={bar.h}
-          rx={2}
-          style={{ fill: 'var(--mg-primary)' }}
-          opacity={0.75}
+    <ResponsiveContainer width="100%" height={220}>
+      <AreaChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: 4 }}>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="0" stroke="var(--mg-fill-0)" vertical={false} />
+        <XAxis
+          dataKey="bucket_start"
+          tickFormatter={formatChartTooltipDate}
+          tick={{ fontSize: 11, fill: 'var(--mg-text-2)', fontFamily: 'system-ui' }}
+          tickLine={false}
+          axisLine={false}
+          interval="preserveStartEnd"
         />
-      ))}
-      {labels.map((l: any, i: number) => (
-        <text key={i} x={l.x} y={height - 6} textAnchor="middle" fontSize={11} fill="var(--mg-text-2)" fontFamily="system-ui, -apple-system, sans-serif">
-          {l.text}
-        </text>
-      ))}
-    </svg>
+        <Tooltip
+          content={<SparklineTooltip metric={metric} currencySymbol={currencySymbol} />}
+          cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: '4 3', strokeOpacity: 0.6 }}
+        />
+        <Area
+          type="monotone"
+          dataKey="value"
+          stroke={color}
+          strokeWidth={2}
+          fill={`url(#${gradientId})`}
+          dot={false}
+          activeDot={{ r: 5, fill: color, stroke: 'var(--mg-bg-0)', strokeWidth: 2 }}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  )
+}
+
+// ─── Histogram (Recharts Bar) ─────────────────────────
+
+interface HistogramChartProps {
+  buckets: { bucket_start: string; count: number }[]
+  noDataLabel: string
+}
+
+function HistogramTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null
+  const d = payload[0].payload
+  return (
+    <div style={TOOLTIP_STYLE}>
+      <div style={{ fontWeight: 700, color: 'var(--mg-primary)', marginBottom: '2px' }}>
+        {d.count.toLocaleString()} 次
+      </div>
+      <div style={{ color: 'var(--mg-text-2)', fontSize: '11px' }}>
+        {formatChartTooltipDate(d.bucket_start)}
+      </div>
+    </div>
+  )
+}
+
+function HistogramChart({ buckets, noDataLabel }: HistogramChartProps) {
+  if (buckets.length === 0) {
+    return (
+      <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mg-text-2)', fontSize: '13px' }}>
+        {noDataLabel}
+      </div>
+    )
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={160}>
+      <BarChart data={buckets} margin={{ top: 8, right: 4, bottom: 0, left: 4 }}>
+        <CartesianGrid strokeDasharray="0" stroke="var(--mg-fill-0)" vertical={false} />
+        <XAxis
+          dataKey="bucket_start"
+          tickFormatter={formatChartTooltipDate}
+          tick={{ fontSize: 11, fill: 'var(--mg-text-2)', fontFamily: 'system-ui' }}
+          tickLine={false}
+          axisLine={false}
+          interval="preserveStartEnd"
+        />
+        <Tooltip
+          content={<HistogramTooltip />}
+          cursor={{ fill: 'var(--mg-fill-0)', opacity: 0.6 }}
+        />
+        <Bar
+          dataKey="count"
+          fill="var(--mg-primary)"
+          opacity={0.75}
+          radius={[3, 3, 0, 0]}
+        />
+      </BarChart>
+    </ResponsiveContainer>
   )
 }
 
@@ -487,10 +434,9 @@ export default function UsagePage() {
           <div style={{ width: '100%' }}>
             <Sparkline
               data={seriesData}
-              width={900}
-              height={220}
               metric={metric}
               noDataLabel={t('usage.noData')}
+              currencySymbol={currencySymbol}
             />
           </div>
         )}
@@ -513,8 +459,6 @@ export default function UsagePage() {
           <div style={{ width: '100%' }}>
             <HistogramChart
               buckets={histogramQuery.data?.buckets ?? []}
-              width={900}
-              height={160}
               noDataLabel={t('usage.noData')}
             />
           </div>

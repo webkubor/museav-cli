@@ -52,38 +52,42 @@ export function AuthLayout({ title, subtitle, footer, children, visual = 'login'
         }}
       />
 
-      <AuthBackgroundVisual variant={visual} />
-
       {/* 核心内容包裹 */}
-      <div className="auth-layout-content">
-        {/* 顶部 Logo 与文案 */}
-        <div className="text-center mb-7">
-          <img
-            src={modelGoLogos[market]}
-            alt="ModelGo"
-            className="w-11 h-11 object-contain mx-auto mb-4 transition-transform duration-300"
-          />
-          <h1 className="m-0 font-extrabold text-[22px] tracking-tight text-mg-text-0 leading-tight">
-            {title}
-          </h1>
-          {subtitle && (
-            <p className="text-mg-text-2 text-xs font-semibold mt-1.5 mb-0">
-              {subtitle}
-            </p>
+      <div className="auth-layout-stage">
+        <div className="auth-layout-content">
+          {/* 顶部 Logo 与文案 */}
+          <div className="text-center mb-7">
+            <img
+              src={modelGoLogos[market]}
+              alt="ModelGo"
+              className="w-11 h-11 object-contain mx-auto mb-4 transition-transform duration-300"
+            />
+            <h1 className="m-0 font-extrabold text-[22px] tracking-tight text-mg-text-0 leading-tight">
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="text-mg-text-2 text-xs font-semibold mt-1.5 mb-0">
+                {subtitle}
+              </p>
+            )}
+          </div>
+
+          {/* 晶莹毛玻璃登录主体卡 */}
+          <div className="glass-auth-card rounded-[18px] p-8">
+            {children}
+          </div>
+
+          {/* 页脚 */}
+          {footer && (
+            <div className="text-center mt-[22px] text-[12.5px] font-semibold text-mg-text-2 tracking-tight">
+              {footer}
+            </div>
           )}
         </div>
 
-        {/* 晶莹毛玻璃登录主体卡 */}
-        <div className="glass-auth-card rounded-[18px] p-8">
-          {children}
+        <div className="auth-visual-pane">
+          <AuthBackgroundVisual variant={visual} />
         </div>
-
-        {/* 页脚 */}
-        {footer && (
-          <div className="text-center mt-[22px] text-[12.5px] font-semibold text-mg-text-2 tracking-tight">
-            {footer}
-          </div>
-        )}
       </div>
     </div>
   )

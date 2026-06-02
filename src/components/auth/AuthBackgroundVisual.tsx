@@ -84,22 +84,30 @@ function LoginGate({
         <rect width="580" height="552" rx="54" fill="var(--mg-bg-0)" fillOpacity="0.82" />
         <rect width="580" height="552" rx="54" stroke="var(--mg-border)" strokeWidth="2" />
         <path
-          d="M290 84L438 146V264C438 371 379 455 290 498C201 455 142 371 142 264V146L290 84Z"
-          fill="var(--brand-glow)"
+          d="M290 78L438 164V336L290 422L142 336V164L290 78Z"
+          stroke="var(--mg-border)"
+          strokeWidth="18"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M290 122L398 184V308L290 370L182 308V184L290 122Z"
           stroke={`url(#${brandGradient})`}
           strokeWidth="24"
           strokeLinejoin="round"
         />
         <path
-          d="M250 278V236C250 192 278 164 290 164C322 164 350 192 350 236V278"
-          stroke="var(--mg-text-0)"
-          strokeOpacity="0.62"
-          strokeWidth="22"
+          d="M214 246H166M414 246H366M290 122V78M290 422V370"
+          stroke="var(--brand-light)"
+          strokeOpacity="0.58"
+          strokeWidth="14"
           strokeLinecap="round"
         />
-        <rect x="220" y="268" width="140" height="112" rx="34" fill={`url(#${brandGradient})`} />
-        <circle cx="290" cy="318" r="17" fill="var(--mg-bg-0)" />
-        <path d="M290 334V356" stroke="var(--mg-bg-0)" strokeWidth="16" strokeLinecap="round" />
+        <rect x="224" y="204" width="132" height="132" rx="40" fill="var(--brand-glow)" />
+        <rect x="224" y="204" width="132" height="132" rx="40" stroke={`url(#${brandGradient})`} strokeWidth="14" />
+        <circle cx="290" cy="270" r="22" fill={`url(#${brandGradient})`} />
+        <path d="M290 292V314" stroke={`url(#${brandGradient})`} strokeWidth="16" strokeLinecap="round" />
+        <rect x="184" y="470" width="232" height="22" rx="11" fill="var(--mg-fill-1)" />
+        <rect x="238" y="470" width="124" height="22" rx="11" fill="var(--brand-base)" fillOpacity="0.42" />
       </g>
 
       <g opacity="0.76">

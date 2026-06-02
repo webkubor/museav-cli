@@ -10,18 +10,20 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
 import { listTenants } from '@/services/tenants'
-import type { TenantItem } from '@/types'
+import type { TenantListResponse } from '@/interfaces/tenants'
 
 export type TenantRole = 'tenant_owner' | 'tenant_admin' | 'tenant_member'
 
 export function useTenantRole() {
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
 
-  const { data: tenants = [], isLoading } = useQuery<TenantItem[]>({
+  const { data, isLoading } = useQuery<TenantListResponse>({
     queryKey: ['tenants'],
-    queryFn: () => listTenants().then((r) => r.items ?? []),
+    queryFn: listTenants,
     staleTime: 60_000,
   })
+
+  const tenants = data?.items ?? []
 
   const role = tenants.find(
     (t) => t.tenant_id === activeTenantId

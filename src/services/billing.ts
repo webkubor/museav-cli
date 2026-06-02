@@ -1,9 +1,9 @@
 /**
  * 计费与交易（§十、§十一）
- * 路由：/billing、/billing/transactions
- * API：GET /tenants/:tenantId/balance、POST /tenants/:tenantId/recharges、POST /tenants/:tenantId/promo-codes/redeem、
- * GET /tenants/:tenantId/transactions、GET /tenants/:tenantId/billing/transactions、
- * POST /tenants/:tenantId/transactions/:id/refund、GET /tenants/:tenantId/transactions/:id/invoice
+ * 路由：/billing
+ * API：GET /tenants/:tenantId/balance、GET|POST /tenants/:tenantId/recharges、
+ * GET /tenants/:tenantId/recharges/:orderNo、POST /tenants/:tenantId/recharges/:orderNo/cancel、
+ * POST /tenants/:tenantId/promo-codes/redeem
  */
 import { get, post } from '@/lib/request'
 import type {

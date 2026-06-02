@@ -14,14 +14,31 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/Table'
-import { LuSearch, LuEye, LuRefreshCw, LuCalendar } from 'react-icons/lu'
+import { LuSearch, LuEye, LuRefreshCw, LuCalendar, LuCopy } from 'react-icons/lu'
 import { IoAlertCircle } from 'react-icons/io5'
 import { useAuthStore } from '@/store/auth'
-import { listCallLogs } from '@/services/logs'
-import type { CallLogItem } from '@/types'
+import { getLogPayload, listCallLogs } from '@/services/logs'
+import type { CallLogItem, LogPayload } from '@/types'
 import { formatDateTime } from '@/lib/format-date'
+import { appToast } from '@/lib/app-toast'
 
 type LogStatusFilter = 'all' | 'success' | 'failed'
+type PayloadKind = 'request' | 'response'
+
+function decodePayload(payload: LogPayload | undefined) {
+  if (!payload?.body_b64) return ''
+  try {
+    const binary = atob(payload.body_b64)
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
+    const decoded = new TextDecoder().decode(bytes)
+    if (payload.content_type?.includes('json')) {
+      return JSON.stringify(JSON.parse(decoded), null, 2)
+    }
+    return decoded
+  } catch {
+    return payload.body_b64
+  }
+}
 
 export default function LogsPage() {
   const { t } = useTranslation()
@@ -34,6 +51,7 @@ export default function LogsPage() {
 
   // 侧边栏抽屉展示
   const [selectedLog, setSelectedLog] = useState<CallLogItem | null>(null)
+  const [payloadKind, setPayloadKind] = useState<PayloadKind>('request')
 
   // 接口分页
   const [page, setPage] = useState(1)
@@ -53,6 +71,21 @@ export default function LogsPage() {
     staleTime: 10_000,
     refetchOnWindowFocus: false,
   })
+
+  const payloadQuery = useQuery({
+    queryKey: ['logs', selectedLog?.request_id, 'payload', payloadKind],
+    queryFn: () => getLogPayload(selectedLog!.request_id, payloadKind),
+    enabled: Boolean(selectedLog?.request_id),
+  })
+
+  const decodedPayload = decodePayload(payloadQuery.data)
+
+  function copyPayload() {
+    if (!decodedPayload) return
+    navigator.clipboard.writeText(decodedPayload).then(() => {
+      appToast.success(t('logs.detail.payloadCopied'))
+    })
+  }
 
   // 简易前端切片分页模拟
   const rawLogs = data?.items ?? []
@@ -200,7 +233,10 @@ export default function LogsPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => setSelectedLog(row)}
+                        onClick={() => {
+                          setSelectedLog(row)
+                          setPayloadKind('request')
+                        }}
                         className="h-7 text-xs font-semibold"
                       >
                         <LuEye className="w-3.5 h-3.5 mr-1" />
@@ -287,12 +323,52 @@ export default function LogsPage() {
 
             <div className="space-y-4">
               <div>
-                <p className="text-[10px] text-mg-text-2 uppercase font-bold tracking-widest mb-2 flex items-center gap-1">
-                  <LuCalendar className="w-3.5 h-3.5" />
-                  {t('logs.detail.promptPayload')}
-                </p>
-                <pre className="text-[11.5px] text-slate-300 bg-slate-950 p-4 rounded-xl border border-mg-border/40 font-mono overflow-x-auto max-h-56 leading-relaxed select-all">
-                  {JSON.stringify(selectedLog.provider, null, 2)}
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <p className="text-[10px] text-mg-text-2 uppercase font-bold tracking-widest flex items-center gap-1">
+                    <LuCalendar className="w-3.5 h-3.5" />
+                    {t('logs.detail.rawPayload')}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    {(['request', 'response'] as PayloadKind[]).map((kind) => (
+                      <button
+                        key={kind}
+                        type="button"
+                        onClick={() => setPayloadKind(kind)}
+                        className={`h-7 rounded-md px-2.5 text-[11px] font-semibold transition-colors ${
+                          payloadKind === kind
+                            ? 'bg-brand-base text-white'
+                            : 'border border-mg-border bg-mg-fill-0 text-mg-text-1 hover:text-mg-text-0'
+                        }`}
+                      >
+                        {t(`logs.detail.payloadKind.${kind}`)}
+                      </button>
+                    ))}
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      disabled={!decodedPayload || payloadQuery.isLoading}
+                      onClick={copyPayload}
+                      className="h-7"
+                    >
+                      <LuCopy className="mr-1 h-3 w-3" />
+                      {t('common.copy')}
+                    </Button>
+                  </div>
+                </div>
+                <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px] text-mg-text-2">
+                  <span>{payloadQuery.data?.content_type || '—'}</span>
+                  <span>·</span>
+                  <span>{payloadQuery.data ? `${payloadQuery.data.size} bytes` : '—'}</span>
+                  {payloadQuery.data?.truncated && (
+                    <Badge variant="warning">{t('logs.detail.payloadTruncated')}</Badge>
+                  )}
+                </div>
+                <pre className="text-[11.5px] text-slate-300 bg-slate-950 p-4 rounded-xl border border-mg-border/40 font-mono overflow-x-auto max-h-72 leading-relaxed select-all">
+                  {payloadQuery.isLoading
+                    ? t('logs.detail.payloadLoading')
+                    : payloadQuery.isError
+                      ? t('logs.detail.payloadError')
+                      : decodedPayload || t('logs.detail.payloadEmpty')}
                 </pre>
               </div>
             </div>

@@ -2,11 +2,12 @@ import { Button } from '@/components/ui/Button'
 import { useState, useEffect, useRef } from 'react'
 
 import Markdown from 'react-markdown'
-import { LuX, LuSendHorizontal, LuRefreshCw } from 'react-icons/lu'
+import { LuX, LuSendHorizontal, LuRefreshCw, LuSquare } from 'react-icons/lu'
 import { modelGoLogos } from '@/config/brand-assets'
 import { getMarket } from '@/lib/market'
 import { storageKeys } from '@/lib/storage'
 import { useAuthStore } from '@/store/auth'
+import { formatChartDate, formatDate, formatShortTime } from '@/lib/format-date'
 import { useCsChat } from './use-cs-chat'
 import type { Message, ConnectionStatus } from './use-cs-chat'
 
@@ -16,16 +17,15 @@ const logoSrc = modelGoLogos[market]
 function formatCsTimestamp(timestamp: number) {
   const date = new Date(timestamp)
   const now = new Date()
-  const isToday = date.toDateString() === now.toDateString()
+  const dateIso = date.toISOString()
+  const isToday = formatDate(dateIso) === formatDate(now.toISOString())
   const yesterday = new Date(now)
   yesterday.setDate(now.getDate() - 1)
-  const isYesterday = date.toDateString() === yesterday.toDateString()
-  const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+  const isYesterday = formatDate(dateIso) === formatDate(yesterday.toISOString())
+  const timeStr = formatShortTime(dateIso)
   if (isToday) return `今天 ${timeStr}`
   if (isYesterday) return `昨天 ${timeStr}`
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${m}-${d} ${timeStr}`
+  return `${formatChartDate(dateIso)} ${timeStr}`
 }
 
 function StatusDot({ status }: { status: ConnectionStatus }) {
@@ -89,7 +89,7 @@ function ThinkingDots() {
 export function CustomerService() {
   const [isOpen, setIsOpen] = useState(false)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
-  const { messages, sendMessage, reconnect, status, isLoading, conversationId } = useCsChat({
+  const { messages, sendMessage, stopMessage, reconnect, status, isLoading, conversationId } = useCsChat({
     source: 'console',
     tenantId: activeTenantId,
   })
@@ -295,18 +295,19 @@ export function CustomerService() {
                 }}
               />
               <button
-                onClick={handleSend}
-                disabled={!inputValue.trim() || isLoading}
+                onClick={isLoading ? stopMessage : handleSend}
+                disabled={!isLoading && !inputValue.trim()}
+                aria-label={isLoading ? '停止生成' : '发送消息'}
                 style={{
                   width: 32, height: 32, borderRadius: 8, border: 'none',
-                  background: inputValue.trim() && !isLoading ? 'var(--mg-text-1)' : 'var(--mg-border)',
-                  color: inputValue.trim() && !isLoading ? 'var(--mg-bg-0)' : 'var(--mg-text-2)',
-                  cursor: inputValue.trim() && !isLoading ? 'pointer' : 'not-allowed',
+                  background: isLoading || inputValue.trim() ? 'var(--mg-text-1)' : 'var(--mg-border)',
+                  color: isLoading || inputValue.trim() ? 'var(--mg-bg-0)' : 'var(--mg-text-2)',
+                  cursor: isLoading || inputValue.trim() ? 'pointer' : 'not-allowed',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0, transition: 'all 0.2s',
                 }}
               >
-                <LuSendHorizontal size={14} />
+                {isLoading ? <LuSquare size={13} /> : <LuSendHorizontal size={14} />}
               </button>
             </div>
           </div>

@@ -275,6 +275,6 @@ export async function getCallLog(callLogId: string) {
  * 获取日志原始 Payload（prompt + completion 完整内容）。
  * 需要 workspace 开启 Input/Output Logging；未开启时返回 null 字段。
  */
-export function getLogPayload(requestId: string) {
-  return get<LogPayload>(`model-logs/${requestId}/payload`)
+export function getLogPayload(requestId: string, kind: 'request' | 'response') {
+  return get<LogPayload>(`model-logs/${requestId}/payload`, { kind })
 }

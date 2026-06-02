@@ -215,7 +215,8 @@
     "tabs": {
       "info": "基本资料",
       "security": "密码与安全",
-      "oauth": "第三方账号"
+      "oauth": "第三方账号",
+      "preferences": "偏好设置"
     },
     "info": {
       "emailLabel": "邮箱地址",
@@ -241,7 +242,23 @@
       "toastError": "密码修改失败，请检查旧密码是否正确",
       "warningEmpty": "请填写所有密码字段",
       "errorMismatch": "两次输入的新密码不一致",
-      "errorLength": "新密码长度不得少于 8 位"
+      "errorLength": "新密码长度不得少于 8 位",
+      "deleteTitle": "注销账号",
+      "deleteDesc": "申请注销后账号会进入 7 天宽限期，期间请停止使用相关服务。该操作会影响账号下的登录与控制台访问。",
+      "deleteAction": "申请注销账号",
+      "deleteModalTitle": "确认注销账号",
+      "deleteModalDesc": "该操作需要当前密码确认。继续前请输入 {{text}}。",
+      "deletePassword": "当前密码",
+      "deletePasswordPlaceholder": "请输入当前登录密码",
+      "deleteReason": "注销原因",
+      "deleteReasonPlaceholder": "可选，说明你注销账号的原因",
+      "deleteConfirmLabel": "输入 {{text}} 确认",
+      "deleteConfirmAction": "确认注销",
+      "deletePasswordRequired": "请输入当前密码",
+      "deleteConfirmRequired": "请输入 {{text}} 后再确认",
+      "deleteSuccess": "账号注销申请已提交",
+      "deleteSuccessDesc": "计划删除时间：{{date}}",
+      "deleteError": "注销申请失败，请稍后重试"
     },
     "oauth": {
       "desc": "绑定第三方社交或代码托管平台账户，支持使用对应的快捷登录入口免密码接入控制台。",
@@ -252,7 +269,36 @@
       "notBound": "未绑定",
       "emailLabel": "账号邮箱: {{email}}",
       "unbind": "解绑",
-      "bind": "连接"
+      "bind": "连接",
+      "processing": "处理中",
+      "unbindSuccess": "第三方账号已解绑",
+      "bindError": "发起绑定失败，请稍后重试",
+      "unbindError": "解绑失败，请稍后重试"
+    },
+    "preferences": {
+      "languageTitle": "界面语言",
+      "languageDesc": "选择控制台默认显示语言，保存后立即生效。",
+      "languageZh": "简体中文",
+      "languageZhDesc": "适用于国内团队和中文工作流。",
+      "languageEn": "English",
+      "languageEnDesc": "For global teams and English workflows.",
+      "themeTitle": "界面主题",
+      "themeDesc": "选择控制台明暗主题，保存后对当前账号生效。",
+      "themeLightDesc": "使用浅色界面，适合日间和高亮环境。",
+      "themeDarkDesc": "使用深色界面，适合夜间和低亮环境。",
+      "themeSystemDesc": "跟随当前设备的系统主题自动切换。",
+      "timeZoneTitle": "显示时区",
+      "timeZoneDesc": "控制控制台内时间的本地化展示。未设置时默认跟随浏览器时区：{{timezone}}。",
+      "timeZoneBrowser": "跟随浏览器时区",
+      "timeZoneBrowserDesc": "当前浏览器：{{timezone}}",
+      "timeZoneFixedDesc": "固定使用该时区显示所有控制台时间。",
+      "timeZonePreview": "当前预览：{{time}} · {{timezone}}",
+      "lowBalanceTitle": "低余额提醒",
+      "lowBalanceDesc": "余额低于阈值时接收提醒，避免服务调用受到影响。",
+      "save": "保存偏好",
+      "saveSuccess": "偏好设置已保存",
+      "saveError": "偏好保存失败，请稍后重试",
+      "loadError": "偏好设置加载失败"
     }
   },
   "guardrails": {
@@ -353,7 +399,17 @@
       "apiKeyName": "API Key 名称",
       "tokens": "Token 消耗数量",
       "errorTitle": "异常报错信息",
-      "promptPayload": "请求内容 (Prompt Payload)"
+      "promptPayload": "请求内容 (Prompt Payload)",
+      "rawPayload": "原始 Payload",
+      "payloadKind": {
+        "request": "请求",
+        "response": "响应"
+      },
+      "payloadLoading": "正在加载原始 Payload...",
+      "payloadError": "原始 Payload 加载失败",
+      "payloadEmpty": "暂无原始 Payload",
+      "payloadTruncated": "已截断",
+      "payloadCopied": "Payload 已复制"
     }
   },
   "observability": {

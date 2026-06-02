@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/Button'
 import React from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePlatformConfig } from '@/hooks/use-platform-config'
 
 import { useTranslation } from 'react-i18next'
@@ -7,6 +8,9 @@ import Google from '@lobehub/icons/es/Google'
 import Github from '@lobehub/icons/es/Github'
 import type { OAuthConnection } from '@/types'
 import { SiWechat } from 'react-icons/si'
+import { connectOAuth, disconnectOAuth } from '@/services/account'
+import { appToast } from '@/lib/app-toast'
+import type { OAuthProvider } from '@/interfaces/account'
 
 const PROVIDER_ICONS: Record<string, React.ReactNode> = {
   google: <Google size={20} />,
@@ -20,13 +24,38 @@ interface OAuthBindingTabProps {
 
 export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections }) => {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const { data: platformConfig } = usePlatformConfig()
   const PROVIDERS = (
     platformConfig?.enabled_login_methods?.filter((m) => m !== 'password') ??
     ['google', 'github', 'wechat']
-  ) as OAuthConnection['provider'][]
+  ) as OAuthProvider[]
 
-  const connMap = new Map<OAuthConnection['provider'], OAuthConnection>()
+  const bindMutation = useMutation({
+    mutationFn: async (provider: OAuthProvider) => {
+      const redirect = `${window.location.pathname}?tab=oauth`
+      return connectOAuth(provider, redirect)
+    },
+    onSuccess: (result) => {
+      window.location.assign(result.authorize_url)
+    },
+    onError: (error) => {
+      appToast.requestError(error, t('account.oauth.bindError'))
+    },
+  })
+
+  const unbindMutation = useMutation({
+    mutationFn: (provider: OAuthProvider) => disconnectOAuth(provider),
+    onSuccess: () => {
+      appToast.success(t('account.oauth.unbindSuccess'))
+      queryClient.invalidateQueries({ queryKey: ['account-profile'] })
+    },
+    onError: (error) => {
+      appToast.requestError(error, t('account.oauth.unbindError'))
+    },
+  })
+
+  const connMap = new Map<OAuthProvider, OAuthConnection>()
   connections.forEach((c) => connMap.set(c.provider, c))
 
   return (
@@ -39,6 +68,16 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
         {PROVIDERS.map((provider) => {
           const conn = connMap.get(provider)
           const isBound = !!conn?.connected_at
+          const isPending = bindMutation.variables === provider && bindMutation.isPending
+            || unbindMutation.variables === provider && unbindMutation.isPending
+
+          const handleClick = () => {
+            if (isBound) {
+              unbindMutation.mutate(provider)
+              return
+            }
+            bindMutation.mutate(provider)
+          }
 
           return (
             <div
@@ -111,13 +150,17 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
               </div>
               <Button 
                 size="small" 
-                disabled 
+                loading={isPending}
+                disabled={isPending}
+                onClick={handleClick}
                 style={{ 
                   borderRadius: '6px', 
                   fontWeight: 600 
                 }}
               >
-                {isBound ? t('account.oauth.unbind') : t('account.oauth.bind')}
+                {isPending
+                  ? t('account.oauth.processing')
+                  : isBound ? t('account.oauth.unbind') : t('account.oauth.bind')}
               </Button>
             </div>
           )

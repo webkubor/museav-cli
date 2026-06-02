@@ -14,6 +14,7 @@ import { isDomestic } from '@/lib/market'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { appToast } from '@/lib/app-toast'
+import { formatDateTime } from '@/lib/format-date'
 
 // ─── Sub-components: TopUpModal ───────────────────────────────────────────
 
@@ -279,7 +280,7 @@ function OrderTab({ tenantId }: { tenantId: string }) {
                       {record.currency} {record.amount}
                     </td>
                     <td className="py-3 px-4 text-xs text-gray-400 dark:text-gray-500">
-                      {record.paid_at ? new Date(record.paid_at).toLocaleString() : '—'}
+                      {formatDateTime(record.paid_at)}
                     </td>
                     <td className="py-3 px-4 text-xs" onClick={(e) => e.stopPropagation()}>
                       {record.status === 'pending' ? (

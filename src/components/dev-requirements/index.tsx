@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { Requirement } from '../../../scripts/dev-requirements-plugin'
+import { formatDate, formatDateTime } from '@/lib/format-date'
 
 const API = '/dev/requirements'
 const GITLAB_ISSUE_URL = 'https://gitlab.ops.modelgo.com/qa/ai-quality-platform/-/issues'
@@ -281,10 +282,10 @@ export function DevRequirements() {
   }
 
   function handleExport() {
-    const now = new Date().toLocaleString('zh-CN', { hour12: false })
+    const now = formatDateTime(new Date().toISOString())
     const fmt = (r: Requirement) => {
       const pri = PRIORITY_LABEL[r.priority]
-      const date = r.createdAt ? new Date(r.createdAt).toLocaleDateString('zh-CN') : ''
+      const date = r.createdAt ? formatDate(r.createdAt) : ''
       const note = r.note ? `\n  > ${r.note}` : ''
       const check = r.status === 'done' ? '[x]' : '[ ]'
       return `- ${check} [${pri}] ${r.title}${date ? '  ·  ' + date : ''}${note}`

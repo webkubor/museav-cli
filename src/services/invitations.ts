@@ -10,7 +10,6 @@ import type {
   CreateInvitationRequest,
   CreateInvitationResponse,
   InvitationPreview,
-  WorkspaceInviteLink,
 } from '@/types'
 
 /** 在指定 workspace 下发起邀请 */
@@ -45,14 +44,4 @@ export function acceptInvitation(token: string, workspaceId?: string) {
     `invitations/${token}/accept`,
     workspaceId ? { workspace_id: workspaceId } : {}
   )
-}
-
-/** 获取工作区的开放邀请链接 */
-export function getInviteLink(workspaceId: string) {
-  return get<WorkspaceInviteLink>(`workspaces/${workspaceId}/invite-link`)
-}
-
-/** 重置工作区开放邀请链接（旧 token 立即失效） */
-export function resetInviteLink(workspaceId: string, role: 'ws_member' | 'ws_admin') {
-  return post<WorkspaceInviteLink>(`workspaces/${workspaceId}/invite-link/reset`, { role })
 }

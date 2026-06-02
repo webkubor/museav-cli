@@ -3,22 +3,17 @@
  * 路由：/observability
  * API：GET|PATCH /workspaces/:id/observability/settings、
  * GET /workspaces/:id/observability/platforms、
- * GET|POST|PATCH|DELETE /workspaces/:id/observability/broadcast-destinations、
- * GET|POST|DELETE /workspaces/:id/observability/broadcast-dead-letters
+ * GET|POST|PATCH|DELETE /workspaces/:id/observability/broadcast-destinations
  */
 import { del, get, patch, post } from '@/lib/request'
 import type {
-  ApiDeadLetter,
   ApiForwardItem,
   ApiForwardListResponse,
   ApiPlatformItem,
   ApiPlatformListResponse,
-  DeadLetterListParams,
 } from '@/interfaces/observability'
 import type {
   CreateForwardRequest,
-  CursorPage,
-  DeadLetter,
   ForwardItem,
   LoggingConfig,
   PlatformItem,
@@ -48,20 +43,6 @@ function toForward(item: ApiForwardItem): ForwardItem {
     privacy_mode_enabled: item.privacy_mode_enabled,
     sampling_rate: item.sampling_rate,
     status: item.status,
-  }
-}
-
-function toDeadLetter(item: ApiDeadLetter): DeadLetter {
-  return {
-    dead_letter_id: item.dead_letter_id,
-    forward_id: item.destination_id,
-    platform: item.provider_type,
-    payload_excerpt: item.payload_excerpt,
-    error_message: item.error_message,
-    attempts: item.attempts,
-    status: item.status,
-    created_at: item.created_at,
-    last_attempted_at: item.last_attempt_at,
   }
 }
 
@@ -138,27 +119,4 @@ export function updateForward(
 /** 删除 Destination */
 export function deleteForward(workspaceId: string, forwardId: string) {
   return del<null>(`workspaces/${workspaceId}/observability/broadcast-destinations/${forwardId}`)
-}
-
-// ─── 死信（Dead Letter）管理 ──────────────────────
-
-/** 查询死信列表 */
-export function listDeadLetters(workspaceId: string, params?: DeadLetterListParams) {
-  return get<CursorPage<ApiDeadLetter>>(
-    `workspaces/${workspaceId}/observability/broadcast-dead-letters`,
-    params
-  ).then((page) => ({ ...page, items: (page.items ?? []).map(toDeadLetter) }))
-}
-
-/** 触发死信立即重试 */
-export function retryDeadLetter(workspaceId: string, deadLetterId: string) {
-  return post<null>(
-    `workspaces/${workspaceId}/observability/broadcast-dead-letters/${deadLetterId}/retry`,
-    {}
-  )
-}
-
-/** 标记死信为忽略 */
-export function deleteDeadLetter(workspaceId: string, deadLetterId: string) {
-  return del<null>(`workspaces/${workspaceId}/observability/broadcast-dead-letters/${deadLetterId}`)
 }

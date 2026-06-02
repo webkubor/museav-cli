@@ -1,16 +1,27 @@
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
 import { getProfile } from '@/services/account'
 import { BasicInfoTab } from '@/features/settings/account/components/BasicInfoTab'
 import { ChangePasswordTab } from '@/features/settings/account/components/ChangePasswordTab'
 import { OAuthBindingTab } from '@/features/settings/account/components/OAuthBindingTab'
+import { PreferencesTab } from '@/features/settings/account/components/PreferencesTab'
 
-type Tab = 'info' | 'security' | 'oauth'
+type Tab = 'info' | 'security' | 'oauth' | 'preferences'
+const TABS = new Set<Tab>(['info', 'security', 'oauth', 'preferences'])
+
+function normalizeTab(value: string | null): Tab {
+  return TABS.has(value as Tab) ? (value as Tab) : 'info'
+}
 
 export default function AccountSettingsPage() {
   const { t } = useTranslation()
-  const [activeTab, setActiveTab] = useState<Tab>('info')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = normalizeTab(searchParams.get('tab'))
+
+  const setActiveTab = (tab: Tab) => {
+    setSearchParams(tab === 'info' ? {} : { tab })
+  }
 
   const { data: profile, isLoading, isError } = useQuery({
     queryKey: ['account-profile'],
@@ -82,12 +93,23 @@ export default function AccountSettingsPage() {
         >
           {t('account.tabs.oauth')}
         </button>
+        <button
+          onClick={() => setActiveTab('preferences')}
+          className={`pb-3 font-semibold transition-all border-b-2 cursor-pointer bg-transparent border-none ${
+            activeTab === 'preferences'
+              ? 'border-brand-base text-brand-base'
+              : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
+          }`}
+        >
+          {t('account.tabs.preferences')}
+        </button>
       </div>
 
       <div style={{ paddingTop: '8px' }}>
         {activeTab === 'info' && <BasicInfoTab profile={profile} />}
         {activeTab === 'security' && <ChangePasswordTab />}
         {activeTab === 'oauth' && <OAuthBindingTab connections={profile.connected_oauth} />}
+        {activeTab === 'preferences' && <PreferencesTab />}
       </div>
     </div>
   )

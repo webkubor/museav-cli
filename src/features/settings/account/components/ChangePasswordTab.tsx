@@ -1,16 +1,29 @@
 import React, { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { changePassword } from '@/services/account'
+import { useNavigate } from 'react-router-dom'
+import { changePassword, deleteAccount } from '@/services/account'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Textarea } from '@/components/ui/Textarea'
+import { Modal } from '@/components/ui/Modal'
 import { appToast } from '@/lib/app-toast'
+import { useAuthStore } from '@/store/auth'
+import { formatDateTime } from '@/lib/format-date'
+
+const DELETE_CONFIRM_TEXT = 'DELETE'
 
 export const ChangePasswordTab: React.FC = () => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const clearAuth = useAuthStore((state) => state.clearAuth)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteReason, setDeleteReason] = useState('')
+  const [deleteConfirm, setDeleteConfirm] = useState('')
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -23,6 +36,27 @@ export const ChangePasswordTab: React.FC = () => {
     },
     onError: (err: any) => {
       appToast.error(err?.message || t('account.security.toastError'))
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteAccount({ password: deletePassword, reason: deleteReason.trim() }),
+    onSuccess: (result) => {
+      appToast.success(
+        t('account.security.deleteSuccess'),
+        t('account.security.deleteSuccessDesc', {
+          date: formatDateTime(result.deletion_scheduled_at),
+        })
+      )
+      setDeleteModalOpen(false)
+      setDeletePassword('')
+      setDeleteReason('')
+      setDeleteConfirm('')
+      clearAuth()
+      navigate('/login', { replace: true })
+    },
+    onError: (error) => {
+      appToast.requestError(error, t('account.security.deleteError'))
     },
   })
 
@@ -40,6 +74,18 @@ export const ChangePasswordTab: React.FC = () => {
       return
     }
     mutation.mutate()
+  }
+
+  function handleDeleteSubmit() {
+    if (!deletePassword) {
+      appToast.warning(t('account.security.deletePasswordRequired'))
+      return
+    }
+    if (deleteConfirm !== DELETE_CONFIRM_TEXT) {
+      appToast.warning(t('account.security.deleteConfirmRequired', { text: DELETE_CONFIRM_TEXT }))
+      return
+    }
+    deleteMutation.mutate()
   }
 
   return (
@@ -92,6 +138,92 @@ export const ChangePasswordTab: React.FC = () => {
           {mutation.isPending ? t('common.loading') : t('common.save')}
         </Button>
       </div>
+
+      <div
+        className="rounded-xl border border-mg-danger/30 bg-mg-danger/5 p-5"
+        style={{ marginTop: '12px' }}
+      >
+        <div style={{ marginBottom: '14px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--mg-danger)', marginBottom: '6px' }}>
+            {t('account.security.deleteTitle')}
+          </div>
+          <div style={{ fontSize: '12.5px', lineHeight: 1.6, color: 'var(--mg-text-1)' }}>
+            {t('account.security.deleteDesc')}
+          </div>
+        </div>
+        <Button
+          variant="destructive"
+          onClick={() => setDeleteModalOpen(true)}
+          className="rounded-[8px] px-5 font-semibold"
+        >
+          {t('account.security.deleteAction')}
+        </Button>
+      </div>
+
+      <Modal
+        open={deleteModalOpen}
+        onClose={() => {
+          if (deleteMutation.isPending) return
+          setDeleteModalOpen(false)
+        }}
+        title={t('account.security.deleteModalTitle')}
+        description={t('account.security.deleteModalDesc', { text: DELETE_CONFIRM_TEXT })}
+        footer={(
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setDeleteModalOpen(false)}
+              disabled={deleteMutation.isPending}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              loading={deleteMutation.isPending}
+              onClick={handleDeleteSubmit}
+            >
+              {t('account.security.deleteConfirmAction')}
+            </Button>
+          </>
+        )}
+      >
+        <div className="space-y-4">
+          <div>
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-mg-text-1">
+              {t('account.security.deletePassword')}
+            </span>
+            <Input
+              type="password"
+              value={deletePassword}
+              disabled={deleteMutation.isPending}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              placeholder={t('account.security.deletePasswordPlaceholder')}
+            />
+          </div>
+          <div>
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-mg-text-1">
+              {t('account.security.deleteReason')}
+            </span>
+            <Textarea
+              value={deleteReason}
+              disabled={deleteMutation.isPending}
+              onChange={(e) => setDeleteReason(e.target.value)}
+              placeholder={t('account.security.deleteReasonPlaceholder')}
+            />
+          </div>
+          <div>
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-mg-text-1">
+              {t('account.security.deleteConfirmLabel', { text: DELETE_CONFIRM_TEXT })}
+            </span>
+            <Input
+              value={deleteConfirm}
+              disabled={deleteMutation.isPending}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              placeholder={DELETE_CONFIRM_TEXT}
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

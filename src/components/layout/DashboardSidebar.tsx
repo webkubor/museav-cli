@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react'
-import { LuSettings, LuChevronLeft, LuChevronRight, LuGlobe } from 'react-icons/lu'
+import React, { useState, useRef, useEffect } from 'react'
+import { LuSettings, LuChevronLeft, LuChevronRight, LuUser, LuBuilding } from 'react-icons/lu'
 
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
@@ -22,8 +22,8 @@ interface DashboardSidebarProps {
   settingsLabel: string
 }
 
-const WORKSPACE_KEYS = ['api-keys', 'guardrails', 'observability', 'invitations-mgmt', 'chat-test']
-const SETTINGS_KEYS = ['settings', 'settings/account', 'settings/workspace', 'settings/organization']
+const WORKSPACE_KEYS = ['api-keys', 'guardrails', 'observability', 'settings/workspace', 'invitations-mgmt', 'chat-test']
+const SETTINGS_KEYS = ['settings', 'settings/account', 'settings/organization']
 const SANDBOX_KEYS = ['platform-config']
 
 /**
@@ -196,39 +196,145 @@ const SidebarFooterInfo: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
 
   if (collapsed) return null
 
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
-  const city = tz.split('/').pop()?.replace(/_/g, ' ') || 'Local'
-  const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+  const timeStr = time.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
 
   return (
-    <div className="mx-3 mt-2 mb-6 p-3.5 rounded-2xl bg-mg-fill-0/20 border border-mg-border/30 flex flex-col gap-3 group transition-all duration-500 hover:bg-mg-fill-0/40 hover:border-brand-base/20 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[9px] font-bold text-mg-text-3 uppercase tracking-widest leading-none">System Version</span>
-          <span className="text-[11px] font-black font-mono text-mg-text-0 tracking-tight">
-            v{__APP_VERSION__}
+    <div className="mx-4 mt-3 mb-6 flex items-center justify-between text-[11px] font-mono text-mg-text-3 select-none">
+      <span>v{__APP_VERSION__}</span>
+      <span className="tabular-nums opacity-85 hover:opacity-100 transition-opacity">{timeStr}</span>
+    </div>
+  )
+}
+
+/**
+ * 侧边栏底部设置按钮（向上弹出/向右弹出菜单）
+ */
+const SidebarSettingsButton: React.FC<{
+  collapsed: boolean
+  selectedKey: string
+  onSelect: (data: { itemKey: string | number }) => void
+  label: string
+  accountLabel: string
+  orgLabel: string
+}> = ({ collapsed, selectedKey, onSelect, label, accountLabel, orgLabel }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleItemClick = (key: string) => {
+    onSelect({ itemKey: key })
+    setIsOpen(false)
+  }
+
+  const isSelected = selectedKey.startsWith('settings')
+
+  return (
+    <div ref={containerRef} className="relative z-[60]">
+      {/* 触发按钮 */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            setIsOpen(!isOpen)
+          }
+        }}
+        className={cn(
+          "group flex items-center gap-3 mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-300 select-none outline-none focus-visible:ring-1 focus-visible:ring-brand-glow justify-between",
+          isSelected
+            ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
+            : "text-mg-text-1 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.96] hover:translate-x-[2px]"
+        )}
+      >
+        <div className={cn("flex items-center gap-3 min-w-0", collapsed && "w-full justify-center")}>
+          <span className={cn(
+            "text-base shrink-0 transition-transform duration-500 ease-out",
+            isSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:rotate-[60deg]"
+          )}>
+            <LuSettings />
           </span>
+          {!collapsed && (
+            <span className="text-[15px] truncate tracking-tight font-medium leading-none">
+              {label}
+            </span>
+          )}
         </div>
-        <div className="w-8 h-8 rounded-xl bg-mg-bg-1 border border-mg-border/50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-        </div>
+        {!collapsed && (
+          <span className={cn(
+            "text-mg-text-2 shrink-0 transition-all duration-300 ml-2",
+            isOpen ? "rotate-90 text-brand-base" : "group-hover:text-mg-text-0"
+          )}>
+            <LuChevronRight size={14} />
+          </span>
+        )}
       </div>
 
-      <div className="h-px w-full bg-gradient-to-r from-transparent via-mg-border/50 to-transparent" />
-
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="p-1 rounded-md bg-mg-bg-1 text-mg-text-2 group-hover:text-brand-base transition-colors">
-            <LuGlobe size={11} />
+      {/* 弹出菜单 */}
+      {isOpen && (
+        <div
+          className={cn(
+            "absolute bg-mg-bg-1/90 backdrop-blur-xl border border-mg-border/50 rounded-2xl p-2 shadow-[0_16px_36px_-6px_rgba(0,0,0,0.2)] flex flex-col gap-1 transition-all duration-300 ease-out animate-in fade-in slide-in-from-bottom-2 z-[70]",
+            collapsed
+              ? "left-full bottom-0 ml-3 w-48"
+              : "bottom-full left-2 right-2 mb-2"
+          )}
+        >
+          {/* Subtle top border highlight */}
+          <div className="absolute top-0 left-4 right-4 h-[1.5px] bg-gradient-to-r from-transparent via-brand-base/20 to-transparent rounded-full" />
+          
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => handleItemClick('settings/account')}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleItemClick('settings/account') }}
+            className={cn(
+              "group/item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13.5px] font-medium leading-none select-none transition-all outline-none",
+              selectedKey === 'settings/account'
+                ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
+                : "text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-0/30 active:scale-[0.98] hover:translate-x-[2px]"
+            )}
+          >
+            <LuUser size={14} className={cn(
+              "transition-transform duration-300 group-hover/item:scale-110",
+              selectedKey === 'settings/account' ? "text-brand-base" : "text-mg-text-3 group-hover/item:text-mg-text-0"
+            )} />
+            <span>{accountLabel}</span>
           </div>
-          <span className="text-[10px] font-bold text-mg-text-2 uppercase truncate group-hover:text-mg-text-1" title={tz}>
-            {city}
-          </span>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => handleItemClick('settings/organization')}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleItemClick('settings/organization') }}
+            className={cn(
+              "group/item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13.5px] font-medium leading-none select-none transition-all outline-none",
+              selectedKey === 'settings/organization'
+                ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
+                : "text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-0/30 active:scale-[0.98] hover:translate-x-[2px]"
+            )}
+          >
+            <LuBuilding size={14} className={cn(
+              "transition-transform duration-300 group-hover/item:scale-110",
+              selectedKey === 'settings/organization' ? "text-brand-base" : "text-mg-text-3 group-hover/item:text-mg-text-0"
+            )} />
+            <span>{orgLabel}</span>
+          </div>
         </div>
-        <div className="font-mono text-[11px] font-bold text-brand-base tabular-nums">
-          {timeStr}
-        </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -396,22 +502,20 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             )
           })}
         </div>
+      </div>
 
-        {/* 底部设置及版本信息 */}
-        <div className="mt-auto pt-2 border-t border-mg-border/40">
-          <SidebarNavItem
-            item={{
-              itemKey: 'settings/account',
-              text: settingsLabel,
-              icon: <LuSettings />,
-            }}
-            collapsed={collapsed}
-            isSelected={isSettingsSelected}
-            onClick={() => onSelect({ itemKey: 'settings/account' })}
-          />
+      {/* 底部设置及版本信息 */}
+      <div className="pt-2 border-t border-mg-border/40 bg-mg-bg-0 shrink-0 relative">
+        <SidebarSettingsButton
+          collapsed={collapsed}
+          selectedKey={selectedKey}
+          onSelect={onSelect}
+          label={settingsLabel}
+          accountLabel={t('nav.account')}
+          orgLabel={t('nav.organization')}
+        />
 
-          <SidebarFooterInfo collapsed={collapsed} />
-        </div>
+        <SidebarFooterInfo collapsed={collapsed} />
       </div>
     </aside>
   )

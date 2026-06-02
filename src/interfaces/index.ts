@@ -33,12 +33,10 @@ export type {
 export type { InvitationListParams, InvitationListResponse } from './invitations'
 export type { CallLogListParams, LogHistogramParams, LogStatsParams } from './logs'
 export type {
-  ApiDeadLetter,
   ApiForwardItem,
   ApiForwardListResponse,
   ApiPlatformItem,
   ApiPlatformListResponse,
-  DeadLetterListParams,
 } from './observability'
 export type { BillingMoneyStatsParams } from './overview'
 export type { TenantListResponse, TenantMemberListParams, UpdateTenantRequest } from './tenants'

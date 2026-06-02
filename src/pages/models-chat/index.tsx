@@ -9,16 +9,12 @@ import { LuSend, LuPlus, LuMessageSquare } from 'react-icons/lu'
 import { chatAgent, listConversations, getConversation } from '@/services/agent'
 import type { AgentConversation } from '@/interfaces/agent'
 import { cn } from '@/lib/utils'
+import { formatDateTime } from '@/lib/format-date'
 import Markdown from 'react-markdown'
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
-}
-
-function formatDate(iso: string) {
-  const d = new Date(iso)
-  return d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
 const PulsingDots = () => (
@@ -135,7 +131,7 @@ export default function ModelsChatPage() {
                   <div className="text-[12px] font-semibold truncate leading-tight">
                     {conv.title || t('modelsHistory.noTitle')}
                   </div>
-                  <div className="text-[10px] text-mg-text-2 mt-1">{formatDate(conv.updated_at)}</div>
+                  <div className="text-[10px] text-mg-text-2 mt-1">{formatDateTime(conv.updated_at)}</div>
                 </button>
               ))}
             </div>

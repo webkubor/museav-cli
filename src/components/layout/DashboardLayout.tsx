@@ -134,7 +134,7 @@ export function DashboardLayout() {
     'chat-test':         [t('nav.home'), '测试区', '对话测试'],
     'platform-config':  [t('nav.home'), '接口调试'],
     'settings/account':      [t('nav.home'), t('nav.settings'), t('nav.account')],
-    'settings/workspace':    [t('nav.home'), t('nav.settings'), t('nav.workspace')],
+    'settings/workspace':    [t('nav.home'), t('nav.workspace')],
     'settings/organization': [t('nav.home'), t('nav.settings'), t('nav.organization')],
   }
 

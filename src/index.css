@@ -452,6 +452,10 @@ body[theme-mode='dark'] .semi-button-borderless:not(.semi-button-disabled):not(.
   justify-content: center;
 }
 
+html {
+  font-size: 15px;
+}
+
 html, body, #root {
   margin: 0;
   padding: 0;

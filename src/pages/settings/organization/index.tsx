@@ -26,8 +26,15 @@ import { appToast } from '@/lib/app-toast'
 
 const MAX_TENANTS = 5
 
-function RoleBadge({ role }: { role: TenantItem['role'] }) {
-  const s = TENANT_ROLE_CONFIG[role]
+function RoleBadge({ role }: { role?: TenantItem['role'] | string | null }) {
+  const s = role ? TENANT_ROLE_CONFIG[role as keyof typeof TENANT_ROLE_CONFIG] : undefined
+  if (!s) {
+    return (
+      <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 rounded-full">
+        {role || 'Unknown'}
+      </Badge>
+    )
+  }
   return <Badge variant={s.variant} className="text-[10px] font-bold px-2 py-0.5 rounded-full">{s.label}</Badge>
 }
 
@@ -192,7 +199,7 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
                   <div className="flex items-center justify-between text-[10px] text-mg-text-2">
                     <span className="font-mono truncate max-w-[80px]">@{record.slug}</span>
                     <span className="flex items-center gap-1">
-                      <span>工作区 {record.current_workspace_count}/{record.max_workspaces}</span>
+                      <span>工作区 {record.current_workspace_count ?? 0}/{record.max_workspaces ?? '—'}</span>
                       <TenantMemberCountBadge tenantId={record.tenant_id} />
                     </span>
                   </div>

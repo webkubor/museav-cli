@@ -3,6 +3,8 @@ import { apiBaseUrl } from '@/lib/request'
 import { injectHeaders } from '@/lib/request-headers'
 import { storageKeys } from '@/lib/storage'
 import type { AgentEvent } from '@/interfaces/agent'
+import { stopConversation } from '@/services/agent'
+import { appToast } from '@/lib/app-toast'
 
 export interface Message {
   id: string
@@ -45,6 +47,7 @@ export function useCsChat(options?: CsChatOptions) {
   const [isLoading, setIsLoading] = useState(false)
   const [status, setStatus] = useState<ConnectionStatus>('online')
   const abortRef = useRef<AbortController | null>(null)
+  const activeAgentMsgIdRef = useRef<string | null>(null)
   const lastUserMessageRef = useRef<string>('')
 
   const saveMessages = useCallback((msgs: Message[]) => {
@@ -75,6 +78,7 @@ export function useCsChat(options?: CsChatOptions) {
     setIsLoading(true)
 
     const agentMsgId = crypto.randomUUID()
+    activeAgentMsgIdRef.current = agentMsgId
     setMessages((prev) => [
       ...prev,
       { id: agentMsgId, role: 'agent' as const, content: '', timestamp: Date.now() },
@@ -191,8 +195,37 @@ export function useCsChat(options?: CsChatOptions) {
       )
     } finally {
       setIsLoading(false)
+      activeAgentMsgIdRef.current = null
     }
   }, [isLoading, conversationId, saveMessages])
+
+  const stopMessage = useCallback(async () => {
+    if (!isLoading) return
+
+    const currentConversationId = conversationId
+    const activeAgentMsgId = activeAgentMsgIdRef.current
+
+    abortRef.current?.abort()
+    setIsLoading(false)
+
+    if (currentConversationId) {
+      stopConversation(currentConversationId).catch((error) => {
+        appToast.requestError(error, '停止会话失败')
+      })
+    }
+
+    if (!activeAgentMsgId) return
+
+    setMessages((prev) => {
+      const next = prev.map((m) =>
+        m.id === activeAgentMsgId
+          ? { ...m, content: m.content.trim() ? `${m.content}\n\n已停止生成。` : '已停止生成。' }
+          : m
+      )
+      saveMessages(next)
+      return next
+    })
+  }, [conversationId, isLoading, saveMessages])
 
   const reconnect = useCallback(() => {
     setStatus('online')
@@ -214,6 +247,7 @@ export function useCsChat(options?: CsChatOptions) {
   return {
     messages,
     sendMessage,
+    stopMessage,
     reconnect,
     retryLastMessage,
     clearHistory,

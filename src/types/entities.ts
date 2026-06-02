@@ -323,14 +323,6 @@ export interface AcceptInvitationResult {
   role: 'ws_member' | 'ws_admin'
 }
 
-/** 工作区开放邀请链接 */
-export interface WorkspaceInviteLink {
-  token: string
-  role: 'ws_member' | 'ws_admin'
-  created_at: string
-  created_by: string
-}
-
 /** 组织邀请链接 */
 export interface TenantInviteLink {
   token: string
@@ -439,8 +431,7 @@ export interface DeleteAccountResult {
 /** 用户偏好 */
 export interface Preferences {
   ui: {
-    language: string
-    timezone: string
+    language: 'zh-CN' | 'en-US'
   }
   notifications: {
     low_balance_alerts_enabled: boolean
@@ -514,19 +505,6 @@ export interface CreateForwardRequest {
   api_key_ids?: string[]
   privacy_mode_enabled?: boolean
   sampling_rate?: number
-}
-
-/** 死信对象 */
-export interface DeadLetter {
-  dead_letter_id: string
-  forward_id: string
-  platform: string
-  payload_excerpt: string
-  error_message: string
-  attempts: number
-  status: 'pending' | 'retrying' | 'ignored'
-  created_at: string
-  last_attempted_at: string
 }
 
 // ─── Billing ────────────────────────────────────────
@@ -709,15 +687,10 @@ export interface LogStats {
 
 /** 日志原始 Payload（GET /model-logs/{requestId}/payload） */
 export interface LogPayload {
-  request_id: string
-  prompt: {
-    messages: Array<{ role: string; content: string }>
-    redacted: boolean
-  } | null
-  completion: {
-    content: string
-    tool_calls: unknown | null
-  } | null
+  body_b64: string
+  content_type: string
+  size: number
+  truncated: boolean
 }
 
 // ─── Catalog ────────────────────────────────────────

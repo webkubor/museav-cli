@@ -40,6 +40,10 @@ export const storageKeys = {
   // ── 语言偏好（app 全局） ──────────────────────────────────────────────────
   lang: () => buildKey('lang', 'app'),
 
+  // ── 时区偏好（app 全局，与市场无关） ──────────────────────────────────────
+  timeZone:       ()                 => buildKey('timezone', 'app'),
+  timeZoneByUser: (userId: string)   => buildKey(`timezone:${userId}`, 'app'),
+
   // ── 客服聊天（app 全局，会话数据无需 market 隔离） ────────────────────────
   csHistory:        () => buildKey('cs_history', 'app'),
   csConversationId: () => buildKey('cs_cid', 'app'),

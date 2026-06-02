@@ -215,7 +215,8 @@
     "tabs": {
       "info": "Profile",
       "security": "Security",
-      "oauth": "Connected Accounts"
+      "oauth": "Connected Accounts",
+      "preferences": "Preferences"
     },
     "info": {
       "emailLabel": "Email",
@@ -241,7 +242,23 @@
       "toastError": "Failed to change password",
       "warningEmpty": "Please fill in all password fields",
       "errorMismatch": "Passwords do not match",
-      "errorLength": "Password must be at least 8 characters"
+      "errorLength": "Password must be at least 8 characters",
+      "deleteTitle": "Delete Account",
+      "deleteDesc": "After submitting the request, the account enters a 7-day grace period. Stop using related services during this period. This affects login and console access.",
+      "deleteAction": "Request Account Deletion",
+      "deleteModalTitle": "Confirm Account Deletion",
+      "deleteModalDesc": "This action requires your current password. Type {{text}} before continuing.",
+      "deletePassword": "Current Password",
+      "deletePasswordPlaceholder": "Enter your current login password",
+      "deleteReason": "Reason",
+      "deleteReasonPlaceholder": "Optional, tell us why you are deleting the account",
+      "deleteConfirmLabel": "Type {{text}} to confirm",
+      "deleteConfirmAction": "Confirm Deletion",
+      "deletePasswordRequired": "Enter your current password",
+      "deleteConfirmRequired": "Type {{text}} before confirming",
+      "deleteSuccess": "Account deletion request submitted",
+      "deleteSuccessDesc": "Scheduled deletion time: {{date}}",
+      "deleteError": "Failed to submit deletion request. Please try again."
     },
     "oauth": {
       "desc": "Connect social accounts for passwordless access.",
@@ -252,7 +269,36 @@
       "notBound": "Not Connected",
       "emailLabel": "Email: {{email}}",
       "unbind": "Disconnect",
-      "bind": "Connect"
+      "bind": "Connect",
+      "processing": "Processing",
+      "unbindSuccess": "Connected account disconnected",
+      "bindError": "Failed to start connection. Please try again.",
+      "unbindError": "Failed to disconnect. Please try again."
+    },
+    "preferences": {
+      "languageTitle": "Interface Language",
+      "languageDesc": "Choose the default console language. Changes apply immediately after saving.",
+      "languageZh": "Simplified Chinese",
+      "languageZhDesc": "For domestic teams and Chinese workflows.",
+      "languageEn": "English",
+      "languageEnDesc": "For global teams and English workflows.",
+      "themeTitle": "Interface Theme",
+      "themeDesc": "Choose the console color mode. Changes apply to the current account after saving.",
+      "themeLightDesc": "Use the light interface for daytime and bright environments.",
+      "themeDarkDesc": "Use the dark interface for nighttime and low-light environments.",
+      "themeSystemDesc": "Follow the current device system theme automatically.",
+      "timeZoneTitle": "Display Time Zone",
+      "timeZoneDesc": "Controls localized time display across the console. When unset, it follows the browser time zone: {{timezone}}.",
+      "timeZoneBrowser": "Follow Browser Time Zone",
+      "timeZoneBrowserDesc": "Current browser: {{timezone}}",
+      "timeZoneFixedDesc": "Always display console time in this time zone.",
+      "timeZonePreview": "Preview: {{time}} · {{timezone}}",
+      "lowBalanceTitle": "Low Balance Alerts",
+      "lowBalanceDesc": "Receive alerts when balance falls below the threshold so API access is not interrupted.",
+      "save": "Save Preferences",
+      "saveSuccess": "Preferences saved",
+      "saveError": "Failed to save preferences. Please try again.",
+      "loadError": "Failed to load preferences"
     }
   },
   "guardrails": {
@@ -353,7 +399,17 @@
       "apiKeyName": "API Key",
       "tokens": "Tokens",
       "errorTitle": "Error",
-      "promptPayload": "Prompt Payload"
+      "promptPayload": "Prompt Payload",
+      "rawPayload": "Raw Payload",
+      "payloadKind": {
+        "request": "Request",
+        "response": "Response"
+      },
+      "payloadLoading": "Loading raw payload...",
+      "payloadError": "Failed to load raw payload",
+      "payloadEmpty": "No raw payload",
+      "payloadTruncated": "Truncated",
+      "payloadCopied": "Payload copied"
     }
   },
   "observability": {

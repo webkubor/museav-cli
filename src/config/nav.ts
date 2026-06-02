@@ -79,6 +79,7 @@ export const navConfig: NavConfig = {
     { itemKey: 'api-keys',         text: t('nav.apiKeys'),       icon: icons.key,    permission: PERMS.API_KEYS_VIEW },
     { itemKey: 'guardrails',       text: t('nav.guardrails'),    icon: icons.shield, permission: PERMS.GUARDRAILS_VIEW },
     { itemKey: 'observability',    text: t('nav.observability'), icon: icons.eye,    permission: PERMS.OBSERVABILITY_VIEW },
+    { itemKey: 'settings/workspace', text: t('nav.workspace'),   icon: icons.apps },
     { itemKey: 'invitations-mgmt', text: t('nav.invitations'),   icon: icons.mail,   permission: PERMS.INVITATIONS_VIEW },
   ],
 

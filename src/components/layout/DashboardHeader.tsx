@@ -3,26 +3,22 @@ import { Input } from '@/components/ui/Input'
 import React, { useState, useEffect } from 'react'
 import {
   LuChevronDown,
-  LuLanguages,
-  LuSun,
-  LuMoon,
   LuPlus,
   LuSettings,
   LuGlobe,
   LuBookOpen,
-  LuMonitor
+  LuLayers,
 } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { modelGoIcons } from '@/config/brand-assets'
-import { getMarket, type Lang } from '@/lib/market'
+import { getMarket } from '@/lib/market'
 import { getMarketConfig } from '@/config/market'
 import { useAuthStore } from '@/store/auth'
-import { useLangStore } from '@/store/use-brand-store'
 import { switchTenant, logout } from '@/services/auth'
 import { listTenants } from '@/services/tenants'
 import { createOrganization } from '@/services/organizations'
-import { applyTheme, getUserTheme, saveTheme, type Theme } from '@/lib/theme'
+import { applyTheme, getUserTheme } from '@/lib/theme'
 import { useTranslation } from 'react-i18next'
 import { listWorkspaces, createWorkspace } from '@/services/workspaces'
 import type { TenantBrief, TenantItem, WorkspaceItem } from '@/types'
@@ -54,14 +50,11 @@ export const DashboardHeader: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setActiveWorkspaceId, clearAuth } = useAuthStore()
   const activeTenantType = tenants.find((t) => t.tenant_id === activeTenantId)?.type ?? 'personal'
   const isNonPersonal = activeTenantType !== 'personal'
-  
-  const [currentTheme, setCurrentTheme] = useState<Theme>('light')
-  const { setLang: setGlobalLang } = useLangStore()
-  
+
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -137,15 +130,14 @@ export const DashboardHeader: React.FC = () => {
       setWsDesc('')
       queryClient.invalidateQueries({ queryKey: ['workspaces'] })
     },
-    onError: (err: any) => {
-      toast.error(err?.message || t('header.createWorkspaceError'))
+    onError: (err: unknown) => {
+      toast.error((err as { message?: string })?.message || t('header.createWorkspaceError'))
     }
   })
 
   useEffect(() => {
-    const activeTheme = account ? getUserTheme(account.account_id) : 'light'
-    setCurrentTheme(activeTheme)
-    applyTheme(activeTheme)
+    if (!account) return
+    applyTheme(getUserTheme(account.account_id))
   }, [account])
 
   const activeWorkspace = workspaces.find((w) => w.workspace_id === activeWorkspaceId) || workspaces.find((w) => w.is_default) || workspaces[0]
@@ -191,17 +183,6 @@ export const DashboardHeader: React.FC = () => {
     navigate('/login', { replace: true })
   }
 
-  function handleThemeChange(theme: Theme) {
-    setCurrentTheme(theme)
-    saveTheme(theme, account?.account_id)
-    applyTheme(theme)
-  }
-
-  function handleLanguageChange(newLang: Lang) {
-    setGlobalLang(newLang)
-    i18n.changeLanguage(newLang)
-  }
-
   const createOrgMutation = useMutation({
     mutationFn: () => createOrganization({ name: newOrgName.trim() }),
     onSuccess: async (org) => {
@@ -217,8 +198,8 @@ export const DashboardHeader: React.FC = () => {
         // Ignored
       }
     },
-    onError: (err: any) => {
-      toast.error(err?.message || t('header.createOrgError'))
+    onError: (err: unknown) => {
+      toast.error((err as { message?: string })?.message || t('header.createOrgError'))
     },
   })
 
@@ -290,12 +271,15 @@ export const DashboardHeader: React.FC = () => {
         {/* 极雅工作区切换选择 Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <div className="flex items-center gap-2 bg-mg-fill-0/50 hover:bg-mg-bg-0 hover:border-brand-mid/50 px-3.5 py-1.5 rounded-full border border-mg-border text-xs text-mg-text-1 transition-all duration-200 hover:shadow-sm cursor-pointer">
-              <span className="font-bold text-mg-text-0">{activeWorkspace?.name ?? t('header.defaultWorkspace')}</span>
-              <LuChevronDown size={10} className="text-mg-text-2" />
+            <div className="group flex items-center gap-2 bg-mg-fill-0/40 hover:bg-mg-fill-0/70 hover:border-brand-base/30 px-3.5 py-1.5 rounded-full border border-mg-border/60 text-xs text-mg-text-1 transition-all duration-300 hover:shadow-sm cursor-pointer select-none active:scale-[0.97]">
+              <LuLayers size={12} className="text-brand-base shrink-0 transition-transform duration-300 group-hover:scale-110" />
+              <span className="font-bold text-mg-text-0 truncate max-w-[110px] md:max-w-[160px]" title={activeWorkspace?.name ?? t('header.defaultWorkspace')}>
+                {activeWorkspace?.name ?? t('header.defaultWorkspace')}
+              </span>
+              <LuChevronDown size={10} className="text-mg-text-3 group-hover:text-mg-text-1 transition-colors shrink-0" />
             </div>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[200px]">
+          <DropdownMenuContent align="end" className="w-[220px]">
             {workspaces.map((ws) => (
               <DropdownMenuItem
                 key={ws.workspace_id}
@@ -306,11 +290,11 @@ export const DashboardHeader: React.FC = () => {
                   backgroundColor: ws.workspace_id === activeWorkspaceId ? 'var(--brand-selected-bg)' : undefined,
                 }}
               >
-                <div className="flex items-center justify-between w-full">
-                  <span>{ws.name}</span>
+                <div className="flex items-center justify-between w-full gap-3 min-w-0" title={ws.name}>
+                  <span className="truncate flex-1 pr-1">{ws.name}</span>
                   {ws.is_default && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-mg-fill-1 text-mg-text-2 font-bold tracking-wide uppercase scale-90">
-                      {t('header.defaultTag')}
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-mg-fill-1 text-mg-text-2 font-bold tracking-wide uppercase shrink-0 scale-95">
+                      {t('header.default')}
                     </span>
                   )}
                 </div>
@@ -337,68 +321,7 @@ export const DashboardHeader: React.FC = () => {
 
       {/* 右侧：功能控制区 + 组织 Switcher + 用户头像 */}
       <div className="flex items-center gap-4">
-        {/* 1. 中英文语言切换 Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              icon={<LuLanguages />}
-              title={t('common.language') || '语言'}
-            />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[120px]">
-            <DropdownMenuItem 
-              onClick={() => handleLanguageChange('zh')}
-              style={{ fontWeight: i18n.language === 'zh' ? 700 : 500 }}
-            >
-              {t('header.langZh')}
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => handleLanguageChange('en')}
-              style={{ fontWeight: i18n.language === 'en' ? 700 : 500 }}
-            >
-              {t('header.langEn')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* 2. 主题切换明暗双系统 Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              icon={currentTheme === 'dark' ? <LuMoon /> : <LuSun />}
-              title={t('common.theme') || '主题'}
-            />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[130px]">
-            <DropdownMenuItem 
-              onClick={() => handleThemeChange('light')}
-              style={{ fontWeight: currentTheme === 'light' ? 700 : 500 }}
-            >
-              <LuSun size={13} className="mr-2 text-mg-text-2 shrink-0" />
-              <span>{t('common.themeLight')}</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => handleThemeChange('dark')}
-              style={{ fontWeight: currentTheme === 'dark' ? 700 : 500 }}
-            >
-              <LuMoon size={13} className="mr-2 text-mg-text-2 shrink-0" />
-              <span>{t('common.themeDark')}</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => handleThemeChange('system')}
-              style={{ fontWeight: currentTheme === 'system' ? 700 : 500 }}
-            >
-              <LuMonitor size={13} className="mr-2 text-mg-text-2 shrink-0" />
-              <span>{t('common.themeSystem')}</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* 3. 官网 & 文档外链 */}
+        {/* 1. 官网 & 文档外链 */}
         <div className="flex items-center gap-0.5">
           <a
             href={marketConfig.siteUrl}
@@ -422,7 +345,7 @@ export const DashboardHeader: React.FC = () => {
         {/* 一级菜单流光分隔竖线：高颜值主题色流动渐变 */}
         <div className="w-[1.5px] h-4 sidebar-flow-line pointer-events-none rounded-full" />
 
-        {/* 4. 用户头像一站式 Dropdown */}
+        {/* 2. 用户头像一站式 Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Avatar className="cursor-pointer active:scale-95 border-2 border-brand-light/30 shadow-sm transition-transform duration-150">

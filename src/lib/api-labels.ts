@@ -34,10 +34,8 @@ const MODULE_LABEL_MAP: Array<[RegExp, string]> = [
   [/\/workspaces\/[^/]+\/api-keys/,'API Keys'],
   [/\/workspaces\/[^/]+\/members\/[^/]+/, '工作区成员详情'],
   [/\/workspaces\/[^/]+\/members/, '工作区成员'],
-  [/\/workspaces\/[^/]+\/invite-link/, '工作区邀请链接'],
   [/\/workspaces\/[^/]+\/invitations/, '工作区邀请'],
   [/\/workspaces\/[^/]+\/guardrails/, '安全护栏列表'],
-  [/\/workspaces\/[^/]+\/observability\/broadcast-dead-letters/, '死信队列'],
   [/\/workspaces\/[^/]+\/observability\/broadcast-destinations/, '推送目标'],
   [/\/workspaces\/[^/]+\/observability\/platforms/, '可观测平台'],
   [/\/workspaces\/[^/]+\/observability/, '可观测性'],
@@ -63,7 +61,7 @@ const MODULE_LABEL_MAP: Array<[RegExp, string]> = [
   [/\/catalog\/pricing/,           '定价方案'],
   // Agent / CS
   [/\/agent\/chat/,                '客服 AI 聊天'],
-  [/\/agent\/conversations\/[^/]+\/stop/, '停止对话'],
+  [/\/agent\/conversations\/[^/]+\/stop/, '客服停止会话'],
   [/\/agent\/conversations\//,     '对话记录'],
   // Invitations
   [/\/invitations\/[^/]+\/accept/, '接受邀请'],

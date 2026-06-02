@@ -21,6 +21,20 @@
 > 覆盖范围：官网、客户中心、账号登录、工作区管理、计费套餐、API Keys、调用审计日志等所有前端接口。
 > **是否有 API，以此 Swagger 为准，禁止自行推测或编造。**
 
+### 当前 API 联调基准
+
+| 字段 | 值 |
+| :--- | :--- |
+| Swagger JSON | `https://modelgo-web-api.test.modelgo.com/swagger/doc.json` |
+| 拉取日期 | `2026-06-02` |
+| API Title | `Modelgo Web API` |
+| API Version | `1.2` |
+| Swagger 格式 | `2.0` |
+| Paths / Operations | `81 / 101` |
+| Spec SHA-256 | `914c3fb15d84698333ada9c29fa00f459b1b1696328386cc2ef62d4ee3fef6f0` |
+
+更新接口联调前必须先执行 `pnpm check:api-contract`。如果 `API Version`、`Paths / Operations` 或 `Spec SHA-256` 变化，必须同步更新本表，避免不知道当前前端对接的是哪一版 Swagger。
+
 ---
 
 ## 技术栈

@@ -970,6 +970,32 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
   @apply text-xs text-brand-base hover:text-brand-deep font-semibold transition-colors duration-200 no-underline;
 }
 
+.auth-password-visibility-btn {
+  @apply inline-flex items-center justify-center border-0 bg-transparent p-0 cursor-pointer transition-colors duration-200;
+  color: var(--mg-text-2);
+}
+
+.auth-password-visibility-btn:hover {
+  color: var(--mg-text-0);
+}
+
+.auth-remember-password {
+  @apply mt-2 inline-flex items-center gap-2 text-xs font-semibold cursor-pointer select-none;
+  color: var(--mg-text-2);
+}
+
+.auth-remember-password:hover {
+  color: var(--mg-text-1);
+}
+
+.auth-remember-password input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--brand-base);
+}
+
 /* 三方登录样式抽离 */
 .social-divider {
   @apply flex items-center gap-4 my-6;
@@ -990,16 +1016,17 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 }
 
 .social-btn {
-  @apply flex-1 flex items-center justify-center h-12 border rounded-xl text-sm font-semibold;
+  @apply flex-1 flex items-center justify-center gap-2 h-11 border rounded-xl text-sm font-semibold;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   border-color: var(--mg-border) !important;
   background-color: rgba(var(--mg-bg-0-rgb), 0.56) !important;
-  color: var(--mg-text-1) !important;
+  color: var(--mg-text-1);
 }
 
 .social-btn:hover {
-  background-color: var(--mg-bg-2) !important;
-  color: var(--mg-text-0) !important;
+  background-color: var(--mg-fill-0) !important;
+  border-color: var(--mg-border-2) !important;
+  color: var(--mg-text-0);
 }
 
 /* ── 💎 通用元组件样式抽离与大厂极简现代美学（硅谷风格） ── */

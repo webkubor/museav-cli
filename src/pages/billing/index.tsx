@@ -9,7 +9,7 @@ import {
   cancelRecharge,
   redeemPromoCode,
 } from '@/services/billing'
-import { usePlatformConfig, useCurrency } from '@/hooks/use-platform-config'
+import { useCurrency, useEnabledChannels } from '@/hooks/use-platform-config'
 import { useAuthStore } from '@/store/auth'
 import { isDomestic } from '@/lib/market'
 import { Button } from '@/components/ui/Button'
@@ -127,11 +127,11 @@ function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   const queryClient = useQueryClient()
   const [amount, setAmount] = useState('100')
 
-  const { data: platformConfig } = usePlatformConfig()
   const { currency, symbol: currencySymbol } = useCurrency()
+  const enabledChannels = useEnabledChannels()
 
-  const CHANNELS = platformConfig?.enabled_channels?.length
-    ? ALL_CHANNELS.filter((c) => platformConfig.enabled_channels.includes(c.value))
+  const CHANNELS = enabledChannels.length
+    ? ALL_CHANNELS.filter((c) => enabledChannels.includes(c.value))
     : ALL_CHANNELS
 
   const [channel, setChannel] = useState<'alipay' | 'wechat' | 'stripe'>('alipay')

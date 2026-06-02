@@ -10,6 +10,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { LuEye, LuEyeOff } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AuthLayout } from '@/components/auth/AuthLayout'
@@ -17,6 +18,7 @@ import { SocialLogin } from '@/components/auth/SocialLogin'
 import { checkLoginEmail, login, getSession } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import { getRedirectTarget } from '@/lib/redirect'
+import { storageKeys } from '@/lib/storage'
 
 const emailSchema = z.object({
   email: z.string().email('请填写有效的邮箱'),
@@ -28,6 +30,39 @@ const passwordSchema = z.object({
 
 type EmailFields = z.infer<typeof emailSchema>
 type PasswordFields = z.infer<typeof passwordSchema>
+
+type RememberedLogin = {
+  email: string
+  password: string
+}
+
+function readRememberedLogin(): RememberedLogin | null {
+  if (typeof window === 'undefined') return null
+
+  const raw = window.localStorage.getItem(storageKeys.rememberedLogin())
+  if (!raw) return null
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<RememberedLogin>
+    if (typeof parsed.email === 'string' && typeof parsed.password === 'string') {
+      return { email: parsed.email, password: parsed.password }
+    }
+  } catch {
+    window.localStorage.removeItem(storageKeys.rememberedLogin())
+  }
+
+  return null
+}
+
+function saveRememberedLogin(email: string, password: string) {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(storageKeys.rememberedLogin(), JSON.stringify({ email, password }))
+}
+
+function clearRememberedLogin() {
+  if (typeof window === 'undefined') return
+  window.localStorage.removeItem(storageKeys.rememberedLogin())
+}
 
 /**
  * 极雅自适应登录页面组件 (Tailwind 样式抽离与全新 shadcn/ui 架构)
@@ -49,9 +84,22 @@ export default function LoginPage() {
     accessDenied ? '你的账号当前不属于任何组织，请联系管理员邀请后再登录。' : ''
   )
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [rememberPassword, setRememberPassword] = useState(false)
 
   const emailForm = useForm<EmailFields>({ resolver: zodResolver(emailSchema) })
   const passwordForm = useForm<PasswordFields>({ resolver: zodResolver(passwordSchema) })
+
+  useEffect(() => {
+    const remembered = readRememberedLogin()
+    if (!remembered) return
+
+    emailForm.setValue('email', remembered.email)
+    passwordForm.setValue('password', remembered.password)
+    setEmail(remembered.email)
+    setRememberPassword(true)
+    setStep('password')
+  }, [emailForm, passwordForm])
 
   // 必须与 ProtectedRoute 的判定完全一致（已登录 AND 有 activeTenantId），
   // 否则「已登录但无组织」的账号会被这里弹回 /dashboard，而 ProtectedRoute 又
@@ -86,6 +134,11 @@ export default function LoginPage() {
     try {
       await login({ email, password: data.password })
       const session = await getSession()
+      if (rememberPassword) {
+        saveRememberedLogin(email, data.password)
+      } else {
+        clearRememberedLogin()
+      }
       setAuth(
         {
           account_id: session.account.account_id,
@@ -107,6 +160,13 @@ export default function LoginPage() {
       setServerError('邮箱或密码错误')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const onRememberPasswordChange = (checked: boolean) => {
+    setRememberPassword(checked)
+    if (!checked) {
+      clearRememberedLogin()
     }
   }
 
@@ -190,14 +250,32 @@ export default function LoginPage() {
             </div>
             <Input
               {...passwordForm.register('password')}
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
               autoComplete="current-password"
               autoFocus
+              suffix={
+                <button
+                  type="button"
+                  className="auth-password-visibility-btn"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                >
+                  {showPassword ? <LuEyeOff size={17} /> : <LuEye size={17} />}
+                </button>
+              }
             />
             {passwordForm.formState.errors.password && (
               <p className="auth-error-message">{passwordForm.formState.errors.password.message}</p>
             )}
+            <label className="auth-remember-password">
+              <input
+                type="checkbox"
+                checked={rememberPassword}
+                onChange={(event) => onRememberPasswordChange(event.target.checked)}
+              />
+              <span>记住密码</span>
+            </label>
           </div>
           
           {serverError && <p className="auth-error-message">{serverError}</p>}

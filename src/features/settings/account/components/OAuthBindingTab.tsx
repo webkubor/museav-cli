@@ -1,22 +1,13 @@
 import { Button } from '@/components/ui/Button'
 import React from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { usePlatformConfig } from '@/hooks/use-platform-config'
-
+import { useOAuthMethods } from '@/hooks/use-platform-config'
 import { useTranslation } from 'react-i18next'
-import Google from '@lobehub/icons/es/Google'
-import Github from '@lobehub/icons/es/Github'
 import type { OAuthConnection } from '@/types'
-import { SiWechat } from 'react-icons/si'
 import { connectOAuth, disconnectOAuth } from '@/services/account'
 import { appToast } from '@/lib/app-toast'
 import type { OAuthProvider } from '@/interfaces/account'
-
-const PROVIDER_ICONS: Record<string, React.ReactNode> = {
-  google: <Google size={20} />,
-  github: <Github size={20} />,
-  wechat: <SiWechat size={20} color="#07C160" />,
-}
+import { OAUTH_ICONS_LG } from '@/constants/oauth'
 
 interface OAuthBindingTabProps {
   connections: OAuthConnection[]
@@ -25,11 +16,7 @@ interface OAuthBindingTabProps {
 export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections }) => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const { data: platformConfig } = usePlatformConfig()
-  const PROVIDERS = (
-    platformConfig?.enabled_login_methods?.filter((m) => m !== 'password') ??
-    ['google', 'github', 'wechat']
-  ) as OAuthProvider[]
+  const PROVIDERS = useOAuthMethods() as OAuthProvider[]
 
   const bindMutation = useMutation({
     mutationFn: async (provider: OAuthProvider) => {
@@ -105,7 +92,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
-                  {PROVIDER_ICONS[provider]}
+                  {OAUTH_ICONS_LG[provider]}
                 </span>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>

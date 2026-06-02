@@ -31,6 +31,7 @@ function buildKey(name: string, scope: Scope): string {
 export const storageKeys = {
   // ── 认证 / 多租户（market 隔离：国内和海外 tenant 体系不同） ──────────────
   activeTenantId: () => buildKey('active_tenant_id', 'market'),
+  rememberedLogin: () => buildKey('remembered_login', 'market'),
 
   // ── 主题（app 全局，与市场无关） ──────────────────────────────────────────
   theme:           ()           => buildKey('theme', 'app'),

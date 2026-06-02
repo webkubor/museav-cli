@@ -1,3 +1,13 @@
+/**
+ * 【回退矩阵 — 非权威数据源】
+ *
+ * 自 2026-06-02（feature qa/ai-quality-platform#75 · 任务 WEB-03 #82）起，菜单/操作权限的
+ * 权威来源是 GET /auth/session 的 permissions.granted（modelgo-permissions
+ * 基于 DB 权威矩阵解析；运营在 controller-web「菜单权限管理」配置）。
+ * 本文件仅在 granted 缺失（旧版后端 / 会话重拉过渡窗口）时由
+ * use-permissions.ts 兜底使用，且使用真实角色计算。
+ * 不要在新代码中直接 import 本矩阵做权限判断。
+ */
 import { PERMS } from './permissions'
 import type { Permission } from './permissions'
 import type { TenantRole } from '@/hooks/use-tenant-role'

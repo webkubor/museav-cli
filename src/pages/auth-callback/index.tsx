@@ -28,7 +28,8 @@ export default function AuthCallbackPage() {
           },
           result.active_tenant_id,
           result.tenants,
-          result.active_workspace_id
+          result.active_workspace_id,
+          result.permissions?.granted ?? null
         )
         navigate(redirect, { replace: true })
       })

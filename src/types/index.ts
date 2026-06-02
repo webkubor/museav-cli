@@ -18,6 +18,8 @@ export type {
   LoginResult,
   CheckLoginEmailResult,
   SessionResult,
+  SessionPermissions,
+  SessionMenu,
   RegisterRequest,
   LoginRequest,
   SwitchTenantRequest,

@@ -149,7 +149,7 @@ export default function LoginPage() {
         session.active_tenant_id,
         session.tenants,
         session.active_workspace_id,
-        session.permissions ?? []
+        session.permissions?.granted ?? null
       )
       if (session.active_tenant_id) {
         navigate(redirectAfterLogin, { replace: true })

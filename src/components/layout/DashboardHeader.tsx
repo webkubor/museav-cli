@@ -15,7 +15,7 @@ import { modelGoIcons } from '@/config/brand-assets'
 import { getMarket } from '@/lib/market'
 import { getMarketConfig } from '@/config/market'
 import { useAuthStore } from '@/store/auth'
-import { switchTenant, logout } from '@/services/auth'
+import { switchTenant, logout, getSession } from '@/services/auth'
 import { listTenants } from '@/services/tenants'
 import { createOrganization } from '@/services/organizations'
 import { applyTheme, getUserTheme } from '@/lib/theme'
@@ -51,7 +51,7 @@ export const DashboardHeader: React.FC = () => {
   const location = useLocation()
   const queryClient = useQueryClient()
   const { t } = useTranslation()
-  const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setActiveWorkspaceId, clearAuth } = useAuthStore()
+  const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setPermissions, setActiveWorkspaceId, clearAuth } = useAuthStore()
   const activeTenantType = tenants.find((t) => t.tenant_id === activeTenantId)?.type ?? 'personal'
   const isNonPersonal = activeTenantType !== 'personal'
 
@@ -148,6 +148,16 @@ export const DashboardHeader: React.FC = () => {
     try {
       await switchTenant({ tenant_id: tenant.tenant_id })
       setAuth(account!, tenant.tenant_id, tenants, undefined)
+      // 切换组织后重拉会话：permissions.granted 是按 租户×工作区 解析的，
+      // 旧值已随 setAuth 置 null，回退期由本地矩阵（真实角色）兜底。
+      // 快速连续切换时丢弃过期响应（B 的响应晚于 C 到达不得覆盖 C 的权限）。
+      getSession()
+        .then((s) => {
+          if (useAuthStore.getState().activeTenantId === tenant.tenant_id) {
+            setPermissions(s.permissions?.granted ?? null)
+          }
+        })
+        .catch((err) => console.warn('[permissions] 切换组织后会话重拉失败，使用本地矩阵回退', err))
       queryClient.invalidateQueries({ queryKey: ['tenants'] })
       queryClient.invalidateQueries({ queryKey: ['workspaces'] })
       try {
@@ -194,6 +204,13 @@ export const DashboardHeader: React.FC = () => {
         await switchTenant({ tenant_id: org.tenant_id })
         setAuth(account!, org.tenant_id, tenants, undefined)
         setActiveWorkspaceId(org.default_workspace_id)
+        getSession()
+          .then((s) => {
+            if (useAuthStore.getState().activeTenantId === org.tenant_id) {
+              setPermissions(s.permissions?.granted ?? null)
+            }
+          })
+          .catch((err) => console.warn('[permissions] 新建组织后会话重拉失败，使用本地矩阵回退', err))
       } catch {
         // Ignored
       }

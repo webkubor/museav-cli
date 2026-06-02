@@ -59,7 +59,7 @@ function SessionLoader() {
           result.active_tenant_id,
           result.tenants,
           result.active_workspace_id,
-          result.permissions ?? []
+          result.permissions?.granted ?? null
         )
       })
       .catch(() => {

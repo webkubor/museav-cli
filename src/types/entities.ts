@@ -80,13 +80,40 @@ export interface CheckLoginEmailResult {
   password_login_enabled: boolean
 }
 
+/** 会话内单个菜单项（后端按角色解析后的可见性与按钮级开关） */
+export interface SessionMenu {
+  key: string
+  name: string
+  scope: 'tenant' | 'workspace' | 'settings'
+  visible: boolean
+  view_permission?: string
+  actions: Record<string, boolean>
+}
+
+/**
+ * 会话权限富对象 —— web-api GET /auth/session 的 permissions 字段
+ * （modelgo-permissions 基于 DB 权威矩阵为当前激活 租户×工作区 解析；
+ * 运营在 controller-web「菜单权限管理」编辑后 ≤30s 生效）。
+ */
+export interface SessionPermissions {
+  active_tenant_id: string
+  active_tenant_type: string
+  active_workspace_id: string
+  region: 'domestic' | 'global'
+  tenant_role: string
+  workspace_role: string
+  granted: string[]
+  menus: SessionMenu[]
+}
+
 /** 会话响应 data */
 export interface SessionResult {
   account: AccountBrief
   active_tenant_id: string
   active_workspace_id: string
   tenants: TenantBrief[]
-  permissions: string[]
+  /** 注意：富对象，不是 string[]（旧类型与线上响应不符） */
+  permissions: SessionPermissions
   session: SessionInfo
 }
 

@@ -466,7 +466,7 @@ function RoleSettingsPanel() {
       {/* 企业角色权限矩阵 */}
       <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
         <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center gap-3">
-          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">企业角色权限矩阵</span>
+          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">租户角色权限矩阵</span>
           <code className="text-[10px] text-mg-text-2 font-mono opacity-60">tenant_owner / tenant_admin / tenant_member</code>
         </div>
         <div className="overflow-x-auto">
@@ -529,12 +529,12 @@ function RoleSettingsPanel() {
           <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">角色层级关系</span>
         </div>
         <div className="p-5 text-xs text-mg-text-1 leading-relaxed space-y-2">
-          <p><strong>账户（Account）</strong>→ 一个人的登录身份，可加入多个企业</p>
-          <p><strong>企业（Tenant）</strong>→ 组织容器，分 personal / enterprise 两种类型。每个账户最多创建 5 个企业</p>
-          <p><strong>企业角色</strong>→ 账户在某个企业内的身份：owner / admin / member。控制账单、成员管理、企业设置等</p>
-          <p><strong>项目（Workspace）</strong>→ 企业下的隔离空间，API Keys / 配额 / 可观测性均为项目级</p>
-          <p><strong>项目角色</strong>→ 账户在某个项目内的身份：owner / admin / member。控制 Key 管理、配额、成员分配等</p>
-          <p className="text-mg-text-2 mt-3">最终权限 = 企业角色权限 ∪ 项目角色权限（取并集）</p>
+          <p><strong>账户（Account）</strong>→ 一个人的登录身份，可加入多个租户</p>
+          <p><strong>租户（Tenant）</strong>→ 系统最小隔离维度，分 personal（个人）和 enterprise（企业/组织）两种类型。每个账户最多创建 5 个租户。国内叫「企业」，国外叫「Organization」，本质是同一个 tenant</p>
+          <p><strong>租户角色</strong>→ 账户在某个租户内的身份：tenant_owner / tenant_admin / tenant_member。控制账单、成员管理、租户设置等</p>
+          <p><strong>项目（Workspace）</strong>→ 租户下的隔离空间，国内叫「项目」，国外叫「Workspace」。API Keys / 配额 / 可观测性均为项目级</p>
+          <p><strong>项目角色</strong>→ 账户在某个项目内的身份：ws_owner / ws_admin / ws_member。控制 Key 管理、配额、成员分配等</p>
+          <p className="text-mg-text-2 mt-3">最终权限 = 租户角色权限 ∪ 项目角色权限（取并集）</p>
         </div>
       </div>
     </>

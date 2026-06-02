@@ -278,7 +278,6 @@ export function DevRequirements() {
     onDrop: handleItemDrop,
     onClaim: handleClaim,
     onPush: handlePush,
-    onFinish: handleFinish,
   }
 
   function handleExport() {
@@ -328,11 +327,6 @@ export function DevRequirements() {
     post({ action: 'push', id })
       .then(() => load())
       .catch(() => {})
-  }
-
-  function handleFinish(id: string) {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, status: 'done' as const } : i)))
-    post({ action: 'finish', id }).then(load).catch(() => load())
   }
 
     const panelW = maximized ? window.innerWidth * 0.9 : size.w
@@ -751,7 +745,6 @@ interface SharedItemProps {
   onDrop: (e: React.DragEvent, id: string) => void
   onClaim: (id: string) => void
   onPush: (id: string) => void
-  onFinish: (id: string) => void
 }
 
 interface ReqItemProps extends SharedItemProps {
@@ -764,7 +757,7 @@ function ReqItem({
   onHover, onToggle, onDelete,
   onEditStart, onEditChange, onEditSave, onEditCancel,
   onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
-  onClaim, onPush, onFinish,
+  onClaim, onPush,
 }: ReqItemProps) {
   const editRef = useRef<HTMLInputElement>(null)
   const hovered = hoverId === item.id
@@ -916,47 +909,48 @@ function ReqItem({
             @{item.assignee}
           </span>
         )}
-        {/* 认领 / 推送 / 完成 */}
+        {/* 认领 / 取消认领 / 推送 */}
         {hovered && !isEditing && item.status !== 'done' && (
           <>
             {item.gitlabIid ? (
-              !item.assignee || item.assignee !== 'webkubor' ? (
+              item.assignee ? (
                 <button
                   onClick={(e) => { e.stopPropagation(); onClaim(item.id) }}
-                  title="认领此任务（分配给我 + 标记已认领）"
+                  title="取消认领（移除负责人）"
                   style={{
-                    fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 3,
+                    fontSize: 11, fontWeight: 700, padding: '2px 6px', borderRadius: 3,
+                    color: 'var(--mg-text-2)', background: 'var(--mg-fill-0)',
+                    border: '1px solid var(--mg-border)', cursor: 'pointer', lineHeight: '16px',
+                  }}
+                >
+                  取消认领
+                </button>
+              ) : (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onClaim(item.id) }}
+                  title="认领此任务"
+                  style={{
+                    fontSize: 11, fontWeight: 700, padding: '2px 6px', borderRadius: 3,
                     color: '#fff', background: 'var(--mg-primary)', border: 'none',
-                    cursor: 'pointer', lineHeight: '18px',
+                    cursor: 'pointer', lineHeight: '16px',
                   }}
                 >
                   认领
                 </button>
-              ) : null
+              )
             ) : (
               <button
                 onClick={(e) => { e.stopPropagation(); onPush(item.id) }}
-                title="推送到 GitLab 并认领"
+                title="推送到 GitLab"
                 style={{
-                  fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 3,
+                  fontSize: 11, fontWeight: 700, padding: '2px 6px', borderRadius: 3,
                   color: 'var(--mg-primary)', background: 'var(--mg-primary-light)',
-                  border: `1px solid var(--mg-primary)`, cursor: 'pointer', lineHeight: '16px',
+                  border: `1px solid var(--mg-primary)`, cursor: 'pointer', lineHeight: '14px',
                 }}
               >
                 推送
               </button>
             )}
-            <button
-              onClick={(e) => { e.stopPropagation(); onFinish(item.id) }}
-              title="标记完成（同步关闭 GitLab Issue）"
-              style={{
-                fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 3,
-                color: '#fff', background: '#22c55e', border: 'none',
-                cursor: 'pointer', lineHeight: '18px',
-              }}
-            >
-              完成
-            </button>
           </>
         )}
         <span style={{ fontSize: 13, color: PRIORITY_COLOR[item.priority], fontWeight: 700 }}>

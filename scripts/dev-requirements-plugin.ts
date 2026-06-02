@@ -124,10 +124,17 @@ function claimIssue(items: Requirement[], localId: string): Requirement[] {
 
   const issue = glabJson<GitLabIssue>(`"projects/${GITLAB_PROJECT_ID}/issues/${item.gitlabIid}"`)
   const bizLabels = issue.labels.filter((l) => !STATUS_LABELS.includes(l))
+  const isClaimed = !!issue.assignee
+
+  if (isClaimed) {
+    glab(`-X PUT "projects/${GITLAB_PROJECT_ID}/issues/${item.gitlabIid}" --field "assignee_id=0"`)
+    return items.map((i) =>
+      i.id === localId ? { ...i, assignee: undefined } : i
+    )
+  }
+
   const newLabels = [...bizLabels, '已认领'].join(',')
-
   glab(`-X PUT "projects/${GITLAB_PROJECT_ID}/issues/${item.gitlabIid}" --field "assignee_id=${GITLAB_USER_ID}" --field "labels=${newLabels}"`)
-
   return items.map((i) =>
     i.id === localId
       ? { ...i, assignee: 'webkubor', gitlabLabels: [...bizLabels, '已认领'] }

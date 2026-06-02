@@ -104,8 +104,9 @@ const WechatPayLogo = () => (
 )
 
 const StripeLogo = () => (
-  <svg width="34" height="14" viewBox="0 0 60 25" fill="none">
-    <path d="M5.45 9.67c0-.7.58-1 1.5-1 1.34 0 3.04.4 4.38 1.12V5.6A11.6 11.6 0 0 0 6.95 5C3.14 5 .6 7 .6 9.9c0 4.6 6.3 3.86 6.3 5.84 0 .83-.72 1.1-1.7 1.1-1.47 0-3.35-.6-4.84-1.42v4.25A12.27 12.27 0 0 0 5.2 20.5c3.9 0 6.58-1.93 6.58-4.9-.02-4.97-6.33-4.07-6.33-5.93zm14.02-9.1l-5.18 1.1-.02 16.9 5.2-.01V.57zm6.62 4.54-5.22 1.1V20.5h5.22V8.2l.96.18 3.42-4.88-4.38-2zm13.12-.1c-1.6 0-2.6.74-3.16 1.26l-.2-1.02h-4.66V25l5.27-1.12.02-5.62a5.8 5.8 0 0 0 2.72.65c2.74 0 5.24-2.2 5.24-7.06-.02-4.44-2.55-6.94-5.23-6.94zm-.92 10.68c-.9 0-1.43-.32-1.8-.72l-.02-5.68c.4-.44.95-.74 1.82-.74 1.4 0 2.36 1.56 2.36 3.56 0 2.04-.94 3.58-2.36 3.58zm18.02-6.2c0-2.6-1.26-4.48-3.68-4.48-2.44 0-3.9 1.88-3.9 4.48v.08c0 2.94 1.66 4.44 4.16 4.44 1.2 0 2.1-.26 2.78-.66v-3.44c-.68.38-1.46.6-2.46.6-.98 0-1.84-.36-1.96-1.56h5.04c.02-.16.02-.3.02-.46zm-5.08-.9c0-1.14.7-1.62 1.34-1.62.62 0 1.28.48 1.28 1.62h-2.62z" fill="#635BFF"/>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <rect width="24" height="24" rx="4" fill="#635BFF"/>
+    <path d="M12.12 9.53c0-.6.5-.84 1.32-.84 1.18 0 2.67.36 3.85.99V5.96A10.22 10.22 0 0 0 13.44 5c-3.43 0-5.71 1.79-5.71 4.78 0 4.66 6.42 3.92 6.42 5.93 0 .71-.62.94-1.48.94-1.28 0-2.92-.53-4.22-1.24v3.74a10.8 10.8 0 0 0 4.22.85c3.51 0 5.93-1.73 5.93-4.77-.03-5.03-6.48-4.13-6.48-5.7z" fill="white"/>
   </svg>
 )
 
@@ -245,10 +246,10 @@ function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
           </div>
 
           <Button
-            variant="default"
+            variant="brand"
             disabled={!parseFloat(amount) || parseFloat(amount) <= 0 || recharge.isPending}
             onClick={() => recharge.mutate()}
-            className="w-full h-11 text-xs font-bold rounded-xl shadow-md bg-gradient-to-r from-brand-base to-brand-deep hover:opacity-95 active:scale-[0.99] transition-all"
+            className="w-full h-11 text-xs rounded-xl"
           >
             {recharge.isPending ? t('billing.rechargeModal.submitting') : t('billing.rechargeModal.submit', { amount })}
           </Button>

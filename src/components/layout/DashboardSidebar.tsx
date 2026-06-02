@@ -205,9 +205,9 @@ const SidebarFooterInfo: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
   })
 
   return (
-    <div className="mx-4 mt-3 mb-6 flex items-center justify-between text-[11px] font-mono text-mg-text-3 select-none">
-      <span>v{__APP_VERSION__}</span>
-      <span className="tabular-nums opacity-85 hover:opacity-100 transition-opacity">{timeStr}</span>
+    <div className="mx-4 mt-3 mb-6 flex items-center justify-between text-[11.5px] font-mono text-mg-text-2 select-none">
+      <span className="font-semibold tracking-wide">v{__APP_VERSION__}</span>
+      <span className="tabular-nums hover:text-mg-text-0 transition-colors">{timeStr}</span>
     </div>
   )
 }

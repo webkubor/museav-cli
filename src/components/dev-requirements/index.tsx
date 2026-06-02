@@ -59,7 +59,7 @@ export function DevRequirements() {
     }
   })
   const [title, setTitle] = useState('')
-  const [gitlabIid, setGitlabIid] = useState('')
+  const [issueType, setIssueType] = useState<'TASK' | 'BUG'>('TASK')
   const [priority, setPriority] = useState<Requirement['priority']>('medium')
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [pos, setPos] = useState<{ top: number; right: number }>(loadPos)
@@ -167,19 +167,18 @@ export function DevRequirements() {
   const handleAdd = () => {
     const trimmed = title.trim()
     if (!trimmed) return
-    const iid = gitlabIid.trim() ? parseInt(gitlabIid.trim(), 10) : undefined
+    const prefix = issueType === 'BUG' ? '[BUG] ' : '[需求] '
+    const fullTitle = trimmed.startsWith('[') ? trimmed : prefix + trimmed
     const optimistic: Requirement = {
       id: `pending-${Date.now()}`,
-      title: trimmed,
+      title: fullTitle,
       priority,
       status: 'pending',
       createdAt: new Date().toISOString(),
-      gitlabIid: iid && !isNaN(iid) ? iid : undefined,
     }
     setItems((prev) => [...prev, optimistic])
     setTitle('')
-    setGitlabIid('')
-    post({ action: 'add', title: trimmed, priority, gitlabIid: optimistic.gitlabIid }).then(load).catch(() => {})
+    post({ action: 'add', title: fullTitle, priority }).then(load).catch(() => {})
   }
 
   const handleToggle = (id: string) => {
@@ -533,45 +532,45 @@ export function DevRequirements() {
                 outline: 'none',
               }}
             />
-            <input
-              value={gitlabIid}
-              onChange={(e) => setGitlabIid(e.target.value.replace(/\D/g, ''))}
-              placeholder="#"
-              title="GitLab Issue ID（选填）"
-              style={{
-                width: 60,
-                padding: '10px 6px',
-                fontSize: 15,
-                fontFamily: 'monospace',
-                fontWeight: 600,
-                background: 'var(--mg-bg-2)',
-                border: '1px solid var(--mg-border)',
-                borderRadius: 6,
-                color: gitlabIid ? 'var(--mg-primary)' : 'var(--mg-text-2)',
-                outline: 'none',
-                textAlign: 'center',
-                flexShrink: 0,
-              }}
-            />
+            {/* 标签类型 */}
             <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as Requirement['priority'])}
+              value={issueType}
+              onChange={(e) => setIssueType(e.target.value as 'TASK' | 'BUG')}
               style={{
-                padding: '10px 6px',
-                fontSize: 16,
-                background: 'var(--mg-bg-2)',
-                border: '1px solid var(--mg-border)',
+                padding: '8px 6px',
+                fontSize: 12,
+                fontWeight: 700,
+                background: issueType === 'BUG' ? 'rgba(239,68,68,0.1)' : 'rgba(99,102,241,0.1)',
+                color: issueType === 'BUG' ? '#ef4444' : '#6366f1',
+                border: `1px solid ${issueType === 'BUG' ? 'rgba(239,68,68,0.3)' : 'rgba(99,102,241,0.3)'}`,
                 borderRadius: 6,
-                color: PRIORITY_COLOR[priority],
-                fontWeight: 600,
                 outline: 'none',
                 cursor: 'pointer',
+                flexShrink: 0,
               }}
             >
-              <option value="high">高</option>
-              <option value="medium">中</option>
-              <option value="low">低</option>
+              <option value="TASK">需求</option>
+              <option value="BUG">BUG</option>
             </select>
+            {/* 优先级色块 */}
+            <div style={{ display: 'flex', gap: 3, flexShrink: 0, alignItems: 'center' }}>
+              {(['high', 'medium', 'low'] as const).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPriority(p)}
+                  title={PRIORITY_LABEL[p]}
+                  style={{
+                    width: 18, height: 18, borderRadius: 4, cursor: 'pointer', border: 'none',
+                    background: PRIORITY_COLOR[p],
+                    opacity: priority === p ? 1 : 0.25,
+                    transition: 'opacity 0.15s',
+                    outline: priority === p ? `2px solid ${PRIORITY_COLOR[p]}` : 'none',
+                    outlineOffset: 2,
+                  }}
+                />
+              ))}
+            </div>
             <button
               onClick={handleAdd}
               disabled={!title.trim()}

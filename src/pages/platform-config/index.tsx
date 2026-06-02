@@ -775,7 +775,6 @@ export default function PlatformConfigPage() {
           <TabsTrigger value="endpoints">{t('platformConfig.tab.endpoints')}</TabsTrigger>
           <TabsTrigger value="modules">{t('platformConfig.tab.modules')}</TabsTrigger>
           <TabsTrigger value="permissions">{t('platformConfig.tab.permissions')}</TabsTrigger>
-          <TabsTrigger value="requirements">{t('platformConfig.tab.requirements')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="endpoints">
@@ -818,35 +817,6 @@ export default function PlatformConfigPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="requirements">
-          <div className="pt-2">
-            <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm p-8 text-center">
-              <h3 className="text-lg font-bold text-mg-text-0 mb-2">需求看板 (Requirement Board)</h3>
-              <p className="text-sm text-mg-text-2 mb-6">点击屏幕右侧的悬浮按钮「需求」来管理实时卡片。</p>
-              <div className="max-w-md mx-auto bg-mg-bg-1/50 rounded-lg p-4 text-left border border-mg-border/40">
-                <div className="text-[11px] font-bold text-mg-text-3 uppercase mb-3">当前核心未完成任务</div>
-                <ul className="space-y-3">
-                  <li className="flex items-start gap-3">
-                    <Badge variant="outline" className="shrink-0 text-[10px]">#66</Badge>
-                    <span className="text-xs text-mg-text-1 leading-relaxed">金额输出统一约束小数点精度 (各币种对齐)</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <Badge variant="outline" className="shrink-0 text-[10px]">#14</Badge>
-                    <span className="text-xs text-mg-text-1 leading-relaxed">API Key 支持 Scope (个人/项目/成员) 区分与绑定</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <Badge variant="outline" className="shrink-0 text-[10px]">#68</Badge>
-                    <span className="text-xs text-mg-text-1 leading-relaxed">护栏详情内支持 API Key 反向绑定规则</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <Badge variant="outline" className="shrink-0 text-[10px]">#72945</Badge>
-                    <span className="text-xs text-mg-text-1 leading-relaxed">组织 Logo 上传接口补齐与更换功能实现</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
       </Tabs>
     </div>
   )

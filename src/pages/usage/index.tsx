@@ -321,6 +321,7 @@ export default function UsagePage() {
   const [range, setRange] = useState<Range>('7d')
   const [metric, setMetric] = useState<Metric>('spend')
 
+  const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const { symbol: currencySymbol } = useCurrency()
 
@@ -338,14 +339,14 @@ export default function UsagePage() {
   const { from, to } = getRangeDates(range)
 
   const summaryQuery = useQuery({
-    queryKey: ['usage-summary', activeWorkspaceId, range],
+    queryKey: ['usage-summary', activeTenantId, activeWorkspaceId, range],
     queryFn: () =>
       getUsageSummary({ workspace_id: activeWorkspaceId || undefined, from, to }),
-    enabled: !!activeWorkspaceId,
+    enabled: !!activeTenantId,
   })
 
   const seriesQuery = useQuery({
-    queryKey: ['usage-series', activeWorkspaceId, range, metric],
+    queryKey: ['usage-series', activeTenantId, activeWorkspaceId, range, metric],
     queryFn: () =>
       getUsageSeries({
         workspace_id: activeWorkspaceId || undefined,
@@ -354,11 +355,11 @@ export default function UsagePage() {
         metric,
         granularity: GRANULARITY_MAP[range],
       }),
-    enabled: !!activeWorkspaceId,
+    enabled: !!activeTenantId,
   })
 
   const histogramQuery = useQuery({
-    queryKey: ['log-histogram', activeWorkspaceId, range],
+    queryKey: ['log-histogram', activeTenantId, activeWorkspaceId, range],
     queryFn: () =>
       getLogHistogram({
         workspace_id: activeWorkspaceId || undefined,
@@ -366,33 +367,20 @@ export default function UsagePage() {
         to,
         granularity: range === '7d' ? 'hour' : 'day',
       }),
-    enabled: !!activeWorkspaceId,
+    enabled: !!activeTenantId,
   })
 
   const summary = summaryQuery.data
 
-  const seriesData = useMemo(() => {
-    const rawData = seriesQuery.data as any
-    if (rawData?.groups?.[0]?.points) {
-      return rawData.groups[0].points.map((p: any) => {
-        let val = '0'
-        if (metric === 'spend') {
-          val = p.spend?.amount ?? '0'
-        } else if (metric === 'requests') {
-          val = String(p.requests ?? 0)
-        } else if (metric === 'tokens') {
-          val = String(p.tokens ?? 0)
-        }
-        return {
-          bucket_start: p.bucket_start,
-          value: val
-        }
-      })
-    }
-    if (rawData?.series) {
-      return rawData.series
-    }
-    return []
+  const seriesData = useMemo<SeriesDataPoint[]>(() => {
+    const points = seriesQuery.data?.groups?.[0]?.points
+    if (!points) return []
+    return points.map((p) => ({
+      bucket_start: p.bucket_start,
+      value: metric === 'spend'
+        ? (p.spend?.amount ?? '0')
+        : String(metric === 'requests' ? (p.requests ?? 0) : (p.tokens ?? 0)),
+    }))
   }, [seriesQuery.data, metric])
 
   const kpiSpend = summary

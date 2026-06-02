@@ -8,6 +8,7 @@
 import type { ReactNode } from 'react'
 import { modelGoLogos } from '@/config/brand-assets'
 import { getMarket } from '@/lib/market'
+import { AuthBackgroundVisual } from './AuthBackgroundVisual'
 
 interface AuthLayoutProps {
   /** 鉴权卡片大标题 */
@@ -18,12 +19,14 @@ interface AuthLayoutProps {
   footer?: ReactNode
   /** 子页面表单结构 */
   children: ReactNode
+  /** 鉴权背景视觉语义 */
+  visual?: 'login' | 'signup'
 }
 
 /**
  * 鉴权公共高品质科技网格氛围骨架 (Tailwind 语义抽离架构)
  */
-export function AuthLayout({ title, subtitle, footer, children }: AuthLayoutProps) {
+export function AuthLayout({ title, subtitle, footer, children, visual = 'login' }: AuthLayoutProps) {
   const market = getMarket()
   const isDomestic = market === 'domestic'
 
@@ -48,6 +51,8 @@ export function AuthLayout({ title, subtitle, footer, children }: AuthLayoutProp
           background: `radial-gradient(circle, ${secondaryGlow} 0%, rgba(255, 255, 255, 0) 70%)`
         }}
       />
+
+      <AuthBackgroundVisual variant={visual} />
 
       {/* 核心内容包裹 */}
       <div className="auth-layout-content">

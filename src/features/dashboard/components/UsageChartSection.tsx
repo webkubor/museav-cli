@@ -6,14 +6,6 @@ import { getUsageSeries } from '@/services/usage'
 import { useAuthStore } from '@/store/auth'
 import { Card } from '@/components/ui/Card'
 
-/** 格式化日期：yyyy-MM-dd */
-function formatISODate(date: Date) {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
 /** 格式化图表日期：MM-dd */
 function formatChartLabel(iso: string) {
   const d = new Date(iso)
@@ -31,37 +23,52 @@ export const UsageChartSection: React.FC = () => {
     queryFn: () => {
       const to = new Date()
       const from = new Date()
-      from.setDate(from.getDate() - 14)
+      from.setDate(from.getDate() - 5)
       return getUsageSeries({
         metric: 'requests',
         granularity: 'day',
-        from: formatISODate(from),
-        to: formatISODate(to)
+        from: from.toISOString(),
+        to: to.toISOString()
       })
     },
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })
 
+  // 安全地提取后端真正的 points 数组（兼容 groups[0].points 结构与 series 结构）
+  const pointsList = useMemo(() => {
+    const rawData = data as any
+    if (rawData?.groups?.[0]?.points) {
+      return rawData.groups[0].points.map((p: any) => ({
+        bucket_start: p.bucket_start,
+        value: String(p.requests ?? 0)
+      }))
+    }
+    if (rawData?.series) {
+      return rawData.series
+    }
+    return []
+  }, [data])
+
   // 简单的 SVG 曲线生成逻辑
   const chartPath = useMemo(() => {
-    if (!data?.series || data.series.length < 2) return ''
+    if (pointsList.length < 2) return ''
     
     const width = 800
     const height = 200
     const padding = 20
     
-    const values = data.series.map(p => parseFloat(p.value))
+    const values = pointsList.map(p => parseFloat(p.value))
     const max = Math.max(...values, 10) // 最小值 10 避免除以 0
     
-    const points = data.series.map((p, i) => {
-      const x = (i / (data.series.length - 1)) * (width - padding * 2) + padding
+    const svgPoints = pointsList.map((p, i) => {
+      const x = (i / (pointsList.length - 1)) * (width - padding * 2) + padding
       const y = height - ((parseFloat(p.value) / max) * (height - padding * 2) + padding)
       return `${x},${y}`
     })
 
-    return `M ${points.join(' L ')}`
-  }, [data])
+    return `M ${svgPoints.join(' L ')}`
+  }, [pointsList])
 
   const areaPath = useMemo(() => {
     if (!chartPath) return ''
@@ -69,7 +76,7 @@ export const UsageChartSection: React.FC = () => {
   }, [chartPath])
 
   return (
-    <Card className="p-6 border-none shadow-md bg-mg-bg-1 flex flex-col">
+    <Card className="p-6 flex flex-col h-full">
       <div style={{ marginBottom: '20px' }}>
         <h3 style={{ fontWeight: 700, fontSize: '16px', color: 'var(--mg-text-0)', margin: 0 }}>{t('dashboard.usageChart.title')}</h3>
         <span style={{ fontSize: '12px', color: 'var(--mg-text-2)', display: 'block', marginTop: '4px' }}>{t('dashboard.usageChart.requestsLabel')}</span>
@@ -78,7 +85,7 @@ export const UsageChartSection: React.FC = () => {
       <div style={{ flex: 1, position: 'relative', minHeight: '200px' }}>
         {isLoading ? (
           <div className="animate-pulse bg-mg-fill-2 rounded w-full h-[200px]" />
-        ) : data?.series && data.series.length > 0 ? (
+        ) : pointsList.length > 0 ? (
           <svg width="100%" height="200" viewBox="0 0 800 200" preserveAspectRatio="none">
             <defs>
               <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
@@ -114,10 +121,10 @@ export const UsageChartSection: React.FC = () => {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
         <span style={{ fontSize: '11px', color: 'var(--mg-text-3)' }}>
-          {data?.series?.[0] ? formatChartLabel(data.series[0].bucket_start) : ''}
+          {pointsList[0] ? formatChartLabel(pointsList[0].bucket_start) : ''}
         </span>
         <span style={{ fontSize: '11px', color: 'var(--mg-text-3)' }}>
-          {data?.series?.[data.series.length - 1] ? formatChartLabel(data.series[data.series.length - 1].bucket_start) : ''}
+          {pointsList[pointsList.length - 1] ? formatChartLabel(pointsList[pointsList.length - 1].bucket_start) : ''}
         </span>
       </div>
     </Card>

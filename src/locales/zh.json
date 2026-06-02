@@ -860,10 +860,16 @@
       "empty": "暂无调用记录"
     },
     "usageChart": {
-      "title": "用量趋势 (最近 14 天)",
+      "title": "用量趋势 (近 5 天)",
       "requests": "请求",
       "empty": "暂无趋势数据",
       "requestsLabel": "请求数 (Requests)"
+    },
+    "histogramChart": {
+      "title": "请求分布 (近 5 天)",
+      "requests": "请求数",
+      "empty": "暂无分布数据",
+      "requestsLabel": "调用频次 (Requests)"
     }
   },
   "welcomeBanner": {
@@ -875,8 +881,8 @@
     "brandNameGlobal": "ModelGo",
     "subTitleDomestic": "高性能、高合规的多模型路由聚合平台",
     "subTitleGlobal": "Unified High-Performance Intelligent AI Routing Platform",
-    "descDomestic": "欢迎访问 ModelGo 开发者控制台。在下方管理 API 密钥、监控用量和账单。使用右侧 CLI 命令行即可在 1 分钟内免密接入与调用多款大语言模型。",
-    "descGlobal": "Welcome to the ModelGo workspace. Manage API keys, monitor requests, and check billing. Use the CLI commands on the right to auth and access models in less than a minute.",
+    "descDomestic": "欢迎访问 ModelGo 开发者控制台。在下方管理 API 密钥、监控用量和账单，并通过统一工作区连接多模型接入、预算控制与调用审计。",
+    "descGlobal": "Welcome to the ModelGo workspace. Manage API keys, monitor requests, and check billing while keeping model access, budgets, and audit trails in one control layer.",
     "workspaceTagEnterpriseDomestic": "企业",
     "workspaceTagEnterpriseGlobal": "Enterprise Org",
     "workspaceTagPersonalDomestic": "个人开发者",

@@ -214,7 +214,7 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
       {createVisible && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setCreateVisible(false)} />
-          <div className="relative bg-card-bg border border-mg-border rounded-2xl w-full max-w-[420px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="relative bg-card-bg modal-glow-flow rounded-2xl w-full max-w-[420px] shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="p-4 border-b border-mg-border flex justify-between items-center bg-mg-fill-0/30">
               <h2 className="text-sm font-bold text-mg-text-0">创建新组织</h2>
               <button className="text-mg-text-2 hover:text-mg-text-0 text-xs font-bold transition-colors" onClick={() => setCreateVisible(false)}>✕</button>

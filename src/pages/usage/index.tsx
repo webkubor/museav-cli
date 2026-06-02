@@ -7,6 +7,9 @@ import { useAuthStore } from '@/store/auth'
 import { useCurrency } from '@/hooks/use-platform-config'
 import type { SeriesDataPoint } from '@/types'
 import { formatChartTooltipDate } from '@/lib/format-date'
+import { KpiCard } from '@/components/ui/KpiCard'
+import { Card } from '@/components/ui/Card'
+import { LuTrendingUp, LuActivity, LuDatabase } from 'react-icons/lu'
 
 // ─── Types ───────────────────────────────────────────
 
@@ -18,8 +21,11 @@ type Metric = 'spend' | 'requests' | 'tokens'
 function getRangeDates(range: Range): { from: string; to: string } {
   const now = new Date()
   const daysMap: Record<Range, number> = { '7d': 7, '30d': 30, '90d': 90 }
-  const from = new Date(now.getTime() - daysMap[range] * 24 * 60 * 60 * 1000).toISOString()
-  return { from, to: now.toISOString() }
+  const from = new Date(now.getTime() - daysMap[range] * 24 * 60 * 60 * 1000)
+  return { 
+    from: from.toISOString(), 
+    to: now.toISOString() 
+  }
 }
 
 function formatMoney(amount: string, symbol: string): string {
@@ -109,7 +115,13 @@ function Sparkline({ data, width, height, metric, noDataLabel }: SparklineProps)
     ` L ${lastPt.x.toFixed(1)} ${height - 28} L ${firstPt.x.toFixed(1)} ${height - 28} Z`
 
   return (
-    <svg width={width} height={height} style={{ display: 'block' }}>
+    <svg 
+      width="100%" 
+      height={height} 
+      viewBox={`0 0 ${width} ${height}`} 
+      preserveAspectRatio="none" 
+      style={{ display: 'block' }}
+    >
       <defs>
         <linearGradient id={areaId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={lineColor} stopOpacity="0.18" />
@@ -205,7 +217,13 @@ function HistogramChart({ buckets, width, height, noDataLabel }: HistogramChartP
   const { items, barW, labels } = bars as any
 
   return (
-    <svg width={width} height={height} style={{ display: 'block' }}>
+    <svg 
+      width="100%" 
+      height={height} 
+      viewBox={`0 0 ${width} ${height}`} 
+      preserveAspectRatio="none" 
+      style={{ display: 'block' }}
+    >
       {[0.25, 0.5, 0.75, 1].map((frac) => {
         const y = 12 + frac * (height - 40)
         return (
@@ -233,39 +251,7 @@ function HistogramChart({ buckets, width, height, noDataLabel }: HistogramChartP
   )
 }
 
-// ─── KPI Card ─────────────────────────────────────────
 
-interface KpiCardProps {
-  label: string
-  value: string
-  sub?: string
-}
-
-function KpiCard({ label, value, sub }: KpiCardProps) {
-  return (
-    <div
-      style={{
-        background: 'var(--mg-bg-0)',
-        borderRadius: '12px',
-        border: '1px solid var(--mg-fill-0)',
-        padding: '24px',
-        boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
-        flex: 1,
-        minWidth: 0,
-      }}
-    >
-      <div style={{ fontSize: '12.5px', fontWeight: 500, color: 'var(--mg-text-2)', marginBottom: '10px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-        {label}
-      </div>
-      <div style={{ fontSize: '26px', fontWeight: 700, color: 'var(--mg-text-0)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
-        {value}
-      </div>
-      {sub && (
-        <div style={{ fontSize: '12px', color: 'var(--mg-text-2)', marginTop: '6px' }}>{sub}</div>
-      )}
-    </div>
-  )
-}
 
 // ─── Range Button ─────────────────────────────────────
 
@@ -354,37 +340,60 @@ export default function UsagePage() {
   const summaryQuery = useQuery({
     queryKey: ['usage-summary', activeWorkspaceId, range],
     queryFn: () =>
-      getUsageSummary({ workspace_id: activeWorkspaceId ?? undefined, from, to }),
-    enabled: true,
+      getUsageSummary({ workspace_id: activeWorkspaceId || undefined, from, to }),
+    enabled: !!activeWorkspaceId,
   })
 
   const seriesQuery = useQuery({
     queryKey: ['usage-series', activeWorkspaceId, range, metric],
     queryFn: () =>
       getUsageSeries({
-        workspace_id: activeWorkspaceId ?? undefined,
+        workspace_id: activeWorkspaceId || undefined,
         from,
         to,
         metric,
         granularity: GRANULARITY_MAP[range],
       }),
-    enabled: true,
+    enabled: !!activeWorkspaceId,
   })
 
   const histogramQuery = useQuery({
     queryKey: ['log-histogram', activeWorkspaceId, range],
     queryFn: () =>
       getLogHistogram({
-        workspace_id: activeWorkspaceId ?? undefined,
+        workspace_id: activeWorkspaceId || undefined,
         from,
         to,
         granularity: range === '7d' ? 'hour' : 'day',
       }),
-    enabled: true,
+    enabled: !!activeWorkspaceId,
   })
 
   const summary = summaryQuery.data
-  const series = seriesQuery.data
+
+  const seriesData = useMemo(() => {
+    const rawData = seriesQuery.data as any
+    if (rawData?.groups?.[0]?.points) {
+      return rawData.groups[0].points.map((p: any) => {
+        let val = '0'
+        if (metric === 'spend') {
+          val = p.spend?.amount ?? '0'
+        } else if (metric === 'requests') {
+          val = String(p.requests ?? 0)
+        } else if (metric === 'tokens') {
+          val = String(p.tokens ?? 0)
+        }
+        return {
+          bucket_start: p.bucket_start,
+          value: val
+        }
+      })
+    }
+    if (rawData?.series) {
+      return rawData.series
+    }
+    return []
+  }, [seriesQuery.data, metric])
 
   const kpiSpend = summary
     ? formatMoney(summary.total.spend.amount, currencySymbol)
@@ -433,12 +442,30 @@ export default function UsagePage() {
             </div>
           ) : (
             <>
-              <KpiCard label={t('usage.kpi.spend')} value={kpiSpend} />
-              <KpiCard label={t('usage.kpi.requests')} value={kpiRequests} />
+              <KpiCard 
+                label={t('usage.kpi.spend')} 
+                value={kpiSpend} 
+                color="var(--mg-warning)"
+                glowColor="rgba(245, 158, 11, 0.12)"
+                hoverBorderClass="hover:border-amber-500/30"
+                icon={<LuTrendingUp size={16} />}
+              />
+              <KpiCard 
+                label={t('usage.kpi.requests')} 
+                value={kpiRequests} 
+                color="var(--mg-success)"
+                glowColor="rgba(16, 185, 129, 0.12)"
+                hoverBorderClass="hover:border-emerald-500/30"
+                icon={<LuActivity size={16} />}
+              />
               <KpiCard
                 label={t('usage.kpi.tokens')}
                 value={summary ? formatNumber(summary.total.tokens) : '—'}
-                sub={summary ? `${t('usage.metric.requests').toLowerCase()} ${formatNumber(summary.total.input_tokens)} · ${formatNumber(summary.total.output_tokens)}` : undefined}
+                sub={summary ? `${t('usage.metric.requests').toLowerCase()}: ${formatNumber(summary.total.input_tokens)} · ${formatNumber(summary.total.output_tokens)}` : undefined}
+                color="#3b82f6"
+                glowColor="rgba(59, 130, 246, 0.12)"
+                hoverBorderClass="hover:border-blue-500/30"
+                icon={<LuDatabase size={16} />}
               />
             </>
           )}
@@ -446,16 +473,7 @@ export default function UsagePage() {
       )}
 
       {/* 折线图区域 */}
-      <div
-        style={{
-          background: 'var(--mg-bg-0)',
-          borderRadius: '12px',
-          border: '1px solid var(--mg-fill-0)',
-          padding: '24px',
-          boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
-          marginBottom: '16px',
-        }}
-      >
+      <Card className="p-6 mb-4 flex flex-col">
         {/* 指标切换 Tab */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--mg-text-0)' }}>
@@ -480,7 +498,7 @@ export default function UsagePage() {
         ) : (
           <div style={{ width: '100%' }}>
             <Sparkline
-              data={series?.series ?? []}
+              data={seriesData}
               width={900}
               height={220}
               metric={metric}
@@ -488,18 +506,10 @@ export default function UsagePage() {
             />
           </div>
         )}
-      </div>
+      </Card>
 
       {/* {t('usage.chart.histogramTitle')}直方图 */}
-      <div
-        style={{
-          background: 'var(--mg-bg-0)',
-          borderRadius: '12px',
-          border: '1px solid var(--mg-fill-0)',
-          padding: '24px',
-          boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
-        }}
-      >
+      <Card className="p-6 flex flex-col">
         <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--mg-text-0)', marginBottom: '20px' }}>
           {t('usage.chart.histogramTitle')}
         </div>
@@ -521,7 +531,7 @@ export default function UsagePage() {
             />
           </div>
         )}
-      </div>
+      </Card>
     </div>
   )
 }

@@ -782,8 +782,58 @@ body[theme-mode='dark'] .modern-auth-btn:hover {
   @apply absolute -top-[10%] -right-[10%] w-[45vw] h-[45vw] max-w-[550px] rounded-full blur-[80px] pointer-events-none z-0;
 }
 
+.auth-background-visual {
+  position: absolute;
+  z-index: 0;
+  width: min(62vw, 920px);
+  aspect-ratio: 21 / 9;
+  right: max(28px, calc((100vw - 1280px) / 2));
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 28px;
+  overflow: hidden;
+  border: 1px solid var(--mg-border);
+  background: var(--mg-bg-0);
+  box-shadow: 0 28px 80px -44px rgba(15, 23, 42, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.3);
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+body[theme-mode='dark'] .auth-background-visual {
+  box-shadow: 0 34px 100px -48px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  opacity: 0.86;
+}
+
 .auth-layout-content {
   @apply w-full max-w-[420px] z-10 relative;
+  margin-right: min(42vw, 520px);
+}
+
+@media (max-width: 1100px) {
+  .auth-background-visual {
+    width: min(88vw, 760px);
+    right: 50%;
+    top: 18px;
+    transform: translateX(50%);
+    opacity: 0.42;
+  }
+
+  .auth-layout-content {
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-layout-container {
+    padding: 20px;
+  }
+
+  .auth-background-visual {
+    width: calc(100vw - 32px);
+    top: 24px;
+    border-radius: 20px;
+    opacity: 0.34;
+  }
 }
 
 /* ── 💎 鉴权中心全新高颜值样式抽离类 ── */
@@ -1238,4 +1288,28 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
 @keyframes shimmer-slide {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+
+/* 🚀 极雅弹窗全屏微流光流动边框 */
+.modal-glow-flow {
+  border: 1px solid transparent !important;
+  background-image: linear-gradient(var(--mg-bg-0), var(--mg-bg-0)), 
+                    linear-gradient(135deg, var(--brand-base) 0%, var(--brand-glow) 30%, var(--brand-base) 60%, var(--brand-glow) 100%) !important;
+  background-origin: border-box !important;
+  background-clip: padding-box, border-box !important;
+  background-size: 200% 200% !important;
+  animation: borderGlow 6s linear infinite !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), 0 0 1px 1px var(--brand-glow) !important;
+}
+
+@keyframes borderGlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }

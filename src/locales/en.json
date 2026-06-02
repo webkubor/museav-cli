@@ -860,10 +860,16 @@
       "empty": "No call records"
     },
     "usageChart": {
-      "title": "Usage Trend (Last 14 days)",
+      "title": "Usage Trend (Last 5 days)",
       "requests": "Requests",
       "empty": "No trend data",
       "requestsLabel": "Requests"
+    },
+    "histogramChart": {
+      "title": "Request Distribution (Last 5 days)",
+      "requests": "Requests",
+      "empty": "No distribution data",
+      "requestsLabel": "Call Frequency (Requests)"
     }
   },
   "welcomeBanner": {
@@ -875,8 +881,8 @@
     "brandNameGlobal": "ModelGo",
     "subTitleDomestic": "High-performance, compliant multi-model routing platform",
     "subTitleGlobal": "Unified High-Performance Intelligent AI Routing Platform",
-    "descDomestic": "Welcome to the ModelGo developer console. Manage API keys, monitor usage and billing below. Use the CLI commands on the right to access multiple LLMs in under 1 minute.",
-    "descGlobal": "Welcome to the ModelGo workspace. Manage API keys, monitor requests, and check billing. Use the CLI commands on the right to auth and access models in less than a minute.",
+    "descDomestic": "Welcome to the ModelGo developer console. Manage API keys, monitor usage and billing, and keep model access, budgets, and audit trails in one workspace.",
+    "descGlobal": "Welcome to the ModelGo workspace. Manage API keys, monitor requests, and check billing while keeping model access, budgets, and audit trails in one control layer.",
     "workspaceTagEnterpriseDomestic": "Enterprise Org",
     "workspaceTagEnterpriseGlobal": "Enterprise Org",
     "workspaceTagPersonalDomestic": "Personal Developer",

@@ -46,7 +46,7 @@ const MODULE_LABEL_MAP: Array<[RegExp, string]> = [
   [/\/guardrails(?:\/|$)/,         '安全护栏'],
   // Logs
   [/\/model-logs\/[^/]+\/payload/, '日志 Payload'],
-  [/\/model-logs\/histogram/,      '用量直方图'],
+  [/\/model-logs\/histogram/,      '用量分析-调用分布'],
   [/\/model-logs\/stats/,          '调用统计'],
   [/\/model-logs(?:\/|$)/,         '调用日志'],
   // Usage

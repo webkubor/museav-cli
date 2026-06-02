@@ -114,6 +114,7 @@ export default function LoginPage() {
 
   return (
     <AuthLayout
+      visual="login"
       title="欢迎回来"
       subtitle="登录到你的 ModelGo 账号"
       footer={

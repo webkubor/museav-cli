@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
@@ -14,13 +14,16 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/Table'
-import { LuSearch, LuEye, LuRefreshCw, LuCalendar, LuCopy } from 'react-icons/lu'
+import { LuSearch, LuEye, LuRefreshCw, LuCalendar, LuCopy, LuCheck } from 'react-icons/lu'
 import { IoAlertCircle } from 'react-icons/io5'
 import { useAuthStore } from '@/store/auth'
 import { getLogPayload, listCallLogs } from '@/services/logs'
+import { listApiKeys } from '@/services/api-keys'
+import { listModels } from '@/services/catalog'
 import type { CallLogItem, LogPayload } from '@/types'
 import { formatDateTime } from '@/lib/format-date'
 import { appToast } from '@/lib/app-toast'
+import { cn } from '@/lib/utils'
 
 type LogStatusFilter = 'all' | 'success' | 'failed'
 type PayloadKind = 'request' | 'response'
@@ -40,6 +43,137 @@ function decodePayload(payload: LogPayload | undefined) {
   }
 }
 
+/**
+ * 高颜值模型筛选搜索选择框（Combobox）
+ */
+const ModelSelectCombobox: React.FC<{
+  value: string
+  onChange: (val: string) => void
+  models: { id: string; display_name: string }[]
+  placeholder: string
+}> = ({ value, onChange, models, placeholder }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const [inputValue, setInputValue] = useState(value)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setInputValue(value)
+  }, [value])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const filtered = models.filter(
+    (m) =>
+      m.id.toLowerCase().includes(inputValue.toLowerCase()) ||
+      m.display_name.toLowerCase().includes(inputValue.toLowerCase())
+  )
+
+  const handleSelect = (modelId: string) => {
+    onChange(modelId)
+    setInputValue(modelId)
+    setIsOpen(false)
+  }
+
+  const handleInputChange = (val: string) => {
+    setInputValue(val)
+    onChange(val)
+  }
+
+  const handleClear = () => {
+    setInputValue('')
+    onChange('')
+  }
+
+  return (
+    <div ref={containerRef} className="relative w-full flex flex-col gap-1.5 z-40 select-none">
+      <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">模型名称</label>
+      <div className="relative">
+        <Input
+          value={inputValue}
+          onFocus={() => setIsOpen(true)}
+          onChange={(e) => handleInputChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full bg-mg-fill-0/30 font-medium pr-8"
+        />
+        {inputValue && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-mg-text-2 hover:text-mg-text-0 text-[11px] font-bold cursor-pointer transition-colors"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {isOpen && (
+        <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-mg-bg-1/90 backdrop-blur-xl border border-mg-border/50 rounded-2xl p-2 shadow-[0_16px_36px_-6px_rgba(0,0,0,0.2)] flex flex-col gap-1 max-h-56 overflow-y-auto z-[80] animate-in fade-in slide-in-from-top-2 no-scrollbar">
+          {/* Subtle top border highlight */}
+          <div className="absolute top-0 left-4 right-4 h-[1.5px] bg-gradient-to-r from-transparent via-brand-base/20 to-transparent rounded-full" />
+
+          {filtered.length === 0 ? (
+            <div className="py-3 text-center text-xs italic text-mg-text-2">
+              未找到匹配模型
+            </div>
+          ) : (
+            filtered.map((m) => (
+              <div
+                key={m.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleSelect(m.id)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect(m.id) }}
+                className={cn(
+                  "group/item flex flex-col gap-0.5 px-3 py-2 rounded-lg cursor-pointer select-none transition-all outline-none",
+                  value === m.id
+                    ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
+                    : "text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-0/30 active:scale-[0.98] hover:translate-x-[2px]"
+                )}
+              >
+                <span className="text-[13.5px] font-bold leading-none truncate">
+                  {m.display_name}
+                </span>
+                <span className="text-[10px] text-mg-text-3 font-mono truncate mt-0.5">
+                  {m.id}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * 极具科技设计感的高颜值数据加载骨架屏（Skeleton）
+ */
+const TableSkeleton = () => (
+  <div className="p-5 flex flex-col gap-4 animate-pulse select-none">
+    {[...Array(5)].map((_, i) => (
+      <div key={i} className="flex items-center justify-between gap-4 py-4 border-b border-mg-border/30 last:border-none animate-in fade-in duration-300">
+        <div className="flex flex-col gap-2 w-1/4">
+          <div className="h-3.5 bg-mg-fill-0/40 rounded-full w-full" />
+          <div className="h-2.5 bg-mg-fill-0/20 rounded-full w-2/3" />
+        </div>
+        <div className="h-3.5 bg-mg-fill-0/40 rounded-full w-1/6" />
+        <div className="h-4 bg-mg-fill-0/40 rounded-full w-1/5" />
+        <div className="h-3 bg-mg-fill-0/40 rounded-full w-12" />
+        <div className="h-3.5 bg-mg-fill-0/40 rounded-full w-1/6" />
+      </div>
+    ))}
+  </div>
+)
+
 export default function LogsPage() {
   const { t } = useTranslation()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
@@ -48,6 +182,10 @@ export default function LogsPage() {
   const [statusFilter, setStatusFilter] = useState<LogStatusFilter>('all')
   const [searchValue, setSearchValue] = useState('')
   const [modelFilter, setModelFilter] = useState('')
+  const [apiKeyFilter, setApiKeyFilter] = useState('all')
+
+  // 复制反馈状态
+  const [copiedPayload, setCopiedPayload] = useState(false)
 
   // 侧边栏抽屉展示
   const [selectedLog, setSelectedLog] = useState<CallLogItem | null>(null)
@@ -57,14 +195,33 @@ export default function LogsPage() {
   const [page, setPage] = useState(1)
   const pageSize = 15
 
+  // 加载当前工作区下的 API 密钥列表
+  const { data: apiKeysData } = useQuery({
+    queryKey: ['apiKeys', activeWorkspaceId],
+    queryFn: () => listApiKeys(activeWorkspaceId!),
+    enabled: Boolean(activeWorkspaceId),
+    staleTime: 60_000,
+  })
+  const apiKeys = apiKeysData?.items ?? []
+
+  // 加载系统所有的模型列表
+  const { data: modelsData } = useQuery({
+    queryKey: ['catalogModels'],
+    queryFn: () => listModels({ limit: 150 }),
+    staleTime: 5 * 60_000,
+  })
+  const systemModels = modelsData?.items ?? []
+
   // 真实日志加载
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['logs', activeWorkspaceId, statusFilter, modelFilter, page],
+    queryKey: ['logs', activeWorkspaceId, statusFilter, modelFilter, apiKeyFilter, searchValue, page],
     queryFn: () =>
       listCallLogs({
         workspace_id: activeWorkspaceId!,
         status: statusFilter === 'all' ? undefined : (statusFilter === 'success' ? 'succeeded' : 'failed'),
         model_id: modelFilter || undefined,
+        api_key_id: apiKeyFilter === 'all' ? undefined : apiKeyFilter,
+        request_id: searchValue.trim() || undefined,
         limit: pageSize * page, // 粗粒度分页兼容
       }),
     enabled: Boolean(activeWorkspaceId),
@@ -84,17 +241,14 @@ export default function LogsPage() {
     if (!decodedPayload) return
     navigator.clipboard.writeText(decodedPayload).then(() => {
       appToast.success(t('logs.detail.payloadCopied'))
+      setCopiedPayload(true)
+      setTimeout(() => setCopiedPayload(false), 2000)
     })
   }
 
   // 简易前端切片分页模拟
   const rawLogs = data?.items ?? []
-  const filteredLogs = rawLogs
-    .filter(row => 
-      row.request_id.toLowerCase().includes(searchValue.toLowerCase()) || 
-      row.model.display_name.toLowerCase().includes(searchValue.toLowerCase())
-    )
-    .slice((page - 1) * pageSize, page * pageSize)
+  const filteredLogs = rawLogs.slice((page - 1) * pageSize, page * pageSize)
 
   const total = data?.items?.length ?? 0
   const hasMore = rawLogs.length > page * pageSize
@@ -131,7 +285,7 @@ export default function LogsPage() {
       </div>
 
       {/* 综合过滤面板 */}
-      <div className="bg-mg-bg-0 p-5 rounded-xl border border-mg-border/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end shadow-sm select-none">
+      <div className="bg-mg-bg-0 p-5 rounded-xl border border-mg-border/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end shadow-sm select-none">
         <div className="flex flex-col gap-1.5">
           <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">{t('logs.filter.statusLabel')}</label>
           <Select
@@ -146,23 +300,37 @@ export default function LogsPage() {
           </Select>
         </div>
 
+        <ModelSelectCombobox
+          value={modelFilter}
+          onChange={(val) => { setModelFilter(val); setPage(1) }}
+          models={systemModels.map(m => ({ id: m.id, display_name: m.display_name }))}
+          placeholder={t('logs.filter.modelPlaceholder')}
+        />
+
         <div className="flex flex-col gap-1.5">
-          <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">{t('logs.filter.modelLabel')}</label>
-          <Input
-            value={modelFilter}
-            onChange={(e) => { setModelFilter(e.target.value); setPage(1) }}
-            placeholder={t('logs.filter.modelPlaceholder')}
-            className="bg-mg-fill-0/30"
-          />
+          <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">API 密钥</label>
+          <Select
+            value={apiKeyFilter}
+            onChange={(v) => { setApiKeyFilter(v); setPage(1) }}
+            placeholder="筛选 API 密钥"
+            className="w-full bg-mg-fill-0/30 font-medium"
+          >
+            <Select.Option value="all">全部密钥</Select.Option>
+            {apiKeys.map((key) => (
+              <Select.Option key={key.api_key_id} value={key.api_key_id}>
+                {key.name} ({key.masked})
+              </Select.Option>
+            ))}
+          </Select>
         </div>
 
         <div className="flex flex-col gap-1.5 lg:col-span-2">
-          <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">{t('logs.filter.keywordLabel')}</label>
+          <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">Request ID</label>
           <Input
-            placeholder={t('logs.filter.keywordPlaceholder')}
+            placeholder="输入完整的 Request ID 进行精确检索"
             prefix={<LuSearch className="opacity-50" />}
             value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
+            onChange={(e) => { setSearchValue(e.target.value); setPage(1) }}
             className="w-full bg-mg-fill-0/30"
           />
         </div>
@@ -171,15 +339,7 @@ export default function LogsPage() {
       {/* 极简细线条无框 Table 视图 */}
       <div className="rounded-xl border border-mg-border/60 overflow-hidden bg-mg-bg-0">
         {isLoading ? (
-          <div className="py-20 text-center text-xs text-mg-text-2">
-            <div className="flex items-center justify-center gap-2">
-              <svg className="animate-spin h-5 w-5 text-brand-base" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              <span>{t('logs.loading')}</span>
-            </div>
-          </div>
+          <TableSkeleton />
         ) : filteredLogs.length === 0 ? (
           <div className="py-20 text-center text-xs italic text-mg-text-2">
             {t('logs.empty')}
@@ -348,10 +508,14 @@ export default function LogsPage() {
                       variant="outline"
                       disabled={!decodedPayload || payloadQuery.isLoading}
                       onClick={copyPayload}
-                      className="h-7"
+                      className="h-7 min-w-[76px] transition-all duration-300 active:scale-[0.95]"
                     >
-                      <LuCopy className="mr-1 h-3 w-3" />
-                      {t('common.copy')}
+                      {copiedPayload ? (
+                        <LuCheck className="mr-1 h-3 w-3 text-emerald-500 animate-in zoom-in-50 duration-300" />
+                      ) : (
+                        <LuCopy className="mr-1 h-3 w-3 animate-in zoom-in-50 duration-300" />
+                      )}
+                      <span>{copiedPayload ? "已复制" : t('common.copy')}</span>
                     </Button>
                   </div>
                 </div>

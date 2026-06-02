@@ -479,7 +479,7 @@ export const DashboardHeader: React.FC = () => {
 
       {/* ─── Dialog 1. 创建新组织 ───────────────── */}
       <Dialog open={orgModalVisible} onOpenChange={setOrgModalVisible}>
-        <DialogContent className="max-w-[400px]">
+        <DialogContent className="max-w-[400px] modal-glow-flow">
           <DialogHeader>
             <DialogTitle>{t('header.createOrg')}</DialogTitle>
           </DialogHeader>
@@ -507,7 +507,7 @@ export const DashboardHeader: React.FC = () => {
 
       {/* ─── Dialog 2. 创建新工作区 ───────────────── */}
       <Dialog open={workspaceModalVisible} onOpenChange={setWorkspaceModalVisible}>
-        <DialogContent className="max-w-[420px]">
+        <DialogContent className="max-w-[420px] modal-glow-flow">
           <DialogHeader>
             <DialogTitle>{t('header.createWorkspace')}</DialogTitle>
           </DialogHeader>

@@ -123,6 +123,7 @@ export default function SignupPage() {
 
   return (
     <AuthLayout
+      visual="signup"
       title="创建账号"
       subtitle="免费开始，按用量付费"
       footer={

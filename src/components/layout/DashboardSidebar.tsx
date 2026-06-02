@@ -288,14 +288,12 @@ const SidebarSettingsButton: React.FC<{
       {isOpen && (
         <div
           className={cn(
-            "absolute bg-mg-bg-1/90 backdrop-blur-xl border border-mg-border/50 rounded-2xl p-2 shadow-[0_16px_36px_-6px_rgba(0,0,0,0.2)] flex flex-col gap-1 transition-all duration-300 ease-out animate-in fade-in slide-in-from-bottom-2 z-[70]",
+            "absolute bg-mg-bg-1/90 backdrop-blur-xl modal-glow-flow rounded-2xl p-2 flex flex-col gap-1 transition-all duration-300 ease-out animate-in fade-in slide-in-from-bottom-2 z-[70]",
             collapsed
               ? "left-full bottom-0 ml-3 w-48"
               : "bottom-full left-2 right-2 mb-2"
           )}
         >
-          {/* Subtle top border highlight */}
-          <div className="absolute top-0 left-4 right-4 h-[1.5px] bg-gradient-to-r from-transparent via-brand-base/20 to-transparent rounded-full" />
           
           <div
             role="button"

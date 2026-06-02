@@ -12,6 +12,7 @@ import { GuideSection } from '@/features/dashboard/components/GuideSection'
 import { QuickAccessSection } from '@/features/dashboard/components/QuickAccessSection'
 import { TerminalSection } from '@/features/dashboard/components/TerminalSection'
 import { UsageChartSection } from '@/features/dashboard/components/UsageChartSection'
+import { HistogramChartSection } from '@/features/dashboard/components/HistogramChartSection'
 import { RecentActivitySection } from '@/features/dashboard/components/RecentActivitySection'
 
 /**
@@ -22,39 +23,44 @@ export default function DashboardPage() {
   const { t } = useTranslation()
 
   return (
-    <div style={{ paddingBottom: '40px' }}>
-      {/* 1. 欢迎横幅 */}
-      <WelcomeBanner />
-
-      {/* 2. 核心 KPI 统计 */}
+    <div style={{ paddingBottom: '40px' }} className="animate-in fade-in duration-300">
+      {/* 1. 核心 KPI 统计（余额那一行） */}
       <KpiSection />
 
-      {/* 3. 用量趋势图表 (新增) */}
-      <div style={{ marginBottom: '36px' }}>
+      {/* 2. 第一屏焦点：用量趋势与请求分布并排（近 5 天） */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-stretch">
         <UsageChartSection />
+        <HistogramChartSection />
       </div>
 
-      {/* 4. 快捷功能入口 */}
-      <QuickAccessSection />
-
-      {/* 5. 调用日志与接入示例混合布局 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-9">
+      {/* 3. 调用日志与接入示例并排 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-start">
         <div className="lg:col-span-2">
           <RecentActivitySection />
         </div>
-        <div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', height: '100%' }}>
-            <div style={{ flex: 1 }}>
-              <h3 style={{ marginBottom: '16px', fontWeight: 700, fontSize: '16px', color: 'var(--mg-text-0)', margin: 0 }}>{t('dashboard.section.integration')}</h3>
-              <TerminalSection />
-            </div>
-          </div>
+        <div className="flex flex-col h-full">
+          <h3 className="text-mg-text-0 text-[15px] font-bold tracking-tight mb-3.5 flex items-center gap-1.5 uppercase select-none">
+            {t('dashboard.section.integration')}
+          </h3>
+          <TerminalSection />
         </div>
+      </div>
+
+      {/* 4. 快捷功能入口 */}
+      <div className="mb-8">
+        <QuickAccessSection />
+      </div>
+
+      {/* 5. 环境卡片（下移到此） */}
+      <div className="mb-8">
+        <WelcomeBanner />
       </div>
 
       {/* 6. 进阶向导 */}
       <div>
-        <h3 style={{ marginBottom: '16px', fontWeight: 700, fontSize: '16px', color: 'var(--mg-text-0)', margin: 0 }}>{t('dashboard.section.guide')}</h3>
+        <h3 className="text-mg-text-0 text-[15px] font-bold tracking-tight mb-3.5 flex items-center gap-1.5 uppercase select-none">
+          {t('dashboard.section.guide')}
+        </h3>
         <GuideSection />
       </div>
     </div>

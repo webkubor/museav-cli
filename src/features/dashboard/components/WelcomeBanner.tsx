@@ -1,18 +1,18 @@
 /**
- * 仪表盘欢迎横幅与 CLI 快速指引组件
- * 职责：展示带品牌色背景渐变的欢迎语，胶囊化展示租户类型徽章，并提供仿 Mac 暗色仿真 CLI 安装与认证命令终端
+ * 仪表盘欢迎横幅组件
+ * 职责：展示带品牌色背景渐变的欢迎语，胶囊化展示租户类型徽章，并提供 21:9 控制台主视觉
  * 路由：/ (Dashboard 主页)
  * API：无外部网络接口依赖，使用客户端 state 与 useAuthStore、storage 等进行状态计算
  */
 
-import React, { useState } from 'react'
+import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { LuCopy, LuCheck, LuBook } from 'react-icons/lu'
+import { LuBook } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { getMarket } from '@/lib/market'
 import { getMarketConfig } from '@/config/market'
 import { Button } from '@/components/ui/Button'
-import { appToast } from '@/lib/app-toast'
+import { DashboardHeroVisual } from './DashboardHeroVisual'
 
 /**
  * 仪表盘核心欢迎 Banner 组件
@@ -32,20 +32,6 @@ export const WelcomeBanner: React.FC = () => {
   // 智能匹配当前活跃的租户实体与其类型
   const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
   const isEnterprise = activeTenant?.type === 'enterprise'
-
-  const [copied, setCopied] = useState(false)
-
-  // CLI 核心命令段
-  const installCmd = 'npm install -g modelgo-cli'
-  const loginCmd = 'modelgo-cli auth login'
-  const fullCmd = `${installCmd}\n${loginCmd}`
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(fullCmd)
-    setCopied(true)
-    appToast.success(isDomestic ? t('welcomeBanner.toast.copiedDomestic') : t('welcomeBanner.toast.copiedGlobal'))
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   // 国际化文案自适应
   const greeting = displayName
@@ -68,16 +54,9 @@ export const WelcomeBanner: React.FC = () => {
     : t('welcomeBanner.workspaceTagPersonalGlobal')
   const docsBtn = isDomestic ? t('welcomeBanner.docsBtnDomestic') : t('welcomeBanner.docsBtnGlobal')
   const docsUrl = marketConfig.docsUrl
-  const terminalTitle = t('welcomeBanner.terminalTitle')
-  const cliComment1 = isDomestic ? t('welcomeBanner.cliComment1Domestic') : t('welcomeBanner.cliComment1Global')
-  const cliComment2 = isDomestic ? t('welcomeBanner.cliComment2Domestic') : t('welcomeBanner.cliComment2Global')
-  const copyLabel = isDomestic ? t('welcomeBanner.copy') : t('welcomeBanner.copyGlobal')
-  const copiedLabel = isDomestic ? t('welcomeBanner.copied') : t('welcomeBanner.copiedGlobal')
 
   // 动态主题渐变色
   const glowColor = isDomestic ? 'rgba(99, 102, 241, 0.08)' : 'rgba(16, 185, 129, 0.08)'
-  const accentBorder = isDomestic ? 'rgba(99, 102, 241, 0.15)' : 'rgba(16, 185, 129, 0.15)'
-  const accentGlow = isDomestic ? 'rgba(99, 102, 241, 0.2)' : 'rgba(16, 185, 129, 0.2)'
   const subTitleColor = isDomestic ? '#4f46e5' : '#059669'
 
   return (
@@ -86,14 +65,14 @@ export const WelcomeBanner: React.FC = () => {
         borderRadius: '20px',
         border: '1px solid var(--mg-border)',
         background: `linear-gradient(135deg, ${glowColor} 0%, rgba(255, 255, 255, 0.03) 50%, var(--mg-bg-0) 100%)`,
-        padding: '40px 48px',
+        padding: 'clamp(28px, 4vw, 40px) clamp(24px, 4vw, 48px)',
         marginBottom: '36px',
         boxShadow: '0 8px 30px rgba(0, 0, 0, 0.02)',
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '40px',
+        gap: '32px',
         position: 'relative',
         overflow: 'hidden',
         backdropFilter: 'blur(10px)',
@@ -117,7 +96,7 @@ export const WelcomeBanner: React.FC = () => {
       />
 
       {/* 左侧：打打招呼信息与身份胶囊 */}
-      <div style={{ flex: '1 1 500px', zIndex: 1 }}>
+      <div style={{ flex: '1 1 360px', zIndex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
           {/* 精致的胶囊身份标签 */}
           <span
@@ -204,84 +183,16 @@ export const WelcomeBanner: React.FC = () => {
         </Button>
       </div>
 
-      {/* 右侧：仿真 Mac 暗色终端 CLI 接入命令 */}
+      {/* 右侧：21:9 控制台首页主视觉 */}
       <div
         style={{
-          flex: '0 1 400px',
-          minWidth: '320px',
-          backgroundColor: '#090d16',
-          borderRadius: '12px',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
-          boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.02)',
-          overflow: 'hidden',
+          flex: '0 1 500px',
+          minWidth: 'min(360px, 100%)',
           zIndex: 1,
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.borderColor = accentBorder;
-          (e.currentTarget as HTMLElement).style.boxShadow = `0 24px 48px -15px rgba(0, 0, 0, 0.45), 0 0 12px 2px ${accentGlow}`;
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255, 255, 255, 0.06)';
-          (e.currentTarget as HTMLElement).style.boxShadow = '0 20px 40px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.02)';
+          transform: 'translateZ(0)',
         }}
       >
-        {/* Terminal Header */}
-        <div
-          style={{
-            height: '38px',
-            backgroundColor: 'rgba(255, 255, 255, 0.02)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-            padding: '0 14px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}
-        >
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#ff5f56', display: 'inline-block' }} />
-            <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#ffbd2e', display: 'inline-block' }} />
-            <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#27c93f', display: 'inline-block' }} />
-            <span style={{ fontSize: '11px', color: '#64748b', fontFamily: 'SFMono-Regular, Consolas, Monaco, monospace', marginLeft: '12px', fontWeight: 600 }}>
-              {terminalTitle}
-            </span>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="xs"
-            onClick={handleCopy}
-            className="text-[#64748b] bg-white/4 rounded-[6px] px-2 py-1 h-6 transition-all border-none flex items-center gap-1 hover:text-white"
-          >
-            {copied ? <LuCheck className="text-[var(--mg-success)]" /> : <LuCopy className="text-[#64748b]" />}
-            {copied ? copiedLabel : copyLabel}
-          </Button>
-        </div>
-
-        {/* Terminal Body / CLI Commands */}
-        <pre
-          style={{
-            margin: 0,
-            padding: '16px 20px',
-            fontFamily: 'SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace',
-            fontSize: '12.5px',
-            lineHeight: 1.7,
-            color: '#cbd5e1',
-            overflowX: 'auto',
-            backgroundColor: 'transparent'
-          }}
-        >
-          <code>
-            <span style={{ color: '#475569' }}># 1. {cliComment1}</span>
-            <br />
-            <span style={{ color: '#38bdf8' }}>npm</span> install -g <span style={{ color: '#34d399' }}>modelgo-cli</span>
-            <br />
-            <br />
-            <span style={{ color: '#475569' }}># 2. {cliComment2}</span>
-            <br />
-            <span style={{ color: '#34d399' }}>modelgo-cli</span> auth <span style={{ color: '#f59e0b' }}>login</span>
-          </code>
-        </pre>
+        <DashboardHeroVisual />
       </div>
     </div>
   )

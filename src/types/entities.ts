@@ -572,7 +572,7 @@ export interface RedeemPromoResult {
 
 // ─── Usage ──────────────────────────────────────────
 
-/** 用量汇总（三卡） */
+/** 用量汇总（usage.SummaryResponse） */
 export interface UsageSummary {
   total: {
     spend: Money
@@ -580,7 +580,13 @@ export interface UsageSummary {
     tokens: number
     input_tokens: number
     output_tokens: number
+    average_latency_ms: number
+    error_rate: number
   }
+  period: { from: string; to: string }
+  daily: Array<{ date: string; requests: number; spend: Money }>
+  usage_series: UsageSeriesPoint[]
+  request_series: UsageSeriesPoint[]
   groups?: Array<{
     key: string
     label: string
@@ -590,17 +596,36 @@ export interface UsageSummary {
   }>
 }
 
-/** 用量时间序列数据点 */
+/** UI 内部折线图数据点（经过转换的） */
 export interface SeriesDataPoint {
   bucket_start: string
   value: string
 }
 
-/** 用量时间序列 */
+/** API 原始时序数据点（usage.SeriesPoint） */
+export interface UsageSeriesPoint {
+  bucket_start: string
+  spend: Money
+  requests: number
+  tokens: number
+}
+
+/** 用量时间序列分组 */
+interface UsageSeriesGroup {
+  key: string
+  label: string
+  points: UsageSeriesPoint[]
+  total: { spend: Money; requests: number; tokens: number }
+}
+
+/** 用量时间序列（usage.SeriesResponse） */
 export interface UsageSeries {
   metric: 'spend' | 'requests' | 'tokens'
-  granularity: 'hour' | 'day' | 'week' | 'month'
-  series: SeriesDataPoint[]
+  granularity: 'day'
+  group_by: 'none' | 'model' | 'provider' | 'workspace'
+  groups: UsageSeriesGroup[]
+  period: { from: string; to: string }
+  totals: { spend: Money; requests: number; tokens: number }
 }
 
 // ─── Generation Logs ────────────────────────────────

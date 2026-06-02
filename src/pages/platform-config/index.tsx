@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { LuSettings, LuCheck, LuDollarSign, LuBox, LuKey, LuUsers } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
@@ -412,198 +411,135 @@ function PermissionPanel() {
   )
 }
 
-function ModuleComparisonPanel() {
-  const { t } = useTranslation()
-
-  const MATCHED_MODULES = [
-    { fe: '概览 (Dashboard)', api: 'overview' },
-    { fe: '模型中心 (Models: Explore, Compare, Chat)', api: 'catalog / agent' },
-    { fe: '账单/计费 (Billing)', api: 'credits / transaction' },
-    { fe: '用量统计 (Usage)', api: 'usage' },
-    { fe: '调用日志 (Logs)', api: 'logs' },
-    { fe: '可观测性 (Observability)', api: 'observability' },
-    { fe: '安全护栏 (Guardrails)', api: 'guardrail' },
-    { fe: 'API Keys', api: 'apikey' },
-    { fe: '组织管理 (Organization)', api: 'tenant / organization' },
-    { fe: '工作区管理 (Workspace)', api: 'workspace' },
-    { fe: '成员邀请 (Invitations)', api: 'invitation' },
-    { fe: '账号设置/偏好 (Account/Preferences)', api: 'account / preference' },
-    { fe: '认证/鉴权 (Auth)', api: 'auth' },
-    { fe: '接口调试 (Platform Config)', api: 'platform' },
+function RoleSettingsPanel() {
+  const TENANT_TYPES = [
+    { type: 'personal', label: '个人账户', desc: '个人开发者，无组织管理，直接使用所有功能' },
+    { type: 'enterprise', label: '企业', desc: '多成员协作，有组织角色和项目角色分层管理' },
   ]
 
-  const EXTRA_IN_API = [
-    { name: 'docs', desc: t('platformConfig.moduleCompare.docsDesc') },
-    { name: 'health', desc: t('platformConfig.moduleCompare.healthDesc') },
+  const ORG_MATRIX = [
+    { perm: '查看总览 / 模型广场 / 用量分析 / 日志', owner: true, admin: true, member: true },
+    { perm: '查看账单 / 充值 / 取消订单', owner: true, admin: true, member: false },
+    { perm: '查看发票（国内）', owner: true, admin: true, member: false },
+    { perm: '企业设置（改名 / 上传 Logo）', owner: true, admin: true, member: false },
+    { perm: '成员管理（邀请 / 移除 / 改角色）', owner: true, admin: true, member: false },
+    { perm: '创建 / 删除项目', owner: true, admin: true, member: false },
+    { perm: '转让企业所有权', owner: true, admin: false, member: false },
   ]
 
-  const EXTRA_IN_FRONTEND = [
-    { name: 'chat-test', desc: t('platformConfig.moduleCompare.chatTestDesc') },
-    { name: 'device', desc: t('platformConfig.moduleCompare.deviceDesc') },
+  const WS_MATRIX = [
+    { perm: '查看 API Keys / 创建 Key', owner: true, admin: true, member: true },
+    { perm: '撤销 API Key', owner: true, admin: true, member: false },
+    { perm: '查看配额管理', owner: true, admin: true, member: true },
+    { perm: '创建 / 编辑 / 删除配额', owner: true, admin: true, member: false },
+    { perm: '配额绑定成员 / Key / 预算', owner: true, admin: true, member: false },
+    { perm: '查看可观测性', owner: true, admin: true, member: true },
+    { perm: '编辑日志 / 转发配置', owner: true, admin: true, member: false },
+    { perm: '查看成员管理', owner: true, admin: true, member: true },
+    { perm: '分配成员到项目 / 改角色 / 移出', owner: true, admin: true, member: false },
   ]
+
+  const check = (v: boolean) => v
+    ? <span className="text-emerald-600 font-bold">✓</span>
+    : <span className="text-mg-text-2">—</span>
 
   return (
-    <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden mb-6 shadow-sm">
-      <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center justify-between">
-        <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">
-          {t('platformConfig.moduleCompare.title')}
-        </span>
-        <Badge variant="outline" className="text-[10px] opacity-70">
-          v1.5 Matcher
-        </Badge>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-mg-border">
-        {/* 已对齐模块 */}
-        <div className="p-5 space-y-4">
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-4 bg-emerald-500 rounded-full" />
-            <span className="text-xs font-bold text-mg-text-0">{t('platformConfig.moduleCompare.matched')}</span>
-            <span className="text-[10px] text-mg-text-2 font-normal italic">
-              ({t('platformConfig.moduleCompare.matchedDesc')})
-            </span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
-            {MATCHED_MODULES.map((m) => (
-              <div key={m.fe} className="flex flex-col gap-0.5 pb-2 border-b border-mg-border/30 last:border-0 sm:last:border-b">
-                <span className="text-[11px] font-medium text-mg-text-1 truncate">{m.fe}</span>
-                <code className="text-[9px] font-mono text-brand-base/80 uppercase tracking-tight">
-                  {m.api}
-                </code>
-              </div>
-            ))}
-          </div>
+    <>
+      {/* 租户类型 */}
+      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
+        <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40">
+          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">租户类型</span>
         </div>
-
-        {/* 差异对比 */}
-        <div className="p-0 divide-y divide-mg-border">
-          {/* API 多出 */}
-          <div className="p-5 space-y-3">
-            <div className="flex items-center gap-2 text-rose-500">
-              <div className="w-1.5 h-4 bg-rose-500 rounded-full" />
-              <span className="text-xs font-bold">{t('platformConfig.moduleCompare.extraInApi')}</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-mg-border">
+          {TENANT_TYPES.map((t) => (
+            <div key={t.type} className="p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <code className="text-[11px] font-bold font-mono px-2 py-0.5 rounded border bg-violet-500/10 border-violet-500/20 text-violet-500">{t.type}</code>
+                <span className="text-[13px] font-bold text-mg-text-0">{t.label}</span>
+              </div>
+              <p className="text-[12px] text-mg-text-2 leading-relaxed">{t.desc}</p>
             </div>
-            <div className="space-y-2">
-              {EXTRA_IN_API.map((m) => (
-                <div key={m.name} className="flex items-center gap-3">
-                  <code className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-rose-500/10 text-rose-600 border border-rose-500/10">
-                    {m.name}
-                  </code>
-                  <span className="text-[11px] text-mg-text-2">{m.desc}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 前端多出 */}
-          <div className="p-5 space-y-3">
-            <div className="flex items-center gap-2 text-blue-500">
-              <div className="w-1.5 h-4 bg-blue-500 rounded-full" />
-              <span className="text-xs font-bold">{t('platformConfig.moduleCompare.extraInFrontend')}</span>
-            </div>
-            <div className="space-y-2">
-              {EXTRA_IN_FRONTEND.map((m) => (
-                <div key={m.name} className="flex items-center gap-3">
-                  <code className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 border border-blue-500/10">
-                    {m.name}
-                  </code>
-                  <span className="text-[11px] text-mg-text-2">{m.desc}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
       </div>
-    </div>
+
+      {/* 企业角色权限矩阵 */}
+      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
+        <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center gap-3">
+          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">企业角色权限矩阵</span>
+          <code className="text-[10px] text-mg-text-2 font-mono opacity-60">tenant_owner / tenant_admin / tenant_member</code>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-mg-border bg-mg-fill-0/30">
+                <th className="py-2.5 px-5 text-[11px] font-bold text-mg-text-2 uppercase tracking-wider">权限</th>
+                <th className="py-2.5 px-4 text-[11px] font-bold text-sky-500 uppercase tracking-wider text-center w-20">拥有者</th>
+                <th className="py-2.5 px-4 text-[11px] font-bold text-sky-500 uppercase tracking-wider text-center w-20">管理员</th>
+                <th className="py-2.5 px-4 text-[11px] font-bold text-sky-500 uppercase tracking-wider text-center w-20">成员</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-mg-border/50">
+              {ORG_MATRIX.map((row) => (
+                <tr key={row.perm} className="hover:bg-mg-fill-0/30 transition-colors">
+                  <td className="py-2.5 px-5 text-xs text-mg-text-1">{row.perm}</td>
+                  <td className="py-2.5 px-4 text-center">{check(row.owner)}</td>
+                  <td className="py-2.5 px-4 text-center">{check(row.admin)}</td>
+                  <td className="py-2.5 px-4 text-center">{check(row.member)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 项目角色权限矩阵 */}
+      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
+        <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center gap-3">
+          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">项目角色权限矩阵</span>
+          <code className="text-[10px] text-mg-text-2 font-mono opacity-60">ws_owner / ws_admin / ws_member</code>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-mg-border bg-mg-fill-0/30">
+                <th className="py-2.5 px-5 text-[11px] font-bold text-mg-text-2 uppercase tracking-wider">权限</th>
+                <th className="py-2.5 px-4 text-[11px] font-bold text-emerald-500 uppercase tracking-wider text-center w-20">拥有者</th>
+                <th className="py-2.5 px-4 text-[11px] font-bold text-emerald-500 uppercase tracking-wider text-center w-20">管理员</th>
+                <th className="py-2.5 px-4 text-[11px] font-bold text-emerald-500 uppercase tracking-wider text-center w-20">成员</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-mg-border/50">
+              {WS_MATRIX.map((row) => (
+                <tr key={row.perm} className="hover:bg-mg-fill-0/30 transition-colors">
+                  <td className="py-2.5 px-5 text-xs text-mg-text-1">{row.perm}</td>
+                  <td className="py-2.5 px-4 text-center">{check(row.owner)}</td>
+                  <td className="py-2.5 px-4 text-center">{check(row.admin)}</td>
+                  <td className="py-2.5 px-4 text-center">{check(row.member)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 角色关系说明 */}
+      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
+        <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40">
+          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">角色层级关系</span>
+        </div>
+        <div className="p-5 text-xs text-mg-text-1 leading-relaxed space-y-2">
+          <p><strong>账户（Account）</strong>→ 一个人的登录身份，可加入多个企业</p>
+          <p><strong>企业（Tenant）</strong>→ 组织容器，分 personal / enterprise 两种类型。每个账户最多创建 5 个企业</p>
+          <p><strong>企业角色</strong>→ 账户在某个企业内的身份：owner / admin / member。控制账单、成员管理、企业设置等</p>
+          <p><strong>项目（Workspace）</strong>→ 企业下的隔离空间，API Keys / 配额 / 可观测性均为项目级</p>
+          <p><strong>项目角色</strong>→ 账户在某个项目内的身份：owner / admin / member。控制 Key 管理、配额、成员分配等</p>
+          <p className="text-mg-text-2 mt-3">最终权限 = 企业角色权限 ∪ 项目角色权限（取并集）</p>
+        </div>
+      </div>
+    </>
   )
 }
-
-function DetailGapsPanel() {
-  const { t } = useTranslation()
-
-  const GAP_ITEMS = [
-    {
-      key: 'models',
-      icon: <LuBox className="w-3.5 h-3.5" />,
-      color: 'text-violet-500',
-      bgColor: 'bg-violet-500/10',
-    },
-    {
-      key: 'organization',
-      icon: <LuUsers className="w-3.5 h-3.5" />,
-      color: 'text-rose-500',
-      bgColor: 'bg-rose-500/10',
-    },
-    {
-      key: 'apiKeys',
-      icon: <LuKey className="w-3.5 h-3.5" />,
-      color: 'text-sky-500',
-      bgColor: 'bg-sky-500/10',
-    },
-    {
-      key: 'guardrail',
-      icon: <LuSettings className="w-3.5 h-3.5" />,
-      color: 'text-amber-500',
-      bgColor: 'bg-amber-500/10',
-    },
-    {
-      key: 'observability',
-      icon: <LuCheck className="w-3.5 h-3.5" />,
-      color: 'text-indigo-500',
-      bgColor: 'bg-indigo-500/10',
-    },
-    {
-      key: 'billing',
-      icon: <LuDollarSign className="w-3.5 h-3.5" />,
-      color: 'text-emerald-500',
-      bgColor: 'bg-emerald-500/10',
-    },
-  ]
-
-  return (
-    <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden mb-6 shadow-sm">
-      <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40">
-        <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">
-          {t('platformConfig.moduleCompare.gaps.title')}
-        </span>
-      </div>
-      <div className="divide-y divide-mg-border">
-        {GAP_ITEMS.map((item) => (
-          <div key={item.key} className="p-5 flex flex-col md:flex-row gap-6">
-            <div className="w-full md:w-1/4 flex items-start gap-3">
-              <div className={`w-8 h-8 rounded-lg ${item.bgColor} ${item.color} flex items-center justify-center shrink-0`}>
-                {item.icon}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-bold text-mg-text-0">
-                  {t(`platformConfig.moduleCompare.gaps.${item.key}.title`)}
-                </span>
-                <Badge variant="outline" className="w-fit text-[9px] mt-1 opacity-60">
-                  Feature Gap
-                </Badge>
-              </div>
-            </div>
-            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div className="space-y-1.5">
-                <div className="text-[10px] font-bold text-mg-text-2 uppercase tracking-tight">Console UI (Product)</div>
-                <p className="text-xs text-mg-text-1 leading-relaxed">
-                  {t(`platformConfig.moduleCompare.gaps.${item.key}.ui`)}
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <div className="text-[10px] font-bold text-mg-text-2 uppercase tracking-tight">Actual API (Swagger)</div>
-                <p className="text-xs text-mg-text-1 leading-relaxed">
-                  {t(`platformConfig.moduleCompare.gaps.${item.key}.api`)}
-                </p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 
 function CustomRequestPanel() {
   const [method, setMethod] = useState<'GET' | 'POST'>('GET')
@@ -773,7 +709,7 @@ export default function PlatformConfigPage() {
       <Tabs defaultValue="endpoints">
         <TabsList>
           <TabsTrigger value="endpoints">{t('platformConfig.tab.endpoints')}</TabsTrigger>
-          <TabsTrigger value="modules">{t('platformConfig.tab.modules')}</TabsTrigger>
+          <TabsTrigger value="roles">角色设置</TabsTrigger>
           <TabsTrigger value="permissions">{t('platformConfig.tab.permissions')}</TabsTrigger>
         </TabsList>
 
@@ -803,10 +739,9 @@ export default function PlatformConfigPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="modules">
-          <div className="space-y-6 pt-2">
-            <ModuleComparisonPanel />
-            <DetailGapsPanel />
+        <TabsContent value="roles">
+          <div className="space-y-5 pt-2">
+            <RoleSettingsPanel />
           </div>
         </TabsContent>
 

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { cn, getFallbackAvatarText } from '@/lib/utils'
 import { resolveVendorIcon } from './vendor-icons'
 
@@ -26,15 +26,21 @@ interface ModelIconProps {
  * 3. 厂商名首字母文字块
  */
 export function ModelIcon({ model, size = 32, rounded = 'rounded-md', className }: ModelIconProps) {
+  const [imgError, setImgError] = useState(false)
+  useEffect(() => {
+    setImgError(false)
+  }, [model.logo_url])
+
   const box = cn('shrink-0 inline-flex items-center justify-center overflow-hidden', rounded, className)
 
-  if (model.logo_url) {
+  if (model.logo_url && !imgError) {
     return (
       <img
         src={model.logo_url}
         alt={model.vendor ?? model.display_name}
         style={{ width: size, height: size }}
         className={cn(box, 'object-contain')}
+        onError={() => setImgError(true)}
       />
     )
   }

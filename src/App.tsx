@@ -16,6 +16,7 @@ import DevicePage from '@/pages/device'
 import UsagePage from '@/pages/usage'
 import LogsPage from '@/pages/logs'
 import BillingPage from '@/pages/billing'
+import ReferralPage from '@/pages/referral'
 import AccountSettingsPage from '@/pages/settings/account'
 import OrganizationPage from '@/pages/settings/organization'
 import GuardrailsPage from '@/pages/guardrails'
@@ -116,6 +117,7 @@ export default function App() {
             <Route path="usage" element={<UsagePage />} />
             <Route path="logs" element={<LogsPage />} />
             <Route path="billing" element={<BillingPage />} />
+            <Route path="referral" element={<ReferralPage />} />
             <Route path="platform-config" element={<PlatformConfigPage />} />
 
             <Route path="settings">

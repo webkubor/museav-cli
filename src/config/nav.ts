@@ -68,6 +68,7 @@ export const navConfig: NavConfig = {
       ],
     },
     { itemKey: 'billing', text: t('nav.billing'), icon: icons.creditCard, permission: PERMS.BILLING_VIEW },
+    { itemKey: 'referral', text: t('nav.referral'), icon: icons.gift },
   ],
 
   workspaceItems: (_ctx, t, icons) => [

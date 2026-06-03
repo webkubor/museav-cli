@@ -14,6 +14,7 @@ import {
   LuTerminal,
   LuLock,
   LuMessageSquare,
+  LuGift,
 } from 'react-icons/lu'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -109,6 +110,7 @@ export function DashboardLayout() {
     eye:         ic(<LuEye          size={16} />),
     mail:        ic(<LuMail         size={16} />),
     message:     ic(<LuMessageSquare size={16} />),
+    gift:        ic(<LuGift          size={16} />),
   }
 
   const tenantNavItems    = filterNavItems(navConfig.tenantItems(navCtx, t, icons))

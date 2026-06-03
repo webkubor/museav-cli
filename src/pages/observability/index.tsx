@@ -13,39 +13,9 @@ import { appToast } from '@/lib/app-toast'
 import {
   getLoggingConfig,
   updateLoggingConfig,
+  listPlatforms,
 } from '@/services/observability'
 import type { LoggingConfig } from '@/types'
-
-// ─── 可用平台列表（mock） ──────────────────────────────────────────────────────
-
-const AVAILABLE_PLATFORMS = [
-  { id: 'arize',     name: 'Arize AI' },
-  { id: 'braintrust', name: 'Braintrust' },
-  { id: 'clickhouse', name: 'ClickHouse' },
-  { id: 'comet',     name: 'Comet Opik' },
-  { id: 'datadog',   name: 'Datadog' },
-  { id: 'grafana',   name: 'Grafana Cloud' },
-  { id: 'langfuse',  name: 'Langfuse' },
-  { id: 'langsmith', name: 'LangSmith' },
-  { id: 'newrelic',  name: 'New Relic AI' },
-  { id: 'otel',      name: 'OpenTelemetry Collector' },
-  { id: 'posthog',   name: 'PostHog' },
-]
-
-// 每个平台对应一个色调，用于 logo 占位块
-const PLATFORM_COLORS: Record<string, string> = {
-  arize:      'bg-violet-500/15 text-violet-600',
-  braintrust: 'bg-amber-500/15 text-amber-600',
-  clickhouse: 'bg-yellow-500/15 text-yellow-600',
-  comet:      'bg-sky-500/15 text-sky-600',
-  datadog:    'bg-purple-500/15 text-purple-600',
-  grafana:    'bg-orange-500/15 text-orange-600',
-  langfuse:   'bg-emerald-500/15 text-emerald-600',
-  langsmith:  'bg-blue-500/15 text-blue-600',
-  newrelic:   'bg-teal-500/15 text-teal-600',
-  otel:       'bg-indigo-500/15 text-indigo-600',
-  posthog:    'bg-pink-500/15 text-pink-600',
-}
 
 // ─── Toggle row ───────────────────────────────────────────────────────────────
 
@@ -177,8 +147,16 @@ function PlatformConfigModal({
 
 // ─── 可用平台列表区块 ──────────────────────────────────────────────────────────
 
-function AvailablePlatformsSection() {
+function AvailablePlatformsSection({ workspaceId }: { workspaceId: string }) {
   const [activePlatform, setActivePlatform] = useState<{ id: string; name: string } | null>(null)
+
+  const platformsQuery = useQuery({
+    queryKey: ['observability', 'platforms', workspaceId],
+    queryFn: () => listPlatforms(workspaceId),
+    enabled: Boolean(workspaceId),
+    staleTime: 5 * 60_000,
+  })
+  const platforms = platformsQuery.data?.items ?? []
 
   return (
     <>
@@ -186,25 +164,32 @@ function AvailablePlatformsSection() {
         <div className="px-5 py-3 border-b border-mg-border">
           <p className="text-[11px] font-bold text-mg-text-2 uppercase tracking-widest">可用平台</p>
         </div>
-        <ul>
-          {AVAILABLE_PLATFORMS.map((p, idx) => {
-            const colorClass = PLATFORM_COLORS[p.id] ?? 'bg-mg-fill-0 text-mg-text-1'
-            return (
+        {platformsQuery.isLoading ? (
+          <div className="px-5 py-10 text-center text-xs text-mg-text-2">加载中…</div>
+        ) : platforms.length === 0 ? (
+          <div className="px-5 py-10 text-center text-xs text-mg-text-2">暂无可用平台</div>
+        ) : (
+          <ul>
+            {platforms.map((p, idx) => (
               <li
-                key={p.id}
+                key={p.platform}
                 className={`flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-mg-fill-0/40 transition-colors ${idx !== 0 ? 'border-t border-mg-border' : ''}`}
-                onClick={() => setActivePlatform(p)}
+                onClick={() => setActivePlatform({ id: p.platform, name: p.display_name })}
               >
                 <div className="flex items-center gap-3">
-                  <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${colorClass}`}>
-                    {p.name.charAt(0)}
-                  </span>
-                  <span className="text-sm font-medium text-mg-text-0">{p.name}</span>
+                  {p.logo_url ? (
+                    <img src={p.logo_url} alt={p.display_name} className="w-8 h-8 rounded-lg object-contain bg-mg-fill-0 shrink-0" />
+                  ) : (
+                    <span className="w-8 h-8 rounded-lg bg-mg-fill-0 text-mg-text-1 flex items-center justify-center text-sm font-bold shrink-0">
+                      {p.display_name.charAt(0)}
+                    </span>
+                  )}
+                  <span className="text-sm font-medium text-mg-text-0">{p.display_name}</span>
                 </div>
                 <button
                   type="button"
                   className="flex items-center gap-1 text-xs text-mg-text-2 hover:text-brand-base transition-colors"
-                  onClick={(e) => { e.stopPropagation(); setActivePlatform(p) }}
+                  onClick={(e) => { e.stopPropagation(); setActivePlatform({ id: p.platform, name: p.display_name }) }}
                 >
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                     <path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -212,9 +197,9 @@ function AvailablePlatformsSection() {
                   Add Destination
                 </button>
               </li>
-            )
-          })}
-        </ul>
+            ))}
+          </ul>
+        )}
       </div>
 
       <PlatformConfigModal
@@ -285,7 +270,7 @@ function ObservabilityContent({
       </div>
 
       {/* 可用平台：常驻展示（对齐原型，不依赖广播开关） */}
-      <AvailablePlatformsSection />
+      <AvailablePlatformsSection workspaceId={workspaceId} />
     </div>
   )
 }

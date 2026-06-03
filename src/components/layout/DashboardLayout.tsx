@@ -204,6 +204,7 @@ export function DashboardLayout() {
           </div>
         </main>
       </div>
+      <div className="bottom-shimmer-line" />
     </div>
   )
 }

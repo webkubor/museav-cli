@@ -1496,3 +1496,21 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
     background-position: 0% 50%;
   }
 }
+
+/* ── 全局底部流光线 ──────────────────────────── */
+.bottom-shimmer-line {
+  height: 1.5px;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--brand-base) 20%,
+    var(--brand-glow) 50%,
+    var(--brand-base) 80%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-slide 4.5s ease-in-out infinite;
+  opacity: 0.5;
+  flex-shrink: 0;
+}

@@ -239,11 +239,6 @@ export default function GuardrailsPage() {
     }
   }
 
-  function toInput(a: GuardrailDetail['assignments'][number]): AssignmentInput {
-    return a.subject_type === 'member'
-      ? { subject_type: 'member', account_id: a.account_id }
-      : { subject_type: 'api_key', api_key_id: a.api_key_id }
-  }
 
 
 
@@ -423,6 +418,7 @@ export default function GuardrailsPage() {
                 modelBlacklist={modelBlacklist} onModelBlacklistChange={setModelBlacklist}
                 ipWhitelist={ipWhitelist} onIpWhitelistChange={setIpWhitelist}
                 modelSuggestions={modelSuggestions}
+                memberIds={memberIds} onMemberIdsChange={setMemberIds} memberOptions={memberOptions}
               />
               <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-mg-border/50">
                 <Button variant="outline" onClick={() => setDetailOpen(false)}>{t('common.cancel')}</Button>

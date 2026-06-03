@@ -863,6 +863,14 @@
     "table": {
       "attr": "Attribute"
     },
+    "row": {
+      "contextLength": "Context Window",
+      "maxOutput": "Max Output Tokens",
+      "modalities": "Modalities",
+      "inputPrice": "Input Price (per 1M)",
+      "outputPrice": "Output Price (per 1M)",
+      "tags": "Tags"
+    },
     "empty": {
       "hint": "Select models from the left to start comparing",
       "noMatch": "No matching models"

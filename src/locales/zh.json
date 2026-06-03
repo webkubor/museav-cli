@@ -863,6 +863,14 @@
     "table": {
       "attr": "属性"
     },
+    "row": {
+      "contextLength": "上下文长度",
+      "maxOutput": "最大输出",
+      "modalities": "模态支持",
+      "inputPrice": "输入价格 (百万)",
+      "outputPrice": "输出价格 (百万)",
+      "tags": "标签"
+    },
     "empty": {
       "hint": "在左侧选择模型后开始对比",
       "noMatch": "未找到匹配的模型"

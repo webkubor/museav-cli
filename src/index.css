@@ -1381,17 +1381,17 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   100% { transform: translateX(150%); opacity: 0; }
 }
 
-/* Logo 品牌名旁绿点脉冲动效 */
+/* Logo 品牌名旁状态点脉冲动效（跟随品牌色） */
 @keyframes logo-dot-pulse {
-  0%, 100% { transform: scale(1);   box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
-  50%       { transform: scale(1.2); box-shadow: 0 0 0 4px rgba(34, 197, 94, 0);  }
+  0%, 100% { transform: scale(1);   box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-base) 50%, transparent); }
+  50%       { transform: scale(1.2); box-shadow: 0 0 0 4px transparent;  }
 }
 
 .logo-status-dot {
   width: 6px;
   height: 6px;
   border-radius: 9999px;
-  background: #22c55e;
+  background: var(--brand-base);
   animation: logo-dot-pulse 2.4s ease-in-out infinite;
   flex-shrink: 0;
 }

@@ -20,8 +20,9 @@ Swagger：`https://modelgo-web-api.test.modelgo.com/swagger/doc.json`
 ## 概念统一（必须遵守）
 
 - **组织** = tenant（API 字段 `tenant_id`）— 一个账号最多 5 个
-- **工作区** = workspace（API 字段 `workspace_id`）— 隶属于某个组织
-- **禁止使用"业务空间"**，UI 全部统一为"工作区"
+- **项目** = workspace（数据层字段 `workspace_id`）— 隶属于某个组织
+- **UI 文案命名**：workspace 实体中文统一显示「项目」，英文显示「Workspace」；数据层、字段名、路由仍用 workspace/workspace_id
+- **禁止使用"业务空间"**
 
 ## 关键约定
 
@@ -35,7 +36,7 @@ Swagger：`https://modelgo-web-api.test.modelgo.com/swagger/doc.json`
 ## 导航架构（侧边栏两段式）
 
 **Tenant 级**（切换工作区不影响）：总览、用量分析、账单、设置
-**工作区级**（切换工作区内容随之变）：API Keys、安全护栏、可观测性、邀请管理
+**工作区级**（切换工作区内容随之变）：API Keys、安全护栏、可观测性、项目管理（含成员）
 
 ## 客服 AI 聊天 API
 

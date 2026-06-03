@@ -1,21 +1,60 @@
 /* ── 全局底部流光线 (仅在 DashboardLayout 使用) ──────────────────────────── */
-.bottom-shimmer-line {
+.bottom-shimmer-line-container {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 1.5px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--brand-base) 20%,
-    var(--brand-glow) 50%,
-    var(--brand-base) 80%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer-slide 4.5s ease-in-out infinite;
-  opacity: 0.5;
+  height: 24px;
+  overflow: hidden;
   z-index: 9999;
   pointer-events: none;
+  background: transparent;
+}
+
+.bottom-shimmer-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.shimmer-path {
+  stroke-dasharray: 280 1200;
+  opacity: 0;
+  filter: drop-shadow(0 0 2px var(--brand-glow));
+  animation: sse-flow 8s linear infinite;
+}
+
+/* 第一条波浪：品牌色，粗线条，流速较快 */
+.shimmer-path.path-1 {
+  animation-duration: 5.8s;
+  animation-delay: 0s;
+}
+
+/* 第二条波浪：浅蓝色/辉光色，中等线条，流速中等 */
+.shimmer-path.path-2 {
+  animation-duration: 7.6s;
+  animation-delay: -1.8s;
+}
+
+/* 第三条波浪：辅助绿色（代表就绪/健康），极细线条，慢速飘忽 */
+.shimmer-path.path-3 {
+  animation-duration: 10.5s;
+  animation-delay: -3.6s;
+}
+
+@keyframes sse-flow {
+  0% {
+    stroke-dashoffset: 1480;
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.75;
+  }
+  85% {
+    opacity: 0.75;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
 }

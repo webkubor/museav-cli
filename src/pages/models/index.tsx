@@ -13,9 +13,7 @@ import {
   LuSend,
   LuSettings2,
   LuSlidersHorizontal,
-  LuSparkles,
-  LuWallet,
-  LuZap,
+  LuSparkles,  LuZap,
 } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -44,6 +42,7 @@ import './styles/model-chat.css'
 import './styles/model-composer.css'
 import './styles/model-params.css'
 import './styles/model-experience-responsive.css'
+import { ModelsCompareModal } from './components/ModelsCompareModal'
 
 export default function ModelsPage() {
   const { i18n } = useTranslation()
@@ -51,6 +50,7 @@ export default function ModelsPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const text = i18n.language.startsWith('zh') ? modelExperienceCopy.zh : modelExperienceCopy.en
   const [category, setCategory] = useState<CategoryKey>('all')
+  const [isCompareOpen, setIsCompareOpen] = useState(false)
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<ExperienceMessage[]>(initialMessages)
   const {
@@ -118,11 +118,7 @@ export default function ModelsPage() {
           <p>{text.desc}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" className="rounded-full h-9 px-4 text-xs font-bold" onClick={() => navigate('/billing')}>
-            <LuWallet size={14} />
-            {text.tokenPlan}
-          </Button>
-          <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-bold" onClick={() => navigate('/models/compare')}>
+          <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-bold" onClick={() => setIsCompareOpen(true)}>
             <LuGitCompareArrows size={14} />
             {text.compare}
           </Button>
@@ -345,6 +341,11 @@ export default function ModelsPage() {
           </aside>
         </section>
       </div>
+      <ModelsCompareModal
+        isOpen={isCompareOpen}
+        onClose={() => setIsCompareOpen(false)}
+        allModels={allModels}
+      />
     </div>
   )
 }

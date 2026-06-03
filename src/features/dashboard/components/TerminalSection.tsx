@@ -33,16 +33,18 @@ export const TerminalSection: React.FC = () => {
   }
 
   return (
-    <div style={{
-      background: 'var(--mg-bg-1)',
-      borderRadius: '14px',
-      border: '1px solid var(--mg-border)',
-      boxShadow: 'var(--semi-shadow-elevated)',
-      overflow: 'hidden'
-    }}>
+    <div 
+      className="glass-card-glow"
+      style={{
+        borderRadius: '14px',
+        overflow: 'hidden'
+      }}
+    >
       {/* IDE 窗口顶栏 */}
       <div style={{
-        backgroundColor: '#0f172a',
+        backgroundColor: 'rgba(15, 23, 42, 0.35)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
         height: '46px',
         padding: '0 16px',
         display: 'flex',
@@ -50,38 +52,44 @@ export const TerminalSection: React.FC = () => {
         justifyContent: 'space-between',
         borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
       }}>
-        {/* 左侧：Mac 三色按钮胶囊 */}
+        {/* 左侧：Mac 三色按钮胶囊与 Tab */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <span style={{ width: '11px', height: '11px', borderRadius: '50%', backgroundColor: '#ff5f56', display: 'inline-block' }}></span>
-          <span style={{ width: '11px', height: '11px', borderRadius: '50%', backgroundColor: '#ffbd2e', display: 'inline-block' }}></span>
-          <span style={{ width: '11px', height: '11px', borderRadius: '50%', backgroundColor: '#27c93f', display: 'inline-block' }}></span>
+          <div style={{ display: 'flex', gap: '6px', marginRight: '16px' }}>
+            <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#ff5f56', display: 'inline-block', opacity: 0.85, boxShadow: '0 0 2px rgba(255, 95, 86, 0.4)' }}></span>
+            <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#ffbd2e', display: 'inline-block', opacity: 0.85, boxShadow: '0 0 2px rgba(255, 189, 46, 0.4)' }}></span>
+            <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#27c93f', display: 'inline-block', opacity: 0.85, boxShadow: '0 0 2px rgba(39, 201, 63, 0.4)' }}></span>
+          </div>
 
           {/* 仿真 Tab 切换 */}
-          <div style={{ display: 'flex', gap: '4px', marginLeft: '20px' }}>
+          <div style={{ display: 'flex', gap: '4px' }}>
             {TAB_LABELS.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 style={{
                   padding: '4px 12px',
-                  borderRadius: '6px',
-                  border: 'none',
+                  borderRadius: '16px',
+                  border: '1px solid transparent',
                   fontSize: '11px',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  transition: 'all 0.2s',
+                  transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
                   fontFamily: 'monospace',
-                  backgroundColor: activeTab === tab.key ? '#1e293b' : 'transparent',
-                  color: activeTab === tab.key ? '#38bdf8' : '#64748b'
+                  backgroundColor: activeTab === tab.key ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
+                  color: activeTab === tab.key ? '#38bdf8' : '#94a3b8',
+                  borderColor: activeTab === tab.key ? 'rgba(56, 189, 248, 0.25)' : 'transparent',
+                  boxShadow: activeTab === tab.key ? '0 0 8px rgba(56, 189, 248, 0.1)' : 'none'
                 }}
                 onMouseEnter={(e) => {
                   if (activeTab !== tab.key) {
-                    (e.currentTarget as HTMLElement).style.color = '#94a3b8';
+                    (e.currentTarget as HTMLElement).style.color = '#fff';
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (activeTab !== tab.key) {
-                    (e.currentTarget as HTMLElement).style.color = '#64748b';
+                    (e.currentTarget as HTMLElement).style.color = '#94a3b8';
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
                   }
                 }}
               >
@@ -96,7 +104,7 @@ export const TerminalSection: React.FC = () => {
           variant="ghost"
           size="xs"
           onClick={handleCopy}
-          className="text-[#94a3b8] bg-white/4 rounded-[6px] px-2.5 py-1 h-7 transition-all border-none flex items-center gap-1 hover:text-white"
+          className="text-[#94a3b8] hover:bg-white/5 rounded-full px-3 py-1 h-7 transition-all border-none flex items-center gap-1 hover:text-white"
         >
           {copied ? <LuCheck className="text-[var(--mg-success)]" /> : <LuCopy className="text-[#94a3b8]" />}
           {copied ? t('terminalSection.copied') : t('terminalSection.copy')}

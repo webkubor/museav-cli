@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
@@ -68,6 +68,20 @@ function ToggleRow({
         )}
         <Switch checked={checked} disabled={loading} onChange={onChange} />
       </div>
+    </div>
+  )
+}
+
+// ─── Collapsible（依赖配置的平滑展开/收起） ───────────────────────────────────
+// 用 CSS grid-template-rows 0fr↔1fr 过渡，无需测量高度即可平滑折叠。
+function CollapsibleSection({ open, children }: { open: boolean; children: ReactNode }) {
+  return (
+    <div
+      className="grid transition-[grid-template-rows] duration-300 ease-out"
+      style={{ gridTemplateRows: open ? '1fr' : '0fr' }}
+      aria-hidden={!open}
+    >
+      <div className="overflow-hidden">{children}</div>
     </div>
   )
 }
@@ -152,19 +166,26 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
 
   return (
     <>
-      {/* Add destination form — 默认收起 */}
-      <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden mb-5">
-        <div
-          className="px-5 py-3.5 flex items-center justify-between cursor-pointer select-none hover:bg-mg-fill-0/30 transition-colors"
-          onClick={() => setFormOpen((o) => !o)}
-        >
-          <h3 className="text-sm font-bold text-mg-text-0">{t('observability.destinations.addTitle')}</h3>
-          <svg width="14" height="14" viewBox="0 0 14 14" className={`text-mg-text-2 transition-transform duration-200 ${formOpen ? 'rotate-180' : ''}`}>
-            <path d="M3 5.5L7 9.5L11 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-          </svg>
+      <div className="rounded-xl border border-mg-border overflow-hidden bg-card-bg">
+        {/* 头部：列表标题 + 添加目标（触发折叠表单） */}
+        <div className="px-5 py-4 border-b border-mg-border flex items-center justify-between gap-3">
+          <h3 className="text-sm font-bold text-mg-text-0">{t('observability.destinations.listTitle')}</h3>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setFormOpen((o) => !o)}
+            className="h-7 text-xs font-semibold gap-1.5"
+          >
+            {t('observability.destinations.addTitle')}
+            <svg width="12" height="12" viewBox="0 0 14 14" className={`transition-transform duration-200 ${formOpen ? 'rotate-180' : ''}`}>
+              <path d="M3 5.5L7 9.5L11 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            </svg>
+          </Button>
         </div>
-        {formOpen && (
-          <div className="p-5 border-t border-mg-border/60">
+
+        {/* 添加目标表单：平滑展开 */}
+        <CollapsibleSection open={formOpen}>
+          <div className="p-5 border-b border-mg-border/60 bg-mg-fill-0/15">
             <CreateForwardForm
               key={selectedPlatformId}
               platformItems={platformsQuery.data?.items ?? []}
@@ -176,14 +197,7 @@ function DestinationsSection({ workspaceId }: { workspaceId: string }) {
               onSubmit={(payload) => createMutation.mutate(payload)}
             />
           </div>
-        )}
-      </div>
-
-      {/* Destinations list */}
-      <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden mb-5">
-        <div className="px-5 py-4 border-b border-mg-border">
-          <h3 className="text-sm font-bold text-mg-text-0">{t('observability.destinations.listTitle')}</h3>
-        </div>
+        </CollapsibleSection>
         {forwardsQuery.isLoading ? (
           <div className="p-5 space-y-2 animate-pulse">
             <div className="h-4 bg-mg-fill-0 rounded w-1/3" />
@@ -544,9 +558,9 @@ function ObservabilityContent({
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
-      {/* Section 1: Logging toggle — always visible */}
+    <div className="max-w-3xl">
       <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden">
+        {/* 一级：日志记录主开关（常驻） */}
         <ToggleRow
           title={t('observability.logging.title')}
           description={t('observability.logging.desc')}
@@ -556,22 +570,30 @@ function ObservabilityContent({
           isFirst
         />
 
-        {/* Section 2: Broadcast toggle — only when logging is on */}
-        {loggingEnabled && (
-          <ToggleRow
-            title={t('observability.broadcast.title')}
-            description={t('observability.broadcast.desc')}
-            checked={broadcastEnabled}
-            loading={saveMutation.isPending}
-            onChange={handleBroadcastChange}
-          />
-        )}
-      </div>
+        {/* 日志的下游配置：开启后平滑展开，左竖线 + 浅底缩进表达从属层级 */}
+        <CollapsibleSection open={loggingEnabled}>
+          <div className="border-t border-mg-border bg-mg-fill-0/15">
+            <div className="ml-5 border-l-2 border-brand-base/25">
+              {/* 二级：广播转发开关，依赖日志开启 */}
+              <ToggleRow
+                title={t('observability.broadcast.title')}
+                description={t('observability.broadcast.desc')}
+                checked={broadcastEnabled}
+                loading={saveMutation.isPending}
+                onChange={handleBroadcastChange}
+                isFirst
+              />
 
-      {/* Section 3: Destinations — only when broadcast is on */}
-      {loggingEnabled && broadcastEnabled && (
-        <DestinationsSection workspaceId={workspaceId} />
-      )}
+              {/* 三级：转发目标，依赖广播开启 */}
+              <CollapsibleSection open={broadcastEnabled}>
+                <div className="border-t border-mg-border/50 px-5 py-5">
+                  <DestinationsSection workspaceId={workspaceId} />
+                </div>
+              </CollapsibleSection>
+            </div>
+          </div>
+        </CollapsibleSection>
+      </div>
     </div>
   )
 }

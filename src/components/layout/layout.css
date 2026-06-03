@@ -61,17 +61,19 @@
 
 /* ── 玻璃感光毛玻璃卡片样式 ── */
 .glass-card-glow {
-  backdrop-filter: blur(14px) saturate(180%);
-  -webkit-backdrop-filter: blur(14px) saturate(180%);
-  background-color: rgba(var(--mg-bg-0-rgb), 0.55) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  /* 浅色模式下增加不透明度（0.82）以形成洁净乳白玻璃，提升文字阅读对比度 */
+  background-color: rgba(255, 255, 255, 0.82) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
   box-shadow: 
-    0 8px 32px 0 rgba(15, 23, 42, 0.04), 
-    0 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+    0 8px 32px -4px rgba(15, 23, 42, 0.05), 
+    0 0 1px 0 rgba(15, 23, 42, 0.1) !important;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 body[theme-mode='dark'] .glass-card-glow {
+  /* 深色模式下继续保持高透太空感 */
   background-color: rgba(26, 26, 29, 0.55) !important; /* 映射 var(--mg-bg-0) */
   border: 1px solid rgba(255, 255, 255, 0.04) !important;
   box-shadow: 

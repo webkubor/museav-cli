@@ -65,6 +65,7 @@ export default function GuardrailsPage() {
   const [priority, setPriority] = useState<number>(0)
   const [modelBlacklist, setModelBlacklist] = useState<string[]>([])
   const [ipWhitelist, setIpWhitelist] = useState<string[]>([])
+  const [memberIds, setMemberIds] = useState<string[]>([])
 
   const modelsQuery = useQuery({
     queryKey: ['catalog-models-all'],
@@ -193,7 +194,7 @@ export default function GuardrailsPage() {
     setIsCreating(true)
     setDetailId(null)
     setName(''); setDescription(''); setIsDefault(false); setPriority(0)
-    setModelBlacklist([]); setIpWhitelist([])
+    setModelBlacklist([]); setIpWhitelist([]); setMemberIds([])
     setSheetTab('info')
     setDetailOpen(true)
   }
@@ -211,6 +212,11 @@ export default function GuardrailsPage() {
     const meta = (d as any).metadata ?? {}
     setModelBlacklist(Array.isArray(meta.model_blacklist) ? meta.model_blacklist : [])
     setIpWhitelist(Array.isArray(meta.ip_whitelist) ? meta.ip_whitelist : [])
+    setMemberIds(
+      Array.isArray(meta.members)
+        ? (meta.members as string[])
+        : (d.assignments?.filter(a => a.subject_type === 'member').map(a => a.account_id) ?? [])
+    )
   }
 
   function handleSubmit() {
@@ -218,6 +224,7 @@ export default function GuardrailsPage() {
     const metadata: Record<string, unknown> = {}
     if (modelBlacklist.length > 0) metadata.model_blacklist = modelBlacklist
     if (ipWhitelist.length > 0) metadata.ip_whitelist = ipWhitelist
+    if (memberIds.length > 0) metadata.members = memberIds
     const payload: CreateGuardrailRequest = {
       name: name.trim(),
       description: description.trim() || undefined,
@@ -258,11 +265,13 @@ export default function GuardrailsPage() {
   }
 
   // ── 派生数据 ────────────────────────────────────────────────────────────
-  const memberAssignments = detail?.assignments.filter(a => a.subject_type === 'member') ?? []
   const apiKeyAssignments = detail?.assignments.filter(a => a.subject_type === 'api_key') ?? []
   const budget = detail?.budget_policies?.[0] ?? null
 
-  const membersMap = new Map((membersQuery.data?.items ?? []).map(m => [m.account.account_id, m.account]))
+  const memberOptions = (membersQuery.data?.items ?? []).map(m => ({
+    id: m.account.account_id,
+    name: m.account.display_name || m.account.email,
+  }))
   const apiKeysMap = new Map((apiKeysQuery.data?.items ?? []).map(k => [k.api_key_id, k]))
 
   const detailRow = guardrails.find(g => g.id === detailId)

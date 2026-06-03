@@ -10,6 +10,8 @@ import { WelcomeBanner } from '@/features/dashboard/components/WelcomeBanner'
 import { KpiSection } from '@/features/dashboard/components/KpiSection'
 import { GuideSection } from '@/features/dashboard/components/GuideSection'
 import { QuickAccessSection } from '@/features/dashboard/components/QuickAccessSection'
+import { DashboardRankingsSection } from '@/features/dashboard/components/DashboardRankingsSection'
+import { RankingImageBanner } from '@/features/dashboard/components/RankingImageBanner'
 import { TerminalSection } from '@/features/dashboard/components/TerminalSection'
 import { UsageChartSection } from '@/features/dashboard/components/UsageChartSection'
 import { HistogramChartSection } from '@/features/dashboard/components/HistogramChartSection'
@@ -51,12 +53,18 @@ export default function DashboardPage() {
         <QuickAccessSection />
       </div>
 
-      {/* 5. 环境卡片（下移到此） */}
+      {/* 5. 热门模型与 Skills 榜单 */}
+      <DashboardRankingsSection />
+
+      {/* 6. Web3 氛围长图 */}
+      <RankingImageBanner />
+
+      {/* 7. 环境卡片（下移到此） */}
       <div className="mb-8">
         <WelcomeBanner />
       </div>
 
-      {/* 6. 进阶向导 */}
+      {/* 8. 进阶向导 */}
       <div>
         <h3 className="text-mg-text-0 text-[15px] font-bold tracking-tight mb-3.5 flex items-center gap-1.5 uppercase select-none">
           {t('dashboard.section.guide')}

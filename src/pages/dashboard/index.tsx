@@ -1,14 +1,12 @@
 /**
  * 控制台仪表盘主页面 (Dashboard)
- * 职责：作为控制台主界面，集中展示欢迎横幅与 CLI onboarding、核心 KPI 指标看板及常用快捷开发向导
+ * 职责：作为控制台主界面，集中展示核心 KPI 指标看板、常用快捷入口、榜单与运营背景图
  * 路由：/ (Dashboard 主页)
- * API：本身无直接接口调用，通过引入各个高内聚子组件（WelcomeBanner, KpiSection, GuideSection）拼装完整面板
+ * API：本身无直接接口调用，通过引入各个高内聚子组件拼装完整面板
  */
 
 import { useTranslation } from 'react-i18next'
-import { WelcomeBanner } from '@/features/dashboard/components/WelcomeBanner'
 import { KpiSection } from '@/features/dashboard/components/KpiSection'
-import { GuideSection } from '@/features/dashboard/components/GuideSection'
 import { QuickAccessSection } from '@/features/dashboard/components/QuickAccessSection'
 import { DashboardRankingsSection } from '@/features/dashboard/components/DashboardRankingsSection'
 import { RankingImageBanner } from '@/features/dashboard/components/RankingImageBanner'
@@ -58,19 +56,6 @@ export default function DashboardPage() {
 
       {/* 6. Web3 氛围长图 */}
       <RankingImageBanner />
-
-      {/* 7. 环境卡片（下移到此） */}
-      <div className="mb-8">
-        <WelcomeBanner />
-      </div>
-
-      {/* 8. 进阶向导 */}
-      <div>
-        <h3 className="text-mg-text-0 text-[15px] font-bold tracking-tight mb-3.5 flex items-center gap-1.5 uppercase select-none">
-          {t('dashboard.section.guide')}
-        </h3>
-        <GuideSection />
-      </div>
     </div>
   )
 }

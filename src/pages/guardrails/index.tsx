@@ -606,7 +606,24 @@ function GuardrailFormFields({
   modelSuggestions?: string[]
 }) {
   const { t } = useTranslation()
-  const ipValidator = (v: string) => /^[\d.:/a-fA-F]+$/.test(v)
+  const ipValidator = (v: string) => {
+    const s = v.trim()
+    // IPv4 或 IPv4 CIDR：四段 0-255，可选 /0-32
+    const m4 = s.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?:\/(\d{1,2}))?$/)
+    if (m4) {
+      const octetsOk = [m4[1], m4[2], m4[3], m4[4]].every((o) => Number(o) <= 255)
+      const cidrOk = m4[5] === undefined || Number(m4[5]) <= 32
+      return octetsOk && cidrOk
+    }
+    // IPv6 或 IPv6 CIDR：含冒号、各段 ≤4 位十六进制，可选 /0-128
+    const m6 = s.match(/^([0-9a-fA-F:]+)(?:\/(\d{1,3}))?$/)
+    if (m6 && s.includes(':')) {
+      const segsOk = m6[1].split(':').filter(Boolean).every((seg) => /^[0-9a-fA-F]{1,4}$/.test(seg))
+      const cidrOk = m6[2] === undefined || Number(m6[2]) <= 128
+      return segsOk && cidrOk
+    }
+    return false
+  }
   return (
     <div className="flex flex-col gap-5 py-2">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

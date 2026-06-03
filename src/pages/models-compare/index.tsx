@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
@@ -152,6 +153,8 @@ const Spinner = () => (
 
 export default function ModelsComparePage() {
   const { t } = useTranslation()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [slots, setSlots] = useState<Array<CatalogModelItem | null>>([null, null, null])
   const [searches, setSearches] = useState(['', '', ''])
 
@@ -161,6 +164,24 @@ export default function ModelsComparePage() {
   })
 
   const models = modelsQuery.data?.items ?? []
+
+  // 接收来自其他页面的对比数据跳转
+  useEffect(() => {
+    if (models.length > 0 && location.state?.selectedIds) {
+      const ids = location.state.selectedIds as string[]
+      const newSlots: Array<CatalogModelItem | null> = [null, null, null]
+      ids.slice(0, 3).forEach((id, idx) => {
+        const found = models.find((m) => m.id === id)
+        if (found) {
+          newSlots[idx] = found
+        }
+      })
+      setSlots(newSlots)
+      
+      // 清空路由 state，防止后续刷新再次覆盖 slots
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+  }, [models, location.state, navigate, location.pathname])
 
   const setSlot = (idx: number, m: CatalogModelItem | null) => {
     setSlots((prev) => prev.map((s, i) => (i === idx ? m : s)))

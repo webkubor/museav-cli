@@ -323,10 +323,10 @@
     }
   },
   "guardrails": {
-    "title": "配额管理",
+    "title": "安全护栏",
     "desc": "配置提示词防御规则，拦截恶意的提示注入、敏感词以及不受控制的模型输出。",
-    "create": "创建配额",
-    "empty": "暂无配额管理，点击右上角创建一个",
+    "create": "创建护栏",
+    "empty": "暂无安全护栏，点击右上角创建一个",
     "table": {
       "name": "名称",
       "desc": "描述",
@@ -356,27 +356,27 @@
       "ipWhitelistPlaceholder": "输入 IP 或 CIDR 后回车添加",
       "ipWhitelistHint": "输入后按回车添加，支持 IPv4/IPv6/CIDR 格式。留空表示不限制。",
       "isDefaultLabel": "默认应用",
-      "isDefaultHint": "自动应用此配额到所有模型请求"
+      "isDefaultHint": "自动应用此护栏到所有模型请求"
     },
     "modal": {
-      "createTitle": "创建配额",
-      "editTitle": "配置配额",
+      "createTitle": "创建护栏",
+      "editTitle": "配置护栏",
       "cancel": "取消",
       "saveEdit": "保存修改",
       "confirmCreate": "确认创建"
     },
     "deleteModal": {
-      "title": "删除配额",
-      "description": "确定要删除配额管理「{{name}}」吗？此操作不可撤销。",
+      "title": "删除护栏",
+      "description": "确定要删除安全护栏「{{name}}」吗？此操作不可撤销。",
       "cancel": "取消",
       "confirm": "确认删除"
     },
     "toast": {
-      "createSuccess": "配额管理已创建",
+      "createSuccess": "安全护栏已创建",
       "createError": "创建失败",
-      "updateSuccess": "配额管理已更新",
+      "updateSuccess": "安全护栏已更新",
       "updateError": "更新失败",
-      "deleteSuccess": "配额管理已删除",
+      "deleteSuccess": "安全护栏已删除",
       "deleteError": "删除失败",
       "toggleError": "操作失败",
       "nameRequired": "请输入名称"
@@ -699,7 +699,7 @@
       "gaps": {
         "title": "核心模块功能对齐细节 (UI 原型 vs 实际 API)",
         "guardrail": {
-          "title": "配额管理 (Guardrails)",
+          "title": "安全护栏 (Guardrails)",
           "ui": "UI 原型仅需要：名称、绑定对象 (成员/Key)、金额预算 (含周期)。已实现 IP/模型白名单展示。",
           "api": "API 严重过度设计：支持 Token/次数限流、监控模式、多种聚合维度。这些复杂度在 UI 中被明确屏蔽。需确保 PATCH 接口稳定支持 IP/模型白名单字段。"
         },
@@ -1000,7 +1000,7 @@
     "link3.title": "财务账单",
     "link3.desc": "充值余额与下载发票",
     "link4.title": "内容安全",
-    "link4.desc": "管理模型调用配额",
+    "link4.desc": "管理模型调用护栏",
     "link5.title": "可观测性",
     "link5.desc": "查看实时调用审计日志"
   },

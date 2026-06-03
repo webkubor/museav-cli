@@ -8,6 +8,7 @@ import {
   LuGlobe,
   LuBookOpen,
   LuLayers,
+  LuLogOut,
 } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -486,9 +487,10 @@ export const DashboardHeader: React.FC = () => {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleLogout}
-              style={{ color: '#ef4444' }}
+              className="text-rose-500 focus:text-rose-500"
             >
-              <span>{t('logout')}</span>
+              <LuLogOut size={14} className="mr-2 shrink-0" />
+              <span>{t('common.logout')}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

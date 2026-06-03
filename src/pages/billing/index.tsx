@@ -474,7 +474,6 @@ export default function BillingPage() {
   })
 
   const { main: availableMain } = formatBalance(balance?.available.amount)
-  const { main: reservedMain } = formatBalance(balance?.reserved.amount)
 
   const ordersQuery = useInfiniteQuery({
     queryKey: ['billing', 'recharges', tenantId],
@@ -564,8 +563,8 @@ export default function BillingPage() {
           </div>
         </div>
 
-        {/* 四余额格 */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 余额细分 */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* 主余额 */}
           <div className="rounded-xl border border-mg-border/60 bg-mg-fill-0/30 p-4 space-y-1.5">
             <div className="text-xs text-mg-text-2">{t('billing.balance.mainBalance')}</div>
@@ -591,15 +590,6 @@ export default function BillingPage() {
               {currencySymbol}{formatBalance(PLACEHOLDER_REWARD_BALANCE).main}
             </div>
             <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.rewardHint')}</div>
-          </div>
-
-          {/* 冻结金额 */}
-          <div className="rounded-xl border border-mg-border/60 bg-mg-fill-0/30 p-4 space-y-1.5">
-            <div className="text-xs text-mg-text-2">{t('billing.balance.frozen')}</div>
-            <div className="text-base font-bold text-mg-text-0 tabular-nums">
-              {currencySymbol}{balanceLoading ? '...' : reservedMain}
-            </div>
-            <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.frozenHint')}</div>
           </div>
         </div>
       </div>

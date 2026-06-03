@@ -3,16 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   LuTriangleAlert,
-  LuCircleCheck,
   LuCopy,
   LuEraser,
   LuGitCompareArrows,
   LuMessageSquare,
-  LuRefreshCw,
   LuSearch,
   LuSend,
-  LuSettings2,
-  LuSlidersHorizontal,
   LuSparkles,  LuZap,
 } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
@@ -40,7 +36,6 @@ import './styles/model-featured-card.css'
 import './styles/model-list.css'
 import './styles/model-chat.css'
 import './styles/model-composer.css'
-import './styles/model-params.css'
 import './styles/model-experience-responsive.css'
 import { ModelsCompareModal } from './components/ModelsCompareModal'
 
@@ -282,10 +277,6 @@ export default function ModelsPage() {
                 {selectedModel?.display_name ?? text.current}
               </div>
               <div className="flex items-center gap-1.5">
-                <Button variant="ghost" size="sm" onClick={() => appToast.info(text.params)}>
-                  <LuSlidersHorizontal size={14} />
-                  {text.params}
-                </Button>
                 <Button variant="ghost" size="sm" onClick={() => { setMessages(initialMessages); setInput('') }}>
                   <LuEraser size={14} />
                   {text.clear}
@@ -298,47 +289,6 @@ export default function ModelsPage() {
             </div>
             <p>{text.note}</p>
           </div>
-
-          <aside className="models-experience-params">
-            <div className="models-experience-params-header">
-              <LuSettings2 size={14} />
-              <span>{text.params}</span>
-            </div>
-
-            <div className="models-experience-params-list">
-              <div className="models-experience-param-item">
-                <span className="param-label">temperature</span>
-                <strong className="param-value">0.7</strong>
-              </div>
-              <div className="models-experience-param-item">
-                <span className="param-label">max tokens</span>
-                <strong className="param-value">{selectedModel?.max_output_tokens || 4096}</strong>
-              </div>
-              <div className="models-experience-param-item">
-                <span className="param-label">top_p</span>
-                <strong className="param-value">0.9</strong>
-              </div>
-              <div className="models-experience-param-item is-switch">
-                <span className="param-label flex items-center gap-1.5">
-                  <LuCircleCheck size={13} className="text-mg-success" />
-                  stream
-                </span>
-                <strong className="param-value badge-success">on</strong>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className="models-experience-reset-btn"
-              onClick={() => {
-                setMessages(initialMessages)
-                appToast.success(i18n.language.startsWith('zh') ? '对话历史已重置' : 'Conversation reset')
-              }}
-            >
-              <LuRefreshCw size={13} className="reset-icon" />
-              <span>{i18n.language.startsWith('zh') ? '重置对话' : 'Reset Chat'}</span>
-            </button>
-          </aside>
         </section>
       </div>
       <ModelsCompareModal

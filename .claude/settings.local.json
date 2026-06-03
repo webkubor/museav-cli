@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Skill(gitlab-board)"
+      "Skill(gitlab-board)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_type",
+      "mcp__playwright__browser_click"
     ]
   }
 }

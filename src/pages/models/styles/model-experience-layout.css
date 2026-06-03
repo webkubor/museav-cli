@@ -3,7 +3,8 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  min-height: calc(100vh - 128px);
+  height: calc(100vh - 128px);
+  overflow: hidden;
 }
 
 .models-experience-warning {
@@ -55,7 +56,8 @@
   display: grid;
   grid-template-columns: minmax(340px, 430px) minmax(0, 1fr);
   gap: 16px;
-  min-height: calc(100vh - 238px);
+  flex: 1;
+  min-height: 0;
 }
 
 .models-experience-picker,
@@ -63,9 +65,16 @@
   border: 1px solid var(--mg-border);
   background: color-mix(in srgb, var(--mg-bg-0) 88%, transparent);
   border-radius: 8px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 @media (max-width: 980px) {
+  .models-experience-page {
+    height: auto;
+    overflow: visible;
+  }
+
   .models-experience-workbench {
     grid-template-columns: 1fr;
   }

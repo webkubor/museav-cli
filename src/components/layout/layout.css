@@ -61,31 +61,64 @@
 
 /* ── 玻璃感光毛玻璃卡片样式 ── */
 .glass-card-glow {
+  position: relative;
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
   /* 浅色模式下增加不透明度（0.82）以形成洁净乳白玻璃，提升文字阅读对比度 */
   background-color: rgba(255, 255, 255, 0.82) !important;
   border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  /* 顶光高光线：利用极窄的内白阴影在最上边缘折射出物理边缘线 */
   box-shadow: 
-    0 8px 32px -4px rgba(15, 23, 42, 0.05), 
+    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.65),
+    0 4px 20px -2px rgba(15, 23, 42, 0.04), 
     0 0 1px 0 rgba(15, 23, 42, 0.1) !important;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 body[theme-mode='dark'] .glass-card-glow {
   /* 深色模式下继续保持高透太空感 */
   background-color: rgba(26, 26, 29, 0.55) !important; /* 映射 var(--mg-bg-0) */
   border: 1px solid rgba(255, 255, 255, 0.04) !important;
+  /* 深色模式下顶光反射线更加明显 */
   box-shadow: 
+    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.15),
     0 8px 32px 0 rgba(0, 0, 0, 0.20), 
     0 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
+/* 顶部 1px 极细光流线 */
+.glass-card-glow::before {
+  content: "";
+  position: absolute;
+  top: -1px; /* 完美贴合在 border 上方 */
+  left: 50%;
+  transform: translateX(-50%);
+  height: 1px;
+  width: 0;
+  background: linear-gradient(90deg, transparent, var(--brand-base) 50%, transparent);
+  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.glass-card-glow:hover::before {
+  width: 80%; /* 悬停时，1px 顶光线条缓缓从中间舒展开 */
+}
+
 .glass-card-glow:hover {
-  border-color: var(--brand-base) !important;
+  border-color: rgba(103, 67, 253, 0.35) !important; /* 浅色模式下变亮，勾勒精准外沿 */
   box-shadow: 
-    0 12px 30px -8px var(--brand-glow), 
-    0 0 8px 0 var(--brand-glow) !important;
-  transform: translateY(-2px);
+    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.75),
+    0 8px 25px -4px rgba(15, 23, 42, 0.06), 
+    0 0 1px 0 rgba(15, 23, 42, 0.12) !important;
+  transform: translateY(-1.5px);
+}
+
+body[theme-mode='dark'] .glass-card-glow:hover {
+  border-color: rgba(139, 106, 255, 0.4) !important; /* 深色下点亮外沿 */
+  box-shadow: 
+    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.25),
+    0 12px 35px 0 rgba(0, 0, 0, 0.28), 
+    0 0 1px 0 rgba(255, 255, 255, 0.1) !important;
 }
 

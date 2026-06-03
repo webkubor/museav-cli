@@ -1,18 +1,4 @@
 /* ── 模型体验响应式 ─────────────────────────────────────────────────── */
-@media (max-width: 1500px) {
-  .models-experience-messages {
-    padding-right: 18px;
-  }
-
-  .models-experience-composer {
-    margin-right: 18px;
-  }
-
-  .models-experience-params {
-    display: none;
-  }
-}
-
 @media (max-width: 980px) {
   .models-experience-chat {
     min-height: 680px;
@@ -20,16 +6,6 @@
 }
 
 @media (max-width: 860px) {
-  .models-experience-messages,
-  .models-experience-composer {
-    margin-right: 18px;
-    padding-right: 18px;
-  }
-
-  .models-experience-params {
-    display: none;
-  }
-
   .models-experience-modelbar {
     align-items: flex-start;
     flex-direction: column;

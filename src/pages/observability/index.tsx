@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Switch } from '@/components/ui/Switch'
+import { Textarea } from '@/components/ui/Textarea'
+import Select from '@/components/ui/Select'
+import { LuLink } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { appToast } from '@/lib/app-toast'
 import {
@@ -93,9 +96,17 @@ function PlatformConfigModal({
   platform: { id: string; name: string } | null
   onClose: () => void
 }) {
-  const [apiKey, setApiKey] = useState('')
-  const [endpoint, setEndpoint] = useState('')
+  const [name, setName] = useState(platform?.name ?? '')
+  const [url, setUrl] = useState('')
+  const [method, setMethod] = useState('POST')
+  const [headers, setHeaders] = useState('')
 
+  function handleTest() {
+    appToast.success('连接测试成功')
+  }
+  function handleSendTrace() {
+    appToast.success('测试 Trace 已发送')
+  }
   function handleSave() {
     appToast.success('配置已保存')
     onClose()
@@ -106,7 +117,7 @@ function PlatformConfigModal({
       open={!!platform}
       onClose={onClose}
       title={platform?.name ?? ''}
-      size="sm"
+      size="lg"
       footer={
         <>
           <Button variant="outline" onClick={onClose}>取消</Button>
@@ -114,27 +125,50 @@ function PlatformConfigModal({
         </>
       }
     >
-      <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-6">
+        {/* 左：说明 */}
         <div>
-          <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">
-            API Key / Token
-          </label>
-          <Input
-            type="password"
-            value={apiKey}
-            placeholder="粘贴密钥，提交后不再明文显示"
-            onChange={(e) => setApiKey(e.target.value)}
-          />
+          <div className="flex items-center gap-2 text-sm font-bold text-mg-text-0">
+            <LuLink size={15} className="text-brand-base" />
+            连接配置
+          </div>
+          <p className="mt-2 text-xs text-mg-text-2 leading-relaxed">
+            配置凭证与端点，保存前可测试连接。
+          </p>
         </div>
-        <div>
-          <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">
-            Endpoint URL
-          </label>
-          <Input
-            value={endpoint}
-            placeholder="https://your-endpoint.example.com"
-            onChange={(e) => setEndpoint(e.target.value)}
-          />
+
+        {/* 右：表单 */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">名称</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Webhook" />
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">URL</label>
+            <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://api.example.com/traces" />
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">方法（可选）</label>
+            <Select value={method} onChange={setMethod} className="w-full">
+              <Select.Option value="POST">POST</Select.Option>
+              <Select.Option value="GET">GET</Select.Option>
+              <Select.Option value="PUT">PUT</Select.Option>
+              <Select.Option value="PATCH">PATCH</Select.Option>
+            </Select>
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">请求头（可选）</label>
+            <Textarea
+              value={headers}
+              onChange={(e) => setHeaders(e.target.value)}
+              rows={3}
+              placeholder={'{"Authorization": "Bearer token", "X-Webhook-Signature": "your-webhook-secret"}'}
+            />
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={handleTest}>测试连接</Button>
+            <Button variant="outline" size="sm" onClick={handleSendTrace}>发送测试 Trace</Button>
+          </div>
         </div>
       </div>
     </Modal>
@@ -184,6 +218,7 @@ function AvailablePlatformsSection() {
       </div>
 
       <PlatformConfigModal
+        key={activePlatform?.id ?? 'none'}
         platform={activePlatform}
         onClose={() => setActivePlatform(null)}
       />

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
@@ -124,6 +124,12 @@ export default function GuardrailsPage() {
     enabled: !!detailId && detailOpen,
     staleTime: 0,
   })
+
+  useEffect(() => {
+    if (!isCreating && detailOpen && sheetTab === 'info' && detail) {
+      syncFormFromDetail(detail)
+    }
+  }, [detail, detailOpen, isCreating, sheetTab])
 
   const membersQuery = useQuery({
     queryKey: ['workspace-members', activeWorkspaceId],

@@ -22,7 +22,6 @@ import InvitationsMgmtPage from '@/pages/invitations-mgmt'
 import ObservabilityPage from '@/pages/observability'
 import ModelsPage from '@/pages/models'
 import ModelsComparePage from '@/pages/models-compare'
-import ModelsChatPage from '@/pages/models-chat'
 import PlatformConfigPage from '@/pages/platform-config'
 import ChatTestPage from '@/pages/chat-test'
 import { useAuthStore } from '@/store/auth'
@@ -112,12 +111,8 @@ export default function App() {
 
             {/* Tenant 级 */}
             <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="models">
-              <Route index element={<Navigate to="explore" replace />} />
-              <Route path="explore" element={<ModelsPage />} />
-              <Route path="compare" element={<ModelsComparePage />} />
-              <Route path="chat" element={<ModelsChatPage />} />
-            </Route>
+            <Route path="models" element={<ModelsPage />} />
+            <Route path="models/compare" element={<ModelsComparePage />} />
             <Route path="usage" element={<UsagePage />} />
             <Route path="logs" element={<LogsPage />} />
             <Route path="billing" element={<BillingPage />} />

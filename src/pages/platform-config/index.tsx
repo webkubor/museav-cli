@@ -151,10 +151,8 @@ interface MenuPermRow {
 
 const MENU_PERM_MAP: MenuPermRow[] = [
   { key: 'dashboard',        label: '仪表盘',    scope: 'tenant',    menuPerm: PERMS.DASHBOARD_VIEW,     actions: [] },
-  { key: 'models/explore',   label: '模型探索',   scope: 'tenant',    menuPerm: PERMS.MODELS_VIEW,        actions: [] },
+  { key: 'models',           label: '模型体验',   scope: 'tenant',    menuPerm: PERMS.MODELS_VIEW,        actions: [] },
   { key: 'models/compare',   label: '模型对比',   scope: 'tenant',    menuPerm: PERMS.MODELS_VIEW,        actions: [] },
-  { key: 'models/chat',      label: '模型对话',   scope: 'tenant',    menuPerm: PERMS.MODELS_VIEW,        actions: [] },
-  { key: 'models/history',   label: '历史记录',   scope: 'tenant',    menuPerm: PERMS.MODELS_VIEW,        actions: [] },
   { key: 'usage',            label: '用量分析',   scope: 'tenant',    menuPerm: PERMS.ANALYTICS_VIEW,     actions: [] },
   { key: 'logs',             label: '调用日志',   scope: 'tenant',    menuPerm: PERMS.LOGS_VIEW,          actions: [] },
   { key: 'billing',          label: '账单',      scope: 'tenant',    menuPerm: PERMS.BILLING_VIEW,       actions: [PERMS.BILLING_INVOICE_VIEW, PERMS.BILLING_RECHARGE_CREATE, PERMS.BILLING_RECHARGE_CANCEL] },

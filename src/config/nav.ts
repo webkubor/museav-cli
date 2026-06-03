@@ -54,13 +54,9 @@ export const navConfig: NavConfig = {
     { itemKey: 'dashboard',    text: t('nav.dashboard'),  icon: icons.home,       permission: PERMS.DASHBOARD_VIEW },
     {
       itemKey: 'models',
-      text: t('nav.models'),
+      text: t('nav.modelExplore'),
       icon: icons.apps,
       permission: PERMS.MODELS_VIEW,
-      items: [
-        { itemKey: 'models/explore', text: t('nav.modelExplore'), icon: icons.apps,        permission: PERMS.MODELS_VIEW },
-        { itemKey: 'models/chat',    text: t('nav.modelChat'),    icon: icons.histogramSm, permission: PERMS.MODELS_VIEW },
-      ],
     },
     {
       itemKey: 'analytics',

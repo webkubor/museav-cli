@@ -32,7 +32,7 @@ export function TagInput({
   const containerRef = useRef<HTMLDivElement>(null)
 
   const filtered = hasSuggestions
-    ? suggestions.filter((s) => !value.includes(s) && s.toLowerCase().includes(input.toLowerCase()))
+    ? suggestions.filter((s) => s != null && !value.includes(s) && s.toLowerCase().includes(input.toLowerCase()))
     : []
 
   const addTag = useCallback((tag: string) => {

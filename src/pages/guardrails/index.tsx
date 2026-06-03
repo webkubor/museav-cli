@@ -265,7 +265,7 @@ export default function GuardrailsPage() {
 
   const memberOptions = (membersQuery.data?.items ?? []).map(m => ({
     id: m.account.account_id,
-    name: m.account.display_name || m.account.email,
+    name: m.account.display_name || m.account.email || m.account.account_id,
   }))
   const apiKeysMap = new Map((apiKeysQuery.data?.items ?? []).map(k => [k.api_key_id, k]))
 

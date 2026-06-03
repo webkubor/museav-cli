@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { cn } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
+import { ModelIcon } from '@/features/models/components/ModelIcon'
 
 interface ModelsCompareModalProps {
   isOpen: boolean
@@ -74,16 +75,9 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({ isOpen, 
   }
 
   // 厂商 Logo 渲染，提供精美后备
-  const renderLogo = (m: CatalogModelItem) => {
-    if (m.logo_url) {
-      return <img src={m.logo_url} alt="" className="w-6 h-6 rounded object-contain flex-shrink-0 bg-white border border-mg-border/40" />
-    }
-    return (
-      <div className="w-6 h-6 rounded bg-brand-selected-bg text-brand-base flex items-center justify-center text-[10px] font-bold flex-shrink-0 border border-brand-mid/10">
-        {m.vendor ? m.vendor.substring(0, 2).toUpperCase() : 'MG'}
-      </div>
-    )
-  }
+  const renderLogo = (m: CatalogModelItem) => (
+    <ModelIcon model={m} size={24} rounded="rounded" className="bg-white border border-mg-border/40" />
+  )
 
   // 属性对比定义，在 t() 中增加中文默认后备以解决 key 缺失带来的重叠灾难
   const ROWS: Array<{ label: string; render: (m: CatalogModelItem) => React.ReactNode }> = [

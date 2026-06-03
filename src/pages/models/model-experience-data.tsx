@@ -1,6 +1,5 @@
 import { ModalityBadge } from '@/features/models/components/ModalityBadge'
-import { VENDOR_ICON } from '@/features/models/components/vendor-icons'
-import { cn, getFallbackAvatarText } from '@/lib/utils'
+import { ModelIcon } from '@/features/models/components/ModelIcon'
 import type { CatalogModelItem } from '@/types'
 
 export type CategoryKey = 'all' | 'text' | 'image' | 'video' | 'code' | 'reasoning' | 'multimodal'
@@ -94,13 +93,13 @@ export function matchesCategory(model: CatalogModelItem, category: CategoryKey) 
 }
 
 export function vendorNode(model: CatalogModelItem, size: 'sm' | 'lg' = 'sm') {
-  const icon = VENDOR_ICON[model.vendor?.toLowerCase() ?? '']
-  const box = size === 'lg' ? 'h-11 w-11 rounded-xl' : 'h-8 w-8 rounded-lg'
-  if (model.logo_url) return <img src={model.logo_url} alt={model.vendor ?? model.display_name} className={cn(box, 'object-contain bg-mg-bg-0')} />
-  return icon ?? (
-    <span className={cn(box, 'inline-flex items-center justify-center bg-mg-fill-0 text-mg-text-2 font-bold')}>
-      {getFallbackAvatarText(model.vendor ?? model.display_name)}
-    </span>
+  return (
+    <ModelIcon
+      model={model}
+      size={size === 'lg' ? 44 : 32}
+      rounded={size === 'lg' ? 'rounded-xl' : 'rounded-lg'}
+      className="bg-mg-bg-0"
+    />
   )
 }
 

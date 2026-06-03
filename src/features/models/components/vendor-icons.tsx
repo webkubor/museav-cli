@@ -17,26 +17,45 @@ import Groq from '@lobehub/icons/es/Groq'
 import Zhipu from '@lobehub/icons/es/Zhipu'
 import Baidu from '@lobehub/icons/es/Baidu'
 
-export const VENDOR_ICON: Record<string, React.ReactNode> = {
-  anthropic: <Anthropic size={28} />,
-  claude:    <Claude.Color size={28} />,
-  openai:    <OpenAI size={28} />,
-  chatgpt:   <OpenAI size={28} />,
-  gemini:    <Gemini.Color size={28} />,
-  google:    <Google.Color size={28} />,
-  deepseek:  <DeepSeek.Color size={28} />,
-  qwen:      <Qwen.Color size={28} />,
-  mistral:   <Mistral.Color size={28} />,
-  ollama:    <Ollama size={28} />,
-  meta:      <Meta.Color size={28} />,
-  llama:     <Meta.Color size={28} />,
-  moonshot:  <Moonshot size={28} />,
-  kimi:      <Moonshot size={28} />,
-  minimax:   <Minimax.Color size={28} />,
-  chatglm:   <ChatGLM.Color size={28} />,
-  zhipu:     <Zhipu.Color size={28} />,
-  cohere:    <Cohere.Color size={28} />,
-  groq:      <Groq size={28} />,
-  baidu:     <Baidu.Color size={28} />,
-  ernie:     <Baidu.Color size={28} />,
+/**
+ * 厂商图标工厂：vendor 名（小写）→ 按尺寸渲染图标。
+ * 新增厂商：import 对应 lobehub 图标后，在此追加一行即可。
+ */
+const ICON_FACTORY: Record<string, (size: number) => React.ReactNode> = {
+  anthropic: (s) => <Anthropic size={s} />,
+  claude:    (s) => <Claude.Color size={s} />,
+  openai:    (s) => <OpenAI size={s} />,
+  chatgpt:   (s) => <OpenAI size={s} />,
+  gemini:    (s) => <Gemini.Color size={s} />,
+  google:    (s) => <Google.Color size={s} />,
+  deepseek:  (s) => <DeepSeek.Color size={s} />,
+  qwen:      (s) => <Qwen.Color size={s} />,
+  mistral:   (s) => <Mistral.Color size={s} />,
+  ollama:    (s) => <Ollama size={s} />,
+  meta:      (s) => <Meta.Color size={s} />,
+  llama:     (s) => <Meta.Color size={s} />,
+  moonshot:  (s) => <Moonshot size={s} />,
+  kimi:      (s) => <Moonshot size={s} />,
+  minimax:   (s) => <Minimax.Color size={s} />,
+  chatglm:   (s) => <ChatGLM.Color size={s} />,
+  zhipu:     (s) => <Zhipu.Color size={s} />,
+  cohere:    (s) => <Cohere.Color size={s} />,
+  groq:      (s) => <Groq size={s} />,
+  baidu:     (s) => <Baidu.Color size={s} />,
+  ernie:     (s) => <Baidu.Color size={s} />,
+}
+
+/**
+ * 按厂商名解析本地图标：先精确命中，再做包含匹配（如 "OpenAI GPT-4" 命中 openai）。
+ * 命中返回对应尺寸的图标节点，否则返回 null（交由调用方走文字兜底）。
+ */
+export function resolveVendorIcon(
+  vendor: string | null | undefined,
+  size = 28
+): React.ReactNode | null {
+  if (!vendor) return null
+  const v = vendor.toLowerCase()
+  if (ICON_FACTORY[v]) return ICON_FACTORY[v](size)
+  const key = Object.keys(ICON_FACTORY).find((k) => v.includes(k))
+  return key ? ICON_FACTORY[key](size) : null
 }

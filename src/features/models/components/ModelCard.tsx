@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import type { CatalogModelItem } from '@/types'
 import { ModalityBadge } from './ModalityBadge'
-import { VENDOR_ICON } from './vendor-icons'
-import { formatContextLength, formatModelPrice, getFallbackAvatarText } from '@/lib/utils'
+import { ModelIcon } from './ModelIcon'
+import { formatContextLength, formatModelPrice } from '@/lib/utils'
 
 interface ModelCardProps {
   model: CatalogModelItem
@@ -30,16 +30,7 @@ export function ModelCard({ model, onSelect }: ModelCardProps) {
     >
       {/* 头部：Logo + 名称 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <div style={{ width: '28px', height: '28px', borderRadius: '6px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-          {model.logo_url
-            ? <img src={model.logo_url} alt={model.vendor} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-            : (VENDOR_ICON[model.vendor?.toLowerCase() ?? ''] ?? (
-              <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'var(--mg-fill-0)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: 'var(--mg-text-2)' }}>
-                {getFallbackAvatarText(model.vendor ?? model.display_name)}
-              </div>
-            ))
-          }
-        </div>
+        <ModelIcon model={model} size={28} />
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--mg-text-0)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {model.display_name}

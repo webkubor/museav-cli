@@ -3,8 +3,8 @@ import { LuCoins, LuWorkflow, LuZap, LuShieldCheck, LuActivity, LuClock, LuGlobe
 import { useTranslation } from 'react-i18next'
 import type { CatalogModelDetail, ProviderForModel } from '@/types'
 import { ModalityBadge } from './ModalityBadge'
-import { VENDOR_ICON } from './vendor-icons'
-import { formatContextLength, formatModelPrice, getFallbackAvatarText, formatNumber } from '@/lib/utils'
+import { ModelIcon } from './ModelIcon'
+import { formatContextLength, formatModelPrice, formatNumber } from '@/lib/utils'
 
 interface ModelDetailPanelProps {
   detail: CatalogModelDetail
@@ -19,16 +19,12 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
     <div className="flex flex-col gap-5">
       {/* 头部面板 */}
       <div className="flex items-start gap-4 border-b border-[var(--mg-border)] pb-5">
-        <div className="w-12 h-12 rounded-[10px] shrink-0 flex items-center justify-center overflow-hidden border border-[var(--mg-border)] bg-card-bg">
-          {detail.logo_url
-            ? <img src={detail.logo_url} alt={vendor} className="w-full h-full object-contain" />
-            : (VENDOR_ICON[vendor.toLowerCase()] ?? (
-              <div className="w-12 h-12 rounded-[10px] bg-[var(--mg-fill-0)] flex items-center justify-center text-lg font-bold text-[var(--mg-text-2)]">
-                {getFallbackAvatarText(vendor || detail.display_name)}
-              </div>
-            ))
-          }
-        </div>
+        <ModelIcon
+          model={{ logo_url: detail.logo_url, vendor, display_name: detail.display_name }}
+          size={48}
+          rounded="rounded-[10px]"
+          className="border border-[var(--mg-border)] bg-card-bg"
+        />
         <div className="min-w-0 flex-1">
           <h2 className="text-[17px] font-bold text-[var(--mg-text-0)] mb-1.5 leading-tight">
             {detail.display_name}

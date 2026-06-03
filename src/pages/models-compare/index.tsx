@@ -7,6 +7,7 @@ import { LuSearch, LuPlus, LuX } from 'react-icons/lu'
 import { listModels } from '@/services/catalog'
 import type { CatalogModelItem } from '@/types'
 import { cn } from '@/lib/utils'
+import { ModelIcon } from '@/features/models/components/ModelIcon'
 
 const MAX_COMPARE = 3
 
@@ -49,9 +50,7 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
         >
           <LuX size={14} />
         </button>
-        {selected.logo_url && (
-          <img src={selected.logo_url} alt="" className="w-7 h-7 rounded-md mb-2 object-contain" />
-        )}
+        <ModelIcon model={selected} size={28} rounded="rounded-md" className="mb-2" />
         <div className="font-semibold text-sm text-[var(--mg-text-0)] mb-1">
           {selected.display_name}
         </div>
@@ -98,7 +97,7 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
                 onClick={() => { onSelect(m); setOpen(false); onSearch('') }}
                 className="px-3 py-2 cursor-pointer flex items-center gap-2 hover:bg-[var(--mg-fill-0)] transition-colors"
               >
-                {m.logo_url && <img src={m.logo_url} alt="" className="w-5 h-5 rounded object-contain flex-shrink-0" />}
+                <ModelIcon model={m} size={20} rounded="rounded" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[13px] font-medium text-[var(--mg-text-0)] truncate">
                     {m.display_name}

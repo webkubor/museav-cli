@@ -1,4 +1,4 @@
-import { LuCpu, LuReceipt, LuX, LuHistory } from 'react-icons/lu'
+import { LuReceipt, LuX, LuHistory, LuGift } from 'react-icons/lu'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -14,7 +14,6 @@ import { useAuthStore } from '@/store/auth'
 import { isDomestic } from '@/lib/market'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { ProgressBar } from '@/components/ui/ProgressBar'
 import { appToast } from '@/lib/app-toast'
 import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
@@ -45,7 +44,7 @@ function formatBalance(amountStr: string | undefined): { main: string; exact: st
 
 // ─── Sub-components: PromoRedeemForm ──────────────────────────────────────
 
-function PromoRedeemForm({ tenantId }: { tenantId: string }) {
+export function PromoRedeemForm({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [code, setCode] = useState('')
@@ -276,7 +275,7 @@ interface OrderReceiptDrawerProps {
   labels: Record<string, string>
 }
 
-function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, labels }: OrderReceiptDrawerProps) {
+export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, labels }: OrderReceiptDrawerProps) {
   const { t } = useTranslation()
   if (!isOpen || !order) return null
 
@@ -447,14 +446,26 @@ function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, labels }: 
   )
 }
 
+// ─── Mock Gift Balance Records ────────────────────────────────────────────
+
+const MOCK_GIFT_RECORDS = [
+  { id: '1', source: '新用户注册赠送', amount: '50.00', currency: 'CNY', credited_at: '2024-03-01T10:00:00Z' },
+  { id: '2', source: '活动促销赠送', amount: '100.00', currency: 'CNY', credited_at: '2024-04-15T14:30:00Z' },
+  { id: '3', source: '推荐好友奖励', amount: '30.00', currency: 'CNY', credited_at: '2024-05-20T09:00:00Z' },
+  { id: '4', source: '平台专属福利', amount: '40.00', currency: 'CNY', credited_at: '2024-06-01T16:00:00Z' },
+]
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function BillingPage() {
   const { t } = useTranslation()
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
   const [topUpVisible, setTopUpVisible] = useState(false)
+  const [activeTab, setActiveTab] = useState<'recharge' | 'gift'>('recharge')
+  const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null)
 
   const { symbol: currencySymbol } = useCurrency()
+  const qc = useQueryClient()
 
   const { data: balance, isLoading: balanceLoading } = useQuery({
     queryKey: ['balance', tenantId],
@@ -462,242 +473,8 @@ export default function BillingPage() {
     enabled: !!tenantId,
   })
 
-  const { main: availableMain, exact: availableExact } = formatBalance(balance?.available.amount)
+  const { main: availableMain } = formatBalance(balance?.available.amount)
   const { main: reservedMain } = formatBalance(balance?.reserved.amount)
-
-  // Account budget health check
-  const balanceNum = balance ? parseFloat(balance.available.amount) : 0
-  let healthStatus: 'sufficient' | 'low' | 'depleted' = 'sufficient'
-  if (balanceNum <= 0) {
-    healthStatus = 'depleted'
-  } else if (balanceNum < 100) {
-    healthStatus = 'low'
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-1.5 pb-2">
-        <h1 className="text-2xl font-bold tracking-tight text-mg-text-0 leading-none">
-          {t('billing.title')}
-        </h1>
-        <p className="text-[13.5px] text-mg-text-2">
-          {t('billing.desc')}
-        </p>
-      </div>
-
-      <TopUpModal visible={topUpVisible} onClose={() => setTopUpVisible(false)} tenantId={tenantId} />
-
-      {/* Top Section: Dashboard Grid (Credit Card + Balance Details & Actions) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        
-        {/* Left: simulated high-fidelity credit card */}
-        <div className="lg:col-span-5 min-h-[220px] rounded-2xl p-6 bg-gradient-to-br from-zinc-900 via-neutral-900 to-mg-bg-1 border border-mg-border/85 shadow-2xl relative overflow-hidden flex flex-col justify-between group">
-          {/* Decorative subtle abstract radial glow */}
-          <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-brand-glow/10 blur-[64px] pointer-events-none transition-transform duration-700 group-hover:scale-125" />
-          
-          {/* Micro chip & Card Logo */}
-          <div className="flex justify-between items-center z-10">
-            <span className="text-[11px] uppercase tracking-widest font-bold text-mg-text-3 font-mono">
-              {t('billing.balance.walletCard')}
-            </span>
-            {/* Hologram metallic microchip */}
-            <div className="w-10 h-8 rounded-md bg-gradient-to-br from-amber-400/30 via-yellow-200/20 to-zinc-700/40 border border-amber-300/40 p-1 flex flex-col justify-between relative shadow-inner overflow-hidden">
-              <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(251,191,36,0.15)_1px,transparent_1px),linear-gradient(to_bottom,rgba(251,191,36,0.15)_1px,transparent_1px)] bg-[size:6px_4px]" />
-              <LuCpu className="text-amber-300/80 animate-pulse w-full h-full z-10 shrink-0" size={16} />
-            </div>
-          </div>
-
-          {/* Balance Amount display */}
-          <div className="z-10 mt-4 space-y-1">
-            <div className="text-[11px] text-mg-text-3 font-bold uppercase tracking-wider">
-              {t('billing.balance.available')}
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-xl font-medium text-mg-text-1">{currencySymbol}</span>
-              <span className="text-3xl font-extrabold text-mg-text-0 tracking-tight leading-none font-sans font-variant-numeric-tabular-nums">
-                {balanceLoading ? '...' : availableMain}
-              </span>
-            </div>
-            {/* Exact Balance tooltip / caption */}
-            {!balanceLoading && balance?.available.amount && parseFloat(balance.available.amount) !== parseFloat(availableMain.replace(/,/g, '')) && (
-              <div className="text-[10px] text-mg-text-3 font-mono font-medium opacity-80">
-                {t('billing.balance.exactBalance', { amount: availableExact })}
-              </div>
-            )}
-          </div>
-
-          {/* Card Footer */}
-          <div className="flex justify-between items-end z-10 border-t border-mg-border/30 pt-4 mt-2">
-            <div className="space-y-0.5">
-              <div className="text-[9px] uppercase tracking-wider text-mg-text-3 font-bold">
-                Tenant ID
-              </div>
-              <div className="text-xs font-bold text-mg-text-1 font-mono uppercase truncate max-w-[180px]">
-                {tenantId || '—'}
-              </div>
-            </div>
-            
-            {/* Wallet Status indicator */}
-            <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-mg-fill-0/60 border border-mg-border/40 backdrop-blur-md">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-base opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-base"></span>
-              </span>
-              <span className="text-[10px] font-bold text-mg-text-1 uppercase tracking-wider">
-                ACTIVE
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Quick stats & Action panel (Promo Code Redemption integrated) */}
-        <div className="lg:col-span-7 rounded-2xl border border-mg-border bg-card-bg/60 p-6 flex flex-col justify-between gap-6 shadow-sm">
-
-          {/* Four balance breakdown cells */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* 主余额 — TODO: 待后端 balance 接口补充细分字段 */}
-            <div className="space-y-1 p-4 rounded-xl bg-mg-fill-0/30 border border-mg-border/40">
-              <div className="text-[11px] text-mg-text-3 font-bold uppercase tracking-wider">
-                {t('billing.balance.mainBalance')}
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-sm font-medium text-mg-text-2">{currencySymbol}</span>
-                <span className="text-xl font-bold text-mg-text-1 tracking-tight tabular-nums">
-                  {formatBalance(PLACEHOLDER_MAIN_BALANCE).main}
-                </span>
-              </div>
-              <div className="text-[10px] text-mg-text-3 leading-snug">
-                {t('billing.balance.mainHint')}
-              </div>
-            </div>
-
-            {/* 赠送余额 — TODO: 待后端 balance 接口补充细分字段 */}
-            <div className="space-y-1 p-4 rounded-xl bg-mg-fill-0/30 border border-mg-border/40">
-              <div className="text-[11px] text-mg-text-3 font-bold uppercase tracking-wider">
-                {t('billing.balance.giftBalance')}
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-sm font-medium text-mg-text-2">{currencySymbol}</span>
-                <span className="text-xl font-bold text-mg-text-1 tracking-tight tabular-nums">
-                  {formatBalance(PLACEHOLDER_GIFT_BALANCE).main}
-                </span>
-              </div>
-              <div className="text-[10px] text-mg-text-3 leading-snug">
-                {t('billing.balance.giftHint')}
-              </div>
-            </div>
-
-            {/* 奖励余额 — TODO: 待后端 balance 接口补充细分字段 */}
-            <div className="space-y-1 p-4 rounded-xl bg-mg-fill-0/30 border border-mg-border/40">
-              <div className="text-[11px] text-mg-text-3 font-bold uppercase tracking-wider">
-                {t('billing.balance.rewardBalance')}
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-sm font-medium text-mg-text-2">{currencySymbol}</span>
-                <span className="text-xl font-bold text-emerald-500 tracking-tight tabular-nums">
-                  {formatBalance(PLACEHOLDER_REWARD_BALANCE).main}
-                </span>
-              </div>
-              <div className="text-[10px] text-mg-text-3 leading-snug">
-                {t('billing.balance.rewardHint')}
-              </div>
-            </div>
-
-            {/* 冻结金额 — 复用 balance.reserved（真实数据） */}
-            <div className="space-y-1 p-4 rounded-xl bg-mg-fill-0/30 border border-mg-border/40">
-              <div className="text-[11px] text-mg-text-3 font-bold uppercase tracking-wider">
-                {t('billing.balance.frozen')}
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-sm font-medium text-mg-text-2">{currencySymbol}</span>
-                <span className="text-xl font-bold text-mg-text-1 tracking-tight tabular-nums">
-                  {balanceLoading ? '...' : reservedMain}
-                </span>
-              </div>
-              <div className="text-[10px] text-mg-text-3 leading-snug">
-                {t('billing.balance.frozenHint')}
-              </div>
-            </div>
-          </div>
-
-          {/* Health / Budget Card */}
-          <div className="space-y-1.5 p-4 rounded-xl bg-mg-fill-0/30 border border-mg-border/40 flex flex-col justify-between">
-            <div>
-              <div className="text-[11px] text-mg-text-3 font-bold uppercase tracking-wider">
-                {t('billing.balance.health')}
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                {healthStatus === 'sufficient' && (
-                  <>
-                    <span className="text-[11px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                      {t('billing.balance.healthSufficient')}
-                    </span>
-                    <span className="text-[10px] text-mg-text-2 font-medium">额度非常健康</span>
-                  </>
-                )}
-                {healthStatus === 'low' && (
-                  <>
-                    <span className="text-[11px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                      {t('billing.balance.healthLow')}
-                    </span>
-                    <span className="text-[10px] text-mg-text-2 font-medium">请及时充值</span>
-                  </>
-                )}
-                {healthStatus === 'depleted' && (
-                  <>
-                    <span className="text-[11px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
-                      {t('billing.balance.healthDepleted')}
-                    </span>
-                    <span className="text-[10px] text-mg-text-2 font-medium">可用余额耗尽</span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Credit Status progress-bar */}
-            <ProgressBar
-              value={healthStatus === 'sufficient' ? 100 : healthStatus === 'low' ? 33.3 : 0}
-              max={100}
-              variant={
-                healthStatus === 'sufficient' ? 'emerald' :
-                healthStatus === 'low' ? 'amber' : 'brand'
-              }
-              size="xs"
-              showGlow={healthStatus !== 'depleted'}
-              className="mt-2"
-            />
-          </div>
-
-          {/* Action Row: TopUp Trigger & Promo Code Redemption Form */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-4 border-t border-mg-border/30">
-            <Button
-              variant="brand"
-              onClick={() => setTopUpVisible(true)}
-              className="rounded-xl h-10 px-6 shrink-0"
-            >
-              {t('billing.balance.recharge')}
-            </Button>
-            
-            {/* Promo Code Input Box (Integrating hidden Promo functionality) */}
-            <PromoRedeemForm tenantId={tenantId} />
-          </div>
-
-        </div>
-      </div>
-
-      {/* Transaction History Section */}
-      <OrderTab tenantId={tenantId} />
-    </div>
-  )
-}
-
-// ─── Tab 2: Orders ────────────────────────────────────────────────────────
-
-function OrderTab({ tenantId }: { tenantId: string }) {
-  const { t } = useTranslation()
-  const qc = useQueryClient()
-  const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null)
 
   const ordersQuery = useInfiniteQuery({
     queryKey: ['billing', 'recharges', tenantId],
@@ -717,118 +494,372 @@ function OrderTab({ tenantId }: { tenantId: string }) {
   })
 
   const orders = ordersQuery.data?.pages.flatMap((page) => page.items) ?? []
-  const selected = orders.find((o) => o.order_no === selectedOrderNo)
+  const selectedOrder = orders.find((o) => o.order_no === selectedOrderNo)
   const labels = t('billing.orders.status', { returnObjects: true }) as Record<string, string>
 
+  // Inline promo redeem state (reuses redeemPromoCode service)
+  const [promoCode, setPromoCode] = useState('')
+  const redeemMutation = useMutation({
+    mutationFn: (code: string) => redeemPromoCode(tenantId, { code }),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['balance', tenantId] })
+      appToast.success(t('billing.promo.success', { amount: data.credited.amount, currency: data.credited.currency }))
+      setPromoCode('')
+    },
+    onError: (err: Error) => {
+      appToast.error(err.message || t('billing.promo.error'))
+    },
+  })
+
+  const handlePromoSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!promoCode.trim()) {
+      appToast.warning(t('billing.promo.emptyWarning'))
+      return
+    }
+    redeemMutation.mutate(promoCode.trim())
+  }
+
   return (
-    <div className="w-full">
-      <div className="bg-card-bg border border-mg-border rounded-2xl overflow-hidden shadow-sm p-4 w-full">
-        <div className="overflow-x-auto w-full p-1">
-          {ordersQuery.isLoading ? (
-            <div className="py-20 flex justify-center items-center">
-              <div className="w-8 h-8 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
+    <div className="space-y-6">
+      {/* 1. 页头 */}
+      <div className="flex flex-col gap-1.5">
+        <h1 className="text-2xl font-bold tracking-tight text-mg-text-0 leading-none">
+          {t('billing.title')}
+        </h1>
+        <p className="text-[13.5px] text-mg-text-2">
+          {t('billing.desc')}
+        </p>
+      </div>
+
+      <TopUpModal visible={topUpVisible} onClose={() => setTopUpVisible(false)} tenantId={tenantId} />
+
+      {/* 2. 账户余额卡 */}
+      <div className="rounded-2xl border border-mg-border bg-card-bg p-6 space-y-5 shadow-sm">
+        {/* 顶部标题 + 充值按钮 */}
+        <div className="flex justify-between items-center">
+          <span className="text-sm font-bold text-mg-text-0">
+            {t('billing.balance.title')}
+          </span>
+          <Button
+            variant="brand"
+            onClick={() => setTopUpVisible(true)}
+            className="rounded-xl h-9 px-5 text-xs"
+          >
+            {t('billing.balance.recharge')}
+          </Button>
+        </div>
+
+        {/* 可消费合计 */}
+        <div className="space-y-1">
+          <p className="text-xs text-mg-text-2">
+            {t('billing.balance.spendableTotal')}
+            <span className="ml-1 text-mg-text-3">({t('billing.balance.spendableHint')})</span>
+          </p>
+          <div className="flex items-baseline gap-1">
+            <span className="text-lg font-medium text-mg-text-1">{currencySymbol}</span>
+            <span className="text-4xl font-bold text-mg-text-0 tracking-tight tabular-nums leading-none">
+              {balanceLoading ? '...' : availableMain}
+            </span>
+          </div>
+        </div>
+
+        {/* 四余额格 */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 主余额 */}
+          <div className="rounded-xl border border-mg-border/60 bg-mg-fill-0/30 p-4 space-y-1.5">
+            <div className="text-xs text-mg-text-2">{t('billing.balance.mainBalance')}</div>
+            <div className="text-base font-bold text-mg-text-0 tabular-nums">
+              {currencySymbol}{formatBalance(PLACEHOLDER_MAIN_BALANCE).main}
             </div>
-          ) : orders.length === 0 ? (
-            /* High-fidelity glowing orbit surrounding Empty state icon */
-            <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-              <div className="relative w-16 h-16 flex items-center justify-center rounded-full bg-mg-fill-0 border border-mg-border/60 shadow-inner">
-                <div className="absolute inset-0 rounded-full border border-dashed border-brand-base/20 animate-[spin_20s_linear_infinite]" />
-                <div className="absolute -inset-1 rounded-full border border-dotted border-mg-text-3/10 animate-[spin_40s_linear_infinite]" />
-                <LuHistory size={24} className="text-mg-text-2" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-mg-text-1 font-bold tracking-tight">
-                  {t('billing.orders.empty')}
-                </p>
-                <p className="text-xs text-mg-text-3 max-w-[280px] leading-relaxed">
-                  您的账户当前尚无历史充值或兑换交易流水，可在上方进行快速充值。
-                </p>
-              </div>
+            <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.mainHint')}</div>
+          </div>
+
+          {/* 赠送余额 */}
+          <div className="rounded-xl border border-mg-border/60 bg-mg-fill-0/30 p-4 space-y-1.5">
+            <div className="text-xs text-mg-text-2">{t('billing.balance.giftBalance')}</div>
+            <div className="text-base font-bold text-mg-text-0 tabular-nums">
+              {currencySymbol}{formatBalance(PLACEHOLDER_GIFT_BALANCE).main}
             </div>
-          ) : (
+            <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.giftHint')}</div>
+          </div>
+
+          {/* 奖励余额 */}
+          <div className="rounded-xl border border-mg-border/60 bg-mg-fill-0/30 p-4 space-y-1.5">
+            <div className="text-xs text-mg-text-2">{t('billing.balance.rewardBalance')}</div>
+            <div className="text-base font-bold text-mg-text-0 tabular-nums">
+              {currencySymbol}{formatBalance(PLACEHOLDER_REWARD_BALANCE).main}
+            </div>
+            <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.rewardHint')}</div>
+          </div>
+
+          {/* 冻结金额 */}
+          <div className="rounded-xl border border-mg-border/60 bg-mg-fill-0/30 p-4 space-y-1.5">
+            <div className="text-xs text-mg-text-2">{t('billing.balance.frozen')}</div>
+            <div className="text-base font-bold text-mg-text-0 tabular-nums">
+              {currencySymbol}{balanceLoading ? '...' : reservedMain}
+            </div>
+            <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.frozenHint')}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. 兑换码充值卡 */}
+      <div className="rounded-2xl border border-mg-border bg-card-bg p-5 shadow-sm">
+        <form onSubmit={handlePromoSubmit} className="flex items-center gap-4 flex-wrap">
+          {/* 左侧图标 + 标题 */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-mg-fill-0 border border-mg-border flex items-center justify-center shrink-0">
+              <LuGift size={16} className="text-brand-base" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-mg-text-0">{t('billing.promo.title')}</div>
+              <div className="text-[11px] text-mg-text-2 mt-0.5">{t('billing.promo.subtitle', { defaultValue: '线下收款 / 促销码自助到账' })}</div>
+            </div>
+          </div>
+
+          {/* 输入框 */}
+          <input
+            type="text"
+            value={promoCode}
+            onChange={(e) => setPromoCode(e.target.value)}
+            placeholder={t('billing.promo.placeholder')}
+            disabled={redeemMutation.isPending}
+            className="flex-1 min-w-[180px] h-9 px-3 rounded-xl border border-mg-border bg-mg-fill-0/30 hover:bg-mg-fill-0 focus:bg-mg-fill-0 text-xs focus:outline-none focus:ring-1 focus:ring-brand-glow focus:border-brand-base transition-all font-medium text-mg-text-0"
+          />
+
+          {/* 立即兑换 */}
+          <Button
+            type="submit"
+            variant="outline"
+            disabled={redeemMutation.isPending || !promoCode.trim()}
+            className="h-9 px-4 text-xs font-semibold rounded-xl border border-mg-border shrink-0 hover:bg-mg-fill-0 transition-all text-mg-text-1"
+          >
+            {redeemMutation.isPending ? t('billing.rechargeModal.submitting') : t('billing.promo.submit')}
+          </Button>
+        </form>
+      </div>
+
+      {/* 4. Tab 切换 */}
+      <div className="border-b border-mg-border/60 flex gap-6">
+        {(['recharge', 'gift'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={cn(
+              'pb-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px cursor-pointer outline-none',
+              activeTab === tab
+                ? 'border-brand-base text-brand-base'
+                : 'border-transparent text-mg-text-2 hover:text-mg-text-1'
+            )}
+          >
+            {tab === 'recharge' ? t('billing.orders.tab.recharge', { defaultValue: '充值记录' }) : t('billing.orders.tab.gift', { defaultValue: '赠送余额明细' })}
+          </button>
+        ))}
+      </div>
+
+      {/* 5. 订单区 */}
+      {activeTab === 'recharge' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* 左：订单表格 */}
+          <div className="lg:col-span-2 rounded-2xl border border-mg-border bg-card-bg shadow-sm overflow-hidden">
+            {ordersQuery.isLoading ? (
+              <div className="py-20 flex justify-center items-center">
+                <div className="w-8 h-8 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
+                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-mg-fill-0 border border-mg-border/60">
+                  <LuHistory size={20} className="text-mg-text-2" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-mg-text-1 font-bold">{t('billing.orders.empty')}</p>
+                  <p className="text-xs text-mg-text-3 max-w-[260px] leading-relaxed">
+                    {t('billing.orders.emptyHint', { defaultValue: '您的账户当前尚无历史充值或兑换交易流水，可在上方进行快速充值。' })}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-mg-border bg-mg-fill-0/20">
+                      <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.orderNo')}</th>
+                      <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.status')}</th>
+                      <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.amount')}</th>
+                      <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.paidAt')}</th>
+                      <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider w-20">{t('billing.orders.table.actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map((record) => {
+                      const isPending = record.status === 'pending'
+                      const isPaid = record.status === 'paid'
+                      return (
+                        <tr
+                          key={record.order_no}
+                          onClick={() => setSelectedOrderNo(record.order_no === selectedOrderNo ? null : record.order_no)}
+                          className={cn(
+                            'border-b border-mg-border/40 hover:bg-mg-fill-0/30 transition-colors cursor-pointer',
+                            selectedOrderNo === record.order_no ? 'bg-brand-glow/5' : ''
+                          )}
+                        >
+                          <td className="py-3.5 px-4 font-mono text-xs text-mg-text-1 max-w-[140px] truncate">{record.order_no}</td>
+                          <td className="py-3.5 px-4">
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                'text-[10px] py-0.5 px-2.5 font-bold rounded-full',
+                                isPaid ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-500' :
+                                isPending ? 'border-amber-500/20 bg-amber-500/5 text-amber-500' :
+                                'border-mg-border text-mg-text-3'
+                              )}
+                            >
+                              {labels[record.status] || record.status}
+                            </Badge>
+                          </td>
+                          <td className="py-3.5 px-4 text-xs font-bold text-mg-text-0 font-mono">{record.currency} {record.amount}</td>
+                          <td className="py-3.5 px-4 text-xs text-mg-text-2 font-mono">{formatDateTime(record.paid_at)}</td>
+                          <td className="py-3.5 px-4 text-xs" onClick={(e) => e.stopPropagation()}>
+                            {record.status === 'pending' ? (
+                              <button
+                                onClick={() => cancelMutation.mutate(record.order_no)}
+                                className="text-rose-500 hover:text-rose-600 font-bold cursor-pointer transition-colors text-xs outline-none"
+                              >
+                                {t('billing.orders.table.cancel')}
+                              </button>
+                            ) : (
+                              <span className="text-mg-text-3 select-none">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+                {ordersQuery.hasNextPage && (
+                  <div className="p-3 border-t border-mg-border/40">
+                    <Button
+                      variant="outline"
+                      className="w-full h-9 rounded-xl font-bold text-xs border border-mg-border hover:bg-mg-fill-0 transition-all text-mg-text-1"
+                      onClick={() => ordersQuery.fetchNextPage()}
+                    >
+                      {t('billing.orders.loadMore')}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* 右：订单详情常驻侧栏 */}
+          <div className="lg:col-span-1 rounded-2xl border border-mg-border bg-card-bg shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <LuReceipt size={14} className="text-brand-base" />
+              <span className="text-xs font-bold text-mg-text-0">{t('billing.orders.detailTitle')}</span>
+            </div>
+            {!selectedOrder ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center space-y-2">
+                <LuReceipt size={28} className="text-mg-text-3" />
+                <p className="text-xs text-mg-text-2">{t('billing.orders.detailPlaceholder', { defaultValue: '点击左侧订单查看详情' })}</p>
+              </div>
+            ) : (
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between items-start gap-2">
+                  <span className="text-mg-text-2 shrink-0">{t('billing.orders.detail.orderNo')}:</span>
+                  <span className="font-mono font-bold text-mg-text-0 text-right break-all">{selectedOrder.order_no}</span>
+                </div>
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-mg-text-2 shrink-0">{t('billing.orders.detail.status')}:</span>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      'text-[10px] py-0.5 px-2.5 font-bold rounded-full',
+                      selectedOrder.status === 'paid' ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-500' :
+                      selectedOrder.status === 'pending' ? 'border-amber-500/20 bg-amber-500/5 text-amber-500' :
+                      'border-mg-border text-mg-text-3'
+                    )}
+                  >
+                    {labels[selectedOrder.status] || selectedOrder.status}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-mg-text-2 shrink-0">{t('billing.orders.detail.amount')}:</span>
+                  <span className="font-bold text-mg-text-0 font-mono">{selectedOrder.currency} {selectedOrder.amount}</span>
+                </div>
+                {selectedOrder.credited_amount && (
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-mg-text-2 shrink-0">{t('billing.orders.detail.credited')}:</span>
+                    <span className="font-bold text-emerald-500 font-mono">{selectedOrder.currency} {selectedOrder.credited_amount}</span>
+                  </div>
+                )}
+                {selectedOrder.channel && (
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-mg-text-2 shrink-0">{t('billing.orders.detail.channel')}:</span>
+                    <span className="font-semibold text-mg-text-0 uppercase">{selectedOrder.channel}</span>
+                  </div>
+                )}
+                {selectedOrder.paid_at && (
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-mg-text-2 shrink-0">{t('billing.orders.detail.paidAt')}:</span>
+                    <span className="text-mg-text-1 font-mono text-right">{formatDateTime(selectedOrder.paid_at)}</span>
+                  </div>
+                )}
+                {selectedOrder.status === 'pending' && (
+                  <div className="pt-3 border-t border-mg-border/40">
+                    <Button
+                      variant="destructive"
+                      disabled={cancelMutation.isPending}
+                      className="w-full h-9 text-xs font-bold rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 transition-all"
+                      onClick={() => {
+                        cancelMutation.mutate(selectedOrder.order_no)
+                        setSelectedOrderNo(null)
+                      }}
+                    >
+                      {cancelMutation.isPending ? t('billing.rechargeModal.submitting') : t('billing.orders.table.cancel')}
+                    </Button>
+                  </div>
+                )}
+                {isDomestic() && selectedOrder.invoice_url && (
+                  <div className="pt-3 border-t border-mg-border/40">
+                    <Button
+                      variant="outline"
+                      className="w-full h-9 text-xs font-bold rounded-xl border border-mg-border hover:bg-mg-fill-0 transition-all text-mg-text-1"
+                      onClick={() => window.open(selectedOrder.invoice_url!, '_blank')}
+                    >
+                      {t('billing.orders.detail.viewInvoice')}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* 赠送余额明细 Tab */
+        <div className="rounded-2xl border border-mg-border bg-card-bg shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b border-mg-border">
-                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.orderNo')}</th>
-                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.status')}</th>
-                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.amount')}</th>
-                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.paidAt')}</th>
-                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider w-24">{t('billing.orders.table.actions')}</th>
+                <tr className="border-b border-mg-border bg-mg-fill-0/20">
+                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.gift.source', { defaultValue: '来源' })}</th>
+                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.gift.amount', { defaultValue: '金额' })}</th>
+                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.gift.creditedAt', { defaultValue: '到账时间' })}</th>
                 </tr>
               </thead>
               <tbody>
-                {orders.map((record) => {
-                  const isPending = record.status === 'pending'
-                  const isPaid = record.status === 'paid'
-                  return (
-                    <tr
-                      key={record.order_no}
-                      onClick={() => setSelectedOrderNo(record.order_no)}
-                      className={cn(
-                        "border-b border-mg-border/40 hover:bg-mg-fill-0/30 transition-colors cursor-pointer",
-                        selectedOrderNo === record.order_no ? 'bg-brand-glow/5 dark:bg-brand-glow/3 font-semibold' : ''
-                      )}
-                    >
-                      <td className="py-3.5 px-4 font-mono text-xs text-mg-text-1">
-                        {record.order_no}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <Badge 
-                          variant="outline" 
-                          className={cn(
-                            "text-[10px] py-0.5 px-2.5 font-bold tracking-tight rounded-full",
-                            isPaid ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-500" :
-                            isPending ? "border-amber-500/20 bg-amber-500/5 text-amber-500 animate-pulse" :
-                            "border-mg-border text-mg-text-3"
-                          )}
-                        >
-                          {labels[record.status] || record.status}
-                        </Badge>
-                      </td>
-                      <td className="py-3.5 px-4 text-xs font-bold text-mg-text-0 font-mono">
-                        {record.currency} {record.amount}
-                      </td>
-                      <td className="py-3.5 px-4 text-xs text-mg-text-2 font-mono">
-                        {formatDateTime(record.paid_at)}
-                      </td>
-                      <td className="py-3.5 px-4 text-xs" onClick={(e) => e.stopPropagation()}>
-                        {record.status === 'pending' ? (
-                          <button
-                            onClick={() => cancelMutation.mutate(record.order_no)}
-                            className="text-rose-500 hover:text-rose-600 font-bold bg-none border-none cursor-pointer transition-colors p-0 text-xs outline-none"
-                          >
-                            {t('billing.orders.table.cancel')}
-                          </button>
-                        ) : (
-                          <span className="text-mg-text-3 select-none">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
+                {MOCK_GIFT_RECORDS.map((record) => (
+                  <tr key={record.id} className="border-b border-mg-border/40 hover:bg-mg-fill-0/20 transition-colors">
+                    <td className="py-3.5 px-4 text-xs text-mg-text-0 font-medium">{record.source}</td>
+                    <td className="py-3.5 px-4 text-xs font-bold text-emerald-500 font-mono">+{record.currency} {record.amount}</td>
+                    <td className="py-3.5 px-4 text-xs text-mg-text-2 font-mono">{formatDateTime(record.credited_at)}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
-          )}
+          </div>
         </div>
-        {ordersQuery.hasNextPage && (
-          <Button
-            variant="outline"
-            className="w-full mt-4 h-9 rounded-xl font-bold text-xs border border-mg-border hover:bg-mg-fill-0 transition-all text-mg-text-1"
-            onClick={() => ordersQuery.fetchNextPage()}
-          >
-            {t('billing.orders.loadMore')}
-          </Button>
-        )}
-      </div>
-
-      {/* Fly-out Sidebar Receipt Drawer */}
-      <OrderReceiptDrawer
-        isOpen={!!selected}
-        order={selected}
-        onClose={() => setSelectedOrderNo(null)}
-        cancelMutation={cancelMutation}
-        labels={labels}
-      />
+      )}
     </div>
   )
 }

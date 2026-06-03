@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LuCoins, LuTrendingUp, LuWallet, LuSparkles } from 'react-icons/lu'
+import { LuCoins, LuTrendingUp, LuUsers, LuWallet, LuSparkles } from 'react-icons/lu'
 
 import { KpiCard } from '@/components/ui/KpiCard'
 import { Button } from '@/components/ui/Button'
@@ -106,7 +106,7 @@ export default function ReferralPage() {
       </div>
 
       {/* KPI 行 */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <KpiCard
           title={text.kpiTotalCommission}
           value={fmt(stats.totalCommission)}
@@ -118,6 +118,13 @@ export default function ReferralPage() {
           title={text.kpiMonthCommission}
           value={fmt(stats.monthCommission)}
           icon={<LuTrendingUp size={16} />}
+          color="var(--brand-base)"
+          glowColor="var(--brand-glow)"
+        />
+        <KpiCard
+          title={text.kpiActive}
+          value={`${stats.invitedTotal}`}
+          icon={<LuUsers size={16} />}
           color="var(--brand-base)"
           glowColor="var(--brand-glow)"
         />

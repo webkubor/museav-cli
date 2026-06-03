@@ -110,7 +110,7 @@ export default function ApiKeysPage() {
           ? { amount: spendingAmount, currency, period: spendingPeriod }
           : undefined,
         expires_at: expiresAt ? new Date(expiresAt).toISOString() : undefined,
-        guardrail_id: guardrailId || undefined,
+        guardrail_id: guardrailId && guardrailId !== 'none' ? guardrailId : undefined,
       }),
     onSuccess: (newKey) => {
       appToast.success(t('apiKeys.toast.createSuccess', { name: newKey.name }))
@@ -503,7 +503,7 @@ export default function ApiKeysPage() {
               placeholder={t('apiKeys.createModal.guardrailPlaceholder')}
               className="w-full"
             >
-              <SelectItem value="">{t('apiKeys.createModal.guardrailNone')}</SelectItem>
+              <SelectItem value="none">{t('apiKeys.createModal.guardrailNone')}</SelectItem>
               {(guardrailsQuery.data ?? []).map((g) => (
                 <SelectItem key={g.id} value={g.id}>
                   {g.name}

@@ -558,9 +558,9 @@ function ObservabilityContent({
   }
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-3xl space-y-6">
+      {/* 输入/输出日志 + 广播转发：两个并列开关（同级，不嵌套） */}
       <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden">
-        {/* 一级：日志记录主开关（常驻） */}
         <ToggleRow
           title={t('observability.logging.title')}
           description={t('observability.logging.desc')}
@@ -569,31 +569,17 @@ function ObservabilityContent({
           onChange={handleLoggingChange}
           isFirst
         />
-
-        {/* 日志的下游配置：开启后平滑展开，左竖线 + 浅底缩进表达从属层级 */}
-        <CollapsibleSection open={loggingEnabled}>
-          <div className="border-t border-mg-border bg-mg-fill-0/15">
-            <div className="ml-5 border-l-2 border-brand-base/25">
-              {/* 二级：广播转发开关，依赖日志开启 */}
-              <ToggleRow
-                title={t('observability.broadcast.title')}
-                description={t('observability.broadcast.desc')}
-                checked={broadcastEnabled}
-                loading={saveMutation.isPending}
-                onChange={handleBroadcastChange}
-                isFirst
-              />
-
-              {/* 三级：转发目标，依赖广播开启 */}
-              <CollapsibleSection open={broadcastEnabled}>
-                <div className="border-t border-mg-border/50 px-5 py-5">
-                  <DestinationsSection workspaceId={workspaceId} />
-                </div>
-              </CollapsibleSection>
-            </div>
-          </div>
-        </CollapsibleSection>
+        <ToggleRow
+          title={t('observability.broadcast.title')}
+          description={t('observability.broadcast.desc')}
+          checked={broadcastEnabled}
+          loading={saveMutation.isPending}
+          onChange={handleBroadcastChange}
+        />
       </div>
+
+      {/* 转发目标：广播开启时显示（独立区块，不缩进） */}
+      {broadcastEnabled && <DestinationsSection workspaceId={workspaceId} />}
     </div>
   )
 }

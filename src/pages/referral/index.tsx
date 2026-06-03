@@ -14,6 +14,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/Table'
+import { Modal } from '@/components/ui/Modal'
 import { appToast } from '@/lib/app-toast'
 
 import {
@@ -43,6 +44,8 @@ export default function ReferralPage() {
 
   const [activeTab, setActiveTab] = useState<TabKey>('invitees')
   const [copied, setCopied] = useState(false)
+  const [rewardBalance, setRewardBalance] = useState(stats.rewardBalance)
+  const [transferOpen, setTransferOpen] = useState(false)
 
   const handleCopy = () => {
     navigator.clipboard.writeText(inviteLink)
@@ -52,7 +55,18 @@ export default function ReferralPage() {
   }
 
   const handleTransfer = () => {
-    appToast.info('功能开发中')
+    if (rewardBalance <= 0) {
+      appToast.info(text.noRewardBalance)
+      return
+    }
+    setTransferOpen(true)
+  }
+
+  const confirmTransfer = () => {
+    const amount = rewardBalance
+    setRewardBalance(0)
+    setTransferOpen(false)
+    appToast.success(text.transferSuccess.replace('{amount}', fmt(amount)))
   }
 
   const handleWithdraw = () => {
@@ -132,10 +146,10 @@ export default function ReferralPage() {
             className="text-[28px] font-bold tracking-tight font-mono"
             style={{ color: 'var(--brand-base)', fontVariantNumeric: 'tabular-nums' }}
           >
-            {fmt(stats.rewardBalance)}
+            {fmt(rewardBalance)}
           </span>
           <div className="flex gap-2 mt-auto">
-            <Button variant="brand" size="sm" onClick={handleTransfer}>
+            <Button variant="brand" size="sm" disabled={rewardBalance <= 0} onClick={handleTransfer}>
               {text.transferToBalance}
             </Button>
             <Button variant="outline" size="sm" onClick={handleWithdraw}>
@@ -297,6 +311,23 @@ export default function ReferralPage() {
           )}
         </div>
       </div>
+
+      <Modal
+        open={transferOpen}
+        onClose={() => setTransferOpen(false)}
+        title={text.transferTitle}
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setTransferOpen(false)}>{text.transferCancel}</Button>
+            <Button variant="brand" onClick={confirmTransfer}>{text.transferConfirm}</Button>
+          </>
+        }
+      >
+        <p className="text-sm text-mg-text-1 py-2 leading-relaxed">
+          {text.transferHint.replace('{amount}', fmt(rewardBalance))}
+        </p>
+      </Modal>
     </div>
   )
 }

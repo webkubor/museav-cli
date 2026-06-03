@@ -63,11 +63,11 @@ export const WelcomeBanner: React.FC = () => {
     <div
       style={{
         borderRadius: '20px',
-        border: '1px solid var(--mg-border)',
-        background: `linear-gradient(135deg, ${glowColor} 0%, rgba(255, 255, 255, 0.03) 50%, var(--mg-bg-0) 100%)`,
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        background: `linear-gradient(135deg, ${glowColor} 0%, rgba(255, 255, 255, 0.02) 50%, rgba(var(--mg-bg-0-rgb), 0.55) 100%)`,
         padding: 'clamp(28px, 4vw, 40px) clamp(24px, 4vw, 48px)',
         marginBottom: '36px',
-        boxShadow: '0 8px 30px rgba(0, 0, 0, 0.02)',
+        boxShadow: '0 8px 32px 0 rgba(15, 23, 42, 0.04)',
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
@@ -75,8 +75,8 @@ export const WelcomeBanner: React.FC = () => {
         gap: '32px',
         position: 'relative',
         overflow: 'hidden',
-        backdropFilter: 'blur(10px)',
-        WebkitBackdropFilter: 'blur(10px)',
+        backdropFilter: 'blur(16px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(180%)',
       }}
     >
       {/* 背景微型修饰辉光 */}

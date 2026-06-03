@@ -85,7 +85,7 @@ export const QuickAccessSection: React.FC = () => {
         {links.map((link, idx) => (
           <Card
             key={idx}
-            hoverable
+            glass
             onClick={() => navigate(link.path)}
             className="p-5 flex flex-col gap-3 cursor-pointer group"
           >

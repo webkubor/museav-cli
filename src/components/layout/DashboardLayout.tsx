@@ -26,7 +26,9 @@ import { isDomestic } from '@/lib/market'
 import { usePlatformConfig } from '@/hooks/use-platform-config'
 import { usePermissions } from '@/hooks/use-permissions'
 import { cn } from '@/lib/utils'
+import { ParticleLinesBackground } from './ParticleLinesBackground'
 import './layout.css'
+
 
 const isDevTools = import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
 
@@ -148,9 +150,11 @@ export function DashboardLayout() {
   const isFlatRoute = FLAT_ROUTES.includes(getSelectedKey())
 
   return (
-    <div className="min-h-screen bg-site-bg flex flex-col font-sans">
+    <div className="min-h-screen bg-site-bg flex flex-col font-sans relative overflow-hidden">
+      <ParticleLinesBackground />
       <DashboardHeader />
       <div className="shimmer-line" />
+
 
       <div className="flex flex-1 relative overflow-hidden">
         <DashboardSidebar
@@ -204,32 +208,6 @@ export function DashboardLayout() {
             </WorkspaceGuard>
           </div>
         </main>
-      </div>
-      <div className="bottom-shimmer-line-container">
-        <svg viewBox="0 0 1440 24" fill="none" preserveAspectRatio="none" className="bottom-shimmer-svg">
-          {/* 三条具有起伏差的飘逸曲线波浪 */}
-          <path d="M0 12 C 360 2, 720 22, 1080 2, 1440 12" className="shimmer-path path-1" stroke="url(#gradient1)" strokeWidth="1.5" />
-          <path d="M0 12 C 360 22, 720 2, 1080 22, 1440 12" className="shimmer-path path-2" stroke="url(#gradient2)" strokeWidth="1" />
-          <path d="M0 12 C 480 8, 960 16, 1440 12" className="shimmer-path path-3" stroke="url(#gradient3)" strokeWidth="0.8" />
-          
-          <defs>
-            <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="var(--brand-base)" stopOpacity="0" />
-              <stop offset="50%" stopColor="var(--brand-base)" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="var(--brand-base)" stopOpacity="0" />
-            </linearGradient>
-            <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="var(--brand-glow)" stopOpacity="0" />
-              <stop offset="50%" stopColor="var(--brand-glow)" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="var(--brand-glow)" stopOpacity="0" />
-            </linearGradient>
-            <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#10b981" stopOpacity="0" />
-              <stop offset="50%" stopColor="#10b981" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-        </svg>
       </div>
     </div>
   )

@@ -77,9 +77,9 @@ const ModelSelectCombobox: React.FC<{
       m.display_name.toLowerCase().includes(inputValue.toLowerCase())
   )
 
-  const handleSelect = (modelId: string) => {
+  const handleSelect = (modelId: string, displayName: string) => {
     onChange(modelId)
-    setInputValue(modelId)
+    setInputValue(displayName)
     setIsOpen(false)
   }
 
@@ -130,8 +130,8 @@ const ModelSelectCombobox: React.FC<{
                 key={m.id}
                 role="button"
                 tabIndex={0}
-                onClick={() => handleSelect(m.id)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect(m.id) }}
+                onClick={() => handleSelect(m.id, m.display_name)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect(m.id, m.display_name) }}
                 className={cn(
                   "group/item flex flex-col gap-0.5 px-3 py-2 rounded-lg cursor-pointer select-none transition-all outline-none",
                   value === m.id

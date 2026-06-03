@@ -58,3 +58,32 @@
     opacity: 0;
   }
 }
+
+/* ── 玻璃感光毛玻璃卡片样式 ── */
+.glass-card-glow {
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  background-color: rgba(var(--mg-bg-0-rgb), 0.55) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 
+    0 8px 32px 0 rgba(15, 23, 42, 0.04), 
+    0 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body[theme-mode='dark'] .glass-card-glow {
+  background-color: rgba(26, 26, 29, 0.55) !important; /* 映射 var(--mg-bg-0) */
+  border: 1px solid rgba(255, 255, 255, 0.04) !important;
+  box-shadow: 
+    0 8px 32px 0 rgba(0, 0, 0, 0.20), 
+    0 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+.glass-card-glow:hover {
+  border-color: var(--brand-base) !important;
+  box-shadow: 
+    0 12px 30px -8px var(--brand-glow), 
+    0 0 8px 0 var(--brand-glow) !important;
+  transform: translateY(-2px);
+}
+

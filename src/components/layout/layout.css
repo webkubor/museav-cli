@@ -1,7 +1,10 @@
 /* ── 全局底部流光线 (仅在 DashboardLayout 使用) ──────────────────────────── */
 .bottom-shimmer-line {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   height: 1.5px;
-  width: 100%;
   background: linear-gradient(
     90deg,
     transparent 0%,
@@ -13,5 +16,6 @@
   background-size: 200% 100%;
   animation: shimmer-slide 4.5s ease-in-out infinite;
   opacity: 0.5;
-  flex-shrink: 0;
+  z-index: 9999;
+  pointer-events: none;
 }

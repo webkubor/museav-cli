@@ -183,19 +183,11 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                     className={cn(
                       "flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer transition-all select-none border border-transparent",
                       isSelected
-                        ? "bg-brand-selected-bg border-brand-mid/10 text-mg-text-0 font-semibold"
+                        ? "bg-brand-selected-bg border-brand-mid/15 border-l-2 border-l-brand-base text-mg-text-0 font-bold"
                         : "hover:bg-mg-fill-0/40 text-mg-text-1",
                       isDisabled && "opacity-30 cursor-not-allowed pointer-events-none"
                     )}
                   >
-                    {/* Checkbox */}
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      disabled={isDisabled}
-                      onChange={() => {}} // 托管在父 div 响应中
-                      className="rounded border-mg-border text-brand-base focus:ring-brand-glow w-3.5 h-3.5 cursor-pointer shrink-0"
-                    />
                     {renderLogo(m)}
                     <div className="min-w-0 flex-1">
                       <div className="text-[12px] font-bold text-mg-text-0 truncate leading-tight">

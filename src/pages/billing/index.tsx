@@ -18,6 +18,12 @@ import { appToast } from '@/lib/app-toast'
 import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
 
+// ─── Placeholder Balance Data ─────────────────────────────────────────────
+// TODO: 待后端 balance 接口补充细分字段（主余额 / 赠送余额 / 奖励余额）
+const PLACEHOLDER_MAIN_BALANCE = '1250.50'
+const PLACEHOLDER_GIFT_BALANCE = '220.00'
+const PLACEHOLDER_REWARD_BALANCE = '1420.00'
+
 // ─── Format Balance Helper ────────────────────────────────────────────────
 
 function formatBalance(amountStr: string | undefined): { main: string; exact: string } {
@@ -546,68 +552,117 @@ export default function BillingPage() {
 
         {/* Right: Quick stats & Action panel (Promo Code Redemption integrated) */}
         <div className="lg:col-span-7 rounded-2xl border border-mg-border bg-card-bg/60 p-6 flex flex-col justify-between gap-6 shadow-sm">
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {/* Frozen Card */}
-            <div className="space-y-1.5 p-4 rounded-xl bg-mg-fill-0/30 border border-mg-border/40">
+
+          {/* Four balance breakdown cells */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* 主余额 — TODO: 待后端 balance 接口补充细分字段 */}
+            <div className="space-y-1 p-4 rounded-xl bg-mg-fill-0/30 border border-mg-border/40">
+              <div className="text-[11px] text-mg-text-3 font-bold uppercase tracking-wider">
+                {t('billing.balance.mainBalance')}
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-sm font-medium text-mg-text-2">{currencySymbol}</span>
+                <span className="text-xl font-bold text-mg-text-1 tracking-tight tabular-nums">
+                  {formatBalance(PLACEHOLDER_MAIN_BALANCE).main}
+                </span>
+              </div>
+              <div className="text-[10px] text-mg-text-3 leading-snug">
+                {t('billing.balance.mainHint')}
+              </div>
+            </div>
+
+            {/* 赠送余额 — TODO: 待后端 balance 接口补充细分字段 */}
+            <div className="space-y-1 p-4 rounded-xl bg-mg-fill-0/30 border border-mg-border/40">
+              <div className="text-[11px] text-mg-text-3 font-bold uppercase tracking-wider">
+                {t('billing.balance.giftBalance')}
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-sm font-medium text-mg-text-2">{currencySymbol}</span>
+                <span className="text-xl font-bold text-mg-text-1 tracking-tight tabular-nums">
+                  {formatBalance(PLACEHOLDER_GIFT_BALANCE).main}
+                </span>
+              </div>
+              <div className="text-[10px] text-mg-text-3 leading-snug">
+                {t('billing.balance.giftHint')}
+              </div>
+            </div>
+
+            {/* 奖励余额 — TODO: 待后端 balance 接口补充细分字段 */}
+            <div className="space-y-1 p-4 rounded-xl bg-mg-fill-0/30 border border-mg-border/40">
+              <div className="text-[11px] text-mg-text-3 font-bold uppercase tracking-wider">
+                {t('billing.balance.rewardBalance')}
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-sm font-medium text-mg-text-2">{currencySymbol}</span>
+                <span className="text-xl font-bold text-emerald-500 tracking-tight tabular-nums">
+                  {formatBalance(PLACEHOLDER_REWARD_BALANCE).main}
+                </span>
+              </div>
+              <div className="text-[10px] text-mg-text-3 leading-snug">
+                {t('billing.balance.rewardHint')}
+              </div>
+            </div>
+
+            {/* 冻结金额 — 复用 balance.reserved（真实数据） */}
+            <div className="space-y-1 p-4 rounded-xl bg-mg-fill-0/30 border border-mg-border/40">
               <div className="text-[11px] text-mg-text-3 font-bold uppercase tracking-wider">
                 {t('billing.balance.frozen')}
               </div>
               <div className="flex items-baseline gap-1">
                 <span className="text-sm font-medium text-mg-text-2">{currencySymbol}</span>
-                <span className="text-xl font-bold text-mg-text-1 tracking-tight font-variant-numeric-tabular-nums">
+                <span className="text-xl font-bold text-mg-text-1 tracking-tight tabular-nums">
                   {balanceLoading ? '...' : reservedMain}
                 </span>
               </div>
               <div className="text-[10px] text-mg-text-3 leading-snug">
-                由于计费挂起或信用担保暂扣的金额，结算后会自动释放
+                {t('billing.balance.frozenHint')}
+              </div>
+            </div>
+          </div>
+
+          {/* Health / Budget Card */}
+          <div className="space-y-1.5 p-4 rounded-xl bg-mg-fill-0/30 border border-mg-border/40 flex flex-col justify-between">
+            <div>
+              <div className="text-[11px] text-mg-text-3 font-bold uppercase tracking-wider">
+                {t('billing.balance.health')}
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                {healthStatus === 'sufficient' && (
+                  <>
+                    <span className="text-[11px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      {t('billing.balance.healthSufficient')}
+                    </span>
+                    <span className="text-[10px] text-mg-text-2 font-medium">额度非常健康</span>
+                  </>
+                )}
+                {healthStatus === 'low' && (
+                  <>
+                    <span className="text-[11px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                      {t('billing.balance.healthLow')}
+                    </span>
+                    <span className="text-[10px] text-mg-text-2 font-medium">请及时充值</span>
+                  </>
+                )}
+                {healthStatus === 'depleted' && (
+                  <>
+                    <span className="text-[11px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+                      {t('billing.balance.healthDepleted')}
+                    </span>
+                    <span className="text-[10px] text-mg-text-2 font-medium">可用余额耗尽</span>
+                  </>
+                )}
               </div>
             </div>
 
-            {/* Health / Budget Card */}
-            <div className="space-y-1.5 p-4 rounded-xl bg-mg-fill-0/30 border border-mg-border/40 flex flex-col justify-between">
-              <div>
-                <div className="text-[11px] text-mg-text-3 font-bold uppercase tracking-wider">
-                  {t('billing.balance.health')}
-                </div>
-                <div className="flex items-center gap-2 mt-1">
-                  {healthStatus === 'sufficient' && (
-                    <>
-                      <span className="text-[11px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                        {t('billing.balance.healthSufficient')}
-                      </span>
-                      <span className="text-[10px] text-mg-text-2 font-medium">额度非常健康</span>
-                    </>
-                  )}
-                  {healthStatus === 'low' && (
-                    <>
-                      <span className="text-[11px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                        {t('billing.balance.healthLow')}
-                      </span>
-                      <span className="text-[10px] text-mg-text-2 font-medium">请及时充值</span>
-                    </>
-                  )}
-                  {healthStatus === 'depleted' && (
-                    <>
-                      <span className="text-[11px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
-                        {t('billing.balance.healthDepleted')}
-                      </span>
-                      <span className="text-[10px] text-mg-text-2 font-medium">可用余额耗尽</span>
-                    </>
-                  )}
-                </div>
-              </div>
-              
-              {/* Credit Status progress-bar */}
-              <div className="w-full h-1.5 bg-mg-fill-0 border border-mg-border/30 rounded-full overflow-hidden mt-2">
-                <div 
-                  className={cn(
-                    "h-full rounded-full transition-all duration-500",
-                    healthStatus === 'sufficient' ? "bg-emerald-500 w-full" :
-                    healthStatus === 'low' ? "bg-amber-500 w-1/3" : "bg-rose-500 w-0"
-                  )}
-                />
-              </div>
+            {/* Credit Status progress-bar */}
+            <div className="w-full h-1.5 bg-mg-fill-0 border border-mg-border/30 rounded-full overflow-hidden mt-2">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all duration-500",
+                  healthStatus === 'sufficient' ? "bg-emerald-500 w-full" :
+                  healthStatus === 'low' ? "bg-amber-500 w-1/3" : "bg-rose-500 w-0"
+                )}
+              />
             </div>
           </div>
 

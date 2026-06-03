@@ -156,7 +156,16 @@
       "healthLow": "额度偏低",
       "healthDepleted": "已欠费",
       "exactBalance": "精确余额 {{amount}}",
-      "walletCard": "ModelGo 开发者虚拟钱包"
+      "walletCard": "ModelGo 开发者虚拟钱包",
+      "spendableTotal": "可消费合计",
+      "spendableHint": "赠送 → 奖励 → 主，依次扣减",
+      "mainBalance": "主余额",
+      "mainHint": "现金充值",
+      "giftBalance": "赠送余额",
+      "giftHint": "兑换码/体验金 · 不可提现",
+      "rewardBalance": "奖励余额",
+      "rewardHint": "推荐返佣 · 可提现",
+      "frozenHint": "预扣/处理中"
     },
     "tabs": {
       "orders": "充值订单",
@@ -603,7 +612,11 @@
     "detail": {
       "back": "返回项目列表",
       "notFound": "未找到该项目",
-      "tabs": { "overview": "概览", "members": "成员", "settings": "设置" },
+      "tabs": {
+        "overview": "概览",
+        "members": "成员",
+        "settings": "设置"
+      },
       "overview": {
         "spend": "近 7 天消费",
         "requests": "近 7 天请求数",

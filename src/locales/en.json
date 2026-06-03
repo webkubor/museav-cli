@@ -156,7 +156,16 @@
       "healthLow": "Low Balance",
       "healthDepleted": "Overdue",
       "exactBalance": "Exact: {{amount}}",
-      "walletCard": "ModelGo Developer Wallet"
+      "walletCard": "ModelGo Developer Wallet",
+      "spendableTotal": "Spendable Total",
+      "spendableHint": "Deducted in order: Gift → Reward → Main",
+      "mainBalance": "Main Balance",
+      "mainHint": "Cash top-up",
+      "giftBalance": "Gift Balance",
+      "giftHint": "Promo code / trial credit · Non-withdrawable",
+      "rewardBalance": "Reward Balance",
+      "rewardHint": "Referral rebate · Withdrawable",
+      "frozenHint": "Pre-authorization / processing"
     },
     "tabs": {
       "orders": "Orders",
@@ -603,7 +612,11 @@
     "detail": {
       "back": "Back to workspaces",
       "notFound": "Workspace not found",
-      "tabs": { "overview": "Overview", "members": "Members", "settings": "Settings" },
+      "tabs": {
+        "overview": "Overview",
+        "members": "Members",
+        "settings": "Settings"
+      },
       "overview": {
         "spend": "Spend (7d)",
         "requests": "Requests (7d)",

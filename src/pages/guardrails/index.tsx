@@ -39,6 +39,39 @@ import { PERIOD_LABEL } from '@/constants/status'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { formatDateTime } from '@/lib/format-date'
 
+function guardrailMetadataList(row: GuardrailDetail, key: 'model_blacklist' | 'ip_whitelist') {
+  const value = row.metadata?.[key]
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0) : []
+}
+
+function boundApiKeyCount(row: GuardrailDetail) {
+  return row.assignments.filter((item) => item.subject_type === 'api_key' && item.api_key_id).length
+}
+
+function LimitCell({ values, emptyLabel }: { values: string[]; emptyLabel: string }) {
+  if (values.length === 0) {
+    return <span className="text-xs text-mg-text-2">{emptyLabel}</span>
+  }
+
+  return (
+    <div className="flex max-w-[280px] flex-wrap gap-1.5">
+      {values.slice(0, 3).map((value) => (
+        <span
+          key={value}
+          className="rounded-full border border-mg-border bg-mg-fill-0 px-2 py-0.5 font-mono text-[11px] font-semibold text-mg-text-1"
+        >
+          {value}
+        </span>
+      ))}
+      {values.length > 3 && (
+        <span className="rounded-full bg-mg-fill-1 px-2 py-0.5 text-[11px] font-bold text-mg-text-2">
+          +{values.length - 3}
+        </span>
+      )}
+    </div>
+  )
+}
+
 export default function GuardrailsPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -304,9 +337,9 @@ export default function GuardrailsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t('guardrails.table.name')}</TableHead>
-                <TableHead>{t('guardrails.table.desc')}</TableHead>
-                <TableHead>{t('guardrails.table.priority')}</TableHead>
-                <TableHead>{t('guardrails.table.isDefault')}</TableHead>
+                <TableHead>{t('guardrails.table.modelBlacklist')}</TableHead>
+                <TableHead>{t('guardrails.table.ipWhitelist')}</TableHead>
+                <TableHead>{t('guardrails.table.boundKeys')}</TableHead>
                 <TableHead>{t('guardrails.table.status')}</TableHead>
                 <TableHead>{t('guardrails.table.createdAt')}</TableHead>
                 <TableHead className="text-right"></TableHead>
@@ -314,16 +347,44 @@ export default function GuardrailsPage() {
             </TableHeader>
             <TableBody>
               {guardrails.map((row) => {
+                const modelBlacklistValues = guardrailMetadataList(row, 'model_blacklist')
+                const ipWhitelistValues = guardrailMetadataList(row, 'ip_whitelist')
+                const apiKeyCount = boundApiKeyCount(row)
+
                 return (
                   <TableRow key={row.id}>
-                    <TableCell className="font-semibold text-mg-text-0 text-[13.5px]">{row.name}</TableCell>
-                    <TableCell className="text-xs text-mg-text-1 max-w-xs truncate">
-                      {row.description || <span className="text-mg-text-2">—</span>}
-                    </TableCell>
-                    <TableCell className="text-xs text-mg-text-1">{row.priority}</TableCell>
                     <TableCell>
-                      <Badge variant={row.is_default ? 'success' : 'outline'}>
-                        {row.is_default ? t('guardrails.table.defaultBadge') : t('guardrails.table.optionalBadge')}
+                      <button
+                        type="button"
+                        onClick={() => openDetail(row.id)}
+                        className="group flex max-w-[260px] items-center gap-2 text-left"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-[13.5px] font-bold text-mg-text-0 group-hover:text-brand-base">
+                            {row.name}
+                          </span>
+                          {row.description && (
+                            <span className="mt-0.5 block truncate text-[11px] font-medium text-mg-text-2">
+                              {row.description}
+                            </span>
+                          )}
+                        </span>
+                        {row.is_default && (
+                          <Badge variant="success" className="shrink-0">
+                            {t('guardrails.table.defaultBadge')}
+                          </Badge>
+                        )}
+                      </button>
+                    </TableCell>
+                    <TableCell>
+                      <LimitCell values={modelBlacklistValues} emptyLabel={t('guardrails.table.unlimited')} />
+                    </TableCell>
+                    <TableCell>
+                      <LimitCell values={ipWhitelistValues} emptyLabel={t('guardrails.table.unlimited')} />
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={apiKeyCount > 0 ? 'info' : 'outline'}>
+                        {apiKeyCount} {t('guardrails.table.keyUnit')}
                       </Badge>
                     </TableCell>
                     <TableCell>

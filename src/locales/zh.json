@@ -330,6 +330,11 @@
     "table": {
       "name": "名称",
       "desc": "描述",
+      "modelBlacklist": "模型黑名单",
+      "ipWhitelist": "IP 白名单",
+      "boundKeys": "绑定 Key",
+      "unlimited": "不限制",
+      "keyUnit": "个",
       "priority": "优先级",
       "isDefault": "默认应用",
       "status": "状态",

@@ -50,6 +50,7 @@ export interface CreateGuardrailRequest {
   description?: string
   is_default?: boolean
   priority?: number
+  metadata?: Record<string, unknown>
 }
 
 export interface UpdateGuardrailRequest {
@@ -58,6 +59,7 @@ export interface UpdateGuardrailRequest {
   is_default?: boolean
   priority?: number
   status?: 'active' | 'inactive' | 'archived'
+  metadata?: Record<string, unknown>
 }
 
 export interface AssignmentInput {

@@ -53,11 +53,19 @@ export function DevToolbar() {
   const setShowRequirements = useDevStore((s) => s.setShowRequirements)
   const mockMemberCount = useDevStore((s) => s.mockMemberCount)
   const setMockMemberCount = useDevStore((s) => s.setMockMemberCount)
+  const mockGuardrailCount = useDevStore((s) => s.mockGuardrailCount)
+  const setMockGuardrailCount = useDevStore((s) => s.setMockGuardrailCount)
   const qc = useQueryClient()
 
   const changeMockMembers = (n: number) => {
     setMockMemberCount(n)
     qc.invalidateQueries({ queryKey: ['tenant-members'] })
+  }
+
+  const changeMockGuardrails = (n: number) => {
+    setMockGuardrailCount(n)
+    qc.invalidateQueries({ queryKey: ['guardrails'] })
+    qc.removeQueries({ queryKey: ['guardrail-detail'] })
   }
 
   const switchMarket = (m: Market) => {
@@ -94,6 +102,27 @@ export function DevToolbar() {
           <button
             type="button"
             onClick={() => changeMockMembers(mockMemberCount + 5)}
+            className="w-5 h-5 rounded-full bg-mg-fill-0 text-mg-text-1 hover:text-mg-text-0 text-xs font-bold leading-none flex items-center justify-center"
+          >
+            +
+          </button>
+        </div>
+      </div>
+      <div className="h-4 w-px bg-mg-border" />
+      <div className="flex items-center gap-1.5">
+        <span className="text-[11px] font-semibold text-mg-text-2">安全护栏</span>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => changeMockGuardrails(mockGuardrailCount - 1)}
+            className="w-5 h-5 rounded-full bg-mg-fill-0 text-mg-text-1 hover:text-mg-text-0 text-xs font-bold leading-none flex items-center justify-center"
+          >
+            −
+          </button>
+          <span className="text-[11px] font-bold text-mg-text-0 w-6 text-center tabular-nums">{mockGuardrailCount}</span>
+          <button
+            type="button"
+            onClick={() => changeMockGuardrails(mockGuardrailCount + 1)}
             className="w-5 h-5 rounded-full bg-mg-fill-0 text-mg-text-1 hover:text-mg-text-0 text-xs font-bold leading-none flex items-center justify-center"
           >
             +

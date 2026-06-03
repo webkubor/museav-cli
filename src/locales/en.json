@@ -330,6 +330,11 @@
     "table": {
       "name": "Name",
       "desc": "Description",
+      "modelBlacklist": "Model Blacklist",
+      "ipWhitelist": "IP Whitelist",
+      "boundKeys": "Bound Keys",
+      "unlimited": "Unlimited",
+      "keyUnit": "keys",
       "priority": "Priority",
       "isDefault": "Default",
       "status": "Status",

@@ -1,0 +1,163 @@
+.dashboard-rankings-section {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.dashboard-ranking-card {
+  position: relative;
+  overflow: hidden;
+  padding: 18px;
+}
+
+.dashboard-ranking-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--brand-base) 10%, transparent), transparent 46%),
+    radial-gradient(circle at 88% 12%, color-mix(in srgb, var(--brand-light) 14%, transparent), transparent 32%);
+  pointer-events: none;
+}
+
+.dashboard-ranking-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.dashboard-ranking-header h3 {
+  margin: 0;
+  color: var(--mg-text-0);
+  font-size: 16px;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+.dashboard-ranking-header p {
+  margin: 5px 0 0;
+  color: var(--mg-text-2);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.dashboard-ranking-header svg {
+  color: var(--brand-base);
+  opacity: 0.82;
+}
+
+.dashboard-ranking-list {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+}
+
+.dashboard-ranking-row {
+  display: grid;
+  grid-template-columns: 42px 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid color-mix(in srgb, var(--mg-border) 82%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--mg-bg-0) 82%, transparent);
+}
+
+.dashboard-ranking-rank {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 20px;
+  font-weight: 850;
+  color: var(--brand-base);
+}
+
+.dashboard-ranking-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 13px;
+  color: var(--rank-tone);
+  background: color-mix(in srgb, var(--rank-tone) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rank-tone) 24%, transparent);
+}
+
+.dashboard-ranking-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.dashboard-ranking-row[data-tone="emerald"] {
+  --rank-tone: #35d98c;
+}
+
+.dashboard-ranking-row[data-tone="cyan"] {
+  --rank-tone: #22c7e8;
+}
+
+.dashboard-ranking-row[data-tone="violet"] {
+  --rank-tone: #8b6cf6;
+}
+
+.dashboard-ranking-row[data-tone="amber"] {
+  --rank-tone: #f5b84b;
+}
+
+.dashboard-ranking-copy {
+  min-width: 0;
+}
+
+.dashboard-ranking-copy strong {
+  display: block;
+  overflow: hidden;
+  color: var(--mg-text-0);
+  font-size: 13px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-ranking-copy small {
+  display: block;
+  overflow: hidden;
+  margin-top: 3px;
+  color: var(--mg-text-2);
+  font-size: 11px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-ranking-score {
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: var(--rank-tone);
+  background: color-mix(in srgb, var(--rank-tone) 10%, transparent);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.dashboard-ranking-note {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mg-text-2);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.dashboard-ranking-note svg {
+  color: var(--brand-base);
+}
+
+@media (max-width: 980px) {
+  .dashboard-rankings-section {
+    grid-template-columns: 1fr;
+  }
+}

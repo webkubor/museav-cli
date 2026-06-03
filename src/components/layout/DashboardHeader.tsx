@@ -29,6 +29,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/Dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar'
@@ -499,6 +500,7 @@ export const DashboardHeader: React.FC = () => {
         <DialogContent className="max-w-[400px] modal-glow-flow">
           <DialogHeader>
             <DialogTitle>{t('header.createOrg')}</DialogTitle>
+            <DialogDescription className="sr-only">{t('header.createOrg')}</DialogDescription>
           </DialogHeader>
           <div className="py-4 flex flex-col gap-2">
             <div className="text-xs font-bold text-mg-text-1">
@@ -527,6 +529,7 @@ export const DashboardHeader: React.FC = () => {
         <DialogContent className="max-w-[420px] modal-glow-flow">
           <DialogHeader>
             <DialogTitle>{t('header.createWorkspace')}</DialogTitle>
+            <DialogDescription className="sr-only">{t('header.createWorkspace')}</DialogDescription>
           </DialogHeader>
           <div className="py-4 flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">

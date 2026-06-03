@@ -45,6 +45,11 @@ export function Modal({
             {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>
         )}
+        {!description && (
+          <DialogDescription className="sr-only">
+            {typeof title === "string" ? title : "对话框"}
+          </DialogDescription>
+        )}
         {children}
         {footer && <DialogFooter>{footer}</DialogFooter>}
       </DialogContent>

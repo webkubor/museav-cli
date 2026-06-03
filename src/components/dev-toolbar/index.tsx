@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import { Switch } from '@/components/ui/Switch'
 import { cn } from '@/lib/utils'
 import { useLangStore } from '@/store/use-brand-store'
@@ -50,6 +51,14 @@ export function DevToolbar() {
   const setLang = useLangStore((s) => s.setLang)
   const showRequirements = useDevStore((s) => s.showRequirements)
   const setShowRequirements = useDevStore((s) => s.setShowRequirements)
+  const mockMemberCount = useDevStore((s) => s.mockMemberCount)
+  const setMockMemberCount = useDevStore((s) => s.setMockMemberCount)
+  const qc = useQueryClient()
+
+  const changeMockMembers = (n: number) => {
+    setMockMemberCount(n)
+    qc.invalidateQueries({ queryKey: ['tenant-members'] })
+  }
 
   const switchMarket = (m: Market) => {
     setMarket(m)
@@ -69,6 +78,27 @@ export function DevToolbar() {
       <div className="flex items-center gap-1.5">
         <span className="text-[11px] font-semibold text-mg-text-2">需求看板</span>
         <Switch checked={showRequirements} onChange={setShowRequirements} />
+      </div>
+      <div className="h-4 w-px bg-mg-border" />
+      <div className="flex items-center gap-1.5">
+        <span className="text-[11px] font-semibold text-mg-text-2">组织人数</span>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => changeMockMembers(mockMemberCount - 5)}
+            className="w-5 h-5 rounded-full bg-mg-fill-0 text-mg-text-1 hover:text-mg-text-0 text-xs font-bold leading-none flex items-center justify-center"
+          >
+            −
+          </button>
+          <span className="text-[11px] font-bold text-mg-text-0 w-6 text-center tabular-nums">{mockMemberCount}</span>
+          <button
+            type="button"
+            onClick={() => changeMockMembers(mockMemberCount + 5)}
+            className="w-5 h-5 rounded-full bg-mg-fill-0 text-mg-text-1 hover:text-mg-text-0 text-xs font-bold leading-none flex items-center justify-center"
+          >
+            +
+          </button>
+        </div>
       </div>
       <div className="h-4 w-px bg-mg-border" />
       <Seg

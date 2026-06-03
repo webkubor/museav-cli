@@ -19,6 +19,7 @@ import type {
   TenantItem,
   TenantMember,
 } from '@/types'
+import { useDevStore } from '@/store/use-dev-store'
 
 /** 当前 account 可访问的所有 tenant 列表（无分页） */
 export function listTenants() {
@@ -50,7 +51,31 @@ export function uploadTenantLogo(tenantId: string, file: File) {
 // ─── Tenant 成员管理 ───────────────────────────────
 
 /** 获取 tenant 成员列表 */
+/** 开发环境：按 dev 工具栏设定的人数生成 mock 组织成员，便于演示 */
+function genMockTenantMembers(n: number): CursorPage<TenantMember> {
+  const names = ['张伟', '李娜', '王芳', '刘洋', '陈静', '杨光', '赵磊', '黄敏', '周杰', '吴昊']
+  const items: TenantMember[] = Array.from({ length: n }, (_, i) => ({
+    account: {
+      account_id: `mock-member-${i}`,
+      display_name: i < names.length ? names[i] : `${names[i % names.length]} ${Math.floor(i / names.length) + 1}`,
+      email: `member${i + 1}@demo.modelgo.com`,
+      avatar_url: null,
+    },
+    role: i === 0 ? 'tenant_owner' : i % 5 === 0 ? 'tenant_admin' : 'tenant_member',
+    joined_at: '2025-01-15T08:00:00Z',
+    workspace_count: (i % 3) + 1,
+    api_key_count: i % 4,
+    spend_30d: { amount: String((i * 137) % 5000), currency: 'CNY' },
+    status: 'active',
+  }))
+  return { items, page_size: n, has_more: false, next_cursor: null }
+}
+
 export function listTenantMembers(tenantId: string, params?: TenantMemberListParams) {
+  if (import.meta.env.DEV) {
+    const n = useDevStore.getState().mockMemberCount
+    if (n > 0) return Promise.resolve(genMockTenantMembers(n))
+  }
   return get<CursorPage<TenantMember>>(`tenants/${tenantId}/members`, params)
 }
 

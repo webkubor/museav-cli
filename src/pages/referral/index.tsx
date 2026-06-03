@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LuCoins, LuTrendingUp, LuUsers, LuWallet } from 'react-icons/lu'
+import { LuCoins, LuTrendingUp, LuUsers, LuWallet, LuSparkles } from 'react-icons/lu'
 
 import { KpiCard } from '@/components/ui/KpiCard'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 import {
   Table,
   TableHeader,
@@ -58,7 +59,6 @@ export default function ReferralPage() {
     appToast.success('已提交申请')
   }
 
-  const progressPct = Math.min(100, Math.round((tier.cumulativeSpend / tier.nextThreshold) * 100))
   const remain = tier.nextThreshold - tier.cumulativeSpend
 
   const tierProgressText = text.tierProgress
@@ -74,6 +74,13 @@ export default function ReferralPage() {
     { key: 'invitees', label: text.tabInvitees },
     { key: 'commissions', label: text.tabCommissions },
     { key: 'withdrawals', label: text.tabWithdrawals },
+  ]
+
+  const isZh = i18n.language.startsWith('zh')
+  const referralMilestones = [
+    { value: 10000, label: isZh ? '普通伙伴' : 'Partner', subLabel: isZh ? '10% 返佣' : '10% Comm.' },
+    { value: 50000, label: isZh ? '核心伙伴' : 'Core Partner', subLabel: isZh ? '13% 返佣' : '13% Comm.' },
+    { value: 200000, label: isZh ? '战略伙伴' : 'Strategic Partner', subLabel: isZh ? '15% 返佣' : '15% Comm.' },
   ]
 
   return (
@@ -176,26 +183,86 @@ export default function ReferralPage() {
           </div>
 
           {/* 进度条 */}
-          <div className="space-y-1.5">
-            <div className="h-1.5 w-full rounded-full bg-mg-fill-1 overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-700"
-                style={{
-                  width: `${progressPct}%`,
-                  background: 'linear-gradient(90deg, var(--brand-base), var(--brand-mid, var(--brand-base)))',
-                }}
-              />
+          <div className="pt-2 pb-6">
+            <ProgressBar
+              value={tier.cumulativeSpend}
+              min={0}
+              max={250000}
+              variant="rainbow"
+              size="sm"
+              showGlow={true}
+              milestones={referralMilestones}
+              milestoneLayout="bottom"
+            />
+            <div className="mt-8 space-y-1">
+              <p className="text-xs text-mg-text-2 font-medium">{tierProgressText}</p>
+              <p className="text-xs text-mg-text-2 font-medium">{tierUpgradeText}</p>
             </div>
-            <p className="text-xs text-mg-text-2">{tierProgressText}</p>
-            <p className="text-xs text-mg-text-2">{tierUpgradeText}</p>
           </div>
         </div>
       </div>
 
       {/* 分润规则 */}
-      <div className="rounded-xl bg-mg-fill-0/30 p-4 text-xs text-mg-text-2 leading-relaxed">
-        <strong className="text-mg-text-1 font-semibold">{text.rulesTitle}</strong>
-        {text.rules}
+      <div className="rounded-xl border border-[var(--brand-base)]/15 bg-gradient-to-r from-[var(--brand-base)]/5 to-transparent p-5 space-y-3.5 shadow-sm">
+        <div className="flex items-center gap-2 text-sm font-bold text-[var(--brand-base)]">
+          <LuSparkles size={15} className="animate-pulse" />
+          <span>{text.rulesTitle}</span>
+        </div>
+        {isZh ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-mg-text-2 leading-relaxed">
+            <div className="flex gap-2.5 items-start">
+              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-[10px] font-bold shrink-0">01</span>
+              <div>
+                被邀请人每次实际付费消费<span className="text-[var(--brand-base)] font-bold">实时计返佣</span>（退款冲回、赠送/兑换码额度消费不计），按当前档位比例结算至奖励余额。
+              </div>
+            </div>
+            <div className="flex gap-2.5 items-start">
+              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-[10px] font-bold shrink-0">02</span>
+              <div>
+                奖励余额<span className="text-[var(--brand-base)] font-bold">满 ¥100</span> 可<span className="text-[var(--brand-base)] font-bold">转入主余额</span>继续消费，或申请提现（运营审核后人工线下打款）。
+              </div>
+            </div>
+            <div className="flex gap-2.5 items-start">
+              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-[10px] font-bold shrink-0">03</span>
+              <div>
+                返佣<span className="text-[var(--brand-base)] font-bold">上不封顶</span>；返佣档位、比例、门槛由平台统一配置。
+              </div>
+            </div>
+            <div className="flex gap-2.5 items-start">
+              <span className="mt-0.5 p-1 rounded-md bg-rose-500/10 text-rose-500 text-[10px] font-bold shrink-0">04</span>
+              <div>
+                平台对同主体 / 同 IP·设备 / 异常刷量保留核查与冻结权，保障返佣生态公平合规。
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-mg-text-2 leading-relaxed">
+            <div className="flex gap-2.5 items-start">
+              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-[10px] font-bold shrink-0">01</span>
+              <div>
+                Commission accrues in <span className="text-[var(--brand-base)] font-bold">real time</span> on actual paid spend (refunds clawed back; gifted/promo codes excluded), settled at your tier rate.
+              </div>
+            </div>
+            <div className="flex gap-2.5 items-start">
+              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-[10px] font-bold shrink-0">02</span>
+              <div>
+                Reward balance <span className="text-[var(--brand-base)] font-bold">reaches ¥100</span> can be <span className="text-[var(--brand-base)] font-bold">transferred to main balance</span> or withdrawn.
+              </div>
+            </div>
+            <div className="flex gap-2.5 items-start">
+              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-[10px] font-bold shrink-0">03</span>
+              <div>
+                Commission has <span className="text-[var(--brand-base)] font-bold">no upper limit</span>. Tiers, rates, and thresholds are configured by the platform.
+              </div>
+            </div>
+            <div className="flex gap-2.5 items-start">
+              <span className="mt-0.5 p-1 rounded-md bg-rose-500/10 text-rose-500 text-[10px] font-bold shrink-0">04</span>
+              <div>
+                The platform reserves the right to audit and freeze same-entity / same-IP / abnormal farming activities.
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 三 Tab */}

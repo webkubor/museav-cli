@@ -14,6 +14,7 @@ import { useAuthStore } from '@/store/auth'
 import { isDomestic } from '@/lib/market'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 import { appToast } from '@/lib/app-toast'
 import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
@@ -655,15 +656,17 @@ export default function BillingPage() {
             </div>
 
             {/* Credit Status progress-bar */}
-            <div className="w-full h-1.5 bg-mg-fill-0 border border-mg-border/30 rounded-full overflow-hidden mt-2">
-              <div
-                className={cn(
-                  "h-full rounded-full transition-all duration-500",
-                  healthStatus === 'sufficient' ? "bg-emerald-500 w-full" :
-                  healthStatus === 'low' ? "bg-amber-500 w-1/3" : "bg-rose-500 w-0"
-                )}
-              />
-            </div>
+            <ProgressBar
+              value={healthStatus === 'sufficient' ? 100 : healthStatus === 'low' ? 33.3 : 0}
+              max={100}
+              variant={
+                healthStatus === 'sufficient' ? 'emerald' :
+                healthStatus === 'low' ? 'amber' : 'brand'
+              }
+              size="xs"
+              showGlow={healthStatus !== 'depleted'}
+              className="mt-2"
+            />
           </div>
 
           {/* Action Row: TopUp Trigger & Promo Code Redemption Form */}

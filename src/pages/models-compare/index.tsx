@@ -4,8 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
-import { Button } from '@/components/ui/Button'
-import { LuSearch, LuPlus, LuX, LuMessageSquare } from 'react-icons/lu'
+import { LuSearch, LuPlus, LuX, LuMessageSquare, LuTrash2, LuSparkles } from 'react-icons/lu'
 import { listModels } from '@/services/catalog'
 import type { CatalogModelItem } from '@/types'
 import { cn } from '@/lib/utils'
@@ -407,36 +406,63 @@ export default function ModelsComparePage() {
                 })}
               </div>
 
-              {/* 统一输入区 */}
-              <div className="glass-card-glow p-3.5 rounded-xl flex items-center gap-3 bg-[var(--mg-fill-0)]/10">
-                <Input
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      handleSend()
-                    }
-                  }}
-                  placeholder="在此输入问题，按 Enter 键统一分发提问..."
-                  className="flex-1 h-9 text-xs rounded-lg"
-                />
-                <Button 
-                  variant="brand" 
-                  onClick={handleSend}
-                  className="h-9 px-5 text-xs font-bold rounded-lg cursor-pointer shrink-0"
-                >
-                  统一发送
-                </Button>
-                {histories.some(h => h.length > 0) && (
-                  <Button 
-                    variant="outline" 
-                    onClick={handleClearChat}
-                    className="h-9 px-3.5 text-xs font-semibold rounded-lg cursor-pointer shrink-0 border border-mg-border/30 hover:bg-mg-fill-1 text-mg-text-1"
-                  >
-                    清空对话
-                  </Button>
-                )}
+              {/* 统一输入区 (Gemini 风格流光输入框) */}
+              <div className="relative rounded-2xl p-[1.5px] transition-all duration-300 focus-within:shadow-[0_0_20px_rgba(155,114,203,0.12)] bg-gradient-to-r from-[#4285f4] via-[#9b72cb] to-[#d96570] hover:from-[#4285f4] hover:via-[#9b72cb] hover:to-[#d96570] focus-within:from-[#4285f4] focus-within:via-[#9b72cb] focus-within:to-[#34a853]">
+                <div className="rounded-[15px] bg-[var(--mg-bg-0)] p-3 flex flex-col gap-3 min-h-[105px]">
+                  {/* 输入区域 */}
+                  <textarea
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        handleSend()
+                      }
+                    }}
+                    placeholder="在此输入问题，按 Enter 键统一分发提问..."
+                    rows={2}
+                    className="flex-1 w-full bg-transparent border-none outline-none resize-none text-[13px] text-[var(--mg-text-0)] placeholder-[var(--mg-text-2)] focus:ring-0 p-1 line-clamp-4 leading-relaxed"
+                  />
+                  
+                  {/* 底部操作区 */}
+                  <div className="flex items-center justify-between border-t border-[var(--mg-border)]/20 pt-2.5">
+                    {/* 左侧操作小图标：清空历史对话 */}
+                    <div className="flex items-center gap-2">
+                      {histories.some(h => h.length > 0) ? (
+                        <button
+                          onClick={handleClearChat}
+                          title="清空对话历史"
+                          className="p-2 rounded-lg cursor-pointer text-[var(--mg-text-2)] hover:text-[var(--mg-danger)] hover:bg-[var(--mg-fill-0)] transition-all flex items-center justify-center border-none bg-transparent"
+                        >
+                          <LuTrash2 size={16} />
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          title="无历史对话"
+                          className="p-2 rounded-lg text-[var(--mg-text-2)]/30 transition-all flex items-center justify-center border-none bg-transparent cursor-not-allowed"
+                        >
+                          <LuTrash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* 右侧发送按钮 */}
+                    <button
+                      onClick={handleSend}
+                      disabled={!chatInput.trim()}
+                      className={cn(
+                        "h-8 px-4 text-xs font-bold rounded-full cursor-pointer flex items-center gap-1.5 border-none transition-all duration-200 select-none shadow-sm",
+                        chatInput.trim()
+                          ? "bg-gradient-to-r from-[#9b72cb] to-[#d96570] text-white hover:opacity-90 active:scale-[0.98]"
+                          : "bg-[var(--mg-fill-0)] text-[var(--mg-text-2)]/50 cursor-not-allowed"
+                      )}
+                    >
+                      <LuSparkles size={13} className={chatInput.trim() ? "animate-[pulse_1.5s_infinite]" : ""} />
+                      统一发送
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}

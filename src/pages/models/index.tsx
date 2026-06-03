@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useModels } from '@/features/models/hooks/useModels'
 import { appToast } from '@/lib/app-toast'
 import { cn, formatContextLength, formatModelPrice } from '@/lib/utils'
@@ -244,7 +245,14 @@ export default function ModelsPage() {
 
           <div className="models-experience-quota">
             <span>{text.quota}</span>
-            <div><i style={{ width: `${progress}%` }} /></div>
+            <ProgressBar
+              value={progress}
+              max={100}
+              variant="brand"
+              size="xs"
+              showGlow={progress > 0}
+              className="flex-1"
+            />
             <strong>{progress}%</strong>
           </div>
 

@@ -408,6 +408,8 @@ export interface CreateApiKeyRequest {
   scope?: 'personal' | 'workspace' | 'member'
   /** scope=member 时指定目标成员 */
   member_account_id?: string
+  /** 绑定护栏 ID（可选） */
+  guardrail_id?: string
 }
 
 /** 创建 API Key 响应（含仅一次返回的明文 key） */

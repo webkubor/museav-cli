@@ -21,6 +21,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { listApiKeys, createApiKey, revokeApiKey } from '@/services/api-keys'
 import { listWorkspaceMembers } from '@/services/workspaces'
+import { listGuardrails } from '@/services/guardrails'
 import { useAuthStore } from '@/store/auth'
 import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
@@ -68,6 +69,7 @@ export default function ApiKeysPage() {
   const [scope, setScope] = useState<ScopeType>('workspace')
   const [memberAccountId, setMemberAccountId] = useState('')
   const [copied, setCopied] = useState(false)
+  const [guardrailId, setGuardrailId] = useState('')
   // 限额与过期时间（可选）
   const [spendingEnabled, setSpendingEnabled] = useState(false)
   const [spendingAmount, setSpendingAmount] = useState('')
@@ -91,6 +93,13 @@ export default function ApiKeysPage() {
     staleTime: 60_000,
   })
 
+  const guardrailsQuery = useQuery({
+    queryKey: ['guardrails', activeWorkspaceId],
+    queryFn: () => listGuardrails(activeWorkspaceId).then((res) => res.items ?? []),
+    enabled: !!activeWorkspaceId && createVisible,
+    staleTime: 60_000,
+  })
+
   const createMutation = useMutation({
     mutationFn: () =>
       createApiKey(activeWorkspaceId, {
@@ -101,6 +110,7 @@ export default function ApiKeysPage() {
           ? { amount: spendingAmount, currency, period: spendingPeriod }
           : undefined,
         expires_at: expiresAt ? new Date(expiresAt).toISOString() : undefined,
+        guardrail_id: guardrailId || undefined,
       }),
     onSuccess: (newKey) => {
       appToast.success(t('apiKeys.toast.createSuccess', { name: newKey.name }))
@@ -135,6 +145,7 @@ export default function ApiKeysPage() {
     setSpendingAmount('')
     setSpendingPeriod('monthly')
     setExpiresAt('')
+    setGuardrailId('')
   }
 
   function handleOpenCreate() {
@@ -480,6 +491,26 @@ export default function ApiKeysPage() {
               )}
             </div>
           )}
+
+          {/* 绑定护栏 */}
+          <div>
+            <label className="block text-xs font-bold text-mg-text-1 mb-2">
+              {t('apiKeys.createModal.guardrailLabel')}
+            </label>
+            <Select
+              value={guardrailId}
+              onChange={setGuardrailId}
+              placeholder={t('apiKeys.createModal.guardrailPlaceholder')}
+              className="w-full"
+            >
+              <SelectItem value="">{t('apiKeys.createModal.guardrailNone')}</SelectItem>
+              {(guardrailsQuery.data ?? []).map((g) => (
+                <SelectItem key={g.id} value={g.id}>
+                  {g.name}
+                </SelectItem>
+              ))}
+            </Select>
+          </div>
 
           {/* 消费限额 */}
           <div>

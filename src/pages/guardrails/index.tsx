@@ -64,6 +64,7 @@ export default function GuardrailsPage() {
   const [isDefault, setIsDefault] = useState(false)
   const [priority, setPriority] = useState<number>(0)
   const [modelWhitelist, setModelWhitelist] = useState<string[]>([])
+  const [modelBlacklist, setModelBlacklist] = useState<string[]>([])
   const [ipWhitelist, setIpWhitelist] = useState<string[]>([])
 
   const modelsQuery = useQuery({
@@ -193,7 +194,7 @@ export default function GuardrailsPage() {
     setIsCreating(true)
     setDetailId(null)
     setName(''); setDescription(''); setIsDefault(false); setPriority(0)
-    setModelWhitelist([]); setIpWhitelist([])
+    setModelWhitelist([]); setModelBlacklist([]); setIpWhitelist([])
     setSheetTab('info')
     setDetailOpen(true)
   }
@@ -210,6 +211,7 @@ export default function GuardrailsPage() {
     setIsDefault(d.is_default); setPriority(d.priority)
     const meta = (d as any).metadata ?? {}
     setModelWhitelist(Array.isArray(meta.model_whitelist) ? meta.model_whitelist : [])
+    setModelBlacklist(Array.isArray(meta.model_blacklist) ? meta.model_blacklist : [])
     setIpWhitelist(Array.isArray(meta.ip_whitelist) ? meta.ip_whitelist : [])
   }
 
@@ -217,6 +219,7 @@ export default function GuardrailsPage() {
     if (!name.trim()) { appToast.error(t('guardrails.toast.nameRequired')); return }
     const metadata: Record<string, unknown> = {}
     if (modelWhitelist.length > 0) metadata.model_whitelist = modelWhitelist
+    if (modelBlacklist.length > 0) metadata.model_blacklist = modelBlacklist
     if (ipWhitelist.length > 0) metadata.ip_whitelist = ipWhitelist
     const payload: CreateGuardrailRequest = {
       name: name.trim(),
@@ -410,7 +413,9 @@ export default function GuardrailsPage() {
                 name={name} onNameChange={setName}
                 description={description} onDescriptionChange={setDescription}
                 priority={priority} onPriorityChange={setPriority}
+                isDefault={isDefault} onIsDefaultChange={setIsDefault}
                 modelWhitelist={modelWhitelist} onModelWhitelistChange={setModelWhitelist}
+                modelBlacklist={modelBlacklist} onModelBlacklistChange={setModelBlacklist}
                 ipWhitelist={ipWhitelist} onIpWhitelistChange={setIpWhitelist}
                 modelSuggestions={modelSuggestions}
               />
@@ -591,14 +596,18 @@ function GuardrailFormFields({
   name, onNameChange,
   description, onDescriptionChange,
   priority, onPriorityChange,
+  isDefault, onIsDefaultChange,
   modelWhitelist, onModelWhitelistChange,
+  modelBlacklist, onModelBlacklistChange,
   ipWhitelist, onIpWhitelistChange,
   modelSuggestions,
 }: {
   name: string; onNameChange: (v: string) => void
   description: string; onDescriptionChange: (v: string) => void
   priority: number; onPriorityChange: (v: number) => void
+  isDefault: boolean; onIsDefaultChange: (v: boolean) => void
   modelWhitelist: string[]; onModelWhitelistChange: (v: string[]) => void
+  modelBlacklist: string[]; onModelBlacklistChange: (v: string[]) => void
   ipWhitelist: string[]; onIpWhitelistChange: (v: string[]) => void
   modelSuggestions?: string[]
 }) {
@@ -620,6 +629,14 @@ function GuardrailFormFields({
         <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.descLabel')}</label>
         <Input value={description} onChange={(e) => onDescriptionChange(e.target.value)} placeholder={t('guardrails.form.descPlaceholder')} />
       </div>
+      {/* 设为默认 — Switch 开关 */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-bold text-mg-text-1">{t('guardrails.form.isDefaultLabel')}</p>
+          <p className="text-xs text-mg-text-2 mt-0.5">{t('guardrails.form.isDefaultHint')}</p>
+        </div>
+        <Switch checked={isDefault} onChange={onIsDefaultChange} />
+      </div>
       {/* 模型白名单 — 下拉多选 */}
       <div>
         <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.modelWhitelistLabel')}</label>
@@ -629,6 +646,17 @@ function GuardrailFormFields({
           suggestions={modelSuggestions}
           placeholder={t('guardrails.form.modelWhitelistPlaceholder')}
           hint={t('guardrails.form.modelWhitelistHint')}
+        />
+      </div>
+      {/* 模型黑名单 — 下拉多选 */}
+      <div>
+        <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.modelBlacklistLabel')}</label>
+        <TagInput
+          value={modelBlacklist}
+          onChange={onModelBlacklistChange}
+          suggestions={modelSuggestions}
+          placeholder={t('guardrails.form.modelBlacklistPlaceholder')}
+          hint={t('guardrails.form.modelBlacklistHint')}
         />
       </div>
       {/* IP 白名单 — 自由输入标签 */}

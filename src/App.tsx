@@ -5,6 +5,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import DashboardPage from '@/pages/dashboard'
 import ApiKeysPage from '@/pages/api-keys'
 import WorkspacesPage from '@/pages/workspaces'
+import WorkspaceDetailPage from '@/pages/settings/workspace-detail'
 import LoginPage from '@/pages/login'
 import SignupPage from '@/pages/signup'
 import ForgotPasswordPage from '@/pages/forgot-password'
@@ -18,7 +19,6 @@ import BillingPage from '@/pages/billing'
 import AccountSettingsPage from '@/pages/settings/account'
 import OrganizationPage from '@/pages/settings/organization'
 import GuardrailsPage from '@/pages/guardrails'
-import InvitationsMgmtPage from '@/pages/invitations-mgmt'
 import ObservabilityPage from '@/pages/observability'
 import ModelsPage from '@/pages/models'
 import ModelsComparePage from '@/pages/models-compare'
@@ -121,6 +121,7 @@ export default function App() {
             <Route path="settings">
               <Route index element={<Navigate to="workspace" replace />} />
               <Route path="workspace" element={<WorkspacesPage />} />
+              <Route path="workspace/:workspaceId" element={<WorkspaceDetailPage />} />
               <Route path="account" element={<AccountSettingsPage />} />
               <Route path="organization" element={<OrganizationPage />} />
             </Route>
@@ -130,7 +131,6 @@ export default function App() {
               <Route path="api-keys" element={<ApiKeysPage />} />
               <Route path="guardrails" element={<GuardrailsPage />} />
               <Route path="observability" element={<ObservabilityPage />} />
-              <Route path="invitations-mgmt" element={<InvitationsMgmtPage />} />
               <Route path="chat-test" element={<ChatTestPage />} />
             </Route>
           </Route>

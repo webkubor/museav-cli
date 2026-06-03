@@ -573,7 +573,7 @@
       "workspaceId": "Workspace ID",
       "createdAt": "Created At",
       "actions": "Actions",
-      "edit": "Edit"
+      "edit": "Manage"
     },
     "modal": {
       "title": "Create Workspace",
@@ -592,6 +592,51 @@
       "nameRequired": "Workspace name cannot be empty",
       "slugRequired": "Slug cannot be empty",
       "slugFormat": "Slug only supports lowercase letters, numbers, and hyphens"
+    },
+    "detail": {
+      "back": "Back to workspaces",
+      "notFound": "Workspace not found",
+      "tabs": { "overview": "Overview", "members": "Members", "settings": "Settings" },
+      "overview": {
+        "spend": "Spend (7d)",
+        "requests": "Requests (7d)",
+        "tokens": "Tokens (7d)",
+        "slug": "Slug",
+        "owner": "Owner",
+        "createdAt": "Created At",
+        "apiKeys": "API Keys"
+      },
+      "members": {
+        "title": "Workspace Members",
+        "count": "{{count}} members",
+        "loading": "Loading members...",
+        "empty": "No members in this workspace",
+        "addTitle": "Add from organization",
+        "addEmpty": "All organization members are already in this workspace",
+        "addSearchPlaceholder": "Search organization members...",
+        "add": "Add",
+        "remove": "Remove",
+        "addSuccess": "Member added to workspace",
+        "addError": "Failed to add member",
+        "removeSuccess": "Member removed from workspace",
+        "removeError": "Failed to remove member",
+        "roleError": "Failed to update role"
+      },
+      "settings": {
+        "renameLabel": "Workspace Name",
+        "rename": "Rename",
+        "save": "Save",
+        "cancel": "Cancel",
+        "renameSuccess": "Workspace name updated",
+        "renameError": "Update failed",
+        "dangerTitle": "Danger Zone",
+        "deleteHint": "This cannot be undone. Type the workspace name to confirm.",
+        "deleteConfirmPlaceholder": "Type workspace name to confirm",
+        "delete": "Delete Workspace",
+        "deleteSuccess": "Workspace deleted",
+        "deleteError": "Delete failed",
+        "defaultCannotDelete": "Default workspace cannot be deleted"
+      }
     }
   },
   "platformConfig": {

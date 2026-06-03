@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { LuSearch, LuPlus } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -21,6 +22,7 @@ import { Select } from '@/components/ui/Select'
 
 export default function WorkspacesPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchValue, setSearchValue] = useState('')
   const [modalVisible, setModalVisible] = useState(false)
@@ -154,7 +156,11 @@ export default function WorkspacesPage() {
               </TableRow>
             ) : (
               filteredData.map((row) => (
-                <TableRow key={row.workspace_id}>
+                <TableRow
+                  key={row.workspace_id}
+                  className="cursor-pointer hover:bg-mg-fill-0/30 transition-colors"
+                  onClick={() => navigate(`/settings/workspace/${row.workspace_id}`)}
+                >
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-mg-text-0 text-[13.5px]">{row.name}</span>
@@ -174,7 +180,7 @@ export default function WorkspacesPage() {
                   <TableCell className="text-mg-text-2">{formatDateTime(row.created_at)}</TableCell>
                   <TableCell className="text-right">
                     <span className="text-brand-base hover:text-brand-deep cursor-pointer font-bold transition-colors duration-200">
-                      {t('workspaces.table.edit')}
+                      {t('workspaces.table.edit')} →
                     </span>
                   </TableCell>
                 </TableRow>

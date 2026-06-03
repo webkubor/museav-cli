@@ -45,7 +45,7 @@
     "workspace": "项目管理",
     "organization": "企业管理",
     "apiKeys": "API Keys",
-    "guardrails": "配额管理",
+    "guardrails": "安全护栏",
     "observability": "可观测性",
     "invitations": "成员管理",
     "sidebarWorkspace": "项目"
@@ -573,7 +573,7 @@
       "workspaceId": "项目 ID",
       "createdAt": "创建时间",
       "actions": "操作",
-      "edit": "编辑"
+      "edit": "管理"
     },
     "modal": {
       "title": "创建新项目",
@@ -592,6 +592,51 @@
       "nameRequired": "项目名称不能为空",
       "slugRequired": "唯一标识不能为空",
       "slugFormat": "唯一标识仅支持小写字母、数字和连字符"
+    },
+    "detail": {
+      "back": "返回项目列表",
+      "notFound": "未找到该项目",
+      "tabs": { "overview": "概览", "members": "成员", "settings": "设置" },
+      "overview": {
+        "spend": "近 7 天消费",
+        "requests": "近 7 天请求数",
+        "tokens": "近 7 天 Tokens",
+        "slug": "唯一标识",
+        "owner": "拥有者",
+        "createdAt": "创建时间",
+        "apiKeys": "API Key 数量"
+      },
+      "members": {
+        "title": "项目成员",
+        "count": "{{count}} 位成员",
+        "loading": "正在加载成员...",
+        "empty": "该项目暂无成员",
+        "addTitle": "从企业成员中添加",
+        "addEmpty": "企业成员都已在该项目中",
+        "addSearchPlaceholder": "搜索企业成员...",
+        "add": "加入",
+        "remove": "移除",
+        "addSuccess": "成员已加入项目",
+        "addError": "添加成员失败",
+        "removeSuccess": "成员已移出项目",
+        "removeError": "移除成员失败",
+        "roleError": "角色更新失败"
+      },
+      "settings": {
+        "renameLabel": "项目名称",
+        "rename": "更名",
+        "save": "保存",
+        "cancel": "取消",
+        "renameSuccess": "项目名称已更新",
+        "renameError": "更新失败",
+        "dangerTitle": "危险操作",
+        "deleteHint": "删除后不可恢复，请输入项目名称确认。",
+        "deleteConfirmPlaceholder": "输入项目名称以确认",
+        "delete": "删除项目",
+        "deleteSuccess": "项目已删除",
+        "deleteError": "删除失败",
+        "defaultCannotDelete": "默认项目不可删除"
+      }
     }
   },
   "platformConfig": {

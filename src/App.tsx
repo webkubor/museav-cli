@@ -26,11 +26,13 @@ import ModelsComparePage from '@/pages/models-compare'
 import PlatformConfigPage from '@/pages/platform-config'
 import ChatTestPage from '@/pages/chat-test'
 import { useAuthStore } from '@/store/auth'
+import { useDevStore } from '@/store/use-dev-store'
 import { getSession } from '@/services/auth'
 import { getMarket } from '@/lib/market'
 import { applyTheme, getSavedTheme } from '@/lib/theme'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import { DevRequirements } from '@/components/dev-requirements'
+import { DevToolbar } from '@/components/dev-toolbar'
 
 import { Toaster } from 'sonner'
 
@@ -89,12 +91,15 @@ export default function App() {
     applyTheme(getSavedTheme())
   }, [])
 
+  const showRequirements = useDevStore((s) => s.showRequirements)
+
   return (
     <Providers>
       <Toaster richColors position="top-right" closeButton />
       <BrowserRouter>
         <SessionLoader />
-        {import.meta.env.DEV && <DevRequirements />}
+        {import.meta.env.DEV && showRequirements && <DevRequirements />}
+        {import.meta.env.DEV && <DevToolbar />}
         <Routes>
           {/* 认证路由（公开） */}
           <Route path="/login" element={<LoginPage />} />

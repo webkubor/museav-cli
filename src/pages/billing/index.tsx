@@ -678,7 +678,6 @@ export default function BillingPage() {
                       <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.status')}</th>
                       <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.amount')}</th>
                       <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.paidAt')}</th>
-                      <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider w-20">{t('billing.orders.table.actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -710,18 +709,6 @@ export default function BillingPage() {
                           </td>
                           <td className="py-3.5 px-4 text-xs font-bold text-mg-text-0 font-mono">{record.currency} {record.amount}</td>
                           <td className="py-3.5 px-4 text-xs text-mg-text-2 font-mono">{formatDateTime(record.paid_at)}</td>
-                          <td className="py-3.5 px-4 text-xs" onClick={(e) => e.stopPropagation()}>
-                            {record.status === 'pending' ? (
-                              <button
-                                onClick={() => cancelMutation.mutate(record.order_no)}
-                                className="text-rose-500 hover:text-rose-600 font-bold cursor-pointer transition-colors text-xs outline-none"
-                              >
-                                {t('billing.orders.table.cancel')}
-                              </button>
-                            ) : (
-                              <span className="text-mg-text-3 select-none">—</span>
-                            )}
-                          </td>
                         </tr>
                       )
                     })}

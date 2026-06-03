@@ -14,7 +14,6 @@ import {
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
-import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useModels } from '@/features/models/hooks/useModels'
 import { appToast } from '@/lib/app-toast'
 import { cn, formatContextLength, formatModelPrice } from '@/lib/utils'
@@ -26,7 +25,6 @@ import {
   modalityBadges,
   modelExperienceCopy,
   previewImages,
-  quotaPercent,
   vendorNode,
   type CategoryKey,
   type ExperienceMessage,
@@ -69,7 +67,6 @@ export default function ModelsPage() {
   const selectedModel = allModels.find((model) => model.id === selectedId) ?? visibleModels[0] ?? allModels[0]
   const provider = providersQuery.data?.items?.[0]
   const detail = detailQuery.data
-  const progress = selectedModel ? quotaPercent(selectedModel) : 0
 
   useEffect(() => {
     if (!selectedId && allModels[0]) setSelectedId(allModels[0].id)
@@ -180,7 +177,6 @@ export default function ModelsPage() {
                 <div className="models-experience-featured-metrics">
                   <span>{formatContextLength(selectedModel.context_length)} {text.context}</span>
                   <span>{formatModelPrice(selectedModel.pricing?.input_per_1m, selectedModel.pricing?.currency)}</span>
-                  <span>{text.quota} {progress}%</span>
                 </div>
               </div>
             </button>
@@ -242,19 +238,6 @@ export default function ModelsPage() {
               </div>
             </div>
           )}
-
-          <div className="models-experience-quota">
-            <span>{text.quota}</span>
-            <ProgressBar
-              value={progress}
-              max={100}
-              variant="brand"
-              size="xs"
-              showGlow={progress > 0}
-              className="flex-1"
-            />
-            <strong>{progress}%</strong>
-          </div>
 
           <div className="models-experience-messages">
             {messages.map((message, index) => (

@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Switch } from '@/components/ui/Switch'
 import { Textarea } from '@/components/ui/Textarea'
+import { TagInput } from '@/components/ui/TagInput'
+import { listApiKeys } from '@/services/api-keys'
 import Select from '@/components/ui/Select'
 import { LuLink } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
@@ -61,9 +63,11 @@ function ToggleRow({
 
 function PlatformConfigModal({
   platform,
+  workspaceId,
   onClose,
 }: {
   platform: { id: string; name: string } | null
+  workspaceId: string
   onClose: () => void
 }) {
   const [name, setName] = useState(platform?.name ?? '')
@@ -71,6 +75,15 @@ function PlatformConfigModal({
   const [method, setMethod] = useState('POST')
   const [headers, setHeaders] = useState('')
   const [privacyMode, setPrivacyMode] = useState(false)
+  const [sampling, setSampling] = useState('100')
+  const [apiKeyIds, setApiKeyIds] = useState<string[]>([])
+
+  const keysQuery = useQuery({
+    queryKey: ['api-keys', workspaceId],
+    queryFn: () => listApiKeys(workspaceId, { page_size: 100 }),
+    enabled: Boolean(platform) && Boolean(workspaceId),
+  })
+  const keyOptions = (keysQuery.data?.items ?? []).map((k) => ({ id: k.api_key_id, name: k.name }))
 
   function handleTest() {
     appToast.success('连接测试成功')
@@ -143,6 +156,28 @@ function PlatformConfigModal({
             </div>
             <Switch checked={privacyMode} onChange={setPrivacyMode} />
           </div>
+          <div>
+            <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">采样率（%）</label>
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              value={sampling}
+              onChange={(e) => setSampling(e.target.value)}
+              placeholder="100"
+            />
+            <p className="text-xs text-mg-text-2 mt-1.5">按比例采样上报，100 = 全量。</p>
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">按 API Key 过滤（留空 = 全部）</label>
+            <TagInput
+              value={apiKeyIds.map((id) => keyOptions.find((o) => o.id === id)?.name ?? id)}
+              onChange={(names) => setApiKeyIds(names.map((n) => keyOptions.find((o) => o.name === n)?.id).filter(Boolean) as string[])}
+              suggestions={keyOptions.filter((o) => !apiKeyIds.includes(o.id)).map((o) => o.name)}
+              allowFreeText={false}
+              placeholder="选择 API Key…"
+            />
+          </div>
           <div className="flex gap-2 pt-1">
             <Button variant="outline" size="sm" onClick={handleTest}>测试连接</Button>
             <Button variant="outline" size="sm" onClick={handleSendTrace}>发送测试 Trace</Button>
@@ -213,6 +248,7 @@ function AvailablePlatformsSection({ workspaceId }: { workspaceId: string }) {
       <PlatformConfigModal
         key={activePlatform?.id ?? 'none'}
         platform={activePlatform}
+        workspaceId={workspaceId}
         onClose={() => setActivePlatform(null)}
       />
     </>

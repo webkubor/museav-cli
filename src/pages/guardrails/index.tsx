@@ -446,42 +446,6 @@ export default function GuardrailsPage() {
               </div>
             ) : detail ? (
               <div className="space-y-7">
-                {/* 成员 — 下拉多选 */}
-                <section>
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider mb-3">
-                    <LuUsers className="w-3.5 h-3.5" /> 成员
-                  </div>
-                  <TagInput
-                    value={memberAssignments.map((a) => {
-                      const acc = membersMap.get(a.account_id)
-                      return acc?.display_name || acc?.email || a.account_id
-                    })}
-                    onChange={(names) => {
-                      if (!detail) return
-                      const nameToId = new Map<string, string>()
-                      for (const m of membersQuery.data?.items ?? []) {
-                        nameToId.set(m.account.display_name, m.account.account_id)
-                        nameToId.set(m.account.email, m.account.account_id)
-                      }
-                      for (const a of detail.assignments) {
-                        if (a.subject_type === 'member') {
-                          const acc = membersMap.get(a.account_id)
-                          if (acc) { nameToId.set(acc.display_name, a.account_id); nameToId.set(acc.email, a.account_id) }
-                        }
-                      }
-                      const memberIds = names.map((n) => nameToId.get(n)).filter(Boolean) as string[]
-                      const keyAssigns = apiKeyAssignments.map(toInput)
-                      const memberAssigns: AssignmentInput[] = memberIds.map((id) => ({ subject_type: 'member', account_id: id }))
-                      assignMutation.mutate({ id: detail.id, assignments: [...memberAssigns, ...keyAssigns] })
-                    }}
-                    suggestions={(membersQuery.data?.items ?? [])
-                      .filter((m) => !memberAssignments.some((a) => a.account_id === m.account.account_id))
-                      .map((m) => m.account.display_name || m.account.email)
-                    }
-                    placeholder="从下拉选择成员"
-                  />
-                </section>
-
                 {/* API Keys — 下拉多选 */}
                 <section>
                   <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider mb-3">
@@ -506,9 +470,8 @@ export default function GuardrailsPage() {
                         }
                       }
                       const keyIds = names.map((n) => nameToId.get(n)).filter(Boolean) as string[]
-                      const memberAssigns = memberAssignments.map(toInput)
                       const keyAssigns: AssignmentInput[] = keyIds.map((id) => ({ subject_type: 'api_key', api_key_id: id }))
-                      assignMutation.mutate({ id: detail.id, assignments: [...memberAssigns, ...keyAssigns] })
+                      assignMutation.mutate({ id: detail.id, assignments: keyAssigns })
                     }}
                     suggestions={(apiKeysQuery.data?.items ?? [])
                       .filter((k: any) => k.status === 'active' && !apiKeyAssignments.some((a) => a.api_key_id === k.api_key_id))
@@ -605,6 +568,7 @@ function GuardrailFormFields({
   modelBlacklist, onModelBlacklistChange,
   ipWhitelist, onIpWhitelistChange,
   modelSuggestions,
+  memberIds, onMemberIdsChange, memberOptions,
 }: {
   name: string; onNameChange: (v: string) => void
   description: string; onDescriptionChange: (v: string) => void
@@ -613,6 +577,7 @@ function GuardrailFormFields({
   modelBlacklist: string[]; onModelBlacklistChange: (v: string[]) => void
   ipWhitelist: string[]; onIpWhitelistChange: (v: string[]) => void
   modelSuggestions?: string[]
+  memberIds: string[]; onMemberIdsChange: (v: string[]) => void; memberOptions: { id: string; name: string }[]
 }) {
   const { t } = useTranslation()
   const ipValidator = (v: string) => {
@@ -679,6 +644,26 @@ function GuardrailFormFields({
           validator={ipValidator}
           placeholder={t('guardrails.form.ipWhitelistPlaceholder')}
           hint={t('guardrails.form.ipWhitelistHint')}
+        />
+      </div>
+      {/* 成员 — 下拉多选 */}
+      <div>
+        <label className="block text-xs font-bold text-mg-text-1 mb-2">
+          <span className="inline-flex items-center gap-1.5">
+            <LuUsers className="w-3.5 h-3.5" />
+            {t('guardrails.form.membersLabel')}
+          </span>
+        </label>
+        <TagInput
+          value={memberIds.map((id) => memberOptions.find((o) => o.id === id)?.name ?? id)}
+          onChange={(names) =>
+            onMemberIdsChange(
+              names.map((n) => memberOptions.find((o) => o.name === n)?.id).filter(Boolean) as string[],
+            )
+          }
+          suggestions={memberOptions.filter((o) => !memberIds.includes(o.id)).map((o) => o.name)}
+          placeholder={t('guardrails.form.membersPlaceholder')}
+          hint={t('guardrails.form.membersHint')}
         />
       </div>
     </div>

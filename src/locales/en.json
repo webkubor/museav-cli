@@ -355,6 +355,9 @@
       "ipWhitelistLabel": "IP Whitelist",
       "ipWhitelistPlaceholder": "Type IP or CIDR, press Enter to add",
       "ipWhitelistHint": "Press Enter to add. Supports IPv4/IPv6/CIDR. Leave empty for no restriction.",
+      "membersLabel": "Members",
+      "membersPlaceholder": "Select workspace members from dropdown",
+      "membersHint": "Select members to bind to this guardrail. Leave empty for no restriction.",
       "isDefaultLabel": "Apply by Default",
       "isDefaultHint": "Automatically apply to all requests"
     },

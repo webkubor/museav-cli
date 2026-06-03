@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
-import { LuSearch, LuPlus, LuX } from 'react-icons/lu'
+import { Button } from '@/components/ui/Button'
+import { LuSearch, LuPlus, LuX, LuMessageSquare } from 'react-icons/lu'
 import { listModels } from '@/services/catalog'
 import type { CatalogModelItem } from '@/types'
 import { cn } from '@/lib/utils'
@@ -183,6 +184,43 @@ export default function ModelsComparePage() {
     }
   }, [models, location.state, navigate, location.pathname])
 
+  const [chatInput, setChatInput] = useState('')
+  const [histories, setHistories] = useState<Array<Array<{ role: 'user' | 'assistant'; content: string; meta?: string }>>>([
+    [],
+    [],
+    []
+  ])
+
+  // 监听槽位变动，若槽位被置空，则自动清空对应槽位的历史对话
+  useEffect(() => {
+    setHistories((prev) => prev.map((history, idx) => {
+      return slots[idx] ? history : []
+    }))
+  }, [slots])
+
+  const handleSend = () => {
+    const prompt = chatInput.trim()
+    if (!prompt) return
+
+    setHistories((prev) => prev.map((history, idx) => {
+      const activeModel = slots[idx]
+      if (!activeModel) return []
+      
+      const userMsg = { role: 'user' as const, content: prompt }
+      const assistantMsg = {
+        role: 'assistant' as const,
+        content: `我是 ${activeModel.display_name}。针对您的提问“${prompt}”：\n\n这正是一个模拟回答。在正式系统对接中，您的接口将直接调用 ModelGo 代理的 \`${activeModel.model_id}\` 终端。通过我们精心设计的分栏对话，您可以同步比对各家大模型的质量、延时与实际消耗性价比。`,
+        meta: `延迟 620ms · 消耗额度极微 · 预估成本 ${formatPrice(activeModel.pricing?.output_per_1m)} / 1M`
+      }
+      return [...history, userMsg, assistantMsg]
+    }))
+    setChatInput('')
+  }
+
+  const handleClearChat = () => {
+    setHistories([[], [], []])
+  }
+
   const setSlot = (idx: number, m: CatalogModelItem | null) => {
     setSlots((prev) => prev.map((s, i) => (i === idx ? m : s)))
   }
@@ -286,6 +324,120 @@ export default function ModelsComparePage() {
                   ))}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* 对话对比 Playground */}
+          {hasAny && (
+            <div className="mt-8 pt-8 border-t border-[var(--mg-border)]">
+              <div className="mb-5">
+                <h2 className="text-sm font-bold text-[var(--mg-text-0)] m-0 flex items-center gap-2">
+                  <LuMessageSquare size={15} className="text-[var(--brand-base)]" />
+                  实时对话对比 (Chat Arena)
+                </h2>
+                <p className="text-[11.5px] text-[var(--mg-text-2)] m-0 mt-1">
+                  统一输入 Prompt 分发给所有已选模型，分栏并行对比各家大模型的响应质量、语气格式与生成耗时。
+                </p>
+              </div>
+
+              {/* 多栏并排对话 */}
+              <div
+                className="grid gap-4 mb-5"
+                style={{
+                  gridTemplateColumns: `repeat(${selectedModels.length}, minmax(0, 1fr))`,
+                }}
+              >
+                {slots.map((m, idx) => {
+                  if (!m) return null
+                  const history = histories[idx]
+                  
+                  return (
+                    <div 
+                      key={`${m.id}-${idx}`} 
+                      className="glass-card-glow flex flex-col h-[350px] overflow-hidden rounded-xl border border-[var(--mg-border)]"
+                    >
+                      {/* 栏头部 */}
+                      <div className="p-3 bg-[var(--mg-fill-0)]/40 border-b border-[var(--mg-border)]/65 flex items-center gap-2 shrink-0 select-none">
+                        <ModelIcon model={m} size={20} rounded="rounded" />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-bold text-[var(--mg-text-0)] truncate">{m.display_name}</div>
+                          <div className="text-[9.5px] text-[var(--mg-text-2)] font-mono truncate">{m.model_id}</div>
+                        </div>
+                      </div>
+
+                      {/* 消息历史滚动 */}
+                      <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 no-scrollbar bg-[var(--mg-bg-0)]/20">
+                        {history.map((msg, msgIdx) => (
+                          <div 
+                            key={msgIdx} 
+                            className={cn(
+                              "flex flex-col gap-1 max-w-[85%]",
+                              msg.role === 'user' ? "ml-auto items-end" : "mr-auto items-start"
+                            )}
+                          >
+                            <div 
+                              className={cn(
+                                "p-2.5 rounded-xl text-xs leading-relaxed shadow-sm",
+                                msg.role === 'user'
+                                  ? "bg-[var(--brand-selected-bg)] border border-[var(--brand-mid)]/10 text-[var(--mg-text-0)]"
+                                  : "bg-[var(--mg-bg-0)] border border-[var(--mg-border)] text-[var(--mg-text-1)] border-l-[3px] border-l-[var(--brand-base)]"
+                              )}
+                            >
+                              {msg.content.split('\n').map((line, lIdx) => (
+                                <p key={lIdx} className="m-0 select-text break-words">{line}</p>
+                              ))}
+                              {msg.meta && (
+                                <span className="block text-[9.5px] text-[var(--mg-text-2)] mt-1.5 font-bold tracking-wide">
+                                  {msg.meta}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+
+                        {history.length === 0 && (
+                          <div className="h-full flex flex-col items-center justify-center text-center p-4 select-none opacity-40">
+                            <LuMessageSquare size={20} className="text-mg-text-2 mb-2" />
+                            <span className="text-[10.5px] text-[var(--mg-text-2)]">等待发送提问</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* 统一输入区 */}
+              <div className="glass-card-glow p-3.5 rounded-xl flex items-center gap-3 bg-[var(--mg-fill-0)]/10">
+                <Input
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSend()
+                    }
+                  }}
+                  placeholder="在此输入问题，按 Enter 键统一分发提问..."
+                  className="flex-1 h-9 text-xs rounded-lg"
+                />
+                <Button 
+                  variant="brand" 
+                  onClick={handleSend}
+                  className="h-9 px-5 text-xs font-bold rounded-lg cursor-pointer shrink-0"
+                >
+                  统一发送
+                </Button>
+                {histories.some(h => h.length > 0) && (
+                  <Button 
+                    variant="outline" 
+                    onClick={handleClearChat}
+                    className="h-9 px-3.5 text-xs font-semibold rounded-lg cursor-pointer shrink-0 border border-mg-border/30 hover:bg-mg-fill-1 text-mg-text-1"
+                  >
+                    清空对话
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 

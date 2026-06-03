@@ -355,6 +355,9 @@
       "ipWhitelistLabel": "IP 白名单",
       "ipWhitelistPlaceholder": "输入 IP 或 CIDR 后回车添加",
       "ipWhitelistHint": "输入后按回车添加，支持 IPv4/IPv6/CIDR 格式。留空表示不限制。",
+      "membersLabel": "成员",
+      "membersPlaceholder": "从下拉选择工作区成员",
+      "membersHint": "选择需要绑定此护栏的工作区成员，留空表示不限制。",
       "isDefaultLabel": "默认应用",
       "isDefaultHint": "自动应用此护栏到所有模型请求"
     },

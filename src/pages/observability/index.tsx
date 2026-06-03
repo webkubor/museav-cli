@@ -70,6 +70,7 @@ function PlatformConfigModal({
   const [url, setUrl] = useState('')
   const [method, setMethod] = useState('POST')
   const [headers, setHeaders] = useState('')
+  const [privacyMode, setPrivacyMode] = useState(false)
 
   function handleTest() {
     appToast.success('连接测试成功')
@@ -134,6 +135,13 @@ function PlatformConfigModal({
               rows={3}
               placeholder={'{"Authorization": "Bearer token", "X-Webhook-Signature": "your-webhook-secret"}'}
             />
+          </div>
+          <div className="flex items-start justify-between gap-4 pt-1">
+            <div>
+              <p className="text-sm font-semibold text-mg-text-0">隐私模式</p>
+              <p className="text-xs text-mg-text-2 mt-0.5 leading-relaxed">开启后，traces 中将排除 prompt 与 completion 数据。</p>
+            </div>
+            <Switch checked={privacyMode} onChange={setPrivacyMode} />
           </div>
           <div className="flex gap-2 pt-1">
             <Button variant="outline" size="sm" onClick={handleTest}>测试连接</Button>

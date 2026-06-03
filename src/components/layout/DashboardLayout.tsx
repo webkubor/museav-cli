@@ -26,6 +26,7 @@ import { isDomestic } from '@/lib/market'
 import { usePlatformConfig } from '@/hooks/use-platform-config'
 import { usePermissions } from '@/hooks/use-permissions'
 import { cn } from '@/lib/utils'
+import './layout.css'
 
 const isDevTools = import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
 

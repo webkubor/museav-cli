@@ -11,6 +11,8 @@ interface ModelsCompareModalProps {
   isOpen: boolean
   onClose: () => void
   allModels: CatalogModelItem[]
+  onConfirmCompare?: (ids: string[]) => void
+  initialSelectedIds?: string[]
 }
 
 const MAX_COMPARE = 3
@@ -31,10 +33,23 @@ function formatContext(n: number | undefined) {
   return String(n)
 }
 
-export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({ isOpen, onClose, allModels }) => {
+export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  allModels,
+  onConfirmCompare,
+  initialSelectedIds = []
+}) => {
   const { t } = useTranslation()
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds)
   const [searchQuery, setSearchQuery] = useState('')
+
+  // 同步初始化对比 IDs
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedIds(initialSelectedIds)
+    }
+  }, [isOpen, initialSelectedIds])
 
   // 监听 Esc 键自动关闭弹窗
   useEffect(() => {
@@ -284,13 +299,18 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({ isOpen, 
               <div className="flex items-center gap-3">
                 <button
                   onClick={onClose}
-                  className="px-4.5 py-1.8 rounded-lg text-xs font-semibold bg-mg-fill-0 hover:bg-mg-fill-1 text-mg-text-1 hover:text-mg-text-0 transition-colors cursor-pointer active:scale-95 border-none outline-none"
+                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-mg-fill-0 hover:bg-mg-fill-1 text-mg-text-1 hover:text-mg-text-0 border border-mg-border/30 transition-all cursor-pointer active:scale-95 outline-none"
                 >
                   取消
                 </button>
                 <button
-                  onClick={onClose}
-                  className="px-5 py-1.8 rounded-lg text-xs font-bold bg-brand-base text-white hover:bg-brand-deep shadow-sm shadow-brand-glow/15 cursor-pointer transition-colors active:scale-95 border-none outline-none"
+                  onClick={() => {
+                    if (onConfirmCompare) {
+                      onConfirmCompare(selectedIds)
+                    }
+                    onClose()
+                  }}
+                  className="px-6 py-2 rounded-xl text-xs font-bold bg-brand-base text-white hover:bg-brand-deep shadow-md hover:shadow-brand-glow/15 transition-all cursor-pointer active:scale-95 border-none outline-none"
                 >
                   确认对比
                 </button>

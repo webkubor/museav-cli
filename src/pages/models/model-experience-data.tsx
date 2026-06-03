@@ -9,6 +9,8 @@ export interface ExperienceMessage {
   role: ChatRole
   content: string
   meta?: string
+  modelName?: string
+  modelLogo?: React.ReactNode
 }
 
 export const previewImages: Record<CategoryKey, string> = {

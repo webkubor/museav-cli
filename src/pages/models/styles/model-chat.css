@@ -141,3 +141,27 @@
   font-size: 11px;
   font-weight: 700;
 }
+
+/* ── 对比模式气泡特别样式 ── */
+.models-experience-message.is-compare-bubble {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.models-experience-message-model-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 2px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--brand-base);
+}
+
+.models-experience-message.is-compare-bubble .models-experience-message-bubble {
+  border-left: 3px solid var(--brand-base);
+  border-top-left-radius: 4px;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.03);
+  width: 100%;
+}

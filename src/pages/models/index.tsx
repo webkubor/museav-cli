@@ -10,6 +10,7 @@ import {
   LuSearch,
   LuSend,
   LuSparkles,  LuZap,
+  LuX,
 } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -46,6 +47,7 @@ export default function ModelsPage() {
   const text = i18n.language.startsWith('zh') ? modelExperienceCopy.zh : modelExperienceCopy.en
   const [category, setCategory] = useState<CategoryKey>('all')
   const [isCompareOpen, setIsCompareOpen] = useState(false)
+  const [compareModelIds, setCompareModelIds] = useState<string[]>([])
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<ExperienceMessage[]>(initialMessages)
   const {
@@ -59,11 +61,18 @@ export default function ModelsPage() {
     filteredModels,
   } = useModels()
 
+  const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
+
+  const comparedModels = useMemo(() => {
+    return compareModelIds
+      .map(id => allModels.find(m => m.id === id))
+      .filter((m): m is CatalogModelItem => !!m)
+  }, [compareModelIds, allModels])
+
   const visibleModels = useMemo(
     () => filteredModels.filter((model) => matchesCategory(model, category)),
     [category, filteredModels],
   )
-  const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
   const selectedModel = allModels.find((model) => model.id === selectedId) ?? visibleModels[0] ?? allModels[0]
   const provider = providersQuery.data?.items?.[0]
   const detail = detailQuery.data
@@ -80,16 +89,31 @@ export default function ModelsPage() {
 
   function sendPrompt() {
     const prompt = input.trim()
-    if (!prompt || !selectedModel) return
-    setMessages((prev) => [
-      ...prev,
-      { role: 'user', content: prompt },
-      {
-        role: 'assistant',
-        content: `已切换到 ${selectedModel.display_name} 进行体验。当前 UI 会保留输入、模型参数和成本提示；正式联调时这里接入模型体验接口返回。`,
-        meta: `模型 ${selectedModel.model_id} · 预估 ${formatModelPrice(selectedModel.pricing?.input_per_1m, selectedModel.pricing?.currency)}`,
-      },
-    ])
+    if (!prompt) return
+    
+    const userMsg = { role: 'user' as const, content: prompt }
+
+    if (compareModelIds.length > 0) {
+      const assistantMsgs = comparedModels.map((m) => ({
+        role: 'assistant' as const,
+        modelName: m.display_name,
+        modelLogo: vendorNode(m, 'sm'),
+        content: `我是 ${m.display_name}。针对您的提问“${prompt}”：\n\n这正是一个模拟回答，在正式联调接入中，您的接口将直连 ModelGo 代理的 \`${m.model_id}\` 节点，享受稳定低延迟的多模型能力。`,
+        meta: `响应延迟 580ms · 消耗额度极微 · 预估成本 ${formatModelPrice(m.pricing?.output_per_1m, m.pricing?.currency)}`
+      }))
+      setMessages((prev) => [...prev, userMsg, ...assistantMsgs])
+    } else {
+      if (!selectedModel) return
+      setMessages((prev) => [
+        ...prev,
+        userMsg,
+        {
+          role: 'assistant',
+          content: `已切换到 ${selectedModel.display_name} 进行体验。当前 UI 会保留输入、模型参数和成本提示；正式联调时这里接入模型体验接口返回。`,
+          meta: `模型 ${selectedModel.model_id} · 预估 ${formatModelPrice(selectedModel.pricing?.input_per_1m, selectedModel.pricing?.currency)}`,
+        },
+      ])
+    }
     setInput('')
   }
 
@@ -219,7 +243,41 @@ export default function ModelsPage() {
         </section>
 
         <section className="models-experience-chat">
-          {selectedModel && (
+          {compareModelIds.length > 0 ? (
+            <div className="models-experience-modelbar">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-brand-selected-bg text-brand-base flex items-center justify-center shrink-0 border border-brand-mid/15">
+                  <LuGitCompareArrows size={18} />
+                </div>
+                <div className="min-w-0">
+                  <div className="models-experience-modelbar-title flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-brand-selected-bg text-brand-base border border-brand-mid/10">对比模式</span>
+                    {comparedModels.map((m, idx) => (
+                      <span key={m.id} className="text-mg-text-0 font-bold text-sm">
+                        {m.display_name}
+                        {idx < comparedModels.length - 1 && <span className="text-mg-text-3 font-normal mx-2">VS</span>}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="models-experience-modelbar-sub">
+                    当前同时体验 {comparedModels.length} 个模型的输出对比
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" className="h-7.5 px-3 text-[11px] rounded-lg font-semibold" onClick={() => setIsCompareOpen(true)}>
+                  管理对比
+                </Button>
+                <button
+                  onClick={() => setCompareModelIds([])}
+                  className="w-7.5 h-7.5 rounded-full bg-mg-fill-0 hover:bg-mg-fill-2 text-mg-text-2 hover:text-mg-text-0 flex items-center justify-center cursor-pointer transition-colors active:scale-95 border-none outline-none"
+                  title="退出对比模式"
+                >
+                  <LuX size={14} />
+                </button>
+              </div>
+            </div>
+          ) : selectedModel ? (
             <div className="models-experience-modelbar">
               <div className="flex items-center gap-3 min-w-0">
                 {vendorNode(selectedModel, 'lg')}
@@ -239,7 +297,7 @@ export default function ModelsPage() {
                 <span>{formatModelPrice(selectedModel.pricing?.output_per_1m, selectedModel.pricing?.currency)}</span>
               </div>
             </div>
-          )}
+          ) : null}
 
           <div className="models-experience-quota">
             <span>{text.quota}</span>
@@ -249,7 +307,20 @@ export default function ModelsPage() {
 
           <div className="models-experience-messages">
             {messages.map((message, index) => (
-              <div key={`${message.role}-${index}`} className={cn('models-experience-message', message.role === 'user' && 'is-user')}>
+              <div
+                key={`${message.role}-${index}`}
+                className={cn(
+                  'models-experience-message',
+                  message.role === 'user' && 'is-user',
+                  message.modelName && 'is-compare-bubble'
+                )}
+              >
+                {message.modelName && message.role === 'assistant' && (
+                  <div className="models-experience-message-model-header">
+                    {message.modelLogo}
+                    <span>{message.modelName}</span>
+                  </div>
+                )}
                 <div className="models-experience-message-bubble">
                   {message.content.split('\n').map((line, lineIndex) => <p key={`${index}-${lineIndex}`}>{line}</p>)}
                   {message.meta && <span>{message.meta}</span>}
@@ -295,6 +366,25 @@ export default function ModelsPage() {
         isOpen={isCompareOpen}
         onClose={() => setIsCompareOpen(false)}
         allModels={allModels}
+        initialSelectedIds={compareModelIds}
+        onConfirmCompare={(ids) => {
+          setCompareModelIds(ids)
+          if (ids.length > 0) {
+            setMessages([
+              { role: 'user' as const, content: '开启模型性能实时对比体验。' },
+              ...ids.map(id => {
+                const m = allModels.find(item => item.id === id)
+                return {
+                  role: 'assistant' as const,
+                  modelName: m?.display_name,
+                  modelLogo: m ? vendorNode(m, 'sm') : undefined,
+                  content: `[系统就绪] 我是 ${m?.display_name || '模型'}，已成功加入对比。我支持的上下文长度为 ${formatContextLength(m?.context_length)}。请发送 Prompt，我将与其他模型同场竞技。`,
+                  meta: `模型 ${m?.model_id} · 就绪`
+                }
+              })
+            ])
+          }
+        }}
       />
     </div>
   )

@@ -1,36 +1,48 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
-import Select from '@/components/ui/Select'
 import { Switch } from '@/components/ui/Switch'
-import { Badge } from '@/components/ui/Badge'
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
-} from '@/components/ui/Table'
 import { useAuthStore } from '@/store/auth'
 import { appToast } from '@/lib/app-toast'
 import {
-  createForward,
-  deleteForward,
   getLoggingConfig,
-  listForwards,
-  listPlatforms,
-  updateForward,
   updateLoggingConfig,
 } from '@/services/observability'
-import { listApiKeys } from '@/services/api-keys'
-import { pageItems } from '@/lib/utils'
-import type { LoggingConfig, PlatformConfigField } from '@/types'
-import { formatDateTime } from '@/lib/format-date'
+import type { LoggingConfig } from '@/types'
 
+// ─── 可用平台列表（mock） ──────────────────────────────────────────────────────
+
+const AVAILABLE_PLATFORMS = [
+  { id: 'arize',     name: 'Arize AI' },
+  { id: 'braintrust', name: 'Braintrust' },
+  { id: 'clickhouse', name: 'ClickHouse' },
+  { id: 'comet',     name: 'Comet Opik' },
+  { id: 'datadog',   name: 'Datadog' },
+  { id: 'grafana',   name: 'Grafana Cloud' },
+  { id: 'langfuse',  name: 'Langfuse' },
+  { id: 'langsmith', name: 'LangSmith' },
+  { id: 'newrelic',  name: 'New Relic AI' },
+  { id: 'otel',      name: 'OpenTelemetry Collector' },
+  { id: 'posthog',   name: 'PostHog' },
+]
+
+// 每个平台对应一个色调，用于 logo 占位块
+const PLATFORM_COLORS: Record<string, string> = {
+  arize:      'bg-violet-500/15 text-violet-600',
+  braintrust: 'bg-amber-500/15 text-amber-600',
+  clickhouse: 'bg-yellow-500/15 text-yellow-600',
+  comet:      'bg-sky-500/15 text-sky-600',
+  datadog:    'bg-purple-500/15 text-purple-600',
+  grafana:    'bg-orange-500/15 text-orange-600',
+  langfuse:   'bg-emerald-500/15 text-emerald-600',
+  langsmith:  'bg-blue-500/15 text-blue-600',
+  newrelic:   'bg-teal-500/15 text-teal-600',
+  otel:       'bg-indigo-500/15 text-indigo-600',
+  posthog:    'bg-pink-500/15 text-pink-600',
+}
 
 // ─── Toggle row ───────────────────────────────────────────────────────────────
 
@@ -72,451 +84,110 @@ function ToggleRow({
   )
 }
 
-// ─── Collapsible（依赖配置的平滑展开/收起） ───────────────────────────────────
-// 用 CSS grid-template-rows 0fr↔1fr 过渡，无需测量高度即可平滑折叠。
-function CollapsibleSection({ open, children }: { open: boolean; children: ReactNode }) {
+// ─── 平台配置 Modal ──────────────────────────────────────────────────────────
+
+function PlatformConfigModal({
+  platform,
+  onClose,
+}: {
+  platform: { id: string; name: string } | null
+  onClose: () => void
+}) {
+  const [apiKey, setApiKey] = useState('')
+  const [endpoint, setEndpoint] = useState('')
+
+  function handleSave() {
+    appToast.success('配置已保存')
+    onClose()
+  }
+
   return (
-    <div
-      className="grid transition-[grid-template-rows] duration-300 ease-out"
-      style={{ gridTemplateRows: open ? '1fr' : '0fr' }}
-      aria-hidden={!open}
+    <Modal
+      open={!!platform}
+      onClose={onClose}
+      title={platform?.name ?? ''}
+      size="sm"
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>取消</Button>
+          <Button variant="brand" onClick={handleSave}>保存</Button>
+        </>
+      }
     >
-      <div className="overflow-hidden">{children}</div>
-    </div>
+      <div className="flex flex-col gap-4">
+        <div>
+          <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">
+            API Key / Token
+          </label>
+          <Input
+            type="password"
+            value={apiKey}
+            placeholder="粘贴密钥，提交后不再明文显示"
+            onChange={(e) => setApiKey(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">
+            Endpoint URL
+          </label>
+          <Input
+            value={endpoint}
+            placeholder="https://your-endpoint.example.com"
+            onChange={(e) => setEndpoint(e.target.value)}
+          />
+        </div>
+      </div>
+    </Modal>
   )
 }
 
-// ─── Destinations section ─────────────────────────────────────────────────────
+// ─── 可用平台列表区块 ──────────────────────────────────────────────────────────
 
-function DestinationsSection({ workspaceId }: { workspaceId: string }) {
-  const { t } = useTranslation()
-  const qc = useQueryClient()
-  const [platform, setPlatform] = useState('')
-  const [formOpen, setFormOpen] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
-
-  const platformsQuery = useQuery({
-    queryKey: ['observability', 'platforms', workspaceId],
-    queryFn: () => listPlatforms(workspaceId),
-    staleTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
-  })
-
-  const forwardsQuery = useQuery({
-    queryKey: ['observability', 'forwards', workspaceId],
-    queryFn: () => listForwards(workspaceId),
-    staleTime: 30_000,
-    refetchOnWindowFocus: false,
-  })
-
-  const selectedPlatformId = platform || platformsQuery.data?.items[0]?.platform || ''
-  const selectedPlatform = useMemo(
-    () => platformsQuery.data?.items.find((item) => item.platform === selectedPlatformId),
-    [platformsQuery.data, selectedPlatformId]
-  )
-
-  const createMutation = useMutation({
-    mutationFn: (payload: {
-      name: string
-      config: Record<string, string>
-      sampling_rate?: number
-      api_key_ids?: string[]
-      privacy_mode_enabled?: boolean
-    }) =>
-      createForward(workspaceId, {
-        platform: selectedPlatformId,
-        name: payload.name,
-        config: payload.config,
-        enabled: true,
-        sampling_rate: payload.sampling_rate,
-        api_key_ids: payload.api_key_ids,
-        privacy_mode_enabled: payload.privacy_mode_enabled,
-      }),
-    onSuccess: () => {
-      appToast.success(t('observability.toast.forwardCreated'))
-      qc.invalidateQueries({ queryKey: ['observability', 'forwards', workspaceId] })
-    },
-    onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : t('observability.toast.forwardCreateError'))
-    },
-  })
-
-  const toggleMutation = useMutation({
-    mutationFn: (values: { forwardId: string; enabled: boolean }) =>
-      updateForward(workspaceId, values.forwardId, { enabled: values.enabled }),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ['observability', 'forwards', workspaceId] }),
-    onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : t('observability.toast.toggleError'))
-    },
-  })
-
-  const removeMutation = useMutation({
-    mutationFn: (forwardId: string) => deleteForward(workspaceId, forwardId),
-    onSuccess: () => {
-      appToast.success(t('observability.toast.forwardDeleted'))
-      qc.invalidateQueries({ queryKey: ['observability', 'forwards', workspaceId] })
-    },
-    onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : t('observability.toast.forwardDeleteError'))
-    },
-  })
-
-  const forwards = forwardsQuery.data?.items ?? []
+function AvailablePlatformsSection() {
+  const [activePlatform, setActivePlatform] = useState<{ id: string; name: string } | null>(null)
 
   return (
     <>
       <div className="rounded-xl border border-mg-border overflow-hidden bg-card-bg">
-        {/* 头部：列表标题 + 添加目标（触发折叠表单） */}
-        <div className="px-5 py-4 border-b border-mg-border flex items-center justify-between gap-3">
-          <h3 className="text-sm font-bold text-mg-text-0">{t('observability.destinations.listTitle')}</h3>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setFormOpen((o) => !o)}
-            className="h-7 text-xs font-semibold gap-1.5"
-          >
-            {t('observability.destinations.addTitle')}
-            <svg width="12" height="12" viewBox="0 0 14 14" className={`transition-transform duration-200 ${formOpen ? 'rotate-180' : ''}`}>
-              <path d="M3 5.5L7 9.5L11 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            </svg>
-          </Button>
+        <div className="px-5 py-3 border-b border-mg-border">
+          <p className="text-[11px] font-bold text-mg-text-2 uppercase tracking-widest">可用平台</p>
         </div>
-
-        {/* 添加目标表单：平滑展开 */}
-        <CollapsibleSection open={formOpen}>
-          <div className="p-5 border-b border-mg-border/60 bg-mg-fill-0/15">
-            <CreateForwardForm
-              key={selectedPlatformId}
-              platformItems={platformsQuery.data?.items ?? []}
-              selectedPlatformId={selectedPlatformId}
-              selectedPlatform={selectedPlatform}
-              onPlatformChange={setPlatform}
-              isSubmitting={createMutation.isPending}
-              workspaceId={workspaceId}
-              onSubmit={(payload) => createMutation.mutate(payload)}
-            />
-          </div>
-        </CollapsibleSection>
-        {forwardsQuery.isLoading ? (
-          <div className="p-5 space-y-2 animate-pulse">
-            <div className="h-4 bg-mg-fill-0 rounded w-1/3" />
-            <div className="h-4 bg-mg-fill-0 rounded w-full" />
-            <div className="h-4 bg-mg-fill-0 rounded w-2/3" />
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('observability.destinations.table.name')}</TableHead>
-                <TableHead>{t('observability.destinations.table.platform')}</TableHead>
-                <TableHead>{t('observability.destinations.table.status')}</TableHead>
-                <TableHead>{t('observability.destinations.table.lastSuccess')}</TableHead>
-                <TableHead className="text-right"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {forwards.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-10 text-xs italic text-mg-text-2">
-                    {t('observability.destinations.empty')}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                forwards.map((row) => (
-                  <TableRow key={row.forward_id}>
-                    <TableCell className="font-semibold text-mg-text-0 text-[13.5px]">
-                      {row.name}
-                    </TableCell>
-                    <TableCell className="text-xs text-mg-text-1">
-                      {row.platform}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={row.enabled ? 'success' : 'outline'}>
-                        {row.enabled ? t('observability.destinations.table.enabled') : t('observability.destinations.table.paused')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs text-mg-text-2">
-                      {formatDateTime(row.last_success_at)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => toggleMutation.mutate({ forwardId: row.forward_id, enabled: !row.enabled })}
-                          className="h-7 text-xs font-semibold"
-                        >
-                          {row.enabled ? t('observability.destinations.table.pause') : t('observability.destinations.table.resume')}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => setDeleteTarget({ id: row.forward_id, name: row.name })}
-                          className="h-7 text-xs"
-                        >
-                          {t('observability.destinations.table.delete')}
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        )}
+        <ul>
+          {AVAILABLE_PLATFORMS.map((p, idx) => {
+            const colorClass = PLATFORM_COLORS[p.id] ?? 'bg-mg-fill-0 text-mg-text-1'
+            return (
+              <li
+                key={p.id}
+                className={`flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-mg-fill-0/40 transition-colors ${idx !== 0 ? 'border-t border-mg-border' : ''}`}
+                onClick={() => setActivePlatform(p)}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${colorClass}`}>
+                    {p.name.charAt(0)}
+                  </span>
+                  <span className="text-sm font-medium text-mg-text-0">{p.name}</span>
+                </div>
+                <button
+                  type="button"
+                  className="flex items-center gap-1 text-xs text-mg-text-2 hover:text-brand-base transition-colors"
+                  onClick={(e) => { e.stopPropagation(); setActivePlatform(p) }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                  Add Destination
+                </button>
+              </li>
+            )
+          })}
+        </ul>
       </div>
 
-      <Modal
-        open={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        title={t('observability.destinations.deleteModal.title')}
-        description={t('observability.destinations.deleteModal.description', { name: deleteTarget?.name })}
-        size="sm"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              {t('observability.destinations.deleteModal.cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              loading={removeMutation.isPending}
-              onClick={() => {
-                if (deleteTarget) {
-                  removeMutation.mutate(deleteTarget.id, {
-                    onSuccess: () => setDeleteTarget(null)
-                  })
-                }
-              }}
-            >
-              {t('observability.destinations.deleteModal.confirm')}
-            </Button>
-          </>
-        }
+      <PlatformConfigModal
+        platform={activePlatform}
+        onClose={() => setActivePlatform(null)}
       />
     </>
-  )
-}
-
-// ─── CreateForwardForm ────────────────────────────────────────────────────────
-
-interface CreateFormPayload {
-  name: string
-  config: Record<string, string>
-  sampling_rate?: number
-  api_key_ids?: string[]
-  privacy_mode_enabled?: boolean
-}
-
-function CreateForwardForm({
-  platformItems,
-  selectedPlatformId,
-  selectedPlatform,
-  onPlatformChange,
-  isSubmitting,
-  workspaceId,
-  onSubmit,
-}: {
-  platformItems: { platform: string; display_name: string }[]
-  selectedPlatformId: string
-  selectedPlatform: { config_schema: { fields: PlatformConfigField[] } } | undefined
-  onPlatformChange: (id: string) => void
-  isSubmitting: boolean
-  workspaceId: string
-  onSubmit: (payload: CreateFormPayload) => void
-}) {
-  const { t } = useTranslation()
-  const fields = selectedPlatform?.config_schema.fields ?? []
-  const [name, setName] = useState('')
-  const [configValues, setConfigValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(fields.map((f) => [f.key, '']))
-  )
-  const [samplingRate, setSamplingRate] = useState('100')
-  const [privacyMode, setPrivacyMode] = useState(false)
-  const [selectedKeyIds, setSelectedKeyIds] = useState<string[]>([])
-  const [errors, setErrors] = useState<Record<string, boolean>>({})
-
-  const apiKeysQuery = useQuery({
-    queryKey: ['api-keys', workspaceId],
-    queryFn: () => listApiKeys(workspaceId).then(pageItems),
-    enabled: !!workspaceId,
-    staleTime: 60_000,
-  })
-  const apiKeys = apiKeysQuery.data ?? []
-
-  function toggleKey(keyId: string) {
-    setSelectedKeyIds((prev) =>
-      prev.includes(keyId) ? prev.filter((k) => k !== keyId) : [...prev, keyId]
-    )
-  }
-
-  function handleSubmit() {
-    const newErrors: Record<string, boolean> = {}
-    const missing: string[] = []
-
-    if (!selectedPlatformId) {
-      newErrors['platform'] = true
-      missing.push(t('observability.form.platformLabel'))
-    }
-    if (!name.trim()) {
-      newErrors['name'] = true
-      missing.push(t('observability.form.nameLabel'))
-    }
-    for (const field of fields) {
-      if (field.required && !configValues[field.key]?.trim()) {
-        newErrors[field.key] = true
-        missing.push(field.label)
-      }
-    }
-    const rate = parseInt(samplingRate, 10)
-    if (samplingRate.trim() && (isNaN(rate) || rate < 1 || rate > 100)) {
-      newErrors['samplingRate'] = true
-      missing.push(t('observability.form.samplingRate'))
-    }
-
-    setErrors(newErrors)
-
-    if (missing.length > 0) {
-      appToast.error(t('observability.form.validationError', { fields: missing.join('、') }))
-      return
-    }
-
-    onSubmit({
-      name: name.trim(),
-      config: configValues,
-      sampling_rate: isNaN(rate) ? 1 : rate / 100,
-      api_key_ids: selectedKeyIds.length > 0 ? selectedKeyIds : undefined,
-      privacy_mode_enabled: privacyMode || undefined,
-    })
-  }
-
-  return (
-    <div className="flex flex-col gap-5">
-      {/* 平台 + 名称 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div>
-          <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">{t('observability.form.platformLabel')}</label>
-          <Select value={selectedPlatformId} onChange={onPlatformChange} className="w-full">
-            {platformItems.map((item) => (
-              <Select.Option key={item.platform} value={item.platform}>
-                {item.display_name}
-              </Select.Option>
-            ))}
-          </Select>
-        </div>
-        <div>
-          <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">
-            {t('observability.form.nameLabel')}
-            <span className="text-rose-500 ml-1">*</span>
-          </label>
-          <Input
-            value={name}
-            placeholder="例如：生产环境 Datadog 主通道"
-            onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: false })) }}
-            className={errors['name'] ? 'border-rose-500 focus:border-rose-500' : ''}
-          />
-        </div>
-      </div>
-
-      {/* 平台配置字段 */}
-      {fields.length > 0 && (
-        <div className={`grid gap-5 ${fields.length > 1 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
-          {fields.map((field) => (
-            <div key={field.key}>
-              <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">
-                {field.label}
-                {field.required && <span className="text-rose-500 ml-1">*</span>}
-              </label>
-              <Input
-                value={configValues[field.key] ?? ''}
-                placeholder={field.type === 'secret' ? '粘贴密钥，提交后不再明文显示' : `填写 ${field.label}，参考平台文档获取`}
-                type={field.type === 'secret' ? 'password' : 'text'}
-                onChange={(e) => {
-                  setConfigValues((prev) => ({ ...prev, [field.key]: e.target.value }))
-                  setErrors((p) => ({ ...p, [field.key]: false }))
-                }}
-                className={errors[field.key] ? 'border-rose-500 focus:border-rose-500' : ''}
-              />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* 采样率 + 隐私模式 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div>
-          <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">
-            {t('observability.form.samplingRate')}
-          </label>
-          <div className="flex items-center gap-2">
-            <Input
-              type="number"
-              min="1"
-              max="100"
-              value={samplingRate}
-              placeholder="1~100，数值越小转发越少"
-              onChange={(e) => { setSamplingRate(e.target.value); setErrors((p) => ({ ...p, samplingRate: false })) }}
-              className={`flex-1 ${errors['samplingRate'] ? 'border-rose-500 focus:border-rose-500' : ''}`}
-            />
-            <span className="text-xs font-bold text-mg-text-2 shrink-0">%</span>
-          </div>
-          <p className="text-[10px] text-mg-text-2 mt-1.5">{t('observability.form.samplingHint')}</p>
-        </div>
-        <div>
-          <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">
-            {t('observability.form.privacyMode')}
-          </label>
-          <div className="flex items-center gap-3 mt-1">
-            <Switch checked={privacyMode} onChange={setPrivacyMode} />
-            <span className="text-xs text-mg-text-2">{t('observability.form.privacyHint')}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* API Key 绑定 */}
-      <div>
-        <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">
-          {t('observability.form.apiKeyFilter')}
-        </label>
-        <p className="text-[10px] text-mg-text-2 mb-2.5">{t('observability.form.apiKeyFilterHint')}</p>
-        {apiKeys.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {apiKeys.filter((k) => k.status === 'active').map((key) => {
-              const selected = selectedKeyIds.includes(key.api_key_id)
-              return (
-                <button
-                  key={key.api_key_id}
-                  type="button"
-                  onClick={() => toggleKey(key.api_key_id)}
-                  className={[
-                    'px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-all cursor-pointer',
-                    selected
-                      ? 'border-brand-base bg-brand-base/5 text-brand-base'
-                      : 'border-mg-border bg-mg-bg-1/40 text-mg-text-1 hover:border-mg-border/80',
-                  ].join(' ')}
-                >
-                  {key.name}
-                  <code className="ml-1.5 text-[10px] text-mg-text-2 font-mono">{key.masked?.slice(0, 12)}</code>
-                </button>
-              )
-            })}
-          </div>
-        ) : (
-          <span className="text-xs text-mg-text-2">{t('observability.form.noApiKeys')}</span>
-        )}
-      </div>
-
-      <div className="flex justify-end pt-2">
-        <Button
-          variant="brand"
-          loading={isSubmitting}
-          onClick={handleSubmit}
-          className="px-8"
-        >
-          {t('observability.form.submit')}
-        </Button>
-      </div>
-    </div>
   )
 }
 
@@ -578,8 +249,8 @@ function ObservabilityContent({
         />
       </div>
 
-      {/* 转发目标：广播开启时显示（独立区块，不缩进） */}
-      {broadcastEnabled && <DestinationsSection workspaceId={workspaceId} />}
+      {/* 可用平台：常驻展示（对齐原型，不依赖广播开关） */}
+      <AvailablePlatformsSection />
     </div>
   )
 }

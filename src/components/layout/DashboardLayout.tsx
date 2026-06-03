@@ -197,7 +197,7 @@ export function DashboardLayout() {
 
           {/* 渲染主视图区域 */}
           <div className={cn(
-            "transition-all duration-300 shrink-0",
+            "shrink-0",
             isDashboardRoute || isFlatRoute ? (
               "bg-transparent border-none shadow-none p-0"
             ) : (

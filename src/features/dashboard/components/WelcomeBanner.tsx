@@ -9,7 +9,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { LuBook } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
-import { getMarket } from '@/lib/market'
+import { useLangStore } from '@/store/use-brand-store'
 import { getMarketConfig } from '@/config/market'
 import { Button } from '@/components/ui/Button'
 import { DashboardHeroVisual } from './DashboardHeroVisual'
@@ -25,7 +25,7 @@ export const WelcomeBanner: React.FC = () => {
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
 
   // 智能探测当前市场与语言
-  const market = getMarket()
+  const market = useLangStore((s) => s.market)
   const isDomestic = market === 'domestic'
   const marketConfig = getMarketConfig(market)
 

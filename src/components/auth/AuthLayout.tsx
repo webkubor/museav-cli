@@ -7,7 +7,7 @@
 
 import type { ReactNode } from 'react'
 import { modelGoLogos } from '@/config/brand-assets'
-import { getMarket } from '@/lib/market'
+import { useLangStore } from '@/store/use-brand-store'
 
 interface AuthLayoutProps {
   /** 鉴权卡片大标题 */
@@ -24,7 +24,7 @@ interface AuthLayoutProps {
  * 鉴权公共高品质科技网格氛围骨架 (Tailwind 语义抽离架构)
  */
 export function AuthLayout({ title, subtitle, footer, children }: AuthLayoutProps) {
-  const market = getMarket()
+  const market = useLangStore((s) => s.market)
   const isDomestic = market === 'domestic'
 
   // 自适应双氛围球的渐变渲染

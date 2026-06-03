@@ -12,7 +12,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { modelGoIcons } from '@/config/brand-assets'
-import { getMarket } from '@/lib/market'
+import { useLangStore } from '@/store/use-brand-store'
 import { getMarketConfig } from '@/config/market'
 import { useAuthStore } from '@/store/auth'
 import { switchTenant, logout, getSession } from '@/services/auth'
@@ -41,14 +41,13 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/DropdownMenu'
 
-const market = getMarket()
-const marketConfig = getMarketConfig(market)
-
 /**
  * 重构后的 DashboardHeader
  */
 export const DashboardHeader: React.FC = () => {
   const navigate = useNavigate()
+  const market = useLangStore((s) => s.market)
+  const marketConfig = getMarketConfig(market)
   const location = useLocation()
   const queryClient = useQueryClient()
   const { t } = useTranslation()

@@ -174,13 +174,14 @@ export default function ModelsCatalogPage() {
           {visibleModels.map((model) => (
             <div
               key={model.id}
+              onClick={(e) => handleGoPlayground(model.model_id, e)}
               onMouseMove={handleMouseMove}
               onMouseLeave={handleMouseLeave}
               style={{
                 transform: 'perspective(1000px) rotateX(var(--rotate-x, 0deg)) rotateY(var(--rotate-y, 0deg)) scale3d(var(--scale, 1), var(--scale, 1), var(--scale, 1))',
                 transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
               }}
-              className="group relative p-[1px] rounded-2xl overflow-hidden bg-[rgba(15,23,42,0.09)] dark:bg-[rgba(255,255,255,0.14)] transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1) hover:shadow-[0_20px_40px_-10px_var(--brand-glow)] shadow-[0_8px_30px_rgb(0,0,0,0.02)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] [--scale:1] hover:[--scale:1.015] flex"
+              className="group relative p-[1px] rounded-2xl overflow-hidden bg-[rgba(15,23,42,0.09)] dark:bg-[rgba(255,255,255,0.14)] transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1) hover:shadow-[0_20px_40px_-10px_var(--brand-glow)] shadow-[0_8px_30px_rgb(0,0,0,0.02)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] [--scale:1] hover:[--scale:1.015] flex cursor-pointer"
             >
               {/* 渐变边框 Spotlight 层（光斑跟随，Hover 时显现） */}
               <div

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
+import { Switch } from '@/components/ui/Switch'
 import { LuSearch, LuPlus, LuX, LuMessageSquare, LuTrash2, LuSparkles } from 'react-icons/lu'
 import { listModels } from '@/services/catalog'
 import type { CatalogModelItem } from '@/types'
@@ -183,7 +184,9 @@ export default function ModelsComparePage() {
     }
   }, [models, location.state, navigate, location.pathname])
 
-  const [chatInput, setChatInput] = useState('')
+  // 每个模型槽位各自的输入框；同步开关打开时一处输入镜像到全部
+  const [chatInputs, setChatInputs] = useState<string[]>(['', '', ''])
+  const [syncInput, setSyncInput] = useState(true)
   const [histories, setHistories] = useState<Array<Array<{ role: 'user' | 'assistant'; content: string; meta?: string }>>>([
     [],
     [],
@@ -197,23 +200,37 @@ export default function ModelsComparePage() {
     }))
   }, [slots])
 
-  const handleSend = () => {
-    const prompt = chatInput.trim()
+  // 输入变化：同步开启时镜像到全部槽位，否则只改当前槽位
+  const handleInputChange = (idx: number, value: string) => {
+    setChatInputs((prev) => (syncInput ? prev.map(() => value) : prev.map((v, i) => (i === idx ? value : v))))
+  }
+
+  const buildExchange = (model: CatalogModelItem, prompt: string) => [
+    { role: 'user' as const, content: prompt },
+    {
+      role: 'assistant' as const,
+      content: `我是 ${model.display_name}。针对您的提问“${prompt}”：\n\n这正是一个模拟回答。在正式系统对接中，您的接口将直接调用 ModelGo 代理的 \`${model.model_id}\` 终端。通过我们精心设计的分栏对话，您可以同步比对各家大模型的质量、延时与实际消耗性价比。`,
+      meta: `延迟 620ms · 消耗额度极微 · 预估成本 ${formatPrice(model.pricing?.output_per_1m)} / 1M`,
+    },
+  ]
+
+  // 从某个槽位发送：同步开启 → 同一 prompt 分发给所有已选模型；否则只发该模型
+  const handleSendFrom = (idx: number) => {
+    const prompt = chatInputs[idx].trim()
     if (!prompt) return
 
-    setHistories((prev) => prev.map((history, idx) => {
-      const activeModel = slots[idx]
-      if (!activeModel) return []
-      
-      const userMsg = { role: 'user' as const, content: prompt }
-      const assistantMsg = {
-        role: 'assistant' as const,
-        content: `我是 ${activeModel.display_name}。针对您的提问“${prompt}”：\n\n这正是一个模拟回答。在正式系统对接中，您的接口将直接调用 ModelGo 代理的 \`${activeModel.model_id}\` 终端。通过我们精心设计的分栏对话，您可以同步比对各家大模型的质量、延时与实际消耗性价比。`,
-        meta: `延迟 620ms · 消耗额度极微 · 预估成本 ${formatPrice(activeModel.pricing?.output_per_1m)} / 1M`
-      }
-      return [...history, userMsg, assistantMsg]
-    }))
-    setChatInput('')
+    if (syncInput) {
+      setHistories((prev) => prev.map((history, i) => {
+        const model = slots[i]
+        return model ? [...history, ...buildExchange(model, prompt)] : []
+      }))
+      setChatInputs(['', '', ''])
+    } else {
+      const model = slots[idx]
+      if (!model) return
+      setHistories((prev) => prev.map((history, i) => (i === idx ? [...history, ...buildExchange(model, prompt)] : history)))
+      setChatInputs((prev) => prev.map((v, i) => (i === idx ? '' : v)))
+    }
   }
 
   const handleClearChat = () => {
@@ -329,14 +346,32 @@ export default function ModelsComparePage() {
           {/* 对话对比 Playground */}
           {hasAny && (
             <div className="mt-8 pt-8 border-t border-[var(--mg-border)]">
-              <div className="mb-5">
-                <h2 className="text-sm font-bold text-[var(--mg-text-0)] m-0 flex items-center gap-2">
-                  <LuMessageSquare size={15} className="text-[var(--brand-base)]" />
-                  实时对话对比 (Chat Arena)
-                </h2>
-                <p className="text-[11.5px] text-[var(--mg-text-2)] m-0 mt-1">
-                  统一输入 Prompt 分发给所有已选模型，分栏并行对比各家大模型的响应质量、语气格式与生成耗时。
-                </p>
+              <div className="mb-5 flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <h2 className="text-sm font-bold text-[var(--mg-text-0)] m-0 flex items-center gap-2">
+                    <LuMessageSquare size={15} className="text-[var(--brand-base)]" />
+                    实时对话对比 (Chat Arena)
+                  </h2>
+                  <p className="text-[11.5px] text-[var(--mg-text-2)] m-0 mt-1">
+                    每个模型卡片底部独立输入框；开启「同步输入」则一处输入分发给所有已选模型，分栏并行对比。
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  {histories.some((h) => h.length > 0) && (
+                    <button
+                      onClick={handleClearChat}
+                      title="清空对话历史"
+                      className="h-8 px-3 rounded-lg cursor-pointer text-[var(--mg-text-2)] hover:text-[var(--mg-danger)] hover:bg-[var(--mg-fill-0)] transition-all flex items-center gap-1.5 border border-[var(--mg-border)] bg-transparent text-xs font-semibold"
+                    >
+                      <LuTrash2 size={14} />
+                      清空
+                    </button>
+                  )}
+                  <label className="flex items-center gap-2 select-none cursor-pointer">
+                    <span className="text-[11.5px] font-semibold text-[var(--mg-text-2)]">同步输入</span>
+                    <Switch checked={syncInput} onChange={setSyncInput} />
+                  </label>
+                </div>
               </div>
 
               {/* 多栏并排对话 */}
@@ -353,7 +388,7 @@ export default function ModelsComparePage() {
                   return (
                     <div 
                       key={`${m.id}-${idx}`} 
-                      className="glass-card-glow flex flex-col h-[350px] overflow-hidden rounded-xl border border-[var(--mg-border)]"
+                      className="glass-card-glow flex flex-col h-[440px] overflow-hidden rounded-xl border border-[var(--mg-border)]"
                     >
                       {/* 栏头部 */}
                       <div className="p-3 bg-[var(--mg-fill-0)]/40 border-b border-[var(--mg-border)]/65 flex items-center gap-2 shrink-0 select-none">
@@ -401,69 +436,45 @@ export default function ModelsComparePage() {
                           </div>
                         )}
                       </div>
+
+                      {/* 卡片底部输入框（复用渐变流光样式，紧凑版） */}
+                      <div className="shrink-0 p-2 border-t border-[var(--mg-border)]/65 bg-[var(--mg-bg-0)]/30">
+                        <div className="rounded-xl p-[1.5px] bg-gradient-to-r from-[#4285f4] via-[#9b72cb] to-[#d96570] transition-all focus-within:shadow-[0_0_14px_rgba(155,114,203,0.12)]">
+                          <div className="rounded-[10px] bg-[var(--mg-bg-0)] p-2 flex items-end gap-2">
+                            <textarea
+                              value={chatInputs[idx]}
+                              onChange={(e) => handleInputChange(idx, e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault()
+                                  handleSendFrom(idx)
+                                }
+                              }}
+                              placeholder={syncInput ? '输入分发给全部模型…' : `仅向 ${m.display_name} 提问…`}
+                              rows={1}
+                              className="flex-1 w-full bg-transparent border-none outline-none resize-none text-[12.5px] text-[var(--mg-text-0)] placeholder-[var(--mg-text-2)] focus:ring-0 leading-relaxed max-h-20"
+                            />
+                            <button
+                              onClick={() => handleSendFrom(idx)}
+                              disabled={!chatInputs[idx].trim()}
+                              title={syncInput ? '分发给全部模型' : '发送'}
+                              className={cn(
+                                "h-7 w-7 shrink-0 rounded-full flex items-center justify-center border-none transition-all",
+                                chatInputs[idx].trim()
+                                  ? "bg-gradient-to-r from-[#9b72cb] to-[#d96570] text-white hover:opacity-90 active:scale-95 cursor-pointer"
+                                  : "bg-[var(--mg-fill-0)] text-[var(--mg-text-2)]/50 cursor-not-allowed"
+                              )}
+                            >
+                              <LuSparkles size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )
                 })}
               </div>
 
-              {/* 统一输入区 (Gemini 风格流光输入框) */}
-              <div className="relative rounded-2xl p-[1.5px] transition-all duration-300 focus-within:shadow-[0_0_20px_rgba(155,114,203,0.12)] bg-gradient-to-r from-[#4285f4] via-[#9b72cb] to-[#d96570] hover:from-[#4285f4] hover:via-[#9b72cb] hover:to-[#d96570] focus-within:from-[#4285f4] focus-within:via-[#9b72cb] focus-within:to-[#34a853]">
-                <div className="rounded-[15px] bg-[var(--mg-bg-0)] p-3 flex flex-col gap-3 min-h-[105px]">
-                  {/* 输入区域 */}
-                  <textarea
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault()
-                        handleSend()
-                      }
-                    }}
-                    placeholder="在此输入问题，按 Enter 键统一分发提问..."
-                    rows={2}
-                    className="flex-1 w-full bg-transparent border-none outline-none resize-none text-[13px] text-[var(--mg-text-0)] placeholder-[var(--mg-text-2)] focus:ring-0 p-1 line-clamp-4 leading-relaxed"
-                  />
-                  
-                  {/* 底部操作区 */}
-                  <div className="flex items-center justify-between border-t border-[var(--mg-border)]/20 pt-2.5">
-                    {/* 左侧操作小图标：清空历史对话 */}
-                    <div className="flex items-center gap-2">
-                      {histories.some(h => h.length > 0) ? (
-                        <button
-                          onClick={handleClearChat}
-                          title="清空对话历史"
-                          className="p-2 rounded-lg cursor-pointer text-[var(--mg-text-2)] hover:text-[var(--mg-danger)] hover:bg-[var(--mg-fill-0)] transition-all flex items-center justify-center border-none bg-transparent"
-                        >
-                          <LuTrash2 size={16} />
-                        </button>
-                      ) : (
-                        <button
-                          disabled
-                          title="无历史对话"
-                          className="p-2 rounded-lg text-[var(--mg-text-2)]/30 transition-all flex items-center justify-center border-none bg-transparent cursor-not-allowed"
-                        >
-                          <LuTrash2 size={16} />
-                        </button>
-                      )}
-                    </div>
-
-                    {/* 右侧发送按钮 */}
-                    <button
-                      onClick={handleSend}
-                      disabled={!chatInput.trim()}
-                      className={cn(
-                        "h-8 px-4 text-xs font-bold rounded-full cursor-pointer flex items-center gap-1.5 border-none transition-all duration-200 select-none shadow-sm",
-                        chatInput.trim()
-                          ? "bg-gradient-to-r from-[#9b72cb] to-[#d96570] text-white hover:opacity-90 active:scale-[0.98]"
-                          : "bg-[var(--mg-fill-0)] text-[var(--mg-text-2)]/50 cursor-not-allowed"
-                      )}
-                    >
-                      <LuSparkles size={13} className={chatInput.trim() ? "animate-[pulse_1.5s_infinite]" : ""} />
-                      统一发送
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
           )}
 

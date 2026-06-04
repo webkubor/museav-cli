@@ -475,12 +475,6 @@ export default function BillingPage() {
         ? 'border-brand-base bg-brand-glow/5 ring-1 ring-brand-base/20'
         : 'border-mg-border/60 bg-mg-fill-0/30 hover:border-mg-border hover:bg-mg-fill-0/50'
     )
-  const listTitle =
-    activeTab === 'main'
-      ? t('billing.orders.tab.recharge', { defaultValue: '充值记录' })
-      : activeTab === 'gift'
-        ? t('billing.orders.tab.gift', { defaultValue: '赠送余额明细' })
-        : t('billing.orders.tab.reward', { defaultValue: '奖励记录' })
 
   const { symbol: currencySymbol } = useCurrency()
   const qc = useQueryClient()
@@ -648,9 +642,26 @@ export default function BillingPage() {
         </form>
       </div>
 
-      {/* 4. 当前列表标题（由上方余额卡片切换驱动） */}
-      <div className="border-b border-mg-border/60 pb-2.5">
-        <span className="text-sm font-bold text-brand-base">{listTitle}</span>
+      {/* 4. Tab 切换（与上方余额卡片联动，点卡片或点 Tab 都可切换） */}
+      <div className="border-b border-mg-border/60 flex gap-6">
+        {([
+          { key: 'main', label: t('billing.orders.tab.recharge', { defaultValue: '充值记录' }) },
+          { key: 'gift', label: t('billing.orders.tab.gift', { defaultValue: '赠送余额明细' }) },
+          { key: 'reward', label: t('billing.orders.tab.reward', { defaultValue: '奖励记录' }) },
+        ] as { key: BalanceTab; label: string }[]).map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={cn(
+              'pb-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px cursor-pointer outline-none',
+              activeTab === tab.key
+                ? 'border-brand-base text-brand-base'
+                : 'border-transparent text-mg-text-2 hover:text-mg-text-1'
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* 5. 列表区 */}

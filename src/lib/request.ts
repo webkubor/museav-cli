@@ -3,7 +3,6 @@ import type { ApiError, ApiResponse, QueryParams } from '@/types'
 import { injectHeaders } from '@/lib/request-headers'
 import { getMarket } from '@/lib/market'
 import { useLangStore } from '@/store/use-brand-store'
-import { getModuleLabel } from '@/lib/api-labels'
 import { useAuthStore } from '@/store/auth'
 
 const API_V1_PREFIX = 'api/v1'
@@ -51,7 +50,11 @@ type ApiLogEntry = {
   status?: number
   request_id?: string
   error?: string
+  request?: unknown
+  response?: unknown
 }
+
+const SENSITIVE_KEY_RE = /authorization|cookie|csrf|token|secret|password|api[_-]?key|access[_-]?key/i
 
 function nowMs() {
   return typeof performance !== 'undefined' ? performance.now() : Date.now()
@@ -61,10 +64,43 @@ function durationMs(startedAt: number) {
   return Math.max(0, Math.round(nowMs() - startedAt))
 }
 
+function redactDevValue(value: unknown, depth = 0): unknown {
+  if (depth > 6) return '[MaxDepth]'
+  if (value === null || value === undefined) return value
+  if (typeof value === 'string') {
+    return value.length > 1000 ? `${value.slice(0, 1000)}...[truncated ${value.length - 1000} chars]` : value
+  }
+  if (typeof value !== 'object') return value
+  if (value instanceof FormData) {
+    return Object.fromEntries(
+      Array.from(value.entries()).map(([key, item]) => [
+        key,
+        item instanceof File ? `[File name=${item.name} size=${item.size} type=${item.type || 'unknown'}]` : redactDevValue(item, depth + 1),
+      ])
+    )
+  }
+  if (Array.isArray(value)) {
+    return value.slice(0, 50).map((item) => redactDevValue(item, depth + 1))
+  }
+
+  const source = value as Record<string, unknown>
+  return Object.fromEntries(
+    Object.entries(source).slice(0, 80).map(([key, item]) => [
+      key,
+      SENSITIVE_KEY_RE.test(key) ? '[REDACTED]' : redactDevValue(item, depth + 1),
+    ])
+  )
+}
+
 function devLogApiCall(entry: ApiLogEntry) {
   if (!import.meta.env.DEV || typeof navigator === 'undefined') return
 
-  const payload = JSON.stringify({ kind: 'api', ...entry })
+  const payload = JSON.stringify({
+    kind: 'api',
+    ...entry,
+    request: redactDevValue(entry.request),
+    response: redactDevValue(entry.response),
+  })
   const blob = new Blob([payload], { type: 'application/json' })
   if (navigator.sendBeacon?.('/dev/log', blob)) return
 
@@ -73,56 +109,6 @@ function devLogApiCall(entry: ApiLogEntry) {
     headers: { 'Content-Type': 'application/json' },
     body: payload,
   }).catch(() => {})
-}
-
-const _lastHeaders = new Map<string, Record<string, string>>()
-
-function captureHeaders(request: Request) {
-  if (!import.meta.env.DEV) return
-  const headers: Record<string, string> = {}
-  request.headers.forEach((v, k) => { headers[k] = v })
-  _lastHeaders.set(`${request.method} ${new URL(request.url).pathname}`, headers)
-}
-
-interface DevLogOpts {
-  url?: string
-  response?: unknown
-  requestBody?: unknown
-  error?: { code?: number; status?: number; message?: string }
-}
-
-function devConsoleLog(ok: boolean, method: string, path: string, ms: number, opts?: DevLogOpts) {
-  if (!import.meta.env.DEV) return
-  const label = getModuleLabel(path)
-  const tag = label ? `[${label}] ` : ''
-  const headerKey = `${method} /api/v1/${path}`
-  const headers = _lastHeaders.get(headerKey)
-  _lastHeaders.delete(headerKey)
-
-  if (ok) {
-    console.groupCollapsed(
-      `%c ✓ ${method} %c${tag}%c${path} %c${ms}ms`,
-      'color:#22c55e;font-weight:bold',
-      'color:#f97316;font-weight:700',
-      'color:#94a3b8',
-      'color:#cbd5e1',
-    )
-  } else {
-    const detail = opts?.error?.code ? `code:${opts.error.code}` : opts?.error?.status ? `http:${opts.error.status}` : ''
-    console.groupCollapsed(
-      `%c ✗ ${method} %c${tag}%c${path} %c${detail} ${ms}ms`,
-      'color:#ef4444;font-weight:bold',
-      'color:#f97316;font-weight:700',
-      'color:#94a3b8',
-      'color:#ef4444',
-    )
-  }
-  if (opts?.url) console.log('URL      ', opts.url)
-  if (headers) console.log('Headers  ', headers)
-  if (opts?.requestBody !== undefined) console.log('Request  ', opts.requestBody)
-  if (ok && opts?.response !== undefined) console.log('Response ', opts.response)
-  if (!ok && opts?.error?.message) console.log('Error    ', opts.error.message)
-  console.groupEnd()
 }
 
 function searchParams(params?: QueryParams) {
@@ -164,7 +150,6 @@ const client = ky.create({
   hooks: {
     beforeRequest: [
       ({ request }) => injectHeaders(request),
-      ({ request }) => captureHeaders(request),
     ],
     afterResponse: [
       async function handleBusinessError({ request, response }) {
@@ -223,12 +208,20 @@ export async function get<T>(path: string, params?: QueryParams): Promise<T> {
       client.get(url, { searchParams: searchParams(params) }).json<ApiResponse<T>>()
     )
     const ms = durationMs(startedAt)
-    devLogApiCall({ method: 'GET', path: normalizedPath, url, ok: true, duration_ms: ms, code: 0 })
-    devConsoleLog(true, 'GET', normalizedPath, ms, { url, response: result, requestBody: params })
+    devLogApiCall({
+      method: 'GET',
+      path: normalizedPath,
+      url,
+      ok: true,
+      duration_ms: ms,
+      code: 0,
+      request: params,
+      response: { code: 0, data: result },
+    })
     return result
   } catch (error) {
     if (error instanceof ModelGoApiError) error.path = normalizedPath
-    devLogApiError('GET', normalizedPath, url, startedAt, error)
+    devLogApiError('GET', normalizedPath, url, startedAt, error, params)
     throw error
   }
 }
@@ -280,6 +273,8 @@ export async function upload<T>(
       ok: true,
       duration_ms: durationMs(startedAt),
       code: 0,
+      request: formData,
+      response: { code: 0, data: result },
     })
     return result
   } catch (error) {
@@ -288,7 +283,7 @@ export async function upload<T>(
       return send()
     }
     if (error instanceof ModelGoApiError) error.path = normalizedPath
-    devLogApiError(method.toUpperCase(), normalizedPath, url, startedAt, error)
+    devLogApiError(method.toUpperCase(), normalizedPath, url, startedAt, error, formData)
     throw error
   }
 }
@@ -305,8 +300,16 @@ async function requestWithJsonBody<T>(
   try {
     const result = await unwrap(send(url))
     const ms = durationMs(startedAt)
-    devLogApiCall({ method, path: normalizedPath, url, ok: true, duration_ms: ms, code: 0 })
-    devConsoleLog(true, method, normalizedPath, ms, { url, response: result, requestBody: body })
+    devLogApiCall({
+      method,
+      path: normalizedPath,
+      url,
+      ok: true,
+      duration_ms: ms,
+      code: 0,
+      request: body,
+      response: { code: 0, data: result },
+    })
     return result
   } catch (error) {
     if (error instanceof ModelGoApiError && error.code === 40302) {
@@ -314,37 +317,30 @@ async function requestWithJsonBody<T>(
       return unwrap(send(url))
     }
     if (error instanceof ModelGoApiError) error.path = normalizedPath
-    devLogApiError(method, normalizedPath, url, startedAt, error)
+    devLogApiError(method, normalizedPath, url, startedAt, error, body)
     throw error
   }
 }
 
-function devLogApiError(
-  method: string,
-  path: string,
-  url: string,
-  startedAt: number,
-  error: unknown
-) {
+function devLogApiError(method: string, path: string, url: string, startedAt: number, error: unknown, request?: unknown) {
   const ms = durationMs(startedAt)
-  const entry: ApiLogEntry = { method, path, url, ok: false, duration_ms: ms }
+  const entry: ApiLogEntry = { method, path, url, ok: false, duration_ms: ms, request }
 
   if (error instanceof ModelGoApiError) {
     entry.code = error.code
     entry.request_id = error.requestId
     entry.error = error.message
+    entry.response = { code: error.code, msg: error.message, data: error.data ?? null, request_id: error.requestId }
   } else if (error instanceof Error) {
     entry.status = getHttpStatus(error)
     entry.error = error.message
+    entry.response = { status: entry.status, msg: error.message }
   } else {
     entry.error = String(error)
+    entry.response = { msg: String(error) }
   }
 
   devLogApiCall(entry)
-  devConsoleLog(false, method, path, ms, {
-    url,
-    error: { code: entry.code, status: entry.status, message: entry.error },
-  })
 }
 
 function getHttpStatus(error: Error) {

@@ -6,6 +6,7 @@ const LOG_DIR = path.resolve(process.cwd(), 'log')
 const ERROR_LOG_PATH = path.join(LOG_DIR, 'dev-errors.log')
 const API_LOG_PATH = path.join(LOG_DIR, 'api-calls.log')
 const LEGACY_ERROR_LOG_PATH = path.resolve(process.cwd(), '.dev-errors.log')
+const LOG_HEADER_SEPARATOR = '\n\n'
 
 type DevLogPayload =
   | {
@@ -19,19 +20,47 @@ type DevLogPayload =
       status?: number
       request_id?: string
       error?: string
+      request?: unknown
+      response?: unknown
     }
   | {
       kind: 'error'
       line: string
     }
 
-function writeLine(file: string, line: string) {
-  fs.appendFileSync(file, `${line}\n`)
+function pad(value: number, size = 2) {
+  return String(value).padStart(size, '0')
+}
+
+function formatLocalTimestamp(date = new Date()) {
+  const offsetMinutes = -date.getTimezoneOffset()
+  const sign = offsetMinutes >= 0 ? '+' : '-'
+  const absoluteOffset = Math.abs(offsetMinutes)
+  const offset = `${sign}${pad(Math.floor(absoluteOffset / 60))}:${pad(absoluteOffset % 60)}`
+  return [
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+    `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${pad(date.getMilliseconds(), 3)}`,
+    offset,
+  ].join(' ')
+}
+
+function writeNewest(file: string, block: string) {
+  const content = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : ''
+  const splitAt = content.indexOf(LOG_HEADER_SEPARATOR)
+
+  if (splitAt === -1) {
+    fs.writeFileSync(file, `${block}\n${content}`)
+    return
+  }
+
+  const header = content.slice(0, splitAt + LOG_HEADER_SEPARATOR.length)
+  const rest = content.slice(splitAt + LOG_HEADER_SEPARATOR.length)
+  fs.writeFileSync(file, `${header}${block}\n${rest}`)
 }
 
 function writeError(line: string) {
-  writeLine(ERROR_LOG_PATH, line)
-  writeLine(LEGACY_ERROR_LOG_PATH, line)
+  writeNewest(ERROR_LOG_PATH, line)
+  writeNewest(LEGACY_ERROR_LOG_PATH, line)
 }
 
 function formatApiLog(payload: Extract<DevLogPayload, { kind: 'api' }>) {
@@ -41,6 +70,33 @@ function formatApiLog(payload: Extract<DevLogPayload, { kind: 'api' }>) {
   const error = payload.error ? ` error="${payload.error}"` : ''
   const result = payload.ok ? 'ok' : 'failed'
   return `[api][${result}] ${payload.method.toUpperCase()} ${payload.path} ${payload.duration_ms}ms${status}${code}${requestId}${error}`
+}
+
+function stableStringify(value: unknown) {
+  if (value === undefined) return ''
+  try {
+    return JSON.stringify(value, null, 2)
+  } catch {
+    return String(value)
+  }
+}
+
+function limitText(value: string, max = 4000) {
+  return value.length > max ? `${value.slice(0, max)}\n...[truncated ${value.length - max} chars]` : value
+}
+
+function formatBlock(label: string, value: unknown) {
+  const text = stableStringify(value)
+  if (!text) return ''
+  return `  ${label}: ${limitText(text).replace(/\n/g, '\n  ')}`
+}
+
+function formatApiLogDetail(payload: Extract<DevLogPayload, { kind: 'api' }>) {
+  return [
+    formatApiLog(payload),
+    formatBlock('提交', payload.request),
+    formatBlock('返回', payload.response),
+  ].filter(Boolean).join('\n')
 }
 
 function parsePayload(raw: string): DevLogPayload | null {
@@ -65,7 +121,7 @@ export function devLoggerPlugin(): Plugin {
     configureServer(server) {
       fs.mkdirSync(LOG_DIR, { recursive: true })
 
-      const header = `# Dev Log — started ${new Date().toISOString()}\n\n`
+      const header = `# Dev Log — started ${formatLocalTimestamp()}\n\n`
       // 每次 dev server 启动清空日志，保证 AI 看到的是本次会话的记录
       fs.writeFileSync(ERROR_LOG_PATH, header)
       fs.writeFileSync(API_LOG_PATH, header)
@@ -83,13 +139,14 @@ export function devLoggerPlugin(): Plugin {
           body += chunk.toString()
         })
         req.on('end', () => {
-          const ts = new Date().toISOString()
+          const ts = formatLocalTimestamp()
           const payload = parsePayload(body)
 
           if (payload?.kind === 'api') {
-            const line = `[${ts}] ${formatApiLog(payload)}`
-            writeLine(API_LOG_PATH, line)
-            if (!payload.ok) writeError(line)
+            const detail = `[${ts}] ${formatApiLogDetail(payload)}`
+            writeNewest(API_LOG_PATH, detail)
+            console.log(detail)
+            if (!payload.ok) writeError(detail)
           } else if (payload?.kind === 'error') {
             writeError(`[${ts}] ${payload.line}`)
           } else {

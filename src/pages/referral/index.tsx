@@ -27,7 +27,8 @@ import {
   type WithdrawalStatus,
 } from './referral-data'
 
-const fmt = (n: number) => '¥' + n.toLocaleString('zh-CN')
+// 金额字段为字符串（后端约定），统一在此解析为数字再格式化
+const fmt = (n: number | string) => '¥' + Number(n).toLocaleString('zh-CN')
 
 type TabKey = 'invitees' | 'withdrawals'
 
@@ -48,7 +49,7 @@ export default function ReferralPage() {
 
   const [activeTab, setActiveTab] = useState<TabKey>('invitees')
   const [copied, setCopied] = useState(false)
-  const [rewardBalance, setRewardBalance] = useState(stats.rewardBalance)
+  const [rewardBalance, setRewardBalance] = useState(Number(stats.rewardBalance))
   const [withdrawalList, setWithdrawalList] = useState<ReferralWithdrawal[]>(withdrawals)
 
   // 转入主余额弹窗
@@ -93,7 +94,7 @@ export default function ReferralPage() {
 
   const confirmTransfer = async () => {
     if (!transferValid) return
-    await transferRewardToBalance(tenantId, { amount: transferNum })
+    await transferRewardToBalance(tenantId, { amount: String(transferNum) })
     setRewardBalance((b) => b - transferNum)
     setTransferOpen(false)
     appToast.success(text.transferSuccess.replace('{amount}', fmt(transferNum)))
@@ -116,7 +117,7 @@ export default function ReferralPage() {
   const submitWithdraw = async () => {
     if (!withdrawValid) return
     await requestWithdrawal(tenantId, {
-      amount: withdrawNum,
+      amount: String(withdrawNum),
       method: payMethod,
       alipay_account: payMethod === 'alipay' ? alipayAccount.trim() : undefined,
       bank_name: payMethod === 'bank' ? bankName.trim() : undefined,
@@ -126,7 +127,7 @@ export default function ReferralPage() {
     const now = new Date()
     const dateStr = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}`
     setWithdrawalList((list) => [
-      { appliedAt: dateStr, amount: withdrawNum, status: 'pending', paidAt: null },
+      { appliedAt: dateStr, amount: String(withdrawNum), status: 'pending', paidAt: null },
       ...list,
     ])
     setRewardBalance((b) => b - withdrawNum)
@@ -149,7 +150,7 @@ export default function ReferralPage() {
     </div>
   )
 
-  const remain = tier.nextThreshold - tier.cumulativeSpend
+  const remain = Number(tier.nextThreshold) - Number(tier.cumulativeSpend)
 
   const tierProgressText = text.tierProgress
     .replace('{cur}', fmt(tier.cumulativeSpend))
@@ -274,7 +275,7 @@ export default function ReferralPage() {
           {/* 进度条 */}
           <div className="pt-2 pb-6">
             <ProgressBar
-              value={tier.cumulativeSpend}
+              value={Number(tier.cumulativeSpend)}
               min={0}
               max={250000}
               variant="rainbow"

@@ -28,24 +28,24 @@ export interface ReferralOverview {
   inviteCode: string
 }
 
-/** 奖励余额转入主余额 */
+/** 奖励余额转入主余额（金额为字符串，与后端一致） */
 export interface TransferRewardRequest {
   /** 转入金额，单次 ≥100，且不超过当前奖励余额 */
-  amount: number
+  amount: string
 }
 export interface TransferRewardResult {
   /** 转入后的奖励余额 */
-  reward_balance: number
+  reward_balance: string
   /** 转入后的主余额 */
-  main_balance: number
+  main_balance: string
 }
 
 export type WithdrawMethod = 'alipay' | 'bank'
 
-/** 申请提现（运营审核后人工线下打款） */
+/** 申请提现（运营审核后人工线下打款，金额为字符串） */
 export interface WithdrawRequest {
   /** 提现金额，单次 ≥100，且不超过当前奖励余额 */
-  amount: number
+  amount: string
   method: WithdrawMethod
   /** method=alipay 时必填 */
   alipay_account?: string
@@ -94,10 +94,8 @@ export function transferRewardToBalance(
   body: TransferRewardRequest
 ): Promise<TransferRewardResult> {
   if (isMock()) {
-    return Promise.resolve({
-      reward_balance: Math.max(0, referralMock.stats.rewardBalance - body.amount),
-      main_balance: 0,
-    })
+    const left = Math.max(0, Number(referralMock.stats.rewardBalance) - Number(body.amount))
+    return Promise.resolve({ reward_balance: String(left), main_balance: '0' })
   }
   return post<TransferRewardResult>(`tenants/${tenantId}/referral/transfer`, body)
 }

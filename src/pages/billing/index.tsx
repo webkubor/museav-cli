@@ -884,9 +884,9 @@ export default function BillingPage() {
                     <tr key={i} className="border-b border-mg-border/40 hover:bg-mg-fill-0/20 transition-colors">
                       <td className="py-3.5 px-4 text-xs text-mg-text-2 font-mono">{rec.date}</td>
                       <td className="py-3.5 px-4 text-xs text-mg-text-0 font-medium">{rec.source}</td>
-                      <td className="py-3.5 px-4 text-xs text-mg-text-1 font-mono text-right">¥{rec.spend.toLocaleString('zh-CN')}</td>
+                      <td className="py-3.5 px-4 text-xs text-mg-text-1 font-mono text-right">¥{Number(rec.spend).toLocaleString('zh-CN')}</td>
                       <td className="py-3.5 px-4 text-xs text-mg-text-1 text-right">{rec.rate}%</td>
-                      <td className="py-3.5 px-4 text-xs font-bold text-emerald-500 font-mono text-right">+¥{rec.amount.toLocaleString('zh-CN')}</td>
+                      <td className="py-3.5 px-4 text-xs font-bold text-emerald-500 font-mono text-right">+¥{Number(rec.amount).toLocaleString('zh-CN')}</td>
                     </tr>
                   ))}
                 </tbody>

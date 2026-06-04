@@ -53,7 +53,7 @@ export default function ModelsPage() {
     queryFn: () => getReferralOverview(tenantId),
     enabled: !!tenantId,
   })
-  const rewardBalance = referralOverview?.stats.rewardBalance ?? 0
+  const rewardBalance = Number(referralOverview?.stats.rewardBalance ?? 0)
   const [category, setCategory] = useState<CategoryKey>('all')
   const [isCompareOpen, setIsCompareOpen] = useState(false)
   const [input, setInput] = useState('')

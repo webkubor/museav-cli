@@ -4,17 +4,18 @@
  * 接口就绪后改为 services/referral.ts 拉取，页面消费同样的类型。
  */
 
+// 金额字段统一为 string（与后端一致：后端金额返回字符串，前端按需 Number() 解析）
 export interface ReferralStats {
   /** 累计返佣 */
-  totalCommission: number
+  totalCommission: string
   /** 本月返佣 */
-  monthCommission: number
+  monthCommission: string
   /** 活跃被邀请人数 */
   activeInvited: number
   /** 已邀请总数 */
   invitedTotal: number
   /** 奖励余额（可转入主余额 / 提现） */
-  rewardBalance: number
+  rewardBalance: string
 }
 
 export interface ReferralTier {
@@ -23,9 +24,9 @@ export interface ReferralTier {
   /** 当前返佣比例（百分比，如 13 表示 13%） */
   rate: number
   /** 当前累计邀请消费 */
-  cumulativeSpend: number
+  cumulativeSpend: string
   /** 升级到下一档所需的累计邀请消费门槛 */
-  nextThreshold: number
+  nextThreshold: string
   /** 下一档位名 */
   nextTierName: string
   /** 下一档比例（百分比） */
@@ -36,24 +37,24 @@ export interface ReferralInvitee {
   name: string
   email: string
   registeredAt: string
-  totalSpend: number
-  commission: number
+  totalSpend: string
+  commission: string
 }
 
 export interface ReferralCommissionRecord {
   date: string
   source: string
-  spend: number
+  spend: string
   /** 结算比例（百分比） */
   rate: number
-  amount: number
+  amount: string
 }
 
 export type WithdrawalStatus = 'pending' | 'approved' | 'rejected'
 
 export interface ReferralWithdrawal {
   appliedAt: string
-  amount: number
+  amount: string
   status: WithdrawalStatus
   paidAt: string | null
 }
@@ -71,41 +72,41 @@ export interface ReferralData {
 /** 静态演示数据（对齐原型 #/console/referral） */
 export const referralMock: ReferralData = {
   stats: {
-    totalCommission: 5900,
-    monthCommission: 980,
+    totalCommission: '5900',
+    monthCommission: '980',
     activeInvited: 3,
     invitedTotal: 5,
-    rewardBalance: 1420,
+    rewardBalance: '1420',
   },
   inviteLink: 'https://console.modelgo.com/signup?aff=MG-KEVIN-8F3A',
   inviteCode: 'MG-KEVIN-8F3A',
   tier: {
     name: '核心伙伴',
     rate: 13,
-    cumulativeSpend: 59000,
-    nextThreshold: 200000,
+    cumulativeSpend: '59000',
+    nextThreshold: '200000',
     nextTierName: '战略伙伴',
     nextRate: 15,
   },
   invitees: [
-    { name: '智设科技', email: 'zhi***@zhishe.com', registeredAt: '2024/4/1', totalSpend: 32000, commission: 3200 },
-    { name: '云图数据', email: 'ops***@cloudpic.io', registeredAt: '2025/5/1', totalSpend: 18500, commission: 1850 },
-    { name: '极光 AI', email: 'dev***@aurora.ai', registeredAt: '2025/5/12', totalSpend: 6400, commission: 640 },
-    { name: '微岩信息', email: 'adm***@weiyan.cn', registeredAt: '2024/3/1', totalSpend: 2100, commission: 210 },
-    { name: '测试团队 A', email: 'try***@demo.com', registeredAt: '2025/5/8', totalSpend: 0, commission: 0 },
+    { name: '智设科技', email: 'zhi***@zhishe.com', registeredAt: '2024/4/1', totalSpend: '32000', commission: '3200' },
+    { name: '云图数据', email: 'ops***@cloudpic.io', registeredAt: '2025/5/1', totalSpend: '18500', commission: '1850' },
+    { name: '极光 AI', email: 'dev***@aurora.ai', registeredAt: '2025/5/12', totalSpend: '6400', commission: '640' },
+    { name: '微岩信息', email: 'adm***@weiyan.cn', registeredAt: '2024/3/1', totalSpend: '2100', commission: '210' },
+    { name: '测试团队 A', email: 'try***@demo.com', registeredAt: '2025/5/8', totalSpend: '0', commission: '0' },
   ],
   commissions: [
-    { date: '2025/5/20', source: '智设科技', spend: 4200, rate: 13, amount: 546 },
-    { date: '2025/5/18', source: '云图数据', spend: 2600, rate: 13, amount: 338 },
-    { date: '2025/5/15', source: '极光 AI', spend: 1800, rate: 13, amount: 234 },
-    { date: '2025/5/10', source: '智设科技', spend: 5000, rate: 13, amount: 650 },
-    { date: '2025/5/2', source: '微岩信息', spend: 900, rate: 10, amount: 90 },
+    { date: '2025/5/20', source: '智设科技', spend: '4200', rate: 13, amount: '546' },
+    { date: '2025/5/18', source: '云图数据', spend: '2600', rate: 13, amount: '338' },
+    { date: '2025/5/15', source: '极光 AI', spend: '1800', rate: 13, amount: '234' },
+    { date: '2025/5/10', source: '智设科技', spend: '5000', rate: 13, amount: '650' },
+    { date: '2025/5/2', source: '微岩信息', spend: '900', rate: 10, amount: '90' },
   ],
   withdrawals: [
-    { appliedAt: '2025/5/19', amount: 1000, status: 'approved', paidAt: '2025/5/21' },
-    { appliedAt: '2025/5/12', amount: 500, status: 'approved', paidAt: '2025/5/14' },
-    { appliedAt: '2025/5/22', amount: 800, status: 'pending', paidAt: null },
-    { appliedAt: '2025/4/30', amount: 300, status: 'rejected', paidAt: null },
+    { appliedAt: '2025/5/19', amount: '1000', status: 'approved', paidAt: '2025/5/21' },
+    { appliedAt: '2025/5/12', amount: '500', status: 'approved', paidAt: '2025/5/14' },
+    { appliedAt: '2025/5/22', amount: '800', status: 'pending', paidAt: null },
+    { appliedAt: '2025/4/30', amount: '300', status: 'rejected', paidAt: null },
   ],
 }
 

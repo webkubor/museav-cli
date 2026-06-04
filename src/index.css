@@ -1427,7 +1427,7 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
 }
 
 .sidebar-flow-line {
-  position: relative;
+  position: absolute;
   background-color: color-mix(in srgb, var(--brand-base) 18%, transparent);
   box-shadow: 0 0 1.5px var(--brand-glow);
   opacity: 0.95;

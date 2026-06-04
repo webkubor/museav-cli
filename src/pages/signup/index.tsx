@@ -21,6 +21,7 @@ const schema = z.object({
   email: z.string().email('请填写有效的邮箱'),
   email_code: z.string().min(6, '请填写 6 位验证码'),
   password: z.string().min(8, '密码至少 8 位'),
+  referral_code: z.string().optional(),
 })
 
 type Fields = z.infer<typeof schema>
@@ -41,7 +42,10 @@ export default function SignupPage() {
     formState: { errors },
   } = useForm<Fields>({
     resolver: zodResolver(schema),
-    defaultValues: { email: searchParams.get('email') ?? '' },
+    defaultValues: {
+      email: searchParams.get('email') ?? '',
+      referral_code: searchParams.get('aff') ?? '',
+    },
   })
 
   const emailValue = watch('email')
@@ -65,15 +69,14 @@ export default function SignupPage() {
     setServerError('')
     try {
       const invitationToken = searchParams.get('invitation') ?? undefined
-      // 推荐计划专属邀请链接 signup?aff=<邀请码>，注册时带上做返佣归属
-      const referralCode = searchParams.get('aff') ?? undefined
       const result = await register({
         email: data.email,
         password: data.password,
         display_name: data.display_name,
         email_code: data.email_code,
         invitation_token: invitationToken,
-        referral_code: referralCode,
+        // 推荐计划邀请码：?aff= 预填或用户手填，注册时做返佣归属
+        referral_code: data.referral_code?.trim() || undefined,
       })
       setAuth(
         {
@@ -164,6 +167,15 @@ export default function SignupPage() {
           />
           <PasswordStrength password={passwordValue} />
           {errors.password && <p className="auth-error-message">{errors.password.message}</p>}
+        </div>
+
+        <div>
+          <label className="modern-auth-label">邀请码（选填）</label>
+          <Input
+            {...field('referral_code')}
+            placeholder="如有推荐邀请码请填写，如 MG-XXXX"
+            autoComplete="off"
+          />
         </div>
 
         {serverError && <p className="auth-error-message">{serverError}</p>}

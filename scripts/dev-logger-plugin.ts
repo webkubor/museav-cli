@@ -147,7 +147,6 @@ export function devLoggerPlugin(): Plugin {
           if (payload?.kind === 'api') {
             const detail = `[${ts}] ${formatApiLogDetail(payload)}`
             writeNewest(API_LOG_PATH, detail)
-            console.log(detail)
             if (!payload.ok) writeError(detail)
           } else if (payload?.kind === 'error') {
             writeError(`[${ts}] ${payload.line}`)

@@ -1,8 +1,8 @@
 /* ── 模型对话体验区 ─────────────────────────────────────────────────── */
 .models-experience-chat {
   position: relative;
-  display: grid;
-  grid-template-rows: auto auto minmax(220px, 1fr) auto;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   overflow: hidden;
 }
@@ -95,6 +95,8 @@
 }
 
 .models-experience-messages {
+  flex: 1;
+  min-height: 180px;
   display: flex;
   flex-direction: column;
   gap: 14px;

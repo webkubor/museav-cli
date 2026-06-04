@@ -21,14 +21,13 @@ import {
   referralMock,
   referralCopy,
   type ReferralInvitee,
-  type ReferralCommissionRecord,
   type ReferralWithdrawal,
   type WithdrawalStatus,
 } from './referral-data'
 
 const fmt = (n: number) => '¥' + n.toLocaleString('zh-CN')
 
-type TabKey = 'invitees' | 'commissions' | 'withdrawals'
+type TabKey = 'invitees' | 'withdrawals'
 
 const WITHDRAWAL_STATUS_VARIANT: Record<WithdrawalStatus, 'warning' | 'success' | 'outline'> = {
   pending: 'warning',
@@ -40,7 +39,7 @@ export default function ReferralPage() {
   const { i18n } = useTranslation()
   const text = i18n.language.startsWith('zh') ? referralCopy.zh : referralCopy.en
 
-  const { stats, inviteLink, inviteCode, tier, invitees, commissions, withdrawals } = referralMock
+  const { stats, inviteLink, inviteCode, tier, invitees, withdrawals } = referralMock
 
   const MIN_AMOUNT = 100
 
@@ -151,7 +150,6 @@ export default function ReferralPage() {
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: 'invitees', label: text.tabInvitees },
-    { key: 'commissions', label: text.tabCommissions },
     { key: 'withdrawals', label: text.tabWithdrawals },
   ]
 
@@ -368,9 +366,6 @@ export default function ReferralPage() {
           {activeTab === 'invitees' && (
             <InviteesTable invitees={invitees} text={text} />
           )}
-          {activeTab === 'commissions' && (
-            <CommissionsTable commissions={commissions} text={text} />
-          )}
           {activeTab === 'withdrawals' && (
             <WithdrawalsTable withdrawals={withdrawalList} text={text} />
           )}
@@ -508,47 +503,6 @@ function InviteesTable({ invitees, text }: { invitees: ReferralInvitee[]; text: 
               <TableCell>{inv.registeredAt}</TableCell>
               <TableCell className="text-right font-mono">{fmt(inv.totalSpend)}</TableCell>
               <TableCell className="text-right font-mono">{fmt(inv.commission)}</TableCell>
-            </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
-  )
-}
-
-function CommissionsTable({
-  commissions,
-  text,
-}: {
-  commissions: ReferralCommissionRecord[]
-  text: TextCopy
-}) {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>{text.colDate}</TableHead>
-          <TableHead>{text.colInvitee}</TableHead>
-          <TableHead className="text-right">{text.colSpend}</TableHead>
-          <TableHead className="text-right">{text.colRate}</TableHead>
-          <TableHead className="text-right">{text.colAmount}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {commissions.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={5} className="text-center text-mg-text-2 py-8">
-              {text.empty}
-            </TableCell>
-          </TableRow>
-        ) : (
-          commissions.map((rec, i) => (
-            <TableRow key={i}>
-              <TableCell>{rec.date}</TableCell>
-              <TableCell>{rec.source}</TableCell>
-              <TableCell className="text-right font-mono">{fmt(rec.spend)}</TableCell>
-              <TableCell className="text-right">{rec.rate}%</TableCell>
-              <TableCell className="text-right font-mono">{fmt(rec.amount)}</TableCell>
             </TableRow>
           ))
         )}

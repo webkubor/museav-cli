@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/Badge'
 import { appToast } from '@/lib/app-toast'
 import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
+import { referralMock, referralCopy } from '@/pages/referral/referral-data'
 
 // ─── Placeholder Balance Data ─────────────────────────────────────────────
 // TODO: 待后端 balance 接口补充细分字段（主余额 / 赠送余额 / 奖励余额）
@@ -457,12 +458,29 @@ const MOCK_GIFT_RECORDS = [
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
+type BalanceTab = 'main' | 'gift' | 'reward'
+
 export default function BillingPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
   const [topUpVisible, setTopUpVisible] = useState(false)
-  const [activeTab, setActiveTab] = useState<'recharge' | 'gift'>('recharge')
+  const [activeTab, setActiveTab] = useState<BalanceTab>('main')
   const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null)
+
+  const rc = i18n.language.startsWith('zh') ? referralCopy.zh : referralCopy.en
+  const cardCls = (active: boolean) =>
+    cn(
+      'rounded-xl border p-4 space-y-1.5 text-left w-full transition-all cursor-pointer outline-none',
+      active
+        ? 'border-brand-base bg-brand-glow/5 ring-1 ring-brand-base/20'
+        : 'border-mg-border/60 bg-mg-fill-0/30 hover:border-mg-border hover:bg-mg-fill-0/50'
+    )
+  const listTitle =
+    activeTab === 'main'
+      ? t('billing.orders.tab.recharge', { defaultValue: '充值记录' })
+      : activeTab === 'gift'
+        ? t('billing.orders.tab.gift', { defaultValue: '赠送余额明细' })
+        : t('billing.orders.tab.reward', { defaultValue: '奖励记录' })
 
   const { symbol: currencySymbol } = useCurrency()
   const qc = useQueryClient()
@@ -563,34 +581,34 @@ export default function BillingPage() {
           </div>
         </div>
 
-        {/* 余额细分 */}
+        {/* 余额细分（可点击切换下方列表） */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* 主余额 */}
-          <div className="rounded-xl border border-mg-border/60 bg-mg-fill-0/30 p-4 space-y-1.5">
+          {/* 主余额 → 充值记录 */}
+          <button type="button" onClick={() => setActiveTab('main')} className={cardCls(activeTab === 'main')}>
             <div className="text-xs text-mg-text-2">{t('billing.balance.mainBalance')}</div>
             <div className="text-base font-bold text-mg-text-0 tabular-nums">
               {currencySymbol}{formatBalance(PLACEHOLDER_MAIN_BALANCE).main}
             </div>
             <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.mainHint')}</div>
-          </div>
+          </button>
 
-          {/* 赠送余额 */}
-          <div className="rounded-xl border border-mg-border/60 bg-mg-fill-0/30 p-4 space-y-1.5">
+          {/* 赠送余额 → 赠送明细 */}
+          <button type="button" onClick={() => setActiveTab('gift')} className={cardCls(activeTab === 'gift')}>
             <div className="text-xs text-mg-text-2">{t('billing.balance.giftBalance')}</div>
             <div className="text-base font-bold text-mg-text-0 tabular-nums">
               {currencySymbol}{formatBalance(PLACEHOLDER_GIFT_BALANCE).main}
             </div>
             <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.giftHint')}</div>
-          </div>
+          </button>
 
-          {/* 奖励余额 */}
-          <div className="rounded-xl border border-mg-border/60 bg-mg-fill-0/30 p-4 space-y-1.5">
+          {/* 奖励余额 → 奖励记录 */}
+          <button type="button" onClick={() => setActiveTab('reward')} className={cardCls(activeTab === 'reward')}>
             <div className="text-xs text-mg-text-2">{t('billing.balance.rewardBalance')}</div>
             <div className="text-base font-bold text-mg-text-0 tabular-nums">
               {currencySymbol}{formatBalance(PLACEHOLDER_REWARD_BALANCE).main}
             </div>
             <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.rewardHint')}</div>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -630,26 +648,13 @@ export default function BillingPage() {
         </form>
       </div>
 
-      {/* 4. Tab 切换 */}
-      <div className="border-b border-mg-border/60 flex gap-6">
-        {(['recharge', 'gift'] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={cn(
-              'pb-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px cursor-pointer outline-none',
-              activeTab === tab
-                ? 'border-brand-base text-brand-base'
-                : 'border-transparent text-mg-text-2 hover:text-mg-text-1'
-            )}
-          >
-            {tab === 'recharge' ? t('billing.orders.tab.recharge', { defaultValue: '充值记录' }) : t('billing.orders.tab.gift', { defaultValue: '赠送余额明细' })}
-          </button>
-        ))}
+      {/* 4. 当前列表标题（由上方余额卡片切换驱动） */}
+      <div className="border-b border-mg-border/60 pb-2.5">
+        <span className="text-sm font-bold text-brand-base">{listTitle}</span>
       </div>
 
-      {/* 5. 订单区 */}
-      {activeTab === 'recharge' ? (
+      {/* 5. 列表区 */}
+      {activeTab === 'main' ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* 左：订单表格 */}
           <div className="lg:col-span-2 rounded-2xl border border-mg-border bg-card-bg shadow-sm overflow-hidden">
@@ -812,8 +817,8 @@ export default function BillingPage() {
             )}
           </div>
         </div>
-      ) : (
-        /* 赠送余额明细 Tab */
+      ) : activeTab === 'gift' ? (
+        /* 赠送余额明细 */
         <div className="rounded-2xl border border-mg-border bg-card-bg shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
@@ -835,6 +840,38 @@ export default function BillingPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      ) : (
+        /* 奖励记录（原推荐计划「返佣流水」） */
+        <div className="rounded-2xl border border-mg-border bg-card-bg shadow-sm overflow-hidden">
+          {referralMock.commissions.length === 0 ? (
+            <div className="py-16 text-center text-xs text-mg-text-2">{rc.empty}</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-mg-border bg-mg-fill-0/20">
+                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{rc.colDate}</th>
+                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{rc.colInvitee}</th>
+                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider text-right">{rc.colSpend}</th>
+                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider text-right">{rc.colRate}</th>
+                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider text-right">{rc.colAmount}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {referralMock.commissions.map((rec, i) => (
+                    <tr key={i} className="border-b border-mg-border/40 hover:bg-mg-fill-0/20 transition-colors">
+                      <td className="py-3.5 px-4 text-xs text-mg-text-2 font-mono">{rec.date}</td>
+                      <td className="py-3.5 px-4 text-xs text-mg-text-0 font-medium">{rec.source}</td>
+                      <td className="py-3.5 px-4 text-xs text-mg-text-1 font-mono text-right">¥{rec.spend.toLocaleString('zh-CN')}</td>
+                      <td className="py-3.5 px-4 text-xs text-mg-text-1 text-right">{rec.rate}%</td>
+                      <td className="py-3.5 px-4 text-xs font-bold text-emerald-500 font-mono text-right">+¥{rec.amount.toLocaleString('zh-CN')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>

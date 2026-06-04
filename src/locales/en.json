@@ -413,6 +413,7 @@
       "statusCode": "Status",
       "duration": "Duration",
       "tokens": "Tokens",
+      "cost": "Cost",
       "apiKey": "API Key",
       "detail": "Detail"
     },

@@ -413,6 +413,7 @@
       "statusCode": "状态码",
       "duration": "耗时",
       "tokens": "Token 消耗",
+      "cost": "费用",
       "apiKey": "调用密钥",
       "detail": "详情"
     },

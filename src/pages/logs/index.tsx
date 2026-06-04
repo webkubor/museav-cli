@@ -355,6 +355,7 @@ export default function LogsPage() {
                   <TableHead>{t('logs.table.statusCode')}</TableHead>
                   <TableHead>{t('logs.table.duration')}</TableHead>
                   <TableHead>{t('logs.table.tokens')}</TableHead>
+                  <TableHead>{t('logs.table.cost')}</TableHead>
                   <TableHead>{t('logs.table.apiKey')}</TableHead>
                   <TableHead className="text-right"></TableHead>
                 </TableRow>
@@ -385,6 +386,11 @@ export default function LogsPage() {
                       ) : (
                         <span className="text-mg-text-2">—</span>
                       )}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-mg-text-1 tabular-nums">
+                      {Number(row.cost.amount) > 0
+                        ? `${row.cost.currency} ${Number(row.cost.amount).toFixed(6)}`
+                        : <span className="text-mg-text-2">—</span>}
                     </TableCell>
                     <TableCell className="text-xs text-mg-text-1 font-medium">
                       {row.api_key.name || <span className="text-mg-text-2">—</span>}

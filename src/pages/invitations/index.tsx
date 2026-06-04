@@ -14,8 +14,6 @@ export default function InvitationsPage() {
   const [searchParams] = useSearchParams()
   // 优先 path 参数（/invitations/:token），兼容旧 query string（?token=xxx）
   const token = tokenParam ?? searchParams.get('token') ?? ''
-  // 工作区由邀请方在邀请配置中预设，经链接 ?workspace= 下发，被邀请人不再自行选择
-  const presetWorkspaceId = searchParams.get('workspace') ?? ''
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isSessionLoading = useAuthStore((s) => s.isLoading)
 
@@ -49,7 +47,7 @@ export default function InvitationsPage() {
     setAccepting(true)
     setServerError('')
     try {
-      const result = await acceptInvitation(token, presetWorkspaceId || undefined)
+      const result = await acceptInvitation(token)
       navigate(`/dashboard?workspace=${result.workspace_id}`, { replace: true })
     } catch {
       setServerError('接受邀请失败，链接可能已过期')

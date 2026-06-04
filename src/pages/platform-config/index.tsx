@@ -642,8 +642,7 @@ const URL_PARAM_ROWS: UrlParamRow[] = [
   { param: '?reason=no_access', where: '/login', purpose: '提示“账号不属于任何组织”', note: '与 ProtectedRoute 联动，防互弹循环' },
   { param: '?email=<email>', where: '/login → /signup', purpose: '未注册时把邮箱带去注册页预填' },
   { param: '?invitation=<token>', where: '/signup', purpose: '→ 注册请求体 invitation_token', note: '被邀请人注册即加入组织' },
-  { param: '/invitations/:token', where: '邀请接受页', purpose: '标识具体邀请', note: '兼容旧 ?token= query' },
-  { param: '?workspace=<id>', where: '邀请链接', purpose: '邀请方预设加入的工作区', note: '被邀请人不自选，静默携带' },
+  { param: '/invitations/:token', where: '邀请接受页', purpose: '标识具体邀请（组织级）', note: '兼容旧 ?token= query；工作区成员从组织内现有成员直接添加，不走链接' },
   { param: '?user_code=<code>', where: '/device', purpose: 'CLI 设备码授权', note: '未登录时经 toLoginWithRedirect 回带' },
   { param: 'OAuth redirect', where: 'oauthAuthorizeUrl', purpose: '${origin}/auth/callback?redirect=<目标>', note: '回跳走专用回调页（跨 API/控制台域）' },
 ]

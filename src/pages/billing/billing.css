@@ -201,6 +201,10 @@ body[theme-mode='dark'] .billing-glow-card .shimmer-light::after {
   transition: all 0.25s ease !important;
 }
 
+.billing-table-row td {
+  border-bottom: 1px solid var(--mg-border) !important;
+}
+
 .billing-table-row::after {
   content: '';
   position: absolute;

@@ -15,24 +15,20 @@ import { useAuthStore } from '@/store/auth'
 import { Card } from '@/components/ui/Card'
 import { formatChartTooltipDate } from '@/lib/format-date'
 
-const TOOLTIP_STYLE: React.CSSProperties = {
-  background: 'var(--mg-bg-0)',
-  border: '1px solid var(--mg-border)',
-  borderRadius: 8,
-  padding: '8px 12px',
-  fontSize: 12,
-  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-}
+
 
 function UsageTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
   return (
-    <div style={TOOLTIP_STYLE}>
-      <div style={{ fontWeight: 700, color: 'var(--brand-base)', marginBottom: 2 }}>
-        {Math.round(parseFloat(d.value) || 0).toLocaleString()} 次
+    <div className="rounded-xl border border-neutral-200/80 dark:border-neutral-800/80 bg-white/98 dark:bg-neutral-950/98 backdrop-blur-md p-3 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_16px_40px_rgb(0,0,0,0.3)] text-left select-none min-w-[120px] space-y-1">
+      <div className="text-[10px] text-neutral-450 dark:text-neutral-500 font-medium">
+        调用次数
       </div>
-      <div style={{ color: 'var(--mg-text-2)', fontSize: 11 }}>
+      <div className="text-sm font-mono font-black text-brand-base tabular-nums">
+        {Math.round(parseFloat(d.value) || 0).toLocaleString()}
+      </div>
+      <div className="text-[10px] text-neutral-400 dark:text-neutral-500 font-semibold font-mono pt-1 border-t border-neutral-100 dark:border-neutral-900/60">
         {formatChartTooltipDate(d.bucket_start)}
       </div>
     </div>
@@ -86,32 +82,33 @@ export const UsageChartSection: React.FC = () => {
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={chartData} margin={{ top: 8, right: 4, bottom: 0, left: 4 }}>
               <defs>
+                {/* 面积发光渐变 */}
                 <linearGradient id="dashUsageGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--brand-base)" stopOpacity={0.2} />
+                  <stop offset="0%" stopColor="var(--brand-base)" stopOpacity={0.16} />
                   <stop offset="100%" stopColor="var(--brand-base)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="0" stroke="var(--mg-fill-0)" vertical={false} />
+              <CartesianGrid strokeDasharray="4 4" stroke="var(--mg-border)" strokeOpacity={0.35} vertical={false} />
               <XAxis
                 dataKey="bucket_start"
                 tickFormatter={formatChartTooltipDate}
-                tick={{ fontSize: 11, fill: 'var(--mg-text-2)', fontFamily: 'system-ui' }}
+                tick={{ fontSize: 10, fill: 'var(--mg-text-2)', fontFamily: 'monospace', fontWeight: 600 }}
                 tickLine={false}
                 axisLine={false}
                 interval="preserveStartEnd"
               />
               <Tooltip
                 content={<UsageTooltip />}
-                cursor={{ stroke: 'var(--brand-base)', strokeWidth: 1, strokeDasharray: '4 3', strokeOpacity: 0.6 }}
+                cursor={{ stroke: 'var(--brand-base)', strokeWidth: 1, strokeDasharray: '4 4', strokeOpacity: 0.4 }}
               />
               <Area
                 type="monotone"
                 dataKey="value"
                 stroke="var(--brand-base)"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 fill="url(#dashUsageGrad)"
                 dot={false}
-                activeDot={{ r: 5, fill: 'var(--brand-base)', stroke: 'var(--mg-bg-0)', strokeWidth: 2 }}
+                activeDot={{ r: 4, fill: 'var(--brand-base)', stroke: 'var(--mg-bg-0)', strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>

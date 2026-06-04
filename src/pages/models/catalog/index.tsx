@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -24,6 +24,99 @@ import {
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
 import { Tooltip } from '@/components/ui/Tooltip'
 
+interface ModelMeta {
+  descriptionZh: string
+  descriptionEn: string
+  tagsZh: string[]
+  tagsEn: string[]
+  scores: {
+    speed: number
+    reasoning: number
+    cost: number
+  }
+}
+
+const MODEL_META_MAP: Record<string, ModelMeta> = {
+  'qwen/qwen3.7-max': {
+    descriptionZh: '适合中文长上下文，复杂推理与企业知识库检索。',
+    descriptionEn: 'Tailored for long Chinese context, complex reasoning, and enterprise knowledge base retrieval.',
+    tagsZh: ['客服知识库', '代码理解', '长文档分析'],
+    tagsEn: ['Customer Support', 'Code Analysis', 'Long Document'],
+    scores: { speed: 2, reasoning: 3, cost: 2 }
+  },
+  'qwen/qwen3.6-flash': {
+    descriptionZh: '极速响应的轻量级模型，适合高频对话、文本分类及实时交互。',
+    descriptionEn: 'Ultra-fast lightweight model, ideal for high-frequency chats, classification, and real-time interactions.',
+    tagsZh: ['即时客服', '日常对话', '文本分类'],
+    tagsEn: ['Live Chat', 'General Chat', 'Classification'],
+    scores: { speed: 4, reasoning: 1, cost: 4 }
+  },
+  'openai/gpt-5.5': {
+    descriptionZh: '前沿的通用智能旗舰模型，在逻辑推理、代码生成与多模态任务中表现卓越。',
+    descriptionEn: 'Cutting-edge flagship general model, excelling in logic, code generation, and multimodal tasks.',
+    tagsZh: ['复杂逻辑', '智能Agent', '多模态交互'],
+    tagsEn: ['Complex Logic', 'AI Agents', 'Multimodal'],
+    scores: { speed: 3, reasoning: 4, cost: 1 }
+  },
+  'anthropic/claude-opus-4.7-fast': {
+    descriptionZh: '长文本理解与精细逻辑的代表作，适合深度阅读、学术分析及复杂指令遵循。',
+    descriptionEn: 'Masterpiece of long context and fine-grained logic, perfect for reading comprehension and complex instructions.',
+    tagsZh: ['论文精读', '长文本分析', '高精指令'],
+    tagsEn: ['Paper Reading', 'Long Text', 'Fine Instruction'],
+    scores: { speed: 3, reasoning: 4, cost: 1 }
+  },
+  'mistralai/mistral-medium-3-5': {
+    descriptionZh: '欧洲明星大模型，平衡了出色的推理能力与合理的运行成本。',
+    descriptionEn: 'European star model balancing outstanding reasoning capabilities with reasonable operation costs.',
+    tagsZh: ['内容创作', '逻辑分析', '多语言翻译'],
+    tagsEn: ['Content Creation', 'Logic Analysis', 'Translation'],
+    scores: { speed: 3, reasoning: 3, cost: 3 }
+  }
+}
+
+function getModelMeta(modelId: string, isZh: boolean) {
+  const matched = MODEL_META_MAP[modelId]
+  if (matched) {
+    return {
+      description: isZh ? matched.descriptionZh : matched.descriptionEn,
+      tags: isZh ? matched.tagsZh : matched.tagsEn,
+      scores: matched.scores
+    }
+  }
+
+  const idLower = modelId.toLowerCase()
+  const isReasoning = idLower.includes('reason') || idLower.includes('think') || idLower.includes('opus') || idLower.includes('max')
+  const isFlash = idLower.includes('flash') || idLower.includes('speed') || idLower.includes('lite') || idLower.includes('mini')
+  
+  let speed = 3
+  let reasoning = 2
+  let cost = 3
+
+  if (isReasoning) {
+    speed = 2
+    reasoning = 4
+    cost = 1
+  } else if (isFlash) {
+    speed = 4
+    reasoning = 1
+    cost = 4
+  }
+
+  const tags = isZh 
+    ? ['业务对接', '接口测试', '快速集成']
+    : ['Business Integration', 'API Testing', 'Fast Setup']
+
+  const description = isZh
+    ? '支持高并发的多功能通用智能模型，可灵活对接企业级生产业务。'
+    : 'A versatile general model supporting high concurrency and flexible business integration.'
+
+  return {
+    description,
+    tags,
+    scores: { speed, reasoning, cost }
+  }
+}
+
 export default function ModelsCatalogPage() {
   const { i18n } = useTranslation()
   const navigate = useNavigate()
@@ -32,6 +125,13 @@ export default function ModelsCatalogPage() {
   const [category, setCategory] = useState<CategoryKey>('all')
   const [isCompareOpen, setIsCompareOpen] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const card = e.currentTarget
@@ -172,61 +272,185 @@ export default function ModelsCatalogPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-          {visibleModels.map((model) => (
-            <Tooltip
-              key={model.id}
-              position="top"
-              containerClassName="w-full flex"
-              className="z-[9999]"
-              content={
-                <div className="p-2 min-w-[190px] text-left select-none space-y-2.5">
-                  <div className="flex items-center justify-between gap-2 border-b border-neutral-100 dark:border-neutral-850 pb-1.5">
-                    <span className="font-bold text-[12px] text-neutral-900 dark:text-white tracking-tight truncate max-w-[130px]">
-                      {model.display_name}
-                    </span>
-                    <span className="shrink-0 text-[9px] font-extrabold tracking-wider uppercase px-1 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 rounded">
-                      {model.vendor || 'ModelGo'}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-3.5 gap-y-1.5 text-[10px]">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-neutral-450 dark:text-neutral-500 font-medium">
-                        {isZh ? '上下文窗口' : 'Context Window'}
-                      </span>
-                      <span className="font-semibold text-neutral-750 dark:text-neutral-300 tabular-nums">
-                        {formatContextLength(model.context_length)}
-                      </span>
-                    </div>
-                    {model.knowledge_cutoff && (
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-neutral-450 dark:text-neutral-500 font-medium">
-                          {isZh ? '知识截止' : 'Cutoff'}
-                        </span>
-                        <span className="font-semibold text-neutral-750 dark:text-neutral-300 tabular-nums">
-                          {model.knowledge_cutoff}
-                        </span>
+          {visibleModels.map((model, idx) => {
+            const meta = getModelMeta(model.model_id, isZh)
+            const position = windowWidth > 1024
+              ? (idx % 3 === 2 ? 'left' : 'right')
+              : (windowWidth > 768 ? (idx % 2 === 1 ? 'left' : 'right') : 'top')
+
+            const arrowClass = position === 'left'
+              ? 'border-l-[#0b0d0b] dark:border-l-[#0b0d0b]'
+              : (position === 'right' ? 'border-r-[#0b0d0b] dark:border-r-[#0b0d0b]' : 'border-t-[#0b0d0b] dark:border-t-[#0b0d0b]')
+
+            return (
+              <Tooltip
+                key={model.id}
+                position={position}
+                containerClassName="w-full flex"
+                className="z-[9999] max-w-[440px] border border-emerald-500/20 shadow-[0_20px_50px_rgba(16,185,129,0.15)] bg-[#0b0d0b] text-neutral-100 p-0 rounded-2xl animate-in fade-in-0 duration-300"
+                arrowClassName={arrowClass}
+                interactive={true}
+                content={
+                  <div className="p-5 select-none w-[420px] text-left space-y-4">
+                    {/* 头部：大图标、厂商、在线状态 */}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="shrink-0 p-1.5 bg-[#141614] border border-neutral-800/60 rounded-xl">
+                          {vendorNode(model, 'lg')}
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="font-extrabold text-[15px] text-white tracking-tight truncate leading-tight">
+                            {model.display_name}
+                          </h4>
+                          <span className="text-[11px] text-neutral-400 font-bold block mt-0.5">
+                            {model.vendor || 'ModelGo'}
+                          </span>
+                        </div>
                       </div>
-                    )}
-                    <div className="flex col-span-2 border-t border-neutral-100 dark:border-neutral-850 pt-1.5 mt-0.5 justify-between items-center">
-                      <span className="text-neutral-450 dark:text-neutral-500 font-medium">
-                        {isZh ? '输入费用' : 'Input Price'}
-                      </span>
-                      <span className="font-mono font-semibold text-neutral-750 dark:text-neutral-200 tabular-nums">
-                        {formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}<span className="text-[9px] font-sans font-normal text-neutral-400 dark:text-neutral-500">/1M</span>
+                      <span className="shrink-0 flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        {isZh ? '在线' : 'Online'}
                       </span>
                     </div>
-                    <div className="flex col-span-2 justify-between items-center">
-                      <span className="text-neutral-450 dark:text-neutral-500 font-medium">
-                        {isZh ? '输出费用' : 'Output Price'}
-                      </span>
-                      <span className="font-mono font-semibold text-neutral-750 dark:text-neutral-250 tabular-nums">
-                        {formatModelPrice(model.pricing?.output_per_1m, model.pricing?.currency)}<span className="text-[9px] font-sans font-normal text-neutral-400 dark:text-neutral-500">/1M</span>
-                      </span>
+
+                    {/* 描述语 */}
+                    <p className="text-neutral-350 text-[11px] leading-relaxed">
+                      {meta.description}
+                    </p>
+                    
+                    {/* 参数网格：仅保留参数网格那一块的上下边框 */}
+                    <div className="grid grid-cols-[1.2fr_1fr] gap-x-4 text-[11px] leading-normal border-y border-neutral-800/40 py-3.5">
+                      {/* 列 1：能力 & 上下文 */}
+                      <div className="space-y-3.5 pr-1">
+                        <div className="space-y-1">
+                          <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider block">
+                            {isZh ? '能力' : 'Capabilities'}
+                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {model.modalities?.slice(0, 3).map(m => {
+                              const labelMap: Record<string, string> = {
+                                text: isZh ? '文本' : 'Text',
+                                image: isZh ? '图像' : 'Image',
+                                audio: isZh ? '音频' : 'Audio',
+                                video: isZh ? '视频' : 'Video',
+                                file: isZh ? '文件' : 'File'
+                              }
+                              const colorMap: Record<string, string> = {
+                                text: 'bg-[#142923] text-[#42b893] border-[#1b3d34]',
+                                image: 'bg-[#241a3a] text-[#a78bfa] border-[#3b2b5c]',
+                                audio: 'bg-[#132d2f] text-[#2dd4bf] border-[#1b4346]',
+                                video: 'bg-[#2d221c] text-[#fbbf24] border-[#453323]',
+                                file: 'bg-[#15233c] text-[#60a5fa] border-[#1e3458]'
+                              }
+                              const cls = colorMap[m] || 'bg-neutral-900 text-neutral-400 border-neutral-800'
+                              return (
+                                <span key={m} className={cn("text-[9px] font-extrabold px-1.5 py-0.5 rounded-full border", cls)}>
+                                  {labelMap[m] || m}
+                                </span>
+                              )
+                            })}
+                          </div>
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider block">
+                            {isZh ? '上下文' : 'Context'}
+                          </span>
+                          <span className="text-xs font-black text-white leading-none">
+                            {formatContextLength(model.context_length)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 列 2：价格 (改版为左右对齐) */}
+                      <div className="border-l border-neutral-800/40 pl-4 space-y-1">
+                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider block">
+                          {isZh ? '价格' : 'Price'}
+                        </span>
+                        <div className="space-y-2 pt-0.5">
+                          <div className="flex items-center justify-between gap-1 text-[11px]">
+                            <span className="text-neutral-500 font-medium">{isZh ? '输入' : 'Input'}</span>
+                            <span className="font-mono font-bold text-white tabular-nums">
+                              {formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-1 text-[11px]">
+                            <span className="text-neutral-500 font-medium">{isZh ? '输出' : 'Output'}</span>
+                            <span className="font-mono font-bold text-white tabular-nums">
+                              {formatModelPrice(model.pricing?.output_per_1m, model.pricing?.currency)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 推荐场景与进度条：无横线分割 */}
+                    <div className="grid grid-cols-[1.4fr_1fr] gap-4">
+                      {/* 推荐场景 */}
+                      <div className="space-y-2">
+                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider block">
+                          {isZh ? '推荐场景' : 'Suggested Use Cases'}
+                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {meta.tags.map(t => (
+                            <span key={t} className="text-[9px] font-semibold px-2 py-1 bg-neutral-900 border border-neutral-850 text-neutral-300 rounded-full transition-colors leading-none">
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 指标评分 */}
+                      <div className="space-y-1.5">
+                        {Object.entries(meta.scores).map(([key, score]) => {
+                          const label = {
+                            speed: isZh ? '速度' : 'Speed',
+                            reasoning: isZh ? '推理' : 'Reasoning',
+                            cost: isZh ? '成本' : 'Cost'
+                          }[key as 'speed' | 'reasoning' | 'cost']
+                          return (
+                            <div key={key} className="flex items-center justify-between text-[10px] gap-2 leading-none">
+                              <span className="text-neutral-450 font-bold">{label}</span>
+                              <div className="flex gap-0.5">
+                                {[1, 2, 3, 4].map(idx => (
+                                  <span
+                                    key={idx}
+                                    className={cn(
+                                      "w-3.5 h-1.5 rounded-sm transition-all duration-300",
+                                      idx <= score 
+                                        ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" 
+                                        : "bg-neutral-850"
+                                    )}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* 底部按钮栏：无横线分割 */}
+                    <div className="flex items-center gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={(e) => handleCopyApiId(model.model_id, e)}
+                        className="flex-1 h-9 bg-transparent hover:bg-neutral-900 border border-neutral-800 text-neutral-300 font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all text-xs cursor-pointer active:scale-98"
+                      >
+                        <LuCopy size={11} />
+                        {isZh ? '复制 API ID' : 'Copy API ID'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleGoPlayground(model.model_id, e)}
+                        className="flex-1 h-9 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all text-xs cursor-pointer active:scale-98 shadow-md shadow-emerald-500/10"
+                      >
+                        {isZh ? '查看详情' : 'View Details'}
+                        <LuChevronRight size={12} />
+                      </button>
                     </div>
                   </div>
-                </div>
-              }
-            >
+                }
+              >
               <div
                 onClick={(e) => handleGoPlayground(model.model_id, e)}
                 onMouseMove={handleMouseMove}
@@ -273,6 +497,11 @@ export default function ModelsCatalogPage() {
                     </div>
                   </div>
 
+                  {/* 模型描述 */}
+                  <p className="text-[12px] text-mg-text-2/90 line-clamp-2 leading-relaxed -mt-2 -mb-1 relative z-10">
+                    {meta.description}
+                  </p>
+
                   {/* 优化后的 API ID 复制栏 */}
                   <div className="space-y-1 relative z-10">
                     <div
@@ -313,7 +542,7 @@ export default function ModelsCatalogPage() {
                     </div>
                   )}
 
-                  {/* 参数指标行：舍弃生硬的实线，通过高空隙排版划分层级 */}
+                  {/* 参数指标行：展示上下文与发布日期 */}
                   <div className="grid grid-cols-2 gap-4 py-1 text-xs relative z-10">
                     <div className="space-y-1">
                       <span className="text-[10px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
@@ -326,32 +555,38 @@ export default function ModelsCatalogPage() {
                     </div>
                     <div className="space-y-1">
                       <span className="text-[10px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
-                        {isZh ? '数据隐私' : 'Data Privacy'}
+                        {isZh ? '发布日期' : 'Released At'}
                       </span>
                       <span className="font-extrabold text-mg-text-0 text-[13px]">
-                        {model.zero_data_retention ? (
-                          <span className="text-emerald-500 font-bold">{isZh ? '零留存' : 'Zero Retention'}</span>
-                        ) : (
-                          <span className="text-mg-text-1">{isZh ? '标准保护' : 'Standard'}</span>
-                        )}
+                        {model.released_at || '—'}
                       </span>
                     </div>
                   </div>
 
-                  {/* 计费单价与快速体验按钮 */}
+                  {/* 计费单价与快速体验按钮：提供完整的输入/输出计费 */}
                   <div className="flex items-end justify-between pt-3 mt-auto border-t border-mg-border/20 relative z-10">
-                    <div className="space-y-0.5">
-                      <span className="text-[10px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
-                        {isZh ? '预估输入单价' : 'Input Price'}
-                      </span>
-                      <span className="font-mono text-[14px] font-black text-mg-text-0 tabular-nums">
-                        {formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}
-                      </span>
+                    <div className="flex gap-4">
+                      <div className="space-y-0.5">
+                        <span className="text-[9px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
+                          {isZh ? '输入单价' : 'Input Price'}
+                        </span>
+                        <span className="font-mono text-[12px] font-black text-mg-text-0 tabular-nums">
+                          {formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}
+                        </span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-[9px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
+                          {isZh ? '输出单价' : 'Output Price'}
+                        </span>
+                        <span className="font-mono text-[12px] font-black text-mg-text-0 tabular-nums">
+                          {formatModelPrice(model.pricing?.output_per_1m, model.pricing?.currency)}
+                        </span>
+                      </div>
                     </div>
                     <button
                       type="button"
                       onClick={(e) => handleGoPlayground(model.model_id, e)}
-                      className="rounded-full h-8 px-4 text-xs font-bold text-brand-base hover:text-white border border-brand-base/20 hover:bg-brand-base flex items-center gap-1 cursor-pointer transition-all duration-300 active:scale-95 hover:shadow-sm hover:shadow-brand-glow/20"
+                      className="rounded-full h-8 px-4 text-xs font-bold text-brand-base hover:text-white border border-brand-base/20 hover:bg-brand-base flex items-center gap-1 cursor-pointer transition-all duration-300 active:scale-95 hover:shadow-sm hover:shadow-brand-glow/20 shrink-0"
                     >
                       {isZh ? '去体验' : 'Try'}
                       <LuChevronRight size={12} className="transition-transform group-hover:translate-x-0.5" />
@@ -360,7 +595,7 @@ export default function ModelsCatalogPage() {
                 </div>
               </div>
             </Tooltip>
-          ))}
+          )})}
         </div>
       )}
 

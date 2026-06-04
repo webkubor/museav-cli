@@ -8,11 +8,13 @@ interface TooltipProps {
   delay?: number
   className?: string
   containerClassName?: string
+  interactive?: boolean
+  arrowClassName?: string
 }
 
 /**
  * 极简高颜值轻量 Tooltip 组件 (免外部库依赖)
- * 职责：鼠标悬停在触发元素上时提供精致、具有淡入微动效的说明浮层
+ * 职责：鼠标悬停在触发元素上时提供精致、具有淡入微动效的说明浮层，支持交互模式
  */
 export const Tooltip: React.FC<TooltipProps> = ({
   content,
@@ -20,12 +22,16 @@ export const Tooltip: React.FC<TooltipProps> = ({
   position = 'top',
   delay = 150,
   className,
-  containerClassName
+  containerClassName,
+  interactive = false,
+  arrowClassName
 }) => {
   const [visible, setVisible] = useState(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const leaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const showTooltip = () => {
+    clearTimeout(leaveTimeoutRef.current)
     clearTimeout(timeoutRef.current)
     timeoutRef.current = setTimeout(() => {
       setVisible(true)
@@ -34,7 +40,29 @@ export const Tooltip: React.FC<TooltipProps> = ({
 
   const hideTooltip = () => {
     clearTimeout(timeoutRef.current)
-    setVisible(false)
+    clearTimeout(leaveTimeoutRef.current)
+    if (interactive) {
+      leaveTimeoutRef.current = setTimeout(() => {
+        setVisible(false)
+      }, 200)
+    } else {
+      setVisible(false)
+    }
+  }
+
+  const handleMouseEnterTooltip = () => {
+    if (interactive) {
+      clearTimeout(leaveTimeoutRef.current)
+    }
+  }
+
+  const handleMouseLeaveTooltip = () => {
+    if (interactive) {
+      clearTimeout(leaveTimeoutRef.current)
+      leaveTimeoutRef.current = setTimeout(() => {
+        setVisible(false)
+      }, 200)
+    }
   }
 
   const posClasses = {
@@ -51,6 +79,11 @@ export const Tooltip: React.FC<TooltipProps> = ({
     right: 'absolute right-full top-1/2 -translate-y-1/2 border-r-white dark:border-r-neutral-950 border-y-transparent border-l-transparent border-[5px]',
   }
 
+  const hasBg = className?.split(' ').some(c => c.startsWith('bg-'))
+  const hasBorder = className?.split(' ').some(c => c.startsWith('border'))
+  const hasRounded = className?.split(' ').some(c => c.startsWith('rounded-'))
+  const hasPadding = className?.split(' ').some(c => c.startsWith('p-'))
+
   return (
     <div
       className={cn("relative inline-block w-fit", containerClassName)}
@@ -63,14 +96,22 @@ export const Tooltip: React.FC<TooltipProps> = ({
       {visible && (
         <div
           data-state={visible ? 'open' : 'closed'}
+          onMouseEnter={handleMouseEnterTooltip}
+          onMouseLeave={handleMouseLeaveTooltip}
           className={cn(
-            "absolute z-[9999] pointer-events-none w-max max-w-[280px] p-1 rounded-xl bg-white/98 dark:bg-neutral-950/98 backdrop-blur-md border border-neutral-200/60 dark:border-neutral-800/60 text-neutral-900 dark:text-neutral-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_16px_40px_rgb(0,0,0,0.35)]",
+            "absolute z-[9999] w-max backdrop-blur-md text-neutral-900 dark:text-neutral-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_16px_40px_rgb(0,0,0,0.35)]",
+            !hasBg && "bg-white/98 dark:bg-neutral-950/98",
+            !hasBorder && "border border-neutral-200/60 dark:border-neutral-800/60",
+            !hasRounded && "rounded-xl",
+            !hasPadding && "p-1",
+            interactive ? "pointer-events-auto" : "pointer-events-none",
+            !className?.includes('max-w-') && "max-w-[280px]",
             posClasses[position],
             className
           )}
         >
           {content}
-          <span className={arrowClasses[position]} />
+          <span className={cn(arrowClasses[position], arrowClassName)} />
         </div>
       )}
     </div>

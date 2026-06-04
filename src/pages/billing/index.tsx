@@ -618,9 +618,18 @@ export default function BillingPage() {
         {/* 余额细分（可点击切换下方列表） */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* 主余额 → 充值记录 */}
-          <button type="button" onClick={() => setActiveTab('main')} className={cardCls(activeTab === 'main')}>
+          <button
+            type="button"
+            onClick={() => setActiveTab('main')}
+            className={cn(cardCls(activeTab === 'main'), activeTab === 'main' && 'active-main')}
+          >
             <div className="shimmer-light" />
-            <div className="text-xs text-mg-text-2">{t('billing.balance.mainBalance')}</div>
+            <div className={cn(
+              "text-xs transition-colors duration-300",
+              activeTab === 'main' ? "text-brand-base font-semibold" : "text-mg-text-2"
+            )}>
+              {t('billing.balance.mainBalance')}
+            </div>
             <div className="flex items-baseline gap-0.5 mt-1 select-none">
               <span className="text-xs font-semibold text-mg-text-2">{currencySymbol}</span>
               <span className={cn(
@@ -634,9 +643,18 @@ export default function BillingPage() {
           </button>
 
           {/* 赠送余额 → 赠送明细 */}
-          <button type="button" onClick={() => setActiveTab('gift')} className={cardCls(activeTab === 'gift')}>
+          <button
+            type="button"
+            onClick={() => setActiveTab('gift')}
+            className={cn(cardCls(activeTab === 'gift'), activeTab === 'gift' && 'active-gift')}
+          >
             <div className="shimmer-light" />
-            <div className="text-xs text-mg-text-2">{t('billing.balance.giftBalance')}</div>
+            <div className={cn(
+              "text-xs transition-colors duration-300",
+              activeTab === 'gift' ? "text-sky-600 dark:text-sky-400 font-semibold" : "text-mg-text-2"
+            )}>
+              {t('billing.balance.giftBalance')}
+            </div>
             <div className="flex items-baseline gap-0.5 mt-1 select-none">
               <span className="text-xs font-semibold text-mg-text-2">{currencySymbol}</span>
               <span className={cn(
@@ -650,9 +668,18 @@ export default function BillingPage() {
           </button>
 
           {/* 奖励余额 → 奖励记录 */}
-          <button type="button" onClick={() => setActiveTab('reward')} className={cardCls(activeTab === 'reward')}>
+          <button
+            type="button"
+            onClick={() => setActiveTab('reward')}
+            className={cn(cardCls(activeTab === 'reward'), activeTab === 'reward' && 'active-reward')}
+          >
             <div className="shimmer-light" />
-            <div className="text-xs text-mg-text-2">{t('billing.balance.rewardBalance')}</div>
+            <div className={cn(
+              "text-xs transition-colors duration-300",
+              activeTab === 'reward' ? "text-amber-500 dark:text-amber-400 font-semibold" : "text-mg-text-2"
+            )}>
+              {t('billing.balance.rewardBalance')}
+            </div>
             <div className="flex items-baseline gap-0.5 mt-1 select-none">
               <span className="text-xs font-semibold text-mg-text-2">{currencySymbol}</span>
               <span className={cn(
@@ -705,9 +732,16 @@ export default function BillingPage() {
 
       {/* 4. Tab 切换（与上方余额卡片联动，点卡片和点 Tab 都可切换） */}
       <div className="relative p-1 bg-mg-fill-0/50 border border-mg-border/30 rounded-xl flex gap-1 w-fit select-none">
-        {/* 滑动背景胶囊 */}
+        {/* 滑动背景胶囊 (联动对应的专属氛围阴影和边框) */}
         <div
-          className="absolute top-1 bottom-1 bg-card-bg shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.3)] border border-mg-border/50 rounded-lg transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] z-0"
+          className={cn(
+            "absolute top-1 bottom-1 bg-card-bg rounded-lg transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] z-0 border",
+            activeTab === 'main'
+              ? "border-brand-base/20 shadow-[0_2px_10px_var(--brand-glow)] dark:shadow-[0_4px_16px_var(--brand-glow)]"
+              : activeTab === 'gift'
+              ? "border-sky-500/20 shadow-[0_2px_10px_rgba(14,165,233,0.15)] dark:shadow-[0_4px_16px_rgba(14,165,233,0.25)]"
+              : "border-amber-500/20 shadow-[0_2px_10px_rgba(245,158,11,0.15)] dark:shadow-[0_4px_16px_rgba(245,158,11,0.25)]"
+          )}
           style={{
             left: underlineStyle.left,
             width: underlineStyle.width,
@@ -721,9 +755,13 @@ export default function BillingPage() {
             }}
             onClick={() => setActiveTab(tab.key)}
             className={cn(
-              'px-4 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer outline-none z-10 select-none',
+              'px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 cursor-pointer outline-none z-10 select-none',
               activeTab === tab.key
-                ? 'text-brand-base'
+                ? (tab.key === 'main'
+                    ? 'text-brand-base'
+                    : tab.key === 'gift'
+                    ? 'text-sky-600 dark:text-sky-400'
+                    : 'text-amber-500 dark:text-amber-400')
                 : 'text-mg-text-2 hover:text-mg-text-1'
             )}
           >

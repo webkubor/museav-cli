@@ -19,22 +19,58 @@
   transition-duration: 0.1s !important;
 }
 
-/* 激活状态下 */
+/* 激活状态下通用属性 */
 .billing-glow-card.active {
   border-color: transparent !important;
+  transform: translateY(-2px) !important;
+}
+
+/* 主余额卡片激活 (.active-main) */
+.billing-glow-card.active.active-main {
   background: radial-gradient(circle at 85% 15%, var(--brand-glow) 0%, transparent 65%), var(--card-bg) !important;
   box-shadow: 
     0 12px 28px -6px rgba(0, 0, 0, 0.08),
     0 0 18px -2px var(--brand-glow),
     0 0 1px 1px var(--brand-glow) !important;
-  transform: translateY(-2px) !important;
 }
 
-body[theme-mode='dark'] .billing-glow-card.active {
+body[theme-mode='dark'] .billing-glow-card.active.active-main {
   box-shadow: 
     0 16px 36px rgba(0, 0, 0, 0.35),
     0 0 20px -2px var(--brand-glow),
     0 0 1px 1px var(--brand-glow) !important;
+}
+
+/* 赠送余额卡片激活 (.active-gift) */
+.billing-glow-card.active.active-gift {
+  background: radial-gradient(circle at 85% 15%, rgba(14, 165, 233, 0.12) 0%, transparent 65%), var(--card-bg) !important;
+  box-shadow: 
+    0 12px 28px -6px rgba(0, 0, 0, 0.08),
+    0 0 18px -2px rgba(14, 165, 233, 0.25),
+    0 0 1px 1px rgba(14, 165, 233, 0.3) !important;
+}
+
+body[theme-mode='dark'] .billing-glow-card.active.active-gift {
+  box-shadow: 
+    0 16px 36px rgba(0, 0, 0, 0.35),
+    0 0 20px -2px rgba(14, 165, 233, 0.35),
+    0 0 1px 1px rgba(14, 165, 233, 0.4) !important;
+}
+
+/* 奖励余额卡片激活 (.active-reward) */
+.billing-glow-card.active.active-reward {
+  background: radial-gradient(circle at 85% 15%, rgba(245, 158, 11, 0.12) 0%, transparent 65%), var(--card-bg) !important;
+  box-shadow: 
+    0 12px 28px -6px rgba(0, 0, 0, 0.08),
+    0 0 18px -2px rgba(245, 158, 11, 0.25),
+    0 0 1px 1px rgba(245, 158, 11, 0.3) !important;
+}
+
+body[theme-mode='dark'] .billing-glow-card.active.active-reward {
+  box-shadow: 
+    0 16px 36px rgba(0, 0, 0, 0.35),
+    0 0 20px -2px rgba(245, 158, 11, 0.35),
+    0 0 1px 1px rgba(245, 158, 11, 0.4) !important;
 }
 
 /* 激活状态下的 1px 流光环绕边框 */
@@ -44,14 +80,6 @@ body[theme-mode='dark'] .billing-glow-card.active {
   inset: 0;
   border-radius: var(--radius-md);
   padding: 1px;
-  background: conic-gradient(
-    from var(--border-angle),
-    transparent 15%,
-    color-mix(in oklch, var(--brand-base) 25%, transparent) 38%,
-    var(--brand-base) 50%,
-    color-mix(in oklch, var(--brand-base) 25%, transparent) 62%,
-    transparent 85%
-  );
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -64,7 +92,42 @@ body[theme-mode='dark'] .billing-glow-card.active {
   transition: opacity 0.4s ease;
 }
 
-.billing-glow-card.active::before {
+/* 主余额专属流光 */
+.billing-glow-card.active.active-main::before {
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 15%,
+    color-mix(in oklch, var(--brand-base) 25%, transparent) 38%,
+    var(--brand-base) 50%,
+    color-mix(in oklch, var(--brand-base) 25%, transparent) 62%,
+    transparent 85%
+  );
+  opacity: 1;
+}
+
+/* 赠送余额专属流光 */
+.billing-glow-card.active.active-gift::before {
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 15%,
+    rgba(14, 165, 233, 0.25) 38%,
+    rgba(14, 165, 233, 1) 50%,
+    rgba(14, 165, 233, 0.25) 62%,
+    transparent 85%
+  );
+  opacity: 1;
+}
+
+/* 奖励余额专属流光 */
+.billing-glow-card.active.active-reward::before {
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 15%,
+    rgba(245, 158, 11, 0.25) 38%,
+    rgba(245, 158, 11, 1) 50%,
+    rgba(245, 158, 11, 0.25) 62%,
+    transparent 85%
+  );
   opacity: 1;
 }
 
@@ -128,15 +191,8 @@ body[theme-mode='dark'] .billing-glow-card .shimmer-light::after {
 }
 
 .billing-glow-card.active .balance-amount {
-  color: var(--brand-base) !important;
-  text-shadow: 0 0 10px var(--brand-glow);
   transform: scale(1.03);
   transform-origin: left center;
-}
-
-body[theme-mode='dark'] .billing-glow-card.active .balance-amount {
-  color: var(--mg-text-0) !important;
-  text-shadow: 0 0 14px var(--brand-glow);
 }
 
 /* ── 列表行指示器与 Hover / Active 状态 ── */
@@ -214,26 +270,22 @@ body[theme-mode='dark'] .spendable-amount-glow {
 .amount-main-active {
   color: var(--brand-base) !important;
   text-shadow: 0 0 14px var(--brand-glow) !important;
-  transform: scale(1.04);
-  transform-origin: left center;
 }
 
 body[theme-mode='dark'] .amount-main-active {
-  color: var(--mg-text-0) !important;
-  text-shadow: 0 0 16px var(--brand-glow) !important;
+  color: var(--brand-base) !important;
+  text-shadow: 0 0 18px var(--brand-glow) !important;
 }
 
 /* 2. 赠送余额数字（激活态 - 湖蓝微发光） */
 .amount-gift-active {
   color: #0284c7 !important; /* sky-600 */
   text-shadow: 0 0 14px rgba(14, 165, 233, 0.3) !important;
-  transform: scale(1.04);
-  transform-origin: left center;
 }
 
 body[theme-mode='dark'] .amount-gift-active {
   color: #38bdf8 !important; /* sky-400 */
-  text-shadow: 0 0 16px rgba(56, 189, 248, 0.4) !important;
+  text-shadow: 0 0 18px rgba(56, 189, 248, 0.4) !important;
 }
 
 /* 3. 奖励余额数字（激活态 - 极奢黄金渐变与发光，成就感拉满） */
@@ -242,8 +294,6 @@ body[theme-mode='dark'] .amount-gift-active {
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   filter: drop-shadow(0 2px 8px rgba(234, 179, 8, 0.4)) !important;
-  transform: scale(1.04);
-  transform-origin: left center;
 }
 
 body[theme-mode='dark'] .amount-reward-active {

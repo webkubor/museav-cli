@@ -25,6 +25,7 @@ import { formatDateTime } from '@/lib/format-date'
 import { appToast } from '@/lib/app-toast'
 import { cn } from '@/lib/utils'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
+import { CodeBlock } from '@/components/ui/CodeBlock'
 
 type LogStatusFilter = 'all' | 'success' | 'failed'
 type PayloadKind = 'request' | 'response'
@@ -553,13 +554,13 @@ export default function LogsPage() {
                     <Badge variant="warning">{t('logs.detail.payloadTruncated')}</Badge>
                   )}
                 </div>
-                <pre className="text-[11.5px] text-mg-code-text bg-mg-code-bg p-4 rounded-xl border border-mg-border font-mono overflow-x-auto max-h-72 leading-relaxed select-all">
+                <CodeBlock className="max-h-72">
                   {payloadQuery.isLoading
                     ? t('logs.detail.payloadLoading')
                     : payloadQuery.isError
                       ? t('logs.detail.payloadError')
                       : decodedPayload || t('logs.detail.payloadEmpty')}
-                </pre>
+                </CodeBlock>
               </div>
             </div>
           </div>

@@ -14,6 +14,7 @@ import { sendEmailCode, register } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import { ModelGoApiError } from '@/lib/request'
 import { toast } from '@/lib/toast'
+import { getRedirectTarget } from '@/lib/redirect'
 
 const schema = z.object({
   display_name: z.string().min(1, '请填写名称'),
@@ -92,7 +93,11 @@ export default function SignupPage() {
     }
   }
 
-  const redirectTo = typeof window !== 'undefined' ? window.location.href : '/'
+  // OAuth 回跳到专用回调页 /auth/callback，由它拉取 session 并落地到目标页
+  const redirectTo =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(getRedirectTarget())}`
+      : '/'
 
   return (
     <AuthLayout

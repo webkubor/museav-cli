@@ -170,7 +170,12 @@ export default function LoginPage() {
     }
   }
 
-  const redirectTo = typeof window !== 'undefined' ? window.location.href : '/'
+  // OAuth 回跳到专用回调页 /auth/callback（API 域处理完登录后跳回控制台域），
+  // 由它拉取 session 并落地到目标页；最终目标作为其 ?redirect 透传。
+  const redirectTo =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(getRedirectTarget())}`
+      : '/'
 
   return (
     <AuthLayout

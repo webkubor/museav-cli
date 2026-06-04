@@ -44,6 +44,8 @@
   --color-mg-success: var(--mg-success);
   --color-mg-danger: var(--mg-danger);
   --color-mg-warning: var(--mg-warning);
+  --color-mg-code-bg: var(--mg-code-bg);
+  --color-mg-code-text: var(--mg-code-text);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -162,6 +164,10 @@ body[theme-mode='dark'] {
   --mg-fill-1: rgba(15, 23, 42, 0.05);
   --mg-fill-2: rgba(15, 23, 42, 0.08);
 
+  /* 代码块面（payload 查看器） */
+  --mg-code-bg:   #f6f8fa;
+  --mg-code-text: #1f2937;
+
   /* 语义色 */
   --mg-success: #00d68f;
   --mg-danger:  #ef4444;
@@ -199,6 +205,10 @@ body[theme-mode='dark'] {
   --mg-fill-0: rgba(255, 255, 255, 0.04);
   --mg-fill-1: rgba(255, 255, 255, 0.07);
   --mg-fill-2: rgba(255, 255, 255, 0.11);
+
+  /* 代码块面（payload 查看器）：比卡片更深，呈现终端质感 */
+  --mg-code-bg:   #0d0d10;
+  --mg-code-text: #d4d4d8;
 
   /* 语义色 */
   --mg-success: #00eda0;

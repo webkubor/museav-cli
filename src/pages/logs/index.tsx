@@ -553,7 +553,7 @@ export default function LogsPage() {
                     <Badge variant="warning">{t('logs.detail.payloadTruncated')}</Badge>
                   )}
                 </div>
-                <pre className="text-[11.5px] text-slate-300 bg-slate-950 p-4 rounded-xl border border-mg-border/40 font-mono overflow-x-auto max-h-72 leading-relaxed select-all">
+                <pre className="text-[11.5px] text-mg-code-text bg-mg-code-bg p-4 rounded-xl border border-mg-border font-mono overflow-x-auto max-h-72 leading-relaxed select-all">
                   {payloadQuery.isLoading
                     ? t('logs.detail.payloadLoading')
                     : payloadQuery.isError

@@ -16,6 +16,7 @@ import Cohere from '@lobehub/icons/es/Cohere'
 import Groq from '@lobehub/icons/es/Groq'
 import Zhipu from '@lobehub/icons/es/Zhipu'
 import Baidu from '@lobehub/icons/es/Baidu'
+import * as LobehubRegistry from '@lobehub/icons'
 
 /**
  * 厂商图标工厂：vendor 名（小写）→ 按尺寸渲染图标。
@@ -58,4 +59,28 @@ export function resolveVendorIcon(
   if (ICON_FACTORY[v]) return ICON_FACTORY[v](size)
   const key = Object.keys(ICON_FACTORY).find((k) => v.includes(k))
   return key ? ICON_FACTORY[key](size) : null
+}
+
+type LobehubIconComp = React.ComponentType<{ size?: number }>
+
+/**
+ * 按 lobehub 组件名解析图标（对应后端 logo_url，如 "OpenRouter.Color"）。
+ * 格式：「图标名」或「图标名.变体」（变体如 Color / Mono / Text / Avatar）。
+ * 命中全量注册表则渲染对应尺寸图标，否则返回 null（交由调用方走 vendor / 文字兜底）。
+ */
+export function resolveLobehubIcon(
+  logoRef: string | null | undefined,
+  size = 28
+): React.ReactNode | null {
+  if (!logoRef) return null
+  const [name, variant] = logoRef.split('.')
+  const registry = LobehubRegistry as unknown as Record<
+    string,
+    (LobehubIconComp & Record<string, LobehubIconComp>) | undefined
+  >
+  const Mod = registry[name]
+  if (!Mod) return null
+  const Comp = variant && Mod[variant] ? Mod[variant] : Mod
+  if (typeof Comp !== 'function') return null
+  return <Comp size={size} />
 }

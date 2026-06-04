@@ -20,6 +20,7 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { DashboardHeader } from './DashboardHeader'
 import { DashboardSidebar } from './DashboardSidebar'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { CustomerService } from '@/components/customer-service'
 import { navConfig } from '@/config/nav'
 import type { NavItem } from '@/config/nav'
@@ -140,27 +141,27 @@ export function DashboardLayout() {
     return path.replace(/^\//, '') || 'dashboard'
   }
 
-  const BREADCRUMB_MAP: Record<string, string[]> = {
-    dashboard:           [t('nav.home')],
-    'models/catalog':    [t('nav.home'), t('nav.models'), '所有模型'],
-    'models/playground': [t('nav.home'), t('nav.models'), t('nav.modelExplore')],
-    'models/compare':    [t('nav.home'), t('nav.models'), t('nav.modelCompare')],
-    'api-keys':       [t('nav.home'), t('nav.apiKeys')],
-    usage:            [t('nav.home'), t('nav.analytics'), t('nav.usage')],
-    logs:             [t('nav.home'), t('nav.analytics'), t('nav.logs')],
-    billing:          [t('nav.home'), t('nav.billing')],
-    guardrails:       [t('nav.home'), t('nav.guardrails')],
-    observability:    [t('nav.home'), t('nav.observability')],
-    'chat-test':         [t('nav.home'), '测试区', '对话测试'],
-    'platform-config':  [t('nav.home'), '接口调试'],
-    'settings/account':      [t('nav.home'), t('nav.settings'), t('nav.account')],
-    'settings/workspace':    [t('nav.home'), t('nav.workspace')],
-    'settings/organization': [t('nav.home'), t('nav.settings'), t('nav.organization')],
+  const BREADCRUMB_MAP: Record<string, { label: string; path?: string }[]> = {
+    dashboard:           [{ label: t('nav.home'), path: '/dashboard' }],
+    'models/catalog':    [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.models') }, { label: '所有模型' }],
+    'models/playground': [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.models'), path: '/models/catalog' }, { label: t('nav.modelExplore') }],
+    'models/compare':    [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.models'), path: '/models/catalog' }, { label: t('nav.modelCompare') }],
+    'api-keys':       [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.apiKeys') }],
+    usage:            [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.analytics') }, { label: t('nav.usage') }],
+    logs:             [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.analytics') }, { label: t('nav.logs') }],
+    billing:          [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.billing') }],
+    guardrails:       [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.guardrails') }],
+    observability:    [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.observability') }],
+    'chat-test':         [{ label: t('nav.home'), path: '/dashboard' }, { label: '测试区' }, { label: '对话测试' }],
+    'platform-config':  [{ label: t('nav.home'), path: '/dashboard' }, { label: '接口调试' }],
+    'settings/account':      [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.settings') }, { label: t('nav.account') }],
+    'settings/workspace':    [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.workspace') }],
+    'settings/organization': [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.settings') }, { label: t('nav.organization') }],
   }
 
   const getBreadcrumbs = () => {
     const path = location.pathname.replace(/^\//, '')
-    return BREADCRUMB_MAP[path] ?? [t('nav.home')]
+    return BREADCRUMB_MAP[path] ?? [{ label: t('nav.home'), path: '/dashboard' }]
   }
 
   const isDashboardRoute = getSelectedKey() === 'dashboard'
@@ -194,20 +195,7 @@ export function DashboardLayout() {
 
         <main className="flex-1 flex flex-col p-6 md:p-9 overflow-y-auto h-[calc(100vh-60px)] transition-all duration-300">
           {/* 高阶极简自定义 Breadcrumbs */}
-          <nav className="flex items-center gap-2 mb-5 text-[11px] font-bold text-mg-text-2 tracking-wider uppercase select-none">
-            {getBreadcrumbs().map((b, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                {idx > 0 && <span className="opacity-45 text-mg-text-2">/</span>}
-                <span className={cn(
-                  idx === getBreadcrumbs().length - 1 
-                    ? "text-mg-text-0 font-bold" 
-                    : "text-mg-text-2/70 font-bold"
-                )}>
-                  {b}
-                </span>
-              </div>
-            ))}
-          </nav>
+          <Breadcrumb items={getBreadcrumbs()} />
 
           <CustomerService />
 

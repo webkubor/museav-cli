@@ -182,12 +182,21 @@ export function DevRequirements() {
   }
 
   const handleToggle = (id: string) => {
+    const target = items.find((i) => i.id === id)
+    if (!target) return
+    const markingDone = target.status !== 'done'
+    // 乐观更新本地状态
     setItems((prev) =>
       prev.map((item) =>
-        item.id === id ? { ...item, status: item.status === 'done' ? 'pending' : 'done' } : item
+        item.id === id ? { ...item, status: markingDone ? 'done' : 'pending' } : item
       )
     )
-    post({ action: 'toggle', id }).catch(() => load())
+    // 标记完成且已关联 GitLab：同步到线上（关闭 issue + 打「已完成」标签）；否则仅改本地
+    if (markingDone && target.gitlabIid) {
+      post({ action: 'finish', id }).then(load).catch(() => load())
+    } else {
+      post({ action: 'toggle', id }).catch(() => load())
+    }
   }
 
   const handleDelete = (id: string) => {

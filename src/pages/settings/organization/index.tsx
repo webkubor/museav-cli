@@ -15,6 +15,7 @@ import {
   updateTenantMemberRole,
   uploadTenantLogo,
 } from '@/services/tenants'
+import { listWorkspaces } from '@/services/workspaces'
 import type { TenantItem } from '@/types'
 import { formatDate } from '@/lib/format-date'
 import { TENANT_ROLE_CONFIG, TENANT_ROLE_OPTIONS } from '@/constants/roles'
@@ -503,10 +504,26 @@ function MembersTab({ tenantId }: { tenantId: string }) {
 // ─── Invite tab ───────────────────────────────────────────────────────────────
 function InviteTab({ tenantId }: { tenantId: string }) {
   const qc = useQueryClient()
+  const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const [inviteEmails, setInviteEmails] = useState('')
   const [inviteRole, setInviteRole] = useState<'tenant_admin' | 'tenant_member'>('tenant_member')
   const [expiresInHours, setExpiresInHours] = useState<number>(72)
+  const [inviteWorkspaceId, setInviteWorkspaceId] = useState<string>(activeWorkspaceId ?? '')
   const [linkCopied, setLinkCopied] = useState(false)
+
+  const workspacesQuery = useQuery({
+    queryKey: ['workspaces', tenantId],
+    queryFn: () => listWorkspaces().then((res) => res.items ?? []),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  })
+  const workspaces = workspacesQuery.data ?? []
+
+  // 默认选中当前工作区；若当前工作区不在列表则回退到第一个
+  const effectiveWorkspaceId =
+    inviteWorkspaceId && workspaces.some((w) => w.workspace_id === inviteWorkspaceId)
+      ? inviteWorkspaceId
+      : (workspaces.find((w) => w.workspace_id === activeWorkspaceId)?.workspace_id ?? workspaces[0]?.workspace_id ?? '')
 
   const inviteLinkQuery = useQuery({
     queryKey: ['tenant-invite-link', tenantId],
@@ -526,13 +543,14 @@ function InviteTab({ tenantId }: { tenantId: string }) {
       emails: inviteEmails.split(/[\s,;]+/).map((e) => e.trim()).filter(Boolean),
       role: inviteRole,
       expires_in_hours: expiresInHours,
+      target_workspace_id: effectiveWorkspaceId || undefined,
     }),
     onSuccess: () => { appToast.success('邀请已发出'); setInviteEmails(''); setExpiresInHours(72); qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] }) },
     onError: (err: any) => appToast.error(err?.message || '邀请失败'),
   })
 
   const inviteLinkUrl = inviteLinkQuery.data
-    ? `${window.location.origin}/invitations/${inviteLinkQuery.data.token}`
+    ? `${window.location.origin}/invitations/${inviteLinkQuery.data.token}${effectiveWorkspaceId ? `?workspace=${effectiveWorkspaceId}` : ''}`
     : null
 
   function handleCopyLink() {
@@ -550,6 +568,20 @@ function InviteTab({ tenantId }: { tenantId: string }) {
       <div className="bg-mg-bg-0 border border-mg-border/50 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-4 shadow-sm">
         <span className="text-xs font-bold text-mg-text-1 uppercase tracking-wider">邀请配置</span>
         <div className="flex gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-mg-border/40 bg-mg-fill-0/30 text-[11px] text-mg-text-2 font-semibold">
+            加入工作区
+            <select
+              value={effectiveWorkspaceId}
+              onChange={(e) => setInviteWorkspaceId(e.target.value)}
+              disabled={!workspaces.length}
+              className="bg-transparent border-none outline-none font-bold text-[11px] ml-1 cursor-pointer text-mg-text-0 max-w-[140px]"
+            >
+              {workspaces.length === 0 && <option value="">加载中…</option>}
+              {workspaces.map((w) => (
+                <option key={w.workspace_id} value={w.workspace_id}>{w.name}</option>
+              ))}
+            </select>
+          </div>
           <div className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-mg-border/40 bg-mg-fill-0/30 text-[11px] text-mg-text-2 font-semibold">
             初始角色
             <select

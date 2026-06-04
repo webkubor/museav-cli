@@ -14,6 +14,8 @@ export default function InvitationsPage() {
   const [searchParams] = useSearchParams()
   // 优先 path 参数（/invitations/:token），兼容旧 query string（?token=xxx）
   const token = tokenParam ?? searchParams.get('token') ?? ''
+  // 工作区由邀请方在邀请配置中预设，经链接 ?workspace= 下发，被邀请人不再自行选择
+  const presetWorkspaceId = searchParams.get('workspace') ?? ''
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isSessionLoading = useAuthStore((s) => s.isLoading)
 
@@ -22,7 +24,6 @@ export default function InvitationsPage() {
   const [loading, setLoading] = useState(true)
   const [accepting, setAccepting] = useState(false)
   const [serverError, setServerError] = useState('')
-  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>('')
   const called = useRef(false)
 
   useEffect(() => {
@@ -35,12 +36,7 @@ export default function InvitationsPage() {
     called.current = true
 
     previewInvitation(token)
-      .then((data) => {
-        setPreview(data)
-        if (data.workspaces?.length) {
-          setSelectedWorkspaceId(data.workspaces[0].workspace_id)
-        }
-      })
+      .then((data) => setPreview(data))
       .catch(() => setLoadError('邀请链接无效或已过期'))
       .finally(() => setLoading(false))
   }, [token])
@@ -53,7 +49,7 @@ export default function InvitationsPage() {
     setAccepting(true)
     setServerError('')
     try {
-      const result = await acceptInvitation(token, selectedWorkspaceId || undefined)
+      const result = await acceptInvitation(token, presetWorkspaceId || undefined)
       navigate(`/dashboard?workspace=${result.workspace_id}`, { replace: true })
     } catch {
       setServerError('接受邀请失败，链接可能已过期')
@@ -133,38 +129,6 @@ export default function InvitationsPage() {
             </div>
           )}
         </div>
-
-        {/* 组织邀请链接时允许选择工作区 */}
-        {preview.workspaces && preview.workspaces.length > 1 && (
-          <div>
-            <label
-              style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-1)', marginBottom: '6px' }}
-            >
-              选择加入的工作区
-            </label>
-            <select
-              value={selectedWorkspaceId}
-              onChange={(e) => setSelectedWorkspaceId(e.target.value)}
-              style={{
-                width: '100%',
-                height: '40px',
-                borderRadius: '8px',
-                border: '1px solid var(--mg-border)',
-                padding: '0 12px',
-                fontSize: '14px',
-                color: 'var(--mg-text-0)',
-                background: 'var(--mg-bg-0)',
-                outline: 'none',
-              }}
-            >
-              {preview.workspaces.map((ws) => (
-                <option key={ws.workspace_id} value={ws.workspace_id}>
-                  {ws.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
 
         {serverError && (
           <p style={{ fontSize: '12px', color: 'var(--mg-danger)', margin: 0 }}>{serverError}</p>

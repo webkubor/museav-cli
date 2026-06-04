@@ -1416,28 +1416,62 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   flex-shrink: 0;
 }
 
-/* ── 🚀 侧边栏一级串联竖线流光过渡 (垂直极速流光) ── */
+/* ── 🚀 侧边栏一级串联竖线流光过渡 (垂直流光脉冲) ── */
 @keyframes verticalFlow {
   0% {
-    background-position: 50% 100%;
+    background-position: 50% -100%;
   }
   100% {
-    background-position: 50% 0%;
+    background-position: 50% 100%;
   }
 }
 
 .sidebar-flow-line {
-  background: linear-gradient(180deg, 
-    color-mix(in oklch, var(--brand-base) 8%, transparent) 0%, 
-    var(--brand-glow) 20%, 
-    var(--brand-base) 50%, 
-    var(--brand-glow) 80%, 
-    color-mix(in oklch, var(--brand-base) 8%, transparent) 100%
+  position: relative;
+  background-color: color-mix(in oklch, var(--brand-base) 14%, transparent);
+  box-shadow: 0 0 1.5px var(--brand-glow);
+  opacity: 0.9;
+  overflow: hidden;
+  
+  /* 渐变遮罩：在底部最后 35% 区域逐渐淡出 */
+  mask-image: linear-gradient(to bottom, 
+    #000 0%, 
+    #000 65%, 
+    rgba(0, 0, 0, 0.3) 82%, 
+    transparent 100%
   );
-  background-size: 100% 400%;
-  animation: verticalFlow 6s linear infinite;
-  box-shadow: 0 0 3px var(--brand-glow);
-  opacity: 0.7;
+  -webkit-mask-image: linear-gradient(to bottom, 
+    #000 0%, 
+    #000 65%, 
+    rgba(0, 0, 0, 0.3) 82%, 
+    transparent 100%
+  );
+  /* 梯形剪裁：在底部逐渐收窄变细，形成向下的针尖状 */
+  clip-path: polygon(
+    0% 0%, 
+    100% 0%, 
+    100% 65%, 
+    75% 82%,
+    50% 100%, 
+    25% 82%, 
+    0% 65%
+  );
+}
+
+/* 轨道内的流动光脉冲 */
+.sidebar-flow-line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom,
+    transparent 0%,
+    var(--brand-base) 35%,
+    var(--brand-mid) 50%,
+    var(--brand-base) 65%,
+    transparent 100%
+  );
+  background-size: 100% 200%;
+  animation: verticalFlow 3.5s linear infinite;
 }
 
 /* ── 🚀 侧边栏子菜单物理高度折叠滑入收缩 (Vercel Style Accordion) ── */

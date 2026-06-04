@@ -628,6 +628,58 @@ function CustomRequestPanel() {
   )
 }
 
+// ─── 认证 / OAuth URL 透传参数速查 ──────────────────────────────
+interface UrlParamRow {
+  param: string
+  where: string
+  purpose: string
+  note?: string
+}
+
+const URL_PARAM_ROWS: UrlParamRow[] = [
+  { param: '?redirect=<path>', where: '/login · /auth/callback', purpose: '登录成功后回跳目标', note: '默认 /dashboard，由 getRedirectTarget() 读写' },
+  { param: '?reason=no_access', where: '/login', purpose: '提示“账号不属于任何组织”', note: '与 ProtectedRoute 联动，防互弹循环' },
+  { param: '?email=<email>', where: '/login → /signup', purpose: '未注册时把邮箱带去注册页预填' },
+  { param: '?invitation=<token>', where: '/signup', purpose: '→ 注册请求体 invitation_token', note: '被邀请人注册即加入组织' },
+  { param: '/invitations/:token', where: '邀请接受页', purpose: '标识具体邀请', note: '兼容旧 ?token= query' },
+  { param: '?workspace=<id>', where: '邀请链接', purpose: '邀请方预设加入的工作区', note: '被邀请人不自选，静默携带' },
+  { param: '?user_code=<code>', where: '/device', purpose: 'CLI 设备码授权', note: '未登录时经 toLoginWithRedirect 回带' },
+  { param: 'OAuth redirect', where: 'oauthAuthorizeUrl', purpose: '${origin}/auth/callback?redirect=<目标>', note: '回跳走专用回调页（跨 API/控制台域）' },
+]
+
+function UrlParamsPanel() {
+  return (
+    <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
+      <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40">
+        <div className="text-sm font-bold text-mg-text-0">认证 / OAuth URL 透传参数</div>
+        <div className="text-[11px] text-mg-text-2 mt-0.5">注册 / 登录 / 邀请 / 设备授权各入口需要兼容携带的 URL 参数</div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-mg-border bg-mg-bg-1/40">
+              <th className="py-2.5 px-5 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">参数</th>
+              <th className="py-2.5 px-5 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">出现位置</th>
+              <th className="py-2.5 px-5 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">作用</th>
+              <th className="py-2.5 px-5 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            {URL_PARAM_ROWS.map((row) => (
+              <tr key={row.param} className="border-b border-mg-border/40 hover:bg-mg-fill-0/20 transition-colors align-top">
+                <td className="py-3 px-5 font-mono text-xs text-brand-base whitespace-nowrap">{row.param}</td>
+                <td className="py-3 px-5 text-xs text-mg-text-1 font-mono whitespace-nowrap">{row.where}</td>
+                <td className="py-3 px-5 text-xs text-mg-text-0">{row.purpose}</td>
+                <td className="py-3 px-5 text-xs text-mg-text-2 leading-relaxed">{row.note ?? '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 export default function PlatformConfigPage() {
   const { t } = useTranslation()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
@@ -709,6 +761,7 @@ export default function PlatformConfigPage() {
           <TabsTrigger value="endpoints">{t('platformConfig.tab.endpoints')}</TabsTrigger>
           <TabsTrigger value="roles">角色设置</TabsTrigger>
           <TabsTrigger value="permissions">{t('platformConfig.tab.permissions')}</TabsTrigger>
+          <TabsTrigger value="url-params">回跳参数</TabsTrigger>
         </TabsList>
 
         <TabsContent value="endpoints">
@@ -747,6 +800,12 @@ export default function PlatformConfigPage() {
           <div className="space-y-4 pt-2">
             <MenuPermissionMap />
             <PermissionPanel />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="url-params">
+          <div className="space-y-4 pt-2">
+            <UrlParamsPanel />
           </div>
         </TabsContent>
 

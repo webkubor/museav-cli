@@ -298,87 +298,107 @@ export default function ModelsCatalogPage() {
                 </div>
               </div>
 
-              {/* 气泡详情 Popover (聊天气泡风格) */}
+              {/* 右上角斜角标触发器及详情气泡 */}
               <div 
                 onClick={(e) => e.stopPropagation()}
-                className="absolute bottom-[calc(100%+12px)] right-4 w-[240px] bg-white dark:bg-[#18181b] border border-neutral-200 dark:border-neutral-850 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.08)] dark:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.4)] rounded-[20px] rounded-br-[2px] p-4 origin-bottom-right transition-all duration-300 [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] opacity-0 scale-90 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0 group-hover:pointer-events-auto z-50 text-left text-neutral-800 dark:text-neutral-200 cursor-default before:absolute before:inset-x-0 before:top-full before:h-[18px] before:content-[''] before:pointer-events-auto"
+                className="absolute top-0 right-0 w-[50px] h-[50px] overflow-visible z-30 group/tooltip"
               >
-                {/* Curved speech bubble tail */}
-                <svg 
-                  width="14" 
-                  height="10" 
-                  viewBox="0 0 14 10" 
-                  fill="none" 
-                  className="absolute top-[calc(100%-1px)] right-5 z-20 text-white dark:text-[#18181b]"
-                >
-                  <path 
-                    d="M14 0C10 0 7 2 5 4.5C3.5 6.5 2 8 0 10C3.5 10 7 7.5 9.5 4.5C11.5 2 13 0.5 14 0Z" 
-                    fill="currentColor"
-                  />
-                  <path 
-                    d="M14 0C10 0 7 2 5 4.5C3.5 6.5 2 8" 
-                    stroke="currentColor" 
-                    strokeWidth="1"
-                    className="text-neutral-200 dark:text-neutral-800"
-                    fill="none"
-                  />
-                </svg>
-
-                {/* Content */}
-                <div className="space-y-2.5">
-                  {/* Header */}
-                  <div>
-                    <span className="text-[9px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest block">{model.vendor || 'ModelGo'}</span>
-                    <h4 className="text-[14px] font-black text-neutral-800 dark:text-white tracking-tight mt-0.5">{model.display_name}</h4>
+                {/* 45度斜拉角标 Ribbon */}
+                <div className="absolute top-0 right-0 w-[50px] h-[50px] overflow-hidden rounded-tr-[15px] pointer-events-auto cursor-pointer">
+                  <div 
+                    className="absolute top-[10px] right-[-16px] w-[66px] py-[2px] bg-neutral-100/90 dark:bg-neutral-800/90 hover:bg-neutral-50 dark:hover:bg-neutral-850 text-[8px] font-black text-neutral-500 dark:text-neutral-400 hover:text-brand-base dark:hover:text-brand-mid uppercase tracking-widest text-center rotate-45 border-y border-neutral-200/50 dark:border-neutral-750 transition-all duration-300 relative shadow-sm"
+                    title={isZh ? '查看模型详情' : 'View model details'}
+                  >
+                    INFO
+                    {/* 橙色发光脉冲点 */}
+                    <span className="absolute top-[1px] right-[4px] flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
+                    </span>
                   </div>
+                </div>
 
-                  {/* Core Meta Text */}
-                  <div className="text-[11px] text-neutral-600 dark:text-neutral-300 space-y-1.5 font-medium">
-                    <div className="flex items-center gap-1.5">
-                      <LuCpu size={12} className="text-neutral-400 dark:text-neutral-500 shrink-0" />
-                      <span>{isZh ? '窗口：' : 'Context: '}<strong>{formatContextLength(model.context_length)}</strong></span>
+                {/* 气泡详情 Popover (极简聊天气泡) */}
+                <div 
+                  className="absolute bottom-[calc(100%-8px)] right-3 w-[240px] bg-white dark:bg-[#18181b] border border-neutral-200 dark:border-neutral-850 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.08)] dark:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.4)] rounded-[20px] rounded-br-[2px] p-4 origin-bottom-right transition-all duration-300 [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] opacity-0 scale-90 translate-y-1 pointer-events-none group-hover/tooltip:opacity-100 group-hover/tooltip:scale-100 group-hover/tooltip:translate-y-0 group-hover/tooltip:pointer-events-auto text-left text-neutral-800 dark:text-neutral-200 cursor-default before:absolute before:inset-x-0 before:top-full before:h-[12px] before:content-[''] before:pointer-events-auto"
+                >
+                  {/* Curved speech bubble tail pointing to the trigger bubble */}
+                  <svg 
+                    width="14" 
+                    height="10" 
+                    viewBox="0 0 14 10" 
+                    fill="none" 
+                    className="absolute top-[calc(100%-1px)] right-[12px] z-20 text-white dark:text-[#18181b]"
+                  >
+                    <path 
+                      d="M14 0C10 0 7 2 5 4.5C3.5 6.5 2 8 0 10C3.5 10 7 7.5 9.5 4.5C11.5 2 13 0.5 14 0Z" 
+                      fill="currentColor"
+                    />
+                    <path 
+                      d="M14 0C10 0 7 2 5 4.5C3.5 6.5 2 8" 
+                      stroke="currentColor" 
+                      strokeWidth="1"
+                      className="text-neutral-200 dark:text-neutral-800"
+                      fill="none"
+                    />
+                  </svg>
+
+                  {/* Content */}
+                  <div className="space-y-2.5">
+                    {/* Header */}
+                    <div>
+                      <span className="text-[9px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest block">{model.vendor || 'ModelGo'}</span>
+                      <h4 className="text-[14px] font-black text-neutral-800 dark:text-white tracking-tight mt-0.5">{model.display_name}</h4>
                     </div>
-                    {model.knowledge_cutoff && (
+
+                    {/* Core Meta Text */}
+                    <div className="text-[11px] text-neutral-600 dark:text-neutral-300 space-y-1.5 font-medium">
                       <div className="flex items-center gap-1.5">
-                        <LuClock size={12} className="text-neutral-400 dark:text-neutral-500 shrink-0" />
-                        <span>{isZh ? '知识截止：' : 'Cutoff: '}<strong>{model.knowledge_cutoff}</strong></span>
+                        <LuCpu size={12} className="text-neutral-400 dark:text-neutral-500 shrink-0" />
+                        <span>{isZh ? '窗口：' : 'Context: '}<strong>{formatContextLength(model.context_length)}</strong></span>
+                      </div>
+                      {model.knowledge_cutoff && (
+                        <div className="flex items-center gap-1.5">
+                          <LuClock size={12} className="text-neutral-400 dark:text-neutral-500 shrink-0" />
+                          <span>{isZh ? '知识截止：' : 'Cutoff: '}<strong>{model.knowledge_cutoff}</strong></span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5">
+                        <LuCalendar size={12} className="text-neutral-400 dark:text-neutral-500 shrink-0" />
+                        <span>{isZh ? '发布时间：' : 'Released: '}<strong>{model.released_at || '—'}</strong></span>
+                      </div>
+                    </div>
+
+                    <div className="h-px bg-neutral-100 dark:bg-neutral-800" />
+
+                    {/* Pricing Core */}
+                    <div className="text-[11px] text-neutral-600 dark:text-neutral-300 space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-neutral-400 dark:text-neutral-500">{isZh ? '输入单价' : 'Input Price'}</span>
+                        <span className="font-mono font-bold text-neutral-800 dark:text-white">{formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-neutral-400 dark:text-neutral-500">{isZh ? '输出单价' : 'Output Price'}</span>
+                        <span className="font-mono font-bold text-neutral-800 dark:text-white">{formatModelPrice(model.pricing?.output_per_1m, model.pricing?.currency)}</span>
+                      </div>
+                    </div>
+
+                    {/* Feature Status Tags */}
+                    {(model.zero_data_retention || model.in_region_routing) && (
+                      <div className="flex flex-wrap gap-1.5 pt-0.5 text-[9px] font-bold">
+                        {model.zero_data_retention && (
+                          <span className="px-1.5 py-0.5 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400">
+                            {isZh ? '数据零留存' : 'Zero Retention'}
+                          </span>
+                        )}
+                        {model.in_region_routing && (
+                          <span className="px-1.5 py-0.5 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400">
+                            {isZh ? '区域内路由' : 'In-Region'}
+                          </span>
+                        )}
                       </div>
                     )}
-                    <div className="flex items-center gap-1.5">
-                      <LuCalendar size={12} className="text-neutral-400 dark:text-neutral-500 shrink-0" />
-                      <span>{isZh ? '发布时间：' : 'Released: '}<strong>{model.released_at || '—'}</strong></span>
-                    </div>
                   </div>
-
-                  <div className="h-px bg-neutral-100 dark:bg-neutral-800" />
-
-                  {/* Pricing Core */}
-                  <div className="text-[11px] text-neutral-600 dark:text-neutral-300 space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-neutral-400 dark:text-neutral-500">{isZh ? '输入单价' : 'Input Price'}</span>
-                      <span className="font-mono font-bold text-neutral-800 dark:text-white">{formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-neutral-400 dark:text-neutral-500">{isZh ? '输出单价' : 'Output Price'}</span>
-                      <span className="font-mono font-bold text-neutral-800 dark:text-white">{formatModelPrice(model.pricing?.output_per_1m, model.pricing?.currency)}</span>
-                    </div>
-                  </div>
-
-                  {/* Feature Status Tags */}
-                  {(model.zero_data_retention || model.in_region_routing) && (
-                    <div className="flex flex-wrap gap-1.5 pt-0.5 text-[9px] font-bold">
-                      {model.zero_data_retention && (
-                        <span className="px-1.5 py-0.5 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400">
-                          {isZh ? '数据零留存' : 'Zero Retention'}
-                        </span>
-                      )}
-                      {model.in_region_routing && (
-                        <span className="px-1.5 py-0.5 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400">
-                          {isZh ? '区域内路由' : 'In-Region'}
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>

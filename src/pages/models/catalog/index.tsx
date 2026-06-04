@@ -180,7 +180,7 @@ export default function ModelsCatalogPage() {
                 transform: 'perspective(1000px) rotateX(var(--rotate-x, 0deg)) rotateY(var(--rotate-y, 0deg)) scale3d(var(--scale, 1), var(--scale, 1), var(--scale, 1))',
                 transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
               }}
-              className="group relative p-[1.5px] rounded-2xl overflow-hidden bg-mg-border/30 dark:bg-mg-border/10 transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1) hover:shadow-[0_25px_45px_-15px_var(--brand-glow)] [--scale:1] hover:[--scale:1.015] flex"
+              className="group relative p-[1px] rounded-2xl overflow-hidden bg-[rgba(15,23,42,0.09)] dark:bg-[rgba(255,255,255,0.14)] transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1) hover:shadow-[0_20px_40px_-10px_var(--brand-glow)] shadow-[0_8px_30px_rgb(0,0,0,0.02)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] [--scale:1] hover:[--scale:1.015] flex"
             >
               {/* 渐变边框 Spotlight 层（光斑跟随，Hover 时显现） */}
               <div
@@ -191,7 +191,7 @@ export default function ModelsCatalogPage() {
               />
 
               {/* 磨砂玻璃内容包裹容器 */}
-              <div className="relative w-full rounded-[15px] bg-white/45 dark:bg-mg-bg-0/35 backdrop-blur-2xl -webkit-backdrop-blur-2xl p-7 flex flex-col gap-6 overflow-hidden flex-1">
+              <div className="relative w-full rounded-[15px] bg-white/90 dark:bg-mg-bg-0/80 backdrop-blur-2xl -webkit-backdrop-blur-2xl p-7 flex flex-col gap-6 overflow-hidden flex-1">
                 {/* 内层内容 Spotlight 背景光晕（光斑跟随，Hover 时显现） */}
                 <div
                   className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"

@@ -32,9 +32,9 @@ function readGuardrailCount(): number {
 function readShowConfig(): boolean {
   try {
     const item = localStorage.getItem(SHOW_CONFIG_KEY)
-    return item === null ? true : item === 'true'
+    return item === 'true'
   } catch {
-    return true
+    return false
   }
 }
 

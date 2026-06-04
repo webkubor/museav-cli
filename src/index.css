@@ -1419,59 +1419,49 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
 /* ── 🚀 侧边栏一级串联竖线流光过渡 (垂直流光脉冲) ── */
 @keyframes verticalFlow {
   0% {
-    background-position: 0 -120px;
+    top: -65px;
   }
   100% {
-    background-position: 0 calc(100% + 120px);
+    top: 100%;
   }
 }
 
 .sidebar-flow-line {
   position: relative;
-  background-color: color-mix(in srgb, var(--brand-base) 22%, transparent);
-  box-shadow: 0 0 4px var(--brand-glow);
+  background-color: color-mix(in srgb, var(--brand-base) 18%, transparent);
+  box-shadow: 0 0 1.5px var(--brand-glow);
   opacity: 0.95;
   overflow: hidden;
   
-  /* 渐变遮罩：在底部最后 35% 区域逐渐淡出 */
+  /* 渐变遮罩：在底部最后 30% 区域逐渐淡出 */
   mask-image: linear-gradient(to bottom, 
     #000 0%, 
-    #000 65%, 
-    rgba(0, 0, 0, 0.3) 82%, 
+    #000 70%, 
+    rgba(0, 0, 0, 0.4) 85%, 
     transparent 100%
   );
   -webkit-mask-image: linear-gradient(to bottom, 
     #000 0%, 
-    #000 65%, 
-    rgba(0, 0, 0, 0.3) 82%, 
+    #000 70%, 
+    rgba(0, 0, 0, 0.4) 85%, 
     transparent 100%
-  );
-  /* 梯形剪裁：在底部逐渐收窄变细，形成向下的针尖状 */
-  clip-path: polygon(
-    0% 0%, 
-    100% 0%, 
-    100% 65%, 
-    80% 82%,
-    50% 100%, 
-    20% 82%, 
-    0% 65%
   );
 }
 
-/* 轨道内的流动光脉冲 */
+/* 轨道内的流动光脉冲 (激光光束效果) */
 .sidebar-flow-line::after {
   content: '';
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  height: 60px; /* 脉冲高度为 60px */
   background: linear-gradient(to bottom,
     transparent 0%,
     var(--brand-base) 30%,
-    #ffffff 50%, /* 极亮核心白光 */
+    #ffffff 50%, /* 核心强白光 */
     var(--brand-base) 70%,
     transparent 100%
   );
-  background-size: 100% 120px;
-  background-repeat: no-repeat;
   filter: drop-shadow(0 0 3px var(--brand-base));
   animation: verticalFlow 2.2s cubic-bezier(0.25, 1, 0.5, 1) infinite;
 }

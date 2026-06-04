@@ -7,6 +7,7 @@ interface TooltipProps {
   position?: 'top' | 'bottom' | 'left' | 'right'
   delay?: number
   className?: string
+  containerClassName?: string
 }
 
 /**
@@ -18,7 +19,8 @@ export const Tooltip: React.FC<TooltipProps> = ({
   children,
   position = 'top',
   delay = 150,
-  className
+  className,
+  containerClassName
 }) => {
   const [visible, setVisible] = useState(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -43,15 +45,15 @@ export const Tooltip: React.FC<TooltipProps> = ({
   }
 
   const arrowClasses = {
-    top: 'absolute top-full left-1/2 -translate-x-1/2 border-t-slate-900 dark:border-t-slate-800 border-x-transparent border-b-transparent border-[5px]',
-    bottom: 'absolute bottom-full left-1/2 -translate-x-1/2 border-b-slate-900 dark:border-b-slate-800 border-x-transparent border-t-transparent border-[5px]',
-    left: 'absolute left-full top-1/2 -translate-y-1/2 border-l-slate-900 dark:border-l-slate-800 border-y-transparent border-r-transparent border-[5px]',
-    right: 'absolute right-full top-1/2 -translate-y-1/2 border-r-slate-900 dark:border-r-slate-800 border-y-transparent border-l-transparent border-[5px]',
+    top: 'absolute top-full left-1/2 -translate-x-1/2 border-t-white dark:border-t-neutral-950 border-x-transparent border-b-transparent border-[5px]',
+    bottom: 'absolute bottom-full left-1/2 -translate-x-1/2 border-b-white dark:border-b-neutral-950 border-x-transparent border-t-transparent border-[5px]',
+    left: 'absolute left-full top-1/2 -translate-y-1/2 border-l-white dark:border-l-neutral-950 border-y-transparent border-r-transparent border-[5px]',
+    right: 'absolute right-full top-1/2 -translate-y-1/2 border-r-white dark:border-r-neutral-950 border-y-transparent border-l-transparent border-[5px]',
   }
 
   return (
     <div
-      className="relative inline-block w-fit"
+      className={cn("relative inline-block w-fit", containerClassName)}
       onMouseEnter={showTooltip}
       onMouseLeave={hideTooltip}
       onFocus={showTooltip}
@@ -62,7 +64,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
         <div
           data-state={visible ? 'open' : 'closed'}
           className={cn(
-            "absolute z-[9999] pointer-events-none w-max max-w-[240px] px-2.5 py-1.2 rounded-md bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-[6px] border border-white/5 text-white text-[11px] font-semibold leading-normal shadow-md tracking-wide text-center",
+            "absolute z-[9999] pointer-events-none w-max max-w-[280px] p-1 rounded-xl bg-white/98 dark:bg-neutral-950/98 backdrop-blur-md border border-neutral-200/60 dark:border-neutral-800/60 text-neutral-900 dark:text-neutral-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_16px_40px_rgb(0,0,0,0.35)]",
             posClasses[position],
             className
           )}

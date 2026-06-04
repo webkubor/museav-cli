@@ -173,172 +173,183 @@ export default function ModelsCatalogPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {visibleModels.map((model) => (
-            <div
+            <Tooltip
               key={model.id}
-              onClick={(e) => handleGoPlayground(model.model_id, e)}
-              onMouseMove={handleMouseMove}
-              onMouseLeave={handleMouseLeave}
-              style={{
-                transform: 'perspective(1000px) rotateX(var(--rotate-x, 0deg)) rotateY(var(--rotate-y, 0deg)) scale3d(var(--scale, 1), var(--scale, 1), var(--scale, 1))',
-                transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-              }}
-              className="group relative p-[1px] rounded-2xl bg-[rgba(15,23,42,0.09)] dark:bg-[rgba(255,255,255,0.14)] transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1) hover:shadow-[0_20px_40px_-10px_var(--brand-glow)] shadow-[0_8px_30px_rgb(0,0,0,0.02)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] [--scale:1] hover:[--scale:1.015] flex cursor-pointer"
+              position="top"
+              containerClassName="w-full flex"
+              className="z-[9999]"
+              content={
+                <div className="p-2 min-w-[190px] text-left select-none space-y-2.5">
+                  <div className="flex items-center justify-between gap-2 border-b border-neutral-100 dark:border-neutral-850 pb-1.5">
+                    <span className="font-bold text-[12px] text-neutral-900 dark:text-white tracking-tight truncate max-w-[130px]">
+                      {model.display_name}
+                    </span>
+                    <span className="shrink-0 text-[9px] font-extrabold tracking-wider uppercase px-1 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 rounded">
+                      {model.vendor || 'ModelGo'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-3.5 gap-y-1.5 text-[10px]">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-neutral-450 dark:text-neutral-500 font-medium">
+                        {isZh ? '上下文窗口' : 'Context Window'}
+                      </span>
+                      <span className="font-semibold text-neutral-750 dark:text-neutral-300 tabular-nums">
+                        {formatContextLength(model.context_length)}
+                      </span>
+                    </div>
+                    {model.knowledge_cutoff && (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-neutral-450 dark:text-neutral-500 font-medium">
+                          {isZh ? '知识截止' : 'Cutoff'}
+                        </span>
+                        <span className="font-semibold text-neutral-750 dark:text-neutral-300 tabular-nums">
+                          {model.knowledge_cutoff}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex col-span-2 border-t border-neutral-100 dark:border-neutral-850 pt-1.5 mt-0.5 justify-between items-center">
+                      <span className="text-neutral-450 dark:text-neutral-500 font-medium">
+                        {isZh ? '输入费用' : 'Input Price'}
+                      </span>
+                      <span className="font-mono font-semibold text-neutral-750 dark:text-neutral-200 tabular-nums">
+                        {formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}<span className="text-[9px] font-sans font-normal text-neutral-400 dark:text-neutral-500">/1M</span>
+                      </span>
+                    </div>
+                    <div className="flex col-span-2 justify-between items-center">
+                      <span className="text-neutral-450 dark:text-neutral-500 font-medium">
+                        {isZh ? '输出费用' : 'Output Price'}
+                      </span>
+                      <span className="font-mono font-semibold text-neutral-750 dark:text-neutral-250 tabular-nums">
+                        {formatModelPrice(model.pricing?.output_per_1m, model.pricing?.currency)}<span className="text-[9px] font-sans font-normal text-neutral-400 dark:text-neutral-500">/1M</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              }
             >
-              {/* 渐变边框 Spotlight 层（光斑跟随，Hover 时显现） */}
               <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                onClick={(e) => handleGoPlayground(model.model_id, e)}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
                 style={{
-                  background: 'radial-gradient(220px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), color-mix(in srgb, var(--brand-base) 15%, transparent) 0%, color-mix(in srgb, var(--brand-mid) 8%, transparent) 50%, transparent 100%)',
+                  transform: 'perspective(1000px) rotateX(var(--rotate-x, 0deg)) rotateY(var(--rotate-y, 0deg)) scale3d(var(--scale, 1), var(--scale, 1), var(--scale, 1))',
+                  transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
                 }}
-              />
-
-              {/* 磨砂玻璃内容包裹容器 */}
-              <div className="relative w-full rounded-[15px] bg-white/90 dark:bg-mg-bg-0/80 backdrop-blur-2xl -webkit-backdrop-blur-2xl p-7 flex flex-col gap-6 overflow-hidden flex-1">
-                {/* 内层内容 Spotlight 背景光晕（光斑跟随，Hover 时显现） */}
+                className="group relative p-[1px] rounded-2xl bg-[rgba(15,23,42,0.09)] dark:bg-[rgba(255,255,255,0.14)] transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1) hover:shadow-[0_20px_40px_-10px_var(--brand-glow)] shadow-[0_8px_30px_rgb(0,0,0,0.02)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] [--scale:1] hover:[--scale:1.015] flex flex-1 cursor-pointer w-full"
+              >
+                {/* 渐变边框 Spotlight 层（光斑跟随，Hover 时显现） */}
                 <div
                   className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                   style={{
-                    background: 'radial-gradient(350px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), color-mix(in srgb, var(--brand-base) 3.5%, transparent) 0%, color-mix(in srgb, var(--brand-mid) 1.5%, transparent) 60%, transparent 100%)',
+                    background: 'radial-gradient(220px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), color-mix(in srgb, var(--brand-base) 15%, transparent) 0%, color-mix(in srgb, var(--brand-mid) 8%, transparent) 50%, transparent 100%)',
                   }}
                 />
 
-                {/* 磨砂玻璃流光扫掠光效 */}
-                <div className="absolute inset-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/20 dark:via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[1400ms] cubic-bezier(0.16, 1, 0.3, 1) pointer-events-none" />
-
-                {/* 卡片头部：精致的厂商图标 & 名字 */}
-                <div className="flex items-start gap-4 relative z-10">
-                  <div className="shrink-0 p-1.5 bg-mg-fill-0/40 rounded-xl border border-mg-border/10">
-                    {vendorNode(model)}
-                  </div>
-                  <div className="min-w-0 flex-1 pt-0.5">
-                    <div className="text-[10px] font-bold text-mg-text-2/70 uppercase tracking-widest">
-                      {model.vendor || 'ModelGo'}
-                    </div>
-                    <h3 className="text-17px font-extrabold text-mg-text-0 mt-1 truncate tracking-tight">
-                      {model.display_name}
-                    </h3>
-                  </div>
-                </div>
-
-                {/* 隐藏式 API ID 复制栏：默认素雅，悬浮时露出动作 */}
-                <div className="space-y-1.5 relative z-10">
+                {/* 磨砂玻璃内容包裹容器 */}
+                <div className="relative w-full rounded-[15px] bg-white/90 dark:bg-mg-bg-0/80 backdrop-blur-2xl -webkit-backdrop-blur-2xl p-7 flex flex-col gap-6 overflow-hidden flex-1">
+                  {/* 内层内容 Spotlight 背景光晕（光斑跟随，Hover 时显现） */}
                   <div
-                    onClick={(e) => handleCopyApiId(model.model_id, e)}
-                    className={cn(
-                      'group/id flex items-center justify-between gap-3 px-3.5 py-2.5 bg-mg-fill-0/30 hover:bg-brand-base/5 border border-mg-border/10 hover:border-brand-base/20 rounded-xl cursor-pointer transition-all duration-300',
-                      copiedId === model.model_id && 'bg-emerald-500/5 border-emerald-500/20'
-                    )}
-                    title={isZh ? '点击复制 API ID' : 'Click to copy API ID'}
-                  >
-                    <code className="font-mono text-xs font-semibold text-mg-text-1 group-hover/id:text-mg-text-0 truncate select-all leading-none">
-                      {model.model_id}
-                    </code>
-                    <div className="shrink-0 flex items-center justify-center w-5 h-5 rounded-md transition-all duration-300 opacity-0 group-hover:opacity-100 group-hover/id:bg-brand-base/5">
-                      {copiedId === model.model_id ? (
-                        <LuCheck size={12} className="text-emerald-500" />
-                      ) : (
-                        <LuCopy size={11} className="text-mg-text-2 group-hover/id:text-brand-base" />
-                      )}
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                    style={{
+                      background: 'radial-gradient(350px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), color-mix(in srgb, var(--brand-base) 3.5%, transparent) 0%, color-mix(in srgb, var(--brand-mid) 1.5%, transparent) 60%, transparent 100%)',
+                    }}
+                  />
+
+                  {/* 磨砂玻璃流光扫掠光效 */}
+                  <div className="absolute inset-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/20 dark:via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[1400ms] cubic-bezier(0.16, 1, 0.3, 1) pointer-events-none" />
+
+                  {/* 卡片头部：精致的厂商图标 & 名字 */}
+                  <div className="flex items-start gap-4 relative z-10">
+                    <div className="shrink-0 p-1.5 bg-mg-fill-0/40 rounded-xl border border-mg-border/10">
+                      {vendorNode(model)}
                     </div>
-                  </div>
-                </div>
-
-                {/* 能力模态标签：仅在有模态标签时展示 */}
-                {model.modalities && model.modalities.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 relative z-10">
-                    {modalityBadges(model)}
-                  </div>
-                )}
-
-                {/* 参数指标行：舍弃生硬的实线，通过高空隙排版划分层级 */}
-                <div className="grid grid-cols-2 gap-4 py-1 text-xs relative z-10">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
-                      {isZh ? '上下文窗口' : 'Context Length'}
-                    </span>
-                    <span className="font-extrabold text-mg-text-0 flex items-center gap-1 text-[13px]">
-                      <LuZap size={13} className="text-amber-500 shrink-0" />
-                      {formatContextLength(model.context_length)}
-                    </span>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
-                      {isZh ? '数据隐私' : 'Data Privacy'}
-                    </span>
-                    <span className="font-extrabold text-mg-text-0 text-[13px]">
-                      {model.zero_data_retention ? (
-                        <span className="text-emerald-500 font-bold">{isZh ? '零留存' : 'Zero Retention'}</span>
-                      ) : (
-                        <span className="text-mg-text-1">{isZh ? '标准保护' : 'Standard'}</span>
-                      )}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 计费单价与快速体验按钮 */}
-                <div className="flex items-end justify-between pt-3 mt-auto border-t border-mg-border/20 relative z-10">
-                  <div className="space-y-0.5">
-                    <span className="text-[10px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
-                      {isZh ? '预估输入单价' : 'Input Price'}
-                    </span>
-                    <span className="font-mono text-[14px] font-black text-mg-text-0 tabular-nums">
-                      {formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => handleGoPlayground(model.model_id, e)}
-                    className="rounded-full h-8 px-4 text-xs font-bold text-brand-base hover:text-white border border-brand-base/20 hover:bg-brand-base flex items-center gap-1 cursor-pointer transition-all duration-300 active:scale-95 hover:shadow-sm hover:shadow-brand-glow/20"
-                  >
-                    {isZh ? '去体验' : 'Try'}
-                    <LuChevronRight size={12} className="transition-transform group-hover:translate-x-0.5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* 右上角斜角标触发器及系统 Tooltip 组件 */}
-              {/* 右上角提示小气泡触发器及系统 Tooltip 组件 */}
-              <div 
-                onClick={(e) => e.stopPropagation()}
-                className="absolute top-4 right-4 z-30"
-              >
-                <Tooltip
-                  position="top"
-                  className="z-[9999]"
-                  content={
-                    <div className="space-y-1.5 text-left text-slate-100 p-1 min-w-[150px] leading-normal select-none">
-                      <div className="font-extrabold text-[12.5px] border-b border-white/10 pb-1 mb-1 tracking-tight text-white">
+                    <div className="min-w-0 flex-1 pt-0.5">
+                      <div className="text-[10px] font-bold text-mg-text-2/70 uppercase tracking-widest">
+                        {model.vendor || 'ModelGo'}
+                      </div>
+                      <h3 className="text-17px font-extrabold text-mg-text-0 mt-1 truncate tracking-tight">
                         {model.display_name}
-                      </div>
-                      <div className="space-y-1 text-[11px] font-semibold text-slate-200">
-                        <p>⚡ {isZh ? '窗口：' : 'Ctx: '}<strong>{formatContextLength(model.context_length)}</strong></p>
-                        {model.knowledge_cutoff && <p>📅 {isZh ? '截止：' : 'Cutoff: '}<strong>{model.knowledge_cutoff}</strong></p>}
-                        <p>📥 {isZh ? '输入：' : 'Input: '}<strong>{formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}</strong>/1M</p>
-                        <p>📤 {isZh ? '输出：' : 'Output: '}<strong>{formatModelPrice(model.pricing?.output_per_1m, model.pricing?.currency)}</strong>/1M</p>
+                      </h3>
+                    </div>
+                  </div>
+
+                  {/* 隐藏式 API ID 复制栏：默认素雅，悬浮时露出动作 */}
+                  <div className="space-y-1.5 relative z-10">
+                    <div
+                      onClick={(e) => handleCopyApiId(model.model_id, e)}
+                      className={cn(
+                        'group/id flex items-center justify-between gap-3 px-3.5 py-2.5 bg-mg-fill-0/30 hover:bg-brand-base/5 border border-mg-border/10 hover:border-brand-base/20 rounded-xl cursor-pointer transition-all duration-300',
+                        copiedId === model.model_id && 'bg-emerald-500/5 border-emerald-500/20'
+                      )}
+                      title={isZh ? '点击复制 API ID' : 'Click to copy API ID'}
+                    >
+                      <code className="font-mono text-xs font-semibold text-mg-text-1 group-hover/id:text-mg-text-0 truncate select-all leading-none">
+                        {model.model_id}
+                      </code>
+                      <div className="shrink-0 flex items-center justify-center w-5 h-5 rounded-md transition-all duration-300 opacity-0 group-hover:opacity-100 group-hover/id:bg-brand-base/5">
+                        {copiedId === model.model_id ? (
+                          <LuCheck size={12} className="text-emerald-500" />
+                        ) : (
+                          <LuCopy size={11} className="text-mg-text-2 group-hover/id:text-brand-base" />
+                        )}
                       </div>
                     </div>
-                  }
-                >
-                  {/* 右上角带动画、带样式的小提示气泡触发器 */}
-                  <div 
-                    className="w-[20px] h-[20px] rounded-full bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border border-neutral-200 dark:border-neutral-800 flex items-center justify-center text-neutral-400 dark:text-neutral-500 hover:text-brand-base dark:hover:text-brand-mid hover:border-brand-base/30 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer shadow-sm relative"
-                    title={isZh ? '查看模型详情' : 'View model details'}
-                  >
-                    {/* 呼吸脉冲底圈 */}
-                    <span className="absolute -inset-[2px] rounded-full bg-neutral-200/35 dark:bg-neutral-850/35 animate-pulse pointer-events-none" />
-                    
-                    {/* 提示小角标字符 i */}
-                    <span className="font-mono text-[9px] font-bold select-none leading-none">i</span>
-                    
-                    {/* 气泡右上角橙色状态小角标（呼吸红点） */}
-                    <span className="absolute -top-0.5 -right-0.5 flex h-1.5 w-1.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
-                    </span>
                   </div>
-                </Tooltip>
+
+                  {/* 能力模态标签：仅在有模态标签时展示 */}
+                  {model.modalities && model.modalities.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 relative z-10">
+                      {modalityBadges(model)}
+                    </div>
+                  )}
+
+                  {/* 参数指标行：舍弃生硬的实线，通过高空隙排版划分层级 */}
+                  <div className="grid grid-cols-2 gap-4 py-1 text-xs relative z-10">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
+                        {isZh ? '上下文窗口' : 'Context Length'}
+                      </span>
+                      <span className="font-extrabold text-mg-text-0 flex items-center gap-1 text-[13px]">
+                        <LuZap size={13} className="text-amber-500 shrink-0" />
+                        {formatContextLength(model.context_length)}
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
+                        {isZh ? '数据隐私' : 'Data Privacy'}
+                      </span>
+                      <span className="font-extrabold text-mg-text-0 text-[13px]">
+                        {model.zero_data_retention ? (
+                          <span className="text-emerald-500 font-bold">{isZh ? '零留存' : 'Zero Retention'}</span>
+                        ) : (
+                          <span className="text-mg-text-1">{isZh ? '标准保护' : 'Standard'}</span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 计费单价与快速体验按钮 */}
+                  <div className="flex items-end justify-between pt-3 mt-auto border-t border-mg-border/20 relative z-10">
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
+                        {isZh ? '预估输入单价' : 'Input Price'}
+                      </span>
+                      <span className="font-mono text-[14px] font-black text-mg-text-0 tabular-nums">
+                        {formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => handleGoPlayground(model.model_id, e)}
+                      className="rounded-full h-8 px-4 text-xs font-bold text-brand-base hover:text-white border border-brand-base/20 hover:bg-brand-base flex items-center gap-1 cursor-pointer transition-all duration-300 active:scale-95 hover:shadow-sm hover:shadow-brand-glow/20"
+                    >
+                      {isZh ? '去体验' : 'Try'}
+                      <LuChevronRight size={12} className="transition-transform group-hover:translate-x-0.5" />
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            </Tooltip>
           ))}
         </div>
       )}

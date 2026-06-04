@@ -48,6 +48,8 @@ export interface ReferralCommissionRecord {
   /** 结算比例（百分比） */
   rate: number
   amount: string
+  /** 结算时的返佣档位 */
+  tierName?: string
 }
 
 export type WithdrawalStatus = 'pending' | 'approved' | 'rejected'
@@ -96,11 +98,11 @@ export const referralMock: ReferralData = {
     { name: '测试团队 A', email: 'try***@demo.com', registeredAt: '2025/5/8', totalSpend: '0', commission: '0' },
   ],
   commissions: [
-    { date: '2025/5/20', source: '智设科技', spend: '4200', rate: 13, amount: '546' },
-    { date: '2025/5/18', source: '云图数据', spend: '2600', rate: 13, amount: '338' },
-    { date: '2025/5/15', source: '极光 AI', spend: '1800', rate: 13, amount: '234' },
-    { date: '2025/5/10', source: '智设科技', spend: '5000', rate: 13, amount: '650' },
-    { date: '2025/5/2', source: '微岩信息', spend: '900', rate: 10, amount: '90' },
+    { date: '2025/5/20', source: '智设科技', spend: '4200', rate: 13, amount: '546', tierName: '核心伙伴' },
+    { date: '2025/5/18', source: '云图数据', spend: '2600', rate: 13, amount: '338', tierName: '核心伙伴' },
+    { date: '2025/5/15', source: '极光 AI', spend: '1800', rate: 13, amount: '234', tierName: '核心伙伴' },
+    { date: '2025/5/10', source: '智设科技', spend: '5000', rate: 13, amount: '650', tierName: '核心伙伴' },
+    { date: '2025/5/2', source: '微岩信息', spend: '900', rate: 10, amount: '90', tierName: '普通伙伴' },
   ],
   withdrawals: [
     { appliedAt: '2025/5/19', amount: '1000', status: 'approved', paidAt: '2025/5/21' },
@@ -160,6 +162,7 @@ export const referralCopy = {
     colDate: '日期',
     colSpend: '消费',
     colRate: '比例',
+    colTier: '档位',
     colAmount: '返佣',
     colAppliedAt: '申请时间',
     colWithdrawAmount: '金额',
@@ -219,6 +222,7 @@ export const referralCopy = {
     colDate: 'Date',
     colSpend: 'Spend',
     colRate: 'Rate',
+    colTier: 'Tier',
     colAmount: 'Commission',
     colAppliedAt: 'Applied',
     colWithdrawAmount: 'Amount',

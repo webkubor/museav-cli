@@ -454,6 +454,37 @@ const MOCK_GIFT_RECORDS = [
   { id: '4', source: '平台专属福利', amount: '40.00', currency: 'CNY', credited_at: '2024-06-01T16:00:00Z' },
 ]
 
+// ─── Render Helper for Referral Tiers ──────────────────────────────────────
+
+function renderTierBadge(tierName?: string) {
+  if (!tierName) return <span className="text-mg-text-3">—</span>
+
+  // 普通伙伴 / Partner
+  if (tierName.includes('普通') || tierName.toLowerCase().includes('partner')) {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-100 dark:bg-neutral-800/80 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700/50 select-none">
+        {tierName}
+      </span>
+    )
+  }
+
+  // 战略伙伴 / Strategic Partner
+  if (tierName.includes('战略') || tierName.toLowerCase().includes('strategic')) {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-[0_2px_8px_rgba(245,158,11,0.08)] select-none">
+        👑 {tierName}
+      </span>
+    )
+  }
+
+  // 核心伙伴 / Core Partner 等默认主色
+  return (
+    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-brand-glow/15 text-brand-base border border-brand-base/25 shadow-[0_2px_8px_var(--brand-glow)]/10 select-none">
+      ✨ {tierName}
+    </span>
+  )
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 type BalanceTab = 'main' | 'gift' | 'reward'
@@ -1037,6 +1068,7 @@ export default function BillingPage() {
                   <tr className="border-b border-mg-border/60 bg-mg-fill-0/30">
                     <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">{rc.colDate}</th>
                     <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">{rc.colInvitee}</th>
+                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">{rc.colTier}</th>
                     <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider text-right">{rc.colSpend}</th>
                     <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider text-right">{rc.colRate}</th>
                     <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider text-right">{rc.colAmount}</th>
@@ -1053,6 +1085,9 @@ export default function BillingPage() {
                           </div>
                           <span className="text-xs text-mg-text-0 font-bold">{rec.source}</span>
                         </div>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {renderTierBadge(rec.tierName)}
                       </td>
                       <td className="py-3.5 px-4 text-xs text-mg-text-1 font-mono text-right">¥{Number(rec.spend).toLocaleString('zh-CN')}</td>
                       <td className="py-3.5 px-4 text-right">

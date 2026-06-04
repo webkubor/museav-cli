@@ -217,13 +217,35 @@ export const DashboardHeader: React.FC = () => {
       }
     },
     onError: (err: unknown) => {
+      // 服务端权威校验的错误码映射（web-api 40903/40904 ← permissions 4091/4092）
+      const code = (err as { code?: number })?.code
+      if (code === 40903) {
+        toast.error(t('header.orgOwnerLimitWarning'))
+        return
+      }
+      if (code === 40904) {
+        toast.error(t('header.orgMemberLimitWarning'))
+        return
+      }
       toast.error((err as { message?: string })?.message || t('header.createOrgError'))
     },
   })
 
   const handleOpenOrgModal = () => {
-    if (tenants.length >= 5) {
-      toast.warning(t('header.maxOrgWarning'))
+    // #85 前端预检（服务端是权威，这里只是体验优化）：
+    // 约束 2 — 每账户最多创建并拥有 1 个企业组织；
+    // 约束 1 — 每账户最多关联 5 个企业组织（owner 也占名额）。
+    const items = tenantsData?.items ?? []
+    const ownsEnterprise = items.some(
+      (it) => it.type === 'enterprise' && (it as { role?: string }).role === 'tenant_owner',
+    )
+    if (ownsEnterprise) {
+      toast.warning(t('header.orgOwnerLimitWarning'))
+      return
+    }
+    const enterpriseCount = items.filter((it) => it.type === 'enterprise').length
+    if (enterpriseCount >= 5) {
+      toast.warning(t('header.orgMemberLimitWarning'))
       return
     }
     setNewOrgName('')

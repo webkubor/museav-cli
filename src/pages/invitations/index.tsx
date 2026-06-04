@@ -49,8 +49,14 @@ export default function InvitationsPage() {
     try {
       const result = await acceptInvitation(token)
       navigate(`/dashboard?workspace=${result.workspace_id}`, { replace: true })
-    } catch {
-      setServerError('接受邀请失败，链接可能已过期')
+    } catch (err) {
+      // #85：组织关联上限（40904）必须给出准确原因，而不是误导为链接过期。
+      const code = (err as { code?: number })?.code
+      if (code === 40904) {
+        setServerError('您已加入 5 个企业组织，已达上限；请先退出一个组织后再接受邀请')
+      } else {
+        setServerError((err as { message?: string })?.message || '接受邀请失败，链接可能已过期')
+      }
     } finally {
       setAccepting(false)
     }

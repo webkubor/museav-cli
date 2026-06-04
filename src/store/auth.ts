@@ -45,6 +45,9 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
     } else {
       localStorage.removeItem(storageKeys.activeTenantId())
     }
+    if (activeWorkspaceId) {
+      localStorage.setItem(storageKeys.activeWorkspaceId(), activeWorkspaceId)
+    }
     set({
       account,
       activeTenantId: activeTenantId || null,
@@ -58,10 +61,18 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
 
   addTenant: (tenant) => set((s) => ({ tenants: [...s.tenants, tenant] })),
   setPermissions: (permissions) => set({ permissions }),
-  setActiveWorkspaceId: (workspaceId) => set({ activeWorkspaceId: workspaceId }),
+  setActiveWorkspaceId: (workspaceId) => {
+    if (workspaceId) {
+      localStorage.setItem(storageKeys.activeWorkspaceId(), workspaceId)
+    } else {
+      localStorage.removeItem(storageKeys.activeWorkspaceId())
+    }
+    set({ activeWorkspaceId: workspaceId })
+  },
 
   clearAuth: () => {
     localStorage.removeItem(storageKeys.activeTenantId())
+    localStorage.removeItem(storageKeys.activeWorkspaceId())
     localStorage.removeItem(storageKeys.csHistory())
     localStorage.removeItem(storageKeys.csConversationId())
     document.cookie = 'modelgo_csrf=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'

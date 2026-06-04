@@ -28,6 +28,7 @@ import ChatTestPage from '@/pages/chat-test'
 import { useAuthStore } from '@/store/auth'
 import { useDevStore } from '@/store/use-dev-store'
 import { getSession } from '@/services/auth'
+import { storageKeys } from '@/lib/storage'
 import { getMarket } from '@/lib/market'
 import { applyTheme, getSavedTheme } from '@/lib/theme'
 import { toLoginWithRedirect } from '@/lib/redirect'
@@ -51,6 +52,9 @@ function SessionLoader() {
     isFetchingSession = true
     getSession()
       .then((result) => {
+        // 刷新时优先恢复用户上次选择的工作区（持久化于 localStorage），
+        // 仅当本地无记录时才回退到会话下发的默认工作区，避免刷新后回到默认工作区。
+        const persistedWs = localStorage.getItem(storageKeys.activeWorkspaceId())
         setAuth(
           {
             account_id: result.account.account_id,
@@ -60,7 +64,7 @@ function SessionLoader() {
           },
           result.active_tenant_id,
           result.tenants,
-          result.active_workspace_id,
+          persistedWs || result.active_workspace_id,
           result.permissions?.granted ?? null
         )
       })

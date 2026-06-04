@@ -10,7 +10,9 @@ import {
   LuSearch,
   LuSend,
   LuSparkles,  LuZap,
+  LuGift,
 } from 'react-icons/lu'
+import { referralMock } from '@/pages/referral/referral-data'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
@@ -112,6 +114,19 @@ export default function ModelsPage() {
           <p>{text.desc}</p>
         </div>
         <div className="flex items-center gap-2">
+          {/* 免费剩余额度（= 奖励余额），体验时实时可见 */}
+          <button
+            type="button"
+            onClick={() => navigate('/referral')}
+            title={text.freeQuotaHint}
+            className="flex items-center gap-2 rounded-full h-9 pl-3 pr-3.5 border border-brand-base/30 bg-[var(--brand-base)]/5 hover:bg-[var(--brand-base)]/10 transition-colors"
+          >
+            <LuGift size={14} className="text-brand-base shrink-0" />
+            <span className="text-[11px] font-semibold text-mg-text-2 leading-none">{text.freeQuota}</span>
+            <span className="text-sm font-bold text-brand-base tabular-nums leading-none">
+              ¥{referralMock.stats.rewardBalance.toLocaleString('zh-CN')}
+            </span>
+          </button>
           <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-bold" onClick={() => setIsCompareOpen(true)}>
             <LuGitCompareArrows size={14} />
             {text.compare}

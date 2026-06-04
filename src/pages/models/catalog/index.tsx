@@ -96,10 +96,10 @@ export default function ModelsCatalogPage() {
           <h1 className="text-3xl font-black tracking-tight text-mg-text-0 md:text-4xl">
             {isZh ? '所有模型' : 'All Models'}
           </h1>
-          <p className="text-[14px] text-mg-text-2 font-medium max-w-2xl leading-relaxed">
+          <p className="text-[13.5px] text-mg-text-2 font-medium max-w-2xl leading-relaxed">
             {isZh
-              ? '聚合支持的全部大语言及多模态模型。一键复制 API ID 后，即可无缝对接至您的本地智能代理或服务端中。'
-              : 'Browse all supported models, copy API IDs, and configure your local clients or servers seamlessly.'}
+              ? '聚合 ModelGo 支持的全部大语言及多模态模型。一键复制 API ID，即可在您的本地智能代理、服务代码或第三方 SDK 中进行无缝配置与调用。'
+              : 'Browse and integrate all supported LLMs and multimodal models. Copy the model API ID with one click to configure your local agents, API requests, or server-side SDKs seamlessly.'}
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
@@ -273,24 +273,29 @@ export default function ModelsCatalogPage() {
                     </div>
                   </div>
 
-                  {/* 隐藏式 API ID 复制栏：默认素雅，悬浮时露出动作 */}
-                  <div className="space-y-1.5 relative z-10">
+                  {/* 优化后的 API ID 复制栏 */}
+                  <div className="space-y-1 relative z-10">
                     <div
                       onClick={(e) => handleCopyApiId(model.model_id, e)}
                       className={cn(
-                        'group/id flex items-center justify-between gap-3 px-3.5 py-2.5 bg-mg-fill-0/30 hover:bg-brand-base/5 border border-mg-border/10 hover:border-brand-base/20 rounded-xl cursor-pointer transition-all duration-300',
-                        copiedId === model.model_id && 'bg-emerald-500/5 border-emerald-500/20'
+                        'group/id flex items-center justify-between gap-2.5 px-3 py-2 bg-mg-fill-0/40 hover:bg-brand-base/5 border border-mg-border/10 hover:border-brand-base/20 rounded-xl cursor-pointer transition-all duration-300 select-all',
+                        copiedId === model.model_id && 'bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/25'
                       )}
                       title={isZh ? '点击复制 API ID' : 'Click to copy API ID'}
                     >
-                      <code className="font-mono text-xs font-semibold text-mg-text-1 group-hover/id:text-mg-text-0 truncate select-all leading-none">
-                        {model.model_id}
-                      </code>
-                      <div className="shrink-0 flex items-center justify-center w-5 h-5 rounded-md transition-all duration-300 opacity-0 group-hover:opacity-100 group-hover/id:bg-brand-base/5">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="shrink-0 text-[9px] font-extrabold tracking-wider uppercase px-1.5 py-0.5 bg-mg-fill-1/65 dark:bg-neutral-800 text-mg-text-2 rounded border border-mg-border/5">
+                          API ID
+                        </span>
+                        <code className="font-mono text-xs font-semibold text-mg-text-1 group-hover/id:text-mg-text-0 truncate leading-none">
+                          {model.model_id}
+                        </code>
+                      </div>
+                      <div className="shrink-0 flex items-center justify-center w-5 h-5 rounded-md transition-all duration-300 opacity-60 group-hover/id:opacity-100 group-hover/id:bg-brand-base/5">
                         {copiedId === model.model_id ? (
-                          <LuCheck size={12} className="text-emerald-500" />
+                          <LuCheck size={12} className="text-emerald-500 animate-in zoom-in-75 duration-200" />
                         ) : (
-                          <LuCopy size={11} className="text-mg-text-2 group-hover/id:text-brand-base" />
+                          <LuCopy size={11.5} className="text-mg-text-2 group-hover/id:text-brand-base" />
                         )}
                       </div>
                     </div>

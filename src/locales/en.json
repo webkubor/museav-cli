@@ -1,5 +1,6 @@
 {
   "common": {
+    "copy": "Copy",
     "playground": "Playground",
     "models": "Models",
     "docs": "Docs",

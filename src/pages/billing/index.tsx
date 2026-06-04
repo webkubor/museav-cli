@@ -4,11 +4,13 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tansta
 import { useTranslation } from 'react-i18next'
 import {
   getBalance,
+  getBalanceBreakdown,
   createRecharge,
   listRecharges,
   cancelRecharge,
   redeemPromoCode,
 } from '@/services/billing'
+import { listRewardRecords } from '@/services/referral'
 import { useCurrency, useEnabledChannels } from '@/hooks/use-platform-config'
 import { useAuthStore } from '@/store/auth'
 import { isDomestic } from '@/lib/market'
@@ -17,13 +19,7 @@ import { Badge } from '@/components/ui/Badge'
 import { appToast } from '@/lib/app-toast'
 import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
-import { referralMock, referralCopy } from '@/pages/referral/referral-data'
-
-// ─── Placeholder Balance Data ─────────────────────────────────────────────
-// TODO: 待后端 balance 接口补充细分字段（主余额 / 赠送余额 / 奖励余额）
-const PLACEHOLDER_MAIN_BALANCE = '1250.50'
-const PLACEHOLDER_GIFT_BALANCE = '220.00'
-const PLACEHOLDER_REWARD_BALANCE = '1420.00'
+import { referralCopy } from '@/pages/referral/referral-data'
 
 // ─── Format Balance Helper ────────────────────────────────────────────────
 
@@ -487,6 +483,20 @@ export default function BillingPage() {
 
   const { main: availableMain } = formatBalance(balance?.available.amount)
 
+  // 余额细分（主 / 赠送 / 奖励）—— 走 service 契约，DEV 返回占位值
+  const { data: breakdown } = useQuery({
+    queryKey: ['balance', 'breakdown', tenantId],
+    queryFn: () => getBalanceBreakdown(tenantId),
+    enabled: !!tenantId,
+  })
+
+  // 奖励记录（即推荐计划返佣流水）
+  const { data: rewardRecords = [] } = useQuery({
+    queryKey: ['referral', 'reward-records', tenantId],
+    queryFn: () => listRewardRecords(tenantId),
+    enabled: !!tenantId && activeTab === 'reward',
+  })
+
   const ordersQuery = useInfiniteQuery({
     queryKey: ['billing', 'recharges', tenantId],
     queryFn: ({ pageParam }) => listRecharges(tenantId, { cursor: pageParam as string | undefined, page_size: 15 }),
@@ -581,7 +591,7 @@ export default function BillingPage() {
           <button type="button" onClick={() => setActiveTab('main')} className={cardCls(activeTab === 'main')}>
             <div className="text-xs text-mg-text-2">{t('billing.balance.mainBalance')}</div>
             <div className="text-base font-bold text-mg-text-0 tabular-nums">
-              {currencySymbol}{formatBalance(PLACEHOLDER_MAIN_BALANCE).main}
+              {currencySymbol}{formatBalance(breakdown?.main.amount).main}
             </div>
             <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.mainHint')}</div>
           </button>
@@ -590,7 +600,7 @@ export default function BillingPage() {
           <button type="button" onClick={() => setActiveTab('gift')} className={cardCls(activeTab === 'gift')}>
             <div className="text-xs text-mg-text-2">{t('billing.balance.giftBalance')}</div>
             <div className="text-base font-bold text-mg-text-0 tabular-nums">
-              {currencySymbol}{formatBalance(PLACEHOLDER_GIFT_BALANCE).main}
+              {currencySymbol}{formatBalance(breakdown?.gift.amount).main}
             </div>
             <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.giftHint')}</div>
           </button>
@@ -599,7 +609,7 @@ export default function BillingPage() {
           <button type="button" onClick={() => setActiveTab('reward')} className={cardCls(activeTab === 'reward')}>
             <div className="text-xs text-mg-text-2">{t('billing.balance.rewardBalance')}</div>
             <div className="text-base font-bold text-mg-text-0 tabular-nums">
-              {currencySymbol}{formatBalance(PLACEHOLDER_REWARD_BALANCE).main}
+              {currencySymbol}{formatBalance(breakdown?.reward.amount).main}
             </div>
             <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.rewardHint')}</div>
           </button>
@@ -855,7 +865,7 @@ export default function BillingPage() {
       ) : (
         /* 奖励记录（原推荐计划「返佣流水」） */
         <div className="rounded-2xl border border-mg-border bg-card-bg shadow-sm overflow-hidden">
-          {referralMock.commissions.length === 0 ? (
+          {rewardRecords.length === 0 ? (
             <div className="py-16 text-center text-xs text-mg-text-2">{rc.empty}</div>
           ) : (
             <div className="overflow-x-auto">
@@ -870,7 +880,7 @@ export default function BillingPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {referralMock.commissions.map((rec, i) => (
+                  {rewardRecords.map((rec, i) => (
                     <tr key={i} className="border-b border-mg-border/40 hover:bg-mg-fill-0/20 transition-colors">
                       <td className="py-3.5 px-4 text-xs text-mg-text-2 font-mono">{rec.date}</td>
                       <td className="py-3.5 px-4 text-xs text-mg-text-0 font-medium">{rec.source}</td>

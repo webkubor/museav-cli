@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/Table'
 import { Modal } from '@/components/ui/Modal'
 import { appToast } from '@/lib/app-toast'
+import { useAuthStore } from '@/store/auth'
+import { transferRewardToBalance, requestWithdrawal } from '@/services/referral'
 
 import {
   referralMock,
@@ -39,6 +41,7 @@ export default function ReferralPage() {
   const { i18n } = useTranslation()
   const text = i18n.language.startsWith('zh') ? referralCopy.zh : referralCopy.en
 
+  const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
   const { stats, inviteLink, inviteCode, tier, invitees, withdrawals } = referralMock
 
   const MIN_AMOUNT = 100
@@ -88,8 +91,9 @@ export default function ReferralPage() {
     setTransferOpen(true)
   }
 
-  const confirmTransfer = () => {
+  const confirmTransfer = async () => {
     if (!transferValid) return
+    await transferRewardToBalance(tenantId, { amount: transferNum })
     setRewardBalance((b) => b - transferNum)
     setTransferOpen(false)
     appToast.success(text.transferSuccess.replace('{amount}', fmt(transferNum)))
@@ -109,8 +113,16 @@ export default function ReferralPage() {
     setWithdrawOpen(true)
   }
 
-  const submitWithdraw = () => {
+  const submitWithdraw = async () => {
     if (!withdrawValid) return
+    await requestWithdrawal(tenantId, {
+      amount: withdrawNum,
+      method: payMethod,
+      alipay_account: payMethod === 'alipay' ? alipayAccount.trim() : undefined,
+      bank_name: payMethod === 'bank' ? bankName.trim() : undefined,
+      bank_card: payMethod === 'bank' ? bankCard.trim() : undefined,
+      bank_holder: payMethod === 'bank' ? bankHolder.trim() : undefined,
+    })
     const now = new Date()
     const dateStr = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}`
     setWithdrawalList((list) => [

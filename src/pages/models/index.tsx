@@ -12,7 +12,9 @@ import {
   LuSparkles,  LuZap,
   LuGift,
 } from 'react-icons/lu'
-import { referralMock } from '@/pages/referral/referral-data'
+import { useQuery } from '@tanstack/react-query'
+import { useAuthStore } from '@/store/auth'
+import { getReferralOverview } from '@/services/referral'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
@@ -45,6 +47,13 @@ export default function ModelsPage() {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const text = i18n.language.startsWith('zh') ? modelExperienceCopy.zh : modelExperienceCopy.en
+  const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
+  const { data: referralOverview } = useQuery({
+    queryKey: ['referral', 'overview', tenantId],
+    queryFn: () => getReferralOverview(tenantId),
+    enabled: !!tenantId,
+  })
+  const rewardBalance = referralOverview?.stats.rewardBalance ?? 0
   const [category, setCategory] = useState<CategoryKey>('all')
   const [isCompareOpen, setIsCompareOpen] = useState(false)
   const [input, setInput] = useState('')
@@ -124,7 +133,7 @@ export default function ModelsPage() {
             <LuGift size={14} className="text-brand-base shrink-0" />
             <span className="text-[11px] font-semibold text-mg-text-2 leading-none">{text.freeQuota}</span>
             <span className="text-sm font-bold text-brand-base tabular-nums leading-none">
-              ¥{referralMock.stats.rewardBalance.toLocaleString('zh-CN')}
+              ¥{rewardBalance.toLocaleString('zh-CN')}
             </span>
           </button>
           <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-bold" onClick={() => setIsCompareOpen(true)}>

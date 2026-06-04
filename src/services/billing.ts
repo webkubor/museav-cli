@@ -13,6 +13,7 @@ import type {
   BalanceInfo,
   CreateRechargeRequest,
   CursorPage,
+  Money,
   RechargeCreated,
   RechargeOrder,
   RedeemPromoRequest,
@@ -24,6 +25,28 @@ import type {
 /** 查询 tenant 余额（含 reserved / available / low_balance_threshold） */
 export function getBalance(tenantId: string) {
   return get<BalanceInfo>(`tenants/${tenantId}/balance`)
+}
+
+/** 余额细分：主余额 / 赠送余额 / 奖励余额（账单页三卡 + 模型体验免费额度复用） */
+export interface BalanceBreakdown {
+  main: Money
+  gift: Money
+  reward: Money
+}
+
+/**
+ * GET /tenants/:tenantId/balance/breakdown — 余额细分。
+ * ⚠️ 后端 balance 接口暂未细分该三项：DEV 返回占位值，后端补全后移除 isMock 分支。
+ */
+export function getBalanceBreakdown(tenantId: string): Promise<BalanceBreakdown> {
+  if (import.meta.env.DEV) {
+    return Promise.resolve({
+      main: { amount: '1250.50', currency: 'CNY' },
+      gift: { amount: '220.00', currency: 'CNY' },
+      reward: { amount: '1420.00', currency: 'CNY' },
+    })
+  }
+  return get<BalanceBreakdown>(`tenants/${tenantId}/balance/breakdown`)
 }
 
 // ─── 充值订单 ─────────────────────────────────────

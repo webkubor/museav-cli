@@ -28,6 +28,7 @@ import { usePlatformConfig } from '@/hooks/use-platform-config'
 import { usePermissions } from '@/hooks/use-permissions'
 import { cn } from '@/lib/utils'
 import { ParticleLinesBackground } from './ParticleLinesBackground'
+import { useDevStore } from '@/store/use-dev-store'
 import './layout.css'
 
 
@@ -113,9 +114,15 @@ export function DashboardLayout() {
     gift:        ic(<LuGift          size={16} />),
   }
 
+  const showPlatformConfig = useDevStore((s) => s.showPlatformConfig)
   const tenantNavItems    = filterNavItems(navConfig.tenantItems(navCtx, t, icons))
-  const workspaceNavItems = filterNavItems(navConfig.workspaceItems(navCtx, t, icons))
-  const sandboxNavItems   = navConfig.sandboxItems(navCtx, icons)
+  const baseWorkspaceNavItems = filterNavItems(navConfig.workspaceItems(navCtx, t, icons))
+  const workspaceNavItems = [
+    ...baseWorkspaceNavItems,
+    ...(import.meta.env.DEV && showPlatformConfig
+      ? navConfig.sandboxItems(navCtx, icons)
+      : []),
+  ]
 
   const getSelectedKey = () => {
     const path = location.pathname
@@ -173,7 +180,6 @@ export function DashboardLayout() {
           }}
           tenantNavItems={tenantNavItems}
           workspaceNavItems={workspaceNavItems}
-          sandboxNavItems={sandboxNavItems}
           settingsLabel={t('nav.settings')}
         />
 

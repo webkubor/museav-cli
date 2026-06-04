@@ -1,0 +1,113 @@
+/* ── WelcomeBanner 极光流光与 Web3 极客风格定制样式 ── */
+
+@property --welcome-border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes welcome-liquid-border {
+  to { --welcome-border-angle: 360deg; }
+}
+
+/* 弥散发光背景卡片 */
+.welcome-aurora-card {
+  position: relative;
+  isolation: isolate;
+  background: rgba(var(--mg-bg-0-rgb), 0.72) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  backdrop-filter: blur(20px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(190%) !important;
+  box-shadow: 
+    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.65),
+    0 12px 30px -6px rgba(15, 23, 42, 0.05), 
+    0 0 1px 0 rgba(15, 23, 42, 0.1) !important;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body[theme-mode='dark'] .welcome-aurora-card {
+  background: rgba(26, 26, 29, 0.55) !important;
+  border: 1px solid rgba(255, 255, 255, 0.04) !important;
+  box-shadow: 
+    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.12),
+    0 16px 40px 0 rgba(0, 0, 0, 0.22), 
+    0 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+/* 流动边框 */
+.welcome-aurora-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  padding: 1.2px;
+  background: conic-gradient(
+    from var(--welcome-border-angle),
+    transparent 0%,
+    transparent 20%,
+    color-mix(in srgb, var(--brand-light) 40%, transparent) 35%,
+    var(--brand-base) 47%,
+    rgba(255, 255, 255, 0.8) 50%,
+    var(--brand-base) 53%,
+    color-mix(in srgb, var(--brand-light) 40%, transparent) 65%,
+    transparent 80%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: destination-out;
+  mask-composite: exclude;
+  animation: welcome-liquid-border 6s linear infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+body[theme-mode='dark'] .welcome-aurora-card::before {
+  background: conic-gradient(
+    from var(--welcome-border-angle),
+    transparent 0%,
+    transparent 22%,
+    var(--brand-mid) 38%,
+    var(--brand-base) 47%,
+    rgba(255, 255, 255, 0.95) 50%,
+    var(--brand-base) 53%,
+    var(--brand-mid) 62%,
+    transparent 78%,
+    transparent 100%
+  );
+}
+
+/* 极客装饰网格 */
+.aurora-grid-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(15, 23, 42, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.015) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.5;
+  z-index: 0;
+}
+
+body[theme-mode='dark'] .aurora-grid-pattern {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  opacity: 0.6;
+}
+
+@keyframes welcome-orb-move-1 {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(50px, 30px) scale(1.15); }
+}
+
+@keyframes welcome-orb-move-2 {
+  0% { transform: translate(0, 0) scale(1.1); }
+  100% { transform: translate(-70px, -40px) scale(0.95); }
+}
+
+@keyframes welcome-orb-move-3 {
+  0% { transform: translate(0, 0) scale(0.9); }
+  100% { transform: translate(-30px, 50px) scale(1.2); }
+}

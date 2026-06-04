@@ -13,6 +13,7 @@ export interface InputProps
   suffix?: React.ReactNode
   mode?: string // 兼容 Semi UI 的 mode 属性 (如 mode="password")
   size?: "default" | "small" | "large" | string // 声明 size 以兼容 Semi，防止原生透传 number 报错
+  variant?: "default" | "search" // 样式变体类型
   onChange?: (e: any) => void // 联合签名兼容：同时接受 React 原生 ChangeEvent 和 Semi 字符串回调
   onEnterPress?: (e: React.KeyboardEvent<HTMLInputElement>) => void // 兼容 Semi UI 的回车事件属性
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
@@ -22,9 +23,12 @@ export interface InputProps
  * 统一的高阶 Input 输入组件
  */
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, prefix, suffix, mode, size, onChange, onEnterPress, onKeyDown, ...props }, ref) => {
+  ({ className, type, prefix, suffix, mode, size, variant, onChange, onEnterPress, onKeyDown, ...props }, ref) => {
     // 智能属性映射：mode="password" 自动解析为 type="password"
     const resolvedType = type || (mode === "password" ? "password" : "text")
+    const variantClasses = variant === "search"
+      ? "rounded-full bg-mg-bg-1/40 hover:bg-mg-bg-1/80 focus:bg-card-bg"
+      : ""
 
     // 回车事件拦截处理
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -40,6 +44,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <div
           className={cn(
             "modern-input-wrapper flex items-center gap-2",
+            variantClasses,
             props.disabled && "opacity-50 cursor-not-allowed pointer-events-none",
             className
           )}
@@ -70,7 +75,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <input
         type={resolvedType}
-        className={cn("modern-input-field", className)}
+        className={cn("modern-input-field", variantClasses, className)}
         ref={ref}
         onChange={onChange}
         onKeyDown={handleKeyDown}

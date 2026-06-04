@@ -19,13 +19,11 @@ interface DashboardSidebarProps {
   onSelect: (data: { itemKey: string | number }) => void
   tenantNavItems: NavItem[]
   workspaceNavItems: NavItem[]
-  sandboxNavItems: NavItem[]
   settingsLabel: string
 }
 
-const WORKSPACE_KEYS = ['api-keys', 'guardrails', 'observability', 'settings/workspace', 'chat-test']
+const WORKSPACE_KEYS = ['api-keys', 'guardrails', 'observability', 'settings/workspace', 'chat-test', 'platform-config']
 const SETTINGS_KEYS = ['settings', 'settings/account', 'settings/organization']
-const SANDBOX_KEYS = ['platform-config']
 
 /**
  * 极简高颜值自定义 Sidebar 导航单项
@@ -307,14 +305,12 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   onSelect,
   tenantNavItems,
   workspaceNavItems,
-  sandboxNavItems,
   settingsLabel,
 }) => {
   const { t } = useTranslation()
   const [hovered, setHovered] = useState(false)
   const leaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
-  const isSandboxSelected = SANDBOX_KEYS.includes(selectedKey)
   const isWorkspaceSelected = WORKSPACE_KEYS.includes(selectedKey)
   const isSettingsSelected = SETTINGS_KEYS.includes(selectedKey)
 
@@ -393,7 +389,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         </div>
 
         {/* Workspace 级导航 */}
-        <div className="relative flex flex-col gap-0.5">
+        <div className="relative flex flex-col gap-0.5 flex-1">
           {!collapsed && workspaceNavItems.length > 1 && (
             <div className="absolute left-[30px] top-[22px] bottom-[22px] w-px bg-mg-border/35 pointer-events-none" />
           )}
@@ -414,47 +410,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 key={item.itemKey}
                 item={item}
                 collapsed={collapsed}
-                isSelected={isWorkspaceSelected && !isSandboxSelected && selectedKey === item.itemKey}
-                onClick={() => onSelect({ itemKey: item.itemKey })}
-              />
-            )
-          })}
-        </div>
-
-        {/* 测试区分隔线 */}
-        <div className={cn("flex items-center gap-2 py-4 select-none", collapsed ? "px-2" : "px-4")}>
-          <div className="flex-1 h-[1px] bg-mg-border/40" />
-          {!collapsed && (
-            <span className="text-[11px] font-bold text-mg-text-2/80 tracking-wider uppercase whitespace-nowrap shrink-0">
-              测试区
-            </span>
-          )}
-          <div className="flex-1 h-[1px] bg-mg-border/40" />
-        </div>
-
-        {/* 测试区导航 */}
-        <div className="relative flex flex-col gap-0.5 flex-1">
-          {!collapsed && sandboxNavItems.length > 1 && (
-            <div className="absolute left-[30px] top-[22px] bottom-[22px] w-px bg-mg-border/35 pointer-events-none" />
-          )}
-          {sandboxNavItems.map((item) => {
-            if (item.items && item.items.length > 0) {
-              return (
-                <SidebarMenuGroup
-                  key={item.itemKey}
-                  item={item}
-                  collapsed={collapsed}
-                  selectedKey={selectedKey}
-                  onSelect={onSelect}
-                />
-              )
-            }
-            return (
-              <SidebarNavItem
-                key={item.itemKey}
-                item={item}
-                collapsed={collapsed}
-                isSelected={isSandboxSelected && selectedKey === item.itemKey}
+                isSelected={isWorkspaceSelected && selectedKey === item.itemKey}
                 onClick={() => onSelect({ itemKey: item.itemKey })}
               />
             )

@@ -3,6 +3,7 @@ import { create } from 'zustand'
 const KEY = 'dev:show-requirements'
 const COUNT_KEY = 'dev:mock-member-count'
 const GUARDRAIL_COUNT_KEY = 'dev:mock-guardrail-count'
+const SHOW_CONFIG_KEY = 'dev:show-platform-config'
 
 function readBool(): boolean {
   try {
@@ -28,6 +29,15 @@ function readGuardrailCount(): number {
   }
 }
 
+function readShowConfig(): boolean {
+  try {
+    const item = localStorage.getItem(SHOW_CONFIG_KEY)
+    return item === null ? true : item === 'true'
+  } catch {
+    return true
+  }
+}
+
 interface DevState {
   /** 是否显示需求看板（仅开发环境） */
   showRequirements: boolean
@@ -38,6 +48,9 @@ interface DevState {
   /** mock 安全护栏数量（>0 时用假数据覆盖安全护栏服务，0=关闭，仅开发环境） */
   mockGuardrailCount: number
   setMockGuardrailCount: (n: number) => void
+  /** 是否在侧边栏显示接口调试菜单（仅开发环境） */
+  showPlatformConfig: boolean
+  setShowPlatformConfig: (v: boolean) => void
 }
 
 export const useDevStore = create<DevState>()((set) => ({
@@ -69,5 +82,14 @@ export const useDevStore = create<DevState>()((set) => ({
       /* ignore */
     }
     set({ mockGuardrailCount: v })
+  },
+  showPlatformConfig: readShowConfig(),
+  setShowPlatformConfig: (v) => {
+    try {
+      localStorage.setItem(SHOW_CONFIG_KEY, String(v))
+    } catch {
+      /* ignore */
+    }
+    set({ showPlatformConfig: v })
   },
 }))

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Providers } from '@/components/providers'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
@@ -31,16 +31,57 @@ import { useAuthStore } from '@/store/auth'
 import { useDevStore } from '@/store/use-dev-store'
 import { getSession } from '@/services/auth'
 import { storageKeys } from '@/lib/storage'
-import { getMarket } from '@/lib/market'
+import { getMarket, type Market } from '@/lib/market'
 import { applyBrandTheme, applyTheme, getSavedBrandTheme, getSavedTheme } from '@/lib/theme'
+import { getPlatformConfig } from '@/services/platform'
+import { useLangStore } from '@/store/use-brand-store'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import { DevRequirements } from '@/components/dev-requirements'
 import { DevToolbar } from '@/components/dev-toolbar'
 
 import { Toaster } from 'sonner'
 
-// 注入市场标识，驱动 CSS 品牌色切换
+// 注入市场标识（初始值用域名探测，PlatformLoader 会用 API 结果覆盖）
 document.documentElement.dataset.market = getMarket()
+
+/** 将 API 返回的 site 字段映射为 Market 枚举 */
+function siteToMarket(site: string): Market {
+  return site === 'international' ? 'global' : 'domestic'
+}
+
+function applyMarket(market: Market) {
+  document.documentElement.dataset.market = market
+  useLangStore.getState().setMarket(market)
+}
+
+/**
+ * 平台配置加载器 — stale-while-revalidate
+ * 1. 读 localStorage 缓存 → 立刻应用（无闪烁）
+ * 2. 若无缓存 → 等 API 返回后才渲染子树（onReady 回调）
+ * 3. 后台静默刷新缓存，下次加载零等待
+ */
+function PlatformLoader({ onReady }: { onReady: () => void }) {
+  useEffect(() => {
+    const cached = localStorage.getItem(storageKeys.platformSite())
+    if (cached) {
+      applyMarket(siteToMarket(cached))
+      onReady()
+    }
+
+    getPlatformConfig()
+      .then((config) => {
+        if (!config?.site) return
+        localStorage.setItem(storageKeys.platformSite(), config.site)
+        applyMarket(siteToMarket(config.site))
+      })
+      .catch(() => {/* 静默失败，保持缓存/域名探测结果 */})
+      .finally(() => {
+        // 无缓存时，fetch 完成后才解锁渲染
+        if (!cached) onReady()
+      })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  return null
+}
 
 let isFetchingSession = false
 
@@ -94,6 +135,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const [platformReady, setPlatformReady] = useState(false)
+
   useEffect(() => {
     applyTheme(getSavedTheme())
     applyBrandTheme(getSavedBrandTheme())
@@ -105,6 +148,23 @@ export default function App() {
     <Providers>
       <Toaster richColors position="top-right" closeButton />
       <BrowserRouter>
+        <PlatformLoader onReady={() => setPlatformReady(true)} />
+        {!platformReady && (
+          <div style={{
+            position: 'fixed', inset: 0,
+            background: 'var(--site-bg, #f8fafc)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 9999,
+          }}>
+            <div style={{
+              width: 28, height: 28,
+              border: '2.5px solid var(--mg-border, rgba(15,23,42,0.08))',
+              borderTopColor: 'var(--brand-base, #1DC39B)',
+              borderRadius: '50%',
+              animation: 'spin 0.7s linear infinite',
+            }} />
+          </div>
+        )}
         <SessionLoader />
         {import.meta.env.DEV && showRequirements && <DevRequirements />}
         {import.meta.env.DEV && <DevToolbar />}

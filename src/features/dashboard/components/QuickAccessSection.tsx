@@ -92,56 +92,37 @@ export const QuickAccessSection: React.FC = () => {
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
 
   const links: QuickLink[] = [
-    {
-      titleKey: 'quickAccess.link0.title',
-      descKey: 'quickAccess.link0.desc',
-      icon: 'models',
-      path: '/models',
-    },
-    {
-      titleKey: 'quickAccess.link1.title',
-      descKey: 'quickAccess.link1.desc',
-      icon: 'keys',
-      path: 'workspace:api-keys',
-    },
-    {
-      titleKey: 'quickAccess.link2.title',
-      descKey: 'quickAccess.link2.desc',
-      icon: 'usage',
-      path: '/usage',
-    },
-    {
-      titleKey: 'quickAccess.link5.title',
-      descKey: 'quickAccess.link5.desc',
-      icon: 'observability',
-      path: 'workspace:observability',
-    },
+    { titleKey: 'quickAccess.link0.title', descKey: 'quickAccess.link0.desc', icon: 'models',        path: '/models' },
+    { titleKey: 'quickAccess.link1.title', descKey: 'quickAccess.link1.desc', icon: 'keys',          path: 'workspace:api-keys' },
+    { titleKey: 'quickAccess.link2.title', descKey: 'quickAccess.link2.desc', icon: 'usage',         path: '/usage' },
+    { titleKey: 'quickAccess.link5.title', descKey: 'quickAccess.link5.desc', icon: 'observability', path: 'workspace:observability' },
   ]
 
   return (
     <section className="quick-access-section">
-      <div className="quick-access-heading">
-        <div>
-          <h3>{t('quickAccess.sectionTitle')}</h3>
-          <p>ModelGo control shortcuts</p>
-        </div>
-      </div>
-
+      <p className="text-[11px] font-bold tracking-widest uppercase text-mg-text-2 mb-3">
+        {t('quickAccess.sectionTitle')}
+      </p>
       <div className="quick-access-grid">
         {links.map((link) => (
           <Card
             key={link.titleKey}
             glass
+            hoverable
             onClick={() => navigate(quickPath(link.path, activeWorkspaceId))}
-            className="quick-access-card group"
+            className="quick-access-card flex flex-col justify-between relative group rounded-2xl border border-mg-border text-left"
           >
-            <QuickWeb3Icon type={link.icon} />
+            <div>
+              <div className="w-14 h-14 flex items-center justify-center">
+                <QuickWeb3Icon type={link.icon} />
+              </div>
+            </div>
             <div className="quick-access-copy">
-              <div>
+              <div className="flex-1 min-w-0">
                 <strong>{t(link.titleKey)}</strong>
                 <span>{t(link.descKey)}</span>
               </div>
-              <LuArrowUpRight className="quick-access-arrow" size={16} />
+              <LuArrowUpRight size={16} className="quick-access-arrow text-brand-base" />
             </div>
           </Card>
         ))}

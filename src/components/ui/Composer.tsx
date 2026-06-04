@@ -1,0 +1,129 @@
+import * as React from 'react'
+import { LuMessageSquare, LuEraser, LuSend } from 'react-icons/lu'
+import { cn } from '@/lib/utils'
+import { Textarea } from './Textarea'
+import { Button } from './Button'
+
+export interface ComposerProps {
+  value: string
+  onChange: (val: string) => void
+  onSend: () => void
+  onClear: () => void
+  placeholder?: string
+  disabled?: boolean
+  loading?: boolean
+  isStreaming?: boolean
+  onStop?: () => void
+  activeChip?: React.ReactNode
+  note?: string
+  className?: string
+  clearLabel?: string
+  sendLabel?: string
+  stopLabel?: string
+}
+
+const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
+  (
+    {
+      value,
+      onChange,
+      onSend,
+      onClear,
+      placeholder,
+      disabled = false,
+      loading = false,
+      isStreaming = false,
+      onStop,
+      activeChip,
+      note,
+      className,
+      clearLabel = '清空',
+      sendLabel = '发送',
+      stopLabel = '停止',
+    },
+    ref
+  ) => {
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault()
+        if (value.trim() && !loading && !disabled && !isStreaming) {
+          onSend()
+        }
+      }
+    }
+
+    return (
+      <div className={cn('composer-rainbow-flow rounded-xl p-3 flex flex-col gap-3 relative transition-all duration-300', className)}>
+        {/* 输入域 */}
+        <Textarea
+          ref={ref}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          disabled={disabled || isStreaming}
+          className="min-h-[74px] max-h-[168px] resize-none border-0 bg-transparent p-1 shadow-none focus:ring-0 focus-visible:ring-0 hover:border-transparent focus:border-transparent text-sm w-full outline-none"
+        />
+
+        {/* 底部动作栏 */}
+        <div className="flex items-center justify-between gap-3 pt-2.5 border-t border-mg-border/50">
+          <div className="min-w-0 flex-1">
+            {activeChip ? (
+              activeChip
+            ) : (
+              <div className="inline-flex items-center gap-1.5 min-w-0 text-mg-text-1 text-xs font-bold">
+                <LuMessageSquare size={13} className="shrink-0" />
+                <span className="truncate">对话测试</span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClear}
+              disabled={loading || disabled || isStreaming}
+              className="h-8 rounded-lg cursor-pointer"
+            >
+              <LuEraser size={14} />
+              {clearLabel}
+            </Button>
+            {isStreaming && onStop ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={onStop}
+                className="h-8 rounded-lg px-4 cursor-pointer"
+              >
+                {stopLabel}
+              </Button>
+            ) : (
+              <Button
+                variant="brand"
+                size="sm"
+                onClick={onSend}
+                loading={loading}
+                disabled={!value.trim() || disabled}
+                className="h-8 rounded-lg px-4 cursor-pointer"
+              >
+                {!loading && <LuSend size={14} className="mr-1" />}
+                {sendLabel}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* 底部备注提示 */}
+        {note && (
+          <p className="margin-0 mt-1 text-center text-[10.5px] font-bold text-mg-text-2/80 tracking-wide select-none">
+            {note}
+          </p>
+        )}
+      </div>
+    )
+  }
+)
+
+Composer.displayName = 'Composer'
+
+export { Composer }

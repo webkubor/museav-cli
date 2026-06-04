@@ -1507,6 +1507,18 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), 0 0 1px 1px var(--brand-glow) !important;
 }
 
+/* 🚀 极雅输入区域彩虹流动边框 */
+.composer-rainbow-flow {
+  border: 1px solid transparent !important;
+  background-image: linear-gradient(var(--mg-bg-0), var(--mg-bg-0)), 
+                    linear-gradient(135deg, var(--brand-base) 0%, var(--brand-glow) 30%, var(--brand-base) 60%, var(--brand-glow) 100%) !important;
+  background-origin: border-box !important;
+  background-clip: padding-box, border-box !important;
+  background-size: 200% 200% !important;
+  animation: borderGlow 6s linear infinite !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08) !important;
+}
+
 @keyframes borderGlow {
   0% {
     background-position: 0% 50%;
@@ -1519,3 +1531,7 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   }
 }
 
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

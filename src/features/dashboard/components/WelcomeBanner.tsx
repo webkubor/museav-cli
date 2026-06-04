@@ -5,13 +5,14 @@
  * API：无外部网络接口依赖，使用客户端 state 与 useAuthStore、storage 等进行状态计算
  */
 
-import React from 'react'
-import { LuKey, LuZap, LuArrowRight } from 'react-icons/lu'
+import React, { useState } from 'react'
+import { LuKey, LuZap, LuArrowRight, LuX } from 'react-icons/lu'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
 import { useLangStore } from '@/store/use-brand-store'
 import { getMarketConfig } from '@/config/market'
 import { TerminalSection } from './TerminalSection'
+import './welcome-banner.css'
 
 const STEPS = [
   { icon: LuKey,  label: '创建 API Key', to: '/api-keys' },
@@ -30,10 +31,36 @@ export const WelcomeBanner: React.FC = () => {
   const marketConfig = getMarketConfig(market)
   const name = displayName ?? '开发者'
 
+  const [visible, setVisible] = useState(() => {
+    return localStorage.getItem('mg_welcome_banner_hidden') !== 'true'
+  })
+
+  if (!visible) return null
+
+  const handleClose = () => {
+    localStorage.setItem('mg_welcome_banner_hidden', 'true')
+    setVisible(false)
+  }
+
   return (
-    <div className="glass-card-glow flex flex-wrap items-stretch gap-0 mb-8 rounded-[20px] overflow-hidden">
+    <div className="welcome-aurora-card flex flex-wrap items-center gap-6 md:gap-8 p-6 md:p-8 mb-8 rounded-[24px] relative overflow-hidden">
+      {/* Web3 极客装饰网格线 */}
+      <div className="absolute inset-0 overflow-hidden rounded-[24px] pointer-events-none z-0">
+        <div className="aurora-grid-pattern" />
+      </div>
+
+      {/* 右上角关闭按钮 */}
+      <button
+        type="button"
+        onClick={handleClose}
+        className="absolute top-4 right-4 text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-1 p-1.5 rounded-full transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center z-20"
+        title="关闭欢迎横幅"
+      >
+        <LuX size={15} />
+      </button>
+
       {/* 左侧：极简引导 */}
-      <div className="flex flex-col justify-center gap-5 p-8 flex-1 min-w-[260px]">
+      <div className="flex flex-col justify-center gap-5 flex-1 min-w-[260px] relative z-10">
         <div>
           <p className="text-[11px] font-bold tracking-widest uppercase text-mg-text-2 mb-1.5">快速开始</p>
           <h2 className="text-[22px] font-bold tracking-tight text-mg-text-0 m-0">
@@ -80,8 +107,8 @@ export const WelcomeBanner: React.FC = () => {
         </a>
       </div>
 
-      {/* 右侧：代码块，紧贴边缘无内边距 */}
-      <div className="flex-[0_1_500px] min-w-[300px]">
+      {/* 右侧：代码块 */}
+      <div className="flex-1 lg:flex-[0_1_500px] min-w-[300px] relative z-10">
         <TerminalSection />
       </div>
     </div>

@@ -3,9 +3,9 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
-import { Textarea } from '@/components/ui/Textarea'
+import { Composer } from '@/components/ui/Composer'
 import { appToast } from '@/lib/app-toast'
-import { LuSend, LuRotateCcw, LuUser, LuBot } from 'react-icons/lu'
+import { LuRotateCcw, LuUser, LuBot, LuMessageSquare } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { listApiKeys } from '@/services/api-keys'
 import { listModels } from '@/services/catalog'
@@ -211,25 +211,24 @@ export default function ChatTestPage() {
       </div>
 
       {/* 输入区 */}
-      <div className="flex gap-2 items-end">
-        <Textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!streaming) handleSend() } }}
-          placeholder={t('chatTest.input.placeholder')}
-          rows={2}
-          className="flex-1 rounded-[10px] resize-none h-[58px] min-h-[58px]"
-          disabled={streaming}
-        />
-        {streaming ? (
-          <Button onClick={handleStop} variant="destructive" className="h-[58px] shrink-0">{t('chatTest.button.stop')}</Button>
-        ) : (
-          <Button variant="brand" onClick={handleSend} className="h-[58px] px-5 rounded-[10px] shrink-0" disabled={!input.trim()}>
-            <LuSend size={14} className="mr-1" />
-            {t('chatTest.button.send')}
-          </Button>
-        )}
-      </div>
+      <Composer
+        value={input}
+        onChange={setInput}
+        onSend={handleSend}
+        onClear={handleReset}
+        placeholder={t('chatTest.input.placeholder')}
+        isStreaming={streaming}
+        onStop={handleStop}
+        clearLabel={t('chatTest.button.clear')}
+        sendLabel={t('chatTest.button.send')}
+        stopLabel={t('chatTest.button.stop')}
+        activeChip={
+          <div className="inline-flex items-center gap-1.5 min-w-0 text-mg-text-1 text-xs font-bold">
+            <LuMessageSquare size={13} className="shrink-0 text-brand-base" />
+            <span className="truncate">{selectedModel ? (models.find(m => m.model_id === selectedModel)?.display_name || selectedModel) : '未选择模型'}</span>
+          </div>
+        }
+      />
 
       <span className="text-[11px] text-[var(--mg-text-2)] mt-2">
         {t('chatTest.footer', { url: baseUrl })}

@@ -344,9 +344,10 @@ export default function ApiKeysPage() {
       {/* 搜索 + 创建 */}
       <div className="flex justify-between items-center gap-4">
         <Input
+          variant="search"
           prefix={<LuSearch className="w-4 h-4" />}
           placeholder={t('apiKeys.search')}
-          className="w-72 rounded-full bg-mg-bg-1/40 hover:bg-mg-bg-1/80 focus:bg-card-bg"
+          className="w-72"
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
         />

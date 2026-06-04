@@ -4,11 +4,9 @@ import { useTranslation } from 'react-i18next'
 import {
   LuTriangleAlert,
   LuCopy,
-  LuEraser,
   LuGitCompareArrows,
   LuMessageSquare,
   LuSearch,
-  LuSend,
   LuSparkles,  LuZap,
   LuGift,
 } from 'react-icons/lu'
@@ -17,7 +15,7 @@ import { useAuthStore } from '@/store/auth'
 import { getReferralOverview } from '@/services/referral'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Textarea } from '@/components/ui/Textarea'
+import { Composer } from '@/components/ui/Composer'
 import { useModels } from '@/features/models/hooks/useModels'
 import { appToast } from '@/lib/app-toast'
 import { cn, formatContextLength, formatModelPrice } from '@/lib/utils'
@@ -284,37 +282,26 @@ export default function ModelsPage() {
             ))}
           </div>
 
-          <div className="models-experience-composer">
-            <Textarea
-              ref={inputRef}
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault()
-                  sendPrompt()
-                }
-              }}
-              placeholder={text.input}
-            />
-            <div className="models-experience-composer-actions">
+          <Composer
+            ref={inputRef}
+            value={input}
+            onChange={setInput}
+            onSend={sendPrompt}
+            onClear={() => {
+              setMessages(initialMessages)
+              setInput('')
+            }}
+            placeholder={text.input}
+            note={text.note}
+            clearLabel={text.clear}
+            sendLabel={text.send}
+            activeChip={
               <div className="models-experience-active-chip">
                 <LuMessageSquare size={13} />
                 {selectedModel?.display_name ?? text.current}
               </div>
-              <div className="flex items-center gap-1.5">
-                <Button variant="ghost" size="sm" onClick={() => { setMessages(initialMessages); setInput('') }}>
-                  <LuEraser size={14} />
-                  {text.clear}
-                </Button>
-                <Button variant="brand" size="sm" onClick={sendPrompt}>
-                  <LuSend size={14} />
-                  {text.send}
-                </Button>
-              </div>
-            </div>
-            <p>{text.note}</p>
-          </div>
+            }
+          />
         </section>
       </div>
       <ModelsCompareModal

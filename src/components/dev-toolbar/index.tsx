@@ -228,6 +228,8 @@ export function DevToolbar() {
   const setLang = useLangStore((s) => s.setLang)
   const showRequirements = useDevStore((s) => s.showRequirements)
   const setShowRequirements = useDevStore((s) => s.setShowRequirements)
+  const showPlatformConfig = useDevStore((s) => s.showPlatformConfig)
+  const setShowPlatformConfig = useDevStore((s) => s.setShowPlatformConfig)
   const mockMemberCount = useDevStore((s) => s.mockMemberCount)
   const setMockMemberCount = useDevStore((s) => s.setMockMemberCount)
   const mockGuardrailCount = useDevStore((s) => s.mockGuardrailCount)
@@ -283,6 +285,11 @@ export function DevToolbar() {
       <div className="flex items-center gap-1.5">
         <span className="text-[11px] font-semibold text-mg-text-2">需求看板</span>
         <Switch checked={showRequirements} onChange={setShowRequirements} />
+      </div>
+      <div className="h-4 w-px bg-mg-border" />
+      <div className="flex items-center gap-1.5">
+        <span className="text-[11px] font-semibold text-mg-text-2">接口调试</span>
+        <Switch checked={showPlatformConfig} onChange={setShowPlatformConfig} />
       </div>
       <div className="h-4 w-px bg-mg-border" />
       <DropdownMenu>

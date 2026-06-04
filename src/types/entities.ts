@@ -680,6 +680,14 @@ export interface CallLogItem {
   model: { id: string; display_name: string }
   provider: { id: string; name: string; type: string }
   workspace_id: string
+  tenant_id: string
+  trace_id: string
+  requested_model: string
+  upstream_model: string
+  path: string
+  call_type: string
+  http_status: number
+  tpot_ms: number
   api_key: { api_key_id: string; name: string; masked: string }
   account: { account_id: string; display_name: string }
   app_name: string | null
@@ -690,6 +698,7 @@ export interface CallLogItem {
     output_tokens: number
     total_tokens: number
     cache_read_tokens: number
+    cache_write_tokens: number
   }
   usage_type: string
   speed: { tps: number; first_token_ms: number }

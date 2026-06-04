@@ -467,6 +467,23 @@ export default function LogsPage() {
               <DetailRow label={t('logs.detail.time')} value={formatDateTime(selectedLog.started_at)} />
               <DetailRow label={t('logs.detail.apiKeyName')} value={selectedLog.api_key.name || '—'} />
               <DetailRow label={t('logs.detail.tokens')} value={selectedLog.usage ? `${selectedLog.usage.total_tokens} (Prompt: ${selectedLog.usage.input_tokens} / Completion: ${selectedLog.usage.output_tokens})` : '—'} />
+              <DetailRow label="账号 ID" value={selectedLog.account.account_id || '—'} mono />
+              <DetailRow label="租户 ID" value={selectedLog.tenant_id || '—'} mono />
+              <DetailRow label="工作区 ID" value={selectedLog.workspace_id || '—'} mono />
+              <DetailRow label="API Key ID" value={selectedLog.api_key.api_key_id || '—'} mono />
+              <DetailRow label="追踪 ID" value={selectedLog.trace_id || '—'} mono />
+              <DetailRow label="供应商" value={selectedLog.provider.name || '—'} />
+              <DetailRow label="请求模型" value={selectedLog.requested_model || '—'} />
+              <DetailRow label="上游模型" value={selectedLog.upstream_model || '—'} />
+              <DetailRow label="端点" value={selectedLog.path || '—'} mono />
+              <DetailRow label="调用类型" value={selectedLog.call_type || '—'} />
+              <DetailRow label="HTTP 状态" value={selectedLog.http_status ? String(selectedLog.http_status) : '—'} mono />
+              <DetailRow label="计费状态" value={selectedLog.billing_status || '—'} />
+              <DetailRow label="费用" value={selectedLog.cost?.amount ? `${selectedLog.cost.amount} ${selectedLog.cost.currency}` : '—'} />
+              <DetailRow label="结束原因" value={selectedLog.finish_reason || '—'} />
+              <DetailRow label="首 Token 延迟" value={selectedLog.speed?.first_token_ms ? `${selectedLog.speed.first_token_ms}ms` : '—'} />
+              <DetailRow label="TPOT" value={selectedLog.tpot_ms ? `${selectedLog.tpot_ms}ms` : '—'} />
+              <DetailRow label="缓存读 Token" value={selectedLog.usage?.cache_read_tokens != null ? String(selectedLog.usage.cache_read_tokens) : '—'} />
             </div>
 
             {selectedLog.error && (

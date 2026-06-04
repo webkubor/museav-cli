@@ -21,8 +21,10 @@ type ModelLogRow = {
   started_at: string
   completed_at?: string
   workspace_id?: string
+  tenant_id?: string
   account_id?: string
   api_key_id?: string
+  trace_id?: string
   requested_model?: string
   provider_instance_id?: string
   status?: string
@@ -57,6 +59,7 @@ type ModelLogRow = {
     output_tokens?: number
     total_tokens?: number
     cache_read_tokens?: number
+    cache_write_tokens?: number
   }
   usage_type?: string
   speed?: { tps?: number; first_token_ms?: number }
@@ -150,6 +153,14 @@ function toCallLogItem(row: ModelLogRow): CallLogItem {
       type: row.provider?.type || providerID,
     },
     workspace_id: row.workspace_id || '',
+    tenant_id: row.tenant_id || '',
+    trace_id: row.trace_id || stringFromMap(row.request_ctx, 'trace_id') || '',
+    requested_model: row.requested_model || '',
+    upstream_model: row.upstream_model || '',
+    path: row.path || '',
+    call_type: row.call_type || '',
+    http_status: numberOrZero(row.http_status),
+    tpot_ms: numberOrZero(row.tpot_ms),
     api_key: {
       api_key_id: apiKeyID,
       name: row.api_key?.name || apiKeyID || '—',
@@ -167,6 +178,7 @@ function toCallLogItem(row: ModelLogRow): CallLogItem {
       output_tokens: outputTokens,
       total_tokens: totalTokens || inputTokens + outputTokens,
       cache_read_tokens: numberOrZero(row.cache_read_tokens ?? row.usage?.cache_read_tokens),
+      cache_write_tokens: numberOrZero(row.usage?.cache_write_tokens),
     },
     usage_type: row.usage_type || 'token',
     speed: {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/store/auth'
 import {
   LuHouse,
@@ -66,6 +66,15 @@ export function DashboardLayout() {
   const location = useLocation()
   usePlatformConfig()
   const [collapsed, setCollapsed] = useState(false)
+  const [navigating, setNavigating] = useState(false)
+
+  useEffect(() => {
+    setNavigating(true)
+    const timer = setTimeout(() => {
+      setNavigating(false)
+    }, 800)
+    return () => clearTimeout(timer)
+  }, [location.pathname])
 
   const tenants = useAuthStore((s) => s.tenants)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
@@ -162,7 +171,7 @@ export function DashboardLayout() {
     <div className="min-h-screen bg-site-bg flex flex-col font-sans relative overflow-hidden">
       <ParticleLinesBackground />
       <DashboardHeader />
-      <div className="shimmer-line" />
+      <div className={cn("shimmer-line", navigating && "navigating")} />
 
 
       <div className="flex flex-1 relative overflow-hidden">

@@ -1419,10 +1419,10 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
 /* ── 🚀 侧边栏一级串联竖线流光过渡 (垂直极速流光) ── */
 @keyframes verticalFlow {
   0% {
-    background-position: 50% 0%;
+    background-position: 50% 100%;
   }
   100% {
-    background-position: 50% 100%;
+    background-position: 50% 0%;
   }
 }
 
@@ -1435,7 +1435,7 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
     color-mix(in oklch, var(--brand-base) 8%, transparent) 100%
   );
   background-size: 100% 400%;
-  animation: verticalFlow 10s linear infinite;
+  animation: verticalFlow 6s linear infinite;
   box-shadow: 0 0 3px var(--brand-glow);
   opacity: 0.7;
 }

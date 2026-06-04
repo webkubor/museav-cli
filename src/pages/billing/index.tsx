@@ -609,7 +609,7 @@ export default function BillingPage() {
           </p>
           <div className="flex items-baseline gap-1">
             <span className="text-lg font-medium text-mg-text-1">{currencySymbol}</span>
-            <span className="text-4xl font-bold text-mg-text-0 tracking-tight tabular-nums leading-none">
+            <span className="text-4xl font-bold tracking-tight tabular-nums leading-none spendable-amount-glow">
               {balanceLoading ? '...' : availableMain}
             </span>
           </div>
@@ -623,7 +623,10 @@ export default function BillingPage() {
             <div className="text-xs text-mg-text-2">{t('billing.balance.mainBalance')}</div>
             <div className="flex items-baseline gap-0.5 mt-1 select-none">
               <span className="text-xs font-semibold text-mg-text-2">{currencySymbol}</span>
-              <span className="text-lg font-bold text-mg-text-0 tabular-nums balance-amount">
+              <span className={cn(
+                "text-lg font-bold text-mg-text-0 tabular-nums balance-amount",
+                activeTab === 'main' ? "amount-main-active" : ""
+              )}>
                 {formatBalance(breakdown?.main.amount).main}
               </span>
             </div>
@@ -636,7 +639,10 @@ export default function BillingPage() {
             <div className="text-xs text-mg-text-2">{t('billing.balance.giftBalance')}</div>
             <div className="flex items-baseline gap-0.5 mt-1 select-none">
               <span className="text-xs font-semibold text-mg-text-2">{currencySymbol}</span>
-              <span className="text-lg font-bold text-mg-text-0 tabular-nums balance-amount">
+              <span className={cn(
+                "text-lg font-bold text-mg-text-0 tabular-nums balance-amount",
+                activeTab === 'gift' ? "amount-gift-active" : ""
+              )}>
                 {formatBalance(breakdown?.gift.amount).main}
               </span>
             </div>
@@ -649,7 +655,10 @@ export default function BillingPage() {
             <div className="text-xs text-mg-text-2">{t('billing.balance.rewardBalance')}</div>
             <div className="flex items-baseline gap-0.5 mt-1 select-none">
               <span className="text-xs font-semibold text-mg-text-2">{currencySymbol}</span>
-              <span className="text-lg font-bold text-mg-text-0 tabular-nums balance-amount">
+              <span className={cn(
+                "text-lg font-bold text-mg-text-0 tabular-nums balance-amount",
+                activeTab === 'reward' ? "amount-reward-active" : ""
+              )}>
                 {formatBalance(breakdown?.reward.amount).main}
               </span>
             </div>
@@ -953,16 +962,23 @@ export default function BillingPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b border-mg-border bg-mg-fill-0/20">
-                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.gift.source', { defaultValue: '来源' })}</th>
-                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.gift.amount', { defaultValue: '金额' })}</th>
-                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.gift.creditedAt', { defaultValue: '到账时间' })}</th>
+                <tr className="border-b border-mg-border/60 bg-mg-fill-0/30">
+                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">{t('billing.orders.gift.source', { defaultValue: '来源' })}</th>
+                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">{t('billing.orders.gift.amount', { defaultValue: '金额' })}</th>
+                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">{t('billing.orders.gift.creditedAt', { defaultValue: '到账时间' })}</th>
                 </tr>
               </thead>
               <tbody>
                 {MOCK_GIFT_RECORDS.map((record) => (
-                  <tr key={record.id} className="border-b border-mg-border/40 hover:bg-mg-fill-0/20 transition-colors">
-                    <td className="py-3.5 px-4 text-xs text-mg-text-0 font-medium">{record.source}</td>
+                  <tr key={record.id} className="border-b border-mg-border/40 cursor-pointer billing-table-row">
+                    <td className="py-3.5 px-4 font-medium">
+                      <div className="flex items-center gap-2.5 select-none">
+                        <div className="w-6 h-6 rounded-lg bg-brand-glow/10 flex items-center justify-center border border-brand-base/10 shrink-0">
+                          <LuGift size={12} className="text-brand-base" />
+                        </div>
+                        <span className="text-xs text-mg-text-0 font-bold">{record.source}</span>
+                      </div>
+                    </td>
                     <td className="py-3.5 px-4 text-xs font-bold text-emerald-500 font-mono">+{record.currency} {record.amount}</td>
                     <td className="py-3.5 px-4 text-xs text-mg-text-2 font-mono">{formatDateTime(record.credited_at)}</td>
                   </tr>
@@ -980,21 +996,32 @@ export default function BillingPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-mg-border bg-mg-fill-0/20">
-                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{rc.colDate}</th>
-                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{rc.colInvitee}</th>
-                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider text-right">{rc.colSpend}</th>
-                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider text-right">{rc.colRate}</th>
-                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider text-right">{rc.colAmount}</th>
+                  <tr className="border-b border-mg-border/60 bg-mg-fill-0/30">
+                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">{rc.colDate}</th>
+                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">{rc.colInvitee}</th>
+                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider text-right">{rc.colSpend}</th>
+                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider text-right">{rc.colRate}</th>
+                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider text-right">{rc.colAmount}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rewardRecords.map((rec, i) => (
-                    <tr key={i} className="border-b border-mg-border/40 hover:bg-mg-fill-0/20 transition-colors">
+                    <tr key={i} className="border-b border-mg-border/40 cursor-pointer billing-table-row">
                       <td className="py-3.5 px-4 text-xs text-mg-text-2 font-mono">{rec.date}</td>
-                      <td className="py-3.5 px-4 text-xs text-mg-text-0 font-medium">{rec.source}</td>
+                      <td className="py-3.5 px-4 font-medium">
+                        <div className="flex items-center gap-2.5 select-none">
+                          <div className="w-6 h-6 rounded-full bg-mg-fill-1 border border-mg-border flex items-center justify-center font-bold text-[10px] text-mg-text-1 uppercase shrink-0">
+                            {rec.source.slice(0, 2)}
+                          </div>
+                          <span className="text-xs text-mg-text-0 font-bold">{rec.source}</span>
+                        </div>
+                      </td>
                       <td className="py-3.5 px-4 text-xs text-mg-text-1 font-mono text-right">¥{Number(rec.spend).toLocaleString('zh-CN')}</td>
-                      <td className="py-3.5 px-4 text-xs text-mg-text-1 text-right">{rec.rate}%</td>
+                      <td className="py-3.5 px-4 text-right">
+                        <span className="bg-brand-glow/10 text-brand-base text-[10px] font-bold px-1.5 py-0.5 rounded-md border border-brand-base/10 font-mono">
+                          {rec.rate}%
+                        </span>
+                      </td>
                       <td className="py-3.5 px-4 text-xs font-bold text-emerald-500 font-mono text-right">+¥{Number(rec.amount).toLocaleString('zh-CN')}</td>
                     </tr>
                   ))}

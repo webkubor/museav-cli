@@ -193,3 +193,62 @@ body[theme-mode='dark'] .billing-glow-card.active .balance-amount {
   border-color: color-mix(in oklch, var(--mg-border) 80%, var(--brand-base));
   box-shadow: var(--shadow-md);
 }
+
+/* ── 🪙 大额可消费合计与各卡片数字高级光效 ── */
+.spendable-amount-glow {
+  background: linear-gradient(135deg, var(--mg-text-0) 30%, var(--brand-base) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 10px rgba(var(--brand-base-rgb), 0.1));
+  transition: all 0.4s ease;
+}
+
+body[theme-mode='dark'] .spendable-amount-glow {
+  background: linear-gradient(135deg, #ffffff 40%, var(--brand-base) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 14px var(--brand-glow));
+}
+
+/* 1. 主余额数字（激活态 - 品牌科技发光） */
+.amount-main-active {
+  color: var(--brand-base) !important;
+  text-shadow: 0 0 14px var(--brand-glow) !important;
+  transform: scale(1.04);
+  transform-origin: left center;
+}
+
+body[theme-mode='dark'] .amount-main-active {
+  color: var(--mg-text-0) !important;
+  text-shadow: 0 0 16px var(--brand-glow) !important;
+}
+
+/* 2. 赠送余额数字（激活态 - 湖蓝微发光） */
+.amount-gift-active {
+  color: #0284c7 !important; /* sky-600 */
+  text-shadow: 0 0 14px rgba(14, 165, 233, 0.3) !important;
+  transform: scale(1.04);
+  transform-origin: left center;
+}
+
+body[theme-mode='dark'] .amount-gift-active {
+  color: #38bdf8 !important; /* sky-400 */
+  text-shadow: 0 0 16px rgba(56, 189, 248, 0.4) !important;
+}
+
+/* 3. 奖励余额数字（激活态 - 极奢黄金渐变与发光，成就感拉满） */
+.amount-reward-active {
+  background: linear-gradient(135deg, #f59e0b 0%, #eab308 50%, #fef08a 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 2px 8px rgba(234, 179, 8, 0.4)) !important;
+  transform: scale(1.04);
+  transform-origin: left center;
+}
+
+body[theme-mode='dark'] .amount-reward-active {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 60%, #fffbeb 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 2px 10px rgba(245, 158, 11, 0.5)) !important;
+}

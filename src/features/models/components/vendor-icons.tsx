@@ -16,7 +16,23 @@ import Cohere from '@lobehub/icons/es/Cohere'
 import Groq from '@lobehub/icons/es/Groq'
 import Zhipu from '@lobehub/icons/es/Zhipu'
 import Baidu from '@lobehub/icons/es/Baidu'
-import * as LobehubRegistry from '@lobehub/icons'
+// ── 后端 logo_url 按名匹配用的精选 LLM 图标 ──────────────────────────────────
+import OpenRouter from '@lobehub/icons/es/OpenRouter'
+import Kimi from '@lobehub/icons/es/Kimi'
+import Wenxin from '@lobehub/icons/es/Wenxin'
+import Grok from '@lobehub/icons/es/Grok'
+import XAI from '@lobehub/icons/es/XAI'
+import Doubao from '@lobehub/icons/es/Doubao'
+import Hunyuan from '@lobehub/icons/es/Hunyuan'
+import Spark from '@lobehub/icons/es/Spark'
+import Yi from '@lobehub/icons/es/Yi'
+import Stepfun from '@lobehub/icons/es/Stepfun'
+import Baichuan from '@lobehub/icons/es/Baichuan'
+import InternLM from '@lobehub/icons/es/InternLM'
+import Together from '@lobehub/icons/es/Together'
+import Fireworks from '@lobehub/icons/es/Fireworks'
+import Perplexity from '@lobehub/icons/es/Perplexity'
+import Hailuo from '@lobehub/icons/es/Hailuo'
 
 /**
  * 厂商图标工厂：vendor 名（小写）→ 按尺寸渲染图标。
@@ -61,12 +77,22 @@ export function resolveVendorIcon(
   return key ? ICON_FACTORY[key](size) : null
 }
 
-type LobehubIconComp = React.ComponentType<{ size?: number }>
+type LobehubIconComp = React.ComponentType<{ size?: number }> & Record<string, React.ComponentType<{ size?: number }>>
+
+/**
+ * 精选 LLM 图标注册表：lobehub 组件名 → 组件。
+ * 新增厂商：import 后在此追加一行即可（只打包用到的，体积可控）。
+ */
+const LOBEHUB_BY_NAME: Record<string, LobehubIconComp> = {
+  OpenAI, OpenRouter, Anthropic, Claude, Gemini, Google, DeepSeek, Qwen, Mistral, Ollama,
+  Meta, Moonshot, Kimi, Minimax, ChatGLM, Zhipu, Cohere, Groq, Baidu, Wenxin, Grok, XAI,
+  Doubao, Hunyuan, Spark, Yi, Stepfun, Baichuan, InternLM, Together, Fireworks, Perplexity, Hailuo,
+} as unknown as Record<string, LobehubIconComp>
 
 /**
  * 按 lobehub 组件名解析图标（对应后端 logo_url，如 "OpenRouter.Color"）。
  * 格式：「图标名」或「图标名.变体」（变体如 Color / Mono / Text / Avatar）。
- * 命中全量注册表则渲染对应尺寸图标，否则返回 null（交由调用方走 vendor / 文字兜底）。
+ * 命中精选表则渲染对应尺寸图标，否则返回 null（交由调用方走 vendor / 文字兜底）。
  */
 export function resolveLobehubIcon(
   logoRef: string | null | undefined,
@@ -74,11 +100,7 @@ export function resolveLobehubIcon(
 ): React.ReactNode | null {
   if (!logoRef) return null
   const [name, variant] = logoRef.split('.')
-  const registry = LobehubRegistry as unknown as Record<
-    string,
-    (LobehubIconComp & Record<string, LobehubIconComp>) | undefined
-  >
-  const Mod = registry[name]
+  const Mod = LOBEHUB_BY_NAME[name]
   if (!Mod) return null
   const Comp = variant && Mod[variant] ? Mod[variant] : Mod
   if (typeof Comp !== 'function') return null

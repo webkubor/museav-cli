@@ -54,13 +54,7 @@ const SidebarNavItem: React.FC<{
     >
       {/* 渐变流动指示线：选中时悬浮在最左边缘 */}
       {isSelected && (
-        <span 
-          className="absolute left-0 top-[18%] bottom-[18%] w-[2.5px] rounded-r-md pointer-events-none"
-          style={{
-            background: 'linear-gradient(180deg, var(--brand-base) 0%, var(--brand-mid) 100%)',
-            boxShadow: '0 0 6px var(--brand-glow)'
-          }}
-        />
+        <span className="absolute left-0 top-[20%] bottom-[20%] w-[2.5px] rounded-r-md pointer-events-none bg-gradient-to-b from-brand-base to-brand-mid dark:shadow-[0_0_6px_var(--brand-glow)]" />
       )}
       <span className={cn(
         "text-base shrink-0 transition-all duration-300 ease-out",

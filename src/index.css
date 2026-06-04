@@ -1428,9 +1428,8 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
 
 .sidebar-flow-line {
   position: absolute;
-  background-color: color-mix(in srgb, var(--brand-base) 18%, transparent);
-  box-shadow: 0 0 1.5px var(--brand-glow);
-  opacity: 0.95;
+  background-color: var(--mg-border); /* 浅色模式下退化为纯灰色细线，极其清雅 */
+  opacity: 0.8;
   overflow: hidden;
   
   /* 渐变遮罩：在底部最后 30% 区域逐渐淡出 */
@@ -1448,8 +1447,20 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   );
 }
 
-/* 轨道内的流动光脉冲 (激光光束效果) */
+body[theme-mode='dark'] .sidebar-flow-line {
+  background-color: color-mix(in srgb, var(--brand-base) 18%, transparent);
+  box-shadow: 0 0 1.5px var(--brand-glow);
+  opacity: 0.95;
+}
+
+/* 轨道内的流动光脉冲 (激光光束效果) - 默认（浅色模式）隐藏 */
 .sidebar-flow-line::after {
+  display: none;
+}
+
+/* 仅在深色模式下展现流光脉冲 */
+body[theme-mode='dark'] .sidebar-flow-line::after {
+  display: block;
   content: '';
   position: absolute;
   left: 0;

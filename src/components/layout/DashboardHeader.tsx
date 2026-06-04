@@ -305,8 +305,8 @@ export const DashboardHeader: React.FC = () => {
           <span className="logo-status-dot" />
         </div>
 
-        {/* 一级菜单流光分隔竖线：高颜值主题色流动渐变 */}
-        <div className="w-[1.5px] h-4 sidebar-flow-line pointer-events-none rounded-full" />
+        {/* 一级菜单极细分隔线 */}
+        <div className="w-[1.5px] h-4 bg-mg-border/85 pointer-events-none rounded-full shrink-0" />
 
         {/* 极雅工作区切换选择 Dropdown */}
         <DropdownMenu>
@@ -382,8 +382,8 @@ export const DashboardHeader: React.FC = () => {
             <span>{t('common.docs')}</span>
           </a>
         </div>
-        {/* 一级菜单流光分隔竖线：高颜值主题色流动渐变 */}
-        <div className="w-[1.5px] h-4 sidebar-flow-line pointer-events-none rounded-full" />
+        {/* 一级菜单极细分隔线 */}
+        <div className="w-[1.5px] h-4 bg-mg-border/85 pointer-events-none rounded-full shrink-0" />
 
         {/* 2. 用户头像一站式 Dropdown */}
         <DropdownMenu>

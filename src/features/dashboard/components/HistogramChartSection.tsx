@@ -72,10 +72,15 @@ export const HistogramChartSection: React.FC = () => {
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={buckets} margin={{ top: 8, right: 4, bottom: 0, left: 4 }}>
               <defs>
-                {/* 科技蓝发光渐变 */}
+                {/* 科技蓝发光渐变 (Blue to Violet) */}
                 <linearGradient id="dashHistGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.16} />
-                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.22} />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0} />
+                </linearGradient>
+                {/* 流光蓝紫渐变线条 */}
+                <linearGradient id="dashHistLineGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#3b82f6" />
+                  <stop offset="100%" stopColor="#8b5cf6" />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="4 4" stroke="var(--mg-border)" strokeOpacity={0.35} vertical={false} />
@@ -94,7 +99,7 @@ export const HistogramChartSection: React.FC = () => {
               <Area
                 type="monotone"
                 dataKey="count"
-                stroke="#3b82f6"
+                stroke="url(#dashHistLineGrad)"
                 strokeWidth={2.5}
                 fill="url(#dashHistGrad)"
                 dot={false}

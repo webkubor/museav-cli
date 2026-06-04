@@ -82,10 +82,15 @@ export const UsageChartSection: React.FC = () => {
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={chartData} margin={{ top: 8, right: 4, bottom: 0, left: 4 }}>
               <defs>
-                {/* 面积发光渐变 */}
+                {/* 面积发光渐变 (Cyan to Emerald) */}
                 <linearGradient id="dashUsageGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--brand-base)" stopOpacity={0.16} />
-                  <stop offset="100%" stopColor="var(--brand-base)" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.22} />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                </linearGradient>
+                {/* 流光线条渐变 */}
+                <linearGradient id="dashUsageLineGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#06b6d4" />
+                  <stop offset="100%" stopColor="#10b981" />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="4 4" stroke="var(--mg-border)" strokeOpacity={0.35} vertical={false} />
@@ -99,16 +104,16 @@ export const UsageChartSection: React.FC = () => {
               />
               <Tooltip
                 content={<UsageTooltip />}
-                cursor={{ stroke: 'var(--brand-base)', strokeWidth: 1, strokeDasharray: '4 4', strokeOpacity: 0.4 }}
+                cursor={{ stroke: '#06b6d4', strokeWidth: 1, strokeDasharray: '4 4', strokeOpacity: 0.4 }}
               />
               <Area
                 type="monotone"
                 dataKey="value"
-                stroke="var(--brand-base)"
+                stroke="url(#dashUsageLineGrad)"
                 strokeWidth={2.5}
                 fill="url(#dashUsageGrad)"
                 dot={false}
-                activeDot={{ r: 4, fill: 'var(--brand-base)', stroke: 'var(--mg-bg-0)', strokeWidth: 2 }}
+                activeDot={{ r: 4, fill: '#06b6d4', stroke: 'var(--mg-bg-0)', strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>

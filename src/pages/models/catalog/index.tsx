@@ -301,18 +301,15 @@ export default function ModelsCatalogPage() {
               {/* 气泡详情 Popover (聊天气泡风格) */}
               <div 
                 onClick={(e) => e.stopPropagation()}
-                className="absolute bottom-[calc(100%+14px)] right-2 left-auto translate-x-0 w-[330px] bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-xl border border-mg-border/60 dark:border-white/10 shadow-[0_20px_50px_-12px_rgba(37,99,235,0.15)] dark:shadow-[0_20px_50px_-12px_rgba(29,195,155,0.25)] rounded-[22px] rounded-br-[2px] p-5 origin-bottom-right transition-all duration-300 [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] opacity-0 scale-90 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0 group-hover:pointer-events-auto z-50 text-left cursor-default before:absolute before:inset-x-0 before:top-full before:h-[18px] before:content-[''] before:pointer-events-auto"
+                className="absolute bottom-[calc(100%+14px)] right-2 left-auto translate-x-0 w-[330px] bg-white dark:bg-[#18181b] border border-neutral-200/80 dark:border-neutral-800 shadow-[0_20px_45px_-10px_rgba(0,0,0,0.12)] dark:shadow-[0_20px_45px_-10px_rgba(0,0,0,0.5)] rounded-[22px] rounded-br-[2px] p-5 origin-bottom-right transition-all duration-300 [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] opacity-0 scale-90 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0 group-hover:pointer-events-auto z-50 text-left cursor-default before:absolute before:inset-x-0 before:top-full before:h-[18px] before:content-[''] before:pointer-events-auto"
               >
-                {/* Top Shimmer Line */}
-                <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-[#2563eb] via-[#1dbd96] to-[#1DC39B] rounded-t-[22px] rounded-tr-[2px]" />
-
                 {/* Speech Bubble Tail */}
                 <svg 
                   width="16" 
                   height="12" 
                   viewBox="0 0 16 12" 
                   fill="none" 
-                  className="absolute top-[calc(100%-1px)] right-6 z-20 text-white dark:text-[#0f172a]"
+                  className="absolute top-[calc(100%-1px)] right-6 z-20 text-white dark:text-[#18181b]"
                 >
                   <path 
                     d="M16 0C12 0 8 2.5 5.5 5.5C3 8.5 1.5 10 0 12C4 12 8 9 11 5.5C13.5 2.5 15 1 16 0Z" 
@@ -322,21 +319,21 @@ export default function ModelsCatalogPage() {
                     d="M16 0C12 0 8 2.5 5.5 5.5C3 8.5 1.5 10 0 12" 
                     stroke="currentColor" 
                     strokeWidth="1.2"
-                    className="text-mg-border/60 dark:text-white/10"
+                    className="text-neutral-200/80 dark:text-neutral-800"
                     fill="none"
                   />
                 </svg>
                 
                 {/* Content */}
-                <div className="relative z-20 space-y-4 pt-1">
+                <div className="relative z-20 space-y-4">
                   {/* Header */}
-                  <div className="flex items-center justify-between pb-1">
+                  <div className="flex items-center justify-between pb-0.5">
                     <div>
-                      <span className="text-[10px] font-bold text-brand-base dark:text-[#1DC39B] uppercase tracking-widest block">{model.vendor || 'ModelGo'}</span>
-                      <h4 className="text-[16px] font-black text-mg-text-0 tracking-tight mt-0.5">{model.display_name}</h4>
+                      <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest block">{model.vendor || 'ModelGo'}</span>
+                      <h4 className="text-[16px] font-black text-neutral-800 dark:text-neutral-100 tracking-tight mt-0.5">{model.display_name}</h4>
                     </div>
                     {model.modalities && model.modalities[0] && (
-                      <span className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-brand-base/10 dark:bg-brand-mid/10 text-brand-base dark:text-brand-mid rounded-md border border-brand-base/20">
+                      <span className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 rounded-md border border-neutral-200 dark:border-neutral-700">
                         {model.modalities[0]}
                       </span>
                     )}
@@ -345,99 +342,91 @@ export default function ModelsCatalogPage() {
                   {/* Grid Specs */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     {/* Released At */}
-                    <div className="bg-mg-fill-0/20 dark:bg-white/[0.02] border border-mg-border/20 dark:border-white/5 rounded-xl p-2.5 flex items-center gap-2.5 transition-colors hover:bg-mg-fill-0/40 dark:hover:bg-white/[0.04]">
-                      <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-brand-base/10 dark:bg-[#1DC39B]/10 text-brand-base dark:text-[#1DC39B]">
+                    <div className="bg-neutral-50/60 dark:bg-neutral-900/40 border border-neutral-100 dark:border-neutral-800/80 rounded-xl p-2.5 flex items-center gap-2.5 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900/60">
+                      <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400">
                         <LuCalendar size={14} />
                       </div>
                       <div className="min-w-0">
-                        <span className="text-[9px] text-mg-text-2 font-medium tracking-wide block uppercase leading-none">{isZh ? '发布时间' : 'Released At'}</span>
-                        <span className="font-extrabold text-[12px] text-mg-text-0 block mt-1 truncate">{model.released_at || '—'}</span>
+                        <span className="text-[9px] text-neutral-400 dark:text-neutral-500 font-medium tracking-wide block uppercase leading-none">{isZh ? '发布时间' : 'Released At'}</span>
+                        <span className="font-extrabold text-[12px] text-neutral-700 dark:text-neutral-300 block mt-1 truncate">{model.released_at || '—'}</span>
                       </div>
                     </div>
 
                     {/* Knowledge Cutoff */}
-                    <div className="bg-mg-fill-0/20 dark:bg-white/[0.02] border border-mg-border/20 dark:border-white/5 rounded-xl p-2.5 flex items-center gap-2.5 transition-colors hover:bg-mg-fill-0/40 dark:hover:bg-white/[0.04]">
-                      <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-brand-base/10 dark:bg-[#1DC39B]/10 text-brand-base dark:text-[#1DC39B]">
+                    <div className="bg-neutral-50/60 dark:bg-neutral-900/40 border border-neutral-100 dark:border-neutral-800/80 rounded-xl p-2.5 flex items-center gap-2.5 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900/60">
+                      <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400">
                         <LuClock size={14} />
                       </div>
                       <div className="min-w-0">
-                        <span className="text-[9px] text-mg-text-2 font-medium tracking-wide block uppercase leading-none">{isZh ? '知识截止' : 'Knowledge'}</span>
-                        <span className="font-extrabold text-[12px] text-mg-text-0 block mt-1 truncate">{model.knowledge_cutoff || '—'}</span>
+                        <span className="text-[9px] text-neutral-400 dark:text-neutral-500 font-medium tracking-wide block uppercase leading-none">{isZh ? '知识截止' : 'Knowledge'}</span>
+                        <span className="font-extrabold text-[12px] text-neutral-700 dark:text-neutral-300 block mt-1 truncate">{model.knowledge_cutoff || '—'}</span>
                       </div>
                     </div>
 
                     {/* Context Length */}
-                    <div className="bg-mg-fill-0/20 dark:bg-white/[0.02] border border-mg-border/20 dark:border-white/5 rounded-xl p-2.5 flex items-center gap-2.5 transition-colors hover:bg-mg-fill-0/40 dark:hover:bg-white/[0.04]">
-                      <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-brand-base/10 dark:bg-[#1DC39B]/10 text-brand-base dark:text-[#1DC39B]">
+                    <div className="bg-neutral-50/60 dark:bg-neutral-900/40 border border-neutral-100 dark:border-neutral-800/80 rounded-xl p-2.5 flex items-center gap-2.5 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900/60">
+                      <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400">
                         <LuCpu size={14} />
                       </div>
                       <div className="min-w-0">
-                        <span className="text-[9px] text-mg-text-2 font-medium tracking-wide block uppercase leading-none">{isZh ? '上下文窗口' : 'Context'}</span>
-                        <span className="font-extrabold text-[12px] text-mg-text-0 block mt-1 truncate">{formatContextLength(model.context_length)}</span>
+                        <span className="text-[9px] text-neutral-400 dark:text-neutral-500 font-medium tracking-wide block uppercase leading-none">{isZh ? '上下文窗口' : 'Context'}</span>
+                        <span className="font-extrabold text-[12px] text-neutral-700 dark:text-neutral-300 block mt-1 truncate">{formatContextLength(model.context_length)}</span>
                       </div>
                     </div>
 
                     {/* Max Output Tokens */}
-                    <div className="bg-mg-fill-0/20 dark:bg-white/[0.02] border border-mg-border/20 dark:border-white/5 rounded-xl p-2.5 flex items-center gap-2.5 transition-colors hover:bg-mg-fill-0/40 dark:hover:bg-white/[0.04]">
-                      <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-brand-base/10 dark:bg-[#1DC39B]/10 text-brand-base dark:text-[#1DC39B]">
+                    <div className="bg-neutral-50/60 dark:bg-neutral-900/40 border border-neutral-100 dark:border-neutral-800/80 rounded-xl p-2.5 flex items-center gap-2.5 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900/60">
+                      <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400">
                         <LuZap size={14} />
                       </div>
                       <div className="min-w-0">
-                        <span className="text-[9px] text-mg-text-2 font-medium tracking-wide block uppercase leading-none">{isZh ? '最大输出' : 'Max Output'}</span>
-                        <span className="font-extrabold text-[12px] text-mg-text-0 block mt-1 truncate">{model.max_output_tokens?.toLocaleString() || '—'}</span>
+                        <span className="text-[9px] text-neutral-400 dark:text-neutral-500 font-medium tracking-wide block uppercase leading-none">{isZh ? '最大输出' : 'Max Output'}</span>
+                        <span className="font-extrabold text-[12px] text-neutral-700 dark:text-neutral-300 block mt-1 truncate">{model.max_output_tokens?.toLocaleString() || '—'}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Pricing Details Table */}
-                  <div className="bg-mg-fill-0/30 dark:bg-white/[0.02] border border-mg-border/30 dark:border-white/5 rounded-xl p-3.5 space-y-2.5">
-                    <div className="flex items-center justify-between text-[10px] font-extrabold text-mg-text-2/70 uppercase tracking-widest pb-1 border-b border-mg-border/10">
+                  <div className="bg-neutral-50/40 dark:bg-neutral-900/30 border border-neutral-100 dark:border-neutral-800/50 rounded-xl p-3.5 space-y-2.5">
+                    <div className="flex items-center justify-between text-[10px] font-extrabold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest pb-1 border-b border-neutral-100 dark:border-neutral-800">
                       <span>{isZh ? '定价细则' : 'Pricing Detail'}</span>
-                      <span className="text-brand-base dark:text-brand-mid font-mono text-[9px] lowercase">per 1M tokens</span>
+                      <span className="text-neutral-400 dark:text-neutral-500 font-mono text-[9px] lowercase">per 1M tokens</span>
                     </div>
                     <div className="space-y-2 text-[12px]">
                       <div className="flex justify-between items-center text-mg-text-1">
-                        <span className="flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                        <span className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
+                          <span className="w-1.5 h-1.5 rounded-full bg-neutral-300 dark:bg-neutral-600" />
                           {isZh ? '输入单价' : 'Input Price'}
                         </span>
-                        <span className="font-mono font-black text-mg-text-0">{formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}</span>
+                        <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200">{formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}</span>
                       </div>
                       <div className="flex justify-between items-center text-mg-text-1">
-                        <span className="flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#1DC39B]" />
+                        <span className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
+                          <span className="w-1.5 h-1.5 rounded-full bg-neutral-300 dark:bg-neutral-600" />
                           {isZh ? '输出单价' : 'Output Price'}
                         </span>
-                        <span className="font-mono font-black text-mg-text-0">{formatModelPrice(model.pricing?.output_per_1m, model.pricing?.currency)}</span>
+                        <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200">{formatModelPrice(model.pricing?.output_per_1m, model.pricing?.currency)}</span>
                       </div>
                       <div className="flex justify-between items-center text-mg-text-1">
-                        <span className="flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                        <span className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
+                          <span className="w-1.5 h-1.5 rounded-full bg-neutral-300 dark:bg-neutral-600" />
                           {isZh ? '缓存读取' : 'Cache Read'}
                         </span>
-                        <span className="font-mono font-black text-mg-text-0">{formatModelPrice(model.pricing?.cache_read_per_1m, model.pricing?.currency)}</span>
+                        <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200">{formatModelPrice(model.pricing?.cache_read_per_1m, model.pricing?.currency)}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Feature Badges with pulse dots */}
+                  {/* Feature Badges with clean slate borders */}
                   {(model.zero_data_retention || model.in_region_routing) && (
-                    <div className="flex flex-wrap gap-2 pt-1">
+                    <div className="flex flex-wrap gap-2 pt-0.5">
                       {model.zero_data_retention && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tracking-wide">
-                          <span className="relative flex h-1.5 w-1.5 mr-1.5 shrink-0">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                          </span>
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200/60 dark:border-neutral-850 text-[10px] font-bold text-neutral-600 dark:text-neutral-400 tracking-wide">
                           {isZh ? '数据零留存' : 'Zero Retention'}
                         </span>
                       )}
                       {model.in_region_routing && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold text-blue-600 dark:text-blue-400 tracking-wide">
-                          <span className="relative flex h-1.5 w-1.5 mr-1.5 shrink-0">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
-                          </span>
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200/60 dark:border-neutral-850 text-[10px] font-bold text-neutral-600 dark:text-neutral-400 tracking-wide">
                           {isZh ? '区域内路由' : 'In-Region'}
                         </span>
                       )}

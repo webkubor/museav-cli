@@ -20,6 +20,7 @@ type DevLogPayload =
       status?: number
       request_id?: string
       error?: string
+      page_path?: string
       request?: unknown
       response?: unknown
     }
@@ -67,9 +68,10 @@ function formatApiLog(payload: Extract<DevLogPayload, { kind: 'api' }>) {
   const status = payload.status ? ` http=${payload.status}` : ''
   const code = payload.code !== undefined ? ` code=${payload.code}` : ''
   const requestId = payload.request_id ? ` requestId=${payload.request_id}` : ''
+  const page = payload.page_path ? ` page=${payload.page_path}` : ''
   const error = payload.error ? ` error="${payload.error}"` : ''
   const result = payload.ok ? 'ok' : 'failed'
-  return `[api][${result}] ${payload.method.toUpperCase()} ${payload.path} ${payload.duration_ms}ms${status}${code}${requestId}${error}`
+  return `[api][${result}] ${payload.method.toUpperCase()} ${payload.path} ${payload.duration_ms}ms${status}${code}${requestId}${page}${error}`
 }
 
 function stableStringify(value: unknown) {

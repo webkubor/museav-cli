@@ -50,6 +50,7 @@ type ApiLogEntry = {
   status?: number
   request_id?: string
   error?: string
+  page_path?: string
   request?: unknown
   response?: unknown
 }
@@ -62,6 +63,11 @@ function nowMs() {
 
 function durationMs(startedAt: number) {
   return Math.max(0, Math.round(nowMs() - startedAt))
+}
+
+function currentPagePath() {
+  if (typeof window === 'undefined') return undefined
+  return `${window.location.pathname}${window.location.search}${window.location.hash}`
 }
 
 function redactDevValue(value: unknown, depth = 0): unknown {
@@ -98,6 +104,7 @@ function devLogApiCall(entry: ApiLogEntry) {
   const payload = JSON.stringify({
     kind: 'api',
     ...entry,
+    page_path: entry.page_path ?? currentPagePath(),
     request: redactDevValue(entry.request),
     response: redactDevValue(entry.response),
   })

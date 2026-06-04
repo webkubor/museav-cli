@@ -33,24 +33,16 @@ export const TerminalSection: React.FC = () => {
   }
 
   return (
-    <div 
-      className="glass-card-glow"
-      style={{
-        borderRadius: '14px',
-        overflow: 'hidden'
-      }}
-    >
+    <div className="code-terminal-shell">
       {/* IDE 窗口顶栏 */}
       <div style={{
-        backgroundColor: 'rgba(15, 23, 42, 0.35)',
-        backdropFilter: 'blur(10px)',
-        WebkitBackdropFilter: 'blur(10px)',
+        backgroundColor: 'rgba(255, 255, 255, 0.04)',
         height: '46px',
         padding: '0 16px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+        borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
       }}>
         {/* 左侧：Mac 三色按钮胶囊与 Tab */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>

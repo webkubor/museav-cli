@@ -53,9 +53,13 @@ export const navConfig: NavConfig = {
     { itemKey: 'dashboard',    text: t('nav.dashboard'),  icon: icons.home,       permission: PERMS.DASHBOARD_VIEW },
     {
       itemKey: 'models',
-      text: t('nav.modelExplore'),
+      text: t('nav.models'),
       icon: icons.apps,
       permission: PERMS.MODELS_VIEW,
+      items: [
+        { itemKey: 'models/catalog', text: '所有模型', icon: icons.list },
+        { itemKey: 'models/playground', text: t('nav.modelExplore'), icon: icons.message },
+      ],
     },
     {
       itemKey: 'analytics',

@@ -125,9 +125,10 @@ export function DashboardLayout() {
   }
 
   const BREADCRUMB_MAP: Record<string, string[]> = {
-    dashboard:        [t('nav.home')],
-    models:           [t('nav.home'), t('nav.modelExplore')],
-    'models/compare': [t('nav.home'), t('nav.modelExplore'), t('nav.modelCompare')],
+    dashboard:           [t('nav.home')],
+    'models/catalog':    [t('nav.home'), t('nav.models'), '所有模型'],
+    'models/playground': [t('nav.home'), t('nav.models'), t('nav.modelExplore')],
+    'models/compare':    [t('nav.home'), t('nav.models'), t('nav.modelCompare')],
     'api-keys':       [t('nav.home'), t('nav.apiKeys')],
     usage:            [t('nav.home'), t('nav.analytics'), t('nav.usage')],
     logs:             [t('nav.home'), t('nav.analytics'), t('nav.logs')],

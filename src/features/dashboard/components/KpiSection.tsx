@@ -1,9 +1,9 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
 import { getBalance } from '@/services/billing'
-import { getUsageSummary } from '@/services/usage'
+import { getUsageSummary, getUsageSeries } from '@/services/usage'
 import { getBillingMoneyStats } from '@/services/overview'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { KpiCard } from '@/components/ui/KpiCard'
@@ -34,6 +34,37 @@ export const KpiSection: React.FC = () => {
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })
+
+  const seriesParams = useMemo(() => {
+    const to = new Date()
+    const from = new Date()
+    from.setDate(from.getDate() - 7)
+    return { from: from.toISOString(), to: to.toISOString(), granularity: 'day' as const }
+  }, [])
+
+  const { data: reqSeries } = useQuery({
+    queryKey: ['usage', 'series', 'requests', 'kpi', activeTenantId],
+    queryFn: () => getUsageSeries({ ...seriesParams, metric: 'requests' }),
+    enabled: !!activeTenantId,
+    staleTime: 60_000,
+  })
+
+  const { data: tokenSeries } = useQuery({
+    queryKey: ['usage', 'series', 'tokens', 'kpi', activeTenantId],
+    queryFn: () => getUsageSeries({ ...seriesParams, metric: 'tokens' }),
+    enabled: !!activeTenantId,
+    staleTime: 60_000,
+  })
+
+  function extractPoints(series: any, metric: 'requests' | 'tokens'): number[] {
+    const raw = series as any
+    if (raw?.groups?.[0]?.points) return raw.groups[0].points.map((p: any) => Number(p[metric] ?? 0))
+    if (raw?.series) return raw.series.map((p: any) => Number(p.value ?? 0))
+    return []
+  }
+
+  const reqSparkData = extractPoints(reqSeries, 'requests')
+  const tokenSparkData = extractPoints(tokenSeries, 'tokens')
 
   const availableBalance = balance
     ? `${currencySymbol}${parseFloat(balance.available.amount).toFixed(2)}`
@@ -72,23 +103,25 @@ export const KpiSection: React.FC = () => {
       hoverBorderClass: 'hover:border-amber-500/30',
       icon: <LuTrendingUp size={16} /> 
     },
-    { 
-      title: t('dashboard.kpi.monthlyRequests'), 
-      value: monthlyRequests, 
-      loading: usageLoading, 
-      color: 'var(--mg-success)', 
-      glowColor: 'rgba(16, 185, 129, 0.12)', 
+    {
+      title: t('dashboard.kpi.monthlyRequests'),
+      value: monthlyRequests,
+      loading: usageLoading,
+      color: 'var(--mg-success)',
+      glowColor: 'rgba(16, 185, 129, 0.12)',
       hoverBorderClass: 'hover:border-emerald-500/30',
-      icon: <LuActivity size={16} /> 
+      icon: <LuActivity size={16} />,
+      sparkData: reqSparkData,
     },
-    { 
-      title: t('dashboard.kpi.monthlyTokens'), 
-      value: monthlyTokens, 
-      loading: usageLoading, 
-      color: '#3b82f6', 
-      glowColor: 'rgba(59, 130, 246, 0.12)', 
+    {
+      title: t('dashboard.kpi.monthlyTokens'),
+      value: monthlyTokens,
+      loading: usageLoading,
+      color: '#3b82f6',
+      glowColor: 'rgba(59, 130, 246, 0.12)',
       hoverBorderClass: 'hover:border-blue-500/30',
-      icon: <LuDatabase size={16} /> 
+      icon: <LuDatabase size={16} />,
+      sparkData: tokenSparkData,
     },
   ]
 

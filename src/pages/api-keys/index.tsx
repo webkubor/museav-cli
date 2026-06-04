@@ -14,11 +14,12 @@ import {
   TableRow,
   TableCell
 } from '@/components/ui/Table'
-import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers, LuKey, LuChevronDown, LuZap, LuArrowRight } from 'react-icons/lu'
+import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers, LuKey, LuChevronDown, LuZap, LuArrowRight, LuChevronRight } from 'react-icons/lu'
 import OpenAI from '@lobehub/icons/es/OpenAI'
 import Anthropic from '@lobehub/icons/es/Anthropic'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { listApiKeys, createApiKey, revokeApiKey } from '@/services/api-keys'
 import { listWorkspaceMembers } from '@/services/workspaces'
 import { listGuardrails } from '@/services/guardrails'
@@ -55,6 +56,7 @@ const SCOPE_OPTIONS: { value: ScopeType; icon: React.ReactNode; label: string; d
 
 export default function ApiKeysPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchValue, setSearchValue] = useState('')
   const [createVisible, setCreateVisible] = useState(false)
@@ -271,11 +273,19 @@ export default function ApiKeysPage() {
           </div>
 
           {/* 底部提示 */}
-          <div className="px-5 py-3 border-t border-mg-border/40 bg-mg-bg-1/30 flex items-center gap-2">
-            <LuArrowRight size={12} className="text-brand-base shrink-0" />
-            <span className="text-[11px] text-mg-text-2">
-              将 Base URL 和 API Key 填入 Agent 配置即可接入全部模型，无需额外代码。
-            </span>
+          <div className="px-5 py-3 border-t border-mg-border/40 bg-mg-bg-1/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2">
+              <LuArrowRight size={12} className="text-brand-base shrink-0" />
+              <span className="text-[11px] text-mg-text-2">
+                将 Base URL 和 API Key 填入 Agent 配置即可接入全部模型，无需额外代码。
+              </span>
+            </div>
+            <button
+              onClick={() => navigate('/models/catalog')}
+              className="text-[11.5px] font-bold text-brand-base hover:text-brand-deep hover:underline flex items-center gap-1 cursor-pointer shrink-0 transition-colors"
+            >
+              浏览支持的模型 ID <LuChevronRight size={11} className="mt-0.5" />
+            </button>
           </div>
         </div>
         )}
@@ -312,9 +322,21 @@ export default function ApiKeysPage() {
                 </button>
               </div>
             </div>
-            <Button variant="brand" onClick={() => setRevealVisible(false)} className="h-11 rounded-lg px-6 font-semibold shrink-0">
-              {t('apiKeys.revealModal.done')}
-            </Button>
+            <div className="flex gap-2 shrink-0">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setRevealVisible(false)
+                  navigate('/models/catalog')
+                }}
+                className="h-11 rounded-lg px-4 font-semibold text-brand-base border-brand-base/30 hover:bg-brand-base/5 cursor-pointer"
+              >
+                复制并去挑选模型
+              </Button>
+              <Button variant="brand" onClick={() => setRevealVisible(false)} className="h-11 rounded-lg px-6 font-semibold cursor-pointer">
+                {t('apiKeys.revealModal.done')}
+              </Button>
+            </div>
           </div>
         </div>
       )}

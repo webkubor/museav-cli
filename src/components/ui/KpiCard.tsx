@@ -11,6 +11,36 @@ export interface KpiCardProps {
   hoverBorderClass?: string
   icon?: React.ReactNode
   sub?: string // 辅助次级描述，例如 Token 用量项下的 Prompt & Completion 比例
+  sparkData?: number[] // 迷你 sparkline 数据
+  trend?: { value: string; up: boolean } // 涨跌 badge
+}
+
+function Sparkline({ data, color }: { data: number[]; color: string }) {
+  if (data.length < 2) return null
+  const w = 100
+  const h = 28
+  const min = Math.min(...data)
+  const max = Math.max(...data)
+  const range = max - min || 1
+  const pts = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * w
+    const y = h - ((v - min) / range) * h
+    return `${x.toFixed(1)},${y.toFixed(1)}`
+  })
+  const linePath = `M ${pts.join(' L ')}`
+  const areaPath = `${linePath} L ${w},${h} L 0,${h} Z`
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-7" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={`sg-${color.replace(/[^a-z0-9]/gi, '')}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill={`url(#sg-${color.replace(/[^a-z0-9]/gi, '')})`} />
+      <path d={linePath} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
 }
 
 export const KpiCard: React.FC<KpiCardProps> = ({
@@ -22,9 +52,21 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   glowColor = 'var(--brand-glow)',
   hoverBorderClass = 'hover:border-brand-base/30',
   icon,
-  sub
+  sub,
+  sparkData,
+  trend,
 }) => {
   const displayTitle = title || label || ''
+
+  const computedTrend = !trend && sparkData && sparkData.length >= 2
+    ? (() => {
+        const first = sparkData[0]
+        const last = sparkData[sparkData.length - 1]
+        if (!first) return undefined
+        const pct = ((last - first) / first) * 100
+        return { value: `${Math.abs(pct).toFixed(1)}%`, up: pct >= 0 }
+      })()
+    : trend
 
   return (
     <Card
@@ -77,15 +119,28 @@ export const KpiCard: React.FC<KpiCardProps> = ({
           <div className="animate-pulse bg-mg-fill-2 rounded-full h-8 w-2/3" />
         ) : (
           <div>
-            <span 
-              className="text-[28px] font-bold tracking-tight block font-mono select-all"
-              style={{
-                color: color === 'var(--mg-text-0)' ? 'var(--mg-text-0)' : color,
-                fontVariantNumeric: 'tabular-nums'
-              }}
-            >
-              {value ?? '—'}
-            </span>
+            <div className="flex items-end gap-2">
+              <span
+                className="text-[28px] font-bold tracking-tight block font-mono select-all"
+                style={{
+                  color: color === 'var(--mg-text-0)' ? 'var(--mg-text-0)' : color,
+                  fontVariantNumeric: 'tabular-nums'
+                }}
+              >
+                {value ?? '—'}
+              </span>
+              {computedTrend && !loading && (
+                <span
+                  className="text-[11px] font-bold mb-1.5 px-1.5 py-0.5 rounded-md"
+                  style={{
+                    color: computedTrend.up ? '#10b981' : '#f59e0b',
+                    backgroundColor: computedTrend.up ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
+                  }}
+                >
+                  {computedTrend.up ? '↑' : '↓'} {computedTrend.value}
+                </span>
+              )}
+            </div>
             {sub && (
               <span className="text-[11px] text-mg-text-2 mt-1.5 block select-none">
                 {sub}
@@ -94,6 +149,13 @@ export const KpiCard: React.FC<KpiCardProps> = ({
           </div>
         )}
       </div>
+
+      {/* Sparkline */}
+      {sparkData && sparkData.length >= 2 && !loading && (
+        <div className="z-10 mt-3 -mx-1 opacity-80">
+          <Sparkline data={sparkData} color={color} />
+        </div>
+      )}
     </Card>
   )
 }

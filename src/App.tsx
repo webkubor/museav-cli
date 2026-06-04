@@ -22,6 +22,7 @@ import OrganizationPage from '@/pages/settings/organization'
 import GuardrailsPage from '@/pages/guardrails'
 import ObservabilityPage from '@/pages/observability'
 import ModelsPage from '@/pages/models'
+import ModelsCatalogPage from '@/pages/models/catalog'
 import ModelsComparePage from '@/pages/models-compare'
 import PlatformConfigPage from '@/pages/platform-config'
 import ChatTestPage from '@/pages/chat-test'
@@ -124,8 +125,12 @@ export default function App() {
 
             {/* Tenant 级 */}
             <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="models" element={<ModelsPage />} />
-            <Route path="models/compare" element={<ModelsComparePage />} />
+            <Route path="models">
+              <Route index element={<Navigate to="catalog" replace />} />
+              <Route path="catalog" element={<ModelsCatalogPage />} />
+              <Route path="playground" element={<ModelsPage />} />
+              <Route path="compare" element={<ModelsComparePage />} />
+            </Route>
             <Route path="usage" element={<UsagePage />} />
             <Route path="logs" element={<LogsPage />} />
             <Route path="billing" element={<BillingPage />} />

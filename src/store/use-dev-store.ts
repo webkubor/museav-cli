@@ -6,9 +6,9 @@ const GUARDRAIL_COUNT_KEY = 'dev:mock-guardrail-count'
 
 function readBool(): boolean {
   try {
-    return localStorage.getItem(KEY) !== 'false'
+    return localStorage.getItem(KEY) === 'true'
   } catch {
-    return true
+    return false
   }
 }
 

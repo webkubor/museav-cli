@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   LuTriangleAlert,
@@ -45,6 +45,7 @@ import { ModelsCompareModal } from './components/ModelsCompareModal'
 export default function ModelsPage() {
   const { i18n } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const text = i18n.language.startsWith('zh') ? modelExperienceCopy.zh : modelExperienceCopy.en
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
@@ -80,8 +81,17 @@ export default function ModelsPage() {
   const detail = detailQuery.data
 
   useEffect(() => {
-    if (!selectedId && allModels[0]) setSelectedId(allModels[0].id)
-  }, [allModels, selectedId, setSelectedId])
+    const state = location.state as { selectedModelId?: string } | null
+    if (state?.selectedModelId) {
+      const targetModel = allModels.find(m => m.model_id === state.selectedModelId || m.id === state.selectedModelId)
+      if (targetModel) {
+        setSelectedId(targetModel.id)
+      }
+      navigate('/models/playground', { replace: true, state: {} })
+    } else if (!selectedId && allModels[0]) {
+      setSelectedId(allModels[0].id)
+    }
+  }, [allModels, selectedId, setSelectedId, location.state, navigate])
 
   function selectModel(model: CatalogModelItem, focusComposer = false) {
     setSelectedId(model.id)

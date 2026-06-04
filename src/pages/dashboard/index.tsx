@@ -5,12 +5,10 @@
  * API：本身无直接接口调用，通过引入各个高内聚子组件拼装完整面板
  */
 
-import { useTranslation } from 'react-i18next'
 import { KpiSection } from '@/features/dashboard/components/KpiSection'
+import { WelcomeBanner } from '@/features/dashboard/components/WelcomeBanner'
 import { QuickAccessSection } from '@/features/dashboard/components/QuickAccessSection'
 import { DashboardRankingsSection } from '@/features/dashboard/components/DashboardRankingsSection'
-import { RankingImageBanner } from '@/features/dashboard/components/RankingImageBanner'
-import { TerminalSection } from '@/features/dashboard/components/TerminalSection'
 import { UsageChartSection } from '@/features/dashboard/components/UsageChartSection'
 import { HistogramChartSection } from '@/features/dashboard/components/HistogramChartSection'
 import { RecentActivitySection } from '@/features/dashboard/components/RecentActivitySection'
@@ -20,42 +18,33 @@ import { RecentActivitySection } from '@/features/dashboard/components/RecentAct
  * 采用极雅多层级响应式结构，平铺展示核心开发总览
  */
 export default function DashboardPage() {
-  const { t } = useTranslation()
 
   return (
     <div style={{ paddingBottom: '40px' }} className="animate-in fade-in duration-300">
+      {/* 0. 欢迎 Banner + Hero Visual */}
+      <WelcomeBanner />
+
       {/* 1. 核心 KPI 统计（余额那一行） */}
       <KpiSection />
 
-      {/* 2. 第一屏焦点：用量趋势与请求分布并排（近 5 天） */}
+      {/* 2. 快捷功能入口 — 提前曝光，引导新用户找到关键操作 */}
+      <div className="mb-8">
+        <QuickAccessSection />
+      </div>
+
+      {/* 3. 用量趋势与请求分布并排（近 5 天） */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-stretch">
         <UsageChartSection />
         <HistogramChartSection />
       </div>
 
-      {/* 3. 调用日志与接入示例并排 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-start">
-        <div className="lg:col-span-2">
-          <RecentActivitySection />
-        </div>
-        <div className="flex flex-col h-full">
-          <h3 className="text-mg-text-0 text-[15px] font-bold tracking-tight mb-3.5 flex items-center gap-1.5 uppercase select-none">
-            {t('dashboard.section.integration')}
-          </h3>
-          <TerminalSection />
-        </div>
-      </div>
-
-      {/* 4. 快捷功能入口 */}
+      {/* 4. 最近调用日志（全宽） */}
       <div className="mb-8">
-        <QuickAccessSection />
+        <RecentActivitySection />
       </div>
 
       {/* 5. 热门模型与 Skills 榜单 */}
       <DashboardRankingsSection />
-
-      {/* 6. Web3 氛围长图 */}
-      <RankingImageBanner />
     </div>
   )
 }

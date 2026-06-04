@@ -539,9 +539,19 @@ html, body, #root {
   animation: flowLight 8s ease infinite !important;
 }
 
+/* 💻 Terminal 外壳容器 — 永远深色，不随主题翻转（行业标准：GitHub/Stripe） */
+.code-terminal-shell {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0d1117;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24), 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
 /* 💻 仿真 IDE 编辑器 - CSS 语法高亮样式 */
 .code-editor-pre {
-  background-color: rgba(9, 13, 22, 0.55) !important;
+  background-color: transparent !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
   color: #e2e8f0 !important;

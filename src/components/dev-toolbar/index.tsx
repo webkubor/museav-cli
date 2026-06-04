@@ -1,13 +1,35 @@
 import { useState } from 'react'
+import type { ChangeEvent, MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { Switch } from '@/components/ui/Switch'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/DropdownMenu'
 import { cn } from '@/lib/utils'
 import { useLangStore } from '@/store/use-brand-store'
 import { useDevStore } from '@/store/use-dev-store'
 import { useAuthStore } from '@/store/auth'
-import { applyTheme, saveTheme } from '@/lib/theme'
+import {
+  applyBrandTheme,
+  applyTheme,
+  getSavedBrandTheme,
+  saveBrandTheme,
+  saveTheme,
+  type BrandThemeConfig,
+} from '@/lib/theme'
 import type { Market, Lang } from '@/lib/market'
+
+const BRAND_THEME_PRESETS = [
+  { label: '默认', value: 'default', color: 'linear-gradient(135deg, #6743fd 0 50%, #00d68f 50% 100%)' },
+  { label: '紫', value: '#6743fd', color: '#6743fd' },
+  { label: '绿', value: '#00d68f', color: '#00d68f' },
+  { label: '蓝', value: '#2563eb', color: '#2563eb' },
+  { label: '青', value: '#0891b2', color: '#0891b2' },
+  { label: '玫', value: '#e11d48', color: '#e11d48' },
+] as const
 
 interface SegOption<T extends string> {
   v: T
@@ -42,6 +64,126 @@ function Seg<T extends string>({
   )
 }
 
+function MockStepper({
+  label,
+  value,
+  step,
+  onChange,
+}: {
+  label: string
+  value: number
+  step: number
+  onChange: (value: number) => void
+}) {
+  const stepValue = (nextValue: number, event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    onChange(nextValue)
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-xl px-2 py-1.5 hover:bg-mg-fill-0/50">
+      <div>
+        <p className="text-[12px] font-bold text-mg-text-0">{label}</p>
+        <p className="text-[10px] font-semibold text-mg-text-2">当前 {value}</p>
+      </div>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={(event) => stepValue(value - step, event)}
+          className="flex h-6 w-6 items-center justify-center rounded-full bg-mg-fill-0 text-xs font-bold leading-none text-mg-text-1 hover:text-mg-text-0"
+        >
+          −
+        </button>
+        <span className="w-8 text-center text-[12px] font-bold tabular-nums text-mg-text-0">{value}</span>
+        <button
+          type="button"
+          onClick={(event) => stepValue(value + step, event)}
+          className="flex h-6 w-6 items-center justify-center rounded-full bg-mg-fill-0 text-xs font-bold leading-none text-mg-text-1 hover:text-mg-text-0"
+        >
+          +
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ThemeColorPanel({
+  value,
+  onChange,
+}: {
+  value: BrandThemeConfig
+  onChange: (value: BrandThemeConfig) => void
+}) {
+  const activeColor = value.mode === 'custom' && value.base ? value.base : ''
+
+  const selectPreset = (presetValue: string, event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    onChange(presetValue === 'default' ? { mode: 'default' } : { mode: 'custom', base: presetValue })
+  }
+
+  const selectCustomColor = (event: ChangeEvent<HTMLInputElement>) => {
+    onChange({ mode: 'custom', base: event.target.value })
+  }
+
+  return (
+    <div className="space-y-3 p-2">
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-brand-base">主题色</p>
+        <p className="mt-0.5 text-[10px] font-medium text-mg-text-2">
+          覆盖全局 brand token，方便验证后台主题配置
+        </p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-1.5">
+        {BRAND_THEME_PRESETS.map((preset) => {
+          const isActive =
+            preset.value === 'default'
+              ? value.mode === 'default'
+              : value.mode === 'custom' && value.base?.toLowerCase() === preset.value
+
+          return (
+            <button
+              key={preset.value}
+              type="button"
+              onClick={(event) => selectPreset(preset.value, event)}
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] font-bold transition-colors',
+                isActive
+                  ? 'border-brand-base bg-brand-selected-bg text-brand-base'
+                  : 'border-mg-border bg-mg-bg-0 text-mg-text-1 hover:border-brand-mid hover:text-mg-text-0'
+              )}
+            >
+              <span
+                className="h-3 w-3 rounded-full border border-white/40 shadow-sm"
+                style={{ background: preset.color }}
+              />
+              {preset.label}
+            </button>
+          )
+        })}
+      </div>
+
+      <label className="flex items-center justify-between gap-3 rounded-xl border border-mg-border bg-mg-bg-0 px-2.5 py-2">
+        <span className="text-[11px] font-semibold text-mg-text-1">自定义</span>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[11px] font-semibold text-mg-text-2">
+            {activeColor || '默认'}
+          </span>
+          <input
+            type="color"
+            value={activeColor || '#6743fd'}
+            onChange={selectCustomColor}
+            className="h-6 w-8 cursor-pointer rounded-md border border-mg-border bg-transparent p-0"
+            aria-label="自定义主题色"
+          />
+        </div>
+      </label>
+    </div>
+  )
+}
+
 /**
  * 开发者工具栏（仅 DEV 环境，悬浮底部居中）。
  * 功能：开关需求看板、切换国内/海外 UI、切换语言。
@@ -64,11 +206,18 @@ export function DevToolbar() {
   const [themeMode, setThemeMode] = useState<'light' | 'dark'>(() =>
     document.body.getAttribute('theme-mode') === 'dark' ? 'dark' : 'light'
   )
+  const [brandTheme, setBrandTheme] = useState<BrandThemeConfig>(() => getSavedBrandTheme())
 
   const switchTheme = (t: 'light' | 'dark') => {
     setThemeMode(t)
     saveTheme(t, accountId)
     applyTheme(t)
+  }
+
+  const switchBrandTheme = (config: BrandThemeConfig) => {
+    setBrandTheme(config)
+    saveBrandTheme(config)
+    applyBrandTheme(config)
   }
 
   const changeMockMembers = (n: number) => {
@@ -102,47 +251,24 @@ export function DevToolbar() {
         <Switch checked={showRequirements} onChange={setShowRequirements} />
       </div>
       <div className="h-4 w-px bg-mg-border" />
-      <div className="flex items-center gap-1.5">
-        <span className="text-[11px] font-semibold text-mg-text-2">组织人数</span>
-        <div className="flex items-center gap-1">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
           <button
             type="button"
-            onClick={() => changeMockMembers(mockMemberCount - 5)}
-            className="w-5 h-5 rounded-full bg-mg-fill-0 text-mg-text-1 hover:text-mg-text-0 text-xs font-bold leading-none flex items-center justify-center"
+            className="rounded-full bg-mg-fill-0 px-3 py-1 text-[11px] font-bold text-mg-text-1 transition-colors hover:text-mg-text-0"
           >
-            −
+            Mock {mockMemberCount}/{mockGuardrailCount}
           </button>
-          <span className="text-[11px] font-bold text-mg-text-0 w-6 text-center tabular-nums">{mockMemberCount}</span>
-          <button
-            type="button"
-            onClick={() => changeMockMembers(mockMemberCount + 5)}
-            className="w-5 h-5 rounded-full bg-mg-fill-0 text-mg-text-1 hover:text-mg-text-0 text-xs font-bold leading-none flex items-center justify-center"
-          >
-            +
-          </button>
-        </div>
-      </div>
-      <div className="h-4 w-px bg-mg-border" />
-      <div className="flex items-center gap-1.5">
-        <span className="text-[11px] font-semibold text-mg-text-2">安全护栏</span>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => changeMockGuardrails(mockGuardrailCount - 1)}
-            className="w-5 h-5 rounded-full bg-mg-fill-0 text-mg-text-1 hover:text-mg-text-0 text-xs font-bold leading-none flex items-center justify-center"
-          >
-            −
-          </button>
-          <span className="text-[11px] font-bold text-mg-text-0 w-6 text-center tabular-nums">{mockGuardrailCount}</span>
-          <button
-            type="button"
-            onClick={() => changeMockGuardrails(mockGuardrailCount + 1)}
-            className="w-5 h-5 rounded-full bg-mg-fill-0 text-mg-text-1 hover:text-mg-text-0 text-xs font-bold leading-none flex items-center justify-center"
-          >
-            +
-          </button>
-        </div>
-      </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side="top" align="center" className="w-[260px] p-2">
+          <div className="mb-2 px-2">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-brand-base">Mock 数据</p>
+            <p className="mt-0.5 text-[10px] font-medium text-mg-text-2">集中调整开发演示数据</p>
+          </div>
+          <MockStepper label="组织人数" value={mockMemberCount} step={5} onChange={changeMockMembers} />
+          <MockStepper label="安全护栏" value={mockGuardrailCount} step={1} onChange={changeMockGuardrails} />
+        </DropdownMenuContent>
+      </DropdownMenu>
       <div className="h-4 w-px bg-mg-border" />
       <Seg
         value={market}
@@ -160,6 +286,23 @@ export function DevToolbar() {
         ]}
         onChange={switchLang}
       />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="flex items-center gap-1.5 rounded-full bg-mg-fill-0 px-3 py-1 text-[11px] font-bold text-mg-text-1 transition-colors hover:text-mg-text-0"
+          >
+            <span
+              className="h-2.5 w-2.5 rounded-full border border-white/40"
+              style={{ background: brandTheme.mode === 'custom' ? brandTheme.base : 'var(--brand-base)' }}
+            />
+            主题色
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side="top" align="center" className="w-[280px] p-0">
+          <ThemeColorPanel value={brandTheme} onChange={switchBrandTheme} />
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Seg
         value={themeMode}
         options={[

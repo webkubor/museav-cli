@@ -38,6 +38,7 @@ export const storageKeys = {
   theme:           ()           => buildKey('theme', 'app'),
   themeByUser:     (userId: string) => buildKey(`theme:${userId}`, 'app'),
   themeModified:   ()           => buildKey('theme_modified', 'app'),
+  brandTheme:      ()           => buildKey('brand_theme', 'app'),
 
   // ── 语言偏好（app 全局） ──────────────────────────────────────────────────
   lang: () => buildKey('lang', 'app'),

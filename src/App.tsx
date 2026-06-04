@@ -30,7 +30,7 @@ import { useDevStore } from '@/store/use-dev-store'
 import { getSession } from '@/services/auth'
 import { storageKeys } from '@/lib/storage'
 import { getMarket } from '@/lib/market'
-import { applyTheme, getSavedTheme } from '@/lib/theme'
+import { applyBrandTheme, applyTheme, getSavedBrandTheme, getSavedTheme } from '@/lib/theme'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import { DevRequirements } from '@/components/dev-requirements'
 import { DevToolbar } from '@/components/dev-toolbar'
@@ -93,6 +93,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   useEffect(() => {
     applyTheme(getSavedTheme())
+    applyBrandTheme(getSavedBrandTheme())
   }, [])
 
   const showRequirements = useDevStore((s) => s.showRequirements)

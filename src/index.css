@@ -1503,14 +1503,13 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   width: 100%;
   background: linear-gradient(
     90deg,
-    transparent 0%,
-    var(--brand-base) 20%,
-    var(--brand-light, rgba(99,102,241,0.3)) 50%,
-    var(--brand-base) 80%,
-    transparent 100%
+    #2563eb 0%,
+    #3b82f6 30%,
+    #1DC39B 70%,
+    #10b981 100%
   );
   background-size: 200% 100%;
-  animation: shimmer-slide 3s ease-in-out infinite;
+  animation: shimmer-slide 2.5s ease-in-out infinite;
   opacity: 0;
   flex-shrink: 0;
   transition: height 350ms cubic-bezier(0.25, 1, 0.5, 1), opacity 350ms cubic-bezier(0.25, 1, 0.5, 1);

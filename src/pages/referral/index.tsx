@@ -42,10 +42,36 @@ export default function ReferralPage() {
 
   const { stats, inviteLink, inviteCode, tier, invitees, commissions, withdrawals } = referralMock
 
+  const MIN_AMOUNT = 100
+
   const [activeTab, setActiveTab] = useState<TabKey>('invitees')
   const [copied, setCopied] = useState(false)
   const [rewardBalance, setRewardBalance] = useState(stats.rewardBalance)
+  const [withdrawalList, setWithdrawalList] = useState<ReferralWithdrawal[]>(withdrawals)
+
+  // 转入主余额弹窗
   const [transferOpen, setTransferOpen] = useState(false)
+  const [transferAmount, setTransferAmount] = useState('')
+
+  // 申请提现弹窗
+  const [withdrawOpen, setWithdrawOpen] = useState(false)
+  const [withdrawAmount, setWithdrawAmount] = useState('')
+  const [payMethod, setPayMethod] = useState<'alipay' | 'bank'>('alipay')
+  const [alipayAccount, setAlipayAccount] = useState('')
+  const [bankName, setBankName] = useState('')
+  const [bankCard, setBankCard] = useState('')
+  const [bankHolder, setBankHolder] = useState('')
+
+  const transferNum = Number(transferAmount)
+  const transferValid = transferNum >= MIN_AMOUNT && transferNum <= rewardBalance
+
+  const withdrawNum = Number(withdrawAmount)
+  const withdrawAmountValid = withdrawNum >= MIN_AMOUNT && withdrawNum <= rewardBalance
+  const accountValid =
+    payMethod === 'alipay'
+      ? alipayAccount.trim().length > 0
+      : bankName.trim().length > 0 && bankCard.trim().length > 0 && bankHolder.trim().length > 0
+  const withdrawValid = withdrawAmountValid && accountValid
 
   const handleCopy = () => {
     navigator.clipboard.writeText(inviteLink)
@@ -55,23 +81,62 @@ export default function ReferralPage() {
   }
 
   const handleTransfer = () => {
-    if (rewardBalance <= 0) {
-      appToast.info(text.noRewardBalance)
+    if (rewardBalance < MIN_AMOUNT) {
+      appToast.info(text.belowMin)
       return
     }
+    setTransferAmount(String(rewardBalance))
     setTransferOpen(true)
   }
 
   const confirmTransfer = () => {
-    const amount = rewardBalance
-    setRewardBalance(0)
+    if (!transferValid) return
+    setRewardBalance((b) => b - transferNum)
     setTransferOpen(false)
-    appToast.success(text.transferSuccess.replace('{amount}', fmt(amount)))
+    appToast.success(text.transferSuccess.replace('{amount}', fmt(transferNum)))
   }
 
   const handleWithdraw = () => {
-    appToast.success('已提交申请')
+    if (rewardBalance < MIN_AMOUNT) {
+      appToast.info(text.belowMin)
+      return
+    }
+    setWithdrawAmount(String(rewardBalance))
+    setPayMethod('alipay')
+    setAlipayAccount('')
+    setBankName('')
+    setBankCard('')
+    setBankHolder('')
+    setWithdrawOpen(true)
   }
+
+  const submitWithdraw = () => {
+    if (!withdrawValid) return
+    const now = new Date()
+    const dateStr = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}`
+    setWithdrawalList((list) => [
+      { appliedAt: dateStr, amount: withdrawNum, status: 'pending', paidAt: null },
+      ...list,
+    ])
+    setRewardBalance((b) => b - withdrawNum)
+    setWithdrawOpen(false)
+    setActiveTab('withdrawals')
+    appToast.success(text.withdrawSuccess)
+  }
+
+  const moneyField = (value: string, onChange: (v: string) => void) => (
+    <div className="flex items-center rounded-lg border border-mg-border bg-mg-fill-0 px-3 focus-within:border-brand-base">
+      <span className="mr-1 text-sm text-mg-text-2">¥</span>
+      <input
+        type="number"
+        min={MIN_AMOUNT}
+        max={rewardBalance}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="min-w-0 flex-1 bg-transparent py-2 font-mono text-sm text-mg-text-0 outline-none"
+      />
+    </div>
+  )
 
   const remain = tier.nextThreshold - tier.cumulativeSpend
 
@@ -307,26 +372,105 @@ export default function ReferralPage() {
             <CommissionsTable commissions={commissions} text={text} />
           )}
           {activeTab === 'withdrawals' && (
-            <WithdrawalsTable withdrawals={withdrawals} text={text} />
+            <WithdrawalsTable withdrawals={withdrawalList} text={text} />
           )}
         </div>
       </div>
 
+      {/* 转入主余额 */}
       <Modal
         open={transferOpen}
         onClose={() => setTransferOpen(false)}
         title={text.transferTitle}
         size="sm"
         footer={
-          <>
-            <Button variant="ghost" onClick={() => setTransferOpen(false)}>{text.transferCancel}</Button>
-            <Button variant="brand" onClick={confirmTransfer}>{text.transferConfirm}</Button>
-          </>
+          <Button variant="brand" disabled={!transferValid} onClick={confirmTransfer}>
+            {text.transferConfirm}
+          </Button>
         }
       >
-        <p className="text-sm text-mg-text-1 py-2 leading-relaxed">
-          {text.transferHint.replace('{amount}', fmt(rewardBalance))}
-        </p>
+        <div className="space-y-3 py-1">
+          <p className="text-xs text-mg-text-2">
+            {text.transferModalHint.replace('{balance}', fmt(rewardBalance))}
+          </p>
+          {moneyField(transferAmount, setTransferAmount)}
+        </div>
+      </Modal>
+
+      {/* 申请提现 */}
+      <Modal
+        open={withdrawOpen}
+        onClose={() => setWithdrawOpen(false)}
+        title={text.withdrawTitle}
+        size="sm"
+        footer={
+          <Button variant="brand" disabled={!withdrawValid} onClick={submitWithdraw}>
+            {text.withdrawSubmit}
+          </Button>
+        }
+      >
+        <div className="space-y-4 py-1">
+          <p className="text-xs text-mg-text-2">
+            {text.withdrawModalHint.replace('{balance}', fmt(rewardBalance))}
+          </p>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-mg-text-1">{text.withdrawAmountLabel}</label>
+            {moneyField(withdrawAmount, setWithdrawAmount)}
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-mg-text-1">{text.withdrawMethodLabel}</label>
+            <div className="flex gap-2">
+              {(['alipay', 'bank'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setPayMethod(m)}
+                  className={`flex-1 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                    payMethod === m
+                      ? 'border-brand-base text-brand-base bg-[var(--brand-base)]/5'
+                      : 'border-mg-border text-mg-text-1 hover:text-mg-text-0'
+                  }`}
+                >
+                  {m === 'alipay' ? text.methodAlipay : text.methodBank}
+                </button>
+              ))}
+            </div>
+
+            {payMethod === 'alipay' ? (
+              <input
+                value={alipayAccount}
+                onChange={(e) => setAlipayAccount(e.target.value)}
+                placeholder={text.alipayPlaceholder}
+                className="w-full rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 text-sm text-mg-text-0 outline-none placeholder:text-mg-text-2 focus:border-brand-base"
+              />
+            ) : (
+              <div className="space-y-2">
+                <input
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                  placeholder={text.bankNamePlaceholder}
+                  className="w-full rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 text-sm text-mg-text-0 outline-none placeholder:text-mg-text-2 focus:border-brand-base"
+                />
+                <input
+                  value={bankCard}
+                  onChange={(e) => setBankCard(e.target.value)}
+                  placeholder={text.bankCardPlaceholder}
+                  className="w-full rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 font-mono text-sm text-mg-text-0 outline-none placeholder:text-mg-text-2 focus:border-brand-base"
+                />
+                <input
+                  value={bankHolder}
+                  onChange={(e) => setBankHolder(e.target.value)}
+                  placeholder={text.bankHolderPlaceholder}
+                  className="w-full rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 text-sm text-mg-text-0 outline-none placeholder:text-mg-text-2 focus:border-brand-base"
+                />
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs leading-relaxed text-mg-text-2">{text.withdrawNote}</p>
+        </div>
       </Modal>
     </div>
   )

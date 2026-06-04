@@ -110,20 +110,23 @@ export const QuickAccessSection: React.FC = () => {
             glass
             hoverable
             onClick={() => navigate(quickPath(link.path, activeWorkspaceId))}
-            className="quick-access-card flex flex-col justify-between relative group rounded-2xl border border-mg-border text-left"
+            className="quick-access-card flex items-center justify-between relative group rounded-2xl border border-mg-border text-left"
           >
-            <div>
-              <div className="w-14 h-14 flex items-center justify-center">
+            <div className="flex items-center gap-3 min-w-0 flex-1 z-10">
+              <div className="w-12 h-12 flex items-center justify-center shrink-0">
                 <QuickWeb3Icon type={link.icon} />
               </div>
-            </div>
-            <div className="quick-access-copy">
-              <div className="flex-1 min-w-0">
-                <strong>{t(link.titleKey)}</strong>
-                <span>{t(link.descKey)}</span>
+              <div className="flex items-center gap-2 min-w-0 overflow-hidden pr-2">
+                <strong className="text-[14px] font-extrabold text-mg-text-0 whitespace-nowrap leading-none shrink-0">
+                  {t(link.titleKey)}
+                </strong>
+                <span className="quick-access-desc text-[11.5px] text-mg-text-2 font-medium whitespace-nowrap opacity-0 max-w-0 translate-x-2 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-100 group-hover:max-w-[180px] group-hover:translate-x-0 flex items-center leading-none">
+                  <span className="text-mg-border/60 mr-1 select-none font-light">—</span>
+                  {t(link.descKey)}
+                </span>
               </div>
-              <LuArrowUpRight size={16} className="quick-access-arrow text-brand-base" />
             </div>
+            <LuArrowUpRight size={14} className="quick-access-arrow text-brand-base shrink-0 z-10" />
           </Card>
         ))}
       </div>

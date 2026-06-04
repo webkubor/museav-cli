@@ -33,10 +33,15 @@
 }
 
 .quick-access-card {
-  min-height: 156px;
-  padding: 18px;
+  min-height: 76px;
+  height: 76px;
+  padding: 10px 16px;
   cursor: pointer;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
 }
 
 .quick-access-card::after {
@@ -60,8 +65,8 @@
 .quick-web3-icon {
   position: relative;
   z-index: 1;
-  width: 58px;
-  height: 58px;
+  width: 46px;
+  height: 46px;
   display: block;
 }
 
@@ -95,32 +100,6 @@
   fill: var(--mg-bg-0);
   stroke: var(--brand-base);
   stroke-width: 2.5;
-}
-
-.quick-access-copy {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 14px;
-}
-
-.quick-access-copy strong {
-  display: block;
-  color: var(--mg-text-0);
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.quick-access-copy span {
-  display: block;
-  margin-top: 4px;
-  color: var(--mg-text-2);
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1.45;
 }
 
 .quick-access-arrow {

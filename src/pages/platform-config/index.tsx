@@ -11,6 +11,7 @@ import { listTenants } from '@/services/tenants'
 import { listWorkspaces } from '@/services/workspaces'
 import { listModels, listModelTags } from '@/services/catalog'
 import { listApiKeys } from '@/services/api-keys'
+import { getReferralOverview, listReferralInvitees, listRewardRecords, listWithdrawals } from '@/services/referral'
 import { PERMS } from '@/config/permissions'
 import type { Permission } from '@/config/permissions'
 import { TENANT_PERM_MATRIX, WS_PERM_MATRIX } from '@/config/permissionMatrix'
@@ -734,6 +735,7 @@ function HeadersPanel() {
 export default function PlatformConfigPage() {
   const { t } = useTranslation()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
+  const activeTenantId = useAuthStore((s) => s.activeTenantId)
 
   const endpoints: EndpointDef[] = [
     {
@@ -785,6 +787,36 @@ export default function PlatformConfigPage() {
       path: '/api/v1/catalog/model-tags',
       call: listModelTags,
     },
+    ...(activeTenantId ? [
+      {
+        group: 'Referral',
+        label: '推荐计划总览',
+        method: 'GET' as const,
+        path: `/api/v1/tenants/${activeTenantId}/referral/overview`,
+        call: () => getReferralOverview(activeTenantId),
+      },
+      {
+        group: 'Referral',
+        label: '被邀请人列表',
+        method: 'GET' as const,
+        path: `/api/v1/tenants/${activeTenantId}/referral/invitees`,
+        call: () => listReferralInvitees(activeTenantId),
+      },
+      {
+        group: 'Referral',
+        label: '奖励记录',
+        method: 'GET' as const,
+        path: `/api/v1/tenants/${activeTenantId}/referral/reward-records`,
+        call: () => listRewardRecords(activeTenantId),
+      },
+      {
+        group: 'Referral',
+        label: '提现记录',
+        method: 'GET' as const,
+        path: `/api/v1/tenants/${activeTenantId}/referral/withdrawals`,
+        call: () => listWithdrawals(activeTenantId),
+      },
+    ] : []),
   ]
 
   const { states, call } = useEndpointState()

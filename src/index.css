@@ -77,22 +77,22 @@ body[theme-mode='dark'] {
 
 /* 国际 — GO 翠绿（浅色） */
 :root, [data-market='global'] {
-  --go-deep: #00b377;
-  --go-base: #00d68f;
-  --go-mid:  #00eda0;
-  --go-light: #5df5be;
-  --go-pale: #e0fff3;
-  --go-glow: rgba(0, 214, 143, 0.18);
-  --go-selected-bg: rgba(0, 214, 143, 0.09);
+  --go-deep: #159b7c;
+  --go-base: #1DC39B;
+  --go-mid:  #4ad1b3;
+  --go-light: #8ee4d1;
+  --go-pale: #e6faf5;
+  --go-glow: rgba(29, 195, 155, 0.18);
+  --go-selected-bg: rgba(29, 195, 155, 0.09);
 }
 /* 国际 — GO 翠绿（深色，提升亮度） */
 [data-market='global'] body[theme-mode='dark'] {
-  --go-deep: #00d68f;
-  --go-base: #00eda0;
-  --go-mid:  #5df5be;
-  --go-pale: #002b1d;
-  --go-glow: rgba(0, 237, 160, 0.25);
-  --go-selected-bg: rgba(0, 237, 160, 0.15);
+  --go-deep: #17a885;
+  --go-base: #1DC39B;
+  --go-mid:  #63dbc2;
+  --go-pale: #062a22;
+  --go-glow: rgba(29, 195, 155, 0.26);
+  --go-selected-bg: rgba(29, 195, 155, 0.16);
 }
 
 /* 品牌色路由 — brand-* 指向当前市场的原色 */

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ChangeEvent, MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
@@ -23,13 +23,22 @@ import {
 import type { Market, Lang } from '@/lib/market'
 
 const BRAND_THEME_PRESETS = [
-  { label: '默认', value: 'default', color: 'linear-gradient(135deg, #6743fd 0 50%, #00d68f 50% 100%)' },
+  { label: '默认', value: 'default', color: 'linear-gradient(135deg, #6743fd 0 50%, #1DC39B 50% 100%)' },
   { label: '紫', value: '#6743fd', color: '#6743fd' },
-  { label: '绿', value: '#00d68f', color: '#00d68f' },
+  { label: '绿', value: '#1DC39B', color: '#1DC39B' },
   { label: '蓝', value: '#2563eb', color: '#2563eb' },
   { label: '青', value: '#0891b2', color: '#0891b2' },
   { label: '玫', value: '#e11d48', color: '#e11d48' },
 ] as const
+
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/
+
+function normalizeHexColor(value: string): string | null {
+  const trimmed = value.trim()
+  if (HEX_COLOR_PATTERN.test(trimmed)) return trimmed
+  if (/^[0-9a-fA-F]{6}$/.test(trimmed)) return `#${trimmed}`
+  return null
+}
 
 interface SegOption<T extends string> {
   v: T
@@ -116,6 +125,11 @@ function ThemeColorPanel({
   onChange: (value: BrandThemeConfig) => void
 }) {
   const activeColor = value.mode === 'custom' && value.base ? value.base : ''
+  const [draftColor, setDraftColor] = useState(activeColor || '#6743fd')
+
+  useEffect(() => {
+    setDraftColor(activeColor || '#6743fd')
+  }, [activeColor])
 
   const selectPreset = (presetValue: string, event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault()
@@ -124,7 +138,18 @@ function ThemeColorPanel({
   }
 
   const selectCustomColor = (event: ChangeEvent<HTMLInputElement>) => {
+    event.stopPropagation()
+    setDraftColor(event.target.value)
     onChange({ mode: 'custom', base: event.target.value })
+  }
+
+  const editCustomColor = (event: ChangeEvent<HTMLInputElement>) => {
+    const nextValue = event.target.value
+    setDraftColor(nextValue)
+    const normalized = normalizeHexColor(nextValue)
+    if (normalized) {
+      onChange({ mode: 'custom', base: normalized })
+    }
   }
 
   return (
@@ -141,7 +166,7 @@ function ThemeColorPanel({
           const isActive =
             preset.value === 'default'
               ? value.mode === 'default'
-              : value.mode === 'custom' && value.base?.toLowerCase() === preset.value
+              : value.mode === 'custom' && value.base?.toLowerCase() === preset.value.toLowerCase()
 
           return (
             <button
@@ -165,21 +190,32 @@ function ThemeColorPanel({
         })}
       </div>
 
-      <label className="flex items-center justify-between gap-3 rounded-xl border border-mg-border bg-mg-bg-0 px-2.5 py-2">
-        <span className="text-[11px] font-semibold text-mg-text-1">自定义</span>
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-[11px] font-semibold text-mg-text-2">
-            {activeColor || '默认'}
-          </span>
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-mg-border bg-mg-bg-0 px-2.5 py-2">
+        <label htmlFor="dev-brand-theme-color" className="text-[11px] font-semibold text-mg-text-1">
+          自定义
+        </label>
+        <div className="flex min-w-0 items-center gap-2">
+          <input
+            id="dev-brand-theme-color"
+            type="text"
+            value={draftColor}
+            onChange={editCustomColor}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            placeholder="#6743fd"
+            spellCheck={false}
+            className="h-7 w-[92px] rounded-lg border border-mg-border bg-mg-fill-0 px-2 font-mono text-[11px] font-semibold text-mg-text-0 outline-none transition-colors focus:border-brand-base focus:ring-2 focus:ring-brand-glow"
+          />
           <input
             type="color"
-            value={activeColor || '#6743fd'}
+            value={normalizeHexColor(draftColor) || activeColor || '#6743fd'}
             onChange={selectCustomColor}
+            onClick={(event) => event.stopPropagation()}
             className="h-6 w-8 cursor-pointer rounded-md border border-mg-border bg-transparent p-0"
             aria-label="自定义主题色"
           />
         </div>
-      </label>
+      </div>
     </div>
   )
 }

@@ -97,7 +97,8 @@ function syncFromGitlab(items: Requirement[]): Requirement[] {
       merged[idx] = {
         ...existing,
         title: issue.title.replace(/^\[Console需求\]\s*/, '').replace(/^\[cs:claude\]\s*/, ''),
-        status: gitlabStatusToLocal(issue),
+        // 本地已标记完成的保留完成态，避免被 GitLab 未关闭状态冲掉（本地 done 或 GitLab done 任一即视为完成）
+        status: existing.status === 'done' ? 'done' : gitlabStatusToLocal(issue),
         gitlabLabels: issue.labels,
         assignee: issue.assignee?.username ?? undefined,
       }

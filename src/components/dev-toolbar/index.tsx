@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { Switch } from '@/components/ui/Switch'
 import { cn } from '@/lib/utils'
 import { useLangStore } from '@/store/use-brand-store'
 import { useDevStore } from '@/store/use-dev-store'
+import { useAuthStore } from '@/store/auth'
+import { applyTheme, saveTheme } from '@/lib/theme'
 import type { Market, Lang } from '@/lib/market'
 
 interface SegOption<T extends string> {
@@ -55,7 +58,18 @@ export function DevToolbar() {
   const setMockMemberCount = useDevStore((s) => s.setMockMemberCount)
   const mockGuardrailCount = useDevStore((s) => s.mockGuardrailCount)
   const setMockGuardrailCount = useDevStore((s) => s.setMockGuardrailCount)
+  const accountId = useAuthStore((s) => s.account?.account_id)
   const qc = useQueryClient()
+
+  const [themeMode, setThemeMode] = useState<'light' | 'dark'>(() =>
+    document.body.getAttribute('theme-mode') === 'dark' ? 'dark' : 'light'
+  )
+
+  const switchTheme = (t: 'light' | 'dark') => {
+    setThemeMode(t)
+    saveTheme(t, accountId)
+    applyTheme(t)
+  }
 
   const changeMockMembers = (n: number) => {
     setMockMemberCount(n)
@@ -145,6 +159,14 @@ export function DevToolbar() {
           { v: 'en', l: 'EN' },
         ]}
         onChange={switchLang}
+      />
+      <Seg
+        value={themeMode}
+        options={[
+          { v: 'light', l: '浅' },
+          { v: 'dark', l: '深' },
+        ]}
+        onChange={switchTheme}
       />
     </div>
   )

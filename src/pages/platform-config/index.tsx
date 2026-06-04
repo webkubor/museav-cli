@@ -645,12 +645,6 @@ const URL_PARAM_ROWS: UrlParamRow[] = [
     why: '未登录访问受保护页被拦到 /login，登录后回到原本要去的页，而非固定首页',
   },
   {
-    param: '?reason=no_access',
-    module: '认证守卫 ProtectedRoute + 登录页',
-    usage: '已登录但 activeTenantId 为空 → Navigate /login?reason=no_access；登录页据此显示“不属于任何组织”',
-    why: '区分“未登录”与“已登录但无组织”，给准确提示；并与登录页跳转条件(isAuthenticated && activeTenantId)对齐，防两守卫互弹死循环',
-  },
-  {
     param: '?email=<email>',
     module: '两步登录 → 注册 / 忘记密码',
     usage: 'email/check 返回未注册 → /signup?email=；也用于 /forgot-password?email=，目标页预填邮箱',

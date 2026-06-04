@@ -25,6 +25,7 @@ import ModelsPage from '@/pages/models'
 import ModelsComparePage from '@/pages/models-compare'
 import PlatformConfigPage from '@/pages/platform-config'
 import ChatTestPage from '@/pages/chat-test'
+import ForbiddenPage from '@/pages/forbidden'
 import { useAuthStore } from '@/store/auth'
 import { useDevStore } from '@/store/use-dev-store'
 import { getSession } from '@/services/auth'
@@ -86,7 +87,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) return null
   if (!isAuthenticated) return <Navigate to={toLoginWithRedirect()} replace />
-  if (!activeTenantId) return <Navigate to="/login?reason=no_access" replace />
+  // 已登录但无组织 = 有身份、无授权 → 403，而非回跳登录（回跳会造成守卫互弹）
+  if (!activeTenantId) return <ForbiddenPage />
   return <>{children}</>
 }
 

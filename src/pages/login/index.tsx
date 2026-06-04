@@ -72,17 +72,12 @@ export default function LoginPage() {
   const setAuth = useAuthStore((s) => s.setAuth)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isSessionLoading = useAuthStore((s) => s.isLoading)
-  const activeTenantId = useAuthStore((s) => s.activeTenantId)
 
   const [redirectAfterLogin] = useState(() => getRedirectTarget())
-  const searchParams = new URLSearchParams(window.location.search)
-  const accessDenied = searchParams.get('reason') === 'no_access'
 
   const [step, setStep] = useState<'email' | 'password'>('email')
   const [email, setEmail] = useState('')
-  const [serverError, setServerError] = useState(
-    accessDenied ? '你的账号当前不属于任何组织，请联系管理员邀请后再登录。' : ''
-  )
+  const [serverError, setServerError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [rememberPassword, setRememberPassword] = useState(false)
@@ -101,14 +96,12 @@ export default function LoginPage() {
     setStep('password')
   }, [emailForm, passwordForm])
 
-  // 必须与 ProtectedRoute 的判定完全一致（已登录 AND 有 activeTenantId），
-  // 否则「已登录但无组织」的账号会被这里弹回 /dashboard，而 ProtectedRoute 又
-  // 把它弹回 /login?reason=no_access —— 两个守卫互弹形成无限循环。
+  // 已登录即离开登录页；无组织的账号到受保护路由由 ProtectedRoute 渲染 403（不回弹登录，无循环）
   useEffect(() => {
-    if (!isSessionLoading && isAuthenticated && activeTenantId) {
+    if (!isSessionLoading && isAuthenticated) {
       navigate(redirectAfterLogin, { replace: true })
     }
-  }, [isAuthenticated, isSessionLoading, activeTenantId, navigate, redirectAfterLogin])
+  }, [isAuthenticated, isSessionLoading, navigate, redirectAfterLogin])
 
   const onEmailSubmit = async (data: EmailFields) => {
     setLoading(true)
@@ -151,11 +144,8 @@ export default function LoginPage() {
         session.active_workspace_id,
         session.permissions?.granted ?? null
       )
-      if (session.active_tenant_id) {
-        navigate(redirectAfterLogin, { replace: true })
-      } else {
-        setServerError('你的账号当前不属于任何组织，请联系管理员邀请后再登录。')
-      }
+      // 无组织账号同样进入受保护路由，由 ProtectedRoute 渲染 403（统一在守卫处理授权）
+      navigate(redirectAfterLogin, { replace: true })
     } catch {
       setServerError('邮箱或密码错误')
     } finally {

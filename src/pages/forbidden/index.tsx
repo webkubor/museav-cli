@@ -1,0 +1,44 @@
+import { useNavigate } from 'react-router-dom'
+import { LuShieldAlert } from 'react-icons/lu'
+import { Button } from '@/components/ui/Button'
+import { useAuthStore } from '@/store/auth'
+import { logout } from '@/services/auth'
+
+/**
+ * 403 — 已登录但无访问权限。
+ * 典型场景：账号登录成功但不属于任何组织（active_tenant_id 为空），
+ * 无法进入控制台。这是「有身份、无授权」，按 403 处理，不回跳登录页。
+ */
+export default function ForbiddenPage() {
+  const navigate = useNavigate()
+  const clearAuth = useAuthStore((s) => s.clearAuth)
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } catch {
+      // 后端失败也继续清理前端态
+    }
+    clearAuth()
+    navigate('/login', { replace: true })
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-mg-bg-1 px-6">
+      <div className="w-full max-w-sm rounded-2xl border border-mg-border bg-card-bg p-8 text-center shadow-sm space-y-5">
+        <div className="mx-auto w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+          <LuShieldAlert size={26} className="text-amber-500" />
+        </div>
+        <div className="space-y-1.5">
+          <h1 className="text-lg font-bold text-mg-text-0">无法访问</h1>
+          <p className="text-sm text-mg-text-2 leading-relaxed">
+            你的账号当前不属于任何组织，无权访问控制台。请联系管理员邀请加入后再使用。
+          </p>
+        </div>
+        <Button variant="outline" onClick={handleLogout} className="w-full h-10 rounded-xl font-semibold">
+          退出登录
+        </Button>
+      </div>
+    </div>
+  )
+}

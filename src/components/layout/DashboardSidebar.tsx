@@ -45,16 +45,26 @@ const SidebarNavItem: React.FC<{
         }
       }}
       className={cn(
-        "group flex items-center gap-3 mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-300 select-none outline-none focus-visible:ring-1 focus-visible:ring-brand-glow",
+        "group flex items-center gap-3 mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-300 select-none outline-none focus-visible:ring-1 focus-visible:ring-brand-glow relative",
         collapsed ? "justify-center" : "justify-start",
         isSelected
           ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
           : "text-mg-text-1 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.96] hover:translate-x-[2px]"
       )}
     >
+      {/* 渐变流动指示线：选中时悬浮在最左边缘 */}
+      {isSelected && (
+        <span 
+          className="absolute left-0 top-[18%] bottom-[18%] w-[2.5px] rounded-r-md pointer-events-none"
+          style={{
+            background: 'linear-gradient(180deg, var(--brand-base) 0%, var(--brand-mid) 100%)',
+            boxShadow: '0 0 6px var(--brand-glow)'
+          }}
+        />
+      )}
       <span className={cn(
         "text-base shrink-0 transition-all duration-300 ease-out",
-        isSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:scale-115 group-hover:rotate-[8deg]"
+        isSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:scale-105 group-hover:translate-x-[1.5px]"
       )}>
         {item.icon}
       </span>
@@ -101,7 +111,7 @@ const SidebarMenuGroup: React.FC<{
         >
           <span className={cn(
             "text-base shrink-0 transition-all duration-300 ease-out",
-            isChildSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:scale-115 group-hover:rotate-[8deg]"
+            isChildSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:scale-105 group-hover:translate-x-[1px]"
           )}>
             {item.icon}
           </span>
@@ -111,7 +121,19 @@ const SidebarMenuGroup: React.FC<{
   }
 
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex flex-col gap-0.5 relative">
+      {/* 展开相邻主菜单时，垂直连通这两个主菜单图标的渐变流动垂线 */}
+      {item.items && isOpen && (
+        <div 
+          className="absolute left-[30px] w-[1.5px] sidebar-flow-line pointer-events-none rounded-full"
+          style={{
+            top: '28px',
+            bottom: '10px',
+            zIndex: 10,
+          }}
+        />
+      )}
+
       {/* 文件夹父级 Trigger */}
       <div
         role="button"
@@ -126,7 +148,7 @@ const SidebarMenuGroup: React.FC<{
         <div className="flex items-center gap-3 min-w-0">
           <span className={cn(
             "text-base shrink-0 transition-all duration-300 ease-out",
-            isChildSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:scale-115 group-hover:rotate-[8deg]"
+            isChildSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:scale-105 group-hover:translate-x-[1.5px]"
           )}>
             {item.icon}
           </span>
@@ -151,8 +173,6 @@ const SidebarMenuGroup: React.FC<{
           )}
         >
           <div className="min-h-0 flex flex-col pl-4 ml-7 gap-1 relative">
-            {/* 展开时才显示的、高颜值流动渐变指示竖线：起点终点完美契合子菜单首尾 */}
-            <div className="absolute left-0 top-2.5 bottom-2.5 w-[1.5px] sidebar-flow-line pointer-events-none rounded-full" />
             {item.items.map((sub) => {
               const isSubSelected = selectedKey === sub.itemKey
               return (
@@ -188,7 +208,7 @@ const SidebarMenuGroup: React.FC<{
 const SidebarFooterInfo: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
   const [time, setTime] = useState(new Date())
 
-  React.useEffect(() => {
+  useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
@@ -202,10 +222,28 @@ const SidebarFooterInfo: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
     hour12: false,
   })
 
+  const offset = -time.getTimezoneOffset() / 60
+  const zoneStr = `GMT${offset >= 0 ? '+' : ''}${offset}`
+
   return (
-    <div className="mx-4 mt-3 mb-6 flex items-center justify-between text-[11.5px] font-mono text-mg-text-2 select-none">
-      <span className="font-semibold tracking-wide">v{__APP_VERSION__}</span>
-      <span className="tabular-nums hover:text-mg-text-0 transition-colors">{timeStr}</span>
+    <div className="mx-4 mt-3 mb-6 flex flex-col gap-1.5 select-none text-mg-text-2">
+      {/* 第一行：版本和在线健康度 */}
+      <div className="flex items-center justify-between text-[11px] font-mono">
+        <div className="flex items-center gap-1.5 font-semibold">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+          </span>
+          <span className="tracking-wide">v{__APP_VERSION__}</span>
+        </div>
+        <span className="opacity-80 font-bold uppercase text-[9px] text-mg-success tracking-widest">ONLINE</span>
+      </div>
+
+      {/* 第二行：时间与时区 */}
+      <div className="flex items-center justify-between text-[11px] font-mono border-t border-mg-border/25 pt-1.5">
+        <span className="tabular-nums text-mg-text-1 hover:text-mg-text-0 transition-colors">{timeStr}</span>
+        <span className="px-1 py-0.5 rounded bg-mg-fill-1 text-[9px] text-mg-text-2 tracking-wide font-bold">{zoneStr}</span>
+      </div>
     </div>
   )
 }
@@ -309,6 +347,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 }) => {
   const { t } = useTranslation()
   const [hovered, setHovered] = useState(false)
+  const [workspaceOpen, setWorkspaceOpen] = useState(true)
   const leaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const isWorkspaceSelected = WORKSPACE_KEYS.includes(selectedKey)
@@ -350,9 +389,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       <div className="flex flex-col flex-1 py-3 overflow-y-auto overflow-x-hidden no-scrollbar">
         {/* Tenant 级导航 */}
         <div className="relative flex flex-col gap-0.5">
-          {!collapsed && tenantNavItems.length > 1 && (
-            <div className="absolute left-[30px] top-[22px] bottom-[22px] w-px bg-mg-border/35 pointer-events-none" />
-          )}
           {tenantNavItems.map((item) => {
             if (item.items && item.items.length > 0) {
               return (
@@ -377,22 +413,39 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           })}
         </div>
 
-        {/* 工作区分隔线 */}
-        <div className={cn("flex items-center gap-2 py-4 select-none", collapsed ? "px-2" : "px-4")}>
+        {/* 工作区折叠标题 */}
+        <div 
+          role="button"
+          onClick={() => !collapsed && setWorkspaceOpen(!workspaceOpen)}
+          className={cn(
+            "flex items-center gap-2 py-4 select-none px-4 group/section justify-between transition-colors",
+            !collapsed && "cursor-pointer hover:text-mg-text-0",
+            collapsed && "px-2 pointer-events-none"
+          )}
+        >
           <div className="flex-1 h-[1px] bg-mg-border/40" />
           {!collapsed && (
-            <span className="text-[11px] font-bold text-mg-text-2/80 tracking-wider uppercase whitespace-nowrap shrink-0">
+            <span className="text-[11px] font-bold text-mg-text-2/80 tracking-wider uppercase whitespace-nowrap shrink-0 flex items-center gap-1 group-hover/section:text-mg-text-1 transition-colors">
               {t('nav.sidebarWorkspace')}
+              <LuChevronRight 
+                size={11} 
+                className={cn(
+                  "transition-transform duration-300 text-mg-text-2", 
+                  workspaceOpen ? "rotate-90 text-brand-base" : "rotate-0"
+                )} 
+              />
             </span>
           )}
           <div className="flex-1 h-[1px] bg-mg-border/40" />
         </div>
 
         {/* Workspace 级导航 */}
-        <div className="relative flex flex-col gap-0.5 flex-1">
-          {!collapsed && workspaceNavItems.length > 1 && (
-            <div className="absolute left-[30px] top-[22px] bottom-[22px] w-px bg-mg-border/35 pointer-events-none" />
+        <div 
+          className={cn(
+            "relative flex flex-col gap-0.5 transition-all duration-300 overflow-hidden flex-1",
+            (!collapsed && !workspaceOpen) ? "max-h-0 opacity-0 pointer-events-none" : "max-h-[500px] opacity-100"
           )}
+        >
           {workspaceNavItems.map((item) => {
             if (item.items && item.items.length > 0) {
               return (

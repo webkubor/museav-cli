@@ -408,10 +408,16 @@
       "keywordPlaceholder": "Search by Request ID"
     },
     "table": {
-      "requestTime": "Time",
+      "requestTime": "Created",
       "model": "Model",
       "statusCode": "Status",
-      "duration": "Duration",
+      "duration": "Latency",
+      "ttft": "TTFT",
+      "usage": "Usage",
+      "status": "Status",
+      "tokenTotal": "Total",
+      "tokenInput": "Input",
+      "tokenOutput": "Output",
       "tokens": "Tokens",
       "cost": "Cost",
       "apiKey": "API Key",

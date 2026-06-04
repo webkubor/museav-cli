@@ -24,6 +24,7 @@ import type { CallLogItem, LogPayload } from '@/types'
 import { formatDateTime } from '@/lib/format-date'
 import { appToast } from '@/lib/app-toast'
 import { cn } from '@/lib/utils'
+import { ModelIcon } from '@/features/models/components/ModelIcon'
 
 type LogStatusFilter = 'all' | 'success' | 'failed'
 type PayloadKind = 'request' | 'response'
@@ -255,10 +256,12 @@ export default function LogsPage() {
 
   // 获取状态标签
   const getStatusBadge = (row: CallLogItem) => {
-    if (row.status === 'succeeded' || row.status === 'accepted') {
-      return <Badge variant="success">Success</Badge>
-    }
-    return <Badge variant="destructive">Failed</Badge>
+    const ok = row.http_status ? row.http_status < 400 : (row.status === 'succeeded' || row.status === 'accepted')
+    return (
+      <Badge variant={ok ? 'success' : 'destructive'}>
+        {row.http_status || (ok ? 'Success' : 'Failed')}
+      </Badge>
+    )
   }
 
   return (
@@ -349,51 +352,58 @@ export default function LogsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('logs.table.requestTime')}</TableHead>
                   <TableHead>Request ID</TableHead>
+                  <TableHead>{t('logs.table.requestTime')}</TableHead>
                   <TableHead>{t('logs.table.model')}</TableHead>
-                  <TableHead>{t('logs.table.statusCode')}</TableHead>
-                  <TableHead>{t('logs.table.duration')}</TableHead>
-                  <TableHead>{t('logs.table.tokens')}</TableHead>
+                  <TableHead>{t('logs.table.usage')}</TableHead>
                   <TableHead>{t('logs.table.cost')}</TableHead>
-                  <TableHead>{t('logs.table.apiKey')}</TableHead>
+                  <TableHead>{t('logs.table.ttft')}</TableHead>
+                  <TableHead>{t('logs.table.duration')}</TableHead>
+                  <TableHead>{t('logs.table.status')}</TableHead>
                   <TableHead className="text-right"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredLogs.map((row) => (
                   <TableRow key={row.call_log_id}>
-                    <TableCell className="text-xs text-mg-text-1">
-                      {formatDateTime(row.started_at)}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-mg-text-0 max-w-[140px] truncate select-all">
+                    <TableCell className="font-mono text-xs text-mg-text-0 max-w-[160px] truncate select-all">
                       {row.request_id}
                     </TableCell>
-                    <TableCell className="font-semibold text-mg-text-0 text-[13.5px]">
-                      {row.model.display_name}
+                    <TableCell className="text-xs text-mg-text-1 whitespace-nowrap">
+                      {formatDateTime(row.started_at)}
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(row)}
+                      <span className="flex items-center gap-2">
+                        <ModelIcon model={{ display_name: row.model.display_name, vendor: row.model.display_name }} size={18} />
+                        <span className="font-semibold text-mg-text-0 text-[13.5px]">{row.model.display_name}</span>
+                      </span>
                     </TableCell>
-                    <TableCell className="font-mono text-xs text-mg-text-1 tabular-nums">
-                      {row.duration_ms}ms
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-mg-text-1 tabular-nums">
+                    <TableCell className="text-xs whitespace-nowrap">
                       {row.usage ? (
-                        <span>
-                          {row.usage.total_tokens} <span className="text-[10px] text-mg-text-2">({row.usage.input_tokens}p/{row.usage.output_tokens}c)</span>
-                        </span>
+                        <div className="space-y-0.5">
+                          <div className="text-mg-text-2">{t('logs.table.tokenTotal')} <strong className="text-mg-text-0 tabular-nums">{row.usage.total_tokens}</strong></div>
+                          <div className="text-mg-text-2">{t('logs.table.tokenInput')} <strong className="text-mg-text-0 tabular-nums">{row.usage.input_tokens}</strong></div>
+                          <div className="text-mg-text-2">{t('logs.table.tokenOutput')} <strong className="text-mg-text-0 tabular-nums">{row.usage.output_tokens}</strong></div>
+                        </div>
                       ) : (
                         <span className="text-mg-text-2">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="font-mono text-xs text-mg-text-1 tabular-nums">
-                      {Number(row.cost.amount) > 0
-                        ? `${row.cost.currency} ${Number(row.cost.amount).toFixed(6)}`
-                        : <span className="text-mg-text-2">—</span>}
+                    <TableCell className="font-mono text-xs tabular-nums whitespace-nowrap">
+                      {Number(row.cost.amount) > 0 ? (
+                        <span className="text-mg-text-0 font-semibold">{row.cost.currency} {Number(row.cost.amount).toFixed(6)}</span>
+                      ) : (
+                        <span className="text-mg-text-2">—</span>
+                      )}
                     </TableCell>
-                    <TableCell className="text-xs text-mg-text-1 font-medium">
-                      {row.api_key.name || <span className="text-mg-text-2">—</span>}
+                    <TableCell className="font-mono text-xs text-mg-text-1 tabular-nums whitespace-nowrap">
+                      {(row.speed.first_token_ms / 1000).toFixed(2)}s
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-mg-text-1 tabular-nums whitespace-nowrap">
+                      {(row.duration_ms / 1000).toFixed(2)}s
+                    </TableCell>
+                    <TableCell>
+                      {getStatusBadge(row)}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -473,15 +483,8 @@ export default function LogsPage() {
               <DetailRow label={t('logs.detail.time')} value={formatDateTime(selectedLog.started_at)} />
               <DetailRow label={t('logs.detail.apiKeyName')} value={selectedLog.api_key.name || '—'} />
               <DetailRow label={t('logs.detail.tokens')} value={selectedLog.usage ? `${selectedLog.usage.total_tokens} (Prompt: ${selectedLog.usage.input_tokens} / Completion: ${selectedLog.usage.output_tokens})` : '—'} />
-              <DetailRow label="账号 ID" value={selectedLog.account.account_id || '—'} mono />
-              <DetailRow label="租户 ID" value={selectedLog.tenant_id || '—'} mono />
-              <DetailRow label="工作区 ID" value={selectedLog.workspace_id || '—'} mono />
-              <DetailRow label="API Key ID" value={selectedLog.api_key.api_key_id || '—'} mono />
               <DetailRow label="追踪 ID" value={selectedLog.trace_id || '—'} mono />
-              <DetailRow label="供应商" value={selectedLog.provider.name || '—'} />
               <DetailRow label="请求模型" value={selectedLog.requested_model || '—'} />
-              <DetailRow label="上游模型" value={selectedLog.upstream_model || '—'} />
-              <DetailRow label="端点" value={selectedLog.path || '—'} mono />
               <DetailRow label="调用类型" value={selectedLog.call_type || '—'} />
               <DetailRow label="HTTP 状态" value={selectedLog.http_status ? String(selectedLog.http_status) : '—'} mono />
               <DetailRow label="计费状态" value={selectedLog.billing_status || '—'} />

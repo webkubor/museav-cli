@@ -22,7 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.requirements.json
 .antigravitycli/
 
 # Browser automation / temporary screenshots

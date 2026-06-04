@@ -1,0 +1,1122 @@
+[
+  {
+    "id": "req-1779949028115",
+    "title": "金额输出统一约束小数点精度",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-05-28T06:17:08.115Z",
+    "gitlabIid": 66,
+    "gitlabLabels": [
+      "前端就绪",
+      "已认领"
+    ]
+  },
+  {
+    "id": "req-1779957107620",
+    "title": "新增模型体验模块",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-05-28T08:31:47.620Z",
+    "gitlabIid": 63,
+    "gitlabLabels": [
+      "TASK",
+      "前端就绪",
+      "已认领"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "req-1779954121499",
+    "title": "预算策略修改- 按照openrouter",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T07:42:01.499Z",
+    "gitlabIid": 57,
+    "gitlabLabels": [
+      "TASK",
+      "前端就绪",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "req-1779954223438",
+    "title": "添加转发目标创建目标异常",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-05-28T07:43:43.439Z",
+    "gitlabIid": 58,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "req-1779954419371",
+    "title": "邀请链接加入一个失效的时间配置",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T07:46:59.371Z"
+  },
+  {
+    "id": "req-1779954684936",
+    "title": "删除域名配置功能",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T07:51:24.936Z"
+  },
+  {
+    "id": "req-1779955335312",
+    "title": "企业组织，创建 apikey，可以选择个人，工作区，成员",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-05-28T08:02:15.312Z",
+    "gitlabIid": 14,
+    "gitlabLabels": [
+      "TASK",
+      "前端就绪"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "req-1779955930788",
+    "title": "工作区内普通成员，不能设置护栏",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T08:12:10.788Z"
+  },
+  {
+    "id": "req-1779959123625",
+    "title": "加入一个菜单级权限开控制",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T09:05:23.625Z"
+  },
+  {
+    "id": "req-1780036407620",
+    "title": "可观测性去除失败记录",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-29T06:33:27.620Z",
+    "gitlabIid": 19,
+    "gitlabLabels": [
+      "TASK"
+    ]
+  },
+  {
+    "id": "req-1780044583969",
+    "title": "护栏=配额管理，工作区=项目,组织改为企业",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-29T08:49:43.969Z",
+    "gitlabIid": 67,
+    "gitlabLabels": [
+      "TASK",
+      "已认领"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "req-1780044690273",
+    "title": "菜单加入IP白名单",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-29T08:51:30.273Z"
+  },
+  {
+    "id": "req-1780045149338",
+    "title": "创建 api 删除环境配置",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-29T08:59:09.338Z"
+  },
+  {
+    "id": "req-1780045276522",
+    "title": "护栏详情内，apikey 可以反向绑定外部护栏规则",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-29T09:01:16.522Z",
+    "gitlabIid": 68,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "req-1780045325941",
+    "title": "护栏加入模型白名单，IP 白名单",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-29T09:02:05.941Z",
+    "gitlabIid": 69,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ]
+  },
+  {
+    "id": "req-1780046626790",
+    "title": "邀请配置：加入工作区选择-默认配置就是组织的工作区-默认工作区",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-29T09:23:46.790Z",
+    "gitlabIid": 70,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "req-1780047351494",
+    "title": "组织链接邀请成员，不需要组织成员同意，不选工作区，默认进入默认分组",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-05-29T09:35:51.494Z",
+    "gitlabIid": 71,
+    "gitlabLabels": [
+      "TASK",
+      "已认领"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "req-1780047701141",
+    "title": "新增组织后，该组织有个默认护栏",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-05-29T09:41:41.141Z",
+    "gitlabIid": 72,
+    "gitlabLabels": [
+      "TASK",
+      "已认领"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-65",
+    "title": "测试 gitlab 同步",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T10:02:45.234Z",
+    "gitlabIid": 65,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-64",
+    "title": "加入一个菜单级权限开控制",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T09:56:14.780Z",
+    "gitlabIid": 64,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-62",
+    "title": "工作区内普通成员，不能设置护栏",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T09:56:14.095Z",
+    "gitlabIid": 62,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-61",
+    "title": "企业组织，创建 apikey，可以选择个人，工作区，成员",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T09:56:13.390Z",
+    "gitlabIid": 61,
+    "gitlabLabels": [
+      "已认领"
+    ]
+  },
+  {
+    "id": "gl-60",
+    "title": "删除域名配置功能",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T09:56:13.002Z",
+    "gitlabIid": 60,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-59",
+    "title": "邀请链接加入一个失效的时间配置",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T09:56:12.651Z",
+    "gitlabIid": 59,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-56",
+    "title": "金额单位的硬编码问题，所有的金额单位走api",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T09:56:10.544Z",
+    "gitlabIid": 56,
+    "gitlabLabels": [
+      "TASK",
+      "前端就绪",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-55",
+    "title": "需要展示美元余额",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T08:44:46.216Z",
+    "gitlabIid": 55,
+    "gitlabLabels": [
+      "已认领"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-54",
+    "title": "[platform_config] 补充自动化测试和大陆/国际版回归验收矩阵",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-05-28T04:25:01.256Z",
+    "gitlabIid": 54,
+    "gitlabLabels": [
+      "TASK"
+    ]
+  },
+  {
+    "id": "gl-53",
+    "title": "[platform_config] 实现配置管理、默认种子数据和迁移脚本",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-05-28T04:24:45.332Z",
+    "gitlabIid": 53,
+    "gitlabLabels": [
+      "TASK"
+    ]
+  },
+  {
+    "id": "gl-52",
+    "title": "[platform_config] 改造全局配置接口并统一前端消费契约",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-05-28T04:24:45.250Z",
+    "gitlabIid": 52,
+    "gitlabLabels": [
+      "TASK"
+    ]
+  },
+  {
+    "id": "gl-51",
+    "title": "[platform_config] 将 OAuth provider 配置接入登录注册和账号绑定",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-05-28T04:24:45.039Z",
+    "gitlabIid": 51,
+    "gitlabLabels": [
+      "TASK"
+    ]
+  },
+  {
+    "id": "gl-50",
+    "title": "[platform_config] 梳理现有表结构、配置语义和业务影响面",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-05-28T04:24:44.968Z",
+    "gitlabIid": 50,
+    "gitlabLabels": [
+      "TASK"
+    ]
+  },
+  {
+    "id": "gl-49",
+    "title": "[platform_config] 设计平台版本、市场区域和配置作用域数据模型",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-05-28T04:23:45.935Z",
+    "gitlabIid": 49,
+    "gitlabLabels": [
+      "TASK"
+    ]
+  },
+  {
+    "id": "gl-48",
+    "title": "[platform_config] 实现平台配置解析服务和请求上下文绑定",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-05-28T04:23:45.227Z",
+    "gitlabIid": 48,
+    "gitlabLabels": [
+      "TASK"
+    ]
+  },
+  {
+    "id": "gl-47",
+    "title": "[platform_config] 将币种和支付方式配置接入账单与支付接口",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-05-28T04:23:45.209Z",
+    "gitlabIid": 47,
+    "gitlabLabels": [
+      "TASK"
+    ]
+  },
+  {
+    "id": "gl-46",
+    "title": "platform_config表是一个掌管全局的配置表。",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T04:13:46.541Z",
+    "gitlabIid": 46,
+    "gitlabLabels": [
+      "TASK"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-45",
+    "title": "新建供应商实例报错",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-05-28T02:52:59.397Z",
+    "gitlabIid": 45,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-44",
+    "title": "个人账户 隐藏工作区的邀请菜单",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T02:30:36.278Z",
+    "gitlabIid": 44,
+    "gitlabLabels": [
+      "TASK",
+      "前端就绪",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-43",
+    "title": "[冒烟测试问题列表] 2、邀请页面邀请，没有收到链接。",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-05-28T01:32:18.610Z",
+    "gitlabIid": 43,
+    "gitlabLabels": [
+      "BUG"
+    ]
+  },
+  {
+    "id": "gl-42",
+    "title": "[冒烟测试问题列表] 1、组织页面邀请功能不可用，如图：还在开发中",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-05-28T01:32:16.700Z",
+    "gitlabIid": 42,
+    "gitlabLabels": [
+      "BUG"
+    ]
+  },
+  {
+    "id": "gl-41",
+    "title": "[冒烟测试问题列表] 3、https://test.modelgo.com/models 点击第一个模型去首页了。【下个版本修复】",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-05-28T01:32:15.277Z",
+    "gitlabIid": 41,
+    "gitlabLabels": [
+      "BUG"
+    ]
+  },
+  {
+    "id": "gl-40",
+    "title": "[冒烟测试问题列表] 4、隐私政策页面文字不清晰：https://test.modelgo.com/legal/privacy【下个版本修复】",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-05-28T01:32:13.491Z",
+    "gitlabIid": 40,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-39",
+    "title": "[冒烟测试问题列表] 5、第一步需要验证账号的有效性：【下个版本修复】",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-05-28T01:32:12.351Z",
+    "gitlabIid": 39,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-38",
+    "title": "[冒烟测试问题列表] 6、新建单个模型计费规则跟全局计费冲突，是如何处理的？",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-05-28T01:32:10.432Z",
+    "gitlabIid": 38,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-37",
+    "title": "[冒烟测试问题列表] 7、字段名称不对：",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-05-28T01:32:09.035Z",
+    "gitlabIid": 37,
+    "gitlabLabels": [
+      "BUG"
+    ]
+  },
+  {
+    "id": "gl-36",
+    "title": "[冒烟测试问题列表] 8、策略管理同时只有一个生效，还是所有的都生效？",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-05-28T01:32:07.192Z",
+    "gitlabIid": 36,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-35",
+    "title": "[冒烟测试问题列表] 9、隐藏之后就不要复制按钮了：",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-05-28T01:32:05.558Z",
+    "gitlabIid": 35,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-34",
+    "title": "[冒烟测试问题列表] 10、生成key后缺少复制按钮：",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-05-28T01:32:03.735Z",
+    "gitlabIid": 34,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-33",
+    "title": "[5.27问题列表] 2、用户后台一直报错，如图：",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-05-28T01:32:01.929Z",
+    "gitlabIid": 33,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-32",
+    "title": "[冒烟测试问题列表] 14、workspace 有 2种作用范围的key：Me，Workspace。测试需要补充不同权限登录后台的场景。",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-05-28T01:32:00.356Z",
+    "gitlabIid": 32,
+    "gitlabLabels": [
+      "BUG",
+      "进行中"
+    ]
+  },
+  {
+    "id": "gl-31",
+    "title": "[冒烟测试问题列表] 12、图片生成/音频转写/TTS 接口没有。dealy",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-05-28T01:31:59.268Z",
+    "gitlabIid": 31,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-30",
+    "title": "[冒烟测试问题列表] 11、配置了一个全流程，apikey调用报错：",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-05-28T01:31:58.091Z",
+    "gitlabIid": 30,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-29",
+    "title": "[冒烟测试问题列表] 13、缺少组织管理-创建/更改/邀请。个人账号也可以创建组织。",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-05-28T01:31:57.347Z",
+    "gitlabIid": 29,
+    "gitlabLabels": [
+      "BUG"
+    ]
+  },
+  {
+    "id": "gl-28",
+    "title": "[5.27问题列表] 1、前台新注册用户绑定的策略不是默认策略。yjfkktw账号。",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-05-28T01:31:56.602Z",
+    "gitlabIid": 28,
+    "gitlabLabels": [
+      "BUG",
+      "进行中"
+    ]
+  },
+  {
+    "id": "gl-27",
+    "title": "[5.27问题列表] 3、调用外部的模型名称如何修改，一直报错：",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-05-28T01:31:55.459Z",
+    "gitlabIid": 27,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-26",
+    "title": "[5.27问题列表] 4、货币没有统一。",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-05-28T01:31:54.281Z",
+    "gitlabIid": 26,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-25",
+    "title": "[5.27问题列表] 5、账单明细没有数据",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-05-28T01:31:51.582Z",
+    "gitlabIid": 25,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-24",
+    "title": "[5.27问题列表] 6、本月消费没有数据，平均相应时长也没有：",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-05-28T01:31:49.800Z",
+    "gitlabIid": 24,
+    "gitlabLabels": [
+      "BUG",
+      "进行中"
+    ]
+  },
+  {
+    "id": "gl-23",
+    "title": "[5.27问题列表] 7、工作区域 无法邀请。",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-05-28T01:31:48.089Z",
+    "gitlabIid": 23,
+    "gitlabLabels": [
+      "BUG"
+    ]
+  },
+  {
+    "id": "gl-22",
+    "title": "[5.27问题列表] 8、key 最近30天消费数据为空，事实上有数据。",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-05-28T01:31:46.424Z",
+    "gitlabIid": 22,
+    "gitlabLabels": [
+      "BUG",
+      "进行中"
+    ]
+  },
+  {
+    "id": "gl-21",
+    "title": "[5.27问题列表] 9、规则试算没有叠加规则，如图：",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-05-28T01:31:44.308Z",
+    "gitlabIid": 21,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-20",
+    "title": "一个全局接口获取当前域名的币种，支付方式，第三方社交账户绑定关系等，全局性市场相关的配置",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T01:31:41.615Z",
+    "gitlabIid": 20,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-18",
+    "title": "工作区不需要邀请功能，只需要 可以拉取组织里的人",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T01:31:40.146Z",
+    "gitlabIid": 18,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-17",
+    "title": "账单- 一个页面管理付费和记录",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T01:31:39.435Z",
+    "gitlabIid": 17,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-16",
+    "title": "一个人有组织的角色，owner 需要标识， 一个人最多关联 5 个组织",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T01:31:38.749Z",
+    "gitlabIid": 16,
+    "gitlabLabels": [
+      "TASK",
+      "前端就绪",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-15",
+    "title": "普通用户- 切换组织-没有账单-保持一致",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T01:31:38.022Z",
+    "gitlabIid": 15,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-13",
+    "title": "字段里apikey 的消费是：累计消费金额",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T01:31:36.612Z",
+    "gitlabIid": 13,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-12",
+    "title": "组织管理；通用配置：域名校验（添加域名以验证。拥有该域名电子邮件地址的用户可以自动加入组织或申请加入，注册的时候，新用户自动加入该组织），组织头像更新功能",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T01:30:55.397Z",
+    "gitlabIid": 12,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-11",
+    "title": "工作区的左侧菜单+ 个人账户下的菜单视角",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T01:30:54.678Z",
+    "gitlabIid": 11,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-10",
+    "title": "界面语言放到顶部，时区，语言按照浏览器配置，偏好设置不要了",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T01:30:54.011Z",
+    "gitlabIid": 10,
+    "gitlabLabels": [
+      "TASK"
+    ]
+  },
+  {
+    "id": "gl-9",
+    "title": "组织区的链接邀请，点击进入后没有工作区的选择",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T01:30:53.338Z",
+    "gitlabIid": 9,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-8",
+    "title": "工作区-成员管理-这里需要一个弹窗，【admin，owner】拉组织内的成员",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T01:30:52.610Z",
+    "gitlabIid": 8,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-7",
+    "title": "发票信息-国内有，国外没有",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T01:30:51.928Z",
+    "gitlabIid": 7,
+    "gitlabLabels": [
+      "TASK",
+      "已认领"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-6",
+    "title": "主题切换先不做",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T01:30:51.214Z",
+    "gitlabIid": 6,
+    "gitlabLabels": [
+      "TASK"
+    ]
+  },
+  {
+    "id": "gl-5",
+    "title": "上游池负载均衡功能测试",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T01:30:50.444Z",
+    "gitlabIid": 5,
+    "gitlabLabels": []
+  },
+  {
+    "id": "gl-4",
+    "title": "限流规则测试",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T01:30:49.688Z",
+    "gitlabIid": 4,
+    "gitlabLabels": []
+  },
+  {
+    "id": "gl-3",
+    "title": "亲和规则测试",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-05-28T01:02:48.798Z",
+    "gitlabIid": 3,
+    "gitlabLabels": []
+  },
+  {
+    "id": "gl-2",
+    "title": "认领",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-28T00:57:59.927Z",
+    "gitlabIid": 2,
+    "gitlabLabels": []
+  },
+  {
+    "id": "gl-1",
+    "title": "test1",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-27T12:09:34.383Z",
+    "gitlabIid": 1,
+    "gitlabLabels": []
+  },
+  {
+    "id": "gl-2",
+    "title": "认领",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-27T11:57:19.428Z",
+    "gitlabIid": 2,
+    "gitlabLabels": []
+  },
+  {
+    "id": "gl-1",
+    "title": "test1",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-05-26T02:01:44.472Z",
+    "gitlabIid": 1,
+    "gitlabLabels": []
+  },
+  {
+    "id": "req-1780294522906",
+    "title": "还缺个组织头像上传的接口：组织 logo 不支持更换",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-01T06:15:22.906Z"
+  },
+  {
+    "id": "req-1780383436570",
+    "title": "退出登录后，修改url直接刷新页面session 有效，还能进入页面看数据",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-06-02T06:57:16.570Z",
+    "gitlabIid": 74,
+    "gitlabLabels": [
+      "TASK",
+      "已认领"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "req-1780489421606",
+    "title": "[需求] 充值记录-删除操作列表",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-03T12:23:41.606Z"
+  },
+  {
+    "id": "req-1780489442903",
+    "title": "[需求] 删除模型体验的，免费额度进度条",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-03T12:24:02.903Z"
+  },
+  {
+    "id": "req-1780489614920",
+    "title": "[需求] 去除活跃人数统计",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-03T12:26:54.920Z"
+  },
+  {
+    "id": "req-1780490778711",
+    "title": "[需求] 可观测性=采样率+apikey 过滤+ 隐私开关",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-03T12:46:18.712Z"
+  },
+  {
+    "id": "req-1780495739244",
+    "title": "[需求] 官网-国外 X402,国内 支付宝 Ai 付",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-06-03T14:08:59.244Z"
+  },
+  {
+    "id": "req-1780495937874",
+    "title": "[需求] 奖励流水",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-06-03T14:12:17.874Z"
+  },
+  {
+    "id": "req-1780496015676",
+    "title": "[需求] 日志列表优化，token 消耗，cost",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-03T14:13:35.676Z"
+  },
+  {
+    "id": "gl-84",
+    "title": "多个钱包 信用钱包和促销钱包在极端情况下消耗切换的时候一个消费记录切分成两部分计费",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-06-02T09:18:48.748Z",
+    "gitlabIid": 84,
+    "gitlabLabels": []
+  },
+  {
+    "id": "gl-83",
+    "title": "[Controller需求] QA-01 端到端验收与测试环境部署",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-02T08:19:43.962Z",
+    "gitlabIid": 83,
+    "gitlabLabels": [
+      "controller",
+      "task"
+    ]
+  },
+  {
+    "id": "gl-82",
+    "title": "[Controller需求] WEB-03 console-web：菜单渲染接入 session.permissions",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-02T08:19:43.676Z",
+    "gitlabIid": 82,
+    "gitlabLabels": [
+      "controller",
+      "task"
+    ]
+  },
+  {
+    "id": "gl-81",
+    "title": "[Controller需求] WEB-02 controller-web：运营/菜单权限管理 矩阵页面",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-02T08:19:43.364Z",
+    "gitlabIid": 81,
+    "gitlabLabels": [
+      "controller",
+      "task"
+    ]
+  },
+  {
+    "id": "gl-80",
+    "title": "[Controller需求] WEB-01 controller-web：菜单权限 API client + hooks",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-02T08:19:43.084Z",
+    "gitlabIid": 80,
+    "gitlabLabels": [
+      "controller",
+      "task"
+    ]
+  },
+  {
+    "id": "gl-79",
+    "title": "[Controller需求] PERM-01 permissions：权限解析切换为 DB 权威数据源",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-02T08:19:42.792Z",
+    "gitlabIid": 79,
+    "gitlabLabels": [
+      "controller",
+      "task"
+    ]
+  },
+  {
+    "id": "gl-78",
+    "title": "[Controller需求] CTRL-03 controller：共享库 DDL 契约同步（authz 目录表）",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-02T08:19:42.488Z",
+    "gitlabIid": 78,
+    "gitlabLabels": [
+      "controller",
+      "task"
+    ]
+  },
+  {
+    "id": "gl-77",
+    "title": "[Controller需求] CTRL-02 controller：角色×菜单绑定写入 API（含审计）",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-02T08:19:42.168Z",
+    "gitlabIid": 77,
+    "gitlabLabels": [
+      "controller",
+      "task"
+    ]
+  },
+  {
+    "id": "gl-76",
+    "title": "[Controller需求] CTRL-01 controller：菜单权限目录与矩阵读取 API",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-02T08:19:41.015Z",
+    "gitlabIid": 76,
+    "gitlabLabels": [
+      "controller",
+      "task"
+    ]
+  },
+  {
+    "id": "gl-75",
+    "title": "[Controller需求] 运营后台·菜单权限管理（RBAC 角色×菜单绑定配置）",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-02T08:19:40.187Z",
+    "gitlabIid": 75,
+    "gitlabLabels": [
+      "controller",
+      "feature"
+    ]
+  },
+  {
+    "id": "gl-73",
+    "title": "xxx",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-06-02T01:24:45.058Z",
+    "gitlabIid": 73,
+    "gitlabLabels": [
+      "TASK",
+      "已认领"
+    ],
+    "assignee": "webkubor"
+  }
+]

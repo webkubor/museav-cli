@@ -1,6 +1,8 @@
 import { LuReceipt, LuX, LuHistory, LuGift } from 'react-icons/lu'
-import { useState } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
+import './billing.css'
+import type { RechargeOrder } from '@/types'
 import { useTranslation } from 'react-i18next'
 import {
   getBalance,
@@ -236,7 +238,7 @@ function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                 <button
                   key={c.value}
                   type="button"
-                  onClick={() => setChannel(c.value as any)}
+                  onClick={() => setChannel(c.value as 'alipay' | 'wechat' | 'stripe')}
                   className={channelClasses(c.value)}
                 >
                   <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
@@ -266,9 +268,9 @@ function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
 
 interface OrderReceiptDrawerProps {
   isOpen: boolean
-  order: any
+  order: RechargeOrder
   onClose: () => void
-  cancelMutation: any
+  cancelMutation: { isPending: boolean; mutate: (orderNo: string) => void }
   labels: Record<string, string>
 }
 
@@ -351,11 +353,11 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
                   {order.currency} {order.amount}
                 </span>
               </div>
-              {order.credited && (
+              {order.credited_amount && (
                 <div className="flex justify-between gap-4">
                   <span className="text-mg-text-3">{t('billing.orders.detail.credited')}:</span>
                   <span className="text-emerald-500 font-extrabold">
-                    {order.currency} {order.credited.amount}
+                    {order.currency} {order.credited_amount}
                   </span>
                 </div>
               )}
@@ -464,13 +466,41 @@ export default function BillingPage() {
   const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null)
 
   const rc = i18n.language.startsWith('zh') ? referralCopy.zh : referralCopy.en
+  
   const cardCls = (active: boolean) =>
     cn(
-      'rounded-xl border p-4 space-y-1.5 text-left w-full transition-all cursor-pointer outline-none',
-      active
-        ? 'border-brand-base bg-brand-glow/5 ring-1 ring-brand-base/20'
-        : 'border-mg-border/60 bg-mg-fill-0/30 hover:border-mg-border hover:bg-mg-fill-0/50'
+      'billing-glow-card p-4 space-y-1.5 text-left w-full cursor-pointer outline-none select-none',
+      active ? 'active' : ''
     )
+
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 })
+
+  const tabs = useMemo(() => [
+    { key: 'main' as const, label: t('billing.orders.tab.recharge', { defaultValue: '充值记录' }) },
+    { key: 'gift' as const, label: t('billing.orders.tab.gift', { defaultValue: '赠送余额明细' }) },
+    { key: 'reward' as const, label: t('billing.orders.tab.reward', { defaultValue: '奖励记录' }) },
+  ], [t])
+
+  useEffect(() => {
+    const handleResize = () => {
+      const activeIndex = tabs.findIndex((tab) => tab.key === activeTab)
+      const activeEl = tabRefs.current[activeIndex]
+      if (activeEl) {
+        setUnderlineStyle({
+          left: activeEl.offsetLeft,
+          width: activeEl.offsetWidth,
+        })
+      }
+    }
+    
+    const timer = setTimeout(handleResize, 50)
+    window.addEventListener('resize', handleResize)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [activeTab, tabs])
 
   const { symbol: currencySymbol } = useCurrency()
   const qc = useQueryClient()
@@ -589,27 +619,39 @@ export default function BillingPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* 主余额 → 充值记录 */}
           <button type="button" onClick={() => setActiveTab('main')} className={cardCls(activeTab === 'main')}>
+            <div className="shimmer-light" />
             <div className="text-xs text-mg-text-2">{t('billing.balance.mainBalance')}</div>
-            <div className="text-base font-bold text-mg-text-0 tabular-nums">
-              {currencySymbol}{formatBalance(breakdown?.main.amount).main}
+            <div className="flex items-baseline gap-0.5 mt-1 select-none">
+              <span className="text-xs font-semibold text-mg-text-2">{currencySymbol}</span>
+              <span className="text-lg font-bold text-mg-text-0 tabular-nums balance-amount">
+                {formatBalance(breakdown?.main.amount).main}
+              </span>
             </div>
             <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.mainHint')}</div>
           </button>
 
           {/* 赠送余额 → 赠送明细 */}
           <button type="button" onClick={() => setActiveTab('gift')} className={cardCls(activeTab === 'gift')}>
+            <div className="shimmer-light" />
             <div className="text-xs text-mg-text-2">{t('billing.balance.giftBalance')}</div>
-            <div className="text-base font-bold text-mg-text-0 tabular-nums">
-              {currencySymbol}{formatBalance(breakdown?.gift.amount).main}
+            <div className="flex items-baseline gap-0.5 mt-1 select-none">
+              <span className="text-xs font-semibold text-mg-text-2">{currencySymbol}</span>
+              <span className="text-lg font-bold text-mg-text-0 tabular-nums balance-amount">
+                {formatBalance(breakdown?.gift.amount).main}
+              </span>
             </div>
             <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.giftHint')}</div>
           </button>
 
           {/* 奖励余额 → 奖励记录 */}
           <button type="button" onClick={() => setActiveTab('reward')} className={cardCls(activeTab === 'reward')}>
+            <div className="shimmer-light" />
             <div className="text-xs text-mg-text-2">{t('billing.balance.rewardBalance')}</div>
-            <div className="text-base font-bold text-mg-text-0 tabular-nums">
-              {currencySymbol}{formatBalance(breakdown?.reward.amount).main}
+            <div className="flex items-baseline gap-0.5 mt-1 select-none">
+              <span className="text-xs font-semibold text-mg-text-2">{currencySymbol}</span>
+              <span className="text-lg font-bold text-mg-text-0 tabular-nums balance-amount">
+                {formatBalance(breakdown?.reward.amount).main}
+              </span>
             </div>
             <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.rewardHint')}</div>
           </button>
@@ -652,21 +694,28 @@ export default function BillingPage() {
         </form>
       </div>
 
-      {/* 4. Tab 切换（与上方余额卡片联动，点卡片或点 Tab 都可切换） */}
-      <div className="border-b border-mg-border/60 flex gap-6">
-        {([
-          { key: 'main', label: t('billing.orders.tab.recharge', { defaultValue: '充值记录' }) },
-          { key: 'gift', label: t('billing.orders.tab.gift', { defaultValue: '赠送余额明细' }) },
-          { key: 'reward', label: t('billing.orders.tab.reward', { defaultValue: '奖励记录' }) },
-        ] as { key: BalanceTab; label: string }[]).map((tab) => (
+      {/* 4. Tab 切换（与上方余额卡片联动，点卡片和点 Tab 都可切换） */}
+      <div className="relative p-1 bg-mg-fill-0/50 border border-mg-border/30 rounded-xl flex gap-1 w-fit select-none">
+        {/* 滑动背景胶囊 */}
+        <div
+          className="absolute top-1 bottom-1 bg-card-bg shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.3)] border border-mg-border/50 rounded-lg transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] z-0"
+          style={{
+            left: underlineStyle.left,
+            width: underlineStyle.width,
+          }}
+        />
+        {tabs.map((tab, idx) => (
           <button
             key={tab.key}
+            ref={(el) => {
+              tabRefs.current[idx] = el
+            }}
             onClick={() => setActiveTab(tab.key)}
             className={cn(
-              'pb-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px cursor-pointer outline-none',
+              'px-4 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer outline-none z-10 select-none',
               activeTab === tab.key
-                ? 'border-brand-base text-brand-base'
-                : 'border-transparent text-mg-text-2 hover:text-mg-text-1'
+                ? 'text-brand-base'
+                : 'text-mg-text-2 hover:text-mg-text-1'
             )}
           >
             {tab.label}
@@ -675,7 +724,8 @@ export default function BillingPage() {
       </div>
 
       {/* 5. 列表区 */}
-      {activeTab === 'main' ? (
+      <div key={activeTab} className="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+        {activeTab === 'main' ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* 左：订单表格 */}
           <div className="lg:col-span-2 rounded-2xl border border-mg-border bg-card-bg shadow-sm overflow-hidden">
@@ -715,8 +765,8 @@ export default function BillingPage() {
                           key={record.order_no}
                           onClick={() => setSelectedOrderNo(record.order_no === selectedOrderNo ? null : record.order_no)}
                           className={cn(
-                            'border-b border-mg-border/40 hover:bg-mg-fill-0/30 transition-colors cursor-pointer',
-                            selectedOrderNo === record.order_no ? 'bg-brand-glow/5' : ''
+                            'border-b border-mg-border/40 cursor-pointer billing-table-row',
+                            selectedOrderNo === record.order_no ? 'active' : ''
                           )}
                         >
                           <td className="py-3.5 px-4 font-mono text-xs text-mg-text-1 max-w-[140px] truncate">{record.order_no}</td>
@@ -725,15 +775,20 @@ export default function BillingPage() {
                               variant="outline"
                               className={cn(
                                 'text-[10px] py-0.5 px-2.5 font-bold rounded-full',
-                                isPaid ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-500' :
-                                isPending ? 'border-amber-500/20 bg-amber-500/5 text-amber-500' :
+                                isPaid ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-500 badge-glow-paid' :
+                                isPending ? 'border-amber-500/20 bg-amber-500/5 text-amber-500 badge-glow-pending animate-pulse' :
                                 'border-mg-border text-mg-text-3'
                               )}
                             >
                               {labels[record.status] || record.status}
                             </Badge>
                           </td>
-                          <td className="py-3.5 px-4 text-xs font-bold text-mg-text-0 font-mono">{record.currency} {record.amount}</td>
+                          <td className={cn(
+                            'py-3.5 px-4 text-xs font-bold font-mono',
+                            isPaid ? 'text-emerald-500' : isPending ? 'text-amber-500' : 'text-mg-text-0'
+                          )}>
+                            {record.currency} {record.amount}
+                          </td>
                           <td className="py-3.5 px-4 text-xs text-mg-text-2 font-mono">{formatDateTime(record.paid_at)}</td>
                         </tr>
                       )
@@ -767,53 +822,109 @@ export default function BillingPage() {
                 <p className="text-xs text-mg-text-2">{t('billing.orders.detailPlaceholder', { defaultValue: '点击左侧订单查看详情' })}</p>
               </div>
             ) : (
-              <div className="space-y-3 text-xs">
-                <div className="flex justify-between items-start gap-2">
-                  <span className="text-mg-text-2 shrink-0">{t('billing.orders.detail.orderNo')}:</span>
-                  <span className="font-mono font-bold text-mg-text-0 text-right break-all">{selectedOrder.order_no}</span>
-                </div>
-                <div className="flex justify-between items-center gap-2">
-                  <span className="text-mg-text-2 shrink-0">{t('billing.orders.detail.status')}:</span>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      'text-[10px] py-0.5 px-2.5 font-bold rounded-full',
-                      selectedOrder.status === 'paid' ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-500' :
-                      selectedOrder.status === 'pending' ? 'border-amber-500/20 bg-amber-500/5 text-amber-500' :
-                      'border-mg-border text-mg-text-3'
+              <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
+                {/* 仿真发票小票 */}
+                <div className="receipt-container-mini relative p-5 space-y-4">
+                  {/* 顶部齿线 */}
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-[linear-gradient(to_right,var(--mg-border)_50%,transparent_50%)] bg-[size:10px_100%]" />
+                  
+                  {/* 发票标头 */}
+                  <div className="text-center pt-1 pb-3 border-b border-dashed border-mg-border/80 space-y-1">
+                    <div className="text-[9px] font-bold text-brand-base uppercase tracking-widest">
+                      ModelGo Ledger
+                    </div>
+                    <div className="text-xs font-mono font-bold tracking-tight text-mg-text-0">
+                      {t('billing.orders.detail.receiptTitle')}
+                    </div>
+                  </div>
+
+                  {/* 状态大标 */}
+                  <div className="flex flex-col items-center py-1 space-y-1">
+                    <span className={cn(
+                      "text-[10px] font-bold px-2.5 py-0.5 rounded-full border",
+                      selectedOrder.status === 'paid' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500 badge-glow-paid" :
+                      selectedOrder.status === 'pending' ? "bg-amber-500/10 border-amber-500/20 text-amber-500 badge-glow-pending animate-pulse" :
+                      "bg-mg-fill-0 border-mg-border text-mg-text-3"
+                    )}>
+                      {labels[selectedOrder.status] || selectedOrder.status}
+                    </span>
+                  </div>
+
+                  {/* 发票内容 */}
+                  <div className="font-mono text-[11px] space-y-3 border-t border-b border-dashed border-mg-border/80 py-3.5 text-mg-text-1">
+                    <div className="flex justify-between gap-3">
+                      <span className="text-mg-text-3">{t('billing.orders.detail.orderNo')}:</span>
+                      <span className="text-mg-text-0 font-bold select-all truncate max-w-[130px]" title={selectedOrder.order_no}>
+                        {selectedOrder.order_no}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-mg-text-3">{t('billing.orders.detail.amount')}:</span>
+                      <span className="text-mg-text-0 font-extrabold text-xs">
+                        {selectedOrder.currency} {selectedOrder.amount}
+                      </span>
+                    </div>
+                    {selectedOrder.credited_amount && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-mg-text-3">{t('billing.orders.detail.credited')}:</span>
+                        <span className="text-emerald-500 font-extrabold">
+                          {selectedOrder.currency} {selectedOrder.credited_amount}
+                        </span>
+                      </div>
                     )}
-                  >
-                    {labels[selectedOrder.status] || selectedOrder.status}
-                  </Badge>
+                    {selectedOrder.channel && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-mg-text-3">{t('billing.orders.detail.channel')}:</span>
+                        <span className="text-mg-text-0 uppercase font-semibold">
+                          {selectedOrder.channel}
+                        </span>
+                      </div>
+                    )}
+                    {selectedOrder.paid_at && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-mg-text-3">{t('billing.orders.detail.paidAt')}:</span>
+                        <span className="text-mg-text-2 text-[10px] text-right">
+                          {formatDateTime(selectedOrder.paid_at)}
+                        </span>
+                      </div>
+                    )}
+                    {selectedOrder.promo_code && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-mg-text-3">{t('billing.orders.detail.promo')}:</span>
+                        <span className="text-brand-base font-bold bg-brand-glow/10 px-1.5 rounded text-[10px]">
+                          {selectedOrder.promo_code}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 仿真条形码 */}
+                  <div className="flex flex-col items-center pt-1 space-y-1 select-none">
+                    <div className="h-7 w-full max-w-[150px] flex items-stretch gap-[1px] opacity-20">
+                      {[2, 1, 3, 1, 4, 2, 1, 2, 3, 1, 2, 4, 1, 3, 2, 1, 3, 4, 1, 2, 1, 3, 2, 4, 1].map((w, idx) => (
+                        <div 
+                          key={idx} 
+                          className="bg-mg-text-0 h-full rounded-sm"
+                          style={{ flexGrow: w }} 
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[7px] text-mg-text-3 font-mono tracking-widest font-semibold uppercase">
+                      * MG - {selectedOrder.order_no.slice(-6)} *
+                    </span>
+                  </div>
+
+                  {/* 底部齿线 */}
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-[linear-gradient(to_right,var(--mg-border)_50%,transparent_50%)] bg-[size:10px_100%]" />
                 </div>
-                <div className="flex justify-between items-center gap-2">
-                  <span className="text-mg-text-2 shrink-0">{t('billing.orders.detail.amount')}:</span>
-                  <span className="font-bold text-mg-text-0 font-mono">{selectedOrder.currency} {selectedOrder.amount}</span>
-                </div>
-                {selectedOrder.credited_amount && (
-                  <div className="flex justify-between items-center gap-2">
-                    <span className="text-mg-text-2 shrink-0">{t('billing.orders.detail.credited')}:</span>
-                    <span className="font-bold text-emerald-500 font-mono">{selectedOrder.currency} {selectedOrder.credited_amount}</span>
-                  </div>
-                )}
-                {selectedOrder.channel && (
-                  <div className="flex justify-between items-center gap-2">
-                    <span className="text-mg-text-2 shrink-0">{t('billing.orders.detail.channel')}:</span>
-                    <span className="font-semibold text-mg-text-0 uppercase">{selectedOrder.channel}</span>
-                  </div>
-                )}
-                {selectedOrder.paid_at && (
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="text-mg-text-2 shrink-0">{t('billing.orders.detail.paidAt')}:</span>
-                    <span className="text-mg-text-1 font-mono text-right">{formatDateTime(selectedOrder.paid_at)}</span>
-                  </div>
-                )}
-                {selectedOrder.status === 'pending' && (
-                  <div className="pt-3 border-t border-mg-border/40">
+
+                {/* 详情下方的按钮操作区 */}
+                <div className="space-y-2 pt-1">
+                  {selectedOrder.status === 'pending' && (
                     <Button
                       variant="destructive"
                       disabled={cancelMutation.isPending}
-                      className="w-full h-9 text-xs font-bold rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 transition-all"
+                      className="w-full h-9 text-xs font-bold rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 active:scale-[0.98] transition-all"
                       onClick={() => {
                         cancelMutation.mutate(selectedOrder.order_no)
                         setSelectedOrderNo(null)
@@ -821,10 +932,8 @@ export default function BillingPage() {
                     >
                       {cancelMutation.isPending ? t('billing.rechargeModal.submitting') : t('billing.orders.table.cancel')}
                     </Button>
-                  </div>
-                )}
-                {isDomestic() && selectedOrder.invoice_url && (
-                  <div className="pt-3 border-t border-mg-border/40">
+                  )}
+                  {isDomestic() && selectedOrder.invoice_url && (
                     <Button
                       variant="outline"
                       className="w-full h-9 text-xs font-bold rounded-xl border border-mg-border hover:bg-mg-fill-0 transition-all text-mg-text-1"
@@ -832,8 +941,8 @@ export default function BillingPage() {
                     >
                       {t('billing.orders.detail.viewInvoice')}
                     </Button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -895,6 +1004,7 @@ export default function BillingPage() {
           )}
         </div>
       )}
+      </div>
     </div>
   )
 }

@@ -1,0 +1,195 @@
+/* ── 💎 账单管理：余额卡片高级流光与呼吸发光 ── */
+.billing-glow-card {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--mg-border) !important;
+  background-color: var(--mg-fill-0) !important;
+  transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+.billing-glow-card:hover {
+  transform: translateY(-2px) scale(1.008);
+  border-color: color-mix(in oklch, var(--mg-border) 80%, var(--brand-base)) !important;
+  background-color: var(--mg-fill-1) !important;
+}
+
+.billing-glow-card:active {
+  transform: translateY(-1px) scale(0.985);
+  transition-duration: 0.1s !important;
+}
+
+/* 激活状态下 */
+.billing-glow-card.active {
+  border-color: transparent !important;
+  background: radial-gradient(circle at 85% 15%, var(--brand-glow) 0%, transparent 65%), var(--card-bg) !important;
+  box-shadow: 
+    0 12px 28px -6px rgba(0, 0, 0, 0.08),
+    0 0 18px -2px var(--brand-glow),
+    0 0 1px 1px var(--brand-glow) !important;
+  transform: translateY(-2px) !important;
+}
+
+body[theme-mode='dark'] .billing-glow-card.active {
+  box-shadow: 
+    0 16px 36px rgba(0, 0, 0, 0.35),
+    0 0 20px -2px var(--brand-glow),
+    0 0 1px 1px var(--brand-glow) !important;
+}
+
+/* 激活状态下的 1px 流光环绕边框 */
+.billing-glow-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-md);
+  padding: 1px;
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 15%,
+    color-mix(in oklch, var(--brand-base) 25%, transparent) 38%,
+    var(--brand-base) 50%,
+    color-mix(in oklch, var(--brand-base) 25%, transparent) 62%,
+    transparent 85%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: destination-out;
+  mask-composite: exclude;
+  animation: liquid-border 8s linear infinite;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.billing-glow-card.active::before {
+  opacity: 1;
+}
+
+/* 扫光容器 */
+.billing-glow-card .shimmer-light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.billing-glow-card.active .shimmer-light {
+  opacity: 1;
+}
+
+/* 扫光斜切滑过动画 */
+.billing-glow-card .shimmer-light::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 60%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.12),
+    transparent
+  );
+  transform: translateX(-100%) skewX(-15deg);
+}
+
+body[theme-mode='dark'] .billing-glow-card .shimmer-light::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.06),
+    transparent
+  );
+}
+
+/* 仅在激活时 Hover 触发扫光，且扫光是有节制的 2s */
+.billing-glow-card.active:hover .shimmer-light::after {
+  animation: shimmer-sweep 2s ease-in-out infinite;
+}
+
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-120%) skewX(-15deg); }
+  100% { transform: translateX(220%) skewX(-15deg); }
+}
+
+/* 金额与货币符号打磨 */
+.billing-glow-card .balance-amount {
+  font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+  transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  letter-spacing: -0.02em;
+}
+
+.billing-glow-card.active .balance-amount {
+  color: var(--brand-base) !important;
+  text-shadow: 0 0 10px var(--brand-glow);
+  transform: scale(1.03);
+  transform-origin: left center;
+}
+
+body[theme-mode='dark'] .billing-glow-card.active .balance-amount {
+  color: var(--mg-text-0) !important;
+  text-shadow: 0 0 14px var(--brand-glow);
+}
+
+/* ── 列表行指示器与 Hover / Active 状态 ── */
+.billing-table-row {
+  position: relative;
+  transition: all 0.25s ease !important;
+}
+
+.billing-table-row::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 3px;
+  border-radius: 999px;
+  background-color: var(--brand-base);
+  opacity: 0;
+  transform: scaleY(0.4);
+  transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1) !important;
+  z-index: 10;
+}
+
+.billing-table-row:hover::after,
+.billing-table-row.active::after {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.billing-table-row.active {
+  background-color: var(--brand-selected-bg) !important;
+}
+
+/* 状态徽标呼吸弥散光效 */
+.badge-glow-pending {
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.15) !important;
+}
+
+.badge-glow-paid {
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.15) !important;
+}
+
+/* 侧栏仿真发票容器 */
+.receipt-container-mini {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--mg-border);
+  background-color: rgba(var(--mg-bg-0-rgb), 0.4);
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.receipt-container-mini:hover {
+  border-color: color-mix(in oklch, var(--mg-border) 80%, var(--brand-base));
+  box-shadow: var(--shadow-md);
+}

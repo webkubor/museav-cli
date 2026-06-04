@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { ChangeEvent, MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
@@ -126,10 +126,6 @@ function ThemeColorPanel({
 }) {
   const activeColor = value.mode === 'custom' && value.base ? value.base : ''
   const [draftColor, setDraftColor] = useState(activeColor || '#6743fd')
-
-  useEffect(() => {
-    setDraftColor(activeColor || '#6743fd')
-  }, [activeColor])
 
   const selectPreset = (presetValue: string, event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault()
@@ -271,6 +267,8 @@ export function DevToolbar() {
     setMarket(m)
     // data-market 驱动品牌色/Logo，需手动同步到 <html>
     document.documentElement.dataset.market = m
+    // 市场切换用于验证国内/海外默认品牌，不应被开发态自定义主题色继续覆盖。
+    switchBrandTheme({ mode: 'default' })
   }
 
   const switchLang = (l: Lang) => {
@@ -336,7 +334,11 @@ export function DevToolbar() {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="top" align="center" className="w-[280px] p-0">
-          <ThemeColorPanel value={brandTheme} onChange={switchBrandTheme} />
+          <ThemeColorPanel
+            key={`${brandTheme.mode}:${brandTheme.base ?? ''}`}
+            value={brandTheme}
+            onChange={switchBrandTheme}
+          />
         </DropdownMenuContent>
       </DropdownMenu>
       <Seg

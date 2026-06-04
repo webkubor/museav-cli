@@ -124,6 +124,8 @@ export interface RegisterRequest {
   display_name: string
   email_code: string
   invitation_token?: string
+  /** 推荐计划返佣归属：来自专属邀请链接 signup?aff=<邀请码> */
+  referral_code?: string
 }
 
 /** 登录请求体 */

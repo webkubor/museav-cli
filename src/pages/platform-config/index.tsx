@@ -657,6 +657,12 @@ const URL_PARAM_ROWS: UrlParamRow[] = [
     why: '新用户经邀请注册时，注册即加入邀请所属组织，免去注册后再单独接受',
   },
   {
+    param: '?aff=<邀请码>',
+    module: '推荐计划（专属邀请链接）',
+    usage: '推荐计划「我的专属邀请链接」signup?aff=<邀请码>；注册时作为 register 请求体 referral_code',
+    why: '被邀请人经此链接注册后，其后续消费的返佣自动归属邀请人（消费分润）',
+  },
+  {
     param: '/invitations/:token',
     module: '组织邀请接受页',
     usage: 'path 参数，previewInvitation / acceptInvitation 使用；兼容旧 ?token= query',

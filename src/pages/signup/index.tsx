@@ -65,12 +65,15 @@ export default function SignupPage() {
     setServerError('')
     try {
       const invitationToken = searchParams.get('invitation') ?? undefined
+      // 推荐计划专属邀请链接 signup?aff=<邀请码>，注册时带上做返佣归属
+      const referralCode = searchParams.get('aff') ?? undefined
       const result = await register({
         email: data.email,
         password: data.password,
         display_name: data.display_name,
         email_code: data.email_code,
         invitation_token: invitationToken,
+        referral_code: referralCode,
       })
       setAuth(
         {

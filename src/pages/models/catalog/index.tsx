@@ -295,7 +295,7 @@ export default function ModelsCatalogPage() {
               <Tooltip
                 position={position}
                 containerClassName="w-full flex"
-                className="z-[9999] max-w-[440px] border border-emerald-500/20 shadow-[0_20px_50px_rgba(16,185,129,0.15)] bg-[#0b0d0b] text-neutral-100 p-0 rounded-2xl animate-in fade-in-0 duration-300"
+                className="z-[9999] max-w-[440px] border border-mg-border dark:border-emerald-500/20 shadow-[0_20px_50px_rgba(0,0,0,0.10)] dark:shadow-[0_20px_50px_rgba(16,185,129,0.15)] bg-white dark:bg-[#0b0d0b] text-mg-text-0 dark:text-neutral-100 p-0 rounded-2xl animate-in fade-in-0 duration-300"
                 arrowClassName={arrowClass}
                 interactive={true}
                 content={
@@ -303,14 +303,14 @@ export default function ModelsCatalogPage() {
                     {/* 头部：大图标、厂商、在线状态 */}
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="shrink-0 p-1.5 bg-[#141614] border border-neutral-800/60 rounded-xl">
+                        <div className="shrink-0 p-1.5 bg-mg-fill-0 dark:bg-[#141614] border border-mg-border dark:border-neutral-800/60 rounded-xl">
                           {vendorNode(model, 'lg')}
                         </div>
                         <div className="min-w-0">
-                          <h4 className="font-extrabold text-[15px] text-white tracking-tight truncate leading-tight">
+                          <h4 className="font-extrabold text-[15px] text-mg-text-0 tracking-tight truncate leading-tight">
                             {model.display_name}
                           </h4>
-                          <span className="text-[11px] text-neutral-400 font-bold block mt-0.5">
+                          <span className="text-[11px] text-mg-text-2 font-bold block mt-0.5">
                             {model.vendor || 'ModelGo'}
                           </span>
                         </div>
@@ -322,16 +322,16 @@ export default function ModelsCatalogPage() {
                     </div>
 
                     {/* 描述语 */}
-                    <p className="text-neutral-350 text-[11px] leading-relaxed">
+                    <p className="text-mg-text-2 text-[11px] leading-relaxed">
                       {meta.description}
                     </p>
                     
                     {/* 参数网格：仅保留参数网格那一块的上下边框 */}
-                    <div className="grid grid-cols-[1.2fr_1fr] gap-x-4 text-[11px] leading-normal border-y border-neutral-800/40 py-3.5">
+                    <div className="grid grid-cols-[1.2fr_1fr] gap-x-4 text-[11px] leading-normal border-y border-mg-border py-3.5">
                       {/* 列 1：能力 & 上下文 */}
                       <div className="space-y-3.5 pr-1">
                         <div className="space-y-1">
-                          <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider block">
+                          <span className="text-[9px] font-bold text-mg-text-2 uppercase tracking-wider block">
                             {isZh ? '能力' : 'Capabilities'}
                           </span>
                           <div className="flex flex-wrap gap-1">
@@ -344,13 +344,13 @@ export default function ModelsCatalogPage() {
                                 file: isZh ? '文件' : 'File'
                               }
                               const colorMap: Record<string, string> = {
-                                text: 'bg-[#142923] text-[#42b893] border-[#1b3d34]',
-                                image: 'bg-[#241a3a] text-[#a78bfa] border-[#3b2b5c]',
-                                audio: 'bg-[#132d2f] text-[#2dd4bf] border-[#1b4346]',
-                                video: 'bg-[#2d221c] text-[#fbbf24] border-[#453323]',
-                                file: 'bg-[#15233c] text-[#60a5fa] border-[#1e3458]'
+                                text:  'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+                                image: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20',
+                                audio: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20',
+                                video: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+                                file:  'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
                               }
-                              const cls = colorMap[m] || 'bg-neutral-900 text-neutral-400 border-neutral-800'
+                              const cls = colorMap[m] || 'bg-mg-fill-0 text-mg-text-2 border-mg-border'
                               return (
                                 <span key={m} className={cn("text-[9px] font-extrabold px-1.5 py-0.5 rounded-full border", cls)}>
                                   {labelMap[m] || m}
@@ -360,30 +360,30 @@ export default function ModelsCatalogPage() {
                           </div>
                         </div>
                         <div className="space-y-0.5">
-                          <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider block">
+                          <span className="text-[9px] font-bold text-mg-text-2 uppercase tracking-wider block">
                             {isZh ? '上下文' : 'Context'}
                           </span>
-                          <span className="text-xs font-black text-white leading-none">
+                          <span className="text-xs font-black text-mg-text-0 leading-none">
                             {formatContextLength(model.context_length)}
                           </span>
                         </div>
                       </div>
 
                       {/* 列 2：价格 (改版为左右对齐) */}
-                      <div className="border-l border-neutral-800/40 pl-4 space-y-1">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider block">
+                      <div className="border-l border-mg-border pl-4 space-y-1">
+                        <span className="text-[9px] font-bold text-mg-text-2 uppercase tracking-wider block">
                           {isZh ? '价格' : 'Price'}
                         </span>
                         <div className="space-y-2 pt-0.5">
                           <div className="flex items-center justify-between gap-1 text-[11px]">
-                            <span className="text-neutral-500 font-medium">{isZh ? '输入' : 'Input'}</span>
-                            <span className="font-mono font-bold text-white tabular-nums">
+                            <span className="text-mg-text-2 font-medium">{isZh ? '输入' : 'Input'}</span>
+                            <span className="font-mono font-bold text-mg-text-0 tabular-nums">
                               {formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}
                             </span>
                           </div>
                           <div className="flex items-center justify-between gap-1 text-[11px]">
-                            <span className="text-neutral-500 font-medium">{isZh ? '输出' : 'Output'}</span>
-                            <span className="font-mono font-bold text-white tabular-nums">
+                            <span className="text-mg-text-2 font-medium">{isZh ? '输出' : 'Output'}</span>
+                            <span className="font-mono font-bold text-mg-text-0 tabular-nums">
                               {formatModelPrice(model.pricing?.output_per_1m, model.pricing?.currency)}
                             </span>
                           </div>
@@ -395,12 +395,12 @@ export default function ModelsCatalogPage() {
                     <div className="grid grid-cols-[1.4fr_1fr] gap-4">
                       {/* 推荐场景 */}
                       <div className="space-y-2">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider block">
+                        <span className="text-[9px] font-bold text-mg-text-2 uppercase tracking-wider block">
                           {isZh ? '推荐场景' : 'Suggested Use Cases'}
                         </span>
                         <div className="flex flex-wrap gap-1">
                           {meta.tags.map(t => (
-                            <span key={t} className="text-[9px] font-semibold px-2 py-1 bg-neutral-900 border border-neutral-850 text-neutral-300 rounded-full transition-colors leading-none">
+                            <span key={t} className="text-[9px] font-semibold px-2 py-1 bg-mg-fill-0 border border-mg-border text-mg-text-1 rounded-full transition-colors leading-none">
                               {t}
                             </span>
                           ))}
@@ -417,7 +417,7 @@ export default function ModelsCatalogPage() {
                           }[key as 'speed' | 'reasoning' | 'cost']
                           return (
                             <div key={key} className="flex items-center justify-between text-[10px] gap-2 leading-none">
-                              <span className="text-neutral-450 font-bold">{label}</span>
+                              <span className="text-mg-text-2 font-bold">{label}</span>
                               <div className="flex gap-0.5">
                                 {[1, 2, 3, 4].map(idx => (
                                   <span
@@ -425,8 +425,8 @@ export default function ModelsCatalogPage() {
                                     className={cn(
                                       "w-3.5 h-1.5 rounded-sm transition-all duration-300",
                                       idx <= score 
-                                        ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" 
-                                        : "bg-neutral-850"
+                                        ? "bg-emerald-500 dark:bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]"
+                                        : "bg-mg-fill-1"
                                     )}
                                   />
                                 ))}
@@ -442,7 +442,7 @@ export default function ModelsCatalogPage() {
                       <button
                         type="button"
                         onClick={(e) => handleCopyApiId(model.model_id, e)}
-                        className="flex-1 h-9 bg-transparent hover:bg-neutral-900 border border-neutral-800 text-neutral-300 font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all text-xs cursor-pointer active:scale-98"
+                        className="flex-1 h-9 bg-transparent hover:bg-mg-fill-0 border border-mg-border text-mg-text-1 font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all text-xs cursor-pointer active:scale-98"
                       >
                         <LuCopy size={11} />
                         {isZh ? '复制 API ID' : 'Copy API ID'}

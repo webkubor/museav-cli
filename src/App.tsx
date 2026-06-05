@@ -25,7 +25,6 @@ import ModelsPage from '@/pages/models'
 import ModelsCatalogPage from '@/pages/models/catalog'
 import ModelsComparePage from '@/pages/models-compare'
 import PlatformConfigPage from '@/pages/platform-config'
-import ChatTestPage from '@/pages/chat-test'
 import ForbiddenPage from '@/pages/forbidden'
 import { useAuthStore } from '@/store/auth'
 import { useDevStore } from '@/store/use-dev-store'
@@ -210,7 +209,6 @@ export default function App() {
               <Route path="api-keys" element={<ApiKeysPage />} />
               <Route path="guardrails" element={<GuardrailsPage />} />
               <Route path="observability" element={<ObservabilityPage />} />
-              <Route path="chat-test" element={<ChatTestPage />} />
             </Route>
           </Route>
 

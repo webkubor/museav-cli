@@ -1,8 +1,12 @@
+// 资产走 Vite import 进 /assets/ 哈希命名空间 —— public/dashboard/ 目录曾与
+// SPA 路由 /dashboard 撞车，nginx 目录补斜杠 301 泄漏内部端口（#100 冒烟发现）。
+import ambientBanner from '@/assets/modelgo-web3-ambient.png'
+
 export function RankingImageBanner() {
   return (
     <section className="relative mb-8 overflow-hidden rounded-[22px] border border-mg-border bg-mg-surface shadow-[0_18px_44px_rgba(15,23,42,0.10)]">
       <img
-        src="/dashboard/modelgo-web3-ambient.png"
+        src={ambientBanner}
         alt=""
         className="block aspect-[21/9] w-full object-cover"
         loading="lazy"

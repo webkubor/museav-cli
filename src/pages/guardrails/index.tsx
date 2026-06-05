@@ -116,6 +116,10 @@ export default function GuardrailsPage() {
   // ── 预算内联编辑状态 ────────────────────────────────────────────────────
   const [budgetAmount, setBudgetAmount] = useState('')
   const [budgetPeriodUnit, setBudgetPeriodUnit] = useState<'hour' | 'day' | 'week' | 'month'>('month')
+  const [showClearBudget, setShowClearBudget] = useState(false)
+
+  // ── API Key 作用范围本地状态 ────────────────────────────────────────────
+  const [localKeyNames, setLocalKeyNames] = useState<string[]>([])
 
   // ── 详情查询 ────────────────────────────────────────────────────────────
   const { data: detail, isLoading: detailLoading } = useQuery({
@@ -128,6 +132,15 @@ export default function GuardrailsPage() {
   useEffect(() => {
     if (!isCreating && detailOpen && sheetTab === 'info' && detail) {
       syncFormFromDetail(detail)
+    }
+    if (!isCreating && detailOpen && sheetTab === 'scope' && detail) {
+      const names = detail.assignments
+        .filter(a => a.subject_type === 'api_key')
+        .map(a => {
+          const key = (apiKeysQuery.data?.items ?? []).find((k: any) => k.api_key_id === a.api_key_id)
+          return key?.name || a.api_key_id
+        })
+      setLocalKeyNames(names)
     }
   }, [detail, detailOpen, isCreating, sheetTab])
 
@@ -150,6 +163,7 @@ export default function GuardrailsPage() {
     mutationFn: ({ id, assignments }: { id: string; assignments: AssignmentInput[] }) =>
       replaceAssignments(id, assignments),
     onSuccess: () => {
+      appToast.success('保存成功')
       qc.invalidateQueries({ queryKey: ['guardrail-detail', detailId] })
       qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
     },
@@ -515,33 +529,43 @@ export default function GuardrailsPage() {
                     <LuKey className="w-3.5 h-3.5" /> API Keys
                   </div>
                   <TagInput
-                    value={apiKeyAssignments.map((a) => {
-                      const key = apiKeysMap.get(a.api_key_id)
-                      return key?.name || a.api_key_id
-                    })}
-                    onChange={(names) => {
-                      if (!detail) return
-                      const nameToId = new Map<string, string>()
-                      for (const k of apiKeysQuery.data?.items ?? []) {
-                        nameToId.set(k.name, k.api_key_id)
-                        nameToId.set(k.api_key_id, k.api_key_id)
-                      }
-                      for (const a of detail.assignments) {
-                        if (a.subject_type === 'api_key') {
-                          const key = apiKeysMap.get(a.api_key_id)
-                          if (key) nameToId.set(key.name, a.api_key_id)
-                        }
-                      }
-                      const keyIds = names.map((n) => nameToId.get(n)).filter(Boolean) as string[]
-                      const keyAssigns: AssignmentInput[] = keyIds.map((id) => ({ subject_type: 'api_key', api_key_id: id }))
-                      assignMutation.mutate({ id: detail.id, assignments: keyAssigns })
-                    }}
+                    value={localKeyNames}
+                    onChange={(names) => setLocalKeyNames(names)}
                     suggestions={(apiKeysQuery.data?.items ?? [])
-                      .filter((k: any) => k.status === 'active' && !apiKeyAssignments.some((a) => a.api_key_id === k.api_key_id))
+                      .filter((k: any) => k.status === 'active' && !localKeyNames.includes(k.name))
                       .map((k: any) => k.name as string)
                     }
                     placeholder="从下拉选择 API Key"
                   />
+                  {localKeyNames.join(',') !== apiKeyAssignments.map((a) => { const key = apiKeysMap.get(a.api_key_id); return key?.name || a.api_key_id }).join(',') && (
+                    <div className="mt-3 flex justify-end">
+                      <Button
+                        size="sm"
+                        variant="brand"
+                        className="h-8 px-4 text-xs font-semibold"
+                        loading={assignMutation.isPending}
+                        onClick={() => {
+                          if (!detail) return
+                          const nameToId = new Map<string, string>()
+                          for (const k of apiKeysQuery.data?.items ?? []) {
+                            nameToId.set(k.name, k.api_key_id)
+                            nameToId.set(k.api_key_id, k.api_key_id)
+                          }
+                          for (const a of detail.assignments) {
+                            if (a.subject_type === 'api_key') {
+                              const key = apiKeysMap.get(a.api_key_id)
+                              if (key) nameToId.set(key.name, a.api_key_id)
+                            }
+                          }
+                          const keyIds = localKeyNames.map((n) => nameToId.get(n)).filter(Boolean) as string[]
+                          const keyAssigns: AssignmentInput[] = keyIds.map((id) => ({ subject_type: 'api_key', api_key_id: id }))
+                          assignMutation.mutate({ id: detail.id, assignments: keyAssigns })
+                        }}
+                      >
+                        保存
+                      </Button>
+                    </div>
+                  )}
                 </section>
               </div>
             ) : null
@@ -583,7 +607,7 @@ export default function GuardrailsPage() {
                   </Button>
                   {budget && (
                     <button
-                      onClick={() => removeBudgetMutation.mutate({ guardrailId: detail.id, policyId: budget.id })}
+                      onClick={() => setShowClearBudget(true)}
                       className="text-[11px] text-mg-text-2 hover:text-rose-500 transition-colors cursor-pointer"
                     >
                       清除预算
@@ -617,6 +641,32 @@ export default function GuardrailsPage() {
           </>
         }
       />
+
+      {/* 清除预算确认 Modal */}
+      <Modal
+        open={showClearBudget}
+        onClose={() => setShowClearBudget(false)}
+        title="确认清除预算限额？"
+        description="此操作不可撤销。"
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowClearBudget(false)}>取消</Button>
+            <Button
+              variant="destructive"
+              loading={removeBudgetMutation.isPending}
+              onClick={() => {
+                if (detail && budget) {
+                  removeBudgetMutation.mutate({ guardrailId: detail.id, policyId: budget.id })
+                  setShowClearBudget(false)
+                }
+              }}
+            >
+              确认清除
+            </Button>
+          </>
+        }
+      />
     </div>
   )
 }
@@ -643,6 +693,7 @@ function GuardrailFormFields({
   memberIds: string[]; onMemberIdsChange: (v: string[]) => void; memberOptions: { id: string; name: string }[]
 }) {
   const { t } = useTranslation()
+  const [ipError, setIpError] = useState('')
   const ipValidator = (v: string) => {
     const s = v.trim()
     // IPv4 或 IPv4 CIDR：四段 0-255，可选 /0-32
@@ -701,13 +752,18 @@ function GuardrailFormFields({
         <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.ipWhitelistLabel')}</label>
         <TagInput
           value={ipWhitelist}
-          onChange={onIpWhitelistChange}
+          onChange={(v) => { setIpError(''); onIpWhitelistChange(v) }}
           allowFreeText
           tagVariant="mono"
           validator={ipValidator}
+          onValidationError={() => {
+            setIpError('无效的 IP 地址格式')
+            setTimeout(() => setIpError(''), 3000)
+          }}
           placeholder={t('guardrails.form.ipWhitelistPlaceholder')}
           hint={t('guardrails.form.ipWhitelistHint')}
         />
+        {ipError && <p className="text-xs text-red-500 mt-1">{ipError}</p>}
       </div>
       {/* 成员 — 下拉多选 */}
       <div>

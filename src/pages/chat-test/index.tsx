@@ -3,11 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
+import { Input } from '@/components/ui/Input'
 import { Composer } from '@/components/ui/Composer'
 import { appToast } from '@/lib/app-toast'
 import { LuRotateCcw, LuUser, LuBot, LuMessageSquare } from 'react-icons/lu'
-import { useAuthStore } from '@/store/auth'
-import { listApiKeys } from '@/services/api-keys'
 import { listModels } from '@/services/catalog'
 import { pageItems } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -23,21 +22,12 @@ interface ChatMessage {
 
 export default function ChatTestPage() {
   const { t } = useTranslation()
-  const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
-
-  const apiKeysQuery = useQuery({
-    queryKey: ['api-keys', activeWorkspaceId],
-    queryFn: () => listApiKeys(activeWorkspaceId!),
-    enabled: !!activeWorkspaceId,
-    staleTime: 60_000,
-  })
   const modelsQuery = useQuery({
     queryKey: ['catalog-models'],
     queryFn: () => listModels({ limit: 100 }),
     staleTime: 5 * 60_000,
   })
 
-  const apiKeys = pageItems(apiKeysQuery.data).filter(k => k.status === 'active')
   const models = pageItems(modelsQuery.data)
 
   const [selectedKey, setSelectedKey] = useState('')
@@ -142,20 +132,15 @@ export default function ChatTestPage() {
       </div>
 
       {/* 顶部配置栏 */}
-      <div className="flex gap-3 mb-4 flex-wrap items-center">
-        <Select
+      <div className="flex gap-3 mb-1 flex-wrap items-center">
+        <Input
           value={selectedKey}
-          onChange={setSelectedKey}
-          placeholder={apiKeysQuery.isLoading ? t('common.loading') : t('chatTest.placeholder.key')}
-          className="w-[240px]"
-        >
-          {apiKeys.map(k => (
-            <Select.Option key={k.api_key_id} value={k.api_key_id}>
-              <span className="font-semibold">{k.name}</span>
-              <span className="ml-2 font-mono text-[11px] text-[var(--mg-text-2)]">{k.masked}</span>
-            </Select.Option>
-          ))}
-        </Select>
+          onChange={(e) => setSelectedKey(e.target.value)}
+          placeholder={t('chatTest.placeholder.key')}
+          className="w-[280px]"
+          autoComplete="off"
+          spellCheck={false}
+        />
 
         <Select
           value={selectedModel}
@@ -177,6 +162,10 @@ export default function ChatTestPage() {
           </Button>
         </div>
       </div>
+
+      <p className="text-[11px] text-[var(--mg-text-2)] mb-4 mt-0">
+        {t('chatTest.keyHint')}
+      </p>
 
       {/* 对话区域 */}
       <div className="flex-1 min-h-[360px] max-h-[520px] overflow-y-auto border border-[var(--mg-border)] rounded-xl p-4 bg-[var(--mg-fill-0)] flex flex-col gap-3 mb-3">

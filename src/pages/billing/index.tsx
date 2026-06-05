@@ -18,6 +18,7 @@ import { useAuthStore } from '@/store/auth'
 import { isDomestic } from '@/lib/market'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { Modal } from '@/components/ui/Modal'
 import { appToast } from '@/lib/app-toast'
 import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
@@ -272,9 +273,10 @@ interface OrderReceiptDrawerProps {
   onClose: () => void
   cancelMutation: { isPending: boolean; mutate: (orderNo: string) => void }
   labels: Record<string, string>
+  onCancelRequest?: (orderNo: string) => void
 }
 
-export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, labels }: OrderReceiptDrawerProps) {
+export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, labels, onCancelRequest }: OrderReceiptDrawerProps) {
   const { t } = useTranslation()
   if (!isOpen || !order) return null
 
@@ -429,8 +431,12 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
                 disabled={cancelMutation.isPending}
                 className="w-full h-10 text-xs font-bold rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 active:scale-[0.98] transition-all select-none"
                 onClick={() => {
-                  cancelMutation.mutate(order.order_no)
-                  onClose()
+                  if (onCancelRequest) {
+                    onCancelRequest(order.order_no)
+                  } else {
+                    cancelMutation.mutate(order.order_no)
+                    onClose()
+                  }
                 }}
               >
                 {cancelMutation.isPending ? t('billing.rechargeModal.submitting') : t('billing.orders.table.cancel')}
@@ -495,6 +501,7 @@ export default function BillingPage() {
   const [topUpVisible, setTopUpVisible] = useState(false)
   const [activeTab, setActiveTab] = useState<BalanceTab>('main')
   const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null)
+  const [cancelTarget, setCancelTarget] = useState<string | null>(null)
 
   const rc = i18n.language.startsWith('zh') ? referralCopy.zh : referralCopy.en
   
@@ -575,6 +582,16 @@ export default function BillingPage() {
     onError: (err: Error) => appToast.error(err.message || t('billing.orders.cancelError')),
   })
 
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        ordersQuery.refetch()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
+
   const orders = ordersQuery.data?.pages.flatMap((page) => page.items) ?? []
   const selectedOrder = orders.find((o) => o.order_no === selectedOrderNo)
   const labels = t('billing.orders.status', { returnObjects: true }) as Record<string, string>
@@ -615,6 +632,40 @@ export default function BillingPage() {
       </div>
 
       <TopUpModal visible={topUpVisible} onClose={() => setTopUpVisible(false)} tenantId={tenantId} />
+
+      <Modal
+        open={cancelTarget !== null}
+        onClose={() => setCancelTarget(null)}
+        size="sm"
+        title={t('billing.orders.cancelConfirm.title')}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              className="h-9 px-4 text-xs rounded-xl"
+              onClick={() => setCancelTarget(null)}
+            >
+              {t('billing.orders.cancelConfirm.no')}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={cancelMutation.isPending}
+              className="h-9 px-4 text-xs rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20"
+              onClick={() => {
+                if (cancelTarget) {
+                  cancelMutation.mutate(cancelTarget)
+                  setSelectedOrderNo(null)
+                }
+                setCancelTarget(null)
+              }}
+            >
+              {cancelMutation.isPending ? t('billing.rechargeModal.submitting') : t('billing.orders.cancelConfirm.yes')}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm text-mg-text-1">{t('billing.orders.cancelConfirm.message')}</p>
+      </Modal>
 
       {/* 2. 账户余额卡 */}
       <div className="rounded-2xl border border-mg-border bg-card-bg p-6 space-y-5 shadow-sm">
@@ -1003,10 +1054,7 @@ export default function BillingPage() {
                       variant="destructive"
                       disabled={cancelMutation.isPending}
                       className="w-full h-9 text-xs font-bold rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 active:scale-[0.98] transition-all"
-                      onClick={() => {
-                        cancelMutation.mutate(selectedOrder.order_no)
-                        setSelectedOrderNo(null)
-                      }}
+                      onClick={() => setCancelTarget(selectedOrder.order_no)}
                     >
                       {cancelMutation.isPending ? t('billing.rechargeModal.submitting') : t('billing.orders.table.cancel')}
                     </Button>

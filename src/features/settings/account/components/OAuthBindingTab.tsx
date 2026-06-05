@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/Button'
-import React from 'react'
+import React, { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useOAuthMethods } from '@/hooks/use-platform-config'
 import { useTranslation } from 'react-i18next'
@@ -8,6 +8,7 @@ import { connectOAuth, disconnectOAuth } from '@/services/account'
 import { appToast } from '@/lib/app-toast'
 import type { OAuthProvider } from '@/interfaces/account'
 import { OAUTH_ICONS_LG } from '@/constants/oauth'
+import { Modal } from '@/components/ui/Modal'
 
 interface OAuthBindingTabProps {
   connections: OAuthConnection[]
@@ -17,6 +18,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const PROVIDERS = useOAuthMethods() as OAuthProvider[]
+  const [pendingUnbind, setPendingUnbind] = useState<OAuthProvider | null>(null)
 
   const bindMutation = useMutation({
     mutationFn: async (provider: OAuthProvider) => {
@@ -45,7 +47,30 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
   const connMap = new Map<OAuthProvider, OAuthConnection>()
   connections.forEach((c) => connMap.set(c.provider, c))
 
+  const boundCount = connections.filter((c) => !!c.connected_at).length
+  const isOnlyLoginMethod = boundCount === 1
+
+  const handleUnbindClick = (provider: OAuthProvider) => {
+    setPendingUnbind(provider)
+  }
+
+  const handleUnbindConfirm = () => {
+    if (pendingUnbind) {
+      unbindMutation.mutate(pendingUnbind)
+    }
+    setPendingUnbind(null)
+  }
+
+  const handleUnbindCancel = () => {
+    setPendingUnbind(null)
+  }
+
+  const confirmMessage = isOnlyLoginMethod
+    ? '解绑后将无法登录你的账号，请先设置密码。'
+    : '确认解绑该账号？'
+
   return (
+    <>
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '520px', paddingTop: '8px' }}>
       <div style={{ fontSize: '13px', color: 'var(--mg-text-1)', marginBottom: '8px', lineHeight: '1.5' }}>
         {t('account.oauth.desc')}
@@ -60,7 +85,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
 
           const handleClick = () => {
             if (isBound) {
-              unbindMutation.mutate(provider)
+              handleUnbindClick(provider)
               return
             }
             bindMutation.mutate(provider)
@@ -154,5 +179,33 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
         })}
       </div>
     </div>
+
+      <Modal
+        open={pendingUnbind !== null}
+        onClose={handleUnbindCancel}
+        size="sm"
+        title="解绑确认"
+        footer={
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <Button size="small" onClick={handleUnbindCancel}>
+              取消
+            </Button>
+            <Button
+              size="small"
+              loading={unbindMutation.isPending}
+              disabled={unbindMutation.isPending}
+              onClick={handleUnbindConfirm}
+              style={{ color: isOnlyLoginMethod ? 'var(--mg-danger)' : undefined }}
+            >
+              确认解绑
+            </Button>
+          </div>
+        }
+      >
+        <p style={{ fontSize: '14px', color: isOnlyLoginMethod ? 'var(--mg-danger)' : 'var(--mg-text-1)', margin: 0 }}>
+          {confirmMessage}
+        </p>
+      </Modal>
+    </>
   )
 }

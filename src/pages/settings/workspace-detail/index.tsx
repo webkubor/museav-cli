@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import Select from '@/components/ui/Select'
+import { Modal } from '@/components/ui/Modal'
 import { appToast } from '@/lib/app-toast'
 
 type DetailTab = 'overview' | 'members' | 'settings'
@@ -153,6 +154,8 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
   const qc = useQueryClient()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const [addSearch, setAddSearch] = useState('')
+  const [removeTarget, setRemoveTarget] = useState<string | null>(null)
+  const [roleChangeTarget, setRoleChangeTarget] = useState<{ accountId: string; role: string } | null>(null)
 
   const membersQuery = useQuery({
     queryKey: ['workspace-members', workspaceId],
@@ -269,7 +272,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
                   {m.role !== 'ws_owner' ? (
                     <Select
                       value={m.role}
-                      onChange={(role) => roleMutation.mutate({ accountId: m.account.account_id, role: role as 'ws_admin' | 'ws_member' })}
+                      onChange={(role) => setRoleChangeTarget({ accountId: m.account.account_id, role })}
                       className="h-6 text-[10px] w-20 rounded"
                     >
                       {WS_ROLE_OPTIONS.map((o) => (
@@ -282,7 +285,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
                   {m.role !== 'ws_owner' && (
                     <button
                       type="button"
-                      onClick={() => (isMockMode ? handleMockRemove(m.account.account_id) : removeMutation.mutate(m.account.account_id))}
+                      onClick={() => (isMockMode ? handleMockRemove(m.account.account_id) : setRemoveTarget(m.account.account_id))}
                       className="shrink-0 p-1 rounded text-mg-text-2 hover:text-rose-500 hover:bg-rose-500/5 transition-colors cursor-pointer border-none bg-transparent"
                       title={t('workspaces.detail.members.remove')}
                     >
@@ -343,6 +346,62 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
           )}
         </div>
       </div>
+      {/* 移除成员确认弹窗 */}
+      <Modal
+        open={removeTarget !== null}
+        onClose={() => setRemoveTarget(null)}
+        size="sm"
+        title={t('workspaces.detail.members.removeConfirmTitle')}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setRemoveTarget(null)}>
+              {t('workspaces.detail.settings.cancel')}
+            </Button>
+            <Button
+              variant="outline"
+              className="border-rose-500/40 text-rose-500 hover:bg-rose-500/5"
+              loading={removeMutation.isPending}
+              onClick={() => {
+                removeMutation.mutate(removeTarget!)
+                setRemoveTarget(null)
+              }}
+            >
+              {t('workspaces.detail.members.remove')}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm text-mg-text-1">{t('workspaces.detail.members.removeConfirmDesc')}</p>
+      </Modal>
+
+      {/* 修改角色确认弹窗 */}
+      <Modal
+        open={roleChangeTarget !== null}
+        onClose={() => setRoleChangeTarget(null)}
+        size="sm"
+        title={t('workspaces.detail.members.roleConfirmTitle')}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setRoleChangeTarget(null)}>
+              {t('workspaces.detail.settings.cancel')}
+            </Button>
+            <Button
+              variant="brand"
+              loading={roleMutation.isPending}
+              onClick={() => {
+                roleMutation.mutate({ accountId: roleChangeTarget!.accountId, role: roleChangeTarget!.role as 'ws_admin' | 'ws_member' })
+                setRoleChangeTarget(null)
+              }}
+            >
+              {t('workspaces.detail.members.roleConfirmOk')}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm text-mg-text-1">
+          {t('workspaces.detail.members.roleConfirmDesc', { role: WS_ROLE_LABEL[roleChangeTarget?.role as keyof typeof WS_ROLE_LABEL] ?? roleChangeTarget?.role })}
+        </p>
+      </Modal>
     </div>
   )
 }

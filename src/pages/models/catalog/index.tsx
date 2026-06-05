@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -8,6 +8,7 @@ import {
   LuZap,
   LuGitCompareArrows,
   LuChevronRight,
+  LuChevronDown,
 } from 'react-icons/lu'
 import { useModels } from '@/features/models/hooks/useModels'
 import { Button } from '@/components/ui/Button'
@@ -125,6 +126,7 @@ export default function ModelsCatalogPage() {
   const [category, setCategory] = useState<CategoryKey>('all')
   const [isCompareOpen, setIsCompareOpen] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
   useEffect(() => {
@@ -187,6 +189,10 @@ export default function ModelsCatalogPage() {
     event.stopPropagation()
     navigate('/models/playground', { state: { selectedModelId: modelId } })
   }
+
+  const handleToggleExpand = useCallback((modelId: string) => {
+    setExpandedId(prev => prev === modelId ? null : modelId)
+  }, [])
 
   return (
     <div className="space-y-8 py-2">
@@ -282,9 +288,11 @@ export default function ModelsCatalogPage() {
               ? 'border-l-[#0b0d0b] dark:border-l-[#0b0d0b]'
               : (position === 'right' ? 'border-r-[#0b0d0b] dark:border-r-[#0b0d0b]' : 'border-t-[#0b0d0b] dark:border-t-[#0b0d0b]')
 
+            const isExpanded = expandedId === model.id
+
             return (
+              <div key={model.id} className="flex flex-col gap-0 w-full">
               <Tooltip
-                key={model.id}
                 position={position}
                 containerClassName="w-full flex"
                 className="z-[9999] max-w-[440px] border border-emerald-500/20 shadow-[0_20px_50px_rgba(16,185,129,0.15)] bg-[#0b0d0b] text-neutral-100 p-0 rounded-2xl animate-in fade-in-0 duration-300"
@@ -452,14 +460,26 @@ export default function ModelsCatalogPage() {
                 }
               >
               <div
-                onClick={(e) => handleGoPlayground(model.model_id, e)}
+                role="button"
+                tabIndex={0}
+                aria-expanded={isExpanded}
+                onClick={() => handleToggleExpand(model.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleToggleExpand(model.id)
+                  }
+                }}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
                 style={{
                   transform: 'perspective(1000px) rotateX(var(--rotate-x, 0deg)) rotateY(var(--rotate-y, 0deg)) scale3d(var(--scale, 1), var(--scale, 1), var(--scale, 1))',
                   transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
                 }}
-                className="group relative p-[1px] rounded-2xl bg-[rgba(15,23,42,0.09)] dark:bg-[rgba(255,255,255,0.14)] transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1) hover:shadow-[0_20px_40px_-10px_var(--brand-glow)] shadow-[0_8px_30px_rgb(0,0,0,0.02)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] [--scale:1] hover:[--scale:1.015] flex flex-1 cursor-pointer w-full"
+                className={cn(
+                  "group relative p-[1px] rounded-2xl bg-[rgba(15,23,42,0.09)] dark:bg-[rgba(255,255,255,0.14)] transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1) hover:shadow-[0_20px_40px_-10px_var(--brand-glow)] shadow-[0_8px_30px_rgb(0,0,0,0.02)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] [--scale:1] hover:[--scale:1.015] flex flex-1 cursor-pointer w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base focus-visible:ring-offset-2",
+                  isExpanded && "shadow-[0_20px_40px_-10px_var(--brand-glow)]"
+                )}
               >
                 {/* 渐变边框 Spotlight 层（光斑跟随，Hover 时显现） */}
                 <div
@@ -583,18 +603,134 @@ export default function ModelsCatalogPage() {
                         </span>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={(e) => handleGoPlayground(model.model_id, e)}
-                      className="rounded-full h-8 px-4 text-xs font-bold text-brand-base hover:text-white border border-brand-base/20 hover:bg-brand-base flex items-center gap-1 cursor-pointer transition-all duration-300 active:scale-95 hover:shadow-sm hover:shadow-brand-glow/20 shrink-0"
-                    >
-                      {isZh ? '去体验' : 'Try'}
-                      <LuChevronRight size={12} className="transition-transform group-hover:translate-x-0.5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => handleGoPlayground(model.model_id, e)}
+                        className="rounded-full h-8 px-4 text-xs font-bold text-brand-base hover:text-white border border-brand-base/20 hover:bg-brand-base flex items-center gap-1 cursor-pointer transition-all duration-300 active:scale-95 hover:shadow-sm hover:shadow-brand-glow/20 shrink-0"
+                      >
+                        {isZh ? '去体验' : 'Try'}
+                        <LuChevronRight size={12} className="transition-transform group-hover:translate-x-0.5" />
+                      </button>
+                      <div
+                        aria-hidden="true"
+                        className={cn(
+                          "w-6 h-6 rounded-full border border-mg-border/40 bg-mg-fill-0/40 flex items-center justify-center text-mg-text-2 transition-transform duration-300",
+                          isExpanded && "rotate-180 text-brand-base border-brand-base/30 bg-brand-base/10"
+                        )}
+                      >
+                        <LuChevronDown size={12} />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </Tooltip>
+
+            {/* 展开的规格面板 */}
+            {isExpanded && (
+              <div className="mt-2 rounded-2xl border border-mg-border/30 bg-mg-bg-0/80 dark:bg-mg-bg-0/90 backdrop-blur-md p-5 space-y-4 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+                {/* 能力标签 */}
+                {model.modalities && model.modalities.length > 0 && (
+                  <div className="space-y-1.5">
+                    <span className="text-[9px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
+                      {isZh ? '能力' : 'Capabilities'}
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {model.modalities.map(m => {
+                        const labelMap: Record<string, string> = {
+                          text: isZh ? '文本' : 'Text',
+                          image: isZh ? '图像' : 'Image',
+                          audio: isZh ? '音频' : 'Audio',
+                          video: isZh ? '视频' : 'Video',
+                          file: isZh ? '文件' : 'File'
+                        }
+                        const colorMap: Record<string, string> = {
+                          text: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+                          image: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20',
+                          audio: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20',
+                          video: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+                          file: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                        }
+                        const cls = colorMap[m] || 'bg-mg-fill-0/60 text-mg-text-2 border-mg-border/40'
+                        return (
+                          <span key={m} className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border", cls)}>
+                            {labelMap[m] || m}
+                          </span>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 推荐场景 & 指标评分 */}
+                <div className="grid grid-cols-[1.4fr_1fr] gap-4">
+                  <div className="space-y-1.5">
+                    <span className="text-[9px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
+                      {isZh ? '推荐场景' : 'Suggested Use Cases'}
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {meta.tags.map(t => (
+                        <span key={t} className="text-[10px] font-semibold px-2 py-0.5 bg-mg-fill-0/60 border border-mg-border/30 text-mg-text-1 rounded-full leading-none">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <span className="text-[9px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
+                      {isZh ? '能力评分' : 'Scores'}
+                    </span>
+                    <div className="space-y-1.5">
+                      {Object.entries(meta.scores).map(([key, score]) => {
+                        const label = {
+                          speed: isZh ? '速度' : 'Speed',
+                          reasoning: isZh ? '推理' : 'Reasoning',
+                          cost: isZh ? '成本' : 'Cost'
+                        }[key as 'speed' | 'reasoning' | 'cost']
+                        return (
+                          <div key={key} className="flex items-center justify-between text-[10px] gap-2 leading-none">
+                            <span className="text-mg-text-2 font-bold">{label}</span>
+                            <div className="flex gap-0.5">
+                              {[1, 2, 3, 4].map(i => (
+                                <span
+                                  key={i}
+                                  className={cn(
+                                    "w-3.5 h-1.5 rounded-sm",
+                                    i <= score ? "bg-brand-base" : "bg-mg-fill-0/60 border border-mg-border/30"
+                                  )}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 底部操作按钮 */}
+                <div className="flex items-center gap-3 pt-1 border-t border-mg-border/20">
+                  <button
+                    type="button"
+                    onClick={(e) => handleCopyApiId(model.model_id, e)}
+                    className="flex-1 h-8 bg-mg-fill-0/40 hover:bg-mg-fill-0/80 border border-mg-border/40 text-mg-text-1 font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all text-xs cursor-pointer"
+                  >
+                    <LuCopy size={11} />
+                    {isZh ? '复制 API ID' : 'Copy API ID'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => handleGoPlayground(model.model_id, e)}
+                    className="flex-1 h-8 bg-brand-base hover:bg-brand-mid text-white font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all text-xs cursor-pointer"
+                  >
+                    {isZh ? '查看详情' : 'View Details'}
+                    <LuChevronRight size={12} />
+                  </button>
+                </div>
+              </div>
+            )}
+            </div>
           )})}
         </div>
       )}

@@ -198,6 +198,12 @@
       "detailPlaceholder": "Click an order to view details",
       "cancelSuccess": "Order cancelled",
       "cancelError": "Failed to cancel order",
+      "cancelConfirm": {
+        "title": "Cancel Order",
+        "message": "Are you sure you want to cancel this recharge order? This action cannot be undone.",
+        "yes": "Confirm Cancel",
+        "no": "Keep"
+      },
       "table": {
         "orderNo": "Order No",
         "status": "Status",
@@ -456,6 +462,7 @@
   "observability": {
     "title": "Observability",
     "desc": "Manage logging, forwarding destinations, and retry policies.",
+    "loggingOffWarning": "Disabling logging will also disable broadcast forwarding",
     "logging": {
       "title": "Input / Output Logging",
       "desc": "Record full input and output of each request."
@@ -657,7 +664,12 @@
         "addError": "Failed to add member",
         "removeSuccess": "Member removed from workspace",
         "removeError": "Failed to remove member",
-        "roleError": "Failed to update role"
+        "roleError": "Failed to update role",
+        "removeConfirmTitle": "Remove Member",
+        "removeConfirmDesc": "Are you sure you want to remove this member? They will lose access to this workspace.",
+        "roleConfirmTitle": "Change Member Role",
+        "roleConfirmDesc": "Are you sure you want to change this member's role to \"{{role}}\"?",
+        "roleConfirmOk": "Confirm"
       },
       "settings": {
         "renameLabel": "Workspace Name",
@@ -841,13 +853,14 @@
       "summary": "Failed to load summary.",
       "series": "Failed to load trend data.",
       "histogram": "Failed to load distribution data."
-    }
+    },
+    "retry": "Retry"
   },
   "chatTest": {
     "title": "Chat Test",
-    "desc": "Select an API Key and model to test streaming chat.",
+    "desc": "Paste your API Key and select a model to test streaming chat.",
     "placeholder": {
-      "key": "Select API Key",
+      "key": "Paste API Key (sk-...)",
       "model": "Select Model"
     },
     "button": {
@@ -855,15 +868,16 @@
       "send": "Send",
       "stop": "Stop"
     },
-    "empty": "Select an API Key and model to start chatting",
+    "empty": "Paste an API Key and select a model to start chatting",
     "input": {
       "placeholder": "Type a message, Enter to send, Shift+Enter for newline"
     },
     "toast": {
-      "noKey": "Please select an API Key",
+      "noKey": "Please paste your API Key",
       "noModel": "Please select a model"
     },
-    "footer": "Requests go directly to {{url}}/v1/chat/completions, bypassing the console backend."
+    "footer": "Requests go directly to {{url}}/v1/chat/completions, bypassing the console backend.",
+    "keyHint": "Paste the full key you copied when creating the API Key. Only the masked version is shown in the list and cannot be retrieved."
   },
   "modelsCompare": {
     "title": "Model Compare",
@@ -1028,6 +1042,7 @@
     "desc.invalidCode": "The authorization code is invalid or corrupted. Please re-run the login command.",
     "success.title": "ModelGo CLI has been authorized",
     "success.desc": "You can return to your terminal. This page can be closed.",
+    "success.returnHint": "Return to your terminal or CLI tool to continue",
     "authNotice": "ModelGo CLI is requesting login authorization. After approval, the CLI will have the same access credentials as your current account.",
     "codeLabel": "Authorization Code",
     "tenant.loading": "Loading organizations...",

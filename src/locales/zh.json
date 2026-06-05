@@ -198,6 +198,12 @@
       "detailPlaceholder": "点击左侧订单查看详情",
       "cancelSuccess": "订单已取消",
       "cancelError": "取消订单失败",
+      "cancelConfirm": {
+        "title": "确认取消订单",
+        "message": "确认取消该充值订单？此操作不可撤销。",
+        "yes": "确认取消",
+        "no": "保留"
+      },
       "table": {
         "orderNo": "订单号",
         "status": "状态",
@@ -456,6 +462,7 @@
   "observability": {
     "title": "可观测性",
     "desc": "管理日志记录、数据转发目标与失败事件的重试策略。",
+    "loggingOffWarning": "关闭日志上报将同时关闭广播转发",
     "logging": {
       "title": "输入 / 输出日志",
       "desc": "记录每次请求的完整输入和模型输出内容。"
@@ -657,7 +664,12 @@
         "addError": "添加成员失败",
         "removeSuccess": "成员已移出项目",
         "removeError": "移除成员失败",
-        "roleError": "角色更新失败"
+        "roleError": "角色更新失败",
+        "removeConfirmTitle": "确认移除成员",
+        "removeConfirmDesc": "确认移除该成员？移除后该成员将无法访问此项目。",
+        "roleConfirmTitle": "确认修改角色",
+        "roleConfirmDesc": "确认将该成员角色修改为「{{role}}」？",
+        "roleConfirmOk": "确认修改"
       },
       "settings": {
         "renameLabel": "项目名称",
@@ -841,13 +853,14 @@
       "summary": "加载用量汇总失败，请稍后重试。",
       "series": "加载趋势数据失败，请稍后重试。",
       "histogram": "加载分布数据失败，请稍后重试。"
-    }
+    },
+    "retry": "重试"
   },
   "chatTest": {
     "title": "对话测试",
-    "desc": "选择 API Key 和模型，实时流式测试对话效果。",
+    "desc": "粘贴 API Key 并选择模型，实时流式测试对话效果。",
     "placeholder": {
-      "key": "选择 API Key",
+      "key": "粘贴 API Key（sk-...）",
       "model": "选择模型"
     },
     "button": {
@@ -855,15 +868,16 @@
       "send": "发送",
       "stop": "停止"
     },
-    "empty": "选好 API Key 和模型后开始对话",
+    "empty": "粘贴 API Key 并选择模型后开始对话",
     "input": {
       "placeholder": "输入消息，Enter 发送，Shift+Enter 换行"
     },
     "toast": {
-      "noKey": "请先选择 API Key",
+      "noKey": "请先粘贴 API Key",
       "noModel": "请先选择模型"
     },
-    "footer": "请求直接发往 {{url}}/v1/chat/completions，响应不经过控制台后端。"
+    "footer": "请求直接发往 {{url}}/v1/chat/completions，响应不经过控制台后端。",
+    "keyHint": "请粘贴创建 API Key 时复制的完整密钥，列表中仅显示掩码，无法在此处检索。"
   },
   "modelsCompare": {
     "title": "模型对比",
@@ -1041,6 +1055,7 @@
     "desc.invalidCode": "授权码格式无效或已损坏，请在终端重新执行登录命令。",
     "success.title": "ModelGo CLI 已获得登录授权",
     "success.desc": "可以回到终端继续使用了。此页面可以关闭。",
+    "success.returnHint": "请返回你的终端或 CLI 工具继续操作",
     "authNotice": "ModelGo CLI 正在请求登录授权。确认后，终端里的 CLI 将获得与当前账号相同的访问凭证。",
     "codeLabel": "本次授权码",
     "tenant.loading": "正在加载企业列表...",

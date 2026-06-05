@@ -158,6 +158,9 @@ export default function DevicePage() {
           <span style={{ color: 'var(--mg-text-2)', fontSize: '13px' }}>
             {t('device.success.desc')}
           </span>
+          <span style={{ color: 'var(--mg-text-2)', fontSize: '13px' }}>
+            {t('device.success.returnHint')}
+          </span>
         </div>
       </AuthLayout>
     )

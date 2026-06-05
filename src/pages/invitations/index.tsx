@@ -4,7 +4,9 @@ import { useNavigate, useSearchParams, useParams, Link } from 'react-router-dom'
 
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { previewInvitation, acceptInvitation } from '@/services/invitations'
+import { getSession } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
+import { storageKeys } from '@/lib/storage'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import type { InvitationPreview } from '@/types'
 
@@ -16,6 +18,7 @@ export default function InvitationsPage() {
   const token = tokenParam ?? searchParams.get('token') ?? ''
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isSessionLoading = useAuthStore((s) => s.isLoading)
+  const setAuth = useAuthStore((s) => s.setAuth)
 
   const [preview, setPreview] = useState<InvitationPreview | null>(null)
   const [loadError, setLoadError] = useState('')
@@ -48,6 +51,24 @@ export default function InvitationsPage() {
     setServerError('')
     try {
       const result = await acceptInvitation(token)
+      try {
+        const session = await getSession()
+        const persistedWs = localStorage.getItem(storageKeys.activeWorkspaceId())
+        setAuth(
+          {
+            account_id: session.account.account_id,
+            display_name: session.account.display_name,
+            email: session.account.email,
+            avatar_url: session.account.avatar_url,
+          },
+          session.active_tenant_id,
+          session.tenants,
+          persistedWs || session.active_workspace_id,
+          session.permissions?.granted ?? null
+        )
+      } catch {
+        // getSession 失败不阻塞跳转，SessionLoader 会在下次渲染时重新拉取
+      }
       navigate(`/dashboard?workspace=${result.workspace_id}`, { replace: true })
     } catch (err) {
       // #85：组织关联上限（40904）必须给出准确原因，而不是误导为链接过期。

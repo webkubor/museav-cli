@@ -304,6 +304,11 @@ function ObservabilityContent({
           onChange={handleLoggingChange}
           isFirst
         />
+        {!loggingEnabled && (
+          <p className="px-5 pb-3 text-xs text-amber-500">
+            {t('observability.loggingOffWarning')}
+          </p>
+        )}
         <ToggleRow
           title={t('observability.broadcast.title')}
           description={t('observability.broadcast.desc')}

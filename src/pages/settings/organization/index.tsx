@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { AvatarUpload } from '@/components/ui/AvatarUpload'
+import { Modal } from '@/components/ui/Modal'
 import { appToast } from '@/lib/app-toast'
 
 const MAX_TENANTS = 5
@@ -398,8 +399,9 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
 }
 
 // ─── Members tab ──────────────────────────────────────────────────────────────
-function MembersTab({ tenantId }: { tenantId: string }) {
+function MembersTab({ tenantId, canManage }: { tenantId: string; canManage: boolean }) {
   const qc = useQueryClient()
+  const [removeTarget, setRemoveTarget] = useState<string | null>(null)
 
   const membersQuery = useQuery({
     queryKey: ['tenant-members', tenantId],
@@ -417,86 +419,120 @@ function MembersTab({ tenantId }: { tenantId: string }) {
 
   const removeMember = useMutation({
     mutationFn: (accountId: string) => removeTenantMember(tenantId, accountId),
-    onSuccess: () => { appToast.success('成员已移除'); qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] }) },
+    onSuccess: () => {
+      appToast.success('成员已移除')
+      qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
+      setRemoveTarget(null)
+    },
     onError: (err: any) => appToast.error(err?.message || '移除成员失败'),
   })
 
   const members = membersQuery.data?.items ?? []
 
   return (
-    <div className="bg-mg-bg-0 border border-mg-border/50 rounded-2xl overflow-hidden shadow-sm">
-      {/* 头部 */}
-      <div className="flex items-center justify-between p-4 border-b border-mg-border/50 bg-mg-fill-0/20">
-        <span className="text-xs font-bold text-mg-text-0">组织成员</span>
-        <span className="text-[10px] text-mg-text-2 bg-mg-fill-1 border border-mg-border/40 px-2 py-0.5 rounded-full font-medium">
-          {membersQuery.isLoading ? '…' : `${members.length} 位成员`}
-        </span>
+    <>
+      <div className="bg-mg-bg-0 border border-mg-border/50 rounded-2xl overflow-hidden shadow-sm">
+        {/* 头部 */}
+        <div className="flex items-center justify-between p-4 border-b border-mg-border/50 bg-mg-fill-0/20">
+          <span className="text-xs font-bold text-mg-text-0">组织成员</span>
+          <span className="text-[10px] text-mg-text-2 bg-mg-fill-1 border border-mg-border/40 px-2 py-0.5 rounded-full font-medium">
+            {membersQuery.isLoading ? '…' : `${members.length} 位成员`}
+          </span>
+        </div>
+
+        {/* 成员列表 */}
+        <div className="overflow-x-auto w-full p-2">
+          {membersQuery.isLoading ? (
+            <div className="py-12 flex justify-center items-center">
+              <div className="w-6 h-6 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
+            </div>
+          ) : (
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-mg-border/50">
+                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">姓名 / 邮箱</th>
+                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">角色权限</th>
+                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">加入时间</th>
+                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider text-center w-16">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((record) => (
+                  <tr
+                    key={record.account.account_id}
+                    className="border-b border-mg-border/40 hover:bg-mg-fill-0/30 transition-colors"
+                  >
+                    <td className="py-3 px-4">
+                      <div className="font-semibold text-mg-text-0">{record.account.display_name || '—'}</div>
+                      <div className="text-[10px] text-mg-text-2 mt-0.5">{record.account.email}</div>
+                    </td>
+                    <td className="py-3 px-4">
+                      {record.role === 'tenant_owner' ? (
+                        <span className="inline-block text-[10px] text-mg-text-2 font-bold bg-mg-fill-1 border border-mg-border/40 px-2.5 py-0.5 rounded-full">Owner</span>
+                      ) : canManage ? (
+                        <select
+                          value={record.role}
+                          onChange={(e) => changeRole.mutate({ accountId: record.account.account_id, role: e.target.value as any })}
+                          className="modern-input-field h-8 text-[11px] py-0 pr-8 pl-2 bg-mg-bg-0 border border-mg-border/40 rounded-lg w-[120px] font-semibold cursor-pointer"
+                        >
+                          {TENANT_ROLE_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="inline-block text-[11px] text-mg-text-1 font-semibold px-2.5 py-0.5">
+                          {TENANT_ROLE_OPTIONS.find((o) => o.value === record.role)?.label ?? record.role}
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-[11px] text-mg-text-1 font-medium">
+                      {formatDate(record.joined_at)}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {record.role !== 'tenant_owner' && canManage ? (
+                        <button
+                          type="button"
+                          onClick={() => setRemoveTarget(record.account.account_id)}
+                          className="text-mg-text-2 hover:text-rose-500 hover:bg-rose-500/5 p-1 rounded-lg transition-all border-none bg-transparent cursor-pointer font-bold text-xs"
+                        >
+                          ✕
+                        </button>
+                      ) : (
+                        <span className="text-mg-text-3">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
 
-      {/* 成员列表 */}
-      <div className="overflow-x-auto w-full p-2">
-        {membersQuery.isLoading ? (
-          <div className="py-12 flex justify-center items-center">
-            <div className="w-6 h-6 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
+      {/* 移除成员确认弹窗 */}
+      <Modal
+        open={removeTarget !== null}
+        onClose={() => setRemoveTarget(null)}
+        size="sm"
+        title="确认移除成员"
+        description="移除后该成员将无法访问此组织及其下的工作区，此操作不可撤销。"
+        footer={
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" className="h-8 px-3 rounded-lg text-xs" onClick={() => setRemoveTarget(null)}>
+              取消
+            </Button>
+            <Button
+              variant="default"
+              disabled={removeMember.isPending}
+              onClick={() => removeMember.mutate(removeTarget!)}
+              className="h-8 px-4 rounded-lg text-xs font-semibold bg-rose-500 text-white hover:bg-rose-500/90"
+            >
+              {removeMember.isPending ? '移除中...' : '确认移除'}
+            </Button>
           </div>
-        ) : (
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-mg-border/50">
-                <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">姓名 / 邮箱</th>
-                <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">角色权限</th>
-                <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">加入时间</th>
-                <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider text-center w-16">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((record) => (
-                <tr
-                  key={record.account.account_id}
-                  className="border-b border-mg-border/40 hover:bg-mg-fill-0/30 transition-colors"
-                >
-                  <td className="py-3 px-4">
-                    <div className="font-semibold text-mg-text-0">{record.account.display_name || '—'}</div>
-                    <div className="text-[10px] text-mg-text-2 mt-0.5">{record.account.email}</div>
-                  </td>
-                  <td className="py-3 px-4">
-                    {record.role === 'tenant_owner' ? (
-                      <span className="inline-block text-[10px] text-mg-text-2 font-bold bg-mg-fill-1 border border-mg-border/40 px-2.5 py-0.5 rounded-full">Owner</span>
-                    ) : (
-                      <select
-                        value={record.role}
-                        onChange={(e) => changeRole.mutate({ accountId: record.account.account_id, role: e.target.value as any })}
-                        className="modern-input-field h-8 text-[11px] py-0 pr-8 pl-2 bg-mg-bg-0 border border-mg-border/40 rounded-lg w-[120px] font-semibold cursor-pointer"
-                      >
-                        {TENANT_ROLE_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
-                      </select>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-[11px] text-mg-text-1 font-medium">
-                    {formatDate(record.joined_at)}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    {record.role !== 'tenant_owner' ? (
-                      <button
-                        type="button"
-                        onClick={() => removeMember.mutate(record.account.account_id)}
-                        className="text-mg-text-2 hover:text-rose-500 hover:bg-rose-500/5 p-1 rounded-lg transition-all border-none bg-transparent cursor-pointer font-bold text-xs"
-                      >
-                        ✕
-                      </button>
-                    ) : (
-                      <span className="text-mg-text-3">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
+        }
+      />
+    </>
   )
 }
 
@@ -507,6 +543,7 @@ function InviteTab({ tenantId }: { tenantId: string }) {
   const [inviteRole, setInviteRole] = useState<'tenant_admin' | 'tenant_member'>('tenant_member')
   const [expiresInHours, setExpiresInHours] = useState<number>(72)
   const [linkCopied, setLinkCopied] = useState(false)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
 
   const inviteLinkQuery = useQuery({
     queryKey: ['tenant-invite-link', tenantId],
@@ -517,7 +554,11 @@ function InviteTab({ tenantId }: { tenantId: string }) {
 
   const resetLink = useMutation({
     mutationFn: () => resetTenantInviteLink(tenantId),
-    onSuccess: () => { appToast.success('邀请链接已重置'); qc.invalidateQueries({ queryKey: ['tenant-invite-link', tenantId] }) },
+    onSuccess: () => {
+      appToast.success('邀请链接已重置')
+      qc.invalidateQueries({ queryKey: ['tenant-invite-link', tenantId] })
+      setShowResetConfirm(false)
+    },
     onError: (err: any) => appToast.error(err?.message || '重置失败'),
   })
 
@@ -545,6 +586,7 @@ function InviteTab({ tenantId }: { tenantId: string }) {
   }
 
   return (
+    <>
     <div className="space-y-6">
       {/* ── 邀请配置 ── */}
       <div className="bg-mg-bg-0 border border-mg-border/50 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-4 shadow-sm">
@@ -588,7 +630,7 @@ function InviteTab({ tenantId }: { tenantId: string }) {
           <Button
             variant="outline"
             className="h-7 text-[10px] font-bold px-3 rounded-full border-mg-border/60 hover:bg-mg-fill-0"
-            onClick={() => resetLink.mutate()}
+            onClick={() => setShowResetConfirm(true)}
           >
             重置链接
           </Button>
@@ -641,6 +683,31 @@ function InviteTab({ tenantId }: { tenantId: string }) {
         </div>
       </div>
     </div>
+
+    {/* 重置邀请链接确认弹窗 */}
+    <Modal
+      open={showResetConfirm}
+      onClose={() => setShowResetConfirm(false)}
+      size="sm"
+      title="确认重置邀请链接"
+      description="重置后当前邀请链接立即失效，确认重置？"
+      footer={
+        <div className="flex gap-2 justify-end">
+          <Button variant="outline" className="h-8 px-3 rounded-lg text-xs" onClick={() => setShowResetConfirm(false)}>
+            取消
+          </Button>
+          <Button
+            variant="default"
+            disabled={resetLink.isPending}
+            onClick={() => resetLink.mutate()}
+            className="h-8 px-4 rounded-lg text-xs font-semibold bg-brand-base text-white hover:bg-brand-base/90"
+          >
+            {resetLink.isPending ? '重置中...' : '确认重置'}
+          </Button>
+        </div>
+      }
+    />
+    </>
   )
 }
 
@@ -730,7 +797,7 @@ function OrgManagePanel({ tenantId }: { tenantId: string | null }) {
 
       <div className="pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
         {activeSubTab === 'info' && <OrgInfoTab tenantId={tenantId} />}
-        {activeSubTab === 'members' && <MembersTab tenantId={tenantId} />}
+        {activeSubTab === 'members' && <MembersTab tenantId={tenantId} canManage={canManage} />}
         {canManage && activeSubTab === 'invite' && <InviteTab tenantId={tenantId} />}
       </div>
     </div>

@@ -18,7 +18,6 @@ import {
   TableCell,
 } from '@/components/ui/Table'
 import { Modal } from '@/components/ui/Modal'
-import { Select } from '@/components/ui/Select'
 
 export default function WorkspacesPage() {
   const { t } = useTranslation()
@@ -93,14 +92,6 @@ export default function WorkspacesPage() {
         <p className="text-[13px] text-mg-text-2 leading-relaxed">
           {t('workspaces.desc')}
         </p>
-      </div>
-
-      {/* 当前工作区展示栏 */}
-      <div className="flex items-center gap-3 text-[13px] text-mg-text-1 font-bold">
-        <span>{t('workspaces.currentLabel')}</span>
-        <Select defaultValue="default" placeholder={t('workspaces.defaultOption')} className="w-[170px]">
-          <Select.Option value="default">{t('workspaces.defaultOption')}</Select.Option>
-        </Select>
       </div>
 
       {/* 控制台操作区域 */}

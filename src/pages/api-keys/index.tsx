@@ -302,6 +302,9 @@ export default function ApiKeysPage() {
               <div className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 max-w-3xl leading-relaxed font-semibold">
                 {t('apiKeys.revealModal.warning')}
               </div>
+              <div className="text-xs text-amber-700 dark:text-amber-300 mt-1 font-bold flex items-center gap-1">
+                ⚠ 请立即复制，关闭后将无法再查看完整密钥
+              </div>
             </div>
             <button
               onClick={() => setRevealVisible(false)}
@@ -405,6 +408,7 @@ export default function ApiKeysPage() {
                         navigator.clipboard.writeText(record.prefix + '••••••••')
                         appToast.success(t('apiKeys.table.copyMaskedSuccess'))
                       }}
+                      title="仅显示掩码，创建时应已复制完整密钥"
                       className="text-brand-base hover:text-brand-deep transition-colors cursor-pointer"
                     >
                       {t('apiKeys.table.copy')}

@@ -9,6 +9,7 @@ interface TagInputProps {
   suggestions?: string[]
   allowFreeText?: boolean
   validator?: (value: string) => boolean
+  onValidationError?: (value: string) => void
   className?: string
   tagVariant?: 'brand' | 'mono'
 }
@@ -21,6 +22,7 @@ export function TagInput({
   suggestions,
   allowFreeText = true,
   validator,
+  onValidationError,
   className,
   tagVariant = 'brand',
 }: TagInputProps) {
@@ -38,12 +40,15 @@ export function TagInput({
   const addTag = useCallback((tag: string) => {
     const trimmed = tag.trim()
     if (!trimmed || value.includes(trimmed)) return
-    if (validator && !validator(trimmed)) return
+    if (validator && !validator(trimmed)) {
+      onValidationError?.(trimmed)
+      return
+    }
     onChange([...value, trimmed])
     setInput('')
     setFocusIdx(-1)
     if (!hasSuggestions) setOpen(false)
-  }, [value, onChange, validator, hasSuggestions])
+  }, [value, onChange, validator, onValidationError, hasSuggestions])
 
   const removeTag = useCallback((tag: string) => {
     onChange(value.filter((v) => v !== tag))

@@ -15,6 +15,7 @@ import type { SeriesDataPoint } from '@/types'
 import { formatChartTooltipDate } from '@/lib/format-date'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
 import { LuTrendingUp, LuActivity, LuDatabase } from 'react-icons/lu'
 
 // ─── Types ───────────────────────────────────────────
@@ -366,8 +367,9 @@ export default function UsagePage() {
 
       {/* KPI 卡片行 */}
       {summaryQuery.isError ? (
-        <div style={{ color: 'var(--mg-danger)', fontSize: '13px', marginBottom: '24px' }}>
+        <div style={{ color: 'var(--mg-danger)', fontSize: '13px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
           {t('usage.error.summary')}
+          <Button variant="outline" size="sm" onClick={() => summaryQuery.refetch()}>{t('usage.retry')}</Button>
         </div>
       ) : (
         <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
@@ -423,8 +425,9 @@ export default function UsagePage() {
 
         {/* 图表内容 */}
         {seriesQuery.isError ? (
-          <div style={{ color: 'var(--mg-danger)', fontSize: '13px', textAlign: 'center', padding: '40px 0' }}>
+          <div style={{ color: 'var(--mg-danger)', fontSize: '13px', textAlign: 'center', padding: '40px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
             {t('usage.error.series')}
+            <Button variant="outline" size="sm" onClick={() => seriesQuery.refetch()}>{t('usage.retry')}</Button>
           </div>
         ) : seriesQuery.isLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
@@ -448,8 +451,9 @@ export default function UsagePage() {
           {t('usage.chart.histogramTitle')}
         </div>
         {histogramQuery.isError ? (
-          <div style={{ color: 'var(--mg-danger)', fontSize: '13px', textAlign: 'center', padding: '40px 0' }}>
+          <div style={{ color: 'var(--mg-danger)', fontSize: '13px', textAlign: 'center', padding: '40px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
             {t('usage.error.histogram')}
+            <Button variant="outline" size="sm" onClick={() => histogramQuery.refetch()}>{t('usage.retry')}</Button>
           </div>
         ) : histogramQuery.isLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '160px' }}>

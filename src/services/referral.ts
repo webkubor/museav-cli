@@ -1,24 +1,21 @@
 /**
- * 推荐计划 / 消费分润（净新增模块）
+ * 推荐计划 / 消费分润
  * 路由：/tenants/:tenantId/referral/...
  *
- * ⚠️ 当前后端接口未就绪：DEV 环境返回本地 mock（referralMock）以驱动可评审 UI。
- * 后端按本文件的「请求/响应类型 + 路径」补全 web-api 后，移除 isMock 分支即可切真实接口。
+ * 后端已就绪（web-api referral BFF，qa/ai-quality-platform#96）——本文件直连真实接口。
+ * 金额一律字符串；transfer/withdraw 必须携带稳定 idempotency_key（每次确认动作
+ * 生成一个 uuid 并在重试时复用），否则超时重试可能产生双重转账。
  */
 import { get, post } from '@/lib/request'
-import {
-  referralMock,
-  type ReferralStats,
-  type ReferralTier,
-  type ReferralInvitee,
-  type ReferralCommissionRecord,
-  type ReferralWithdrawal,
+import type {
+  ReferralStats,
+  ReferralTier,
+  ReferralInvitee,
+  ReferralCommissionRecord,
+  ReferralWithdrawal,
 } from '@/pages/referral/referral-data'
 
-/** DEV 兜底开关：后端就绪后移除此守卫即可切真实接口 */
-const isMock = () => import.meta.env.DEV
-
-// ─── 响应/请求类型（即后端需对齐的契约） ───────────────────────────────────
+// ─── 响应/请求类型 ───────────────────────────────────────────────────────────
 
 /** 推荐计划总览：KPI 统计 + 当前档位 + 专属邀请信息 */
 export interface ReferralOverview {
@@ -32,6 +29,8 @@ export interface ReferralOverview {
 export interface TransferRewardRequest {
   /** 转入金额，单次 ≥100，且不超过当前奖励余额 */
   amount: string
+  /** 稳定幂等键：同一次确认动作的重试必须复用同一个值 */
+  idempotency_key: string
 }
 export interface TransferRewardResult {
   /** 转入后的奖励余额 */
@@ -47,6 +46,8 @@ export interface WithdrawRequest {
   /** 提现金额，单次 ≥100，且不超过当前奖励余额 */
   amount: string
   method: WithdrawMethod
+  /** 稳定幂等键：同一次确认动作的重试必须复用同一个值 */
+  idempotency_key: string
   /** method=alipay 时必填 */
   alipay_account?: string
   /** method=bank 时必填 */
@@ -59,32 +60,21 @@ export interface WithdrawRequest {
 
 /** GET /tenants/:tenantId/referral/overview — 总览 KPI + 档位 + 邀请信息 */
 export function getReferralOverview(tenantId: string): Promise<ReferralOverview> {
-  if (isMock()) {
-    return Promise.resolve({
-      stats: referralMock.stats,
-      tier: referralMock.tier,
-      inviteLink: referralMock.inviteLink,
-      inviteCode: referralMock.inviteCode,
-    })
-  }
   return get<ReferralOverview>(`tenants/${tenantId}/referral/overview`)
 }
 
 /** GET /tenants/:tenantId/referral/invitees — 被邀请人列表 */
 export function listReferralInvitees(tenantId: string): Promise<ReferralInvitee[]> {
-  if (isMock()) return Promise.resolve(referralMock.invitees)
   return get<ReferralInvitee[]>(`tenants/${tenantId}/referral/invitees`)
 }
 
 /** GET /tenants/:tenantId/referral/reward-records — 奖励记录（即返佣流水） */
 export function listRewardRecords(tenantId: string): Promise<ReferralCommissionRecord[]> {
-  if (isMock()) return Promise.resolve(referralMock.commissions)
   return get<ReferralCommissionRecord[]>(`tenants/${tenantId}/referral/reward-records`)
 }
 
 /** GET /tenants/:tenantId/referral/withdrawals — 提现记录 */
 export function listWithdrawals(tenantId: string): Promise<ReferralWithdrawal[]> {
-  if (isMock()) return Promise.resolve(referralMock.withdrawals)
   return get<ReferralWithdrawal[]>(`tenants/${tenantId}/referral/withdrawals`)
 }
 
@@ -93,10 +83,6 @@ export function transferRewardToBalance(
   tenantId: string,
   body: TransferRewardRequest
 ): Promise<TransferRewardResult> {
-  if (isMock()) {
-    const left = Math.max(0, Number(referralMock.stats.rewardBalance) - Number(body.amount))
-    return Promise.resolve({ reward_balance: String(left), main_balance: '0' })
-  }
   return post<TransferRewardResult>(`tenants/${tenantId}/referral/transfer`, body)
 }
 
@@ -105,8 +91,5 @@ export function requestWithdrawal(
   tenantId: string,
   body: WithdrawRequest
 ): Promise<ReferralWithdrawal> {
-  if (isMock()) {
-    return Promise.resolve({ appliedAt: '', amount: body.amount, status: 'pending', paidAt: null })
-  }
   return post<ReferralWithdrawal>(`tenants/${tenantId}/referral/withdrawals`, body)
 }

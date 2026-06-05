@@ -477,18 +477,16 @@ export interface UpdatePreferencesRequest {
 
 // ─── Observability ──────────────────────────────────
 
-/** Logging 配置 */
+/** Logging 配置（retention_days 已移除：后端从未支持，此前为前端伪造值） */
 export interface LoggingConfig {
   input_output_logging_enabled: boolean
   broadcast_enabled: boolean
-  retention_days: number
 }
 
 /** 更新 Logging 配置请求体 */
 export interface UpdateLoggingConfigRequest {
   input_output_logging_enabled?: boolean
   broadcast_enabled?: boolean
-  retention_days?: number
 }
 
 /** 可观测平台配置字段 schema */
@@ -709,28 +707,6 @@ export interface CallLogItem {
   error: string | null
 }
 
-/** 调用日志详情 */
-export interface CallLogDetail extends CallLogItem {
-  finished_at: string
-  protocol: string
-  endpoint: string
-  billing: {
-    billing_session_id: string
-    billing_status: string
-    preauthorized_amount: string
-    settled_amount: string
-  }
-  /** 仅开启 Input/Output Logging 时返回 */
-  prompt?: {
-    messages: Array<{ role: string; content: string }>
-    redacted: boolean
-  }
-  /** 仅开启 Input/Output Logging 时返回 */
-  completion?: {
-    content: string
-    tool_calls: unknown | null
-  }
-}
 
 /** 调用日志统计摘要（GET /model-logs/stats） */
 export interface LogStats {

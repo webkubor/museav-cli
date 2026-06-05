@@ -13,6 +13,7 @@ import {
   redeemPromoCode,
 } from '@/services/billing'
 import { listRewardRecords } from '@/services/referral'
+import { listGiftRecords } from '@/services/billing'
 import { useCurrency, useEnabledChannels } from '@/hooks/use-platform-config'
 import { useAuthStore } from '@/store/auth'
 import { isDomestic } from '@/lib/market'
@@ -451,14 +452,6 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
   )
 }
 
-// ─── Mock Gift Balance Records ────────────────────────────────────────────
-
-const MOCK_GIFT_RECORDS = [
-  { id: '1', source: '新用户注册赠送', amount: '50.00', currency: 'CNY', credited_at: '2024-03-01T10:00:00Z' },
-  { id: '2', source: '活动促销赠送', amount: '100.00', currency: 'CNY', credited_at: '2024-04-15T14:30:00Z' },
-  { id: '3', source: '推荐好友奖励', amount: '30.00', currency: 'CNY', credited_at: '2024-05-20T09:00:00Z' },
-  { id: '4', source: '平台专属福利', amount: '40.00', currency: 'CNY', credited_at: '2024-06-01T16:00:00Z' },
-]
 
 // ─── Render Helper for Referral Tiers ──────────────────────────────────────
 
@@ -565,6 +558,14 @@ export default function BillingPage() {
     enabled: !!tenantId && activeTab === 'reward',
   })
 
+  // 赠送明细（grant 桶入账 journal，#93）
+  const { data: giftRecordsPage } = useQuery({
+    queryKey: ['billing', 'gift-records', tenantId],
+    queryFn: () => listGiftRecords(tenantId),
+    enabled: !!tenantId && activeTab === 'gift',
+  })
+  const giftRecords = giftRecordsPage?.items ?? []
+
   const ordersQuery = useInfiniteQuery({
     queryKey: ['billing', 'recharges', tenantId],
     queryFn: ({ pageParam }) => listRecharges(tenantId, { cursor: pageParam as string | undefined, page_size: 15 }),
@@ -590,6 +591,8 @@ export default function BillingPage() {
     }
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)
+    // 仅在挂载时注册一次；refetch 引用刻意不进依赖（pre-existing 行为，显式豁免）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const orders = ordersQuery.data?.pages.flatMap((page) => page.items) ?? []
@@ -1076,6 +1079,11 @@ export default function BillingPage() {
       ) : activeTab === 'gift' ? (
         /* 赠送余额明细 */
         <div className="rounded-2xl border border-mg-border bg-card-bg shadow-sm overflow-hidden">
+          {giftRecords.length === 0 ? (
+            <div className="py-16 text-center text-xs text-mg-text-2">
+              {t('billing.orders.gift.empty', { defaultValue: '暂无赠送记录' })}
+            </div>
+          ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
@@ -1086,7 +1094,7 @@ export default function BillingPage() {
                 </tr>
               </thead>
               <tbody>
-                {MOCK_GIFT_RECORDS.map((record) => (
+                {giftRecords.map((record) => (
                   <tr key={record.id} className="border-b border-mg-border/40 cursor-pointer billing-table-row">
                     <td className="py-3.5 px-4 font-medium">
                       <div className="flex items-center gap-2.5 select-none">
@@ -1103,6 +1111,7 @@ export default function BillingPage() {
               </tbody>
             </table>
           </div>
+          )}
         </div>
       ) : (
         /* 奖励记录（原推荐计划「返佣流水」） */

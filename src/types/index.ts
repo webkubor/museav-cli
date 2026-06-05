@@ -77,7 +77,6 @@ export type {
   HistogramBucket,
   LogHistogram,
   CallLogItem,
-  CallLogDetail,
   LogStats,
   LogPayload,
   ModelPricing,

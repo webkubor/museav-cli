@@ -1,10 +1,10 @@
+import { createOrganization } from '@/services/organizations'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { LuPlus } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import {
   addTenantMembers,
-  createTenant,
   getTenant,
   getTenantInviteLink,
   listTenantMembers,
@@ -69,7 +69,6 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
   const qc = useQueryClient()
   const [createVisible, setCreateVisible] = useState(false)
   const [newName, setNewName] = useState('')
-  const [newSlug, setNewSlug] = useState('')
 
   const tenantsQuery = useQuery({
     queryKey: ['tenants'],
@@ -81,24 +80,23 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
   const atLimit = tenants.length >= MAX_TENANTS
 
   const createMutation = useMutation({
-    mutationFn: () => createTenant({ name: newName.trim(), slug: newSlug.trim(), type: 'enterprise' }),
+    // 企业组织创建走 POST /organizations（slug 由后端从 name 派生）；
+    // 原 createTenant(POST /tenants) 后端从未注册，必 404（#92/#99 修正）。
+    mutationFn: () => createOrganization({ name: newName.trim() }),
     onSuccess: (org) => {
       appToast.success(`组织「${org.name}」已创建`)
       setCreateVisible(false)
       setNewName('')
-      setNewSlug('')
       qc.invalidateQueries({ queryKey: ['tenants'] })
       onSelect(org.tenant_id)
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       appToast.error(err?.message || '创建失败')
     },
   })
 
   function handleCreate() {
     if (!newName.trim()) { appToast.error('组织名称不能为空'); return }
-    if (!newSlug.trim()) { appToast.error('唯一标识不能为空'); return }
-    if (!/^[a-z0-9-]+$/.test(newSlug)) { appToast.error('唯一标识仅支持小写字母、数字和连字符'); return }
     createMutation.mutate()
   }
 
@@ -225,13 +223,6 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
                 <label className="text-[10px] font-bold text-mg-text-1 uppercase tracking-wider block">组织名称</label>
                 <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="如：我的团队" className="rounded-lg w-full text-xs h-9" />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-mg-text-1 uppercase tracking-wider block">唯一标识 (Slug)</label>
-                <Input value={newSlug} onChange={(e) => setNewSlug(e.target.value)} placeholder="如：my-team" className="rounded-lg w-full text-xs h-9" />
-                <span className="text-[10px] text-mg-text-2 block mt-1">
-                  仅支持小写字母、数字和连字符
-                </span>
-              </div>
             </div>
             <div className="p-4 border-t border-mg-border flex justify-end gap-2 bg-mg-fill-0/30">
               <Button variant="outline" className="h-8 px-3 rounded-lg text-xs" onClick={() => setCreateVisible(false)}>取消</Button>
@@ -282,7 +273,7 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
       qc.invalidateQueries({ queryKey: ['tenants'] })
       setEditing(false)
     },
-    onError: (err: any) => appToast.error(err?.message || '更新失败'),
+    onError: (err: Error) => appToast.error(err?.message || '更新失败'),
   })
 
   const logoMutation = useMutation({
@@ -292,7 +283,7 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
       qc.invalidateQueries({ queryKey: ['tenant', tenantId] })
       qc.invalidateQueries({ queryKey: ['tenants'] })
     },
-    onError: (err: any) => appToast.error(err?.message || '上传失败，请重试'),
+    onError: (err: Error) => appToast.error(err?.message || '上传失败，请重试'),
   })
 
   if (tenantQuery.isLoading) {
@@ -414,7 +405,7 @@ function MembersTab({ tenantId, canManage }: { tenantId: string; canManage: bool
     mutationFn: (values: { accountId: string; role: 'tenant_admin' | 'tenant_member' }) =>
       updateTenantMemberRole(tenantId, values.accountId, values.role),
     onSuccess: () => { appToast.success('角色已更新'); qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] }) },
-    onError: (err: any) => appToast.error(err?.message || '更新角色失败'),
+    onError: (err: Error) => appToast.error(err?.message || '更新角色失败'),
   })
 
   const removeMember = useMutation({
@@ -424,7 +415,7 @@ function MembersTab({ tenantId, canManage }: { tenantId: string; canManage: bool
       qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
       setRemoveTarget(null)
     },
-    onError: (err: any) => appToast.error(err?.message || '移除成员失败'),
+    onError: (err: Error) => appToast.error(err?.message || '移除成员失败'),
   })
 
   const members = membersQuery.data?.items ?? []
@@ -472,7 +463,7 @@ function MembersTab({ tenantId, canManage }: { tenantId: string; canManage: bool
                       ) : canManage ? (
                         <select
                           value={record.role}
-                          onChange={(e) => changeRole.mutate({ accountId: record.account.account_id, role: e.target.value as any })}
+                          onChange={(e) => changeRole.mutate({ accountId: record.account.account_id, role: e.target.value as 'tenant_admin' | 'tenant_member' })}
                           className="modern-input-field h-8 text-[11px] py-0 pr-8 pl-2 bg-mg-bg-0 border border-mg-border/40 rounded-lg w-[120px] font-semibold cursor-pointer"
                         >
                           {TENANT_ROLE_OPTIONS.map((o) => (
@@ -559,7 +550,7 @@ function InviteTab({ tenantId }: { tenantId: string }) {
       qc.invalidateQueries({ queryKey: ['tenant-invite-link', tenantId] })
       setShowResetConfirm(false)
     },
-    onError: (err: any) => appToast.error(err?.message || '重置失败'),
+    onError: (err: Error) => appToast.error(err?.message || '重置失败'),
   })
 
   const addMembers = useMutation({
@@ -569,7 +560,7 @@ function InviteTab({ tenantId }: { tenantId: string }) {
       expires_in_hours: expiresInHours,
     }),
     onSuccess: () => { appToast.success('邀请已发出'); setInviteEmails(''); setExpiresInHours(72); qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] }) },
-    onError: (err: any) => appToast.error(err?.message || '邀请失败'),
+    onError: (err: Error) => appToast.error(err?.message || '邀请失败'),
   })
 
   const inviteLinkUrl = inviteLinkQuery.data
@@ -596,7 +587,7 @@ function InviteTab({ tenantId }: { tenantId: string }) {
             初始角色
             <select
               value={inviteRole}
-              onChange={(e) => setInviteRole(e.target.value as any)}
+              onChange={(e) => setInviteRole(e.target.value as 'tenant_admin' | 'tenant_member')}
               className="bg-transparent border-none outline-none font-bold text-[11px] ml-1 cursor-pointer text-mg-text-0"
             >
               {TENANT_ROLE_OPTIONS.map((o) => (
@@ -714,6 +705,10 @@ function InviteTab({ tenantId }: { tenantId: string }) {
 // ─── Management panel ─────────────────────────────────────────────────────────
 function OrgManagePanel({ tenantId }: { tenantId: string | null }) {
   const tenantsQuery = useQuery({ queryKey: ['tenants'], queryFn: listTenants, staleTime: 30_000 })
+  // Hooks 必须无条件调用（rules-of-hooks）：原先位于 early-return 之后，
+  // tenantId 在空/非空之间切换会改变 Hook 调用顺序——真实潜在崩溃点。
+  const sessionTenants = useAuthStore((s) => s.tenants)
+  const [activeSubTab, setActiveSubTab] = useState<'info' | 'members' | 'invite'>('members')
 
   if (!tenantId) {
     return (
@@ -736,13 +731,9 @@ function OrgManagePanel({ tenantId }: { tenantId: string | null }) {
 
   const tenant = tenantsQuery.data?.items.find((t) => t.tenant_id === tenantId)
   const canManage = tenant?.role === 'tenant_owner' || tenant?.role === 'tenant_admin'
-
-  const sessionTenants = useAuthStore((s) => s.tenants)
   const tenantName = tenant?.name
     || sessionTenants.find((t) => t.tenant_id === tenantId)?.name
     || '…'
-
-  const [activeSubTab, setActiveSubTab] = useState<'info' | 'members' | 'invite'>('members')
 
   return (
     <div className="space-y-6">

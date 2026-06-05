@@ -12,7 +12,8 @@ import {
 } from 'react-icons/lu'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
-import { getReferralOverview } from '@/services/referral'
+import { getBalanceBreakdown } from '@/services/billing'
+import { streamExperienceChat } from '@/services/experience'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Composer } from '@/components/ui/Composer'
@@ -47,16 +48,23 @@ export default function ModelsPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const text = i18n.language.startsWith('zh') ? modelExperienceCopy.zh : modelExperienceCopy.en
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
-  const { data: referralOverview } = useQuery({
-    queryKey: ['referral', 'overview', tenantId],
-    queryFn: () => getReferralOverview(tenantId),
+  // 免费额度 = 当前租户「赠送余额」（grant 桶）：体验计费优先从中扣减，
+  // 与后端多桶账本的真实扣费顺序一致（grant→cash，#97/#93）。
+  const { data: breakdown } = useQuery({
+    queryKey: ['balance', 'breakdown', tenantId],
+    queryFn: () => getBalanceBreakdown(tenantId),
     enabled: !!tenantId,
   })
-  const rewardBalance = Number(referralOverview?.stats.rewardBalance ?? 0)
+  const giftBalance = Number(breakdown?.gift.amount ?? 0)
   const [category, setCategory] = useState<CategoryKey>('all')
   const [isCompareOpen, setIsCompareOpen] = useState(false)
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<ExperienceMessage[]>(initialMessages)
+  const [isStreaming, setIsStreaming] = useState(false)
+  const abortRef = useRef<AbortController | null>(null)
+
+  // 离开页面时中断在途流式请求，避免后台继续消耗额度。
+  useEffect(() => () => abortRef.current?.abort(), [])
   const {
     search,
     setSearch,
@@ -96,19 +104,48 @@ export default function ModelsPage() {
     if (focusComposer) window.setTimeout(() => inputRef.current?.focus(), 80)
   }
 
-  function sendPrompt() {
+  async function sendPrompt() {
     const prompt = input.trim()
-    if (!prompt || !selectedModel) return
-    setMessages((prev) => [
-      ...prev,
-      { role: 'user', content: prompt },
-      {
-        role: 'assistant',
-        content: `已切换到 ${selectedModel.display_name} 进行体验。当前 UI 会保留输入、模型参数和成本提示；正式联调时这里接入模型体验接口返回。`,
-        meta: `模型 ${selectedModel.model_id} · 预估 ${formatModelPrice(selectedModel.pricing?.input_per_1m, selectedModel.pricing?.currency)}`,
-      },
-    ])
+    if (!prompt || !selectedModel || isStreaming) return
+    // 取历史对话（不含静态开场白的 meta），加上本次输入，发给体验代理。
+    const history = [...messages, { role: 'user' as const, content: prompt }]
+    setMessages((prev) => [...prev, { role: 'user', content: prompt }, { role: 'assistant', content: '' }])
     setInput('')
+    setIsStreaming(true)
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+    const startedAt = Date.now()
+
+    const applyAssistant = (updater: (content: string) => string, meta?: string) => {
+      setMessages((prev) => {
+        const next = [...prev]
+        const last = next[next.length - 1]
+        if (last?.role === 'assistant') {
+          next[next.length - 1] = { ...last, content: updater(last.content), ...(meta ? { meta } : {}) }
+        }
+        return next
+      })
+    }
+
+    try {
+      await streamExperienceChat({
+        model: selectedModel.model_id,
+        messages: history.map(({ role, content }) => ({ role, content })),
+        signal: controller.signal,
+        onDelta: (delta) => applyAssistant((content) => content + delta),
+      })
+      const seconds = ((Date.now() - startedAt) / 1000).toFixed(1)
+      applyAssistant(
+        (content) => content,
+        `模型 ${selectedModel.model_id} · 延迟 ${seconds}s · ${formatModelPrice(selectedModel.pricing?.input_per_1m, selectedModel.pricing?.currency)}`
+      )
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return
+      applyAssistant(() => `体验请求失败：${(err as Error).message || '请稍后重试'}`)
+    } finally {
+      setIsStreaming(false)
+    }
   }
 
   async function copyModelId() {
@@ -131,17 +168,17 @@ export default function ModelsPage() {
           <p>{text.desc}</p>
         </div>
         <div className="flex items-center gap-2">
-          {/* 免费剩余额度（= 奖励余额），体验时实时可见 */}
+          {/* 免费剩余额度（= 赠送余额 grant 桶），体验计费优先扣减 */}
           <button
             type="button"
-            onClick={() => navigate('/referral')}
+            onClick={() => navigate('/billing')}
             title={text.freeQuotaHint}
             className="flex items-center gap-2 rounded-full h-9 pl-3 pr-3.5 border border-brand-base/30 bg-[var(--brand-base)]/5 hover:bg-[var(--brand-base)]/10 transition-colors"
           >
             <LuGift size={14} className="text-brand-base shrink-0" />
             <span className="text-[11px] font-semibold text-mg-text-2 leading-none">{text.freeQuota}</span>
             <span className="text-sm font-bold text-brand-base tabular-nums leading-none">
-              ¥{rewardBalance.toLocaleString('zh-CN')}
+              ¥{giftBalance.toLocaleString('zh-CN')}
             </span>
           </button>
           <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-bold" onClick={() => setIsCompareOpen(true)}>
@@ -287,6 +324,8 @@ export default function ModelsPage() {
             value={input}
             onChange={setInput}
             onSend={sendPrompt}
+            isStreaming={isStreaming}
+            onStop={() => abortRef.current?.abort()}
             onClear={() => {
               setMessages(initialMessages)
               setInput('')

@@ -64,7 +64,7 @@ export function switchTenant(body: SwitchTenantRequest) {
   return post<null>('account/active-tenant', body)
 }
 
-/** 发送密码重置邮件（后端未实现时依赖 MSW mock） */
+/** 发送密码重置邮件 */
 export function forgotPassword(email: string) {
   const resetUrl = `${window.location.origin}/reset-password`
   return post<AuthMailTTLResponse>('auth/password/forgot', { email, reset_url: resetUrl })

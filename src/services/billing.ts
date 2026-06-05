@@ -34,19 +34,32 @@ export interface BalanceBreakdown {
   reward: Money
 }
 
-/**
- * GET /tenants/:tenantId/balance/breakdown — 余额细分。
- * ⚠️ 后端 balance 接口暂未细分该三项：DEV 返回占位值，后端补全后移除 isMock 分支。
- */
+/** GET /tenants/:tenantId/balance/breakdown — 余额细分（cash/grant/rebate 三桶，#93） */
 export function getBalanceBreakdown(tenantId: string): Promise<BalanceBreakdown> {
-  if (import.meta.env.DEV) {
-    return Promise.resolve({
-      main: { amount: '1250.50', currency: 'CNY' },
-      gift: { amount: '220.00', currency: 'CNY' },
-      reward: { amount: '1420.00', currency: 'CNY' },
-    })
-  }
   return get<BalanceBreakdown>(`tenants/${tenantId}/balance/breakdown`)
+}
+
+// ─── 赠送明细 ─────────────────────────────────────
+
+/** 单条赠金入账记录（grant 桶 journal，#93） */
+export interface GiftRecord {
+  id: string
+  source: string
+  amount: string
+  currency: string
+  credited_at: string
+}
+
+export interface GiftRecordsPage {
+  items: GiftRecord[]
+  page_size: number
+  has_more: boolean
+  next_cursor: string
+}
+
+/** GET /tenants/:tenantId/gift-records — 赠送明细（促销/注册等赠金入账） */
+export function listGiftRecords(tenantId: string, params?: { cursor?: string; page_size?: number }) {
+  return get<GiftRecordsPage>(`tenants/${tenantId}/gift-records`, params)
 }
 
 // ─── 充值订单 ─────────────────────────────────────

@@ -1,14 +1,8 @@
-import {
-  LuActivity,
-  LuChartBar,
-  LuBot,
-  LuCode,
-  LuKeyRound,
-  LuListTree,
-  LuSearch,
-  LuSquareTerminal,
-} from 'react-icons/lu'
+import { LuBot, LuChartBar } from 'react-icons/lu'
+import { useQuery } from '@tanstack/react-query'
 import { Card } from '@/components/ui/Card'
+import { useAuthStore } from '@/store/auth'
+import { getRankings, type RankingApiItem } from '@/services/overview'
 import './dashboard-rankings-section.css'
 
 type RankingTone = 'emerald' | 'cyan' | 'violet' | 'amber'
@@ -22,61 +16,29 @@ interface RankingItem {
   icon: React.ReactNode
 }
 
-const modelRankings: RankingItem[] = [
-  {
-    rank: '01',
-    name: 'qwen/qwen3.7-max',
-    meta: '企业知识库问答 · 低延迟',
-    score: '98.6',
-    tone: 'emerald',
-    icon: <LuBot />,
-  },
-  {
-    rank: '02',
-    name: 'deepseek-r1',
-    meta: '复杂推理 · 代码分析',
-    score: '96.2',
-    tone: 'cyan',
-    icon: <LuActivity />,
-  },
-  {
-    rank: '03',
-    name: 'claude-opus-4.7-fast',
-    meta: '长上下文 · 稳定输出',
-    score: '94.8',
-    tone: 'violet',
-    icon: <LuListTree />,
-  },
-]
+const TONES: RankingTone[] = ['emerald', 'cyan', 'violet', 'amber']
 
-const skillRankings: RankingItem[] = [
-  {
-    rank: '01',
-    name: 'CLI 快速接入',
-    meta: '本地开发 · 一键验证',
-    score: '12.4k',
-    tone: 'emerald',
-    icon: <LuSquareTerminal />,
-  },
-  {
-    rank: '02',
-    name: 'API Key 管理',
-    meta: '密钥轮换 · 权限隔离',
-    score: '9.8k',
-    tone: 'amber',
-    icon: <LuKeyRound />,
-  },
-  {
-    rank: '03',
-    name: '日志 Payload 追踪',
-    meta: '请求排障 · 原始数据',
-    score: '8.6k',
-    tone: 'cyan',
-    icon: <LuSearch />,
-  },
-]
+/** 后端真实聚合行 → 展示行（rank 补零、tone 轮转） */
+function toRankingItem(item: RankingApiItem, index: number): RankingItem {
+  return {
+    rank: item.rank.padStart(2, '0'),
+    name: item.name,
+    meta: item.meta,
+    score: item.score,
+    tone: TONES[index % TONES.length],
+    icon: <LuBot aria-hidden />,
+  }
+}
 
-function RankingCard({ title, caption, items }: { title: string; caption: string; items: RankingItem[] }) {
+function RankingCard({
+  title,
+  caption,
+  items,
+}: {
+  title: string
+  caption: string
+  items: RankingItem[]
+}) {
   return (
     <Card glass className="dashboard-ranking-card">
       <div className="dashboard-ranking-header">
@@ -88,31 +50,53 @@ function RankingCard({ title, caption, items }: { title: string; caption: string
       </div>
 
       <div className="dashboard-ranking-list">
-        {items.map((item) => (
-          <div className="dashboard-ranking-row" data-tone={item.tone} key={item.name}>
-            <span className="dashboard-ranking-rank">{item.rank}</span>
-            <span className="dashboard-ranking-icon">{item.icon}</span>
+        {items.length === 0 ? (
+          <div className="dashboard-ranking-row" data-tone="cyan">
             <span className="dashboard-ranking-copy">
-              <strong>{item.name}</strong>
-              <small>{item.meta}</small>
+              <strong>暂无数据</strong>
+              <small>近 30 天还没有模型调用记录</small>
             </span>
-            <span className="dashboard-ranking-score">{item.score}</span>
           </div>
-        ))}
+        ) : (
+          items.map((item) => (
+            <div className="dashboard-ranking-row" data-tone={item.tone} key={item.name}>
+              <span className="dashboard-ranking-rank">{item.rank}</span>
+              <span className="dashboard-ranking-icon">{item.icon}</span>
+              <span className="dashboard-ranking-copy">
+                <strong>{item.name}</strong>
+                <small>{item.meta}</small>
+              </span>
+              <span className="dashboard-ranking-score">{item.score}</span>
+            </div>
+          ))
+        )}
       </div>
     </Card>
   )
 }
 
+/**
+ * Dashboard 排行榜（#98）：models 榜来自 observer 真实聚合（近 30 天调用量
+ * Top3）。skills 榜后端恒返回空（平台无 skills 数据源，不造假数据）——
+ * 列表为空时整张卡片隐藏。
+ */
 export function DashboardRankingsSection() {
+  const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
+  const { data } = useQuery({
+    queryKey: ['overview', 'rankings', tenantId],
+    queryFn: () => getRankings(tenantId),
+    enabled: !!tenantId,
+  })
+
+  const models = (data?.models ?? []).map(toRankingItem)
+  const skills = (data?.skills ?? []).map(toRankingItem)
+
   return (
     <section className="dashboard-rankings-section">
-      <RankingCard title="热门模型排行榜" caption="当前高频体验与调用模型" items={modelRankings} />
-      <RankingCard title="热门 Skills" caption="开发者最常使用的工作流" items={skillRankings} />
-      <div className="dashboard-ranking-note">
-        <LuCode aria-hidden />
-        <span>榜单结构先按产品展示做静态承载，后续可直接替换为真实统计接口。</span>
-      </div>
+      <RankingCard title="热门模型排行榜" caption="近 30 天调用量 Top 3" items={models} />
+      {skills.length > 0 && (
+        <RankingCard title="热门 Skills" caption="开发者最常使用的工作流" items={skills} />
+      )}
     </section>
   )
 }

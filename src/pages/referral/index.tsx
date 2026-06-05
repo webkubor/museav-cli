@@ -17,12 +17,21 @@ import {
 import { Modal } from '@/components/ui/Modal'
 import { appToast } from '@/lib/app-toast'
 import { useAuthStore } from '@/store/auth'
-import { transferRewardToBalance, requestWithdrawal } from '@/services/referral'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
-  referralMock,
+  getReferralOverview,
+  listReferralInvitees,
+  listWithdrawals,
+  transferRewardToBalance,
+  requestWithdrawal,
+} from '@/services/referral'
+
+import {
   referralCopy,
   type ReferralInvitee,
+  type ReferralStats,
+  type ReferralTier,
   type ReferralWithdrawal,
   type WithdrawalStatus,
 } from './referral-data'
@@ -42,15 +51,65 @@ export default function ReferralPage() {
   const { i18n } = useTranslation()
   const text = i18n.language.startsWith('zh') ? referralCopy.zh : referralCopy.en
 
-  const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
-  const { stats, inviteLink, inviteCode, tier, invitees, withdrawals } = referralMock
+  // 推荐计划绑定用户「默认（个人）租户」：佣金只入默认租户的奖励余额
+  // （qa/ai-quality-platform#96 评审决策），与当前切换的组织无关。
+  const tenantId = useAuthStore(
+    (s) => s.tenants.find((t) => t.is_default)?.tenant_id ?? s.activeTenantId ?? ''
+  )
+  const queryClient = useQueryClient()
+
+  const { data: overview } = useQuery({
+    queryKey: ['referral', 'overview', tenantId],
+    queryFn: () => getReferralOverview(tenantId),
+    enabled: !!tenantId,
+  })
+  const { data: invitees = [] } = useQuery({
+    queryKey: ['referral', 'invitees', tenantId],
+    queryFn: () => listReferralInvitees(tenantId),
+    enabled: !!tenantId,
+  })
+  const { data: withdrawalList = [] } = useQuery({
+    queryKey: ['referral', 'withdrawals', tenantId],
+    queryFn: () => listWithdrawals(tenantId),
+    enabled: !!tenantId,
+  })
+
+  const emptyStats: ReferralStats = {
+    totalCommission: '0',
+    monthCommission: '0',
+    activeInvited: 0,
+    invitedTotal: 0,
+    rewardBalance: '0',
+  }
+  const emptyTier: ReferralTier = {
+    name: '—',
+    rate: 0,
+    cumulativeSpend: '0',
+    nextThreshold: '0',
+    nextTierName: '',
+    nextRate: 0,
+  }
+  const stats = overview?.stats ?? emptyStats
+  const tier = overview?.tier ?? emptyTier
+  const inviteLink = overview?.inviteLink ?? ''
+  const inviteCode = overview?.inviteCode ?? ''
+  const rewardBalance = Number(stats.rewardBalance)
+
+  /** 转出/提现成功后刷新所有受影响的余额与记录视图 */
+  const invalidateMoneyViews = () => {
+    queryClient.invalidateQueries({ queryKey: ['referral', 'overview', tenantId] })
+    queryClient.invalidateQueries({ queryKey: ['referral', 'withdrawals', tenantId] })
+    queryClient.invalidateQueries({ queryKey: ['referral', 'reward-records', tenantId] })
+    queryClient.invalidateQueries({ queryKey: ['balance', tenantId] })
+    queryClient.invalidateQueries({ queryKey: ['balance', 'breakdown', tenantId] })
+  }
 
   const MIN_AMOUNT = 100
 
   const [activeTab, setActiveTab] = useState<TabKey>('invitees')
   const [copied, setCopied] = useState(false)
-  const [rewardBalance, setRewardBalance] = useState(Number(stats.rewardBalance))
-  const [withdrawalList, setWithdrawalList] = useState<ReferralWithdrawal[]>(withdrawals)
+  // 稳定幂等键：打开弹窗时生成，确认重试期间复用；金额修改即重铸。
+  const [idempotencyKey, setIdempotencyKey] = useState('')
 
   // 转入主余额弹窗
   const [transferOpen, setTransferOpen] = useState(false)
@@ -88,16 +147,38 @@ export default function ReferralPage() {
       appToast.info(text.belowMin)
       return
     }
+    setIdempotencyKey(crypto.randomUUID())
     setTransferAmount(String(rewardBalance))
     setTransferOpen(true)
   }
 
-  const confirmTransfer = async () => {
-    if (!transferValid) return
-    await transferRewardToBalance(tenantId, { amount: String(transferNum) })
-    setRewardBalance((b) => b - transferNum)
-    setTransferOpen(false)
-    appToast.success(text.transferSuccess.replace('{amount}', fmt(transferNum)))
+  /** 金额一旦修改即重铸幂等键：同键不同额会被后端按原额重放，必须避免 */
+  const onTransferAmountChange = (v: string) => {
+    setIdempotencyKey(crypto.randomUUID())
+    setTransferAmount(v)
+  }
+  const onWithdrawAmountChange = (v: string) => {
+    setIdempotencyKey(crypto.randomUUID())
+    setWithdrawAmount(v)
+  }
+
+  const transferMutation = useMutation({
+    mutationFn: () =>
+      transferRewardToBalance(tenantId, {
+        amount: String(transferNum),
+        idempotency_key: idempotencyKey,
+      }),
+    onSuccess: () => {
+      invalidateMoneyViews()
+      setTransferOpen(false)
+      appToast.success(text.transferSuccess.replace('{amount}', fmt(transferNum)))
+    },
+    onError: (err: Error) => appToast.error(err.message || text.transferFailed),
+  })
+
+  const confirmTransfer = () => {
+    if (!transferValid || transferMutation.isPending) return
+    transferMutation.mutate()
   }
 
   const handleWithdraw = () => {
@@ -105,6 +186,7 @@ export default function ReferralPage() {
       appToast.info(text.belowMin)
       return
     }
+    setIdempotencyKey(crypto.randomUUID())
     setWithdrawAmount(String(rewardBalance))
     setPayMethod('alipay')
     setAlipayAccount('')
@@ -114,26 +196,29 @@ export default function ReferralPage() {
     setWithdrawOpen(true)
   }
 
-  const submitWithdraw = async () => {
-    if (!withdrawValid) return
-    await requestWithdrawal(tenantId, {
-      amount: String(withdrawNum),
-      method: payMethod,
-      alipay_account: payMethod === 'alipay' ? alipayAccount.trim() : undefined,
-      bank_name: payMethod === 'bank' ? bankName.trim() : undefined,
-      bank_card: payMethod === 'bank' ? bankCard.trim() : undefined,
-      bank_holder: payMethod === 'bank' ? bankHolder.trim() : undefined,
-    })
-    const now = new Date()
-    const dateStr = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}`
-    setWithdrawalList((list) => [
-      { appliedAt: dateStr, amount: String(withdrawNum), status: 'pending', paidAt: null },
-      ...list,
-    ])
-    setRewardBalance((b) => b - withdrawNum)
-    setWithdrawOpen(false)
-    setActiveTab('withdrawals')
-    appToast.success(text.withdrawSuccess)
+  const withdrawMutation = useMutation({
+    mutationFn: () =>
+      requestWithdrawal(tenantId, {
+        amount: String(withdrawNum),
+        method: payMethod,
+        idempotency_key: idempotencyKey,
+        alipay_account: payMethod === 'alipay' ? alipayAccount.trim() : undefined,
+        bank_name: payMethod === 'bank' ? bankName.trim() : undefined,
+        bank_card: payMethod === 'bank' ? bankCard.trim() : undefined,
+        bank_holder: payMethod === 'bank' ? bankHolder.trim() : undefined,
+      }),
+    onSuccess: () => {
+      invalidateMoneyViews()
+      setWithdrawOpen(false)
+      setActiveTab('withdrawals')
+      appToast.success(text.withdrawSuccess)
+    },
+    onError: (err: Error) => appToast.error(err.message || text.withdrawFailed),
+  })
+
+  const submitWithdraw = () => {
+    if (!withdrawValid || withdrawMutation.isPending) return
+    withdrawMutation.mutate()
   }
 
   const moneyField = (value: string, onChange: (v: string) => void) => (
@@ -150,16 +235,24 @@ export default function ReferralPage() {
     </div>
   )
 
-  const remain = Number(tier.nextThreshold) - Number(tier.cumulativeSpend)
+  // 顶级档位时后端返回空 nextTierName（无下一档），隐藏升级进度文案。
+  const hasNextTier = !!tier.nextTierName
+  const remain = hasNextTier
+    ? Math.max(0, Number(tier.nextThreshold) - Number(tier.cumulativeSpend))
+    : 0
 
-  const tierProgressText = text.tierProgress
-    .replace('{cur}', fmt(tier.cumulativeSpend))
-    .replace('{target}', fmt(tier.nextThreshold))
+  const tierProgressText = hasNextTier
+    ? text.tierProgress
+        .replace('{cur}', fmt(tier.cumulativeSpend))
+        .replace('{target}', fmt(tier.nextThreshold))
+    : text.tierProgress.replace('{cur}', fmt(tier.cumulativeSpend)).replace('{target}', '—')
 
-  const tierUpgradeText = text.tierUpgrade
-    .replace('{remain}', fmt(remain))
-    .replace('{nextTier}', tier.nextTierName)
-    .replace('{nextRate}', String(tier.nextRate))
+  const tierUpgradeText = hasNextTier
+    ? text.tierUpgrade
+        .replace('{remain}', fmt(remain))
+        .replace('{nextTier}', tier.nextTierName)
+        .replace('{nextRate}', String(tier.nextRate))
+    : ''
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: 'invitees', label: text.tabInvitees },
@@ -286,7 +379,9 @@ export default function ReferralPage() {
             />
             <div className="mt-8 space-y-1">
               <p className="text-xs text-mg-text-2 font-medium">{tierProgressText}</p>
-              <p className="text-xs text-mg-text-2 font-medium">{tierUpgradeText}</p>
+              {tierUpgradeText && (
+                <p className="text-xs text-mg-text-2 font-medium">{tierUpgradeText}</p>
+              )}
             </div>
           </div>
         </div>
@@ -401,7 +496,7 @@ export default function ReferralPage() {
           <p className="text-xs text-mg-text-2">
             {text.transferModalHint.replace('{balance}', fmt(rewardBalance))}
           </p>
-          {moneyField(transferAmount, setTransferAmount)}
+          {moneyField(transferAmount, onTransferAmountChange)}
         </div>
       </Modal>
 
@@ -424,7 +519,7 @@ export default function ReferralPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-mg-text-1">{text.withdrawAmountLabel}</label>
-            {moneyField(withdrawAmount, setWithdrawAmount)}
+            {moneyField(withdrawAmount, onWithdrawAmountChange)}
           </div>
 
           <div className="space-y-2">
@@ -507,8 +602,8 @@ function InviteesTable({ invitees, text }: { invitees: ReferralInvitee[]; text: 
             </TableCell>
           </TableRow>
         ) : (
-          invitees.map((inv, i) => (
-            <TableRow key={i}>
+          invitees.map((inv) => (
+            <TableRow key={`${inv.email}-${inv.registeredAt}`}>
               <TableCell>
                 <div className="font-medium text-mg-text-0">{inv.name}</div>
                 <div className="text-[11px] text-mg-text-2 mt-0.5">{inv.email}</div>
@@ -555,8 +650,8 @@ function WithdrawalsTable({
             </TableCell>
           </TableRow>
         ) : (
-          withdrawals.map((w, i) => (
-            <TableRow key={i}>
+          withdrawals.map((w) => (
+            <TableRow key={`${w.appliedAt}-${w.amount}-${w.status}`}>
               <TableCell>{w.appliedAt}</TableCell>
               <TableCell className="text-right font-mono">{fmt(w.amount)}</TableCell>
               <TableCell>

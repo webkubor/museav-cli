@@ -6,7 +6,6 @@
 import { get } from '@/lib/request'
 import type { CallLogListParams, LogHistogramParams, LogStatsParams } from '@/interfaces/logs'
 import type {
-  CallLogDetail,
   CallLogItem,
   CursorPage,
   LogHistogram,
@@ -70,10 +69,6 @@ type ModelLogRow = {
 type ModelLogListResponse = {
   items?: ModelLogRow[]
   limit?: number
-}
-
-type ModelLogDetailResponse = {
-  log?: ModelLogRow
 }
 
 type ModelLogStatsResponse = {
@@ -192,21 +187,6 @@ function toCallLogItem(row: ModelLogRow): CallLogItem {
   }
 }
 
-function toCallLogDetail(row: ModelLogRow): CallLogDetail {
-  return {
-    ...toCallLogItem(row),
-    finished_at: row.completed_at || '',
-    protocol: row.call_type || '',
-    endpoint: row.path || '',
-    billing: {
-      billing_session_id: '',
-      billing_status: row.billing_status || '',
-      preauthorized_amount: '0',
-      settled_amount: row.final_amount || row.cost_amount || '0',
-    },
-  }
-}
-
 function toListQuery(params?: CallLogListParams) {
   return {
     before_started_at: params?.before_started_at || params?.cursor,
@@ -272,15 +252,6 @@ export async function listCallLogs(params?: CallLogListParams) {
   const query = toListQuery(params)
   const data = await get<ModelLogListResponse>('model-logs', query)
   return toCursorPage(data, query.limit)
-}
-
-/**
- * 获取单条调用日志详情。
- * 仅当 workspace 开启 Input/Output Logging 时返回 prompt / completion 字段。
- */
-export async function getCallLog(callLogId: string) {
-  const data = await get<ModelLogDetailResponse>(`model-logs/${callLogId}`)
-  return toCallLogDetail(data.log ?? { request_id: callLogId, started_at: '' })
 }
 
 /**

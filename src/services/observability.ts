@@ -50,20 +50,12 @@ function toForward(item: ApiForwardItem): ForwardItem {
 
 /** 读取 workspace 级 Input/Output Logging 开关配置 */
 export function getLoggingConfig(workspaceId: string) {
-  return get<Omit<LoggingConfig, 'retention_days'>>(
-    `workspaces/${workspaceId}/observability/settings`
-  ).then((config) => ({ ...config, retention_days: 30 }))
+  return get<LoggingConfig>(`workspaces/${workspaceId}/observability/settings`)
 }
 
 /** 更新 workspace 级 Logging 配置 */
 export function updateLoggingConfig(workspaceId: string, body: UpdateLoggingConfigRequest) {
-  return patch<Omit<LoggingConfig, 'retention_days'>>(
-    `workspaces/${workspaceId}/observability/settings`,
-    {
-      input_output_logging_enabled: body.input_output_logging_enabled,
-      broadcast_enabled: body.broadcast_enabled,
-    }
-  ).then((config) => ({ ...config, retention_days: body.retention_days ?? 30 }))
+  return patch<LoggingConfig>(`workspaces/${workspaceId}/observability/settings`, body)
 }
 
 // ─── 平台目录（只读） ─────────────────────────────

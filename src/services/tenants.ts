@@ -16,7 +16,6 @@ import type {
   CursorPage,
   TenantDetail,
   TenantInviteLink,
-  TenantItem,
   TenantMember,
 } from '@/types'
 import { useDevStore } from '@/store/use-dev-store'
@@ -26,10 +25,6 @@ export function listTenants() {
   return get<TenantListResponse>('tenants')
 }
 
-/** 创建新 tenant（每个 account 最多 5 个） */
-export function createTenant(body: { name: string; slug: string; type?: 'personal' | 'enterprise' }) {
-  return post<TenantItem>('tenants', body)
-}
 
 /** 获取指定 tenant 详情 */
 export function getTenant(tenantId: string) {

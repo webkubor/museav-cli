@@ -119,7 +119,7 @@ function getModelMeta(modelId: string, isZh: boolean) {
 }
 
 export default function ModelsCatalogPage() {
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const isZh = i18n.language.startsWith('zh')
 
@@ -178,10 +178,10 @@ export default function ModelsCatalogPage() {
     try {
       await navigator.clipboard.writeText(modelId)
       setCopiedId(modelId)
-      appToast.success(isZh ? 'API ID 已复制' : 'Model API ID copied')
+      appToast.success(t('modelsCatalog.toast.copied'))
       setTimeout(() => setCopiedId(null), 2000)
     } catch {
-      appToast.error(isZh ? '复制失败' : 'Failed to copy')
+      appToast.error(t('modelsCatalog.toast.copyFailed'))
     }
   }
 
@@ -200,12 +200,10 @@ export default function ModelsCatalogPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
         <div className="space-y-2">
           <h1 className="text-3xl font-black tracking-tight text-mg-text-0 md:text-4xl">
-            {isZh ? '所有模型' : 'All Models'}
+            {t('modelsCatalog.allModels.title')}
           </h1>
           <p className="text-[13.5px] text-mg-text-2 font-medium max-w-2xl leading-relaxed">
-            {isZh
-              ? '聚合 ModelGo 支持的全部大语言及多模态模型。一键复制 API ID，即可在您的本地智能代理、服务代码或第三方 SDK 中进行无缝配置与调用。'
-              : 'Browse and integrate all supported LLMs and multimodal models. Copy the model API ID with one click to configure your local agents, API requests, or server-side SDKs seamlessly.'}
+            {t('modelsCatalog.allModels.desc')}
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
@@ -215,7 +213,7 @@ export default function ModelsCatalogPage() {
             onClick={() => setIsCompareOpen(true)}
           >
             <LuGitCompareArrows size={14} className="mr-2 text-brand-base" />
-            {isZh ? '对比模型' : 'Compare Models'}
+            {t('modelsCatalog.button.compare')}
           </Button>
         </div>
       </div>
@@ -228,7 +226,7 @@ export default function ModelsCatalogPage() {
           prefix={<LuSearch size={16} className="text-mg-text-2/80" />}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder={isZh ? '检索模型名称、API ID 或厂商...' : 'Search model name, API ID, provider...'}
+          placeholder={t('modelsCatalog.placeholder.search')}
           className="w-full lg:w-96 h-11 text-[13.5px]"
         />
 
@@ -246,17 +244,7 @@ export default function ModelsCatalogPage() {
                   : 'bg-mg-fill-0/40 text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/90 active:scale-95',
               )}
             >
-              {isZh
-                ? {
-                    all: '全部模型',
-                    text: '文本对话',
-                    image: '图像生成',
-                    video: '视频理解',
-                    code: '代码编写',
-                    reasoning: '深度推理',
-                    multimodal: '多模态',
-                  }[item]
-                : item.toUpperCase()}
+              {t(`modelsCatalog.filter.${item}`)}
             </button>
           ))}
         </div>
@@ -266,15 +254,15 @@ export default function ModelsCatalogPage() {
       {modelsQuery.isLoading ? (
         <div className="py-28 flex flex-col items-center justify-center text-mg-text-2 text-sm gap-3">
           <div className="w-7 h-7 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
-          <span className="font-semibold tracking-wider">{isZh ? '正在拉取可用模型...' : 'Loading models...'}</span>
+          <span className="font-semibold tracking-wider">{t('modelsCatalog.loading')}</span>
         </div>
       ) : modelsQuery.isError ? (
         <div className="py-28 text-center text-mg-text-2 text-sm font-semibold tracking-wide">
-          {isZh ? '模型列表加载失败，请稍后重试' : 'Failed to load models. Please try again later.'}
+          {t('modelsCatalog.error.load')}
         </div>
       ) : visibleModels.length === 0 ? (
         <div className="py-28 text-center text-mg-text-2 text-sm font-semibold tracking-wide">
-          {isZh ? '暂无匹配的模型数据' : 'No matching models found.'}
+          {t('modelsCatalog.empty')}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">

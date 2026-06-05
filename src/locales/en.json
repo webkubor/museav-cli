@@ -946,9 +946,36 @@
     "title": "Model Catalog",
     "desc": "Browse all models supported by ModelGo — context length, pricing, and modalities.",
     "placeholder.search": "Search model name, provider or ID",
+    "placeholder": {
+      "search": "Search model name, API ID, provider..."
+    },
     "filter.all": "All",
+    "filter": {
+      "all": "All Models",
+      "text": "Text Chat",
+      "image": "Image Generation",
+      "video": "Video Understanding",
+      "code": "Code Writing",
+      "reasoning": "Deep Reasoning",
+      "multimodal": "Multimodal"
+    },
+    "allModels": {
+      "title": "All Models",
+      "desc": "Browse and integrate all supported LLMs and multimodal models. Copy the model API ID with one click to configure your local agents, API requests, or server-side SDKs seamlessly."
+    },
+    "button": {
+      "compare": "Compare Models"
+    },
+    "loading": "Loading models...",
     "empty": "No matching models",
     "error.load": "Failed to load model catalog. Please try again.",
+    "error": {
+      "load": "Failed to load models. Please try again later."
+    },
+    "toast": {
+      "copied": "Model API ID copied",
+      "copyFailed": "Failed to copy"
+    },
     "detail.title": "Model Detail",
     "error.loadDetail": "Failed to load model detail. Please try again."
   },

@@ -946,9 +946,36 @@
     "title": "模型目录",
     "desc": "浏览 ModelGo 支持的全部模型，查看上下文长度、价格与可用模态。",
     "placeholder.search": "搜索模型名称、供应商 or ID",
+    "placeholder": {
+      "search": "检索模型名称、API ID 或厂商..."
+    },
     "filter.all": "全部",
+    "filter": {
+      "all": "全部模型",
+      "text": "文本对话",
+      "image": "图像生成",
+      "video": "视频理解",
+      "code": "代码编写",
+      "reasoning": "深度推理",
+      "multimodal": "多模态"
+    },
+    "allModels": {
+      "title": "全部模型",
+      "desc": "聚合 ModelGo 支持的全部大语言及多模态模型。一键复制 API ID，即可在您的本地智能代理、服务代码或第三方 SDK 中进行无缝配置与调用。"
+    },
+    "button": {
+      "compare": "对比模型"
+    },
+    "loading": "正在拉取可用模型...",
     "empty": "未找到匹配的模型",
     "error.load": "加载模型目录失败，请稍后重试。",
+    "error": {
+      "load": "模型列表加载失败，请稍后重试"
+    },
+    "toast": {
+      "copied": "API ID 已复制",
+      "copyFailed": "复制失败"
+    },
     "detail.title": "模型详情",
     "error.loadDetail": "加载模型详情失败，请稍后重试。"
   },

@@ -219,7 +219,7 @@ export default function ModelsCatalogPage() {
       </div>
 
       {/* 搜索与过滤栏 */}
-      <div className="flex flex-col gap-3 bg-mg-bg-0/60 backdrop-blur-md px-4 pt-4 pb-3 border border-mg-border/40 rounded-2xl shadow-sm">
+      <div className="flex flex-col gap-3">
         <Input
           variant="search"
           prefix={<LuSearch size={16} className="text-mg-text-2/80" />}
@@ -262,7 +262,7 @@ export default function ModelsCatalogPage() {
           {t('modelsCatalog.empty')}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch">
           {visibleModels.map((model, idx) => {
             const meta = getModelMeta(model.model_id, isZh)
             const position = windowWidth > 1024
@@ -280,7 +280,7 @@ export default function ModelsCatalogPage() {
               <Tooltip
                 position={position}
                 containerClassName="w-full flex"
-                className="z-[9999] max-w-[440px] border border-mg-border dark:border-emerald-500/20 shadow-[0_20px_50px_rgba(0,0,0,0.10)] dark:shadow-[0_20px_50px_rgba(16,185,129,0.15)] bg-mg-bg-0 dark:bg-[#0b0d0b] text-mg-text-0 dark:text-neutral-100 p-0 rounded-2xl animate-in fade-in-0 duration-300"
+                className="z-[9999] max-w-[440px] border border-mg-border dark:border-brand-base/20 shadow-[0_20px_50px_rgba(0,0,0,0.10)] dark:shadow-[0_20px_50px_rgba(var(--brand-base),0.15)] bg-mg-bg-0 dark:bg-mg-bg-0 text-mg-text-0 dark:text-mg-text-0 p-0 rounded-2xl animate-in fade-in-0 duration-300"
                 arrowClassName={arrowClass}
                 interactive={true}
                 disabled={isExpanded}
@@ -301,8 +301,8 @@ export default function ModelsCatalogPage() {
                           </span>
                         </div>
                       </div>
-                      <span className="shrink-0 flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="shrink-0 flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         {isZh ? '在线' : 'Online'}
                       </span>
                     </div>
@@ -411,7 +411,7 @@ export default function ModelsCatalogPage() {
                                     className={cn(
                                       "w-3.5 h-1.5 rounded-sm transition-all duration-300",
                                       idx <= score 
-                                        ? "bg-emerald-500 dark:bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]"
+                                        ? "bg-brand-base shadow-[0_0_6px_var(--brand-glow)]"
                                         : "bg-mg-fill-1"
                                     )}
                                   />
@@ -436,7 +436,7 @@ export default function ModelsCatalogPage() {
                       <button
                         type="button"
                         onClick={(e) => handleGoPlayground(model.model_id, e)}
-                        className="flex-1 h-9 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all text-xs cursor-pointer active:scale-98 shadow-md shadow-emerald-500/10"
+                        className="flex-1 h-9 bg-brand-base hover:bg-brand-mid text-white font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all text-xs cursor-pointer active:scale-98 shadow-md shadow-brand-glow/10"
                       >
                         {isZh ? '查看详情' : 'View Details'}
                         <LuChevronRight size={12} />
@@ -476,7 +476,7 @@ export default function ModelsCatalogPage() {
                 />
 
                 {/* 磨砂玻璃内容包裹容器 */}
-                <div className="relative w-full rounded-[15px] bg-mg-bg-0/90 dark:bg-mg-bg-0/80 backdrop-blur-2xl -webkit-backdrop-blur-2xl p-7 flex flex-col gap-6 overflow-hidden flex-1">
+                <div className="relative w-full rounded-[15px] bg-mg-bg-0/90 dark:bg-mg-bg-0/80 backdrop-blur-2xl -webkit-backdrop-blur-2xl p-7 flex flex-col gap-6 overflow-hidden flex-1 h-[320px]">
                   {/* 内层内容 Spotlight 背景光晕（光斑跟随，Hover 时显现） */}
                   <div
                     className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
@@ -514,7 +514,7 @@ export default function ModelsCatalogPage() {
                       onClick={(e) => handleCopyApiId(model.model_id, e)}
                       className={cn(
                         'group/id flex items-center justify-between gap-3 px-3 py-2.5 bg-mg-fill-0/75 dark:bg-neutral-900/50 hover:bg-brand-base/[0.03] border border-mg-border/30 dark:border-neutral-800/80 hover:border-brand-base/30 rounded-xl cursor-pointer transition-all duration-300 select-all shadow-inner',
-                        copiedId === model.model_id && 'bg-emerald-500/[0.03] dark:bg-emerald-500/5 border-emerald-500/30'
+                        copiedId === model.model_id && 'bg-brand-base/[0.03] dark:bg-brand-base/5 border-brand-base/30'
                       )}
                       title={isZh ? '点击复制 API ID' : 'Click to copy API ID'}
                     >
@@ -529,7 +529,7 @@ export default function ModelsCatalogPage() {
                       <div className={cn(
                         "shrink-0 flex items-center justify-center w-6 h-6 rounded-lg border shadow-sm transition-all duration-300",
                         copiedId === model.model_id 
-                          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500" 
+                          ? "border-brand-base/20 bg-brand-base/10 text-brand-base" 
                           : "border-mg-border/60 bg-mg-bg-0 dark:bg-neutral-800 text-mg-text-2 group-hover/id:text-brand-base group-hover/id:border-brand-base/30 group-hover/id:shadow"
                       )}>
                         {copiedId === model.model_id ? (

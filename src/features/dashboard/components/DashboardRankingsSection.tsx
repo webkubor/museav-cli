@@ -80,7 +80,7 @@ function RankingCard({
  * Top3）。skills 榜后端恒返回空（平台无 skills 数据源，不造假数据）——
  * 列表为空时整张卡片隐藏。
  */
-export function DashboardRankingsSection() {
+export function DashboardRankingsSection({ compact }: { compact?: boolean }) {
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
   const { data } = useQuery({
     queryKey: ['overview', 'rankings', tenantId],
@@ -92,7 +92,7 @@ export function DashboardRankingsSection() {
   const skills = (data?.skills ?? []).map(toRankingItem)
 
   return (
-    <section className="dashboard-rankings-section">
+    <section className={`dashboard-rankings-section${compact ? ' dashboard-rankings-section--compact' : ''}`}>
       <RankingCard title="热门模型排行榜" caption="近 30 天调用量 Top 3" items={models} />
       {skills.length > 0 && (
         <RankingCard title="热门 Skills" caption="开发者最常使用的工作流" items={skills} />

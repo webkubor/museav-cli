@@ -161,3 +161,7 @@
     grid-template-columns: 1fr;
   }
 }
+
+.dashboard-rankings-section--compact {
+  grid-template-columns: 1fr;
+}

@@ -38,13 +38,11 @@ export default function DashboardPage() {
         <HistogramChartSection />
       </div>
 
-      {/* 4. 最近调用日志（全宽） */}
-      <div className="mb-8">
+      {/* 4. 热门模型排行榜 + 最近调用日志 并排 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-start">
+        <DashboardRankingsSection compact />
         <RecentActivitySection />
       </div>
-
-      {/* 5. 热门模型与 Skills 榜单 */}
-      <DashboardRankingsSection />
     </div>
   )
 }

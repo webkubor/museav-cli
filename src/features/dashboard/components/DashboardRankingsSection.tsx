@@ -40,7 +40,7 @@ function RankingCard({
   items: RankingItem[]
 }) {
   return (
-    <Card glass className="dashboard-ranking-card">
+    <Card glass className="dashboard-ranking-card h-full flex flex-col">
       <div className="dashboard-ranking-header">
         <div>
           <h3>{title}</h3>

@@ -39,7 +39,7 @@ export default function DashboardPage() {
       </div>
 
       {/* 4. 热门模型排行榜 + 最近调用日志 并排 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-stretch">
         <DashboardRankingsSection compact />
         <RecentActivitySection />
       </div>

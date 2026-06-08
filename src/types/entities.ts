@@ -399,6 +399,8 @@ export interface ApiKeyItem {
   total_spend: Money
   limit: SpendingLimit
   created_at: string
+  /** 作用域：个人 / 工作区 / 成员（attribution，qa#14） */
+  scope: 'personal' | 'workspace' | 'member'
 }
 
 /** 创建 API Key 请求体 */
@@ -424,6 +426,8 @@ export interface ApiKeyCreated {
   masked: string
   env: 'live' | 'test'
   created_at: string
+  /** 作用域：个人 / 工作区 / 成员（attribution，qa#14） */
+  scope: 'personal' | 'workspace' | 'member'
 }
 
 /** 更新 API Key 请求体 */

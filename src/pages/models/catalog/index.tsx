@@ -283,6 +283,7 @@ export default function ModelsCatalogPage() {
                 className="z-[9999] max-w-[440px] border border-mg-border dark:border-emerald-500/20 shadow-[0_20px_50px_rgba(0,0,0,0.10)] dark:shadow-[0_20px_50px_rgba(16,185,129,0.15)] bg-mg-bg-0 dark:bg-[#0b0d0b] text-mg-text-0 dark:text-neutral-100 p-0 rounded-2xl animate-in fade-in-0 duration-300"
                 arrowClassName={arrowClass}
                 interactive={true}
+                disabled={isExpanded}
                 content={
                   <div className="p-5 select-none w-[420px] text-left space-y-4">
                     {/* 头部：大图标、厂商、在线状态 */}

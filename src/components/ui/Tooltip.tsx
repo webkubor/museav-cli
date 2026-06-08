@@ -10,6 +10,7 @@ interface TooltipProps {
   containerClassName?: string
   interactive?: boolean
   arrowClassName?: string
+  disabled?: boolean
 }
 
 /**
@@ -24,13 +25,15 @@ export const Tooltip: React.FC<TooltipProps> = ({
   className,
   containerClassName,
   interactive = false,
-  arrowClassName
+  arrowClassName,
+  disabled = false,
 }) => {
   const [visible, setVisible] = useState(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const leaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const showTooltip = () => {
+    if (disabled) return
     clearTimeout(leaveTimeoutRef.current)
     clearTimeout(timeoutRef.current)
     timeoutRef.current = setTimeout(() => {

@@ -149,9 +149,6 @@ export const DashboardHeader: React.FC = () => {
     try {
       await switchTenant({ tenant_id: tenant.tenant_id })
       setAuth(account!, tenant.tenant_id, tenants, undefined)
-      // 切换组织后重拉会话：permissions.granted 是按 租户×工作区 解析的，
-      // 旧值已随 setAuth 置 null，回退期由本地矩阵（真实角色）兜底。
-      // 快速连续切换时丢弃过期响应（B 的响应晚于 C 到达不得覆盖 C 的权限）。
       getSession()
         .then((s) => {
           if (useAuthStore.getState().activeTenantId === tenant.tenant_id) {
@@ -161,6 +158,13 @@ export const DashboardHeader: React.FC = () => {
         .catch((err) => console.warn('[permissions] 切换组织后会话重拉失败，使用本地矩阵回退', err))
       queryClient.invalidateQueries({ queryKey: ['tenants'] })
       queryClient.invalidateQueries({ queryKey: ['workspaces'] })
+      queryClient.removeQueries({ queryKey: ['api-keys'] })
+      queryClient.removeQueries({ queryKey: ['guardrails'] })
+      queryClient.removeQueries({ queryKey: ['observability'] })
+      queryClient.removeQueries({ queryKey: ['billing'] })
+      queryClient.removeQueries({ queryKey: ['referral'] })
+      queryClient.removeQueries({ queryKey: ['usage'] })
+      queryClient.removeQueries({ queryKey: ['logs'] })
       try {
         const wsData = await listWorkspaces()
         const wsItems = wsData.items ?? []
@@ -169,6 +173,7 @@ export const DashboardHeader: React.FC = () => {
       } catch {
         setActiveWorkspaceId('')
       }
+      navigate('/dashboard', { replace: true })
       toast.success(t('header.switchedOrg', { name: tenant.name }))
     } catch {
       toast.error(t('switchTenantFailed') || '切换组织失败')
@@ -178,6 +183,9 @@ export const DashboardHeader: React.FC = () => {
   function handleSwitchWorkspace(workspaceId: string) {
     if (workspaceId === activeWorkspaceId) return
     setActiveWorkspaceId(workspaceId)
+    queryClient.removeQueries({ queryKey: ['api-keys'] })
+    queryClient.removeQueries({ queryKey: ['guardrails'] })
+    queryClient.removeQueries({ queryKey: ['observability'] })
     const wsMatch = location.pathname.match(/^\/workspace\/[^/]+\/(.+)$/)
     if (wsMatch) {
       navigate(`/workspace/${workspaceId}/${wsMatch[1]}`, { replace: true })

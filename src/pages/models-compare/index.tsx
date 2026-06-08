@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
 import { LuSearch, LuPlus, LuX, LuMessageSquare, LuTrash2, LuSparkles } from 'react-icons/lu'
 import { listModels } from '@/services/catalog'
+import { streamExperienceChat } from '@/services/experience'
 import type { CatalogModelItem } from '@/types'
 import { cn } from '@/lib/utils'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
@@ -192,6 +193,9 @@ export default function ModelsComparePage() {
     [],
     []
   ])
+  // 每个槽位独立的流式状态与 AbortController（并行对话互不阻塞）
+  const [streaming, setStreaming] = useState<boolean[]>([false, false, false])
+  const abortRefs = useRef<Array<AbortController | null>>([null, null, null])
 
   // 监听槽位变动，若槽位被置空，则自动清空对应槽位的历史对话
   useEffect(() => {
@@ -200,40 +204,94 @@ export default function ModelsComparePage() {
     }))
   }, [slots])
 
+  // 卸载时中止所有进行中的流，避免 setState-after-unmount
+  useEffect(() => {
+    const controllers = abortRefs.current
+    return () => controllers.forEach((c) => c?.abort())
+  }, [])
+
   // 输入变化：同步开启时镜像到全部槽位，否则只改当前槽位
   const handleInputChange = (idx: number, value: string) => {
     setChatInputs((prev) => (syncInput ? prev.map(() => value) : prev.map((v, i) => (i === idx ? value : v))))
   }
 
-  const buildExchange = (model: CatalogModelItem, prompt: string) => [
-    { role: 'user' as const, content: prompt },
-    {
-      role: 'assistant' as const,
-      content: `我是 ${model.display_name}。针对您的提问“${prompt}”：\n\n这正是一个模拟回答。在正式系统对接中，您的接口将直接调用 ModelGo 代理的 \`${model.model_id}\` 终端。通过我们精心设计的分栏对话，您可以同步比对各家大模型的质量、延时与实际消耗性价比。`,
-      meta: `延迟 620ms · 消耗额度极微 · 预估成本 ${formatPrice(model.pricing?.output_per_1m)} / 1M`,
-    },
-  ]
+  const setSlotStreaming = (idx: number, value: boolean) =>
+    setStreaming((prev) => prev.map((s, i) => (i === idx ? value : s)))
 
-  // 从某个槽位发送：同步开启 → 同一 prompt 分发给所有已选模型；否则只发该模型
+  // 更新某槽位最后一条 assistant 消息（流式增量 / 元信息 / 错误文案）
+  const applyAssistant = (idx: number, updater: (content: string) => string, meta?: string) => {
+    setHistories((prev) =>
+      prev.map((history, i) => {
+        if (i !== idx) return history
+        const next = [...history]
+        const last = next[next.length - 1]
+        if (last?.role === 'assistant') {
+          next[next.length - 1] = { ...last, content: updater(last.content), ...(meta ? { meta } : {}) }
+        }
+        return next
+      })
+    )
+  }
+
+  // 向单个槽位发起真实体验对话流（POST /api/v1/experience/chat/completions）
+  const streamOne = async (idx: number, prompt: string) => {
+    const model = slots[idx]
+    if (!model || streaming[idx]) return
+
+    // 该槽位既有历史（仅 role/content）+ 本次输入 → 上游对话上下文
+    const requestMessages = [
+      ...histories[idx].map(({ role, content }) => ({ role, content })),
+      { role: 'user' as const, content: prompt },
+    ]
+
+    setHistories((prev) =>
+      prev.map((history, i) =>
+        i === idx ? [...history, { role: 'user', content: prompt }, { role: 'assistant', content: '' }] : history
+      )
+    )
+    setSlotStreaming(idx, true)
+    abortRefs.current[idx]?.abort()
+    const controller = new AbortController()
+    abortRefs.current[idx] = controller
+    const startedAt = Date.now()
+
+    try {
+      await streamExperienceChat({
+        model: model.model_id,
+        messages: requestMessages,
+        signal: controller.signal,
+        onDelta: (delta) => applyAssistant(idx, (content) => content + delta),
+      })
+      const seconds = ((Date.now() - startedAt) / 1000).toFixed(1)
+      applyAssistant(idx, (content) => content, `延迟 ${seconds}s · 预估成本 ${formatPrice(model.pricing?.output_per_1m)} / 1M`)
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return
+      applyAssistant(idx, (content) => content || `体验请求失败：${(err as Error).message || '请稍后重试'}`)
+    } finally {
+      setSlotStreaming(idx, false)
+    }
+  }
+
+  // 从某个槽位发送：同步开启 → 同一 prompt 并行分发给所有已选模型；否则只发该模型
   const handleSendFrom = (idx: number) => {
     const prompt = chatInputs[idx].trim()
     if (!prompt) return
 
     if (syncInput) {
-      setHistories((prev) => prev.map((history, i) => {
-        const model = slots[i]
-        return model ? [...history, ...buildExchange(model, prompt)] : []
-      }))
+      slots.forEach((model, i) => {
+        if (model) void streamOne(i, prompt)
+      })
       setChatInputs(['', '', ''])
     } else {
-      const model = slots[idx]
-      if (!model) return
-      setHistories((prev) => prev.map((history, i) => (i === idx ? [...history, ...buildExchange(model, prompt)] : history)))
+      if (!slots[idx]) return
+      void streamOne(idx, prompt)
       setChatInputs((prev) => prev.map((v, i) => (i === idx ? '' : v)))
     }
   }
 
   const handleClearChat = () => {
+    abortRefs.current.forEach((c) => c?.abort())
+    setStreaming([false, false, false])
     setHistories([[], [], []])
   }
 
@@ -417,9 +475,17 @@ export default function ModelsComparePage() {
                                   : "bg-[var(--mg-bg-0)] border border-[var(--mg-border)] text-[var(--mg-text-1)] border-l-[3px] border-l-[var(--brand-base)]"
                               )}
                             >
-                              {msg.content.split('\n').map((line, lIdx) => (
-                                <p key={lIdx} className="m-0 select-text break-words">{line}</p>
-                              ))}
+                              {msg.role === 'assistant' && msg.content === '' && streaming[idx] ? (
+                                <span className="inline-flex gap-1 py-1 items-center" aria-label="生成中">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--mg-text-2)] animate-bounce [animation-delay:-0.3s]" />
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--mg-text-2)] animate-bounce [animation-delay:-0.15s]" />
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--mg-text-2)] animate-bounce" />
+                                </span>
+                              ) : (
+                                msg.content.split('\n').map((line, lIdx) => (
+                                  <p key={lIdx} className="m-0 select-text break-words">{line}</p>
+                                ))
+                              )}
                               {msg.meta && (
                                 <span className="block text-[9.5px] text-[var(--mg-text-2)] mt-1.5 font-bold tracking-wide">
                                   {msg.meta}
@@ -456,16 +522,16 @@ export default function ModelsComparePage() {
                             />
                             <button
                               onClick={() => handleSendFrom(idx)}
-                              disabled={!chatInputs[idx].trim()}
+                              disabled={!chatInputs[idx].trim() || streaming[idx]}
                               title={syncInput ? '分发给全部模型' : '发送'}
                               className={cn(
                                 "h-7 w-7 shrink-0 rounded-full flex items-center justify-center border-none transition-all",
-                                chatInputs[idx].trim()
+                                chatInputs[idx].trim() && !streaming[idx]
                                   ? "bg-gradient-to-r from-[#9b72cb] to-[#d96570] text-white hover:opacity-90 active:scale-95 cursor-pointer"
                                   : "bg-[var(--mg-fill-0)] text-[var(--mg-text-2)]/50 cursor-not-allowed"
                               )}
                             >
-                              <LuSparkles size={13} />
+                              <LuSparkles size={13} className={streaming[idx] ? 'animate-pulse' : ''} />
                             </button>
                           </div>
                         </div>

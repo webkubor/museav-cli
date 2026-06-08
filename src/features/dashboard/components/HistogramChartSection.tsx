@@ -65,11 +65,11 @@ export const HistogramChartSection: React.FC = () => {
         <span className="text-xs text-mg-text-2 block mt-1">{t('dashboard.histogramChart.requestsLabel')}</span>
       </div>
 
-      <div className="flex-1" style={{ minHeight: 200 }}>
+      <div className="flex-1 outline-none select-none" style={{ minHeight: 200 }}>
         {isLoading ? (
           <div className="animate-pulse bg-mg-fill-2 rounded w-full h-[200px]" />
         ) : buckets.length > 0 ? (
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={200} style={{ outline: 'none' }}>
             <AreaChart data={buckets} margin={{ top: 8, right: 4, bottom: 0, left: 4 }}>
               <defs>
                 {/* 科技蓝发光渐变 (Blue to Violet) */}

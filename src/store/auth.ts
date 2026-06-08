@@ -75,7 +75,11 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
     localStorage.removeItem(storageKeys.activeWorkspaceId())
     localStorage.removeItem(storageKeys.csHistory())
     localStorage.removeItem(storageKeys.csConversationId())
-    document.cookie = 'modelgo_csrf=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'
+    // CSRF cookie lifecycle belongs to the server (Set-Cookie). A host-only
+    // `path=/` delete cannot reliably clear a `Domain=.modelgo.com` same-name
+    // cookie during the parent-domain migration, and matchCSRFCookie tolerates
+    // a stale+fresh pair on purpose — purging it here re-arms the prior
+    // /login↔/dashboard shadowing incident. Clearing in-memory state suffices.
     set({
       account: null,
       activeTenantId: null,

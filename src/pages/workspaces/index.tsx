@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { LuSearch, LuPlus } from 'react-icons/lu'
+import { LuSearch, LuPlus, LuKey, LuShield, LuActivity, LuArrowRight } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listWorkspaces, createWorkspace } from '@/services/workspaces'
 import { formatDateTime } from '@/lib/format-date'
@@ -9,14 +9,6 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { toast } from 'sonner'
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from '@/components/ui/Table'
 import { Modal } from '@/components/ui/Modal'
 
 export default function WorkspacesPage() {
@@ -115,71 +107,62 @@ export default function WorkspacesPage() {
         </Button>
       </div>
 
-      {/* 极简细线条无框 Table 视图 */}
-      <div className="rounded-xl border border-mg-border/60 overflow-hidden bg-mg-bg-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('workspaces.table.name')}</TableHead>
-              <TableHead>{t('workspaces.table.workspaceId')}</TableHead>
-              <TableHead>{t('workspaces.table.createdAt')}</TableHead>
-              <TableHead className="text-right">{t('workspaces.table.actions')}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center py-12 text-mg-text-2">
-                  <div className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-5 w-5 text-brand-base" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    <span>{t('workspaces.loading')}</span>
+      {/* 卡片网格 */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20 text-mg-text-2 gap-2">
+          <svg className="animate-spin h-5 w-5 text-brand-base" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          <span className="font-semibold tracking-wide text-sm">{t('workspaces.loading')}</span>
+        </div>
+      ) : filteredData.length === 0 ? (
+        <div className="text-center py-20 text-mg-text-2 text-sm font-semibold">{t('workspaces.empty')}</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredData.map((ws) => (
+            <div
+              key={ws.workspace_id}
+              onClick={() => navigate(`/settings/workspace/${ws.workspace_id}`)}
+              className="group relative bg-mg-bg-0 border border-mg-border/50 rounded-2xl p-5 flex flex-col gap-4 cursor-pointer transition-all duration-300 hover:border-brand-base/30 hover:shadow-lg hover:shadow-brand-glow/10 active:scale-[0.98]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-mg-text-0 text-[15px] truncate">{ws.name}</h3>
+                    {ws.is_default && (
+                      <Badge variant="success" dot className="shrink-0">{t('workspaces.defaultBadge')}</Badge>
+                    )}
                   </div>
-                </TableCell>
-              </TableRow>
-            ) : filteredData.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center py-12 text-mg-text-2">
-                  {t('workspaces.empty')}
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredData.map((row) => (
-                <TableRow
-                  key={row.workspace_id}
-                  className="cursor-pointer hover:bg-mg-fill-0/30 transition-colors"
-                  onClick={() => navigate(`/settings/workspace/${row.workspace_id}`)}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-mg-text-0 text-[13.5px]">{row.name}</span>
-                      {row.is_default && (
-                        <>
-                          <Badge variant="success" dot>{t('workspaces.currentBadge')}</Badge>
-                          <Badge variant="secondary">{t('workspaces.defaultBadge')}</Badge>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-mono text-xs bg-mg-fill-0 px-2 py-0.5 rounded border border-mg-border/60">
-                      {row.workspace_id}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-mg-text-2">{formatDateTime(row.created_at)}</TableCell>
-                  <TableCell className="text-right">
-                    <span className="text-brand-base hover:text-brand-deep cursor-pointer font-bold transition-colors duration-200">
-                      {t('workspaces.table.edit')} →
-                    </span>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                  <span className="text-[11px] font-mono text-mg-text-2 mt-1 block truncate">{ws.workspace_id}</span>
+                </div>
+                <div className="shrink-0 w-9 h-9 rounded-xl bg-brand-base/8 border border-brand-base/15 flex items-center justify-center text-brand-base">
+                  <LuKey size={16} />
+                </div>
+              </div>
+
+              {ws.description && (
+                <p className="text-xs text-mg-text-2 leading-relaxed line-clamp-2">{ws.description}</p>
+              )}
+
+              <div className="flex items-center gap-4 text-[11px] text-mg-text-2 font-medium mt-auto">
+                <span className="flex items-center gap-1"><LuShield size={12} />{formatDateTime(ws.created_at)}</span>
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-mg-border/30">
+                <div className="flex items-center gap-3 text-[11px] text-mg-text-2">
+                  <span className="flex items-center gap-1"><LuKey size={11} />API Keys</span>
+                  <span className="flex items-center gap-1"><LuShield size={11} />Guardrails</span>
+                  <span className="flex items-center gap-1"><LuActivity size={11} />Logs</span>
+                </div>
+                <span className="flex items-center gap-0.5 text-xs font-bold text-brand-base opacity-0 group-hover:opacity-100 transition-opacity">
+                  {t('workspaces.table.edit')} <LuArrowRight size={12} />
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* 真实创建工作空间的表单对话框 */}
       <Modal

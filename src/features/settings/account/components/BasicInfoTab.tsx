@@ -10,6 +10,7 @@ import { AvatarUpload } from '@/components/ui/AvatarUpload'
 import { ReferralInviteCard } from '@/components/referral/ReferralInviteCard'
 import { getReferralOverview } from '@/services/referral'
 import { appToast } from '@/lib/app-toast'
+import { LuGift } from 'react-icons/lu'
 
 interface BasicInfoTabProps {
   profile: AccountProfile
@@ -117,7 +118,8 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
 
         {referral?.inviteLink && (
           <div className="pt-4 border-t border-mg-border/40">
-            <p className="text-xs font-bold text-mg-text-2 uppercase tracking-wider mb-3">
+            <p className="text-xs font-bold text-mg-text-2 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <LuGift className="h-3.5 w-3.5 text-mg-brand" />
               {t('account.info.referralLabel') || '邀请链接'}
             </p>
             <ReferralInviteCard

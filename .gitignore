@@ -30,3 +30,4 @@ dist-ssr
 /*.jpg
 /*.jpeg
 /*.webp
+.claude/settings.local.json

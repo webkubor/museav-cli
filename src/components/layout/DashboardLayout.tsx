@@ -24,6 +24,7 @@ import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { CustomerService } from '@/components/customer-service'
 import { navConfig } from '@/config/nav'
 import type { NavItem } from '@/config/nav'
+import { breadcrumbConfig, FLAT_ROUTES } from '@/config/breadcrumbs'
 import { isDomestic } from '@/lib/market'
 import { usePlatformConfig } from '@/hooks/use-platform-config'
 import { usePermissions } from '@/hooks/use-permissions'
@@ -141,31 +142,13 @@ export function DashboardLayout() {
     return path.replace(/^\//, '') || 'dashboard'
   }
 
-  const BREADCRUMB_MAP: Record<string, { label: string; path?: string }[]> = {
-    dashboard:           [{ label: t('nav.home'), path: '/dashboard' }],
-    'models/catalog':    [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.models') }, { label: t('nav.modelCatalog') }],
-    'models/playground': [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.models'), path: '/models/catalog' }, { label: t('nav.modelExplore') }],
-    'models/compare':    [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.models'), path: '/models/catalog' }, { label: t('nav.modelCompare') }],
-    'api-keys':       [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.apiKeys') }],
-    usage:            [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.analytics') }, { label: t('nav.usage') }],
-    logs:             [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.analytics') }, { label: t('nav.logs') }],
-    billing:          [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.billing') }],
-    guardrails:       [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.guardrails') }],
-    observability:    [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.observability') }],
-    'chat-test':         [{ label: t('nav.home'), path: '/dashboard' }, { label: '测试区' }, { label: '对话测试' }],
-    'platform-config':  [{ label: t('nav.home'), path: '/dashboard' }, { label: '接口调试' }],
-    'settings/account':      [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.settings') }, { label: t('nav.account') }],
-    'settings/workspace':    [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.workspace') }],
-    'settings/organization': [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.settings') }, { label: t('nav.organization') }],
-  }
-
   const getBreadcrumbs = () => {
     const key = getSelectedKey()
-    return BREADCRUMB_MAP[key] ?? [{ label: t('nav.home'), path: '/dashboard' }]
+    const raw = breadcrumbConfig[key] ?? [{ label: 'nav.home', path: '/dashboard' }]
+    return raw.map((item) => ({ ...item, label: t(item.label) }))
   }
 
   const isDashboardRoute = getSelectedKey() === 'dashboard'
-  const FLAT_ROUTES = ['logs', 'usage', 'observability', 'billing', 'platform-config', 'settings/organization']
   const isFlatRoute = FLAT_ROUTES.includes(getSelectedKey())
 
   return (

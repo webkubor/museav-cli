@@ -117,7 +117,7 @@ const SidebarMenuGroup: React.FC<{
         <div 
           className="absolute left-[29px] w-[2px] sidebar-flow-line pointer-events-none rounded-full"
           style={{
-            top: '28px',
+            top: '36px',
             bottom: '-20px',
             zIndex: 10,
           }}

@@ -71,6 +71,21 @@ build:production:
   only:
     - main
 
+# qa#109: push the FE-owned nav.ts menu catalog to the backend on every main
+# build so 运营后台 always manages the latest menus. The backend upserts by key
+# (never hard-deletes), so this is idempotent and safe to re-run. Non-blocking
+# (allow_failure) — a sync hiccup must not fail a release; the next build re-syncs.
+# MENUS_API_BASE defaults to the test web-api host in scripts/sync-menus.ts;
+# override the CI variable to target another environment.
+sync:menus:
+  stage: notify
+  script:
+    - pnpm sync:menus
+  needs: [build:production]
+  allow_failure: true
+  only:
+    - main
+
 notify:feishu:
   stage: notify
   image: python:3-alpine

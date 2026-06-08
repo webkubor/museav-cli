@@ -131,7 +131,7 @@ export const ChangePasswordTab: React.FC = () => {
 
       <div style={{ marginTop: '8px' }}>
         <Button
-          variant="default"
+          variant="brand"
           onClick={handleSubmit}
           className="rounded-[8px] px-6 font-semibold transition-all"
         >

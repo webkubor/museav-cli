@@ -137,7 +137,7 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
         </div>
         {canCreateOrg && (
           <Button
-            variant="default"
+            variant="brand"
             disabled={atLimit}
             onClick={() => setCreateVisible(true)}
             className="rounded-full text-[11px] font-semibold h-7 px-3 flex items-center gap-1 bg-brand-base text-white hover:bg-brand-base/90 active:scale-[0.97] transition-all"
@@ -233,7 +233,7 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
             <div className="p-4 border-t border-mg-border flex justify-end gap-2 bg-mg-fill-0/30">
               <Button variant="outline" className="h-8 px-3 rounded-lg text-xs" onClick={() => setCreateVisible(false)}>取消</Button>
               <Button
-                variant="default"
+                variant="brand"
                 className="h-8 px-4 rounded-lg text-xs font-semibold bg-brand-base text-white hover:bg-brand-base/90"
                 disabled={createMutation.isPending}
                 onClick={handleCreate}
@@ -337,7 +337,7 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
               className="max-w-[280px] h-9 text-xs rounded-lg"
             />
             <Button
-              variant="default"
+              variant="brand"
               disabled={update.isPending || name === tenant.name}
               onClick={() => update.mutate()}
               className="h-9 px-4 rounded-lg font-semibold text-xs bg-brand-base text-white hover:bg-brand-base/90"
@@ -524,7 +524,7 @@ function MembersTab({ tenantId, canManage }: { tenantId: string; canManage: bool
               取消
             </Button>
             <Button
-              variant="default"
+              variant="brand"
               disabled={removeMember.isPending}
               onClick={() => removeMember.mutate(removeTarget!)}
               className="h-8 px-4 rounded-lg text-xs font-semibold bg-rose-500 text-white hover:bg-rose-500/90"
@@ -647,7 +647,7 @@ function InviteTab({ tenantId }: { tenantId: string }) {
               {inviteLinkUrl ?? <span className="text-mg-text-3 italic">加载中…</span>}
             </div>
             <Button
-              variant="default"
+              variant="brand"
               disabled={!inviteLinkUrl}
               onClick={handleCopyLink}
               className={`font-semibold h-9 px-4 rounded-lg text-xs transition-colors shrink-0 ${
@@ -681,7 +681,7 @@ function InviteTab({ tenantId }: { tenantId: string }) {
           </div>
           {canInvite && (
             <Button
-              variant="default"
+              variant="brand"
               className="font-semibold h-9 px-4 rounded-lg text-xs bg-brand-base text-white hover:bg-brand-base/90 shrink-0"
               onClick={() => addMembers.mutate()}
             >
@@ -705,7 +705,7 @@ function InviteTab({ tenantId }: { tenantId: string }) {
             取消
           </Button>
           <Button
-            variant="default"
+            variant="brand"
             disabled={resetLink.isPending}
             onClick={() => resetLink.mutate()}
             className="h-8 px-4 rounded-lg text-xs font-semibold bg-brand-base text-white hover:bg-brand-base/90"

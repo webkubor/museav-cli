@@ -329,7 +329,7 @@ export function PreferencesTab() {
 
       <div className="pt-3">
         <Button
-          type="primary"
+          variant="brand"
           loading={saveMutation.isPending}
           onClick={() => saveMutation.mutate()}
           className="rounded-xl px-6 h-10 font-bold active:scale-[0.97] transition-all"

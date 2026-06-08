@@ -96,7 +96,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
               style={{ flex: 1, borderRadius: '8px' }}
             />
             <Button
-              variant="default"
+              variant="brand"
               disabled={!isDirty || updateMutation.isPending}
               onClick={() => updateMutation.mutate()}
               className="rounded-[8px] px-5 font-semibold transition-all"

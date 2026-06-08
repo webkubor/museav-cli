@@ -188,7 +188,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
         title="解绑确认"
         footer={
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <Button size="small" onClick={handleUnbindCancel}>
+            <Button size="small" variant="secondary" onClick={handleUnbindCancel}>
               取消
             </Button>
             <Button

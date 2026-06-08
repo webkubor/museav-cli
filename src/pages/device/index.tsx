@@ -344,7 +344,7 @@ export default function DevicePage() {
             {t('device.button.cancel')}
           </Button>
           <Button
-            variant="default"
+            variant="brand"
             style={{ flex: 2, height: '40px', borderRadius: '8px', fontWeight: 600 }}
             disabled={!selectedTenantId}
             onClick={handleApprove}

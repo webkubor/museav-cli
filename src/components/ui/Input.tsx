@@ -23,19 +23,28 @@ export interface InputProps
  * 统一的高阶 Input 输入组件
  */
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, prefix, suffix, mode, size, variant, onChange, onEnterPress, onKeyDown, ...props }, ref) => {
+  ({ className, type, prefix, suffix, mode, size, variant, onChange, onEnterPress, onKeyDown, onBlur, ...props }, ref) => {
     // 智能属性映射：mode="password" 自动解析为 type="password"
     const resolvedType = type || (mode === "password" ? "password" : "text")
+    const shouldTrim = resolvedType === "text" || resolvedType === "search" || resolvedType === "url" || resolvedType === "email"
     const variantClasses = variant === "search"
       ? "rounded-full bg-mg-bg-1/40 hover:bg-mg-bg-1/80 focus:bg-card-bg"
       : ""
 
-    // 回车事件拦截处理
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (onKeyDown) onKeyDown(e)
       if (e.key === "Enter" && onEnterPress) {
         onEnterPress(e)
       }
+    }
+
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+      if (shouldTrim && e.target.value !== e.target.value.trim()) {
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
+        nativeInputValueSetter?.call(e.target, e.target.value.trim())
+        e.target.dispatchEvent(new Event('change', { bubbles: true }))
+      }
+      onBlur?.(e)
     }
 
     // 存在前缀或后缀时，使用复合包装容器，将聚焦发光与悬停状态移至 wrapper 容器上
@@ -60,6 +69,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             onChange={onChange}
             onKeyDown={handleKeyDown}
+            onBlur={handleBlur}
             {...props}
           />
           {suffix && (
@@ -79,6 +89,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         ref={ref}
         onChange={onChange}
         onKeyDown={handleKeyDown}
+        onBlur={handleBlur}
         {...props}
       />
     )

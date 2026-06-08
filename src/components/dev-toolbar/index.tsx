@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import type { ChangeEvent, MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQueryClient } from '@tanstack/react-query'
 import { Switch } from '@/components/ui/Switch'
 import {
   DropdownMenu,
@@ -69,50 +68,6 @@ function Seg<T extends string>({
           {o.l}
         </button>
       ))}
-    </div>
-  )
-}
-
-function MockStepper({
-  label,
-  value,
-  step,
-  onChange,
-}: {
-  label: string
-  value: number
-  step: number
-  onChange: (value: number) => void
-}) {
-  const stepValue = (nextValue: number, event: MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
-    onChange(nextValue)
-  }
-
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-xl px-2 py-1.5 hover:bg-mg-fill-0/50">
-      <div>
-        <p className="text-[12px] font-bold text-mg-text-0">{label}</p>
-        <p className="text-[10px] font-semibold text-mg-text-2">当前 {value}</p>
-      </div>
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          onClick={(event) => stepValue(value - step, event)}
-          className="flex h-6 w-6 items-center justify-center rounded-full bg-mg-fill-0 text-xs font-bold leading-none text-mg-text-1 hover:text-mg-text-0"
-        >
-          −
-        </button>
-        <span className="w-8 text-center text-[12px] font-bold tabular-nums text-mg-text-0">{value}</span>
-        <button
-          type="button"
-          onClick={(event) => stepValue(value + step, event)}
-          className="flex h-6 w-6 items-center justify-center rounded-full bg-mg-fill-0 text-xs font-bold leading-none text-mg-text-1 hover:text-mg-text-0"
-        >
-          +
-        </button>
-      </div>
     </div>
   )
 }
@@ -218,7 +173,7 @@ function ThemeColorPanel({
 
 /**
  * 开发者工具栏（仅 DEV 环境，悬浮底部居中）。
- * 功能：开关需求看板、切换国内/海外 UI、切换语言。
+ * 功能：切换国内/海外 UI、切换语言、切换主题色。
  */
 export function DevToolbar() {
   const { i18n } = useTranslation()
@@ -226,16 +181,9 @@ export function DevToolbar() {
   const lang = useLangStore((s) => s.lang)
   const setMarket = useLangStore((s) => s.setMarket)
   const setLang = useLangStore((s) => s.setLang)
-  const showRequirements = useDevStore((s) => s.showRequirements)
-  const setShowRequirements = useDevStore((s) => s.setShowRequirements)
   const showPlatformConfig = useDevStore((s) => s.showPlatformConfig)
   const setShowPlatformConfig = useDevStore((s) => s.setShowPlatformConfig)
-  const mockMemberCount = useDevStore((s) => s.mockMemberCount)
-  const setMockMemberCount = useDevStore((s) => s.setMockMemberCount)
-  const mockGuardrailCount = useDevStore((s) => s.mockGuardrailCount)
-  const setMockGuardrailCount = useDevStore((s) => s.setMockGuardrailCount)
   const accountId = useAuthStore((s) => s.account?.account_id)
-  const qc = useQueryClient()
 
   const [themeMode, setThemeMode] = useState<'light' | 'dark'>(() =>
     document.body.getAttribute('theme-mode') === 'dark' ? 'dark' : 'light'
@@ -254,22 +202,9 @@ export function DevToolbar() {
     applyBrandTheme(config)
   }
 
-  const changeMockMembers = (n: number) => {
-    setMockMemberCount(n)
-    qc.invalidateQueries({ queryKey: ['tenant-members'] })
-  }
-
-  const changeMockGuardrails = (n: number) => {
-    setMockGuardrailCount(n)
-    qc.invalidateQueries({ queryKey: ['guardrails'] })
-    qc.removeQueries({ queryKey: ['guardrail-detail'] })
-  }
-
   const switchMarket = (m: Market) => {
     setMarket(m)
-    // data-market 驱动品牌色/Logo，需手动同步到 <html>
     document.documentElement.dataset.market = m
-    // 市场切换用于验证国内/海外默认品牌，不应被开发态自定义主题色继续覆盖。
     switchBrandTheme({ mode: 'default' })
   }
 
@@ -283,33 +218,9 @@ export function DevToolbar() {
       <span className="text-[10px] font-bold text-brand-base tracking-widest uppercase">DEV</span>
       <div className="h-4 w-px bg-mg-border" />
       <div className="flex items-center gap-1.5">
-        <span className="text-[11px] font-semibold text-mg-text-2">需求看板</span>
-        <Switch checked={showRequirements} onChange={setShowRequirements} />
-      </div>
-      <div className="h-4 w-px bg-mg-border" />
-      <div className="flex items-center gap-1.5">
         <span className="text-[11px] font-semibold text-mg-text-2">接口调试</span>
         <Switch checked={showPlatformConfig} onChange={setShowPlatformConfig} />
       </div>
-      <div className="h-4 w-px bg-mg-border" />
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className="rounded-full bg-mg-fill-0 px-3 py-1 text-[11px] font-bold text-mg-text-1 transition-colors hover:text-mg-text-0"
-          >
-            Mock {mockMemberCount}/{mockGuardrailCount}
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent side="top" align="center" className="w-[260px] p-2">
-          <div className="mb-2 px-2">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-brand-base">Mock 数据</p>
-            <p className="mt-0.5 text-[10px] font-medium text-mg-text-2">集中调整开发演示数据</p>
-          </div>
-          <MockStepper label="组织人数" value={mockMemberCount} step={5} onChange={changeMockMembers} />
-          <MockStepper label="安全护栏" value={mockGuardrailCount} step={1} onChange={changeMockGuardrails} />
-        </DropdownMenuContent>
-      </DropdownMenu>
       <div className="h-4 w-px bg-mg-border" />
       <Seg
         value={market}

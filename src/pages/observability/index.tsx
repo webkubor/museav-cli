@@ -18,8 +18,12 @@ import {
   getLoggingConfig,
   updateLoggingConfig,
   listPlatforms,
+  createForward,
+  updateForward,
+  deleteForward,
+  listForwards,
 } from '@/services/observability'
-import type { LoggingConfig } from '@/types'
+import type { ForwardItem, LoggingConfig } from '@/types'
 
 // ─── Toggle row ───────────────────────────────────────────────────────────────
 
@@ -68,19 +72,26 @@ function ToggleRow({
 function PlatformConfigModal({
   platform,
   workspaceId,
+  editingForward,
   onClose,
 }: {
   platform: { id: string; name: string } | null
   workspaceId: string
+  editingForward?: ForwardItem | null
   onClose: () => void
 }) {
-  const [name, setName] = useState(platform?.name ?? '')
-  const [url, setUrl] = useState('')
-  const [method, setMethod] = useState('POST')
-  const [headers, setHeaders] = useState('')
-  const [privacyMode, setPrivacyMode] = useState(false)
-  const [sampling, setSampling] = useState('100')
-  const [apiKeyIds, setApiKeyIds] = useState<string[]>([])
+  const { t } = useTranslation()
+  const qc = useQueryClient()
+  const isEdit = Boolean(editingForward)
+  const [name, setName] = useState(editingForward?.name ?? platform?.name ?? '')
+  const [url, setUrl] = useState((editingForward?.config?.endpoint_url as string) ?? '')
+  const [method, setMethod] = useState((editingForward?.config?.method as string) ?? 'POST')
+  const [headers, setHeaders] = useState(editingForward?.config?.headers ? JSON.stringify(editingForward.config.headers) : '')
+  const [privacyMode, setPrivacyMode] = useState(editingForward?.privacy_mode_enabled ?? false)
+  const [sampling, setSampling] = useState(editingForward ? String(Math.round(editingForward.sampling_rate * 100)) : '100')
+  const [apiKeyIds, setApiKeyIds] = useState<string[]>(editingForward?.api_key_ids ?? [])
+  const [testing, setTesting] = useState(false)
+  const [sendingTrace, setSendingTrace] = useState(false)
 
   const keysQuery = useQuery({
     queryKey: ['api-keys', workspaceId],
@@ -89,15 +100,108 @@ function PlatformConfigModal({
   })
   const keyOptions = (keysQuery.data?.items ?? []).map((k) => ({ id: k.api_key_id, name: k.name }))
 
-  function handleTest() {
-    appToast.success('连接测试成功')
+  const buildConfig = () => {
+    const config: Record<string, string> = { endpoint_url: url.trim() }
+    if (headers) {
+      try { Object.assign(config, JSON.parse(headers)) } catch { /* ignore */ }
+    }
+    return config
   }
-  function handleSendTrace() {
-    appToast.success('测试 Trace 已发送')
+
+  const saveMutation = useMutation({
+    mutationFn: () => {
+      const body = {
+        platform: editingForward?.platform ?? platform!.id,
+        name,
+        config: buildConfig(),
+        enabled: true,
+        sampling_rate: Number(sampling) / 100,
+        api_key_ids: apiKeyIds,
+        privacy_mode_enabled: privacyMode,
+      }
+      if (isEdit && editingForward) {
+        return updateForward(workspaceId, editingForward.forward_id, body)
+      }
+      return createForward(workspaceId, body)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['observability', 'forwards', workspaceId] })
+      appToast.success(t('observability.toast.saveSuccess'))
+      onClose()
+    },
+    onError: (err: unknown) => {
+      appToast.error(err instanceof Error ? err.message : t('observability.toast.saveError'))
+    },
+  })
+
+  async function handleTest() {
+    if (!url.trim()) {
+      appToast.error(t('observability.toast.urlRequired'))
+      return
+    }
+    setTesting(true)
+    try {
+      const res = await fetch(url.trim(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}', mode: 'cors' })
+      if (res.ok || res.status === 200) {
+        appToast.success('连接测试成功')
+      } else {
+        appToast.error(`连接测试失败: HTTP ${res.status}`)
+      }
+    } catch (err) {
+      appToast.error(err instanceof Error ? err.message : '连接失败')
+    } finally {
+      setTesting(false)
+    }
   }
+
+  async function handleSendTrace() {
+    if (!url.trim()) {
+      appToast.error(t('observability.toast.urlRequired'))
+      return
+    }
+    setSendingTrace(true)
+    try {
+      const trace = {
+        resourceSpans: [{
+          scopeSpans: [{
+            spans: [{
+              name: 'modelgo-test-trace',
+              kind: 1,
+              startTimeUnixNano: String(Date.now() * 1_000_000),
+              endTimeUnixNano: String(Date.now() * 1_000_000 + 100_000_000),
+              attributes: [{ key: 'test', value: { stringValue: 'from-modelgo-console' } }],
+            }],
+          }],
+        }],
+      }
+      const res = await fetch(url.trim(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(trace),
+        mode: 'cors',
+      })
+      if (res.ok || res.status === 200) {
+        appToast.success('测试 Trace 已发送')
+      } else {
+        appToast.error(`发送失败: HTTP ${res.status}`)
+      }
+    } catch (err) {
+      appToast.error(err instanceof Error ? err.message : '发送失败')
+    } finally {
+      setSendingTrace(false)
+    }
+  }
+
   function handleSave() {
-    appToast.success('配置已保存')
-    onClose()
+    if (!name.trim()) {
+      appToast.error(t('observability.toast.nameRequired'))
+      return
+    }
+    if (!url.trim()) {
+      appToast.error(t('observability.toast.urlRequired'))
+      return
+    }
+    saveMutation.mutate()
   }
 
   return (
@@ -109,7 +213,7 @@ function PlatformConfigModal({
       footer={
         <>
           <Button variant="outline" onClick={onClose}>取消</Button>
-          <Button variant="brand" onClick={handleSave}>保存</Button>
+          <Button variant="brand" onClick={handleSave} loading={saveMutation.isPending}>保存</Button>
         </>
       }
     >
@@ -183,8 +287,8 @@ function PlatformConfigModal({
             />
           </div>
           <div className="flex gap-2 pt-1">
-            <Button variant="outline" size="sm" onClick={handleTest}>测试连接</Button>
-            <Button variant="outline" size="sm" onClick={handleSendTrace}>发送测试 Trace</Button>
+            <Button variant="outline" size="sm" onClick={handleTest} loading={testing}>测试连接</Button>
+            <Button variant="outline" size="sm" onClick={handleSendTrace} loading={sendingTrace}>发送测试 Trace</Button>
           </div>
         </div>
       </div>
@@ -195,7 +299,10 @@ function PlatformConfigModal({
 // ─── 可用平台列表区块 ──────────────────────────────────────────────────────────
 
 function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspaceId: string; canManageForward: boolean }) {
+  const { t } = useTranslation()
+  const qc = useQueryClient()
   const [activePlatform, setActivePlatform] = useState<{ id: string; name: string } | null>(null)
+  const [editingForward, setEditingForward] = useState<ForwardItem | null>(null)
 
   const platformsQuery = useQuery({
     queryKey: ['observability', 'platforms', workspaceId],
@@ -205,8 +312,76 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
   })
   const platforms = platformsQuery.data?.items ?? []
 
+  const forwardsQuery = useQuery({
+    queryKey: ['observability', 'forwards', workspaceId],
+    queryFn: () => listForwards(workspaceId),
+    enabled: Boolean(workspaceId),
+    staleTime: 30_000,
+  })
+  const forwards = forwardsQuery.data?.items ?? []
+
+  const deleteMutation = useMutation({
+    mutationFn: (forwardId: string) => deleteForward(workspaceId, forwardId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['observability', 'forwards', workspaceId] })
+      appToast.success(t('observability.toast.deleteSuccess'))
+    },
+    onError: (err: unknown) => {
+      appToast.error(err instanceof Error ? err.message : t('observability.toast.saveError'))
+    },
+  })
+
+  function handleEditForward(fwd: ForwardItem) {
+    const p = platforms.find((pl) => pl.platform === fwd.platform)
+    setEditingForward(fwd)
+    setActivePlatform({ id: fwd.platform, name: p?.display_name ?? fwd.name })
+  }
+
+  function handleCloseModal() {
+    setActivePlatform(null)
+    setEditingForward(null)
+  }
+
   return (
     <>
+      {forwards.length > 0 && (
+        <div className="rounded-xl border border-mg-border overflow-hidden bg-card-bg">
+          <div className="px-5 py-3 border-b border-mg-border">
+            <p className="text-[11px] font-bold text-mg-text-2 uppercase tracking-widest">已配置的 Destination</p>
+          </div>
+          <ul>
+            {forwards.map((fwd, idx) => (
+              <li
+                key={fwd.forward_id}
+                className={`flex items-center justify-between px-5 py-3 hover:bg-mg-fill-0/40 transition-colors ${idx !== 0 ? 'border-t border-mg-border' : ''}`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${fwd.status === 'active' ? 'bg-green-500' : fwd.status === 'error' ? 'bg-red-500' : 'bg-yellow-500'}`} />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-mg-text-0 truncate">{fwd.name}</p>
+                    <p className="text-xs text-mg-text-2 truncate">{fwd.config?.endpoint_url as string ?? ''}</p>
+                  </div>
+                </div>
+                {canManageForward && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      className="text-xs text-mg-text-2 hover:text-brand-base transition-colors"
+                      onClick={() => handleEditForward(fwd)}
+                    >编辑</button>
+                    <button
+                      type="button"
+                      className="text-xs text-mg-text-2 hover:text-red-500 transition-colors"
+                      onClick={() => deleteMutation.mutate(fwd.forward_id)}
+                    >删除</button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="rounded-xl border border-mg-border overflow-hidden bg-card-bg">
         <div className="px-5 py-3 border-b border-mg-border">
           <p className="text-[11px] font-bold text-mg-text-2 uppercase tracking-widest">可用平台</p>
@@ -252,10 +427,11 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
       </div>
 
       <PlatformConfigModal
-        key={activePlatform?.id ?? 'none'}
+        key={editingForward?.forward_id ?? activePlatform?.id ?? 'none'}
         platform={activePlatform}
         workspaceId={workspaceId}
-        onClose={() => setActivePlatform(null)}
+        editingForward={editingForward}
+        onClose={handleCloseModal}
       />
     </>
   )

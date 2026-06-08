@@ -16,7 +16,6 @@ import {
 } from '@/services/workspaces'
 import { listTenantMembers } from '@/services/tenants'
 import { createInvitations } from '@/services/invitations'
-import { useDevStore } from '@/store/use-dev-store'
 import { pageItems } from '@/lib/utils'
 import { formatDateTime } from '@/lib/format-date'
 import { WS_ROLE_LABEL, WS_ROLE_OPTIONS, TENANT_ROLE_LABEL } from '@/constants/roles'
@@ -175,29 +174,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
     staleTime: 60_000,
   })
 
-  // 开发演示：mock 模式下「加入/移除」走本地状态，左侧列表实时反映（createInvitations 是真实接口，mock 不到）
-  const mockCount = useDevStore((s) => s.mockMemberCount)
-  const isMockMode = import.meta.env.DEV && mockCount > 0
-  const [mockAdded, setMockAdded] = useState<WorkspaceMember[]>([])
-
-  const members: WorkspaceMember[] = [
-    ...(membersQuery.data ?? []),
-    ...(isMockMode ? mockAdded : []),
-  ]
-
-  const handleMockAdd = (m: TenantMember) => {
-    const now = new Date().toISOString()
-    setMockAdded((prev) => [
-      ...prev,
-      { account: m.account, role: 'ws_member', joined_at: now, last_active_at: now },
-    ])
-    appToast.success(t('workspaces.detail.members.addSuccess'))
-  }
-
-  const handleMockRemove = (accountId: string) => {
-    setMockAdded((prev) => prev.filter((x) => x.account.account_id !== accountId))
-    appToast.success(t('workspaces.detail.members.removeSuccess'))
-  }
+  const members: WorkspaceMember[] = membersQuery.data ?? []
 
   const wsAccountIds = useMemo(() => {
     const ids = new Set<string>()
@@ -289,7 +266,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
                   {m.role !== 'ws_owner' && canManageMembers && (
                     <button
                       type="button"
-                      onClick={() => (isMockMode ? handleMockRemove(m.account.account_id) : setRemoveTarget(m.account.account_id))}
+                      onClick={() => setRemoveTarget(m.account.account_id)}
                       className="shrink-0 p-1 rounded text-mg-text-2 hover:text-rose-500 hover:bg-rose-500/5 transition-colors cursor-pointer border-none bg-transparent"
                       title={t('workspaces.detail.members.remove')}
                     >
@@ -340,7 +317,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
                       variant="ghost"
                       className="h-6 px-2 text-[10px] font-semibold shrink-0 text-brand-base hover:bg-brand-base/5"
                       loading={addMutation.isPending}
-                      onClick={() => (isMockMode ? handleMockAdd(m) : addMutation.mutate(m.account.email))}
+                      onClick={() => addMutation.mutate(m.account.email)}
                     >
                       <LuArrowRight size={11} className="mr-0.5" />
                       {t('workspaces.detail.members.add')}

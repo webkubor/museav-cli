@@ -828,8 +828,7 @@
     "tab": {
       "endpoints": "接口调试",
       "modules": "模块对照",
-      "permissions": "权限速查",
-      "requirements": "需求看板"
+      "permissions": "权限速查"
     }
   },
   "usage": {

@@ -9,7 +9,15 @@ export interface TextareaProps
  * 职责：提供与 Input 完全统一的发光聚焦环、高感圆角和响应式状态的多行文本域
  */
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, ...props }, ref) => {
+  ({ className, onBlur, ...props }, ref) => {
+    const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+      if (e.target.value !== e.target.value.trim()) {
+        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set
+        nativeSetter?.call(e.target, e.target.value.trim())
+        e.target.dispatchEvent(new Event('change', { bubbles: true }))
+      }
+      onBlur?.(e)
+    }
     return (
       <textarea
         className={cn(
@@ -17,6 +25,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           className
         )}
         ref={ref}
+        onBlur={handleBlur}
         {...props}
       />
     )

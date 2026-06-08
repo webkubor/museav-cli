@@ -134,9 +134,9 @@ pnpm check:api-contract
 | `VITE_API_URL` | 空（手动配置） | `https://test.modelgo.com` | 空（运行时推断） |
 | `VITE_SITE_URL` | `https://test.modelgo.com` | `https://test.modelgo.com` | 空（按市场回退到正式官网） |
 | `VITE_DOMESTIC_CONSOLE` | `https://console.test.modelgo.com` | `https://console.test.modelgo.com` | `https://console.modelgo.com` |
-| `VITE_DOMESTIC_DOCS` | `https://modelgo-docs-cn.pages.dev` | `https://modelgo-docs-cn.pages.dev` | `https://doc.modelgo.com` |
+| `VITE_DOMESTIC_DOCS` | `https://doc.test.modelgo.com` | `https://doc.test.modelgo.com` | `https://doc.modelgo.com` |
 | `VITE_GLOBAL_CONSOLE` | `https://console.test.modelgo.com` | `https://console.test.modelgo.com` | `https://console.modelgo.ai` |
-| `VITE_GLOBAL_DOCS` | `https://modelgo-docs-global.pages.dev` | `https://modelgo-docs-global.pages.dev` | `https://doc.modelgo.ai` |
+| `VITE_GLOBAL_DOCS` | `https://doc.test.modelgo.com` | `https://doc.test.modelgo.com` | `https://doc.modelgo.ai` |
 
 ---
 

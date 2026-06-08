@@ -27,7 +27,6 @@ import ModelsComparePage from '@/pages/models-compare'
 import PlatformConfigPage from '@/pages/platform-config'
 import ForbiddenPage from '@/pages/forbidden'
 import { useAuthStore } from '@/store/auth'
-import { useDevStore } from '@/store/use-dev-store'
 import { getSession } from '@/services/auth'
 import { storageKeys } from '@/lib/storage'
 import { getMarket, type Market } from '@/lib/market'
@@ -36,7 +35,6 @@ import { getPlatformConfig } from '@/services/platform'
 import { useLangStore } from '@/store/use-brand-store'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import { NavLogger } from '@/components/dev/NavLogger'
-import { DevRequirements } from '@/components/dev-requirements'
 import { DevToolbar } from '@/components/dev-toolbar'
 
 import { Toaster } from 'sonner'
@@ -143,8 +141,6 @@ export default function App() {
     applyBrandTheme(getSavedBrandTheme())
   }, [])
 
-  const showRequirements = useDevStore((s) => s.showRequirements)
-
   return (
     <Providers>
       <Toaster richColors position="top-right" closeButton />
@@ -168,7 +164,6 @@ export default function App() {
           </div>
         )}
         <SessionLoader />
-        {import.meta.env.DEV && showRequirements && <DevRequirements />}
         {import.meta.env.DEV && <DevToolbar />}
         <Routes>
           {/* 认证路由（公开） */}

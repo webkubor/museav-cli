@@ -95,7 +95,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
       activeTenantId: null,
       activeWorkspaceId: null,
       tenants: [],
-      permissions: [],
+      permissions: null,
       menus: [],
       isAuthenticated: false,
       isLoading: false,

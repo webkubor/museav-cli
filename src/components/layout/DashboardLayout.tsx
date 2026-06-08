@@ -143,7 +143,7 @@ export function DashboardLayout() {
 
   const BREADCRUMB_MAP: Record<string, { label: string; path?: string }[]> = {
     dashboard:           [{ label: t('nav.home'), path: '/dashboard' }],
-    'models/catalog':    [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.models') }, { label: '所有模型' }],
+    'models/catalog':    [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.models') }, { label: t('nav.modelCatalog') }],
     'models/playground': [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.models'), path: '/models/catalog' }, { label: t('nav.modelExplore') }],
     'models/compare':    [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.models'), path: '/models/catalog' }, { label: t('nav.modelCompare') }],
     'api-keys':       [{ label: t('nav.home'), path: '/dashboard' }, { label: t('nav.apiKeys') }],

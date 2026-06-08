@@ -52,10 +52,6 @@ const SidebarNavItem: React.FC<{
           : "text-mg-text-1 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.96] hover:translate-x-[2px]"
       )}
     >
-      {/* 渐变流动指示线：选中时悬浮在最左边缘 */}
-      {isSelected && (
-        <span className="absolute left-0 top-[20%] bottom-[20%] w-[2.5px] rounded-r-md pointer-events-none bg-gradient-to-b from-brand-base to-brand-mid dark:shadow-[0_0_6px_var(--brand-glow)]" />
-      )}
       <span className={cn(
         "text-base shrink-0 transition-all duration-300 ease-out",
         isSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:scale-105 group-hover:translate-x-[1.5px]"

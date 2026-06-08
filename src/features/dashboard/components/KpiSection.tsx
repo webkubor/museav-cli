@@ -66,46 +66,39 @@ export const KpiSection: React.FC = () => {
   const reqSparkData = extractPoints(reqSeries, 'requests')
   const tokenSparkData = extractPoints(tokenSeries, 'tokens')
 
-  const availableBalance = balance
-    ? `${currencySymbol}${parseFloat(balance.available.amount).toFixed(2)}`
-    : undefined
-
-  const monthlySpend = billingStats
-    ? `${currencySymbol}${parseFloat(billingStats.monthly_spend.amount).toFixed(4)}`
-    : undefined
-
-  const monthlyRequests = usage
-    ? usage.total.requests.toLocaleString()
-    : undefined
-
-  const monthlyTokens = usage
-    ? usage.total.tokens >= 1_000_000
-      ? `${(usage.total.tokens / 1_000_000).toFixed(2)}M`
-      : `${(usage.total.tokens / 1_000).toFixed(1)}K`
-    : undefined
+  const rawBalance = balance ? parseFloat(balance.available.amount) : undefined
+  const rawSpend = billingStats ? parseFloat(billingStats.monthly_spend.amount) : undefined
+  const rawRequests = usage?.total.requests
+  const rawTokens = usage?.total.tokens
 
   const cards = [
-    { 
-      title: t('dashboard.kpi.balance'), 
-      value: availableBalance, 
-      loading: balanceLoading, 
-      color: 'var(--mg-primary)', 
-      glowColor: 'var(--brand-glow)', 
+    {
+      title: t('dashboard.kpi.balance'),
+      value: rawBalance !== undefined ? `${currencySymbol}${rawBalance.toFixed(2)}` : undefined,
+      rawNumber: rawBalance,
+      formatter: (n: number) => `${currencySymbol}${n.toFixed(2)}`,
+      loading: balanceLoading,
+      color: 'var(--mg-primary)',
+      glowColor: 'var(--brand-glow)',
       hoverBorderClass: 'hover:border-brand-base/30',
-      icon: <LuWallet size={16} /> 
+      icon: <LuWallet size={16} />,
     },
-    { 
-      title: t('dashboard.kpi.monthlySpend'), 
-      value: monthlySpend, 
-      loading: billingLoading, 
-      color: 'var(--mg-warning)', 
-      glowColor: 'rgba(245, 158, 11, 0.12)', 
+    {
+      title: t('dashboard.kpi.monthlySpend'),
+      value: rawSpend !== undefined ? `${currencySymbol}${rawSpend.toFixed(4)}` : undefined,
+      rawNumber: rawSpend,
+      formatter: (n: number) => `${currencySymbol}${n.toFixed(4)}`,
+      loading: billingLoading,
+      color: 'var(--mg-warning)',
+      glowColor: 'rgba(245, 158, 11, 0.12)',
       hoverBorderClass: 'hover:border-amber-500/30',
-      icon: <LuTrendingUp size={16} /> 
+      icon: <LuTrendingUp size={16} />,
     },
     {
       title: t('dashboard.kpi.monthlyRequests'),
-      value: monthlyRequests,
+      value: rawRequests !== undefined ? rawRequests.toLocaleString() : undefined,
+      rawNumber: rawRequests,
+      formatter: (n: number) => Math.round(n).toLocaleString(),
       loading: usageLoading,
       color: 'var(--mg-success)',
       glowColor: 'rgba(16, 185, 129, 0.12)',
@@ -115,7 +108,15 @@ export const KpiSection: React.FC = () => {
     },
     {
       title: t('dashboard.kpi.monthlyTokens'),
-      value: monthlyTokens,
+      value: rawTokens !== undefined
+        ? rawTokens >= 1_000_000
+          ? `${(rawTokens / 1_000_000).toFixed(2)}M`
+          : `${(rawTokens / 1_000).toFixed(1)}K`
+        : undefined,
+      rawNumber: rawTokens,
+      formatter: (n: number) => n >= 1_000_000
+        ? `${(n / 1_000_000).toFixed(2)}M`
+        : `${(n / 1_000).toFixed(1)}K`,
       loading: usageLoading,
       color: '#3b82f6',
       glowColor: 'rgba(59, 130, 246, 0.12)',

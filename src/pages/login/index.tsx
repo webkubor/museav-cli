@@ -31,22 +31,15 @@ const passwordSchema = z.object({
 type EmailFields = z.infer<typeof emailSchema>
 type PasswordFields = z.infer<typeof passwordSchema>
 
-type RememberedLogin = {
-  email: string
-  password: string
-}
-
-function readRememberedLogin(): RememberedLogin | null {
+function readRememberedLogin(): string | null {
   if (typeof window === 'undefined') return null
 
   const raw = window.localStorage.getItem(storageKeys.rememberedLogin())
   if (!raw) return null
 
   try {
-    const parsed = JSON.parse(raw) as Partial<RememberedLogin>
-    if (typeof parsed.email === 'string' && typeof parsed.password === 'string') {
-      return { email: parsed.email, password: parsed.password }
-    }
+    const parsed = JSON.parse(raw) as { email?: string }
+    if (typeof parsed.email === 'string') return parsed.email
   } catch {
     window.localStorage.removeItem(storageKeys.rememberedLogin())
   }
@@ -54,9 +47,9 @@ function readRememberedLogin(): RememberedLogin | null {
   return null
 }
 
-function saveRememberedLogin(email: string, password: string) {
+function saveRememberedEmail(email: string) {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(storageKeys.rememberedLogin(), JSON.stringify({ email, password }))
+  window.localStorage.setItem(storageKeys.rememberedLogin(), JSON.stringify({ email }))
 }
 
 function clearRememberedLogin() {
@@ -89,12 +82,10 @@ export default function LoginPage() {
     const remembered = readRememberedLogin()
     if (!remembered) return
 
-    emailForm.setValue('email', remembered.email)
-    passwordForm.setValue('password', remembered.password)
-    setEmail(remembered.email)
+    emailForm.setValue('email', remembered)
+    setEmail(remembered)
     setRememberPassword(true)
-    setStep('password')
-  }, [emailForm, passwordForm])
+  }, [emailForm])
 
   // 已登录即离开登录页；无组织的账号到受保护路由由 ProtectedRoute 渲染 403（不回弹登录，无循环）
   useEffect(() => {
@@ -124,11 +115,13 @@ export default function LoginPage() {
   const onPasswordSubmit = async (data: PasswordFields) => {
     setLoading(true)
     setServerError('')
+    let loginOk = false
     try {
       await login({ email, password: data.password })
+      loginOk = true
       const session = await getSession()
       if (rememberPassword) {
-        saveRememberedLogin(email, data.password)
+        saveRememberedEmail(email)
       } else {
         clearRememberedLogin()
       }
@@ -144,10 +137,9 @@ export default function LoginPage() {
         session.active_workspace_id,
         session.permissions?.granted ?? null
       )
-      // 无组织账号同样进入受保护路由，由 ProtectedRoute 渲染 403（统一在守卫处理授权）
       navigate(redirectAfterLogin, { replace: true })
     } catch {
-      setServerError('邮箱或密码错误')
+      setServerError(loginOk ? '登录成功但获取会话失败，请刷新重试' : '邮箱或密码错误')
     } finally {
       setLoading(false)
     }

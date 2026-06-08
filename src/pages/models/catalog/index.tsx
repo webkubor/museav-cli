@@ -218,27 +218,24 @@ export default function ModelsCatalogPage() {
         </div>
       </div>
 
-      {/* 极雅毛玻璃质感 搜索与过滤栏 */}
-      <div className="flex flex-col lg:flex-row lg:items-center gap-5 justify-between bg-mg-bg-0/60 backdrop-blur-md p-4 border border-mg-border/40 rounded-2xl shadow-sm">
-        {/* 极简无框搜索 */}
+      {/* 搜索与过滤栏 */}
+      <div className="flex flex-col gap-3 bg-mg-bg-0/60 backdrop-blur-md px-4 pt-4 pb-3 border border-mg-border/40 rounded-2xl shadow-sm">
         <Input
           variant="search"
           prefix={<LuSearch size={16} className="text-mg-text-2/80" />}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder={t('modelsCatalog.placeholder.search')}
-          className="w-full lg:w-96 h-11 text-[13.5px]"
+          className="w-full h-11 text-[13.5px]"
         />
-
-        {/* 高感胶囊分类 Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 scrollbar-none fade-edge-x">
+        <div className="flex items-center gap-2 flex-wrap">
           {categories.map((item) => (
             <button
               key={item}
               type="button"
               onClick={() => setCategory(item)}
               className={cn(
-                'px-4 py-2 text-xs font-bold rounded-full transition-all duration-300 cursor-pointer whitespace-nowrap tracking-wide',
+                'px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-300 cursor-pointer whitespace-nowrap tracking-wide',
                 category === item
                   ? 'bg-brand-base text-white shadow-md shadow-brand-glow/20'
                   : 'bg-mg-fill-0/40 text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/90 active:scale-95',

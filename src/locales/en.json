@@ -30,6 +30,7 @@
     "dashboard": "Dashboard",
     "models": "Model Hub",
     "playground": "Chat",
+    "modelCatalog": "All Models",
     "modelExplore": "Explore",
     "modelCompare": "Compare",
     "modelChat": "Chat",

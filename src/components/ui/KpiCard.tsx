@@ -1,5 +1,6 @@
 import React from 'react'
 import { Card } from '@/components/ui/Card'
+import { useCountUp } from '@/hooks/use-count-up'
 
 export interface KpiCardProps {
   title?: string
@@ -13,6 +14,8 @@ export interface KpiCardProps {
   sub?: string // 辅助次级描述，例如 Token 用量项下的 Prompt & Completion 比例
   sparkData?: number[] // 迷你 sparkline 数据
   trend?: { value: string; up: boolean } // 涨跌 badge
+  rawNumber?: number // 传入原始数值时启用 countUp 动画
+  formatter?: (n: number) => string // 配合 rawNumber 使用的格式化函数
 }
 
 function Sparkline({ data, color }: { data: number[]; color: string }) {
@@ -55,8 +58,14 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   sub,
   sparkData,
   trend,
+  rawNumber,
+  formatter,
 }) => {
   const displayTitle = title || label || ''
+  const animated = useCountUp(loading ? 0 : (rawNumber ?? 0))
+  const displayValue = rawNumber !== undefined && !loading
+    ? (formatter ? formatter(animated) : String(Math.round(animated)))
+    : value
 
   const computedTrend = !trend && sparkData && sparkData.length >= 2
     ? (() => {
@@ -127,7 +136,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
                   fontVariantNumeric: 'tabular-nums'
                 }}
               >
-                {value ?? '—'}
+                {displayValue ?? '—'}
               </span>
               {computedTrend && !loading && (
                 <span

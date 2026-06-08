@@ -12,10 +12,14 @@ export function toLoginWithRedirect(returnTo?: string): string {
 
 const AUTH_PATHS = ['/login', '/signup', '/forgot-password', '/reset-password', '/auth/callback']
 
-function isAuthPath(path: string): boolean {
+function isSafeRedirect(path: string): boolean {
+  if (!path.startsWith('/')) return false
+  if (path.startsWith('//')) return false
   try {
     const url = new URL(path, window.location.origin)
-    return AUTH_PATHS.some((p) => url.pathname === p || url.pathname.startsWith(p + '/'))
+    if (url.origin !== window.location.origin) return false
+    if (AUTH_PATHS.some((p) => url.pathname === p || url.pathname.startsWith(p + '/'))) return false
+    return true
   } catch {
     return false
   }
@@ -24,7 +28,6 @@ function isAuthPath(path: string): boolean {
 export function getRedirectTarget(fallback = '/dashboard'): string {
   const params = new URLSearchParams(window.location.search)
   const redirect = params.get('redirect')
-  if (!redirect) return fallback
-  if (isAuthPath(redirect)) return fallback
+  if (!redirect || !isSafeRedirect(redirect)) return fallback
   return redirect
 }

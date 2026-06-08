@@ -273,7 +273,7 @@ export function CustomerService() {
           <div style={{ padding: '12px 16px', borderTop: '1px solid var(--mg-fill-0)' }}>
             <div style={{
               display: 'flex',
-              alignItems: 'flex-end',
+              alignItems: 'center',
               gap: 8,
               background: 'var(--mg-fill-0)',
               border: '1px solid var(--mg-border)',
@@ -292,6 +292,7 @@ export function CustomerService() {
                   flex: 1, border: 'none', outline: 'none', background: 'transparent',
                   resize: 'none', fontSize: 13, lineHeight: '1.5', color: 'var(--mg-text-0)',
                   maxHeight: 100, overflowY: 'auto', fontFamily: 'inherit',
+                  padding: 0, margin: 0,
                 }}
               />
               <button

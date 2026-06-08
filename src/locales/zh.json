@@ -259,7 +259,8 @@
       "avatarError": "头像上传失败",
       "avatarTooLarge": "图片大小不能超过 2MB",
       "avatarChange": "更换",
-      "avatarCropTitle": "裁剪头像"
+      "avatarCropTitle": "裁剪头像",
+      "referralLabel": "邀请链接"
     },
     "security": {
       "currentPassword": "当前密码",
@@ -538,7 +539,11 @@
       "retryError": "重试失败",
       "ignored": "已标记为忽略",
       "ignoreError": "操作失败",
-      "saveError": "保存失败"
+      "saveError": "保存失败",
+      "saveSuccess": "保存成功",
+      "nameRequired": "请填写名称",
+      "urlRequired": "请填写 URL",
+      "deleteSuccess": "删除成功"
     }
   },
   "invitations": {

@@ -259,7 +259,8 @@
       "avatarError": "Failed to upload avatar",
       "avatarTooLarge": "Image must be under 2MB",
       "avatarChange": "Change",
-      "avatarCropTitle": "Crop Avatar"
+      "avatarCropTitle": "Crop Avatar",
+      "referralLabel": "Referral Link"
     },
     "security": {
       "currentPassword": "Current Password",
@@ -538,7 +539,11 @@
       "retryError": "Retry failed",
       "ignored": "Marked as ignored",
       "ignoreError": "Operation failed",
-      "saveError": "Failed to save"
+      "saveError": "Failed to save",
+      "saveSuccess": "Saved successfully",
+      "nameRequired": "Name is required",
+      "urlRequired": "URL is required",
+      "deleteSuccess": "Deleted successfully"
     }
   },
   "invitations": {

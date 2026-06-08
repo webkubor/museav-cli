@@ -280,7 +280,7 @@ export default function ModelsCatalogPage() {
               <Tooltip
                 position={position}
                 containerClassName="w-full flex"
-                className="z-[9999] max-w-[440px] border border-mg-border dark:border-emerald-500/20 shadow-[0_20px_50px_rgba(0,0,0,0.10)] dark:shadow-[0_20px_50px_rgba(16,185,129,0.15)] bg-white dark:bg-[#0b0d0b] text-mg-text-0 dark:text-neutral-100 p-0 rounded-2xl animate-in fade-in-0 duration-300"
+                className="z-[9999] max-w-[440px] border border-mg-border dark:border-emerald-500/20 shadow-[0_20px_50px_rgba(0,0,0,0.10)] dark:shadow-[0_20px_50px_rgba(16,185,129,0.15)] bg-mg-bg-0 dark:bg-[#0b0d0b] text-mg-text-0 dark:text-neutral-100 p-0 rounded-2xl animate-in fade-in-0 duration-300"
                 arrowClassName={arrowClass}
                 interactive={true}
                 content={
@@ -475,7 +475,7 @@ export default function ModelsCatalogPage() {
                 />
 
                 {/* 磨砂玻璃内容包裹容器 */}
-                <div className="relative w-full rounded-[15px] bg-white/90 dark:bg-mg-bg-0/80 backdrop-blur-2xl -webkit-backdrop-blur-2xl p-7 flex flex-col gap-6 overflow-hidden flex-1">
+                <div className="relative w-full rounded-[15px] bg-mg-bg-0/90 dark:bg-mg-bg-0/80 backdrop-blur-2xl -webkit-backdrop-blur-2xl p-7 flex flex-col gap-6 overflow-hidden flex-1">
                   {/* 内层内容 Spotlight 背景光晕（光斑跟随，Hover 时显现） */}
                   <div
                     className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
@@ -529,7 +529,7 @@ export default function ModelsCatalogPage() {
                         "shrink-0 flex items-center justify-center w-6 h-6 rounded-lg border shadow-sm transition-all duration-300",
                         copiedId === model.model_id 
                           ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500" 
-                          : "border-mg-border/60 bg-white dark:bg-neutral-800 text-mg-text-2 group-hover/id:text-brand-base group-hover/id:border-brand-base/30 group-hover/id:shadow"
+                          : "border-mg-border/60 bg-mg-bg-0 dark:bg-neutral-800 text-mg-text-2 group-hover/id:text-brand-base group-hover/id:border-brand-base/30 group-hover/id:shadow"
                       )}>
                         {copiedId === model.model_id ? (
                           <LuCheck size={11} className="text-emerald-500 animate-in zoom-in-75 duration-200" />

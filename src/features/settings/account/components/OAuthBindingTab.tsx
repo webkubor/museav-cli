@@ -160,14 +160,15 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
                   )}
                 </div>
               </div>
-              <Button 
-                size="small" 
+              <Button
+                size="small"
+                variant={isBound ? "outline" : "brand"}
                 loading={isPending}
                 disabled={isPending}
                 onClick={handleClick}
-                style={{ 
-                  borderRadius: '6px', 
-                  fontWeight: 600 
+                style={{
+                  borderRadius: '6px',
+                  fontWeight: 600
                 }}
               >
                 {isPending

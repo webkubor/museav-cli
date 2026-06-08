@@ -15,6 +15,7 @@ import { getReferralOverview, listReferralInvitees, listRewardRecords, listWithd
 import { PERMS } from '@/config/permissions'
 import type { Permission } from '@/config/permissions'
 import { TENANT_PERM_MATRIX, WS_PERM_MATRIX } from '@/config/permissionMatrix'
+import { appToast } from '@/lib/app-toast'
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
@@ -865,14 +866,15 @@ export default function PlatformConfigPage() {
         </Badge>
       </div>
 
-      <Tabs defaultValue="endpoints">
-        <TabsList>
-          <TabsTrigger value="endpoints">{t('platformConfig.tab.endpoints')}</TabsTrigger>
-          <TabsTrigger value="roles">角色设置</TabsTrigger>
-          <TabsTrigger value="permissions">{t('platformConfig.tab.permissions')}</TabsTrigger>
-          <TabsTrigger value="url-params">回跳参数</TabsTrigger>
-          <TabsTrigger value="headers">请求头</TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="endpoints">
+          <TabsList>
+            <TabsTrigger value="endpoints">{t('platformConfig.tab.endpoints')}</TabsTrigger>
+            <TabsTrigger value="public-routes">公共路由</TabsTrigger>
+            <TabsTrigger value="roles">角色设置</TabsTrigger>
+            <TabsTrigger value="permissions">{t('platformConfig.tab.permissions')}</TabsTrigger>
+            <TabsTrigger value="url-params">回跳参数</TabsTrigger>
+            <TabsTrigger value="headers">请求头</TabsTrigger>
+          </TabsList>
 
         <TabsContent value="endpoints">
           <div className="space-y-6 pt-2">
@@ -897,6 +899,36 @@ export default function PlatformConfigPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="public-routes">
+          <div className="space-y-3 pt-2">
+            <p className="text-xs text-mg-text-2">无需登录即可访问的页面路由，点击复制完整 URL</p>
+            {([
+              { path: '/login', desc: '邮箱密码登录' },
+              { path: '/signup', desc: '新用户注册' },
+              { path: '/forgot-password', desc: '忘记密码（发送重置邮件）' },
+              { path: '/reset-password?token=xxx', desc: '重置密码（邮件链接带 token）' },
+              { path: '/auth/callback?redirect=/dashboard', desc: 'OAuth 回调（GitHub/Google/WeChat）' },
+              { path: '/invitations', desc: '邀请列表' },
+              { path: '/invitations/:token', desc: '邀请详情（链接带 token）' },
+              { path: '/device', desc: 'CLI 设备码授权' },
+            ] as const).map((r) => {
+              const full = `${window.location.origin}${r.path}`
+              return (
+                <div
+                  key={r.path}
+                  className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border px-5 py-3 flex items-center gap-4 cursor-pointer hover:border-brand-base/30 transition-colors"
+                  onClick={() => { navigator.clipboard.writeText(full); appToast.success(`已复制 ${r.path}`) }}
+                >
+                  <code className="text-xs font-mono text-brand-base shrink-0 select-all">{r.path}</code>
+                  <span className="text-xs text-mg-text-2">—</span>
+                  <span className="text-xs text-mg-text-1">{r.desc}</span>
+                  <span className="ml-auto text-[10px] text-mg-text-2 shrink-0">点击复制</span>
+                </div>
+              )
+            })}
           </div>
         </TabsContent>
 

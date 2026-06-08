@@ -35,6 +35,7 @@ import { applyBrandTheme, applyTheme, getSavedBrandTheme, getSavedTheme } from '
 import { getPlatformConfig } from '@/services/platform'
 import { useLangStore } from '@/store/use-brand-store'
 import { toLoginWithRedirect } from '@/lib/redirect'
+import { NavLogger } from '@/components/dev/NavLogger'
 import { DevRequirements } from '@/components/dev-requirements'
 import { DevToolbar } from '@/components/dev-toolbar'
 
@@ -148,6 +149,7 @@ export default function App() {
     <Providers>
       <Toaster richColors position="top-right" closeButton />
       <BrowserRouter>
+        {import.meta.env.DEV && <NavLogger />}
         <PlatformLoader onReady={() => setPlatformReady(true)} />
         {!platformReady && (
           <div style={{

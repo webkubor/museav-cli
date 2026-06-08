@@ -53,7 +53,7 @@ const SidebarNavItem: React.FC<{
       )}
     >
       <span className={cn(
-        "text-base shrink-0 transition-all duration-300 ease-out",
+        "inline-flex items-center justify-center text-base leading-none shrink-0 transition-all duration-300 ease-out",
         isSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:scale-105 group-hover:translate-x-[1.5px]"
       )}>
         {item.icon}
@@ -100,7 +100,7 @@ const SidebarMenuGroup: React.FC<{
           }}
         >
           <span className={cn(
-            "text-base shrink-0 transition-all duration-300 ease-out",
+            "inline-flex items-center justify-center text-base leading-none shrink-0 transition-all duration-300 ease-out",
             isChildSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:scale-105 group-hover:translate-x-[1px]"
           )}>
             {item.icon}
@@ -137,7 +137,7 @@ const SidebarMenuGroup: React.FC<{
       >
         <div className="flex items-center gap-3 min-w-0">
           <span className={cn(
-            "text-base shrink-0 transition-all duration-300 ease-out",
+            "inline-flex items-center justify-center text-base leading-none shrink-0 transition-all duration-300 ease-out",
             isChildSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:scale-105 group-hover:translate-x-[1.5px]"
           )}>
             {item.icon}
@@ -290,7 +290,7 @@ const SidebarSettingsButton: React.FC<{
       >
         <div className={cn("flex items-center gap-3 min-w-0", collapsed && "w-full justify-center")}>
           <span className={cn(
-            "text-base shrink-0 transition-transform duration-500 ease-out",
+            "inline-flex items-center justify-center text-base leading-none shrink-0 transition-transform duration-500 ease-out",
             isSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:rotate-[60deg]"
           )}>
             <LuSettings />

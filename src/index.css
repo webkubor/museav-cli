@@ -165,7 +165,7 @@ body[theme-mode='dark'] {
   --mg-fill-2: rgba(15, 23, 42, 0.09);
 
   /* 代码块面（payload 查看器） */
-  --mg-code-bg:   #f6f8fa;
+  --mg-code-bg:   #e9ecf1;
   --mg-code-text: #1f2937;
 
   /* 语义色 */
@@ -1137,16 +1137,17 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 }
 
 body[theme-mode='dark'] .modern-btn-default {
-  background-color: #ffffff !important; /* 深色大厂极雅耀白 */
-  border-color: #ffffff !important;
-  color: #0f172a !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  background-color: rgba(255, 255, 255, 0.10) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  color: #f0f0f2 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
 }
 
 body[theme-mode='dark'] .modern-btn-default:hover {
-  background-color: #f1f5f9 !important;
-  border-color: #f1f5f9 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  transform: translateY(-1.5px);
+  background-color: rgba(255, 255, 255, 0.16) !important;
+  border-color: rgba(255, 255, 255, 0.20) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2) !important;
 }
 
 .modern-btn-destructive {
@@ -1345,6 +1346,16 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   box-shadow: inset 2px 0 0 var(--brand-base);
 }
 
+/* Semi 浮层容器背景跟随主题 */
+.semi-select-option-list,
+.semi-popover-content,
+.semi-tooltip-content,
+.semi-dropdown-menu,
+.semi-modal-content,
+.semi-sidesheet-inner {
+  background-color: var(--mg-bg-0) !important;
+}
+
 /* 下拉菜单项 (Select Option) 微移高亮反馈 */
 .semi-select-option {
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
@@ -1352,7 +1363,7 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
 
 .semi-select-option-hover {
   background-color: var(--mg-fill-0) !important;
-  padding-left: 18px !important; /* 精致向右平移 4px 反馈 (原本是 14px) */
+  padding-left: 18px !important;
   color: var(--mg-text-0) !important;
 }
 

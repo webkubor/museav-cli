@@ -25,6 +25,11 @@ type DevLogPayload =
       response?: unknown
     }
   | {
+      kind: 'nav'
+      from: string
+      to: string
+    }
+  | {
       kind: 'error'
       line: string
     }
@@ -101,10 +106,17 @@ function formatApiLogDetail(payload: Extract<DevLogPayload, { kind: 'api' }>) {
   ].filter(Boolean).join('\n')
 }
 
+function formatNavLog(payload: Extract<DevLogPayload, { kind: 'nav' }>) {
+  return `[nav] ${payload.from || '(direct)'} → ${payload.to}`
+}
+
 function parsePayload(raw: string): DevLogPayload | null {
   try {
     const parsed = JSON.parse(raw) as Partial<DevLogPayload>
     if (parsed.kind === 'api' && parsed.method && parsed.path && parsed.url) {
+      return parsed as DevLogPayload
+    }
+    if (parsed.kind === 'nav' && parsed.to) {
       return parsed as DevLogPayload
     }
     if (parsed.kind === 'error' && parsed.line) {
@@ -148,6 +160,8 @@ export function devLoggerPlugin(): Plugin {
             const detail = `[${ts}] ${formatApiLogDetail(payload)}`
             writeNewest(API_LOG_PATH, detail)
             if (!payload.ok) writeError(detail)
+          } else if (payload?.kind === 'nav') {
+            writeNewest(API_LOG_PATH, `[${ts}] ${formatNavLog(payload)}`)
           } else if (payload?.kind === 'error') {
             writeError(`[${ts}] ${payload.line}`)
           } else {

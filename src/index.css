@@ -141,16 +141,16 @@ body[theme-mode='dark'] {
    浅色 / 深色相同分组、相同顺序，对照清晰
    ══════════════════════════════════════════════════════════════ */
 
-/* 浅色（默认）— 莫兰迪暖石系 */
+/* 浅色（默认）— 莫兰迪冷灰石系 */
 :root {
   /* 背景层级 */
-  --site-bg:  #f3efe9;   /* 页面底层 — 亚麻米 */
-  --card-bg:  #faf8f5;   /* 卡片面 — 象牙白 */
-  --mg-bg-0:  #faf8f5;   /* 主卡片 — 象牙白 */
-  --mg-bg-0-rgb: 250, 248, 245;
-  --mg-bg-1:  #f3efe9;   /* 页面背景 — 亚麻米 */
-  --mg-bg-2:  #ece6de;   /* 悬浮卡片 / Dropdown — 暖燕麦 */
-  --mg-bg-3:  #e2dcd3;   /* Modal / Tooltip 顶层 — 暖石灰 */
+  --site-bg:  #f1f2f5;   /* 页面底层 — 冷灰雾 */
+  --card-bg:  #f7f8fa;   /* 卡片面 — 云白 */
+  --mg-bg-0:  #f7f8fa;   /* 主卡片 — 云白 */
+  --mg-bg-0-rgb: 247, 248, 250;
+  --mg-bg-1:  #f1f2f5;   /* 页面背景 — 冷灰雾 */
+  --mg-bg-2:  #e8eaef;   /* 悬浮卡片 / Dropdown — 冷石 */
+  --mg-bg-3:  #dde0e7;   /* Modal / Tooltip 顶层 — 冷砾 */
 
   /* 文字层级 */
   --mg-text-0: #0f172a;  /* 主文字 */
@@ -159,10 +159,10 @@ body[theme-mode='dark'] {
   --mg-text-3: #cbd5e1;  /* 禁用 / 装饰 */
 
   /* 边框与填充 */
-  --mg-border: rgba(60, 45, 30, 0.07);
-  --mg-fill-0: rgba(60, 45, 30, 0.03);
-  --mg-fill-1: rgba(60, 45, 30, 0.055);
-  --mg-fill-2: rgba(60, 45, 30, 0.09);
+  --mg-border: rgba(15, 23, 42, 0.07);
+  --mg-fill-0: rgba(15, 23, 42, 0.03);
+  --mg-fill-1: rgba(15, 23, 42, 0.055);
+  --mg-fill-2: rgba(15, 23, 42, 0.09);
 
   /* 代码块面（payload 查看器） */
   --mg-code-bg:   #f6f8fa;
@@ -174,13 +174,13 @@ body[theme-mode='dark'] {
   --mg-warning: #f59e0b;
 
   /* 阴影 */
-  --shadow-sm: 0 1px 2px rgba(60, 45, 30, 0.07);
-  --shadow-md: 0 4px 12px -1px rgba(60, 45, 30, 0.09), 0 2px 4px -1px rgba(60, 45, 30, 0.05);
-  --shadow-lg: 0 12px 24px -4px rgba(60, 45, 30, 0.07), 0 4px 8px -2px rgba(60, 45, 30, 0.05);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 12px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.06), 0 4px 8px -2px rgba(15, 23, 42, 0.04);
 
   /* 导航 */
-  --nav-item-hover-bg: rgba(60, 45, 30, 0.04);
-  --grid-color: rgba(60, 45, 30, 0.025);
+  --nav-item-hover-bg: rgba(15, 23, 42, 0.035);
+  --grid-color: rgba(15, 23, 42, 0.02);
 }
 
 /* 深色 */

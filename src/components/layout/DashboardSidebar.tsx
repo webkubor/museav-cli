@@ -115,7 +115,7 @@ const SidebarMenuGroup: React.FC<{
       {/* 展开相邻主菜单时，垂直连通这两个主菜单图标的渐变流动垂线 */}
       {item.items && isOpen && (
         <div 
-          className="absolute left-[30px] w-[2px] sidebar-flow-line pointer-events-none rounded-full"
+          className="absolute left-[29px] w-[2px] sidebar-flow-line pointer-events-none rounded-full"
           style={{
             top: '28px',
             bottom: '-20px',

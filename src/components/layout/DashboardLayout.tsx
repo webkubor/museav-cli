@@ -161,7 +161,12 @@ export function DashboardLayout() {
 
   const getBreadcrumbs = () => {
     const path = location.pathname.replace(/^\//, '')
-    return BREADCRUMB_MAP[path] ?? [{ label: t('nav.home'), path: '/dashboard' }]
+    if (BREADCRUMB_MAP[path]) return BREADCRUMB_MAP[path]
+    const matched = Object.keys(BREADCRUMB_MAP)
+      .filter((key) => path.startsWith(key + '/') || path.startsWith(key))
+      .sort((a, b) => b.length - a.length)[0]
+    if (matched) return BREADCRUMB_MAP[matched]
+    return [{ label: t('nav.home'), path: '/dashboard' }]
   }
 
   const isDashboardRoute = getSelectedKey() === 'dashboard'

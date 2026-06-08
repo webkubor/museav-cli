@@ -1576,3 +1576,13 @@ body[theme-mode='dark'] .sidebar-flow-line::after {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* recharts 图表区域：禁止点击/双击后出现浏览器 focus outline */
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-wrapper svg:focus,
+.recharts-wrapper svg:focus-visible,
+.recharts-surface:focus,
+.recharts-surface:focus-visible {
+  outline: none !important;
+}

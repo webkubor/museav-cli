@@ -33,8 +33,25 @@ export default function AuthCallbackPage() {
         )
         navigate(redirect, { replace: true })
       })
-      .catch(() => {
-        navigate('/login', { replace: true })
+      .catch(async () => {
+        try {
+          const result = await getSession()
+          setAuth(
+            {
+              account_id: result.account.account_id,
+              display_name: result.account.display_name,
+              email: result.account.email,
+              avatar_url: result.account.avatar_url,
+            },
+            result.active_tenant_id,
+            result.tenants,
+            result.active_workspace_id,
+            result.permissions?.granted ?? null
+          )
+          navigate(redirect, { replace: true })
+        } catch {
+          navigate('/login', { replace: true })
+        }
       })
   }, [])
 

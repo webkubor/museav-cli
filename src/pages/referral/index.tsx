@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LuCoins, LuTrendingUp, LuUsers, LuWallet, LuSparkles } from 'react-icons/lu'
-
 import { KpiCard } from '@/components/ui/KpiCard'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -15,6 +14,7 @@ import {
   TableCell,
 } from '@/components/ui/Table'
 import { Modal } from '@/components/ui/Modal'
+import { ReferralInviteCard } from '@/components/referral/ReferralInviteCard'
 import { appToast } from '@/lib/app-toast'
 import { useAuthStore } from '@/store/auth'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -112,7 +112,6 @@ export default function ReferralPage() {
   const MIN_AMOUNT = 100
 
   const [activeTab, setActiveTab] = useState<TabKey>('invitees')
-  const [copied, setCopied] = useState(false)
   // 稳定幂等键：打开弹窗时生成，确认重试期间复用；金额修改即重铸。
   const [idempotencyKey, setIdempotencyKey] = useState('')
 
@@ -139,13 +138,6 @@ export default function ReferralPage() {
       ? alipayAccount.trim().length > 0
       : bankName.trim().length > 0 && bankCard.trim().length > 0 && bankHolder.trim().length > 0
   const withdrawValid = withdrawAmountValid && accountValid
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(inviteLink)
-    appToast.success(text.copySuccess)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   const handleTransfer = () => {
     if (rewardBalance < MIN_AMOUNT) {
@@ -339,27 +331,14 @@ export default function ReferralPage() {
 
       {/* 邀请区 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* 邀请链接卡 */}
-        <div className="rounded-2xl border border-mg-border bg-card-bg p-5 space-y-4">
-          <p className="text-sm font-bold text-mg-text-0">{text.inviteLinkLabel}</p>
-          <div className="flex gap-2">
-            <input
-              readOnly
-              value={inviteLink}
-              className="flex-1 min-w-0 rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 text-xs text-mg-text-1 font-mono outline-none"
-            />
-            <Button variant="outline" size="sm" onClick={handleCopy}>
-              {copied ? text.copied : text.copy}
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-mg-text-2">{text.inviteCodeLabel}</span>
-            <span className="rounded-md border border-mg-border bg-mg-fill-0 px-2 py-0.5 text-xs font-mono text-mg-text-0 tracking-widest">
-              {inviteCode}
-            </span>
-          </div>
-          <p className="text-xs text-mg-text-2 leading-relaxed">{text.inviteHint}</p>
-        </div>
+        <ReferralInviteCard
+          inviteLink={inviteLink}
+          inviteCode={inviteCode}
+          inviteLinkLabel={text.inviteLinkLabel}
+          inviteCodeLabel={text.inviteCodeLabel}
+          inviteHint={text.inviteHint}
+          copySuccess={text.copySuccess}
+        />
 
         {/* 档位卡 */}
         <div className="rounded-2xl border border-mg-border bg-card-bg p-5 space-y-4">

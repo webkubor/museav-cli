@@ -45,9 +45,13 @@ const configs: Record<Market, MarketConfig> = {
     icp: import.meta.env.VITE_ICP || null,
     locales: ['zh'],
     defaultLocale: 'zh',
-    siteUrl: import.meta.env.VITE_SITE_URL || 'https://modelgo.com',
+    siteUrl: isTestOrDev()
+      ? 'https://test.modelgo.com'
+      : (import.meta.env.VITE_SITE_URL || 'https://modelgo.com'),
     consoleUrl: import.meta.env.VITE_DOMESTIC_CONSOLE || 'https://console.modelgo.com',
-    docsUrl: import.meta.env.VITE_DOMESTIC_DOCS || 'https://doc.modelgo.com',
+    docsUrl: isTestOrDev()
+      ? 'https://doc.test.modelgo.com'
+      : (import.meta.env.VITE_DOMESTIC_DOCS || 'https://doc.modelgo.com'),
   },
 
   global: {
@@ -59,9 +63,13 @@ const configs: Record<Market, MarketConfig> = {
     icp: null,
     locales: ['zh', 'en'],
     defaultLocale: 'en',
-    siteUrl: import.meta.env.VITE_SITE_URL || 'https://modelgo.ai',
+    siteUrl: isTestOrDev()
+      ? 'https://test.modelgo.com'
+      : (import.meta.env.VITE_SITE_URL || 'https://modelgo.ai'),
     consoleUrl: import.meta.env.VITE_GLOBAL_CONSOLE || 'https://console.modelgo.ai',
-    docsUrl: import.meta.env.VITE_GLOBAL_DOCS || 'https://doc.modelgo.ai',
+    docsUrl: isTestOrDev()
+      ? 'https://doc.test.modelgo.com'
+      : (import.meta.env.VITE_GLOBAL_DOCS || 'https://doc.modelgo.ai'),
   },
 }
 

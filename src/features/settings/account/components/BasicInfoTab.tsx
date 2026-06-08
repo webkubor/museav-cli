@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { updateProfile, uploadAvatar } from '@/services/account'
 import { useAuthStore } from '@/store/auth'
@@ -7,6 +7,8 @@ import type { AccountProfile } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AvatarUpload } from '@/components/ui/AvatarUpload'
+import { ReferralInviteCard } from '@/components/referral/ReferralInviteCard'
+import { getReferralOverview } from '@/services/referral'
 import { appToast } from '@/lib/app-toast'
 
 interface BasicInfoTabProps {
@@ -17,6 +19,13 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [displayName, setDisplayName] = useState(profile.display_name)
+  const tenantId = useAuthStore((s) => s.tenants.find((t) => t.is_default)?.tenant_id ?? '')
+
+  const { data: referral } = useQuery({
+    queryKey: ['referral', 'overview', tenantId],
+    queryFn: () => getReferralOverview(tenantId),
+    enabled: !!tenantId,
+  })
 
   const avatarMutation = useMutation({
     mutationFn: (file: File) => uploadAvatar(file),
@@ -105,6 +114,19 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             </Button>
           </div>
         </div>
+
+        {referral?.inviteLink && (
+          <div className="pt-4 border-t border-mg-border/40">
+            <p className="text-xs font-bold text-mg-text-2 uppercase tracking-wider mb-3">
+              {t('account.info.referralLabel') || '邀请链接'}
+            </p>
+            <ReferralInviteCard
+              inviteLink={referral.inviteLink}
+              inviteCode={referral.inviteCode ?? ''}
+              compact
+            />
+          </div>
+        )}
       </div>
     </div>
   )

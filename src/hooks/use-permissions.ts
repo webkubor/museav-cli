@@ -22,6 +22,7 @@ import type { Permission } from '@/config/permissions'
  */
 export function usePermissions() {
   const granted        = useAuthStore((s) => s.permissions)
+  const menus          = useAuthStore((s) => s.menus)
   const tenants        = useAuthStore((s) => s.tenants)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const { role: tenantRole } = useTenantRole()
@@ -45,5 +46,9 @@ export function usePermissions() {
 
   const hasPermission = (perm: Permission): boolean => permissions.includes(perm)
 
-  return { permissions, hasPermission }
+  /** 获取指定菜单的 actions 开关表，供页面组件判断按钮级权限 */
+  const getMenuActions = (menuKey: string): Record<string, boolean> =>
+    menus.find((m) => m.key === menuKey)?.actions ?? {}
+
+  return { permissions, hasPermission, menus, getMenuActions }
 }

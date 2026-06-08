@@ -215,7 +215,7 @@ describe('usePermissions — FALLBACK via real roles (granted === null)', () => 
 
     // member-level grants
     expect(value.hasPermission('dashboard:view')).toBe(true) // BASE
-    expect(value.hasPermission('invitations:view')).toBe(true) // ENTERPRISE_MENU
+    expect(value.hasPermission('org.settings:edit')).toBe(false) // tenant_member has no org manage
     expect(value.hasPermission('api_keys:view')).toBe(true) // ws_member
     expect(value.hasPermission('api_keys:create')).toBe(true) // ws_member
     // owner-only — proves the hardcoded-owner default is dead

@@ -107,7 +107,8 @@ function SessionLoader() {
           result.active_tenant_id,
           result.tenants,
           persistedWs || result.active_workspace_id,
-          result.permissions?.granted ?? null
+          result.permissions?.granted ?? null,
+          result.permissions?.menus ?? []
         )
       })
       .catch(() => {

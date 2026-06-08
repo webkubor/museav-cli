@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { AccountBrief, TenantBrief } from '@/types'
+import type { AccountBrief, TenantBrief, SessionMenu } from '@/types'
 import { storageKeys } from '@/lib/storage'
 
 interface AuthState {
@@ -9,6 +9,8 @@ interface AuthState {
   tenants: TenantBrief[]
   /** 会话下发的 granted 权限集；null = 后端未下发（触发本地矩阵回退），[] = 明确零权限 */
   permissions: string[] | null
+  /** 会话下发的菜单列表，含每个菜单的 actions 开关 */
+  menus: SessionMenu[]
   isAuthenticated: boolean
   isLoading: boolean
 }
@@ -19,7 +21,8 @@ interface AuthActions {
     activeTenantId: string,
     tenants: TenantBrief[],
     activeWorkspaceId?: string,
-    permissions?: string[] | null
+    permissions?: string[] | null,
+    menus?: SessionMenu[]
   ) => void
   addTenant: (tenant: TenantBrief) => void
   setActiveWorkspaceId: (workspaceId: string) => void
@@ -27,7 +30,11 @@ interface AuthActions {
   setLoading: (loading: boolean) => void
   /** 会话刷新（如切换组织后重拉 /auth/session）时单独更新 granted 权限集 */
   setPermissions: (permissions: string[] | null) => void
+  /** 会话刷新时单独更新菜单列表 */
+  setMenus: (menus: SessionMenu[]) => void
   hasPermission: (permission: string) => boolean
+  /** 获取指定菜单的 actions 开关表；key 不存在时返回 {} */
+  getMenuActions: (menuKey: string) => Record<string, boolean>
 }
 
 export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
@@ -36,10 +43,11 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   activeWorkspaceId: null,
   tenants: [],
   permissions: null,
+  menus: [],
   isAuthenticated: false,
   isLoading: true,
 
-  setAuth: (account, activeTenantId, tenants, activeWorkspaceId, permissions = null) => {
+  setAuth: (account, activeTenantId, tenants, activeWorkspaceId, permissions = null, menus = []) => {
     if (activeTenantId) {
       localStorage.setItem(storageKeys.activeTenantId(), activeTenantId)
     } else {
@@ -54,6 +62,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
       activeWorkspaceId: activeWorkspaceId || null,
       tenants,
       permissions,
+      menus,
       isAuthenticated: true,
       isLoading: false,
     })
@@ -61,6 +70,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
 
   addTenant: (tenant) => set((s) => ({ tenants: [...s.tenants, tenant] })),
   setPermissions: (permissions) => set({ permissions }),
+  setMenus: (menus) => set({ menus }),
   setActiveWorkspaceId: (workspaceId) => {
     if (workspaceId) {
       localStorage.setItem(storageKeys.activeWorkspaceId(), workspaceId)
@@ -86,6 +96,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
       activeWorkspaceId: null,
       tenants: [],
       permissions: [],
+      menus: [],
       isAuthenticated: false,
       isLoading: false,
     })
@@ -94,4 +105,6 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   setLoading: (isLoading) => set({ isLoading }),
 
   hasPermission: (permission) => get().permissions?.includes(permission) ?? false,
+
+  getMenuActions: (menuKey) => get().menus.find((m) => m.key === menuKey)?.actions ?? {},
 }))

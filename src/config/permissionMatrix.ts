@@ -42,18 +42,15 @@ const ORG_MANAGE: Permission[] = [
   PERMS.ORG_INVITE_MANAGE,
 ]
 
-// 企业类型所有成员均可见邀请管理菜单（操作权限在 ws 维度控制）
-const ENTERPRISE_MENU: Permission[] = [PERMS.INVITATIONS_VIEW]
-
 export const TENANT_PERM_MATRIX: Record<
   Market,
   Record<TenantType, Record<TenantRole, Permission[]>>
 > = {
   domestic: {
     enterprise: {
-      tenant_owner:  [...BASE, ...BILLING_DOMESTIC, ...ORG_MANAGE, ...ENTERPRISE_MENU],
-      tenant_admin:  [...BASE, ...BILLING_DOMESTIC, ...ORG_MANAGE, ...ENTERPRISE_MENU],
-      tenant_member: [...BASE, ...ENTERPRISE_MENU],
+      tenant_owner:  [...BASE, ...BILLING_DOMESTIC, ...ORG_MANAGE],
+      tenant_admin:  [...BASE, ...BILLING_DOMESTIC, ...ORG_MANAGE],
+      tenant_member: [...BASE],
     },
     personal: {
       tenant_owner:  [...BASE, ...BILLING_DOMESTIC],
@@ -63,9 +60,9 @@ export const TENANT_PERM_MATRIX: Record<
   },
   global: {
     enterprise: {
-      tenant_owner:  [...BASE, ...BILLING_GLOBAL, ...ORG_MANAGE, ...ENTERPRISE_MENU],
-      tenant_admin:  [...BASE, ...BILLING_GLOBAL, ...ORG_MANAGE, ...ENTERPRISE_MENU],
-      tenant_member: [...BASE, ...ENTERPRISE_MENU],
+      tenant_owner:  [...BASE, ...BILLING_GLOBAL, ...ORG_MANAGE],
+      tenant_admin:  [...BASE, ...BILLING_GLOBAL, ...ORG_MANAGE],
+      tenant_member: [...BASE],
     },
     personal: {
       tenant_owner:  [...BASE, ...BILLING_GLOBAL],
@@ -81,14 +78,14 @@ export const WS_PERM_MATRIX: Record<WorkspaceRole, Permission[]> = {
     PERMS.GUARDRAILS_VIEW, PERMS.GUARDRAILS_CREATE, PERMS.GUARDRAILS_EDIT,
     PERMS.GUARDRAILS_DELETE, PERMS.GUARDRAILS_ASSIGNMENT_EDIT, PERMS.GUARDRAILS_BUDGET_EDIT,
     PERMS.OBSERVABILITY_VIEW, PERMS.OBSERVABILITY_LOGGING_EDIT, PERMS.OBSERVABILITY_FORWARD_MANAGE,
-    PERMS.INVITATIONS_MANAGE,
+    PERMS.WORKSPACE_RENAME, PERMS.WORKSPACE_DELETE, PERMS.WORKSPACE_MEMBERS_MANAGE,
   ],
   ws_admin: [
     PERMS.API_KEYS_VIEW, PERMS.API_KEYS_CREATE, PERMS.API_KEYS_REVOKE,
     PERMS.GUARDRAILS_VIEW, PERMS.GUARDRAILS_CREATE, PERMS.GUARDRAILS_EDIT,
     PERMS.GUARDRAILS_DELETE, PERMS.GUARDRAILS_ASSIGNMENT_EDIT, PERMS.GUARDRAILS_BUDGET_EDIT,
     PERMS.OBSERVABILITY_VIEW, PERMS.OBSERVABILITY_LOGGING_EDIT, PERMS.OBSERVABILITY_FORWARD_MANAGE,
-    PERMS.INVITATIONS_MANAGE,
+    PERMS.WORKSPACE_RENAME, PERMS.WORKSPACE_MEMBERS_MANAGE,
   ],
   ws_member: [
     PERMS.API_KEYS_VIEW, PERMS.API_KEYS_CREATE,

@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { LuArrowLeft, LuSearch, LuX, LuArrowRight, LuUsers, LuBuilding2 } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 import {
   getWorkspace,
   updateWorkspace,
@@ -153,6 +155,8 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
+  const { hasPermission } = usePermissions()
+  const canManageMembers = hasPermission(PERMS.WORKSPACE_MEMBERS_MANAGE)
   const [addSearch, setAddSearch] = useState('')
   const [removeTarget, setRemoveTarget] = useState<string | null>(null)
   const [roleChangeTarget, setRoleChangeTarget] = useState<{ accountId: string; role: string } | null>(null)
@@ -269,7 +273,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
                     <div className="text-[12px] font-semibold text-mg-text-0 truncate">{m.account.display_name}</div>
                     <div className="text-[10px] text-mg-text-2 truncate">{m.account.email}</div>
                   </div>
-                  {m.role !== 'ws_owner' ? (
+                  {m.role !== 'ws_owner' && canManageMembers ? (
                     <Select
                       value={m.role}
                       onChange={(role) => setRoleChangeTarget({ accountId: m.account.account_id, role })}
@@ -282,7 +286,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
                   ) : (
                     <Badge variant="purple" className="text-[9px] shrink-0">{WS_ROLE_LABEL[m.role]}</Badge>
                   )}
-                  {m.role !== 'ws_owner' && (
+                  {m.role !== 'ws_owner' && canManageMembers && (
                     <button
                       type="button"
                       onClick={() => (isMockMode ? handleMockRemove(m.account.account_id) : setRemoveTarget(m.account.account_id))}
@@ -331,15 +335,17 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
                     <div className="text-[10px] text-mg-text-2 truncate">{m.account.email}</div>
                   </div>
                   <Badge variant="outline" className="text-[9px] shrink-0">{TENANT_ROLE_LABEL[m.role]}</Badge>
-                  <Button
-                    variant="ghost"
-                    className="h-6 px-2 text-[10px] font-semibold shrink-0 text-brand-base hover:bg-brand-base/5"
-                    loading={addMutation.isPending}
-                    onClick={() => (isMockMode ? handleMockAdd(m) : addMutation.mutate(m.account.email))}
-                  >
-                    <LuArrowRight size={11} className="mr-0.5" />
-                    {t('workspaces.detail.members.add')}
-                  </Button>
+                  {canManageMembers && (
+                    <Button
+                      variant="ghost"
+                      className="h-6 px-2 text-[10px] font-semibold shrink-0 text-brand-base hover:bg-brand-base/5"
+                      loading={addMutation.isPending}
+                      onClick={() => (isMockMode ? handleMockAdd(m) : addMutation.mutate(m.account.email))}
+                    >
+                      <LuArrowRight size={11} className="mr-0.5" />
+                      {t('workspaces.detail.members.add')}
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -422,6 +428,9 @@ function MemberAvatar({ member, accent }: { member: WorkspaceMember | TenantMemb
 function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => void }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const { hasPermission } = usePermissions()
+  const canRename = hasPermission(PERMS.WORKSPACE_RENAME)
+  const canDelete = hasPermission(PERMS.WORKSPACE_DELETE)
   const [name, setName] = useState(ws.name)
   const [confirmName, setConfirmName] = useState('')
 
@@ -454,14 +463,16 @@ function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => 
         </label>
         <div className="flex items-center gap-2">
           <Input value={name} onChange={(e) => setName(e.target.value)} className="max-w-[320px] h-9 text-xs rounded-lg" />
-          <Button
-            variant="brand"
-            disabled={renameMutation.isPending || !name.trim() || name.trim() === ws.name}
-            onClick={() => renameMutation.mutate()}
-            className="h-9 px-4 rounded-lg font-semibold text-xs"
-          >
-            {t('workspaces.detail.settings.save')}
-          </Button>
+          {canRename && (
+            <Button
+              variant="brand"
+              disabled={renameMutation.isPending || !name.trim() || name.trim() === ws.name}
+              onClick={() => renameMutation.mutate()}
+              className="h-9 px-4 rounded-lg font-semibold text-xs"
+            >
+              {t('workspaces.detail.settings.save')}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -472,7 +483,7 @@ function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => 
         </div>
         {ws.is_default ? (
           <p className="text-xs text-mg-text-2">{t('workspaces.detail.settings.defaultCannotDelete')}</p>
-        ) : (
+        ) : canDelete ? (
           <>
             <p className="text-xs text-mg-text-2">{t('workspaces.detail.settings.deleteHint')}</p>
             <div className="flex items-center gap-2">
@@ -492,7 +503,7 @@ function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => 
               </Button>
             </div>
           </>
-        )}
+        ) : null}
       </div>
     </div>
   )

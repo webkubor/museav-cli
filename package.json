@@ -14,7 +14,8 @@
     "test": "vitest run",
     "version:patch": "npm version patch --no-git-tag-version",
     "version:minor": "npm version minor --no-git-tag-version",
-    "version:major": "npm version major --no-git-tag-version"
+    "version:major": "npm version major --no-git-tag-version",
+    "sync:menus": "npx tsx scripts/sync-menus.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

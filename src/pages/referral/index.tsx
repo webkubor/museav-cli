@@ -18,6 +18,8 @@ import { Modal } from '@/components/ui/Modal'
 import { appToast } from '@/lib/app-toast'
 import { useAuthStore } from '@/store/auth'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 
 import {
   getReferralOverview,
@@ -57,6 +59,9 @@ export default function ReferralPage() {
     (s) => s.tenants.find((t) => t.is_default)?.tenant_id ?? s.activeTenantId ?? ''
   )
   const queryClient = useQueryClient()
+  const { hasPermission } = usePermissions()
+  const canTransfer = hasPermission(PERMS.REFERRAL_REWARD_TRANSFER)
+  const canWithdraw = hasPermission(PERMS.REFERRAL_REWARD_WITHDRAW)
 
   const { data: overview } = useQuery({
     queryKey: ['referral', 'overview', tenantId],
@@ -318,12 +323,16 @@ export default function ReferralPage() {
             {fmt(rewardBalance)}
           </span>
           <div className="flex gap-2 mt-auto">
-            <Button variant="brand" size="sm" disabled={rewardBalance <= 0} onClick={handleTransfer}>
-              {text.transferToBalance}
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleWithdraw}>
-              {text.requestWithdrawal}
-            </Button>
+            {canTransfer && (
+              <Button variant="brand" size="sm" disabled={rewardBalance <= 0} onClick={handleTransfer}>
+                {text.transferToBalance}
+              </Button>
+            )}
+            {canWithdraw && (
+              <Button variant="outline" size="sm" onClick={handleWithdraw}>
+                {text.requestWithdrawal}
+              </Button>
+            )}
           </div>
         </div>
       </div>

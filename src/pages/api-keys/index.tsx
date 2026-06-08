@@ -24,6 +24,8 @@ import { listApiKeys, createApiKey, revokeApiKey } from '@/services/api-keys'
 import { listWorkspaceMembers } from '@/services/workspaces'
 import { listGuardrails } from '@/services/guardrails'
 import { useAuthStore } from '@/store/auth'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { pageItems } from '@/lib/utils'
@@ -81,6 +83,9 @@ export default function ApiKeysPage() {
   const { currency, symbol } = useCurrency()
 
   const activeWorkspaceId = useAuthStore((state) => state.activeWorkspaceId) || '01HV3KWS000000000000001'
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission(PERMS.API_KEYS_CREATE)
+  const canRevoke = hasPermission(PERMS.API_KEYS_REVOKE)
 
   const { data, isLoading } = useQuery({
     queryKey: ['api-keys', activeWorkspaceId],
@@ -354,10 +359,12 @@ export default function ApiKeysPage() {
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
         />
-        <Button variant="brand" onClick={handleOpenCreate} className="rounded-full px-6 h-10 shadow-lg shadow-brand-glow/20">
-          <LuPlus className="w-4 h-4 mr-1.5" />
-          {t('apiKeys.create')}
-        </Button>
+        {canCreate && (
+          <Button variant="brand" onClick={handleOpenCreate} className="rounded-full px-6 h-10 shadow-lg shadow-brand-glow/20">
+            <LuPlus className="w-4 h-4 mr-1.5" />
+            {t('apiKeys.create')}
+          </Button>
+        )}
       </div>
 
       {/* 列表 */}
@@ -413,7 +420,7 @@ export default function ApiKeysPage() {
                     >
                       {t('apiKeys.table.copy')}
                     </button>
-                    {record.status === 'active' ? (
+                    {record.status === 'active' && canRevoke ? (
                       <button
                         onClick={() => setRevokeTarget({ id: record.api_key_id, name: record.name })}
                         className="text-rose-500 hover:text-rose-600 transition-colors cursor-pointer"

@@ -8,6 +8,7 @@ interface AvatarUploadProps {
   fallback: string
   size?: number
   loading?: boolean
+  disabled?: boolean
   onUpload: (file: File) => void
   outputSize?: number
   maxSizeMB?: number
@@ -48,6 +49,7 @@ export function AvatarUpload({
   fallback,
   size = 64,
   loading = false,
+  disabled = false,
   onUpload,
   outputSize = 512,
   maxSizeMB = 2,
@@ -78,7 +80,8 @@ export function AvatarUpload({
         onMouseLeave={() => setHover(false)}
         style={{
           position: 'relative', width: size, height: size, borderRadius: '50%',
-          overflow: 'hidden', cursor: loading ? 'wait' : 'pointer', flexShrink: 0,
+          overflow: 'hidden', cursor: disabled ? 'default' : loading ? 'wait' : 'pointer', flexShrink: 0,
+          pointerEvents: disabled ? 'none' : undefined,
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 0 0 3px var(--brand-glow), 0 4px 10px rgba(0,0,0,0.06)',
           backgroundColor: src ? 'var(--mg-fill-0)' : 'var(--mg-primary)',

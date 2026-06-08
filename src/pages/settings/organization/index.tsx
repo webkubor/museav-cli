@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { LuPlus } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 import {
   addTenantMembers,
   getTenant,
@@ -67,6 +69,8 @@ interface OrgListSectionProps {
 
 function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
   const qc = useQueryClient()
+  const { hasPermission } = usePermissions()
+  const canCreateOrg = hasPermission(PERMS.ORG_SETTINGS_EDIT)
   const [createVisible, setCreateVisible] = useState(false)
   const [newName, setNewName] = useState('')
 
@@ -131,15 +135,17 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
             {tenants.length} / {MAX_TENANTS}
           </span>
         </div>
-        <Button
-          variant="default"
-          disabled={atLimit}
-          onClick={() => setCreateVisible(true)}
-          className="rounded-full text-[11px] font-semibold h-7 px-3 flex items-center gap-1 bg-brand-base text-white hover:bg-brand-base/90 active:scale-[0.97] transition-all"
-        >
-          <LuPlus size={12} />
-          创建组织
-        </Button>
+        {canCreateOrg && (
+          <Button
+            variant="default"
+            disabled={atLimit}
+            onClick={() => setCreateVisible(true)}
+            className="rounded-full text-[11px] font-semibold h-7 px-3 flex items-center gap-1 bg-brand-base text-white hover:bg-brand-base/90 active:scale-[0.97] transition-all"
+          >
+            <LuPlus size={12} />
+            创建组织
+          </Button>
+        )}
       </div>
 
       {/* 组织卡片列表 */}
@@ -244,6 +250,8 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
 
 // ─── Org info tab ─────────────────────────────────────────────────────────────
 function OrgInfoTab({ tenantId }: { tenantId: string }) {
+  const { hasPermission } = usePermissions()
+  const canEditOrg = hasPermission(PERMS.ORG_SETTINGS_EDIT)
   const qc = useQueryClient()
   const [name, setName] = useState('')
   const [editing, setEditing] = useState(false)
@@ -303,6 +311,7 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
           fallback={tenant.name.charAt(0).toUpperCase()}
           size={64}
           loading={logoMutation.isPending}
+          disabled={!canEditOrg}
           onUpload={(file) => logoMutation.mutate(file)}
         />
         <div className="space-y-1">
@@ -340,13 +349,15 @@ function OrgInfoTab({ tenantId }: { tenantId: string }) {
         ) : (
           <div className="flex items-center gap-3">
             <span className="text-lg font-bold text-mg-text-0">{tenant.name}</span>
-            <button
-              type="button"
-              className="text-xs font-bold text-brand-base hover:text-brand-base/80 bg-transparent border-none p-0 cursor-pointer transition-colors"
-              onClick={() => { setName(tenant.name); setEditing(true) }}
-            >
-              更名
-            </button>
+            {canEditOrg && (
+              <button
+                type="button"
+                className="text-xs font-bold text-brand-base hover:text-brand-base/80 bg-transparent border-none p-0 cursor-pointer transition-colors"
+                onClick={() => { setName(tenant.name); setEditing(true) }}
+              >
+                更名
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -529,6 +540,8 @@ function MembersTab({ tenantId, canManage }: { tenantId: string; canManage: bool
 
 // ─── Invite tab ───────────────────────────────────────────────────────────────
 function InviteTab({ tenantId }: { tenantId: string }) {
+  const { hasPermission } = usePermissions()
+  const canInvite = hasPermission(PERMS.ORG_INVITE_MANAGE)
   const qc = useQueryClient()
   const [inviteEmails, setInviteEmails] = useState('')
   const [inviteRole, setInviteRole] = useState<'tenant_admin' | 'tenant_member'>('tenant_member')
@@ -618,13 +631,15 @@ function InviteTab({ tenantId }: { tenantId: string }) {
             <div className="text-xs font-bold text-mg-text-0">快速邀请链接</div>
             <span className="text-[10px] text-mg-text-2">将此链接发送给同事，他们点击后可直接申请加入</span>
           </div>
-          <Button
-            variant="outline"
-            className="h-7 text-[10px] font-bold px-3 rounded-full border-mg-border/60 hover:bg-mg-fill-0"
-            onClick={() => setShowResetConfirm(true)}
-          >
-            重置链接
-          </Button>
+          {canInvite && (
+            <Button
+              variant="outline"
+              className="h-7 text-[10px] font-bold px-3 rounded-full border-mg-border/60 hover:bg-mg-fill-0"
+              onClick={() => setShowResetConfirm(true)}
+            >
+              重置链接
+            </Button>
+          )}
         </div>
         <div className="p-4">
           <div className="flex items-center gap-2">
@@ -664,13 +679,15 @@ function InviteTab({ tenantId }: { tenantId: string }) {
               className="h-9 text-xs rounded-lg"
             />
           </div>
-          <Button
-            variant="default"
-            className="font-semibold h-9 px-4 rounded-lg text-xs bg-brand-base text-white hover:bg-brand-base/90 shrink-0"
-            onClick={() => addMembers.mutate()}
-          >
-            发送邀请
-          </Button>
+          {canInvite && (
+            <Button
+              variant="default"
+              className="font-semibold h-9 px-4 rounded-lg text-xs bg-brand-base text-white hover:bg-brand-base/90 shrink-0"
+              onClick={() => addMembers.mutate()}
+            >
+              发送邀请
+            </Button>
+          )}
         </div>
       </div>
     </div>
@@ -730,7 +747,11 @@ function OrgManagePanel({ tenantId }: { tenantId: string | null }) {
   }
 
   const tenant = tenantsQuery.data?.items.find((t) => t.tenant_id === tenantId)
-  const canManage = tenant?.role === 'tenant_owner' || tenant?.role === 'tenant_admin'
+  const isRoleAdmin = tenant?.role === 'tenant_owner' || tenant?.role === 'tenant_admin'
+  const { hasPermission } = usePermissions()
+  const canManageMembers = isRoleAdmin && hasPermission(PERMS.ORG_MEMBERS_MANAGE)
+  const canManageInvite  = isRoleAdmin && hasPermission(PERMS.ORG_INVITE_MANAGE)
+  const canManage = canManageMembers
   const tenantName = tenant?.name
     || sessionTenants.find((t) => t.tenant_id === tenantId)?.name
     || '…'
@@ -772,7 +793,7 @@ function OrgManagePanel({ tenantId }: { tenantId: string | null }) {
         >
           组织成员
         </button>
-        {canManage && (
+        {canManageInvite && (
           <button
             onClick={() => setActiveSubTab('invite')}
             className={`pb-3 font-bold transition-all border-b-2 cursor-pointer bg-transparent border-none text-xs ${
@@ -789,7 +810,7 @@ function OrgManagePanel({ tenantId }: { tenantId: string | null }) {
       <div className="pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
         {activeSubTab === 'info' && <OrgInfoTab tenantId={tenantId} />}
         {activeSubTab === 'members' && <MembersTab tenantId={tenantId} canManage={canManage} />}
-        {canManage && activeSubTab === 'invite' && <InviteTab tenantId={tenantId} />}
+        {canManageInvite && activeSubTab === 'invite' && <InviteTab tenantId={tenantId} />}
       </div>
     </div>
   )

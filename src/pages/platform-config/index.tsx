@@ -151,17 +151,20 @@ interface MenuPermRow {
 }
 
 const MENU_PERM_MAP: MenuPermRow[] = [
-  { key: 'dashboard',        label: '仪表盘',    scope: 'tenant',    menuPerm: PERMS.DASHBOARD_VIEW,     actions: [] },
-  { key: 'models',           label: '模型体验',   scope: 'tenant',    menuPerm: PERMS.MODELS_VIEW,        actions: [] },
-  { key: 'models/compare',   label: '模型对比',   scope: 'tenant',    menuPerm: PERMS.MODELS_VIEW,        actions: [] },
-  { key: 'usage',            label: '用量分析',   scope: 'tenant',    menuPerm: PERMS.ANALYTICS_VIEW,     actions: [] },
-  { key: 'logs',             label: '调用日志',   scope: 'tenant',    menuPerm: PERMS.LOGS_VIEW,          actions: [] },
-  { key: 'billing',          label: '账单',      scope: 'tenant',    menuPerm: PERMS.BILLING_VIEW,       actions: [PERMS.BILLING_INVOICE_VIEW, PERMS.BILLING_RECHARGE_CREATE, PERMS.BILLING_RECHARGE_CANCEL] },
-  { key: 'api-keys',         label: 'API Keys',  scope: 'workspace', menuPerm: PERMS.API_KEYS_VIEW,      actions: [PERMS.API_KEYS_CREATE, PERMS.API_KEYS_REVOKE] },
-  { key: 'guardrails',       label: '配额管理 / Guardrails',  scope: 'workspace', menuPerm: PERMS.GUARDRAILS_VIEW,    actions: [PERMS.GUARDRAILS_CREATE, PERMS.GUARDRAILS_EDIT, PERMS.GUARDRAILS_DELETE, PERMS.GUARDRAILS_ASSIGNMENT_EDIT, PERMS.GUARDRAILS_BUDGET_EDIT] },
-  { key: 'observability',    label: '可观测性 / Observability', scope: 'workspace', menuPerm: PERMS.OBSERVABILITY_VIEW, actions: [PERMS.OBSERVABILITY_LOGGING_EDIT, PERMS.OBSERVABILITY_FORWARD_MANAGE] },
-  { key: 'invitations-mgmt', label: '邀请管理 / Invitations',   scope: 'workspace', menuPerm: PERMS.INVITATIONS_VIEW,   actions: [PERMS.INVITATIONS_MANAGE] },
-  { key: 'settings/org',     label: '企业管理 / Organization',  scope: 'settings',  menuPerm: null,                     actions: [PERMS.ORG_SETTINGS_EDIT, PERMS.ORG_MEMBERS_MANAGE, PERMS.ORG_INVITE_MANAGE] },
+  { key: 'dashboard',           label: '仪表盘',                    scope: 'tenant',    menuPerm: PERMS.DASHBOARD_VIEW,     actions: [] },
+  { key: 'models',              label: '模型',                      scope: 'tenant',    menuPerm: PERMS.MODELS_VIEW,        actions: [] },
+  { key: 'models/catalog',      label: '所有模型',                  scope: 'tenant',    menuPerm: PERMS.MODELS_VIEW,        actions: [] },
+  { key: 'models/playground',   label: '模型体验 / Playground',     scope: 'tenant',    menuPerm: PERMS.MODELS_VIEW,        actions: [] },
+  { key: 'analytics',           label: '分析',                      scope: 'tenant',    menuPerm: PERMS.ANALYTICS_VIEW,     actions: [] },
+  { key: 'usage',               label: '用量分析',                  scope: 'tenant',    menuPerm: PERMS.ANALYTICS_VIEW,     actions: [] },
+  { key: 'logs',                label: '调用日志',                  scope: 'tenant',    menuPerm: PERMS.LOGS_VIEW,          actions: [] },
+  { key: 'billing',             label: '账单',                      scope: 'tenant',    menuPerm: PERMS.BILLING_VIEW,       actions: [PERMS.BILLING_INVOICE_VIEW, PERMS.BILLING_RECHARGE_CREATE, PERMS.BILLING_RECHARGE_CANCEL] },
+  { key: 'referral',            label: '推荐有奖 / Referral',       scope: 'tenant',    menuPerm: null,                     actions: [PERMS.REFERRAL_REWARD_TRANSFER, PERMS.REFERRAL_REWARD_WITHDRAW] },
+  { key: 'api-keys',            label: 'API Keys',                  scope: 'workspace', menuPerm: PERMS.API_KEYS_VIEW,      actions: [PERMS.API_KEYS_CREATE, PERMS.API_KEYS_REVOKE] },
+  { key: 'guardrails',          label: '配额管理 / Guardrails',     scope: 'workspace', menuPerm: PERMS.GUARDRAILS_VIEW,    actions: [PERMS.GUARDRAILS_CREATE, PERMS.GUARDRAILS_EDIT, PERMS.GUARDRAILS_DELETE, PERMS.GUARDRAILS_ASSIGNMENT_EDIT, PERMS.GUARDRAILS_BUDGET_EDIT] },
+  { key: 'observability',       label: '可观测性 / Observability',  scope: 'workspace', menuPerm: PERMS.OBSERVABILITY_VIEW, actions: [PERMS.OBSERVABILITY_LOGGING_EDIT, PERMS.OBSERVABILITY_FORWARD_MANAGE] },
+  { key: 'settings/workspace',  label: '工作区设置',                scope: 'workspace', menuPerm: null,                     actions: [PERMS.WORKSPACE_RENAME, PERMS.WORKSPACE_DELETE, PERMS.WORKSPACE_MEMBERS_MANAGE] },
+  { key: 'settings/org',        label: '企业管理 / Organization',   scope: 'settings',  menuPerm: null,                     actions: [PERMS.ORG_SETTINGS_EDIT, PERMS.ORG_MEMBERS_MANAGE, PERMS.ORG_INVITE_MANAGE] },
 ]
 
 const SCOPE_STYLE: Record<string, { text: string; bg: string }> = {
@@ -249,34 +252,21 @@ function PermissionPanel() {
   const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
 
-  const MENU_PERMS: Permission[] = [
-    PERMS.DASHBOARD_VIEW, PERMS.MODELS_VIEW, PERMS.ANALYTICS_VIEW, PERMS.LOGS_VIEW,
-    PERMS.BILLING_VIEW, PERMS.API_KEYS_VIEW, PERMS.GUARDRAILS_VIEW,
-    PERMS.OBSERVABILITY_VIEW, PERMS.INVITATIONS_VIEW,
-  ]
-  const PAGE_PERMS: Permission[] = [
-    PERMS.BILLING_INVOICE_VIEW, PERMS.BILLING_RECHARGE_CREATE, PERMS.BILLING_RECHARGE_CANCEL,
-  ]
-  const ACTION_PERMS: Permission[] = [
-    PERMS.API_KEYS_CREATE, PERMS.API_KEYS_REVOKE,
-    PERMS.GUARDRAILS_CREATE, PERMS.GUARDRAILS_EDIT, PERMS.GUARDRAILS_DELETE,
-    PERMS.GUARDRAILS_ASSIGNMENT_EDIT, PERMS.GUARDRAILS_BUDGET_EDIT,
-    PERMS.OBSERVABILITY_LOGGING_EDIT, PERMS.OBSERVABILITY_FORWARD_MANAGE,
-    PERMS.INVITATIONS_MANAGE,
-    PERMS.ORG_SETTINGS_EDIT, PERMS.ORG_MEMBERS_MANAGE, PERMS.ORG_INVITE_MANAGE,
-  ]
+  // 从 MENU_PERM_MAP 派生，保持单一来源
+  const menuPerms = [...new Set(
+    MENU_PERM_MAP.map((r) => r.menuPerm).filter((p): p is Permission => p !== null)
+  )]
+  const actionPerms = MENU_PERM_MAP.flatMap((r) => r.actions)
 
   const TENANT_ROLES = ['tenant_owner', 'tenant_admin', 'tenant_member'] as const
   const WS_ROLES = ['ws_owner', 'ws_admin', 'ws_member'] as const
 
   function buildCopyText() {
     const lines: string[] = ['# ModelGo 权限清单', '', '## 权限 ID 注册表', '']
-    lines.push('### 菜单级')
-    MENU_PERMS.forEach((p) => lines.push(`  - ${p}`))
-    lines.push('', '### 页面/区块级')
-    PAGE_PERMS.forEach((p) => lines.push(`  - ${p}`))
-    lines.push('', '### 按钮/操作级')
-    ACTION_PERMS.forEach((p) => lines.push(`  - ${p}`))
+    lines.push('### 菜单级（view）')
+    menuPerms.forEach((p) => lines.push(`  - ${p}`))
+    lines.push('', '### 操作级（action）')
+    actionPerms.forEach((p) => lines.push(`  - ${p}`))
 
     lines.push('', '## 组织角色权限矩阵（enterprise）', '')
     TENANT_ROLES.forEach((role) => {
@@ -298,7 +288,7 @@ function PermissionPanel() {
     })
 
     lines.push('## 备注')
-    lines.push('- personal 租户：owner 获得 billing 权限（国内含 invoice），无 org 管理与邀请管理菜单')
+    lines.push('- personal 租户：owner 获得 billing 权限（国内含 invoice），无 org 管理菜单')
     lines.push('- 最终权限 = 组织角色权限 ∪ 工作区角色权限')
     return lines.join('\n')
   }
@@ -326,21 +316,23 @@ function PermissionPanel() {
             {copied ? `✓ ${t('common.copied')}` : t('platformConfig.permPanel.copyBtn')}
           </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-mg-border p-5 gap-5 md:gap-0">
-          {([
-            { label: t('platformConfig.perm.menuLevel'), perms: MENU_PERMS, color: 'text-violet-500', bg: 'bg-violet-500/10 border-violet-500/20' },
-            { label: t('platformConfig.perm.pageLevel'), perms: PAGE_PERMS, color: 'text-sky-500', bg: 'bg-sky-500/10 border-sky-500/20' },
-            { label: t('platformConfig.perm.actionLevel'), perms: ACTION_PERMS, color: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/20' },
-          ] as const).map(({ label, perms, color, bg }) => (
-            <div key={label} className="md:px-5 first:md:pl-0 last:md:pr-0 space-y-3">
-              <div className={`text-[11px] font-bold tracking-wider ${color}`}>{label}</div>
-              <div className="flex flex-wrap gap-1.5">
-                {(perms as readonly Permission[]).map((p) => (
-                  <code key={p} className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${bg} ${color}`}>{p}</code>
-                ))}
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-mg-border p-5 gap-5 md:gap-0">
+          <div className="md:pr-5 space-y-3">
+            <div className="text-[11px] font-bold tracking-wider text-violet-500">{t('platformConfig.perm.menuLevel')}</div>
+            <div className="flex flex-wrap gap-1.5">
+              {menuPerms.map((p) => (
+                <code key={p} className="text-[10px] font-mono px-1.5 py-0.5 rounded border bg-violet-500/10 border-violet-500/20 text-violet-500">{p}</code>
+              ))}
             </div>
-          ))}
+          </div>
+          <div className="md:pl-5 space-y-3">
+            <div className="text-[11px] font-bold tracking-wider text-amber-500">{t('platformConfig.perm.actionLevel')}</div>
+            <div className="flex flex-wrap gap-1.5">
+              {actionPerms.map((p) => (
+                <code key={p} className="text-[10px] font-mono px-1.5 py-0.5 rounded border bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400">{p}</code>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 

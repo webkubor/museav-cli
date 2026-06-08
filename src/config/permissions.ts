@@ -8,7 +8,6 @@ export const PERMS = {
   API_KEYS_VIEW:      'api_keys:view',
   GUARDRAILS_VIEW:    'guardrails:view',
   OBSERVABILITY_VIEW: 'observability:view',
-  INVITATIONS_VIEW:   'invitations:view',
 
   // ── 页面/区块级 ──────────────────────────────
   BILLING_INVOICE_VIEW:    'billing.invoice:view',
@@ -28,7 +27,12 @@ export const PERMS = {
   OBSERVABILITY_LOGGING_EDIT:   'observability.logging:edit',
   OBSERVABILITY_FORWARD_MANAGE: 'observability.forward:manage',
 
-  INVITATIONS_MANAGE: 'invitations:manage',
+  REFERRAL_REWARD_TRANSFER: 'referral.reward:transfer',
+  REFERRAL_REWARD_WITHDRAW: 'referral.reward:withdraw',
+
+  WORKSPACE_RENAME:         'workspace:rename',
+  WORKSPACE_DELETE:         'workspace:delete',
+  WORKSPACE_MEMBERS_MANAGE: 'workspace.members:manage',
 
   ORG_SETTINGS_EDIT:  'org.settings:edit',
   ORG_MEMBERS_MANAGE: 'org.members:manage',

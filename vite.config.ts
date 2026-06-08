@@ -78,6 +78,7 @@ export default defineConfig(({ mode }) => ({
     dedupe: ['react', 'react-dom'],
   },
   server: {
+    port: process.env.PORT ? parseInt(process.env.PORT) : undefined,
     proxy: {
       '/api': {
         target: 'https://test.modelgo.com',

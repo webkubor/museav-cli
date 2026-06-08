@@ -16,6 +16,8 @@ import { listRewardRecords } from '@/services/referral'
 import { listGiftRecords } from '@/services/billing'
 import { useCurrency, useEnabledChannels } from '@/hooks/use-platform-config'
 import { useAuthStore } from '@/store/auth'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 import { isDomestic } from '@/lib/market'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -491,6 +493,10 @@ type BalanceTab = 'main' | 'gift' | 'reward'
 export default function BillingPage() {
   const { t, i18n } = useTranslation()
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
+  const { hasPermission } = usePermissions()
+  const canRecharge = hasPermission(PERMS.BILLING_RECHARGE_CREATE)
+  const canCancel   = hasPermission(PERMS.BILLING_RECHARGE_CANCEL)
+  const canInvoice  = hasPermission(PERMS.BILLING_INVOICE_VIEW)
   const [topUpVisible, setTopUpVisible] = useState(false)
   const [activeTab, setActiveTab] = useState<BalanceTab>('main')
   const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null)
@@ -677,13 +683,15 @@ export default function BillingPage() {
           <span className="text-sm font-bold text-mg-text-0">
             {t('billing.balance.title')}
           </span>
-          <Button
-            variant="brand"
-            onClick={() => setTopUpVisible(true)}
-            className="rounded-xl h-9 px-5 text-xs"
-          >
-            {t('billing.balance.recharge')}
-          </Button>
+          {canRecharge && (
+            <Button
+              variant="brand"
+              onClick={() => setTopUpVisible(true)}
+              className="rounded-xl h-9 px-5 text-xs"
+            >
+              {t('billing.balance.recharge')}
+            </Button>
+          )}
         </div>
 
         {/* 可消费合计 */}
@@ -1052,7 +1060,7 @@ export default function BillingPage() {
 
                 {/* 详情下方的按钮操作区 */}
                 <div className="space-y-2 pt-1">
-                  {selectedOrder.status === 'pending' && (
+                  {canCancel && selectedOrder.status === 'pending' && (
                     <Button
                       variant="destructive"
                       disabled={cancelMutation.isPending}
@@ -1062,7 +1070,7 @@ export default function BillingPage() {
                       {cancelMutation.isPending ? t('billing.rechargeModal.submitting') : t('billing.orders.table.cancel')}
                     </Button>
                   )}
-                  {isDomestic() && selectedOrder.invoice_url && (
+                  {canInvoice && isDomestic() && selectedOrder.invoice_url && (
                     <Button
                       variant="outline"
                       className="w-full h-9 text-xs font-bold rounded-xl border border-mg-border hover:bg-mg-fill-0 transition-all text-mg-text-1"

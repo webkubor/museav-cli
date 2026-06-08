@@ -11,6 +11,8 @@ import { listApiKeys } from '@/services/api-keys'
 import Select from '@/components/ui/Select'
 import { LuLink } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 import { appToast } from '@/lib/app-toast'
 import {
   getLoggingConfig,
@@ -26,6 +28,7 @@ function ToggleRow({
   description,
   checked,
   loading,
+  disabled = false,
   onChange,
   isFirst = false,
 }: {
@@ -33,6 +36,7 @@ function ToggleRow({
   description: string
   checked: boolean
   loading: boolean
+  disabled?: boolean
   onChange: (v: boolean) => void
   isFirst?: boolean
 }) {
@@ -53,7 +57,7 @@ function ToggleRow({
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
         )}
-        <Switch checked={checked} disabled={loading} onChange={onChange} />
+        <Switch checked={checked} disabled={loading || disabled} onChange={onChange} />
       </div>
     </div>
   )
@@ -190,7 +194,7 @@ function PlatformConfigModal({
 
 // ─── 可用平台列表区块 ──────────────────────────────────────────────────────────
 
-function AvailablePlatformsSection({ workspaceId }: { workspaceId: string }) {
+function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspaceId: string; canManageForward: boolean }) {
   const [activePlatform, setActivePlatform] = useState<{ id: string; name: string } | null>(null)
 
   const platformsQuery = useQuery({
@@ -229,16 +233,18 @@ function AvailablePlatformsSection({ workspaceId }: { workspaceId: string }) {
                   )}
                   <span className="text-sm font-medium text-mg-text-0">{p.display_name}</span>
                 </div>
-                <button
-                  type="button"
-                  className="flex items-center gap-1 text-xs text-mg-text-2 hover:text-brand-base transition-colors"
-                  onClick={(e) => { e.stopPropagation(); setActivePlatform({ id: p.platform, name: p.display_name }) }}
-                >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                  Add Destination
-                </button>
+                {canManageForward && (
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 text-xs text-mg-text-2 hover:text-brand-base transition-colors"
+                    onClick={(e) => { e.stopPropagation(); setActivePlatform({ id: p.platform, name: p.display_name }) }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                    Add Destination
+                  </button>
+                )}
               </li>
             ))}
           </ul>
@@ -260,9 +266,13 @@ function AvailablePlatformsSection({ workspaceId }: { workspaceId: string }) {
 function ObservabilityContent({
   workspaceId,
   config,
+  canEditLogging,
+  canManageForward,
 }: {
   workspaceId: string
   config: LoggingConfig
+  canEditLogging: boolean
+  canManageForward: boolean
 }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -301,6 +311,7 @@ function ObservabilityContent({
           description={t('observability.logging.desc')}
           checked={loggingEnabled}
           loading={saveMutation.isPending}
+          disabled={!canEditLogging}
           onChange={handleLoggingChange}
           isFirst
         />
@@ -314,12 +325,13 @@ function ObservabilityContent({
           description={t('observability.broadcast.desc')}
           checked={broadcastEnabled}
           loading={saveMutation.isPending}
+          disabled={!canEditLogging}
           onChange={handleBroadcastChange}
         />
       </div>
 
       {/* 可用平台：常驻展示（对齐原型，不依赖广播开关） */}
-      <AvailablePlatformsSection workspaceId={workspaceId} />
+      <AvailablePlatformsSection workspaceId={workspaceId} canManageForward={canManageForward} />
     </div>
   )
 }
@@ -329,6 +341,9 @@ function ObservabilityContent({
 export default function ObservabilityPage() {
   const { t } = useTranslation()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
+  const { hasPermission } = usePermissions()
+  const canEditLogging = hasPermission(PERMS.OBSERVABILITY_LOGGING_EDIT)
+  const canManageForward = hasPermission(PERMS.OBSERVABILITY_FORWARD_MANAGE)
 
   const loggingQuery = useQuery({
     queryKey: ['observability', 'logging', activeWorkspaceId],
@@ -362,6 +377,8 @@ export default function ObservabilityPage() {
           key={activeWorkspaceId}
           workspaceId={activeWorkspaceId}
           config={loggingQuery.data}
+          canEditLogging={canEditLogging}
+          canManageForward={canManageForward}
         />
       )}
     </div>

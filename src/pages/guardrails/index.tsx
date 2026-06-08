@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/Table'
 import { LuPlus, LuSettings, LuUsers, LuKey, LuDollarSign } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 import { TagInput } from '@/components/ui/TagInput'
 import { listModels } from '@/services/catalog'
 import { appToast } from '@/lib/app-toast'
@@ -77,6 +79,12 @@ export default function GuardrailsPage() {
   const qc = useQueryClient()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const { symbol: currencySymbol } = useCurrency()
+  const { hasPermission } = usePermissions()
+  const canCreate         = hasPermission(PERMS.GUARDRAILS_CREATE)
+  const canEdit           = hasPermission(PERMS.GUARDRAILS_EDIT)
+  const canDelete         = hasPermission(PERMS.GUARDRAILS_DELETE)
+  const canEditAssignment = hasPermission(PERMS.GUARDRAILS_ASSIGNMENT_EDIT)
+  const canEditBudget     = hasPermission(PERMS.GUARDRAILS_BUDGET_EDIT)
 
   // ── 列表 ───────────────────────────────────────────────────────────────
   const { data: guardrails = [], isLoading } = useQuery({
@@ -333,14 +341,16 @@ export default function GuardrailsPage() {
           <h1 className="text-2xl font-bold tracking-tight text-mg-text-0">{t('guardrails.title')}</h1>
           <p className="text-sm text-mg-text-1 mt-1.5 font-medium">{t('guardrails.desc')}</p>
         </div>
-        <Button
-          variant="brand"
-          onClick={openCreate}
-          className="rounded-full px-5 h-10 shadow-lg shadow-brand-glow/20"
-        >
-          <LuPlus className="w-4 h-4 mr-1.5" />
-          {t('guardrails.create')}
-        </Button>
+        {canCreate && (
+          <Button
+            variant="brand"
+            onClick={openCreate}
+            className="rounded-full px-5 h-10 shadow-lg shadow-brand-glow/20"
+          >
+            <LuPlus className="w-4 h-4 mr-1.5" />
+            {t('guardrails.create')}
+          </Button>
+        )}
       </div>
 
       {/* 列表 */}
@@ -410,6 +420,7 @@ export default function GuardrailsPage() {
                     <TableCell>
                       <Switch
                         checked={row.status === 'active'}
+                        disabled={!canEdit}
                         onChange={(checked) =>
                           toggleMutation.mutate({ id: row.id, status: checked ? 'active' : 'inactive' })
                         }
@@ -418,13 +429,17 @@ export default function GuardrailsPage() {
                     <TableCell className="text-xs text-mg-text-2">{formatDateTime(row.created_at)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => openDetail(row.id)} className="h-7 text-xs font-semibold">
-                          <LuSettings className="w-3.5 h-3.5 mr-1" />
-                          {t('guardrails.table.configure')}
-                        </Button>
-                        <Button size="sm" variant="destructive" onClick={() => setDeleteTarget({ id: row.id, name: row.name })} className="h-7 text-xs">
-                          {t('guardrails.table.delete')}
-                        </Button>
+                        {canEdit && (
+                          <Button size="sm" variant="outline" onClick={() => openDetail(row.id)} className="h-7 text-xs font-semibold">
+                            <LuSettings className="w-3.5 h-3.5 mr-1" />
+                            {t('guardrails.table.configure')}
+                          </Button>
+                        )}
+                        {canDelete && (
+                          <Button size="sm" variant="destructive" onClick={() => setDeleteTarget({ id: row.id, name: row.name })} className="h-7 text-xs">
+                            {t('guardrails.table.delete')}
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -537,7 +552,7 @@ export default function GuardrailsPage() {
                     }
                     placeholder="从下拉选择 API Key"
                   />
-                  {localKeyNames.join(',') !== apiKeyAssignments.map((a) => { const key = apiKeysMap.get(a.api_key_id); return key?.name || a.api_key_id }).join(',') && (
+                  {canEditAssignment && localKeyNames.join(',') !== apiKeyAssignments.map((a) => { const key = apiKeysMap.get(a.api_key_id); return key?.name || a.api_key_id }).join(',') && (
                     <div className="mt-3 flex justify-end">
                       <Button
                         size="sm"
@@ -596,24 +611,26 @@ export default function GuardrailsPage() {
                     ))}
                   </Select>
                 </div>
-                <div className="flex items-center justify-between">
-                  <Button
-                    variant="brand"
-                    className="h-9 px-5 text-xs font-semibold"
-                    loading={setBudgetMutation.isPending}
-                    onClick={handleSaveBudget}
-                  >
-                    保存预算
-                  </Button>
-                  {budget && (
-                    <button
-                      onClick={() => setShowClearBudget(true)}
-                      className="text-[11px] text-mg-text-2 hover:text-rose-500 transition-colors cursor-pointer"
+                {canEditBudget && (
+                  <div className="flex items-center justify-between">
+                    <Button
+                      variant="brand"
+                      className="h-9 px-5 text-xs font-semibold"
+                      loading={setBudgetMutation.isPending}
+                      onClick={handleSaveBudget}
                     >
-                      清除预算
-                    </button>
-                  )}
-                </div>
+                      保存预算
+                    </Button>
+                    {budget && (
+                      <button
+                        onClick={() => setShowClearBudget(true)}
+                        className="text-[11px] text-mg-text-2 hover:text-rose-500 transition-colors cursor-pointer"
+                      >
+                        清除预算
+                      </button>
+                    )}
+                  </div>
+                )}
                 {budget && (
                   <div className="p-3 rounded-lg border border-mg-border bg-mg-fill-0/50 text-xs text-mg-text-1">
                     当前生效：<span className="font-semibold text-brand-base">{currencySymbol}{parseFloat(budget.spend_limit_amount).toLocaleString()} / {PERIOD_LABEL[budget.period_unit]}</span>

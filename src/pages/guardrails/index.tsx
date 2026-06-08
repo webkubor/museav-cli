@@ -400,7 +400,7 @@ export default function GuardrailsPage() {
                           )}
                         </span>
                         {row.is_default && (
-                          <Badge variant="success" className="shrink-0">
+                          <Badge variant="warning" className="shrink-0">
                             {t('guardrails.table.defaultBadge')}
                           </Badge>
                         )}

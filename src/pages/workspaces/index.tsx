@@ -131,7 +131,7 @@ export default function WorkspacesPage() {
                   <div className="flex items-center gap-2">
                     <h3 className="font-bold text-mg-text-0 text-[15px] truncate">{ws.name}</h3>
                     {ws.is_default && (
-                      <Badge variant="success" dot className="shrink-0">{t('workspaces.defaultBadge')}</Badge>
+                      <Badge variant="warning" dot className="shrink-0">{t('workspaces.defaultBadge')}</Badge>
                     )}
                   </div>
                   <span className="text-[11px] font-mono text-mg-text-2 mt-1 block truncate">{ws.workspace_id}</span>

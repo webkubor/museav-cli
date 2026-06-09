@@ -324,10 +324,15 @@ export default function GuardrailsPage() {
   const apiKeyAssignments = detail?.assignments.filter(a => a.subject_type === 'api_key') ?? []
   const budget = detail?.budget_policies?.[0] ?? null
 
-  const memberOptions = (membersQuery.data?.items ?? []).map(m => ({
-    id: m.account.account_id,
-    name: m.account.display_name || m.account.email || m.account.account_id,
-  }))
+  // Label as "name (email)" so the picker is human-readable instead of an
+  // opaque account_id. Fall back gracefully when a field is missing.
+  const memberOptions = (membersQuery.data?.items ?? []).map(m => {
+    const a = m.account
+    const label = a.display_name && a.email
+      ? `${a.display_name} (${a.email})`
+      : (a.display_name || a.email || a.account_id)
+    return { id: a.account_id, name: label }
+  })
   const apiKeysMap = new Map((apiKeysQuery.data?.items ?? []).map(k => [k.api_key_id, k]))
 
   const detailRow = guardrails.find(g => g.id === detailId)

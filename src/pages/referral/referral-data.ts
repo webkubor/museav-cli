@@ -70,48 +70,6 @@ export interface ReferralData {
   commissions: ReferralCommissionRecord[]
   withdrawals: ReferralWithdrawal[]
 }
-
-/** 静态演示数据（对齐原型 #/console/referral） */
-export const referralMock: ReferralData = {
-  stats: {
-    totalCommission: '5900',
-    monthCommission: '980',
-    activeInvited: 3,
-    invitedTotal: 5,
-    rewardBalance: '1420',
-  },
-  inviteLink: 'https://console.modelgo.com/signup?aff=MG-KEVIN-8F3A',
-  inviteCode: 'MG-KEVIN-8F3A',
-  tier: {
-    name: '核心伙伴',
-    rate: 13,
-    cumulativeSpend: '59000',
-    nextThreshold: '200000',
-    nextTierName: '战略伙伴',
-    nextRate: 15,
-  },
-  invitees: [
-    { name: '智设科技', email: 'zhi***@zhishe.com', registeredAt: '2024/4/1', totalSpend: '32000', commission: '3200' },
-    { name: '云图数据', email: 'ops***@cloudpic.io', registeredAt: '2025/5/1', totalSpend: '18500', commission: '1850' },
-    { name: '极光 AI', email: 'dev***@aurora.ai', registeredAt: '2025/5/12', totalSpend: '6400', commission: '640' },
-    { name: '微岩信息', email: 'adm***@weiyan.cn', registeredAt: '2024/3/1', totalSpend: '2100', commission: '210' },
-    { name: '测试团队 A', email: 'try***@demo.com', registeredAt: '2025/5/8', totalSpend: '0', commission: '0' },
-  ],
-  commissions: [
-    { date: '2025/5/20', source: '智设科技', spend: '4200', rate: 13, amount: '546', tierName: '核心伙伴' },
-    { date: '2025/5/18', source: '云图数据', spend: '2600', rate: 13, amount: '338', tierName: '核心伙伴' },
-    { date: '2025/5/15', source: '极光 AI', spend: '1800', rate: 13, amount: '234', tierName: '核心伙伴' },
-    { date: '2025/5/10', source: '智设科技', spend: '5000', rate: 13, amount: '650', tierName: '核心伙伴' },
-    { date: '2025/5/2', source: '微岩信息', spend: '900', rate: 10, amount: '90', tierName: '普通伙伴' },
-  ],
-  withdrawals: [
-    { appliedAt: '2025/5/19', amount: '1000', status: 'approved', paidAt: '2025/5/21' },
-    { appliedAt: '2025/5/12', amount: '500', status: 'approved', paidAt: '2025/5/14' },
-    { appliedAt: '2025/5/22', amount: '800', status: 'pending', paidAt: null },
-    { appliedAt: '2025/4/30', amount: '300', status: 'rejected', paidAt: null },
-  ],
-}
-
 export const referralCopy = {
   zh: {
     title: '推荐计划',

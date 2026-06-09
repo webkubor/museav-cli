@@ -4,6 +4,8 @@ import { Card } from '@/components/ui/Card'
 import { useAuthStore } from '@/store/auth'
 import { useNavigate } from 'react-router-dom'
 import { getUsageRankingsModels, getUsageRankingsApiKeys } from '@/services/generated-api'
+import { listModels } from '@/services/catalog'
+import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
 import { useCurrency } from '@/hooks/use-platform-config'
 import type { UsageRankingItem } from '@/types/generated-api-types'
 import './dashboard-rankings-section.css'
@@ -17,11 +19,17 @@ interface DisplayItem {
   score: string
   tone: RankingTone
   key: string
+  iconModel?: ModelIconLike
 }
 
 const TONES: RankingTone[] = ['emerald', 'cyan', 'violet', 'amber']
 
-function toDisplay(item: UsageRankingItem, index: number, symbol: string): DisplayItem {
+function toDisplay(
+  item: UsageRankingItem,
+  index: number,
+  symbol: string,
+  iconMap: Map<string, ModelIconLike>
+): DisplayItem {
   const amount = item.spend?.amount ? `${symbol}${parseFloat(item.spend.amount).toFixed(4)}` : '—'
   const tokens = item.tokens ? `${(item.tokens / 1000).toFixed(1)}K` : ''
   return {
@@ -31,6 +39,7 @@ function toDisplay(item: UsageRankingItem, index: number, symbol: string): Displ
     score: amount,
     tone: TONES[index % TONES.length],
     key: item.key ?? '',
+    iconModel: item.key ? iconMap.get(item.key) : undefined,
   }
 }
 
@@ -77,7 +86,20 @@ export function UsageRankingsSection({ type }: { type: 'models' | 'api-keys' }) 
     enabled: !!tenantId,
   })
 
-  const items = (data?.items ?? []).map((item, i) => toDisplay(item, i, symbol))
+  // 仅模型排行需要 logo，复用目录页同一查询（react-query 去重，不重复请求）
+  const { data: modelsData } = useQuery({
+    queryKey: ['catalog-models'],
+    queryFn: () => listModels({ limit: 100 }),
+    staleTime: 5 * 60_000,
+    enabled: type === 'models',
+  })
+
+  const iconMap = new Map<string, ModelIconLike>()
+  for (const m of modelsData?.items ?? []) {
+    iconMap.set(m.model_id, { logo_url: m.logo_url, vendor: m.vendor, display_name: m.display_name })
+  }
+
+  const items = (data?.items ?? []).map((item, i) => toDisplay(item, i, symbol, iconMap))
 
   function handleRowClick(item: DisplayItem) {
     if (type === 'models' && item.key) {
@@ -114,7 +136,13 @@ export function UsageRankingsSection({ type }: { type: 'models' | 'api-keys' }) 
               onClick={() => handleRowClick(item)}
             >
               <span className="dashboard-ranking-rank">{item.rank}</span>
-              <span className="dashboard-ranking-icon">{cfg.icon}</span>
+              <span className="dashboard-ranking-icon">
+                {item.iconModel ? (
+                  <ModelIcon model={item.iconModel} size={24} />
+                ) : (
+                  cfg.icon
+                )}
+              </span>
               <span className="dashboard-ranking-copy">
                 <strong>{item.name}</strong>
                 <small>{item.meta}</small>

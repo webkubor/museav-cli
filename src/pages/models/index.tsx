@@ -41,6 +41,7 @@ import './styles/model-featured-card.css'
 import './styles/model-list.css'
 import './styles/model-chat.css'
 import './styles/model-composer.css'
+import './styles/model-params.css'
 import './styles/model-experience-responsive.css'
 import { ModelsCompareModal } from './components/ModelsCompareModal'
 

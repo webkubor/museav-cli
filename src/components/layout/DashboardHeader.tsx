@@ -23,6 +23,7 @@ import { applyTheme, getUserTheme } from '@/lib/theme'
 import { useTranslation } from 'react-i18next'
 import { listWorkspaces, createWorkspace } from '@/services/workspaces'
 import type { TenantBrief, TenantItem, WorkspaceItem } from '@/types'
+import type { TenantListResponse } from '@/interfaces'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
@@ -95,7 +96,9 @@ export const DashboardHeader: React.FC = () => {
     queryKey: ['tenants'],
     queryFn: listTenants,
     staleTime: 60_000,
-    initialData: tenants.length > 0 ? () => ({ items: tenants }) : undefined,
+    // session 的 tenants 不含 role，仅作即时占位；placeholderData 不写缓存、仍会拉取带 role 的真实列表
+    // 占位数据是 TenantBrief（缺 role 等字段），断言为完整类型；role 由真实请求补全
+    placeholderData: tenants.length > 0 ? ({ items: tenants } as TenantListResponse) : undefined,
   })
 
   const displayTenants = (() => {

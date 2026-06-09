@@ -118,39 +118,23 @@ export function getSystemThemePreference(): 'dark' | 'light' {
 export function formatFriendlyAmount(
   amount: number | string | null | undefined,
   currencySymbol = '',
-  _opts?: { minDecimals?: number; maxDecimals?: number }
+  opts?: { minDecimals?: number; maxDecimals?: number }
 ): string {
   if (amount == null || amount === '') return '—'
 
-  // Convert to plain string, avoiding scientific notation
-  let str = String(amount).trim()
-  if (str === 'NaN' || str === '') return '—'
+  const n = typeof amount === 'string' ? Number(amount.trim()) : amount
+  if (!Number.isFinite(n)) return '—'
 
-  if (str.includes('e') || str.includes('E')) {
-    const n = Number(str)
-    if (isNaN(n)) return '—'
-    str = n.toFixed(20).replace(/\.?0+$/, '')
-  }
+  const maxDecimals = opts?.maxDecimals ?? 2
+  const minDecimals = Math.min(opts?.minDecimals ?? 2, maxDecimals)
 
-  // Extract sign and magnitude
-  const match = str.match(/^([+-]?)(.*)$/)
-  const sign = match ? match[1] : ''
-  const rest = match ? match[2] : str
+  // 千分位逗号 + 四舍五入到指定小数位（常规货币显示）
+  const formatted = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: minDecimals,
+    maximumFractionDigits: maxDecimals,
+  }).format(n)
 
-  // Split by decimal point
-  const parts = rest.split('.')
-  const integerPart = parts[0] || '0'
-  const decimalPart = parts[1] // might be undefined
-
-  // Apply spaces as thousands separator to the integer part
-  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
-
-  // Combine segments back
-  const formattedValue = decimalPart !== undefined
-    ? `${formattedInteger}.${decimalPart}`
-    : formattedInteger
-
-  return `${currencySymbol}${sign}${formattedValue}`
+  return `${currencySymbol}${formatted}`
 }
 
 

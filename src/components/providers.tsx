@@ -34,7 +34,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           },
         }),
         defaultOptions: {
-          queries: { staleTime: 60 * 1000, retry: 1 },
+          // staleTime: 同 key 60s 内不重复请求；retry: 503 等失败只重试 1 次
+          // refetchOnWindowFocus: 关闭切回标签页的整页重刷（最大的冗余请求源）
+          queries: { staleTime: 60 * 1000, retry: 1, refetchOnWindowFocus: false },
         },
       })
   )

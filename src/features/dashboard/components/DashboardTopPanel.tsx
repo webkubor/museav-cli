@@ -37,7 +37,9 @@ export const DashboardTopPanel: React.FC = () => {
   const { symbol: currencySymbol } = useCurrency()
 
   const { data: balance } = useQuery({
-    queryKey: ['dashboard-top-balance', activeTenantId],
+    // 全项目统一余额 key ['balance', tenantId]：同页与 KpiSection 去重为一次请求，
+    // 且充值/推荐/兑换后的 invalidateQueries(['balance', tenantId]) 能刷新首页余额
+    queryKey: ['balance', activeTenantId],
     queryFn: () => getBalance(activeTenantId!),
     enabled: !!activeTenantId,
     staleTime: 30_000,

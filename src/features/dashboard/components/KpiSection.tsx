@@ -16,7 +16,7 @@ export const KpiSection: React.FC = () => {
   const { symbol: currencySymbol } = useCurrency()
 
   const { data: balance, isLoading: balanceLoading } = useQuery({
-    queryKey: ['billing', 'balance', activeTenantId],
+    queryKey: ['balance', activeTenantId],
     queryFn: () => getBalance(activeTenantId!),
     enabled: !!activeTenantId,
     staleTime: 30_000,

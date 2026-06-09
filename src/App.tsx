@@ -1,32 +1,34 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Providers } from '@/components/providers'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
-import DashboardPage from '@/pages/dashboard'
-import ApiKeysPage from '@/pages/api-keys'
-import WorkspacesPage from '@/pages/workspaces'
-import WorkspaceDetailPage from '@/pages/settings/workspace-detail'
-import LoginPage from '@/pages/login'
-import SignupPage from '@/pages/signup'
-import ForgotPasswordPage from '@/pages/forgot-password'
-import ResetPasswordPage from '@/pages/reset-password'
-import AuthCallbackPage from '@/pages/auth-callback'
-import InvitationsPage from '@/pages/invitations'
-import DevicePage from '@/pages/device'
-import UsagePage from '@/pages/usage'
-import LogsPage from '@/pages/logs'
-import BillingPage from '@/pages/billing'
-import ReferralPage from '@/pages/referral'
-import AccountSettingsPage from '@/pages/settings/account'
-import OrganizationPage from '@/pages/settings/organization'
-import GuardrailsPage from '@/pages/guardrails'
-import ObservabilityPage from '@/pages/observability'
-import ModelsPage from '@/pages/models'
-import ModelsCatalogPage from '@/pages/models/catalog'
-import ModelsComparePage from '@/pages/models-compare'
-import PlatformConfigPage from '@/pages/platform-config'
-import TasksPage from '@/pages/tasks'
 import ForbiddenPage from '@/pages/forbidden'
+
+// 页面路由懒加载：各页面拆为独立 chunk，按需加载，缩小首屏体积
+const DashboardPage = lazy(() => import('@/pages/dashboard'))
+const ApiKeysPage = lazy(() => import('@/pages/api-keys'))
+const WorkspacesPage = lazy(() => import('@/pages/workspaces'))
+const WorkspaceDetailPage = lazy(() => import('@/pages/settings/workspace-detail'))
+const LoginPage = lazy(() => import('@/pages/login'))
+const SignupPage = lazy(() => import('@/pages/signup'))
+const ForgotPasswordPage = lazy(() => import('@/pages/forgot-password'))
+const ResetPasswordPage = lazy(() => import('@/pages/reset-password'))
+const AuthCallbackPage = lazy(() => import('@/pages/auth-callback'))
+const InvitationsPage = lazy(() => import('@/pages/invitations'))
+const DevicePage = lazy(() => import('@/pages/device'))
+const UsagePage = lazy(() => import('@/pages/usage'))
+const LogsPage = lazy(() => import('@/pages/logs'))
+const BillingPage = lazy(() => import('@/pages/billing'))
+const ReferralPage = lazy(() => import('@/pages/referral'))
+const AccountSettingsPage = lazy(() => import('@/pages/settings/account'))
+const OrganizationPage = lazy(() => import('@/pages/settings/organization'))
+const GuardrailsPage = lazy(() => import('@/pages/guardrails'))
+const ObservabilityPage = lazy(() => import('@/pages/observability'))
+const ModelsPage = lazy(() => import('@/pages/models'))
+const ModelsCatalogPage = lazy(() => import('@/pages/models/catalog'))
+const ModelsComparePage = lazy(() => import('@/pages/models-compare'))
+const PlatformConfigPage = lazy(() => import('@/pages/platform-config'))
+const TasksPage = lazy(() => import('@/pages/tasks'))
 import { useAuthStore } from '@/store/auth'
 import { getSession } from '@/services/auth'
 import { storageKeys } from '@/lib/storage'
@@ -122,6 +124,24 @@ function SessionLoader() {
   return null
 }
 
+/** 懒加载页面 chunk 加载中的占位（居中 spinner，复用平台加载样式） */
+function RouteFallback() {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        width: 28, height: 28,
+        border: '2.5px solid var(--mg-border, rgba(15,23,42,0.08))',
+        borderTopColor: 'var(--brand-base, #1DC39B)',
+        borderRadius: '50%',
+        animation: 'spin 0.7s linear infinite',
+      }} />
+    </div>
+  )
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isLoading = useAuthStore((s) => s.isLoading)
@@ -166,6 +186,7 @@ export default function App() {
         )}
         <SessionLoader />
         {import.meta.env.DEV && <DevToolbar />}
+        <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* 认证路由（公开） */}
           <Route path="/login" element={<LoginPage />} />
@@ -214,6 +235,7 @@ export default function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
     </Providers>
   )

@@ -1,7 +1,7 @@
 import { LuReceipt, LuX } from 'react-icons/lu'
 import type { RechargeOrder } from '@/types'
 import { useTranslation } from 'react-i18next'
-import { useLangStore } from '@/store/use-brand-store'
+import { useSite } from '@/hooks/use-platform-config'
 import { Button } from '@/components/ui/Button'
 import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
@@ -19,7 +19,7 @@ interface OrderReceiptDrawerProps {
 
 export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, labels, onCancelRequest }: OrderReceiptDrawerProps) {
   const { t } = useTranslation()
-  const market = useLangStore((s) => s.market)
+  const site = useSite()
   if (!isOpen || !order) return null
 
   const isPending = order.status === 'pending'
@@ -157,7 +157,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
 
           {/* Actions Inside Drawer */}
           <div className="space-y-3">
-            {market === 'domestic' && order.invoice_url && (
+            {site === 'china' && order.invoice_url && (
               <Button
                 variant="outline"
                 className="w-full h-10 text-xs font-bold rounded-xl border border-mg-border hover:bg-mg-fill-0 transition-all select-none text-mg-text-1"

@@ -12,11 +12,10 @@ import {
 } from '@/services/billing'
 import { listRewardRecords } from '@/services/referral'
 import { listGiftRecords } from '@/services/billing'
-import { useCurrency } from '@/hooks/use-platform-config'
+import { useCurrency, useSite } from '@/hooks/use-platform-config'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
-import { useLangStore } from '@/store/use-brand-store'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
@@ -39,7 +38,7 @@ type BalanceTab = 'main' | 'gift' | 'reward'
 export default function BillingPage() {
   const { t, i18n } = useTranslation()
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
-  const market = useLangStore((s) => s.market)
+  const site = useSite()
   const { hasPermission } = usePermissions()
   const canRecharge = hasPermission(PERMS.BILLING_RECHARGE_CREATE)
   const canCancel   = hasPermission(PERMS.BILLING_RECHARGE_CANCEL)
@@ -635,7 +634,7 @@ export default function BillingPage() {
                       {cancelMutation.isPending ? t('billing.rechargeModal.submitting') : t('billing.orders.table.cancel')}
                     </Button>
                   )}
-                  {canInvoice && market === 'domestic' && selectedOrder.invoice_url && (
+                  {canInvoice && site === 'china' && selectedOrder.invoice_url && (
                     <Button
                       variant="outline"
                       className="w-full h-9 text-xs font-bold rounded-xl border border-mg-border hover:bg-mg-fill-0 transition-all text-mg-text-1"

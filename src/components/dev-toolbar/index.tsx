@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import type { ChangeEvent, MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
+import type { PlatformConfig } from '@/services/platform'
 import { Switch } from '@/components/ui/Switch'
 import {
   DropdownMenu,
@@ -181,6 +183,7 @@ export function DevToolbar() {
   const lang = useLangStore((s) => s.lang)
   const setMarket = useLangStore((s) => s.setMarket)
   const setLang = useLangStore((s) => s.setLang)
+  const qc = useQueryClient()
   const showPlatformConfig = useDevStore((s) => s.showPlatformConfig)
   const setShowPlatformConfig = useDevStore((s) => s.setShowPlatformConfig)
   const accountId = useAuthStore((s) => s.account?.account_id)
@@ -206,6 +209,17 @@ export function DevToolbar() {
     setMarket(m)
     document.documentElement.dataset.market = m
     switchBrandTheme({ mode: 'default' })
+    // 本地 dev：测试后端只有一套（platform-config 固定），override 业务真源缓存，
+    // 让所有读 platform-config 的业务 UI（useSite / useCurrency / 发票等）跟随本地市场切换。
+    qc.setQueryData<PlatformConfig>(['platform-config'], (old) =>
+      old
+        ? {
+            ...old,
+            site: m === 'domestic' ? 'china' : 'international',
+            settlement_currency: m === 'domestic' ? 'CNY' : 'USD',
+          }
+        : old
+    )
   }
 
   const switchLang = (l: Lang) => {

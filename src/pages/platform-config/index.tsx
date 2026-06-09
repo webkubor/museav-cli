@@ -62,9 +62,9 @@ function EndpointCard({ def, state, onCall }: {
     <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden mb-3">
       <div className="flex items-center gap-3 px-5 py-3 border-b border-mg-border/40">
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono shrink-0 select-none ${
-          def.method === 'GET' 
-            ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' 
-            : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+          def.method === 'GET'
+            ? 'bg-blue-500/10 text-blue-600 border border-blue-500/20'
+            : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
         }`}>
           {def.method}
         </span>
@@ -98,11 +98,11 @@ function EndpointCard({ def, state, onCall }: {
       )}
 
       {state?.status === 'success' && (
-        <div className="relative bg-slate-950 overflow-hidden">
+        <div className="relative bg-mg-code-bg overflow-hidden">
           <div className="absolute top-3 right-3 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
             200 OK
           </div>
-          <pre className="m-0 p-5 text-xs font-mono text-slate-300 overflow-auto max-h-[360px] leading-relaxed shadow-inner select-all w-full min-w-0">
+          <pre className="m-0 p-5 text-xs font-mono text-mg-text-1 overflow-auto max-h-[360px] leading-relaxed shadow-inner select-all w-full min-w-0">
             {JSON.stringify(state.data, null, 2)}
           </pre>
         </div>
@@ -110,7 +110,7 @@ function EndpointCard({ def, state, onCall }: {
 
       {state?.status === 'error' && (
         <div className="px-5 py-3.5 bg-rose-500/5 border-t border-rose-500/10 flex items-center gap-3">
-          <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded">
+          <span className="text-[10px] font-bold text-rose-600 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded">
             ERROR
           </span>
           <span className="text-xs font-mono text-rose-500 break-all">{state.error}</span>
@@ -171,7 +171,7 @@ const MENU_PERM_MAP: MenuPermRow[] = [
 const SCOPE_STYLE: Record<string, { text: string; bg: string }> = {
   tenant:    { text: 'text-indigo-500', bg: 'bg-indigo-500/10 border-indigo-500/20' },
   workspace: { text: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/20' },
-  settings:  { text: 'text-slate-500', bg: 'bg-slate-500/10 border-slate-500/20' },
+  settings:  { text: 'text-mg-text-2', bg: 'bg-mg-fill-0 border-mg-border' },
 }
 
 function MenuPermissionMap() {
@@ -234,7 +234,7 @@ function MenuPermissionMap() {
                   <td className="px-5 py-2.5">
                     {row.actions.length > 0
                       ? <div className="flex flex-wrap gap-1">{row.actions.map((a) => (
-                          <code key={a} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400">{a}</code>
+                          <code key={a} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-600">{a}</code>
                         ))}</div>
                       : <span className="text-[10px] text-mg-text-2">—</span>
                     }
@@ -330,7 +330,7 @@ function PermissionPanel() {
             <div className="text-[11px] font-bold tracking-wider text-amber-500">{t('platformConfig.perm.actionLevel')}</div>
             <div className="flex flex-wrap gap-1.5">
               {actionPerms.map((p) => (
-                <code key={p} className="text-[10px] font-mono px-1.5 py-0.5 rounded border bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400">{p}</code>
+                <code key={p} className="text-[10px] font-mono px-1.5 py-0.5 rounded border bg-amber-500/10 border-amber-500/20 text-amber-600">{p}</code>
               ))}
             </div>
           </div>
@@ -603,11 +603,11 @@ function CustomRequestPanel() {
       </div>
 
       {state.status === 'success' && (
-        <div className="relative bg-slate-950 overflow-hidden">
+        <div className="relative bg-mg-code-bg overflow-hidden">
           <div className="absolute top-3 right-3 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded z-10">
             OK
           </div>
-          <pre className="m-0 p-5 text-xs font-mono text-slate-300 overflow-auto max-h-[400px] w-full min-w-0 leading-relaxed select-all">
+          <pre className="m-0 p-5 text-xs font-mono text-mg-text-1 overflow-auto max-h-[400px] w-full min-w-0 leading-relaxed select-all">
             {JSON.stringify(state.data, null, 2)}
           </pre>
         </div>

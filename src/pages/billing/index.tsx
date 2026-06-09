@@ -463,7 +463,7 @@ function renderTierBadge(tierName?: string) {
   // 普通伙伴 / Partner
   if (tierName.includes('普通') || tierName.toLowerCase().includes('partner')) {
     return (
-      <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400 select-none">
+      <span className="text-xs font-bold text-mg-text-2 select-none">
         {tierName}
       </span>
     )
@@ -472,7 +472,7 @@ function renderTierBadge(tierName?: string) {
   // 战略伙伴 / Strategic Partner
   if (tierName.includes('战略') || tierName.toLowerCase().includes('strategic')) {
     return (
-      <span className="text-xs font-black text-amber-500 dark:text-amber-400 select-none">
+      <span className="text-xs font-black text-amber-500 select-none">
         {tierName}
       </span>
     )
@@ -744,7 +744,7 @@ export default function BillingPage() {
             <div className="shimmer-light" />
             <div className={cn(
               "text-xs transition-colors duration-300",
-              activeTab === 'gift' ? "text-sky-600 dark:text-sky-400 font-semibold" : "text-mg-text-2"
+              activeTab === 'gift' ? "text-sky-600 font-semibold" : "text-mg-text-2"
             )}>
               {t('billing.balance.giftBalance')}
             </div>
@@ -769,7 +769,7 @@ export default function BillingPage() {
             <div className="shimmer-light" />
             <div className={cn(
               "text-xs transition-colors duration-300",
-              activeTab === 'reward' ? "text-amber-500 dark:text-amber-400 font-semibold" : "text-mg-text-2"
+              activeTab === 'reward' ? "text-amber-500 font-semibold" : "text-mg-text-2"
             )}>
               {t('billing.balance.rewardBalance')}
             </div>
@@ -830,10 +830,10 @@ export default function BillingPage() {
           className={cn(
             "absolute top-1 bottom-1 bg-card-bg rounded-lg transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] z-0 border",
             activeTab === 'main'
-              ? "border-brand-base/20 shadow-[0_2px_10px_var(--brand-glow)] dark:shadow-[0_4px_16px_var(--brand-glow)]"
+              ? "border-brand-base/20 shadow-[0_2px_10px_var(--brand-glow)]"
               : activeTab === 'gift'
-              ? "border-sky-500/20 shadow-[0_2px_10px_rgba(14,165,233,0.15)] dark:shadow-[0_4px_16px_rgba(14,165,233,0.25)]"
-              : "border-amber-500/20 shadow-[0_2px_10px_rgba(245,158,11,0.15)] dark:shadow-[0_4px_16px_rgba(245,158,11,0.25)]"
+              ? "border-sky-500/20 shadow-[0_2px_10px_rgba(14,165,233,0.15)]"
+              : "border-amber-500/20 shadow-[0_2px_10px_rgba(245,158,11,0.15)]"
           )}
           style={{
             left: underlineStyle.left,
@@ -853,8 +853,8 @@ export default function BillingPage() {
                 ? (tab.key === 'main'
                     ? 'text-brand-base'
                     : tab.key === 'gift'
-                    ? 'text-sky-600 dark:text-sky-400'
-                    : 'text-amber-500 dark:text-amber-400')
+                    ? 'text-sky-600'
+                    : 'text-amber-500')
                 : 'text-mg-text-2 hover:text-mg-text-1'
             )}
           >

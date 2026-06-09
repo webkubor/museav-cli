@@ -279,7 +279,7 @@ export default function ModelsCatalogPage() {
                   transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
                 }}
                 className={cn(
-                  "group relative p-[1px] rounded-2xl bg-[rgba(15,23,42,0.09)] dark:bg-[rgba(255,255,255,0.14)] transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1) hover:shadow-[0_20px_40px_-10px_var(--brand-glow)] shadow-[0_8px_30px_rgb(0,0,0,0.02)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] [--scale:1] hover:[--scale:1.015] flex flex-1 cursor-pointer w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base focus-visible:ring-offset-2",
+                  "group relative p-[1px] rounded-2xl bg-mg-border/10 transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1) hover:shadow-[0_20px_40px_-10px_var(--brand-glow)] shadow-[0_8px_30px_rgb(0,0,0,0.02)] [--scale:1] hover:[--scale:1.015] flex flex-1 cursor-pointer w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base focus-visible:ring-offset-2",
                   isExpanded && "shadow-[0_20px_40px_-10px_var(--brand-glow)]"
                 )}
               >
@@ -329,7 +329,7 @@ export default function ModelsCatalogPage() {
                     <div
                       onClick={(e) => handleCopyApiId(model.model_id, e)}
                       className={cn(
-                        'group/id flex items-center justify-between gap-3 px-3 py-2.5 bg-mg-fill-0/75 dark:bg-neutral-900/50 hover:bg-brand-base/[0.03] border border-mg-border/30 dark:border-neutral-800/80 hover:border-brand-base/30 rounded-xl cursor-pointer transition-all duration-300 select-all shadow-inner',
+                        'group/id flex items-center justify-between gap-3 px-3 py-2.5 bg-mg-fill-0/75 hover:bg-brand-base/[0.03] border border-mg-border/30 hover:border-brand-base/30 rounded-xl cursor-pointer transition-all duration-300 select-all shadow-inner',
                         copiedId === model.model_id && 'bg-brand-base/[0.03] dark:bg-brand-base/5 border-brand-base/30'
                       )}
                       title={isZh ? '点击复制 API ID' : 'Click to copy API ID'}
@@ -346,7 +346,7 @@ export default function ModelsCatalogPage() {
                         "shrink-0 flex items-center justify-center w-6 h-6 rounded-lg border shadow-sm transition-all duration-300",
                         copiedId === model.model_id 
                           ? "border-brand-base/20 bg-brand-base/10 text-brand-base" 
-                          : "border-mg-border/60 bg-mg-bg-0 dark:bg-neutral-800 text-mg-text-2 group-hover/id:text-brand-base group-hover/id:border-brand-base/30 group-hover/id:shadow"
+                          : "border-mg-border/60 bg-mg-bg-0 text-mg-text-2 group-hover/id:text-brand-base group-hover/id:border-brand-base/30 group-hover/id:shadow"
                       )}>
                         {copiedId === model.model_id ? (
                           <LuCheck size={11} className="text-emerald-500 animate-in zoom-in-75 duration-200" />

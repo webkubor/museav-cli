@@ -23,7 +23,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, className }) => {
   return (
     <nav
       className={cn(
-        "flex items-center gap-1.5 px-3.5 py-1.5 bg-mg-bg-0/30 dark:bg-neutral-900/30 backdrop-blur-md border border-mg-border/20 dark:border-neutral-800/40 rounded-full w-fit mb-6 text-[10.5px] font-bold text-mg-text-2 tracking-wider select-none shadow-sm shadow-black/5 animate-in fade-in slide-in-from-top-1 duration-300",
+        "flex items-center gap-1.5 px-3.5 py-1.5 bg-mg-bg-0/30 backdrop-blur-md border border-mg-border/20 rounded-full w-fit mb-6 text-[10.5px] font-bold text-mg-text-2 tracking-wider select-none shadow-sm shadow-black/5 animate-in fade-in slide-in-from-top-1 duration-300",
         className
       )}
     >
@@ -34,7 +34,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, className }) => {
         return (
           <div key={idx} className="flex items-center gap-1.5">
             {idx > 0 && (
-              <LuChevronRight size={10} className="text-mg-text-2/40 dark:text-neutral-600/80 shrink-0" />
+              <LuChevronRight size={10} className="text-mg-text-2/40 shrink-0" />
             )}
             <div className="flex items-center">
               {isLast && (

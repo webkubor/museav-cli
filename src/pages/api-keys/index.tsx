@@ -304,10 +304,10 @@ export default function ApiKeysPage() {
               <div className="text-sm font-bold text-mg-text-0 flex items-center gap-2">
 <LuKey size={14} className="shrink-0" /> {t('apiKeys.revealModal.title')}
               </div>
-              <div className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 max-w-3xl leading-relaxed font-semibold">
+              <div className="text-xs text-amber-600 mt-1.5 max-w-3xl leading-relaxed font-semibold">
                 {t('apiKeys.revealModal.warning')}
               </div>
-              <div className="text-xs text-amber-700 dark:text-amber-300 mt-1 font-bold flex items-center gap-1">
+              <div className="text-xs text-amber-700 mt-1 font-bold flex items-center gap-1">
                 ⚠ 请立即复制，关闭后将无法再查看完整密钥
               </div>
             </div>
@@ -320,11 +320,11 @@ export default function ApiKeysPage() {
           </div>
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
-              <div className="bg-slate-900 border border-slate-800 text-emerald-400 px-4 py-3 rounded-lg font-mono text-sm flex items-center justify-between font-bold select-all tracking-wider shadow-inner">
+              <div className="bg-mg-code-bg border border-mg-border text-emerald-400 px-4 py-3 rounded-lg font-mono text-sm flex items-center justify-between font-bold select-all tracking-wider shadow-inner">
                 <span className="truncate">{createdKeyText}</span>
                 <button
                   onClick={() => handleCopyText(createdKeyText)}
-                  className="text-emerald-500 hover:text-emerald-400 transition-colors p-1.5 hover:bg-white/5 rounded ml-2 shrink-0 cursor-pointer"
+                  className="text-emerald-500 hover:text-emerald-400 transition-colors p-1.5 hover:bg-mg-fill-1 rounded ml-2 shrink-0 cursor-pointer"
                 >
                   {copied ? <LuCheck className="w-4 h-4" /> : <LuCopy className="w-4 h-4" />}
                 </button>

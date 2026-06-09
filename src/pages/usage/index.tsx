@@ -216,9 +216,9 @@ function RangeBtn({ label, active, onClick }: RangeBtnProps) {
       style={{
         padding: '5px 16px',
         borderRadius: '20px',
-        border: active ? '1px solid #1e293b' : '1px solid var(--mg-border)',
-        background: active ? '#0f172a' : 'var(--mg-bg-0)',
-        color: active ? 'var(--mg-bg-0)' : 'var(--mg-text-1)',
+        border: active ? '1px solid var(--brand-base)' : '1px solid var(--mg-border)',
+        background: active ? 'var(--brand-base)' : 'var(--mg-bg-0)',
+        color: active ? '#fff' : 'var(--mg-text-1)',
         fontSize: '13px',
         fontWeight: active ? 600 : 400,
         cursor: 'pointer',
@@ -375,7 +375,7 @@ export default function UsagePage() {
         <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
           {summaryQuery.isLoading ? (
             <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '96px' }}>
-              <div className="w-8 h-8 border-2 border-gray-200 border-t-brand-base rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
             </div>
           ) : (
             <>
@@ -431,7 +431,7 @@ export default function UsagePage() {
           </div>
         ) : seriesQuery.isLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-            <div className="w-8 h-8 border-2 border-gray-200 border-t-brand-base rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
           </div>
         ) : (
           <div style={{ width: '100%' }}>
@@ -457,7 +457,7 @@ export default function UsagePage() {
           </div>
         ) : histogramQuery.isLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '160px' }}>
-            <div className="w-8 h-8 border-2 border-gray-200 border-t-brand-base rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
           </div>
         ) : (
           <div style={{ width: '100%' }}>

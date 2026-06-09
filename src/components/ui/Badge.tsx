@@ -32,7 +32,7 @@ const badgeVariants = cva(
         info:
           "border-transparent bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
         glass:
-          "bg-white/10 dark:bg-white/5 backdrop-blur-md border-white/20 text-mg-text-1",
+          "bg-white/10 backdrop-blur-md border-white/20 text-mg-text-1",
       },
     },
     defaultVariants: {

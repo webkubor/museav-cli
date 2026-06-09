@@ -6,10 +6,10 @@ interface ModalityBadgeProps {
 
 const MODALITY_CLASSES: Record<string, string> = {
   text:      'bg-mg-primary-light text-mg-primary border-mg-primary-light',
-  image:     'bg-violet-50 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400 border-violet-200 dark:border-violet-800/50',
-  audio:     'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50',
-  video:     'bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800/50',
-  embedding: 'bg-yellow-50 dark:bg-yellow-950/30 text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800/50',
+  image:     'bg-violet-500/10 text-violet-600 border-violet-500/20',
+  audio:     'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+  video:     'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  embedding: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
   reranker:  'bg-mg-fill-0 text-mg-text-1 border-mg-fill-1',
 }
 

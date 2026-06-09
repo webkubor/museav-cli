@@ -264,7 +264,7 @@ body[theme-mode='dark'] .billing-glow-card .shimmer-light::after {
 }
 
 body[theme-mode='dark'] .spendable-amount-glow {
-  background: linear-gradient(135deg, #ffffff 40%, var(--brand-base) 100%);
+  background: linear-gradient(135deg, var(--mg-text-0) 40%, var(--brand-base) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 2px 14px var(--brand-glow));

@@ -129,7 +129,7 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
                   </span>
                   <div>
                     {detail.zero_data_retention ? (
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[10px] bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">{t('models.detail.supported')}</span>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[10px] bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">{t('models.detail.supported')}</span>
                     ) : (
                       <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[10px] bg-[var(--mg-fill-0)] text-[var(--mg-text-2)] border border-[var(--mg-border)]">{t('models.detail.notSupported')}</span>
                     )}
@@ -142,7 +142,7 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
                     </span>
                     <div>
                       {detail.in_region_routing ? (
-                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[10px] bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">{t('models.detail.supported')}</span>
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[10px] bg-blue-500/10 text-blue-600 border border-blue-500/20">{t('models.detail.supported')}</span>
                       ) : (
                         <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[10px] bg-[var(--mg-fill-0)] text-[var(--mg-text-2)] border border-[var(--mg-border)]">{t('models.detail.notSupported')}</span>
                       )}
@@ -195,7 +195,7 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" style={{ width: '6px', height: '6px' }} />
-                        <span className={`text-xs font-semibold ${isEnabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                        <span className={`text-xs font-semibold ${isEnabled ? 'text-mg-success' : 'text-mg-danger'}`}>
                           {isEnabled ? t('models.detail.providerEnabled') : t('models.detail.providerDisabled')}
                         </span>
                       </div>

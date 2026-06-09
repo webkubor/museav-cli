@@ -90,9 +90,6 @@ function PlatformConfigModal({
   const [privacyMode, setPrivacyMode] = useState(editingForward?.privacy_mode_enabled ?? false)
   const [sampling, setSampling] = useState(editingForward ? String(Math.round(editingForward.sampling_rate * 100)) : '100')
   const [apiKeyIds, setApiKeyIds] = useState<string[]>(editingForward?.api_key_ids ?? [])
-  const [testing, setTesting] = useState(false)
-  const [sendingTrace, setSendingTrace] = useState(false)
-
   const keysQuery = useQuery({
     queryKey: ['api-keys', workspaceId],
     queryFn: () => listApiKeys(workspaceId, { page_size: 100 }),
@@ -134,63 +131,7 @@ function PlatformConfigModal({
     },
   })
 
-  async function handleTest() {
-    if (!url.trim()) {
-      appToast.error(t('observability.toast.urlRequired'))
-      return
-    }
-    setTesting(true)
-    try {
-      const res = await fetch(url.trim(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}', mode: 'cors' })
-      if (res.ok || res.status === 200) {
-        appToast.success('连接测试成功')
-      } else {
-        appToast.error(`连接测试失败: HTTP ${res.status}`)
-      }
-    } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '连接失败')
-    } finally {
-      setTesting(false)
-    }
-  }
 
-  async function handleSendTrace() {
-    if (!url.trim()) {
-      appToast.error(t('observability.toast.urlRequired'))
-      return
-    }
-    setSendingTrace(true)
-    try {
-      const trace = {
-        resourceSpans: [{
-          scopeSpans: [{
-            spans: [{
-              name: 'modelgo-test-trace',
-              kind: 1,
-              startTimeUnixNano: String(Date.now() * 1_000_000),
-              endTimeUnixNano: String(Date.now() * 1_000_000 + 100_000_000),
-              attributes: [{ key: 'test', value: { stringValue: 'from-modelgo-console' } }],
-            }],
-          }],
-        }],
-      }
-      const res = await fetch(url.trim(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(trace),
-        mode: 'cors',
-      })
-      if (res.ok || res.status === 200) {
-        appToast.success('测试 Trace 已发送')
-      } else {
-        appToast.error(`发送失败: HTTP ${res.status}`)
-      }
-    } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '发送失败')
-    } finally {
-      setSendingTrace(false)
-    }
-  }
 
   function handleSave() {
     if (!name.trim()) {
@@ -286,10 +227,6 @@ function PlatformConfigModal({
               allowFreeText={false}
               placeholder="选择 API Key…"
             />
-          </div>
-          <div className="flex gap-2 pt-1">
-            <Button variant="outline" size="sm" onClick={handleTest} loading={testing}>测试连接</Button>
-            <Button variant="outline" size="sm" onClick={handleSendTrace} loading={sendingTrace}>发送测试 Trace</Button>
           </div>
         </div>
       </div>

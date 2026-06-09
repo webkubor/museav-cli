@@ -31,7 +31,7 @@ export function InvoiceRecordsTab({
   tenantId: string
   currencySymbol: string
 }) {
-  const [status, setStatus] = useState('')
+  const [status, setStatus] = useState('all')
   const [keyword, setKeyword] = useState('')
   const [records, setRecords] = useState<InvoiceRecord[]>([])
   const [hasMore, setHasMore] = useState(false)
@@ -40,7 +40,7 @@ export function InvoiceRecordsTab({
   useEffect(() => {
     let alive = true
     setLoading(true)
-    listInvoiceRecords(tenantId, { status: status || undefined, keyword: keyword || undefined })
+    listInvoiceRecords(tenantId, { status: status === 'all' ? undefined : status, keyword: keyword || undefined })
       .then((res) => {
         if (!alive) return
         setRecords(res.items)
@@ -59,7 +59,7 @@ export function InvoiceRecordsTab({
   }, [tenantId, status, keyword])
 
   const loadMore = () => {
-    listInvoiceRecords(tenantId, { status: status || undefined, keyword: keyword || undefined, cursor: 'next' })
+    listInvoiceRecords(tenantId, { status: status === 'all' ? undefined : status, keyword: keyword || undefined, cursor: 'next' })
       .then((res) => {
         setRecords((prev) => [...prev, ...res.items])
         setHasMore(res.has_more)
@@ -83,7 +83,7 @@ export function InvoiceRecordsTab({
       {/* 筛选栏 */}
       <div className="flex gap-2">
         <Select value={status} onChange={setStatus} className="w-[130px]" placeholder="全部状态">
-          <Select.Option value="">全部状态</Select.Option>
+          <Select.Option value="all">全部状态</Select.Option>
           <Select.Option value="invoiced">已开票</Select.Option>
           <Select.Option value="invoicing">开票中</Select.Option>
           <Select.Option value="failed">开票失败</Select.Option>

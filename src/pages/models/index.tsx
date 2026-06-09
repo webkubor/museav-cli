@@ -7,8 +7,11 @@ import {
   LuGitCompareArrows,
   LuMessageSquare,
   LuSearch,
-  LuSparkles,  LuZap,
+  LuSparkles, LuZap,
   LuGift,
+  LuSettings2,
+  LuCircleCheck,
+  LuRefreshCw,
 } from 'react-icons/lu'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
@@ -85,7 +88,6 @@ export default function ModelsPage() {
   const selectedModel = allModels.find((model) => model.id === selectedId) ?? visibleModels[0] ?? allModels[0]
   const provider = providersQuery.data?.items?.[0]
   const detail = detailQuery.data
-
   useEffect(() => {
     const state = location.state as { selectedModelId?: string } | null
     if (state?.selectedModelId) {
@@ -341,6 +343,47 @@ export default function ModelsPage() {
               </div>
             }
           />
+
+          <aside className="models-experience-params">
+            <div className="models-experience-params-header">
+              <LuSettings2 size={14} />
+              <span>{text.params}</span>
+            </div>
+
+            <div className="models-experience-params-list">
+              <div className="models-experience-param-item">
+                <span className="param-label">temperature</span>
+                <strong className="param-value">0.7</strong>
+              </div>
+              <div className="models-experience-param-item">
+                <span className="param-label">max tokens</span>
+                <strong className="param-value">{selectedModel?.max_output_tokens || 4096}</strong>
+              </div>
+              <div className="models-experience-param-item">
+                <span className="param-label">top_p</span>
+                <strong className="param-value">0.9</strong>
+              </div>
+              <div className="models-experience-param-item is-switch">
+                <span className="param-label flex items-center gap-1.5">
+                  <LuCircleCheck size={13} className="text-mg-success" />
+                  stream
+                </span>
+                <strong className="param-value badge-success">on</strong>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="models-experience-reset-btn"
+              onClick={() => {
+                setMessages(initialMessages)
+                appToast.success(i18n.language.startsWith('zh') ? '对话历史已重置' : 'Conversation reset')
+              }}
+            >
+              <LuRefreshCw size={13} className="reset-icon" />
+              <span>{i18n.language.startsWith('zh') ? '重置对话' : 'Reset Chat'}</span>
+            </button>
+          </aside>
         </section>
       </div>
       <ModelsCompareModal

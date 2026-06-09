@@ -1,0 +1,122 @@
+/* ── 模型参数控制面板 ───────────────────────────────────────────────────── */
+.models-experience-params {
+  position: absolute;
+  right: 16px;
+  top: 96px;
+  bottom: 16px;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 20px;
+  padding: 20px;
+  border-left: 1px solid var(--mg-border);
+  background: color-mix(in srgb, var(--mg-bg-0) 94%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--mg-text-1);
+}
+
+.models-experience-params-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 750;
+  color: var(--mg-text-0);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--mg-border);
+}
+
+.models-experience-params-header svg {
+  color: var(--brand-base);
+}
+
+.models-experience-params-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.models-experience-param-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--mg-border);
+  border-radius: var(--radius-sm);
+  background: var(--mg-fill-0);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.models-experience-param-item:hover {
+  transform: translateY(-1.5px);
+  background: var(--mg-bg-0);
+  border-color: color-mix(in srgb, var(--brand-base) 24%, var(--mg-border));
+  box-shadow: var(--shadow-sm);
+}
+
+.param-label {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--mg-text-1);
+  text-transform: capitalize;
+}
+
+.param-value {
+  font-size: 13px;
+  font-weight: 750;
+  color: var(--mg-text-0);
+}
+
+/* 特殊标签样式 */
+.badge-success {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 750;
+  background: var(--brand-selected-bg);
+  color: var(--brand-deep);
+  text-transform: uppercase;
+}
+
+/* 重置对话按钮 */
+.models-experience-reset-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  width: 100%;
+  border: 1px solid var(--mg-border);
+  border-radius: var(--radius-sm);
+  background: var(--mg-fill-0);
+  color: var(--mg-text-1);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.models-experience-reset-btn:hover {
+  background: var(--mg-fill-1);
+  color: var(--mg-text-0);
+  border-color: var(--mg-text-2);
+}
+
+.models-experience-reset-btn:active {
+  transform: scale(0.97);
+}
+
+.models-experience-reset-btn .reset-icon {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.models-experience-reset-btn:hover .reset-icon {
+  transform: rotate(180deg);
+}

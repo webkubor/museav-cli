@@ -1,16 +1,16 @@
 import React from 'react'
 import Google from '@lobehub/icons/es/Google'
 import Github from '@lobehub/icons/es/Github'
-import { SiWechat } from 'react-icons/si'
+import { WechatIcon } from './brand-icons'
 
 export const OAUTH_ICONS: Record<string, React.ReactNode> = {
-  wechat: <SiWechat size={17} style={{ color: '#07C160', flexShrink: 0 }} />,
+  wechat: <WechatIcon size={17} />,
   github: <Github size={17} style={{ flexShrink: 0 }} />,
   google: <Google.Color size={17} style={{ flexShrink: 0 }} />,
 }
 
 export const OAUTH_ICONS_LG: Record<string, React.ReactNode> = {
-  wechat: <SiWechat size={20} style={{ color: '#07C160', flexShrink: 0 }} />,
+  wechat: <WechatIcon size={20} />,
   github: <Github size={20} style={{ flexShrink: 0 }} />,
   google: <Google.Color size={20} style={{ flexShrink: 0 }} />,
 }

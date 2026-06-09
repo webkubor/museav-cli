@@ -6,12 +6,12 @@ import { useCurrency, useEnabledChannels } from '@/hooks/use-platform-config'
 import { Button } from '@/components/ui/Button'
 import { appToast } from '@/lib/app-toast'
 import { cn } from '@/lib/utils'
-import { SiAlipay, SiWechat, SiStripe } from 'react-icons/si'
+import { AlipayIcon, WechatIcon, StripeIcon } from '@/constants/brand-icons'
 
 const ALL_CHANNELS = [
-  { value: 'alipay', label: '支付宝',  icon: <SiAlipay  size={18} style={{ color: '#1677FF', flexShrink: 0 }} /> },
-  { value: 'wechat', label: '微信支付', icon: <SiWechat  size={18} style={{ color: '#07C160', flexShrink: 0 }} /> },
-  { value: 'stripe', label: 'Stripe',  icon: <SiStripe  size={18} style={{ color: '#635BFF', flexShrink: 0 }} /> },
+  { value: 'alipay', label: '支付宝',  icon: <AlipayIcon /> },
+  { value: 'wechat', label: '微信支付', icon: <WechatIcon /> },
+  { value: 'stripe', label: 'Stripe',  icon: <StripeIcon /> },
 ]
 
 interface TopUpModalProps {

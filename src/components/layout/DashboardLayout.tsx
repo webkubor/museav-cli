@@ -25,7 +25,7 @@ import { CustomerService } from '@/components/customer-service'
 import { navConfig } from '@/config/nav'
 import type { NavItem } from '@/config/nav'
 import { breadcrumbConfig, FLAT_ROUTES } from '@/config/breadcrumbs'
-import { isDomestic } from '@/lib/market'
+import { useLangStore } from '@/store/use-brand-store'
 import { usePlatformConfig } from '@/hooks/use-platform-config'
 import { usePermissions } from '@/hooks/use-permissions'
 import { cn } from '@/lib/utils'
@@ -84,10 +84,11 @@ export function DashboardLayout() {
   const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
 
   const { hasPermission } = usePermissions()
+  const market = useLangStore((s) => s.market)
 
   const navCtx = {
     isNonPersonal: activeTenant?.type !== 'personal',
-    isDomestic: isDomestic(),
+    isDomestic: market === 'domestic',
     isDevTools,
   }
 

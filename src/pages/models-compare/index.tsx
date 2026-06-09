@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -216,8 +216,10 @@ export default function ModelsComparePage() {
   })
 
   // 对比只支持纯文字模型（LLM），过滤掉 VLM / Audio / Video
-  const models = (modelsQuery.data?.items ?? []).filter(
-    (m) => getModelType(m.modalities) === 'LLM'
+  // useMemo 防止 filter 每次 render 产生新引用，避免触发依赖 models 的 useEffect 死循环
+  const models = useMemo(
+    () => (modelsQuery.data?.items ?? []).filter((m) => getModelType(m.modalities) === 'LLM'),
+    [modelsQuery.data]
   )
 
   // 接收来自其他页面的对比数据跳转

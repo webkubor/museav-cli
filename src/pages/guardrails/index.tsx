@@ -282,16 +282,21 @@ export default function GuardrailsPage() {
 
   function handleSubmit() {
     if (!name.trim()) { appToast.error(t('guardrails.toast.nameRequired')); return }
-    const metadata: Record<string, unknown> = {}
-    if (modelBlacklist.length > 0) metadata.model_blacklist = modelBlacklist
-    if (ipWhitelist.length > 0) metadata.ip_whitelist = ipWhitelist
-    if (memberIds.length > 0) metadata.members = memberIds
+    // Always send all three arrays (even empty) so the backend receives the
+    // authoritative lists: model_blacklist/ip_whitelist round-trip via metadata,
+    // and members is materialized into member assignments server-side — an empty
+    // array must clear prior selections, so it can't be omitted.
+    const metadata: Record<string, unknown> = {
+      model_blacklist: modelBlacklist,
+      ip_whitelist: ipWhitelist,
+      members: memberIds,
+    }
     const payload: CreateGuardrailRequest = {
       name: name.trim(),
       description: description.trim() || undefined,
       is_default: isDefault,
       priority,
-      ...(Object.keys(metadata).length > 0 ? { metadata } : {}),
+      metadata,
     }
     if (!isCreating && detailId) {
       updateMutation.mutate({ id: detailId, payload })
@@ -579,7 +584,13 @@ export default function GuardrailsPage() {
                           }
                           const keyIds = localKeyNames.map((n) => nameToId.get(n)).filter(Boolean) as string[]
                           const keyAssigns: AssignmentInput[] = keyIds.map((id) => ({ subject_type: 'api_key', api_key_id: id }))
-                          assignMutation.mutate({ id: detail.id, assignments: keyAssigns })
+                          // replaceAssignments is a full replace — carry the existing
+                          // member assignments through so editing key bindings doesn't
+                          // wipe the guardrail's member scope.
+                          const memberAssigns: AssignmentInput[] = detail.assignments
+                            .filter((a) => a.subject_type === 'member' && a.account_id)
+                            .map((a) => ({ subject_type: 'member', account_id: a.account_id }))
+                          assignMutation.mutate({ id: detail.id, assignments: [...memberAssigns, ...keyAssigns] })
                         }}
                       >
                         保存

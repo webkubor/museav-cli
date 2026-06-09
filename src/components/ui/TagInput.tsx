@@ -116,6 +116,14 @@ export function TagInput({
               if (hasSuggestions) { setOpen(true); setFocusIdx(-1) }
             }}
             onFocus={() => { if (hasSuggestions) setOpen(true) }}
+            onBlur={() => {
+              // Commit pending free-text on blur so a value typed but not
+              // Enter-committed isn't silently dropped when the user clicks
+              // Save (e.g. IP whitelist). Scoped to pure free-text inputs;
+              // suggestion-backed inputs still require explicit selection so
+              // half-typed queries don't get committed as junk tags.
+              if (allowFreeText && !hasSuggestions && input.trim()) addTag(input)
+            }}
             onKeyDown={handleKeyDown}
             placeholder={value.length === 0 ? placeholder : ''}
             className="flex-1 bg-transparent text-sm text-mg-text-0 outline-none placeholder:text-mg-text-2/60 min-w-0 font-mono"

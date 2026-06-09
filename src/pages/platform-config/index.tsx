@@ -550,6 +550,7 @@ export default function PlatformConfigPage() {
             <TabsTrigger value="menus-sync">菜单同步</TabsTrigger>
             <TabsTrigger value="url-params">回跳参数</TabsTrigger>
             <TabsTrigger value="headers">请求头</TabsTrigger>
+            <TabsTrigger value="swagger">Swagger</TabsTrigger>
           </TabsList>
 
         <TabsContent value="endpoints">
@@ -621,6 +622,17 @@ export default function PlatformConfigPage() {
         <TabsContent value="headers">
           <div className="space-y-4 pt-2">
             <HeadersPanel />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="swagger">
+          <div className="pt-2">
+            <iframe
+              src="https://modelgo-web-api.test.modelgo.com/swagger/index.html"
+              className="w-full rounded-xl border border-mg-border"
+              style={{ height: 'calc(100vh - 260px)', minHeight: 600 }}
+              title="Swagger API Docs"
+            />
           </div>
         </TabsContent>
 

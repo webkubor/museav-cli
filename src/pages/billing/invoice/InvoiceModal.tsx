@@ -81,6 +81,7 @@ export function InvoiceModal({
             tenantId={tenantId}
             currencySymbol={currencySymbol}
             onInvoiced={() => setTab('records')}
+            onGoTitles={() => setTab('titles')}
           />
         )}
         {tab === 'records' && <InvoiceRecordsTab tenantId={tenantId} currencySymbol={currencySymbol} />}

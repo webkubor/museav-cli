@@ -1,9 +1,10 @@
 /**
  * 申请开票页（FR-B1 / FR-B2 合并开票）
- * 勾选「可开票」充值 → 选抬头 + 票种 → 合并开一张票。
+ * 两步流程：① 勾选可开票充值 → 右上角「合并开票(N笔·¥X)」② 确认页（汇总+包含充值单+选抬头+出票提示+提交）。
  */
 import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { LuArrowLeft, LuPlus } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
 import { cn } from '@/lib/utils'
@@ -25,15 +26,17 @@ export function ApplyInvoiceTab({
   tenantId,
   currencySymbol,
   onInvoiced,
+  onGoTitles,
 }: {
   tenantId: string
   currencySymbol: string
   onInvoiced: () => void
+  onGoTitles: () => void
 }) {
   const qc = useQueryClient()
+  const [view, setView] = useState<'list' | 'confirm'>('list')
   const [selected, setSelected] = useState<string[]>([])
   const [titleId, setTitleId] = useState('')
-  const [titleType, setTitleType] = useState<InvoiceTitleType>('vat_normal')
 
   const { data: rechargeData, isLoading } = useQuery({
     queryKey: ['invoice', 'recharges', tenantId],
@@ -48,35 +51,142 @@ export function ApplyInvoiceTab({
   const recharges = rechargeData?.items ?? []
   const titles = titleData?.items ?? []
 
-  const selectedTotal = useMemo(
-    () =>
-      recharges
-        .filter((r) => selected.includes(r.recharge_id))
-        .reduce((sum, r) => sum + Number(r.amount), 0),
+  const selectedRecharges = useMemo(
+    () => recharges.filter((r) => selected.includes(r.recharge_id)),
     [recharges, selected]
   )
+  const selectedTotal = useMemo(
+    () => selectedRecharges.reduce((sum, r) => sum + Number(r.amount), 0),
+    [selectedRecharges]
+  )
+  const activeTitle = titles.find((t) => t.id === titleId)
 
   const toggle = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
 
+  const goConfirm = () => {
+    // 进确认页默认带出默认抬头
+    if (!titleId) setTitleId(titles.find((t) => t.is_default)?.id ?? titles[0]?.id ?? '')
+    setView('confirm')
+  }
+
   const submit = useMutation({
     mutationFn: () =>
-      createInvoice(tenantId, { recharge_ids: selected, title_id: titleId, title_type: titleType }),
+      createInvoice(tenantId, {
+        recharge_ids: selected,
+        title_id: titleId,
+        title_type: activeTitle?.type ?? 'vat_normal',
+      }),
     onSuccess: () => {
       appToast.success('已提交开票，状态为「开票中」')
       qc.invalidateQueries({ queryKey: ['invoice'] })
       setSelected([])
+      setView('list')
       onInvoiced()
     },
     onError: () => appToast.error('开票提交失败，请重试'),
   })
 
-  const handleSubmit = () => {
-    if (!selected.length) return appToast.warning('请至少勾选一笔充值')
-    if (!titleId) return appToast.warning('请选择发票抬头')
-    submit.mutate()
+  // ─── 确认页 ───────────────────────────────────────
+  if (view === 'confirm') {
+    return (
+      <div className="space-y-4">
+        <button
+          type="button"
+          onClick={() => setView('list')}
+          className="flex items-center gap-1 text-sm text-mg-text-2 transition-colors hover:text-mg-text-0"
+        >
+          <LuArrowLeft size={15} /> 返回
+        </button>
+
+        {/* 合并汇总 */}
+        <div className="flex items-center justify-between rounded-xl bg-mg-fill-0 px-4 py-3">
+          <div className="space-y-1 text-xs text-mg-text-2">
+            <div>合并笔数</div>
+            <div>价税合计</div>
+          </div>
+          <div className="space-y-1 text-right">
+            <div className="text-sm font-semibold text-mg-text-0">{selected.length} 笔</div>
+            <div className="text-lg font-bold tabular-nums text-mg-text-0">
+              {currencySymbol}
+              {selectedTotal.toFixed(2)}
+            </div>
+          </div>
+        </div>
+
+        {/* 包含充值单 */}
+        <div className="rounded-xl border border-mg-border p-4">
+          <div className="mb-2 text-xs font-semibold text-mg-text-1">包含充值单（{selected.length}）</div>
+          {selectedRecharges.map((r) => (
+            <div key={r.recharge_id} className="flex items-center justify-between py-1 text-sm">
+              <span className="text-mg-text-1">{r.order_no}</span>
+              <span className="font-semibold tabular-nums text-mg-text-0">
+                {currencySymbol}
+                {r.amount}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* 抬头选择 */}
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold text-mg-text-1">发票抬头 / 票种</span>
+            <button
+              type="button"
+              onClick={onGoTitles}
+              className="flex items-center gap-1 text-xs font-semibold text-brand-base hover:text-brand-mid"
+            >
+              <LuPlus size={13} /> 新增抬头
+            </button>
+          </div>
+          <Select value={titleId} onChange={setTitleId} className="w-full" placeholder="选择发票抬头">
+            {titles.map((t) => (
+              <Select.Option key={t.id} value={t.id}>
+                {t.company_name}（{TITLE_TYPE_LABEL[t.type]}）
+              </Select.Option>
+            ))}
+          </Select>
+        </div>
+
+        {/* 选中抬头详情 */}
+        {activeTitle && (
+          <div className="rounded-xl border border-mg-border p-4">
+            <div className="mb-2 text-sm font-bold text-mg-text-0">{TITLE_TYPE_LABEL[activeTitle.type]}</div>
+            <div className="space-y-1 text-xs text-mg-text-2">
+              <div>税号：{activeTitle.tax_id}</div>
+              {activeTitle.reg_address && <div>地址：{activeTitle.reg_address}</div>}
+              {activeTitle.reg_phone && <div>电话：{activeTitle.reg_phone}</div>}
+              {activeTitle.bank_name && (
+                <div>
+                  开行：{activeTitle.bank_name} {activeTitle.bank_account}
+                </div>
+              )}
+              <div>接收邮箱：{activeTitle.email}</div>
+            </div>
+          </div>
+        )}
+
+        <p className="text-[11px] leading-relaxed text-mg-text-3">
+          提交后由服务商出票（含扫脸/验证码校验），通常几分钟、最长 1 个工作日，出票后推送至接收邮箱。
+        </p>
+
+        <Button
+          variant="brand"
+          className="w-full"
+          loading={submit.isPending}
+          onClick={() => {
+            if (!titleId) return appToast.warning('请选择发票抬头')
+            submit.mutate()
+          }}
+        >
+          提交开票
+        </Button>
+      </div>
+    )
   }
 
+  // ─── 列表页 ───────────────────────────────────────
   return (
     <div className="space-y-4">
       <p className="text-xs leading-relaxed text-mg-text-2">
@@ -84,11 +194,19 @@ export function ApplyInvoiceTab({
       </p>
 
       <div className="rounded-xl border border-mg-border p-4">
-        <div className="mb-3 flex items-center gap-2 text-sm font-bold text-mg-text-0">
-          <span className="text-brand-base">₣</span> 充值 · 申请开票
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-bold text-mg-text-0">
+            <span className="text-brand-base">₣</span> 充值 · 申请开票
+          </div>
+          {selected.length > 0 && (
+            <Button variant="brand" size="sm" onClick={goConfirm}>
+              合并开票（{selected.length} 笔 · {currencySymbol}
+              {selectedTotal.toFixed(2)}）
+            </Button>
+          )}
         </div>
 
-        <div className="grid grid-cols-[24px_1fr_auto_88px] items-center gap-x-3 px-1 pb-2 text-[11px] font-semibold uppercase tracking-wider text-mg-text-2">
+        <div className="grid grid-cols-[24px_1fr_auto_120px] items-center gap-x-3 px-1 pb-2 text-[11px] font-semibold uppercase tracking-wider text-mg-text-2">
           <span />
           <span>充值单号</span>
           <span className="text-right">金额</span>
@@ -97,6 +215,8 @@ export function ApplyInvoiceTab({
 
         {isLoading ? (
           <div className="py-8 text-center text-sm text-mg-text-2">加载中…</div>
+        ) : recharges.length === 0 ? (
+          <div className="py-8 text-center text-sm text-mg-text-2">暂无可开票充值</div>
         ) : (
           recharges.map((r) => {
             const billable = r.invoice_status === 'billable'
@@ -104,7 +224,7 @@ export function ApplyInvoiceTab({
               <label
                 key={r.recharge_id}
                 className={cn(
-                  'grid grid-cols-[24px_1fr_auto_88px] items-center gap-x-3 border-t border-mg-border px-1 py-3 text-sm',
+                  'grid grid-cols-[24px_1fr_auto_120px] items-center gap-x-3 border-t border-mg-border px-1 py-3 text-sm',
                   billable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
                 )}
               >
@@ -134,46 +254,6 @@ export function ApplyInvoiceTab({
           })
         )}
       </div>
-
-      {/* 合并开票操作栏 */}
-      {selected.length > 0 && (
-        <div className="flex flex-wrap items-end gap-3 rounded-xl border border-brand-base/30 bg-brand-base/[0.03] p-4">
-          <div className="text-sm">
-            <span className="text-mg-text-2">已选 </span>
-            <span className="font-bold text-mg-text-0">{selected.length}</span>
-            <span className="text-mg-text-2"> 笔 · 合计 </span>
-            <span className="font-bold tabular-nums text-brand-base">
-              {currencySymbol}
-              {selectedTotal.toFixed(2)}
-            </span>
-          </div>
-          <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
-            <Select
-              value={titleId}
-              onChange={(v) => {
-                setTitleId(v)
-                const t = titles.find((x) => x.id === v)
-                if (t) setTitleType(t.type)
-              }}
-              className="min-w-[180px]"
-              placeholder="选择发票抬头"
-            >
-              {titles.map((t) => (
-                <Select.Option key={t.id} value={t.id}>
-                  {t.company_name}
-                </Select.Option>
-              ))}
-            </Select>
-            <Select value={titleType} onChange={(v) => setTitleType(v as InvoiceTitleType)} className="min-w-[130px]">
-              <Select.Option value="vat_normal">{TITLE_TYPE_LABEL.vat_normal}</Select.Option>
-              <Select.Option value="vat_special">{TITLE_TYPE_LABEL.vat_special}</Select.Option>
-            </Select>
-            <Button variant="brand" size="sm" loading={submit.isPending} onClick={handleSubmit}>
-              合并开票
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

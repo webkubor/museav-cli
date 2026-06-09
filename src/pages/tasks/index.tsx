@@ -172,6 +172,18 @@ function TaskDetailSheet({ taskId, onClose }: { taskId: string; onClose: () => v
             <DetailRow label="提交时间" value={fmtDate(task.created_at)} />
             <DetailRow label="结束时间" value={fmtDate(task.completed_at)} />
             <DetailRow label="耗时"     value={fmtDuration(task.created_at, task.completed_at)} />
+            {(task.input_tokens != null || task.output_tokens != null) && (
+              <DetailRow
+                label="Token 用量"
+                value={
+                  <span className="text-[12px] text-mg-text-1">
+                    输入 <strong className="text-mg-text-0">{(task.input_tokens ?? 0).toLocaleString()}</strong>
+                    {' · '}
+                    输出 <strong className="text-mg-text-0">{(task.output_tokens ?? 0).toLocaleString()}</strong>
+                  </span>
+                }
+              />
+            )}
             <DetailRow
               label="实际费用"
               value={task.status === 'cancelled' || (task.status === 'failed' && !task.actual_cost)

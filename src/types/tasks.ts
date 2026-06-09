@@ -16,6 +16,11 @@ export interface TaskItem {
   created_at: string
   updated_at: string
   completed_at: string
+  /** 输入 token 用量 */
+  input_tokens?: number
+  /** 输出 token 用量 */
+  output_tokens?: number
+  // ── 以下为后端扩展字段（非核心 Row，待接入）─────────
   actual_cost?: number
   line?: string
   kind?: TaskKind

@@ -142,6 +142,16 @@ pnpm check:api-contract
 
 ## 🚀 启动与构建
 
+### 测试账号
+
+| 字段 | 值 |
+| :--- | :--- |
+| Email | `api-test-static-owner@test.modelgo.com` |
+| Password | `Homebrew02` |
+| 环境 | 测试环境（test） |
+
+### 本地启动
+
 ```bash
 pnpm install
 

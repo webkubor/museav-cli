@@ -8,6 +8,7 @@ import { getBillingMoneyStats } from '@/services/overview'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { LuWallet, LuTrendingUp, LuActivity, LuDatabase } from 'react-icons/lu'
+import { formatFriendlyAmount } from '@/lib/utils'
 
 export const KpiSection: React.FC = () => {
   const { t } = useTranslation()
@@ -74,9 +75,9 @@ export const KpiSection: React.FC = () => {
   const cards = [
     {
       title: t('dashboard.kpi.balance'),
-      value: rawBalance !== undefined ? `${currencySymbol}${rawBalance.toFixed(2)}` : undefined,
+      value: rawBalance !== undefined ? formatFriendlyAmount(rawBalance, currencySymbol) : undefined,
       rawNumber: rawBalance,
-      formatter: (n: number) => `${currencySymbol}${n.toFixed(2)}`,
+      formatter: (n: number) => formatFriendlyAmount(n, currencySymbol),
       loading: balanceLoading,
       color: 'var(--mg-primary)',
       glowColor: 'var(--brand-glow)',
@@ -85,9 +86,9 @@ export const KpiSection: React.FC = () => {
     },
     {
       title: t('dashboard.kpi.monthlySpend'),
-      value: rawSpend !== undefined ? `${currencySymbol}${rawSpend.toFixed(4)}` : undefined,
+      value: rawSpend !== undefined ? formatFriendlyAmount(rawSpend, currencySymbol, { maxDecimals: 4 }) : undefined,
       rawNumber: rawSpend,
-      formatter: (n: number) => `${currencySymbol}${n.toFixed(4)}`,
+      formatter: (n: number) => formatFriendlyAmount(n, currencySymbol, { maxDecimals: 4 }),
       loading: billingLoading,
       color: 'var(--mg-warning)',
       glowColor: 'rgba(245, 158, 11, 0.12)',

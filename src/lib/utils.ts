@@ -108,5 +108,37 @@ export function getSystemThemePreference(): 'dark' | 'light' {
   return isDark ? 'dark' : 'light'
 }
 
+/**
+ * 格式化金额为千分位亲和性显示格式，自适应处理高精度小数与标准货币小数
+ * 比如：
+ *   - 12800.5 => "12,800.50"
+ *   - 0.002135 => "0.002135"
+ *   - 0 => "0.00"
+ */
+export function formatFriendlyAmount(
+  amount: number | string | null | undefined,
+  currencySymbol = '',
+  opts?: { minDecimals?: number; maxDecimals?: number }
+): string {
+  if (amount == null || amount === '') return '—'
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount
+  if (isNaN(num)) return '—'
+
+  // 处理极小数值（如单个 API 调用花费、Token 单价），保留更高精度
+  if (num > 0 && num < 0.01) {
+    const decimals = opts?.maxDecimals ?? 6
+    const str = num.toFixed(decimals)
+    const trimmed = str.replace(/0+$/, '') // 去除冗余尾随零
+    const finalDecimals = Math.max(opts?.minDecimals ?? 2, trimmed.split('.')[1]?.length ?? 2)
+    return `${currencySymbol}${num.toFixed(finalDecimals)}`
+  }
+
+  // 标准金额数值，采用千分位分隔并默认保留 2 位小数
+  return `${currencySymbol}${num.toLocaleString('en-US', {
+    minimumFractionDigits: opts?.minDecimals ?? 2,
+    maximumFractionDigits: opts?.maxDecimals ?? 2,
+  })}`
+}
+
 
 

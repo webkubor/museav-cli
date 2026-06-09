@@ -8,6 +8,7 @@ import { useCurrency } from '@/hooks/use-platform-config'
 import { getBalance } from '@/services/billing'
 import { useAuthStore } from '@/store/auth'
 import { CLI_CODE } from '@/features/dashboard/constants/code-snippets'
+import { formatFriendlyAmount } from '@/lib/utils'
 import { QuickWeb3Icon, type QuickIconType } from './QuickAccessSection'
 import './quick-access-section.css'
 import './dashboard-top-panel.css'
@@ -52,7 +53,7 @@ export const DashboardTopPanel: React.FC = () => {
   const displayName = account?.display_name || account?.email || t('dashboardTop.greeting.defaultName')
   const availableAmount = parseAmount(balance?.available.amount)
   const thresholdAmount = parseAmount(balance?.low_balance_threshold.amount)
-  const balanceText = availableAmount === null ? t('dashboardTop.status.balanceUnknown') : `${currencySymbol}${availableAmount.toFixed(2)}`
+  const balanceText = availableAmount === null ? t('dashboardTop.status.balanceUnknown') : formatFriendlyAmount(availableAmount, currencySymbol)
   const isLowBalance = availableAmount !== null && thresholdAmount !== null && availableAmount <= thresholdAmount
   const cliCommand = getCliCommandLine()
 

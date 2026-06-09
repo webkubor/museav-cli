@@ -24,7 +24,7 @@ import { listModels } from '@/services/catalog'
 import type { CallLogItem, LogPayload } from '@/types'
 import { formatDateTime } from '@/lib/format-date'
 import { appToast } from '@/lib/app-toast'
-import { cn } from '@/lib/utils'
+import { cn, formatFriendlyAmount } from '@/lib/utils'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { CodeBlock } from '@/components/ui/CodeBlock'
 
@@ -405,7 +405,10 @@ export default function LogsPage() {
                     </TableCell>
                     <TableCell className="font-mono text-xs tabular-nums whitespace-nowrap">
                       {Number(row.cost.amount) > 0 ? (
-                        <span className="text-mg-text-0 font-semibold">{row.cost.currency} {Number(row.cost.amount).toFixed(6)}</span>
+                        <span className="text-mg-text-0 font-semibold">
+                          <span className="text-[10px] text-mg-text-2 mr-0.5">{row.cost.currency}</span>
+                          {formatFriendlyAmount(row.cost.amount, '', { maxDecimals: 6 })}
+                        </span>
                       ) : (
                         <span className="text-mg-text-2">—</span>
                       )}
@@ -502,7 +505,7 @@ export default function LogsPage() {
               <DetailRow label="调用类型" value={selectedLog.call_type || '—'} />
               <DetailRow label="HTTP 状态" value={selectedLog.http_status ? String(selectedLog.http_status) : '—'} mono />
               <DetailRow label="计费状态" value={selectedLog.billing_status || '—'} />
-              <DetailRow label="费用" value={selectedLog.cost?.amount ? `${selectedLog.cost.amount} ${selectedLog.cost.currency}` : '—'} />
+              <DetailRow label="费用" value={selectedLog.cost?.amount ? `${formatFriendlyAmount(selectedLog.cost.amount, '', { maxDecimals: 6 })} ${selectedLog.cost.currency}` : '—'} />
               <DetailRow label="结束原因" value={selectedLog.finish_reason || '—'} />
               <DetailRow label="首 Token 延迟" value={selectedLog.speed?.first_token_ms ? `${selectedLog.speed.first_token_ms}ms` : '—'} />
               <DetailRow label="TPOT" value={selectedLog.tpot_ms ? `${selectedLog.tpot_ms}ms` : '—'} />

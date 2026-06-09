@@ -62,16 +62,16 @@ export default function AuthCallbackPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#f8fafc',
+        background: 'var(--mg-bg-1)',
       }}
     >
-      <div style={{ textAlign: 'center', color: '#64748b', fontSize: '14px' }}>
+      <div style={{ textAlign: 'center', color: 'var(--mg-text-2)', fontSize: '14px' }}>
         <div
           style={{
             width: '32px',
             height: '32px',
-            border: '3px solid #e2e8f0',
-            borderTopColor: '#1890ff',
+            border: '3px solid var(--mg-border)',
+            borderTopColor: 'var(--brand-base)',
             borderRadius: '50%',
             animation: 'spin 0.8s linear infinite',
             margin: '0 auto 12px',

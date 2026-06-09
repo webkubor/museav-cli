@@ -77,7 +77,7 @@ function ThinkingDots() {
       {[0, 1, 2].map((i) => (
         <span key={i} style={{
           width: 6, height: 6, borderRadius: '50%',
-          backgroundColor: 'var(--mg-text-2)',
+          backgroundColor: 'var(--mg-fill-2)',
           opacity: 0.6,
           animation: `cs-bounce 1.2s ${i * 0.2}s ease-in-out infinite`,
         }} />
@@ -301,8 +301,8 @@ export function CustomerService() {
                 aria-label={isLoading ? '停止生成' : '发送消息'}
                 style={{
                   width: 32, height: 32, borderRadius: 8, border: 'none',
-                  background: isLoading || inputValue.trim() ? 'var(--mg-text-1)' : 'var(--mg-border)',
-                  color: isLoading || inputValue.trim() ? 'var(--mg-bg-0)' : 'var(--mg-text-2)',
+                  background: isLoading || inputValue.trim() ? 'var(--brand-base)' : 'var(--mg-fill-1)',
+                  color: isLoading || inputValue.trim() ? '#ffffff' : 'var(--mg-text-2)',
                   cursor: isLoading || inputValue.trim() ? 'pointer' : 'not-allowed',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0, transition: 'all 0.2s',

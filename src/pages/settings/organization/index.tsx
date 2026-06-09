@@ -167,7 +167,7 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
                 onClick={() => onSelect(record.tenant_id)}
                 className={`relative flex items-start gap-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
                   isSelected
-                    ? 'border-brand-base bg-brand-glow/8 shadow-[0_4px_12px_rgba(var(--brand-base-rgb,99,102,241),0.04)] translate-x-[2px]'
+                    ? 'border-brand-base bg-brand-glow/8 shadow-[0_4px_12px_rgba(var(--brand-base-rgb),0.04)] translate-x-[2px]'
                     : 'border-mg-border/40 bg-mg-bg-0 hover:border-brand-base/20 hover:bg-mg-fill-0 hover:translate-x-[2px] active:scale-[0.98]'
                 }`}
               >

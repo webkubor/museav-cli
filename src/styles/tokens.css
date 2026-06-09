@@ -8,6 +8,7 @@
 :root, [data-market='domestic'] {
   --cn-deep: #5433e8;
   --cn-base: #6743fd;
+  --cn-base-rgb: 103, 67, 253;
   --cn-mid:  #8b6aff;
   --cn-light: #b8a4ff;
   --cn-pale: #f0ecff;
@@ -19,6 +20,7 @@
 body[theme-mode='dark'] {
   --cn-deep: #7a63e8;
   --cn-base: #9c86f0;
+  --cn-base-rgb: 156, 134, 240;
   --cn-mid:  #b9aaf5;
   --cn-pale: #1a1430;
   --cn-glow: rgba(156, 134, 240, 0.20);
@@ -29,6 +31,7 @@ body[theme-mode='dark'] {
 :root, [data-market='global'] {
   --go-deep: #159b7c;
   --go-base: #1DC39B;
+  --go-base-rgb: 29, 195, 155;
   --go-mid:  #4ad1b3;
   --go-light: #8ee4d1;
   --go-pale: #e6faf5;
@@ -39,6 +42,7 @@ body[theme-mode='dark'] {
 [data-market='global'] body[theme-mode='dark'] {
   --go-deep: #17a885;
   --go-base: #1DC39B;
+  --go-base-rgb: 29, 195, 155;
   --go-mid:  #63dbc2;
   --go-pale: #062a22;
   --go-glow: rgba(29, 195, 155, 0.26);
@@ -49,6 +53,7 @@ body[theme-mode='dark'] {
 :root, [data-market='domestic'] {
   --brand-deep: var(--cn-deep);
   --brand-base: var(--cn-base);
+  --brand-base-rgb: var(--cn-base-rgb);
   --brand-mid:  var(--cn-mid);
   --brand-light: var(--cn-light);
   --brand-pale: var(--cn-pale);
@@ -58,6 +63,7 @@ body[theme-mode='dark'] {
 [data-market='global'] {
   --brand-deep: var(--go-deep);
   --brand-base: var(--go-base);
+  --brand-base-rgb: var(--go-base-rgb);
   --brand-mid:  var(--go-mid);
   --brand-light: var(--go-light);
   --brand-pale: var(--go-pale);

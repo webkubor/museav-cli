@@ -67,10 +67,10 @@ export const TerminalSection: React.FC = () => {
                   cursor: 'pointer',
                   transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
                   fontFamily: 'monospace',
-                  backgroundColor: activeTab === tab.key ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
-                  color: activeTab === tab.key ? '#38bdf8' : '#94a3b8',
-                  borderColor: activeTab === tab.key ? 'rgba(56, 189, 248, 0.25)' : 'transparent',
-                  boxShadow: activeTab === tab.key ? '0 0 8px rgba(56, 189, 248, 0.1)' : 'none'
+                  backgroundColor: activeTab === tab.key ? 'rgba(var(--brand-base-rgb),0.12)' : 'transparent',
+                  color: activeTab === tab.key ? 'var(--brand-base)' : 'var(--mg-text-2)',
+                  borderColor: activeTab === tab.key ? 'rgba(var(--brand-base-rgb),0.25)' : 'transparent',
+                  boxShadow: activeTab === tab.key ? '0 0 8px rgba(var(--brand-base-rgb),0.1)' : 'none'
                 }}
                 onMouseEnter={(e) => {
                   if (activeTab !== tab.key) {
@@ -80,7 +80,7 @@ export const TerminalSection: React.FC = () => {
                 }}
                 onMouseLeave={(e) => {
                   if (activeTab !== tab.key) {
-                    (e.currentTarget as HTMLElement).style.color = '#94a3b8';
+                    (e.currentTarget as HTMLElement).style.color = 'var(--mg-text-2)';
                     (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
                   }
                 }}
@@ -96,9 +96,9 @@ export const TerminalSection: React.FC = () => {
           variant="ghost"
           size="xs"
           onClick={handleCopy}
-          className="text-[#94a3b8] hover:bg-white/5 rounded-full px-3 py-1 h-7 transition-all border-none flex items-center gap-1 hover:text-white"
+          className="text-mg-text-2 hover:bg-white/5 rounded-full px-3 py-1 h-7 transition-all border-none flex items-center gap-1 hover:text-white"
         >
-          {copied ? <LuCheck className="text-[var(--mg-success)]" /> : <LuCopy className="text-[#94a3b8]" />}
+          {copied ? <LuCheck className="text-[var(--mg-success)]" /> : <LuCopy className="text-mg-text-2" />}
           {copied ? t('terminalSection.copied') : t('terminalSection.copy')}
         </Button>
       </div>

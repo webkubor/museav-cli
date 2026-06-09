@@ -18,26 +18,26 @@ const inputStyle: React.CSSProperties = {
   width: '100%',
   height: '40px',
   borderRadius: '8px',
-  border: '1px solid #e2e8f0',
+  border: '1px solid var(--mg-border)',
   padding: '0 12px',
   fontSize: '14px',
   outline: 'none',
   boxSizing: 'border-box',
-  color: '#0f172a',
-  background: '#fff',
+  color: 'var(--mg-text-0)',
+  background: 'var(--mg-bg-0)',
 }
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: '13px',
   fontWeight: 600,
-  color: '#374151',
+  color: 'var(--mg-text-1)',
   marginBottom: '6px',
 }
 
 const errorStyle: React.CSSProperties = {
   fontSize: '12px',
-  color: '#f43f5e',
+  color: 'var(--mg-danger)',
   marginTop: '4px',
 }
 
@@ -80,7 +80,7 @@ export default function ForgotPasswordPage() {
         title="邮件已发送"
         subtitle="请检查你的收件箱"
         footer={
-          <Link to="/login" style={{ color: '#1890ff', textDecoration: 'none' }}>
+          <Link to="/login" style={{ color: 'var(--brand-base)', textDecoration: 'none' }}>
             返回登录
           </Link>
         }
@@ -104,12 +104,12 @@ export default function ForgotPasswordPage() {
           >
             ✉️
           </div>
-          <p style={{ fontSize: '14px', color: '#374151', margin: 0 }}>
+          <p style={{ fontSize: '14px', color: 'var(--mg-text-1)', margin: 0 }}>
             重置链接已发送至
             <br />
             <strong>{getValues('email')}</strong>
           </p>
-          <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>
+          <p style={{ fontSize: '12px', color: 'var(--mg-text-2)', margin: 0 }}>
             链接在 {minutes} 分钟内有效，请尽快操作
           </p>
         </div>
@@ -122,7 +122,7 @@ export default function ForgotPasswordPage() {
       title="忘记密码"
       subtitle="输入邮箱，我们将发送重置链接"
       footer={
-        <Link to="/login" style={{ color: '#1890ff', textDecoration: 'none' }}>
+        <Link to="/login" style={{ color: 'var(--brand-base)', textDecoration: 'none' }}>
           返回登录
         </Link>
       }

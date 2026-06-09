@@ -25,26 +25,26 @@ const inputStyle: React.CSSProperties = {
   width: '100%',
   height: '40px',
   borderRadius: '8px',
-  border: '1px solid #e2e8f0',
+  border: '1px solid var(--mg-border)',
   padding: '0 12px',
   fontSize: '14px',
   outline: 'none',
   boxSizing: 'border-box',
-  color: '#0f172a',
-  background: '#fff',
+  color: 'var(--mg-text-0)',
+  background: 'var(--mg-bg-0)',
 }
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: '13px',
   fontWeight: 600,
-  color: '#374151',
+  color: 'var(--mg-text-1)',
   marginBottom: '6px',
 }
 
 const errorStyle: React.CSSProperties = {
   fontSize: '12px',
-  color: '#f43f5e',
+  color: 'var(--mg-danger)',
   marginTop: '4px',
 }
 
@@ -85,11 +85,11 @@ export default function ResetPasswordPage() {
   if (!token) {
     return (
       <AuthLayout title="链接无效" footer={
-        <Link to="/forgot-password" style={{ color: '#1890ff', textDecoration: 'none' }}>
+        <Link to="/forgot-password" style={{ color: 'var(--brand-base)', textDecoration: 'none' }}>
           重新发送重置邮件
         </Link>
       }>
-        <p style={{ textAlign: 'center', fontSize: '14px', color: '#64748b' }}>
+        <p style={{ textAlign: 'center', fontSize: '14px', color: 'var(--mg-text-2)' }}>
           重置链接无效或已过期，请重新申请。
         </p>
       </AuthLayout>
@@ -102,7 +102,7 @@ export default function ResetPasswordPage() {
         title="密码已重置"
         subtitle="你的密码已成功更新"
         footer={
-          <Link to="/login" style={{ color: '#1890ff', textDecoration: 'none' }}>
+          <Link to="/login" style={{ color: 'var(--brand-base)', textDecoration: 'none' }}>
             返回登录
           </Link>
         }
@@ -140,7 +140,7 @@ export default function ResetPasswordPage() {
       title="重置密码"
       subtitle="设置一个新密码"
       footer={
-        <Link to="/login" style={{ color: '#1890ff', textDecoration: 'none' }}>
+        <Link to="/login" style={{ color: 'var(--brand-base)', textDecoration: 'none' }}>
           返回登录
         </Link>
       }

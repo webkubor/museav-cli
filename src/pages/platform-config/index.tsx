@@ -12,10 +12,9 @@ import { listWorkspaces } from '@/services/workspaces'
 import { listModels, listModelTags } from '@/services/catalog'
 import { listApiKeys } from '@/services/api-keys'
 import { getReferralOverview, listReferralInvitees, listRewardRecords, listWithdrawals } from '@/services/referral'
-import { PERMS } from '@/config/permissions'
-import type { Permission } from '@/config/permissions'
-import { TENANT_PERM_MATRIX, WS_PERM_MATRIX } from '@/config/permissionMatrix'
 import { appToast } from '@/lib/app-toast'
+import { syncMenus } from '@/services/admin'
+import { MENUS } from '@/config/menu-sync-data'
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
@@ -120,416 +119,81 @@ function EndpointCard({ def, state, onCall }: {
   )
 }
 
-function PermTagList({ perms, highlight }: { perms: Permission[]; highlight?: Permission[] }) {
+
+const SCOPE_LABEL: Record<string, string> = {
+  tenant: '组织级',
+  workspace: '工作区级',
+  settings: '设置级',
+}
+
+function MenusSyncPanel() {
+  const [syncStatus, setSyncStatus] = useState<Status>('idle')
+  const [result, setResult] = useState<{ upserted: number; skipped: number } | null>(null)
+
+  const handleSync = async () => {
+    setSyncStatus('loading')
+    setResult(null)
+    try {
+      const data = await syncMenus(MENUS)
+      setResult(data)
+      setSyncStatus('success')
+      appToast.success(`同步成功 — upserted: ${data.upserted}, skipped: ${data.skipped}`)
+    } catch (err) {
+      setSyncStatus('error')
+      appToast.error(`同步失败：${err instanceof Error ? err.message : '未知错误'}`)
+    }
+  }
+
+  const groups = ['tenant', 'workspace', 'settings'] as const
+
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {perms.map((p) => {
-        const isDomesticOnly = highlight?.includes(p)
+    <div className="space-y-5 pt-2">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs text-mg-text-2">
+            将下方菜单列表同步到后端（POST /admin/menus/sync）。共 {MENUS.length} 条。
+          </p>
+          {syncStatus === 'success' && result && (
+            <p className="text-xs text-[var(--mg-success)] mt-1 font-semibold">
+              ✓ 上次同步成功 — upserted: {result.upserted}, skipped: {result.skipped}
+            </p>
+          )}
+        </div>
+        <Button
+          onClick={() => { void handleSync() }}
+          disabled={syncStatus === 'loading'}
+          size="sm"
+        >
+          {syncStatus === 'loading' ? '同步中…' : '立即同步'}
+        </Button>
+      </div>
+
+      {groups.map((scope) => {
+        const items = MENUS.filter((m) => m.scope === scope)
         return (
-          <code
-            key={p}
-            className={[
-              'text-[10px] font-mono px-1.5 py-0.5 rounded border',
-              isDomesticOnly
-                ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
-                : 'bg-mg-bg-1 border-mg-border text-mg-text-1',
-            ].join(' ')}
-          >
-            {p}
-          </code>
+          <div key={scope} className="space-y-2">
+            <div className="text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">
+              {SCOPE_LABEL[scope]}
+            </div>
+            <div className="space-y-1.5">
+              {items.map((m) => (
+                <div
+                  key={m.key}
+                  className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border px-4 py-2.5 flex items-start gap-4"
+                >
+                  <code className="text-xs font-mono text-brand-base shrink-0 w-[180px] truncate">{m.key}</code>
+                  <span className="text-xs text-mg-text-1 w-[100px] shrink-0">{m.name}</span>
+                  <span className="text-xs text-mg-text-2 shrink-0">{m.name_en}</span>
+                  {m.view_permission && (
+                    <code className="ml-auto text-[10px] font-mono text-mg-text-2 shrink-0">{m.view_permission}</code>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         )
       })}
     </div>
-  )
-}
-
-interface MenuPermRow {
-  key: string
-  label: string
-  scope: 'tenant' | 'workspace' | 'settings'
-  menuPerm: Permission | null
-  actions: Permission[]
-}
-
-const MENU_PERM_MAP: MenuPermRow[] = [
-  { key: 'dashboard',           label: '仪表盘',                    scope: 'tenant',    menuPerm: PERMS.DASHBOARD_VIEW,     actions: [] },
-  { key: 'models',              label: '模型',                      scope: 'tenant',    menuPerm: PERMS.MODELS_VIEW,        actions: [] },
-  { key: 'models/catalog',      label: '所有模型',                  scope: 'tenant',    menuPerm: PERMS.MODELS_VIEW,        actions: [] },
-  { key: 'models/playground',   label: '模型体验 / Playground',     scope: 'tenant',    menuPerm: PERMS.MODELS_VIEW,        actions: [] },
-  { key: 'analytics',           label: '分析',                      scope: 'tenant',    menuPerm: PERMS.ANALYTICS_VIEW,     actions: [] },
-  { key: 'usage',               label: '用量分析',                  scope: 'tenant',    menuPerm: PERMS.ANALYTICS_VIEW,     actions: [] },
-  { key: 'logs',                label: '调用日志',                  scope: 'tenant',    menuPerm: PERMS.LOGS_VIEW,          actions: [] },
-  { key: 'billing',             label: '账单',                      scope: 'tenant',    menuPerm: PERMS.BILLING_VIEW,       actions: [PERMS.BILLING_INVOICE_VIEW, PERMS.BILLING_RECHARGE_CREATE, PERMS.BILLING_RECHARGE_CANCEL] },
-  { key: 'referral',            label: '推荐有奖 / Referral',       scope: 'tenant',    menuPerm: null,                     actions: [PERMS.REFERRAL_REWARD_TRANSFER, PERMS.REFERRAL_REWARD_WITHDRAW] },
-  { key: 'api-keys',            label: 'API Keys',                  scope: 'workspace', menuPerm: PERMS.API_KEYS_VIEW,      actions: [PERMS.API_KEYS_CREATE, PERMS.API_KEYS_REVOKE] },
-  { key: 'guardrails',          label: '配额管理 / Guardrails',     scope: 'workspace', menuPerm: PERMS.GUARDRAILS_VIEW,    actions: [PERMS.GUARDRAILS_CREATE, PERMS.GUARDRAILS_EDIT, PERMS.GUARDRAILS_DELETE, PERMS.GUARDRAILS_ASSIGNMENT_EDIT, PERMS.GUARDRAILS_BUDGET_EDIT] },
-  { key: 'observability',       label: '可观测性 / Observability',  scope: 'workspace', menuPerm: PERMS.OBSERVABILITY_VIEW, actions: [PERMS.OBSERVABILITY_LOGGING_EDIT, PERMS.OBSERVABILITY_FORWARD_MANAGE] },
-  { key: 'settings/workspace',  label: '工作区设置',                scope: 'workspace', menuPerm: null,                     actions: [PERMS.WORKSPACE_RENAME, PERMS.WORKSPACE_DELETE, PERMS.WORKSPACE_MEMBERS_MANAGE] },
-  { key: 'settings/org',        label: '企业管理 / Organization',   scope: 'settings',  menuPerm: null,                     actions: [PERMS.ORG_SETTINGS_EDIT, PERMS.ORG_MEMBERS_MANAGE, PERMS.ORG_INVITE_MANAGE] },
-]
-
-const SCOPE_STYLE: Record<string, { text: string; bg: string }> = {
-  tenant:    { text: 'text-indigo-500', bg: 'bg-indigo-500/10 border-indigo-500/20' },
-  workspace: { text: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/20' },
-  settings:  { text: 'text-mg-text-2', bg: 'bg-mg-fill-0 border-mg-border' },
-}
-
-function MenuPermissionMap() {
-  const [copied, setCopied] = useState(false)
-
-  function handleCopy() {
-    const header = '菜单 key\t菜单名\t归属\t菜单权限 ID\t页面/操作权限 ID'
-    const rows = MENU_PERM_MAP.map((r) =>
-      [r.key, r.label, r.scope, r.menuPerm ?? '—', r.actions.join(', ') || '—'].join('\t')
-    )
-    navigator.clipboard.writeText([header, ...rows].join('\n')).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }
-
-  return (
-    <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
-      <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center justify-between">
-        <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">菜单 — 权限 ID 映射表</span>
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="text-[11px] font-bold px-3 py-1 rounded-lg border border-mg-border text-mg-text-1 hover:border-brand-base hover:text-brand-base transition-colors duration-150"
-        >
-          {copied ? '✓ 已复制' : '复制为表格'}
-        </button>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-mg-border bg-mg-bg-1/20">
-              <th className="px-5 py-2.5 text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">菜单 Key</th>
-              <th className="px-5 py-2.5 text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">菜单名</th>
-              <th className="px-5 py-2.5 text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">归属</th>
-              <th className="px-5 py-2.5 text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">菜单权限</th>
-              <th className="px-5 py-2.5 text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">页面/操作权限</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-mg-border/50">
-            {MENU_PERM_MAP.map((row) => {
-              const scope = SCOPE_STYLE[row.scope]
-              return (
-                <tr key={row.key} className="hover:bg-mg-bg-1/30 transition-colors">
-                  <td className="px-5 py-2.5">
-                    <code className="text-[11px] font-mono font-bold text-mg-text-0">{row.key}</code>
-                  </td>
-                  <td className="px-5 py-2.5 text-xs text-mg-text-1">{row.label}</td>
-                  <td className="px-5 py-2.5">
-                    <code className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded border ${scope.text} ${scope.bg}`}>
-                      {row.scope}
-                    </code>
-                  </td>
-                  <td className="px-5 py-2.5">
-                    {row.menuPerm
-                      ? <code className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-mg-bg-1 border border-mg-border text-mg-text-1">{row.menuPerm}</code>
-                      : <span className="text-[10px] text-mg-text-2">—</span>
-                    }
-                  </td>
-                  <td className="px-5 py-2.5">
-                    {row.actions.length > 0
-                      ? <div className="flex flex-wrap gap-1">{row.actions.map((a) => (
-                          <code key={a} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-600">{a}</code>
-                        ))}</div>
-                      : <span className="text-[10px] text-mg-text-2">—</span>
-                    }
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-function PermissionPanel() {
-  const { t } = useTranslation()
-  const [copied, setCopied] = useState(false)
-
-  // 从 MENU_PERM_MAP 派生，保持单一来源
-  const menuPerms = [...new Set(
-    MENU_PERM_MAP.map((r) => r.menuPerm).filter((p): p is Permission => p !== null)
-  )]
-  const actionPerms = MENU_PERM_MAP.flatMap((r) => r.actions)
-
-  const TENANT_ROLES = ['tenant_owner', 'tenant_admin', 'tenant_member'] as const
-  const WS_ROLES = ['ws_owner', 'ws_admin', 'ws_member'] as const
-
-  function buildCopyText() {
-    const lines: string[] = ['# ModelGo 权限清单', '', '## 权限 ID 注册表', '']
-    lines.push('### 菜单级（view）')
-    menuPerms.forEach((p) => lines.push(`  - ${p}`))
-    lines.push('', '### 操作级（action）')
-    actionPerms.forEach((p) => lines.push(`  - ${p}`))
-
-    lines.push('', '## 组织角色权限矩阵（enterprise）', '')
-    TENANT_ROLES.forEach((role) => {
-      const d = TENANT_PERM_MATRIX.domestic.enterprise[role]
-      const g = TENANT_PERM_MATRIX.global.enterprise[role]
-      const shared = d.filter((p) => g.includes(p))
-      const domOnly = d.filter((p) => !g.includes(p))
-      lines.push(`### ${role}`)
-      lines.push(`  共有: ${shared.join(', ')}`)
-      if (domOnly.length) lines.push(`  domestic only: ${domOnly.join(', ')}`)
-      lines.push('')
-    })
-
-    lines.push('## 工作区角色权限矩阵', '')
-    WS_ROLES.forEach((role) => {
-      lines.push(`### ${role}`)
-      lines.push(`  ${WS_PERM_MATRIX[role].join(', ')}`)
-      lines.push('')
-    })
-
-    lines.push('## 备注')
-    lines.push('- personal 租户：owner 获得 billing 权限（国内含 invoice），无 org 管理菜单')
-    lines.push('- 最终权限 = 组织角色权限 ∪ 工作区角色权限')
-    return lines.join('\n')
-  }
-
-  function handleCopy() {
-    navigator.clipboard.writeText(buildCopyText()).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }
-
-  return (
-    <div className="space-y-4">
-      {/* Permission Registry */}
-      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
-        <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center justify-between">
-          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">
-            {t('platformConfig.permPanel.idList')}
-          </span>
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="text-[11px] font-bold px-3 py-1 rounded-lg border border-mg-border text-mg-text-1 hover:border-brand-base hover:text-brand-base transition-colors duration-150"
-          >
-            {copied ? `✓ ${t('common.copied')}` : t('platformConfig.permPanel.copyBtn')}
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-mg-border p-5 gap-5 md:gap-0">
-          <div className="md:pr-5 space-y-3">
-            <div className="text-[11px] font-bold tracking-wider text-violet-500">{t('platformConfig.perm.menuLevel')}</div>
-            <div className="flex flex-wrap gap-1.5">
-              {menuPerms.map((p) => (
-                <code key={p} className="text-[10px] font-mono px-1.5 py-0.5 rounded border bg-violet-500/10 border-violet-500/20 text-violet-500">{p}</code>
-              ))}
-            </div>
-          </div>
-          <div className="md:pl-5 space-y-3">
-            <div className="text-[11px] font-bold tracking-wider text-amber-500">{t('platformConfig.perm.actionLevel')}</div>
-            <div className="flex flex-wrap gap-1.5">
-              {actionPerms.map((p) => (
-                <code key={p} className="text-[10px] font-mono px-1.5 py-0.5 rounded border bg-amber-500/10 border-amber-500/20 text-amber-600">{p}</code>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tenant Matrix */}
-      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
-        <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center gap-3">
-          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">
-            {t('platformConfig.permPanel.tenantMatrix')}
-          </span>
-          <code className="text-[10px] text-mg-text-2 font-mono opacity-60">enterprise · domestic vs global</code>
-        </div>
-        <div className="divide-y divide-mg-border">
-          {TENANT_ROLES.map((role) => {
-            const domestic = TENANT_PERM_MATRIX.domestic.enterprise[role]
-            const global   = TENANT_PERM_MATRIX.global.enterprise[role]
-            const shared     = domestic.filter((p) => global.includes(p))
-            const domOnly    = domestic.filter((p) => !global.includes(p))
-            return (
-              <div key={role} className="p-5 grid grid-cols-1 md:grid-cols-[200px_1fr] gap-3">
-                <code className="text-[11px] font-bold font-mono px-2.5 py-1 rounded border bg-sky-500/10 border-sky-500/20 text-sky-500 w-fit h-fit shrink-0">
-                  {role}
-                </code>
-                <div className="space-y-2">
-                  <PermTagList perms={shared} />
-                  {domOnly.length > 0 && (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[9px] font-bold text-amber-500 uppercase tracking-wider shrink-0">domestic only</span>
-                      <PermTagList perms={domOnly} highlight={domOnly} />
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-          <div className="px-5 py-3 bg-mg-bg-1/30">
-            <span className="text-[11px] text-mg-text-2">
-              {t('platformConfig.permPanel.personalNotice')}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Workspace Matrix */}
-      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
-        <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40">
-          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">
-            {t('platformConfig.permPanel.wsMatrix')}
-          </span>
-        </div>
-        <div className="divide-y divide-mg-border">
-          {WS_ROLES.map((role) => (
-            <div key={role} className="p-5 grid grid-cols-1 md:md:grid-cols-[200px_1fr] gap-3">
-              <code className="text-[11px] font-bold font-mono px-2.5 py-1 rounded border bg-emerald-500/10 border-emerald-500/20 text-emerald-500 w-fit h-fit shrink-0">
-                {role}
-              </code>
-              <PermTagList perms={WS_PERM_MATRIX[role]} />
-            </div>
-          ))}
-          <div className="px-5 py-3 bg-mg-bg-1/30">
-            <span className="text-[11px] text-mg-text-2">
-              {t('platformConfig.permPanel.permLogic')}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function RoleSettingsPanel() {
-  const TENANT_TYPES = [
-    { type: 'personal', label: '个人账户', desc: '个人开发者，无企业管理，直接使用所有功能' },
-    { type: 'enterprise', label: '企业', desc: '多成员协作，有组织角色和项目角色分层管理' },
-  ]
-
-  const ORG_MATRIX = [
-    { perm: '查看总览 / 模型广场 / 用量分析 / 日志', owner: true, admin: true, member: true },
-    { perm: '查看账单 / 充值 / 取消订单', owner: true, admin: true, member: false },
-    { perm: '查看发票（国内）', owner: true, admin: true, member: false },
-    { perm: '企业设置（改名 / 上传 Logo）', owner: true, admin: true, member: false },
-    { perm: '成员管理（邀请 / 移除 / 改角色）', owner: true, admin: true, member: false },
-    { perm: '创建 / 删除项目', owner: true, admin: true, member: false },
-    { perm: '转让企业所有权', owner: true, admin: false, member: false },
-  ]
-
-  const WS_MATRIX = [
-    { perm: '查看 API Keys / 创建 Key', owner: true, admin: true, member: true },
-    { perm: '撤销 API Key', owner: true, admin: true, member: false },
-    { perm: '查看配额管理', owner: true, admin: true, member: true },
-    { perm: '创建 / 编辑 / 删除配额', owner: true, admin: true, member: false },
-    { perm: '配额绑定成员 / Key / 预算', owner: true, admin: true, member: false },
-    { perm: '查看可观测性', owner: true, admin: true, member: true },
-    { perm: '编辑日志 / 转发配置', owner: true, admin: true, member: false },
-    { perm: '查看成员管理', owner: true, admin: true, member: true },
-    { perm: '分配成员到项目 / 改角色 / 移出', owner: true, admin: true, member: false },
-  ]
-
-  const check = (v: boolean) => v
-    ? <span className="text-mg-success font-bold">✓</span>
-    : <span className="text-mg-text-2">—</span>
-
-  return (
-    <>
-      {/* 租户类型 */}
-      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
-        <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40">
-          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">租户类型</span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-mg-border">
-          {TENANT_TYPES.map((t) => (
-            <div key={t.type} className="p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <code className="text-[11px] font-bold font-mono px-2 py-0.5 rounded border bg-violet-500/10 border-violet-500/20 text-violet-500">{t.type}</code>
-                <span className="text-[13px] font-bold text-mg-text-0">{t.label}</span>
-              </div>
-              <p className="text-[12px] text-mg-text-2 leading-relaxed">{t.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 企业角色权限矩阵 */}
-      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
-        <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center gap-3">
-          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">租户角色权限矩阵</span>
-          <code className="text-[10px] text-mg-text-2 font-mono opacity-60">tenant_owner / tenant_admin / tenant_member</code>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-mg-border bg-mg-fill-0/30">
-                <th className="py-2.5 px-5 text-[11px] font-bold text-mg-text-2 uppercase tracking-wider">权限</th>
-                <th className="py-2.5 px-4 text-[11px] font-bold text-sky-500 uppercase tracking-wider text-center w-20">拥有者</th>
-                <th className="py-2.5 px-4 text-[11px] font-bold text-sky-500 uppercase tracking-wider text-center w-20">管理员</th>
-                <th className="py-2.5 px-4 text-[11px] font-bold text-sky-500 uppercase tracking-wider text-center w-20">成员</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-mg-border/50">
-              {ORG_MATRIX.map((row) => (
-                <tr key={row.perm} className="hover:bg-mg-fill-0/30 transition-colors">
-                  <td className="py-2.5 px-5 text-xs text-mg-text-1">{row.perm}</td>
-                  <td className="py-2.5 px-4 text-center">{check(row.owner)}</td>
-                  <td className="py-2.5 px-4 text-center">{check(row.admin)}</td>
-                  <td className="py-2.5 px-4 text-center">{check(row.member)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* 项目角色权限矩阵 */}
-      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
-        <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center gap-3">
-          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">项目角色权限矩阵</span>
-          <code className="text-[10px] text-mg-text-2 font-mono opacity-60">ws_owner / ws_admin / ws_member</code>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-mg-border bg-mg-fill-0/30">
-                <th className="py-2.5 px-5 text-[11px] font-bold text-mg-text-2 uppercase tracking-wider">权限</th>
-                <th className="py-2.5 px-4 text-[11px] font-bold text-emerald-500 uppercase tracking-wider text-center w-20">拥有者</th>
-                <th className="py-2.5 px-4 text-[11px] font-bold text-emerald-500 uppercase tracking-wider text-center w-20">管理员</th>
-                <th className="py-2.5 px-4 text-[11px] font-bold text-emerald-500 uppercase tracking-wider text-center w-20">成员</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-mg-border/50">
-              {WS_MATRIX.map((row) => (
-                <tr key={row.perm} className="hover:bg-mg-fill-0/30 transition-colors">
-                  <td className="py-2.5 px-5 text-xs text-mg-text-1">{row.perm}</td>
-                  <td className="py-2.5 px-4 text-center">{check(row.owner)}</td>
-                  <td className="py-2.5 px-4 text-center">{check(row.admin)}</td>
-                  <td className="py-2.5 px-4 text-center">{check(row.member)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* 角色关系说明 */}
-      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
-        <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40">
-          <span className="text-[11px] font-bold tracking-widest text-mg-text-2 uppercase">角色层级关系</span>
-        </div>
-        <div className="p-5 text-xs text-mg-text-1 leading-relaxed space-y-2">
-          <p><strong>账户（Account）</strong>→ 一个人的登录身份，可加入多个租户</p>
-          <p><strong>租户（Tenant）</strong>→ 系统最小隔离维度，分 personal（个人）和 enterprise（企业/组织）两种类型。每个账户最多创建 5 个租户。国内叫「企业」，国外叫「Organization」，本质是同一个 tenant</p>
-          <p><strong>租户角色</strong>→ 账户在某个租户内的身份：tenant_owner / tenant_admin / tenant_member。控制账单、成员管理、租户设置等</p>
-          <p><strong>项目（Workspace）</strong>→ 租户下的隔离空间，国内叫「项目」，国外叫「Workspace」。API Keys / 配额 / 可观测性均为项目级</p>
-          <p><strong>项目角色</strong>→ 账户在某个项目内的身份：ws_owner / ws_admin / ws_member。控制 Key 管理、配额、成员分配等</p>
-          <p className="text-mg-text-2 mt-3">最终权限 = 租户角色权限 ∪ 项目角色权限（取并集）</p>
-        </div>
-      </div>
-    </>
   )
 }
 
@@ -870,8 +534,7 @@ export default function PlatformConfigPage() {
           <TabsList>
             <TabsTrigger value="endpoints">{t('platformConfig.tab.endpoints')}</TabsTrigger>
             <TabsTrigger value="public-routes">公共路由</TabsTrigger>
-            <TabsTrigger value="roles">角色设置</TabsTrigger>
-            <TabsTrigger value="permissions">{t('platformConfig.tab.permissions')}</TabsTrigger>
+            <TabsTrigger value="menus-sync">菜单同步</TabsTrigger>
             <TabsTrigger value="url-params">回跳参数</TabsTrigger>
             <TabsTrigger value="headers">请求头</TabsTrigger>
           </TabsList>
@@ -932,17 +595,8 @@ export default function PlatformConfigPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="roles">
-          <div className="space-y-5 pt-2">
-            <RoleSettingsPanel />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="permissions">
-          <div className="space-y-4 pt-2">
-            <MenuPermissionMap />
-            <PermissionPanel />
-          </div>
+        <TabsContent value="menus-sync">
+          <MenusSyncPanel />
         </TabsContent>
 
         <TabsContent value="url-params">

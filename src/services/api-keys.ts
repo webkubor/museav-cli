@@ -31,7 +31,8 @@ export function updateApiKey(workspaceId: string, keyId: string, body: UpdateApi
   return patch<ApiKeyItem>(`workspaces/${workspaceId}/api-keys/${keyId}`, body)
 }
 
-/** 撤销 API Key（立即对网关生效，status=revoked） */
+/** 删除 API Key：后端做软删除（revoke + deleted_at），立即对网关失效并从列表移除；
+ *  行保留以维持计费/审计的 FK 引用完整性。 */
 export function revokeApiKey(workspaceId: string, keyId: string) {
   return del<null>(`workspaces/${workspaceId}/api-keys/${keyId}`)
 }

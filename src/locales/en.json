@@ -110,14 +110,14 @@
       "active": "Active",
       "disabled": "Disabled",
       "copy": "Copy",
-      "revoke": "Revoke",
+      "revoke": "Delete",
       "copyMaskedSuccess": "Masked credentials copied to clipboard",
       "totalSpend": "Total Spend",
       "noData": "No data"
     },
     "revokeConfirm": {
-      "title": "Revoke this key?",
-      "content": "The key will be immediately invalidated and cannot be recovered."
+      "title": "Delete this API key?",
+      "content": "The key is invalidated immediately, removed from the list, and cannot be recovered. All gateway requests using it will be blocked."
     },
     "createModal": {
       "title": "Create API Key",
@@ -142,8 +142,8 @@
     "toast": {
       "createSuccess": "Key \"{{name}}\" created successfully",
       "createError": "Failed to create API key",
-      "revokeSuccess": "API Key revoked",
-      "revokeError": "Failed to revoke API key"
+      "revokeSuccess": "API Key deleted",
+      "revokeError": "Failed to delete API key"
     }
   },
   "billing": {

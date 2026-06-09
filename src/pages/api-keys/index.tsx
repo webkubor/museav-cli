@@ -420,15 +420,13 @@ export default function ApiKeysPage() {
                     >
                       {t('apiKeys.table.copy')}
                     </button>
-                    {record.status === 'active' && canRevoke ? (
+                    {canRevoke && (
                       <button
                         onClick={() => setRevokeTarget({ id: record.api_key_id, name: record.name })}
                         className="text-mg-danger hover:text-mg-danger/80 transition-colors cursor-pointer"
                       >
                         {t('apiKeys.table.revoke')}
                       </button>
-                    ) : (
-                      <span className="text-mg-text-2 cursor-not-allowed">{t('apiKeys.table.disabled')}</span>
                     )}
                   </div>
                 </TableCell>

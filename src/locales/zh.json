@@ -110,14 +110,14 @@
       "active": "启用中",
       "disabled": "已禁用",
       "copy": "复制",
-      "revoke": "禁用",
+      "revoke": "删除",
       "copyMaskedSuccess": "遮蔽凭证已复制到剪贴板",
       "totalSpend": "累计消费",
       "noData": "无数据"
     },
     "revokeConfirm": {
-      "title": "确定要废弃该密钥吗？",
-      "content": "密钥废弃后立即失效，且不可恢复，所有的网关请求将直接被阻断！"
+      "title": "确定删除该密钥吗？",
+      "content": "密钥删除后立即失效、从列表中移除且不可恢复，所有使用该密钥的网关请求将被阻断！"
     },
     "createModal": {
       "title": "创建 API Key",
@@ -142,8 +142,8 @@
     "toast": {
       "createSuccess": "密钥 \"{{name}}\" 创建成功",
       "createError": "创建密钥失败",
-      "revokeSuccess": "密钥已成功撤销废弃",
-      "revokeError": "撤销密钥失败"
+      "revokeSuccess": "密钥已删除",
+      "revokeError": "删除密钥失败"
     }
   },
   "billing": {

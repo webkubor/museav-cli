@@ -40,6 +40,7 @@ import type {
 import { PERIOD_LABEL } from '@/constants/status'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { formatDateTime } from '@/lib/format-date'
+import { pageItems } from '@/lib/utils'
 
 function guardrailMetadataList(row: GuardrailDetail, key: 'model_blacklist' | 'ip_whitelist') {
   const value = row.metadata?.[key]
@@ -145,7 +146,7 @@ export default function GuardrailsPage() {
       const names = detail.assignments
         .filter(a => a.subject_type === 'api_key')
         .map(a => {
-          const key = (apiKeysQuery.data?.items ?? []).find((k: any) => k.api_key_id === a.api_key_id)
+          const key = (apiKeysQuery.data ?? []).find((k: any) => k.api_key_id === a.api_key_id)
           return key?.name || a.api_key_id
         })
       setLocalKeyNames(names)
@@ -161,7 +162,10 @@ export default function GuardrailsPage() {
 
   const apiKeysQuery = useQuery({
     queryKey: ['api-keys', activeWorkspaceId],
-    queryFn: () => listApiKeys(activeWorkspaceId!),
+    // pageItems normalizes the api-keys endpoint, which returns a bare array
+    // (not a {items} CursorPage) — reading .data.items left the binding
+    // dropdown empty so no API key could be selected.
+    queryFn: () => listApiKeys(activeWorkspaceId!).then(pageItems),
     enabled: !!activeWorkspaceId && detailOpen,
     staleTime: 60_000,
   })
@@ -338,7 +342,7 @@ export default function GuardrailsPage() {
       : (a.display_name || a.email || a.account_id)
     return { id: a.account_id, name: label }
   })
-  const apiKeysMap = new Map((apiKeysQuery.data?.items ?? []).map(k => [k.api_key_id, k]))
+  const apiKeysMap = new Map((apiKeysQuery.data ?? []).map(k => [k.api_key_id, k]))
 
   const detailRow = guardrails.find(g => g.id === detailId)
 
@@ -556,7 +560,7 @@ export default function GuardrailsPage() {
                   <TagInput
                     value={localKeyNames}
                     onChange={(names) => setLocalKeyNames(names)}
-                    suggestions={(apiKeysQuery.data?.items ?? [])
+                    suggestions={(apiKeysQuery.data ?? [])
                       .filter((k: any) => k.status === 'active' && !localKeyNames.includes(k.name))
                       .map((k: any) => k.name as string)
                     }
@@ -572,7 +576,7 @@ export default function GuardrailsPage() {
                         onClick={() => {
                           if (!detail) return
                           const nameToId = new Map<string, string>()
-                          for (const k of apiKeysQuery.data?.items ?? []) {
+                          for (const k of apiKeysQuery.data ?? []) {
                             nameToId.set(k.name, k.api_key_id)
                             nameToId.set(k.api_key_id, k.api_key_id)
                           }

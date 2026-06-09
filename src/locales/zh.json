@@ -900,8 +900,14 @@
       "contextLength": "上下文长度",
       "maxOutput": "最大输出",
       "modalities": "模态支持",
+      "releasedAt": "发布时间",
+      "knowledgeCutoff": "知识截止",
       "inputPrice": "输入价格 (百万)",
       "outputPrice": "输出价格 (百万)",
+      "cachePrice": "缓存读取 (百万)",
+      "providersCount": "供应商数量",
+      "zeroDataRetention": "零数据留存",
+      "inRegionRouting": "区域内路由",
       "tags": "标签"
     },
     "empty": {

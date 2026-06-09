@@ -27,6 +27,13 @@ function formatContext(n: number) {
   return String(n)
 }
 
+function formatDate(val: string | undefined) {
+  if (!val) return '—'
+  const d = new Date(val)
+  if (isNaN(d.getTime())) return val
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
 interface ModelPickerProps {
   models: CatalogModelItem[]
   selected: CatalogModelItem | null
@@ -126,8 +133,22 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
 function renderCell(model: CatalogModelItem, key: string) {
   if (key === 'pricing_input') return formatPrice(model.pricing?.input_per_1m)
   if (key === 'pricing_output') return formatPrice(model.pricing?.output_per_1m)
+  if (key === 'pricing_cache') return formatPrice(model.pricing?.cache_read_per_1m)
   if (key === 'context_length') return formatContext(model.context_length)
   if (key === 'max_output_tokens') return formatContext(model.max_output_tokens)
+  if (key === 'knowledge_cutoff') return formatDate(model.knowledge_cutoff)
+  if (key === 'released_at') return formatDate(model.released_at)
+  if (key === 'providers_count') return model.providers_count != null ? String(model.providers_count) : '—'
+  if (key === 'zero_data_retention') {
+    return model.zero_data_retention
+      ? <Badge variant="success" className="py-0.5 px-2">支持</Badge>
+      : <span className="text-[var(--mg-text-2)]">—</span>
+  }
+  if (key === 'in_region_routing') {
+    return model.in_region_routing
+      ? <Badge variant="success" className="py-0.5 px-2">支持</Badge>
+      : <span className="text-[var(--mg-text-2)]">—</span>
+  }
   if (key === 'modalities') {
     return (
       <div className="flex gap-1 flex-wrap">
@@ -306,12 +327,18 @@ export default function ModelsComparePage() {
   const selectedModels = slots.filter((s): s is CatalogModelItem => s !== null)
   const hasAny = selectedModels.length > 0
 
-  const ROWS: Array<{ labelKey: string; key: keyof CatalogModelItem | 'pricing_input' | 'pricing_output' }> = [
+  const ROWS: Array<{ labelKey: string; key: keyof CatalogModelItem | 'pricing_input' | 'pricing_output' | 'pricing_cache' }> = [
     { labelKey: 'modelsCompare.row.contextLength', key: 'context_length' },
     { labelKey: 'modelsCompare.row.maxOutput', key: 'max_output_tokens' },
     { labelKey: 'modelsCompare.row.modalities', key: 'modalities' },
+    { labelKey: 'modelsCompare.row.releasedAt', key: 'released_at' },
+    { labelKey: 'modelsCompare.row.knowledgeCutoff', key: 'knowledge_cutoff' },
     { labelKey: 'modelsCompare.row.inputPrice', key: 'pricing_input' },
     { labelKey: 'modelsCompare.row.outputPrice', key: 'pricing_output' },
+    { labelKey: 'modelsCompare.row.cachePrice', key: 'pricing_cache' },
+    { labelKey: 'modelsCompare.row.providersCount', key: 'providers_count' },
+    { labelKey: 'modelsCompare.row.zeroDataRetention', key: 'zero_data_retention' },
+    { labelKey: 'modelsCompare.row.inRegionRouting', key: 'in_region_routing' },
     { labelKey: 'modelsCompare.row.tags', key: 'tags' },
   ]
 

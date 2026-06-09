@@ -898,11 +898,17 @@
       "attr": "Attribute"
     },
     "row": {
-      "contextLength": "Context Window",
-      "maxOutput": "Max Output Tokens",
+      "contextLength": "Context Length",
+      "maxOutput": "Max Output",
       "modalities": "Modalities",
-      "inputPrice": "Input Price (per 1M)",
-      "outputPrice": "Output Price (per 1M)",
+      "releasedAt": "Released",
+      "knowledgeCutoff": "Knowledge Cutoff",
+      "inputPrice": "Input Price (1M)",
+      "outputPrice": "Output Price (1M)",
+      "cachePrice": "Cache Read (1M)",
+      "providersCount": "Providers",
+      "zeroDataRetention": "Zero Data Retention",
+      "inRegionRouting": "In-Region Routing",
       "tags": "Tags"
     },
     "empty": {

@@ -22,6 +22,8 @@ import {
   type BrandThemeConfig,
 } from '@/lib/theme'
 import type { Market, Lang } from '@/lib/market'
+import { syncMenus } from '@/services/admin'
+import { MENUS } from '@/config/menu-sync-data'
 
 const BRAND_THEME_PRESETS = [
   { label: '默认', value: 'default', color: 'linear-gradient(135deg, #6743fd 0 50%, #1DC39B 50% 100%)' },
@@ -227,6 +229,20 @@ export function DevToolbar() {
     i18n.changeLanguage(l)
   }
 
+  const [syncState, setSyncState] = useState<'idle' | 'loading' | 'ok' | 'err'>('idle')
+
+  const handleSyncMenus = async () => {
+    setSyncState('loading')
+    try {
+      await syncMenus(MENUS)
+      setSyncState('ok')
+      setTimeout(() => setSyncState('idle'), 2000)
+    } catch {
+      setSyncState('err')
+      setTimeout(() => setSyncState('idle'), 3000)
+    }
+  }
+
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[2000] flex items-center gap-3 px-4 py-2 rounded-full bg-mg-bg-0/95 backdrop-blur border border-mg-border shadow-lg shadow-black/5 select-none">
       <span className="text-[10px] font-bold text-brand-base tracking-widest uppercase">DEV</span>
@@ -281,6 +297,22 @@ export function DevToolbar() {
         ]}
         onChange={switchTheme}
       />
+      <div className="h-4 w-px bg-mg-border" />
+      <button
+        type="button"
+        onClick={() => { void handleSyncMenus() }}
+        disabled={syncState === 'loading'}
+        className={cn(
+          'rounded-full px-3 py-1 text-[11px] font-bold transition-colors',
+          syncState === 'ok' && 'bg-[var(--mg-success)]/15 text-[var(--mg-success)]',
+          syncState === 'err' && 'bg-[var(--mg-danger)]/15 text-[var(--mg-danger)]',
+          syncState === 'idle' || syncState === 'loading'
+            ? 'bg-mg-fill-0 text-mg-text-1 hover:text-mg-text-0'
+            : ''
+        )}
+      >
+        {syncState === 'loading' ? '同步中…' : syncState === 'ok' ? '✓ 已同步' : syncState === 'err' ? '✗ 失败' : '同步菜单'}
+      </button>
     </div>
   )
 }

@@ -16,6 +16,7 @@ interface DisplayItem {
   meta: string
   score: string
   tone: RankingTone
+  key: string
 }
 
 const TONES: RankingTone[] = ['emerald', 'cyan', 'violet', 'amber']
@@ -29,6 +30,7 @@ function toDisplay(item: UsageRankingItem, index: number, symbol: string): Displ
     meta: tokens ? `${tokens} tokens · ${item.requests ?? 0} calls` : `${item.requests ?? 0} calls`,
     score: amount,
     tone: TONES[index % TONES.length],
+    key: item.key ?? '',
   }
 }
 
@@ -77,6 +79,14 @@ export function UsageRankingsSection({ type }: { type: 'models' | 'api-keys' }) 
 
   const items = (data?.items ?? []).map((item, i) => toDisplay(item, i, symbol))
 
+  function handleRowClick(item: DisplayItem) {
+    if (type === 'models' && item.key) {
+      navigate('/models/playground', { state: { selectedModelId: item.key } })
+    } else {
+      navigate(cfg.link)
+    }
+  }
+
   return (
     <Card glass className="dashboard-ranking-card h-full flex flex-col">
       <div className="dashboard-ranking-header">
@@ -97,7 +107,12 @@ export function UsageRankingsSection({ type }: { type: 'models' | 'api-keys' }) 
           </div>
         ) : (
           items.map((item) => (
-            <div className="dashboard-ranking-row" data-tone={item.tone} key={item.rank}>
+            <div
+              className="dashboard-ranking-row cursor-pointer hover:shadow-sm transition-shadow"
+              data-tone={item.tone}
+              key={item.rank}
+              onClick={() => handleRowClick(item)}
+            >
               <span className="dashboard-ranking-rank">{item.rank}</span>
               <span className="dashboard-ranking-icon">{cfg.icon}</span>
               <span className="dashboard-ranking-copy">

@@ -696,7 +696,7 @@
     }
   },
   "platformConfig": {
-    "title": "接口调试",
+    "title": "开发者菜单",
     "desc": "点击「调用」发起请求，查看接口实际返回的数据。",
     "callBtn": "调用",
     "recallBtn": "重新调用",

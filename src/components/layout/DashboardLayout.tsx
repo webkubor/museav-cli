@@ -154,13 +154,14 @@ export function DashboardLayout() {
   const isFlatRoute = FLAT_ROUTES.includes(getSelectedKey())
 
   return (
-    <div className="min-h-screen bg-site-bg flex flex-col font-sans relative overflow-hidden">
+    <div className="dashboard-shell min-h-screen bg-site-bg flex flex-col font-sans relative overflow-hidden">
       <ParticleLinesBackground />
+      <div className="dashboard-global-bottom-bg" aria-hidden="true" />
       <DashboardHeader />
       <div className={cn("shimmer-line", navigating && "navigating")} />
 
 
-      <div className="flex flex-1 relative overflow-hidden">
+      <div className="flex flex-1 relative z-10 overflow-hidden">
         <DashboardSidebar
           collapsed={collapsed}
           setCollapsed={setCollapsed}

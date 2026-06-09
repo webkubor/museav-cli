@@ -154,7 +154,12 @@
   width: 48px;
   height: 48px;
   color: #fff;
-  background: color-mix(in srgb, var(--mg-text-0) 88%, var(--brand-base));
+  background: #0f172a;
+}
+
+body[theme-mode='dark'] .dashboard-top-guide-icon {
+  color: var(--brand-base);
+  background: var(--brand-selected-bg);
 }
 
 .dashboard-top-guide-title {

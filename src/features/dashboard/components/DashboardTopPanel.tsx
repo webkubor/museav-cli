@@ -23,7 +23,7 @@ function parseAmount(amount?: string) {
 }
 
 function getCliCommandLine() {
-  return CLI_CODE.split('\n').find((line) => line.startsWith('modelgo-cli auth login')) ?? 'modelgo-cli auth login'
+  return CLI_CODE.split('\n').find((line) => line.startsWith('npm install -g modelgo-cli')) ?? 'npm install -g modelgo-cli'
 }
 
 export const DashboardTopPanel: React.FC = () => {

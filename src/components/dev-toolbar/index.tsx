@@ -232,7 +232,7 @@ export function DevToolbar() {
       <span className="text-[10px] font-bold text-brand-base tracking-widest uppercase">DEV</span>
       <div className="h-4 w-px bg-mg-border" />
       <div className="flex items-center gap-1.5">
-        <span className="text-[11px] font-semibold text-mg-text-2">开发菜单</span>
+        <span className="text-[11px] font-semibold text-mg-text-2">开发者菜单</span>
         <Switch checked={showPlatformConfig} onChange={setShowPlatformConfig} />
       </div>
       <div className="h-4 w-px bg-mg-border" />

@@ -44,14 +44,20 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, className }) => {
                 className="flex items-center gap-1.5 text-mg-text-2 hover:text-brand-base dark:hover:text-brand-base font-bold transition-all duration-200 cursor-pointer hover:-translate-y-[0.5px] active:scale-95 bg-transparent border-none p-0 outline-none"
               >
                 {idx === 0 && (
-                  <LuHouse size={13} className="shrink-0 text-mg-text-2/80 group-hover/item:text-brand-base transition-colors" />
+                  <div className="relative flex items-center shrink-0">
+                    <LuHouse size={13} className="shrink-0 text-mg-text-2/80 group-hover/item:text-brand-base transition-colors" />
+                    <span className="absolute -top-[1px] -right-[1px] w-1.5 h-1.5 rounded-full bg-brand-base animate-pulse" />
+                  </div>
                 )}
                 <span>{item.label}</span>
               </button>
             ) : (
               <div className="flex items-center gap-1.5">
                 {idx === 0 && (
-                  <LuHouse size={13} className="text-mg-text-2/80 shrink-0" />
+                  <div className="relative flex items-center shrink-0">
+                    <LuHouse size={13} className="text-mg-text-2/80 shrink-0" />
+                    <span className="absolute -top-[1px] -right-[1px] w-1.5 h-1.5 rounded-full bg-brand-base animate-pulse" />
+                  </div>
                 )}
                 {isLast && idx > 0 && (
                   <span className="w-1.5 h-1.5 rounded-full bg-brand-base animate-pulse shrink-0" />

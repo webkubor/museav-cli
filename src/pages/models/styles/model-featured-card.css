@@ -114,6 +114,10 @@
   z-index: 2;
 }
 
+body[theme-mode='dark'] .models-experience-featured-shade {
+  background: linear-gradient(180deg, transparent 4%, color-mix(in srgb, var(--mg-bg-2) 85%, transparent) 100%);
+}
+
 .models-experience-featured-content {
   position: absolute;
   inset: auto 16px 15px;

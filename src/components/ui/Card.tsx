@@ -12,14 +12,20 @@ const Card = React.forwardRef<
     hoverable?: boolean;
     glass?: boolean;
     noBorder?: boolean;
+    level?: 1 | 2;
   }
->(({ className, hoverable, glass, noBorder, ...props }, ref) => (
+>(({ className, hoverable, glass, noBorder, level = 1, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      "rounded-xl bg-mg-bg-0 text-mg-text-0 shadow-sm transition-all duration-300",
+      "text-mg-text-0 shadow-sm transition-all duration-300",
+      level === 1 ? "rounded-xl bg-mg-bg-0" : "rounded-2xl bg-mg-bg-2",
       !noBorder && "border border-mg-border",
-      hoverable && !glass && "hover:shadow-lg hover:-translate-y-1 hover:border-brand-mid",
+      hoverable && !glass && (
+        level === 1 
+          ? "hover:shadow-lg hover:-translate-y-1 hover:border-brand-mid" 
+          : "hover:bg-mg-bg-3 hover:shadow-lg hover:border-brand-base/30 hover:shadow-brand-glow/10 active:scale-[0.98]"
+      ),
       glass && "glass-card-glow",
       className
     )}

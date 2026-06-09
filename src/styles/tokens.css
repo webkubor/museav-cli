@@ -174,31 +174,34 @@ body[theme-mode='dark'] {
   --grid-color: rgba(29, 195, 155, 0.025);
 }
 
-/* 深色 — 中性深灰（zinc），品牌色只用于强调元素，背景保持中性不染色 */
-body[theme-mode='dark'] {
-  /* 背景层级 — 柔和中性深灰（阅读器护眼），非纯黑，层次靠明度递进 */
-  --site-bg:  #161618;   /* 页面底层 */
-  --card-bg:  #1e1e21;   /* 卡片面 — 比底层略亮，柔和分层 */
-  --mg-bg-0:  #1e1e21;   /* 主卡片 */
-  --mg-bg-0-rgb: 30, 30, 33;
-  --mg-bg-1:  #161618;   /* 页面背景 */
-  --mg-bg-2:  #27272b;   /* 悬浮卡片 / Dropdown */
-  --mg-bg-3:  #313136;   /* Modal / Tooltip 顶层 */
+/* 深色 — 支持微弱背景染色 (Hue Bleeding)，消除生硬的死灰感，对齐品牌主题 */
 
-  /* 文字层级 — 柔白主文字，避免纯白眩光，对比约 12:1 */
-  --mg-text-0: #e9e9ec;  /* 主文字 */
-  --mg-text-1: #a0a0a7;  /* 次要 */
-  --mg-text-2: #6f6f77;  /* 辅助 / placeholder */
-  --mg-text-3: #4d4d54;  /* 禁用 / 装饰 */
+/* 默认或国内市场深色（微偏靛紫，烘托 CN 靛紫质感） */
+body[theme-mode='dark'],
+[data-market='domestic'] body[theme-mode='dark'] {
+  /* 背景层级 — 重构为大阶梯明度，彻底拉开卡片与大底对比度 */
+  --site-bg:  #0a0a0f;   /* 大底：大幅度调深，提升沉浸感与对比度底座 */
+  --card-bg:  #191924;   /* 卡片面：调亮，产生 >8% 亮度差，形成清晰内容卡片 */
+  --mg-bg-0:  #191924;   
+  --mg-bg-0-rgb: 25, 25, 36;
+  --mg-bg-1:  #0a0a0f;   
+  --mg-bg-2:  #242433;   /* 下拉菜单/悬浮层：再次阶梯性调亮 */
+  --mg-bg-3:  #303045;   /* Modal 弹出框：最亮，浮起感最强 */
 
-  /* 边框与填充 — 中性白透明 */
-  --mg-border: rgba(255, 255, 255, 0.08);
-  --mg-fill-0: rgba(255, 255, 255, 0.04);
-  --mg-fill-1: rgba(255, 255, 255, 0.07);
-  --mg-fill-2: rgba(255, 255, 255, 0.11);
+  /* 文字层级 — 柔白主文字，避免纯白眩光 */
+  --mg-text-0: #e9e9ec;
+  --mg-text-1: #a0a0a7;
+  --mg-text-2: #6f6f77;
+  --mg-text-3: #4d4d54;
 
-  /* 代码块面（payload 查看器）：比卡片更深，呈现终端质感 */
-  --mg-code-bg:   #0d0d10;
+  /* 边框与填充 — 提升边框不透明度至 14%，勾勒出精细的高级微发光边缘 */
+  --mg-border: rgba(156, 134, 240, 0.14);
+  --mg-fill-0: rgba(156, 134, 240, 0.04);
+  --mg-fill-1: rgba(156, 134, 240, 0.08);
+  --mg-fill-2: rgba(156, 134, 240, 0.12);
+
+  /* 代码块面（payload 查看器）：极深暗沉浸感 */
+  --mg-code-bg:   #06060a;
   --mg-code-text: #d4d4d8;
 
   /* 语义色 */
@@ -206,13 +209,63 @@ body[theme-mode='dark'] {
   --mg-danger:  #f87171;
   --mg-warning: #fbbf24;
 
-  /* 阴影 — 中性黑 */
+  /* 财务与数据趋势别名（国内红涨绿跌） */
+  --mg-trend-up:   var(--mg-danger);
+  --mg-trend-down: var(--mg-success);
+
+  /* 阴影 */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.06);
   --shadow-lg: 0 18px 46px rgba(0, 0, 0, 0.36), 0 0 0 1px rgba(255, 255, 255, 0.05);
 
   /* 导航 */
   --nav-item-hover-bg: rgba(255, 255, 255, 0.05);
-  --grid-color: rgba(255, 255, 255, 0.02);
+  --grid-color: rgba(255, 255, 255, 0.025);
+}
+
+/* 国际市场深色（微偏绿墨，烘托 GO 翠绿极客感） */
+[data-market='global'] body[theme-mode='dark'] {
+  /* 背景层级 — 重构为大阶梯明度 */
+  --site-bg:  #070a09;   /* 大底 */
+  --card-bg:  #151c1a;   /* 卡片面 */
+  --mg-bg-0:  #151c1a;   
+  --mg-bg-0-rgb: 21, 28, 26;
+  --mg-bg-1:  #070a09;   
+  --mg-bg-2:  #202b28;   /* 下拉菜单/悬浮层 */
+  --mg-bg-3:  #2b3a36;   /* Modal 弹出框 */
+
+  /* 文字层级 — 柔白主文字，避免纯白眩光 */
+  --mg-text-0: #e5e8e7;
+  --mg-text-1: #9da3a1;
+  --mg-text-2: #6c7371;
+  --mg-text-3: #4a504f;
+
+  /* 边框与填充 — 提升边框不透明度至 14% */
+  --mg-border: rgba(29, 195, 155, 0.14);
+  --mg-fill-0: rgba(29, 195, 155, 0.04);
+  --mg-fill-1: rgba(29, 195, 155, 0.08);
+  --mg-fill-2: rgba(29, 195, 155, 0.12);
+
+  /* 代码块面（payload 查看器）：极深暗沉浸感 */
+  --mg-code-bg:   #040605;
+  --mg-code-text: #ccd4d1;
+
+  /* 语义色 */
+  --mg-success: #00eda0;
+  --mg-danger:  #f87171;
+  --mg-warning: #fbbf24;
+
+  /* 财务与数据趋势别名（国际绿涨红跌） */
+  --mg-trend-up:   var(--mg-success);
+  --mg-trend-down: var(--mg-danger);
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-lg: 0 18px 46px rgba(0, 0, 0, 0.36), 0 0 0 1px rgba(255, 255, 255, 0.05);
+
+  /* 导航 */
+  --nav-item-hover-bg: rgba(255, 255, 255, 0.05);
+  --grid-color: rgba(255, 255, 255, 0.025);
 }
 

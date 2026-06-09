@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { toast } from 'sonner'
 import { Modal } from '@/components/ui/Modal'
+import { Card } from '@/components/ui/Card'
 
 export default function WorkspacesPage() {
   const { t } = useTranslation()
@@ -47,8 +48,13 @@ export default function WorkspacesPage() {
       setDescription('')
       queryClient.invalidateQueries({ queryKey: ['workspaces'] })
     },
-    onError: (err: any) => {
-      toast.error(err?.message || t('workspaces.toast.createError'))
+    onError: (err: unknown) => {
+      const message = err instanceof Error 
+        ? err.message 
+        : (typeof err === 'object' && err !== null && 'message' in err 
+            ? String((err as Record<string, unknown>).message) 
+            : '')
+      toast.error(message || t('workspaces.toast.createError'))
     }
   })
 
@@ -121,10 +127,12 @@ export default function WorkspacesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredData.map((ws) => (
-            <div
+            <Card
               key={ws.workspace_id}
+              level={2}
+              hoverable
               onClick={() => navigate(`/settings/workspace/${ws.workspace_id}`)}
-              className="group relative bg-mg-bg-0 border border-mg-border/50 rounded-2xl p-5 flex flex-col gap-4 cursor-pointer transition-all duration-300 hover:border-brand-base/30 hover:shadow-lg hover:shadow-brand-glow/10 active:scale-[0.98]"
+              className="group relative p-5 flex flex-col gap-4 cursor-pointer"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -159,7 +167,7 @@ export default function WorkspacesPage() {
                   {t('workspaces.table.edit')} <LuArrowRight size={12} />
                 </span>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

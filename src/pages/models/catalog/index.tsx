@@ -346,7 +346,7 @@ export default function ModelsCatalogPage() {
                         "shrink-0 flex items-center justify-center w-6 h-6 rounded-lg border shadow-sm transition-all duration-300",
                         copiedId === model.model_id 
                           ? "border-brand-base/20 bg-brand-base/10 text-brand-base" 
-                          : "border-mg-border/60 bg-mg-bg-0 text-mg-text-2 group-hover/id:text-brand-base group-hover/id:border-brand-base/30 group-hover/id:shadow"
+                          : "border-mg-border/60 bg-mg-bg-2 text-mg-text-2 group-hover/id:text-brand-base group-hover/id:border-brand-base/30 group-hover/id:shadow"
                       )}>
                         {copiedId === model.model_id ? (
                           <LuCheck size={11} className="text-mg-success animate-in zoom-in-75 duration-200" />
@@ -430,7 +430,7 @@ export default function ModelsCatalogPage() {
 
             {/* 展开的规格面板 */}
             {isExpanded && (
-              <div className="mt-2 rounded-2xl border border-mg-border/30 bg-mg-bg-0/80 dark:bg-mg-bg-0/90 backdrop-blur-md p-5 space-y-4 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+              <div className="mt-2 rounded-2xl border border-mg-border/30 bg-mg-bg-2/80 dark:bg-mg-bg-2/95 backdrop-blur-md p-5 space-y-4 animate-in fade-in-0 slide-in-from-top-2 duration-200">
                 {/* 能力标签 */}
                 {model.modalities && model.modalities.length > 0 && (
                   <div className="space-y-1.5">

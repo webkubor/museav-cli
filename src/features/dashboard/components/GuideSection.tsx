@@ -74,7 +74,7 @@ export const GuideSection: React.FC = () => {
               justifyContent: 'space-between',
               padding: '20px',
               borderRadius: '12px',
-              backgroundColor: 'var(--mg-bg-1)',
+              backgroundColor: 'var(--mg-bg-0)',
               border: '1px solid var(--mg-border)',
               cursor: 'pointer',
               height: '140px',
@@ -89,7 +89,7 @@ export const GuideSection: React.FC = () => {
               if (arrow) arrow.style.transform = 'translateX(4px)';
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--mg-bg-1)';
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--mg-bg-0)';
               (e.currentTarget as HTMLElement).style.borderColor = 'var(--mg-border)';
               (e.currentTarget as HTMLElement).style.transform = 'none';
               (e.currentTarget as HTMLElement).style.boxShadow = 'none';

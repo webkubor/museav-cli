@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import { SideSheet } from '@/components/ui/SideSheet'
 import { Badge } from '@/components/ui/Badge'
+import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
 import {
   Table,
   TableHeader,
@@ -185,6 +186,7 @@ export default function LogsPage() {
   const [searchValue, setSearchValue] = useState('')
   const [modelFilter, setModelFilter] = useState('')
   const [apiKeyFilter, setApiKeyFilter] = useState('all')
+  const [timeRange, setTimeRange] = useState<DateRangeValue>({ preset: 'all' })
 
   // 复制反馈状态
   const [copiedPayload, setCopiedPayload] = useState(false)
@@ -216,7 +218,7 @@ export default function LogsPage() {
 
   // 真实日志加载
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['logs', activeWorkspaceId, statusFilter, modelFilter, apiKeyFilter, searchValue, page],
+    queryKey: ['logs', activeWorkspaceId, statusFilter, modelFilter, apiKeyFilter, searchValue, timeRange, page],
     queryFn: () =>
       listCallLogs({
         workspace_id: activeWorkspaceId!,
@@ -224,6 +226,8 @@ export default function LogsPage() {
         model_id: modelFilter || undefined,
         api_key_id: apiKeyFilter === 'all' ? undefined : apiKeyFilter,
         request_id: searchValue.trim() || undefined,
+        preset: timeRange.preset !== 'all' ? (timeRange.preset as '1h' | '24h' | '7d' | '30d' | 'custom') : undefined,
+        before_started_at: timeRange.preset === 'custom' && timeRange.endDate ? timeRange.endDate : undefined,
         limit: pageSize * page, // 粗粒度分页兼容
       }),
     enabled: Boolean(activeWorkspaceId),
@@ -289,7 +293,7 @@ export default function LogsPage() {
       </div>
 
       {/* 综合过滤面板 */}
-      <div className="bg-mg-bg-0 p-5 rounded-xl border border-mg-border/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end shadow-sm select-none">
+      <div className="bg-mg-bg-0 p-5 rounded-xl border border-mg-border/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end shadow-sm select-none">
         <div className="flex flex-col gap-1.5">
           <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">{t('logs.filter.statusLabel')}</label>
           <Select
@@ -326,6 +330,15 @@ export default function LogsPage() {
               </Select.Option>
             ))}
           </Select>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">时间范围</label>
+          <DateRangePicker
+            value={timeRange}
+            onChange={(val) => { setTimeRange(val); setPage(1) }}
+            className="w-full"
+          />
         </div>
 
         <div className="flex flex-col gap-1.5 lg:col-span-2">

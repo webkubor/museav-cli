@@ -58,24 +58,33 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   border: 1px solid var(--mg-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: rgba(var(--mg-bg-0-rgb), 0.84);
   box-shadow: var(--shadow-md);
   overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .dashboard-top-status {
   min-height: 76px;
-  padding: 16px 18px;
+  padding: 16px 20px 16px 24px;
+}
+
+/* 统一重构为悬浮式圆角胶囊指示条 */
+.dashboard-top-status::before,
+.dashboard-top-guide::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 16px;
+  bottom: 16px;
+  width: 3px;
+  border-radius: 99px;
 }
 
 .dashboard-top-status::before {
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
   background: var(--mg-success);
 }
 
@@ -88,18 +97,19 @@
   background: var(--mg-warning);
 }
 
+/* 统一左侧图标容器尺寸与圆角 */
 .dashboard-top-status-mark,
 .dashboard-top-guide-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  border-radius: var(--radius-sm);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
 }
 
 .dashboard-top-status-mark {
-  width: 34px;
-  height: 34px;
   color: var(--mg-success);
   background: rgba(0, 214, 143, 0.1);
 }
@@ -134,27 +144,21 @@
 
 .dashboard-top-guide {
   min-height: 108px;
-  padding: 18px;
+  padding: 16px 20px 16px 24px;
   border-color: color-mix(in srgb, var(--brand-base) 16%, var(--mg-border));
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--brand-base) 7%, transparent), transparent 42%),
+    linear-gradient(135deg, color-mix(in srgb, var(--brand-base) 6%, transparent), transparent 45%),
     rgba(var(--mg-bg-0-rgb), 0.88);
 }
 
 .dashboard-top-guide::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--brand-base), color-mix(in srgb, var(--brand-base) 12%, transparent), var(--brand-mid));
-  opacity: 0.62;
+  background: var(--brand-base);
 }
 
+/* 去除硬编码深灰背景，改用自适应的柔和品牌背景色 */
 .dashboard-top-guide-icon {
-  width: 48px;
-  height: 48px;
-  color: #fff;
-  background: #0f172a;
+  color: var(--brand-base);
+  background: color-mix(in srgb, var(--brand-base) 10%, transparent);
 }
 
 body[theme-mode='dark'] .dashboard-top-guide-icon {
@@ -172,7 +176,7 @@ body[theme-mode='dark'] .dashboard-top-guide-icon {
 .dashboard-top-guide-title h2 {
   margin: 0;
   color: var(--mg-text-0);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 850;
   line-height: 1.35;
   letter-spacing: 0;

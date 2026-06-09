@@ -18,8 +18,7 @@ export interface LogStatsParams extends QueryParams {
 
 /** 调用日志列表查询参数 */
 export interface CallLogListParams extends QueryParams {
-  /** 时间窗口预设：1h / 24h / 7d */
-  preset?: '1h' | '24h' | '7d'
+  preset?: '1h' | '24h' | '7d' | '30d' | 'custom'
   /** 时间游标，向前翻页 */
   before_started_at?: string
   /** 时间范围（默认最近 24 小时，最长 90 天） */

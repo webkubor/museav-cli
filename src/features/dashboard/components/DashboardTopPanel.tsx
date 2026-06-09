@@ -104,7 +104,7 @@ export const DashboardTopPanel: React.FC = () => {
             })}
           </p>
         </div>
-        <button type="button" className="dashboard-top-primary-action" onClick={() => navigate('/billing')}>
+        <button type="button" className="dashboard-top-secondary-action" onClick={() => navigate('/billing')}>
           {t(isLowBalance ? 'dashboardTop.status.rechargeAction' : 'dashboardTop.status.billingAction')}
           <LuArrowRight size={14} />
         </button>

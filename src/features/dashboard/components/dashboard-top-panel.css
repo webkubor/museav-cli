@@ -212,16 +212,22 @@
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
-.dashboard-top-primary-action {
-  background: color-mix(in srgb, var(--mg-text-0) 88%, var(--brand-base));
-  color: #fff;
-  box-shadow: 0 12px 22px -16px rgba(15, 23, 42, 0.72);
-}
 
 .dashboard-top-secondary-action {
   border: 1px solid color-mix(in srgb, var(--brand-base) 18%, var(--mg-border));
   background: rgba(var(--mg-bg-0-rgb), 0.8);
   color: var(--brand-base);
+}
+
+/* 低余额警告卡片内的按钮：跟随橙色警告语义 */
+.dashboard-top-status[data-tone='warning'] .dashboard-top-secondary-action {
+  border-color: color-mix(in srgb, var(--mg-warning) 45%, transparent);
+  color: var(--mg-warning);
+}
+
+.dashboard-top-status[data-tone='warning'] .dashboard-top-secondary-action:hover {
+  border-color: var(--mg-warning);
+  background: color-mix(in srgb, var(--mg-warning) 8%, rgba(var(--mg-bg-0-rgb), 0.8));
 }
 
 .dashboard-top-command {

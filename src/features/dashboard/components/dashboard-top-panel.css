@@ -29,6 +29,38 @@
   font-weight: 650;
 }
 
+.waving-hand {
+  display: inline-block;
+  transform-origin: 70% 70%;
+  animation: wave-init 1.5s ease-in-out 1; /* Waving once on initial load */
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.waving-hand:hover {
+  animation: wave-hover 1s infinite;
+}
+
+@keyframes wave-init {
+  0% { transform: rotate(0deg); }
+  15% { transform: rotate(15deg); }
+  30% { transform: rotate(-10deg); }
+  45% { transform: rotate(15deg); }
+  60% { transform: rotate(-5deg); }
+  75% { transform: rotate(10deg); }
+  90% { transform: rotate(-2deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes wave-hover {
+  0% { transform: rotate(0deg); }
+  20% { transform: rotate(18deg); }
+  40% { transform: rotate(-12deg); }
+  60% { transform: rotate(18deg); }
+  80% { transform: rotate(-8deg); }
+  100% { transform: rotate(0deg); }
+}
+
 .dashboard-top-live {
   display: inline-flex;
   align-items: center;

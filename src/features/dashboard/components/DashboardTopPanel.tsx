@@ -83,7 +83,10 @@ export const DashboardTopPanel: React.FC = () => {
     <section className="dashboard-top-panel" aria-labelledby="dashboard-top-title">
       <div className="dashboard-top-greeting">
         <div className="dashboard-top-greeting-copy">
-          <h1 id="dashboard-top-title">{t(greetingKey, { name: displayName })}</h1>
+          <h1 id="dashboard-top-title" className="flex items-center gap-2 flex-wrap">
+            <span>{t(greetingKey, { name: displayName })}</span>
+            <span className="waving-hand" role="img" aria-label="waving hand">👋</span>
+          </h1>
           <p>{t('dashboardTop.greeting.desc')}</p>
         </div>
         <span className="dashboard-top-live">

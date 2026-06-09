@@ -26,8 +26,8 @@ export default function ForbiddenPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-mg-bg-1 px-6">
       <div className="w-full max-w-sm rounded-2xl border border-mg-border bg-card-bg p-8 text-center shadow-sm space-y-5">
-        <div className="mx-auto w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-          <LuShieldAlert size={26} className="text-amber-500" />
+        <div className="mx-auto w-14 h-14 rounded-2xl bg-mg-warning/10 border border-mg-warning/20 flex items-center justify-center">
+          <LuShieldAlert size={26} className="text-mg-warning" />
         </div>
         <div className="space-y-1.5">
           <h1 className="text-lg font-bold text-mg-text-0">无法访问</h1>

@@ -497,12 +497,12 @@ export default function LogsPage() {
             </div>
 
             {selectedLog.error && (
-              <div className="border border-rose-500/10 bg-rose-500/[0.03] p-4 rounded-xl space-y-2 border-l-4 border-l-rose-500">
-                <p className="text-xs font-bold text-rose-500 flex items-center gap-1.5">
+              <div className="border border-mg-danger/10 bg-mg-danger/[0.03] p-4 rounded-xl space-y-2 border-l-4 border-l-mg-danger">
+                <p className="text-xs font-bold text-mg-danger flex items-center gap-1.5">
                   <IoAlertCircle className="w-4 h-4 shrink-0" />
                   {t('logs.detail.errorTitle')}
                 </p>
-                <pre className="text-xs text-rose-600 dark:text-rose-400 font-mono break-all whitespace-pre-wrap leading-relaxed select-all">
+                <pre className="text-xs text-mg-danger font-mono break-all whitespace-pre-wrap leading-relaxed select-all">
                   {selectedLog.error}
                 </pre>
               </div>
@@ -538,7 +538,7 @@ export default function LogsPage() {
                       className="h-7 min-w-[76px] transition-all duration-300 active:scale-[0.95]"
                     >
                       {copiedPayload ? (
-                        <LuCheck className="mr-1 h-3 w-3 text-emerald-500 animate-in zoom-in-50 duration-300" />
+                        <LuCheck className="mr-1 h-3 w-3 text-mg-success animate-in zoom-in-50 duration-300" />
                       ) : (
                         <LuCopy className="mr-1 h-3 w-3 animate-in zoom-in-50 duration-300" />
                       )}

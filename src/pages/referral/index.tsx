@@ -402,7 +402,7 @@ export default function ReferralPage() {
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-rose-500/10 text-rose-500 text-[10px] font-bold shrink-0">04</span>
+              <span className="mt-0.5 p-1 rounded-md bg-mg-danger/10 text-mg-danger text-[10px] font-bold shrink-0">04</span>
               <div>
                 平台对同主体 / 同 IP·设备 / 异常刷量保留核查与冻结权，保障返佣生态公平合规。
               </div>
@@ -429,7 +429,7 @@ export default function ReferralPage() {
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-rose-500/10 text-rose-500 text-[10px] font-bold shrink-0">04</span>
+              <span className="mt-0.5 p-1 rounded-md bg-mg-danger/10 text-mg-danger text-[10px] font-bold shrink-0">04</span>
               <div>
                 The platform reserves the right to audit and freeze same-entity / same-IP / abnormal farming activities.
               </div>

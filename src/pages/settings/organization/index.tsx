@@ -130,7 +130,7 @@ function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
         <div className="flex items-center gap-2">
           <span className="text-sm font-bold text-mg-text-0">我的组织</span>
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-            atLimit ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' : 'bg-mg-fill-1 text-mg-text-2 border border-mg-border/40'
+            atLimit ? 'bg-mg-danger/10 text-mg-danger border border-mg-danger/20' : 'bg-mg-fill-1 text-mg-text-2 border border-mg-border/40'
           }`}>
             {tenants.length} / {MAX_TENANTS}
           </span>
@@ -495,7 +495,7 @@ function MembersTab({ tenantId, canManage }: { tenantId: string; canManage: bool
                         <button
                           type="button"
                           onClick={() => setRemoveTarget(record.account.account_id)}
-                          className="text-mg-text-2 hover:text-rose-500 hover:bg-rose-500/5 p-1 rounded-lg transition-all border-none bg-transparent cursor-pointer font-bold text-xs"
+                          className="text-mg-text-2 hover:text-mg-danger hover:bg-mg-danger/5 p-1 rounded-lg transition-all border-none bg-transparent cursor-pointer font-bold text-xs"
                         >
                           ✕
                         </button>
@@ -527,7 +527,7 @@ function MembersTab({ tenantId, canManage }: { tenantId: string; canManage: bool
               variant="brand"
               disabled={removeMember.isPending}
               onClick={() => removeMember.mutate(removeTarget!)}
-              className="h-8 px-4 rounded-lg text-xs font-semibold bg-rose-500 text-white hover:bg-rose-500/90"
+              className="h-8 px-4 rounded-lg text-xs font-semibold bg-mg-danger text-white hover:bg-mg-danger/90"
             >
               {removeMember.isPending ? '移除中...' : '确认移除'}
             </Button>
@@ -652,7 +652,7 @@ function InviteTab({ tenantId }: { tenantId: string }) {
               onClick={handleCopyLink}
               className={`font-semibold h-9 px-4 rounded-lg text-xs transition-colors shrink-0 ${
                 linkCopied
-                  ? 'border-emerald-500 bg-transparent text-emerald-500 hover:bg-emerald-500/5'
+                  ? 'border-mg-success bg-transparent text-mg-success hover:bg-mg-success/5'
                   : 'bg-brand-base text-white hover:bg-brand-base/90'
               }`}
             >

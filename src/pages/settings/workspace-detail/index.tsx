@@ -267,7 +267,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
                     <button
                       type="button"
                       onClick={() => setRemoveTarget(m.account.account_id)}
-                      className="shrink-0 p-1 rounded text-mg-text-2 hover:text-rose-500 hover:bg-rose-500/5 transition-colors cursor-pointer border-none bg-transparent"
+                      className="shrink-0 p-1 rounded text-mg-text-2 hover:text-mg-danger hover:bg-mg-danger/5 transition-colors cursor-pointer border-none bg-transparent"
                       title={t('workspaces.detail.members.remove')}
                     >
                       <LuX size={13} />
@@ -342,7 +342,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
             </Button>
             <Button
               variant="outline"
-              className="border-rose-500/40 text-rose-500 hover:bg-rose-500/5"
+              className="border-mg-danger/40 text-mg-danger hover:bg-mg-danger/5"
               loading={removeMutation.isPending}
               onClick={() => {
                 removeMutation.mutate(removeTarget!)
@@ -454,8 +454,8 @@ function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => 
       </div>
 
       {/* 危险操作 */}
-      <div className="bg-mg-bg-0 border border-rose-500/30 rounded-2xl p-6 shadow-xs space-y-3">
-        <div className="text-xs font-bold text-rose-500 uppercase tracking-wider">
+      <div className="bg-mg-bg-0 border border-mg-danger/30 rounded-2xl p-6 shadow-xs space-y-3">
+        <div className="text-xs font-bold text-mg-danger uppercase tracking-wider">
           {t('workspaces.detail.settings.dangerTitle')}
         </div>
         {ws.is_default ? (
@@ -474,7 +474,7 @@ function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => 
                 variant="outline"
                 disabled={deleteMutation.isPending || confirmName.trim() !== ws.name}
                 onClick={() => deleteMutation.mutate()}
-                className="h-9 px-4 rounded-lg font-semibold text-xs border-rose-500/40 text-rose-500 hover:bg-rose-500/5"
+                className="h-9 px-4 rounded-lg font-semibold text-xs border-mg-danger/40 text-mg-danger hover:bg-mg-danger/5"
               >
                 {t('workspaces.detail.settings.delete')}
               </Button>

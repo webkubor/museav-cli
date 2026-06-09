@@ -99,7 +99,7 @@ function EndpointCard({ def, state, onCall }: {
 
       {state?.status === 'success' && (
         <div className="relative bg-mg-code-bg overflow-hidden">
-          <div className="absolute top-3 right-3 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
+          <div className="absolute top-3 right-3 text-[10px] font-bold text-mg-success bg-mg-success/10 border border-mg-success/20 px-2 py-0.5 rounded">
             200 OK
           </div>
           <pre className="m-0 p-5 text-xs font-mono text-mg-text-1 overflow-auto max-h-[360px] leading-relaxed shadow-inner select-all w-full min-w-0">
@@ -432,7 +432,7 @@ function RoleSettingsPanel() {
   ]
 
   const check = (v: boolean) => v
-    ? <span className="text-emerald-600 font-bold">✓</span>
+    ? <span className="text-mg-success font-bold">✓</span>
     : <span className="text-mg-text-2">—</span>
 
   return (
@@ -604,7 +604,7 @@ function CustomRequestPanel() {
 
       {state.status === 'success' && (
         <div className="relative bg-mg-code-bg overflow-hidden">
-          <div className="absolute top-3 right-3 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded z-10">
+          <div className="absolute top-3 right-3 text-[10px] font-bold text-mg-success bg-mg-success/10 border border-mg-success/20 px-2 py-0.5 rounded z-10">
             OK
           </div>
           <pre className="m-0 p-5 text-xs font-mono text-mg-text-1 overflow-auto max-h-[400px] w-full min-w-0 leading-relaxed select-all">

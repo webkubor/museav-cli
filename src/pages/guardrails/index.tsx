@@ -644,7 +644,7 @@ export default function GuardrailsPage() {
                     {budget && (
                       <button
                         onClick={() => setShowClearBudget(true)}
-                        className="text-[11px] text-mg-text-2 hover:text-rose-500 transition-colors cursor-pointer"
+                        className="text-[11px] text-mg-text-2 hover:text-mg-danger transition-colors cursor-pointer"
                       >
                         清除预算
                       </button>
@@ -753,7 +753,7 @@ function GuardrailFormFields({
     <div className="flex flex-col gap-5 py-2">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.nameLabel')}<span className="text-rose-500 ml-1">*</span></label>
+          <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.nameLabel')}<span className="text-mg-danger ml-1">*</span></label>
           <Input value={name} onChange={(e) => onNameChange(e.target.value)} placeholder={t('guardrails.form.namePlaceholder')} />
         </div>
         <div>
@@ -800,7 +800,7 @@ function GuardrailFormFields({
           placeholder={t('guardrails.form.ipWhitelistPlaceholder')}
           hint={t('guardrails.form.ipWhitelistHint')}
         />
-        {ipError && <p className="text-xs text-red-500 mt-1">{ipError}</p>}
+        {ipError && <p className="text-xs text-mg-danger mt-1">{ipError}</p>}
       </div>
       {/* 成员 — 下拉多选 */}
       <div>

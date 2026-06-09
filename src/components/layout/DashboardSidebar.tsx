@@ -221,8 +221,8 @@ const SidebarFooterInfo: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
       <div className="flex items-center justify-between text-[11px] font-mono">
         <div className="flex items-center gap-1.5 font-semibold">
           <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mg-success opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-mg-success"></span>
           </span>
           <span className="tracking-wide">v{__APP_VERSION__}</span>
         </div>

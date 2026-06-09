@@ -71,14 +71,14 @@ export const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
       emerald: {
         bar: "bg-gradient-to-r from-emerald-500 to-teal-400",
         glow: "shadow-[0_0_12px_rgba(16,185,129,0.6)]",
-        text: "text-emerald-500",
-        badge: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+        text: "text-mg-success",
+        badge: "bg-mg-success/10 text-mg-success border-mg-success/20"
       },
       amber: {
         bar: "bg-gradient-to-r from-amber-500 to-orange-400",
         glow: "shadow-[0_0_12px_rgba(245,158,11,0.6)]",
-        text: "text-amber-500",
-        badge: "bg-amber-500/10 text-amber-500 border-amber-500/20"
+        text: "text-mg-warning",
+        badge: "bg-mg-warning/10 text-mg-warning border-mg-warning/20"
       },
       blue: {
         bar: "bg-gradient-to-r from-blue-500 to-indigo-400",

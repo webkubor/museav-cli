@@ -336,8 +336,8 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
               </div>
               <span className={cn(
                 "text-xs font-bold px-3 py-1 rounded-full border",
-                isPaid ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" :
-                isPending ? "bg-amber-500/10 border-amber-500/20 text-amber-500 animate-pulse" :
+                isPaid ? "bg-mg-success/10 border-mg-success/20 text-mg-success" :
+                isPending ? "bg-mg-warning/10 border-mg-warning/20 text-mg-warning animate-pulse" :
                 "bg-mg-fill-0 border-mg-border text-mg-text-3"
               )}>
                 {labels[order.status] || order.status}
@@ -361,7 +361,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
               {order.credited_amount && (
                 <div className="flex justify-between gap-4">
                   <span className="text-mg-text-3">{t('billing.orders.detail.credited')}:</span>
-                  <span className="text-emerald-500 font-extrabold">
+                  <span className="text-mg-success font-extrabold">
                     {order.currency} {order.credited_amount}
                   </span>
                 </div>
@@ -432,7 +432,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
               <Button
                 variant="destructive"
                 disabled={cancelMutation.isPending}
-                className="w-full h-10 text-xs font-bold rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 active:scale-[0.98] transition-all select-none"
+                className="w-full h-10 text-xs font-bold rounded-xl bg-mg-danger/10 hover:bg-mg-danger/20 text-mg-danger border border-mg-danger/20 active:scale-[0.98] transition-all select-none"
                 onClick={() => {
                   if (onCancelRequest) {
                     onCancelRequest(order.order_no)
@@ -659,7 +659,7 @@ export default function BillingPage() {
             <Button
               variant="destructive"
               disabled={cancelMutation.isPending}
-              className="h-9 px-4 text-xs rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20"
+              className="h-9 px-4 text-xs rounded-xl bg-mg-danger/10 hover:bg-mg-danger/20 text-mg-danger border border-mg-danger/20"
               onClick={() => {
                 if (cancelTarget) {
                   cancelMutation.mutate(cancelTarget)
@@ -915,8 +915,8 @@ export default function BillingPage() {
                               variant="outline"
                               className={cn(
                                 'text-[10px] py-0.5 px-2.5 font-bold rounded-full',
-                                isPaid ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-500 badge-glow-paid' :
-                                isPending ? 'border-amber-500/20 bg-amber-500/5 text-amber-500 badge-glow-pending animate-pulse' :
+                                isPaid ? 'border-mg-success/20 bg-mg-success/5 text-mg-success badge-glow-paid' :
+                                isPending ? 'border-mg-warning/20 bg-mg-warning/5 text-mg-warning badge-glow-pending animate-pulse' :
                                 'border-mg-border text-mg-text-3'
                               )}
                             >
@@ -925,7 +925,7 @@ export default function BillingPage() {
                           </td>
                           <td className={cn(
                             'py-3.5 px-4 text-xs font-bold font-mono',
-                            isPaid ? 'text-emerald-500' : isPending ? 'text-amber-500' : 'text-mg-text-0'
+                            isPaid ? 'text-mg-success' : isPending ? 'text-mg-warning' : 'text-mg-text-0'
                           )}>
                             {record.currency} {record.amount}
                           </td>
@@ -982,8 +982,8 @@ export default function BillingPage() {
                   <div className="flex flex-col items-center py-1 space-y-1">
                     <span className={cn(
                       "text-[10px] font-bold px-2.5 py-0.5 rounded-full border",
-                      selectedOrder.status === 'paid' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500 badge-glow-paid" :
-                      selectedOrder.status === 'pending' ? "bg-amber-500/10 border-amber-500/20 text-amber-500 badge-glow-pending animate-pulse" :
+                      selectedOrder.status === 'paid' ? "bg-mg-success/10 border-mg-success/20 text-mg-success badge-glow-paid" :
+                      selectedOrder.status === 'pending' ? "bg-mg-warning/10 border-mg-warning/20 text-mg-warning badge-glow-pending animate-pulse" :
                       "bg-mg-fill-0 border-mg-border text-mg-text-3"
                     )}>
                       {labels[selectedOrder.status] || selectedOrder.status}
@@ -1007,7 +1007,7 @@ export default function BillingPage() {
                     {selectedOrder.credited_amount && (
                       <div className="flex justify-between gap-3">
                         <span className="text-mg-text-3">{t('billing.orders.detail.credited')}:</span>
-                        <span className="text-emerald-500 font-extrabold">
+                        <span className="text-mg-success font-extrabold">
                           {selectedOrder.currency} {selectedOrder.credited_amount}
                         </span>
                       </div>
@@ -1064,7 +1064,7 @@ export default function BillingPage() {
                     <Button
                       variant="destructive"
                       disabled={cancelMutation.isPending}
-                      className="w-full h-9 text-xs font-bold rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 active:scale-[0.98] transition-all"
+                      className="w-full h-9 text-xs font-bold rounded-xl bg-mg-danger/10 hover:bg-mg-danger/20 text-mg-danger border border-mg-danger/20 active:scale-[0.98] transition-all"
                       onClick={() => setCancelTarget(selectedOrder.order_no)}
                     >
                       {cancelMutation.isPending ? t('billing.rechargeModal.submitting') : t('billing.orders.table.cancel')}
@@ -1112,7 +1112,7 @@ export default function BillingPage() {
                         <span className="text-xs text-mg-text-0 font-bold">{record.source}</span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 text-xs font-bold text-emerald-500 font-mono">+{record.currency} {record.amount}</td>
+                    <td className="py-3.5 px-4 text-xs font-bold text-mg-success font-mono">+{record.currency} {record.amount}</td>
                     <td className="py-3.5 px-4 text-xs text-mg-text-2 font-mono">{formatDateTime(record.credited_at)}</td>
                   </tr>
                 ))}
@@ -1160,7 +1160,7 @@ export default function BillingPage() {
                           {rec.rate}%
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-xs font-bold text-emerald-500 font-mono text-right">+¥{Number(rec.amount).toLocaleString('zh-CN')}</td>
+                      <td className="py-3.5 px-4 text-xs font-bold text-mg-success font-mono text-right">+¥{Number(rec.amount).toLocaleString('zh-CN')}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -249,7 +249,7 @@ export default function ApiKeysPage() {
                   onClick={() => handleQuickCopy(label, value)}
                   className={`group flex items-center gap-2 rounded-lg px-3.5 py-2.5 cursor-pointer transition-all duration-200 border ${
                     quickCopied === label
-                      ? 'bg-emerald-500/5 border-emerald-500/30'
+                      ? 'bg-mg-success/5 border-mg-success/30'
                       : 'bg-mg-bg-1/60 border-mg-border/50 hover:border-brand-base/40 hover:bg-brand-base/3'
                   }`}
                 >
@@ -257,7 +257,7 @@ export default function ApiKeysPage() {
                     {value}
                   </code>
                   <span className={`shrink-0 text-[11px] font-bold flex items-center gap-1 transition-colors ${
-                    quickCopied === label ? 'text-emerald-500' : 'text-mg-text-2 group-hover:text-brand-base'
+                    quickCopied === label ? 'text-mg-success' : 'text-mg-text-2 group-hover:text-brand-base'
                   }`}>
                     {quickCopied === label
                       ? <><LuCheck size={12} /> 已复制</>
@@ -298,16 +298,16 @@ export default function ApiKeysPage() {
 
       {/* 新建密钥横幅 */}
       {revealVisible && (
-        <div className="card-shadow-adaptive border-l-4 border-l-emerald-500 p-5 bg-card-bg relative overflow-hidden transition-all animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="card-shadow-adaptive border-l-4 border-l-mg-success p-5 bg-card-bg relative overflow-hidden transition-all animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="flex justify-between items-start mb-4">
             <div>
               <div className="text-sm font-bold text-mg-text-0 flex items-center gap-2">
 <LuKey size={14} className="shrink-0" /> {t('apiKeys.revealModal.title')}
               </div>
-              <div className="text-xs text-amber-600 mt-1.5 max-w-3xl leading-relaxed font-semibold">
+              <div className="text-xs text-mg-warning mt-1.5 max-w-3xl leading-relaxed font-semibold">
                 {t('apiKeys.revealModal.warning')}
               </div>
-              <div className="text-xs text-amber-700 mt-1 font-bold flex items-center gap-1">
+              <div className="text-xs text-mg-warning mt-1 font-bold flex items-center gap-1">
                 ⚠ 请立即复制，关闭后将无法再查看完整密钥
               </div>
             </div>
@@ -320,11 +320,11 @@ export default function ApiKeysPage() {
           </div>
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
-              <div className="bg-mg-code-bg border border-mg-border text-emerald-400 px-4 py-3 rounded-lg font-mono text-sm flex items-center justify-between font-bold select-all tracking-wider shadow-inner">
+              <div className="bg-mg-code-bg border border-mg-border text-mg-success px-4 py-3 rounded-lg font-mono text-sm flex items-center justify-between font-bold select-all tracking-wider shadow-inner">
                 <span className="truncate">{createdKeyText}</span>
                 <button
                   onClick={() => handleCopyText(createdKeyText)}
-                  className="text-emerald-500 hover:text-emerald-400 transition-colors p-1.5 hover:bg-mg-fill-1 rounded ml-2 shrink-0 cursor-pointer"
+                  className="text-mg-success hover:text-mg-success/80 transition-colors p-1.5 hover:bg-mg-fill-1 rounded ml-2 shrink-0 cursor-pointer"
                 >
                   {copied ? <LuCheck className="w-4 h-4" /> : <LuCopy className="w-4 h-4" />}
                 </button>
@@ -423,7 +423,7 @@ export default function ApiKeysPage() {
                     {record.status === 'active' && canRevoke ? (
                       <button
                         onClick={() => setRevokeTarget({ id: record.api_key_id, name: record.name })}
-                        className="text-rose-500 hover:text-rose-600 transition-colors cursor-pointer"
+                        className="text-mg-danger hover:text-mg-danger/80 transition-colors cursor-pointer"
                       >
                         {t('apiKeys.table.revoke')}
                       </button>

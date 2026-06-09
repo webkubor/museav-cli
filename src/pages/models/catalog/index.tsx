@@ -349,7 +349,7 @@ export default function ModelsCatalogPage() {
                           : "border-mg-border/60 bg-mg-bg-0 text-mg-text-2 group-hover/id:text-brand-base group-hover/id:border-brand-base/30 group-hover/id:shadow"
                       )}>
                         {copiedId === model.model_id ? (
-                          <LuCheck size={11} className="text-emerald-500 animate-in zoom-in-75 duration-200" />
+                          <LuCheck size={11} className="text-mg-success animate-in zoom-in-75 duration-200" />
                         ) : (
                           <LuCopy size={11} className="text-mg-text-2 group-hover/id:text-brand-base" />
                         )}

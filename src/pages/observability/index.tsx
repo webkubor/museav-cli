@@ -356,7 +356,7 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
                 className={`flex items-center justify-between px-5 py-3 hover:bg-mg-fill-0/40 transition-colors ${idx !== 0 ? 'border-t border-mg-border' : ''}`}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${fwd.status === 'active' ? 'bg-green-500' : fwd.status === 'error' ? 'bg-red-500' : 'bg-yellow-500'}`} />
+                  <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${fwd.status === 'active' ? 'bg-mg-success' : fwd.status === 'error' ? 'bg-mg-danger' : 'bg-mg-warning'}`} />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-mg-text-0 truncate">{fwd.name}</p>
                     <p className="text-xs text-mg-text-2 truncate">{fwd.config?.endpoint_url as string ?? ''}</p>
@@ -371,7 +371,7 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
                     >编辑</button>
                     <button
                       type="button"
-                      className="text-xs text-mg-text-2 hover:text-red-500 transition-colors"
+                      className="text-xs text-mg-text-2 hover:text-mg-danger transition-colors"
                       onClick={() => deleteMutation.mutate(fwd.forward_id)}
                     >删除</button>
                   </div>
@@ -492,7 +492,7 @@ function ObservabilityContent({
           isFirst
         />
         {!loggingEnabled && (
-          <p className="px-5 pb-3 text-xs text-amber-500">
+          <p className="px-5 pb-3 text-xs text-mg-warning">
             {t('observability.loggingOffWarning')}
           </p>
         )}

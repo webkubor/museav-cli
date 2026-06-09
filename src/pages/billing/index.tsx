@@ -238,16 +238,14 @@ export default function BillingPage() {
             {t('billing.balance.title')}
           </span>
           <div className="flex items-center gap-2">
-            {isDomestic() && (
-              <Button
-                variant="outline"
-                onClick={() => setInvoiceVisible(true)}
-                className="rounded-xl h-9 px-4 text-xs"
-              >
-                <LuReceipt size={14} className="mr-1" />
-                发票
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              onClick={() => setInvoiceVisible(true)}
+              className="rounded-xl h-9 px-4 text-xs"
+            >
+              <LuReceipt size={14} className="mr-1" />
+              发票
+            </Button>
             {canRecharge && (
               <Button
                 variant="brand"

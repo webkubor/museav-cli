@@ -46,6 +46,12 @@ export function InvoiceRecordsTab({
         setRecords(res.items)
         setHasMore(res.has_more)
       })
+      .catch(() => {
+        if (alive) {
+          setRecords([])
+          setHasMore(false)
+        }
+      })
       .finally(() => alive && setLoading(false))
     return () => {
       alive = false
@@ -53,12 +59,12 @@ export function InvoiceRecordsTab({
   }, [tenantId, status, keyword])
 
   const loadMore = () => {
-    listInvoiceRecords(tenantId, { status: status || undefined, keyword: keyword || undefined, cursor: 'next' }).then(
-      (res) => {
+    listInvoiceRecords(tenantId, { status: status || undefined, keyword: keyword || undefined, cursor: 'next' })
+      .then((res) => {
         setRecords((prev) => [...prev, ...res.items])
         setHasMore(res.has_more)
-      }
-    )
+      })
+      .catch(() => setHasMore(false))
   }
 
   const retry = useMutation({

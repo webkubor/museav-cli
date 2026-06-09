@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react'
-import { createPortal } from 'react-dom'
 import { LuX, LuChevronDown } from 'react-icons/lu'
 
 interface TagInputProps {
@@ -175,7 +174,11 @@ export function TagInput({
 
       {hint && <p className="text-[10px] text-mg-text-2 mt-1.5">{hint}</p>}
 
-      {showDropdown && menuPos && createPortal(
+      {/* Rendered inline (NOT portaled to body) so it stays inside the Radix
+          Dialog content — a body portal inherits the modal's pointer-events:none
+          and becomes unclickable. position:fixed (no transformed ancestor at
+          rest) still escapes the drawer's overflow-scroll clip. */}
+      {showDropdown && menuPos && (
         <div
           ref={dropdownRef}
           style={{ position: 'fixed', left: menuPos.left, top: menuPos.top, width: menuPos.width, zIndex: 9999 }}
@@ -195,8 +198,7 @@ export function TagInput({
               {item}
             </button>
           ))}
-        </div>,
-        document.body,
+        </div>
       )}
     </div>
   )

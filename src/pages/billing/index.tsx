@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils'
 import { referralCopy } from '@/pages/referral/referral-data'
 import { formatBalance } from './formatBalance'
 import { TopUpModal } from './TopUpModal'
+import { InvoiceModal } from './invoice/InvoiceModal'
 import { renderTierBadge } from './renderTierBadge'
 
 export { PromoRedeemForm } from './PromoRedeemForm'
@@ -43,6 +44,7 @@ export default function BillingPage() {
   const canCancel   = hasPermission(PERMS.BILLING_RECHARGE_CANCEL)
   const canInvoice  = hasPermission(PERMS.BILLING_INVOICE_VIEW)
   const [topUpVisible, setTopUpVisible] = useState(false)
+  const [invoiceVisible, setInvoiceVisible] = useState(false)
   const [activeTab, setActiveTab] = useState<BalanceTab>('main')
   const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null)
   const [cancelTarget, setCancelTarget] = useState<string | null>(null)
@@ -187,6 +189,13 @@ export default function BillingPage() {
 
       <TopUpModal visible={topUpVisible} onClose={() => setTopUpVisible(false)} tenantId={tenantId} />
 
+      <InvoiceModal
+        open={invoiceVisible}
+        onClose={() => setInvoiceVisible(false)}
+        tenantId={tenantId}
+        currencySymbol={currencySymbol}
+      />
+
       <Modal
         open={cancelTarget !== null}
         onClose={() => setCancelTarget(null)}
@@ -228,15 +237,27 @@ export default function BillingPage() {
           <span className="text-sm font-bold text-mg-text-0">
             {t('billing.balance.title')}
           </span>
-          {canRecharge && (
-            <Button
-              variant="brand"
-              onClick={() => setTopUpVisible(true)}
-              className="rounded-xl h-9 px-5 text-xs"
-            >
-              {t('billing.balance.recharge')}
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {isDomestic() && (
+              <Button
+                variant="outline"
+                onClick={() => setInvoiceVisible(true)}
+                className="rounded-xl h-9 px-4 text-xs"
+              >
+                <LuReceipt size={14} className="mr-1" />
+                发票
+              </Button>
+            )}
+            {canRecharge && (
+              <Button
+                variant="brand"
+                onClick={() => setTopUpVisible(true)}
+                className="rounded-xl h-9 px-5 text-xs"
+              >
+                {t('billing.balance.recharge')}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* 可消费合计 */}

@@ -97,3 +97,13 @@ export type {
   DocsPage,
   HealthStatus,
 } from './entities'
+export type {
+  InvoiceTitleType,
+  InvoiceTitle,
+  RechargeInvoiceStatus,
+  InvoiceableRecharge,
+  InvoiceStatus,
+  InvoiceRecord,
+  CreateInvoiceTitleRequest,
+  CreateInvoiceRequest,
+} from './invoice'

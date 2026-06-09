@@ -427,7 +427,7 @@ export default function ModelsComparePage() {
                 {selectedModels.map((m) => (
                   <div key={m.model_id} className="p-3.5 px-4 border-l border-[var(--mg-border)]">
                     <div className="flex items-center gap-2">
-                      {m.logo_url && <img src={m.logo_url} alt="" className="w-5.5 h-5.5 rounded object-contain" />}
+                      <ModelIcon model={m} size={22} rounded="rounded" />
                       <div className="min-w-0">
                         <div className="font-bold text-[13px] text-[var(--mg-text-0)] truncate">{m.display_name}</div>
                         <div className="text-[10px] text-[var(--mg-text-2)] font-mono truncate">{m.vendor}</div>

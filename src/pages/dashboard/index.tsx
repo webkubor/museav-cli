@@ -7,10 +7,9 @@
 
 import { KpiSection } from '@/features/dashboard/components/KpiSection'
 import { DashboardTopPanel } from '@/features/dashboard/components/DashboardTopPanel'
-import { DashboardRankingsSection } from '@/features/dashboard/components/DashboardRankingsSection'
 import { UsageChartSection } from '@/features/dashboard/components/UsageChartSection'
 import { HistogramChartSection } from '@/features/dashboard/components/HistogramChartSection'
-import { RecentActivitySection } from '@/features/dashboard/components/RecentActivitySection'
+import { UsageRankingsSection } from '@/features/dashboard/components/UsageRankingsSection'
 
 /**
  * 仪表盘控制台主页面组件
@@ -32,10 +31,10 @@ export default function DashboardPage() {
         <HistogramChartSection />
       </div>
 
-      {/* 3. 热门模型排行榜 + 最近调用日志 并排 */}
+      {/* 3. 模型消费排行 + API Key 消费排行 并排 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-stretch">
-        <DashboardRankingsSection compact />
-        <RecentActivitySection />
+        <UsageRankingsSection type="models" />
+        <UsageRankingsSection type="api-keys" />
       </div>
     </div>
   )

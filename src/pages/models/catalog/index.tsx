@@ -9,12 +9,20 @@ import {
   LuGitCompareArrows,
   LuChevronRight,
   LuChevronDown,
+  LuBot,
+  LuChartBar,
 } from 'react-icons/lu'
+import { useQuery } from '@tanstack/react-query'
 import { useModels } from '@/features/models/hooks/useModels'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Card } from '@/components/ui/Card'
 import { appToast } from '@/lib/app-toast'
 import { cn, formatContextLength, formatModelPrice } from '@/lib/utils'
+import { useAuthStore } from '@/store/auth'
+import { getUsageRankingsModels } from '@/services/generated-api'
+import { useCurrency } from '@/hooks/use-platform-config'
+import type { UsageRankingItem } from '@/types/generated-api-types'
 import {
   categories,
   matchesCategory,
@@ -186,6 +194,32 @@ export default function ModelsCatalogPage() {
     setExpandedId(prev => prev === modelId ? null : modelId)
   }, [])
 
+  const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
+  const { symbol: currencySymbol } = useCurrency()
+  const { data: rankingsData } = useQuery({
+    queryKey: ['usage-rankings', 'models', tenantId],
+    queryFn: () => {
+      const now = new Date()
+      const from = new Date(now.getFullYear(), now.getMonth(), 1)
+      return getUsageRankingsModels({ from: from.toISOString(), to: now.toISOString(), limit: 5 })
+    },
+    enabled: !!tenantId,
+  })
+
+  const rankingItems = useMemo(() => {
+    const TONES = ['emerald', 'cyan', 'violet', 'amber'] as const
+    return (rankingsData?.items ?? []).map((item: UsageRankingItem, i: number) => {
+      const amount = item.spend?.amount ? `${currencySymbol}${parseFloat(item.spend.amount).toFixed(4)}` : '—'
+      return {
+        rank: String(item.rank ?? i + 1).padStart(2, '0'),
+        name: item.name || item.key || '—',
+        requests: item.requests ?? 0,
+        score: amount,
+        tone: TONES[i % TONES.length],
+      }
+    })
+  }, [rankingsData])
+
   return (
     <div className="space-y-8 py-2">
       {/* 极简大气头部看板 */}
@@ -239,7 +273,10 @@ export default function ModelsCatalogPage() {
         </div>
       </div>
 
-      {/* 呼吸感卡片网格列表 */}
+      {/* 主体区域：模型卡片网格 + 热门排行榜侧边栏 */}
+      <div className="flex gap-6 items-start">
+        {/* 模型卡片网格 */}
+        <div className="flex-1 min-w-0">
       {modelsQuery.isLoading ? (
         <div className="py-28 flex flex-col items-center justify-center text-mg-text-2 text-sm gap-3">
           <div className="w-7 h-7 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
@@ -254,7 +291,7 @@ export default function ModelsCatalogPage() {
           {t('modelsCatalog.empty')}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8 items-stretch">
           {visibleModels.map((model) => {
             const meta = getModelMeta(model.model_id, isZh)
             const isExpanded = expandedId === model.id
@@ -535,6 +572,36 @@ export default function ModelsCatalogPage() {
           )})}
         </div>
       )}
+        </div>
+
+        {/* 热门模型排行榜侧边栏 */}
+        {rankingItems.length > 0 && (
+          <aside className="hidden xl:block w-[280px] shrink-0 sticky top-6">
+            <Card glass className="dashboard-ranking-card flex flex-col">
+              <div className="dashboard-ranking-header">
+                <div>
+                  <h3>{isZh ? '热门模型排行' : 'Hot Models'}</h3>
+                  <p>{isZh ? '本月消费排行' : 'Monthly ranking'}</p>
+                </div>
+                <LuChartBar aria-hidden />
+              </div>
+              <div className="dashboard-ranking-list">
+                {rankingItems.map((item) => (
+                  <div className="dashboard-ranking-row" data-tone={item.tone} key={item.rank}>
+                    <span className="dashboard-ranking-rank">{item.rank}</span>
+                    <span className="dashboard-ranking-icon"><LuBot aria-hidden /></span>
+                    <span className="dashboard-ranking-copy">
+                      <strong>{item.name}</strong>
+                      <small>{item.requests.toLocaleString()} calls</small>
+                    </span>
+                    <span className="dashboard-ranking-score">{item.score}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </aside>
+        )}
+      </div>
 
       {/* 模型对比 Modal */}
       <ModelsCompareModal

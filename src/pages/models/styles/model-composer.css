@@ -1,4 +1,8 @@
 /* ── 模型输入器 ─────────────────────────────────────────────────────── */
+.models-experience-composer-wrap {
+  margin: 0 272px 16px 18px;
+}
+
 .models-experience-composer {
   margin: 0 272px 16px 18px;
   padding: 12px;

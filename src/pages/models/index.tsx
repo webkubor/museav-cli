@@ -336,6 +336,7 @@ export default function ModelsPage() {
             note={text.note}
             clearLabel={text.clear}
             sendLabel={text.send}
+            className="models-experience-composer-wrap"
             activeChip={
               <div className="models-experience-active-chip">
                 <LuMessageSquare size={13} />

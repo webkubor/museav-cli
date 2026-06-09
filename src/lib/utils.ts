@@ -118,26 +118,39 @@ export function getSystemThemePreference(): 'dark' | 'light' {
 export function formatFriendlyAmount(
   amount: number | string | null | undefined,
   currencySymbol = '',
-  opts?: { minDecimals?: number; maxDecimals?: number }
+  _opts?: { minDecimals?: number; maxDecimals?: number }
 ): string {
   if (amount == null || amount === '') return '—'
-  const num = typeof amount === 'string' ? parseFloat(amount) : amount
-  if (isNaN(num)) return '—'
 
-  // 处理极小数值（如单个 API 调用花费、Token 单价），保留更高精度
-  if (num > 0 && num < 0.01) {
-    const decimals = opts?.maxDecimals ?? 6
-    const str = num.toFixed(decimals)
-    const trimmed = str.replace(/0+$/, '') // 去除冗余尾随零
-    const finalDecimals = Math.max(opts?.minDecimals ?? 2, trimmed.split('.')[1]?.length ?? 2)
-    return `${currencySymbol}${num.toFixed(finalDecimals)}`
+  // Convert to plain string, avoiding scientific notation
+  let str = String(amount).trim()
+  if (str === 'NaN' || str === '') return '—'
+
+  if (str.includes('e') || str.includes('E')) {
+    const n = Number(str)
+    if (isNaN(n)) return '—'
+    str = n.toFixed(20).replace(/\.?0+$/, '')
   }
 
-  // 标准金额数值，采用千分位分隔并默认保留 2 位小数
-  return `${currencySymbol}${num.toLocaleString('en-US', {
-    minimumFractionDigits: opts?.minDecimals ?? 2,
-    maximumFractionDigits: opts?.maxDecimals ?? 2,
-  })}`
+  // Extract sign and magnitude
+  const match = str.match(/^([+-]?)(.*)$/)
+  const sign = match ? match[1] : ''
+  const rest = match ? match[2] : str
+
+  // Split by decimal point
+  const parts = rest.split('.')
+  const integerPart = parts[0] || '0'
+  const decimalPart = parts[1] // might be undefined
+
+  // Apply spaces as thousands separator to the integer part
+  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+
+  // Combine segments back
+  const formattedValue = decimalPart !== undefined
+    ? `${formattedInteger}.${decimalPart}`
+    : formattedInteger
+
+  return `${currencySymbol}${sign}${formattedValue}`
 }
 
 

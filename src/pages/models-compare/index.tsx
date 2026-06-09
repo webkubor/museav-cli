@@ -34,6 +34,34 @@ function formatDate(val: string | undefined) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
+/** 从 modalities 派生模型类型，用于同类对比限制 */
+function getModelType(modalities: string[]): string {
+  if (modalities.includes('audio')) return 'Audio'
+  if (modalities.includes('image')) return 'VLM'
+  if (modalities.includes('video')) return 'Video'
+  return 'LLM'
+}
+
+const MODEL_TYPE_STYLE: Record<string, string> = {
+  LLM:   'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
+  VLM:   'bg-blue-500/10 text-blue-500 border-blue-500/20',
+  Audio: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+  Video: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+}
+
+function ModelTypeBadge({ modalities, className }: { modalities: string[]; className?: string }) {
+  const type = getModelType(modalities)
+  return (
+    <span className={cn(
+      'text-[10px] font-bold font-mono px-1.5 py-0.5 rounded border',
+      MODEL_TYPE_STYLE[type] ?? MODEL_TYPE_STYLE.LLM,
+      className
+    )}>
+      {type}
+    </span>
+  )
+}
+
 interface ModelPickerProps {
   models: CatalogModelItem[]
   selected: CatalogModelItem | null
@@ -41,9 +69,10 @@ interface ModelPickerProps {
   onClear: () => void
   search: string
   onSearch: (v: string) => void
+  lockedType: string | null
 }
 
-function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: ModelPickerProps) {
+function ModelPicker({ models, selected, onSelect, onClear, search, onSearch, lockedType }: ModelPickerProps) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
 
@@ -60,7 +89,10 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
         >
           <LuX size={14} />
         </button>
-        <ModelIcon model={selected} size={28} rounded="rounded-md" className="mb-2" />
+        <div className="flex items-center gap-2 mb-2">
+          <ModelIcon model={selected} size={28} rounded="rounded-md" />
+          <ModelTypeBadge modalities={selected.modalities} />
+        </div>
         <div className="font-semibold text-sm text-[var(--mg-text-0)] mb-1">
           {selected.display_name}
         </div>
@@ -83,41 +115,69 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
         className="w-full border-2 border-dashed border-[var(--mg-border)] rounded-xl p-6 bg-transparent cursor-pointer flex flex-col items-center gap-2 text-[var(--mg-text-2)] hover:border-[var(--brand-base)] hover:text-[var(--brand-base)] hover:bg-[var(--mg-fill-0)]/50 transition-all duration-150"
       >
         <LuPlus size={20} />
-        <span className="text-[13px]">{t('modelsCompare.button.select')}</span>
+        <span className="text-[13px]">
+          {lockedType
+            ? `选择 ${lockedType} 模型`
+            : t('modelsCompare.button.select')}
+        </span>
+        {lockedType && (
+          <span className={cn(
+            'text-[10px] font-bold font-mono px-1.5 py-0.5 rounded border',
+            MODEL_TYPE_STYLE[lockedType] ?? MODEL_TYPE_STYLE.LLM
+          )}>
+            仅限 {lockedType}
+          </span>
+        )}
       </button>
 
       {open && (
         <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-card-bg border border-[var(--mg-border)] rounded-lg shadow-lg z-50 max-h-[280px] overflow-hidden flex flex-col animate-[fadeIn_0.15s_ease-out]">
           <div className="p-2 border-b border-[var(--mg-border)] bg-[var(--mg-fill-0)]">
-            <div className="w-full">
-              <Input
-                prefix={<LuSearch className="w-3.5 h-3.5" />}
-                placeholder={t('modelsCompare.placeholder.search')}
-                className="h-8 text-xs rounded-md"
-                value={search}
-                onChange={(e) => onSearch(e.target.value)}
-                autoFocus
-              />
-            </div>
+            <Input
+              prefix={<LuSearch className="w-3.5 h-3.5" />}
+              placeholder={t('modelsCompare.placeholder.search')}
+              className="h-8 text-xs rounded-md"
+              value={search}
+              onChange={(e) => onSearch(e.target.value)}
+              autoFocus
+            />
+            {lockedType && (
+              <p className="text-[10px] text-[var(--mg-text-2)] mt-1.5 px-1">
+                仅显示与已选模型同类型的 <span className={cn('font-bold', MODEL_TYPE_STYLE[lockedType]?.split(' ')[1])}>{lockedType}</span> 模型
+              </p>
+            )}
           </div>
           <div className="overflow-y-auto flex-1 py-1">
-            {filtered.slice(0, 30).map((m) => (
-              <div
-                key={m.model_id}
-                onClick={() => { onSelect(m); setOpen(false); onSearch('') }}
-                className="px-3 py-2 cursor-pointer flex items-center gap-2 hover:bg-[var(--mg-fill-0)] transition-colors"
-              >
-                <ModelIcon model={m} size={20} rounded="rounded" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-medium text-[var(--mg-text-0)] truncate">
-                    {m.display_name}
+            {filtered.slice(0, 30).map((m) => {
+              const type = getModelType(m.modalities)
+              const incompatible = lockedType !== null && type !== lockedType
+              return (
+                <div
+                  key={m.model_id}
+                  onClick={() => {
+                    if (incompatible) return
+                    onSelect(m); setOpen(false); onSearch('')
+                  }}
+                  className={cn(
+                    'px-3 py-2 flex items-center gap-2 transition-colors',
+                    incompatible
+                      ? 'opacity-30 cursor-not-allowed'
+                      : 'cursor-pointer hover:bg-[var(--mg-fill-0)]'
+                  )}
+                >
+                  <ModelIcon model={m} size={20} rounded="rounded" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-medium text-[var(--mg-text-0)] truncate">
+                      {m.display_name}
+                    </div>
+                    <div className="text-[11px] text-[var(--mg-text-2)] truncate font-mono">
+                      {m.model_id}
+                    </div>
                   </div>
-                  <div className="text-[11px] text-[var(--mg-text-2)] truncate font-mono">
-                    {m.model_id}
-                  </div>
+                  <ModelTypeBadge modalities={m.modalities} className="shrink-0" />
                 </div>
-              </div>
-            ))}
+              )
+            })}
             {filtered.length === 0 && (
               <div className="p-4 text-center text-[13px] text-[var(--mg-text-2)]">
                 {t('modelsCompare.empty.noMatch')}
@@ -327,6 +387,11 @@ export default function ModelsComparePage() {
   const selectedModels = slots.filter((s): s is CatalogModelItem => s !== null)
   const hasAny = selectedModels.length > 0
 
+  // 第一个选定模型决定本轮对比的类型锁，其他槽只允许同类型
+  const lockedType = selectedModels.length > 0
+    ? getModelType(selectedModels[0].modalities)
+    : null
+
   const ROWS: Array<{ labelKey: string; key: keyof CatalogModelItem | 'pricing_input' | 'pricing_output' | 'pricing_cache' }> = [
     { labelKey: 'modelsCompare.row.contextLength', key: 'context_length' },
     { labelKey: 'modelsCompare.row.maxOutput', key: 'max_output_tokens' },
@@ -372,6 +437,7 @@ export default function ModelsComparePage() {
                 onClear={() => setSlot(idx, null)}
                 search={searches[idx]}
                 onSearch={(v) => setSearch(idx, v)}
+                lockedType={slots[idx] ? null : lockedType}
               />
             ))}
           </div>

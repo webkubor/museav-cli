@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
+import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
 import Select from '@/components/ui/Select'
 import { SelectItem } from '@/components/ui/Select'
 import {
@@ -54,6 +55,14 @@ const SCOPE_OPTIONS: { value: ScopeType; icon: React.ReactNode; label: string; d
   },
 ]
 
+const EXPIRATION_PRESETS = [
+  { key: 'all', label: '永不过期' },
+  { key: '24h', label: '24 小时后' },
+  { key: '7d', label: '7 天后' },
+  { key: '30d', label: '30 天后' },
+  { key: 'custom', label: '自定义截止日期' }
+]
+
 
 
 export default function ApiKeysPage() {
@@ -78,7 +87,12 @@ export default function ApiKeysPage() {
   const [spendingEnabled, setSpendingEnabled] = useState(false)
   const [spendingAmount, setSpendingAmount] = useState('')
   const [spendingPeriod, setSpendingPeriod] = useState<'total' | 'monthly'>('monthly')
-  const [expiresAt, setExpiresAt] = useState('')
+  const todayStr = new Date().toISOString().split('T')[0]
+  const [expiryRange, setExpiryRange] = useState<DateRangeValue>({
+    preset: 'all',
+    startDate: todayStr,
+    endDate: ''
+  })
 
   const { currency, symbol } = useCurrency()
 
@@ -116,7 +130,18 @@ export default function ApiKeysPage() {
         spending_limit: spendingEnabled && spendingAmount
           ? { amount: spendingAmount, currency, period: spendingPeriod }
           : undefined,
-        expires_at: expiresAt ? new Date(expiresAt).toISOString() : undefined,
+        expires_at: (() => {
+          if (expiryRange.preset === 'all' || !expiryRange.preset) return undefined
+          if (expiryRange.preset === 'custom' && expiryRange.endDate) {
+            return new Date(expiryRange.endDate).toISOString()
+          }
+          const now = new Date()
+          if (expiryRange.preset === '1h') now.setHours(now.getHours() + 1)
+          else if (expiryRange.preset === '24h') now.setDate(now.getDate() + 1)
+          else if (expiryRange.preset === '7d') now.setDate(now.getDate() + 7)
+          else if (expiryRange.preset === '30d') now.setDate(now.getDate() + 30)
+          return now.toISOString()
+        })(),
         guardrail_id: guardrailId && guardrailId !== 'none' ? guardrailId : undefined,
       }),
     onSuccess: (newKey) => {
@@ -151,7 +176,11 @@ export default function ApiKeysPage() {
     setSpendingEnabled(false)
     setSpendingAmount('')
     setSpendingPeriod('monthly')
-    setExpiresAt('')
+    setExpiryRange({
+      preset: 'all',
+      startDate: todayStr,
+      endDate: ''
+    })
     setGuardrailId('')
   }
 
@@ -589,12 +618,15 @@ export default function ApiKeysPage() {
             <label className="block text-xs font-bold text-mg-text-1 mb-2">
               过期时间 <span className="text-mg-text-2 font-normal">（可选，不填则永不过期）</span>
             </label>
-            <Input
-              type="date"
-              value={expiresAt}
-              onChange={(e) => setExpiresAt(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
-              className="w-full"
+            <DateRangePicker
+              value={expiryRange}
+              onChange={setExpiryRange}
+              presets={EXPIRATION_PRESETS}
+              customTitle="过期预设"
+              customLabel="选择截止时间"
+              hideStartDate={true}
+              placeholder="选择过期失效时间"
+              className="w-full rounded-xl h-10 justify-between"
             />
           </div>
         </div>

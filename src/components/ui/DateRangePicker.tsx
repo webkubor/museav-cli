@@ -11,20 +11,43 @@ export interface DateRangeValue {
   preset?: string    // 预设: 'all' | '1h' | '24h' | '7d' | '30d' | 'custom'
 }
 
+export interface DateRangePreset {
+  key: string
+  label: string
+}
+
 interface DateRangePickerProps {
   value: DateRangeValue
   onChange: (value: DateRangeValue) => void
   placeholder?: string
   className?: string
+  presets?: DateRangePreset[]
+  customLabel?: string
+  customTitle?: string
+  hideStartDate?: boolean
 }
 
 export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   value,
   onChange,
   placeholder = '选择时间范围',
-  className
+  className,
+  presets,
+  customLabel,
+  customTitle,
+  hideStartDate = false
 }) => {
-  const [activePreset, setActivePreset] = useState<string>(value.preset || 'all')
+  const defaultPresets = [
+    { key: 'all', label: '全部时间' },
+    { key: '1h', label: '近 1 小时' },
+    { key: '24h', label: '近 24 小时' },
+    { key: '7d', label: '近 7 天' },
+    { key: '30d', label: '近 30 天' },
+    { key: 'custom', label: '自定义范围' }
+  ]
+  const activePresets = presets || defaultPresets
+
+  const [activePreset, setActivePreset] = useState<string>(value.preset || activePresets[0]?.key || 'all')
   const [customStart, setCustomStart] = useState<string>(value.startDate || '')
   const [customEnd, setCustomEnd] = useState<string>(value.endDate || '')
 
@@ -34,18 +57,12 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     if (value.endDate) setCustomEnd(value.endDate)
   }, [value])
 
-  const presets = [
-    { key: 'all', label: '全部时间' },
-    { key: '1h', label: '近 1 小时' },
-    { key: '24h', label: '近 24 小时' },
-    { key: '7d', label: '近 7 天' },
-    { key: '30d', label: '近 30 天' },
-    { key: 'custom', label: '自定义范围' }
-  ]
-
   const getDisplayText = () => {
     if (activePreset !== 'custom') {
-      return presets.find(p => p.key === activePreset)?.label || placeholder
+      return activePresets.find(p => p.key === activePreset)?.label || placeholder
+    }
+    if (hideStartDate && customEnd) {
+      return customEnd
     }
     if (customStart && customEnd) {
       return `${customStart} 至 ${customEnd}`
@@ -73,8 +90,8 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     <div className="flex flex-col md:flex-row gap-4 w-[280px] md:w-[480px] text-left">
       {/* 预设列表 */}
       <div className="flex flex-col gap-1 pr-0 md:pr-4 border-b md:border-b-0 md:border-r border-mg-border/40 pb-3 md:pb-0 shrink-0 w-full md:w-36">
-        <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider mb-1 px-2">常用时间</span>
-        {presets.map(p => (
+        <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider mb-1 px-2">{customTitle || '常用时间'}</span>
+        {activePresets.map(p => (
           <button
             key={p.key}
             type="button"
@@ -93,24 +110,29 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
       {/* 自定义区域 */}
       <div className="flex-1 flex flex-col gap-3.5 pt-1">
-        <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">自定义日期区间</span>
+        <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">{customLabel || '自定义日期区间'}</span>
         <div className="flex flex-col gap-2">
+          {!hideStartDate && (
+            <div className="flex flex-col gap-1">
+              <span className="text-[10.5px] font-semibold text-mg-text-1">起始日期</span>
+              <Input
+                type="date"
+                value={customStart}
+                disabled={activePreset !== 'custom'}
+                onChange={e => setCustomStart(e.target.value)}
+                className="bg-mg-fill-0/20 font-medium h-9 text-xs"
+              />
+            </div>
+          )}
           <div className="flex flex-col gap-1">
-            <span className="text-[10.5px] font-semibold text-mg-text-1">起始日期</span>
-            <Input
-              type="date"
-              value={customStart}
-              disabled={activePreset !== 'custom'}
-              onChange={e => setCustomStart(e.target.value)}
-              className="bg-mg-fill-0/20 font-medium h-9 text-xs"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-[10.5px] font-semibold text-mg-text-1">截止日期</span>
+            <span className="text-[10.5px] font-semibold text-mg-text-1">
+              {hideStartDate ? '截止日期（失效时间）' : '截止日期'}
+            </span>
             <Input
               type="date"
               value={customEnd}
               disabled={activePreset !== 'custom'}
+              min={hideStartDate ? customStart : undefined}
               onChange={e => setCustomEnd(e.target.value)}
               className="bg-mg-fill-0/20 font-medium h-9 text-xs"
             />

@@ -51,7 +51,8 @@
     "guardrails": "Guardrails",
     "observability": "Observability",
     "invitations": "Members",
-    "sidebarWorkspace": "WORKSPACE"
+    "sidebarWorkspace": "WORKSPACE",
+    "tasks": "Tasks"
   },
   "header": {
     "openPlatform": "Open Platform",

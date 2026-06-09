@@ -71,6 +71,7 @@ export const navConfig: NavConfig = {
         { itemKey: 'logs',  text: t('nav.logs'),  icon: icons.list,        permission: PERMS.LOGS_VIEW },
       ],
     },
+    { itemKey: 'tasks',   text: t('nav.tasks'),   icon: icons.clapper },
     { itemKey: 'billing', text: t('nav.billing'), icon: icons.creditCard, permission: PERMS.BILLING_VIEW },
     { itemKey: 'referral', text: t('nav.referral'), icon: icons.gift },
   ],

@@ -107,3 +107,12 @@ export type {
   CreateInvoiceTitleRequest,
   CreateInvoiceRequest,
 } from './invoice'
+
+export type {
+  TaskStatus,
+  TaskKind,
+  TaskItem,
+  TaskDetail,
+  TaskListParams,
+  TaskListResponse,
+} from './tasks'

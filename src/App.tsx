@@ -25,6 +25,7 @@ import ModelsPage from '@/pages/models'
 import ModelsCatalogPage from '@/pages/models/catalog'
 import ModelsComparePage from '@/pages/models-compare'
 import PlatformConfigPage from '@/pages/platform-config'
+import TasksPage from '@/pages/tasks'
 import ForbiddenPage from '@/pages/forbidden'
 import { useAuthStore } from '@/store/auth'
 import { getSession } from '@/services/auth'
@@ -190,6 +191,7 @@ export default function App() {
             </Route>
             <Route path="usage" element={<UsagePage />} />
             <Route path="logs" element={<LogsPage />} />
+            <Route path="tasks" element={<TasksPage />} />
             <Route path="billing" element={<BillingPage />} />
             <Route path="referral" element={<ReferralPage />} />
             <Route path="dev-config" element={<PlatformConfigPage />} />

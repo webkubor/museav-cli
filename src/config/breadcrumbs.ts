@@ -17,6 +17,7 @@ export const breadcrumbConfig: BreadcrumbConfig = {
   logs:             [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.analytics' }, { label: 'nav.logs' }],
   billing:          [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.billing' }],
   referral:         [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.referral' }],
+  tasks:            [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.tasks' }],
   guardrails:       [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.workspace', path: '/settings/workspace' }, { label: 'nav.guardrails' }],
   observability:    [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.workspace', path: '/settings/workspace' }, { label: 'nav.observability' }],
   'chat-test':      [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.workspace', path: '/settings/workspace' }, { label: '测试区' }, { label: '对话测试' }],
@@ -26,4 +27,4 @@ export const breadcrumbConfig: BreadcrumbConfig = {
   'settings/organization': [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.settings' }, { label: 'nav.organization' }],
 }
 
-export const FLAT_ROUTES = ['logs', 'usage', 'observability', 'billing', 'referral', 'dev-config', 'settings/organization']
+export const FLAT_ROUTES = ['logs', 'usage', 'observability', 'billing', 'referral', 'tasks', 'dev-config', 'settings/organization']

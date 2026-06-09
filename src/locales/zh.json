@@ -51,7 +51,8 @@
     "guardrails": "安全护栏",
     "observability": "可观测性",
     "invitations": "成员管理",
-    "sidebarWorkspace": "项目"
+    "sidebarWorkspace": "项目",
+    "tasks": "任务"
   },
   "header": {
     "openPlatform": "开放平台",

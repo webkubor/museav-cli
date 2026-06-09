@@ -42,6 +42,14 @@ export const MENUS: MenuSyncItem[] = [
     actions: [],
   },
   {
+    key: 'tasks',
+    name: '任务',
+    name_en: 'Tasks',
+    scope: 'tenant',
+    view_permission: null,
+    actions: [],
+  },
+  {
     key: 'analytics',
     name: '分析',
     name_en: 'Analytics',

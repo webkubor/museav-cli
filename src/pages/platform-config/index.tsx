@@ -179,13 +179,26 @@ function MenusSyncPanel() {
               {items.map((m) => (
                 <div
                   key={m.key}
-                  className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border px-4 py-2.5 flex items-start gap-4"
+                  className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border px-4 py-2.5 space-y-2"
                 >
-                  <code className="text-xs font-mono text-brand-base shrink-0 w-[180px] truncate">{m.key}</code>
-                  <span className="text-xs text-mg-text-1 w-[100px] shrink-0">{m.name}</span>
-                  <span className="text-xs text-mg-text-2 shrink-0">{m.name_en}</span>
-                  {m.view_permission && (
-                    <code className="ml-auto text-[10px] font-mono text-mg-text-2 shrink-0">{m.view_permission}</code>
+                  <div className="flex items-center gap-4">
+                    <code className="text-xs font-mono text-brand-base shrink-0 w-[180px] truncate">{m.key}</code>
+                    <span className="text-xs text-mg-text-1 w-[100px] shrink-0">{m.name}</span>
+                    <span className="text-xs text-mg-text-2 shrink-0">{m.name_en}</span>
+                    {m.view_permission && (
+                      <code className="ml-auto text-[10px] font-mono bg-blue-500/10 text-blue-500 border border-blue-500/20 px-1.5 py-0.5 rounded shrink-0">
+                        {m.view_permission}
+                      </code>
+                    )}
+                  </div>
+                  {m.actions.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pl-[196px]">
+                      {m.actions.map((a) => (
+                        <code key={a} className="text-[10px] font-mono bg-amber-500/10 text-amber-600 border border-amber-500/20 px-1.5 py-0.5 rounded">
+                          {a}
+                        </code>
+                      ))}
+                    </div>
                   )}
                 </div>
               ))}

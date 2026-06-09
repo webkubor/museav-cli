@@ -911,3 +911,4 @@ export interface DocsPage {
 export interface HealthStatus {
   status: 'healthy' | 'degraded'
 }
+

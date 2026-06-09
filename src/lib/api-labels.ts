@@ -67,7 +67,7 @@ const MODULE_LABEL_MAP: Array<[RegExp, string]> = [
   [/\/invitations\/[^/]+\/accept/, '接受邀请'],
   [/\/invitations(?:\/|$)/,        '邀请'],
   // Platform / Misc
-  [/\/platform-config/,            '平台配置'],
+  [/\/dev-config/,                 '开发者菜单'],
   [/\/organizations/,              '创建组织'],
   [/\/docs\//,                     '文档'],
 ]

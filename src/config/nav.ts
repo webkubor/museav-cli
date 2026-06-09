@@ -83,6 +83,6 @@ export const navConfig: NavConfig = {
   ],
 
   sandboxItems: (_ctx, icons) => [
-    { itemKey: 'platform-config', text: '接口调试', icon: icons.wrench },
+    { itemKey: 'dev-config', text: '开发者菜单', icon: icons.wrench },
   ],
 }

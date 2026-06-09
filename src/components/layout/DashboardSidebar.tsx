@@ -22,7 +22,7 @@ interface DashboardSidebarProps {
   settingsLabel: string
 }
 
-const WORKSPACE_KEYS = ['api-keys', 'guardrails', 'observability', 'settings/workspace', 'platform-config']
+const WORKSPACE_KEYS = ['api-keys', 'guardrails', 'observability', 'settings/workspace', 'dev-config']
 const SETTINGS_KEYS = ['settings', 'settings/account', 'settings/organization']
 
 /**

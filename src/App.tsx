@@ -192,7 +192,7 @@ export default function App() {
             <Route path="logs" element={<LogsPage />} />
             <Route path="billing" element={<BillingPage />} />
             <Route path="referral" element={<ReferralPage />} />
-            <Route path="platform-config" element={<PlatformConfigPage />} />
+            <Route path="dev-config" element={<PlatformConfigPage />} />
 
             <Route path="settings">
               <Route index element={<Navigate to="workspace" replace />} />

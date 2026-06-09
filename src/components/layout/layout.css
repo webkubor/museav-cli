@@ -1,3 +1,46 @@
+/* ── Dashboard 全局背景层 (仅在 DashboardLayout 使用) ───────────────────── */
+.dashboard-shell {
+  isolation: isolate;
+}
+
+.dashboard-global-bottom-bg {
+  position: fixed;
+  right: clamp(-180px, -7vw, -72px);
+  bottom: -120px;
+  z-index: 1;
+  width: min(86vw, 1480px);
+  height: min(54vh, 560px);
+  pointer-events: none;
+  background-image: url("../../assets/console-global-bottom-green.png");
+  background-repeat: no-repeat;
+  background-position: right bottom;
+  background-size: contain;
+  opacity: 0.22;
+  mix-blend-mode: screen;
+  filter: saturate(1.08) contrast(1.04);
+  -webkit-mask-image: radial-gradient(ellipse at right bottom, #000 0%, rgba(0, 0, 0, 0.9) 40%, rgba(0, 0, 0, 0.45) 62%, transparent 78%);
+  mask-image: radial-gradient(ellipse at right bottom, #000 0%, rgba(0, 0, 0, 0.9) 40%, rgba(0, 0, 0, 0.45) 62%, transparent 78%);
+}
+
+body[theme-mode='dark'] .dashboard-global-bottom-bg {
+  opacity: 0.18;
+  filter: saturate(1) contrast(1.02);
+}
+
+@media (max-width: 768px) {
+  .dashboard-global-bottom-bg {
+    right: -180px;
+    bottom: -90px;
+    width: 118vw;
+    height: 38vh;
+    opacity: 0.16;
+  }
+
+  body[theme-mode='dark'] .dashboard-global-bottom-bg {
+    opacity: 0.14;
+  }
+}
+
 /* ── 全局底部流光线 (仅在 DashboardLayout 使用) ──────────────────────────── */
 .bottom-shimmer-line-container {
   position: fixed;
@@ -121,4 +164,3 @@ body[theme-mode='dark'] .glass-card-glow:hover {
     0 12px 35px 0 rgba(0, 0, 0, 0.28), 
     0 0 1px 0 rgba(255, 255, 255, 0.1) !important;
 }
-

@@ -533,7 +533,7 @@ export interface ForwardItem {
 export interface CreateForwardRequest {
   platform: string
   name: string
-  config: Record<string, string>
+  config: Record<string, unknown>
   enabled?: boolean
   api_key_ids?: string[]
   privacy_mode_enabled?: boolean

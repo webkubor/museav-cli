@@ -84,7 +84,7 @@ function PlatformConfigModal({
   const qc = useQueryClient()
   const isEdit = Boolean(editingForward)
   const [name, setName] = useState(editingForward?.name ?? platform?.name ?? '')
-  const [url, setUrl] = useState((editingForward?.config?.endpoint_url as string) ?? '')
+  const [url, setUrl] = useState((editingForward?.config?.endpoint as string) ?? '')
   const [method, setMethod] = useState((editingForward?.config?.method as string) ?? 'POST')
   const [headers, setHeaders] = useState(editingForward?.config?.headers ? JSON.stringify(editingForward.config.headers) : '')
   const [privacyMode, setPrivacyMode] = useState(editingForward?.privacy_mode_enabled ?? false)
@@ -101,9 +101,9 @@ function PlatformConfigModal({
   const keyOptions = (keysQuery.data?.items ?? []).map((k) => ({ id: k.api_key_id, name: k.name }))
 
   const buildConfig = () => {
-    const config: Record<string, string> = { endpoint_url: url.trim() }
+    const config: Record<string, unknown> = { endpoint: url.trim() }
     if (headers) {
-      try { Object.assign(config, JSON.parse(headers)) } catch { /* ignore */ }
+      try { config.headers = JSON.parse(headers) } catch { /* ignore */ }
     }
     return config
   }
@@ -237,7 +237,8 @@ function PlatformConfigModal({
           </div>
           <div>
             <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">URL</label>
-            <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://api.example.com/traces" />
+            <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://api.example.com/v1/traces" />
+            <p className="text-[11px] text-mg-text-2 mt-1 leading-relaxed">需填完整 OTLP traces 地址，以 <code className="text-mg-text-1">/v1/traces</code> 结尾</p>
           </div>
           <div>
             <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">方法（可选）</label>
@@ -359,7 +360,7 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
                   <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${fwd.status === 'active' ? 'bg-mg-success' : fwd.status === 'error' ? 'bg-mg-danger' : 'bg-mg-warning'}`} />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-mg-text-0 truncate">{fwd.name}</p>
-                    <p className="text-xs text-mg-text-2 truncate">{fwd.config?.endpoint_url as string ?? ''}</p>
+                    <p className="text-xs text-mg-text-2 truncate">{fwd.config?.endpoint as string ?? ''}</p>
                   </div>
                 </div>
                 {canManageForward && (

@@ -24,7 +24,6 @@ import {
   listGuardrails,
   updateGuardrail,
   getGuardrail,
-  replaceAssignments,
   addBudgetPolicy,
   deleteBudgetPolicy,
 } from '@/services/guardrails'
@@ -35,7 +34,6 @@ import type {
   CreateGuardrailRequest,
   UpdateGuardrailRequest,
   AddBudgetPolicyRequest,
-  AssignmentInput,
 } from '@/interfaces/guardrails'
 import { PERIOD_LABEL } from '@/constants/status'
 import { useCurrency } from '@/hooks/use-platform-config'
@@ -84,7 +82,6 @@ export default function GuardrailsPage() {
   const canCreate         = hasPermission(PERMS.GUARDRAILS_CREATE)
   const canEdit           = hasPermission(PERMS.GUARDRAILS_EDIT)
   const canDelete         = hasPermission(PERMS.GUARDRAILS_DELETE)
-  const canEditAssignment = hasPermission(PERMS.GUARDRAILS_ASSIGNMENT_EDIT)
   const canEditBudget     = hasPermission(PERMS.GUARDRAILS_BUDGET_EDIT)
 
   // ── 列表 ───────────────────────────────────────────────────────────────
@@ -127,8 +124,8 @@ export default function GuardrailsPage() {
   const [budgetPeriodUnit, setBudgetPeriodUnit] = useState<'hour' | 'day' | 'week' | 'month'>('month')
   const [showClearBudget, setShowClearBudget] = useState(false)
 
-  // ── API Key 作用范围本地状态 ────────────────────────────────────────────
-  const [localKeyNames, setLocalKeyNames] = useState<string[]>([])
+  // ── API Key 作用范围本地状态（account_id 风格，与成员一致） ─────────────
+  const [apiKeyIds, setApiKeyIds] = useState<string[]>([])
 
   // ── 详情查询 ────────────────────────────────────────────────────────────
   const { data: detail, isLoading: detailLoading } = useQuery({
@@ -138,20 +135,15 @@ export default function GuardrailsPage() {
     staleTime: 0,
   })
 
+  // Populate the whole form (info fields + scope: members + api_keys) once the
+  // detail loads, regardless of the active tab — the single bottom Save button
+  // persists all of it, so every field's state must be ready even if the user
+  // never visits the scope tab.
   useEffect(() => {
-    if (!isCreating && detailOpen && sheetTab === 'info' && detail) {
+    if (!isCreating && detailOpen && detail) {
       syncFormFromDetail(detail)
     }
-    if (!isCreating && detailOpen && sheetTab === 'scope' && detail) {
-      const names = detail.assignments
-        .filter(a => a.subject_type === 'api_key')
-        .map(a => {
-          const key = (apiKeysQuery.data ?? []).find((k: any) => k.api_key_id === a.api_key_id)
-          return key?.name || a.api_key_id
-        })
-      setLocalKeyNames(names)
-    }
-  }, [detail, detailOpen, isCreating, sheetTab])
+  }, [detail, detailOpen, isCreating])
 
   const membersQuery = useQuery({
     queryKey: ['workspace-members', activeWorkspaceId],
@@ -171,18 +163,6 @@ export default function GuardrailsPage() {
   })
 
   // ── 突变 ────────────────────────────────────────────────────────────────
-  const assignMutation = useMutation({
-    mutationFn: ({ id, assignments }: { id: string; assignments: AssignmentInput[] }) =>
-      replaceAssignments(id, assignments),
-    onSuccess: () => {
-      appToast.success('保存成功')
-      qc.invalidateQueries({ queryKey: ['guardrail-detail', detailId] })
-      qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
-    },
-    onError: (err: unknown) =>
-      appToast.error(err instanceof Error ? err.message : '操作失败'),
-  })
-
   const setBudgetMutation = useMutation({
     mutationFn: async ({ id, body, oldPolicyId }: { id: string; body: AddBudgetPolicyRequest; oldPolicyId?: string }) => {
       if (oldPolicyId) await deleteBudgetPolicy(id, oldPolicyId)
@@ -277,23 +257,31 @@ export default function GuardrailsPage() {
     const meta = (d as any).metadata ?? {}
     setModelBlacklist(Array.isArray(meta.model_blacklist) ? meta.model_blacklist : [])
     setIpWhitelist(Array.isArray(meta.ip_whitelist) ? meta.ip_whitelist : [])
+    // Scope (members + api_keys) lives in assignments; metadata.* is the input
+    // we materialize from. Read assignments first (the enforced truth), falling
+    // back to metadata for guardrails saved before materialization existed.
     setMemberIds(
-      Array.isArray(meta.members)
-        ? (meta.members as string[])
-        : (d.assignments?.filter(a => a.subject_type === 'member').map(a => a.account_id) ?? [])
+      d.assignments?.filter(a => a.subject_type === 'member' && a.account_id).map(a => a.account_id as string)
+      ?? (Array.isArray(meta.members) ? (meta.members as string[]) : [])
+    )
+    setApiKeyIds(
+      d.assignments?.filter(a => a.subject_type === 'api_key' && a.api_key_id).map(a => a.api_key_id as string)
+      ?? (Array.isArray(meta.api_keys) ? (meta.api_keys as string[]) : [])
     )
   }
 
   function handleSubmit() {
     if (!name.trim()) { appToast.error(t('guardrails.toast.nameRequired')); return }
-    // Always send all three arrays (even empty) so the backend receives the
-    // authoritative lists: model_blacklist/ip_whitelist round-trip via metadata,
-    // and members is materialized into member assignments server-side — an empty
-    // array must clear prior selections, so it can't be omitted.
+    // ONE save for the whole drawer: rules (model_blacklist/ip_whitelist) round-
+    // trip via metadata; scope (members + api_keys) is materialized into
+    // assignments server-side. Always send all arrays (even empty) so empty =
+    // clear. api_keys is only editable in edit mode (scope tab); on create it
+    // stays whatever was selected (none).
     const metadata: Record<string, unknown> = {
       model_blacklist: modelBlacklist,
       ip_whitelist: ipWhitelist,
       members: memberIds,
+      api_keys: apiKeyIds,
     }
     const payload: CreateGuardrailRequest = {
       name: name.trim(),
@@ -330,7 +318,6 @@ export default function GuardrailsPage() {
   }
 
   // ── 派生数据 ────────────────────────────────────────────────────────────
-  const apiKeyAssignments = detail?.assignments.filter(a => a.subject_type === 'api_key') ?? []
   const budget = detail?.budget_policies?.[0] ?? null
 
   // Label as "name (email)" so the picker is human-readable instead of an
@@ -342,7 +329,14 @@ export default function GuardrailsPage() {
       : (a.display_name || a.email || a.account_id)
     return { id: a.account_id, name: label }
   })
-  const apiKeysMap = new Map((apiKeysQuery.data ?? []).map(k => [k.api_key_id, k]))
+  // API key picker options (id-based, like members): label by name, fall back to
+  // id. Only active keys are selectable; an already-bound key that is no longer
+  // active still resolves its label for display.
+  const apiKeyOptions = (apiKeysQuery.data ?? []).map((k: any) => ({
+    id: k.api_key_id as string,
+    name: (k.name as string) || (k.api_key_id as string),
+    active: k.status === 'active',
+  }))
 
   const detailRow = guardrails.find(g => g.id === detailId)
 
@@ -530,16 +524,6 @@ export default function GuardrailsPage() {
                 modelSuggestions={modelSuggestions}
                 memberIds={memberIds} onMemberIdsChange={setMemberIds} memberOptions={memberOptions}
               />
-              <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-mg-border/50">
-                <Button variant="outline" onClick={() => setDetailOpen(false)}>{t('common.cancel')}</Button>
-                <Button
-                  variant="brand"
-                  loading={createMutation.isPending || updateMutation.isPending}
-                  onClick={handleSubmit}
-                >
-                  {isCreating ? t('guardrails.modal.confirmCreate') : t('guardrails.modal.saveEdit')}
-                </Button>
-              </div>
             </div>
           )}
 
@@ -552,55 +536,24 @@ export default function GuardrailsPage() {
               </div>
             ) : detail ? (
               <div className="space-y-7">
-                {/* API Keys — 下拉多选 */}
+                {/* API Keys — 下拉多选（与成员一致，id 风格；统一由底部保存） */}
                 <section>
                   <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider mb-3">
                     <LuKey className="w-3.5 h-3.5" /> API Keys
                   </div>
                   <TagInput
-                    value={localKeyNames}
-                    onChange={(names) => setLocalKeyNames(names)}
-                    suggestions={(apiKeysQuery.data ?? [])
-                      .filter((k: any) => k.status === 'active' && !localKeyNames.includes(k.name))
-                      .map((k: any) => k.name as string)
+                    value={apiKeyIds.map((id) => apiKeyOptions.find((o) => o.id === id)?.name ?? id)}
+                    onChange={(names) =>
+                      setApiKeyIds(
+                        names.map((n) => apiKeyOptions.find((o) => o.name === n)?.id).filter(Boolean) as string[],
+                      )
                     }
-                    placeholder="从下拉选择 API Key"
+                    suggestions={apiKeyOptions
+                      .filter((o) => o.active && !apiKeyIds.includes(o.id))
+                      .map((o) => o.name)}
+                    placeholder="从下拉批量选择该工作区的 API Key"
+                    hint="选中的 Key 将绑定到该护栏，点击底部「保存修改」生效，供网关护栏鉴权使用"
                   />
-                  {canEditAssignment && localKeyNames.join(',') !== apiKeyAssignments.map((a) => { const key = apiKeysMap.get(a.api_key_id); return key?.name || a.api_key_id }).join(',') && (
-                    <div className="mt-3 flex justify-end">
-                      <Button
-                        size="sm"
-                        variant="brand"
-                        className="h-8 px-4 text-xs font-semibold"
-                        loading={assignMutation.isPending}
-                        onClick={() => {
-                          if (!detail) return
-                          const nameToId = new Map<string, string>()
-                          for (const k of apiKeysQuery.data ?? []) {
-                            nameToId.set(k.name, k.api_key_id)
-                            nameToId.set(k.api_key_id, k.api_key_id)
-                          }
-                          for (const a of detail.assignments) {
-                            if (a.subject_type === 'api_key') {
-                              const key = apiKeysMap.get(a.api_key_id)
-                              if (key) nameToId.set(key.name, a.api_key_id)
-                            }
-                          }
-                          const keyIds = localKeyNames.map((n) => nameToId.get(n)).filter(Boolean) as string[]
-                          const keyAssigns: AssignmentInput[] = keyIds.map((id) => ({ subject_type: 'api_key', api_key_id: id }))
-                          // replaceAssignments is a full replace — carry the existing
-                          // member assignments through so editing key bindings doesn't
-                          // wipe the guardrail's member scope.
-                          const memberAssigns: AssignmentInput[] = detail.assignments
-                            .filter((a) => a.subject_type === 'member' && a.account_id)
-                            .map((a) => ({ subject_type: 'member', account_id: a.account_id }))
-                          assignMutation.mutate({ id: detail.id, assignments: [...memberAssigns, ...keyAssigns] })
-                        }}
-                      >
-                        保存
-                      </Button>
-                    </div>
-                  )}
                 </section>
               </div>
             ) : null
@@ -660,6 +613,21 @@ export default function GuardrailsPage() {
             ) : null
           )}
         </div>
+
+        {/* 统一底部保存：基本信息 + 作用范围（成员/API Keys）一次保存。
+            预算是独立的增删策略，保留其自有按钮。 */}
+        {(isCreating || sheetTab !== 'budget') && (
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-mg-border/50 shrink-0">
+            <Button variant="outline" onClick={() => setDetailOpen(false)}>{t('common.cancel')}</Button>
+            <Button
+              variant="brand"
+              loading={createMutation.isPending || updateMutation.isPending}
+              onClick={handleSubmit}
+            >
+              {isCreating ? t('guardrails.modal.confirmCreate') : t('guardrails.modal.saveEdit')}
+            </Button>
+          </div>
+        )}
       </SideSheet>
 
       {/* 删除确认 Modal */}

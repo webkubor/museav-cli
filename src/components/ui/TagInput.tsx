@@ -1,4 +1,5 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react'
+import React, { useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { LuX, LuChevronDown } from 'react-icons/lu'
 
 interface TagInputProps {
@@ -32,6 +33,11 @@ export function TagInput({
   const [focusIdx, setFocusIdx] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  // Position the options menu via a fixed-position portal so it is never
+  // clipped by a scrollable/overflow-hidden ancestor (e.g. the guardrail
+  // drawer body). Recomputed on open + on scroll/resize.
+  const [menuPos, setMenuPos] = useState<{ left: number; top: number; width: number } | null>(null)
 
   const filtered = hasSuggestions
     ? suggestions.filter((s) => s != null && !value.includes(s) && s.toLowerCase().includes(input.toLowerCase()))
@@ -77,13 +83,40 @@ export function TagInput({
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false)
+      const t = e.target as Node
+      // The menu is portaled outside containerRef, so also exempt dropdownRef.
+      if (
+        containerRef.current && !containerRef.current.contains(t) &&
+        (!dropdownRef.current || !dropdownRef.current.contains(t))
+      ) {
+        setOpen(false)
+      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   const showDropdown = hasSuggestions && open && filtered.length > 0
+
+  // Track the input's viewport rect so the fixed-position portal menu lines up,
+  // and follows scroll/resize while open.
+  useLayoutEffect(() => {
+    if (!showDropdown) {
+      setMenuPos(null)
+      return
+    }
+    const update = () => {
+      const r = containerRef.current?.getBoundingClientRect()
+      if (r) setMenuPos({ left: r.left, top: r.bottom + 4, width: r.width })
+    }
+    update()
+    window.addEventListener('scroll', update, true)
+    window.addEventListener('resize', update)
+    return () => {
+      window.removeEventListener('scroll', update, true)
+      window.removeEventListener('resize', update)
+    }
+  }, [showDropdown, filtered.length])
 
   const tagClass = tagVariant === 'mono'
     ? 'bg-mg-fill-0 text-mg-text-0 border-mg-border'
@@ -142,14 +175,18 @@ export function TagInput({
 
       {hint && <p className="text-[10px] text-mg-text-2 mt-1.5">{hint}</p>}
 
-      {showDropdown && (
-        <div className="absolute z-20 mt-1 w-full max-h-[200px] overflow-y-auto rounded-lg border border-mg-border bg-card-bg shadow-lg py-1">
+      {showDropdown && menuPos && createPortal(
+        <div
+          ref={dropdownRef}
+          style={{ position: 'fixed', left: menuPos.left, top: menuPos.top, width: menuPos.width, zIndex: 9999 }}
+          className="max-h-[240px] overflow-y-auto rounded-lg border border-mg-border bg-card-bg shadow-lg py-1"
+        >
           {filtered.map((item, idx) => (
             <button
               key={item}
               type="button"
               onMouseDown={(e) => { e.preventDefault(); addTag(item) }}
-              className={`w-full text-left px-3 py-1.5 text-xs font-mono transition-colors cursor-pointer ${
+              className={`block w-full text-left px-3 py-1.5 text-xs font-mono transition-colors cursor-pointer ${
                 idx === focusIdx
                   ? 'bg-brand-base/10 text-brand-base'
                   : 'text-mg-text-0 hover:bg-mg-fill-0'
@@ -158,7 +195,8 @@ export function TagInput({
               {item}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

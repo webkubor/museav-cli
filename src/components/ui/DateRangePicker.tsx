@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import { Popover } from './Popover'
-import { Input } from './Input'
 import { Button } from './Button'
 import { LuCalendar, LuChevronRight } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
@@ -51,6 +50,24 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   const [customStart, setCustomStart] = useState<string>(value.startDate || '')
   const [customEnd, setCustomEnd] = useState<string>(value.endDate || '')
 
+  // Custom inline calendar state
+  const [currentYear, setCurrentYear] = useState(() => {
+    const dStr = value.endDate || value.startDate
+    if (dStr) {
+      const d = new Date(dStr)
+      if (!isNaN(d.getTime())) return d.getFullYear()
+    }
+    return new Date().getFullYear()
+  })
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const dStr = value.endDate || value.startDate
+    if (dStr) {
+      const d = new Date(dStr)
+      if (!isNaN(d.getTime())) return d.getMonth()
+    }
+    return new Date().getMonth()
+  })
+
   useEffect(() => {
     if (value.preset) setActivePreset(value.preset)
     if (value.startDate) setCustomStart(value.startDate)
@@ -86,9 +103,128 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     })
   }
 
+  // Inline calendar calculations
+  const getDaysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate()
+  const getFirstDayOfMonth = (y: number, m: number) => new Date(y, m, 1).getDay()
+
+  const handleDateClick = (dateStr: string) => {
+    if (hideStartDate) {
+      if (dateStr < customStart) return // Prevent selecting past dates
+      setCustomEnd(dateStr)
+    } else {
+      if (!customStart || (customStart && customEnd)) {
+        setCustomStart(dateStr)
+        setCustomEnd('')
+      } else {
+        if (dateStr < customStart) {
+          setCustomStart(dateStr)
+        } else {
+          setCustomEnd(dateStr)
+        }
+      }
+    }
+  }
+
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11)
+      setCurrentYear(y => y - 1)
+    } else {
+      setCurrentMonth(m => m - 1)
+    }
+  }
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0)
+      setCurrentYear(y => y + 1)
+    } else {
+      setCurrentMonth(m => m + 1)
+    }
+  }
+
+  const renderCalendar = () => {
+    const daysInMonth = getDaysInMonth(currentYear, currentMonth)
+    const firstDay = getFirstDayOfMonth(currentYear, currentMonth)
+    const cells: React.ReactNode[] = []
+
+    // Empty spaces for previous month's trailing days
+    for (let i = 0; i < firstDay; i++) {
+      cells.push(<div key={`empty-${i}`} className="h-7 w-7" />)
+    }
+
+    // Days grid
+    for (let day = 1; day <= daysInMonth; day++) {
+      const monthStr = String(currentMonth + 1).padStart(2, '0')
+      const dayStr = String(day).padStart(2, '0')
+      const dateStr = `${currentYear}-${monthStr}-${dayStr}`
+
+      const isSelected = hideStartDate
+        ? customEnd === dateStr
+        : (customStart === dateStr || customEnd === dateStr)
+
+      const isInRange = !hideStartDate && customStart && customEnd && dateStr > customStart && dateStr < customEnd
+      const isDisabled = hideStartDate && dateStr < customStart
+
+      cells.push(
+        <button
+          key={`day-${day}`}
+          type="button"
+          disabled={isDisabled}
+          onClick={() => handleDateClick(dateStr)}
+          className={cn(
+            "h-7 w-7 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer active:scale-95",
+            isSelected && "bg-brand-base text-white shadow-sm shadow-brand-glow",
+            isInRange && "bg-brand-base/15 text-brand-base rounded-none",
+            !isSelected && !isInRange && !isDisabled && "text-mg-text-0 hover:bg-mg-fill-0/40",
+            isDisabled && "text-mg-text-2/40 cursor-not-allowed opacity-30"
+          )}
+        >
+          {day}
+        </button>
+      )
+    }
+
+    const weekDays = ['日', '一', '二', '三', '四', '五', '六']
+
+    return (
+      <div className="flex flex-col gap-2 w-full select-none">
+        <div className="flex items-center justify-between px-1">
+          <button
+            type="button"
+            onClick={handlePrevMonth}
+            className="p-1 rounded-lg hover:bg-mg-fill-0 text-mg-text-2 hover:text-mg-text-0 cursor-pointer text-xs"
+          >
+            &lt;
+          </button>
+          <span className="text-xs font-bold text-mg-text-0">
+            {currentYear}年 {currentMonth + 1}月
+          </span>
+          <button
+            type="button"
+            onClick={handleNextMonth}
+            className="p-1 rounded-lg hover:bg-mg-fill-0 text-mg-text-2 hover:text-mg-text-0 cursor-pointer text-xs"
+          >
+            &gt;
+          </button>
+        </div>
+
+        <div className="grid grid-cols-7 gap-1 text-center">
+          {weekDays.map(w => (
+            <span key={w} className="text-[10px] font-bold text-mg-text-2">{w}</span>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-7 gap-1 text-center">
+          {cells}
+        </div>
+      </div>
+    )
+  }
+
   const presetList = (
     <div className="flex flex-col md:flex-row gap-4 w-[280px] md:w-[480px] text-left">
-      {/* 预设列表 */}
+      {/* Preset List */}
       <div className="flex flex-col gap-1 pr-0 md:pr-4 border-b md:border-b-0 md:border-r border-mg-border/40 pb-3 md:pb-0 shrink-0 w-full md:w-36">
         <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider mb-1 px-2">{customTitle || '常用时间'}</span>
         {activePresets.map(p => (
@@ -108,41 +244,33 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         ))}
       </div>
 
-      {/* 自定义区域 */}
-      <div className="flex-1 flex flex-col gap-3.5 pt-1">
-        <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">{customLabel || '自定义日期区间'}</span>
-        <div className="flex flex-col gap-2">
-          {!hideStartDate && (
-            <div className="flex flex-col gap-1">
-              <span className="text-[10.5px] font-semibold text-mg-text-1">起始日期</span>
-              <Input
-                type="date"
-                value={customStart}
-                disabled={activePreset !== 'custom'}
-                onChange={e => setCustomStart(e.target.value)}
-                className="bg-mg-fill-0/20 font-medium h-9 text-xs"
-              />
+      {/* Custom Area */}
+      <div className="flex-1 flex flex-col gap-3 pt-1 w-full min-w-[220px]">
+        <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider mb-1">{customLabel || '自定义日期区间'}</span>
+        
+        {/* Selected preview bar */}
+        <div className="text-[11px] font-semibold text-brand-base bg-brand-base/5 border border-brand-base/20 rounded-lg px-2.5 py-1.5 flex flex-col gap-0.5">
+          {hideStartDate ? (
+            <span>截止时间: {customEnd ? <span className="font-bold">{customEnd}</span> : '请在下方选择'}</span>
+          ) : (
+            <div className="flex justify-between items-center text-[10.5px]">
+              <span>始: {customStart ? <span className="font-bold">{customStart}</span> : '待选择'}</span>
+              <span>至</span>
+              <span>终: {customEnd ? <span className="font-bold">{customEnd}</span> : '待选择'}</span>
             </div>
           )}
-          <div className="flex flex-col gap-1">
-            <span className="text-[10.5px] font-semibold text-mg-text-1">
-              {hideStartDate ? '截止日期（失效时间）' : '截止日期'}
-            </span>
-            <Input
-              type="date"
-              value={customEnd}
-              disabled={activePreset !== 'custom'}
-              min={hideStartDate ? customStart : undefined}
-              onChange={e => setCustomEnd(e.target.value)}
-              className="bg-mg-fill-0/20 font-medium h-9 text-xs"
-            />
-          </div>
         </div>
+
+        {/* Inline Custom Calendar Grid */}
+        <div className="border border-mg-border/40 rounded-xl p-2.5 bg-mg-fill-0/10">
+          {renderCalendar()}
+        </div>
+
         <Button
           variant="brand"
-          disabled={activePreset !== 'custom' || !customStart || !customEnd}
+          disabled={activePreset !== 'custom' || (hideStartDate ? !customEnd : (!customStart || !customEnd))}
           onClick={handleApplyCustom}
-          className="mt-auto h-8 text-xs font-bold !rounded-lg w-full flex items-center justify-center gap-1"
+          className="mt-1 h-8 text-xs font-bold !rounded-lg w-full flex items-center justify-center gap-1 cursor-pointer"
         >
           确定应用 <LuChevronRight size={13} />
         </Button>

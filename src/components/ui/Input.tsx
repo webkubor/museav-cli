@@ -28,7 +28,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const resolvedType = type || (mode === "password" ? "password" : "text")
     const shouldTrim = resolvedType === "text" || resolvedType === "search" || resolvedType === "url" || resolvedType === "email"
     const variantClasses = variant === "search"
-      ? "rounded-full bg-mg-bg-1/40 hover:bg-mg-bg-1/80 focus:bg-card-bg"
+      ? "modern-input-search rounded-full"
       : ""
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

@@ -1,0 +1,396 @@
+/* ── 💎 登录与注册毛玻璃晶莹卡片 ── */
+.glass-auth-card {
+  width: 100%;
+  padding: 44px 44px 30px;
+  border-radius: 20px;
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 252, 255, 0.86)) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: none !important;
+  box-shadow:
+    0 34px 90px -54px rgba(15, 23, 42, 0.42),
+    0 1px 0 rgba(255, 255, 255, 0.76) inset !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 流光边框 */
+.glass-auth-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 0%,
+    transparent 28%,
+    var(--brand-light) 40%,
+    var(--brand-base) 47%,
+    rgba(255, 255, 255, 0.95) 50%,
+    var(--brand-base) 53%,
+    var(--brand-light) 60%,
+    transparent 72%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: destination-out;
+  mask-composite: exclude;
+  animation: liquid-border 4s linear infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+
+body[theme-mode='dark'] .glass-auth-card {
+  background:
+    linear-gradient(180deg, rgba(18, 27, 46, 0.88), rgba(11, 18, 32, 0.84)) !important;
+  box-shadow:
+    0 42px 110px -58px rgba(0, 0, 0, 0.9),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset !important;
+}
+
+body[theme-mode='dark'] .glass-auth-card::before {
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 0%,
+    transparent 28%,
+    var(--brand-mid) 40%,
+    var(--brand-base) 47%,
+    rgba(255, 255, 255, 1) 50%,
+    var(--brand-base) 53%,
+    var(--brand-mid) 60%,
+    transparent 72%,
+    transparent 100%
+  );
+}
+
+
+body[theme-mode='dark'] .glass-auth-card .modern-auth-label {
+  color: rgba(226, 232, 240, 0.86) !important;
+}
+
+body[theme-mode='dark'] .glass-auth-card .auth-subtitle,
+body[theme-mode='dark'] .glass-auth-card .auth-footer,
+body[theme-mode='dark'] .glass-auth-card .auth-policy-text {
+  color: rgba(203, 213, 225, 0.72);
+}
+
+/* ── 💎 鉴权中心输入框与表单高级优化 ── */
+.modern-auth-label {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--mg-text-1) !important;
+  margin-bottom: 8px;
+}
+
+.modern-auth-input {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--mg-border) !important;
+  padding: 0 14px;
+  font-size: 13.5px;
+  outline: none;
+  box-sizing: border-box;
+  color: var(--mg-text-0) !important;
+  background-color: var(--mg-bg-1) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modern-auth-input::placeholder {
+  color: var(--mg-text-2) !important;
+  opacity: 0.7;
+}
+
+/* 输入框聚焦 (Focus) 态：淡品牌色边框 + 品牌外发光 */
+.modern-auth-input:focus {
+  border-color: var(--brand-base) !important;
+  box-shadow: 0 0 0 3px var(--brand-glow) !important;
+  background-color: var(--mg-bg-0) !important;
+}
+
+/* 按钮大厂极简实色美学覆写 */
+.modern-auth-btn {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  background-color: #0f172a !important; /* 大厂极雅石墨黑 */
+  border: 1px solid #0f172a !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.modern-auth-btn:hover {
+  transform: translateY(-0.5px);
+  background-color: #1e293b !important;
+  border-color: #1e293b !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
+}
+
+.modern-auth-btn:active {
+  transform: translateY(0);
+}
+
+body[theme-mode='dark'] .modern-auth-btn {
+  background-color: #ffffff !important; /* 深色模式下大厂极雅耀白 */
+  border-color: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+body[theme-mode='dark'] .modern-auth-btn:hover {
+  background-color: #f1f5f9 !important;
+  border-color: #f1f5f9 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 统一品牌渐变底色类，供 Tailwind 样式抽离架构使用 */
+.background-gradient-brand {
+  background: linear-gradient(135deg, var(--brand-base) 0%, var(--brand-deep) 100%) !important;
+}
+
+/* ── 💎 鉴权中心全新高颜值样式抽离类 ── */
+.auth-layout-container {
+  @apply min-h-screen flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300;
+  background-color: #f7fbff;
+  background-image:
+    radial-gradient(circle at 86% 38%, rgba(20, 219, 183, 0.16) 0 1px, transparent 2px),
+    radial-gradient(circle at 24% 68%, rgba(37, 99, 235, 0.12) 0 1px, transparent 2px),
+    radial-gradient(circle at 78% 42%, rgba(20, 219, 183, 0.14), transparent 18%),
+    radial-gradient(circle at 16% 74%, rgba(37, 99, 235, 0.1), transparent 22%),
+    linear-gradient(rgba(22, 40, 72, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(22, 40, 72, 0.035) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 48px 48px, 48px 48px;
+}
+
+body[theme-mode='dark'] .auth-layout-container {
+  background-color: #06101f;
+  background-image:
+    radial-gradient(circle at 86% 38%, rgba(45, 255, 214, 0.78) 0 1px, transparent 2px),
+    radial-gradient(circle at 32% 66%, rgba(49, 109, 255, 0.58) 0 1px, transparent 2px),
+    radial-gradient(circle at 78% 42%, rgba(20, 219, 183, 0.18), transparent 18%),
+    radial-gradient(circle at 27% 70%, rgba(37, 99, 235, 0.2), transparent 20%),
+    linear-gradient(rgba(226, 232, 240, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(226, 232, 240, 0.055) 1px, transparent 1px);
+}
+
+.auth-blur-orb-primary {
+  @apply absolute -bottom-[12%] -left-[8%] w-[42vw] h-[42vw] max-w-[620px] rounded-full blur-[90px] pointer-events-none z-0;
+  opacity: 0.7;
+}
+
+.auth-blur-orb-secondary {
+  @apply absolute -top-[12%] -right-[9%] w-[38vw] h-[38vw] max-w-[560px] rounded-full blur-[96px] pointer-events-none z-0;
+  opacity: 0.58;
+}
+
+.auth-layout-content {
+  @apply w-full max-w-[400px] z-10 relative;
+}
+
+.auth-brand-header {
+  @apply text-center mb-7;
+}
+
+.auth-brand-logo {
+  @apply object-contain mx-auto mb-5 transition-transform duration-300;
+  width: 132px;
+  height: 38px;
+}
+
+.auth-title {
+  margin: 0;
+  color: var(--mg-text-0);
+  font-size: 24px;
+  font-weight: 850;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.auth-subtitle {
+  margin: 10px 0 0;
+  color: var(--mg-text-2);
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.auth-footer {
+  margin-top: 20px;
+  text-align: center;
+  color: var(--mg-text-2);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* ── 💎 鉴权中心全新高颜值样式抽离类 ── */
+.auth-redirect-link {
+  @apply text-brand-base hover:text-brand-deep font-semibold transition-colors duration-200 no-underline;
+}
+
+.auth-form-container {
+  @apply flex flex-col gap-4;
+}
+
+.auth-form-container .modern-input-field,
+.auth-form-container .modern-input-wrapper {
+  height: 44px;
+  border-radius: 10px;
+  padding-inline: 14px;
+  font-size: 13.5px;
+  background-color: rgba(var(--mg-bg-0-rgb), 0.62) !important;
+  border-color: rgba(100, 116, 139, 0.22) !important;
+  box-shadow: none !important;
+}
+
+body[theme-mode='dark'] .auth-form-container .modern-input-field,
+body[theme-mode='dark'] .auth-form-container .modern-input-wrapper {
+  background-color: rgba(15, 23, 42, 0.46) !important;
+  border-color: rgba(226, 232, 240, 0.18) !important;
+}
+
+body[theme-mode='dark'] .auth-form-container .modern-input-field::placeholder,
+body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
+  color: rgba(203, 213, 225, 0.58) !important;
+}
+
+.auth-form-container .modern-input-field:focus,
+.auth-form-container .modern-input-wrapper:focus-within {
+  border-color: var(--brand-base) !important;
+  box-shadow: 0 0 0 1px var(--brand-base), 0 0 0 4px var(--brand-glow) !important;
+}
+
+.auth-form-container .modern-btn-brand {
+  width: 100%;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.auth-error-message {
+  @apply text-rose-500 text-[11.5px] mt-1.5 font-medium block tracking-tight;
+}
+
+.auth-email-preview {
+  @apply flex items-center gap-2 p-3 rounded-xl text-[13px] border;
+  background-color: var(--mg-fill-0);
+  border-color: var(--mg-border);
+}
+
+.auth-code-row {
+  @apply flex gap-2;
+}
+
+.auth-code-row .modern-input-field {
+  min-width: 0;
+}
+
+.auth-code-button {
+  flex-shrink: 0;
+  min-width: 104px;
+  white-space: nowrap;
+}
+
+.auth-policy-text {
+  margin: -2px 0 0;
+  text-align: center;
+  color: var(--mg-text-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.7;
+}
+
+.auth-muted-link {
+  color: var(--mg-text-2);
+  text-decoration: none;
+}
+
+.auth-muted-link:hover {
+  color: var(--brand-base);
+}
+
+.auth-email-text {
+  @apply flex-1 overflow-hidden text-ellipsis font-semibold;
+  color: var(--mg-text-1);
+}
+
+.auth-email-modify-btn {
+  @apply bg-none border-none text-brand-base hover:text-brand-deep cursor-pointer text-xs font-semibold p-0 shrink-0 transition-colors duration-200;
+}
+
+.auth-password-header {
+  @apply flex justify-between items-center mb-1.5;
+}
+
+.auth-forgot-password-link {
+  @apply text-xs text-brand-base hover:text-brand-deep font-semibold transition-colors duration-200 no-underline;
+}
+
+.auth-password-visibility-btn {
+  @apply inline-flex items-center justify-center border-0 bg-transparent p-0 cursor-pointer transition-colors duration-200;
+  color: var(--mg-text-2);
+}
+
+.auth-password-visibility-btn:hover {
+  color: var(--mg-text-0);
+}
+
+.auth-remember-password {
+  @apply mt-2 inline-flex items-center gap-2 text-xs font-semibold cursor-pointer select-none;
+  color: var(--mg-text-2);
+}
+
+.auth-remember-password:hover {
+  color: var(--mg-text-1);
+}
+
+.auth-remember-password input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--brand-base);
+}
+
+/* 三方登录样式抽离 */
+.social-divider {
+  @apply flex items-center gap-4 my-6;
+}
+
+.social-divider-line {
+  @apply flex-1 h-[1px];
+  background-color: var(--mg-border);
+}
+
+.social-divider-text {
+  @apply text-[11px] font-bold tracking-widest uppercase;
+  color: var(--mg-text-2);
+}
+
+.social-btn-group {
+  @apply flex gap-2;
+}
+
+.social-btn {
+  @apply flex-1 flex items-center justify-center gap-2 h-11 border rounded-xl text-sm font-semibold;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border-color: var(--mg-border) !important;
+  background-color: rgba(var(--mg-bg-0-rgb), 0.56) !important;
+  color: var(--mg-text-1);
+}
+
+.social-btn:hover {
+  background-color: var(--mg-fill-0) !important;
+  border-color: var(--mg-border-2) !important;
+  color: var(--mg-text-0);
+}
+

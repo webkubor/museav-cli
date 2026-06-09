@@ -1,0 +1,182 @@
+/* ── 液态玻璃流光边框动画 ── */
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes liquid-border {
+  to { --border-angle: 360deg; }
+}
+
+
+/* ── 🚀 侧边栏一级串联竖线流光过渡 (垂直流光脉冲) ── */
+@keyframes verticalFlow {
+  0% {
+    top: -65px;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+.sidebar-flow-line {
+  position: absolute;
+  background-color: var(--mg-border); /* 浅色模式下退化为纯灰色细线，极其清雅 */
+  opacity: 0.8;
+  overflow: hidden;
+  
+  /* 渐变遮罩：在底部最后 30% 区域逐渐淡出 */
+  mask-image: linear-gradient(to bottom, 
+    #000 0%, 
+    #000 70%, 
+    rgba(0, 0, 0, 0.4) 85%, 
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(to bottom, 
+    #000 0%, 
+    #000 70%, 
+    rgba(0, 0, 0, 0.4) 85%, 
+    transparent 100%
+  );
+}
+
+body[theme-mode='dark'] .sidebar-flow-line {
+  background-color: color-mix(in srgb, var(--brand-base) 18%, transparent);
+  box-shadow: 0 0 1.5px var(--brand-glow);
+  opacity: 0.95;
+}
+
+/* 轨道内的流动光脉冲 (激光光束效果) - 默认（浅色模式）隐藏 */
+.sidebar-flow-line::after {
+  display: none;
+}
+
+/* 仅在深色模式下展现流光脉冲 */
+body[theme-mode='dark'] .sidebar-flow-line::after {
+  display: block;
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 60px; /* 脉冲高度为 60px */
+  background: linear-gradient(to bottom,
+    transparent 0%,
+    var(--brand-base) 30%,
+    #ffffff 50%, /* 核心强白光 */
+    var(--brand-base) 70%,
+    transparent 100%
+  );
+  filter: drop-shadow(0 0 3px var(--brand-base));
+  animation: verticalFlow 2.2s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+
+/* ── 🚀 侧边栏子菜单物理高度折叠滑入收缩 (Vercel Style Accordion) ── */
+.sidebar-submenu-container {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 250ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease, margin 200ms ease;
+  opacity: 0;
+  overflow: hidden;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.sidebar-submenu-container.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+/* ── 客服聊天 Markdown ─────────────────────────── */
+.cs-markdown { font-size: 13px; line-height: 1.6; }
+.cs-markdown p { margin: 0 0 8px; }
+.cs-markdown p:last-child { margin-bottom: 0; }
+.cs-markdown ul, .cs-markdown ol { margin: 4px 0 8px; padding-left: 18px; }
+.cs-markdown li { margin-bottom: 2px; }
+.cs-markdown code { font-size: 12px; padding: 1px 5px; border-radius: 4px; background: var(--mg-fill-1); font-family: monospace; }
+.cs-markdown pre { margin: 6px 0; padding: 10px 12px; border-radius: 8px; background: #0f172a; overflow-x: auto; }
+.cs-markdown pre code { padding: 0; background: none; color: #e2e8f0; font-size: 12px; }
+.cs-markdown a { color: var(--brand-base); text-decoration: underline; }
+.cs-markdown h1, .cs-markdown h2, .cs-markdown h3 { font-size: 13px; font-weight: 700; margin: 8px 0 4px; }
+.cs-markdown blockquote { margin: 4px 0; padding-left: 10px; border-left: 3px solid var(--mg-border); color: var(--mg-text-2); }
+.cs-markdown hr { border: none; border-top: 1px solid var(--mg-border); margin: 8px 0; }
+
+.shimmer-line {
+  height: 0;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    #2563eb 0%,
+    #3b82f6 30%,
+    #1DC39B 70%,
+    #10b981 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-slide 2.5s ease-in-out infinite;
+  opacity: 0;
+  flex-shrink: 0;
+  transition: height 350ms cubic-bezier(0.25, 1, 0.5, 1), opacity 350ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.shimmer-line.navigating {
+  height: 1.5px;
+  opacity: 0.75;
+}
+
+@keyframes shimmer-slide {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* 🚀 极雅弹窗全屏微流光流动边框 */
+.modal-glow-flow {
+  border: 1px solid transparent !important;
+  background-image: linear-gradient(var(--mg-bg-0), var(--mg-bg-0)), 
+                    linear-gradient(135deg, var(--brand-base) 0%, var(--brand-glow) 30%, var(--brand-base) 60%, var(--brand-glow) 100%) !important;
+  background-origin: border-box !important;
+  background-clip: padding-box, border-box !important;
+  background-size: 200% 200% !important;
+  animation: borderGlow 6s linear infinite !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), 0 0 1px 1px var(--brand-glow) !important;
+}
+
+/* 🚀 极雅输入区域彩虹流动边框 */
+.composer-rainbow-flow {
+  border: 1px solid transparent !important;
+  background-image: linear-gradient(var(--mg-bg-0), var(--mg-bg-0)), 
+                    linear-gradient(135deg, var(--brand-base) 0%, var(--brand-glow) 30%, var(--brand-base) 60%, var(--brand-glow) 100%) !important;
+  background-origin: border-box !important;
+  background-clip: padding-box, border-box !important;
+  background-size: 200% 200% !important;
+  animation: borderGlow 6s linear infinite !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08) !important;
+}
+
+@keyframes borderGlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* recharts 图表区域：禁止点击/双击后出现浏览器 focus outline */
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-wrapper svg:focus,
+.recharts-wrapper svg:focus-visible,
+.recharts-surface:focus,
+.recharts-surface:focus-visible {
+  outline: none !important;
+}

@@ -1,0 +1,344 @@
+/* ── 💎 通用元组件样式抽离与大厂极简现代美学（硅谷风格） ── */
+.modern-btn {
+  @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-glow disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 物理触觉阻尼按压 */
+.modern-btn:not(:disabled):active {
+  transform: scale(0.97) !important;
+  transition-duration: 0.1s !important;
+}
+
+.modern-btn-default {
+  @apply text-white shadow-sm;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  background-color: #0f172a !important; /* 浅色大厂极雅实色黑 */
+  border: 1px solid #0f172a !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05) !important;
+}
+
+.modern-btn-default:hover {
+  transform: translateY(-1.5px);
+  background-color: #1e293b !important;
+  border-color: #1e293b !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12), 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+body[theme-mode='dark'] .modern-btn-default {
+  background-color: rgba(255, 255, 255, 0.10) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  color: #f0f0f2 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+body[theme-mode='dark'] .modern-btn-default:hover {
+  transform: translateY(-1.5px);
+  background-color: rgba(255, 255, 255, 0.16) !important;
+  border-color: rgba(255, 255, 255, 0.20) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+.modern-btn-destructive {
+  @apply bg-rose-500 text-white shadow-sm;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border: none !important;
+  box-shadow: 0 1px 2px rgba(244, 63, 94, 0.1) !important;
+}
+
+.modern-btn-destructive:hover {
+  transform: translateY(-1.5px);
+  background-color: #e11d48 !important;
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.25), 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.modern-btn-outline {
+  @apply border bg-transparent;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-color: var(--mg-border) !important;
+  color: var(--mg-text-0) !important;
+}
+
+.modern-btn-outline:hover {
+  transform: translateY(-1px);
+  background-color: var(--mg-fill-0) !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+.modern-btn-secondary {
+  @apply transition-all;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  background-color: var(--mg-fill-0) !important;
+  color: var(--mg-text-1) !important;
+}
+
+.modern-btn-secondary:hover {
+  transform: translateY(-1px);
+  background-color: var(--mg-fill-1) !important;
+  color: var(--mg-text-0) !important;
+}
+
+.modern-btn-ghost {
+  @apply transition-all;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--mg-text-1) !important;
+}
+
+.modern-btn-ghost:hover {
+  transform: translateY(-0.5px);
+  background-color: var(--mg-fill-0) !important;
+  color: var(--mg-text-0) !important;
+}
+
+.modern-btn-link {
+  @apply underline-offset-4 hover:underline;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--brand-base) !important;
+}
+
+.modern-btn-link:hover {
+  color: var(--brand-deep) !important;
+}
+
+/* Brand 主色调按钮 — 渐变 + 光晕 + 上浮 */
+.modern-btn-brand {
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  border: none !important;
+  background: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand-base) 55%, var(--brand-mid) 100%) !important;
+  box-shadow: 0 2px 8px var(--brand-glow), 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.modern-btn-brand::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.modern-btn-brand:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--brand-glow), 0 3px 8px rgba(0, 0, 0, 0.12) !important;
+  filter: brightness(1.06) saturate(1.1);
+}
+
+.modern-btn-brand:not(:disabled):active {
+  transform: translateY(0) scale(0.97) !important;
+  filter: brightness(0.97);
+}
+
+/* 通用输入框与复合输入框极雅样式抽离 */
+.modern-input-field,
+.modern-input-wrapper {
+  @apply flex h-10 w-full rounded-lg border px-3.5 py-2 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-color: var(--mg-border) !important;
+  background-color: var(--mg-bg-1) !important;
+  color: var(--mg-text-0) !important;
+  box-shadow: var(--shadow-sm) !important;
+  box-sizing: border-box !important;
+}
+
+.modern-input-field::placeholder {
+  color: var(--mg-text-2) !important;
+  opacity: 0.7;
+}
+
+.modern-input-field:hover,
+.modern-input-wrapper:hover {
+  border-color: rgba(15, 23, 42, 0.15) !important;
+}
+
+body[theme-mode='dark'] .modern-input-field:hover,
+body[theme-mode='dark'] .modern-input-wrapper:hover {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.modern-input-field:focus,
+.modern-input-wrapper:focus-within {
+  border-color: var(--brand-base) !important;
+  box-shadow: 0 0 0 1px var(--brand-base), 0 0 0 3.5px var(--brand-glow), var(--shadow-sm) !important;
+  background-color: var(--mg-bg-0) !important;
+}
+
+/* 获焦时前置/后置图标联动亮化 */
+.modern-input-wrapper:focus-within .modern-input-prefix,
+.modern-input-wrapper:focus-within .modern-input-suffix {
+  color: var(--mg-text-0) !important;
+}
+
+/* 🔍 液态玻璃搜索输入框 — 半透明 + 毛玻璃 + 立体浮起，深浅主题都清晰可见 */
+.modern-input-search {
+  background-color: rgba(var(--mg-bg-0-rgb), 0.55) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.5);
+  backdrop-filter: blur(14px) saturate(1.5);
+  border-color: var(--mg-border) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 4px 18px -6px rgba(0, 0, 0, 0.14) !important;
+}
+
+.modern-input-search:hover {
+  background-color: rgba(var(--mg-bg-0-rgb), 0.72) !important;
+  border-color: color-mix(in srgb, var(--brand-base) 24%, var(--mg-border)) !important;
+}
+
+.modern-input-search:focus-within {
+  background-color: rgba(var(--mg-bg-0-rgb), 0.82) !important;
+  border-color: var(--brand-base) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px var(--brand-base),
+    0 0 0 3.5px var(--brand-glow),
+    0 4px 18px -6px rgba(0, 0, 0, 0.16) !important;
+}
+
+/* ── 💎 常用组件大厂级 UX 规范与微动效微交互 ── */
+
+/* 1. 终极平滑过渡与弹性曲线（硅谷极客动效 ease-out-expo） */
+.transition-ux {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition-duration: 350ms !important;
+}
+
+/* 2. 边缘渐变遮罩 (Scrolling Fade Edge) */
+/* 左右滚动高透朦胧淡出 (横向滚动 Table 或 Tab 导航) */
+.fade-edge-x {
+  mask-image: linear-gradient(to right, transparent, white 20px, white calc(100% - 20px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, white 20px, white calc(100% - 20px), transparent);
+}
+
+/* 上下滚动高透朦胧淡出 (纵向滚动 SideSheet 抽屉或 Select 下拉) */
+.fade-edge-y {
+  mask-image: linear-gradient(to bottom, transparent, white 20px, white calc(100% - 20px), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, white 20px, white calc(100% - 20px), transparent);
+}
+
+/* 3. 卡片微光与弹簧悬浮 (Card Spring Glow) */
+.card-glow-hover {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.card-glow-hover:hover {
+  transform: translateY(-1.5px) !important;
+  border-color: var(--brand-mid) !important;
+  box-shadow: 0 10px 25px -5px var(--brand-glow), 0 8px 16px -6px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* 4. 硅谷级微交互动效 */
+
+/* 选项卡 Tab Pane 的渐现与微缩放弹性 */
+.semi-tabs-pane {
+  animation: tabPaneEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes tabPaneEntrance {
+  from {
+    opacity: 0;
+    transform: scale(0.99) translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 表格行 (Table Row) 微平移悬停反馈 */
+.semi-table-row {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.semi-table-row:hover {
+  transform: scale(1.001) translateX(1.5px);
+  box-shadow: inset 2px 0 0 var(--brand-base);
+}
+
+/* Semi 浮层容器背景跟随主题 */
+.semi-select-option-list,
+.semi-popover-content,
+.semi-tooltip-content,
+.semi-dropdown-menu,
+.semi-modal-content,
+.semi-sidesheet-inner {
+  background-color: var(--mg-bg-0) !important;
+}
+
+/* 下拉菜单项 (Select Option) 微移高亮反馈 */
+.semi-select-option {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.semi-select-option-hover {
+  background-color: var(--mg-fill-0) !important;
+  padding-left: 18px !important;
+  color: var(--mg-text-0) !important;
+}
+
+/* 交互型 Badge 徽章动效 */
+.badge-interactive {
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.badge-interactive:hover {
+  transform: scale(1.04);
+  filter: brightness(0.96);
+}
+
+/* 自动为全站所有 SideSheet 抽屉的滚动体注入高级边缘渐变淡出遮罩 */
+.semi-sidesheet-body {
+  mask-image: linear-gradient(to bottom, transparent, white 20px, white calc(100% - 20px), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, white 20px, white calc(100% - 20px), transparent);
+}
+
+/* Logo 流光 Shimmer 动效 */
+.logo-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 70%
+  );
+  transform: translateX(-150%);
+  animation: logo-shimmer-sweep 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes logo-shimmer-sweep {
+  0%   { transform: translateX(-150%); opacity: 0; }
+  10%  { opacity: 1; }
+  40%  { transform: translateX(150%); opacity: 0; }
+  100% { transform: translateX(150%); opacity: 0; }
+}
+
+/* Logo 品牌名旁状态点脉冲动效（跟随品牌色） */
+@keyframes logo-dot-pulse {
+  0%, 100% { transform: scale(1);   box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-base) 50%, transparent); }
+  50%       { transform: scale(1.2); box-shadow: 0 0 0 4px transparent;  }
+}
+
+.logo-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--brand-base);
+  animation: logo-dot-pulse 2.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+

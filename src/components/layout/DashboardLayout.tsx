@@ -15,7 +15,6 @@ import {
   LuLock,
   LuMessageSquare,
   LuGift,
-  LuGitCompareArrows,
 } from 'react-icons/lu'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -122,9 +121,8 @@ export function DashboardLayout() {
     shield:      ic(<LuShield       size={16} />),
     eye:         ic(<LuEye          size={16} />),
     mail:        ic(<LuMail         size={16} />),
-    message:     ic(<LuMessageSquare    size={16} />),
-    gift:        ic(<LuGift             size={16} />),
-    compare:     ic(<LuGitCompareArrows size={14} />),
+    message:     ic(<LuMessageSquare size={16} />),
+    gift:        ic(<LuGift          size={16} />),
   }
 
   const showPlatformConfig = useDevStore((s) => s.showPlatformConfig)

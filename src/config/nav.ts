@@ -59,7 +59,6 @@ export const navConfig: NavConfig = {
       items: [
         { itemKey: 'models/catalog',    text: t('nav.modelCatalog'), icon: icons.list },
         { itemKey: 'models/playground', text: t('nav.modelExplore'), icon: icons.message },
-        { itemKey: 'models/compare',    text: t('nav.modelCompare'), icon: icons.compare },
       ],
     },
     {

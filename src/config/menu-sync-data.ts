@@ -42,14 +42,6 @@ export const MENUS: MenuSyncItem[] = [
     actions: [],
   },
   {
-    key: 'models/compare',
-    name: '模型对比',
-    name_en: 'Compare',
-    scope: 'tenant',
-    view_permission: 'models:view',
-    actions: [],
-  },
-  {
     key: 'analytics',
     name: '分析',
     name_en: 'Analytics',

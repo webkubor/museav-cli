@@ -1017,6 +1017,40 @@
       "requestsLabel": "Call Frequency (Requests)"
     }
   },
+  "dashboardTop": {
+    "greeting": {
+      "morning": "Good morning, {{name}}",
+      "afternoon": "Good afternoon, {{name}}",
+      "evening": "Good evening, {{name}}",
+      "defaultName": "Developer",
+      "desc": "Welcome back. Here is the real-time operating overview for your workspace.",
+      "liveBadge": "Live overview"
+    },
+    "status": {
+      "normalTitle": "System status is healthy",
+      "lowTitle": "Low balance reminder",
+      "normalDesc": "Available balance is {{amount}}. API calls, billing, and audit pipelines are running normally.",
+      "lowDesc": "Available balance is {{amount}}. Top up soon to avoid API interruptions and business impact.",
+      "balanceUnknown": "--",
+      "billingAction": "View billing",
+      "rechargeAction": "Top up now"
+    },
+    "onboarding": {
+      "title": "One-click setup for ModelGo CLI, API keys, and multi-model access",
+      "recommended": "Recommended",
+      "desc": "Authorize from your terminal to start calling models without manually copying Base URLs or keys.",
+      "action": "View models",
+      "toastCopied": "CLI login command copied to clipboard",
+      "toastCopyFailed": "Copy failed. Please copy the command manually."
+    },
+    "quick": {
+      "label": "Quick actions",
+      "createKey": "Create API Key",
+      "recharge": "Top up",
+      "logs": "View logs",
+      "models": "Model catalog"
+    }
+  },
   "welcomeBanner": {
     "greetingDomestic": "Hello, {{name}}",
     "greetingGlobal": "Hello, {{name}}",

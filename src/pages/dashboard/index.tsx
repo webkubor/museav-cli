@@ -6,8 +6,7 @@
  */
 
 import { KpiSection } from '@/features/dashboard/components/KpiSection'
-import { WelcomeBanner } from '@/features/dashboard/components/WelcomeBanner'
-import { QuickAccessSection } from '@/features/dashboard/components/QuickAccessSection'
+import { DashboardTopPanel } from '@/features/dashboard/components/DashboardTopPanel'
 import { DashboardRankingsSection } from '@/features/dashboard/components/DashboardRankingsSection'
 import { UsageChartSection } from '@/features/dashboard/components/UsageChartSection'
 import { HistogramChartSection } from '@/features/dashboard/components/HistogramChartSection'
@@ -21,24 +20,19 @@ export default function DashboardPage() {
 
   return (
     <div style={{ paddingBottom: '40px' }} className="animate-in fade-in duration-300">
-      {/* 0. 欢迎 Banner + Hero Visual */}
-      <WelcomeBanner />
+      {/* 0. 问候、状态提醒、一键配置与快捷操作 */}
+      <DashboardTopPanel />
 
-      {/* 1. 核心 KPI 统计（余额那一行） */}
+      {/* 1. 核心 KPI 统计 */}
       <KpiSection />
 
-      {/* 2. 快捷功能入口 — 提前曝光，引导新用户找到关键操作 */}
-      <div className="mb-8">
-        <QuickAccessSection />
-      </div>
-
-      {/* 3. 用量趋势与请求分布并排（近 5 天） */}
+      {/* 2. 用量趋势与请求分布并排（近 5 天） */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-stretch">
         <UsageChartSection />
         <HistogramChartSection />
       </div>
 
-      {/* 4. 热门模型排行榜 + 最近调用日志 并排 */}
+      {/* 3. 热门模型排行榜 + 最近调用日志 并排 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-stretch">
         <DashboardRankingsSection compact />
         <RecentActivitySection />

@@ -1016,6 +1016,40 @@
       "requestsLabel": "调用频次 (Requests)"
     }
   },
+  "dashboardTop": {
+    "greeting": {
+      "morning": "早上好，{{name}}",
+      "afternoon": "下午好，{{name}}",
+      "evening": "晚上好，{{name}}",
+      "defaultName": "开发者",
+      "desc": "欢迎回来，以下是当前系统的实时运行概览。",
+      "liveBadge": "实时概览"
+    },
+    "status": {
+      "normalTitle": "系统状态正常",
+      "lowTitle": "账户余额不足提醒",
+      "normalDesc": "当前可用余额为 {{amount}}，API 调用、账单和审计链路运行正常。",
+      "lowDesc": "当前可用余额为 {{amount}}，建议及时充值，避免影响 API 正常调用和业务连续性。",
+      "balanceUnknown": "--",
+      "billingAction": "查看账单",
+      "rechargeAction": "立即充值"
+    },
+    "onboarding": {
+      "title": "一键配置 ModelGo CLI、API Key 与多模型接入",
+      "recommended": "推荐",
+      "desc": "在本地终端完成授权登录后，无需手动复制 Base URL 和 Key，即可快速开始调用模型。",
+      "action": "查看模型",
+      "toastCopied": "CLI 登录命令已复制到剪贴板",
+      "toastCopyFailed": "复制失败，请手动复制命令"
+    },
+    "quick": {
+      "label": "快捷操作",
+      "createKey": "创建 API Key",
+      "recharge": "充值",
+      "logs": "查看日志",
+      "models": "模型目录"
+    }
+  },
   "welcomeBanner": {
     "greetingDomestic": "你好，{{name}}",
     "greetingGlobal": "Hello, {{name}}",

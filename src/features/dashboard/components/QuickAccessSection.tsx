@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/auth'
 import { Card } from '@/components/ui/Card'
 import './quick-access-section.css'
 
-type QuickIconType = 'models' | 'keys' | 'usage' | 'observability'
+export type QuickIconType = 'models' | 'keys' | 'usage' | 'observability'
 
 interface QuickLink {
   titleKey: string
@@ -21,7 +21,7 @@ function quickPath(path: string, workspaceId: string | null) {
   return workspaceId ? `/workspace/${workspaceId}/${scopedPath}` : '/dashboard'
 }
 
-function QuickWeb3Icon({ type }: { type: QuickIconType }) {
+export function QuickWeb3Icon({ type }: { type: QuickIconType }) {
   const id = `quick-${type}`
 
   return (

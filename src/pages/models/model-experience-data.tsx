@@ -14,13 +14,13 @@ export interface ExperienceMessage {
 }
 
 export const previewImages: Record<CategoryKey, string> = {
-  all: '/modelgo/model-experience-all.png',
-  text: '/modelgo/model-experience-text.png',
-  image: '/modelgo/model-experience-image.png',
-  video: '/modelgo/model-experience-video.png',
-  code: '/modelgo/model-experience-code.png',
-  reasoning: '/modelgo/model-experience-reasoning.png',
-  multimodal: '/modelgo/model-experience-multimodal.png',
+  all: '/modelgo/model-experience-all.webp',
+  text: '/modelgo/model-experience-text.webp',
+  image: '/modelgo/model-experience-image.webp',
+  video: '/modelgo/model-experience-video.webp',
+  code: '/modelgo/model-experience-code.webp',
+  reasoning: '/modelgo/model-experience-reasoning.webp',
+  multimodal: '/modelgo/model-experience-multimodal.webp',
 }
 
 export const modelExperienceCopy = {

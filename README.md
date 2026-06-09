@@ -126,6 +126,8 @@ pnpm check:api-contract
 | `VITE_GLOBAL_CONSOLE` | 海外客户中心地址 |
 | `VITE_GLOBAL_DOCS` | 海外说明文档地址 |
 | `VITE_ICP` | ICP 备案号（仅国内生产） |
+| `VITE_WX_MP_APP_ID` | 微信小程序 AppID |
+| `VITE_WX_MP_APP_SECRET` | 微信小程序 AppSecret（仅 `.env.local`，不入库） |
 
 ### 三套环境矩阵
 

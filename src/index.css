@@ -218,46 +218,72 @@ body[theme-mode='dark'] {
   --grid-color: rgba(29, 195, 155, 0.025);
 }
 
-/* 深色 */
+/* 深色 — 柔和品牌暗面，避免纯黑导致层级疲劳 */
 body[theme-mode='dark'] {
   /* 背景层级 */
-  --site-bg:  #111113;   /* 页面底层 */
-  --card-bg:  #1a1a1d;   /* 卡片面 */
-  --mg-bg-0:  #1a1a1d;   /* 主卡片 */
-  --mg-bg-0-rgb: 26, 26, 29;
-  --mg-bg-1:  #111113;   /* 页面背景 */
-  --mg-bg-2:  #242428;   /* 悬浮卡片 / Dropdown */
-  --mg-bg-3:  #2e2e33;   /* Modal / Tooltip 顶层 */
+  --site-bg:  #181720;   /* 页面底层 — 深紫灰 */
+  --card-bg:  #211f2b;   /* 卡片面 */
+  --mg-bg-0:  #211f2b;   /* 主卡片 */
+  --mg-bg-0-rgb: 33, 31, 43;
+  --mg-bg-1:  #181720;   /* 页面背景 */
+  --mg-bg-2:  #2a2735;   /* 悬浮卡片 / Dropdown */
+  --mg-bg-3:  #34303f;   /* Modal / Tooltip 顶层 */
 
   /* 文字层级 */
-  --mg-text-0: #f0f0f2;  /* 主文字，暖白 ~14:1 */
-  --mg-text-1: #a1a1aa;  /* 次要，~6:1 */
-  --mg-text-2: #71717a;  /* 辅助 / placeholder，~4.5:1 */
-  --mg-text-3: #52525b;  /* 禁用 / 装饰 */
+  --mg-text-0: #f4f2f8;  /* 主文字 */
+  --mg-text-1: #c0bacd;  /* 次要 */
+  --mg-text-2: #8f88a0;  /* 辅助 / placeholder */
+  --mg-text-3: #6f687c;  /* 禁用 / 装饰 */
 
   /* 边框与填充 */
-  --mg-border: rgba(255, 255, 255, 0.08);
-  --mg-fill-0: rgba(255, 255, 255, 0.04);
-  --mg-fill-1: rgba(255, 255, 255, 0.07);
-  --mg-fill-2: rgba(255, 255, 255, 0.11);
+  --mg-border: rgba(207, 198, 255, 0.12);
+  --mg-fill-0: rgba(184, 164, 255, 0.055);
+  --mg-fill-1: rgba(184, 164, 255, 0.085);
+  --mg-fill-2: rgba(184, 164, 255, 0.13);
 
   /* 代码块面（payload 查看器）：比卡片更深，呈现终端质感 */
-  --mg-code-bg:   #0d0d10;
-  --mg-code-text: #d4d4d8;
+  --mg-code-bg:   #15131d;
+  --mg-code-text: #ded9ea;
 
   /* 语义色 */
   --mg-success: #00eda0;
   --mg-danger:  #f87171;
   --mg-warning: #fbbf24;
 
-  /* 阴影（深色用边框模拟层次） */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  /* 阴影（深色降低黑度，用边框与色阶区分层级） */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(207, 198, 255, 0.08);
+  --shadow-lg: 0 18px 46px rgba(0, 0, 0, 0.36), 0 0 0 1px rgba(207, 198, 255, 0.07);
 
   /* 导航 */
-  --nav-item-hover-bg: rgba(255, 255, 255, 0.055);
-  --grid-color: rgba(255, 255, 255, 0.03);
+  --nav-item-hover-bg: rgba(184, 164, 255, 0.085);
+  --grid-color: rgba(207, 198, 255, 0.035);
+}
+
+/* 国际市场深色：深绿灰，避免 global 仍落入紫灰氛围 */
+[data-market='global'] body[theme-mode='dark'] {
+  --site-bg:  #141d1b;
+  --card-bg:  #1c2724;
+  --mg-bg-0:  #1c2724;
+  --mg-bg-0-rgb: 28, 39, 36;
+  --mg-bg-1:  #141d1b;
+  --mg-bg-2:  #24322f;
+  --mg-bg-3:  #2e3d39;
+  --mg-text-0: #f0f7f5;
+  --mg-text-1: #b8cbc5;
+  --mg-text-2: #829a93;
+  --mg-text-3: #657973;
+  --mg-border: rgba(142, 228, 209, 0.12);
+  --mg-fill-0: rgba(29, 195, 155, 0.055);
+  --mg-fill-1: rgba(29, 195, 155, 0.085);
+  --mg-fill-2: rgba(29, 195, 155, 0.13);
+  --mg-code-bg: #111917;
+  --mg-code-text: #d6e7e2;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.26), 0 0 0 1px rgba(142, 228, 209, 0.08);
+  --shadow-lg: 0 18px 46px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(142, 228, 209, 0.07);
+  --nav-item-hover-bg: rgba(29, 195, 155, 0.085);
+  --grid-color: rgba(142, 228, 209, 0.035);
 }
 
 /* ── 🍏 全局 Semi UI 输入框与多行文本域极雅覆写与聚焦发光 ── */

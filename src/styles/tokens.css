@@ -174,98 +174,58 @@ body[theme-mode='dark'] {
   --grid-color: rgba(29, 195, 155, 0.025);
 }
 
-/* 深色 — 支持微弱背景染色 (Hue Bleeding)，消除生硬的死灰感，对齐品牌主题 */
+/* 深色主题 — 采用高端中性灰/碳黑灰色 (Slate-Charcoal)，去除重度的紫色/绿色 Hue Bleeding，仅用品牌色作为强调色 */
 
-/* 默认或国内市场深色（微偏靛紫，烘托 CN 靛紫质感） */
-body[theme-mode='dark'],
-[data-market='domestic'] body[theme-mode='dark'] {
-  /* 背景层级 — 重构为大阶梯明度，彻底拉开卡片与大底对比度 */
-  --site-bg:  #0a0a0f;   /* 大底：大幅度调深，提升沉浸感与对比度底座 */
-  --card-bg:  #191924;   /* 卡片面：调亮，产生 >8% 亮度差，形成清晰内容卡片 */
-  --mg-bg-0:  #191924;   
-  --mg-bg-0-rgb: 25, 25, 36;
-  --mg-bg-1:  #0a0a0f;   
-  --mg-bg-2:  #242433;   /* 下拉菜单/悬浮层：再次阶梯性调亮 */
-  --mg-bg-3:  #303045;   /* Modal 弹出框：最亮，浮起感最强 */
+body[theme-mode='dark'] {
+  /* 背景层级 — 改良为高端碳黑深灰，微弱提升亮度减少压抑感 */
+  --site-bg:  #0d0e12;   /* 大底：极致典雅的深灰 */
+  --card-bg:  #17181e;   /* 卡片面：中性深灰，产生良好层叠感 */
+  --mg-bg-0:  #17181e;   
+  --mg-bg-0-rgb: 23, 24, 30;
+  --mg-bg-1:  #0d0e12;   
+  --mg-bg-2:  #20222b;   /* 下拉菜单/悬浮层 */
+  --mg-bg-3:  #2a2c37;   /* Modal 弹出框 */
 
-  /* 文字层级 — 柔白主文字，避免纯白眩光 */
-  --mg-text-0: #e9e9ec;
-  --mg-text-1: #a0a0a7;
-  --mg-text-2: #6f6f77;
-  --mg-text-3: #4d4d54;
+  /* 文字层级 — 柔白主文字，高对比度防眩光 */
+  --mg-text-0: #f8fafc;
+  --mg-text-1: #cbd5e1;
+  --mg-text-2: #94a3b8;
+  --mg-text-3: #64748b;
 
-  /* 边框与填充 — 提升边框不透明度至 14%，勾勒出精细的高级微发光边缘 */
-  --mg-border: rgba(156, 134, 240, 0.14);
-  --mg-fill-0: rgba(156, 134, 240, 0.04);
-  --mg-fill-1: rgba(156, 134, 240, 0.08);
-  --mg-fill-2: rgba(156, 134, 240, 0.12);
+  /* 边框与填充 — 弃用带有色偏的边框，改用高精细半透明中性灰边框 */
+  --mg-border: rgba(255, 255, 255, 0.08);
+  --mg-fill-0: rgba(255, 255, 255, 0.025);
+  --mg-fill-1: rgba(255, 255, 255, 0.05);
+  --mg-fill-2: rgba(255, 255, 255, 0.085);
 
   /* 代码块面（payload 查看器）：极深暗沉浸感 */
-  --mg-code-bg:   #06060a;
-  --mg-code-text: #d4d4d8;
+  --mg-code-bg:   #050608;
+  --mg-code-text: #cbd5e1;
 
   /* 语义色 */
   --mg-success: #00eda0;
   --mg-danger:  #f87171;
   --mg-warning: #fbbf24;
 
-  /* 财务与数据趋势别名（国内红涨绿跌） */
-  --mg-trend-up:   var(--mg-danger);
-  --mg-trend-down: var(--mg-success);
-
   /* 阴影 */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.06);
-  --shadow-lg: 0 18px 46px rgba(0, 0, 0, 0.36), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.36), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
 
   /* 导航 */
-  --nav-item-hover-bg: rgba(255, 255, 255, 0.05);
-  --grid-color: rgba(255, 255, 255, 0.025);
+  --nav-item-hover-bg: rgba(255, 255, 255, 0.04);
+  --grid-color: rgba(255, 255, 255, 0.015);
 }
 
-/* 国际市场深色（微偏绿墨，烘托 GO 翠绿极客感） */
+/* 国内市场特有趋势 (红涨绿跌) */
+[data-market='domestic'] body[theme-mode='dark'] {
+  --mg-trend-up:   var(--mg-danger);
+  --mg-trend-down: var(--mg-success);
+}
+
+/* 国际市场特有趋势 (绿涨红跌) */
 [data-market='global'] body[theme-mode='dark'] {
-  /* 背景层级 — 重构为大阶梯明度 */
-  --site-bg:  #070a09;   /* 大底 */
-  --card-bg:  #151c1a;   /* 卡片面 */
-  --mg-bg-0:  #151c1a;   
-  --mg-bg-0-rgb: 21, 28, 26;
-  --mg-bg-1:  #070a09;   
-  --mg-bg-2:  #202b28;   /* 下拉菜单/悬浮层 */
-  --mg-bg-3:  #2b3a36;   /* Modal 弹出框 */
-
-  /* 文字层级 — 柔白主文字，避免纯白眩光 */
-  --mg-text-0: #e5e8e7;
-  --mg-text-1: #9da3a1;
-  --mg-text-2: #6c7371;
-  --mg-text-3: #4a504f;
-
-  /* 边框与填充 — 提升边框不透明度至 14% */
-  --mg-border: rgba(29, 195, 155, 0.14);
-  --mg-fill-0: rgba(29, 195, 155, 0.04);
-  --mg-fill-1: rgba(29, 195, 155, 0.08);
-  --mg-fill-2: rgba(29, 195, 155, 0.12);
-
-  /* 代码块面（payload 查看器）：极深暗沉浸感 */
-  --mg-code-bg:   #040605;
-  --mg-code-text: #ccd4d1;
-
-  /* 语义色 */
-  --mg-success: #00eda0;
-  --mg-danger:  #f87171;
-  --mg-warning: #fbbf24;
-
-  /* 财务与数据趋势别名（国际绿涨红跌） */
   --mg-trend-up:   var(--mg-success);
   --mg-trend-down: var(--mg-danger);
-
-  /* 阴影 */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.06);
-  --shadow-lg: 0 18px 46px rgba(0, 0, 0, 0.36), 0 0 0 1px rgba(255, 255, 255, 0.05);
-
-  /* 导航 */
-  --nav-item-hover-bg: rgba(255, 255, 255, 0.05);
-  --grid-color: rgba(255, 255, 255, 0.025);
 }
 

@@ -26,7 +26,8 @@ Swagger：`https://modelgo-web-api.test.modelgo.com/swagger/doc.json`
 
 ## 关键约定
 
-- **无 Mock**：MSW 已完全移除，接口直连后端（dev 走 vite proxy，test/prod 走域名）
+- **无 Mock**：MSW 已彻底移除（含 `src/mocks`、`public/mockServiceWorker.js`、依赖），接口直连后端（dev 走 vite proxy，test/prod 走域名）
+- **本地日志**：`scripts/dev-logger-plugin.ts` 开 `/dev/log` 接口，前端 POST 落盘到 `log/`。API 失败 → `[api][failed]`（dev-errors.log）；前端运行时错误经 `src/lib/dev-error-reporter.ts` 上报 → `[frontend][uncaught|rejection|console]`
 - **认证**：`SessionLoader` 启动时拉 `/api/v1/auth/session`；未登录 → `ProtectedRoute` 重定向 `/login`
 - **双端品牌**：`data-market` 挂在 `<html>` 上，`domestic` = indigo，`global` = emerald；Logo 文件在 `public/brand/`
 - **Semi Design 主色**：通过 `--semi-color-primary` CSS 变量注入，在 `src/index.css` 按 `[data-market]` 切换

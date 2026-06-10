@@ -80,7 +80,7 @@ export const RecentActivitySection: React.FC = () => {
                       {displayModelName}
                     </td>
                     <td className="py-2.5 px-3">
-                      <Badge variant={item.status === 'failed' ? 'destructive' : item.status === 'rejected' ? 'secondary' : 'default'} className="text-[10px] py-0.5 px-1.5 font-bold tracking-wider">
+                      <Badge variant={item.status === 'failed' ? 'destructive' : item.status === 'rejected' ? 'secondary' : 'default'} size="sm">
                         {item.status.toUpperCase()}
                       </Badge>
                     </td>

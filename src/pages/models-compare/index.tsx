@@ -100,7 +100,7 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
         </div>
         <div className="flex gap-1 flex-wrap">
           {selected.modalities.map((m) => (
-            <Badge key={m} variant="info" className="py-0.5 px-2">{m}</Badge>
+            <Badge key={m} variant="info" size="sm">{m}</Badge>
           ))}
         </div>
       </div>
@@ -170,25 +170,25 @@ function renderCell(model: CatalogModelItem, key: string) {
   if (key === 'providers_count') return model.providers_count != null ? String(model.providers_count) : '—'
   if (key === 'zero_data_retention') {
     return model.zero_data_retention
-      ? <Badge variant="success" className="py-0.5 px-2">支持</Badge>
+      ? <Badge variant="success" size="sm">支持</Badge>
       : <span className="text-[var(--mg-text-2)]">—</span>
   }
   if (key === 'in_region_routing') {
     return model.in_region_routing
-      ? <Badge variant="success" className="py-0.5 px-2">支持</Badge>
+      ? <Badge variant="success" size="sm">支持</Badge>
       : <span className="text-[var(--mg-text-2)]">—</span>
   }
   if (key === 'modalities') {
     return (
       <div className="flex gap-1 flex-wrap">
-        {(model.modalities ?? []).map((m) => <Badge key={m} variant="info" className="py-0.5 px-2">{m}</Badge>)}
+        {(model.modalities ?? []).map((m) => <Badge key={m} variant="info" size="sm">{m}</Badge>)}
       </div>
     )
   }
   if (key === 'tags') {
     return (
       <div className="flex gap-1 flex-wrap">
-        {(model.tags ?? []).slice(0, 4).map((t) => <Badge key={t} variant="secondary" className="py-0.5 px-2">{t}</Badge>)}
+        {(model.tags ?? []).slice(0, 4).map((t) => <Badge key={t} variant="secondary" size="sm">{t}</Badge>)}
       </div>
     )
   }

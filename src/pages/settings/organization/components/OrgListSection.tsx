@@ -166,7 +166,7 @@ export function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
                         {record.name}
                       </span>
                       {record.is_default && (
-                        <Badge variant="secondary" className="text-[9px] py-0 px-1 rounded-full font-bold scale-[0.9] origin-left shrink-0">默认</Badge>
+                        <Badge variant="secondary" size="xs" className="shrink-0">默认</Badge>
                       )}
                     </div>
                     <RoleBadge role={record.role} />

@@ -105,7 +105,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
       render: (m) => (
         <div className="flex gap-1 flex-wrap">
           {(m.modalities ?? []).map((mod) => (
-            <Badge key={mod} variant="info" className="py-0 px-1.5 text-[10px] font-semibold leading-relaxed">{mod}</Badge>
+            <Badge key={mod} variant="info" size="sm">{mod}</Badge>
           ))}
         </div>
       ),
@@ -117,7 +117,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
       render: (m) => (
         <div className="flex gap-0.5 flex-wrap">
           {(m.tags ?? []).slice(0, 2).map((tag) => (
-            <Badge key={tag} variant="secondary" className="py-0 px-1 text-[9.5px] font-normal leading-relaxed">{tag}</Badge>
+            <Badge key={tag} variant="secondary" size="xs">{tag}</Badge>
           ))}
         </div>
       ),

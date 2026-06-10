@@ -713,7 +713,7 @@ export default function PlatformConfigPage() {
             {t('platformConfig.desc')}
           </p>
         </div>
-        <Badge variant="warning" className="uppercase font-bold tracking-wide text-[10px] select-none h-6 px-2.5">
+        <Badge variant="warning" size="sm" className="uppercase tracking-wide select-none">
           DEV ONLY
         </Badge>
       </div>

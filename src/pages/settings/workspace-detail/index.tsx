@@ -251,7 +251,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
                       ))}
                     </Select>
                   ) : (
-                    <Badge variant="purple" className="text-[9px] shrink-0">{WS_ROLE_LABEL[m.role]}</Badge>
+                    <Badge variant="purple" size="xs" className="shrink-0">{WS_ROLE_LABEL[m.role]}</Badge>
                   )}
                   {m.role !== 'ws_owner' && canManageMembers && (
                     <button
@@ -301,7 +301,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
                     <div className="text-[12px] font-semibold text-mg-text-0 truncate">{m.account.display_name}</div>
                     <div className="text-[10px] text-mg-text-2 truncate">{m.account.email}</div>
                   </div>
-                  <Badge variant="outline" className="text-[9px] shrink-0">{TENANT_ROLE_LABEL[m.role]}</Badge>
+                  <Badge variant="outline" size="xs" className="shrink-0">{TENANT_ROLE_LABEL[m.role]}</Badge>
                   {canManageMembers && (
                     <Button
                       variant="ghost"

@@ -5,6 +5,9 @@ import { toast } from 'sonner'
 import './index.css'
 import './i18n'
 import App from './App.tsx'
+import { installDevErrorReporter } from './lib/dev-error-reporter'
+
+installDevErrorReporter()
 
 registerSW({
   onNeedRefresh() {

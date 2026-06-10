@@ -215,8 +215,7 @@ export default function ModelsComparePage() {
     queryFn: () => listModels({ limit: 100 }),
   })
 
-  // 对比只支持纯文字模型（LLM），过滤掉 VLM / Audio / Video
-  // useMemo 防止 filter 每次 render 产生新引用，避免触发依赖 models 的 useEffect 死循环
+  // 对比只支持文本模型（LLM），过滤掉 VLM / Audio / Video
   const models = useMemo(
     () => (modelsQuery.data?.items ?? []).filter((m) => getModelType(m.modalities) === 'LLM'),
     [modelsQuery.data]

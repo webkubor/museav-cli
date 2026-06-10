@@ -410,6 +410,7 @@ export default function ApiKeysPage() {
           <TableRow>
             <TableHead>{t('apiKeys.table.name')}</TableHead>
             <TableHead>{t('apiKeys.table.credentials')}</TableHead>
+            <TableHead>作用域</TableHead>
             <TableHead>{t('apiKeys.table.status')}</TableHead>
             <TableHead>{t('apiKeys.table.totalSpend')}</TableHead>
             <TableHead>{t('apiKeys.table.createdAt')}</TableHead>
@@ -419,11 +420,11 @@ export default function ApiKeysPage() {
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-10 text-mg-text-2">{t('common.loading')}</TableCell>
+              <TableCell colSpan={7} className="text-center py-10 text-mg-text-2">{t('common.loading')}</TableCell>
             </TableRow>
           ) : filteredData.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-10 text-mg-text-2">{t('apiKeys.table.noData')}</TableCell>
+              <TableCell colSpan={7} className="text-center py-10 text-mg-text-2">{t('apiKeys.table.noData')}</TableCell>
             </TableRow>
           ) : (
             filteredData.map((record) => (
@@ -433,6 +434,20 @@ export default function ApiKeysPage() {
                   <span className="font-mono text-xs bg-mg-bg-1 border border-mg-border px-2.5 py-1 rounded text-mg-text-1">
                     {record.masked}
                   </span>
+                </TableCell>
+                <TableCell>
+                  {record.scope
+                    ? (() => {
+                        const opt = SCOPE_OPTIONS.find((o) => o.value === record.scope)
+                        return opt ? (
+                          <span className="inline-flex items-center gap-1 text-xs text-mg-text-1">
+                            <span className="text-mg-text-2">{opt.icon}</span>
+                            {opt.label}
+                          </span>
+                        ) : <span className="text-mg-text-2 text-xs">—</span>
+                      })()
+                    : <span className="text-mg-text-2 text-xs">—</span>
+                  }
                 </TableCell>
                 <TableCell>
                   <Badge variant={record.status === 'active' ? 'success' : 'outline'} dot={record.status === 'active'}>

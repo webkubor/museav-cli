@@ -85,6 +85,13 @@
   box-shadow: 0 0 0 5px rgba(0, 214, 143, 0.12);
 }
 
+.dashboard-top-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+  gap: 16px;
+}
+
 .dashboard-top-status,
 .dashboard-top-guide {
   position: relative;
@@ -100,7 +107,6 @@
 }
 
 .dashboard-top-status {
-  min-height: 76px;
   padding: 16px 20px 16px 24px;
 }
 
@@ -175,7 +181,6 @@
 }
 
 .dashboard-top-guide {
-  min-height: 108px;
   padding: 16px 20px 16px 24px;
   border-color: color-mix(in srgb, var(--brand-base) 16%, var(--mg-border));
   background:
@@ -383,6 +388,10 @@ body[theme-mode='dark'] .dashboard-top-guide-icon {
 }
 
 @media (max-width: 900px) {
+  .dashboard-top-cards {
+    grid-template-columns: 1fr;
+  }
+
   .dashboard-top-greeting,
   .dashboard-top-status,
   .dashboard-top-guide {

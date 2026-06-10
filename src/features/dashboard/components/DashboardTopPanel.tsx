@@ -98,6 +98,7 @@ export const DashboardTopPanel: React.FC = () => {
         </span>
       </div>
 
+      <div className="dashboard-top-cards">
       <div className="dashboard-top-status" data-tone={isLowBalance ? 'warning' : 'normal'}>
         <span className="dashboard-top-status-mark" aria-hidden>
           <LuInfo size={18} />
@@ -138,6 +139,7 @@ export const DashboardTopPanel: React.FC = () => {
           {t('dashboardTop.onboarding.action')}
           <LuArrowRight size={14} />
         </button>
+      </div>
       </div>
 
       <div className="dashboard-top-quick">

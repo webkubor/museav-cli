@@ -1060,7 +1060,9 @@
       "createKey": "创建 API Key",
       "recharge": "充值",
       "logs": "查看日志",
-      "models": "模型目录"
+      "models": "模型目录",
+      "guardrails": "安全护栏",
+      "compare": "模型对比"
     }
   },
   "welcomeBanner": {

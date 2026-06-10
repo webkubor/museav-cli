@@ -58,9 +58,11 @@ export const DashboardTopPanel: React.FC = () => {
       path: scopedWorkspacePath(activeWorkspaceId, 'api-keys'),
       primary: true,
     },
-    { icon: 'usage', label: t('dashboardTop.quick.recharge'), path: '/billing' },
-    { icon: 'observability', label: t('dashboardTop.quick.logs'), path: '/logs' },
-    { icon: 'models', label: t('dashboardTop.quick.models'), path: '/models/catalog' },
+    { icon: 'usage',        label: t('dashboardTop.quick.recharge'),   path: '/billing' },
+    { icon: 'observability',label: t('dashboardTop.quick.logs'),        path: '/logs' },
+    { icon: 'models',       label: t('dashboardTop.quick.models'),      path: '/models/catalog' },
+    { icon: 'guardrails',   label: t('dashboardTop.quick.guardrails'),  path: scopedWorkspacePath(activeWorkspaceId, 'guardrails') },
+    { icon: 'compare',      label: t('dashboardTop.quick.compare'),     path: '/models/compare' },
   ]
 
   const handleCopy = async () => {

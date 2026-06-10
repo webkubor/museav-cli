@@ -1061,7 +1061,9 @@
       "createKey": "Create API Key",
       "recharge": "Top up",
       "logs": "View logs",
-      "models": "Model catalog"
+      "models": "Model catalog",
+      "guardrails": "Guardrails",
+      "compare": "Compare"
     }
   },
   "welcomeBanner": {

@@ -31,6 +31,7 @@ import {
   type CategoryKey,
 } from '../model-experience-data'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
+import '@/features/dashboard/components/dashboard-rankings-section.css'
 
 interface ModelMeta {
   descriptionZh: string

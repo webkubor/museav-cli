@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/Badge'
 import { toast } from 'sonner'
 import { Modal } from '@/components/ui/Modal'
 import { Card } from '@/components/ui/Card'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 export default function WorkspacesPage() {
   const { t } = useTranslation()
@@ -86,14 +88,11 @@ export default function WorkspacesPage() {
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       {/* 头部标题与描述 */}
-      <div>
-        <h1 className="text-2xl font-bold text-mg-text-0 tracking-tight mb-1.5">
-          {t('workspaces.title')}
-        </h1>
-        <p className="text-[13px] text-mg-text-2 leading-relaxed">
-          {t('workspaces.desc')}
-        </p>
-      </div>
+      <PageHeader
+        title={t('workspaces.title')}
+        description={t('workspaces.desc')}
+        className="mb-0"
+      />
 
       {/* 控制台操作区域 */}
       <div className="flex justify-between items-center gap-4">
@@ -126,7 +125,7 @@ export default function WorkspacesPage() {
           <span className="font-semibold tracking-wide text-sm">{t('workspaces.loading')}</span>
         </div>
       ) : filteredData.length === 0 ? (
-        <div className="text-center py-20 text-mg-text-2 text-sm font-semibold">{t('workspaces.empty')}</div>
+        <EmptyState title={t('workspaces.empty')} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredData.map((ws) => (

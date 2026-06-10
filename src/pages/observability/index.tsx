@@ -14,6 +14,10 @@ import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { appToast } from '@/lib/app-toast'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import type { StatusConfig } from '@/components/ui/StatusBadge'
 import {
   getLoggingConfig,
   updateLoggingConfig,
@@ -236,6 +240,12 @@ function PlatformConfigModal({
 
 // ─── 可用平台列表区块 ──────────────────────────────────────────────────────────
 
+const FORWARD_STATUS_MAP: Record<string, StatusConfig> = {
+  active: { label: 'Active', variant: 'success', dot: true },
+  error: { label: 'Error', variant: 'danger', dot: true },
+  warning: { label: 'Warning', variant: 'warning', dot: true },
+}
+
 function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspaceId: string; canManageForward: boolean }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -294,7 +304,10 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
                 className={`flex items-center justify-between px-5 py-3 hover:bg-mg-fill-0/40 transition-colors ${idx !== 0 ? 'border-t border-mg-border' : ''}`}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${fwd.status === 'active' ? 'bg-mg-success' : fwd.status === 'error' ? 'bg-mg-danger' : 'bg-mg-warning'}`} />
+                  <StatusBadge
+                    status={fwd.status ?? ''}
+                    statusMap={FORWARD_STATUS_MAP}
+                  />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-mg-text-0 truncate">{fwd.name}</p>
                     <p className="text-xs text-mg-text-2 truncate">{fwd.config?.endpoint as string ?? ''}</p>
@@ -325,9 +338,9 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
           <p className="text-[11px] font-bold text-mg-text-2 uppercase tracking-widest">可用平台</p>
         </div>
         {platformsQuery.isLoading ? (
-          <div className="px-5 py-10 text-center text-xs text-mg-text-2">加载中…</div>
+          <EmptyState title="加载中…" className="py-10" />
         ) : platforms.length === 0 ? (
-          <div className="px-5 py-10 text-center text-xs text-mg-text-2">暂无可用平台</div>
+          <EmptyState title="暂无可用平台" className="py-10" />
         ) : (
           <ul>
             {platforms.map((p, idx) => (
@@ -469,14 +482,11 @@ export default function ObservabilityPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-mg-text-0">
-          {t('observability.title')}
-        </h1>
-        <p className="text-sm text-mg-text-1 mt-1.5 font-medium">
-          {t('observability.desc')}
-        </p>
-      </div>
+      <PageHeader
+        title={t('observability.title')}
+        description={t('observability.desc')}
+        className="mb-0"
+      />
 
       {loggingQuery.isLoading && (
         <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border p-6 max-w-3xl space-y-4 animate-pulse">

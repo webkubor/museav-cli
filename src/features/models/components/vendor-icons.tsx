@@ -60,6 +60,10 @@ const ICON_FACTORY: Record<string, (size: number) => React.ReactNode> = {
   groq:      (s) => <Groq size={s} />,
   baidu:     (s) => <Baidu.Color size={s} />,
   ernie:     (s) => <Baidu.Color size={s} />,
+  seedream:  (s) => <Doubao.Color size={s} />,
+  skylark:   (s) => <Doubao.Color size={s} />,
+  bytedance: (s) => <Doubao.Color size={s} />,
+  ark:       (s) => <Doubao.Color size={s} />,
 }
 
 /**
@@ -87,6 +91,8 @@ const LOBEHUB_BY_NAME: Record<string, LobehubIconComp> = {
   OpenAI, OpenRouter, Anthropic, Claude, Gemini, Google, DeepSeek, Qwen, Mistral, Ollama,
   Meta, Moonshot, Kimi, Minimax, ChatGLM, Zhipu, Cohere, Groq, Baidu, Wenxin, Grok, XAI,
   Doubao, Hunyuan, Spark, Yi, Stepfun, Baichuan, InternLM, Together, Fireworks, Perplexity, Hailuo,
+  // ByteDanceSeed 是后端写错的 lobehub 名，实际不存在，映射到 Doubao 兜底
+  ByteDanceSeed: Doubao,
 } as unknown as Record<string, LobehubIconComp>
 
 /**

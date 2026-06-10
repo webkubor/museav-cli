@@ -9,7 +9,6 @@ import {
   LuGitCompareArrows,
   LuChevronRight,
   LuChevronDown,
-  LuBot,
   LuChartBar,
 } from 'react-icons/lu'
 import { useQuery } from '@tanstack/react-query'
@@ -31,6 +30,7 @@ import {
   type CategoryKey,
 } from '../model-experience-data'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
+import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
 import '@/features/dashboard/components/dashboard-rankings-section.css'
 
 interface ModelMeta {
@@ -209,17 +209,23 @@ export default function ModelsCatalogPage() {
 
   const rankingItems = useMemo(() => {
     const TONES = ['emerald', 'cyan', 'violet', 'amber'] as const
+    const iconMap = new Map<string, ModelIconLike>()
+    for (const m of allModels) {
+      iconMap.set(m.model_id, { logo_url: m.logo_url, vendor: m.vendor, display_name: m.display_name })
+    }
     return (rankingsData?.items ?? []).map((item: UsageRankingItem, i: number) => {
       const amount = item.spend?.amount ? `${currencySymbol}${parseFloat(item.spend.amount).toFixed(4)}` : '—'
+      const key = item.key ?? ''
       return {
         rank: String(item.rank ?? i + 1).padStart(2, '0'),
-        name: item.name || item.key || '—',
+        name: item.name || key || '—',
         requests: item.requests ?? 0,
         score: amount,
         tone: TONES[i % TONES.length],
+        iconModel: iconMap.get(key) ?? { display_name: item.name || key, vendor: key.split('/')[0] },
       }
     })
-  }, [rankingsData])
+  }, [rankingsData, allModels])
 
   return (
     <div className="space-y-8 py-2">
@@ -590,7 +596,7 @@ export default function ModelsCatalogPage() {
                 {rankingItems.map((item) => (
                   <div className="dashboard-ranking-row" data-tone={item.tone} key={item.rank}>
                     <span className="dashboard-ranking-rank">{item.rank}</span>
-                    <span className="dashboard-ranking-icon"><LuBot aria-hidden /></span>
+                    <span className="dashboard-ranking-icon"><ModelIcon model={item.iconModel} size={24} /></span>
                     <span className="dashboard-ranking-copy">
                       <strong>{item.name}</strong>
                       <small>{item.requests.toLocaleString()} calls</small>

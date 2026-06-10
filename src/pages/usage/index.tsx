@@ -16,6 +16,7 @@ import { formatChartTooltipDate } from '@/lib/format-date'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { LuTrendingUp, LuActivity, LuDatabase } from 'react-icons/lu'
 
 // ─── Types ───────────────────────────────────────────
@@ -338,32 +339,18 @@ export default function UsagePage() {
 
   return (
     <div>
-      {/* 页面头部 */}
-      <div style={{ marginBottom: '28px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <h1
-            style={{
-              fontSize: '24px',
-              fontWeight: 700,
-              color: 'var(--mg-text-0)',
-              margin: '0 0 6px 0',
-              letterSpacing: '-0.02em',
-            }}
-          >
-            {t('usage.title')}
-          </h1>
-          <p style={{ fontSize: '13px', color: 'var(--mg-text-1)', margin: 0, fontWeight: 400 }}>
-            {t('usage.desc')}
-          </p>
-        </div>
-
-        {/* 时间范围选择 */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {(['7d', '30d', '90d'] as Range[]).map((r) => (
-            <RangeBtn key={r} label={RANGE_LABELS[r]} active={range === r} onClick={() => setRange(r)} />
-          ))}
-        </div>
-      </div>
+      <PageHeader
+        title={t('usage.title')}
+        description={t('usage.desc')}
+        actions={
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {(['7d', '30d', '90d'] as Range[]).map((r) => (
+              <RangeBtn key={r} label={RANGE_LABELS[r]} active={range === r} onClick={() => setRange(r)} />
+            ))}
+          </div>
+        }
+        className="mb-7"
+      />
 
       {/* KPI 卡片行 */}
       {summaryQuery.isError ? (

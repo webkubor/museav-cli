@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { getProfile } from '@/services/account'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { BasicInfoTab } from '@/features/settings/account/components/BasicInfoTab'
 import { ChangePasswordTab } from '@/features/settings/account/components/ChangePasswordTab'
 import { OAuthBindingTab } from '@/features/settings/account/components/OAuthBindingTab'
@@ -49,17 +50,10 @@ export default function AccountSettingsPage() {
 
   return (
     <div style={{ maxWidth: '800px' }}>
-      {/* 头部标题与说明 */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1
-          style={{ fontSize: '24px', fontWeight: 700, color: 'var(--mg-text-0)', margin: 0, letterSpacing: '-0.02em' }}
-        >
-          {t('account.title')}
-        </h1>
-        <span style={{ color: 'var(--mg-text-1)', fontSize: '13.5px', marginTop: '6px', display: 'block' }}>
-          {t('account.desc')}
-        </span>
-      </div>
+      <PageHeader
+        title={t('account.title')}
+        description={t('account.desc')}
+      />
 
       {/* 清雅水平 Tabs 视窗切换，彻底告别堆叠 Card 拥挤感 */}
       <div className="border-b border-mg-border flex gap-6 text-sm mb-6 bg-transparent">

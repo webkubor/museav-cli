@@ -1,6 +1,7 @@
 import { LuBot, LuChartBar } from 'react-icons/lu'
 import { useQuery } from '@tanstack/react-query'
 import { Card } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { useAuthStore } from '@/store/auth'
 import { getRankings, type RankingApiItem } from '@/services/overview'
 import './dashboard-rankings-section.css'
@@ -51,12 +52,7 @@ function RankingCard({
 
       <div className="dashboard-ranking-list">
         {items.length === 0 ? (
-          <div className="dashboard-ranking-row" data-tone="cyan">
-            <span className="dashboard-ranking-copy">
-              <strong>暂无数据</strong>
-              <small>近 30 天还没有模型调用记录</small>
-            </span>
-          </div>
+          <EmptyState title="暂无数据" description="近 30 天还没有模型调用记录" />
         ) : (
           items.map((item) => (
             <div className="dashboard-ranking-row" data-tone={item.tone} key={item.name}>

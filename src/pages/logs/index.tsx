@@ -6,6 +6,10 @@ import { Input } from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import { SideSheet } from '@/components/ui/SideSheet'
 import { Badge } from '@/components/ui/Badge'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import type { StatusConfig } from '@/components/ui/StatusBadge'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
 import {
   Table,
@@ -30,6 +34,16 @@ import { CodeBlock } from '@/components/ui/CodeBlock'
 
 type LogStatusFilter = 'all' | 'success' | 'failed'
 type PayloadKind = 'request' | 'response'
+
+const LOG_STATUS_MAP: Record<string, StatusConfig> = {
+  success: { label: 'Success', variant: 'success' },
+  failed:  { label: 'Failed',  variant: 'destructive' },
+}
+
+function getLogStatus(row: { http_status?: number | null; status?: string }): string {
+  const ok = row.http_status ? row.http_status < 400 : (row.status === 'succeeded' || row.status === 'accepted')
+  return ok ? 'success' : 'failed'
+}
 
 function decodePayload(payload: LogPayload | undefined) {
   if (!payload?.body_b64) return ''
@@ -259,38 +273,23 @@ export default function LogsPage() {
   const total = data?.items?.length ?? 0
   const hasMore = rawLogs.length > page * pageSize
 
-  // 获取状态标签
-  const getStatusBadge = (row: CallLogItem) => {
-    const ok = row.http_status ? row.http_status < 400 : (row.status === 'succeeded' || row.status === 'accepted')
-    return (
-      <Badge variant={ok ? 'success' : 'destructive'}>
-        {row.http_status || (ok ? 'Success' : 'Failed')}
-      </Badge>
-    )
-  }
-
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
-      {/* 头部标题与刷新 */}
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-mg-text-0 tracking-tight mb-1.5">
-            {t('logs.title')}
-          </h1>
-          <p className="text-[13px] text-mg-text-2 leading-relaxed">
-            {t('logs.desc')}
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          disabled={isLoading || isFetching}
-          onClick={() => refetch()}
-          className="rounded-full px-5 h-10 shrink-0 font-semibold"
-        >
-          <LuRefreshCw className={`w-4 h-4 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
-          {t('logs.refresh')}
-        </Button>
-      </div>
+      <PageHeader
+        title={t('logs.title')}
+        description={t('logs.desc')}
+        actions={
+          <Button
+            variant="outline"
+            disabled={isLoading || isFetching}
+            onClick={() => refetch()}
+            className="rounded-full px-5 h-10 shrink-0 font-semibold"
+          >
+            <LuRefreshCw className={`w-4 h-4 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
+            {t('logs.refresh')}
+          </Button>
+        }
+      />
 
       {/* 综合过滤面板 */}
       <div className="bg-mg-bg-0 p-5 rounded-xl border border-mg-border/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end shadow-sm select-none">
@@ -358,9 +357,7 @@ export default function LogsPage() {
         {isLoading ? (
           <TableSkeleton />
         ) : filteredLogs.length === 0 ? (
-          <div className="py-20 text-center text-xs italic text-mg-text-2">
-            {t('logs.empty')}
-          </div>
+          <EmptyState title={t('logs.empty')} />
         ) : (
           <>
             <Table>
@@ -420,7 +417,7 @@ export default function LogsPage() {
                       {(row.duration_ms / 1000).toFixed(2)}s
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(row)}
+                      <StatusBadge status={getLogStatus(row)} statusMap={LOG_STATUS_MAP} />
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -486,7 +483,7 @@ export default function LogsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="border border-mg-border/60 p-3.5 rounded-lg bg-mg-fill-0/20">
                 <p className="text-[10px] text-mg-text-2 uppercase font-bold tracking-widest">{t('logs.detail.status')}</p>
-                <div className="mt-1.5">{getStatusBadge(selectedLog)}</div>
+                <div className="mt-1.5"><StatusBadge status={getLogStatus(selectedLog)} statusMap={LOG_STATUS_MAP} /></div>
               </div>
               <div className="border border-mg-border/60 p-3.5 rounded-lg bg-mg-fill-0/20">
                 <p className="text-[10px] text-mg-text-2 uppercase font-bold tracking-widest">{t('logs.detail.duration')}</p>

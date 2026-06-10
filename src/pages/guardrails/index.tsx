@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { LuPlus } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
@@ -296,13 +297,10 @@ export default function GuardrailsPage() {
   // ── JSX ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
-      {/* 页头 */}
-      <div className="flex justify-between items-start gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-mg-text-0">{t('guardrails.title')}</h1>
-          <p className="text-sm text-mg-text-1 mt-1.5 font-medium">{t('guardrails.desc')}</p>
-        </div>
-        {canCreate && (
+      <PageHeader
+        title={t('guardrails.title')}
+        description={t('guardrails.desc')}
+        actions={canCreate && (
           <Button
             variant="brand"
             onClick={openCreate}
@@ -312,7 +310,7 @@ export default function GuardrailsPage() {
             {t('guardrails.create')}
           </Button>
         )}
-      </div>
+      />
 
       {/* 列表 */}
       <GuardrailTable

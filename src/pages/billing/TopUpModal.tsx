@@ -47,16 +47,37 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
         channel: effectiveChannel,
         return_url: window.location.href,
       }),
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['balance', tenantId] })
       queryClient.invalidateQueries({ queryKey: ['billing', 'recharges', tenantId] })
-      const url = data.payment.redirect_url ?? data.payment.qr_code_url
-      if (url) window.open(url, '_blank', 'noopener')
       onClose()
       appToast.success(t('billing.rechargeModal.success'))
     },
     onError: (err: Error) => appToast.error(err.message || t('billing.rechargeModal.error')),
   })
+
+  const handleSubmit = () => {
+    const paymentWindow = window.open('about:blank', '_blank')
+    if (paymentWindow) paymentWindow.opener = null
+
+    recharge.mutate(undefined, {
+      onSuccess: (data) => {
+        const url = data.payment.redirect_url ?? data.payment.qr_code_url
+        if (!url) {
+          paymentWindow?.close()
+          return
+        }
+        if (paymentWindow && !paymentWindow.closed) {
+          paymentWindow.location.href = url
+          return
+        }
+        window.location.assign(url)
+      },
+      onError: () => {
+        paymentWindow?.close()
+      },
+    })
+  }
 
   const presetClasses = (p: string) => {
     const isActive = amount === p
@@ -146,7 +167,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
           <Button
             variant="brand"
             disabled={!parseFloat(amount) || parseFloat(amount) <= 0 || recharge.isPending}
-            onClick={() => recharge.mutate()}
+            onClick={handleSubmit}
             className="w-full h-11 text-xs rounded-xl"
           >
             {recharge.isPending ? t('billing.rechargeModal.submitting') : t('billing.rechargeModal.submit', { amount })}

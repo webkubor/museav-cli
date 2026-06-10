@@ -11,9 +11,8 @@ import {
   LuGift,
   LuRefreshCw,
 } from 'react-icons/lu'
-import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
-import { getBalanceBreakdown } from '@/services/billing'
+import { useBalanceBreakdown } from '@/hooks/use-balance'
 import { streamExperienceChat } from '@/services/experience'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -52,11 +51,7 @@ export default function ModelsPage() {
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
   // 免费额度 = 当前租户「赠送余额」（grant 桶）：体验计费优先从中扣减，
   // 与后端多桶账本的真实扣费顺序一致（grant→cash，#97/#93）。
-  const { data: breakdown } = useQuery({
-    queryKey: ['balance', 'breakdown', tenantId],
-    queryFn: () => getBalanceBreakdown(tenantId),
-    enabled: !!tenantId,
-  })
+  const { data: breakdown } = useBalanceBreakdown(tenantId)
   const giftBalance = Number(breakdown?.gift.amount ?? 0)
   const [category, setCategory] = useState<CategoryKey>('all')
   const [isCompareOpen, setIsCompareOpen] = useState(false)

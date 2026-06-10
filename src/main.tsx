@@ -18,22 +18,8 @@ registerSW({
   },
 })
 
-async function bootstrap() {
-  // MSW 仅在开发模式且有待 mock 接口时启动
-  if (import.meta.env.DEV) {
-    const { worker } = await import('./mocks/browser')
-    await worker.start({
-      // 未注册 handler 的请求全部穿透到真实后端，不拦截
-      onUnhandledRequest: 'bypass',
-      serviceWorker: { url: '/mockServiceWorker.js' },
-    })
-  }
-
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  )
-}
-
-bootstrap()
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)

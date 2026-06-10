@@ -211,8 +211,8 @@ export default function ModelsComparePage() {
   const [searches, setSearches] = useState(['', '', ''])
 
   const modelsQuery = useQuery({
-    queryKey: ['catalog', 'models', 'all'],
-    queryFn: () => listModels({ page_size: 200 }),
+    queryKey: ['catalog-models'],
+    queryFn: () => listModels({ limit: 100 }),
   })
 
   // 对比只支持纯文字模型（LLM），过滤掉 VLM / Audio / Video

@@ -65,8 +65,8 @@ export default function GuardrailsPage() {
   const [memberIds, setMemberIds] = useState<string[]>([])
 
   const modelsQuery = useQuery({
-    queryKey: ['catalog-models-all'],
-    queryFn: () => listModels({ limit: 200 }),
+    queryKey: ['catalog-models'],
+    queryFn: () => listModels({ limit: 100 }),
     staleTime: 120_000,
   })
   const modelSuggestions = (modelsQuery.data as any)?.items?.map((m: any) => m.model_id as string) ?? []

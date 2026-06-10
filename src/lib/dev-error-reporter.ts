@@ -13,20 +13,29 @@
  *     把日志撑爆（参考此前 MSW × PWA 冲突刷出 1.4 万条的事故）。
  */
 
-const THROTTLE_MS = 1000
+const THROTTLE_MS = 5000
+const MAX_BROWSER_REPEATS = 3
+
 const recent = new Map<string, number>()
+const browserCount = new Map<string, number>()
+
+// 去掉 HMR 时间戳参数（?t=\d+），避免同一错误因版本戳不同绕过去重
+function normalizeKey(line: string): string {
+  return line.replace(/\?t=\d+/g, '').slice(0, 300)
+}
 
 function postErrorLine(line: string) {
   if (typeof navigator === 'undefined') return
 
+  const key = normalizeKey(line)
   const now = Date.now()
-  const last = recent.get(line)
+  const last = recent.get(key)
   if (last && now - last < THROTTLE_MS) return
-  recent.set(line, now)
-  // 防止 Map 无限增长：超过 200 条时清掉过期项
+  recent.set(key, now)
+
   if (recent.size > 200) {
-    for (const [key, ts] of recent) {
-      if (now - ts >= THROTTLE_MS) recent.delete(key)
+    for (const [k, ts] of recent) {
+      if (now - ts >= THROTTLE_MS) recent.delete(k)
     }
   }
 
@@ -39,6 +48,16 @@ function postErrorLine(line: string) {
     headers: { 'Content-Type': 'application/json' },
     body: payload,
   }).catch(() => {})
+}
+
+// 同一错误在浏览器控制台最多显示 MAX_BROWSER_REPEATS 次，之后静默抑制
+function shouldPrintToBrowser(key: string): boolean {
+  const count = (browserCount.get(key) ?? 0) + 1
+  browserCount.set(key, count)
+  if (count === MAX_BROWSER_REPEATS + 1) {
+    console.warn(`[dev-reporter] 重复错误已抑制（后续不再显示）: ${key.slice(0, 120)}`)
+  }
+  return count <= MAX_BROWSER_REPEATS
 }
 
 function describeError(value: unknown): string {
@@ -70,9 +89,10 @@ export function installDevErrorReporter() {
   const originalConsoleError = console.error.bind(console)
   console.error = (...args: unknown[]) => {
     const line = args.map(describeError).join(' ')
-    // 过滤 SW 噪音：mockServiceWorker / storage 冲突产生的高频错误不污染控制台
     const isSWNoise = /mockServiceWorker|Failed to access storage|service.worker/i.test(line)
-    if (!isSWNoise) originalConsoleError(...args)
+    if (!isSWNoise && shouldPrintToBrowser(normalizeKey(line))) {
+      originalConsoleError(...args)
+    }
     postErrorLine(`[frontend][console] ${line}`)
   }
 }

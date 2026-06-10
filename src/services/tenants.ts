@@ -66,6 +66,11 @@ export function removeTenantMember(tenantId: string, accountId: string) {
   return del<null>(`tenants/${tenantId}/members/${accountId}`)
 }
 
+/** 解散组织（仅 tenant_owner） */
+export function dissolveTenant(tenantId: string) {
+  return del<null>(`tenants/${tenantId}`)
+}
+
 // ─── Tenant 邀请链接 ───────────────────────────────
 
 /** 获取组织邀请链接 */

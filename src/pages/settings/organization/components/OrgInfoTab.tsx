@@ -2,18 +2,33 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
-import { getTenant, listTenantMembers, updateTenant, uploadTenantLogo } from '@/services/tenants'
+import { getTenant, listTenantMembers, updateTenant, uploadTenantLogo, dissolveTenant } from '@/services/tenants'
+import { getSession } from '@/services/auth'
+import { useAuthStore } from '@/store/auth'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Modal } from '@/components/ui/Modal'
 import { AvatarUpload } from '@/components/ui/AvatarUpload'
 import { appToast } from '@/lib/app-toast'
 
-export function OrgInfoTab({ tenantId }: { tenantId: string }) {
+export function OrgInfoTab({
+  tenantId,
+  tenantRole,
+  onDissolved,
+}: {
+  tenantId: string
+  tenantRole?: 'tenant_owner' | 'tenant_admin' | 'tenant_member'
+  onDissolved?: () => void
+}) {
   const { hasPermission } = usePermissions()
   const canEditOrg = hasPermission(PERMS.ORG_SETTINGS_EDIT)
+  const canDissolveOrg = tenantRole === 'tenant_owner'
+  const setAuth = useAuthStore((s) => s.setAuth)
   const qc = useQueryClient()
   const [name, setName] = useState('')
   const [editing, setEditing] = useState(false)
+  const [dissolveOpen, setDissolveOpen] = useState(false)
+  const [confirmName, setConfirmName] = useState('')
 
   const tenantQuery = useQuery({
     queryKey: ['tenant', tenantId],
@@ -53,6 +68,33 @@ export function OrgInfoTab({ tenantId }: { tenantId: string }) {
     onError: (err: Error) => appToast.error(err?.message || '上传失败，请重试'),
   })
 
+  const dissolve = useMutation({
+    mutationFn: () => dissolveTenant(tenantId),
+    onSuccess: async () => {
+      appToast.success('组织已解散')
+      setDissolveOpen(false)
+      setConfirmName('')
+      qc.removeQueries({ queryKey: ['tenant', tenantId] })
+      qc.removeQueries({ queryKey: ['tenant-members', tenantId] })
+      await qc.invalidateQueries({ queryKey: ['tenants'] })
+      try {
+        const session = await getSession()
+        setAuth(
+          session.account,
+          session.active_tenant_id,
+          session.tenants,
+          session.active_workspace_id,
+          session.permissions?.granted ?? null,
+          session.permissions?.menus ?? []
+        )
+      } catch {
+        await qc.invalidateQueries({ queryKey: ['auth-session'] })
+      }
+      onDissolved?.()
+    },
+    onError: (err: Error) => appToast.error(err?.message || '解散组织失败'),
+  })
+
   if (tenantQuery.isLoading) {
     return (
       <div className="h-48 bg-mg-fill-1 rounded-2xl animate-pulse" />
@@ -61,7 +103,10 @@ export function OrgInfoTab({ tenantId }: { tenantId: string }) {
 
   if (!tenant) return null
 
+  const confirmMatched = confirmName.trim() === tenant.name
+
   return (
+    <>
     <div className="bg-mg-bg-0 border border-mg-border/50 rounded-2xl p-6 shadow-sm space-y-6">
       {/* 企业头像 */}
       <div className="flex items-center gap-4 pb-6 border-b border-mg-border/40">
@@ -155,6 +200,82 @@ export function OrgInfoTab({ tenantId }: { tenantId: string }) {
           <span className="text-xs text-mg-text-0 font-medium">{tenant.max_members} 人</span>
         </div>
       </div>
+
+      {canDissolveOrg && tenant.type === 'enterprise' && (
+        <div className="pt-6 border-t border-mg-border/40">
+          <div className="flex flex-col gap-4 rounded-xl border border-mg-danger/25 bg-mg-danger/5 p-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              <div className="text-xs font-bold text-mg-danger">解散组织</div>
+              <div className="text-xs leading-relaxed text-mg-text-1">
+                解散后该组织和其工作区将停止访问，并从成员的组织列表中移除。
+              </div>
+            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="h-8 rounded-lg px-3 text-xs font-semibold"
+              onClick={() => setDissolveOpen(true)}
+            >
+              解散组织
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
+
+    <Modal
+      open={dissolveOpen}
+      onClose={() => {
+        if (dissolve.isPending) return
+        setDissolveOpen(false)
+        setConfirmName('')
+      }}
+      size="md"
+      title="确认解散组织"
+      description={`请输入组织名称「${tenant.name}」确认解散。`}
+      footer={(
+        <>
+          <Button
+            variant="outline"
+            disabled={dissolve.isPending}
+            className="h-8 rounded-lg px-3 text-xs"
+            onClick={() => {
+              setDissolveOpen(false)
+              setConfirmName('')
+            }}
+          >
+            取消
+          </Button>
+          <Button
+            variant="destructive"
+            loading={dissolve.isPending}
+            disabled={!confirmMatched}
+            className="h-8 rounded-lg px-4 text-xs font-semibold"
+            onClick={() => dissolve.mutate()}
+          >
+            确认解散
+          </Button>
+        </>
+      )}
+    >
+      <div className="space-y-3">
+        <div className="rounded-lg border border-mg-danger/20 bg-mg-danger/5 p-3 text-xs leading-relaxed text-mg-text-1">
+          该操作会让所有成员失去此组织下工作区、密钥和配置入口的访问权限。
+        </div>
+        <div>
+          <label className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-mg-text-1">
+            组织名称
+          </label>
+          <Input
+            value={confirmName}
+            disabled={dissolve.isPending}
+            onChange={(e) => setConfirmName(e.target.value)}
+            placeholder={tenant.name}
+            className="h-9 text-xs rounded-lg"
+          />
+        </div>
+      </div>
+    </Modal>
+    </>
   )
 }

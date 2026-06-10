@@ -177,7 +177,7 @@ export interface TenantDetail {
   owner_account_id: string
   max_workspaces: number
   max_members: number
-  status: 'active' | 'suspended'
+  status: 'active' | 'suspended' | 'deleted'
   created_at: string
   settings: TenantSettings
   logo_url?: string | null

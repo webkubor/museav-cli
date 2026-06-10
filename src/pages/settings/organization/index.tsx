@@ -29,7 +29,7 @@ export default function OrganizationSettingsPage() {
 
         {/* 右侧宽栏 */}
         <div className="lg:col-span-8">
-          <OrgManagePanel key={managingId ?? 'empty'} tenantId={managingId} />
+          <OrgManagePanel key={managingId ?? 'empty'} tenantId={managingId} onDissolved={setManagingId} />
         </div>
       </div>
     </div>

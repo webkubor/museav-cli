@@ -9,12 +9,19 @@ import { OrgInfoTab } from './OrgInfoTab'
 import { MembersTab } from './MembersTab'
 import { InviteTab } from './InviteTab'
 
-export function OrgManagePanel({ tenantId }: { tenantId: string | null }) {
+export function OrgManagePanel({
+  tenantId,
+  onDissolved,
+}: {
+  tenantId: string | null
+  onDissolved?: (nextTenantId: string | null) => void
+}) {
   const tenantsQuery = useQuery({ queryKey: ['tenants'], queryFn: listTenants, staleTime: 30_000 })
   // Hooks 必须无条件调用（rules-of-hooks）：原先位于 early-return 之后，
   // tenantId 在空/非空之间切换会改变 Hook 调用顺序——真实潜在崩溃点。
   const sessionTenants = useAuthStore((s) => s.tenants)
   const [activeSubTab, setActiveSubTab] = useState<'info' | 'members' | 'invite'>('members')
+  const { hasPermission } = usePermissions()
 
   if (!tenantId) {
     return (
@@ -37,7 +44,6 @@ export function OrgManagePanel({ tenantId }: { tenantId: string | null }) {
 
   const tenant = tenantsQuery.data?.items.find((t) => t.tenant_id === tenantId)
   const isRoleAdmin = tenant?.role === 'tenant_owner' || tenant?.role === 'tenant_admin'
-  const { hasPermission } = usePermissions()
   const canManageMembers = isRoleAdmin && hasPermission(PERMS.ORG_MEMBERS_MANAGE)
   const canManageInvite  = isRoleAdmin && hasPermission(PERMS.ORG_INVITE_MANAGE)
   const canManage = canManageMembers
@@ -97,7 +103,17 @@ export function OrgManagePanel({ tenantId }: { tenantId: string | null }) {
       </div>
 
       <div className="pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
-        {activeSubTab === 'info' && <OrgInfoTab tenantId={tenantId} />}
+        {activeSubTab === 'info' && (
+          <OrgInfoTab
+            tenantId={tenantId}
+            tenantRole={tenant?.role}
+            onDissolved={() => {
+              const nextTenant = (tenantsQuery.data?.items ?? sessionTenants)
+                .find((item) => item.tenant_id !== tenantId && item.type === 'enterprise')
+              onDissolved?.(nextTenant?.tenant_id ?? null)
+            }}
+          />
+        )}
         {activeSubTab === 'members' && <MembersTab tenantId={tenantId} canManage={canManage} />}
         {canManageInvite && activeSubTab === 'invite' && <InviteTab tenantId={tenantId} />}
       </div>

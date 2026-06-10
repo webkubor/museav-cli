@@ -4,7 +4,6 @@ import { Card } from '@/components/ui/Card'
 import { useAuthStore } from '@/store/auth'
 import { useNavigate } from 'react-router-dom'
 import { getUsageRankingsModels, getUsageRankingsApiKeys } from '@/services/generated-api'
-import { listModels } from '@/services/catalog'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
 import { useCurrency } from '@/hooks/use-platform-config'
 import type { UsageRankingItem } from '@/types/generated-api-types'
@@ -88,20 +87,7 @@ export function UsageRankingsSection({ type }: { type: 'models' | 'api-keys' }) 
     enabled: !!tenantId,
   })
 
-  // 仅模型排行需要 logo，复用目录页同一查询（react-query 去重，不重复请求）
-  const { data: modelsData } = useQuery({
-    queryKey: ['catalog-models'],
-    queryFn: () => listModels({ page_size: 100 }),
-    staleTime: 5 * 60_000,
-    enabled: type === 'models',
-  })
-
-  const iconMap = new Map<string, ModelIconLike>()
-  for (const m of modelsData?.items ?? []) {
-    iconMap.set(m.model_id, { logo_url: m.logo_url, vendor: m.vendor, display_name: m.display_name })
-  }
-
-  const items = (data?.items ?? []).map((item, i) => toDisplay(item, i, symbol, iconMap))
+  const items = (data?.items ?? []).map((item, i) => toDisplay(item, i, symbol, new Map()))
 
   function handleRowClick(item: DisplayItem) {
     if (type === 'models' && item.key) {

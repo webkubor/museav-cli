@@ -5,10 +5,17 @@ import { Switch } from '@/components/ui/Switch'
 import { SideSheet } from '@/components/ui/SideSheet'
 import { Select, SelectItem } from '@/components/ui/Select'
 import { TagInput } from '@/components/ui/TagInput'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import type { StatusConfig } from '@/components/ui/StatusBadge'
 import { LuKey, LuDollarSign } from 'react-icons/lu'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
 import { PERIOD_LABEL } from '@/constants/status'
 import { GuardrailFormFields } from './GuardrailFormFields'
+
+const GUARDRAIL_STATUS_MAP: Record<string, StatusConfig> = {
+  active: { label: '已启用', variant: 'success' },
+  inactive: { label: '已停用', variant: 'secondary' },
+}
 
 type PeriodUnit = 'hour' | 'day' | 'week' | 'month'
 type BudgetPolicy = NonNullable<GuardrailDetail['budget_policies']>[number]
@@ -73,9 +80,7 @@ export function GuardrailDetailSheet({
       {/* 状态切换 */}
       {!isCreating && detail && (
         <div className="flex items-center justify-between px-6 py-3 border-b border-mg-border/50">
-          <span className="text-xs text-mg-text-2">
-            {detail.status === 'active' ? '已启用' : '已停用'}
-          </span>
+          <StatusBadge status={detail.status} statusMap={GUARDRAIL_STATUS_MAP} />
           <Switch
             checked={detail.status === 'active'}
             onChange={(checked) => onToggleStatus({ id: detail.id, status: checked ? 'active' : 'inactive' })}

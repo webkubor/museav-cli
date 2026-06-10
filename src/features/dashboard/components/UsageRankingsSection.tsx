@@ -39,7 +39,9 @@ function toDisplay(
     score: amount,
     tone: TONES[index % TONES.length],
     key: item.key ?? '',
-    iconModel: item.key ? iconMap.get(item.key) : undefined,
+    iconModel: item.key
+      ? (iconMap.get(item.key) ?? { display_name: item.name || item.key, vendor: item.key.split('/')[0] })
+      : undefined,
   }
 }
 

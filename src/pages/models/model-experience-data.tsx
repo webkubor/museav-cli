@@ -2,7 +2,7 @@ import { ModalityBadge } from '@/features/models/components/ModalityBadge'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import type { CatalogModelItem } from '@/types'
 
-export type CategoryKey = 'all' | 'text' | 'image' | 'video' | 'code' | 'reasoning' | 'multimodal'
+export type CategoryKey = 'all' | 'standard' | 'high' | 'ultra'
 export type ChatRole = 'user' | 'assistant'
 
 export interface ExperienceMessage {
@@ -15,12 +15,9 @@ export interface ExperienceMessage {
 
 export const previewImages: Record<CategoryKey, string> = {
   all: '/modelgo/model-experience-all.webp',
-  text: '/modelgo/model-experience-text.webp',
-  image: '/modelgo/model-experience-image.webp',
-  video: '/modelgo/model-experience-video.webp',
-  code: '/modelgo/model-experience-code.webp',
-  reasoning: '/modelgo/model-experience-reasoning.webp',
-  multimodal: '/modelgo/model-experience-multimodal.webp',
+  standard: '/modelgo/model-experience-text.webp',
+  high: '/modelgo/model-experience-code.webp',
+  ultra: '/modelgo/model-experience-reasoning.webp',
 }
 
 export const modelExperienceCopy = {
@@ -48,7 +45,7 @@ export const modelExperienceCopy = {
     loading: '正在加载模型...',
     error: '模型列表加载失败，请稍后重试',
     copied: '模型 ID 已复制',
-    categories: { all: '全部', text: '文本', image: '图像', video: '视频', code: '代码', reasoning: '推理', multimodal: '多模态' },
+    categories: { all: '全部', standard: '标准输出', high: '高输出', ultra: '超长输出' },
   },
   en: {
     warning: 'Your balance is low. Once the free trial quota is used, this model experience may stop.',
@@ -74,11 +71,11 @@ export const modelExperienceCopy = {
     loading: 'Loading models...',
     error: 'Failed to load models. Please try again later.',
     copied: 'Model ID copied',
-    categories: { all: 'All', text: 'Text', image: 'Image', video: 'Video', code: 'Code', reasoning: 'Reasoning', multimodal: 'Multimodal' },
+    categories: { all: 'All', standard: 'Standard', high: 'High Output', ultra: 'Ultra Long' },
   },
 } as const
 
-export const categories: CategoryKey[] = ['all', 'text', 'image', 'video', 'code', 'reasoning', 'multimodal']
+export const categories: CategoryKey[] = ['all', 'standard', 'high', 'ultra']
 
 export const initialMessages: ExperienceMessage[] = [
   { role: 'user', content: '帮我比较三个适合企业知识库问答的模型，重点看成本、上下文长度和稳定性。' },
@@ -90,12 +87,15 @@ export const initialMessages: ExperienceMessage[] = [
   },
 ]
 
+const OUTPUT_TIERS = { standard: 16_384, high: 65_536 } as const
+
 export function matchesCategory(model: CatalogModelItem, category: CategoryKey) {
   if (category === 'all') return true
-  if (category === 'multimodal') return model.modalities.length > 1
-  if (category === 'code') return model.tags.some((tag) => tag.toLowerCase().includes('code'))
-  if (category === 'reasoning') return model.tags.some((tag) => /reason|think|推理/i.test(tag))
-  return model.modalities.includes(category)
+  const tokens = model.max_output_tokens ?? 0
+  if (category === 'standard') return tokens > 0 && tokens <= OUTPUT_TIERS.standard
+  if (category === 'high') return tokens > OUTPUT_TIERS.standard && tokens <= OUTPUT_TIERS.high
+  if (category === 'ultra') return tokens > OUTPUT_TIERS.high
+  return true
 }
 
 export function vendorNode(model: CatalogModelItem, size: 'sm' | 'lg' = 'sm') {

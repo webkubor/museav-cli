@@ -113,7 +113,8 @@ export const DashboardHeader: React.FC = () => {
   const { data: workspaces = [] } = useQuery<WorkspaceItem[]>({
     queryKey: ['workspaces', activeTenantId],
     queryFn: () => listWorkspaces().then(res => res.items || []),
-    enabled: !!activeTenantId
+    enabled: !!activeTenantId,
+    staleTime: 60_000,
   })
 
   const createWorkspaceMutation = useMutation({

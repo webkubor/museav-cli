@@ -33,6 +33,7 @@ export default function WorkspacesPage() {
     queryKey: ['workspaces', activeTenantId],
     queryFn: () => listWorkspaces().then(res => res.items || []),
     enabled: !!activeTenantId,
+    staleTime: 60_000,
   })
 
   // ─── 2. Mutation 真实绑定新建工作空间接口 ─────────────────────

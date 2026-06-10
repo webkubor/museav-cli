@@ -21,6 +21,7 @@ export function useBalanceBreakdown(tenantId: string | null | undefined) {
     queryKey: balanceBreakdownKey(tenantId),
     queryFn: () => getBalanceBreakdown(tenantId!),
     enabled: !!tenantId,
+    staleTime: 30_000,
   })
 }
 

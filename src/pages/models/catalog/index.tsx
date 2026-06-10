@@ -213,6 +213,7 @@ export default function ModelsCatalogPage() {
       return getUsageRankingsModels({ from: from.toISOString(), to: now.toISOString(), limit: 5 })
     },
     enabled: !!tenantId,
+    staleTime: 5 * 60_000,
   })
 
   const rankingItems = useMemo(() => {

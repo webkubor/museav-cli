@@ -85,6 +85,7 @@ export function UsageRankingsSection({ type }: { type: 'models' | 'api-keys' }) 
         ? getUsageRankingsModels({ from, to, limit: 5 })
         : getUsageRankingsApiKeys({ from, to, limit: 5 }),
     enabled: !!tenantId,
+    staleTime: 5 * 60_000,
   })
 
   const items = (data?.items ?? []).map((item, i) => toDisplay(item, i, symbol, new Map()))

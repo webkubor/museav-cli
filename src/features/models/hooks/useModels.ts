@@ -14,7 +14,7 @@ export function useModels() {
   })
 
   const tagsQuery = useQuery({
-    queryKey: ['catalog-tags'],
+    queryKey: ['catalog-model-tags'],
     queryFn: () => listModelTags(),
     staleTime: 10 * 60_000,
   })

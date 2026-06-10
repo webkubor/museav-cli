@@ -26,6 +26,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
     queryKey: ['referral', 'overview', tenantId],
     queryFn: () => getReferralOverview(tenantId),
     enabled: !!tenantId,
+    staleTime: 60_000,
   })
 
   const avatarMutation = useMutation({

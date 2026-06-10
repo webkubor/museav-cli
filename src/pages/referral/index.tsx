@@ -68,16 +68,19 @@ export default function ReferralPage() {
     queryKey: ['referral', 'overview', tenantId],
     queryFn: () => getReferralOverview(tenantId),
     enabled: !!tenantId,
+    staleTime: 60_000,
   })
   const { data: invitees = [] } = useQuery({
     queryKey: ['referral', 'invitees', tenantId],
     queryFn: () => listReferralInvitees(tenantId),
     enabled: !!tenantId,
+    staleTime: 60_000,
   })
   const { data: withdrawalList = [] } = useQuery({
     queryKey: ['referral', 'withdrawals', tenantId],
     queryFn: () => listWithdrawals(tenantId),
     enabled: !!tenantId,
+    staleTime: 60_000,
   })
 
   const emptyStats: ReferralStats = {

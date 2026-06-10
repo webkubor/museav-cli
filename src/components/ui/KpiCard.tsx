@@ -81,7 +81,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     <Card
       hoverable
       glass
-      className={`p-6 min-h-[120px] flex flex-col justify-center rounded-2xl relative overflow-hidden group transition-all duration-500 flex-1 min-w-[200px] ${hoverBorderClass}`}
+      className={`p-4 flex flex-col justify-center rounded-2xl relative overflow-hidden group transition-all duration-500 flex-1 min-w-[200px] ${hoverBorderClass}`}
     >
       {/* 专属高精密几何光环与微弱环境底色 (线与光的结合) */}
       <div className="absolute right-[-20px] bottom-[-20px] w-32 h-32 pointer-events-none z-0 opacity-25 group-hover:opacity-75 transition-all duration-700">
@@ -106,7 +106,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         />
       </div>
 
-      <div className="flex items-center justify-between gap-4 mb-3 z-10">
+      <div className="flex items-center justify-between gap-4 mb-2 z-10">
         <span className="text-[12px] font-semibold text-mg-text-2 tracking-wide select-none">
           {displayTitle}
         </span>

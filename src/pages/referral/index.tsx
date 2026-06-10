@@ -296,7 +296,7 @@ export default function ReferralPage() {
         />
 
         {/* 奖励余额卡（自定义，含按钮） */}
-        <div className="rounded-2xl border border-mg-border bg-card-bg p-5 flex flex-col gap-3">
+        <div className="rounded-2xl border border-mg-border bg-card-bg p-4 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <span className="text-[12px] font-semibold text-mg-text-2 tracking-wide">
               {text.kpiRewardBalance}

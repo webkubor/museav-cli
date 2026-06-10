@@ -52,7 +52,7 @@ export function ReferralInviteCard({
   }
 
   return (
-    <div className="relative rounded-2xl border border-mg-border bg-card-bg p-6 space-y-4 overflow-hidden">
+    <div className="relative rounded-2xl border border-mg-border bg-card-bg p-5 space-y-3 overflow-hidden">
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-gradient-to-br from-brand-base via-transparent to-transparent" />
       <div className="relative space-y-4">
         <div className="flex items-center gap-2">

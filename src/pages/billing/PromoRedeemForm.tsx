@@ -16,6 +16,8 @@ export function PromoRedeemForm({ tenantId }: { tenantId: string }) {
     mutationFn: (promoCode: string) => redeemPromoCode(tenantId, { code: promoCode }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['balance', tenantId] })
+      queryClient.invalidateQueries({ queryKey: ['balance', 'breakdown', tenantId] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-top-balance', tenantId] })
       appToast.success(t('billing.promo.success', { amount: data.credited.amount, currency: data.credited.currency }))
       setCode('')
     },

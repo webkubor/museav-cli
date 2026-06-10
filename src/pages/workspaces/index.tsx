@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '@/store/auth'
 import { useTranslation } from 'react-i18next'
 import { LuSearch, LuPlus, LuKey, LuShield, LuActivity, LuArrowRight } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -16,6 +17,7 @@ export default function WorkspacesPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const [searchValue, setSearchValue] = useState('')
   const [modalVisible, setModalVisible] = useState(false)
 
@@ -26,8 +28,9 @@ export default function WorkspacesPage() {
 
   // ─── 1. TanStack Query 真实获取工作空间接口数据 ─────────────────
   const { data, isLoading } = useQuery({
-    queryKey: ['workspaces'],
-    queryFn: () => listWorkspaces().then(res => res.items || [])
+    queryKey: ['workspaces', activeTenantId],
+    queryFn: () => listWorkspaces().then(res => res.items || []),
+    enabled: !!activeTenantId,
   })
 
   // ─── 2. Mutation 真实绑定新建工作空间接口 ─────────────────────
@@ -46,7 +49,7 @@ export default function WorkspacesPage() {
       setName('')
       setSlug('')
       setDescription('')
-      queryClient.invalidateQueries({ queryKey: ['workspaces'] })
+      queryClient.invalidateQueries({ queryKey: ['workspaces', activeTenantId] })
     },
     onError: (err: unknown) => {
       const message = err instanceof Error 

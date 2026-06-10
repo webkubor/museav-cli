@@ -171,7 +171,6 @@ export const DashboardHeader: React.FC = () => {
         .then((s) => applyRefreshedSession(s, tenant.tenant_id))
         .catch((err) => console.warn('[permissions] 切换组织后会话重拉失败，使用本地矩阵回退', err))
       queryClient.invalidateQueries({ queryKey: ['tenants'] })
-      queryClient.invalidateQueries({ queryKey: ['workspaces'] })
       queryClient.removeQueries({ queryKey: ['api-keys'] })
       queryClient.removeQueries({ queryKey: ['guardrails'] })
       queryClient.removeQueries({ queryKey: ['observability'] })
@@ -180,8 +179,11 @@ export const DashboardHeader: React.FC = () => {
       queryClient.removeQueries({ queryKey: ['usage'] })
       queryClient.removeQueries({ queryKey: ['logs'] })
       try {
-        const wsData = await listWorkspaces()
-        const wsItems = wsData.items ?? []
+        const wsItems = await queryClient.fetchQuery({
+          queryKey: ['workspaces', tenant.tenant_id],
+          queryFn: () => listWorkspaces().then(res => res.items || []),
+          staleTime: 0,
+        })
         const defaultWs = wsItems.find((w) => w.is_default) ?? wsItems[0]
         setActiveWorkspaceId(defaultWs?.workspace_id ?? '')
       } catch {

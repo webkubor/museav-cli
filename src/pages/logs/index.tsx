@@ -201,7 +201,7 @@ export default function LogsPage() {
 
   // 加载当前工作区下的 API 密钥列表
   const { data: apiKeysData } = useQuery({
-    queryKey: ['apiKeys', activeWorkspaceId],
+    queryKey: ['api-keys', activeWorkspaceId],
     queryFn: () => listApiKeys(activeWorkspaceId!),
     enabled: Boolean(activeWorkspaceId),
     staleTime: 60_000,
@@ -210,7 +210,7 @@ export default function LogsPage() {
 
   // 加载系统所有的模型列表
   const { data: modelsData } = useQuery({
-    queryKey: ['catalogModels'],
+    queryKey: ['catalog-models'],
     queryFn: () => listModels({ limit: 150 }),
     staleTime: 5 * 60_000,
   })

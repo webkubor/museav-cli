@@ -9,8 +9,6 @@ import {
   LuSearch,
   LuSparkles, LuZap,
   LuGift,
-  LuSettings2,
-  LuCircleCheck,
   LuRefreshCw,
 } from 'react-icons/lu'
 import { useQuery } from '@tanstack/react-query'
@@ -346,46 +344,28 @@ export default function ModelsPage() {
             }
           />
 
-          <aside className="models-experience-params">
-            <div className="models-experience-params-header">
-              <LuSettings2 size={14} />
-              <span>{text.params}</span>
-            </div>
-
-            <div className="models-experience-params-list">
-              <div className="models-experience-param-item">
-                <span className="param-label">temperature</span>
-                <strong className="param-value">0.7</strong>
-              </div>
-              <div className="models-experience-param-item">
-                <span className="param-label">max tokens</span>
-                <strong className="param-value">{selectedModel?.max_output_tokens || 4096}</strong>
-              </div>
-              <div className="models-experience-param-item">
-                <span className="param-label">top_p</span>
-                <strong className="param-value">0.9</strong>
-              </div>
-              <div className="models-experience-param-item is-switch">
-                <span className="param-label flex items-center gap-1.5">
-                  <LuCircleCheck size={13} className="text-mg-success" />
-                  stream
-                </span>
-                <strong className="param-value badge-success">on</strong>
-              </div>
-            </div>
-
+          <div className="flex items-center justify-between px-1 pt-1 pb-0.5">
+            <span className="text-[11px] text-mg-text-2 font-mono select-none">
+              temperature&nbsp;<b className="text-mg-text-1">0.7</b>
+              <span className="mx-1.5 opacity-30">·</span>
+              max_tokens&nbsp;<b className="text-mg-text-1">{selectedModel?.max_output_tokens || 4096}</b>
+              <span className="mx-1.5 opacity-30">·</span>
+              top_p&nbsp;<b className="text-mg-text-1">0.9</b>
+              <span className="mx-1.5 opacity-30">·</span>
+              stream&nbsp;<b className="text-green-500">on</b>
+            </span>
             <button
               type="button"
-              className="models-experience-reset-btn"
+              className="flex items-center gap-1 text-[11px] text-mg-text-2 hover:text-mg-text-0 transition-colors"
               onClick={() => {
                 setMessages(initialMessages)
                 appToast.success(i18n.language.startsWith('zh') ? '对话历史已重置' : 'Conversation reset')
               }}
             >
-              <LuRefreshCw size={13} className="reset-icon" />
-              <span>{i18n.language.startsWith('zh') ? '重置对话' : 'Reset Chat'}</span>
+              <LuRefreshCw size={11} />
+              <span>{i18n.language.startsWith('zh') ? '重置' : 'Reset'}</span>
             </button>
-          </aside>
+          </div>
         </section>
       </div>
       <ModelsCompareModal

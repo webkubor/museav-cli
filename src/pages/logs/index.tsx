@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useCopy } from '@/hooks/use-copy'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
@@ -203,7 +204,7 @@ export default function LogsPage() {
   const [timeRange, setTimeRange] = useState<DateRangeValue>({ preset: 'all' })
 
   // 复制反馈状态
-  const [copiedPayload, setCopiedPayload] = useState(false)
+  const { copy: copyPayloadText, copied: copiedPayload } = useCopy()
 
   // 侧边栏抽屉展示
   const [selectedLog, setSelectedLog] = useState<CallLogItem | null>(null)
@@ -257,13 +258,10 @@ export default function LogsPage() {
 
   const decodedPayload = decodePayload(payloadQuery.data)
 
-  function copyPayload() {
+  async function copyPayload() {
     if (!decodedPayload) return
-    navigator.clipboard.writeText(decodedPayload).then(() => {
-      appToast.success(t('logs.detail.payloadCopied'))
-      setCopiedPayload(true)
-      setTimeout(() => setCopiedPayload(false), 2000)
-    })
+    await copyPayloadText(decodedPayload)
+    appToast.success(t('logs.detail.payloadCopied'))
   }
 
   // 简易前端切片分页模拟

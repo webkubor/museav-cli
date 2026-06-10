@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo } from 'react'
+import { useCopy } from '@/hooks/use-copy'
 import { useTranslation } from 'react-i18next'
 import { LuArrowRight, LuCheck, LuCopy, LuInfo, LuSparkles, LuTerminal } from 'react-icons/lu'
 import { useNavigate } from 'react-router-dom'
@@ -31,7 +32,7 @@ function getCliCommandLine() {
 export const DashboardTopPanel: React.FC = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [copied, setCopied] = useState(false)
+  const { copy, copied } = useCopy(1400)
   const account = useAuthStore((s) => s.account)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
@@ -70,14 +71,9 @@ export const DashboardTopPanel: React.FC = () => {
   )
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(cliCommand)
-      setCopied(true)
-      appToast.success(t('dashboardTop.onboarding.toastCopied'))
-      window.setTimeout(() => setCopied(false), 1400)
-    } catch {
-      appToast.error(t('dashboardTop.onboarding.toastCopyFailed'))
-    }
+    const ok = await copy(cliCommand)
+    if (ok) appToast.success(t('dashboardTop.onboarding.toastCopied'))
+    else appToast.error(t('dashboardTop.onboarding.toastCopyFailed'))
   }
 
   return (

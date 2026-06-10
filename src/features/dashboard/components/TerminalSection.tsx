@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LuCheck, LuCopy } from 'react-icons/lu'
+import { useCopy } from '@/hooks/use-copy'
 import { CodeHighlight } from '@/components/ui/CodeHighlight'
 import { PLAIN_CODES, CLI_CODE } from '../constants/code-snippets'
 import { Button } from '@/components/ui/Button'
@@ -24,13 +25,11 @@ function getCode(tab: Tab): string {
 export const TerminalSection: React.FC = () => {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<Tab>('cli')
-  const [copied, setCopied] = useState(false)
+  const { copy, copied } = useCopy()
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(getCode(activeTab))
-    setCopied(true)
+  const handleCopy = async () => {
+    await copy(getCode(activeTab))
     appToast.success(t('terminalSection.toast.copied'))
-    setTimeout(() => setCopied(false), 2000)
   }
 
   return (

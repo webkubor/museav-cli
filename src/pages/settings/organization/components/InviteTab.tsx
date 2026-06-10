@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useCopy } from '@/hooks/use-copy'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
@@ -16,7 +17,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
   const [inviteEmails, setInviteEmails] = useState('')
   const [inviteRole, setInviteRole] = useState<'tenant_admin' | 'tenant_member'>('tenant_member')
   const [expiresInHours, setExpiresInHours] = useState<number>(72)
-  const [linkCopied, setLinkCopied] = useState(false)
+  const { copy: copyLink, copied: linkCopied } = useCopy()
   const [showResetConfirm, setShowResetConfirm] = useState(false)
 
   const inviteLinkQuery = useQuery({
@@ -50,13 +51,10 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
     ? `${window.location.origin}/invitations/${inviteLinkQuery.data.token}`
     : null
 
-  function handleCopyLink() {
+  async function handleCopyLink() {
     if (!inviteLinkUrl) return
-    navigator.clipboard.writeText(inviteLinkUrl).then(() => {
-      setLinkCopied(true)
-      setTimeout(() => setLinkCopied(false), 2000)
-      appToast.success('邀请链接已复制')
-    })
+    await copyLink(inviteLinkUrl)
+    appToast.success('邀请链接已复制')
   }
 
   return (

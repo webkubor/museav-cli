@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useCopy } from '@/hooks/use-copy'
 import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -79,12 +80,12 @@ export default function ApiKeysPage() {
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null)
   const [quickOpen, setQuickOpen] = useState(false)
   const [quickCopied, setQuickCopied] = useState<string | null>(null)
+  const { copy: copyText, copied } = useCopy()
 
   // 表单状态
   const [name, setName] = useState('')
   const [scope, setScope] = useState<ScopeType>('workspace')
   const [memberAccountId, setMemberAccountId] = useState('')
-  const [copied, setCopied] = useState(false)
   const [guardrailId, setGuardrailId] = useState('')
   // 限额与过期时间（可选）
   const [spendingEnabled, setSpendingEnabled] = useState(false)
@@ -218,13 +219,10 @@ export default function ApiKeysPage() {
     createMutation.mutate()
   }
 
-  const handleCopyText = (text: string) => {
-    navigator.clipboard.writeText(text)
-    setCopied(true)
+  const handleCopyText = useCallback(async (text: string) => {
+    await copyText(text)
     appToast.success(t('apiKeys.table.copyMaskedSuccess'))
-    setTimeout(() => setCopied(false), 2000)
-  }
-
+  }, [copyText, t])
 
   function handleQuickCopy(key: string, text: string) {
     navigator.clipboard.writeText(text)

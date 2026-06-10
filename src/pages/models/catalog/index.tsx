@@ -576,7 +576,7 @@ export default function ModelsCatalogPage() {
 
         {/* 热门模型排行榜侧边栏 */}
         {rankingItems.length > 0 && (
-          <aside className="hidden xl:block w-[280px] shrink-0 sticky top-6">
+          <aside className="hidden xl:block w-[340px] shrink-0 sticky top-6">
             <Card glass className="dashboard-ranking-card flex flex-col">
               <div className="dashboard-ranking-header">
                 <div>

@@ -8,6 +8,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
+  DropdownMenuItem,
 } from '@/components/ui/DropdownMenu'
 import { cn } from '@/lib/utils'
 import { useLangStore } from '@/store/use-brand-store'
@@ -281,6 +282,39 @@ export function DevToolbar() {
         ]}
         onChange={switchTheme}
       />
+      <div className="h-4 w-px bg-mg-border" />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="flex items-center gap-1 rounded-full bg-mg-fill-0 px-3 py-1 text-[11px] font-bold text-mg-text-1 transition-colors hover:text-mg-text-0"
+          >
+            链接
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side="top" align="end" className="w-48">
+          <DropdownMenuItem asChild>
+            <a href="https://cloud.umami.is/share/LG5OU5ibCRxc2w3j" target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+              📊 埋点数据
+            </a>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <a href="https://test.modelgo.com" target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+              🌐 测试官网
+            </a>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <a href="https://modelgo-docs-cn.pages.dev" target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+              📖 测试文档
+            </a>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <a href="https://admin.test.modelgo.com" target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+              🛠 测试后台
+            </a>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }

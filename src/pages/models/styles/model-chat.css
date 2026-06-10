@@ -101,7 +101,7 @@
   flex-direction: column;
   gap: 14px;
   overflow-y: auto;
-  padding: 18px 272px 18px 18px;
+  padding: 18px;
 }
 
 .models-experience-message {

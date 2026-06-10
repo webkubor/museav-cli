@@ -14,12 +14,20 @@ import {
   listInvoiceTitles,
   createInvoice,
 } from '@/services/invoice'
-import type { InvoiceTitleType } from '@/types'
+import type { InvoiceTitleType, RechargeInvoiceStatus } from '@/types'
 
 const TITLE_TYPE_LABEL: Record<InvoiceTitleType, string> = {
   vat_normal: '增值税普票',
   vat_special: '增值税专票',
   overseas: '国外 Invoice',
+}
+
+const RECHARGE_INVOICE_STATUS: Record<RechargeInvoiceStatus, { label: string; cls: string }> = {
+  billable: { label: '可开票', cls: 'text-brand-base' },
+  invoicing: { label: '开票中', cls: 'bg-mg-warning/10 text-mg-warning' },
+  invoiced: { label: '已开票', cls: 'bg-mg-success/10 text-mg-success' },
+  failed: { label: '开票失败', cls: 'bg-mg-danger/10 text-mg-danger' },
+  voided: { label: '已作废', cls: 'bg-mg-fill-0 text-mg-text-2' },
 }
 
 export function ApplyInvoiceTab({
@@ -220,6 +228,8 @@ export function ApplyInvoiceTab({
         ) : (
           recharges.map((r) => {
             const billable = r.invoice_status === 'billable'
+            const status = RECHARGE_INVOICE_STATUS[r.invoice_status]
+            const statusText = billable || !r.invoice_no ? status.label : `${status.label} · ${r.invoice_no}`
             return (
               <label
                 key={r.recharge_id}
@@ -240,12 +250,15 @@ export function ApplyInvoiceTab({
                   {currencySymbol}
                   {r.amount}
                 </span>
-                <span className="text-right text-xs">
+                <span className="min-w-0 text-right text-xs">
                   {billable ? (
-                    <span className="font-semibold text-brand-base">可开票</span>
+                    <span className={cn('font-semibold', status.cls)}>{status.label}</span>
                   ) : (
-                    <span className="rounded-full bg-mg-success/10 px-2 py-0.5 text-[11px] font-semibold text-mg-success">
-                      已开票 · {r.invoice_no}
+                    <span
+                      className={cn('inline-block max-w-full truncate rounded-full px-2 py-0.5 text-[11px] font-semibold', status.cls)}
+                      title={statusText}
+                    >
+                      {statusText}
                     </span>
                   )}
                 </span>

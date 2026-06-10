@@ -183,7 +183,12 @@
       "submit": "前往支付 ¥{{amount}}",
       "success": "充值订单已创建，请完成支付",
       "error": "创建充值订单失败",
-      "submitting": "提交中..."
+      "submitting": "提交中...",
+      "wechatQrReady": "微信支付二维码已生成",
+      "wechatQrTitle": "微信扫码支付",
+      "wechatQrHint": "请使用微信扫描二维码完成支付",
+      "wechatQrCopy": "复制支付链接",
+      "wechatQrCopied": "支付链接已复制"
     },
     "promo": {
       "title": "兑换优惠码",

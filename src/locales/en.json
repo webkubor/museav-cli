@@ -183,7 +183,12 @@
       "submit": "Pay ¥{{amount}}",
       "success": "Recharge order created",
       "error": "Failed to create order",
-      "submitting": "Submitting..."
+      "submitting": "Submitting...",
+      "wechatQrReady": "WeChat Pay QR code created",
+      "wechatQrTitle": "Scan with WeChat Pay",
+      "wechatQrHint": "Use WeChat to scan the QR code and complete payment",
+      "wechatQrCopy": "Copy payment link",
+      "wechatQrCopied": "Payment link copied"
     },
     "promo": {
       "title": "Redeem Promo Code",

@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { QRCodeSVG } from 'qrcode.react'
+import { LuCopy } from 'react-icons/lu'
 import { createRecharge } from '@/services/billing'
 import { useCurrency, useEnabledChannels } from '@/hooks/use-platform-config'
 import { Button } from '@/components/ui/Button'
@@ -20,10 +22,16 @@ interface TopUpModalProps {
   tenantId: string
 }
 
+interface WechatQrPayment {
+  orderNo: string
+  url: string
+}
+
 export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [amount, setAmount] = useState('100')
+  const [wechatQr, setWechatQr] = useState<WechatQrPayment | null>(null)
 
   const { currency, symbol: currencySymbol } = useCurrency()
   const enabledChannels = useEnabledChannels()
@@ -39,6 +47,14 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
 
   const PRESETS = ['10', '50', '100', '500']
 
+  useEffect(() => {
+    if (!visible) setWechatQr(null)
+  }, [visible])
+
+  useEffect(() => {
+    setWechatQr(null)
+  }, [amount, effectiveChannel])
+
   const recharge = useMutation({
     mutationFn: () =>
       createRecharge(tenantId, {
@@ -47,12 +63,6 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
         channel: effectiveChannel,
         return_url: window.location.href,
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['balance', tenantId] })
-      queryClient.invalidateQueries({ queryKey: ['billing', 'recharges', tenantId] })
-      onClose()
-      appToast.success(t('billing.rechargeModal.success'))
-    },
     onError: (err: Error) => appToast.error(err.message || t('billing.rechargeModal.error')),
   })
 
@@ -62,16 +72,30 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
 
     recharge.mutate(undefined, {
       onSuccess: (data) => {
-        const url = data.payment.redirect_url ?? data.payment.qr_code_url
-        if (!url) {
+        queryClient.invalidateQueries({ queryKey: ['balance', tenantId] })
+        queryClient.invalidateQueries({ queryKey: ['billing', 'recharges', tenantId] })
+
+        const qrCodeURL = data.payment.qr_code_url
+        if (qrCodeURL) {
           paymentWindow?.close()
+          setWechatQr({ orderNo: data.order_no, url: qrCodeURL })
+          appToast.success(t('billing.rechargeModal.wechatQrReady'))
           return
         }
+
+        const redirectURL = data.payment.redirect_url
+        if (!redirectURL) {
+          paymentWindow?.close()
+          appToast.error(t('billing.rechargeModal.error'))
+          return
+        }
+        onClose()
+        appToast.success(t('billing.rechargeModal.success'))
         if (paymentWindow && !paymentWindow.closed) {
-          paymentWindow.location.href = url
+          paymentWindow.location.href = redirectURL
           return
         }
-        window.location.assign(url)
+        window.location.assign(redirectURL)
       },
       onError: () => {
         paymentWindow?.close()
@@ -104,6 +128,14 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   }
 
   if (!visible) return null
+
+  const copyWechatPayURL = () => {
+    if (!wechatQr?.url || !navigator.clipboard) return
+    navigator.clipboard
+      .writeText(wechatQr.url)
+      .then(() => appToast.success(t('billing.rechargeModal.wechatQrCopied')))
+      .catch(() => appToast.error(t('billing.rechargeModal.error')))
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -172,6 +204,33 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
           >
             {recharge.isPending ? t('billing.rechargeModal.submitting') : t('billing.rechargeModal.submit', { amount })}
           </Button>
+
+          {wechatQr && (
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-center space-y-3">
+              <div className="space-y-1">
+                <div className="text-xs font-bold text-mg-text-0">
+                  {t('billing.rechargeModal.wechatQrTitle')}
+                </div>
+                <div className="text-[11px] text-mg-text-2">
+                  {t('billing.rechargeModal.wechatQrHint')}
+                </div>
+              </div>
+              <div className="mx-auto w-[192px] rounded-xl border border-mg-border bg-white p-3 shadow-sm">
+                <QRCodeSVG value={wechatQr.url} size={168} level="M" includeMargin={false} />
+              </div>
+              <div className="text-[10px] text-mg-text-3 font-mono truncate" title={wechatQr.orderNo}>
+                {wechatQr.orderNo}
+              </div>
+              <button
+                type="button"
+                onClick={copyWechatPayURL}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 text-[11px] font-bold text-mg-text-1 hover:bg-mg-fill-0/80 hover:text-mg-text-0 transition-colors"
+              >
+                <LuCopy size={13} />
+                {t('billing.rechargeModal.wechatQrCopy')}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

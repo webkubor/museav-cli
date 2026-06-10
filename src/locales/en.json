@@ -200,6 +200,7 @@
       "detailPlaceholder": "Click an order to view details",
       "cancelSuccess": "Order cancelled",
       "cancelError": "Failed to cancel order",
+      "paymentSuccess": "Top-up credited: {{amount}}. Balance updated.",
       "cancelConfirm": {
         "title": "Cancel Order",
         "message": "Are you sure you want to cancel this recharge order? This action cannot be undone.",

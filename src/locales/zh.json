@@ -200,6 +200,7 @@
       "detailPlaceholder": "点击左侧订单查看详情",
       "cancelSuccess": "订单已取消",
       "cancelError": "取消订单失败",
+      "paymentSuccess": "充值已到账：{{amount}}，余额已更新",
       "cancelConfirm": {
         "title": "确认取消订单",
         "message": "确认取消该充值订单？此操作不可撤销。",

@@ -1,5 +1,5 @@
 import { LuReceipt, LuHistory, LuGift } from 'react-icons/lu'
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import './billing.css'
 import { useTranslation } from 'react-i18next'
@@ -23,6 +23,7 @@ import { appToast } from '@/lib/app-toast'
 import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
 import { referralCopy } from '@/pages/referral/referral-data'
+import type { RechargeOrder } from '@/types'
 import { formatBalance } from './formatBalance'
 import { TopUpModal } from './TopUpModal'
 import { InvoiceModal } from './invoice/InvoiceModal'
@@ -48,6 +49,9 @@ export default function BillingPage() {
   const [activeTab, setActiveTab] = useState<BalanceTab>('main')
   const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null)
   const [cancelTarget, setCancelTarget] = useState<string | null>(null)
+  const observedTenantRef = useRef<string | null>(null)
+  const hasHydratedOrderStatusesRef = useRef(false)
+  const orderStatusRef = useRef<Map<string, RechargeOrder['status']>>(new Map())
 
   const rc = i18n.language.startsWith('zh') ? referralCopy.zh : referralCopy.en
 
@@ -89,6 +93,14 @@ export default function BillingPage() {
   const { symbol: currencySymbol } = useCurrency()
   const qc = useQueryClient()
 
+  const refreshBalanceViews = useCallback(() => {
+    if (!tenantId) return
+    void qc.invalidateQueries({ queryKey: ['balance', tenantId] })
+    void qc.invalidateQueries({ queryKey: ['balance', 'breakdown', tenantId] })
+    void qc.invalidateQueries({ queryKey: ['billing', 'balance', tenantId] })
+    void qc.invalidateQueries({ queryKey: ['dashboard-top-balance', tenantId] })
+  }, [qc, tenantId])
+
   const { data: balance, isLoading: balanceLoading } = useQuery({
     queryKey: ['balance', tenantId],
     queryFn: () => getBalance(tenantId),
@@ -125,7 +137,16 @@ export default function BillingPage() {
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.next_cursor || undefined,
     enabled: !!tenantId,
+    refetchInterval: (query) => {
+      const pages = query.state.data?.pages ?? []
+      const hasPendingOrder = pages.some((page) => page.items.some((order) => order.status === 'pending'))
+      return hasPendingOrder ? 3000 : false
+    },
+    refetchIntervalInBackground: true,
   })
+
+  const orders = useMemo(() => ordersQuery.data?.pages.flatMap((page) => page.items) ?? [], [ordersQuery.data])
+  const refetchOrders = ordersQuery.refetch
 
   const cancelMutation = useMutation({
     mutationFn: (orderNo: string) => cancelRecharge(tenantId, orderNo),
@@ -139,16 +160,55 @@ export default function BillingPage() {
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
-        ordersQuery.refetch()
+        void refetchOrders()
+        refreshBalanceViews()
       }
     }
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)
-    // 仅在挂载时注册一次；refetch 引用刻意不进依赖（pre-existing 行为，显式豁免）
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [refetchOrders, refreshBalanceViews])
 
-  const orders = ordersQuery.data?.pages.flatMap((page) => page.items) ?? []
+  useEffect(() => {
+    if (!tenantId) {
+      observedTenantRef.current = null
+      hasHydratedOrderStatusesRef.current = false
+      orderStatusRef.current.clear()
+      return
+    }
+    if (observedTenantRef.current !== tenantId) {
+      observedTenantRef.current = tenantId
+      hasHydratedOrderStatusesRef.current = false
+      orderStatusRef.current.clear()
+    }
+
+    const nextStatuses = new Map<string, RechargeOrder['status']>()
+    const paidOrders: RechargeOrder[] = []
+    for (const order of orders) {
+      nextStatuses.set(order.order_no, order.status)
+      const previousStatus = orderStatusRef.current.get(order.order_no)
+      if (hasHydratedOrderStatusesRef.current && previousStatus === 'pending' && order.status === 'paid') {
+        paidOrders.push(order)
+      }
+    }
+
+    orderStatusRef.current = nextStatuses
+    if (!hasHydratedOrderStatusesRef.current) {
+      hasHydratedOrderStatusesRef.current = true
+      return
+    }
+    if (paidOrders.length === 0) return
+
+    refreshBalanceViews()
+    void qc.invalidateQueries({ queryKey: ['billing', 'recharges', tenantId] })
+
+    const order = paidOrders[0]
+    const paidAmount = order.credited_amount || order.amount
+    appToast.success(t('billing.orders.paymentSuccess', {
+      amount: `${order.currency} ${paidAmount}`,
+      count: paidOrders.length,
+    }))
+  }, [orders, qc, refreshBalanceViews, t, tenantId])
+
   const selectedOrder = orders.find((o) => o.order_no === selectedOrderNo)
   const labels = t('billing.orders.status', { returnObjects: true }) as Record<string, string>
 

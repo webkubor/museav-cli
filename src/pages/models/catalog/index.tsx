@@ -298,13 +298,13 @@ export default function ModelsCatalogPage() {
           {t('modelsCatalog.empty')}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8 items-start overflow-visible">
           {visibleModels.map((model) => {
             const meta = getModelMeta(model.model_id, isZh)
             const isExpanded = expandedId === model.id
 
             return (
-              <div key={model.id} className="flex flex-col gap-0 w-full">
+              <div key={model.id} className="relative flex flex-col gap-0 w-full">
               <div
                 role="button"
                 tabIndex={0}
@@ -474,7 +474,7 @@ export default function ModelsCatalogPage() {
 
             {/* 展开的规格面板 */}
             {isExpanded && (
-              <div className="mt-2 rounded-2xl border border-mg-border/30 bg-mg-bg-2/80 dark:bg-mg-bg-2/95 backdrop-blur-md p-5 space-y-4 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+              <div className="absolute top-[calc(100%+8px)] left-0 right-0 z-20 rounded-2xl border border-mg-border/30 bg-mg-bg-2/80 dark:bg-mg-bg-2/95 backdrop-blur-md p-5 space-y-4 animate-in fade-in-0 slide-in-from-top-2 duration-200 shadow-xl">
                 {/* 能力标签 */}
                 {model.modalities && model.modalities.length > 0 && (
                   <div className="space-y-1.5">

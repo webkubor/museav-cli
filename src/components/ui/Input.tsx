@@ -31,6 +31,18 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       ? "modern-input-search rounded-full"
       : ""
 
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (resolvedType === 'email') {
+        const filtered = e.target.value.replace(/[^a-zA-Z0-9._%+\-@]/g, '')
+        if (filtered !== e.target.value) {
+          const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
+          setter?.call(e.target, filtered)
+          e.target.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+      }
+      onChange?.(e)
+    }
+
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (onKeyDown) onKeyDown(e)
       if (e.key === "Enter" && onEnterPress) {
@@ -67,7 +79,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             type={resolvedType}
             className="modern-input-inner flex-1 w-full h-full bg-transparent border-none outline-none p-0 text-sm focus:ring-0 focus:outline-none placeholder:text-mg-text-2/70 text-mg-text-0 disabled:cursor-not-allowed"
             ref={ref}
-            onChange={onChange}
+            onChange={handleChange}
             onKeyDown={handleKeyDown}
             onBlur={handleBlur}
             {...props}

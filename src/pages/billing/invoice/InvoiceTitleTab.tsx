@@ -100,7 +100,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
           <Input value={form.tax_id} onChange={(e) => set('tax_id', e.target.value)} placeholder="统一社会信用代码" />
         </Field>
         <Field label="接收邮箱">
-          <Input value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="finance@company.com" />
+          <Input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="finance@company.com" />
         </Field>
 
         {isSpecial && (

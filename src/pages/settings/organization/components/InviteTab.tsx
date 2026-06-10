@@ -142,6 +142,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
           <div className="flex-1 min-w-[200px] space-y-1">
             <label className="text-[10px] font-bold text-mg-text-1 uppercase tracking-wider block">成员邮箱</label>
             <Input
+              type="email"
               placeholder="example@company.com，多个用逗号分隔"
               value={inviteEmails}
               onChange={(e) => setInviteEmails(e.target.value)}

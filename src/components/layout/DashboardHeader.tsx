@@ -22,7 +22,7 @@ import { createOrganization } from '@/services/organizations'
 import { applyTheme, getUserTheme } from '@/lib/theme'
 import { useTranslation } from 'react-i18next'
 import { listWorkspaces, createWorkspace } from '@/services/workspaces'
-import type { TenantBrief, TenantItem, WorkspaceItem } from '@/types'
+import type { TenantBrief, TenantItem, WorkspaceItem, SessionResult } from '@/types'
 import type { TenantListResponse } from '@/interfaces'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -53,7 +53,7 @@ export const DashboardHeader: React.FC = () => {
   const location = useLocation()
   const queryClient = useQueryClient()
   const { t } = useTranslation()
-  const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setPermissions, setActiveWorkspaceId, clearAuth } = useAuthStore()
+  const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setActiveWorkspaceId, clearAuth } = useAuthStore()
   const activeTenantType = tenants.find((t) => t.tenant_id === activeTenantId)?.type ?? 'personal'
   const isNonPersonal = activeTenantType !== 'personal'
 
@@ -147,17 +147,28 @@ export const DashboardHeader: React.FC = () => {
   const activeWorkspace = workspaces.find((w) => w.workspace_id === activeWorkspaceId) || workspaces.find((w) => w.is_default) || workspaces[0]
   const avatarLetter = (account?.display_name || account?.email || 'U').charAt(0).toUpperCase()
 
+  // 会话重拉后完整回写 store：granted + menus + tenants 身份，与登录时的 setAuth 对齐。
+  // 仅缺 granted 时旧逻辑会漏掉新组织的 menus 和 enterprise 身份，导致企业管理不出现。
+  // expectedTenantId 守卫：重拉期间用户若再次切换组织则放弃落库，避免竞态覆盖。
+  function applyRefreshedSession(s: SessionResult, expectedTenantId: string) {
+    if (useAuthStore.getState().activeTenantId !== expectedTenantId) return
+    setAuth(
+      s.account,
+      s.active_tenant_id,
+      s.tenants,
+      useAuthStore.getState().activeWorkspaceId ?? s.active_workspace_id,
+      s.permissions?.granted ?? null,
+      s.permissions?.menus ?? []
+    )
+  }
+
   async function handleSwitchTenant(tenant: TenantBrief) {
     if (tenant.tenant_id === activeTenantId) return
     try {
       await switchTenant({ tenant_id: tenant.tenant_id })
       setAuth(account!, tenant.tenant_id, tenants, undefined)
       getSession()
-        .then((s) => {
-          if (useAuthStore.getState().activeTenantId === tenant.tenant_id) {
-            setPermissions(s.permissions?.granted ?? null)
-          }
-        })
+        .then((s) => applyRefreshedSession(s, tenant.tenant_id))
         .catch((err) => console.warn('[permissions] 切换组织后会话重拉失败，使用本地矩阵回退', err))
       queryClient.invalidateQueries({ queryKey: ['tenants'] })
       queryClient.invalidateQueries({ queryKey: ['workspaces'] })
@@ -217,11 +228,7 @@ export const DashboardHeader: React.FC = () => {
         setAuth(account!, org.tenant_id, tenants, undefined)
         setActiveWorkspaceId(org.default_workspace_id)
         getSession()
-          .then((s) => {
-            if (useAuthStore.getState().activeTenantId === org.tenant_id) {
-              setPermissions(s.permissions?.granted ?? null)
-            }
-          })
+          .then((s) => applyRefreshedSession(s, org.tenant_id))
           .catch((err) => console.warn('[permissions] 新建组织后会话重拉失败，使用本地矩阵回退', err))
       } catch {
         // Ignored

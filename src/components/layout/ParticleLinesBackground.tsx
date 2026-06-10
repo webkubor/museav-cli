@@ -209,6 +209,7 @@ export const ParticleLinesBackground: React.FC = () => {
 
   return (
     <canvas
+      className="particle-lines-background"
       ref={canvasRef}
       style={{
         position: 'absolute',
@@ -217,7 +218,6 @@ export const ParticleLinesBackground: React.FC = () => {
         height: '100%',
         pointerEvents: 'none',
         zIndex: 0,
-        opacity: 0.85,
       }}
     />
   )

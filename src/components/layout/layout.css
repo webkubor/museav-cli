@@ -3,6 +3,10 @@
   isolation: isolate;
 }
 
+.particle-lines-background {
+  opacity: var(--ambient-particle-opacity, 0.72);
+}
+
 .dashboard-global-bottom-bg {
   position: fixed;
   right: clamp(-180px, -7vw, -72px);
@@ -23,8 +27,8 @@
 }
 
 body[theme-mode='dark'] .dashboard-global-bottom-bg {
-  opacity: 0.18;
-  filter: saturate(1) contrast(1.02);
+  opacity: 0.1;
+  filter: saturate(0.88) contrast(0.96);
 }
 
 @media (max-width: 768px) {

@@ -42,9 +42,9 @@
 }
 
 body[theme-mode='dark'] .sidebar-flow-line {
-  background-color: color-mix(in srgb, var(--brand-base) 18%, transparent);
-  box-shadow: 0 0 1.5px var(--brand-glow);
-  opacity: 0.95;
+  background-color: color-mix(in srgb, var(--brand-base) 12%, transparent);
+  box-shadow: 0 0 1px var(--brand-glow);
+  opacity: 0.72;
 }
 
 /* 轨道内的流动光脉冲 (激光光束效果) - 默认（浅色模式）隐藏 */
@@ -62,13 +62,13 @@ body[theme-mode='dark'] .sidebar-flow-line::after {
   height: 60px; /* 脉冲高度为 60px */
   background: linear-gradient(to bottom,
     transparent 0%,
-    var(--brand-base) 30%,
-    #ffffff 50%, /* 核心强白光 */
-    var(--brand-base) 70%,
+    color-mix(in srgb, var(--brand-base) 42%, transparent) 30%,
+    color-mix(in srgb, var(--brand-light) 62%, transparent) 50%,
+    color-mix(in srgb, var(--brand-base) 42%, transparent) 70%,
     transparent 100%
   );
-  filter: drop-shadow(0 0 3px var(--brand-base));
-  animation: verticalFlow 2.2s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+  filter: drop-shadow(0 0 2px var(--brand-glow));
+  animation: verticalFlow 3.4s cubic-bezier(0.25, 1, 0.5, 1) infinite;
 }
 
 /* ── 🚀 侧边栏子菜单物理高度折叠滑入收缩 (Vercel Style Accordion) ── */

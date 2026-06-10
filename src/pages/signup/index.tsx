@@ -15,6 +15,7 @@ import { useAuthStore } from '@/store/auth'
 import { ModelGoApiError } from '@/lib/request'
 import { toast } from '@/lib/toast'
 import { getRedirectTarget } from '@/lib/redirect'
+import { referralCodeFromSearchParams } from './referral-code'
 
 const schema = z.object({
   display_name: z.string().min(1, '请填写名称'),
@@ -44,7 +45,7 @@ export default function SignupPage() {
     resolver: zodResolver(schema),
     defaultValues: {
       email: searchParams.get('email') ?? '',
-      referral_code: searchParams.get('aff') ?? '',
+      referral_code: referralCodeFromSearchParams(searchParams),
     },
   })
 

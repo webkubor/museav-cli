@@ -6,7 +6,7 @@ import { changePassword, deleteAccount } from '@/services/account'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
-import { Modal } from '@/components/ui/Modal'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { appToast } from '@/lib/app-toast'
 import { useAuthStore } from '@/store/auth'
 import { formatDateTime } from '@/lib/format-date'
@@ -23,7 +23,6 @@ export const ChangePasswordTab: React.FC = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteReason, setDeleteReason] = useState('')
-  const [deleteConfirm, setDeleteConfirm] = useState('')
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -51,7 +50,6 @@ export const ChangePasswordTab: React.FC = () => {
       setDeleteModalOpen(false)
       setDeletePassword('')
       setDeleteReason('')
-      setDeleteConfirm('')
       clearAuth()
       navigate('/login', { replace: true })
     },
@@ -79,10 +77,6 @@ export const ChangePasswordTab: React.FC = () => {
   function handleDeleteSubmit() {
     if (!deletePassword) {
       appToast.warning(t('account.security.deletePasswordRequired'))
-      return
-    }
-    if (deleteConfirm !== DELETE_CONFIRM_TEXT) {
-      appToast.warning(t('account.security.deleteConfirmRequired', { text: DELETE_CONFIRM_TEXT }))
       return
     }
     deleteMutation.mutate()
@@ -160,32 +154,20 @@ export const ChangePasswordTab: React.FC = () => {
         </Button>
       </div>
 
-      <Modal
+      <ConfirmModal
         open={deleteModalOpen}
         onClose={() => {
           if (deleteMutation.isPending) return
           setDeleteModalOpen(false)
         }}
+        onConfirm={handleDeleteSubmit}
         title={t('account.security.deleteModalTitle')}
         description={t('account.security.deleteModalDesc', { text: DELETE_CONFIRM_TEXT })}
-        footer={(
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => setDeleteModalOpen(false)}
-              disabled={deleteMutation.isPending}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              loading={deleteMutation.isPending}
-              onClick={handleDeleteSubmit}
-            >
-              {t('account.security.deleteConfirmAction')}
-            </Button>
-          </>
-        )}
+        confirmLabel={t('account.security.deleteConfirmAction')}
+        cancelLabel={t('common.cancel')}
+        variant="destructive"
+        loading={deleteMutation.isPending}
+        requireTyping={DELETE_CONFIRM_TEXT}
       >
         <div className="space-y-4">
           <div>
@@ -211,19 +193,8 @@ export const ChangePasswordTab: React.FC = () => {
               placeholder={t('account.security.deleteReasonPlaceholder')}
             />
           </div>
-          <div>
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-mg-text-1">
-              {t('account.security.deleteConfirmLabel', { text: DELETE_CONFIRM_TEXT })}
-            </span>
-            <Input
-              value={deleteConfirm}
-              disabled={deleteMutation.isPending}
-              onChange={(e) => setDeleteConfirm(e.target.value)}
-              placeholder={DELETE_CONFIRM_TEXT}
-            />
-          </div>
         </div>
-      </Modal>
+      </ConfirmModal>
     </div>
   )
 }

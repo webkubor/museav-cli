@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import Select from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { appToast } from '@/lib/app-toast'
 
 type DetailTab = 'overview' | 'members' | 'settings'
@@ -410,7 +411,7 @@ function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => 
   const canRename = hasPermission(PERMS.WORKSPACE_RENAME)
   const canDelete = hasPermission(PERMS.WORKSPACE_DELETE)
   const [name, setName] = useState(ws.name)
-  const [confirmName, setConfirmName] = useState('')
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   const renameMutation = useMutation({
     mutationFn: () => updateWorkspace(ws.workspace_id, { name: name.trim() }),
@@ -423,7 +424,7 @@ function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => 
   })
 
   const deleteMutation = useMutation({
-    mutationFn: () => deleteWorkspace(ws.workspace_id, { confirm_name: confirmName.trim() }),
+    mutationFn: () => deleteWorkspace(ws.workspace_id, { confirm_name: ws.name }),
     onSuccess: () => {
       appToast.success(t('workspaces.detail.settings.deleteSuccess'))
       qc.invalidateQueries({ queryKey: ['workspaces'] })
@@ -464,25 +465,29 @@ function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => 
         ) : canDelete ? (
           <>
             <p className="text-xs text-mg-text-2">{t('workspaces.detail.settings.deleteHint')}</p>
-            <div className="flex items-center gap-2">
-              <Input
-                value={confirmName}
-                onChange={(e) => setConfirmName(e.target.value)}
-                placeholder={t('workspaces.detail.settings.deleteConfirmPlaceholder')}
-                className="max-w-[320px] h-9 text-xs rounded-lg"
-              />
-              <Button
-                variant="outline"
-                disabled={deleteMutation.isPending || confirmName.trim() !== ws.name}
-                onClick={() => deleteMutation.mutate()}
-                className="h-9 px-4 rounded-lg font-semibold text-xs border-mg-danger/40 text-mg-danger hover:bg-mg-danger/5"
-              >
-                {t('workspaces.detail.settings.delete')}
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteOpen(true)}
+              className="h-9 px-4 rounded-lg font-semibold text-xs border-mg-danger/40 text-mg-danger hover:bg-mg-danger/5"
+            >
+              {t('workspaces.detail.settings.delete')}
+            </Button>
           </>
         ) : null}
       </div>
+
+      <ConfirmModal
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={() => deleteMutation.mutate()}
+        title={t('workspaces.detail.settings.delete')}
+        description={t('workspaces.detail.settings.deleteHint')}
+        confirmLabel={t('workspaces.detail.settings.delete')}
+        cancelLabel={t('workspaces.detail.settings.cancel')}
+        variant="destructive"
+        loading={deleteMutation.isPending}
+        requireTyping={ws.name}
+      />
     </div>
   )
 }

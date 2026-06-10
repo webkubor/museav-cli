@@ -23,12 +23,10 @@ import { getUsageRankingsModels } from '@/services/generated-api'
 import { useCurrency } from '@/hooks/use-platform-config'
 import type { UsageRankingItem } from '@/types/generated-api-types'
 import {
-  categories,
-  matchesCategory,
   modalityBadges,
   vendorNode,
-  type CategoryKey,
 } from '../model-experience-data'
+import { listModelTags } from '@/services/catalog'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
 import '@/features/dashboard/components/dashboard-rankings-section.css'
@@ -131,7 +129,14 @@ export default function ModelsCatalogPage() {
   const navigate = useNavigate()
   const isZh = i18n.language.startsWith('zh')
 
-  const [category, setCategory] = useState<CategoryKey>('all')
+  const [category, setCategory] = useState<string>('all')
+
+  const tagsQuery = useQuery({
+    queryKey: ['catalog-model-tags'],
+    queryFn: () => listModelTags(true),
+    staleTime: 5 * 60_000,
+  })
+  const apiTags = tagsQuery.data?.items ?? []
   const [isCompareOpen, setIsCompareOpen] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -169,10 +174,13 @@ export default function ModelsCatalogPage() {
 
   const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
 
-  const visibleModels = useMemo(
-    () => filteredModels.filter((model) => matchesCategory(model, category)),
-    [category, filteredModels],
-  )
+  const visibleModels = useMemo(() => {
+    if (category === 'all') return filteredModels
+    return filteredModels.filter((model) =>
+      model.tags?.some((t) => t.toLowerCase() === category.toLowerCase()) ||
+      model.modalities?.includes(category)
+    )
+  }, [category, filteredModels])
 
   const handleCopyApiId = async (modelId: string, event: React.MouseEvent) => {
     event.stopPropagation()
@@ -262,19 +270,32 @@ export default function ModelsCatalogPage() {
           className="w-full h-11 text-[13.5px]"
         />
         <div className="flex items-center gap-2 flex-wrap">
-          {categories.map((item) => (
+          <button
+            key="all"
+            type="button"
+            onClick={() => setCategory('all')}
+            className={cn(
+              'px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-300 cursor-pointer whitespace-nowrap tracking-wide',
+              category === 'all'
+                ? 'bg-brand-base text-white shadow-md shadow-brand-glow/20'
+                : 'bg-mg-fill-0/40 text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/90 active:scale-95',
+            )}
+          >
+            {isZh ? '全部' : 'All'}
+          </button>
+          {apiTags.map((tag) => (
             <button
-              key={item}
+              key={tag.code}
               type="button"
-              onClick={() => setCategory(item)}
+              onClick={() => setCategory(tag.code)}
               className={cn(
                 'px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-300 cursor-pointer whitespace-nowrap tracking-wide',
-                category === item
+                category === tag.code
                   ? 'bg-brand-base text-white shadow-md shadow-brand-glow/20'
                   : 'bg-mg-fill-0/40 text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/90 active:scale-95',
               )}
             >
-              {t(`modelsCatalog.filter.${item}`)}
+              {isZh ? tag.name_zh : tag.name_en}
             </button>
           ))}
         </div>

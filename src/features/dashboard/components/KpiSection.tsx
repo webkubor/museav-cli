@@ -39,19 +39,19 @@ export const KpiSection: React.FC = () => {
   const seriesParams = useMemo(() => {
     const to = new Date()
     const from = new Date()
-    from.setDate(from.getDate() - 7)
+    from.setDate(from.getDate() - 5)
     return { from: from.toISOString(), to: to.toISOString(), granularity: 'day' as const }
   }, [])
 
   const { data: reqSeries } = useQuery({
-    queryKey: ['usage', 'series', 'requests', 'kpi', activeTenantId],
+    queryKey: ['usage', 'series', 'requests', activeTenantId],
     queryFn: () => getUsageSeries({ ...seriesParams, metric: 'requests' }),
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })
 
   const { data: tokenSeries } = useQuery({
-    queryKey: ['usage', 'series', 'tokens', 'kpi', activeTenantId],
+    queryKey: ['usage', 'series', 'tokens', activeTenantId],
     queryFn: () => getUsageSeries({ ...seriesParams, metric: 'tokens' }),
     enabled: !!activeTenantId,
     staleTime: 60_000,

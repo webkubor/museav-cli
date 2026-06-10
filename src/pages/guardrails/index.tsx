@@ -66,7 +66,7 @@ export default function GuardrailsPage() {
 
   const modelsQuery = useQuery({
     queryKey: ['catalog-models'],
-    queryFn: () => listModels({ limit: 100 }),
+    queryFn: () => listModels({ page_size: 100 }),
     staleTime: 120_000,
   })
   const modelSuggestions = (modelsQuery.data as any)?.items?.map((m: any) => m.model_id as string) ?? []

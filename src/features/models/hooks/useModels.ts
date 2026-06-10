@@ -9,7 +9,7 @@ export function useModels() {
 
   const modelsQuery = useQuery({
     queryKey: ['catalog-models'],
-    queryFn: () => listModels({ page_size: 100 }),
+    queryFn: () => listModels({ limit: 100 }),
     staleTime: 5 * 60_000,
   })
 

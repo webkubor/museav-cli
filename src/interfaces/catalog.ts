@@ -25,7 +25,8 @@ export interface CatalogModelListParams extends QueryParams {
   /** 排序：newest | cheapest | popular（默认 popular） */
   sort?: 'newest' | 'cheapest' | 'popular'
   cursor?: string
-  page_size?: number
+  /** 后端实际使用 limit，page_size 为 Swagger 定义但未生效 */
+  limit?: number
 }
 
 /** 供应商列表查询参数 */

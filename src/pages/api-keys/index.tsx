@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
 import Select from '@/components/ui/Select'
 import { SelectItem } from '@/components/ui/Select'
@@ -15,7 +17,7 @@ import {
   TableRow,
   TableCell
 } from '@/components/ui/Table'
-import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers, LuKey, LuChevronDown, LuZap, LuArrowRight, LuChevronRight } from 'react-icons/lu'
+import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers, LuKey, LuChevronDown, LuZap, LuArrowRight, LuChevronRight, LuKeyRound } from 'react-icons/lu'
 import OpenAI from '@lobehub/icons/es/OpenAI'
 import Anthropic from '@lobehub/icons/es/Anthropic'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -33,6 +35,7 @@ import { pageItems } from '@/lib/utils'
 import { formatDateTime } from '@/lib/format-date'
 
 type ScopeType = 'personal' | 'workspace' | 'member'
+
 
 const SCOPE_OPTIONS: { value: ScopeType; icon: React.ReactNode; label: string; desc: string }[] = [
   {
@@ -232,10 +235,7 @@ export default function ApiKeysPage() {
   return (
     <div className="space-y-6">
       {/* 头部 */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-mg-text-0">{t('apiKeys.title')}</h1>
-        <p className="text-sm text-mg-text-1 mt-1.5">{t('apiKeys.desc')}</p>
-      </div>
+      <PageHeader title={t('apiKeys.title')} description={t('apiKeys.desc')} className="mb-0" />
 
 
       {/* 快速接入配置 */}
@@ -423,9 +423,11 @@ export default function ApiKeysPage() {
               <TableCell colSpan={7} className="text-center py-10 text-mg-text-2">{t('common.loading')}</TableCell>
             </TableRow>
           ) : filteredData.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={7} className="text-center py-10 text-mg-text-2">{t('apiKeys.table.noData')}</TableCell>
-            </TableRow>
+            <EmptyState
+              icon={<LuKeyRound />}
+              title={t('apiKeys.table.noData')}
+              colSpan={7}
+            />
           ) : (
             filteredData.map((record) => (
               <TableRow key={record.api_key_id}>
@@ -450,9 +452,14 @@ export default function ApiKeysPage() {
                   }
                 </TableCell>
                 <TableCell>
-                  <Badge variant={record.status === 'active' ? 'success' : 'outline'} dot={record.status === 'active'}>
-                    {record.status === 'active' ? t('apiKeys.table.active') : t('apiKeys.table.disabled')}
-                  </Badge>
+                  <StatusBadge
+                    status={record.status}
+                    statusMap={{
+                      active: { label: t('apiKeys.table.active'), variant: 'success', dot: true },
+                      inactive: { label: t('apiKeys.table.disabled'), variant: 'outline' },
+                    }}
+                    fallback={record.status}
+                  />
                 </TableCell>
                 <TableCell className="font-mono text-xs text-mg-text-0 tabular-nums">
                   {record.total_spend?.amount

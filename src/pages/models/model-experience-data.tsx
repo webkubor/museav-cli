@@ -45,7 +45,7 @@ export const modelExperienceCopy = {
     loading: '正在加载模型...',
     error: '模型列表加载失败，请稍后重试',
     copied: '模型 ID 已复制',
-    categories: { all: '全部', standard: '标准输出', high: '高输出', ultra: '超长输出' },
+    categories: { all: '全部', standard: '标准 ≤16K', high: '高输出 ≤64K', ultra: '超长 64K+' },
   },
   en: {
     warning: 'Your balance is low. Once the free trial quota is used, this model experience may stop.',
@@ -71,7 +71,7 @@ export const modelExperienceCopy = {
     loading: 'Loading models...',
     error: 'Failed to load models. Please try again later.',
     copied: 'Model ID copied',
-    categories: { all: 'All', standard: 'Standard', high: 'High Output', ultra: 'Ultra Long' },
+    categories: { all: 'All', standard: 'Standard ≤16K', high: 'High ≤64K', ultra: 'Ultra 64K+' },
   },
 } as const
 

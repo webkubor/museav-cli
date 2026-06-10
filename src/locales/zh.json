@@ -1062,7 +1062,9 @@
       "logs": "查看日志",
       "models": "模型目录",
       "guardrails": "安全护栏",
-      "compare": "模型对比"
+      "compare": "模型对比",
+      "workspaces": "项目管理",
+      "orgSettings": "企业设置"
     }
   },
   "welcomeBanner": {

@@ -6,6 +6,8 @@ import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { useBalance } from '@/hooks/use-balance'
 import { useAuthStore } from '@/store/auth'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS, type Permission } from '@/config/permissions'
 import { CLI_CODE } from '@/features/dashboard/constants/code-snippets'
 import { formatFriendlyAmount } from '@/lib/utils'
 import { QuickWeb3Icon, type QuickIconType } from './QuickAccessSection'
@@ -34,6 +36,7 @@ export const DashboardTopPanel: React.FC = () => {
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const { symbol: currencySymbol } = useCurrency()
+  const { hasPermission } = usePermissions()
 
   const { data: balance } = useBalance(activeTenantId)
 
@@ -51,19 +54,20 @@ export const DashboardTopPanel: React.FC = () => {
   const isLowBalance = availableAmount !== null && thresholdAmount !== null && availableAmount <= thresholdAmount
   const cliCommand = getCliCommandLine()
 
-  const quickActions: Array<{ icon: QuickIconType; label: string; path: string; primary?: boolean }> = [
-    {
-      icon: 'keys',
-      label: t('dashboardTop.quick.createKey'),
-      path: scopedWorkspacePath(activeWorkspaceId, 'api-keys'),
-      primary: true,
-    },
-    { icon: 'usage',        label: t('dashboardTop.quick.recharge'),   path: '/billing' },
-    { icon: 'observability',label: t('dashboardTop.quick.logs'),        path: '/logs' },
-    { icon: 'models',       label: t('dashboardTop.quick.models'),      path: '/models/catalog' },
-    { icon: 'guardrails',   label: t('dashboardTop.quick.guardrails'),  path: scopedWorkspacePath(activeWorkspaceId, 'guardrails') },
-    { icon: 'compare',      label: t('dashboardTop.quick.compare'),     path: '/models/compare' },
+  const allQuickActions: Array<{ icon: QuickIconType; label: string; path: string; primary?: boolean; permission?: Permission }> = [
+    { icon: 'keys',        label: t('dashboardTop.quick.createKey'),   path: scopedWorkspacePath(activeWorkspaceId, 'api-keys'),   primary: true, permission: PERMS.API_KEYS_VIEW },
+    { icon: 'usage',       label: t('dashboardTop.quick.recharge'),    path: '/billing',                                           permission: PERMS.BILLING_VIEW },
+    { icon: 'observability',label: t('dashboardTop.quick.logs'),       path: '/logs',                                              permission: PERMS.LOGS_VIEW },
+    { icon: 'models',      label: t('dashboardTop.quick.models'),      path: '/models/catalog',                                    permission: PERMS.MODELS_VIEW },
+    { icon: 'guardrails',  label: t('dashboardTop.quick.guardrails'),  path: scopedWorkspacePath(activeWorkspaceId, 'guardrails'), permission: PERMS.GUARDRAILS_VIEW },
+    { icon: 'compare',     label: t('dashboardTop.quick.compare'),     path: '/models/compare',                                    permission: PERMS.MODELS_VIEW },
+    { icon: 'workspaces',  label: t('dashboardTop.quick.workspaces'),  path: '/settings/workspace' },
+    { icon: 'orgSettings', label: t('dashboardTop.quick.orgSettings'), path: '/settings/organization',                             permission: PERMS.ORG_SETTINGS_EDIT },
   ]
+
+  const quickActions = allQuickActions.filter(
+    (a) => !a.permission || hasPermission(a.permission)
+  )
 
   const handleCopy = async () => {
     try {

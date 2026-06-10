@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/auth'
 import { Card } from '@/components/ui/Card'
 import './quick-access-section.css'
 
-export type QuickIconType = 'models' | 'keys' | 'usage' | 'observability' | 'billing' | 'guardrails' | 'compare'
+export type QuickIconType = 'models' | 'keys' | 'usage' | 'observability' | 'billing' | 'guardrails' | 'compare' | 'workspaces' | 'orgSettings'
 
 interface QuickLink {
   titleKey: string
@@ -99,6 +99,24 @@ export function QuickWeb3Icon({ type }: { type: QuickIconType }) {
           <rect className="quick-web3-stroke" x="18" y="24" width="22" height="48" rx="4" stroke={`url(#${id}-g)`} filter={`url(#${id}-glow)`} />
           <rect className="quick-web3-stroke" x="56" y="24" width="22" height="48" rx="4" stroke={`url(#${id}-g)`} />
           <path className="quick-web3-link" d="M40 48h16M44 42l-4 6 4 6M52 42l4 6-4 6" stroke={`url(#${id}-g)`} strokeLinecap="round" strokeLinejoin="round" />
+        </>
+      )}
+
+      {type === 'workspaces' && (
+        <>
+          <rect className="quick-web3-stroke" x="16" y="20" width="28" height="24" rx="4" stroke={`url(#${id}-g)`} filter={`url(#${id}-glow)`} />
+          <rect className="quick-web3-stroke" x="52" y="20" width="28" height="24" rx="4" stroke={`url(#${id}-g)`} />
+          <rect className="quick-web3-stroke" x="34" y="52" width="28" height="24" rx="4" stroke={`url(#${id}-g)`} />
+          <path className="quick-web3-link" d="M30 44v4M66 44v4M48 52v0" stroke={`url(#${id}-g)`} strokeLinecap="round" />
+          <path className="quick-web3-link" d="M30 48h36" stroke={`url(#${id}-g)`} />
+        </>
+      )}
+
+      {type === 'orgSettings' && (
+        <>
+          <circle className="quick-web3-stroke" cx="48" cy="42" r="14" stroke={`url(#${id}-g)`} filter={`url(#${id}-glow)`} />
+          <circle cx="48" cy="42" r="5" fill={`url(#${id}-g)`} />
+          <path className="quick-web3-link" d="M48 20v8M48 56v8M26 42h8M62 42h8M33 27l6 6M57 51l6 6M33 57l6-6M57 33l6-6" stroke={`url(#${id}-g)`} strokeLinecap="round" />
         </>
       )}
 

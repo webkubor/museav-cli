@@ -1063,7 +1063,9 @@
       "logs": "View logs",
       "models": "Model catalog",
       "guardrails": "Guardrails",
-      "compare": "Compare"
+      "compare": "Compare",
+      "workspaces": "Projects",
+      "orgSettings": "Org Settings"
     }
   },
   "welcomeBanner": {

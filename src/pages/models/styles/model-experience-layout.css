@@ -54,7 +54,7 @@
 
 .models-experience-workbench {
   display: grid;
-  grid-template-columns: minmax(340px, 430px) minmax(0, 1fr);
+  grid-template-columns: minmax(380px, 520px) minmax(0, 1fr);
   gap: 16px;
   flex: 1;
   min-height: 0;

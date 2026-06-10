@@ -572,7 +572,6 @@ export default function ApiKeysPage() {
               placeholder={t('apiKeys.createModal.guardrailPlaceholder')}
               className="w-full"
             >
-              <SelectItem value="none">{t('apiKeys.createModal.guardrailNone')}</SelectItem>
               {(guardrailsQuery.data ?? []).map((g) => (
                 <SelectItem key={g.id} value={g.id}>
                   {g.name}

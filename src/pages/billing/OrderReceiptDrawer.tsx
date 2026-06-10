@@ -3,8 +3,9 @@ import type { RechargeOrder } from '@/types'
 import { useTranslation } from 'react-i18next'
 import { useSite } from '@/hooks/use-platform-config'
 import { Button } from '@/components/ui/Button'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import type { StatusConfig } from '@/components/ui/StatusBadge'
 import { formatDateTime } from '@/lib/format-date'
-import { cn } from '@/lib/utils'
 
 // ─── Sub-components: OrderReceiptDrawer ───────────────────────────────────
 
@@ -23,7 +24,13 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
   if (!isOpen || !order) return null
 
   const isPending = order.status === 'pending'
-  const isPaid = order.status === 'paid'
+
+  const orderStatusMap: Record<string, StatusConfig> = {
+    paid: { label: labels['paid'] ?? 'paid', variant: 'success' },
+    pending: { label: labels['pending'] ?? 'pending', variant: 'warning', dot: true },
+    failed: { label: labels['failed'] ?? 'failed', variant: 'danger' },
+    cancelled: { label: labels['cancelled'] ?? 'cancelled', variant: 'outline' },
+  }
 
   return (
     <div className="fixed inset-0 z-[80] flex justify-end">
@@ -73,14 +80,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
               <div className="text-[10px] uppercase tracking-wider text-mg-text-3 font-bold">
                 {t('billing.orders.detail.status')}
               </div>
-              <span className={cn(
-                "text-xs font-bold px-3 py-1 rounded-full border",
-                isPaid ? "bg-mg-success/10 border-mg-success/20 text-mg-success" :
-                isPending ? "bg-mg-warning/10 border-mg-warning/20 text-mg-warning animate-pulse" :
-                "bg-mg-fill-0 border-mg-border text-mg-text-3"
-              )}>
-                {labels[order.status] || order.status}
-              </span>
+              <StatusBadge status={order.status} statusMap={orderStatusMap} />
             </div>
 
             {/* Receipt Details rows inside monospace grid */}

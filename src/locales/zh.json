@@ -1120,7 +1120,9 @@
     "link4.title": "内容安全",
     "link4.desc": "管理模型调用护栏",
     "link5.title": "可观测性",
-    "link5.desc": "查看实时调用审计日志"
+    "link5.desc": "查看实时调用审计日志",
+    "link6.title": "模型对比",
+    "link6.desc": "多模型并排对比性能"
   },
   "device": {
     "title.missingCode": "授权链接无效",

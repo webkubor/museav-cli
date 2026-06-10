@@ -1108,7 +1108,9 @@
     "link4.title": "Guardrails",
     "link4.desc": "Configure model filter rules",
     "link5.title": "Observability",
-    "link5.desc": "View real-time call audit logs"
+    "link5.desc": "View real-time call audit logs",
+    "link6.title": "Compare Models",
+    "link6.desc": "Side-by-side model performance"
   },
   "device": {
     "title.missingCode": "Invalid Authorization Link",

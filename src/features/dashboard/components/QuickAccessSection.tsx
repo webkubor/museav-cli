@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/auth'
 import { Card } from '@/components/ui/Card'
 import './quick-access-section.css'
 
-export type QuickIconType = 'models' | 'keys' | 'usage' | 'observability'
+export type QuickIconType = 'models' | 'keys' | 'usage' | 'observability' | 'billing' | 'guardrails' | 'compare'
 
 interface QuickLink {
   titleKey: string
@@ -78,6 +78,30 @@ export function QuickWeb3Icon({ type }: { type: QuickIconType }) {
         </>
       )}
 
+      {type === 'billing' && (
+        <>
+          <rect className="quick-web3-stroke" x="20" y="30" width="56" height="36" rx="6" stroke={`url(#${id}-g)`} filter={`url(#${id}-glow)`} />
+          <path className="quick-web3-link" d="M20 44h56" stroke={`url(#${id}-g)`} />
+          <rect x="28" y="52" width="16" height="6" rx="2" fill={`url(#${id}-g)`} opacity="0.7" />
+          <rect x="52" y="52" width="16" height="6" rx="2" fill={`url(#${id}-g)`} opacity="0.4" />
+        </>
+      )}
+
+      {type === 'guardrails' && (
+        <>
+          <path className="quick-web3-stroke" d="M48 14c0 0-22 8-22 22v18c0 14 22 28 22 28s22-14 22-28V36c0-14-22-22-22-22Z" stroke={`url(#${id}-g)`} filter={`url(#${id}-glow)`} />
+          <path className="quick-web3-link" d="M38 48l8 8 14-16" stroke={`url(#${id}-g)`} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+        </>
+      )}
+
+      {type === 'compare' && (
+        <>
+          <rect className="quick-web3-stroke" x="18" y="24" width="22" height="48" rx="4" stroke={`url(#${id}-g)`} filter={`url(#${id}-glow)`} />
+          <rect className="quick-web3-stroke" x="56" y="24" width="22" height="48" rx="4" stroke={`url(#${id}-g)`} />
+          <path className="quick-web3-link" d="M40 48h16M44 42l-4 6 4 6M52 42l4 6-4 6" stroke={`url(#${id}-g)`} strokeLinecap="round" strokeLinejoin="round" />
+        </>
+      )}
+
       <circle className="quick-web3-node" cx="16" cy="28" r="4" />
       <circle className="quick-web3-node" cx="80" cy="28" r="4" />
       <circle className="quick-web3-node" cx="16" cy="68" r="4" />
@@ -96,6 +120,9 @@ export const QuickAccessSection: React.FC = () => {
     { titleKey: 'quickAccess.link1.title', descKey: 'quickAccess.link1.desc', icon: 'keys',          path: 'workspace:api-keys' },
     { titleKey: 'quickAccess.link2.title', descKey: 'quickAccess.link2.desc', icon: 'usage',         path: '/usage' },
     { titleKey: 'quickAccess.link5.title', descKey: 'quickAccess.link5.desc', icon: 'observability', path: 'workspace:observability' },
+    { titleKey: 'quickAccess.link4.title', descKey: 'quickAccess.link4.desc', icon: 'guardrails',    path: 'workspace:guardrails' },
+    { titleKey: 'quickAccess.link3.title', descKey: 'quickAccess.link3.desc', icon: 'billing',       path: '/billing' },
+    { titleKey: 'quickAccess.link6.title', descKey: 'quickAccess.link6.desc', icon: 'compare',       path: '/models/compare' },
   ]
 
   return (

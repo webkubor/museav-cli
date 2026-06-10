@@ -8,6 +8,7 @@ import { LuDownload } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { appToast } from '@/lib/app-toast'
 import { listInvoiceRecords, retryInvoice, getInvoiceDownloadUrl } from '@/services/invoice'
 import type { InvoiceRecord, InvoiceStatus, InvoiceTitleType } from '@/types'
@@ -100,9 +101,9 @@ export function InvoiceRecordsTab({
 
       {/* 列表 */}
       {loading && records.length === 0 ? (
-        <div className="py-10 text-center text-sm text-mg-text-2">加载中…</div>
+        <EmptyState title="加载中…" />
       ) : records.length === 0 ? (
-        <div className="py-10 text-center text-sm text-mg-text-2">暂无发票记录</div>
+        <EmptyState title="暂无发票记录" />
       ) : (
         records.map((r) => {
           const st = STATUS_MAP[r.status]

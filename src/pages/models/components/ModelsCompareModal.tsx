@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { LuSearch, LuX, LuGitCompareArrows } from 'react-icons/lu'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { cn } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
@@ -203,9 +204,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
               })}
 
               {filteredModels.length === 0 && (
-                <div className="py-12 text-center text-xs text-mg-text-2">
-                  未匹配到相关模型
-                </div>
+                <EmptyState title="未匹配到相关模型" />
               )}
             </div>
           </div>
@@ -263,17 +262,12 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                 ))}
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center py-16 animate-in fade-in duration-300">
-                <div className="w-14 h-14 rounded-full bg-mg-fill-0 flex items-center justify-center text-mg-text-2 border border-mg-border/40">
-                  <LuGitCompareArrows size={26} className="opacity-40" />
-                </div>
-                <div>
-                  <h3 className="text-[13.5px] font-bold text-mg-text-1 m-0">请勾选需要对比的模型</h3>
-                  <p className="text-[11.5px] text-mg-text-2 m-0 mt-1 max-w-[280px]">
-                    在左侧列表中勾选最多 3 个模型，即可在此区域直观展示核心指标、上下文与价格对比。
-                  </p>
-                </div>
-              </div>
+              <EmptyState
+                icon={<LuGitCompareArrows size={26} className="opacity-40" />}
+                title="请勾选需要对比的模型"
+                description="在左侧列表中勾选最多 3 个模型，即可在此区域直观展示核心指标、上下文与价格对比。"
+                className="flex-1 animate-in fade-in duration-300"
+              />
             )}
 
             {/* 底部操作工具栏 */}

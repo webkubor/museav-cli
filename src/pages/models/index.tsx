@@ -25,7 +25,7 @@ import {
   categories,
   initialMessages,
   matchesCategory,
-  modalityBadges,
+
   modelExperienceCopy,
   previewImages,
   vendorNode,
@@ -236,11 +236,8 @@ export default function ModelsPage() {
                   <span>{selectedModel.vendor || provider?.provider_name || 'ModelGo'}</span>
                 </div>
                 <h2>{selectedModel.display_name}</h2>
-                <div className="flex gap-1.5 flex-wrap">
-                  {modalityBadges(selectedModel)}
-                </div>
                 <div className="models-experience-featured-metrics">
-                  <span>{formatContextLength(selectedModel.context_length)} {text.context}</span>
+                  <span>最大输出 {selectedModel.max_output_tokens ? formatContextLength(selectedModel.max_output_tokens) : '—'} tokens</span>
                   <span>{formatModelPrice(selectedModel.pricing?.input_per_1m, selectedModel.pricing?.currency)}</span>
                 </div>
               </div>
@@ -271,7 +268,7 @@ export default function ModelsPage() {
                   <span className="min-w-0 flex-1">
                     <span className="models-experience-row-name">{model.display_name}</span>
                     <span className="models-experience-row-meta">
-                      {model.vendor || 'ModelGo'} · {formatContextLength(model.context_length)} · {formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}
+                      {model.vendor || 'ModelGo'} · 最大输出 {model.max_output_tokens ? formatContextLength(model.max_output_tokens) : '—'} · {formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}
                     </span>
                   </span>
                   <span className="models-experience-status-dot" />

@@ -4,12 +4,11 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tansta
 import './billing.css'
 import { useTranslation } from 'react-i18next'
 import {
-  getBalance,
-  getBalanceBreakdown,
   listRecharges,
   cancelRecharge,
   redeemPromoCode,
 } from '@/services/billing'
+import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
 import { listRewardRecords } from '@/services/referral'
 import { listGiftRecords } from '@/services/billing'
 import { useCurrency, useSite } from '@/hooks/use-platform-config'
@@ -97,24 +96,11 @@ export default function BillingPage() {
     if (!tenantId) return
     void qc.invalidateQueries({ queryKey: ['balance', tenantId] })
     void qc.invalidateQueries({ queryKey: ['balance', 'breakdown', tenantId] })
-    void qc.invalidateQueries({ queryKey: ['billing', 'balance', tenantId] })
-    void qc.invalidateQueries({ queryKey: ['dashboard-top-balance', tenantId] })
   }, [qc, tenantId])
 
-  const { data: balance, isLoading: balanceLoading } = useQuery({
-    queryKey: ['balance', tenantId],
-    queryFn: () => getBalance(tenantId),
-    enabled: !!tenantId,
-  })
-
+  const { data: balance, isLoading: balanceLoading } = useBalance(tenantId)
   const { main: availableMain } = formatBalance(balance?.available.amount)
-
-  // 余额细分（主 / 赠送 / 奖励）—— 走 service 契约，DEV 返回占位值
-  const { data: breakdown } = useQuery({
-    queryKey: ['balance', 'breakdown', tenantId],
-    queryFn: () => getBalanceBreakdown(tenantId),
-    enabled: !!tenantId,
-  })
+  const { data: breakdown } = useBalanceBreakdown(tenantId)
 
   // 奖励记录（即推荐计划返佣流水）
   const { data: rewardRecords = [] } = useQuery({

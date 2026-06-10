@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
-import { getBalance } from '@/services/billing'
+import { useBalance } from '@/hooks/use-balance'
 import { getUsageSummary, getUsageSeries } from '@/services/usage'
 import { getBillingMoneyStats } from '@/services/overview'
 import { useCurrency } from '@/hooks/use-platform-config'
@@ -15,12 +15,7 @@ export const KpiSection: React.FC = () => {
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const { symbol: currencySymbol } = useCurrency()
 
-  const { data: balance, isLoading: balanceLoading } = useQuery({
-    queryKey: ['balance', activeTenantId],
-    queryFn: () => getBalance(activeTenantId!),
-    enabled: !!activeTenantId,
-    staleTime: 30_000,
-  })
+  const { data: balance, isLoading: balanceLoading } = useBalance(activeTenantId)
 
   const { data: usage, isLoading: usageLoading } = useQuery({
     queryKey: ['usage', 'summary', activeTenantId],

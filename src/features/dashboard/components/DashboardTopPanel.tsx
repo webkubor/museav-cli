@@ -1,11 +1,10 @@
 import React, { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { LuArrowRight, LuCheck, LuCopy, LuInfo, LuSparkles, LuTerminal } from 'react-icons/lu'
 import { useNavigate } from 'react-router-dom'
 import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
-import { getBalance } from '@/services/billing'
+import { useBalance } from '@/hooks/use-balance'
 import { useAuthStore } from '@/store/auth'
 import { CLI_CODE } from '@/features/dashboard/constants/code-snippets'
 import { formatFriendlyAmount } from '@/lib/utils'
@@ -36,14 +35,7 @@ export const DashboardTopPanel: React.FC = () => {
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const { symbol: currencySymbol } = useCurrency()
 
-  const { data: balance } = useQuery({
-    // 全项目统一余额 key ['balance', tenantId]：同页与 KpiSection 去重为一次请求，
-    // 且充值/推荐/兑换后的 invalidateQueries(['balance', tenantId]) 能刷新首页余额
-    queryKey: ['balance', activeTenantId],
-    queryFn: () => getBalance(activeTenantId!),
-    enabled: !!activeTenantId,
-    staleTime: 30_000,
-  })
+  const { data: balance } = useBalance(activeTenantId)
 
   const greetingKey = useMemo(() => {
     const hour = new Date().getHours()

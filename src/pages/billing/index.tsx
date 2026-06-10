@@ -16,8 +16,11 @@ import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { EmptyState } from '@/components/ui/EmptyState'
+import type { StatusConfig } from '@/components/ui/StatusBadge'
 import { appToast } from '@/lib/app-toast'
 import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
@@ -198,6 +201,13 @@ export default function BillingPage() {
   const selectedOrder = orders.find((o) => o.order_no === selectedOrderNo)
   const labels = t('billing.orders.status', { returnObjects: true }) as Record<string, string>
 
+  const rechargeStatusMap = useMemo<Record<string, StatusConfig>>(() => ({
+    paid:      { label: labels['paid']      ?? 'paid',      variant: 'success',   dot: true },
+    pending:   { label: labels['pending']   ?? 'pending',   variant: 'warning',   dot: true },
+    failed:    { label: labels['failed']    ?? 'failed',    variant: 'danger',    dot: true },
+    cancelled: { label: labels['cancelled'] ?? 'cancelled', variant: 'secondary', dot: true },
+  }), [labels])
+
   // Inline promo redeem state (reuses redeemPromoCode service)
   const [promoCode, setPromoCode] = useState('')
   const redeemMutation = useMutation({
@@ -224,14 +234,11 @@ export default function BillingPage() {
   return (
     <div className="space-y-6">
       {/* 1. 页头 */}
-      <div className="flex flex-col gap-1.5">
-        <h1 className="text-2xl font-bold tracking-tight text-mg-text-0 leading-none">
-          {t('billing.title')}
-        </h1>
-        <p className="text-[13.5px] text-mg-text-2">
-          {t('billing.desc')}
-        </p>
-      </div>
+      <PageHeader
+        title={t('billing.title')}
+        description={t('billing.desc')}
+        className="mb-0"
+      />
 
       <TopUpModal visible={topUpVisible} onClose={() => setTopUpVisible(false)} tenantId={tenantId} />
 
@@ -484,17 +491,12 @@ export default function BillingPage() {
                 <div className="w-8 h-8 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
               </div>
             ) : orders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
-                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-mg-fill-0 border border-mg-border/60">
-                  <LuHistory size={20} className="text-mg-text-2" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-mg-text-1 font-bold">{t('billing.orders.empty')}</p>
-                  <p className="text-xs text-mg-text-3 max-w-[260px] leading-relaxed">
-                    {t('billing.orders.emptyHint', { defaultValue: '您的账户当前尚无历史充值或兑换交易流水，可在上方进行快速充值。' })}
-                  </p>
-                </div>
-              </div>
+              <EmptyState
+                icon={<LuHistory />}
+                title={t('billing.orders.empty')}
+                description={t('billing.orders.emptyHint', { defaultValue: '您的账户当前尚无历史充值或兑换交易流水，可在上方进行快速充值。' })}
+                className="py-20"
+              />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-sm">
@@ -521,17 +523,11 @@ export default function BillingPage() {
                         >
                           <td className="py-3.5 px-4 font-mono text-xs text-mg-text-1 max-w-[140px] truncate">{record.order_no}</td>
                           <td className="py-3.5 px-4">
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                'text-[10px] py-0.5 px-2.5 font-bold rounded-full',
-                                isPaid ? 'border-mg-success/20 bg-mg-success/5 text-mg-success badge-glow-paid' :
-                                isPending ? 'border-mg-warning/20 bg-mg-warning/5 text-mg-warning badge-glow-pending animate-pulse' :
-                                'border-mg-border text-mg-text-3'
-                              )}
-                            >
-                              {labels[record.status] || record.status}
-                            </Badge>
+                            <StatusBadge
+                              status={record.status}
+                              statusMap={rechargeStatusMap}
+                              fallback={record.status}
+                            />
                           </td>
                           <td className={cn(
                             'py-3.5 px-4 text-xs font-bold font-mono',
@@ -567,10 +563,10 @@ export default function BillingPage() {
               <span className="text-xs font-bold text-mg-text-0">{t('billing.orders.detailTitle')}</span>
             </div>
             {!selectedOrder ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center space-y-2">
-                <LuReceipt size={28} className="text-mg-text-3" />
-                <p className="text-xs text-mg-text-2">{t('billing.orders.detailPlaceholder', { defaultValue: '点击左侧订单查看详情' })}</p>
-              </div>
+              <EmptyState
+                icon={<LuReceipt />}
+                title={t('billing.orders.detailPlaceholder', { defaultValue: '点击左侧订单查看详情' })}
+              />
             ) : (
               <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
                 {/* 仿真发票小票 */}
@@ -590,14 +586,11 @@ export default function BillingPage() {
 
                   {/* 状态大标 */}
                   <div className="flex flex-col items-center py-1 space-y-1">
-                    <span className={cn(
-                      "text-[10px] font-bold px-2.5 py-0.5 rounded-full border",
-                      selectedOrder.status === 'paid' ? "bg-mg-success/10 border-mg-success/20 text-mg-success badge-glow-paid" :
-                      selectedOrder.status === 'pending' ? "bg-mg-warning/10 border-mg-warning/20 text-mg-warning badge-glow-pending animate-pulse" :
-                      "bg-mg-fill-0 border-mg-border text-mg-text-3"
-                    )}>
-                      {labels[selectedOrder.status] || selectedOrder.status}
-                    </span>
+                    <StatusBadge
+                      status={selectedOrder.status}
+                      statusMap={rechargeStatusMap}
+                      fallback={selectedOrder.status}
+                    />
                   </div>
 
                   {/* 发票内容 */}
@@ -698,9 +691,10 @@ export default function BillingPage() {
         /* 赠送余额明细 */
         <div className="rounded-2xl border border-mg-border bg-card-bg shadow-sm overflow-hidden">
           {giftRecords.length === 0 ? (
-            <div className="py-16 text-center text-xs text-mg-text-2">
-              {t('billing.orders.gift.empty', { defaultValue: '暂无赠送记录' })}
-            </div>
+            <EmptyState
+              icon={<LuGift />}
+              title={t('billing.orders.gift.empty', { defaultValue: '暂无赠送记录' })}
+            />
           ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
@@ -735,7 +729,7 @@ export default function BillingPage() {
         /* 奖励记录（原推荐计划「返佣流水」） */
         <div className="rounded-2xl border border-mg-border bg-card-bg shadow-sm overflow-hidden">
           {rewardRecords.length === 0 ? (
-            <div className="py-16 text-center text-xs text-mg-text-2">{rc.empty}</div>
+            <EmptyState title={rc.empty} />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">

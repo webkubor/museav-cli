@@ -17,13 +17,15 @@ export interface InputProps
   onChange?: (e: any) => void // 联合签名兼容：同时接受 React 原生 ChangeEvent 和 Semi 字符串回调
   onEnterPress?: (e: React.KeyboardEvent<HTMLInputElement>) => void // 兼容 Semi UI 的回车事件属性
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
+  error?: boolean
+  success?: boolean
 }
 
 /**
  * 统一的高阶 Input 输入组件
  */
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, prefix, suffix, mode, size, variant, onChange, onEnterPress, onKeyDown, onBlur, ...props }, ref) => {
+  ({ className, type, prefix, suffix, mode, size, variant, onChange, onEnterPress, onKeyDown, onBlur, error, success, ...props }, ref) => {
     // 智能属性映射：mode="password" 自动解析为 type="password"
     const resolvedType = type || (mode === "password" ? "password" : "text")
     const shouldTrim = resolvedType === "text" || resolvedType === "search" || resolvedType === "url" || resolvedType === "email"
@@ -59,51 +61,38 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       onBlur?.(e)
     }
 
-    // 存在前缀或后缀时，使用复合包装容器，将聚焦发光与悬停状态移至 wrapper 容器上
-    if (prefix || suffix) {
-      return (
-        <div
-          className={cn(
-            "modern-input-wrapper flex items-center gap-2",
-            variantClasses,
-            props.disabled && "opacity-50 cursor-not-allowed pointer-events-none",
-            className
-          )}
-        >
-          {prefix && (
-            <span className="modern-input-prefix inline-flex items-center text-mg-text-2 shrink-0 transition-colors duration-200">
-              {prefix}
-            </span>
-          )}
-          <input
-            type={resolvedType}
-            className="modern-input-inner flex-1 w-full h-full bg-transparent border-none outline-none p-0 text-sm focus:ring-0 focus:outline-none placeholder:text-mg-text-2/70 text-mg-text-0 disabled:cursor-not-allowed"
-            ref={ref}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            onBlur={handleBlur}
-            {...props}
-          />
-          {suffix && (
-            <span className="modern-input-suffix inline-flex items-center text-mg-text-2 shrink-0 transition-colors duration-200">
-              {suffix}
-            </span>
-          )}
-        </div>
-      )
-    }
-
-    // 默认标准单体输入框
+    // 统一采用复合包装容器，以支持前/后缀及高颜值流光边框动效
     return (
-      <input
-        type={resolvedType}
-        className={cn("modern-input-field", variantClasses, className)}
-        ref={ref}
-        onChange={onChange}
-        onKeyDown={handleKeyDown}
-        onBlur={handleBlur}
-        {...props}
-      />
+      <div
+        className={cn(
+          "modern-input-wrapper modern-input-field flex items-center gap-2",
+          variantClasses,
+          error && "is-error",
+          success && "is-success",
+          props.disabled && "opacity-50 cursor-not-allowed pointer-events-none",
+          className
+        )}
+      >
+        {prefix && (
+          <span className="modern-input-prefix inline-flex items-center text-mg-text-2 shrink-0 transition-colors duration-200">
+            {prefix}
+          </span>
+        )}
+        <input
+          type={resolvedType}
+          className="modern-input-inner flex-1 w-full h-full bg-transparent border-none outline-none p-0 text-sm focus:ring-0 focus:outline-none placeholder:text-mg-text-2/70 text-mg-text-0 disabled:cursor-not-allowed"
+          ref={ref}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
+          {...props}
+        />
+        {suffix && (
+          <span className="modern-input-suffix inline-flex items-center text-mg-text-2 shrink-0 transition-colors duration-200">
+            {suffix}
+          </span>
+        )}
+      </div>
     )
   }
 )

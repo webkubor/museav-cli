@@ -1,13 +1,7 @@
-/**
- * 鉴权与登录公共骨架组件 (AuthLayout)
- * 职责：提供沉浸式弥散柔光科技网格背景，以高透毛玻璃圆角卡片渲染所有鉴权页面（登录、注册、重置密码等），自适应国内靛蓝/全球翠绿品牌视觉
- * 路由：/login, /signup, /forgot-password, /reset-password ...
- * API: 纯视觉布局，无直接网络请求依赖，依赖 getMarket() 实现双端品牌感知
- */
-
 import type { ReactNode } from 'react'
 import { modelGoLogos } from '@/config/brand-assets'
 import { useLangStore } from '@/store/use-brand-store'
+import { cn } from '@/lib/utils'
 
 interface AuthLayoutProps {
   /** 鉴权卡片大标题 */
@@ -18,12 +12,14 @@ interface AuthLayoutProps {
   footer?: ReactNode
   /** 子页面表单结构 */
   children: ReactNode
+  /** 是否使用宽版卡片布局 */
+  wide?: boolean
 }
 
 /**
  * 鉴权公共高品质科技网格氛围骨架 (Tailwind 语义抽离架构)
  */
-export function AuthLayout({ title, subtitle, footer, children }: AuthLayoutProps) {
+export function AuthLayout({ title, subtitle, footer, children, wide = false }: AuthLayoutProps) {
   const market = useLangStore((s) => s.market)
   const isDomestic = market === 'domestic'
 
@@ -33,7 +29,7 @@ export function AuthLayout({ title, subtitle, footer, children }: AuthLayoutProp
 
   return (
     <div className="auth-layout-container">
-      {/* 🔮 氛围球一（左下角底层弥散） */}
+      {/* 🔮 氛围球一（left-bottom） */}
       <div
         className="auth-blur-orb-primary"
         style={{
@@ -41,7 +37,7 @@ export function AuthLayout({ title, subtitle, footer, children }: AuthLayoutProp
         }}
       />
 
-      {/* 🔮 氛围球二（右上角底层弥散） */}
+      {/* 🔮 氛围球二（right-top） */}
       <div
         className="auth-blur-orb-secondary"
         style={{
@@ -50,7 +46,7 @@ export function AuthLayout({ title, subtitle, footer, children }: AuthLayoutProp
       />
 
       {/* 核心内容包裹 */}
-      <div className="auth-layout-content">
+      <div className={cn("auth-layout-content", wide && "max-w-none md:!max-w-[640px]")}>
         <div className="glass-auth-card">
           {/* 顶部 Logo 与文案 */}
           <div className="auth-brand-header">

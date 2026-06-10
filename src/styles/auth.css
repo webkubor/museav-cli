@@ -263,11 +263,12 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
   color: rgba(203, 213, 225, 0.58) !important;
 }
 
-.auth-form-container .modern-input-field:focus,
-.auth-form-container .modern-input-wrapper:focus-within {
+.auth-form-container .modern-input-field:not(.is-error):not(.is-success):focus,
+.auth-form-container .modern-input-wrapper:not(.is-error):not(.is-success):focus-within {
   border-color: var(--brand-base) !important;
   box-shadow: 0 0 0 1px var(--brand-base), 0 0 0 4px var(--brand-glow) !important;
 }
+
 
 .auth-form-container .modern-btn-brand {
   width: 100%;
@@ -286,18 +287,28 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
   border-color: var(--mg-border);
 }
 
-.auth-code-row {
-  @apply flex gap-2;
-}
-
-.auth-code-row .modern-input-field {
-  min-width: 0;
-}
-
-.auth-code-button {
-  flex-shrink: 0;
-  min-width: 104px;
+/* 发送验证码内嵌文字按钮，Stripe/Vercel 风格极简化设计 */
+.auth-code-link-btn {
+  color: var(--brand-base) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  padding: 0 4px !important;
+  height: auto !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: color 0.2s ease, opacity 0.2s ease;
   white-space: nowrap;
+}
+
+.auth-code-link-btn:hover:not(:disabled) {
+  color: var(--brand-mid) !important;
+}
+
+.auth-code-link-btn:disabled {
+  color: var(--mg-text-2) !important;
+  opacity: 0.65;
+  cursor: not-allowed !important;
 }
 
 .auth-policy-text {
@@ -393,4 +404,136 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
   border-color: var(--mg-border-2) !important;
   color: var(--mg-text-0);
 }
+
+/* ── 🔒 密码输入圆点高级视觉打磨 ── */
+/* 密文状态下，将圆点微调到饱满精致的 14.5px，拉开轻微的字间距 */
+.auth-form-container input[type="password"] {
+  font-size: 14.5px !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* 覆盖 input type="password" 下的 placeholder 样式，避免它继承密码状态的大字号与字距 */
+.auth-form-container input[type="password"]::placeholder {
+  font-size: 13px !important;
+  letter-spacing: normal !important;
+}
+.auth-form-container input[type="password"]::-webkit-input-placeholder {
+  font-size: 13px !important;
+  letter-spacing: normal !important;
+}
+.auth-form-container input[type="password"]::-moz-placeholder {
+  font-size: 13px !important;
+  letter-spacing: normal !important;
+}
+.auth-form-container input[type="password"]:-ms-input-placeholder {
+  font-size: 13px !important;
+  letter-spacing: normal !important;
+}
+
+/* 明文状态下，恢复为与普通文本框一致的清雅字号和正常间距 */
+.auth-form-container input[type="text"] {
+  font-size: 14px !important;
+  letter-spacing: normal !important;
+}
+
+/* ── 🎨 鉴权输入框多维状态视觉反馈 ── */
+.auth-form-container .modern-input-field,
+.auth-form-container .modern-input-wrapper {
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  z-index: 1;
+}
+
+/* 伪元素作为背景边框流光 */
+.auth-form-container .modern-input-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 10px;
+  padding: 1px;
+  background: transparent;
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: -1;
+  transition: opacity 0.3s ease, background 0.3s ease;
+  opacity: 0;
+}
+
+/* 1. 默认仅聚焦且未输入 (Focus but Empty) -> 静态亮起品牌蓝紫渐变 (排除错误与成功状态) */
+.auth-form-container .modern-input-wrapper:not(.is-error):not(.is-success):focus-within:has(input:placeholder-shown)::before {
+  opacity: 1 !important;
+  background: linear-gradient(135deg, var(--brand-base), var(--brand-light)) !important;
+}
+
+/* 2. 聚焦且输入中 (Focus & Typing / Has content) -> 霓虹流光边框缓缓流动 (排除错误与成功状态) */
+@keyframes input-border-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.auth-form-container .modern-input-wrapper:not(.is-error):not(.is-success):focus-within:has(input:not(:placeholder-shown))::before {
+  opacity: 1 !important;
+  background: linear-gradient(90deg, var(--brand-base), #a855f7, #6366f1, #3b82f6, var(--brand-base)) !important;
+  background-size: 200% 100% !important;
+  animation: input-border-flow 3s linear infinite !important;
+}
+
+
+/* 3. 输入失败 (Error) 状态 */
+.auth-form-container .modern-input-field.is-error,
+.auth-form-container .modern-input-wrapper.is-error {
+  border-color: rgba(244, 63, 94, 0.65) !important;
+  background-color: rgba(244, 63, 94, 0.02) !important;
+}
+
+.auth-form-container .modern-input-wrapper.is-error::before {
+  opacity: 1 !important;
+  background: #f43f5e !important;
+  animation: none !important;
+}
+
+.auth-form-container .modern-input-field.is-error:focus,
+.auth-form-container .modern-input-wrapper.is-error:focus-within {
+  border-color: #f43f5e !important;
+  box-shadow: 0 0 0 1px #f43f5e, 0 0 0 4px rgba(244, 63, 94, 0.16) !important;
+  background-color: rgba(var(--mg-bg-0-rgb), 0.72) !important;
+}
+
+body[theme-mode='dark'] .auth-form-container .modern-input-field.is-error,
+body[theme-mode='dark'] .auth-form-container .modern-input-wrapper.is-error {
+  background-color: rgba(244, 63, 94, 0.04) !important;
+}
+
+/* 4. 输入成功 (Success) 状态 */
+.auth-form-container .modern-input-field.is-success,
+.auth-form-container .modern-input-wrapper.is-success {
+  border-color: rgba(16, 185, 129, 0.55) !important;
+}
+
+.auth-form-container .modern-input-wrapper.is-success::before {
+  opacity: 1 !important;
+  background: #10b981 !important;
+  animation: none !important;
+}
+
+.auth-form-container .modern-input-field.is-success:focus,
+.auth-form-container .modern-input-wrapper.is-success:focus-within {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 1px #10b981, 0 0 0 4px rgba(16, 185, 129, 0.14) !important;
+}
+
+
+
+
 

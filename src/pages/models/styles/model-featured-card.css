@@ -3,10 +3,10 @@
   position: relative;
   min-height: 252px;
   padding: 0;
-  border: 1px solid var(--mg-border);
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 12px;
   overflow: hidden;
-  background: var(--mg-bg-2);
+  background: #09090b !important; /* 强制极暗背景，配合暗色背景底图 */
   cursor: pointer;
   text-align: left;
   transform: translateZ(0);
@@ -15,64 +15,64 @@
 
 /* 默认的科技发光投影效果，在 hover 时强化 */
 .models-experience-featured:hover {
-  border-color: color-mix(in srgb, var(--brand-base) 60%, var(--mg-border));
-  box-shadow: 0 12px 35px -10px color-mix(in srgb, var(--brand-base) 20%, transparent),
-              0 0 20px 2px color-mix(in srgb, var(--brand-base) 8%, transparent);
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 12px 35px -10px rgba(0, 0, 0, 0.5),
+              0 0 20px 2px rgba(255, 255, 255, 0.05) !important;
 }
 
 /* 针对不同分类激活时，赋予精选卡片不同的流光边框色与投影 */
 .models-experience-featured.cat-text {
-  border-color: color-mix(in srgb, #2f80ed 40%, var(--mg-border));
+  border-color: rgba(47, 128, 237, 0.4) !important;
 }
 .models-experience-featured.cat-text:hover {
-  border-color: #2f80ed;
-  box-shadow: 0 12px 35px -10px color-mix(in srgb, #2f80ed 25%, transparent),
-              0 0 20px 2px color-mix(in srgb, #2f80ed 12%, transparent);
+  border-color: #2f80ed !important;
+  box-shadow: 0 12px 35px -10px rgba(47, 128, 237, 0.35),
+              0 0 20px 2px rgba(47, 128, 237, 0.18) !important;
 }
 
 .models-experience-featured.cat-image {
-  border-color: color-mix(in srgb, #9b51e0 40%, var(--mg-border));
+  border-color: rgba(155, 81, 224, 0.4) !important;
 }
 .models-experience-featured.cat-image:hover {
-  border-color: #9b51e0;
-  box-shadow: 0 12px 35px -10px color-mix(in srgb, #9b51e0 25%, transparent),
-              0 0 20px 2px color-mix(in srgb, #9b51e0 12%, transparent);
+  border-color: #9b51e0 !important;
+  box-shadow: 0 12px 35px -10px rgba(155, 81, 224, 0.35),
+              0 0 20px 2px rgba(155, 81, 224, 0.18) !important;
 }
 
 .models-experience-featured.cat-video {
-  border-color: color-mix(in srgb, #eb5757 40%, var(--mg-border));
+  border-color: rgba(235, 87, 87, 0.4) !important;
 }
 .models-experience-featured.cat-video:hover {
-  border-color: #eb5757;
-  box-shadow: 0 12px 35px -10px color-mix(in srgb, #eb5757 25%, transparent),
-              0 0 20px 2px color-mix(in srgb, #eb5757 12%, transparent);
+  border-color: #eb5757 !important;
+  box-shadow: 0 12px 35px -10px rgba(235, 87, 87, 0.35),
+              0 0 20px 2px rgba(235, 87, 87, 0.18) !important;
 }
 
 .models-experience-featured.cat-code {
-  border-color: color-mix(in srgb, #27ae60 40%, var(--mg-border));
+  border-color: rgba(39, 174, 96, 0.4) !important;
 }
 .models-experience-featured.cat-code:hover {
-  border-color: #27ae60;
-  box-shadow: 0 12px 35px -10px color-mix(in srgb, #27ae60 25%, transparent),
-              0 0 20px 2px color-mix(in srgb, #27ae60 12%, transparent);
+  border-color: #27ae60 !important;
+  box-shadow: 0 12px 35px -10px rgba(39, 174, 96, 0.35),
+              0 0 20px 2px rgba(39, 174, 96, 0.18) !important;
 }
 
 .models-experience-featured.cat-reasoning {
-  border-color: color-mix(in srgb, #f2c94c 40%, var(--mg-border));
+  border-color: rgba(242, 201, 76, 0.4) !important;
 }
 .models-experience-featured.cat-reasoning:hover {
-  border-color: #f2c94c;
-  box-shadow: 0 12px 35px -10px color-mix(in srgb, #f2c94c 25%, transparent),
-              0 0 20px 2px color-mix(in srgb, #f2c94c 12%, transparent);
+  border-color: #f2c94c !important;
+  box-shadow: 0 12px 35px -10px rgba(242, 201, 76, 0.35),
+              0 0 20px 2px rgba(242, 201, 76, 0.18) !important;
 }
 
 .models-experience-featured.cat-multimodal {
-  border-color: color-mix(in srgb, #e28743 40%, var(--mg-border));
+  border-color: rgba(226, 135, 67, 0.4) !important;
 }
 .models-experience-featured.cat-multimodal:hover {
-  border-color: #e28743;
-  box-shadow: 0 12px 35px -10px color-mix(in srgb, #e28743 25%, transparent),
-              0 0 20px 2px color-mix(in srgb, #e28743 12%, transparent);
+  border-color: #e28743 !important;
+  box-shadow: 0 12px 35px -10px rgba(226, 135, 67, 0.35),
+              0 0 20px 2px rgba(226, 135, 67, 0.18) !important;
 }
 
 /* 背景图片的优雅跨淡入淡出 (Cross-fade) 与多重缓动过渡 */
@@ -89,16 +89,16 @@
 }
 
 .featured-bg-img.is-active {
-  opacity: 1;
+  opacity: 0.9;
   transform: scale(1);
-  filter: blur(0px) brightness(1);
+  filter: blur(0px) brightness(0.95);
   z-index: 1;
 }
 
 .featured-bg-img.is-inactive {
   opacity: 0;
   transform: scale(1.06);
-  filter: blur(8px) brightness(0.8);
+  filter: blur(8px) brightness(0.7);
   z-index: 0;
 }
 
@@ -107,15 +107,16 @@
   transform: scale(1.035);
 }
 
+/* 渐变遮罩：在所有模式下都采用暗色遮罩以强化对比度 */
 .models-experience-featured-shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 4%, color-mix(in srgb, var(--mg-bg-1) 82%, transparent) 100%);
+  background: linear-gradient(180deg, rgba(9, 9, 11, 0.05) 0%, rgba(9, 9, 11, 0.82) 100%) !important;
   z-index: 2;
 }
 
 body[theme-mode='dark'] .models-experience-featured-shade {
-  background: linear-gradient(180deg, transparent 4%, color-mix(in srgb, var(--mg-bg-2) 85%, transparent) 100%);
+  background: linear-gradient(180deg, rgba(9, 9, 11, 0.05) 0%, rgba(9, 9, 11, 0.85) 100%) !important;
 }
 
 .models-experience-featured-content {
@@ -124,22 +125,24 @@ body[theme-mode='dark'] .models-experience-featured-shade {
   display: flex;
   flex-direction: column;
   gap: 9px;
-  color: var(--mg-text-0);
+  color: #e4e4e7 !important; /* 强制使用亮白色字 */
   z-index: 3;
 }
 
 .models-experience-featured-content h2 {
   margin: 0;
-  color: var(--mg-text-0);
+  color: #ffffff !important; /* 强制纯白 */
   font-size: 19px;
   font-weight: 820;
   letter-spacing: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .models-experience-featured-content > div:first-child {
-  color: var(--mg-text-1);
+  color: #a1a1aa !important; /* 强制淡灰色 */
   font-size: 12px;
   font-weight: 760;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .models-experience-featured-metrics {
@@ -151,9 +154,52 @@ body[theme-mode='dark'] .models-experience-featured-shade {
 .models-experience-featured-metrics span {
   padding: 5px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--mg-bg-0) 72%, transparent);
-  border: 1px solid color-mix(in srgb, var(--mg-border) 70%, transparent);
-  color: var(--mg-text-1);
+  background: rgba(255, 255, 255, 0.08) !important; /* 强制半透明背景 */
+  border: 1px solid rgba(255, 255, 255, 0.15) !important; /* 强制微弱白色边框 */
+  color: #f4f4f5 !important; /* 强制极亮字体 */
   font-size: 11px;
   font-weight: 700;
+  backdrop-filter: blur(4px);
+}
+
+/* 针对精选卡片内的 ModalityBadge 强化对比度与高雅感 */
+.models-experience-featured .badge-interactive {
+  backdrop-filter: blur(4px) !important;
+  font-weight: 700 !important;
+}
+
+.models-experience-featured .badge-interactive[class*='text-mg-primary'] {
+  background: rgba(139, 106, 255, 0.18) !important;
+  border-color: rgba(139, 106, 255, 0.35) !important;
+  color: #c6bef4 !important; /* 浅紫，来自 --cn-light */
+}
+
+.models-experience-featured .badge-interactive[class*='text-violet-600'] {
+  background: rgba(139, 92, 246, 0.18) !important;
+  border-color: rgba(139, 92, 246, 0.35) !important;
+  color: #ddd6fe !important;
+}
+
+.models-experience-featured .badge-interactive[class*='text-orange-600'] {
+  background: rgba(249, 115, 22, 0.18) !important;
+  border-color: rgba(249, 115, 22, 0.35) !important;
+  color: #ffedd5 !important;
+}
+
+.models-experience-featured .badge-interactive[class*='text-emerald-600'] {
+  background: rgba(16, 185, 129, 0.18) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  color: #d1fae5 !important;
+}
+
+.models-experience-featured .badge-interactive[class*='text-yellow-600'] {
+  background: rgba(234, 179, 8, 0.18) !important;
+  border-color: rgba(234, 179, 8, 0.35) !important;
+  color: #fef9c3 !important;
+}
+
+.models-experience-featured .badge-interactive[class*='text-mg-text-1'] {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #e4e4e7 !important;
 }

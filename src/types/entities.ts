@@ -300,6 +300,12 @@ export interface WorkspaceMember {
   last_active_at: string
 }
 
+/** 添加已有 Tenant 成员到 Workspace 请求体 */
+export interface AddWorkspaceMemberRequest {
+  account_id: string
+  role: 'ws_admin' | 'ws_member'
+}
+
 /** 修改 Workspace 成员角色请求体 */
 export interface UpdateWorkspaceMemberRoleRequest {
   role: 'ws_admin' | 'ws_member'
@@ -911,4 +917,3 @@ export interface DocsPage {
 export interface HealthStatus {
   status: 'healthy' | 'degraded'
 }
-

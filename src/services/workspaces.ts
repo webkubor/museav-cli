@@ -1,11 +1,12 @@
 /**
  * 工作区管理（§六）
  * 路由：/workspaces、/workspaces/:id
- * API：GET|POST /workspaces、GET|PATCH|DELETE /workspaces/:id、GET|PATCH|DELETE /workspaces/:id/members
+ * API：GET|POST /workspaces、GET|PATCH|DELETE /workspaces/:id、GET|POST|PATCH|DELETE /workspaces/:id/members
  */
 import { del, get, patch, post } from '@/lib/request'
 import type { WorkspaceListResponse, WorkspaceMemberListParams } from '@/interfaces/workspaces'
 import type {
+  AddWorkspaceMemberRequest,
   CreateWorkspaceRequest,
   CursorPage,
   DeleteWorkspaceRequest,
@@ -48,6 +49,11 @@ export function deleteWorkspace(workspaceId: string, body: DeleteWorkspaceReques
 /** 获取 workspace 成员列表 */
 export function listWorkspaceMembers(workspaceId: string, params?: WorkspaceMemberListParams) {
   return get<CursorPage<WorkspaceMember>>(`workspaces/${workspaceId}/members`, params)
+}
+
+/** 添加已有 Tenant 成员到 workspace */
+export function addWorkspaceMember(workspaceId: string, body: AddWorkspaceMemberRequest) {
+  return post<null>(`workspaces/${workspaceId}/members`, body)
 }
 
 /** 修改成员角色（ws_admin | ws_member） */

@@ -38,6 +38,7 @@ export type {
   UpdateWorkspaceRequest,
   DeleteWorkspaceRequest,
   WorkspaceMember,
+  AddWorkspaceMemberRequest,
   UpdateWorkspaceMemberRoleRequest,
   InvitationItem,
   CreateInvitationRequest,

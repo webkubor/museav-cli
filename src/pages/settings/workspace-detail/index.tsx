@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import {
+  addWorkspaceMember,
   getWorkspace,
   updateWorkspace,
   deleteWorkspace,
@@ -15,7 +16,6 @@ import {
   updateWorkspaceMemberRole,
 } from '@/services/workspaces'
 import { listTenantMembers } from '@/services/tenants'
-import { createInvitations } from '@/services/invitations'
 import { pageItems } from '@/lib/utils'
 import { formatDateTime } from '@/lib/format-date'
 import { WS_ROLE_LABEL, WS_ROLE_OPTIONS, TENANT_ROLE_LABEL } from '@/constants/roles'
@@ -195,14 +195,15 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
   }, [orgQuery.data, wsAccountIds, addSearch])
 
   const addMutation = useMutation({
-    mutationFn: (email: string) =>
-      createInvitations(workspaceId, {
-        invites: [{ email, role: 'ws_member' }],
-        expires_in_hours: 720,
+    mutationFn: (accountId: string) =>
+      addWorkspaceMember(workspaceId, {
+        account_id: accountId,
+        role: 'ws_member',
       }),
     onSuccess: () => {
       appToast.success(t('workspaces.detail.members.addSuccess'))
       qc.invalidateQueries({ queryKey: ['workspace-members', workspaceId] })
+      qc.invalidateQueries({ queryKey: ['tenant-members', activeTenantId] })
     },
     onError: (err: unknown) => appToast.error((err as Error)?.message || t('workspaces.detail.members.addError')),
   })
@@ -317,7 +318,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
                       variant="ghost"
                       className="h-6 px-2 text-[10px] font-semibold shrink-0 text-brand-base hover:bg-brand-base/5"
                       loading={addMutation.isPending}
-                      onClick={() => addMutation.mutate(m.account.email)}
+                      onClick={() => addMutation.mutate(m.account.account_id)}
                     >
                       <LuArrowRight size={11} className="mr-0.5" />
                       {t('workspaces.detail.members.add')}

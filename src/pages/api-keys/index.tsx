@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -120,6 +120,14 @@ export default function ApiKeysPage() {
     enabled: !!activeWorkspaceId && createVisible,
     staleTime: 60_000,
   })
+
+  useEffect(() => {
+    if (!guardrailsQuery.data?.length) return
+    const defaultGuardrail = guardrailsQuery.data.find((g) => g.is_default)
+    if (defaultGuardrail && !guardrailId) {
+      setGuardrailId(defaultGuardrail.id ?? '')
+    }
+  }, [guardrailsQuery.data])
 
   const createMutation = useMutation({
     mutationFn: () =>

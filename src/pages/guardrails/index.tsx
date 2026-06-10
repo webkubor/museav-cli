@@ -285,7 +285,7 @@ export default function GuardrailsPage() {
   // API key picker options (id-based, like members): label by name, fall back to
   // id. Only active keys are selectable; an already-bound key that is no longer
   // active still resolves its label for display.
-  const apiKeyOptions = (apiKeysQuery.data ?? []).map((k: any) => ({
+  const apiKeyOptions = (Array.isArray(apiKeysQuery.data) ? apiKeysQuery.data : []).map((k: any) => ({
     id: k.api_key_id as string,
     name: (k.name as string) || (k.api_key_id as string),
     active: k.status === 'active',

@@ -354,7 +354,7 @@ export default function LogsPage() {
       </div>
 
       {/* 极简细线条无框 Table 视图 */}
-      <div className="rounded-xl border border-mg-border/60 overflow-hidden bg-mg-bg-0">
+      <div className="rounded-xl border border-mg-border/60 overflow-x-auto bg-mg-bg-0">
         {isLoading ? (
           <TableSkeleton />
         ) : filteredLogs.length === 0 ? (

@@ -51,7 +51,7 @@ export function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
     staleTime: 30_000,
   })
 
-  const tenants = tenantsQuery.data?.items ?? []
+  const tenants = (tenantsQuery.data?.items ?? []).filter((t) => t.type !== 'personal')
   const atLimit = tenants.length >= MAX_TENANTS
 
   const createMutation = useMutation({

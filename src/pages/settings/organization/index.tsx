@@ -5,8 +5,12 @@ import { OrgListSection } from './components/OrgListSection'
 import { OrgManagePanel } from './components/OrgManagePanel'
 
 export default function OrganizationSettingsPage() {
-  const { activeTenantId } = useAuthStore()
-  const [managingId, setManagingId] = useState<string | null>(activeTenantId ?? null)
+  const { activeTenantId, tenants } = useAuthStore()
+  const firstEnterpriseId = tenants.find((t) => t.type !== 'personal')?.tenant_id ?? null
+  const initialId = tenants.find((t) => t.tenant_id === activeTenantId)?.type !== 'personal'
+    ? (activeTenantId ?? null)
+    : firstEnterpriseId
+  const [managingId, setManagingId] = useState<string | null>(initialId)
 
   return (
     <div className="space-y-6">

@@ -71,13 +71,13 @@ function PlatformLoader({ onReady }: { onReady: () => void }) {
       onReady()
     }
 
-    getPlatformConfig()
+    // 用 fetchQuery 而非裸 fetch：让 React Query 追踪这个飞行中的请求，
+    // DashboardLayout 的 usePlatformConfig() 进来时会复用同一个请求，不再重发。
+    qc.fetchQuery({ queryKey: ['platform-config'], queryFn: getPlatformConfig, staleTime: Infinity })
       .then((config) => {
         if (!config?.site) return
         localStorage.setItem(storageKeys.platformSite(), config.site)
         applyMarket(siteToMarket(config.site))
-        // 写入 React Query 缓存，避免 DashboardLayout 的 usePlatformConfig() 重复发请求
-        qc.setQueryData(['platform-config'], config)
       })
       .catch(() => {/* 静默失败，保持缓存/域名探测结果 */})
       .finally(() => {

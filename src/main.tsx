@@ -9,6 +9,17 @@ import { installDevErrorReporter } from './lib/dev-error-reporter'
 
 installDevErrorReporter()
 
+// 清除历史遗留的 mockServiceWorker.js，防止与 PWA SW 冲突产生疯狂报错
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    regs.forEach((reg) => {
+      if (reg.active?.scriptURL.includes('mockServiceWorker')) {
+        reg.unregister()
+      }
+    })
+  })
+}
+
 registerSW({
   onNeedRefresh() {
     toast.info('检测到新版本', {

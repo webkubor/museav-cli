@@ -69,8 +69,10 @@ export function installDevErrorReporter() {
 
   const originalConsoleError = console.error.bind(console)
   console.error = (...args: unknown[]) => {
-    originalConsoleError(...args)
     const line = args.map(describeError).join(' ')
+    // 过滤 SW 噪音：mockServiceWorker / storage 冲突产生的高频错误不污染控制台
+    const isSWNoise = /mockServiceWorker|Failed to access storage|service.worker/i.test(line)
+    if (!isSWNoise) originalConsoleError(...args)
     postErrorLine(`[frontend][console] ${line}`)
   }
 }

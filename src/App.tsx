@@ -1,4 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Providers } from '@/components/providers'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
@@ -62,6 +63,7 @@ function applyMarket(market: Market) {
  * 3. 后台静默刷新缓存，下次加载零等待
  */
 function PlatformLoader({ onReady }: { onReady: () => void }) {
+  const qc = useQueryClient()
   useEffect(() => {
     const cached = localStorage.getItem(storageKeys.platformSite())
     if (cached) {
@@ -74,6 +76,8 @@ function PlatformLoader({ onReady }: { onReady: () => void }) {
         if (!config?.site) return
         localStorage.setItem(storageKeys.platformSite(), config.site)
         applyMarket(siteToMarket(config.site))
+        // 写入 React Query 缓存，避免 DashboardLayout 的 usePlatformConfig() 重复发请求
+        qc.setQueryData(['platform-config'], config)
       })
       .catch(() => {/* 静默失败，保持缓存/域名探测结果 */})
       .finally(() => {

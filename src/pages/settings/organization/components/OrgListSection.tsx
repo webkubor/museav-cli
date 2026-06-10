@@ -15,7 +15,7 @@ import { RoleBadge } from './RoleBadge'
 
 function TenantMemberCountBadge({ tenantId }: { tenantId: string }) {
   const membersQuery = useQuery({
-    queryKey: ['tenant-members-count', tenantId],
+    queryKey: ['tenant-members', tenantId],
     queryFn: () => listTenantMembers(tenantId),
     staleTime: 30_000,
     refetchOnWindowFocus: false,

@@ -91,7 +91,7 @@ export function UsageRankingsSection({ type }: { type: 'models' | 'api-keys' }) 
   // 仅模型排行需要 logo，复用目录页同一查询（react-query 去重，不重复请求）
   const { data: modelsData } = useQuery({
     queryKey: ['catalog-models'],
-    queryFn: () => listModels({ limit: 100 }),
+    queryFn: () => listModels({ page_size: 100 }),
     staleTime: 5 * 60_000,
     enabled: type === 'models',
   })

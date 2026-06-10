@@ -657,7 +657,7 @@ export default function PlatformConfigPage() {
       label: t('platformConfig.endpoints.models'),
       method: 'GET',
       path: '/api/v1/catalog/models',
-      call: () => listModels({ limit: 10 }),
+      call: () => listModels({ page_size: 10 }),
     },
     {
       group: 'Catalog',

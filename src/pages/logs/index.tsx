@@ -225,7 +225,7 @@ export default function LogsPage() {
   // 加载系统所有的模型列表
   const { data: modelsData } = useQuery({
     queryKey: ['catalog-models'],
-    queryFn: () => listModels({ limit: 100 }),
+    queryFn: () => listModels({ page_size: 100 }),
     staleTime: 5 * 60_000,
   })
   const systemModels = modelsData?.items ?? []

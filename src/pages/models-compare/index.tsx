@@ -212,7 +212,7 @@ export default function ModelsComparePage() {
 
   const modelsQuery = useQuery({
     queryKey: ['catalog-models'],
-    queryFn: () => listModels({ limit: 100 }),
+    queryFn: () => listModels({ page_size: 100 }),
   })
 
   // 对比只支持文本模型（LLM），过滤掉 VLM / Audio / Video

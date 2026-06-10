@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/Badge'
 import Select from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { appToast } from '@/lib/app-toast'
 
 type DetailTab = 'overview' | 'members' | 'settings'
@@ -82,33 +83,20 @@ export default function WorkspaceDetailPage() {
       </div>
 
       {ws && (
-        <>
-          {/* Tab 导航 */}
-          <div className="border-b border-mg-border/60 flex gap-6">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as DetailTab)}>
+          <TabsList variant="pills" className="mb-2">
             {tabs.map((tabItem) => (
-              <button
-                key={tabItem.key}
-                type="button"
-                onClick={() => setTab(tabItem.key)}
-                className={`pb-3 text-xs font-bold transition-all border-b-2 cursor-pointer bg-transparent border-none ${
-                  tab === tabItem.key
-                    ? 'border-brand-base text-brand-base'
-                    : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
-                }`}
-              >
+              <TabsTrigger key={tabItem.key} variant="pills" value={tabItem.key}>
                 {tabItem.label}
-              </button>
+              </TabsTrigger>
             ))}
-          </div>
-
-          <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-            {tab === 'overview' && <OverviewTab ws={ws} />}
-            {tab === 'members' && <MembersTab workspaceId={workspaceId} />}
-            {tab === 'settings' && (
-              <SettingsTab ws={ws} onDeleted={() => navigate('/settings/workspace')} />
-            )}
-          </div>
-        </>
+          </TabsList>
+          <TabsContent value="overview"><OverviewTab ws={ws} /></TabsContent>
+          <TabsContent value="members"><MembersTab workspaceId={workspaceId} /></TabsContent>
+          <TabsContent value="settings">
+            <SettingsTab ws={ws} onDeleted={() => navigate('/settings/workspace')} />
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   )

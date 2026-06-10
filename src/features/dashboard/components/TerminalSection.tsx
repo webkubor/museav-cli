@@ -4,6 +4,7 @@ import { LuCheck, LuCopy } from 'react-icons/lu'
 import { CodeHighlight } from '@/components/ui/CodeHighlight'
 import { PLAIN_CODES, CLI_CODE } from '../constants/code-snippets'
 import { Button } from '@/components/ui/Button'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { appToast } from '@/lib/app-toast'
 
 type Tab = 'cli' | 'python' | 'node' | 'curl'
@@ -33,7 +34,7 @@ export const TerminalSection: React.FC = () => {
   }
 
   return (
-    <div className="code-terminal-shell">
+    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as Tab)} className="code-terminal-shell">
       {/* IDE 窗口顶栏 */}
       <div style={{
         backgroundColor: 'rgba(255, 255, 255, 0.04)',
@@ -52,43 +53,19 @@ export const TerminalSection: React.FC = () => {
             <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#27c93f', display: 'inline-block', opacity: 0.85, boxShadow: '0 0 2px rgba(39, 201, 63, 0.4)' }}></span>
           </div>
 
-          {/* 仿真 Tab 切换 */}
-          <div style={{ display: 'flex', gap: '4px' }}>
+          {/* Tab 切换 */}
+          <TabsList variant="pills" className="bg-white/5 border-white/10 p-0.5">
             {TAB_LABELS.map((tab) => (
-              <button
+              <TabsTrigger
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                style={{
-                  padding: '4px 12px',
-                  borderRadius: '16px',
-                  border: '1px solid transparent',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                  fontFamily: 'monospace',
-                  backgroundColor: activeTab === tab.key ? 'rgba(var(--brand-base-rgb),0.12)' : 'transparent',
-                  color: activeTab === tab.key ? 'var(--brand-base)' : 'var(--mg-text-2)',
-                  borderColor: activeTab === tab.key ? 'rgba(var(--brand-base-rgb),0.25)' : 'transparent',
-                  boxShadow: activeTab === tab.key ? '0 0 8px rgba(var(--brand-base-rgb),0.1)' : 'none'
-                }}
-                onMouseEnter={(e) => {
-                  if (activeTab !== tab.key) {
-                    (e.currentTarget as HTMLElement).style.color = '#fff';
-                    (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (activeTab !== tab.key) {
-                    (e.currentTarget as HTMLElement).style.color = 'var(--mg-text-2)';
-                    (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                  }
-                }}
+                variant="pills"
+                value={tab.key}
+                className="px-3 py-1 text-[11px] font-mono data-[state=active]:bg-brand-base/20 data-[state=active]:text-brand-base data-[state=active]:shadow-none text-mg-text-2 hover:text-white"
               >
                 {tab.label}
-              </button>
+              </TabsTrigger>
             ))}
-          </div>
+          </TabsList>
         </div>
 
         {/* 右侧：复制键 */}
@@ -104,7 +81,11 @@ export const TerminalSection: React.FC = () => {
       </div>
 
       {/* 代码渲染区 */}
-      <CodeHighlight language={activeTab} />
-    </div>
+      {TAB_LABELS.map((tab) => (
+        <TabsContent key={tab.key} value={tab.key} className="mt-0">
+          <CodeHighlight language={tab.key} />
+        </TabsContent>
+      ))}
+    </Tabs>
   )
 }

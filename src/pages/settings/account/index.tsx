@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { getProfile } from '@/services/account'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { BasicInfoTab } from '@/features/settings/account/components/BasicInfoTab'
 import { ChangePasswordTab } from '@/features/settings/account/components/ChangePasswordTab'
 import { OAuthBindingTab } from '@/features/settings/account/components/OAuthBindingTab'
@@ -55,56 +56,18 @@ export default function AccountSettingsPage() {
         description={t('account.desc')}
       />
 
-      {/* 清雅水平 Tabs 视窗切换，彻底告别堆叠 Card 拥挤感 */}
-      <div className="border-b border-mg-border flex gap-6 text-sm mb-6 bg-transparent">
-        <button
-          onClick={() => setActiveTab('info')}
-          className={`pb-3 font-semibold transition-all border-b-2 cursor-pointer bg-transparent border-none ${
-            activeTab === 'info'
-              ? 'border-brand-base text-brand-base'
-              : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
-          }`}
-        >
-          {t('account.tabs.info')}
-        </button>
-        <button
-          onClick={() => setActiveTab('security')}
-          className={`pb-3 font-semibold transition-all border-b-2 cursor-pointer bg-transparent border-none ${
-            activeTab === 'security'
-              ? 'border-brand-base text-brand-base'
-              : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
-          }`}
-        >
-          {t('account.tabs.security')}
-        </button>
-        <button
-          onClick={() => setActiveTab('oauth')}
-          className={`pb-3 font-semibold transition-all border-b-2 cursor-pointer bg-transparent border-none ${
-            activeTab === 'oauth'
-              ? 'border-brand-base text-brand-base'
-              : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
-          }`}
-        >
-          {t('account.tabs.oauth')}
-        </button>
-        <button
-          onClick={() => setActiveTab('preferences')}
-          className={`pb-3 font-semibold transition-all border-b-2 cursor-pointer bg-transparent border-none ${
-            activeTab === 'preferences'
-              ? 'border-brand-base text-brand-base'
-              : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
-          }`}
-        >
-          {t('account.tabs.preferences')}
-        </button>
-      </div>
-
-      <div style={{ paddingTop: '8px' }}>
-        {activeTab === 'info' && <BasicInfoTab profile={profile} />}
-        {activeTab === 'security' && <ChangePasswordTab />}
-        {activeTab === 'oauth' && <OAuthBindingTab connections={profile.connected_oauth} />}
-        {activeTab === 'preferences' && <PreferencesTab />}
-      </div>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as Tab)}>
+        <TabsList variant="pills" className="mb-6">
+          <TabsTrigger variant="pills" value="info">{t('account.tabs.info')}</TabsTrigger>
+          <TabsTrigger variant="pills" value="security">{t('account.tabs.security')}</TabsTrigger>
+          <TabsTrigger variant="pills" value="oauth">{t('account.tabs.oauth')}</TabsTrigger>
+          <TabsTrigger variant="pills" value="preferences">{t('account.tabs.preferences')}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="info"><BasicInfoTab profile={profile} /></TabsContent>
+        <TabsContent value="security"><ChangePasswordTab /></TabsContent>
+        <TabsContent value="oauth"><OAuthBindingTab connections={profile.connected_oauth} /></TabsContent>
+        <TabsContent value="preferences"><PreferencesTab /></TabsContent>
+      </Tabs>
     </div>
   )
 }

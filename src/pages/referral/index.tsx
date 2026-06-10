@@ -14,6 +14,7 @@ import {
   TableCell,
 } from '@/components/ui/Table'
 import { Modal } from '@/components/ui/Modal'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { ReferralInviteCard } from '@/components/referral/ReferralInviteCard'
 import { appToast } from '@/lib/app-toast'
 import { useAuthStore } from '@/store/auth'
@@ -440,32 +441,23 @@ export default function ReferralPage() {
 
       {/* 三 Tab */}
       <div className="rounded-2xl border border-mg-border bg-card-bg overflow-hidden">
-        {/* Tab 导航 */}
-        <div className="border-b border-mg-border/60 flex gap-6 px-5">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`pb-3 pt-4 font-bold transition-all border-b-2 cursor-pointer bg-transparent border-none text-xs ${
-                activeTab === tab.key
-                  ? 'border-brand-base text-brand-base'
-                  : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab 内容 */}
-        <div>
-          {activeTab === 'invitees' && (
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)}>
+          <div className="border-b border-mg-border/60 px-5 pt-3">
+            <TabsList variant="pills">
+              {tabs.map((tab) => (
+                <TabsTrigger key={tab.key} variant="pills" value={tab.key}>
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+          <TabsContent value="invitees" className="mt-0">
             <InviteesTable invitees={invitees} text={text} />
-          )}
-          {activeTab === 'withdrawals' && (
+          </TabsContent>
+          <TabsContent value="withdrawals" className="mt-0">
             <WithdrawalsTable withdrawals={withdrawalList} text={text} />
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* 转入主余额 */}

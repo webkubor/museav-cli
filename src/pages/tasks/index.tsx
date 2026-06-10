@@ -12,8 +12,11 @@ import {
 } from 'react-icons/lu'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { PageHeader } from '@/components/ui/PageHeader'
 import Select from '@/components/ui/Select'
 import { SideSheet } from '@/components/ui/SideSheet'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 import {
   Table,
   TableBody,
@@ -22,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/Table'
+import type { BadgeVariant } from '@/components/ui/Badge'
 import { useAuthStore } from '@/store/auth'
 import { listTasks, getTask } from '@/services/tasks'
 import { post } from '@/lib/request'
@@ -33,7 +37,7 @@ import type { TaskItem, TaskStatus, TaskKind } from '@/types'
 
 const PAGE_SIZE = 20
 
-const STATUS_CONFIG: Record<TaskStatus, { label: string; variant: 'secondary' | 'info' | 'success' | 'danger' | 'outline'; dot: boolean }> = {
+const STATUS_CONFIG: Record<TaskStatus, { label: string; variant: BadgeVariant; dot: boolean }> = {
   queued:    { label: '排队中', variant: 'secondary', dot: true },
   running:   { label: '执行中', variant: 'info',      dot: true },
   completed: { label: '已完成', variant: 'success',   dot: false },
@@ -83,23 +87,6 @@ function resolveKind(item: TaskItem): TaskKind {
   if (p.includes('image')) return 'image'
   if (p.includes('audio') || p.includes('music')) return 'audio'
   return 'video'
-}
-
-// ─── 状态徽章 ─────────────────────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: TaskStatus }) {
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.queued
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      {cfg.dot && (
-        <span className={cn(
-          'h-1.5 w-1.5 rounded-full animate-pulse',
-          status === 'running' ? 'bg-blue-500' : 'bg-mg-text-2'
-        )} />
-      )}
-      <Badge variant={cfg.variant}>{cfg.label}</Badge>
-    </span>
-  )
 }
 
 // ─── 详情面板字段行 ───────────────────────────────────────────────────────────
@@ -157,7 +144,7 @@ function TaskDetailSheet({ taskId, onClose }: { taskId: string; onClose: () => v
         <div className="space-y-5 px-1 py-2 text-sm">
           {/* 头部徽章 */}
           <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={task.status} />
+            <StatusBadge status={task.status} statusMap={STATUS_CONFIG} />
             <Badge variant="secondary" className="flex items-center gap-1">
               {kindCfg.icon}{kindCfg.label}
             </Badge>
@@ -279,26 +266,22 @@ export default function TasksPage() {
   return (
     <div>
       {/* 页头 */}
-      <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-mg-text-0 m-0 mb-1.5 tracking-tight flex items-center gap-2">
-            <LuClapperboard size={22} className="text-brand-base" />
-            {t('nav.tasks')}
-          </h1>
-          <p className="text-[13px] text-mg-text-1 m-0">
-            查看异步任务的执行状态与产物（视频生成等媒体任务）。任务由 API 发起，本页用于监控与取片；排队中的任务可取消。
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-        >
-          <LuRefreshCw size={13} className={cn(isFetching && 'animate-spin')} />
-          刷新
-        </Button>
-      </div>
+      <PageHeader
+        title={t('nav.tasks')}
+        description="查看异步任务的执行状态与产物（视频生成等媒体任务）。任务由 API 发起，本页用于监控与取片；排队中的任务可取消。"
+        className="mb-6"
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+          >
+            <LuRefreshCw size={13} className={cn(isFetching && 'animate-spin')} />
+            刷新
+          </Button>
+        }
+      />
 
       {/* 筛选栏 */}
       <div className="flex items-center gap-3 mb-5 flex-wrap">
@@ -355,27 +338,20 @@ export default function TasksPage() {
           </TableHeader>
           <TableBody>
             {isLoading && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-16 text-center text-sm text-mg-text-2">
-                  加载中…
-                </TableCell>
-              </TableRow>
+              <EmptyState colSpan={6} title="加载中…" />
             )}
             {isError && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-16 text-center text-sm text-[var(--mg-danger)]">
-                  加载失败，请稍后重试
-                </TableCell>
-              </TableRow>
+              <EmptyState colSpan={6} title="加载失败，请稍后重试" />
             )}
             {!isLoading && !isError && filteredItems.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-16 text-center text-sm text-mg-text-2">
-                  {search || statusFilter !== 'all' || kindFilter !== 'all'
+              <EmptyState
+                colSpan={6}
+                title={
+                  search || statusFilter !== 'all' || kindFilter !== 'all'
                     ? '没有符合条件的任务'
-                    : '暂无任务'}
-                </TableCell>
-              </TableRow>
+                    : '暂无任务'
+                }
+              />
             )}
             {filteredItems.map((item) => {
               const kind    = resolveKind(item)
@@ -404,7 +380,7 @@ export default function TasksPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge status={item.status} />
+                    <StatusBadge status={item.status} statusMap={STATUS_CONFIG} />
                   </TableCell>
                   <TableCell className="text-right">
                     <span className={cn(

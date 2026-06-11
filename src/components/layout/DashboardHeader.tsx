@@ -9,6 +9,8 @@ import {
   LuBookOpen,
   LuLayers,
   LuLogOut,
+  LuUser,
+  LuBuilding2,
 } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -109,6 +111,12 @@ export const DashboardHeader: React.FC = () => {
     }
     return Array.from(map.values())
   })()
+
+  // 右上角切换器当前上下文标签：组织显示组织名，个人显示「个人」
+  const activeTenant = displayTenants.find((tn) => tn.tenant_id === activeTenantId)
+  const activeTenantLabel = isNonPersonal
+    ? (activeTenant?.name || activeTenant?.slug || t('header.organizations'))
+    : t('header.personalTag')
 
   const { data: workspaces = [] } = useQuery<WorkspaceItem[]>({
     queryKey: ['workspaces', activeTenantId],
@@ -409,12 +417,21 @@ export const DashboardHeader: React.FC = () => {
         {/* 2. 用户头像一站式 Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Avatar className="cursor-pointer active:scale-95 border-2 border-brand-light/30 shadow-sm transition-transform duration-150">
-              {account?.avatar_url && <AvatarImage src={account.avatar_url} alt={account.display_name} />}
-              <AvatarFallback className="bg-brand-pale text-brand-base font-bold text-sm">
-                {avatarLetter}
-              </AvatarFallback>
-            </Avatar>
+            <button className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full border border-mg-border hover:border-brand-base/40 hover:bg-mg-fill-0/60 active:scale-95 transition-all duration-150 select-none">
+              <Avatar className="h-7 w-7 border border-brand-light/30 shadow-sm">
+                {account?.avatar_url && <AvatarImage src={account.avatar_url} alt={account.display_name} />}
+                <AvatarFallback className="bg-brand-pale text-brand-base font-bold text-xs">
+                  {avatarLetter}
+                </AvatarFallback>
+              </Avatar>
+              <span className="flex items-center gap-1 max-w-[130px]">
+                {isNonPersonal
+                  ? <LuBuilding2 size={12} className="text-brand-base shrink-0" />
+                  : <LuUser size={12} className="text-mg-text-2 shrink-0" />}
+                <span className="text-[12px] font-semibold text-mg-text-0 truncate">{activeTenantLabel}</span>
+              </span>
+              <LuChevronDown size={13} className="text-mg-text-2 shrink-0" />
+            </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[230px]">
             {/* 账户信息 + 个人账户 */}

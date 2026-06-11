@@ -139,61 +139,82 @@ export default function PlatformConfigPage() {
 
       <Tabs defaultValue="endpoints">
         <TabsList>
-          <TabsTrigger value="endpoints">{t('platformConfig.tab.endpoints')}</TabsTrigger>
-          <TabsTrigger value="public-routes">公共路由</TabsTrigger>
-          <TabsTrigger value="menus-sync">菜单同步</TabsTrigger>
+          <TabsTrigger value="endpoints">接口 / Swagger</TabsTrigger>
+          <TabsTrigger value="routes-menus">路由 / 菜单</TabsTrigger>
           <TabsTrigger value="url-params">回跳参数</TabsTrigger>
           <TabsTrigger value="headers">请求头</TabsTrigger>
           <TabsTrigger value="requirements">我的问题</TabsTrigger>
-          <TabsTrigger value="swagger">Swagger</TabsTrigger>
         </TabsList>
 
         <TabsContent value="endpoints">
-          <div className="space-y-6 pt-2">
-            <CustomRequestPanel />
-            {groups.map((group) => (
-              <div key={group} className="space-y-3">
-                <div className="text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">
-                  {group}
-                </div>
-                <div className="space-y-3">
-                  {endpoints.filter((e) => e.group === group).map((def) => (
-                    <EndpointCard
-                      key={def.path}
-                      def={def}
-                      state={states[def.path]}
-                      onCall={() => call(def.path, def.call)}
-                    />
-                  ))}
-                </div>
+          <div className="space-y-8 pt-2">
+            <section className="space-y-6">
+              <div>
+                <h2 className="text-base font-bold text-mg-text-0">接口调试</h2>
+                <p className="mt-1 text-xs text-mg-text-2">本地调用常用接口，查看真实返回和错误日志。</p>
               </div>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="public-routes">
-          <div className="space-y-3 pt-2">
-            <p className="text-xs text-mg-text-2">无需登录即可访问的页面路由，点击复制完整 URL</p>
-            {PUBLIC_ROUTES.map((r) => {
-              const full = `${window.location.origin}${r.path}`
-              return (
-                <div
-                  key={r.path}
-                  className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border px-5 py-3 flex items-center gap-4 cursor-pointer hover:border-brand-base/30 transition-colors"
-                  onClick={() => { navigator.clipboard.writeText(full); appToast.success(`已复制 ${r.path}`) }}
-                >
-                  <code className="text-xs font-mono text-brand-base shrink-0 select-all">{r.path}</code>
-                  <span className="text-xs text-mg-text-2">—</span>
-                  <span className="text-xs text-mg-text-1">{r.desc}</span>
-                  <span className="ml-auto text-[10px] text-mg-text-2 shrink-0">点击复制</span>
+              <CustomRequestPanel />
+              {groups.map((group) => (
+                <div key={group} className="space-y-3">
+                  <div className="text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">
+                    {group}
+                  </div>
+                  <div className="space-y-3">
+                    {endpoints.filter((e) => e.group === group).map((def) => (
+                      <EndpointCard
+                        key={def.path}
+                        def={def}
+                        state={states[def.path]}
+                        onCall={() => call(def.path, def.call)}
+                      />
+                    ))}
+                  </div>
                 </div>
-              )
-            })}
+              ))}
+            </section>
+
+            <section className="space-y-3">
+              <div>
+                <h2 className="text-base font-bold text-mg-text-0">Swagger</h2>
+                <p className="mt-1 text-xs text-mg-text-2">同一个接口入口里检索 Swagger 契约，避免在多个 tab 间来回切换。</p>
+              </div>
+              <SwaggerPanel />
+            </section>
           </div>
         </TabsContent>
 
-        <TabsContent value="menus-sync">
-          <MenusSyncPanel />
+        <TabsContent value="routes-menus">
+          <div className="space-y-8 pt-2">
+            <section className="space-y-3">
+              <div>
+                <h2 className="text-base font-bold text-mg-text-0">公共路由</h2>
+                <p className="mt-1 text-xs text-mg-text-2">无需登录即可访问的页面路由，点击复制完整 URL。</p>
+              </div>
+              {PUBLIC_ROUTES.map((r) => {
+                const full = `${window.location.origin}${r.path}`
+                return (
+                  <div
+                    key={r.path}
+                    className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border px-5 py-3 flex items-center gap-4 cursor-pointer hover:border-brand-base/30 transition-colors"
+                    onClick={() => { navigator.clipboard.writeText(full); appToast.success(`已复制 ${r.path}`) }}
+                  >
+                    <code className="text-xs font-mono text-brand-base shrink-0 select-all">{r.path}</code>
+                    <span className="text-xs text-mg-text-2">—</span>
+                    <span className="text-xs text-mg-text-1">{r.desc}</span>
+                    <span className="ml-auto text-[10px] text-mg-text-2 shrink-0">点击复制</span>
+                  </div>
+                )
+              })}
+            </section>
+
+            <section className="space-y-3">
+              <div>
+                <h2 className="text-base font-bold text-mg-text-0">菜单同步</h2>
+                <p className="mt-1 text-xs text-mg-text-2">查看当前菜单声明并同步到后端权限菜单。</p>
+              </div>
+              <MenusSyncPanel />
+            </section>
+          </div>
         </TabsContent>
 
         <TabsContent value="url-params">
@@ -212,11 +233,6 @@ export default function PlatformConfigPage() {
           <RequirementsPanel />
         </TabsContent>
 
-        <TabsContent value="swagger">
-          <div className="pt-2">
-            <SwaggerPanel />
-          </div>
-        </TabsContent>
       </Tabs>
     </div>
   )

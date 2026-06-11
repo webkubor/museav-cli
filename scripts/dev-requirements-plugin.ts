@@ -29,6 +29,12 @@ interface GitLabIssue {
   created_at: string
 }
 
+interface GitLabUser {
+  id: number
+  username: string
+  name: string
+}
+
 const STATUS_LABELS = ['已认领', '进行中', '待验证', '已完成']
 
 type Action =
@@ -41,6 +47,8 @@ type Action =
   | { action: 'claim'; id: string }
   | { action: 'push'; id: string }
   | { action: 'finish'; id: string }
+  | { action: 'comment'; id: string; content: string }
+  | { action: 'assign'; id: string; assigneeId: number }
 
 function read(): Requirement[] {
   if (!fs.existsSync(DATA_FILE)) return []
@@ -72,6 +80,14 @@ function glab(cmd: string): string {
 
 function glabJson<T>(cmd: string): T {
   return JSON.parse(glab(cmd)) as T
+}
+
+function shellArg(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`
+}
+
+function listGitlabUsers(): GitLabUser[] {
+  return glabJson<GitLabUser[]>(`"projects/${GITLAB_PROJECT_ID}/users?per_page=100"`)
 }
 
 function gitlabStatusToPriority(labels: string[]): Requirement['priority'] {
@@ -177,6 +193,36 @@ function finishIssue(items: Requirement[], localId: string): Requirement[] {
   )
 }
 
+function commentIssue(items: Requirement[], localId: string, content: string): Requirement {
+  const item = items.find((i) => i.id === localId)
+  if (!item?.gitlabIid) throw new Error('no_gitlab_link')
+
+  const trimmed = content.trim()
+  if (!trimmed) throw new Error('empty_comment')
+
+  glab(`-X POST "projects/${GITLAB_PROJECT_ID}/issues/${item.gitlabIid}/notes" --field ${shellArg(`body=${trimmed}`)}`)
+  return item
+}
+
+function assignIssue(items: Requirement[], localId: string, assigneeId: number): Requirement[] {
+  const item = items.find((i) => i.id === localId)
+  if (!item?.gitlabIid) throw new Error('no_gitlab_link')
+
+  const users = listGitlabUsers()
+  const assignee = users.find((user) => user.id === assigneeId)
+  if (!assignee) throw new Error('assignee_not_found')
+
+  const updatedIssue = glabJson<GitLabIssue>(
+    `-X PUT "projects/${GITLAB_PROJECT_ID}/issues/${item.gitlabIid}" --field "assignee_id=${assignee.id}"`
+  )
+
+  return items.map((i) =>
+    i.id === localId
+      ? { ...i, assignee: updatedIssue.assignee?.username ?? assignee.username }
+      : i
+  )
+}
+
 export function devRequirementsPlugin(): Plugin {
   return {
     name: 'dev-requirements',
@@ -186,6 +232,17 @@ export function devRequirementsPlugin(): Plugin {
         res.setHeader('Content-Type', 'application/json')
 
         if (req.method === 'GET') {
+          if (req.url?.startsWith('/users')) {
+            try {
+              res.statusCode = 200
+              res.end(JSON.stringify(listGitlabUsers()))
+            } catch (e) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ error: (e as Error).message }))
+            }
+            return
+          }
+
           res.statusCode = 200
           res.end(JSON.stringify(read()))
           return
@@ -245,6 +302,31 @@ export function devRequirementsPlugin(): Plugin {
           if (payload.action === 'finish') {
             try {
               const updated = finishIssue(items, payload.id)
+              write(updated)
+              res.statusCode = 200
+              res.end(JSON.stringify(updated.find((i) => i.id === payload.id)))
+            } catch (e) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ error: (e as Error).message }))
+            }
+            return
+          }
+
+          if (payload.action === 'comment') {
+            try {
+              const item = commentIssue(items, payload.id, payload.content)
+              res.statusCode = 200
+              res.end(JSON.stringify(item))
+            } catch (e) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ error: (e as Error).message }))
+            }
+            return
+          }
+
+          if (payload.action === 'assign') {
+            try {
+              const updated = assignIssue(items, payload.id, payload.assigneeId)
               write(updated)
               res.statusCode = 200
               res.end(JSON.stringify(updated.find((i) => i.id === payload.id)))

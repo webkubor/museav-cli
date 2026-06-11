@@ -9,7 +9,8 @@
     "gitlabLabels": [
       "前端就绪",
       "已认领"
-    ]
+    ],
+    "assignee": "duanlingxiao"
   },
   {
     "id": "req-1779957107620",
@@ -112,7 +113,7 @@
     "gitlabIid": 67,
     "gitlabLabels": [
       "TASK",
-      "已认领"
+      "已完成"
     ],
     "assignee": "webkubor"
   },
@@ -172,27 +173,27 @@
     "id": "req-1780047351494",
     "title": "组织链接邀请成员，不需要组织成员同意，不选工作区，默认进入默认分组",
     "priority": "medium",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-05-29T09:35:51.494Z",
     "gitlabIid": 71,
     "gitlabLabels": [
       "TASK",
       "已认领"
     ],
-    "assignee": "webkubor"
+    "assignee": "duanlingxiao"
   },
   {
     "id": "req-1780047701141",
     "title": "新增组织后，该组织有个默认护栏",
     "priority": "medium",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-05-29T09:41:41.141Z",
     "gitlabIid": 72,
     "gitlabLabels": [
       "TASK",
       "已认领"
     ],
-    "assignee": "webkubor"
+    "assignee": "duanlingxiao"
   },
   {
     "id": "gl-65",
@@ -848,13 +849,15 @@
   },
   {
     "id": "gl-6",
-    "title": "主题切换先不做",
+    "title": "[提测] /v1/models 接口改为本地数据库查询",
     "priority": "medium",
     "status": "done",
     "createdAt": "2026-05-28T01:30:51.214Z",
     "gitlabIid": 6,
     "gitlabLabels": [
-      "TASK"
+      "Feature",
+      "reopen",
+      "进行中"
     ]
   },
   {
@@ -864,7 +867,9 @@
     "status": "done",
     "createdAt": "2026-05-28T01:30:50.444Z",
     "gitlabIid": 5,
-    "gitlabLabels": []
+    "gitlabLabels": [
+      "TASK"
+    ]
   },
   {
     "id": "gl-4",
@@ -873,7 +878,9 @@
     "status": "done",
     "createdAt": "2026-05-28T01:30:49.688Z",
     "gitlabIid": 4,
-    "gitlabLabels": []
+    "gitlabLabels": [
+      "TASK"
+    ]
   },
   {
     "id": "gl-3",
@@ -882,7 +889,9 @@
     "status": "done",
     "createdAt": "2026-05-28T01:02:48.798Z",
     "gitlabIid": 3,
-    "gitlabLabels": []
+    "gitlabLabels": [
+      "TASK"
+    ]
   },
   {
     "id": "gl-2",
@@ -931,7 +940,7 @@
     "id": "req-1780383436570",
     "title": "退出登录后，修改url直接刷新页面session 有效，还能进入页面看数据",
     "priority": "medium",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-02T06:57:16.570Z",
     "gitlabIid": 74,
     "gitlabLabels": [
@@ -993,7 +1002,7 @@
     "id": "gl-84",
     "title": "多个钱包 信用钱包和促销钱包在极端情况下消耗切换的时候一个消费记录切分成两部分计费",
     "priority": "medium",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-02T09:18:48.748Z",
     "gitlabIid": 84,
     "gitlabLabels": []
@@ -1110,14 +1119,14 @@
     "id": "gl-73",
     "title": "xxx",
     "priority": "medium",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-02T01:24:45.058Z",
     "gitlabIid": 73,
     "gitlabLabels": [
       "TASK",
       "已认领"
     ],
-    "assignee": "webkubor"
+    "assignee": "duanlingxiao"
   },
   {
     "id": "gl-147",
@@ -1181,5 +1190,867 @@
       "已完成"
     ],
     "assignee": "webkubor"
+  },
+  {
+    "id": "gl-161",
+    "title": "用量分析-日志 翻页不可用",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-11T03:43:56.675Z",
+    "gitlabIid": 161,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-160",
+    "title": "智能客服不可用",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-11T03:31:52.708Z",
+    "gitlabIid": 160,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-159",
+    "title": "邀请返利，被邀请人应该脱敏",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-11T03:30:00.477Z",
+    "gitlabIid": 159,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-158",
+    "title": "后台余额调整报错，如图",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-11T03:27:52.292Z",
+    "gitlabIid": 158,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-157",
+    "title": "被邀请人消费达到1000+，邀请人没有正确展示返佣",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-11T03:21:38.495Z",
+    "gitlabIid": 157,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-156",
+    "title": "[Console-Bug] 安全护栏预算弹窗：输入金额与保存/回显不一致，金额无校验，替换非原子",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-11T03:03:55.028Z",
+    "gitlabIid": 156,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-155",
+    "title": "兑换码达到单人兑换上限，提示问题，兑换码所有提示需要改进",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-11T02:50:37.625Z",
+    "gitlabIid": 155,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-154",
+    "title": "兑换码没有实现部分需求",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-11T02:47:03.027Z",
+    "gitlabIid": 154,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-153",
+    "title": "获取模型列表失败",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-11T00:37:59.287Z",
+    "gitlabIid": 153,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-152",
+    "title": "解散组织 需要查看组织这个租户下的余额信息 如果存在余额解散的时候需要一个提示 当前组织还有多少余额未使用完毕。",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-06-10T11:57:35.449Z",
+    "gitlabIid": 152,
+    "gitlabLabels": [
+      "TASK"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-149",
+    "title": "[Console] 补全 low_balance_threshold：余额预警卡片需后端返回有效阈值",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-06-10T09:13:59.998Z",
+    "gitlabIid": 149,
+    "gitlabLabels": [
+      "TASK",
+      "已认领"
+    ]
+  },
+  {
+    "id": "gl-148",
+    "title": "调用正式视频生成模型，超过10分钟，任务查询接口开始报错",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-10T09:00:04.587Z",
+    "gitlabIid": 148,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-146",
+    "title": "可观测地址保存出错",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-10T08:30:41.039Z",
+    "gitlabIid": 146,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-144",
+    "title": "无法从key的维度修改绑定的安全围栏",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-10T07:22:46.024Z",
+    "gitlabIid": 144,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-143",
+    "title": "创建key时应该默认选中默认护栏",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-10T07:21:34.820Z",
+    "gitlabIid": 143,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-142",
+    "title": "安全护栏模型黑明单没有展示所有模型，如图",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-10T07:16:37.229Z",
+    "gitlabIid": 142,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-141",
+    "title": "页面偶发前端报错",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-10T07:13:10.905Z",
+    "gitlabIid": 141,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-140",
+    "title": "安全护栏修改预算不生效",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-10T07:08:16.399Z",
+    "gitlabIid": 140,
+    "gitlabLabels": [
+      "BUG",
+      "待验证"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-139",
+    "title": "向workspace添加组织内成员，提示提交成功，但是workspace没有这个人",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-10T06:57:28.590Z",
+    "gitlabIid": 139,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-138",
+    "title": "邀请链接未生效",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-10T06:51:49.671Z",
+    "gitlabIid": 138,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-137",
+    "title": "已经在组织内的用户无法拉到workspace",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-10T06:28:25.693Z",
+    "gitlabIid": 137,
+    "gitlabLabels": [
+      "BUG",
+      "待验证"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-136",
+    "title": "前台提交发票申请，后台看不到",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-10T06:23:51.105Z",
+    "gitlabIid": 136,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-135",
+    "title": "[Console] test 环境普通浏览器登录后 auth/session 返回 40101，无痕模式正常",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-10T04:29:19.574Z",
+    "gitlabIid": 135,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-134",
+    "title": "[Billing] 支付宝充值回调二次查单确认与入账闭环",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-10T04:27:43.196Z",
+    "gitlabIid": 134,
+    "gitlabLabels": [
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-132",
+    "title": "[Feature][待验证] modelgo-model-gateway 护栏校验接入与界面验证",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-10T02:53:33.216Z",
+    "gitlabIid": 132,
+    "gitlabLabels": [
+      "Feature",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-131",
+    "title": "调用日志样式错乱",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-09T12:01:16.190Z",
+    "gitlabIid": 131,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-130",
+    "title": "模型体验暂不可用",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-09T12:00:05.866Z",
+    "gitlabIid": 130,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-127",
+    "title": "[Feature] 计费明细透出（Billing Detail / FreezeBreakdown）",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-09T11:39:24.943Z",
+    "gitlabIid": 127,
+    "gitlabLabels": [
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-126",
+    "title": "[Feature] modelgo-cli v0.1.2 + x402 pay 命令",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-09T11:39:18.545Z",
+    "gitlabIid": 126,
+    "gitlabLabels": [
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-125",
+    "title": "[Feature] 视频/媒体投递设置（Media Delivery）",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-06-09T11:39:15.161Z",
+    "gitlabIid": 125,
+    "gitlabLabels": [
+      "reopen",
+      "进行中"
+    ]
+  },
+  {
+    "id": "gl-124",
+    "title": "[Feature] 异步任务（Async Tasks）端到端查询",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-09T11:39:11.194Z",
+    "gitlabIid": 124,
+    "gitlabLabels": [
+      "Feature",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-123",
+    "title": "组织邀请链接跟推荐计划邀请链接相同，是个bug。",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-09T11:34:21.076Z",
+    "gitlabIid": 123,
+    "gitlabLabels": [
+      "BUG",
+      "待验证"
+    ]
+  },
+  {
+    "id": "gl-122",
+    "title": "[运营增长] controller-web 新增「运营增长」板块：兑换码管理 / 返佣规则配置 / 提现审核（全链路闭环）",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-09T09:06:25.601Z",
+    "gitlabIid": 122,
+    "gitlabLabels": [
+      "Feature",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-121",
+    "title": "[Console-Bug] 创建 API Key 时选择的安全护栏未生效——未在护栏作用范围绑定该 key",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-09T08:35:23.673Z",
+    "gitlabIid": 121,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-120",
+    "title": "[Console] API Keys 增加删除按钮 + 后端真实删除接口（软删除）",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-09T08:01:57.500Z",
+    "gitlabIid": 120,
+    "gitlabLabels": [
+      "Feature",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-119",
+    "title": "[Console-Bug] 安全护栏配置弹框 作用范围→API Keys 下拉无法选择，绑定无法落库",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-09T04:27:05.046Z",
+    "gitlabIid": 119,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-118",
+    "title": "[安全护栏] 配置闭环：专用护栏校验接口 + 配置落库 + model_blacklist/ip_whitelist/members 强制执行",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-09T03:37:00.481Z",
+    "gitlabIid": 118,
+    "gitlabLabels": [
+      "Feature",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-117",
+    "title": "[Console-Bug] 安全护栏配置弹窗：保存成功后重新打开，模型黑名单/IP白名单/成员下拉框回显为空",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-09T02:39:32.166Z",
+    "gitlabIid": 117,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-116",
+    "title": "新建组织当中应该默认创建一个default的安全护栏",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-08T08:25:00.259Z",
+    "gitlabIid": 116,
+    "gitlabLabels": []
+  },
+  {
+    "id": "gl-115",
+    "title": "【多模态】新增 audio/transcriptions、audio/translations、/v1/models、/v1/completions 端点 + Volcengine/BytePlus 不支持端点拦截",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-08T04:01:37.685Z",
+    "gitlabIid": 115,
+    "gitlabLabels": [
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-114",
+    "title": "【视频生成】Ark Provider 视频生成 OpenAI Video 统一入站协议 + OSS 文件持久化",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-08T02:48:22.228Z",
+    "gitlabIid": 114,
+    "gitlabLabels": [
+      "reopen",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-113",
+    "title": "API 文档上线",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-06-08T02:43:12.326Z",
+    "gitlabIid": 113,
+    "gitlabLabels": [
+      "TASK",
+      "已认领"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-112",
+    "title": "官网双域名上线",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-06-08T02:43:11.965Z",
+    "gitlabIid": 112,
+    "gitlabLabels": [
+      "TASK",
+      "已认领"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-111",
+    "title": "官网双域名上线 & API 文档上线",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-08T02:42:39.682Z",
+    "gitlabIid": 111,
+    "gitlabLabels": [
+      "TASK",
+      "已认领"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-110",
+    "title": "菜单按钮级权限前端接入完成，需 API 联调",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-08T02:14:24.548Z",
+    "gitlabIid": 110,
+    "gitlabLabels": [
+      "TASK",
+      "前端就绪",
+      "已认领"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-109",
+    "title": "菜单权限同步接口 — POST /admin/menus/sync",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-08T02:12:30.759Z",
+    "gitlabIid": 109,
+    "gitlabLabels": [
+      "TASK",
+      "前端就绪"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-108",
+    "title": "[网关] OpenRouter provider 实现 + direct_cost 计费链路",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-08T02:07:50.265Z",
+    "gitlabIid": 108,
+    "gitlabLabels": [
+      "Feature",
+      "待验证"
+    ]
+  },
+  {
+    "id": "gl-107",
+    "title": "[网关全量] 多模态API + 计费逻辑 + 文本高级功能 端到端测试",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-08T01:38:25.438Z",
+    "gitlabIid": 107,
+    "gitlabLabels": [
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-106",
+    "title": "【计费】Cache 5m/1h Split 端到端验证",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-07T14:48:30.630Z",
+    "gitlabIid": 106,
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-105",
+    "title": "[permissions] 测试环境组织创建 503：test namespace Nacos 配置 billing.base_url 主机名错误",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-05T09:47:40.226Z",
+    "gitlabIid": 105,
+    "gitlabLabels": [
+      "BUG"
+    ]
+  },
+  {
+    "id": "gl-104",
+    "title": "[网关] 客户端中断流式请求不写补偿行——preauthorized 冻结永久泄漏",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-05T09:31:21.283Z",
+    "gitlabIid": 104,
+    "gitlabLabels": []
+  },
+  {
+    "id": "gl-103",
+    "title": "[预存在] guardrail 策略未物化到 gateway_policies——带护栏工作区网关流量全 403",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-06-05T09:13:14.526Z",
+    "gitlabIid": 103,
+    "gitlabLabels": [
+      "TASK"
+    ]
+  },
+  {
+    "id": "gl-102",
+    "title": "[permissions] 测试 PG 表结构落后 + 3 个过时测试断言（pg 套件预存 5 红）",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-04T13:46:04.733Z",
+    "gitlabIid": 102,
+    "gitlabLabels": [
+      "BUG"
+    ]
+  },
+  {
+    "id": "gl-101",
+    "title": "[billing] gateway_call_logs 表结构漂移：FindByRequestID 引用不存在的 id 列（42703）",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-04T12:52:55.927Z",
+    "gitlabIid": 101,
+    "gitlabLabels": [
+      "BUG"
+    ]
+  },
+  {
+    "id": "gl-100",
+    "title": "[Console对接] F1 QA：测试环境部署 + REST E2E 有效性验证（含 Accept-Language 双语断言）",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-04T10:17:44.148Z",
+    "gitlabIid": 100,
+    "gitlabLabels": [
+      "task",
+      "进行中"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-99",
+    "title": "[Console对接] E1 console-web：去 mock 切真实接口（referral 页重写 / useMutation / 各面接线）",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-04T10:17:43.651Z",
+    "gitlabIid": 99,
+    "gitlabLabels": [
+      "task",
+      "已完成",
+      "已认领"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-98",
+    "title": "[Console对接] D2 web-api：overview/rankings 真实聚合（models 榜 Top3；skills 空态）",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-04T10:17:17.187Z",
+    "gitlabIid": 98,
+    "gitlabLabels": [
+      "task",
+      "前端就绪",
+      "已完成",
+      "已认领"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-97",
+    "title": "[Console对接] D1 web-api：模型体验对话代理（session 认证 SSE 反代网关）",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-04T10:17:16.676Z",
+    "gitlabIid": 97,
+    "gitlabLabels": [
+      "task",
+      "前端就绪",
+      "已完成",
+      "已认领"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-96",
+    "title": "[Console对接] C3 web-api：referral BFF 六端点（聚合 permissions/billing + 业务错误码）",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-04T10:17:16.155Z",
+    "gitlabIid": 96,
+    "gitlabLabels": [
+      "task",
+      "前端就绪",
+      "已完成",
+      "已认领"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-95",
+    "title": "[Console对接] C2 billing：佣金计提（结算 hook / 档位费率 / commission-records）",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-04T10:16:32.334Z",
+    "gitlabIid": 95,
+    "gitlabLabels": [
+      "task",
+      "已完成",
+      "已认领"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-94",
+    "title": "[Console对接] C1 permissions：推荐归因域（邀请码 / 注册归因 / invitees 查询）",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-04T10:16:31.788Z",
+    "gitlabIid": 94,
+    "gitlabLabels": [
+      "task",
+      "已完成",
+      "已认领"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-93",
+    "title": "[Console对接] B1 billing+web-api：三桶余额查询 + balance/breakdown + gift-records",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-04T10:16:31.207Z",
+    "gitlabIid": 93,
+    "gitlabLabels": [
+      "task",
+      "前端就绪",
+      "已完成",
+      "已认领"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-92",
+    "title": "[Console对接] A2 web-api：REST 契约修缮（guardrail DELETE / retention_days / confirm_name / docs slug / model-logs id）",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-04T10:16:04.787Z",
+    "gitlabIid": 92,
+    "gitlabLabels": [
+      "reopen",
+      "task",
+      "已认领",
+      "待验证"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-91",
+    "title": "[Console对接] A1 web-api：错误码双语目录与渲染期 i18n（Accept-Language）",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-04T10:15:46.540Z",
+    "gitlabIid": 91,
+    "gitlabLabels": [
+      "task",
+      "进行中"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-90",
+    "title": "前端modelgo-console-web 和服务端modelgo-web-api对接",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-04T09:53:51.101Z",
+    "gitlabIid": 90,
+    "gitlabLabels": [
+      "TASK",
+      "feature"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-89",
+    "title": "[QA] 组织数量双限制：集成/E2E 测试用例",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-06-04T07:12:02.153Z",
+    "gitlabIid": 89,
+    "gitlabLabels": [
+      "TASK"
+    ]
+  },
+  {
+    "id": "gl-88",
+    "title": "[web-api/前端] 组织数量限制的错误透传与界面提示",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-04T07:12:01.673Z",
+    "gitlabIid": 88,
+    "gitlabLabels": [
+      "reopen",
+      "task",
+      "进行中"
+    ]
+  },
+  {
+    "id": "gl-87",
+    "title": "[permissions] 成员关联企业组织上限：单账户最多加入 5 个公司（含并发安全）",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-04T07:12:01.192Z",
+    "gitlabIid": 87,
+    "gitlabLabels": [
+      "task"
+    ]
+  },
+  {
+    "id": "gl-86",
+    "title": "[permissions] 企业组织 owner 唯一限制：单账户最多创建 1 个公司组织",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-04T07:11:21.605Z",
+    "gitlabIid": 86,
+    "gitlabLabels": [
+      "task"
+    ]
+  },
+  {
+    "id": "gl-85",
+    "title": "单个租户限制最大关联5个公司，单个租户最大只能创建一个公司组织，也就是成为一个公司组织的owner",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-04T06:51:19.023Z",
+    "gitlabIid": 85,
+    "gitlabLabels": [
+      "已完成"
+    ]
   }
 ]

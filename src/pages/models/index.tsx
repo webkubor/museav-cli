@@ -302,14 +302,28 @@ export default function ModelsPage() {
           )}
 
           <div className="models-experience-messages">
-            {messages.map((message, index) => (
-              <div key={`${message.role}-${index}`} className={cn('models-experience-message', message.role === 'user' && 'is-user')}>
-                <div className="models-experience-message-bubble">
-                  {message.content.split('\n').map((line, lineIndex) => <p key={`${index}-${lineIndex}`}>{line}</p>)}
-                  {message.meta && <span>{message.meta}</span>}
+            {messages.map((message, index) => {
+              // 思考态：最后一条 assistant 消息内容还为空且正在流式请求中
+              const isThinking =
+                message.role === 'assistant' &&
+                message.content === '' &&
+                isStreaming &&
+                index === messages.length - 1
+              return (
+                <div key={`${message.role}-${index}`} className={cn('models-experience-message', message.role === 'user' && 'is-user')}>
+                  <div className="models-experience-message-bubble">
+                    {isThinking ? (
+                      <span className="models-experience-thinking" aria-label="模型思考中">
+                        <i /><i /><i />
+                      </span>
+                    ) : (
+                      message.content.split('\n').map((line, lineIndex) => <p key={`${index}-${lineIndex}`}>{line}</p>)
+                    )}
+                    {message.meta && <span>{message.meta}</span>}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           <Composer

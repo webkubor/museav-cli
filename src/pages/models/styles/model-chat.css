@@ -144,6 +144,36 @@
   font-weight: 700;
 }
 
+/* ── 思考态：模型响应前的 typing 指示（三点跳动） ── */
+.models-experience-message-bubble .models-experience-thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 0;
+  padding: 3px 0;
+}
+
+.models-experience-message-bubble .models-experience-thinking i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mg-text-2);
+  animation: models-thinking-bounce 1.2s infinite ease-in-out both;
+}
+
+.models-experience-message-bubble .models-experience-thinking i:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.models-experience-message-bubble .models-experience-thinking i:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+@keyframes models-thinking-bounce {
+  0%, 70%, 100% { opacity: 0.3; transform: translateY(0); }
+  35% { opacity: 0.9; transform: translateY(-4px); }
+}
+
 /* ── 对比模式气泡特别样式 ── */
 .models-experience-message.is-compare-bubble {
   flex-direction: column;

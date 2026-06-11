@@ -77,6 +77,7 @@ export default function ApiKeysPage() {
   const [createVisible, setCreateVisible] = useState(false)
   const [revealVisible, setRevealVisible] = useState(false)
   const [createdKeyText, setCreatedKeyText] = useState('')
+  const [verifyState, setVerifyState] = useState<'idle' | 'mismatch' | 'no-copy'>('idle')
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null)
   const [quickOpen, setQuickOpen] = useState(false)
   const [quickCopied, setQuickCopied] = useState<string | null>(null)
@@ -240,6 +241,28 @@ export default function ApiKeysPage() {
     navigate('/models/catalog')
   }, [copyText, createdKeyText, navigate])
 
+  const handleConfirmSaved = useCallback(async () => {
+    if (!copied) {
+      await copyText(createdKeyText)
+      setVerifyState('no-copy')
+      return
+    }
+    try {
+      const clipText = await navigator.clipboard.readText()
+      if (clipText.trim() === createdKeyText.trim()) {
+        setRevealVisible(false)
+        setVerifyState('idle')
+      } else {
+        await copyText(createdKeyText)
+        setVerifyState('mismatch')
+      }
+    } catch {
+      // 无剪贴板读权限，已复制过则直接关闭
+      setRevealVisible(false)
+      setVerifyState('idle')
+    }
+  }, [copied, copyText, createdKeyText])
+
   async function handleQuickCopy(key: string, text: string) {
     const ok = await copyText(text)
     if (!ok) {
@@ -367,7 +390,7 @@ export default function ApiKeysPage() {
               </div>
             </div>
             <button
-              onClick={() => setRevealVisible(false)}
+              onClick={() => { setRevealVisible(false); setVerifyState('idle') }}
               className="text-mg-text-2 hover:text-mg-text-0 p-1 rounded transition-colors cursor-pointer"
             >
               <LuX className="w-4 h-4" />
@@ -384,6 +407,16 @@ export default function ApiKeysPage() {
                   {copied ? <LuCheck className="w-4 h-4" /> : <LuCopy className="w-4 h-4" />}
                 </button>
               </div>
+              {verifyState === 'mismatch' && (
+                <p className="text-xs text-mg-danger mt-1.5 font-semibold">
+                  粘贴内容与密钥不符，已重新复制，请再次粘贴确认后点击完成
+                </p>
+              )}
+              {verifyState === 'no-copy' && (
+                <p className="text-xs text-mg-warning mt-1.5 font-semibold">
+                  请先复制密钥，再点击「我已复制并妥善保存」
+                </p>
+              )}
             </div>
             <div className="flex gap-2 shrink-0">
               <Button
@@ -393,8 +426,8 @@ export default function ApiKeysPage() {
               >
                 复制并去挑选模型
               </Button>
-              <Button variant="brand" onClick={() => setRevealVisible(false)} className="h-11 rounded-lg px-6 font-semibold cursor-pointer">
-                {t('apiKeys.revealModal.done')}
+              <Button variant="brand" onClick={handleConfirmSaved} className="h-11 rounded-lg px-6 font-semibold cursor-pointer">
+                我已复制并妥善保存
               </Button>
             </div>
           </div>

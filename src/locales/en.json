@@ -190,6 +190,22 @@
       "wechatQrCopy": "Copy payment link",
       "wechatQrCopied": "Payment link copied"
     },
+    "wechatCashier": {
+      "title": "WeChat Pay Cashier",
+      "defaultPayee": "ModelGo",
+      "payee": "Payee",
+      "amount": "Amount",
+      "back": "Back to Billing",
+      "scanHint": "Scan with WeChat to complete payment",
+      "statusHint": "After payment succeeds, the order will be confirmed and credited automatically.",
+      "orderNo": "Order No.",
+      "copy": "Copy payment link",
+      "copied": "Copied",
+      "done": "Back to Billing after payment",
+      "qrAria": "WeChat Pay QR code",
+      "missingTitle": "Payment QR code expired",
+      "missingDesc": "Return to Billing and create a new recharge order."
+    },
     "promo": {
       "title": "Redeem Promo Code",
       "placeholder": "Enter Promo Code",

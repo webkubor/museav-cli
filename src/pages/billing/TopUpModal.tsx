@@ -14,6 +14,26 @@ const ALL_CHANNELS = [
   { value: 'stripe', label: 'Stripe',  icon: <StripeIcon /> },
 ]
 
+const WECHAT_PAYEE_NAME = 'ModelGo'
+
+function buildWechatCashierURL(params: {
+  qrCodeUrl: string
+  orderNo: string
+  amount: string
+  currency: string
+  payee: string
+  returnTo: string
+}) {
+  const url = new URL('/billing/wechat-cashier', window.location.origin)
+  url.searchParams.set('qr', params.qrCodeUrl)
+  url.searchParams.set('order', params.orderNo)
+  url.searchParams.set('amount', params.amount)
+  url.searchParams.set('currency', params.currency)
+  url.searchParams.set('payee', params.payee)
+  url.searchParams.set('return_to', params.returnTo)
+  return url.toString()
+}
+
 interface TopUpModalProps {
   visible: boolean
   onClose: () => void
@@ -59,7 +79,16 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
         queryClient.invalidateQueries({ queryKey: ['balance', tenantId] })
         queryClient.invalidateQueries({ queryKey: ['billing', 'recharges', tenantId] })
 
-        const redirectURL = data.payment.redirect_url || data.payment.qr_code_url
+        const redirectURL = effectiveChannel === 'wechat' && data.payment.qr_code_url
+          ? buildWechatCashierURL({
+              qrCodeUrl: data.payment.qr_code_url,
+              orderNo: data.order_no,
+              amount,
+              currency,
+              payee: WECHAT_PAYEE_NAME,
+              returnTo: window.location.href,
+            })
+          : data.payment.redirect_url || data.payment.qr_code_url
         if (!redirectURL) {
           paymentWindow?.close()
           appToast.error(t('billing.rechargeModal.error'))

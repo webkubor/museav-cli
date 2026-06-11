@@ -62,7 +62,7 @@ describe('TopUpModal', () => {
       status: 'pending',
       payment: {
         channel: 'wechat',
-        redirect_url: 'https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=test',
+        qr_code_url: 'weixin://wxpay/bizpayurl?pr=test',
       },
       expires_at: '2026-06-10T18:00:00Z',
     })
@@ -74,7 +74,7 @@ describe('TopUpModal', () => {
     vi.restoreAllMocks()
   })
 
-  it('redirects to the WeChat cashier URL returned by web-api', async () => {
+  it('opens the first-party WeChat cashier for QR code responses', async () => {
     const close = vi.fn()
     const paymentWindow = {
       close,
@@ -87,8 +87,15 @@ describe('TopUpModal', () => {
     fireEvent.click(screen.getByRole('button', { name: '前往支付 ¥100' }))
 
     await waitFor(() => {
-      expect(paymentWindow.location.href).toBe('https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=test')
+      expect(paymentWindow.location.href).toContain('/billing/wechat-cashier')
     })
+    const cashierURL = new URL(paymentWindow.location.href)
+    expect(cashierURL.pathname).toBe('/billing/wechat-cashier')
+    expect(cashierURL.searchParams.get('qr')).toBe('weixin://wxpay/bizpayurl?pr=test')
+    expect(cashierURL.searchParams.get('order')).toBe('WX202606100001')
+    expect(cashierURL.searchParams.get('amount')).toBe('100')
+    expect(cashierURL.searchParams.get('currency')).toBe('CNY')
+    expect(cashierURL.searchParams.get('payee')).toBe('ModelGo')
     expect(screen.queryByText('WX202606100001')).not.toBeInTheDocument()
     expect(close).not.toHaveBeenCalled()
     expect(createRecharge).toHaveBeenCalledWith(
@@ -98,13 +105,13 @@ describe('TopUpModal', () => {
     await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('充值订单已创建，请完成支付'))
   })
 
-  it('redirects instead of rendering a local QR code for legacy WeChat qr_code_url responses', async () => {
+  it('falls back to a provider redirect when no WeChat QR code is returned', async () => {
     createRecharge.mockResolvedValueOnce({
       order_no: 'WX202606100002',
       status: 'pending',
       payment: {
         channel: 'wechat',
-        qr_code_url: 'weixin://wxpay/bizpayurl?pr=test',
+        redirect_url: 'https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=test',
       },
       expires_at: '2026-06-10T18:00:00Z',
     })
@@ -119,7 +126,7 @@ describe('TopUpModal', () => {
     fireEvent.click(screen.getByRole('button', { name: '前往支付 ¥100' }))
 
     await waitFor(() => {
-      expect(paymentWindow.location.href).toBe('weixin://wxpay/bizpayurl?pr=test')
+      expect(paymentWindow.location.href).toBe('https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=test')
     })
     expect(screen.queryByText('WX202606100002')).not.toBeInTheDocument()
   })

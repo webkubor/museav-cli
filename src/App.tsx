@@ -20,6 +20,7 @@ const DevicePage = lazy(() => import('@/pages/device'))
 const UsagePage = lazy(() => import('@/pages/usage'))
 const LogsPage = lazy(() => import('@/pages/logs'))
 const BillingPage = lazy(() => import('@/pages/billing'))
+const WechatCashierPage = lazy(() => import('@/pages/billing/WechatCashierPage'))
 const ReferralPage = lazy(() => import('@/pages/referral'))
 const AccountSettingsPage = lazy(() => import('@/pages/settings/account'))
 const OrganizationPage = lazy(() => import('@/pages/settings/organization'))
@@ -201,6 +202,7 @@ export default function App() {
           <Route path="/invitations" element={<InvitationsPage />} />
           <Route path="/invitations/:token" element={<InvitationsPage />} />
           <Route path="/device" element={<DevicePage />} />
+          <Route path="/billing/wechat-cashier" element={<WechatCashierPage />} />
 
           {/* 控制台路由（需登录） */}
           <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>

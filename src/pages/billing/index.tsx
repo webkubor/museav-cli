@@ -505,6 +505,7 @@ export default function BillingPage() {
                     <tr className="border-b border-mg-border bg-mg-fill-0/20">
                       <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.orderNo')}</th>
                       <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.status')}</th>
+                      <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.channel')}</th>
                       <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.amount')}</th>
                       <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.paidAt')}</th>
                     </tr>
@@ -529,6 +530,9 @@ export default function BillingPage() {
                               statusMap={rechargeStatusMap}
                               fallback={record.status}
                             />
+                          </td>
+                          <td className="py-3.5 px-4 text-xs text-mg-text-1 font-semibold whitespace-nowrap">
+                            {record.channel_label || record.channel || '-'}
                           </td>
                           <td className={cn(
                             'py-3.5 px-4 text-xs font-bold font-mono',
@@ -619,8 +623,8 @@ export default function BillingPage() {
                     {selectedOrder.channel && (
                       <div className="flex justify-between gap-3">
                         <span className="text-mg-text-3">{t('billing.orders.detail.channel')}:</span>
-                        <span className="text-mg-text-0 uppercase font-semibold">
-                          {selectedOrder.channel}
+                        <span className="text-mg-text-0 font-semibold">
+                          {selectedOrder.channel_label || selectedOrder.channel}
                         </span>
                       </div>
                     )}

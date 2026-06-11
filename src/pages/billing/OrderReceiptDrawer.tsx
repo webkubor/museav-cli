@@ -108,8 +108,8 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
               {order.channel && (
                 <div className="flex justify-between gap-4">
                   <span className="text-mg-text-3">{t('billing.orders.detail.channel')}:</span>
-                  <span className="text-mg-text-0 uppercase font-semibold">
-                    {order.channel}
+                  <span className="text-mg-text-0 font-semibold">
+                    {order.channel_label || order.channel}
                   </span>
                 </div>
               )}

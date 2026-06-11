@@ -610,6 +610,7 @@ export interface CreditsPromoRedeemResponse {
 export interface CreditsRechargeOrder {
   amount?: string
   channel?: string
+  channel_label?: string
   credited_amount?: string
   currency?: string
   expires_at?: string

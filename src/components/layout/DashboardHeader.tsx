@@ -435,88 +435,92 @@ export const DashboardHeader: React.FC = () => {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[230px]">
-            {/* 账户信息 + 个人账户 */}
+            {/* 当前登录账户（纯信息头部，不参与切换） */}
+            <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-mg-border/40 mb-1 select-none">
+              <Avatar className="h-7 w-7 border border-brand-light/30 shrink-0">
+                {account?.avatar_url && <AvatarImage src={account.avatar_url} alt={account.display_name} />}
+                <AvatarFallback className="bg-brand-pale text-brand-base font-bold text-xs">
+                  {avatarLetter}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <div className="font-bold text-[13px] text-mg-text-0 leading-tight truncate">
+                  {account?.display_name || '—'}
+                </div>
+                <div className="text-[11px] text-mg-text-2 truncate">{account?.email}</div>
+              </div>
+            </div>
+
+            {/* 个人 + 企业：平级可切换列表 */}
             {(() => {
               const personalTenant = displayTenants.find((t) => t.type === 'personal')
-              const isPersonalActive = personalTenant?.tenant_id === activeTenantId
+              if (!personalTenant) return null
+              const isActive = personalTenant.tenant_id === activeTenantId
               return (
-                <div
-                  className="px-3.5 py-2.5 border-b border-mg-border/40 mb-1 select-none cursor-pointer hover:bg-mg-fill-0/40 transition-colors rounded-t-lg"
-                  onClick={() => personalTenant && handleSwitchTenant(personalTenant)}
+                <DropdownMenuItem
+                  onClick={() => handleSwitchTenant(personalTenant)}
                   style={{
-                    backgroundColor: isPersonalActive ? 'var(--brand-selected-bg)' : undefined,
+                    fontWeight: isActive ? 700 : 500,
+                    color: isActive ? 'var(--brand-base)' : 'var(--mg-text-1)',
+                    backgroundColor: isActive ? 'var(--brand-selected-bg)' : undefined,
                   }}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0">
-                      <div className="font-bold text-sm text-mg-text-0 leading-none truncate"
-                        style={{ color: isPersonalActive ? 'var(--brand-base)' : undefined }}
-                      >
-                        {account?.display_name || '—'}
-                      </div>
-                      <div className="text-[11.5px] text-mg-text-2 mt-1 truncate">
-                        {account?.email}
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2.5 w-full">
+                    <span className="h-6 w-6 rounded-full bg-mg-fill-1 flex items-center justify-center shrink-0">
+                      <LuUser size={13} className="text-mg-text-1" />
+                    </span>
+                    <span className="flex-1 truncate max-w-[100px]">{account?.display_name || t('header.personalTag')}</span>
                     <Badge variant="outline" size="xs" className="shrink-0">
                       {t('header.personalTag')}
                     </Badge>
                   </div>
-                </div>
+                </DropdownMenuItem>
               )
             })()}
 
-            {/* 企业列表（仅 enterprise） */}
-            {displayTenants.some((t) => t.type === 'enterprise') && (
-              <>
-                <div className="px-3.5 py-1 text-[10px] font-bold tracking-wider text-mg-text-2/80 uppercase select-none">
-                  {t('header.organizations')}
-                </div>
-                {displayTenants.filter((t) => t.type === 'enterprise').map((tenant) => {
-                  const displayName = tenant.name || tenant.slug || tenant.tenant_id
-                  const letter = displayName.charAt(0).toUpperCase()
-                  const isActive = tenant.tenant_id === activeTenantId
-                  const tenantRole = (tenant as TenantItem).role
-                  const roleLabel: Record<string, string> = {
-                    tenant_owner: t('header.roleOwner'),
-                    tenant_admin: t('header.roleAdmin'),
-                    tenant_member: t('header.roleMember'),
-                  }
-                  // 角色按权限分级着色：所有者最突出 → 管理员 → 成员
-                  const roleBadgeVariant: Record<string, BadgeVariant> = {
-                    tenant_owner: 'warning',
-                    tenant_admin: 'info',
-                    tenant_member: 'secondary',
-                  }
-                  return (
-                    <DropdownMenuItem
-                      key={tenant.tenant_id}
-                      onClick={() => handleSwitchTenant(tenant)}
-                      style={{
-                        fontWeight: isActive ? 700 : 500,
-                        color: isActive ? 'var(--brand-base)' : 'var(--mg-text-1)',
-                        backgroundColor: isActive ? 'var(--brand-selected-bg)' : undefined,
-                      }}
-                    >
-                      <div className="flex items-center gap-2.5 w-full">
-                        <Avatar className="h-6 w-6 border-none">
-                          {tenant.logo_url && <AvatarImage src={tenant.logo_url} />}
-                          <AvatarFallback className="text-[10px] bg-mg-fill-1 text-mg-text-1 font-bold">
-                            {letter}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="flex-1 truncate max-w-[100px]">{displayName}</span>
-                        {tenantRole && (
-                          <Badge variant={roleBadgeVariant[tenantRole] ?? 'secondary'} size="xs" className="shrink-0">
-                            {roleLabel[tenantRole] ?? tenantRole}
-                          </Badge>
-                        )}
-                      </div>
-                    </DropdownMenuItem>
-                  )
-                })}
-              </>
-            )}
+            {displayTenants.filter((t) => t.type === 'enterprise').map((tenant) => {
+              const displayName = tenant.name || tenant.slug || tenant.tenant_id
+              const letter = displayName.charAt(0).toUpperCase()
+              const isActive = tenant.tenant_id === activeTenantId
+              const tenantRole = (tenant as TenantItem).role
+              const roleLabel: Record<string, string> = {
+                tenant_owner: t('header.roleOwner'),
+                tenant_admin: t('header.roleAdmin'),
+                tenant_member: t('header.roleMember'),
+              }
+              // 角色按权限分级着色：所有者最突出 → 管理员 → 成员
+              const roleBadgeVariant: Record<string, BadgeVariant> = {
+                tenant_owner: 'warning',
+                tenant_admin: 'info',
+                tenant_member: 'secondary',
+              }
+              return (
+                <DropdownMenuItem
+                  key={tenant.tenant_id}
+                  onClick={() => handleSwitchTenant(tenant)}
+                  style={{
+                    fontWeight: isActive ? 700 : 500,
+                    color: isActive ? 'var(--brand-base)' : 'var(--mg-text-1)',
+                    backgroundColor: isActive ? 'var(--brand-selected-bg)' : undefined,
+                  }}
+                >
+                  <div className="flex items-center gap-2.5 w-full">
+                    <Avatar className="h-6 w-6 border-none">
+                      {tenant.logo_url && <AvatarImage src={tenant.logo_url} />}
+                      <AvatarFallback className="text-[10px] bg-mg-fill-1 text-mg-text-1 font-bold">
+                        {letter}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="flex-1 truncate max-w-[100px]">{displayName}</span>
+                    {tenantRole && (
+                      <Badge variant={roleBadgeVariant[tenantRole] ?? 'secondary'} size="xs" className="shrink-0">
+                        {roleLabel[tenantRole] ?? tenantRole}
+                      </Badge>
+                    )}
+                  </div>
+                </DropdownMenuItem>
+              )
+            })}
 
             <DropdownMenuItem
               onClick={handleOpenOrgModal}

@@ -214,6 +214,7 @@ export default function BillingPage() {
     mutationFn: (code: string) => redeemPromoCode(tenantId, { code }),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['balance', tenantId] })
+      qc.invalidateQueries({ queryKey: ['balance', 'breakdown', tenantId] })
       appToast.success(t('billing.promo.success', { amount: data.credited.amount, currency: data.credited.currency }))
       setPromoCode('')
     },

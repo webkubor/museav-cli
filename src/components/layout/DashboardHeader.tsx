@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Badge, type BadgeVariant } from '@/components/ui/Badge'
 import React, { useState, useEffect } from 'react'
 import {
   LuChevronDown,
@@ -457,9 +458,9 @@ export const DashboardHeader: React.FC = () => {
                         {account?.email}
                       </div>
                     </div>
-                    <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded border bg-mg-fill-0 border-mg-border text-mg-text-2 scale-90 shrink-0">
+                    <Badge variant="outline" size="xs" className="shrink-0">
                       {t('header.personalTag')}
-                    </span>
+                    </Badge>
                   </div>
                 </div>
               )
@@ -481,6 +482,12 @@ export const DashboardHeader: React.FC = () => {
                     tenant_admin: t('header.roleAdmin'),
                     tenant_member: t('header.roleMember'),
                   }
+                  // 角色按权限分级着色：所有者最突出 → 管理员 → 成员
+                  const roleBadgeVariant: Record<string, BadgeVariant> = {
+                    tenant_owner: 'warning',
+                    tenant_admin: 'info',
+                    tenant_member: 'secondary',
+                  }
                   return (
                     <DropdownMenuItem
                       key={tenant.tenant_id}
@@ -500,9 +507,9 @@ export const DashboardHeader: React.FC = () => {
                         </Avatar>
                         <span className="flex-1 truncate max-w-[100px]">{displayName}</span>
                         {tenantRole && (
-                          <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded border bg-mg-fill-0 border-mg-border text-mg-text-2 scale-90 shrink-0">
+                          <Badge variant={roleBadgeVariant[tenantRole] ?? 'secondary'} size="xs" className="shrink-0">
                             {roleLabel[tenantRole] ?? tenantRole}
-                          </span>
+                          </Badge>
                         )}
                       </div>
                     </DropdownMenuItem>

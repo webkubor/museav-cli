@@ -1132,24 +1132,25 @@
     "id": "gl-147",
     "title": "组织创建后无法删除",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-10T08:43:00.731Z",
     "gitlabIid": 147,
     "gitlabLabels": [
       "BUG",
-      "待验证"
+      "已完成"
     ],
-    "assignee": "webkubor"
+    "assignee": "duanlingxiao"
   },
   {
     "id": "gl-145",
     "title": "默认护栏应该是不可以删除",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-10T08:09:55.149Z",
     "gitlabIid": 145,
     "gitlabLabels": [
-      "BUG"
+      "BUG",
+      "已完成"
     ],
     "assignee": "webkubor"
   },
@@ -1170,13 +1171,14 @@
     "id": "gl-129",
     "title": "模型广场类别缺少视频生成",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-09T11:57:55.186Z",
     "gitlabIid": 129,
     "gitlabLabels": [
-      "BUG"
+      "BUG",
+      "已完成"
     ],
-    "assignee": "webkubor"
+    "assignee": "xionrenjie"
   },
   {
     "id": "gl-128",
@@ -1195,11 +1197,12 @@
     "id": "gl-161",
     "title": "用量分析-日志 翻页不可用",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-11T03:43:56.675Z",
     "gitlabIid": 161,
     "gitlabLabels": [
-      "BUG"
+      "BUG",
+      "已完成"
     ],
     "assignee": "webkubor"
   },
@@ -1211,7 +1214,8 @@
     "createdAt": "2026-06-11T03:31:52.708Z",
     "gitlabIid": 160,
     "gitlabLabels": [
-      "BUG"
+      "BUG",
+      "待验证"
     ],
     "assignee": "xionrenjie"
   },
@@ -1223,7 +1227,8 @@
     "createdAt": "2026-06-11T03:30:00.477Z",
     "gitlabIid": 159,
     "gitlabLabels": [
-      "BUG"
+      "BUG",
+      "待验证"
     ],
     "assignee": "duanlingxiao"
   },
@@ -1235,7 +1240,8 @@
     "createdAt": "2026-06-11T03:27:52.292Z",
     "gitlabIid": 158,
     "gitlabLabels": [
-      "BUG"
+      "BUG",
+      "待验证"
     ],
     "assignee": "duanlingxiao"
   },
@@ -1341,11 +1347,12 @@
     "id": "gl-146",
     "title": "可观测地址保存出错",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-10T08:30:41.039Z",
     "gitlabIid": 146,
     "gitlabLabels": [
-      "BUG"
+      "BUG",
+      "已完成"
     ],
     "assignee": "xionrenjie"
   },
@@ -1404,12 +1411,12 @@
     "id": "gl-140",
     "title": "安全护栏修改预算不生效",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-10T07:08:16.399Z",
     "gitlabIid": 140,
     "gitlabLabels": [
       "BUG",
-      "待验证"
+      "已完成"
     ],
     "assignee": "duanlingxiao"
   },
@@ -1442,18 +1449,18 @@
     "id": "gl-137",
     "title": "已经在组织内的用户无法拉到workspace",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-10T06:28:25.693Z",
     "gitlabIid": 137,
     "gitlabLabels": [
       "BUG",
-      "待验证"
+      "已完成"
     ],
     "assignee": "duanlingxiao"
   },
   {
     "id": "gl-136",
-    "title": "前台提交发票申请，后台看不到",
+    "title": "前台提交发票申请，admin后台看不到",
     "priority": "high",
     "status": "pending",
     "createdAt": "2026-06-10T06:23:51.105Z",
@@ -1516,11 +1523,12 @@
     "id": "gl-130",
     "title": "模型体验暂不可用",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-09T12:00:05.866Z",
     "gitlabIid": 130,
     "gitlabLabels": [
-      "BUG"
+      "BUG",
+      "已完成"
     ],
     "assignee": "xionrenjie"
   },
@@ -1574,12 +1582,12 @@
     "id": "gl-123",
     "title": "组织邀请链接跟推荐计划邀请链接相同，是个bug。",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-09T11:34:21.076Z",
     "gitlabIid": 123,
     "gitlabLabels": [
       "BUG",
-      "待验证"
+      "已完成"
     ]
   },
   {
@@ -1690,12 +1698,12 @@
     "id": "gl-113",
     "title": "API 文档上线",
     "priority": "medium",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-08T02:43:12.326Z",
     "gitlabIid": 113,
     "gitlabLabels": [
       "TASK",
-      "已认领"
+      "已完成"
     ],
     "assignee": "webkubor"
   },
@@ -2050,6 +2058,106 @@
     "createdAt": "2026-06-04T06:51:19.023Z",
     "gitlabIid": 85,
     "gitlabLabels": [
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-169",
+    "title": "【Bug】model-gateway：/v1/responses 转发未剥离客户端专有字段，导致 Ark 上游严格解析报 unknown field \"client_metadata\"",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-11T07:44:44.020Z",
+    "gitlabIid": 169,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-168",
+    "title": "[后端] /model-logs 接口补充游标分页字段（next_cursor / has_more），修复 #161 翻页不可用",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-11T06:34:09.805Z",
+    "gitlabIid": 168,
+    "gitlabLabels": [
+      "BUG",
+      "待验证"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-167",
+    "title": "可观测性数据不全，需要保证数据完整性",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-11T06:33:40.629Z",
+    "gitlabIid": 167,
+    "gitlabLabels": [
+      "BUG",
+      "待验证"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-166",
+    "title": "个人/组织之前切换不明显",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-11T06:24:40.521Z",
+    "gitlabIid": 166,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-165",
+    "title": "已经加入了一个组织，一个默认组织，应该还能再创建一个组织",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-11T06:15:13.374Z",
+    "gitlabIid": 165,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-164",
+    "title": "[护栏] 预算策略单条维护语义：首次手动创建、后续原地编辑同一条、支持删除",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-06-11T05:14:54.828Z",
+    "gitlabIid": 164,
+    "gitlabLabels": [
+      "Feature",
+      "待验证"
+    ]
+  },
+  {
+    "id": "gl-163",
+    "title": "点击按钮key没有复制，如图",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-11T04:08:29.402Z",
+    "gitlabIid": 163,
+    "gitlabLabels": [
+      "BUG",
+      "待验证"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-162",
+    "title": "[Console-Bug] 安全护栏 budget_policies 出现多条生效策略：清数据 + 强制单条不变量 + 接口/前端报错",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-11T04:01:35.152Z",
+    "gitlabIid": 162,
+    "gitlabLabels": [
+      "BUG",
       "已完成"
     ]
   }

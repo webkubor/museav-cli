@@ -45,7 +45,7 @@ export const modelExperienceCopy = {
     loading: '正在加载模型...',
     error: '模型列表加载失败，请稍后重试',
     copied: '模型 ID 已复制',
-    categories: { all: '全部', standard: '标准 ≤16K', high: '高输出 ≤64K', ultra: '超长 64K+' },
+    categories: { all: '全部', standard: '上下文 ≤32K', high: '上下文 ≤128K', ultra: '上下文 128K+' },
   },
   en: {
     warning: 'Your balance is low. Once the free trial quota is used, this model experience may stop.',
@@ -71,7 +71,7 @@ export const modelExperienceCopy = {
     loading: 'Loading models...',
     error: 'Failed to load models. Please try again later.',
     copied: 'Model ID copied',
-    categories: { all: 'All', standard: 'Standard ≤16K', high: 'High ≤64K', ultra: 'Ultra 64K+' },
+    categories: { all: 'All', standard: 'Context ≤32K', high: 'Context ≤128K', ultra: 'Context 128K+' },
   },
 } as const
 
@@ -87,14 +87,14 @@ export const initialMessages: ExperienceMessage[] = [
   },
 ]
 
-const OUTPUT_TIERS = { standard: 16_384, high: 65_536 } as const
+const CTX_TIERS = { standard: 32_768, high: 131_072 } as const
 
 export function matchesCategory(model: CatalogModelItem, category: CategoryKey) {
   if (category === 'all') return true
-  const tokens = model.max_output_tokens ?? 0
-  if (category === 'standard') return tokens > 0 && tokens <= OUTPUT_TIERS.standard
-  if (category === 'high') return tokens > OUTPUT_TIERS.standard && tokens <= OUTPUT_TIERS.high
-  if (category === 'ultra') return tokens > OUTPUT_TIERS.high
+  const ctx = model.context_length ?? 0
+  if (category === 'standard') return ctx <= CTX_TIERS.standard
+  if (category === 'high') return ctx > CTX_TIERS.standard && ctx <= CTX_TIERS.high
+  if (category === 'ultra') return ctx > CTX_TIERS.high
   return true
 }
 

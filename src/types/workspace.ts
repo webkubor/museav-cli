@@ -1,0 +1,239 @@
+import type { AccountBrief, Money, TenantBrief } from './account'
+
+// ─── Tenant ─────────────────────────────────────────
+
+export interface TenantItem {
+  tenant_id: string
+  name: string
+  slug: string
+  type: 'personal' | 'enterprise'
+  role: 'tenant_owner' | 'tenant_admin' | 'tenant_member'
+  is_default: boolean
+  max_workspaces: number
+  current_workspace_count: number
+  balance: Money | null
+  logo_url?: string | null
+}
+
+export interface TenantDetail {
+  tenant_id: string
+  name: string
+  slug: string
+  type: 'personal' | 'enterprise'
+  owner_account_id: string
+  max_workspaces: number
+  max_members: number
+  status: 'active' | 'suspended' | 'deleted'
+  created_at: string
+  settings: TenantSettings
+  logo_url?: string | null
+}
+
+export interface TenantSettings {
+  billing_email: string
+  invoice_company_name: string
+  invoice_tax_id: string
+}
+
+export interface TenantMember {
+  account: AccountBrief
+  role: 'tenant_owner' | 'tenant_admin' | 'tenant_member'
+  joined_at: string
+  workspace_count: number
+  api_key_count: number
+  spend_30d: Money
+  status: 'active'
+}
+
+export interface AddTenantMemberRequest {
+  emails: string[]
+  role: 'tenant_admin' | 'tenant_member'
+  target_workspace_id?: string
+  expires_in_hours?: number
+}
+
+export interface AddTenantMemberResult {
+  email: string
+  invitation_id: string | null
+  status: 'pending' | 'already_member'
+}
+
+export interface AddTenantMemberResponse {
+  items: AddTenantMemberResult[]
+}
+
+export interface UpdateTenantMemberRoleRequest {
+  role: 'tenant_admin' | 'tenant_member'
+}
+
+// ─── Workspace ──────────────────────────────────────
+
+export interface WorkspaceItem {
+  workspace_id: string
+  tenant_id: string
+  name: string
+  slug: string
+  kind: 'personal' | 'team'
+  is_default: boolean
+  description: string
+  owner: Pick<AccountBrief, 'account_id' | 'display_name'>
+  member_count: number
+  api_key_count: number
+  spend_7d: Money
+  created_at: string
+  my_role: 'ws_owner' | 'ws_admin' | 'ws_member'
+}
+
+export interface WorkspaceDetail {
+  workspace_id: string
+  tenant_id: string
+  name: string
+  slug: string
+  kind: 'personal' | 'team'
+  is_default: boolean
+  description: string
+  owner: AccountBrief
+  api_key_count: number
+  no_api_keys_yet: boolean
+  usage_7d: { spend: Money; requests: number; tokens: number }
+  status: 'active' | 'deleted'
+  created_at: string
+}
+
+export interface CreateWorkspaceRequest {
+  name: string
+  slug: string
+  description?: string
+  kind?: 'team'
+  invite_members?: Array<{ email: string; role: 'ws_member' | 'ws_admin' }>
+}
+
+export interface UpdateWorkspaceRequest {
+  name?: string
+  description?: string
+}
+
+export interface DeleteWorkspaceRequest {
+  confirm_name: string
+}
+
+export interface WorkspaceMember {
+  account: AccountBrief
+  role: 'ws_owner' | 'ws_admin' | 'ws_member'
+  joined_at: string
+  last_active_at: string
+}
+
+export interface AddWorkspaceMemberRequest {
+  account_id: string
+  role: 'ws_admin' | 'ws_member'
+}
+
+export interface UpdateWorkspaceMemberRoleRequest {
+  role: 'ws_admin' | 'ws_member'
+}
+
+// ─── Invitation ─────────────────────────────────────
+
+export interface InvitationItem {
+  invitation_id: string
+  email: string
+  role: 'ws_member' | 'ws_admin'
+  status: 'pending' | 'accepted' | 'expired' | 'revoked'
+  expires_at: string
+  invited_by: string
+}
+
+export interface CreateInvitationRequest {
+  invites: Array<{ email: string; role: 'ws_member' | 'ws_admin' }>
+  expires_in_hours?: number
+}
+
+export interface CreateInvitationResponse {
+  items: InvitationItem[]
+}
+
+export interface InvitationPreview {
+  invitation_id: string
+  tenant: TenantBrief
+  workspace: Omit<WorkspaceItem, 'spend_7d' | 'api_key_count' | 'member_count' | 'my_role'>
+  invited_by: AccountBrief
+  email?: string
+  role: 'ws_member' | 'ws_admin'
+  expires_at: string
+  workspaces?: Array<{ workspace_id: string; name: string }>
+}
+
+export interface AcceptInvitationResult {
+  workspace_id: string
+  tenant_id: string
+  role: 'ws_member' | 'ws_admin'
+}
+
+export interface TenantInviteLink {
+  token: string
+  created_at: string
+  created_by: string
+}
+
+export interface TenantInviteLinkPreview {
+  token: string
+  tenant: { tenant_id: string; name: string; slug: string }
+  workspaces: Array<{ workspace_id: string; name: string }>
+  created_by: { account_id: string; display_name: string }
+}
+
+export interface TenantInviteLinkAcceptResult {
+  tenant_id: string
+  workspace_id?: string
+}
+
+// ─── API Key ────────────────────────────────────────
+
+export interface SpendingLimit {
+  amount: string
+  currency: string
+  period: 'total' | 'monthly'
+}
+
+export interface ApiKeyItem {
+  api_key_id: string
+  name: string
+  prefix: string
+  masked: string
+  env: 'live' | 'test'
+  status: 'active' | 'revoked'
+  owner: Pick<AccountBrief, 'account_id' | 'display_name' | 'email'>
+  expires_at: string | null
+  last_used_at: string | null
+  total_spend: Money
+  limit: SpendingLimit
+  created_at: string
+  scope: 'personal' | 'workspace' | 'member'
+}
+
+export interface CreateApiKeyRequest {
+  name: string
+  expires_at?: string | null
+  spending_limit?: SpendingLimit
+  scope?: 'personal' | 'workspace' | 'member'
+  member_account_id?: string
+  guardrail_id?: string
+}
+
+export interface ApiKeyCreated {
+  api_key_id: string
+  name: string
+  key: string
+  prefix: string
+  masked: string
+  env: 'live' | 'test'
+  created_at: string
+  scope: 'personal' | 'workspace' | 'member'
+}
+
+export interface UpdateApiKeyRequest {
+  name?: string
+  expires_at?: string | null
+  spending_limit?: SpendingLimit
+}

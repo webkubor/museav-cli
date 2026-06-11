@@ -1,18 +1,24 @@
 /**
  * 用量分析（§十二）
  * 路由：/usage
- * API：GET /usage/summary、GET /usage/series
+ * API：GET /usage/summary、/usage/series、/usage/rankings/*
  */
 import { get } from '@/lib/request'
-import type { UsageSeriesParams, UsageSummaryParams } from '@/interfaces/usage'
-import type { UsageSeries, UsageSummary } from '@/types'
+import type { UsageSeriesParams, UsageSummaryParams, UsageRankingsParams } from '@/interfaces/usage'
+import type { UsageSeries, UsageSummary, UsageRankings } from '@/types'
 
-/** 获取用量汇总指标（三卡 + 可选分组） */
 export function getUsageSummary(params?: UsageSummaryParams) {
   return get<UsageSummary>('usage/summary', params)
 }
 
-/** 获取用量时间序列（图表数据） */
 export function getUsageSeries(params?: UsageSeriesParams) {
   return get<UsageSeries>('usage/series', params)
+}
+
+export function getUsageRankingsModels(params?: UsageRankingsParams) {
+  return get<UsageRankings>('usage/rankings/models', params)
+}
+
+export function getUsageRankingsApiKeys(params?: UsageRankingsParams) {
+  return get<UsageRankings>('usage/rankings/api-keys', params)
 }

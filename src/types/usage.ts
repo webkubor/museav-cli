@@ -1,0 +1,69 @@
+import type { Money } from './account'
+
+export interface UsageSummary {
+  total: {
+    spend: Money
+    requests: number
+    tokens: number
+    input_tokens: number
+    output_tokens: number
+    average_latency_ms: number
+    error_rate: number
+  }
+  period: { from: string; to: string }
+  daily: Array<{ date: string; requests: number; spend: Money }>
+  usage_series: UsageSeriesPoint[]
+  request_series: UsageSeriesPoint[]
+  groups?: Array<{
+    key: string
+    label: string
+    spend: Money
+    requests: number
+    tokens: number
+  }>
+}
+
+export interface SeriesDataPoint {
+  bucket_start: string
+  value: string
+}
+
+export interface UsageSeriesPoint {
+  bucket_start: string
+  spend: Money
+  requests: number
+  tokens: number
+}
+
+interface UsageSeriesGroup {
+  key: string
+  label: string
+  points: UsageSeriesPoint[]
+  total: { spend: Money; requests: number; tokens: number }
+}
+
+export interface UsageSeries {
+  metric: 'spend' | 'requests' | 'tokens'
+  granularity: 'day'
+  group_by: 'none' | 'model' | 'provider' | 'workspace'
+  groups: UsageSeriesGroup[]
+  period: { from: string; to: string }
+  totals: { spend: Money; requests: number; tokens: number }
+}
+
+export interface UsageRankingItem {
+  key?: string
+  name?: string
+  rank?: number
+  requests?: number
+  share_percent?: number
+  spend?: Money
+  tokens?: number
+}
+
+export interface UsageRankings {
+  items?: UsageRankingItem[]
+  limit?: number
+  period?: { from?: string; to?: string }
+  totals?: { requests?: number; spend?: Money; tokens?: number }
+}

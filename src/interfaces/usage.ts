@@ -26,3 +26,16 @@ export interface UsageSeriesParams extends QueryParams {
   provider_id?: string
   api_key_id?: string
 }
+
+/** 用量排行查询参数 */
+export interface UsageRankingsParams extends QueryParams {
+  from?: string
+  to?: string
+  /** Top N，默认 10，上限 100 */
+  limit?: number
+  workspace_id?: string
+  account_id?: string
+  model_id?: string
+  provider_id?: string
+  api_key_id?: string
+}

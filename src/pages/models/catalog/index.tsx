@@ -20,9 +20,9 @@ import { appToast } from '@/lib/app-toast'
 import { useCopy } from '@/hooks/use-copy'
 import { cn, formatContextLength, formatModelPrice } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
-import { getUsageRankingsModels } from '@/services/generated-api'
+import { getUsageRankingsModels } from '@/services/usage'
 import { useCurrency } from '@/hooks/use-platform-config'
-import type { UsageRankingItem } from '@/types/generated-api-types'
+import type { UsageRankingItem } from '@/types'
 import {
   modalityBadges,
   vendorNode,

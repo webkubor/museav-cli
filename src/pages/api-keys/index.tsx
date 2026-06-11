@@ -18,7 +18,7 @@ import {
   TableRow,
   TableCell
 } from '@/components/ui/Table'
-import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers, LuKey, LuChevronDown, LuZap, LuArrowRight, LuChevronRight, LuKeyRound, LuTriangleAlert, LuInfo } from 'react-icons/lu'
+import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers, LuKey, LuChevronDown, LuZap, LuArrowRight, LuChevronRight, LuKeyRound, LuTriangleAlert } from 'react-icons/lu'
 import OpenAI from '@lobehub/icons/es/OpenAI'
 import Anthropic from '@lobehub/icons/es/Anthropic'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -77,7 +77,7 @@ export default function ApiKeysPage() {
   const [createVisible, setCreateVisible] = useState(false)
   const [revealVisible, setRevealVisible] = useState(false)
   const [createdKeyText, setCreatedKeyText] = useState('')
-  const [verifyState, setVerifyState] = useState<'idle' | 'mismatch' | 'no-copy'>('idle')
+
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null)
   const [quickOpen, setQuickOpen] = useState(false)
   const [quickCopied, setQuickCopied] = useState<string | null>(null)
@@ -242,25 +242,8 @@ export default function ApiKeysPage() {
   }, [copyText, createdKeyText, navigate])
 
   const handleConfirmSaved = useCallback(async () => {
-    if (!copied) {
-      await copyText(createdKeyText)
-      setVerifyState('no-copy')
-      return
-    }
-    try {
-      const clipText = await navigator.clipboard.readText()
-      if (clipText.trim() === createdKeyText.trim()) {
-        setRevealVisible(false)
-        setVerifyState('idle')
-      } else {
-        await copyText(createdKeyText)
-        setVerifyState('mismatch')
-      }
-    } catch {
-      // 无剪贴板读权限，已复制过则直接关闭
-      setRevealVisible(false)
-      setVerifyState('idle')
-    }
+    await copyText(createdKeyText)
+    setRevealVisible(false)
   }, [copied, copyText, createdKeyText])
 
   async function handleQuickCopy(key: string, text: string) {
@@ -392,7 +375,7 @@ export default function ApiKeysPage() {
               </div>
             </div>
             <button
-              onClick={() => { setRevealVisible(false); setVerifyState('idle') }}
+              onClick={() => setRevealVisible(false)}
               className="text-mg-text-3 hover:text-mg-text-1 p-1.5 rounded-lg hover:bg-mg-fill-1 transition-colors cursor-pointer shrink-0"
             >
               <LuX className="w-4 h-4" />
@@ -401,10 +384,7 @@ export default function ApiKeysPage() {
 
           {/* 密钥区 */}
           <div className="px-5 pb-4">
-            <div className={[
-              'flex items-center gap-2 bg-mg-code-bg border rounded-lg px-4 py-3 font-mono text-sm font-bold select-all tracking-wider transition-colors',
-              verifyState === 'mismatch' ? 'border-mg-danger/60 ring-1 ring-mg-danger/30' : 'border-mg-border',
-            ].join(' ')}>
+            <div className="flex items-center gap-2 bg-mg-code-bg border border-mg-border rounded-lg px-4 py-3 font-mono text-sm font-bold select-all tracking-wider">
               <span className="flex-1 truncate text-mg-success">{createdKeyText}</span>
               <button
                 onClick={() => handleCopyText(createdKeyText)}
@@ -419,23 +399,6 @@ export default function ApiKeysPage() {
                 {copied ? '已复制' : '复制'}
               </button>
             </div>
-
-            {/* 验证状态提示 */}
-            {verifyState === 'mismatch' && (
-              <div className="mt-2.5 flex items-start gap-2 rounded-lg bg-mg-danger/10 border border-mg-danger/25 px-3.5 py-2.5">
-                <LuInfo size={14} className="text-mg-danger shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-bold text-mg-danger">粘贴内容与密钥不符</p>
-                  <p className="text-xs text-mg-danger/80 mt-0.5">已重新复制到剪贴板，请粘贴确认内容一致后再点击完成</p>
-                </div>
-              </div>
-            )}
-            {verifyState === 'no-copy' && (
-              <div className="mt-2.5 flex items-start gap-2 rounded-lg bg-mg-warning/10 border border-mg-warning/25 px-3.5 py-2.5">
-                <LuTriangleAlert size={14} className="text-mg-warning shrink-0 mt-0.5" />
-                <p className="text-xs font-semibold text-mg-warning">请先点击上方「复制」按钮复制密钥，再确认保存</p>
-              </div>
-            )}
           </div>
 
           {/* 底部操作栏 */}

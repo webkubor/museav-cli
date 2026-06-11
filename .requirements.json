@@ -2140,12 +2140,12 @@
     "id": "gl-163",
     "title": "点击按钮key没有复制，如图",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-11T04:08:29.402Z",
     "gitlabIid": 163,
     "gitlabLabels": [
       "BUG",
-      "待验证"
+      "已完成"
     ],
     "assignee": "webkubor"
   },

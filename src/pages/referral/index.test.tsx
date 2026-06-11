@@ -38,6 +38,15 @@ vi.mock('@/lib/app-toast', () => ({
   appToast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }))
 
+vi.mock('@/hooks/use-permissions', () => ({
+  usePermissions: () => ({
+    hasPermission: () => true,
+    permissions: [],
+    menus: [],
+    getMenuActions: () => ({}),
+  }),
+}))
+
 import { useAuthStore } from '@/store/auth'
 import ReferralPage from '@/pages/referral/index'
 
@@ -91,7 +100,6 @@ beforeEach(() => {
   transferRewardToBalance.mockReset()
   requestWithdrawal.mockClear()
 
-  // active org is the NON-default org — the page must still scope to the default.
   useAuthStore.setState({
     activeTenantId: ORG_TENANT_ID,
     tenants: [tenant(DEFAULT_TENANT_ID, true), tenant(ORG_TENANT_ID, false)],
@@ -108,27 +116,27 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-// ── (a) default-tenant scoping — qa/ai-quality-platform#96 ───────────────────
+// ── (a) active-tenant scoping — qa/ai-quality-platform#157 ───────────────────
 
-describe('ReferralPage — default-tenant scoping (#96)', () => {
-  it('queries the DEFAULT tenant, not the active org, for the referral overview', async () => {
-    renderPage()
-    await waitFor(() => expect(getReferralOverview).toHaveBeenCalled())
-    expect(getReferralOverview).toHaveBeenCalledWith(DEFAULT_TENANT_ID)
-    expect(getReferralOverview).not.toHaveBeenCalledWith(ORG_TENANT_ID)
-    // invitees + withdrawals queries are scoped identically
-    expect(listReferralInvitees).toHaveBeenCalledWith(DEFAULT_TENANT_ID)
-    expect(listWithdrawals).toHaveBeenCalledWith(DEFAULT_TENANT_ID)
-  })
-
-  it('falls back to the active tenant when no default tenant exists', async () => {
-    useAuthStore.setState({
-      activeTenantId: ORG_TENANT_ID,
-      tenants: [tenant(ORG_TENANT_ID, false)],
-    })
+describe('ReferralPage — active-tenant scoping (#157)', () => {
+  it('queries the active tenant for the referral overview', async () => {
     renderPage()
     await waitFor(() => expect(getReferralOverview).toHaveBeenCalled())
     expect(getReferralOverview).toHaveBeenCalledWith(ORG_TENANT_ID)
+    expect(getReferralOverview).not.toHaveBeenCalledWith(DEFAULT_TENANT_ID)
+    // invitees + withdrawals queries are scoped identically
+    expect(listReferralInvitees).toHaveBeenCalledWith(ORG_TENANT_ID)
+    expect(listWithdrawals).toHaveBeenCalledWith(ORG_TENANT_ID)
+  })
+
+  it('falls back to the default tenant when no active tenant exists', async () => {
+    useAuthStore.setState({
+      activeTenantId: null,
+      tenants: [tenant(DEFAULT_TENANT_ID, true)],
+    })
+    renderPage()
+    await waitFor(() => expect(getReferralOverview).toHaveBeenCalled())
+    expect(getReferralOverview).toHaveBeenCalledWith(DEFAULT_TENANT_ID)
   })
 })
 
@@ -198,7 +206,7 @@ describe('ReferralPage — transfer idempotency key lifecycle', () => {
     fireEvent.click(confirm)
     await waitFor(() => expect(transferRewardToBalance).toHaveBeenCalledTimes(1))
     const [tenantId, body] = transferRewardToBalance.mock.calls[0]
-    expect(tenantId).toBe(DEFAULT_TENANT_ID)
+    expect(tenantId).toBe(ORG_TENANT_ID)
     expect(body.amount).toBe('1420') // prefilled to full reward balance
     expect(body.idempotency_key).not.toBe('')
   })
@@ -217,13 +225,13 @@ describe('ReferralPage — transfer success side effects', () => {
 
     await waitFor(() => expect(transferRewardToBalance).toHaveBeenCalledTimes(1))
 
-    // overview + balance views invalidated, scoped to the default tenant
+    // overview + balance views invalidated, scoped to the active tenant
     await waitFor(() =>
       expect(invalidateSpy).toHaveBeenCalledWith({
-        queryKey: ['referral', 'overview', DEFAULT_TENANT_ID],
+        queryKey: ['referral', 'overview', ORG_TENANT_ID],
       })
     )
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['balance', DEFAULT_TENANT_ID] })
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['balance', ORG_TENANT_ID] })
 
     // modal closes
     await waitFor(() =>
@@ -240,8 +248,9 @@ describe('ReferralPage — render', () => {
     expect(await screen.findByText('推荐计划')).toBeInTheDocument()
     // reward balance KPI shows the formatted ¥ amount
     expect(await screen.findByText('¥1,420')).toBeInTheDocument()
-    // invite code from the response
-    expect(screen.getByDisplayValue('https://console.modelgo.com/signup?aff=MG-TEST')).toBeInTheDocument()
+    // invite link is tenant-scoped via inviteCode and uses the current frontend origin.
+    const expectedLink = `${window.location.origin}/signup?aff=MG-TEST`
+    expect(screen.getAllByText(expectedLink).length).toBeGreaterThan(0)
   })
 
   it('shows the empty state in the invitees table when there are no invitees', async () => {

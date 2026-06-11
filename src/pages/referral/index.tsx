@@ -56,10 +56,9 @@ export default function ReferralPage() {
   const { i18n } = useTranslation()
   const text = i18n.language.startsWith('zh') ? referralCopy.zh : referralCopy.en
 
-  // 推荐计划绑定用户「默认（个人）租户」：佣金只入默认租户的奖励余额
-  // （qa/ai-quality-platform#96 评审决策），与当前切换的组织无关。
+  // 推荐计划按当前租户隔离：从哪个租户发出邀请，返佣就进入哪个租户的奖励余额。
   const tenantId = useAuthStore(
-    (s) => s.tenants.find((t) => t.is_default)?.tenant_id ?? s.activeTenantId ?? ''
+    (s) => s.activeTenantId ?? s.tenants.find((t) => t.is_default)?.tenant_id ?? ''
   )
   const queryClient = useQueryClient()
   const { hasPermission } = usePermissions()

@@ -12,7 +12,7 @@ import {
   LuRefreshCw,
 } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
-import { useBalanceBreakdown } from '@/hooks/use-balance'
+import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
 import { streamExperienceChat } from '@/services/experience'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -54,6 +54,12 @@ export default function ModelsPage() {
   // 与后端多桶账本的真实扣费顺序一致（grant→cash，#97/#93）。
   const { data: breakdown } = useBalanceBreakdown(tenantId)
   const giftBalance = Number(breakdown?.gift.amount ?? 0)
+  // 充值提示不再常驻写死：免费额度耗尽，或主余额低于预警阈值（与总览 low_balance_threshold 一致）时才显示
+  const { data: mainBalance } = useBalance(tenantId)
+  const availableAmount = Number(mainBalance?.available?.amount ?? NaN)
+  const thresholdAmount = Number(mainBalance?.low_balance_threshold?.amount ?? NaN)
+  const isLowBalance = Number.isFinite(availableAmount) && Number.isFinite(thresholdAmount) && availableAmount <= thresholdAmount
+  const showRechargeWarning = giftBalance <= 0 || isLowBalance
   const [category, setCategory] = useState<CategoryKey>('all')
   const [isCompareOpen, setIsCompareOpen] = useState(false)
   const [input, setInput] = useState('')
@@ -154,11 +160,13 @@ export default function ModelsPage() {
 
   return (
     <div className="models-experience-page">
-      <div className="models-experience-warning">
-        <LuTriangleAlert size={15} />
-        <span>{text.warning}</span>
-        <button type="button" onClick={() => navigate('/billing')}>{text.recharge}</button>
-      </div>
+      {showRechargeWarning && (
+        <div className="models-experience-warning">
+          <LuTriangleAlert size={15} />
+          <span>{text.warning}</span>
+          <button type="button" onClick={() => navigate('/billing')}>{text.recharge}</button>
+        </div>
+      )}
 
       <div className="models-experience-header">
         <div>

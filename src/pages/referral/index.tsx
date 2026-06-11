@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LuCoins, LuTrendingUp, LuUsers, LuWallet, LuSparkles } from 'react-icons/lu'
+import { LuCalendarDays, LuCoins, LuTrendingUp, LuUsers, LuWallet, LuSparkles } from 'react-icons/lu'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -25,6 +25,7 @@ import { PERMS } from '@/config/permissions'
 import {
   getReferralOverview,
   listReferralInvitees,
+  listRewardRecords,
   listWithdrawals,
   transferRewardToBalance,
   requestWithdrawal,
@@ -32,6 +33,7 @@ import {
 
 import {
   referralCopy,
+  type ReferralCommissionRecord,
   type ReferralInvitee,
   type ReferralStats,
   type ReferralTier,
@@ -42,7 +44,7 @@ import {
 // 金额字段为字符串（后端约定），统一在此解析为数字再格式化
 const fmt = (n: number | string) => '¥' + Number(n).toLocaleString('zh-CN')
 
-type TabKey = 'invitees' | 'withdrawals'
+type TabKey = 'invitees' | 'commissions' | 'withdrawals'
 
 const WITHDRAWAL_STATUS_VARIANT: Record<WithdrawalStatus, 'warning' | 'success' | 'outline'> = {
   pending: 'warning',
@@ -76,6 +78,12 @@ export default function ReferralPage() {
     enabled: !!tenantId,
     staleTime: 60_000,
   })
+  const { data: rewardRecords = [] } = useQuery({
+    queryKey: ['referral', 'reward-records', tenantId],
+    queryFn: () => listRewardRecords(tenantId),
+    enabled: !!tenantId,
+    staleTime: 60_000,
+  })
   const { data: withdrawalList = [] } = useQuery({
     queryKey: ['referral', 'withdrawals', tenantId],
     queryFn: () => listWithdrawals(tenantId),
@@ -86,6 +94,7 @@ export default function ReferralPage() {
   const emptyStats: ReferralStats = {
     totalCommission: '0',
     monthCommission: '0',
+    todayCommission: '0',
     activeInvited: 0,
     invitedTotal: 0,
     rewardBalance: '0',
@@ -257,6 +266,7 @@ export default function ReferralPage() {
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: 'invitees', label: text.tabInvitees },
+    { key: 'commissions', label: text.tabCommissions },
     { key: 'withdrawals', label: text.tabWithdrawals },
   ]
 
@@ -276,7 +286,7 @@ export default function ReferralPage() {
       </div>
 
       {/* KPI 行 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5">
         <KpiCard
           title={text.kpiTotalCommission}
           value={fmt(stats.totalCommission)}
@@ -288,6 +298,13 @@ export default function ReferralPage() {
           title={text.kpiMonthCommission}
           value={fmt(stats.monthCommission)}
           icon={<LuTrendingUp size={16} />}
+          color="var(--brand-base)"
+          glowColor="var(--brand-glow)"
+        />
+        <KpiCard
+          title={text.kpiTodayCommission}
+          value={fmt(stats.todayCommission)}
+          icon={<LuCalendarDays size={16} />}
           color="var(--brand-base)"
           glowColor="var(--brand-glow)"
         />
@@ -457,6 +474,9 @@ export default function ReferralPage() {
           <TabsContent value="invitees" className="mt-0">
             <InviteesTable invitees={invitees} text={text} />
           </TabsContent>
+          <TabsContent value="commissions" className="mt-0">
+            <CommissionsTable records={rewardRecords} text={text} />
+          </TabsContent>
           <TabsContent value="withdrawals" className="mt-0">
             <WithdrawalsTable withdrawals={withdrawalList} text={text} />
           </TabsContent>
@@ -594,6 +614,55 @@ function InviteesTable({ invitees, text }: { invitees: ReferralInvitee[]; text: 
               <TableCell>{inv.registeredAt}</TableCell>
               <TableCell className="text-right font-mono">{fmt(inv.totalSpend)}</TableCell>
               <TableCell className="text-right font-mono">{fmt(inv.commission)}</TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  )
+}
+
+function CommissionsTable({
+  records,
+  text,
+}: {
+  records: ReferralCommissionRecord[]
+  text: TextCopy
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>{text.colDate}</TableHead>
+          <TableHead>{text.colInvitee}</TableHead>
+          <TableHead>{text.colTier}</TableHead>
+          <TableHead className="text-right">{text.colSpend}</TableHead>
+          <TableHead className="text-right">{text.colRate}</TableHead>
+          <TableHead className="text-right">{text.colAmount}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {records.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={6} className="text-center text-mg-text-2 py-8">
+              {text.empty}
+            </TableCell>
+          </TableRow>
+        ) : (
+          records.map((rec, index) => (
+            <TableRow key={`${rec.date}-${rec.source}-${index}`}>
+              <TableCell className="font-mono text-xs">{rec.date}</TableCell>
+              <TableCell>{rec.source}</TableCell>
+              <TableCell>
+                {rec.tierName ? (
+                  <Badge variant="purple" size="sm">{rec.tierName}</Badge>
+                ) : (
+                  <span className="text-mg-text-3">{text.notYet}</span>
+                )}
+              </TableCell>
+              <TableCell className="text-right font-mono">{fmt(rec.spend)}</TableCell>
+              <TableCell className="text-right font-mono">{rec.rate}%</TableCell>
+              <TableCell className="text-right font-mono">{fmt(rec.amount)}</TableCell>
             </TableRow>
           ))
         )}

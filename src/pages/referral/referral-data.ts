@@ -10,6 +10,8 @@ export interface ReferralStats {
   totalCommission: string
   /** 本月返佣 */
   monthCommission: string
+  /** 今日返佣 */
+  todayCommission: string
   /** 活跃被邀请人数 */
   activeInvited: number
   /** 已邀请总数 */
@@ -76,6 +78,7 @@ export const referralCopy = {
     desc: '邀请企业/团队加入 ModelGo，按其实际消费持续返佣（消费分润），返佣比例随业绩阶梯提升。',
     kpiTotalCommission: '累计返佣',
     kpiMonthCommission: '本月返佣',
+    kpiTodayCommission: '今日返佣',
     kpiActive: '已邀请',
     kpiRewardBalance: '奖励余额（可转入主余额）',
     transferToBalance: '转入主余额',
@@ -139,6 +142,7 @@ export const referralCopy = {
     desc: 'Invite teams to ModelGo and earn ongoing commission on their actual spend; rates rise with performance tiers.',
     kpiTotalCommission: 'Total Commission',
     kpiMonthCommission: 'This Month',
+    kpiTodayCommission: 'Today',
     kpiActive: 'Invited',
     kpiRewardBalance: 'Reward Balance (transferable)',
     transferToBalance: 'To Main Balance',

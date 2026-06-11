@@ -10,6 +10,7 @@ import type { ReferralOverview } from '@/services/referral'
 // ── service mock: the page is a read+mutate view over @/services/referral ────
 const getReferralOverview = vi.fn<(tenantId: string) => Promise<ReferralOverview>>()
 const listReferralInvitees = vi.fn().mockResolvedValue([])
+const listRewardRecords = vi.fn().mockResolvedValue([])
 const listWithdrawals = vi.fn().mockResolvedValue([])
 const transferRewardToBalance =
   vi.fn<(tenantId: string, body: { amount: string; idempotency_key: string }) => Promise<unknown>>()
@@ -18,6 +19,7 @@ const requestWithdrawal = vi.fn().mockResolvedValue({})
 vi.mock('@/services/referral', () => ({
   getReferralOverview: (tenantId: string) => getReferralOverview(tenantId),
   listReferralInvitees: (tenantId: string) => listReferralInvitees(tenantId),
+  listRewardRecords: (tenantId: string) => listRewardRecords(tenantId),
   listWithdrawals: (tenantId: string) => listWithdrawals(tenantId),
   transferRewardToBalance: (tenantId: string, body: { amount: string; idempotency_key: string }) =>
     transferRewardToBalance(tenantId, body),
@@ -50,6 +52,7 @@ const OVERVIEW: ReferralOverview = {
   stats: {
     totalCommission: '5900',
     monthCommission: '980',
+    todayCommission: '80',
     activeInvited: 3,
     invitedTotal: 5,
     rewardBalance: '1420', // ≥ MIN_AMOUNT (100) so transfer/withdraw are enabled
@@ -83,6 +86,7 @@ function renderPage() {
 beforeEach(() => {
   getReferralOverview.mockReset().mockResolvedValue(OVERVIEW)
   listReferralInvitees.mockClear()
+  listRewardRecords.mockClear()
   listWithdrawals.mockClear()
   transferRewardToBalance.mockReset()
   requestWithdrawal.mockClear()

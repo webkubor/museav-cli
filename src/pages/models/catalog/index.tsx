@@ -43,6 +43,7 @@ interface ModelMeta {
   }
 }
 
+
 const MODEL_META_MAP: Record<string, ModelMeta> = {
   'qwen/qwen3.7-max': {
     descriptionZh: '适合中文长上下文，复杂推理与企业知识库检索。',
@@ -173,8 +174,7 @@ export default function ModelsCatalogPage() {
   } = useModels()
 
   const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
-
-  const visibleModels = useMemo(() => {
+const visibleModels = useMemo(() => {
     if (category === 'all') return filteredModels
     return filteredModels.filter((model) =>
       model.tags?.some((t) => t.toLowerCase() === category.toLowerCase()) ||

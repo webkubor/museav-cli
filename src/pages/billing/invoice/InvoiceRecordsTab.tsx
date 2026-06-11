@@ -37,6 +37,7 @@ export function InvoiceRecordsTab({
   const [records, setRecords] = useState<InvoiceRecord[]>([])
   const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     let alive = true
@@ -57,7 +58,7 @@ export function InvoiceRecordsTab({
     return () => {
       alive = false
     }
-  }, [tenantId, status, keyword])
+  }, [tenantId, status, keyword, refreshKey])
 
   const loadMore = () => {
     listInvoiceRecords(tenantId, { status: status === 'all' ? undefined : status, keyword: keyword || undefined, cursor: 'next' })
@@ -70,7 +71,10 @@ export function InvoiceRecordsTab({
 
   const retry = useMutation({
     mutationFn: (invoiceNo: string) => retryInvoice(tenantId, invoiceNo),
-    onSuccess: () => appToast.success('已重新提交开票'),
+    onSuccess: () => {
+      appToast.success('已重新提交开票')
+      setRefreshKey((k) => k + 1)
+    },
     onError: () => appToast.error('重试失败，请稍后再试'),
   })
 

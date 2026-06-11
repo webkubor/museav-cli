@@ -46,6 +46,9 @@ const fmt = (n: number | string) => '¥' + Number(n).toLocaleString('zh-CN')
 
 type TabKey = 'invitees' | 'commissions' | 'withdrawals'
 
+// 1.0 暂不开放提现：隐藏所有提现入口/记录/文案，功能代码保留，置 true 即可恢复
+const WITHDRAW_ENABLED = false
+
 const WITHDRAWAL_STATUS_VARIANT: Record<WithdrawalStatus, 'warning' | 'success' | 'outline'> = {
   pending: 'warning',
   approved: 'success',
@@ -266,7 +269,7 @@ export default function ReferralPage() {
   const tabs: { key: TabKey; label: string }[] = [
     { key: 'invitees', label: text.tabInvitees },
     { key: 'commissions', label: text.tabCommissions },
-    { key: 'withdrawals', label: text.tabWithdrawals },
+    ...(WITHDRAW_ENABLED ? [{ key: 'withdrawals' as TabKey, label: text.tabWithdrawals }] : []),
   ]
 
   const isZh = i18n.language.startsWith('zh')
@@ -340,7 +343,7 @@ export default function ReferralPage() {
                 {text.transferToBalance}
               </Button>
             )}
-            {canWithdraw && (
+            {canWithdraw && WITHDRAW_ENABLED && (
               <Button variant="outline" size="sm" onClick={handleWithdraw}>
                 {text.requestWithdrawal}
               </Button>
@@ -412,7 +415,7 @@ export default function ReferralPage() {
             <div className="flex gap-2.5 items-start">
               <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-[10px] font-bold shrink-0">02</span>
               <div>
-                奖励余额<span className="text-[var(--brand-base)] font-bold">满 ¥100</span> 可<span className="text-[var(--brand-base)] font-bold">转入主余额</span>继续消费，或申请提现（运营审核后人工线下打款）。
+                奖励余额<span className="text-[var(--brand-base)] font-bold">满 ¥100</span> 可<span className="text-[var(--brand-base)] font-bold">转入主余额</span>继续消费。
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
@@ -439,7 +442,7 @@ export default function ReferralPage() {
             <div className="flex gap-2.5 items-start">
               <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-[10px] font-bold shrink-0">02</span>
               <div>
-                Reward balance <span className="text-[var(--brand-base)] font-bold">reaches ¥100</span> can be <span className="text-[var(--brand-base)] font-bold">transferred to main balance</span> or withdrawn.
+                Reward balance <span className="text-[var(--brand-base)] font-bold">reaches ¥100</span> can be <span className="text-[var(--brand-base)] font-bold">transferred to main balance</span>.
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
@@ -476,9 +479,11 @@ export default function ReferralPage() {
           <TabsContent value="commissions" className="mt-0">
             <CommissionsTable records={rewardRecords} text={text} />
           </TabsContent>
-          <TabsContent value="withdrawals" className="mt-0">
-            <WithdrawalsTable withdrawals={withdrawalList} text={text} />
-          </TabsContent>
+          {WITHDRAW_ENABLED && (
+            <TabsContent value="withdrawals" className="mt-0">
+              <WithdrawalsTable withdrawals={withdrawalList} text={text} />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 

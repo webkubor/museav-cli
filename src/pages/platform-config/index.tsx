@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { useAuthStore } from '@/store/auth'
@@ -32,9 +33,17 @@ const PUBLIC_ROUTES = [
   { path: '/device', desc: 'CLI 设备码授权' },
 ] as const
 
+// 开发者菜单 tab，挂到 URL ?tab= 上以便直接定位某个 tab
+const DEV_CONFIG_TABS = ['endpoints', 'routes-menus', 'url-params', 'headers', 'requirements']
+const DEFAULT_TAB = 'endpoints'
+
 export default function PlatformConfigPage() {
   const { t } = useTranslation()
   const { copy } = useCopy()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab') ?? ''
+  const activeTab = DEV_CONFIG_TABS.includes(tabParam) ? tabParam : DEFAULT_TAB
+  const handleTabChange = (v: string) => setSearchParams({ tab: v }, { replace: true })
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
 
@@ -139,7 +148,7 @@ export default function PlatformConfigPage() {
         </Badge>
       </div>
 
-      <Tabs defaultValue="endpoints">
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="endpoints">接口 / Swagger</TabsTrigger>
           <TabsTrigger value="routes-menus">路由 / 菜单</TabsTrigger>

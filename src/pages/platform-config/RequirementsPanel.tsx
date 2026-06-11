@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 
 type RequirementStatus = 'pending' | 'done'
 type RequirementPriority = 'high' | 'medium' | 'low'
+type RequirementFilter = 'pending' | 'all' | 'done'
 
 interface Requirement {
   id: string
@@ -39,6 +40,10 @@ function statusText(item: Requirement): string {
   const statusLabel = item.gitlabLabels?.find((label) => STATUS_LABELS.includes(label))
   if (statusLabel) return statusLabel
   return item.status === 'done' ? '已完成' : '待处理'
+}
+
+function isRequirementDone(item: Requirement): boolean {
+  return item.status === 'done' || statusText(item) === '已完成'
 }
 
 function statusVariant(item: Requirement): 'success' | 'warning' | 'secondary' | 'info' {
@@ -101,6 +106,7 @@ export function RequirementsPanel() {
   const [activeAction, setActiveAction] = useState<string | null>(null)
   const [comments, setComments] = useState<Record<string, string>>({})
   const [assigneeIds, setAssigneeIds] = useState<Record<string, string>>({})
+  const [issueFilter, setIssueFilter] = useState<RequirementFilter>('pending')
   const [error, setError] = useState<string | null>(null)
 
   const load = async () => {
@@ -165,8 +171,13 @@ export function RequirementsPanel() {
       .sort((a, b) => Number(b.gitlabIid ?? 0) - Number(a.gitlabIid ?? 0))
   }, [items])
 
-  const pendingCount = myBugs.filter((item) => item.status !== 'done').length
+  const pendingCount = myBugs.filter((item) => !isRequirementDone(item)).length
   const doneCount = myBugs.length - pendingCount
+  const visibleBugs = useMemo(() => {
+    if (issueFilter === 'all') return myBugs
+    if (issueFilter === 'done') return myBugs.filter(isRequirementDone)
+    return myBugs.filter((item) => !isRequirementDone(item))
+  }, [issueFilter, myBugs])
 
   const updateLocalItem = (updated: Requirement) => {
     setItems((current) => current.map((item) => item.id === updated.id ? { ...item, ...updated } : item))
@@ -231,6 +242,12 @@ export function RequirementsPanel() {
     }
   }
 
+  const filterOptions: Array<{ value: RequirementFilter; label: string; count: number }> = [
+    { value: 'pending', label: '待处理', count: pendingCount },
+    { value: 'all', label: '全部', count: myBugs.length },
+    { value: 'done', label: '已完成', count: doneCount },
+  ]
+
   return (
     <div className="space-y-4 pt-2">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-mg-border bg-card-bg px-4 py-3">
@@ -244,8 +261,21 @@ export function RequirementsPanel() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="warning" size="sm">待处理 {pendingCount}</Badge>
-          <Badge variant="success" size="sm">已完成 {doneCount}</Badge>
+          <div className="flex rounded-lg border border-mg-border bg-mg-fill-0 p-0.5">
+            {filterOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setIssueFilter(option.value)}
+                className={cn(
+                  'h-7 rounded-md px-2.5 text-xs font-bold text-mg-text-2 transition-colors hover:text-mg-text-0',
+                  issueFilter === option.value && 'bg-card-bg text-brand-base shadow-sm'
+                )}
+              >
+                {option.label} {option.count}
+              </button>
+            ))}
+          </div>
           <Button size="sm" variant="outline" onClick={sync} loading={isSyncing} icon={<LuRefreshCw className="h-3.5 w-3.5" />}>
             同步 GitLab
           </Button>
@@ -266,6 +296,10 @@ export function RequirementsPanel() {
         <div className="rounded-xl border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-2">
           暂无指派给你的 BUG。点击同步 GitLab 后再查看。
         </div>
+      ) : visibleBugs.length === 0 ? (
+        <div className="rounded-xl border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-2">
+          当前筛选下没有问题。
+        </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-mg-border bg-card-bg">
           <div className="grid grid-cols-[84px_1fr_92px_86px] gap-3 border-b border-mg-border bg-mg-fill-0 px-4 py-2.5 text-[11px] font-bold text-mg-text-2">
@@ -275,14 +309,14 @@ export function RequirementsPanel() {
             <span>优先级</span>
           </div>
           <div className="divide-y divide-mg-border">
-            {myBugs.map((item) => {
+            {visibleBugs.map((item) => {
               const currentAssignee = users.find((user) => user.username === item.assignee)
               const selectedAssignee = assigneeIds[item.id] ?? (currentAssignee ? String(currentAssignee.id) : '')
 
               return (
                 <div
                   key={item.id}
-                  className={cn('px-4 py-3 text-sm transition-colors hover:bg-mg-fill-0/70', item.status === 'done' && 'opacity-70')}
+                  className={cn('px-4 py-3 text-sm transition-colors hover:bg-mg-fill-0/70', isRequirementDone(item) && 'opacity-70')}
                 >
                   <div className="grid grid-cols-[84px_1fr_92px_86px] items-center gap-3">
                     <a
@@ -309,7 +343,7 @@ export function RequirementsPanel() {
                     <Button
                       size="xs"
                       variant="secondary"
-                      disabled={item.status === 'done'}
+                      disabled={isRequirementDone(item)}
                       loading={activeAction === `finish:${item.id}`}
                       icon={<LuCheck className="h-3.5 w-3.5" />}
                       onClick={() => finish(item)}

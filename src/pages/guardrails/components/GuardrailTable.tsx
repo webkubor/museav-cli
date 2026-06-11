@@ -9,12 +9,12 @@ import { LuSettings } from 'react-icons/lu'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
 import { formatDateTime } from '@/lib/format-date'
 
-export function guardrailMetadataList(row: GuardrailDetail, key: 'model_blacklist' | 'ip_whitelist') {
+function guardrailMetadataList(row: GuardrailDetail, key: 'model_blacklist' | 'ip_whitelist') {
   const value = row.metadata?.[key]
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0) : []
 }
 
-export function boundApiKeyCount(row: GuardrailDetail) {
+function boundApiKeyCount(row: GuardrailDetail) {
   return row.assignments.filter((item) => item.subject_type === 'api_key' && item.api_key_id).length
 }
 
@@ -144,7 +144,14 @@ export function GuardrailTable({
                         </Button>
                       )}
                       {canDelete && (
-                        <Button size="sm" variant="destructive" onClick={() => onDelete({ id: row.id, name: row.name })} className="h-7 text-xs">
+                        <Button
+                          size="sm"
+                          variant={row.is_default ? 'secondary' : 'destructive'}
+                          disabled={row.is_default}
+                          title={row.is_default ? '默认护栏不可删除' : undefined}
+                          onClick={() => { if (!row.is_default) onDelete({ id: row.id, name: row.name }) }}
+                          className="h-7 text-xs"
+                        >
                           {t('guardrails.table.delete')}
                         </Button>
                       )}

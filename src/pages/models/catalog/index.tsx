@@ -43,6 +43,12 @@ interface ModelMeta {
   }
 }
 
+const MODALITY_FILTERS = [
+  { code: 'text', nameZh: '文本生成', nameEn: 'Text' },
+  { code: 'image', nameZh: '图像生成', nameEn: 'Image' },
+  { code: 'audio', nameZh: '音频生成', nameEn: 'Audio' },
+  { code: 'video', nameZh: '视频生成', nameEn: 'Video' },
+] as const
 
 const MODEL_META_MAP: Record<string, ModelMeta> = {
   'qwen/qwen3.7-max': {
@@ -137,7 +143,7 @@ export default function ModelsCatalogPage() {
     queryFn: () => listModelTags(true),
     staleTime: 5 * 60_000,
   })
-  const apiTags = tagsQuery.data?.items ?? []
+  const apiTags = useMemo(() => tagsQuery.data?.items ?? [], [tagsQuery.data?.items])
   const [isCompareOpen, setIsCompareOpen] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -174,7 +180,15 @@ export default function ModelsCatalogPage() {
   } = useModels()
 
   const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
-const visibleModels = useMemo(() => {
+  const modalityFilters = useMemo(() => {
+    const existingTagCodes = new Set(apiTags.map((tag) => tag.code.toLowerCase()))
+    const existingModalities = new Set(allModels.flatMap((model) => model.modalities ?? []))
+    return MODALITY_FILTERS.filter((item) =>
+      existingModalities.has(item.code) && !existingTagCodes.has(item.code)
+    )
+  }, [allModels, apiTags])
+
+  const visibleModels = useMemo(() => {
     if (category === 'all') return filteredModels
     return filteredModels.filter((model) =>
       model.tags?.some((t) => t.toLowerCase() === category.toLowerCase()) ||
@@ -234,7 +248,7 @@ const visibleModels = useMemo(() => {
         iconModel: iconMap.get(key) ?? { display_name: item.name || key, vendor: key.split('/')[0] },
       }
     })
-  }, [rankingsData, allModels])
+  }, [rankingsData, allModels, currencySymbol])
 
   return (
     <div className="space-y-8 py-2">
@@ -297,6 +311,21 @@ const visibleModels = useMemo(() => {
               )}
             >
               {isZh ? tag.name_zh : tag.name_en}
+            </button>
+          ))}
+          {modalityFilters.map((item) => (
+            <button
+              key={item.code}
+              type="button"
+              onClick={() => setCategory(item.code)}
+              className={cn(
+                'px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-300 cursor-pointer whitespace-nowrap tracking-wide',
+                category === item.code
+                  ? 'bg-brand-base text-white shadow-md shadow-brand-glow/20'
+                  : 'bg-mg-fill-0/40 text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/90 active:scale-95',
+              )}
+            >
+              {isZh ? item.nameZh : item.nameEn}
             </button>
           ))}
         </div>

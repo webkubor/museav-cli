@@ -129,9 +129,10 @@ export default function ApiKeysPage() {
     if (!guardrailsQuery.data?.length) return
     const defaultGuardrail = guardrailsQuery.data.find((g) => g.is_default)
     if (defaultGuardrail && !guardrailId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setGuardrailId(defaultGuardrail.id ?? '')
     }
-  }, [guardrailsQuery.data])
+  }, [guardrailId, guardrailsQuery.data])
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -164,8 +165,8 @@ export default function ApiKeysPage() {
       resetForm()
       queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
     },
-    onError: (err: any) => {
-      appToast.error(err?.message || t('apiKeys.toast.createError'))
+    onError: (err: unknown) => {
+      appToast.error(err instanceof Error ? err.message : t('apiKeys.toast.createError'))
     },
   })
 
@@ -176,8 +177,8 @@ export default function ApiKeysPage() {
       setRevokeTarget(null)
       queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
     },
-    onError: (err: any) => {
-      appToast.error(err?.message || t('apiKeys.toast.revokeError'))
+    onError: (err: unknown) => {
+      appToast.error(err instanceof Error ? err.message : t('apiKeys.toast.revokeError'))
     },
   })
 
@@ -223,6 +224,17 @@ export default function ApiKeysPage() {
     await copyText(text)
     appToast.success(t('apiKeys.table.copyMaskedSuccess'))
   }, [copyText, t])
+
+  const handleCopyCreatedKeyAndBrowseModels = useCallback(async () => {
+    const ok = await copyText(createdKeyText)
+    if (!ok) {
+      appToast.error('复制失败，请手动复制 API Key')
+      return
+    }
+    appToast.success('API Key 已复制')
+    setRevealVisible(false)
+    navigate('/models/catalog')
+  }, [copyText, createdKeyText, navigate])
 
   function handleQuickCopy(key: string, text: string) {
     navigator.clipboard.writeText(text)
@@ -368,10 +380,7 @@ export default function ApiKeysPage() {
             <div className="flex gap-2 shrink-0">
               <Button
                 variant="outline"
-                onClick={() => {
-                  setRevealVisible(false)
-                  navigate('/models/catalog')
-                }}
+                onClick={handleCopyCreatedKeyAndBrowseModels}
                 className="h-11 rounded-lg px-4 font-semibold text-brand-base border-brand-base/30 hover:bg-brand-base/5 cursor-pointer"
               >
                 复制并去挑选模型
@@ -468,10 +477,7 @@ export default function ApiKeysPage() {
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-4 text-xs font-bold">
                     <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(record.prefix + '••••••••')
-                        appToast.success(t('apiKeys.table.copyMaskedSuccess'))
-                      }}
+                      onClick={() => handleCopyText(record.masked || `${record.prefix}••••••••`)}
                       title="仅显示掩码，创建时应已复制完整密钥"
                       className="text-brand-base hover:text-brand-deep transition-colors cursor-pointer"
                     >

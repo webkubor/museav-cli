@@ -212,7 +212,14 @@ export default function LogsPage() {
 
   // 接口分页
   const [page, setPage] = useState(1)
+  const [cursorStack, setCursorStack] = useState<Array<string | null>>([null])
   const pageSize = 15
+  const currentCursor = cursorStack[page - 1] ?? null
+
+  function resetPagination() {
+    setPage(1)
+    setCursorStack([null])
+  }
 
   // 加载当前工作区下的 API 密钥列表
   const { data: apiKeysData } = useQuery({
@@ -233,7 +240,7 @@ export default function LogsPage() {
 
   // 真实日志加载
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['logs', activeWorkspaceId, statusFilter, modelFilter, apiKeyFilter, searchValue, timeRange, page],
+    queryKey: ['logs', activeWorkspaceId, statusFilter, modelFilter, apiKeyFilter, searchValue, timeRange, page, currentCursor],
     queryFn: () =>
       listCallLogs({
         workspace_id: activeWorkspaceId!,
@@ -242,8 +249,8 @@ export default function LogsPage() {
         api_key_id: apiKeyFilter === 'all' ? undefined : apiKeyFilter,
         request_id: searchValue.trim() || undefined,
         preset: timeRange.preset !== 'all' ? (timeRange.preset as '1h' | '24h' | '7d' | '30d' | 'custom') : undefined,
-        before_started_at: timeRange.preset === 'custom' && timeRange.endDate ? timeRange.endDate : undefined,
-        limit: pageSize * page, // 粗粒度分页兼容
+        before_started_at: currentCursor ?? (timeRange.preset === 'custom' && timeRange.endDate ? timeRange.endDate : undefined),
+        limit: pageSize,
       }),
     enabled: Boolean(activeWorkspaceId),
     staleTime: 10_000,
@@ -264,12 +271,23 @@ export default function LogsPage() {
     appToast.success(t('logs.detail.payloadCopied'))
   }
 
-  // 简易前端切片分页模拟
+  // 后端 cursor 翻页
   const rawLogs = data?.items ?? []
-  const filteredLogs = rawLogs.slice((page - 1) * pageSize, page * pageSize)
+  const filteredLogs = rawLogs
 
-  const total = data?.items?.length ?? 0
-  const hasMore = rawLogs.length > page * pageSize
+  const total = rawLogs.length
+  const hasMore = Boolean(data?.has_more && data.next_cursor)
+
+  function goNextPage() {
+    const nextCursor = data?.next_cursor
+    if (!nextCursor) return
+    setCursorStack((current) => [...current.slice(0, page), nextCursor])
+    setPage((current) => current + 1)
+  }
+
+  function goPrevPage() {
+    setPage((current) => Math.max(1, current - 1))
+  }
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
@@ -295,7 +313,7 @@ export default function LogsPage() {
           <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">{t('logs.filter.statusLabel')}</label>
           <Select
             value={statusFilter}
-            onChange={(v) => { setStatusFilter(v as LogStatusFilter); setPage(1) }}
+            onChange={(v) => { setStatusFilter(v as LogStatusFilter); resetPagination() }}
             placeholder={t('logs.filter.statusPlaceholder')}
             className="w-full bg-mg-fill-0/30"
           >
@@ -307,7 +325,7 @@ export default function LogsPage() {
 
         <ModelSelectCombobox
           value={modelFilter}
-          onChange={(val) => { setModelFilter(val); setPage(1) }}
+          onChange={(val) => { setModelFilter(val); resetPagination() }}
           models={systemModels.map(m => ({ id: m.id, display_name: m.display_name }))}
           placeholder={t('logs.filter.modelPlaceholder')}
         />
@@ -316,7 +334,7 @@ export default function LogsPage() {
           <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">API 密钥</label>
           <Select
             value={apiKeyFilter}
-            onChange={(v) => { setApiKeyFilter(v); setPage(1) }}
+            onChange={(v) => { setApiKeyFilter(v); resetPagination() }}
             placeholder="筛选 API 密钥"
             className="w-full bg-mg-fill-0/30 font-medium"
           >
@@ -333,7 +351,7 @@ export default function LogsPage() {
           <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">时间范围</label>
           <DateRangePicker
             value={timeRange}
-            onChange={(val) => { setTimeRange(val); setPage(1) }}
+            onChange={(val) => { setTimeRange(val); resetPagination() }}
             className="w-full"
           />
         </div>
@@ -344,7 +362,7 @@ export default function LogsPage() {
             placeholder="输入完整的 Request ID 进行精确检索"
             prefix={<LuSearch className="opacity-50" />}
             value={searchValue}
-            onChange={(e) => { setSearchValue(e.target.value); setPage(1) }}
+            onChange={(e) => { setSearchValue(e.target.value); resetPagination() }}
             className="w-full bg-mg-fill-0/30"
           />
         </div>
@@ -446,7 +464,7 @@ export default function LogsPage() {
                   size="sm"
                   variant="outline"
                   disabled={page <= 1}
-                  onClick={() => setPage(page - 1)}
+                  onClick={goPrevPage}
                   className="h-8 font-semibold"
                 >
                   {t('logs.pagination.prev')}
@@ -458,7 +476,7 @@ export default function LogsPage() {
                   size="sm"
                   variant="outline"
                   disabled={!hasMore}
-                  onClick={() => setPage(page + 1)}
+                  onClick={goNextPage}
                   className="h-8 font-semibold"
                 >
                   {t('logs.pagination.next')}

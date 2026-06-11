@@ -37,11 +37,6 @@ vi.mock('react-i18next', () => ({
         'billing.rechargeModal.success': '充值订单已创建，请完成支付',
         'billing.rechargeModal.error': '创建充值订单失败',
         'billing.rechargeModal.submitting': '提交中...',
-        'billing.rechargeModal.wechatQrReady': '微信支付二维码已生成',
-        'billing.rechargeModal.wechatQrTitle': '微信扫码支付',
-        'billing.rechargeModal.wechatQrHint': '请使用微信扫描二维码完成支付',
-        'billing.rechargeModal.wechatQrCopy': '复制支付链接',
-        'billing.rechargeModal.wechatQrCopied': '支付链接已复制',
       }
       return copy[key] ?? key
     },
@@ -67,7 +62,7 @@ describe('TopUpModal', () => {
       status: 'pending',
       payment: {
         channel: 'wechat',
-        qr_code_url: 'weixin://wxpay/bizpayurl?pr=test',
+        redirect_url: 'https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=test',
       },
       expires_at: '2026-06-10T18:00:00Z',
     })
@@ -79,21 +74,53 @@ describe('TopUpModal', () => {
     vi.restoreAllMocks()
   })
 
-  it('renders the WeChat Native payment QR code returned by web-api', async () => {
+  it('redirects to the WeChat cashier URL returned by web-api', async () => {
     const close = vi.fn()
-    vi.spyOn(window, 'open').mockReturnValue({ close, closed: false } as unknown as Window)
+    const paymentWindow = {
+      close,
+      closed: false,
+      location: { href: '' },
+    } as unknown as Window
+    vi.spyOn(window, 'open').mockReturnValue(paymentWindow)
 
-    const { container } = renderModal()
+    renderModal()
     fireEvent.click(screen.getByRole('button', { name: '前往支付 ¥100' }))
 
-    await screen.findByText('微信扫码支付')
-    expect(screen.getByText('WX202606100001')).toBeInTheDocument()
-    expect(container.querySelector('svg')).toBeTruthy()
-    expect(close).toHaveBeenCalled()
+    await waitFor(() => {
+      expect(paymentWindow.location.href).toBe('https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=test')
+    })
+    expect(screen.queryByText('WX202606100001')).not.toBeInTheDocument()
+    expect(close).not.toHaveBeenCalled()
     expect(createRecharge).toHaveBeenCalledWith(
       'tnt_1',
       expect.objectContaining({ channel: 'wechat', currency: 'CNY', amount: '100' })
     )
-    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('微信支付二维码已生成'))
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('充值订单已创建，请完成支付'))
+  })
+
+  it('redirects instead of rendering a local QR code for legacy WeChat qr_code_url responses', async () => {
+    createRecharge.mockResolvedValueOnce({
+      order_no: 'WX202606100002',
+      status: 'pending',
+      payment: {
+        channel: 'wechat',
+        qr_code_url: 'weixin://wxpay/bizpayurl?pr=test',
+      },
+      expires_at: '2026-06-10T18:00:00Z',
+    })
+    const paymentWindow = {
+      close: vi.fn(),
+      closed: false,
+      location: { href: '' },
+    } as unknown as Window
+    vi.spyOn(window, 'open').mockReturnValue(paymentWindow)
+
+    renderModal()
+    fireEvent.click(screen.getByRole('button', { name: '前往支付 ¥100' }))
+
+    await waitFor(() => {
+      expect(paymentWindow.location.href).toBe('weixin://wxpay/bizpayurl?pr=test')
+    })
+    expect(screen.queryByText('WX202606100002')).not.toBeInTheDocument()
   })
 })

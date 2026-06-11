@@ -5,6 +5,7 @@ import type {
   CreateGuardrailRequest,
   GuardrailDetail,
   GuardrailListResponse,
+  UpdateBudgetPolicyRequest,
   UpdateGuardrailRequest,
 } from '@/interfaces/guardrails'
 
@@ -30,6 +31,11 @@ export function replaceAssignments(guardrailId: string, assignments: AssignmentI
 
 export function addBudgetPolicy(guardrailId: string, body: AddBudgetPolicyRequest) {
   return post<GuardrailDetail>(`guardrails/${guardrailId}/budget-policies`, body)
+}
+
+/** qa#164 单条维护：原地编辑同一条预算策略（同一 id），省略字段保持原值 */
+export function updateBudgetPolicy(guardrailId: string, budgetPolicyId: string, body: UpdateBudgetPolicyRequest) {
+  return patch<GuardrailDetail>(`guardrails/${guardrailId}/budget-policies/${budgetPolicyId}`, body)
 }
 
 export function deleteBudgetPolicy(guardrailId: string, budgetPolicyId: string) {

@@ -8,12 +8,14 @@ import type {
   AddBudgetPolicyRequest,
   GuardrailBudgetPolicy,
   GuardrailDetail,
+  UpdateBudgetPolicyRequest,
 } from '@/interfaces/guardrails'
 
 // ── service mocks: the page is a read+mutate view over @/services/guardrails ─
 const listGuardrails = vi.fn<(workspaceId: string) => Promise<{ items: GuardrailDetail[] }>>()
 const getGuardrail = vi.fn<(id: string) => Promise<GuardrailDetail>>()
 const addBudgetPolicy = vi.fn<(id: string, body: AddBudgetPolicyRequest) => Promise<GuardrailDetail>>()
+const updateBudgetPolicy = vi.fn<(id: string, policyId: string, body: UpdateBudgetPolicyRequest) => Promise<GuardrailDetail>>()
 const deleteBudgetPolicy = vi.fn<(guardrailId: string, policyId: string) => Promise<GuardrailDetail>>()
 const createGuardrail = vi.fn()
 const updateGuardrail = vi.fn()
@@ -25,6 +27,8 @@ vi.mock('@/services/guardrails', () => ({
   getGuardrail: (id: string) => getGuardrail(id),
   updateGuardrail: (id: string, body: unknown) => updateGuardrail(id, body),
   addBudgetPolicy: (id: string, body: AddBudgetPolicyRequest) => addBudgetPolicy(id, body),
+  updateBudgetPolicy: (id: string, policyId: string, body: UpdateBudgetPolicyRequest) =>
+    updateBudgetPolicy(id, policyId, body),
   deleteBudgetPolicy: (guardrailId: string, policyId: string) => deleteBudgetPolicy(guardrailId, policyId),
   deleteGuardrail: (id: string) => deleteGuardrail(id),
 }))
@@ -152,6 +156,7 @@ beforeEach(() => {
   listGuardrails.mockReset().mockImplementation(async () => ({ items: [detailNow] }))
   getGuardrail.mockReset().mockImplementation(async () => detailNow)
   addBudgetPolicy.mockReset()
+  updateBudgetPolicy.mockReset()
   deleteBudgetPolicy.mockReset()
   createGuardrail.mockReset()
   updateGuardrail.mockReset()
@@ -192,24 +197,24 @@ describe('GuardrailsPage — invalid budget amount', () => {
     await waitFor(() => expect(appToast.error).toHaveBeenCalledTimes(1))
     expect(vi.mocked(appToast.error).mock.calls[0][0]).toContain('预算金额无效')
     expect(addBudgetPolicy).not.toHaveBeenCalled()
+    expect(updateBudgetPolicy).not.toHaveBeenCalled()
     expect(deleteBudgetPolicy).not.toHaveBeenCalled()
     expect(appToast.success).not.toHaveBeenCalled()
   })
 })
 
-// ── valid amount: ONE atomic replace request, no delete-then-add ──────────────
+// ── valid amount: qa#164 single-policy maintenance — edit PATCHes the SAME
+// policy in place; only the first save POSTs a new one ────────────────────────
 
 describe('GuardrailsPage — valid budget save', () => {
-  it('sends ONE addBudgetPolicy with the typed amount and replace_budget_policy_id of the active policy', async () => {
-    addBudgetPolicy.mockImplementation(async (_id, body) => {
-      // backend atomically disables the old policy and creates the new one,
-      // echoing the amount with NUMERIC scale padding
+  it('编辑已有预算：PATCH 同一条策略（同一 id），不新增不删除', async () => {
+    updateBudgetPolicy.mockImplementation(async (_id, policyId, body) => {
+      // backend edits the row in place: SAME id, NUMERIC scale padding on echo
       detailNow = guardrailDetail([
-        budgetPolicy({ id: OLD_POLICY_ID, enabled: false }),
         budgetPolicy({
-          id: 'bp-2',
+          id: policyId,
           spend_limit_amount: `${body.spend_limit_amount}0000000000`,
-          period_unit: body.period_unit,
+          period_unit: body.period_unit ?? 'month',
         }),
       ])
       return detailNow
@@ -220,17 +225,18 @@ describe('GuardrailsPage — valid budget save', () => {
     fireEvent.change(input, { target: { value: '123.45' } })
     fireEvent.click(screen.getByRole('button', { name: '保存预算' }))
 
-    await waitFor(() => expect(addBudgetPolicy).toHaveBeenCalledTimes(1))
-    const [guardrailId, body] = addBudgetPolicy.mock.calls[0]
+    await waitFor(() => expect(updateBudgetPolicy).toHaveBeenCalledTimes(1))
+    const [guardrailId, policyId, body] = updateBudgetPolicy.mock.calls[0]
     expect(guardrailId).toBe(GUARDRAIL_ID)
+    expect(policyId).toBe(OLD_POLICY_ID)
     expect(body.spend_limit_amount).toBe('123.45')
-    expect(body.replace_budget_policy_id).toBe(OLD_POLICY_ID)
-    expect(body.aggregation_scope).toBe('guardrail_total')
-    expect(body.enabled).toBe(true)
+    // 只发变更字段：周期没动就不发（计费 counter 窗口不重锚），也不得泄漏
+    // create-only 字段（enabled / aggregation_scope / replace_budget_policy_id）
+    expect(Object.keys(body)).toEqual(['spend_limit_amount'])
 
-    // the old two-request flow (DELETE then POST) must be gone (qa#156)
+    // in-place maintenance: no create, no delete, no replace
+    expect(addBudgetPolicy).not.toHaveBeenCalled()
     expect(deleteBudgetPolicy).not.toHaveBeenCalled()
-    expect(addBudgetPolicy).toHaveBeenCalledTimes(1)
 
     await waitFor(() => expect(appToast.success).toHaveBeenCalled())
     expect(appToast.error).not.toHaveBeenCalled()
@@ -238,6 +244,37 @@ describe('GuardrailsPage — valid budget save', () => {
     // onSuccess back-fills the input with the trimmed saved value, so what the
     // user sees is exactly what was stored
     await waitFor(() => expect(input.value).toBe('123.45'))
+  })
+
+  it('首次设置（无预算）：POST 新增唯一一条，不带 replace 字段', async () => {
+    detailNow = guardrailDetail([])
+    getGuardrail.mockReset().mockImplementation(async () => detailNow)
+    addBudgetPolicy.mockImplementation(async (_id, body) => {
+      detailNow = guardrailDetail([
+        budgetPolicy({ id: 'bp-new', spend_limit_amount: `${body.spend_limit_amount}.000000000000` }),
+      ])
+      return detailNow
+    })
+
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: GUARDRAIL_NAME }))
+    fireEvent.click(await screen.findByRole('button', { name: '预算' }))
+    const input = (await screen.findByRole('textbox', { name: '预算限额金额' })) as HTMLInputElement
+    expect(input.value).toBe('')
+
+    fireEvent.change(input, { target: { value: '88' } })
+    fireEvent.click(screen.getByRole('button', { name: '保存预算' }))
+
+    await waitFor(() => expect(addBudgetPolicy).toHaveBeenCalledTimes(1))
+    const [guardrailId, body] = addBudgetPolicy.mock.calls[0]
+    expect(guardrailId).toBe(GUARDRAIL_ID)
+    expect(body.spend_limit_amount).toBe('88')
+    expect(body.enabled).toBe(true)
+    expect(body.replace_budget_policy_id).toBeUndefined()
+    expect(updateBudgetPolicy).not.toHaveBeenCalled()
+
+    // 落库回显去尾零
+    await waitFor(() => expect(input.value).toBe('88'))
   })
 })
 
@@ -259,6 +296,7 @@ describe('GuardrailsPage — 多条生效预算策略（脏数据）防线 qa#16
     expect(screen.queryByRole('textbox', { name: '预算限额金额' })).toBeNull()
     expect(screen.queryByRole('button', { name: '保存预算' })).toBeNull()
     expect(addBudgetPolicy).not.toHaveBeenCalled()
+    expect(updateBudgetPolicy).not.toHaveBeenCalled()
     expect(deleteBudgetPolicy).not.toHaveBeenCalled()
   })
 

@@ -82,8 +82,23 @@ export interface AddBudgetPolicyRequest {
   rate_token_limit?: number
   rate_request_limit?: number
   rate_window_seconds?: number
-  /** 原子替换：后端在同一事务内停用该策略并创建新策略，避免先删后加丢预算 (qa#156) */
+  /**
+   * 原子替换：后端在同一事务内停用该策略并创建新策略 (qa#156)。
+   * qa#164 起控制台编辑改走 updateBudgetPolicy 原地更新，此字段仅保留兼容。
+   */
   replace_budget_policy_id?: string
+}
+
+/** qa#164 单条维护：原地编辑预算策略，省略字段保持原值 */
+export interface UpdateBudgetPolicyRequest {
+  period_unit?: 'hour' | 'day' | 'week' | 'month'
+  period_length?: number
+  aggregation_scope?: 'guardrail_total' | 'per_member' | 'per_api_key'
+  enforcement_mode?: 'monitor' | 'soft_limit' | 'hard_limit'
+  spend_limit_amount?: string
+  token_limit?: number
+  request_limit?: number
+  timezone?: string
 }
 
 export interface GuardrailListResponse {

@@ -16,6 +16,7 @@ import {
   updateGuardrail,
   getGuardrail,
   addBudgetPolicy,
+  updateBudgetPolicy,
   deleteBudgetPolicy,
 } from '@/services/guardrails'
 import { listWorkspaceMembers } from '@/services/workspaces'
@@ -25,6 +26,7 @@ import type {
   CreateGuardrailRequest,
   UpdateGuardrailRequest,
   AddBudgetPolicyRequest,
+  UpdateBudgetPolicyRequest,
 } from '@/interfaces/guardrails'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { pageItems } from '@/lib/utils'
@@ -153,16 +155,20 @@ export default function GuardrailsPage() {
   })
 
   // ── 突变 ────────────────────────────────────────────────────────────────
-  // 单请求原子替换：旧策略 id 放进 replace_budget_policy_id，由后端在同一事务
-  // 内停用旧策略 + 创建新策略。此前是前端先 DELETE 再 POST 两次请求，第二步
-  // 失败时旧预算已被删掉，预算直接丢失 (qa#156)。
+  // qa#164 单条维护语义：首次设置 POST 新增唯一一条；已有预算时 PATCH 原地
+  // 编辑同一条（同一 id），不再停旧建新——策略 id 稳定，计费侧当期已消耗
+  // 额度不会因为改限额而重置。
+  type SaveBudgetVars =
+    | { id: string; policyId: string; body: UpdateBudgetPolicyRequest }
+    | { id: string; policyId?: undefined; body: AddBudgetPolicyRequest }
   const setBudgetMutation = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: AddBudgetPolicyRequest }) =>
-      addBudgetPolicy(id, body),
+    mutationFn: (vars: SaveBudgetVars) =>
+      vars.policyId !== undefined
+        ? updateBudgetPolicy(vars.id, vars.policyId, vars.body)
+        : addBudgetPolicy(vars.id, vars.body),
     onSuccess: (updated, vars) => {
       appToast.success('预算已保存')
-      // 响应就是最新 detail：先写缓存（立即修正 budget.id，封住"refetch 落地前
-      // 再次保存会带过期 replace_budget_policy_id"的窗口），再失效兜底
+      // 响应就是最新 detail：先写缓存（立即同步 budget 状态），再失效兜底
       qc.setQueryData(['guardrail-detail', vars.id], updated)
       qc.invalidateQueries({ queryKey: ['guardrail-detail', vars.id] })
     },
@@ -312,18 +318,32 @@ export default function GuardrailsPage() {
       appToast.error('预算金额无效：请输入大于 0 的数字，整数最多 12 位，小数最多 2 位')
       return
     }
-    setBudgetMutation.mutate({
-      id: detail.id,
-      body: {
-        aggregation_scope: 'guardrail_total',
-        period_unit: budgetPeriodUnit,
-        period_length: 1,
-        enforcement_mode: 'hard_limit',
-        spend_limit_amount: amount,
-        enabled: true,
-        replace_budget_policy_id: budget?.id,
-      },
-    })
+    if (budget) {
+      // 编辑：原地维护这唯一一条策略。只发真正变更的字段——金额没改就不发
+      // 金额、周期没改就不发周期：计费当期消耗 counter 按 (policy id, 周期窗口)
+      // 累计，少发未变字段可避免无谓的窗口重锚。
+      const body: UpdateBudgetPolicyRequest = {}
+      if (amount !== trimAmountScale(budget.spend_limit_amount)) body.spend_limit_amount = amount
+      if (budgetPeriodUnit !== budget.period_unit) body.period_unit = budgetPeriodUnit
+      if (Object.keys(body).length === 0) {
+        appToast.info('预算未发生变化')
+        return
+      }
+      setBudgetMutation.mutate({ id: detail.id, policyId: budget.id, body })
+    } else {
+      // 首次设置：新增唯一一条
+      setBudgetMutation.mutate({
+        id: detail.id,
+        body: {
+          aggregation_scope: 'guardrail_total',
+          period_unit: budgetPeriodUnit,
+          period_length: 1,
+          enforcement_mode: 'hard_limit',
+          spend_limit_amount: amount,
+          enabled: true,
+        },
+      })
+    }
   }
 
   // ── 派生数据 ────────────────────────────────────────────────────────────

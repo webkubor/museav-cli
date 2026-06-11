@@ -6,6 +6,7 @@
  */
 
 import { storageKeys } from '@/lib/storage'
+import { getDeviceId } from '@/lib/device-fingerprint'
 
 // ─── 类型定义 ────────────────────────────
 
@@ -36,6 +37,7 @@ export type InjectedHeader =
   | 'Accept-Language' // 客户端语言偏好，值见 AcceptLanguageTag
   | 'X-Origin' // 请求来源域名（modelgo.com / modelgo.ai）
   | 'X-App-Version' // 前端版本号（来自 package.json）
+  | 'X-Device-Id' // 设备指纹（FingerprintJS visitorId）
 
 /** 每个注入头的定义 */
 interface HeaderDef {
@@ -100,6 +102,7 @@ const headerDefs: Record<InjectedHeader, HeaderDef> = {
   'Accept-Language': { resolve: resolveLocale },
   'X-Origin': { resolve: resolveOrigin },
   'X-App-Version': { resolve: () => __APP_VERSION__ },
+  'X-Device-Id': { resolve: getDeviceId },
 }
 
 // ─── 统一注入入口 ─────────────────────────

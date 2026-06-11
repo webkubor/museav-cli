@@ -19,6 +19,7 @@
     "sync:api": "bun run scripts/sync-api.ts"
   },
   "dependencies": {
+    "@fingerprintjs/fingerprintjs": "^5.2.0",
     "@hookform/resolvers": "^5.4.0",
     "@lobehub/icons": "^5.8.0",
     "@radix-ui/react-avatar": "^1.1.11",

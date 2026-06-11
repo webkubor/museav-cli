@@ -54,4 +54,7 @@ export const storageKeys = {
   csHistory:        () => buildKey('cs_history', 'app'),
   csConversationId: () => buildKey('cs_cid', 'app'),
   csTriggerPos:     () => buildKey('cs_pos', 'app'),
+
+  // ── 设备指纹（app 全局，跨市场唯一标识） ─────────────────────────────────
+  deviceId:         () => buildKey('device_id', 'app'),
 } as const

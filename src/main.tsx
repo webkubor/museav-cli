@@ -6,8 +6,10 @@ import './index.css'
 import './i18n'
 import App from './App.tsx'
 import { installDevErrorReporter } from './lib/dev-error-reporter'
+import { initDeviceFingerprint } from './lib/device-fingerprint'
 
 installDevErrorReporter()
+initDeviceFingerprint()
 
 // 清除历史遗留的 mockServiceWorker.js，防止与 PWA SW 冲突产生疯狂报错
 if ('serviceWorker' in navigator) {

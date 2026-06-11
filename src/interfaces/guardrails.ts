@@ -82,6 +82,8 @@ export interface AddBudgetPolicyRequest {
   rate_token_limit?: number
   rate_request_limit?: number
   rate_window_seconds?: number
+  /** 原子替换：后端在同一事务内停用该策略并创建新策略，避免先删后加丢预算 (qa#156) */
+  replace_budget_policy_id?: string
 }
 
 export interface GuardrailListResponse {

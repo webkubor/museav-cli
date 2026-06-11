@@ -31,6 +31,7 @@ import { pageItems } from '@/lib/utils'
 import { GuardrailTable } from './components/GuardrailTable'
 import { GuardrailDetailSheet } from './components/GuardrailDetailSheet'
 import { GuardrailConfirmModals } from './components/GuardrailConfirmModals'
+import { isValidBudgetAmount, trimAmountScale } from './budget'
 
 type BudgetPolicy = NonNullable<GuardrailDetail['budget_policies']>[number]
 
@@ -133,15 +134,18 @@ export default function GuardrailsPage() {
   })
 
   // ── 突变 ────────────────────────────────────────────────────────────────
+  // 单请求原子替换：旧策略 id 放进 replace_budget_policy_id，由后端在同一事务
+  // 内停用旧策略 + 创建新策略。此前是前端先 DELETE 再 POST 两次请求，第二步
+  // 失败时旧预算已被删掉，预算直接丢失 (qa#156)。
   const setBudgetMutation = useMutation({
-    mutationFn: async ({ id, body, oldPolicyId }: { id: string; body: AddBudgetPolicyRequest; oldPolicyId?: string }) => {
-      if (oldPolicyId) await deleteBudgetPolicy(id, oldPolicyId)
-      return addBudgetPolicy(id, body)
-    },
-    onSuccess: () => {
+    mutationFn: ({ id, body }: { id: string; body: AddBudgetPolicyRequest }) =>
+      addBudgetPolicy(id, body),
+    onSuccess: (updated, vars) => {
       appToast.success('预算已保存')
-
-      qc.invalidateQueries({ queryKey: ['guardrail-detail', detailId] })
+      // 响应就是最新 detail：先写缓存（立即修正 budget.id，封住"refetch 落地前
+      // 再次保存会带过期 replace_budget_policy_id"的窗口），再失效兜底
+      qc.setQueryData(['guardrail-detail', vars.id], updated)
+      qc.invalidateQueries({ queryKey: ['guardrail-detail', vars.id] })
     },
     onError: (err: unknown) =>
       appToast.error(err instanceof Error ? err.message : '保存失败'),
@@ -224,6 +228,11 @@ export default function GuardrailsPage() {
   function syncFormFromDetail(d: GuardrailDetail) {
     setName(d.name); setDescription(d.description ?? '')
     setIsDefault(d.is_default); setPriority(d.priority)
+    // 预算 input 回填落库的规范金额（去掉 NUMERIC(24,12) 的 scale 尾零），
+    // 保证回显值与保存值一致 (qa#156)
+    const bp = currentBudgetPolicy(d)
+    setBudgetAmount(bp ? trimAmountScale(bp.spend_limit_amount) : '')
+    setBudgetPeriodUnit(bp?.period_unit ?? 'month')
     const meta = (d as any).metadata ?? {}
     setModelBlacklist(Array.isArray(meta.model_blacklist) ? meta.model_blacklist : [])
     setIpWhitelist(Array.isArray(meta.ip_whitelist) ? meta.ip_whitelist : [])
@@ -268,18 +277,23 @@ export default function GuardrailsPage() {
   }
 
   function handleSaveBudget() {
-    if (!budgetAmount || !detail) return
-    const oldPolicyId = budget?.id
+    if (!detail) return
+    const amount = budgetAmount.trim()
+    // 与后端校验同一契约：输入什么就存什么，存不了的直接拒绝
+    if (!isValidBudgetAmount(amount)) {
+      appToast.error('预算金额无效：请输入大于 0 的数字，整数最多 12 位，小数最多 2 位')
+      return
+    }
     setBudgetMutation.mutate({
       id: detail.id,
-      oldPolicyId,
       body: {
         aggregation_scope: 'guardrail_total',
         period_unit: budgetPeriodUnit,
         period_length: 1,
         enforcement_mode: 'hard_limit',
-        spend_limit_amount: budgetAmount,
+        spend_limit_amount: amount,
         enabled: true,
+        replace_budget_policy_id: budget?.id,
       },
     })
   }

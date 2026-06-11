@@ -11,6 +11,7 @@ import { LuKey, LuDollarSign } from 'react-icons/lu'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
 import { PERIOD_LABEL } from '@/constants/status'
 import { GuardrailFormFields } from './GuardrailFormFields'
+import { trimAmountScale } from '../budget'
 
 const GUARDRAIL_STATUS_MAP: Record<string, StatusConfig> = {
   active: { label: '已启用', variant: 'success' },
@@ -102,8 +103,9 @@ export function GuardrailDetailSheet({
                 onSheetTabChange(tab.key)
                 if (tab.key === 'info' && detail) syncFormFromDetail(detail)
                 if (tab.key === 'budget' && detail) {
+                  // 回填规范化金额（去 NUMERIC 尾零），切 Tab 即放弃未保存的输入
                   const bp = budget
-                  onBudgetAmountChange(bp?.spend_limit_amount ?? '')
+                  onBudgetAmountChange(bp ? trimAmountScale(bp.spend_limit_amount) : '')
                   onBudgetPeriodUnitChange((bp?.period_unit as PeriodUnit) ?? 'month')
                 }
               }}
@@ -181,10 +183,12 @@ export function GuardrailDetailSheet({
               </div>
               <div className="flex items-center gap-2">
                 <Input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
+                  aria-label="预算限额金额"
                   value={budgetAmount}
                   onChange={(e) => onBudgetAmountChange(e.target.value)}
-                  placeholder="输入限额金额"
+                  placeholder="输入限额金额（最多两位小数）"
                   className="h-9 text-xs flex-1"
                 />
                 <Select value={budgetPeriodUnit} onChange={(v) => onBudgetPeriodUnitChange(v as PeriodUnit)} className="h-9 text-xs w-28">

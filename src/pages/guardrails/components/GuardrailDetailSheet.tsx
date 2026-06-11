@@ -102,7 +102,7 @@ export function GuardrailDetailSheet({
                 onSheetTabChange(tab.key)
                 if (tab.key === 'info' && detail) syncFormFromDetail(detail)
                 if (tab.key === 'budget' && detail) {
-                  const bp = detail.budget_policies?.[0]
+                  const bp = budget
                   onBudgetAmountChange(bp?.spend_limit_amount ?? '')
                   onBudgetPeriodUnitChange((bp?.period_unit as PeriodUnit) ?? 'month')
                 }

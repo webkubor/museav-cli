@@ -32,6 +32,19 @@ import { GuardrailTable } from './components/GuardrailTable'
 import { GuardrailDetailSheet } from './components/GuardrailDetailSheet'
 import { GuardrailConfirmModals } from './components/GuardrailConfirmModals'
 
+type BudgetPolicy = NonNullable<GuardrailDetail['budget_policies']>[number]
+
+function isActiveBudgetPolicy(policy: BudgetPolicy) {
+  if (!policy.enabled) return false
+  if (!policy.effective_to) return true
+  const endsAt = Date.parse(policy.effective_to)
+  return Number.isNaN(endsAt) || endsAt > Date.now()
+}
+
+function currentBudgetPolicy(detail?: GuardrailDetail | null) {
+  return detail?.budget_policies?.find(isActiveBudgetPolicy) ?? null
+}
+
 export default function GuardrailsPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -256,7 +269,7 @@ export default function GuardrailsPage() {
 
   function handleSaveBudget() {
     if (!budgetAmount || !detail) return
-    const oldPolicyId = detail.budget_policies?.[0]?.id
+    const oldPolicyId = budget?.id
     setBudgetMutation.mutate({
       id: detail.id,
       oldPolicyId,
@@ -272,7 +285,7 @@ export default function GuardrailsPage() {
   }
 
   // ── 派生数据 ────────────────────────────────────────────────────────────
-  const budget = detail?.budget_policies?.[0] ?? null
+  const budget = currentBudgetPolicy(detail)
 
   // Label as "name (email)" so the picker is human-readable instead of an
   // opaque account_id. Fall back gracefully when a field is missing.

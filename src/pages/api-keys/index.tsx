@@ -221,7 +221,11 @@ export default function ApiKeysPage() {
   }
 
   const handleCopyText = useCallback(async (text: string) => {
-    await copyText(text)
+    const ok = await copyText(text)
+    if (!ok) {
+      appToast.error('复制失败，请手动复制')
+      return
+    }
     appToast.success(t('apiKeys.table.copyMaskedSuccess'))
   }, [copyText, t])
 
@@ -236,8 +240,12 @@ export default function ApiKeysPage() {
     navigate('/models/catalog')
   }, [copyText, createdKeyText, navigate])
 
-  function handleQuickCopy(key: string, text: string) {
-    navigator.clipboard.writeText(text)
+  async function handleQuickCopy(key: string, text: string) {
+    const ok = await copyText(text)
+    if (!ok) {
+      appToast.error('复制失败，请手动复制')
+      return
+    }
     setQuickCopied(key)
     setTimeout(() => setQuickCopied(null), 2000)
   }

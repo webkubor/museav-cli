@@ -38,6 +38,8 @@ import {
   type ReferralWithdrawal,
   type WithdrawalStatus,
 } from './referral-data'
+import { getMarketConfig } from '@/config/market'
+import { getMarket } from '@/lib/market'
 
 // 金额字段为字符串（后端约定），统一在此解析为数字再格式化
 const fmt = (n: number | string) => '¥' + Number(n).toLocaleString('zh-CN')
@@ -100,8 +102,10 @@ export default function ReferralPage() {
   }
   const stats = overview?.stats ?? emptyStats
   const tier = overview?.tier ?? emptyTier
-  const inviteLink = overview?.inviteLink ?? ''
   const inviteCode = overview?.inviteCode ?? ''
+  const inviteLink = inviteCode
+    ? `${getMarketConfig(getMarket()).siteUrl}/signup?aff=${inviteCode}`
+    : ''
   const rewardBalance = Number(stats.rewardBalance)
 
   /** 转出/提现成功后刷新所有受影响的余额与记录视图 */

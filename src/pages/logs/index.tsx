@@ -3,6 +3,7 @@ import { useCopy } from '@/hooks/use-copy'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
+import { Pagination } from '@/components/ui/Pagination'
 import { Input } from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import { SideSheet } from '@/components/ui/SideSheet'
@@ -455,34 +456,15 @@ export default function LogsPage() {
             </Table>
 
             {/* 分页控制 */}
-            <div className="flex items-center justify-between px-5 py-4 border-t border-mg-border gap-4 flex-wrap select-none">
-              <span className="text-xs text-mg-text-2">
-                {t('logs.pagination.total', { count: total })}
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page <= 1}
-                  onClick={goPrevPage}
-                  className="h-8 font-semibold"
-                >
-                  {t('logs.pagination.prev')}
-                </Button>
-                <span className="text-xs font-mono text-mg-text-1 bg-mg-fill-0 border border-mg-border px-3 py-1 rounded">
-                  {t('logs.pagination.page', { page })}
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={!hasMore}
-                  onClick={goNextPage}
-                  className="h-8 font-semibold"
-                >
-                  {t('logs.pagination.next')}
-                </Button>
-              </div>
-            </div>
+            <Pagination
+              mode="cursor"
+              page={page}
+              hasMore={hasMore}
+              total={total}
+              onPrev={goPrevPage}
+              onNext={goNextPage}
+              loading={isFetching}
+            />
           </>
         )}
       </div>

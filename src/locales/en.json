@@ -23,7 +23,14 @@
     "confirm": "Confirm",
     "collapse": "Collapse",
     "expand": "Expand",
-    "website": "Website"
+    "website": "Website",
+    "pagination": {
+      "prev": "Prev",
+      "next": "Next",
+      "page": "Page {{page}}",
+      "total": "{{count}} items",
+      "loadMore": "Load More"
+    }
   },
   "nav": {
     "home": "Home",

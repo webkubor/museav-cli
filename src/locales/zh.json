@@ -23,7 +23,14 @@
     "confirm": "确定",
     "collapse": "收起侧栏",
     "expand": "展开侧栏",
-    "website": "官网"
+    "website": "官网",
+    "pagination": {
+      "prev": "上一页",
+      "next": "下一页",
+      "page": "第 {{page}} 页",
+      "total": "共 {{count}} 条",
+      "loadMore": "加载更多"
+    }
   },
   "nav": {
     "home": "首页",

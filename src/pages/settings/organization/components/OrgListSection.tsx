@@ -53,6 +53,7 @@ export function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
 
   const tenants = (tenantsQuery.data?.items ?? []).filter((t) => t.type !== 'personal')
   const atLimit = tenants.length >= MAX_TENANTS
+  const alreadyOwns = tenants.some((t) => t.role === 'tenant_owner')
 
   const createMutation = useMutation({
     // 企业组织创建走 POST /organizations（slug 由后端从 name 派生）；
@@ -106,10 +107,9 @@ export function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
             {tenants.length} / {MAX_TENANTS}
           </span>
         </div>
-        {canCreateOrg && (
+        {canCreateOrg && !alreadyOwns && !atLimit && (
           <Button
             variant="brand"
-            disabled={atLimit}
             onClick={() => setCreateVisible(true)}
             className="rounded-full text-[11px] font-semibold h-7 px-3 flex items-center gap-1 bg-brand-base text-white hover:bg-brand-base/90 active:scale-[0.97] transition-all"
           >

@@ -118,6 +118,10 @@ export const DashboardHeader: React.FC = () => {
   const activeTenantLabel = isNonPersonal
     ? (activeTenant?.name || activeTenant?.slug || t('header.organizations'))
     : t('header.personalTag')
+  // 已作为 owner 创建过企业的账户隐藏「创建企业」入口（一人最多创建 1 个）
+  const ownsEnterprise = displayTenants.some(
+    (tn) => tn.type === 'enterprise' && (tn as { role?: string }).role === 'tenant_owner',
+  )
 
   const { data: workspaces = [] } = useQuery<WorkspaceItem[]>({
     queryKey: ['workspaces', activeTenantId],
@@ -522,12 +526,14 @@ export const DashboardHeader: React.FC = () => {
               )
             })}
 
-            <DropdownMenuItem
-              onClick={handleOpenOrgModal}
-            >
-              <LuPlus size={14} className="mr-2 text-mg-text-2 shrink-0" />
-              <span>{t('header.createOrg')}</span>
-            </DropdownMenuItem>
+            {!ownsEnterprise && (
+              <DropdownMenuItem
+                onClick={handleOpenOrgModal}
+              >
+                <LuPlus size={14} className="mr-2 text-mg-text-2 shrink-0" />
+                <span>{t('header.createOrg')}</span>
+              </DropdownMenuItem>
+            )}
 
             {/* 系统快捷菜单 */}
             <DropdownMenuSeparator />

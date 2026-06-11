@@ -242,10 +242,16 @@ glab api -X PUT "projects/1/issues/{iid}" --hostname gitlab.ops.modelgo.com \
 <div className="welcome-banner-card">...</div>
 ```
 
-### 飞书设计规范
+### 飞书文档
 
-- **主题色系**：[飞书设计文档](https://ocny5azjudjs.feishu.cn/docx/ZBSTdpOukohJVOxPKNDcGb6DnIc)
-- **HTTP 请求头注入清单**：[请求头注入规范](https://ocny5azjudjs.feishu.cn/wiki/ZtDewaaqFiclOFkWnUscEs8CnNg)
+| 文档 | 链接 |
+| :--- | :--- |
+| 前端设计文档 | [ModelGo 官网与客户中心前端设计文档](https://ocny5azjudjs.feishu.cn/wiki/XPxZwyr1Xinp71kVtxlcIVHQn0g) |
+| HTTP 请求头注入清单 | [前端 HTTP 请求头注入清单](https://ocny5azjudjs.feishu.cn/wiki/ZtDewaaqFiclOFkWnUscEs8CnNg) |
+| OAuth 快捷登录 | [OAuth 快捷登录 · 端到端配置手册](https://ocny5azjudjs.feishu.cn/wiki/Yh0lwqJ3TiDa6jkFIslcWCsXnGg) |
+| 打包部署 | [前端项目打包部署说明](https://ocny5azjudjs.feishu.cn/wiki/GMgPwHjqiiTnhGkom1ecCSZRnTc) |
+| 微信开放平台 | [微信开放平台 · 网站应用申请材料清单](https://ocny5azjudjs.feishu.cn/wiki/M8a0wGI5ZivsIvk7TJDcdk6FnJf) |
+| Claude Code 钩子 | [Claude Code 上线前检查钩子手册](https://ocny5azjudjs.feishu.cn/wiki/UjNFwdR0hi0FHLkNvgpcXOfInXg) |
 
 ---
 

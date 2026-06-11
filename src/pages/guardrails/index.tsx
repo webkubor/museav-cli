@@ -42,8 +42,18 @@ function isActiveBudgetPolicy(policy: BudgetPolicy) {
   return Number.isNaN(endsAt) || endsAt > Date.now()
 }
 
+function activeBudgetPolicies(detail?: GuardrailDetail | null) {
+  return detail?.budget_policies?.filter(isActiveBudgetPolicy) ?? []
+}
+
+// 单条不变量 (qa#162)：界面只有一个预算槽位。展示兜底取最新一条；
+// 出现多条生效策略属于脏数据，由 budgetConflict 走报错分支而非静默展示。
 function currentBudgetPolicy(detail?: GuardrailDetail | null) {
-  return detail?.budget_policies?.find(isActiveBudgetPolicy) ?? null
+  const actives = activeBudgetPolicies(detail)
+  if (actives.length === 0) return null
+  return [...actives].sort(
+    (a, b) => Date.parse(b.effective_from) - Date.parse(a.effective_from),
+  )[0]
 }
 
 export default function GuardrailsPage() {
@@ -99,12 +109,21 @@ export default function GuardrailsPage() {
   const [apiKeyIds, setApiKeyIds] = useState<string[]>([])
 
   // ── 详情查询 ────────────────────────────────────────────────────────────
-  const { data: detail, isLoading: detailLoading } = useQuery({
+  const { data: detail, isLoading: detailLoading, error: detailError } = useQuery({
     queryKey: ['guardrail-detail', detailId],
     queryFn: () => getGuardrail(detailId!),
     enabled: !!detailId && detailOpen,
     staleTime: 0,
   })
+  // 详情加载失败（含后端对脏数据返回的 409「预算配置数据错误」）要在抽屉内
+  // 呈现，而不是留一个空壳或上一条护栏的可保存表单 (qa#162 review)
+  const detailLoadError = detail
+    ? null
+    : detailError instanceof Error
+      ? detailError.message
+      : detailError
+        ? '护栏详情加载失败'
+        : null
 
   // Populate the whole form (info fields + scope: members + api_keys) once the
   // detail loads, regardless of the active tab — the single bottom Save button
@@ -221,6 +240,11 @@ export default function GuardrailsPage() {
   function openDetail(id: string) {
     setIsCreating(false)
     setDetailId(id)
+    // 防串档：清掉上一条护栏的表单残留。加载成功后 syncFormFromDetail 回填；
+    // 加载失败时抽屉只显示错误，而不是上一条护栏的可保存表单 (qa#162 review)
+    setName(''); setDescription(''); setIsDefault(false); setPriority(0)
+    setModelBlacklist([]); setIpWhitelist([]); setMemberIds([]); setApiKeyIds([])
+    setBudgetAmount(''); setBudgetPeriodUnit('month')
     setSheetTab('info')
     setDetailOpen(true)
   }
@@ -278,6 +302,10 @@ export default function GuardrailsPage() {
 
   function handleSaveBudget() {
     if (!detail) return
+    if (budgetConflict) {
+      appToast.error('预算配置数据错误：存在多条生效中的预算策略，请联系管理员处理')
+      return
+    }
     const amount = budgetAmount.trim()
     // 与后端校验同一契约：输入什么就存什么，存不了的直接拒绝
     if (!isValidBudgetAmount(amount)) {
@@ -300,6 +328,7 @@ export default function GuardrailsPage() {
 
   // ── 派生数据 ────────────────────────────────────────────────────────────
   const budget = currentBudgetPolicy(detail)
+  const budgetConflict = activeBudgetPolicies(detail).length > 1
 
   // Label as "name (email)" so the picker is human-readable instead of an
   // opaque account_id. Fall back gracefully when a field is missing.
@@ -357,6 +386,7 @@ export default function GuardrailsPage() {
         isCreating={isCreating}
         detail={detail}
         detailLoading={detailLoading}
+        detailLoadError={detailLoadError}
         detailRow={detailRow}
         sheetTab={sheetTab}
         onSheetTabChange={setSheetTab}
@@ -372,6 +402,7 @@ export default function GuardrailsPage() {
         memberIds={memberIds} onMemberIdsChange={setMemberIds} memberOptions={memberOptions}
         apiKeyIds={apiKeyIds} onApiKeyIdsChange={setApiKeyIds} apiKeyOptions={apiKeyOptions}
         budget={budget}
+        budgetConflict={budgetConflict}
         budgetAmount={budgetAmount} onBudgetAmountChange={setBudgetAmount}
         budgetPeriodUnit={budgetPeriodUnit} onBudgetPeriodUnitChange={setBudgetPeriodUnit}
         canEditBudget={canEditBudget}
@@ -393,7 +424,9 @@ export default function GuardrailsPage() {
         onCloseClear={() => setShowClearBudget(false)}
         clearing={removeBudgetMutation.isPending}
         onConfirmClear={() => {
-          if (detail && budget) {
+          // budgetConflict 防线：确认弹窗是独立状态，版本错位下 detail 可能在
+          // 弹窗打开后才变脏——脏数据上清除最新策略只会留下更旧的那条
+          if (detail && budget && !budgetConflict) {
             removeBudgetMutation.mutate({ guardrailId: detail.id, policyId: budget.id })
             setShowClearBudget(false)
           }

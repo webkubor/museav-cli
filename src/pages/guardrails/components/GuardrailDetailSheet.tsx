@@ -24,7 +24,7 @@ type BudgetPolicy = NonNullable<GuardrailDetail['budget_policies']>[number]
 export function GuardrailDetailSheet({
   open, onClose,
   isCreating,
-  detail, detailLoading, detailRow,
+  detail, detailLoading, detailLoadError, detailRow,
   sheetTab, onSheetTabChange,
   onToggleStatus,
   syncFormFromDetail,
@@ -40,7 +40,7 @@ export function GuardrailDetailSheet({
   // 作用范围
   apiKeyIds, onApiKeyIdsChange, apiKeyOptions,
   // 预算
-  budget, budgetAmount, onBudgetAmountChange,
+  budget, budgetConflict, budgetAmount, onBudgetAmountChange,
   budgetPeriodUnit, onBudgetPeriodUnitChange,
   canEditBudget, savingBudget, onSaveBudget, onShowClearBudget,
   currencySymbol,
@@ -49,7 +49,7 @@ export function GuardrailDetailSheet({
 }: {
   open: boolean; onClose: () => void
   isCreating: boolean
-  detail: GuardrailDetail | undefined; detailLoading: boolean; detailRow: GuardrailDetail | undefined
+  detail: GuardrailDetail | undefined; detailLoading: boolean; detailLoadError: string | null; detailRow: GuardrailDetail | undefined
   sheetTab: 'info' | 'scope' | 'budget'; onSheetTabChange: (tab: 'info' | 'scope' | 'budget') => void
   onToggleStatus: (args: { id: string; status: 'active' | 'inactive' }) => void
   syncFormFromDetail: (d: GuardrailDetail) => void
@@ -63,6 +63,7 @@ export function GuardrailDetailSheet({
   memberIds: string[]; onMemberIdsChange: (v: string[]) => void; memberOptions: { id: string; name: string }[]
   apiKeyIds: string[]; onApiKeyIdsChange: (v: string[]) => void; apiKeyOptions: { id: string; name: string; active: boolean }[]
   budget: BudgetPolicy | null
+  budgetConflict: boolean
   budgetAmount: string; onBudgetAmountChange: (v: string) => void
   budgetPeriodUnit: PeriodUnit; onBudgetPeriodUnitChange: (v: PeriodUnit) => void
   canEditBudget: boolean; savingBudget: boolean; onSaveBudget: () => void; onShowClearBudget: () => void
@@ -70,6 +71,11 @@ export function GuardrailDetailSheet({
   submitting: boolean; onSubmit: () => void
 }) {
   const { t } = useTranslation()
+
+  // 详情加载失败（含后端对多条生效预算策略返回的 409「预算配置数据错误」）：
+  // 抽屉只渲染错误说明。表单/保存一概不出——openDetail 虽已清空表单，
+  // 但在加载失败的护栏上提交任何修改都是在脏数据上盲写 (qa#162 review)
+  const detailLoadFailed = !isCreating && !detailLoading && !detail && !!detailLoadError
 
   return (
     <SideSheet
@@ -90,7 +96,7 @@ export function GuardrailDetailSheet({
       )}
 
       {/* Tab 导航 */}
-      {!isCreating && (
+      {!isCreating && !detailLoadFailed && (
         <div className="flex border-b border-mg-border px-6 pt-1">
           {([
             { key: 'info', label: '基本信息' },
@@ -122,8 +128,15 @@ export function GuardrailDetailSheet({
       )}
 
       <div className="p-6 overflow-y-auto flex-1">
+        {/* ── 详情加载失败：只渲染错误说明 ── */}
+        {detailLoadFailed && (
+          <div role="alert" className="p-3 rounded-lg border border-mg-danger/40 bg-mg-danger/5 text-xs text-mg-danger">
+            {detailLoadError}
+          </div>
+        )}
+
         {/* ── Tab: 基本信息（创建/编辑共用） ── */}
-        {(isCreating || sheetTab === 'info') && (
+        {!detailLoadFailed && (isCreating || sheetTab === 'info') && (
           <div>
             <GuardrailFormFields
               name={name} onNameChange={onNameChange}
@@ -176,6 +189,17 @@ export function GuardrailDetailSheet({
             <div className="space-y-4 animate-pulse">
               <div className="h-5 bg-mg-fill-0 rounded w-1/3" />
             </div>
+          ) : detail && budgetConflict ? (
+            // 单条不变量被破坏（接口返回多条生效策略）：直接报错，禁止任何
+            // 预算编辑——在脏数据上替换/清除只会加深不一致 (qa#162)
+            <section className="space-y-4">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider">
+                <LuDollarSign className="w-3.5 h-3.5" /> 预算策略
+              </div>
+              <div role="alert" className="p-3 rounded-lg border border-mg-danger/40 bg-mg-danger/5 text-xs text-mg-danger">
+                预算配置数据错误：存在多条生效中的预算策略，请联系管理员处理
+              </div>
+            </section>
           ) : detail ? (
             <section className="space-y-4">
               <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider">
@@ -229,7 +253,7 @@ export function GuardrailDetailSheet({
 
       {/* 统一底部保存：基本信息 + 作用范围（成员/API Keys）一次保存。
           预算是独立的增删策略，保留其自有按钮。 */}
-      {(isCreating || sheetTab !== 'budget') && (
+      {!detailLoadFailed && (isCreating || sheetTab !== 'budget') && (
         <div className="flex justify-end gap-2 px-6 py-4 border-t border-mg-border/50 shrink-0">
           <Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
           <Button

@@ -240,3 +240,58 @@ describe('GuardrailsPage — valid budget save', () => {
     await waitFor(() => expect(input.value).toBe('123.45'))
   })
 })
+
+describe('GuardrailsPage — 多条生效预算策略（脏数据）防线 qa#162', () => {
+  it('预算 Tab 直接报错并隐藏编辑器，保存被禁止', async () => {
+    detailNow = guardrailDetail([
+      budgetPolicy({ id: 'bp-new', spend_limit_amount: '500.000000000000', effective_from: '2026-06-10T00:00:00Z' }),
+      budgetPolicy({ id: 'bp-old', spend_limit_amount: '100.000000000000', effective_from: '2026-06-01T00:00:00Z' }),
+    ])
+    getGuardrail.mockReset().mockImplementation(async () => detailNow)
+
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: GUARDRAIL_NAME }))
+    fireEvent.click(await screen.findByRole('button', { name: '预算' }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toContain('预算配置数据错误')
+    // 编辑器与保存/清除控件一概不渲染——在脏数据上替换只会加深不一致
+    expect(screen.queryByRole('textbox', { name: '预算限额金额' })).toBeNull()
+    expect(screen.queryByRole('button', { name: '保存预算' })).toBeNull()
+    expect(addBudgetPolicy).not.toHaveBeenCalled()
+    expect(deleteBudgetPolicy).not.toHaveBeenCalled()
+  })
+
+  it('单条生效 + 历史停用策略不触发报错，回填取生效那条', async () => {
+    detailNow = guardrailDetail([
+      budgetPolicy({ id: 'bp-live', spend_limit_amount: '500.000000000000', effective_from: '2026-06-10T00:00:00Z' }),
+      budgetPolicy({ id: 'bp-dead', enabled: false, effective_to: '2026-06-09T00:00:00Z', spend_limit_amount: '100.000000000000' }),
+    ])
+    getGuardrail.mockReset().mockImplementation(async () => detailNow)
+
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: GUARDRAIL_NAME }))
+    fireEvent.click(await screen.findByRole('button', { name: '预算' }))
+
+    const input = (await screen.findByRole('textbox', { name: '预算限额金额' })) as HTMLInputElement
+    await waitFor(() => expect(input.value).toBe('500'))
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+})
+
+describe('GuardrailsPage — 详情加载失败（后端 409 预算配置数据错误）qa#162', () => {
+  it('抽屉内渲染错误说明，表单与保存按钮一概不出', async () => {
+    getGuardrail.mockReset().mockRejectedValue(
+      new Error('预算配置数据错误：存在多条生效中的预算策略'),
+    )
+
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: GUARDRAIL_NAME }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toContain('预算配置数据错误')
+    // 防串档：失败的详情上不允许出现可保存的表单（底部保存键 = t key）
+    expect(screen.queryByRole('button', { name: 'guardrails.modal.saveEdit' })).toBeNull()
+    expect(screen.queryByRole('button', { name: '预算' })).toBeNull()
+  })
+})

@@ -46,11 +46,11 @@ SSE 事件：`start` → `delta`(流式) → `done`(完整答案 + conversation_
 持久化：localStorage `modelgo_cs_history`、`modelgo_cs_conversation_id`
 组件：`src/components/customer-service/`，挂载在 DashboardLayout 全局
 
-## 完成度（2026-05-27）
+## 完成度（2026-06-11）
 
 ✅ 基础设施：认证守卫、品牌系统、接口代理、构建配置、客服聊天浮窗
 ✅ 页面：Dashboard、API Keys、工作区管理、用量分析、日志、账单、安全护栏、可观测性、邀请管理、组织管理（多组织）、账号设置、Auth 全套
-❌ Dashboard KPI 数据 hardcoded（未接 /overview API）
+✅ Dashboard KPI 全部接口联调：余额/本月消费/请求数/Token 均已接入真实 API
 
 ## 更多上下文
 

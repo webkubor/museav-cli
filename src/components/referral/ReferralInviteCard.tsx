@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { LuLink, LuCopy, LuCheck } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { appToast } from '@/lib/app-toast'
+import { useCopy } from '@/hooks/use-copy'
 
 interface ReferralInviteCardProps {
   inviteLink: string
@@ -23,9 +24,14 @@ export function ReferralInviteCard({
   compact = false,
 }: ReferralInviteCardProps) {
   const [copied, setCopied] = useState(false)
+  const { copy } = useCopy()
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(inviteLink)
+  const handleCopy = async () => {
+    const ok = await copy(inviteLink)
+    if (!ok) {
+      appToast.error('复制失败，请手动复制')
+      return
+    }
     appToast.success(copySuccess)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)

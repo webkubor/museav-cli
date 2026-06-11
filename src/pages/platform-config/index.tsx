@@ -10,6 +10,7 @@ import { listModels, listModelTags } from '@/services/catalog'
 import { listApiKeys } from '@/services/api-keys'
 import { getReferralOverview, listReferralInvitees, listRewardRecords, listWithdrawals } from '@/services/referral'
 import { appToast } from '@/lib/app-toast'
+import { useCopy } from '@/hooks/use-copy'
 import { useEndpointState } from './use-endpoint-state'
 import { EndpointCard } from './EndpointCard'
 import { CustomRequestPanel } from './CustomRequestPanel'
@@ -33,6 +34,7 @@ const PUBLIC_ROUTES = [
 
 export default function PlatformConfigPage() {
   const { t } = useTranslation()
+  const { copy } = useCopy()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
 
@@ -196,7 +198,7 @@ export default function PlatformConfigPage() {
                   <div
                     key={r.path}
                     className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border px-5 py-3 flex items-center gap-4 cursor-pointer hover:border-brand-base/30 transition-colors"
-                    onClick={() => { navigator.clipboard.writeText(full); appToast.success(`已复制 ${r.path}`) }}
+                    onClick={async () => { if (await copy(full)) appToast.success(`已复制 ${r.path}`) }}
                   >
                     <code className="text-xs font-mono text-brand-base shrink-0 select-all">{r.path}</code>
                     <span className="text-xs text-mg-text-2">—</span>

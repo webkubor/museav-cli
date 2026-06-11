@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/Input'
 import { Composer } from '@/components/ui/Composer'
 import { useModels } from '@/features/models/hooks/useModels'
 import { appToast } from '@/lib/app-toast'
+import { useCopy } from '@/hooks/use-copy'
 import { cn, formatContextLength, formatModelPrice } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import {
@@ -58,6 +59,7 @@ export default function ModelsPage() {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<ExperienceMessage[]>(initialMessages)
   const [isStreaming, setIsStreaming] = useState(false)
+  const { copy } = useCopy()
   const abortRef = useRef<AbortController | null>(null)
 
   // 离开页面时中断在途流式请求，避免后台继续消耗额度。
@@ -146,8 +148,8 @@ export default function ModelsPage() {
 
   async function copyModelId() {
     if (!selectedModel) return
-    await navigator.clipboard.writeText(selectedModel.model_id)
-    appToast.success(text.copied)
+    const ok = await copy(selectedModel.model_id)
+    if (ok) appToast.success(text.copied)
   }
 
   return (

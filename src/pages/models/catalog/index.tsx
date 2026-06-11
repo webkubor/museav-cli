@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
 import { appToast } from '@/lib/app-toast'
+import { useCopy } from '@/hooks/use-copy'
 import { cn, formatContextLength, formatModelPrice } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { getUsageRankingsModels } from '@/services/generated-api'
@@ -146,6 +147,7 @@ export default function ModelsCatalogPage() {
   const apiTags = useMemo(() => tagsQuery.data?.items ?? [], [tagsQuery.data?.items])
   const [isCompareOpen, setIsCompareOpen] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const { copy } = useCopy()
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -198,14 +200,14 @@ export default function ModelsCatalogPage() {
 
   const handleCopyApiId = async (modelId: string, event: React.MouseEvent) => {
     event.stopPropagation()
-    try {
-      await navigator.clipboard.writeText(modelId)
-      setCopiedId(modelId)
-      appToast.success(t('modelsCatalog.toast.copied'))
-      setTimeout(() => setCopiedId(null), 2000)
-    } catch {
+    const ok = await copy(modelId)
+    if (!ok) {
       appToast.error(t('modelsCatalog.toast.copyFailed'))
+      return
     }
+    setCopiedId(modelId)
+    appToast.success(t('modelsCatalog.toast.copied'))
+    setTimeout(() => setCopiedId(null), 2000)
   }
 
   const handleGoPlayground = (modelId: string, event: React.MouseEvent) => {

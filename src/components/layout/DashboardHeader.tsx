@@ -12,6 +12,7 @@ import {
   LuLogOut,
   LuUser,
   LuBuilding2,
+  LuScrollText,
 } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -414,6 +415,15 @@ export const DashboardHeader: React.FC = () => {
           >
             <LuBookOpen size={13} className="shrink-0" />
             <span>{t('common.docs')}</span>
+          </a>
+          <a
+            href={`${marketConfig.docsUrl}/changelog`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/60 transition-all duration-150 select-none"
+          >
+            <LuScrollText size={13} className="shrink-0" />
+            <span>{t('common.changelog')}</span>
           </a>
         </div>
         {/* 一级菜单极细分隔线 */}

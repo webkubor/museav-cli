@@ -30,7 +30,8 @@
       "page": "Page {{page}}",
       "total": "{{count}} items",
       "loadMore": "Load More"
-    }
+    },
+    "changelog": "Changelog"
   },
   "nav": {
     "home": "Home",

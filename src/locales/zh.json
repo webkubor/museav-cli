@@ -30,7 +30,8 @@
       "page": "第 {{page}} 页",
       "total": "共 {{count}} 条",
       "loadMore": "加载更多"
-    }
+    },
+    "changelog": "更新日志"
   },
   "nav": {
     "home": "首页",

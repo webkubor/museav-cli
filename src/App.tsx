@@ -31,6 +31,7 @@ const ModelsCatalogPage = lazy(() => import('@/pages/models/catalog'))
 const ModelsComparePage = lazy(() => import('@/pages/models-compare'))
 const PlatformConfigPage = lazy(() => import('@/pages/platform-config'))
 const TasksPage = lazy(() => import('@/pages/tasks'))
+const NotFoundPage = lazy(() => import('@/pages/not-found'))
 import { useAuthStore } from '@/store/auth'
 import { getSession } from '@/services/auth'
 import { storageKeys } from '@/lib/storage'
@@ -239,7 +240,7 @@ export default function App() {
             </Route>
           </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
         </Suspense>
       </BrowserRouter>

@@ -8,6 +8,8 @@ export interface ApiEnvelope<T> {
   msg: string
   /** 后端请求追踪 id，用于日志排障和客服定位问题。 */
   request_id: string
+  /** 分布式链路追踪 id，后端用于跨服务定位问题（如 "04b155f0a86b0706d41a68d076e094c2"）。 */
+  trace_id?: string
 }
 
 export type ApiResponse<T> = ApiEnvelope<T>
@@ -32,6 +34,8 @@ export interface ApiError {
   msg: string
   /** 后端请求追踪 id，可能在网络错误或非标准响应中缺失。 */
   request_id?: string
+  /** 分布式链路追踪 id。 */
+  trace_id?: string
   /** 错误附加数据，主要用于表单字段级错误。 */
   data?: {
     field_errors?: Array<{

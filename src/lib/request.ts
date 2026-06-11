@@ -49,6 +49,7 @@ type ApiLogEntry = {
   code?: number
   status?: number
   request_id?: string
+  trace_id?: string
   error?: string
   page_path?: string
   request?: unknown
@@ -130,6 +131,7 @@ function searchParams(params?: QueryParams) {
 export class ModelGoApiError extends Error {
   code: number
   requestId?: string
+  traceId?: string
   data?: ApiError['data']
   path?: string
 
@@ -138,6 +140,7 @@ export class ModelGoApiError extends Error {
     this.name = 'ModelGoApiError'
     this.code = error.code
     this.requestId = error.request_id
+    this.traceId = error.trace_id
     this.data = error.data
   }
 }
@@ -190,13 +193,13 @@ const client = ky.create({
   },
 })
 
-async function unwrap<T>(response: Promise<ApiResponse<T>>): Promise<T> {
-  const envelope = await response
+function unwrapEnvelope<T>(envelope: ApiResponse<T>): T {
   if (envelope.code !== 0) {
     throw new ModelGoApiError({
       code: envelope.code,
       msg: envelope.msg,
       request_id: envelope.request_id,
+      trace_id: envelope.trace_id,
       data:
         envelope.data && typeof envelope.data === 'object'
           ? (envelope.data as ApiError['data'])
@@ -211,17 +214,16 @@ export async function get<T>(path: string, params?: QueryParams): Promise<T> {
   const url = apiUrl(normalizedPath)
   const startedAt = nowMs()
   try {
-    const result = await unwrap(
-      client.get(url, { searchParams: searchParams(params) }).json<ApiResponse<T>>()
-    )
-    const ms = durationMs(startedAt)
+    const envelope = await client.get(url, { searchParams: searchParams(params) }).json<ApiResponse<T>>()
+    const result = unwrapEnvelope(envelope)
     devLogApiCall({
       method: 'GET',
       path: normalizedPath,
       url,
       ok: true,
-      duration_ms: ms,
+      duration_ms: durationMs(startedAt),
       code: 0,
+      trace_id: envelope.trace_id,
       request: params,
       response: { code: 0, data: result },
     })
@@ -270,9 +272,10 @@ export async function upload<T>(
   const normalizedPath = normalizePath(path)
   const url = apiUrl(normalizedPath)
   const startedAt = nowMs()
-  const send = () => unwrap(client[method](url, { body: formData }).json<ApiResponse<T>>())
+  const sendRaw = () => client[method](url, { body: formData }).json<ApiResponse<T>>()
   try {
-    const result = await send()
+    const envelope = await sendRaw()
+    const result = unwrapEnvelope(envelope)
     devLogApiCall({
       method: method.toUpperCase(),
       path: normalizedPath,
@@ -280,6 +283,7 @@ export async function upload<T>(
       ok: true,
       duration_ms: durationMs(startedAt),
       code: 0,
+      trace_id: envelope.trace_id,
       request: formData,
       response: { code: 0, data: result },
     })
@@ -287,7 +291,7 @@ export async function upload<T>(
   } catch (error) {
     if (error instanceof ModelGoApiError && error.code === 40302) {
       await refreshCsrf()
-      return send()
+      return unwrapEnvelope(await sendRaw())
     }
     if (error instanceof ModelGoApiError) error.path = normalizedPath
     devLogApiError(method.toUpperCase(), normalizedPath, url, startedAt, error, formData)
@@ -305,15 +309,16 @@ async function requestWithJsonBody<T>(
   const url = apiUrl(normalizedPath)
   const startedAt = nowMs()
   try {
-    const result = await unwrap(send(url))
-    const ms = durationMs(startedAt)
+    const envelope = await send(url)
+    const result = unwrapEnvelope(envelope)
     devLogApiCall({
       method,
       path: normalizedPath,
       url,
       ok: true,
-      duration_ms: ms,
+      duration_ms: durationMs(startedAt),
       code: 0,
+      trace_id: envelope.trace_id,
       request: body,
       response: { code: 0, data: result },
     })
@@ -321,7 +326,7 @@ async function requestWithJsonBody<T>(
   } catch (error) {
     if (error instanceof ModelGoApiError && error.code === 40302) {
       await refreshCsrf()
-      return unwrap(send(url))
+      return unwrapEnvelope(await send(url))
     }
     if (error instanceof ModelGoApiError) error.path = normalizedPath
     devLogApiError(method, normalizedPath, url, startedAt, error, body)
@@ -336,8 +341,9 @@ function devLogApiError(method: string, path: string, url: string, startedAt: nu
   if (error instanceof ModelGoApiError) {
     entry.code = error.code
     entry.request_id = error.requestId
+    entry.trace_id = error.traceId
     entry.error = error.message
-    entry.response = { code: error.code, msg: error.message, data: error.data ?? null, request_id: error.requestId }
+    entry.response = { code: error.code, msg: error.message, data: error.data ?? null, request_id: error.requestId, trace_id: error.traceId }
   } else if (error instanceof Error) {
     entry.status = getHttpStatus(error)
     entry.error = error.message

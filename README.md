@@ -169,7 +169,7 @@ pnpm build:production
 
 ---
 
-## 📋 任务看板 & AI Skills
+## 📋 任务看板 & CS 入口
 
 ### GitLab QA 看板
 
@@ -188,21 +188,26 @@ Group: `qa`（ID 8） · Board: `Development`（ID 2） · 默认项目: `ai-qua
 
 > 控制台 `platform-config` 页面的需求看板与此 GitLab Board 对应，issue 状态同步。
 
-### AI Skills 安装与更新
+### Agent / CLI 入口
+
+本项目不再通过 README 安装或加载外部技能包。研发流程、规则和看板操作统一走 CortexOS `cs` 系统与 GitLab/TestMgr API。
 
 ```bash
-npx git+ssh://git@gitlab.ops.modelgo.com/shared/ai-skills.git
+# 开工快照
+cs brief
+
+# 查看研发流程和规则
+cs flow
+cs rule
+
+# 查指派给自己的 GitLab QA issue
+glab api "issues?state=opened&scope=assigned_to_me&per_page=100" --hostname gitlab.ops.modelgo.com
+
+# 查指派给自己的 BUG
+glab api "issues?state=opened&scope=assigned_to_me&labels=BUG&per_page=100" --hostname gitlab.ops.modelgo.com
 ```
 
-安装后 Claude/Codex 自动加载以下 skill：
-
-| Skill | 用途 |
-| :--- | :--- |
-| `gitlab-board` | 查看/创建/移动 GitLab QA 看板 issue |
-| `gotest` | Go 单元测试生成 |
-| `testmgr-api` | TestMgr API 查询 |
-
-常用操作（通过 `gitlab-board` skill）：
+常用 GitLab 看板操作：
 
 ```bash
 # 查看所有 open issues

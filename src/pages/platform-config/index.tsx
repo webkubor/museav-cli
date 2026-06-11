@@ -17,6 +17,7 @@ import { MenusSyncPanel } from './MenusSyncPanel'
 import { UrlParamsPanel } from './UrlParamsPanel'
 import { HeadersPanel } from './HeadersPanel'
 import { SwaggerPanel } from './SwaggerPanel'
+import { RequirementsPanel } from './RequirementsPanel'
 import type { EndpointDef } from './types'
 
 const PUBLIC_ROUTES = [
@@ -143,6 +144,7 @@ export default function PlatformConfigPage() {
           <TabsTrigger value="menus-sync">菜单同步</TabsTrigger>
           <TabsTrigger value="url-params">回跳参数</TabsTrigger>
           <TabsTrigger value="headers">请求头</TabsTrigger>
+          <TabsTrigger value="requirements">我的问题</TabsTrigger>
           <TabsTrigger value="swagger">Swagger</TabsTrigger>
         </TabsList>
 
@@ -204,6 +206,10 @@ export default function PlatformConfigPage() {
           <div className="space-y-4 pt-2">
             <HeadersPanel />
           </div>
+        </TabsContent>
+
+        <TabsContent value="requirements">
+          <RequirementsPanel />
         </TabsContent>
 
         <TabsContent value="swagger">

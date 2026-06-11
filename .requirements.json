@@ -1118,5 +1118,68 @@
       "已认领"
     ],
     "assignee": "webkubor"
+  },
+  {
+    "id": "gl-147",
+    "title": "组织创建后无法删除",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-10T08:43:00.731Z",
+    "gitlabIid": 147,
+    "gitlabLabels": [
+      "BUG",
+      "待验证"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-145",
+    "title": "默认护栏应该是不可以删除",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-10T08:09:55.149Z",
+    "gitlabIid": 145,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-133",
+    "title": "右上角无法切换到新创建组织（企业），如图",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-10T04:20:53.071Z",
+    "gitlabIid": 133,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-129",
+    "title": "模型广场类别缺少视频生成",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-09T11:57:55.186Z",
+    "gitlabIid": 129,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-128",
+    "title": "数据库有余额，但是接口返回0",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-09T11:40:58.731Z",
+    "gitlabIid": 128,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "webkubor"
   }
 ]

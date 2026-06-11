@@ -18,7 +18,7 @@ import {
   TableRow,
   TableCell
 } from '@/components/ui/Table'
-import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers, LuKey, LuChevronDown, LuZap, LuArrowRight, LuChevronRight, LuKeyRound } from 'react-icons/lu'
+import { LuSearch, LuPlus, LuCopy, LuCheck, LuX, LuUser, LuBuilding2, LuUsers, LuKey, LuChevronDown, LuZap, LuArrowRight, LuChevronRight, LuKeyRound, LuTriangleAlert, LuInfo } from 'react-icons/lu'
 import OpenAI from '@lobehub/icons/es/OpenAI'
 import Anthropic from '@lobehub/icons/es/Anthropic'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -376,60 +376,79 @@ export default function ApiKeysPage() {
 
       {/* 新建密钥横幅 */}
       {revealVisible && (
-        <div className="card-shadow-adaptive border-l-4 border-l-mg-success p-5 bg-card-bg relative overflow-hidden transition-all animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <div className="text-sm font-bold text-mg-text-0 flex items-center gap-2">
-<LuKey size={14} className="shrink-0" /> {t('apiKeys.revealModal.title')}
+        <div className="rounded-xl border border-mg-success/40 bg-mg-success/5 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+          {/* 顶部标题栏 */}
+          <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-mg-success/15 flex items-center justify-center shrink-0 mt-0.5">
+                <LuKey size={15} className="text-mg-success" />
               </div>
-              <div className="text-xs text-mg-warning mt-1.5 max-w-3xl leading-relaxed font-semibold">
-                {t('apiKeys.revealModal.warning')}
-              </div>
-              <div className="text-xs text-mg-warning mt-1 font-bold flex items-center gap-1">
-                ⚠ 请立即复制，关闭后将无法再查看完整密钥
+              <div>
+                <div className="text-sm font-bold text-mg-text-0">{t('apiKeys.revealModal.title')}</div>
+                <div className="text-xs text-mg-warning font-semibold mt-0.5 flex items-center gap-1">
+                  <LuTriangleAlert size={11} className="shrink-0" />
+                  请立即复制并保存，关闭后将无法再查看完整密钥
+                </div>
               </div>
             </div>
             <button
               onClick={() => { setRevealVisible(false); setVerifyState('idle') }}
-              className="text-mg-text-2 hover:text-mg-text-0 p-1 rounded transition-colors cursor-pointer"
+              className="text-mg-text-3 hover:text-mg-text-1 p-1.5 rounded-lg hover:bg-mg-fill-1 transition-colors cursor-pointer shrink-0"
             >
               <LuX className="w-4 h-4" />
             </button>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <div className="bg-mg-code-bg border border-mg-border text-mg-success px-4 py-3 rounded-lg font-mono text-sm flex items-center justify-between font-bold select-all tracking-wider shadow-inner">
-                <span className="truncate">{createdKeyText}</span>
-                <button
-                  onClick={() => handleCopyText(createdKeyText)}
-                  className="text-mg-success hover:text-mg-success/80 transition-colors p-1.5 hover:bg-mg-fill-1 rounded ml-2 shrink-0 cursor-pointer"
-                >
-                  {copied ? <LuCheck className="w-4 h-4" /> : <LuCopy className="w-4 h-4" />}
-                </button>
-              </div>
-              {verifyState === 'mismatch' && (
-                <p className="text-xs text-mg-danger mt-1.5 font-semibold">
-                  粘贴内容与密钥不符，已重新复制，请再次粘贴确认后点击完成
-                </p>
-              )}
-              {verifyState === 'no-copy' && (
-                <p className="text-xs text-mg-warning mt-1.5 font-semibold">
-                  请先复制密钥，再点击「我已复制并妥善保存」
-                </p>
-              )}
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <Button
-                variant="outline"
-                onClick={handleCopyCreatedKeyAndBrowseModels}
-                className="h-11 rounded-lg px-4 font-semibold text-brand-base border-brand-base/30 hover:bg-brand-base/5 cursor-pointer"
+
+          {/* 密钥区 */}
+          <div className="px-5 pb-4">
+            <div className={[
+              'flex items-center gap-2 bg-mg-code-bg border rounded-lg px-4 py-3 font-mono text-sm font-bold select-all tracking-wider transition-colors',
+              verifyState === 'mismatch' ? 'border-mg-danger/60 ring-1 ring-mg-danger/30' : 'border-mg-border',
+            ].join(' ')}>
+              <span className="flex-1 truncate text-mg-success">{createdKeyText}</span>
+              <button
+                onClick={() => handleCopyText(createdKeyText)}
+                className={[
+                  'shrink-0 flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-md transition-colors cursor-pointer',
+                  copied
+                    ? 'bg-mg-success/15 text-mg-success'
+                    : 'bg-mg-fill-1 text-mg-text-1 hover:bg-mg-fill-2 hover:text-mg-text-0',
+                ].join(' ')}
               >
-                复制并去挑选模型
-              </Button>
-              <Button variant="brand" onClick={handleConfirmSaved} className="h-11 rounded-lg px-6 font-semibold cursor-pointer">
-                我已复制并妥善保存
-              </Button>
+                {copied ? <LuCheck className="w-3.5 h-3.5" /> : <LuCopy className="w-3.5 h-3.5" />}
+                {copied ? '已复制' : '复制'}
+              </button>
             </div>
+
+            {/* 验证状态提示 */}
+            {verifyState === 'mismatch' && (
+              <div className="mt-2.5 flex items-start gap-2 rounded-lg bg-mg-danger/10 border border-mg-danger/25 px-3.5 py-2.5">
+                <LuInfo size={14} className="text-mg-danger shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-bold text-mg-danger">粘贴内容与密钥不符</p>
+                  <p className="text-xs text-mg-danger/80 mt-0.5">已重新复制到剪贴板，请粘贴确认内容一致后再点击完成</p>
+                </div>
+              </div>
+            )}
+            {verifyState === 'no-copy' && (
+              <div className="mt-2.5 flex items-start gap-2 rounded-lg bg-mg-warning/10 border border-mg-warning/25 px-3.5 py-2.5">
+                <LuTriangleAlert size={14} className="text-mg-warning shrink-0 mt-0.5" />
+                <p className="text-xs font-semibold text-mg-warning">请先点击上方「复制」按钮复制密钥，再确认保存</p>
+              </div>
+            )}
+          </div>
+
+          {/* 底部操作栏 */}
+          <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-t border-mg-border/40 bg-mg-bg-1/40">
+            <button
+              onClick={handleCopyCreatedKeyAndBrowseModels}
+              className="text-xs font-semibold text-brand-base hover:text-brand-deep hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              复制并去挑选模型 <LuChevronRight size={12} />
+            </button>
+            <Button variant="brand" onClick={handleConfirmSaved} className="h-9 rounded-lg px-5 text-sm font-semibold cursor-pointer">
+              我已复制并妥善保存
+            </Button>
           </div>
         </div>
       )}

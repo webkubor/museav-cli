@@ -505,44 +505,18 @@ export default function ApiKeysPage() {
             </div>
           </div>
 
-          <div className="border-t border-mg-border/40 bg-mg-bg-1/35 px-5 py-4">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex min-w-0 flex-col gap-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-mg-text-0">
-                  <LuZap size={13} className="text-brand-base" />
-                  推荐接入
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {CONNECT_ACTIONS.map((action) => (
-                    <button
-                      key={action.key}
-                      type="button"
-                      onClick={handleOpenConnectWindow}
-                      className="group inline-flex items-center gap-2 rounded-full border border-mg-border bg-mg-bg-0 px-3 py-1.5 text-left transition-all hover:border-brand-base/40 hover:bg-brand-base/5 cursor-pointer"
-                    >
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-base/10 text-brand-base group-hover:bg-brand-base group-hover:text-white transition-colors">
-                        {action.icon}
-                      </span>
-                      <span>
-                        <span className="block text-[11.5px] font-bold leading-none text-mg-text-0">{action.label}</span>
-                        <span className="mt-0.5 block text-[10px] leading-none text-mg-text-2">{action.desc}</span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-3 shrink-0">
-                <button
-                  onClick={handleOpenConnectWindow}
-                  className="text-xs font-semibold text-brand-base hover:text-brand-deep hover:underline flex items-center gap-1 cursor-pointer transition-colors"
-                >
-                  立即接入工具 <LuChevronRight size={12} />
-                </button>
-                <Button variant="brand" onClick={handleConfirmSaved} className="h-9 rounded-lg px-5 text-sm font-semibold cursor-pointer">
-                  我已复制并妥善保存
-                </Button>
-              </div>
+          <div className="border-t border-mg-border/40 bg-mg-bg-1/35 px-5 py-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <button
+                type="button"
+                onClick={handleOpenConnectWindow}
+                className="inline-flex w-fit items-center gap-1 text-xs font-semibold text-brand-base transition-colors hover:text-brand-deep hover:underline cursor-pointer"
+              >
+                接入工具窗口 <LuChevronRight size={12} />
+              </button>
+              <Button variant="brand" onClick={handleConfirmSaved} className="h-9 rounded-lg px-5 text-sm font-semibold cursor-pointer">
+                我已复制并妥善保存
+              </Button>
             </div>
           </div>
         </div>

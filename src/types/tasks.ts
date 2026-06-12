@@ -33,6 +33,8 @@ export interface TaskItem {
 export interface TaskDetail {
   task: TaskItem
   provider_meta?: Record<string, unknown>
+  /** 上游原始响应透传（未类型化），视频任务的产物 URL 一般在其中（如 Ark 的 content.video_url） */
+  provider_response?: Record<string, unknown>
   call_log_snapshot?: Record<string, unknown>
 }
 

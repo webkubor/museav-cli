@@ -31,7 +31,7 @@ import { listTasks, getTask } from '@/services/tasks'
 import { post } from '@/lib/request'
 import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
-import type { TaskItem, TaskStatus, TaskKind } from '@/types'
+import type { TaskItem, TaskDetail, TaskStatus, TaskKind } from '@/types'
 
 // ─── 常量 ────────────────────────────────────────────────────────────────────
 
@@ -89,6 +89,42 @@ function resolveKind(item: TaskItem): TaskKind {
   return 'video'
 }
 
+/**
+ * 从上游透传的 provider_response / provider_meta 中提取产物媒体 URL。
+ * 后端 Row 没有类型化的产物字段，各家上游结构不一（Ark 为 content.video_url），
+ * 故按「字段名含 url 且值为 http(s)」优先、媒体扩展名兜底，递归扫描。
+ */
+function extractMediaUrl(detail: TaskDetail | undefined): string | null {
+  if (!detail) return null
+  const named: string[] = []
+  const byExt: string[] = []
+  const seen = new Set<object>()
+  const walk = (node: unknown, depth: number) => {
+    if (node == null || depth > 6) return
+    if (typeof node === 'string') {
+      if (/^https?:\/\/\S+\.(mp4|webm|mov|m3u8|mp3|wav|m4a|png|jpe?g|webp|gif)([?#]|$)/i.test(node)) byExt.push(node)
+      return
+    }
+    if (typeof node !== 'object') return
+    if (seen.has(node as object)) return
+    seen.add(node as object)
+    if (Array.isArray(node)) {
+      node.forEach((item) => walk(item, depth + 1))
+      return
+    }
+    for (const [key, val] of Object.entries(node as Record<string, unknown>)) {
+      if (typeof val === 'string' && /^https?:\/\//.test(val) && /(?:^url$|_url$|^(video|image|audio|file|media|download)_?url)/i.test(key)) {
+        named.push(val)
+      } else {
+        walk(val, depth + 1)
+      }
+    }
+  }
+  walk(detail.provider_response, 0)
+  walk(detail.provider_meta, 0)
+  return named[0] ?? byExt[0] ?? null
+}
+
 // ─── 详情面板字段行 ───────────────────────────────────────────────────────────
 
 function DetailRow({ label, value, hint, mono }: {
@@ -135,6 +171,7 @@ function TaskDetailSheet({ taskId, onClose }: { taskId: string; onClose: () => v
   const task = data?.task
   const kind = task ? resolveKind(task) : 'video'
   const kindCfg = KIND_CONFIG[kind]
+  const mediaUrl = task?.status === 'completed' ? extractMediaUrl(data) : null
 
   return (
     <SideSheet open={!!taskId} onClose={onClose} width={460} title="任务详情">
@@ -180,6 +217,36 @@ function TaskDetailSheet({ taskId, onClose }: { taskId: string; onClose: () => v
             />
           </div>
 
+          {/* 产物预览：完成态且能从上游响应中解析出媒体 URL 时展示 */}
+          {task.status === 'completed' && mediaUrl && (
+            <div className="rounded-xl border border-mg-border bg-card-bg p-3">
+              <p className="text-[11px] font-bold text-mg-text-2 mb-2 uppercase tracking-wide">产物预览</p>
+              {kind === 'video' && (
+                <video
+                  src={mediaUrl}
+                  controls
+                  preload="metadata"
+                  playsInline
+                  className="w-full rounded-lg bg-black max-h-64"
+                />
+              )}
+              {kind === 'image' && (
+                <img src={mediaUrl} alt="生成产物" className="w-full rounded-lg max-h-64 object-contain bg-mg-fill-0" />
+              )}
+              {kind === 'audio' && (
+                <audio src={mediaUrl} controls preload="metadata" className="w-full" />
+              )}
+            </div>
+          )}
+          {task.status === 'completed' && !mediaUrl && (
+            <div className="rounded-xl border border-mg-border bg-card-bg p-4">
+              <p className="text-[11px] font-bold text-mg-text-2 mb-1.5 uppercase tracking-wide">产物预览</p>
+              <p className="text-[12px] text-mg-text-2 leading-relaxed">
+                上游响应中未找到产物地址，可能已过期或后端未透传，请通过 API 获取产物。
+              </p>
+            </div>
+          )}
+
           {/* Prompt */}
           {task.prompt && (
             <div className="rounded-xl border border-mg-border bg-card-bg p-4">
@@ -199,7 +266,14 @@ function TaskDetailSheet({ taskId, onClose }: { taskId: string; onClose: () => v
           {/* 操作按钮 */}
           <div className="flex gap-2 pt-1">
             {task.status === 'completed' && (
-              <Button variant="outline" size="sm" className="flex-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                disabled={!mediaUrl}
+                title={mediaUrl ? undefined : '未找到产物地址'}
+                onClick={() => { if (mediaUrl) window.open(mediaUrl, '_blank', 'noopener') }}
+              >
                 <LuDownload size={14} />
                 下载产物
               </Button>

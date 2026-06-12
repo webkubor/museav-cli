@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', '.claude']),
+  // generated-api-types 为脚本生成文件，不参与 lint
+  globalIgnores(['dist', '.claude', 'src/types/generated-api-types.ts']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

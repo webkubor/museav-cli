@@ -128,6 +128,20 @@
   font-size: 12px !important;
   font-weight: 800 !important;
   white-space: nowrap !important;
+  text-decoration: none;
+}
+
+.models-catalog-action--link {
+  border: 1px solid var(--mg-border);
+  background: transparent;
+  color: var(--mg-text-1);
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.models-catalog-action--link:hover {
+  border-color: color-mix(in srgb, var(--brand-base) 26%, var(--mg-border));
+  background: var(--mg-fill-0);
+  color: var(--mg-text-0);
 }
 
 .models-catalog-toolbar {

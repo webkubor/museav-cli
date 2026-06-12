@@ -358,13 +358,16 @@ export default function ModelsCatalogPage() {
             <LuGitCompareArrows size={15} />
             {t('modelsCatalog.button.compare')}
           </Button>
-          <Button asChild variant="ghost" className="models-catalog-action">
-            <a href={docsUrl} target="_blank" rel="noreferrer">
-              <LuBookOpen size={15} />
-              {t('modelsCatalog.button.docs')}
-              <LuArrowUpRight size={13} />
-            </a>
-          </Button>
+          <a
+            href={docsUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="models-catalog-action models-catalog-action--link"
+          >
+            <LuBookOpen size={15} />
+            {t('modelsCatalog.button.docs')}
+            <LuArrowUpRight size={13} />
+          </a>
         </div>
       </section>
 

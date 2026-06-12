@@ -1024,6 +1024,7 @@
     },
     "filters": {
       "label": "筛选",
+      "moreLabel": "更多筛选",
       "all": "全部",
       "category": "模型类别",
       "language": "语言支持",

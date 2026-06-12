@@ -14,6 +14,7 @@ const messages: Record<string, string> = {
   'modelsCatalog.placeholder.search': '搜索模型名称、API ID 或厂商...',
   'modelsCatalog.filter.all': '全部',
   'modelsCatalog.filters.label': '筛选',
+  'modelsCatalog.filters.moreLabel': '更多筛选',
   'modelsCatalog.filters.all': '全部',
   'modelsCatalog.filters.category': '模型类别',
   'modelsCatalog.filters.language': '语言支持',
@@ -66,7 +67,7 @@ const tag: CatalogModelTag = {
 }
 
 describe('ModelCatalogFilters', () => {
-  it('展开筛选按钮后显示多维度筛选项', () => {
+  it('展开更多筛选后只显示补充筛选维度', () => {
     render(
       <ModelCatalogFilters
         search=""
@@ -84,9 +85,9 @@ describe('ModelCatalogFilters', () => {
 
     expect(screen.queryByText('模型类别')).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: '筛选' }))
+    fireEvent.click(screen.getByRole('button', { name: '更多筛选' }))
 
-    expect(screen.getByText('模型类别')).toBeInTheDocument()
+    expect(screen.queryByText('模型类别')).not.toBeInTheDocument()
     expect(screen.getByText('语言支持')).toBeInTheDocument()
     expect(screen.getByText('推理上下文长度')).toBeInTheDocument()
     expect(screen.getByText('模型提供方')).toBeInTheDocument()

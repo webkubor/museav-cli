@@ -1025,6 +1025,7 @@
     },
     "filters": {
       "label": "Filters",
+      "moreLabel": "More filters",
       "all": "All",
       "category": "Model category",
       "language": "Language support",

@@ -60,15 +60,6 @@ export function ModelCatalogFilters({
   const { t } = useTranslation()
   const [filtersOpen, setFiltersOpen] = useState(false)
 
-  const categoryOptions = useMemo<FilterOption[]>(
-    () => [
-      { code: 'all', label: t('modelsCatalog.filter.all') },
-      ...apiTags.map((tag) => ({ code: tag.code, label: isZh ? tag.name_zh : tag.name_en })),
-      ...modalityFilters.map((item) => ({ code: item.code, label: isZh ? item.nameZh : item.nameEn })),
-    ],
-    [apiTags, modalityFilters, isZh, t],
-  )
-
   const quickCategoryOptions = useMemo<FilterOption[]>(
     () => [
       { code: 'all', label: t('modelsCatalog.filter.all') },
@@ -135,13 +126,12 @@ export function ModelCatalogFilters({
 
   const activeFilterCount = useMemo(
     () => [
-      category !== 'all',
       advancedFilters.language !== 'all',
       advancedFilters.context !== 'all',
       advancedFilters.provider !== 'all',
       advancedFilters.scenario !== 'all',
     ].filter(Boolean).length,
-    [category, advancedFilters],
+    [advancedFilters],
   )
 
   const handleAdvancedFilterChange = (key: AdvancedFilterKey, value: string) => {
@@ -149,7 +139,6 @@ export function ModelCatalogFilters({
   }
 
   const handleResetFilters = () => {
-    onCategoryChange('all')
     onAdvancedFiltersChange({ ...DEFAULT_ADVANCED_FILTERS })
   }
 
@@ -171,7 +160,7 @@ export function ModelCatalogFilters({
           aria-expanded={filtersOpen}
         >
           <LuSlidersHorizontal aria-hidden />
-          {t('modelsCatalog.filters.label')}
+          {t('modelsCatalog.filters.moreLabel')}
           {activeFilterCount > 0 && <span>{activeFilterCount}</span>}
         </button>
         {quickCategoryOptions.map((option) => (
@@ -187,12 +176,6 @@ export function ModelCatalogFilters({
       </div>
       {filtersOpen && (
         <div className="models-catalog-advanced-filters">
-          <AdvancedFilterRow
-            label={t('modelsCatalog.filters.category')}
-            options={categoryOptions}
-            value={category}
-            onChange={onCategoryChange}
-          />
           <AdvancedFilterRow
             label={t('modelsCatalog.filters.language')}
             options={languageOptions}

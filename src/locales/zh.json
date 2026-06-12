@@ -1063,12 +1063,9 @@
       "liveBadge": "实时概览"
     },
     "status": {
-      "normalTitle": "系统状态正常",
       "lowTitle": "账户余额不足提醒",
-      "normalDesc": "当前可用余额为 {{amount}}，API 调用、账单和审计链路运行正常。",
       "lowDesc": "当前可用余额为 {{amount}}，建议及时充值，避免影响 API 正常调用和业务连续性。",
       "balanceUnknown": "--",
-      "billingAction": "查看账单",
       "rechargeAction": "立即充值"
     },
     "onboarding": {

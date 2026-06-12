@@ -1,28 +1,19 @@
 import React, { useMemo } from 'react'
 import { useCopy } from '@/hooks/use-copy'
 import { useTranslation } from 'react-i18next'
-import { LuArrowRight, LuCheck, LuCopy, LuInfo, LuSparkles, LuTerminal } from 'react-icons/lu'
+import { LuArrowRight, LuCheck, LuCopy, LuSparkles, LuTerminal } from 'react-icons/lu'
 import { useNavigate } from 'react-router-dom'
 import { appToast } from '@/lib/app-toast'
-import { useCurrency } from '@/hooks/use-platform-config'
-import { useBalance } from '@/hooks/use-balance'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS, type Permission } from '@/config/permissions'
 import { CLI_CODE } from '@/features/dashboard/constants/code-snippets'
-import { formatFriendlyAmount } from '@/lib/utils'
 import { QuickWeb3Icon, type QuickIconType } from './QuickAccessSection'
 import './quick-access-section.css'
 import './dashboard-top-panel.css'
 
 function scopedWorkspacePath(workspaceId: string | null, path: string) {
   return workspaceId ? `/workspace/${workspaceId}/${path}` : '/dashboard'
-}
-
-function parseAmount(amount?: string) {
-  if (!amount) return null
-  const value = Number.parseFloat(amount)
-  return Number.isFinite(value) ? value : null
 }
 
 function getCliCommandLine() {
@@ -34,12 +25,8 @@ export const DashboardTopPanel: React.FC = () => {
   const navigate = useNavigate()
   const { copy, copied } = useCopy(1400)
   const account = useAuthStore((s) => s.account)
-  const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
-  const { symbol: currencySymbol } = useCurrency()
   const { hasPermission } = usePermissions()
-
-  const { data: balance } = useBalance(activeTenantId)
 
   const greetingKey = useMemo(() => {
     const hour = new Date().getHours()
@@ -49,10 +36,6 @@ export const DashboardTopPanel: React.FC = () => {
   }, [])
 
   const displayName = account?.display_name || account?.email || t('dashboardTop.greeting.defaultName')
-  const availableAmount = parseAmount(balance?.available.amount)
-  const thresholdAmount = parseAmount(balance?.low_balance_threshold.amount)
-  const balanceText = availableAmount === null ? t('dashboardTop.status.balanceUnknown') : formatFriendlyAmount(availableAmount, currencySymbol)
-  const isLowBalance = availableAmount !== null && thresholdAmount !== null && availableAmount <= thresholdAmount
   const cliCommand = getCliCommandLine()
 
   const allQuickActions: Array<{ icon: QuickIconType; label: string; path: string; primary?: boolean; permission?: Permission }> = [
@@ -93,24 +76,6 @@ export const DashboardTopPanel: React.FC = () => {
       </div>
 
       <div className="dashboard-top-cards">
-      <div className="dashboard-top-status" data-tone={isLowBalance ? 'warning' : 'normal'}>
-        <span className="dashboard-top-status-mark" aria-hidden>
-          <LuInfo size={18} />
-        </span>
-        <div className="dashboard-top-status-copy">
-          <strong>{t(isLowBalance ? 'dashboardTop.status.lowTitle' : 'dashboardTop.status.normalTitle')}</strong>
-          <p>
-            {t(isLowBalance ? 'dashboardTop.status.lowDesc' : 'dashboardTop.status.normalDesc', {
-              amount: balanceText,
-            })}
-          </p>
-        </div>
-        <button type="button" className="dashboard-top-secondary-action" onClick={() => navigate('/billing')}>
-          {t(isLowBalance ? 'dashboardTop.status.rechargeAction' : 'dashboardTop.status.billingAction')}
-          <LuArrowRight size={14} />
-        </button>
-      </div>
-
       <div className="dashboard-top-guide">
         <span className="dashboard-top-guide-icon" aria-hidden>
           <LuTerminal size={20} />

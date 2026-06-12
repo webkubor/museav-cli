@@ -87,12 +87,11 @@
 
 .dashboard-top-cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   align-items: stretch;
   gap: 16px;
 }
 
-.dashboard-top-status,
 .dashboard-top-guide {
   position: relative;
   display: flex;
@@ -106,12 +105,7 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.dashboard-top-status {
-  padding: 16px 20px 16px 24px;
-}
-
-/* 统一重构为悬浮式圆角胶囊指示条 */
-.dashboard-top-status::before,
+/* 悬浮式圆角胶囊指示条 */
 .dashboard-top-guide::before {
   content: '';
   position: absolute;
@@ -120,19 +114,6 @@
   bottom: 16px;
   width: 3px;
   border-radius: 99px;
-}
-
-.dashboard-top-status::before {
-  background: var(--mg-success);
-}
-
-.dashboard-top-status[data-tone='warning'] {
-  border-color: rgba(245, 158, 11, 0.22);
-  background: linear-gradient(90deg, rgba(245, 158, 11, 0.08), rgba(var(--mg-bg-0-rgb), 0.9) 45%);
-}
-
-.dashboard-top-status[data-tone='warning']::before {
-  background: var(--mg-warning);
 }
 
 /* 统一左侧图标容器尺寸与圆角 */
@@ -145,16 +126,6 @@
   width: 40px;
   height: 40px;
   border-radius: var(--radius-md);
-}
-
-.dashboard-top-status-mark {
-  color: var(--mg-success);
-  background: rgba(0, 214, 143, 0.1);
-}
-
-.dashboard-top-status[data-tone='warning'] .dashboard-top-status-mark {
-  color: var(--mg-warning);
-  background: rgba(245, 158, 11, 0.12);
 }
 
 .dashboard-top-status-copy,
@@ -263,17 +234,6 @@ body[theme-mode='dark'] .dashboard-top-guide-icon {
   border: 1px solid color-mix(in srgb, var(--brand-base) 18%, var(--mg-border));
   background: rgba(var(--mg-bg-0-rgb), 0.8);
   color: var(--brand-base);
-}
-
-/* 低余额警告卡片内的按钮：跟随橙色警告语义 */
-.dashboard-top-status[data-tone='warning'] .dashboard-top-secondary-action {
-  border-color: color-mix(in srgb, var(--mg-warning) 45%, transparent);
-  color: var(--mg-warning);
-}
-
-.dashboard-top-status[data-tone='warning'] .dashboard-top-secondary-action:hover {
-  border-color: var(--mg-warning);
-  background: color-mix(in srgb, var(--mg-warning) 8%, rgba(var(--mg-bg-0-rgb), 0.8));
 }
 
 .dashboard-top-command {
@@ -388,12 +348,7 @@ body[theme-mode='dark'] .dashboard-top-guide-icon {
 }
 
 @media (max-width: 900px) {
-  .dashboard-top-cards {
-    grid-template-columns: 1fr;
-  }
-
   .dashboard-top-greeting,
-  .dashboard-top-status,
   .dashboard-top-guide {
     align-items: stretch;
     flex-direction: column;
@@ -414,7 +369,6 @@ body[theme-mode='dark'] .dashboard-top-guide-icon {
     font-size: 24px;
   }
 
-  .dashboard-top-status,
   .dashboard-top-guide {
     padding: 14px;
   }

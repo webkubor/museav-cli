@@ -21,6 +21,7 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { DashboardHeader } from './DashboardHeader'
 import { DashboardSidebar } from './DashboardSidebar'
+import { LowBalanceAlert } from './LowBalanceAlert'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { CustomerService } from '@/components/customer-service'
 import { navConfig } from '@/config/nav'
@@ -159,6 +160,7 @@ export function DashboardLayout() {
       <div className="dashboard-global-bottom-bg" aria-hidden="true" />
       <DashboardHeader />
       <div className={cn("shimmer-line", navigating && "navigating")} />
+      <LowBalanceAlert />
 
 
       <div className="flex flex-1 relative z-10 overflow-hidden">
@@ -179,7 +181,7 @@ export function DashboardLayout() {
           settingsLabel={t('nav.settings')}
         />
 
-        <main className="flex-1 flex flex-col pt-3 px-6 pb-6 md:pt-4 md:px-9 md:pb-9 overflow-y-auto h-[calc(100vh-60px)] transition-all duration-300">
+        <main className="flex-1 flex flex-col pt-3 px-6 pb-6 md:pt-4 md:px-9 md:pb-9 overflow-y-auto h-full min-h-0 transition-all duration-300">
           {/* 高阶极简自定义 Breadcrumbs */}
           <Breadcrumb items={getBreadcrumbs()} />
 

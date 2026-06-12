@@ -1064,12 +1064,9 @@
       "liveBadge": "Live overview"
     },
     "status": {
-      "normalTitle": "System status is healthy",
       "lowTitle": "Low balance reminder",
-      "normalDesc": "Available balance is {{amount}}. API calls, billing, and audit pipelines are running normally.",
       "lowDesc": "Available balance is {{amount}}. Top up soon to avoid API interruptions and business impact.",
       "balanceUnknown": "--",
-      "billingAction": "View billing",
       "rechargeAction": "Top up now"
     },
     "onboarding": {

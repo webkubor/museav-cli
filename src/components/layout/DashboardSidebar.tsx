@@ -357,7 +357,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       className={cn(
-        "relative flex flex-col h-[calc(100vh-60px)] bg-mg-bg-0 border-r border-mg-border/60 transition-all duration-300 ease-out select-none",
+        "relative flex flex-col h-full min-h-0 bg-mg-bg-0 border-r border-mg-border/60 transition-all duration-300 ease-out select-none",
         collapsed ? "w-16" : "w-60"
       )}
     >

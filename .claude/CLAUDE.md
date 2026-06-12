@@ -33,6 +33,7 @@ Swagger：`https://modelgo-web-api.test.modelgo.com/swagger/doc.json`
 - **Semi Design 主色**：通过 `--semi-color-primary` CSS 变量注入，在 `src/index.css` 按 `[data-market]` 切换
 - **颜色**：所有颜色用 Semi Design CSS token，禁止硬编码 hex（保留语义状态色 green/red/yellow 和 box-shadow rgba）
 - **pageItems<T>()**：`src/lib/utils.ts`，处理后端返回 CursorPage 或直接数组的兼容
+- **页面布局规范**：每页用 `<PageHeader>` 做标题，**禁止传 `className="mb-0"` 之类覆盖其间距**——间距由组件统一管（自带 `mb-6`），页面外层容器统一 `space-y-6`（或 `flex flex-col gap-6`）。标题到首卡的标准间距即由这两者叠加而来，曾因 5 个页面私自 `mb-0` 导致标题贴卡（33d7fc6 修复）
 
 ## 导航架构（侧边栏两段式）
 

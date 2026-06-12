@@ -92,7 +92,6 @@ export default function WorkspacesPage() {
       <PageHeader
         title={t('workspaces.title')}
         description={t('workspaces.desc')}
-        className="mb-0"
       />
 
       {/* 控制台操作区域 */}

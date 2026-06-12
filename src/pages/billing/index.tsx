@@ -239,7 +239,6 @@ export default function BillingPage() {
       <PageHeader
         title={t('billing.title')}
         description={t('billing.desc')}
-        className="mb-0"
       />
 
       <TopUpModal visible={topUpVisible} onClose={() => setTopUpVisible(false)} tenantId={tenantId} />

@@ -74,7 +74,7 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
           </a>
         </div>
 
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
           <div className="w-full shrink-0 xl:w-[420px]">
             <div className="mb-1.5 text-[11px] font-bold text-mg-text-1">协议地址</div>
             <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-1">
@@ -114,7 +114,7 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
 
           <div className="min-w-0 flex-1">
             <div className="mb-1.5 text-[11px] font-bold text-mg-text-1">接入方式</div>
-            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 2xl:grid-cols-5">
+            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
               {CONNECT_ACTIONS.map((action) => (
                 <button
                   key={action.key}

@@ -18,7 +18,6 @@ export default function OrganizationSettingsPage() {
       <PageHeader
         title="企业管理"
         description={`一个账号最多创建 ${MAX_TENANTS} 个企业。在左侧选择需要管理的企业，可在右侧进行信息维护、成员管理与成员邀请。`}
-        className="mb-0"
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

@@ -485,7 +485,6 @@ export default function ObservabilityPage() {
       <PageHeader
         title={t('observability.title')}
         description={t('observability.desc')}
-        className="mb-0"
       />
 
       {loggingQuery.isLoading && (

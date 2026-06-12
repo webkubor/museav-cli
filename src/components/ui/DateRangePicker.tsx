@@ -222,10 +222,15 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     )
   }
 
+  const isCustomActive = activePreset === 'custom'
+
   const presetList = (
-    <div className="flex gap-0 w-[460px] text-left">
+    <div className={cn('flex gap-0 text-left', isCustomActive ? 'w-[460px]' : 'w-[140px]')}>
       {/* Preset List */}
-      <div className="flex flex-col gap-0.5 pr-3 mr-3 border-r border-mg-border/50 shrink-0 w-[108px]">
+      <div className={cn(
+        'flex flex-col gap-0.5 shrink-0',
+        isCustomActive ? 'pr-3 mr-3 border-r border-mg-border/50 w-[108px]' : 'w-full'
+      )}>
         <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider mb-1.5 px-2">{customTitle || '常用时间'}</span>
         {activePresets.map(p => (
           <button
@@ -244,7 +249,8 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         ))}
       </div>
 
-      {/* Custom Area */}
+      {/* Custom Area：仅选中「自定义范围」时展开，切回其他预设自动收起 */}
+      {isCustomActive && (
       <div className="flex-1 flex flex-col gap-2.5 min-w-0">
         <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">{customLabel || '自定义日期区间'}</span>
 
@@ -274,13 +280,14 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
         <Button
           variant="brand"
-          disabled={activePreset !== 'custom' || (hideStartDate ? !customEnd : (!customStart || !customEnd))}
+          disabled={hideStartDate ? !customEnd : (!customStart || !customEnd)}
           onClick={handleApplyCustom}
           className="h-8 text-xs font-bold !rounded-lg w-full flex items-center justify-center gap-1 cursor-pointer"
         >
           确定应用 <LuChevronRight size={13} />
         </Button>
       </div>
+      )}
     </div>
   )
 

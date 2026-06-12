@@ -49,17 +49,83 @@ function getLogStatus(row: { http_status?: number | null; status?: string }): st
 
 function decodePayload(payload: LogPayload | undefined) {
   if (!payload?.body_b64) return ''
+  let decoded: string
   try {
     const binary = atob(payload.body_b64)
     const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
-    const decoded = new TextDecoder().decode(bytes)
-    if (payload.content_type?.includes('json')) {
-      return JSON.stringify(JSON.parse(decoded), null, 2)
-    }
-    return decoded
+    decoded = new TextDecoder().decode(bytes)
   } catch {
+    // 不是合法 base64，原样返回
     return payload.body_b64
   }
+  // 能解析成 JSON 就美化；解析失败（如流式 SSE 响应 data: {...}）则返回解码后的纯文本，
+  // 不再回退到原始 base64——content_type 标的是 json 但 body 实为 SSE 流时尤其重要
+  try {
+    return JSON.stringify(JSON.parse(decoded), null, 2)
+  } catch {
+    return decoded
+  }
+}
+
+interface SSEReassembled {
+  reasoning: string
+  content: string
+  chunkCount: number
+  finishReason?: string
+  usage?: unknown
+}
+
+/**
+ * 把 OpenAI 风格的流式 SSE 响应（一堆 `data: {delta}` chunk）合并还原成完整回答。
+ * 不是 SSE（如普通 JSON）时返回 null，调用方退回原始解码文本。
+ */
+function reassembleSSE(text: string): SSEReassembled | null {
+  if (!/^\s*data:/.test(text)) return null
+  let reasoning = ''
+  let content = ''
+  let chunkCount = 0
+  let finishReason: string | undefined
+  let usage: unknown
+  let sawJson = false
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim()
+    if (!trimmed.startsWith('data:')) continue
+    const data = trimmed.slice(5).trim()
+    if (!data || data === '[DONE]') continue
+    chunkCount++
+    try {
+      const obj = JSON.parse(data) as {
+        choices?: Array<{
+          delta?: { content?: unknown; reasoning_content?: unknown }
+          message?: { content?: unknown; reasoning_content?: unknown }
+          finish_reason?: string | null
+        }>
+        usage?: unknown
+      }
+      sawJson = true
+      const choice = obj.choices?.[0]
+      const delta = choice?.delta ?? choice?.message
+      if (typeof delta?.reasoning_content === 'string') reasoning += delta.reasoning_content
+      if (typeof delta?.content === 'string') content += delta.content
+      if (choice?.finish_reason) finishReason = choice.finish_reason
+      if (obj.usage) usage = obj.usage
+    } catch {
+      // 非 JSON 的 data 行，跳过
+    }
+  }
+  if (!sawJson) return null
+  return { reasoning, content, chunkCount, finishReason, usage }
+}
+
+function formatSSESummary(s: SSEReassembled): string {
+  const blocks: string[] = []
+  if (s.reasoning) blocks.push(`【推理 reasoning_content】\n${s.reasoning}`)
+  blocks.push(`【回答 content】\n${s.content || '(空)'}`)
+  const meta = [`合并 ${s.chunkCount} 个 chunk`]
+  if (s.finishReason) meta.push(`finish_reason: ${s.finishReason}`)
+  if (s.usage) meta.push(`usage: ${JSON.stringify(s.usage)}`)
+  blocks.push(`──\n${meta.join('  ·  ')}`)
+  return blocks.join('\n\n')
 }
 
 /**
@@ -210,6 +276,7 @@ export default function LogsPage() {
   // 侧边栏抽屉展示
   const [selectedLog, setSelectedLog] = useState<CallLogItem | null>(null)
   const [payloadKind, setPayloadKind] = useState<PayloadKind>('request')
+  const [payloadView, setPayloadView] = useState<'parsed' | 'raw'>('parsed')
 
   // 接口分页
   const [page, setPage] = useState(1)
@@ -265,10 +332,14 @@ export default function LogsPage() {
   })
 
   const decodedPayload = decodePayload(payloadQuery.data)
+  const sseReassembled = reassembleSSE(decodedPayload)
+  const displayedPayload = sseReassembled && payloadView === 'parsed'
+    ? formatSSESummary(sseReassembled)
+    : decodedPayload
 
   async function copyPayload() {
-    if (!decodedPayload) return
-    await copyPayloadText(decodedPayload)
+    if (!displayedPayload) return
+    await copyPayloadText(displayedPayload)
     appToast.success(t('logs.detail.payloadCopied'))
   }
 
@@ -541,10 +612,20 @@ export default function LogsPage() {
                         {t(`logs.detail.payloadKind.${kind}`)}
                       </button>
                     ))}
+                    {sseReassembled && (
+                      <button
+                        type="button"
+                        onClick={() => setPayloadView((v) => (v === 'parsed' ? 'raw' : 'parsed'))}
+                        className="h-7 rounded-md border border-mg-border bg-mg-fill-0 px-2.5 text-[11px] font-semibold text-mg-text-1 transition-colors hover:text-mg-text-0"
+                        title="在合并回答与原始 SSE 流之间切换"
+                      >
+                        {payloadView === 'parsed' ? '原始 SSE' : '合并回答'}
+                      </button>
+                    )}
                     <Button
                       size="xs"
                       variant="outline"
-                      disabled={!decodedPayload || payloadQuery.isLoading}
+                      disabled={!displayedPayload || payloadQuery.isLoading}
                       onClick={copyPayload}
                       className="h-7 min-w-[76px] transition-all duration-300 active:scale-[0.95]"
                     >
@@ -570,7 +651,7 @@ export default function LogsPage() {
                     ? t('logs.detail.payloadLoading')
                     : payloadQuery.isError
                       ? t('logs.detail.payloadError')
-                      : decodedPayload || t('logs.detail.payloadEmpty')}
+                      : displayedPayload || t('logs.detail.payloadEmpty')}
                 </CodeBlock>
               </div>
             </div>

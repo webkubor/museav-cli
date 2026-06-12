@@ -13,6 +13,7 @@ import {
   LuUser,
   LuBuilding2,
   LuScrollText,
+  LuZap,
 } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -26,10 +27,12 @@ import { createOrganization } from '@/services/organizations'
 import { applyTheme, getUserTheme } from '@/lib/theme'
 import { useTranslation } from 'react-i18next'
 import { listWorkspaces, createWorkspace } from '@/services/workspaces'
+import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 import type { TenantBrief, TenantItem, WorkspaceItem, SessionResult } from '@/types'
 import type { TenantListResponse } from '@/interfaces'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { ConnectModal } from '@/pages/api-keys/ConnectModal'
 import {
   Dialog,
   DialogContent,
@@ -92,6 +95,7 @@ export const DashboardHeader: React.FC = () => {
   const [newOrgName, setNewOrgName] = useState('')
 
   const [workspaceModalVisible, setWorkspaceModalVisible] = useState(false)
+  const [connectModalVisible, setConnectModalVisible] = useState(false)
   const [wsName, setWsName] = useState('')
   const [wsSlug, setWsSlug] = useState('')
   const [wsDesc, setWsDesc] = useState('')
@@ -221,6 +225,11 @@ export const DashboardHeader: React.FC = () => {
     if (wsMatch) {
       navigate(`/workspace/${workspaceId}/${wsMatch[1]}`, { replace: true })
     }
+  }
+
+  function handleCreateApiKeyFromConnect() {
+    setConnectModalVisible(false)
+    navigate(activeWorkspaceId ? `/workspace/${activeWorkspaceId}/api-keys` : '/dashboard')
   }
 
   async function handleLogout() {
@@ -392,6 +401,16 @@ export const DashboardHeader: React.FC = () => {
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <button
+          type="button"
+          onClick={() => setConnectModalVisible(true)}
+          title={t('header.quickAccess')}
+          className="inline-flex items-center gap-1.5 rounded-full border border-brand-base/20 bg-brand-base/[0.06] px-2.5 py-1.5 text-xs font-bold text-brand-base transition-all duration-200 hover:border-brand-base/35 hover:bg-brand-base/[0.1] hover:shadow-sm active:scale-[0.97] md:px-3"
+        >
+          <LuZap size={12} className="shrink-0" />
+          <span className="hidden md:inline">{t('header.quickAccess')}</span>
+        </button>
       </div>
 
       {/* 右侧：功能控制区 + 组织 Switcher + 用户头像 */}
@@ -662,6 +681,16 @@ export const DashboardHeader: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConnectModal
+        open={connectModalVisible}
+        onClose={() => setConnectModalVisible(false)}
+        openAIBaseUrl={GATEWAY_ENDPOINTS[0]?.baseUrl ?? ''}
+        anthropicBaseUrl={GATEWAY_ENDPOINTS[1]?.baseUrl ?? GATEWAY_ENDPOINTS[0]?.baseUrl ?? ''}
+        createdKeyText=""
+        docsUrl={marketConfig.docsUrl}
+        onCreateKey={handleCreateApiKeyFromConnect}
+      />
     </header>
   )
 }

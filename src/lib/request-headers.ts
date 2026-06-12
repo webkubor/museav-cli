@@ -74,7 +74,7 @@ function resolveLocale(): AcceptLanguageTag {
   }
 
   // 2. 智能探测浏览器默认语言。前期仅支持中文和英文，只要包含 zh 则返回 zh-CN，其余一律默认返回 en-US
-  const browserLang = navigator.language || (navigator as any).userLanguage || ''
+  const browserLang = navigator.language || (navigator as Navigator & { userLanguage?: string }).userLanguage || ''
   return browserLang.toLowerCase().includes('zh') ? 'zh-CN' : 'en-US'
 }
 

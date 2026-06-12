@@ -54,7 +54,6 @@ export interface ButtonProps
   asChild?: boolean
   loading?: boolean
   htmlType?: "submit" | "button" | "reset" // 兼容 Semi UI 的 htmlType 属性
-  theme?: string // 兼容 Semi UI 的 theme 属性，无须特殊行为直接过滤
   size?: "icon" | "default" | "xs" | "sm" | "lg" | "xl" | "small" | "large" | string | null // 显式扩充 size 类型以完美支持 "small" 和 "large"
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "glass" | "brand" | string | null
   type?: "submit" | "button" | "reset" | "primary" | "secondary" | "danger" | "tertiary" | string // 兼容 Semi UI 的 type 属性
@@ -65,7 +64,7 @@ export interface ButtonProps
  * 统一的高阶 Button 组件
  */
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, loading = false, htmlType, theme, type, icon, children, disabled, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, loading = false, htmlType, type, icon, children, disabled, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
 
     // 1. 智能解析 variant (如果 type 传递了 Semi 颜色，自动映射为对应 variant)
@@ -91,7 +90,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <Comp
         type={resolvedHtmlType}
-        className={cn(buttonVariants({ variant: resolvedVariant as any, size: mappedSize as any, className }))}
+        className={cn(buttonVariants({
+          variant: resolvedVariant as VariantProps<typeof buttonVariants>['variant'],
+          size: mappedSize as VariantProps<typeof buttonVariants>['size'],
+          className,
+        }))}
         ref={ref}
         disabled={disabled || loading}
         {...props}
@@ -134,6 +137,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 )
 Button.displayName = "Button"
 
-export { Button, buttonVariants }
+export { Button }
 
 

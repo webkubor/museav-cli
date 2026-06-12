@@ -43,7 +43,10 @@ export default function DevicePage() {
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null)
 
   useEffect(() => {
+    // 设备授权状态机：同步 URL user_code 与 auth session（外部状态）推进 state，
+    // 异步 loadTenants/审批流共用同一 state，无法拆成渲染期派生
     if (!rawCode) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ kind: 'missing_code' })
       return
     }

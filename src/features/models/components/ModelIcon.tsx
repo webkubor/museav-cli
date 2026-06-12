@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { cn, getFallbackAvatarText } from '@/lib/utils'
 import { resolveVendorIcon, resolveLobehubIcon } from './vendor-icons'
 
@@ -27,9 +27,12 @@ interface ModelIconProps {
  */
 export function ModelIcon({ model, size = 32, rounded = 'rounded-md', className }: ModelIconProps) {
   const [imgError, setImgError] = useState(false)
-  useEffect(() => {
+  // logo_url 变化时在渲染期重置加载失败标记（react.dev: adjusting state when a prop changes）
+  const [prevLogoUrl, setPrevLogoUrl] = useState(model.logo_url)
+  if (prevLogoUrl !== model.logo_url) {
+    setPrevLogoUrl(model.logo_url)
     setImgError(false)
-  }, [model.logo_url])
+  }
 
   const box = cn('shrink-0 inline-flex items-center justify-center overflow-hidden', rounded, className)
   const iconSize = Math.round(size * 0.9)

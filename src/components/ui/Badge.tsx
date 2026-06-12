@@ -63,4 +63,4 @@ function Badge({ className, variant, size, dot, children, ...props }: BadgeProps
 }
 
 export type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>['variant']>
-export { Badge, badgeVariants }
+export { Badge }

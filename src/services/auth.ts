@@ -52,8 +52,10 @@ export function getSession() {
  * @param provider  - 'google' | 'github' | 'wechat'
  * @param redirect  - 授权成功后回跳路径，默认 '/'
  */
+export type OAuthProvider = 'google' | 'github' | 'wechat'
+
 export function oauthAuthorizeUrl(
-  provider: 'google' | 'github' | 'wechat',
+  provider: OAuthProvider,
   redirect = '/'
 ): string {
   return `${apiBaseUrl()}/api/v1/auth/oauth/${provider}/authorize?redirect=${encodeURIComponent(redirect)}`

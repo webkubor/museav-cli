@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/Button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { useCopy } from '@/hooks/use-copy'
 import { appToast } from '@/lib/app-toast'
-import { LuCopy, LuCheck, LuZap, LuChevronRight, LuExternalLink } from 'react-icons/lu'
+import { useTranslation } from 'react-i18next'
+import { LuCopy, LuCheck, LuZap, LuChevronRight, LuExternalLink, LuKey } from 'react-icons/lu'
 import { CONNECT_ACTIONS, buildConnectSnippets, getConnectAction } from './constants'
 
 type Props = {
@@ -17,11 +18,14 @@ type Props = {
   anthropicBaseUrl: string
   createdKeyText: string
   docsUrl: string
+  onCreateKey?: () => void
 }
 
-export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl }: Props) {
+export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl, onCreateKey }: Props) {
+  const { t } = useTranslation()
   const { copy } = useCopy()
   const [connectCopied, setConnectCopied] = useState<string | null>(null)
+  const hasCreatedKey = createdKeyText.trim().length > 0
 
   async function handleConnectCopy(key: string, text: string) {
     const ok = await copy(text)
@@ -55,20 +59,34 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
               <div>
                 <div className="text-sm font-bold text-mg-text-0">ModelGo 接入参数</div>
                 <div className="text-xs text-mg-text-2 mt-1">
-                  API Key 只在创建后展示一次，关闭横幅后将无法再次查看完整密钥。
+                  {hasCreatedKey
+                    ? t('apiKeys.connectModal.keyCreatedHint')
+                    : t('apiKeys.connectModal.noKeyHint')}
                 </div>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleConnectCopy('api-key', createdKeyText)}
-              className="shrink-0"
-            >
-              {connectCopied === 'api-key'
-                ? <><LuCheck className="w-3.5 h-3.5 mr-1.5" />已复制 Key</>
-                : <><LuCopy className="w-3.5 h-3.5 mr-1.5" />复制 API Key</>}
-            </Button>
+            {hasCreatedKey ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleConnectCopy('api-key', createdKeyText)}
+                className="shrink-0"
+              >
+                {connectCopied === 'api-key'
+                  ? <><LuCheck className="w-3.5 h-3.5 mr-1.5" />已复制 Key</>
+                  : <><LuCopy className="w-3.5 h-3.5 mr-1.5" />复制 API Key</>}
+              </Button>
+            ) : onCreateKey ? (
+              <Button
+                variant="brand"
+                size="sm"
+                onClick={onCreateKey}
+                className="shrink-0"
+              >
+                <LuKey className="w-3.5 h-3.5 mr-1.5" />
+                {t('apiKeys.create')}
+              </Button>
+            ) : null}
           </div>
           <div className="mt-4 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
             <div className="rounded-lg border border-mg-border/60 bg-mg-bg-0 px-3 py-2">

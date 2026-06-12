@@ -41,9 +41,9 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
             <div className="flex gap-1">
               {detail.modalities.map((m) => <ModalityBadge key={m} modality={m} />)}
             </div>
-            {(detail as any).tags?.length > 0 && (
+            {detail.tags?.length > 0 && (
               <div className="flex gap-1 flex-wrap">
-                {(detail as any).tags.map((tag: string) => (
+                {detail.tags.map((tag) => (
                   <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--mg-fill-0)] text-[var(--mg-text-2)] border border-[var(--mg-border)]">{tag}</span>
                 ))}
               </div>

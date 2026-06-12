@@ -12,9 +12,8 @@ export interface InputProps
   prefix?: React.ReactNode
   suffix?: React.ReactNode
   mode?: string // 兼容 Semi UI 的 mode 属性 (如 mode="password")
-  size?: "default" | "small" | "large" | string // 声明 size 以兼容 Semi，防止原生透传 number 报错
   variant?: "default" | "search" // 样式变体类型
-  onChange?: (e: any) => void // 联合签名兼容：同时接受 React 原生 ChangeEvent 和 Semi 字符串回调
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
   onEnterPress?: (e: React.KeyboardEvent<HTMLInputElement>) => void // 兼容 Semi UI 的回车事件属性
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
   error?: boolean
@@ -25,7 +24,7 @@ export interface InputProps
  * 统一的高阶 Input 输入组件
  */
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, prefix, suffix, mode, size, variant, onChange, onEnterPress, onKeyDown, onBlur, error, success, ...props }, ref) => {
+  ({ className, type, prefix, suffix, mode, variant, onChange, onEnterPress, onKeyDown, onBlur, error, success, ...props }, ref) => {
     // 智能属性映射：mode="password" 自动解析为 type="password"
     const resolvedType = type || (mode === "password" ? "password" : "text")
     const shouldTrim = resolvedType === "text" || resolvedType === "search" || resolvedType === "url" || resolvedType === "email"

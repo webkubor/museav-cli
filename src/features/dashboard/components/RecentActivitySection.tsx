@@ -63,7 +63,7 @@ export const RecentActivitySection: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {data.items.map((item: any) => {
+              {data.items.map((item) => {
                 const reqId = item.request_id.startsWith('gw_') ? item.request_id.slice(3) : item.request_id
                 const rawModelName = item.model?.display_name || '—'
                 const displayModelName = rawModelName.includes('/') ? rawModelName.split('/').pop() : rawModelName

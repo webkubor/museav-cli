@@ -74,7 +74,14 @@ interface SparklineProps {
   currencySymbol: string
 }
 
-function SparklineTooltip({ active, payload, metric, currencySymbol }: any) {
+interface SparklineTooltipProps {
+  active?: boolean
+  payload?: Array<{ payload: SeriesDataPoint }>
+  metric: Metric
+  currencySymbol: string
+}
+
+function SparklineTooltip({ active, payload, metric, currencySymbol }: SparklineTooltipProps) {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
   const val = parseFloat(d.value) || 0
@@ -149,7 +156,12 @@ interface HistogramChartProps {
   noDataLabel: string
 }
 
-function HistogramTooltip({ active, payload }: any) {
+interface HistogramTooltipProps {
+  active?: boolean
+  payload?: Array<{ payload: { bucket_start: string; count: number } }>
+}
+
+function HistogramTooltip({ active, payload }: HistogramTooltipProps) {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
   return (

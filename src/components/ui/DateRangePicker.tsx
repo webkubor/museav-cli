@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Popover } from './Popover'
 import { Button } from './Button'
 import { LuCalendar, LuChevronRight } from 'react-icons/lu'
@@ -68,11 +68,19 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     return new Date().getMonth()
   })
 
-  useEffect(() => {
+  // 外部 value 变化时在渲染期同步内部状态（react.dev: adjusting state when a prop changes）
+  // 按字段比较而非对象引用，避免父组件每次渲染新建对象导致死循环
+  const [prevValue, setPrevValue] = useState(value)
+  if (
+    value.preset !== prevValue.preset ||
+    value.startDate !== prevValue.startDate ||
+    value.endDate !== prevValue.endDate
+  ) {
+    setPrevValue(value)
     if (value.preset) setActivePreset(value.preset)
     if (value.startDate) setCustomStart(value.startDate)
     if (value.endDate) setCustomEnd(value.endDate)
-  }, [value])
+  }
 
   const getDisplayText = () => {
     if (activePreset !== 'custom') {

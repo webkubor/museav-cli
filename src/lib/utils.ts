@@ -65,7 +65,7 @@ export function getFallbackAvatarText(name: string | null | undefined): string {
 /** 获取浏览器语言偏好 */
 export function getBrowserLanguage(): string {
   if (typeof navigator === 'undefined') return 'en'
-  return navigator.language || (navigator as any).userLanguage || 'en'
+  return navigator.language || (navigator as Navigator & { userLanguage?: string }).userLanguage || 'en'
 }
 
 /** 获取浏览器时区 (IANA 规范格式，如 "Asia/Shanghai") */

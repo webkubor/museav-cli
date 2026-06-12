@@ -21,19 +21,15 @@ export default function InvitationsPage() {
   const setAuth = useAuthStore((s) => s.setAuth)
 
   const [preview, setPreview] = useState<InvitationPreview | null>(null)
-  const [loadError, setLoadError] = useState('')
-  const [loading, setLoading] = useState(true)
+  // token 为空属可在首次渲染判定的静态错误，直接作为初始状态，effect 只负责拉取预览
+  const [loadError, setLoadError] = useState(token ? '' : '邀请链接无效')
+  const [loading, setLoading] = useState(Boolean(token))
   const [accepting, setAccepting] = useState(false)
   const [serverError, setServerError] = useState('')
   const called = useRef(false)
 
   useEffect(() => {
-    if (!token) {
-      setLoadError('邀请链接无效')
-      setLoading(false)
-      return
-    }
-    if (called.current) return
+    if (!token || called.current) return
     called.current = true
 
     previewInvitation(token)

@@ -68,24 +68,21 @@ export default function LoginPage() {
 
   const [redirectAfterLogin] = useState(() => getRedirectTarget())
 
+  // 记住的登录邮箱在挂载时读取一次，作为各状态的初始值，避免 effect 同步 setState
+  const [remembered] = useState(() => readRememberedLogin())
+
   const [step, setStep] = useState<'email' | 'password'>('email')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(remembered || '')
   const [serverError, setServerError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [rememberPassword, setRememberPassword] = useState(false)
+  const [rememberPassword, setRememberPassword] = useState(Boolean(remembered))
 
-  const emailForm = useForm<EmailFields>({ resolver: zodResolver(emailSchema) })
+  const emailForm = useForm<EmailFields>({
+    resolver: zodResolver(emailSchema),
+    defaultValues: { email: remembered || '' },
+  })
   const passwordForm = useForm<PasswordFields>({ resolver: zodResolver(passwordSchema) })
-
-  useEffect(() => {
-    const remembered = readRememberedLogin()
-    if (!remembered) return
-
-    emailForm.setValue('email', remembered)
-    setEmail(remembered)
-    setRememberPassword(true)
-  }, [emailForm])
 
   // 已登录即离开登录页；无组织的账号到受保护路由由 ProtectedRoute 渲染 403（不回弹登录，无循环）
   useEffect(() => {

@@ -57,6 +57,8 @@ export const Popover: React.FC<PopoverProps> = ({
     if (open) {
       computePosition()
     } else {
+      // 同步 DOM 布局测量结果：关闭时先隐藏，避免下次打开首帧闪到旧位置（1088d15）
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStyle({ position: 'fixed', visibility: 'hidden' })
     }
   }, [open, computePosition])

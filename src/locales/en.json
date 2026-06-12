@@ -65,6 +65,7 @@
   "header": {
     "openPlatform": "Open Platform",
     "switchWorkspace": "Switch Workspace",
+    "quickAccess": "Quick Access",
     "default": "Default",
     "createWorkspace": "Create Workspace",
     "workspaceMgmt": "Workspace Mgmt",
@@ -147,6 +148,10 @@
       "warning": "Please save this credential immediately! It is only shown once.",
       "label": "Plain Text API Key:",
       "done": "I have copied and saved it"
+    },
+    "connectModal": {
+      "keyCreatedHint": "The API key is shown only once after creation. Save it before closing this banner.",
+      "noKeyHint": "Review endpoints and connection methods first. Create an API key to copy complete parameters."
     },
     "toast": {
       "createSuccess": "Key \"{{name}}\" created successfully",

@@ -71,6 +71,8 @@ export function DashboardLayout() {
   const [navigating, setNavigating] = useState(false)
 
   useEffect(() => {
+    // 路由切换（外部事件）触发 800ms 导航过渡指示，无法从渲染派生
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNavigating(true)
     const timer = setTimeout(() => {
       setNavigating(false)

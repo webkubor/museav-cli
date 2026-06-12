@@ -45,13 +45,12 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
   const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds)
   const [searchQuery, setSearchQuery] = useState('')
 
-  // 仅在弹窗打开时，同步一次初始化对比 IDs
-  useEffect(() => {
-    if (isOpen) {
-      setSelectedIds(initialSelectedIds)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen])
+  // 弹窗打开瞬间在渲染期重置选中项（react.dev: adjusting state when a prop changes）
+  const [prevOpen, setPrevOpen] = useState(isOpen)
+  if (isOpen !== prevOpen) {
+    setPrevOpen(isOpen)
+    if (isOpen) setSelectedIds(initialSelectedIds)
+  }
 
   // 监听 Esc 键自动关闭弹窗
   useEffect(() => {

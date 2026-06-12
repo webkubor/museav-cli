@@ -9,6 +9,7 @@ import { useCurrency } from '@/hooks/use-platform-config'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { LuWallet, LuTrendingUp, LuActivity, LuDatabase } from 'react-icons/lu'
 import { formatFriendlyAmount } from '@/lib/utils'
+import type { UsageSeries } from '@/types'
 
 export const KpiSection: React.FC = () => {
   const { t } = useTranslation()
@@ -52,10 +53,11 @@ export const KpiSection: React.FC = () => {
     staleTime: 60_000,
   })
 
-  function extractPoints(series: any, metric: 'requests' | 'tokens'): number[] {
-    const raw = series as any
-    if (raw?.groups?.[0]?.points) return raw.groups[0].points.map((p: any) => Number(p[metric] ?? 0))
-    if (raw?.series) return raw.series.map((p: any) => Number(p.value ?? 0))
+  function extractPoints(series: UsageSeries | undefined, metric: 'requests' | 'tokens'): number[] {
+    if (series?.groups?.[0]?.points) return series.groups[0].points.map((p) => Number(p[metric] ?? 0))
+    // 旧版接口兼容：扁平 series 数组（无 groups 包装）
+    const legacy = (series as unknown as { series?: Array<{ value?: number | string }> } | undefined)?.series
+    if (legacy) return legacy.map((p) => Number(p.value ?? 0))
     return []
   }
 

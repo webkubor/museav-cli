@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/Button'
 import { useMarket } from '@/hooks/useMarket'
-import { oauthAuthorizeUrl } from '@/services/auth'
+import { oauthAuthorizeUrl, type OAuthProvider } from '@/services/auth'
 import { useOAuthMethods } from '@/hooks/use-platform-config'
 import { OAUTH_ICONS, OAUTH_LABELS } from '@/constants/oauth'
 
@@ -16,8 +16,9 @@ export function SocialLogin({ redirectTo }: Props) {
     domestic: ['wechat', 'github'],
     global:   ['google', 'github'],
   }
+  // OAUTH_ICONS 只收录受支持的 provider，过滤后即可安全收窄为 OAuthProvider
   const methods = (oauthMethods.length > 0 ? oauthMethods : (MARKET_FALLBACK[market] ?? []))
-    .filter((method) => OAUTH_ICONS[method])
+    .filter((method): method is OAuthProvider => Boolean(OAUTH_ICONS[method]))
 
   if (methods.length === 0) return null
 
@@ -35,7 +36,7 @@ export function SocialLogin({ redirectTo }: Props) {
             key={method}
             variant="secondary"
             className="social-btn"
-            onClick={() => { window.location.href = oauthAuthorizeUrl(method as any, redirectTo) }}
+            onClick={() => { window.location.href = oauthAuthorizeUrl(method, redirectTo) }}
           >
             {OAUTH_ICONS[method]}
             <span>{OAUTH_LABELS[method] ?? method}</span>

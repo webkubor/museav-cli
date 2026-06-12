@@ -14,10 +14,14 @@ import { getUsageSeries } from '@/services/usage'
 import { useAuthStore } from '@/store/auth'
 import { Card } from '@/components/ui/Card'
 import { formatChartTooltipDate } from '@/lib/format-date'
+import type { SeriesDataPoint } from '@/types/usage'
 
+interface UsageTooltipProps {
+  active?: boolean
+  payload?: Array<{ payload: SeriesDataPoint }>
+}
 
-
-function UsageTooltip({ active, payload }: any) {
+function UsageTooltip({ active, payload }: UsageTooltipProps) {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
   return (
@@ -56,16 +60,16 @@ export const UsageChartSection: React.FC = () => {
     staleTime: 60_000,
   })
 
-  const chartData = useMemo(() => {
-    const rawData = data as any
-    if (rawData?.groups?.[0]?.points) {
-      return rawData.groups[0].points.map((p: any) => ({
+  const chartData = useMemo((): SeriesDataPoint[] => {
+    if (data?.groups?.[0]?.points) {
+      return data.groups[0].points.map((p) => ({
         bucket_start: p.bucket_start,
         value: String(p.requests ?? 0),
       }))
     }
-    if (rawData?.series) return rawData.series
-    return []
+    // 旧版接口兼容：扁平 series 数组（无 groups 包装）
+    const legacy = (data as unknown as { series?: SeriesDataPoint[] } | undefined)?.series
+    return legacy ?? []
   }, [data])
 
   return (

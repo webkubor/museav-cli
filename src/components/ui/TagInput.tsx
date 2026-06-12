@@ -100,10 +100,9 @@ export function TagInput({
   // Track the input's viewport rect so the fixed-position portal menu lines up,
   // and follows scroll/resize while open.
   useLayoutEffect(() => {
-    if (!showDropdown) {
-      setMenuPos(null)
-      return
-    }
+    // 关闭时不重置 menuPos：渲染处已由 showDropdown 同时把关，旧值不会被画出来；
+    // 重新打开时本 effect 会在绘制前先 update() 取到新位置
+    if (!showDropdown) return
     const update = () => {
       const r = containerRef.current?.getBoundingClientRect()
       if (r) setMenuPos({ left: r.left, top: r.bottom + 4, width: r.width })

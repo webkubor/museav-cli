@@ -41,6 +41,8 @@ export function InvoiceRecordsTab({
 
   useEffect(() => {
     let alive = true
+    // 筛选条件变化触发重新拉取（外部数据同步），loading 起点需与请求同步置位
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     listInvoiceRecords(tenantId, { status: status === 'all' ? undefined : status, keyword: keyword || undefined })
       .then((res) => {

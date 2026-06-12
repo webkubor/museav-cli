@@ -16,8 +16,14 @@ import { getLogHistogram } from '@/services/logs'
 import { useAuthStore } from '@/store/auth'
 import { Card } from '@/components/ui/Card'
 import { formatChartTooltipDate } from '@/lib/format-date'
+import type { HistogramBucket } from '@/types/logs'
 
-function HistogramTooltip({ active, payload }: any) {
+interface HistogramTooltipProps {
+  active?: boolean
+  payload?: Array<{ payload: HistogramBucket }>
+}
+
+function HistogramTooltip({ active, payload }: HistogramTooltipProps) {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
   return (
@@ -55,7 +61,7 @@ export const HistogramChartSection: React.FC = () => {
   })
 
   const buckets = data?.buckets ?? []
-  const maxCount = Math.max(...buckets.map((b: any) => b.count), 1)
+  const maxCount = Math.max(...buckets.map((b) => b.count), 1)
 
   return (
     <Card className="p-6 flex flex-col h-full">
@@ -111,10 +117,10 @@ export const HistogramChartSection: React.FC = () => {
               />
               <Tooltip
                 content={<HistogramTooltip />}
-                cursor={{ fill: 'var(--mg-fill-1)', opacity: 0.5, radius: 6 } as any}
+                cursor={{ fill: 'var(--mg-fill-1)', opacity: 0.5, radius: 6 }}
               />
               <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={48}>
-                {buckets.map((entry: any, index: number) => (
+                {buckets.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={entry.count === maxCount ? 'url(#barGradActive)' : 'url(#barGrad)'}

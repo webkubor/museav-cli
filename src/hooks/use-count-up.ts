@@ -6,7 +6,6 @@ export function useCountUp(target: number, duration = 700): number {
 
   useEffect(() => {
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
-    if (target === 0) { setValue(0); return }
 
     const startTime = performance.now()
 

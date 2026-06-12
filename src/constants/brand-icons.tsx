@@ -4,7 +4,7 @@
  */
 import { SiAlipay, SiWechat, SiStripe } from 'react-icons/si'
 
-export const BRAND_COLORS = {
+const BRAND_COLORS = {
   alipay: '#1677FF',
   wechat: '#07C160',
   stripe: '#635BFF',

@@ -2,10 +2,12 @@ import * as React from "react"
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
 import { cn } from "@/lib/utils"
 
-export const DropdownMenu = DropdownMenuPrimitive.Root
-export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
-export const DropdownMenuGroup = DropdownMenuPrimitive.Group
-export const DropdownMenuPortal = DropdownMenuPrimitive.Portal
+export {
+  Root as DropdownMenu,
+  Trigger as DropdownMenuTrigger,
+  Group as DropdownMenuGroup,
+  Portal as DropdownMenuPortal,
+} from "@radix-ui/react-dropdown-menu"
 
 export const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Content>,

@@ -55,7 +55,7 @@ export function getInitialLang(): Lang {
     if (saved === 'zh' || saved === 'en') return saved
 
     // 智能匹配浏览器默认语言
-    const browserLang = navigator.language || (navigator as any).userLanguage || ''
+    const browserLang = navigator.language || (navigator as Navigator & { userLanguage?: string }).userLanguage || ''
     if (browserLang.toLowerCase().includes('zh')) {
       return 'zh'
     }

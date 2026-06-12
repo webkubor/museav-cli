@@ -65,6 +65,7 @@
   "header": {
     "openPlatform": "开放平台",
     "switchWorkspace": "切换项目",
+    "quickAccess": "快速接入",
     "default": "默认",
     "createWorkspace": "创建项目",
     "workspaceMgmt": "项目管理",
@@ -147,6 +148,10 @@
       "warning": "请立即妥善保存该凭证！出于安全性设计，明文 API Key 仅在创建时短暂显示一次，若不慎关闭该弹窗，您将再也无法寻回明文。",
       "label": "API Key 凭证明文：",
       "done": "我已复制并妥善保存"
+    },
+    "connectModal": {
+      "keyCreatedHint": "API Key 只在创建后展示一次，关闭横幅后将无法再次查看完整密钥。",
+      "noKeyHint": "先确认协议地址和接入方式；创建 API Key 后即可复制完整参数。"
     },
     "toast": {
       "createSuccess": "密钥 \"{{name}}\" 创建成功",

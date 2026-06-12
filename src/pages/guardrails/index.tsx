@@ -96,7 +96,7 @@ export default function GuardrailsPage() {
     queryFn: () => listModels({ page_size: 100 }),
     staleTime: 120_000,
   })
-  const modelSuggestions = (modelsQuery.data as any)?.items?.map((m: any) => m.model_id as string) ?? []
+  const modelSuggestions = modelsQuery.data?.items?.map((m) => m.model_id) ?? []
   const [detailId, setDetailId] = useState<string | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [sheetTab, setSheetTab] = useState<'info' | 'scope' | 'budget'>('info')
@@ -263,7 +263,7 @@ export default function GuardrailsPage() {
     const bp = currentBudgetPolicy(d)
     setBudgetAmount(bp ? trimAmountScale(bp.spend_limit_amount) : '')
     setBudgetPeriodUnit(bp?.period_unit ?? 'month')
-    const meta = (d as any).metadata ?? {}
+    const meta = d.metadata ?? {}
     setModelBlacklist(Array.isArray(meta.model_blacklist) ? meta.model_blacklist : [])
     setIpWhitelist(Array.isArray(meta.ip_whitelist) ? meta.ip_whitelist : [])
     // Scope (members + api_keys) lives in assignments; metadata.* is the input
@@ -362,9 +362,9 @@ export default function GuardrailsPage() {
   // API key picker options (id-based, like members): label by name, fall back to
   // id. Only active keys are selectable; an already-bound key that is no longer
   // active still resolves its label for display.
-  const apiKeyOptions = (Array.isArray(apiKeysQuery.data) ? apiKeysQuery.data : []).map((k: any) => ({
-    id: k.api_key_id as string,
-    name: (k.name as string) || (k.api_key_id as string),
+  const apiKeyOptions = (apiKeysQuery.data ?? []).map((k) => ({
+    id: k.api_key_id,
+    name: k.name || k.api_key_id,
     active: k.status === 'active',
   }))
 

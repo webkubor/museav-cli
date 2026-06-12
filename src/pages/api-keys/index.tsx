@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import Select from '@/components/ui/Select'
 import { SelectItem } from '@/components/ui/Select'
 import {
@@ -76,11 +77,13 @@ export default function ApiKeysPage() {
   const [searchValue, setSearchValue] = useState('')
   const [createVisible, setCreateVisible] = useState(false)
   const [revealVisible, setRevealVisible] = useState(false)
+  const [connectVisible, setConnectVisible] = useState(false)
   const [createdKeyText, setCreatedKeyText] = useState('')
 
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null)
   const [quickOpen, setQuickOpen] = useState(false)
   const [quickCopied, setQuickCopied] = useState<string | null>(null)
+  const [connectCopied, setConnectCopied] = useState<string | null>(null)
   const { copy: copyText, copied } = useCopy()
 
   // 表单状态
@@ -230,21 +233,14 @@ export default function ApiKeysPage() {
     appToast.success(t('apiKeys.table.copyMaskedSuccess'))
   }, [copyText, t])
 
-  const handleCopyCreatedKeyAndBrowseModels = useCallback(async () => {
-    const ok = await copyText(createdKeyText)
-    if (!ok) {
-      appToast.error('复制失败，请手动复制 API Key')
-      return
-    }
-    appToast.success('API Key 已复制')
-    setRevealVisible(false)
-    navigate('/models/catalog')
-  }, [copyText, createdKeyText, navigate])
+  const handleOpenConnectWindow = useCallback(() => {
+    setConnectVisible(true)
+  }, [])
 
   const handleConfirmSaved = useCallback(async () => {
     await copyText(createdKeyText)
     setRevealVisible(false)
-  }, [copied, copyText, createdKeyText])
+  }, [copyText, createdKeyText])
 
   async function handleQuickCopy(key: string, text: string) {
     const ok = await copyText(text)
@@ -255,6 +251,85 @@ export default function ApiKeysPage() {
     setQuickCopied(key)
     setTimeout(() => setQuickCopied(null), 2000)
   }
+
+  async function handleConnectCopy(key: string, text: string) {
+    const ok = await copyText(text)
+    if (!ok) {
+      appToast.error('复制失败，请手动复制')
+      return
+    }
+    setConnectCopied(key)
+    appToast.success('配置已复制')
+    setTimeout(() => setConnectCopied(null), 2000)
+  }
+
+  const openAIBaseUrl = GATEWAY_ENDPOINTS[0]?.baseUrl ?? ''
+  const anthropicBaseUrl = GATEWAY_ENDPOINTS[1]?.baseUrl ?? openAIBaseUrl
+  const keyForSnippet = createdKeyText || '<YOUR_MODELGO_API_KEY>'
+  const connectSnippets = [
+    {
+      id: 'cc-switch',
+      label: 'CC Switch',
+      title: 'CC Switch Provider 配置',
+      desc: '在 CC Switch 里新增 Provider，选择对应工具后粘贴下面配置。',
+      content: [
+        'Provider Name: ModelGo',
+        `API Key: ${keyForSnippet}`,
+        `OpenAI Base URL: ${openAIBaseUrl}`,
+        `Anthropic Base URL: ${anthropicBaseUrl}`,
+        '',
+        '适用工具: Claude Code / Codex / OpenClaw / Hermes Agent',
+      ].join('\n'),
+    },
+    {
+      id: 'claude-code',
+      label: 'Claude Code',
+      title: 'Claude Code 环境变量',
+      desc: '适合本地终端临时接入，复制后在当前 shell 执行。',
+      content: [
+        `export ANTHROPIC_BASE_URL="${anthropicBaseUrl}"`,
+        `export ANTHROPIC_API_KEY="${keyForSnippet}"`,
+        'claude',
+      ].join('\n'),
+    },
+    {
+      id: 'codex',
+      label: 'Codex',
+      title: 'OpenAI 兼容环境变量',
+      desc: 'Codex 或 OpenAI 兼容工具可使用这组 Base URL 与 API Key。',
+      content: [
+        `export OPENAI_BASE_URL="${openAIBaseUrl}"`,
+        `export OPENAI_API_KEY="${keyForSnippet}"`,
+      ].join('\n'),
+    },
+    {
+      id: 'openai-sdk',
+      label: 'OpenAI SDK',
+      title: 'Node.js SDK 示例',
+      desc: '用于快速验证 Key 与网关是否可用。',
+      content: [
+        "import OpenAI from 'openai'",
+        '',
+        'const client = new OpenAI({',
+        `  apiKey: '${keyForSnippet}',`,
+        `  baseURL: '${openAIBaseUrl}',`,
+        '})',
+        '',
+        "const models = await client.models.list()",
+        'process.stdout.write(JSON.stringify(models.data, null, 2))',
+      ].join('\n'),
+    },
+    {
+      id: 'curl',
+      label: 'cURL',
+      title: '接口连通性检查',
+      desc: '直接请求模型列表，适合排查本地环境变量和代理问题。',
+      content: [
+        `curl "${openAIBaseUrl}/models" \\`,
+        `  -H "Authorization: Bearer ${keyForSnippet}"`,
+      ].join('\n'),
+    },
+  ]
 
   return (
     <div className="space-y-6">
@@ -404,10 +479,10 @@ export default function ApiKeysPage() {
           {/* 底部操作栏 */}
           <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-t border-mg-border/40 bg-mg-bg-1/40">
             <button
-              onClick={handleCopyCreatedKeyAndBrowseModels}
+              onClick={handleOpenConnectWindow}
               className="text-xs font-semibold text-brand-base hover:text-brand-deep hover:underline flex items-center gap-1 cursor-pointer transition-colors"
             >
-              复制并去挑选模型 <LuChevronRight size={12} />
+              立即接入工具 <LuChevronRight size={12} />
             </button>
             <Button variant="brand" onClick={handleConfirmSaved} className="h-9 rounded-lg px-5 text-sm font-semibold cursor-pointer">
               我已复制并妥善保存
@@ -521,6 +596,90 @@ export default function ApiKeysPage() {
           )}
         </TableBody>
       </Table>
+
+      {/* ── API Key 接入工具弹窗 ─────────────────────────────────────── */}
+      <Modal
+        open={connectVisible}
+        onClose={() => setConnectVisible(false)}
+        title="立即接入"
+        description="不离开当前页面，复制对应工具的接入配置即可开始使用。"
+        size="lg"
+        className="sm:max-w-[840px]"
+      >
+        <div className="space-y-4 py-2">
+          <div className="rounded-xl border border-mg-border bg-mg-bg-1/60 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-lg bg-brand-base/10 flex items-center justify-center shrink-0">
+                  <LuZap size={16} className="text-brand-base" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-mg-text-0">ModelGo 接入参数</div>
+                  <div className="text-xs text-mg-text-2 mt-1">
+                    API Key 只在创建后展示一次，关闭横幅后将无法再次查看完整密钥。
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleConnectCopy('api-key', createdKeyText)}
+                className="shrink-0"
+              >
+                {connectCopied === 'api-key'
+                  ? <><LuCheck className="w-3.5 h-3.5 mr-1.5" />已复制 Key</>
+                  : <><LuCopy className="w-3.5 h-3.5 mr-1.5" />复制 API Key</>}
+              </Button>
+            </div>
+            <div className="mt-4 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+              <div className="rounded-lg border border-mg-border/60 bg-mg-bg-0 px-3 py-2">
+                <div className="text-mg-text-2 mb-1">OpenAI 兼容地址</div>
+                <code className="font-mono text-mg-text-0 break-all">{openAIBaseUrl}</code>
+              </div>
+              <div className="rounded-lg border border-mg-border/60 bg-mg-bg-0 px-3 py-2">
+                <div className="text-mg-text-2 mb-1">Anthropic 兼容地址</div>
+                <code className="font-mono text-mg-text-0 break-all">{anthropicBaseUrl}</code>
+              </div>
+            </div>
+          </div>
+
+          <Tabs defaultValue="cc-switch">
+            <TabsList variant="pills" className="w-full justify-start overflow-x-auto">
+              {connectSnippets.map((item) => (
+                <TabsTrigger key={item.id} value={item.id} variant="pills" className="shrink-0">
+                  {item.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {connectSnippets.map((item) => (
+              <TabsContent key={item.id} value={item.id}>
+                <div className="rounded-xl border border-mg-border bg-mg-bg-0 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <div className="text-sm font-bold text-mg-text-0">{item.title}</div>
+                      <div className="text-xs text-mg-text-2 mt-1">{item.desc}</div>
+                    </div>
+                    <Button
+                      variant="brand"
+                      size="sm"
+                      onClick={() => handleConnectCopy(item.id, item.content)}
+                      className="shrink-0"
+                    >
+                      {connectCopied === item.id
+                        ? <><LuCheck className="w-3.5 h-3.5 mr-1.5" />已复制</>
+                        : <><LuCopy className="w-3.5 h-3.5 mr-1.5" />复制配置</>}
+                    </Button>
+                  </div>
+                  <pre className="mt-4 max-h-[300px] overflow-auto rounded-lg border border-mg-border bg-mg-code-bg p-4 text-xs leading-6 text-mg-text-0">
+                    <code>{item.content}</code>
+                  </pre>
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
+      </Modal>
 
       {/* ── 创建 API Key 弹窗 ─────────────────────────────────────────── */}
       <Modal

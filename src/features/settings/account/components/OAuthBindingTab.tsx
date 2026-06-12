@@ -22,7 +22,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
 
   const bindMutation = useMutation({
     mutationFn: async (provider: OAuthProvider) => {
-      const redirect = `${window.location.pathname}?tab=oauth`
+      const redirect = `${window.location.origin}${window.location.pathname}?tab=oauth`
       return connectOAuth(provider, redirect)
     },
     onSuccess: (result) => {

@@ -155,7 +155,7 @@ export function DashboardLayout() {
   const isFlatRoute = FLAT_ROUTES.includes(getSelectedKey())
 
   return (
-    <div className="dashboard-shell min-h-screen bg-site-bg flex flex-col font-sans relative overflow-hidden">
+    <div className="dashboard-shell h-screen bg-site-bg flex flex-col font-sans relative overflow-hidden">
       <ParticleLinesBackground />
       <div className="dashboard-global-bottom-bg" aria-hidden="true" />
       <DashboardHeader />
@@ -163,7 +163,7 @@ export function DashboardLayout() {
       <LowBalanceAlert />
 
 
-      <div className="flex flex-1 relative z-10 overflow-hidden">
+      <div className="flex flex-1 min-h-0 relative z-10 overflow-hidden">
         <DashboardSidebar
           collapsed={collapsed}
           setCollapsed={setCollapsed}

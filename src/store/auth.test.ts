@@ -107,7 +107,8 @@ describe('useAuthStore', () => {
     expect(s.activeTenantId).toBeNull()
     expect(s.activeWorkspaceId).toBeNull()
     expect(s.tenants).toEqual([])
-    expect(s.permissions).toEqual([])
+    // 未登录基线与 store 初始值一致为 null（“未知”），区别于 [] 的“已知为空”
+    expect(s.permissions).toBeNull()
     expect(s.isAuthenticated).toBe(false)
     expect(s.isLoading).toBe(false)
     expect(s.hasPermission('dashboard:view')).toBe(false)

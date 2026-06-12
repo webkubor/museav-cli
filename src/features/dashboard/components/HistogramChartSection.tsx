@@ -4,27 +4,25 @@ import React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   ResponsiveContainer,
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
+  YAxis,
   CartesianGrid,
   Tooltip,
+  Cell,
 } from 'recharts'
 import { getLogHistogram } from '@/services/logs'
 import { useAuthStore } from '@/store/auth'
 import { Card } from '@/components/ui/Card'
 import { formatChartTooltipDate } from '@/lib/format-date'
 
-
-
 function HistogramTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
   return (
     <div className="rounded-xl border border-mg-border bg-mg-bg-2/98 backdrop-blur-md p-3 shadow-[0_8px_30px_rgb(0,0,0,0.06)] text-left select-none min-w-[120px] space-y-1">
-      <div className="text-[10px] text-mg-text-2 font-medium">
-        请求次数
-      </div>
+      <div className="text-[10px] text-mg-text-2 font-medium">请求次数</div>
       <div className="text-sm font-mono font-black text-brand-base tabular-nums">
         {d.count.toLocaleString()}
       </div>
@@ -57,6 +55,7 @@ export const HistogramChartSection: React.FC = () => {
   })
 
   const buckets = data?.buckets ?? []
+  const maxCount = Math.max(...buckets.map((b: any) => b.count), 1)
 
   return (
     <Card className="p-6 flex flex-col h-full">
@@ -67,23 +66,34 @@ export const HistogramChartSection: React.FC = () => {
 
       <div className="flex-1 outline-none select-none" style={{ minHeight: 200 }}>
         {isLoading ? (
-          <div className="animate-pulse bg-mg-fill-2 rounded w-full h-[200px]" />
+          <div className="flex items-end gap-2 h-[200px] px-2">
+            {[0.4, 0.7, 0.55, 0.85, 0.6].map((h, i) => (
+              <div
+                key={i}
+                className="flex-1 rounded-t-md animate-pulse bg-mg-fill-2"
+                style={{ height: `${h * 100}%` }}
+              />
+            ))}
+          </div>
         ) : buckets.length > 0 ? (
           <ResponsiveContainer width="100%" height={200} style={{ outline: 'none' }}>
-            <AreaChart data={buckets} margin={{ top: 8, right: 4, bottom: 0, left: 4 }}>
+            <BarChart data={buckets} margin={{ top: 4, right: 4, bottom: 0, left: -24 }} barCategoryGap="28%">
               <defs>
-                {/* 科技蓝发光渐变 (Blue to Violet) */}
-                <linearGradient id="dashHistGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.22} />
-                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0} />
+                <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9} />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.75} />
                 </linearGradient>
-                {/* 流光蓝紫渐变线条 */}
-                <linearGradient id="dashHistLineGrad" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#3b82f6" />
-                  <stop offset="100%" stopColor="#8b5cf6" />
+                <linearGradient id="barGradActive" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#818cf8" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#60a5fa" stopOpacity={0.9} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="4 4" stroke="var(--mg-border)" strokeOpacity={0.35} vertical={false} />
+              <CartesianGrid
+                strokeDasharray="4 4"
+                stroke="var(--mg-border)"
+                strokeOpacity={0.4}
+                vertical={false}
+              />
               <XAxis
                 dataKey="bucket_start"
                 tickFormatter={formatChartTooltipDate}
@@ -92,20 +102,26 @@ export const HistogramChartSection: React.FC = () => {
                 axisLine={false}
                 interval="preserveStartEnd"
               />
+              <YAxis
+                tick={{ fontSize: 10, fill: 'var(--mg-text-2)', fontFamily: 'monospace' }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)}
+                width={40}
+              />
               <Tooltip
                 content={<HistogramTooltip />}
-                cursor={{ stroke: '#3b82f6', strokeWidth: 1, strokeDasharray: '4 4', strokeOpacity: 0.4 }}
+                cursor={{ fill: 'var(--mg-fill-1)', opacity: 0.5, radius: 6 } as any}
               />
-              <Area
-                type="monotone"
-                dataKey="count"
-                stroke="url(#dashHistLineGrad)"
-                strokeWidth={2.5}
-                fill="url(#dashHistGrad)"
-                dot={false}
-                activeDot={{ r: 4, fill: '#3b82f6', stroke: 'var(--mg-bg-0)', strokeWidth: 2 }}
-              />
-            </AreaChart>
+              <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={48}>
+                {buckets.map((entry: any, index: number) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.count === maxCount ? 'url(#barGradActive)' : 'url(#barGrad)'}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         ) : (
           <div className="flex flex-col items-center justify-center h-[200px] text-center">

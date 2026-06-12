@@ -4,6 +4,7 @@ import { LuSettings, LuChevronLeft, LuChevronRight } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { SidebarSettingsPopup } from './SidebarSettingsPopup'
+import { SidebarPromoCarousel } from './SidebarPromoCarousel'
 
 type NavItem = {
   itemKey: string
@@ -455,6 +456,9 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           })}
         </div>
       </div>
+
+      {/* 底部促销轮播 */}
+      <SidebarPromoCarousel collapsed={collapsed} />
 
       {/* 底部设置及版本信息 */}
       <div className="pt-2 border-t border-mg-border/40 bg-mg-bg-0 shrink-0 relative">

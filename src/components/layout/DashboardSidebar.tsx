@@ -216,21 +216,16 @@ const SidebarFooterInfo: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
   const zoneStr = `GMT${offset >= 0 ? '+' : ''}${offset}`
 
   return (
-    <div className="mx-4 mt-3 mb-6 flex flex-col gap-1.5 select-none text-mg-text-2">
-      {/* 第一行：版本和在线健康度 */}
-      <div className="flex items-center justify-between text-[11px] font-mono">
-        <div className="flex items-center gap-1.5 font-semibold">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mg-success opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-mg-success"></span>
-          </span>
-          <span className="tracking-wide">v{__APP_VERSION__}</span>
-        </div>
-        <span className="opacity-80 font-bold uppercase text-[9px] text-mg-success tracking-widest">ONLINE</span>
+    <div className="mx-4 mt-3 mb-6 flex items-center justify-between gap-2 select-none text-mg-text-2 text-[11px] font-mono">
+      {/* 单行：版本 + 实时时间，去掉无意义的 ONLINE */}
+      <div className="flex items-center gap-1.5 font-semibold">
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mg-success opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-mg-success"></span>
+        </span>
+        <span className="tracking-wide">v{__APP_VERSION__}</span>
       </div>
-
-      {/* 第二行：时间与时区 */}
-      <div className="flex items-center justify-between text-[11px] font-mono border-t border-mg-border/25 pt-1.5">
+      <div className="flex items-center gap-1.5">
         <span className="tabular-nums text-mg-text-1 hover:text-mg-text-0 transition-colors">{timeStr}</span>
         <span className="px-1 py-0.5 rounded bg-mg-fill-1 text-[9px] text-mg-text-2 tracking-wide font-bold">{zoneStr}</span>
       </div>

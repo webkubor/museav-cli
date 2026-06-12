@@ -1,36 +1,42 @@
+/**
+ * 模型目录页
+ * 路由：/models/catalog
+ * API：GET /api/v1/catalog/models、GET /api/v1/catalog/model-tags、GET /api/v1/usage/rankings/models
+ */
+
 import { useMemo, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import {
-  LuSearch,
-  LuCopy,
-  LuCheck,
-  LuZap,
-  LuGitCompareArrows,
-  LuChevronRight,
-  LuChevronDown,
-  LuChartBar,
-} from 'react-icons/lu'
 import { useQuery } from '@tanstack/react-query'
-import { useModels } from '@/features/models/hooks/useModels'
+import {
+  LuArrowUpRight,
+  LuBookOpen,
+  LuCheck,
+  LuChevronRight,
+  LuCopy,
+  LuGitCompareArrows,
+  LuSearch,
+  LuSlidersHorizontal,
+  LuSparkles,
+  LuZap,
+} from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Card } from '@/components/ui/Card'
-import { appToast } from '@/lib/app-toast'
-import { useCopy } from '@/hooks/use-copy'
-import { cn, formatContextLength, formatModelPrice } from '@/lib/utils'
-import { useAuthStore } from '@/store/auth'
-import { getUsageRankingsModels } from '@/services/usage'
-import { useCurrency } from '@/hooks/use-platform-config'
-import type { UsageRankingItem } from '@/types'
-import {
-  modalityBadges,
-  vendorNode,
-} from '../model-experience-data'
-import { listModelTags } from '@/services/catalog'
-import { ModelsCompareModal } from '../components/ModelsCompareModal'
+import { getMarketConfig } from '@/config/market'
+import { useModels } from '@/features/models/hooks/useModels'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
-import '@/features/dashboard/components/dashboard-rankings-section.css'
+import { ModalityBadge } from '@/features/models/components/ModalityBadge'
+import { useCopy } from '@/hooks/use-copy'
+import { useMarket } from '@/hooks/useMarket'
+import { useCurrency } from '@/hooks/use-platform-config'
+import { appToast } from '@/lib/app-toast'
+import { cn, formatContextLength, formatModelPrice } from '@/lib/utils'
+import { listModelTags } from '@/services/catalog'
+import { getUsageRankingsModels } from '@/services/usage'
+import { useAuthStore } from '@/store/auth'
+import type { CatalogModelItem, UsageRankingItem } from '@/types'
+import { ModelsCompareModal } from '../components/ModelsCompareModal'
+import './catalog.css'
 
 interface ModelMeta {
   descriptionZh: string
@@ -42,6 +48,17 @@ interface ModelMeta {
     reasoning: number
     cost: number
   }
+}
+
+type InsightTone = 'emerald' | 'cyan' | 'violet' | 'amber'
+
+interface RankingViewItem {
+  rank: string
+  name: string
+  requests: number
+  score: string
+  tone: InsightTone
+  iconModel: ModelIconLike
 }
 
 const MODALITY_FILTERS = [
@@ -57,36 +74,36 @@ const MODEL_META_MAP: Record<string, ModelMeta> = {
     descriptionEn: 'Tailored for long Chinese context, complex reasoning, and enterprise knowledge base retrieval.',
     tagsZh: ['客服知识库', '代码理解', '长文档分析'],
     tagsEn: ['Customer Support', 'Code Analysis', 'Long Document'],
-    scores: { speed: 2, reasoning: 3, cost: 2 }
+    scores: { speed: 2, reasoning: 3, cost: 2 },
   },
   'qwen/qwen3.6-flash': {
     descriptionZh: '极速响应的轻量级模型，适合高频对话、文本分类及实时交互。',
     descriptionEn: 'Ultra-fast lightweight model, ideal for high-frequency chats, classification, and real-time interactions.',
     tagsZh: ['即时客服', '日常对话', '文本分类'],
     tagsEn: ['Live Chat', 'General Chat', 'Classification'],
-    scores: { speed: 4, reasoning: 1, cost: 4 }
+    scores: { speed: 4, reasoning: 1, cost: 4 },
   },
   'openai/gpt-5.5': {
     descriptionZh: '前沿的通用智能旗舰模型，在逻辑推理、代码生成与多模态任务中表现卓越。',
     descriptionEn: 'Cutting-edge flagship general model, excelling in logic, code generation, and multimodal tasks.',
     tagsZh: ['复杂逻辑', '智能Agent', '多模态交互'],
     tagsEn: ['Complex Logic', 'AI Agents', 'Multimodal'],
-    scores: { speed: 3, reasoning: 4, cost: 1 }
+    scores: { speed: 3, reasoning: 4, cost: 1 },
   },
   'anthropic/claude-opus-4.7-fast': {
     descriptionZh: '长文本理解与精细逻辑的代表作，适合深度阅读、学术分析及复杂指令遵循。',
     descriptionEn: 'Masterpiece of long context and fine-grained logic, perfect for reading comprehension and complex instructions.',
     tagsZh: ['论文精读', '长文本分析', '高精指令'],
     tagsEn: ['Paper Reading', 'Long Text', 'Fine Instruction'],
-    scores: { speed: 3, reasoning: 4, cost: 1 }
+    scores: { speed: 3, reasoning: 4, cost: 1 },
   },
   'mistralai/mistral-medium-3-5': {
     descriptionZh: '欧洲明星大模型，平衡了出色的推理能力与合理的运行成本。',
     descriptionEn: 'European star model balancing outstanding reasoning capabilities with reasonable operation costs.',
     tagsZh: ['内容创作', '逻辑分析', '多语言翻译'],
     tagsEn: ['Content Creation', 'Logic Analysis', 'Translation'],
-    scores: { speed: 3, reasoning: 3, cost: 3 }
-  }
+    scores: { speed: 3, reasoning: 3, cost: 3 },
+  },
 }
 
 function getModelMeta(modelId: string, isZh: boolean) {
@@ -95,14 +112,14 @@ function getModelMeta(modelId: string, isZh: boolean) {
     return {
       description: isZh ? matched.descriptionZh : matched.descriptionEn,
       tags: isZh ? matched.tagsZh : matched.tagsEn,
-      scores: matched.scores
+      scores: matched.scores,
     }
   }
 
   const idLower = modelId.toLowerCase()
   const isReasoning = idLower.includes('reason') || idLower.includes('think') || idLower.includes('opus') || idLower.includes('max')
   const isFlash = idLower.includes('flash') || idLower.includes('speed') || idLower.includes('lite') || idLower.includes('mini')
-  
+
   let speed = 3
   let reasoning = 2
   let cost = 3
@@ -117,62 +134,66 @@ function getModelMeta(modelId: string, isZh: boolean) {
     cost = 4
   }
 
-  const tags = isZh 
-    ? ['业务对接', '接口测试', '快速集成']
-    : ['Business Integration', 'API Testing', 'Fast Setup']
-
-  const description = isZh
-    ? '支持高并发的多功能通用智能模型，可灵活对接企业级生产业务。'
-    : 'A versatile general model supporting high concurrency and flexible business integration.'
-
   return {
-    description,
-    tags,
-    scores: { speed, reasoning, cost }
+    description: isZh
+      ? '支持高并发的多功能通用智能模型，可灵活对接企业级生产业务。'
+      : 'A versatile general model supporting high concurrency and flexible business integration.',
+    tags: isZh
+      ? ['业务对接', '接口测试', '快速集成']
+      : ['Business Integration', 'API Testing', 'Fast Setup'],
+    scores: { speed, reasoning, cost },
   }
+}
+
+function parsePrice(amount: string | number | null | undefined) {
+  if (amount == null || amount === '') return 0
+  const parsed = typeof amount === 'string' ? Number.parseFloat(amount) : amount
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+function getModelMinPrice(model: CatalogModelItem) {
+  const input = parsePrice(model.pricing?.input_per_1m)
+  const output = parsePrice(model.pricing?.output_per_1m)
+  if (input <= 0 && output <= 0) return 0
+  if (input <= 0) return output
+  if (output <= 0) return input
+  return Math.min(input, output)
+}
+
+function isFreeModel(model: CatalogModelItem) {
+  const tags = (model.tags ?? []).map((tag) => tag.toLowerCase())
+  return tags.includes('free') || getModelMinPrice(model) <= 0
+}
+
+function isComparableModel(model: CatalogModelItem) {
+  const modalities = model.modalities ?? []
+  return !modalities.some((modality) => modality === 'image' || modality === 'audio' || modality === 'video')
+}
+
+function getReleaseTime(model: CatalogModelItem) {
+  const time = Date.parse(model.released_at)
+  return Number.isFinite(time) ? time : 0
+}
+
+function getStatusLabel(status: string, isZh: boolean) {
+  if (status === 'enabled') return isZh ? '可用' : 'Available'
+  if (status === 'disabled') return isZh ? '停用' : 'Disabled'
+  if (status === 'test') return 'Test'
+  return status || (isZh ? '可用' : 'Available')
 }
 
 export default function ModelsCatalogPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const isZh = i18n.language.startsWith('zh')
+  const market = useMarket()
+  const docsUrl = getMarketConfig(market).docsUrl
 
   const [category, setCategory] = useState<string>('all')
-
-  const tagsQuery = useQuery({
-    queryKey: ['catalog-model-tags'],
-    queryFn: () => listModelTags(true),
-    staleTime: 5 * 60_000,
-  })
-  const apiTags = useMemo(() => tagsQuery.data?.items ?? [], [tagsQuery.data?.items])
   const [isCompareOpen, setIsCompareOpen] = useState(false)
+  const [compareInitialIds, setCompareInitialIds] = useState<string[]>([])
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const { copy } = useCopy()
-  const [expandedId, setExpandedId] = useState<string | null>(null)
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const card = e.currentTarget
-    const rect = card.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    card.style.setProperty('--mouse-x', `${x}px`)
-    card.style.setProperty('--mouse-y', `${y}px`)
-
-    const width = rect.width
-    const height = rect.height
-    // 阻尼 3D 旋转计算
-    const rotateX = ((y - height / 2) / height) * -3.5 // 限制在 -3.5deg 到 3.5deg
-    const rotateY = ((x - width / 2) / width) * 3.5
-    card.style.setProperty('--rotate-x', `${rotateX}deg`)
-    card.style.setProperty('--rotate-y', `${rotateY}deg`)
-  }
-
-  const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
-    const card = e.currentTarget
-    card.style.setProperty('--rotate-x', '0deg')
-    card.style.setProperty('--rotate-y', '0deg')
-  }
-
 
   const {
     search,
@@ -181,7 +202,18 @@ export default function ModelsCatalogPage() {
     filteredModels,
   } = useModels()
 
+  const tagsQuery = useQuery({
+    queryKey: ['catalog-model-tags'],
+    queryFn: () => listModelTags(true),
+    staleTime: 5 * 60_000,
+  })
+
+  const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
+  const { symbol: currencySymbol } = useCurrency()
   const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
+  const comparableModels = useMemo(() => allModels.filter(isComparableModel), [allModels])
+  const apiTags = useMemo(() => tagsQuery.data?.items ?? [], [tagsQuery.data?.items])
+
   const modalityFilters = useMemo(() => {
     const existingTagCodes = new Set(apiTags.map((tag) => tag.code.toLowerCase()))
     const existingModalities = new Set(allModels.flatMap((model) => model.modalities ?? []))
@@ -193,10 +225,82 @@ export default function ModelsCatalogPage() {
   const visibleModels = useMemo(() => {
     if (category === 'all') return filteredModels
     return filteredModels.filter((model) =>
-      model.tags?.some((t) => t.toLowerCase() === category.toLowerCase()) ||
+      model.tags?.some((tag) => tag.toLowerCase() === category.toLowerCase()) ||
       model.modalities?.includes(category)
     )
   }, [category, filteredModels])
+
+  const catalogStats = useMemo(() => {
+    const vendorCount = new Set(allModels.map((model) => model.vendor).filter(Boolean)).size
+    const countByModality = (modality: string) =>
+      allModels.filter((model) => model.modalities?.includes(modality)).length
+
+    return [
+      { key: 'models', label: t('modelsCatalog.stats.models'), value: allModels.length },
+      { key: 'vendors', label: t('modelsCatalog.stats.vendors'), value: vendorCount },
+      { key: 'text', label: t('modelsCatalog.stats.text'), value: countByModality('text') },
+      { key: 'image', label: t('modelsCatalog.stats.image'), value: countByModality('image') },
+      { key: 'video', label: t('modelsCatalog.stats.video'), value: countByModality('video') },
+      { key: 'free', label: t('modelsCatalog.stats.free'), value: allModels.filter(isFreeModel).length },
+    ]
+  }, [allModels, t])
+
+  const { data: rankingsData } = useQuery({
+    queryKey: ['usage-rankings', 'models', tenantId],
+    queryFn: () => {
+      const now = new Date()
+      const from = new Date(now.getFullYear(), now.getMonth(), 1)
+      return getUsageRankingsModels({ from: from.toISOString(), to: now.toISOString(), limit: 5 })
+    },
+    enabled: !!tenantId,
+    staleTime: 5 * 60_000,
+  })
+
+  const rankingItems = useMemo<RankingViewItem[]>(() => {
+    const tones: InsightTone[] = ['emerald', 'cyan', 'violet', 'amber']
+    const iconMap = new Map<string, ModelIconLike>()
+    for (const model of allModels) {
+      iconMap.set(model.model_id, {
+        logo_url: model.logo_url,
+        vendor: model.vendor,
+        display_name: model.display_name,
+      })
+    }
+    return (rankingsData?.items ?? []).map((item: UsageRankingItem, index: number) => {
+      const amount = item.spend?.amount ? `${currencySymbol}${Number.parseFloat(item.spend.amount).toFixed(4)}` : '—'
+      const key = item.key ?? ''
+      return {
+        rank: String(item.rank ?? index + 1).padStart(2, '0'),
+        name: item.name || key || '—',
+        requests: item.requests ?? 0,
+        score: amount,
+        tone: tones[index % tones.length],
+        iconModel: iconMap.get(key) ?? { display_name: item.name || key, vendor: key.split('/')[0] },
+      }
+    })
+  }, [rankingsData, allModels, currencySymbol])
+
+  const fallbackRankingItems = useMemo<RankingViewItem[]>(() => {
+    const tones: InsightTone[] = ['emerald', 'cyan', 'violet', 'amber']
+    return allModels.slice(0, 5).map((model, index) => ({
+      rank: String(index + 1).padStart(2, '0'),
+      name: model.display_name || model.model_id,
+      requests: 0,
+      score: '—',
+      tone: tones[index % tones.length],
+      iconModel: model,
+    }))
+  }, [allModels])
+
+  const lowCostModels = useMemo(
+    () => [...allModels].sort((a, b) => getModelMinPrice(a) - getModelMinPrice(b)).slice(0, 3),
+    [allModels],
+  )
+
+  const recentModels = useMemo(
+    () => [...allModels].sort((a, b) => getReleaseTime(b) - getReleaseTime(a)).slice(0, 2),
+    [allModels],
+  )
 
   const handleCopyApiId = async (modelId: string, event: React.MouseEvent) => {
     event.stopPropagation()
@@ -210,107 +314,81 @@ export default function ModelsCatalogPage() {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  const handleGoPlayground = (modelId: string, event: React.MouseEvent) => {
-    event.stopPropagation()
+  const handleGoPlayground = (modelId: string, event?: React.MouseEvent) => {
+    event?.stopPropagation()
     navigate('/models/playground', { state: { selectedModelId: modelId } })
   }
 
-  const handleToggleExpand = useCallback((modelId: string) => {
-    setExpandedId(prev => prev === modelId ? null : modelId)
+  const handleOpenCompare = useCallback((initialIds: string[] = []) => {
+    setCompareInitialIds(initialIds)
+    setIsCompareOpen(true)
   }, [])
 
-  const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
-  const { symbol: currencySymbol } = useCurrency()
-  const { data: rankingsData } = useQuery({
-    queryKey: ['usage-rankings', 'models', tenantId],
-    queryFn: () => {
-      const now = new Date()
-      const from = new Date(now.getFullYear(), now.getMonth(), 1)
-      return getUsageRankingsModels({ from: from.toISOString(), to: now.toISOString(), limit: 5 })
-    },
-    enabled: !!tenantId,
-    staleTime: 5 * 60_000,
-  })
-
-  const rankingItems = useMemo(() => {
-    const TONES = ['emerald', 'cyan', 'violet', 'amber'] as const
-    const iconMap = new Map<string, ModelIconLike>()
-    for (const m of allModels) {
-      iconMap.set(m.model_id, { logo_url: m.logo_url, vendor: m.vendor, display_name: m.display_name })
-    }
-    return (rankingsData?.items ?? []).map((item: UsageRankingItem, i: number) => {
-      const amount = item.spend?.amount ? `${currencySymbol}${parseFloat(item.spend.amount).toFixed(4)}` : '—'
-      const key = item.key ?? ''
-      return {
-        rank: String(item.rank ?? i + 1).padStart(2, '0'),
-        name: item.name || key || '—',
-        requests: item.requests ?? 0,
-        score: amount,
-        tone: TONES[i % TONES.length],
-        iconModel: iconMap.get(key) ?? { display_name: item.name || key, vendor: key.split('/')[0] },
-      }
-    })
-  }, [rankingsData, allModels, currencySymbol])
-
   return (
-    <div className="space-y-8 py-2">
-      {/* 极简大气头部看板 */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-black tracking-tight text-mg-text-0 md:text-4xl">
-            {t('modelsCatalog.allModels.title')}
-          </h1>
-          <p className="text-[13.5px] text-mg-text-2 font-medium max-w-2xl leading-relaxed">
-            {t('modelsCatalog.allModels.desc')}
-          </p>
+    <div className="models-catalog-page">
+      <section className="models-catalog-hero" aria-labelledby="models-catalog-title">
+        <div className="models-catalog-hero-copy">
+          <div className="models-catalog-kicker">
+            <LuSparkles aria-hidden />
+            {t('modelsCatalog.hero.kicker')}
+          </div>
+          <h1 id="models-catalog-title">{t('modelsCatalog.allModels.title')}</h1>
+          <p>{t('modelsCatalog.allModels.desc')}</p>
+          <div className="models-catalog-stats" aria-label={t('modelsCatalog.stats.label')}>
+            {catalogStats.map((item) => (
+              <span key={item.key} className="models-catalog-stat">
+                <strong>{item.value}</strong>
+                {item.label}
+              </span>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="models-catalog-actions">
           <Button
             variant="outline"
-            className="rounded-full h-10 px-5 text-xs font-bold shadow-sm hover:shadow-md transition-all duration-300"
-            onClick={() => setIsCompareOpen(true)}
+            className="models-catalog-action"
+            onClick={() => handleOpenCompare()}
           >
-            <LuGitCompareArrows size={14} className="mr-2 text-brand-base" />
+            <LuGitCompareArrows size={15} />
             {t('modelsCatalog.button.compare')}
           </Button>
+          <Button asChild variant="ghost" className="models-catalog-action">
+            <a href={docsUrl} target="_blank" rel="noreferrer">
+              <LuBookOpen size={15} />
+              {t('modelsCatalog.button.docs')}
+              <LuArrowUpRight size={13} />
+            </a>
+          </Button>
         </div>
-      </div>
+      </section>
 
-      {/* 搜索与过滤栏 */}
-      <div className="flex flex-col gap-3">
+      <section className="models-catalog-toolbar" aria-label={t('modelsCatalog.filters.label')}>
         <Input
           variant="search"
           prefix={<LuSearch size={16} className="text-mg-text-2/80" />}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder={t('modelsCatalog.placeholder.search')}
-          className="w-full h-11 text-[13.5px]"
+          className="models-catalog-search"
         />
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="models-catalog-filter-row">
+          <span className="models-catalog-filter-label">
+            <LuSlidersHorizontal aria-hidden />
+            {t('modelsCatalog.filters.label')}
+          </span>
           <button
-            key="all"
             type="button"
             onClick={() => setCategory('all')}
-            className={cn(
-              'px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-300 cursor-pointer whitespace-nowrap tracking-wide',
-              category === 'all'
-                ? 'bg-brand-base text-white shadow-md shadow-brand-glow/20'
-                : 'bg-mg-fill-0/40 text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/90 active:scale-95',
-            )}
+            className={cn('models-catalog-filter-chip', category === 'all' && 'is-active')}
           >
-            {isZh ? '全部' : 'All'}
+            {t('modelsCatalog.filter.all')}
           </button>
-          {apiTags.map((tag) => (
+          {apiTags.slice(0, 8).map((tag) => (
             <button
               key={tag.code}
               type="button"
               onClick={() => setCategory(tag.code)}
-              className={cn(
-                'px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-300 cursor-pointer whitespace-nowrap tracking-wide',
-                category === tag.code
-                  ? 'bg-brand-base text-white shadow-md shadow-brand-glow/20'
-                  : 'bg-mg-fill-0/40 text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/90 active:scale-95',
-              )}
+              className={cn('models-catalog-filter-chip', category === tag.code && 'is-active')}
             >
               {isZh ? tag.name_zh : tag.name_en}
             </button>
@@ -320,354 +398,73 @@ export default function ModelsCatalogPage() {
               key={item.code}
               type="button"
               onClick={() => setCategory(item.code)}
-              className={cn(
-                'px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-300 cursor-pointer whitespace-nowrap tracking-wide',
-                category === item.code
-                  ? 'bg-brand-base text-white shadow-md shadow-brand-glow/20'
-                  : 'bg-mg-fill-0/40 text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/90 active:scale-95',
-              )}
+              className={cn('models-catalog-filter-chip', category === item.code && 'is-active')}
             >
               {isZh ? item.nameZh : item.nameEn}
             </button>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* 主体区域：模型卡片网格 + 热门排行榜侧边栏 */}
-      <div className="flex gap-6 items-start">
-        {/* 模型卡片网格 */}
-        <div className="flex-1 min-w-0">
-      {modelsQuery.isLoading ? (
-        <div className="py-28 flex flex-col items-center justify-center text-mg-text-2 text-sm gap-3">
-          <div className="w-7 h-7 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
-          <span className="font-semibold tracking-wider">{t('modelsCatalog.loading')}</span>
-        </div>
-      ) : modelsQuery.isError ? (
-        <div className="py-28 text-center text-mg-text-2 text-sm font-semibold tracking-wide">
-          {t('modelsCatalog.error.load')}
-        </div>
-      ) : visibleModels.length === 0 ? (
-        <div className="py-28 text-center text-mg-text-2 text-sm font-semibold tracking-wide">
-          {t('modelsCatalog.empty')}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8 items-start overflow-visible">
-          {visibleModels.map((model) => {
-            const meta = getModelMeta(model.model_id, isZh)
-            const isExpanded = expandedId === model.id
+      <div className="models-catalog-layout">
+        <section className="models-catalog-results" aria-label={t('modelsCatalog.results.label')}>
+          <div className="models-catalog-results-head">
+            <div>
+              <h2>{t('modelsCatalog.results.title')}</h2>
+              <p>
+                {t('modelsCatalog.results.count', {
+                  visible: visibleModels.length,
+                  total: allModels.length,
+                })}
+              </p>
+            </div>
+            <span className="models-catalog-results-badge">
+              {category === 'all' ? t('modelsCatalog.filter.all') : category}
+            </span>
+          </div>
 
-            return (
-              <div key={model.id} className="relative flex flex-col gap-0 w-full">
-              <div
-                role="button"
-                tabIndex={0}
-                aria-expanded={isExpanded}
-                onClick={() => handleToggleExpand(model.id)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    handleToggleExpand(model.id)
-                  }
-                }}
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-                style={{
-                  transform: 'perspective(1000px) rotateX(var(--rotate-x, 0deg)) rotateY(var(--rotate-y, 0deg)) scale3d(var(--scale, 1), var(--scale, 1), var(--scale, 1))',
-                  transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-                }}
-                className={cn(
-                  "group relative p-[1px] rounded-2xl bg-mg-border/10 transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1) hover:shadow-[0_20px_40px_-10px_var(--brand-glow)] shadow-[0_8px_30px_rgb(0,0,0,0.02)] [--scale:1] hover:[--scale:1.015] flex flex-1 cursor-pointer w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base focus-visible:ring-offset-2",
-                  isExpanded && "shadow-[0_20px_40px_-10px_var(--brand-glow)]"
-                )}
-              >
-                {/* 渐变边框 Spotlight 层（光斑跟随，Hover 时显现） */}
-                <div
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                  style={{
-                    background: 'radial-gradient(220px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), color-mix(in srgb, var(--brand-base) 15%, transparent) 0%, color-mix(in srgb, var(--brand-mid) 8%, transparent) 50%, transparent 100%)',
+          {modelsQuery.isLoading ? (
+            <div className="models-catalog-state">
+              <div className="models-catalog-spinner" />
+              <span>{t('modelsCatalog.loading')}</span>
+            </div>
+          ) : modelsQuery.isError ? (
+            <div className="models-catalog-state">{t('modelsCatalog.error.load')}</div>
+          ) : visibleModels.length === 0 ? (
+            <div className="models-catalog-state">{t('modelsCatalog.empty')}</div>
+          ) : (
+            <div className="models-catalog-grid">
+              {visibleModels.map((model) => (
+                <ModelCatalogCard
+                  key={model.id}
+                  model={model}
+                  isZh={isZh}
+                  copied={copiedId === model.model_id}
+                  onCopy={handleCopyApiId}
+                  onTry={handleGoPlayground}
+                  onCompare={(event) => {
+                    event.stopPropagation()
+                    handleOpenCompare([model.id])
                   }}
                 />
-
-                {/* 磨砂玻璃内容包裹容器 */}
-                <div className="relative w-full rounded-[15px] bg-mg-bg-0/90 dark:bg-mg-bg-0/80 backdrop-blur-2xl -webkit-backdrop-blur-2xl p-7 flex flex-col gap-6 overflow-hidden flex-1 min-h-[320px]">
-                  {/* 内层内容 Spotlight 背景光晕（光斑跟随，Hover 时显现） */}
-                  <div
-                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                    style={{
-                      background: 'radial-gradient(350px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), color-mix(in srgb, var(--brand-base) 3.5%, transparent) 0%, color-mix(in srgb, var(--brand-mid) 1.5%, transparent) 60%, transparent 100%)',
-                    }}
-                  />
-
-                  {/* 磨砂玻璃流光扫掠光效 */}
-                  <div className="absolute inset-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/20 dark:via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[1400ms] cubic-bezier(0.16, 1, 0.3, 1) pointer-events-none" />
-
-                  {/* 卡片头部：精致的厂商图标 & 名字 */}
-                  <div className="flex items-start gap-4 relative z-10">
-                    <div className="shrink-0 p-1.5 bg-mg-fill-0/40 rounded-xl border border-mg-border/10">
-                      {vendorNode(model)}
-                    </div>
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <div className="text-[10px] font-bold text-mg-text-2/70 uppercase tracking-widest">
-                        {model.vendor || 'ModelGo'}
-                      </div>
-                      <h3 className="text-17px font-extrabold text-mg-text-0 mt-1 truncate tracking-tight">
-                        {model.display_name}
-                      </h3>
-                    </div>
-                  </div>
-
-                  {/* 模型描述 */}
-                  <p className="text-[12px] text-mg-text-2/90 line-clamp-2 leading-relaxed -mt-2 -mb-1 relative z-10">
-                    {meta.description}
-                  </p>
-
-                  {/* 优化后的 API ID 复制栏 */}
-                  <div className="space-y-1 relative z-10">
-                    <div
-                      onClick={(e) => handleCopyApiId(model.model_id, e)}
-                      className={cn(
-                        'group/id flex items-center justify-between gap-3 px-3 py-2.5 bg-mg-fill-0/75 hover:bg-brand-base/[0.03] border border-mg-border/30 hover:border-brand-base/30 rounded-xl cursor-pointer transition-all duration-300 select-all shadow-inner',
-                        copiedId === model.model_id && 'bg-brand-base/[0.03] dark:bg-brand-base/5 border-brand-base/30'
-                      )}
-                      title={isZh ? '点击复制 API ID' : 'Click to copy API ID'}
-                    >
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <span className="shrink-0 text-[9px] font-black tracking-wider uppercase px-1.5 py-0.5 bg-brand-base/10 dark:bg-brand-base/15 text-brand-base rounded border border-brand-base/20 select-none">
-                          API ID
-                        </span>
-                        <code className="font-mono text-xs font-bold text-mg-text-1 group-hover/id:text-mg-text-0 truncate leading-none">
-                          {model.model_id}
-                        </code>
-                      </div>
-                      <div className={cn(
-                        "shrink-0 flex items-center justify-center w-6 h-6 rounded-lg border shadow-sm transition-all duration-300",
-                        copiedId === model.model_id 
-                          ? "border-brand-base/20 bg-brand-base/10 text-brand-base" 
-                          : "border-mg-border/60 bg-mg-bg-2 text-mg-text-2 group-hover/id:text-brand-base group-hover/id:border-brand-base/30 group-hover/id:shadow"
-                      )}>
-                        {copiedId === model.model_id ? (
-                          <LuCheck size={11} className="text-mg-success animate-in zoom-in-75 duration-200" />
-                        ) : (
-                          <LuCopy size={11} className="text-mg-text-2 group-hover/id:text-brand-base" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 能力模态标签：仅在有模态标签时展示 */}
-                  {model.modalities && model.modalities.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 relative z-10">
-                      {modalityBadges(model)}
-                    </div>
-                  )}
-
-                  {/* 参数指标行：展示上下文与发布日期 */}
-                  <div className="grid grid-cols-2 gap-4 py-1 text-xs relative z-10">
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
-                        {isZh ? '上下文窗口' : 'Context Length'}
-                      </span>
-                      <span className="font-extrabold text-mg-text-0 flex items-center gap-1 text-[13px]">
-                        <LuZap size={13} className="text-amber-500 shrink-0" />
-                        {formatContextLength(model.context_length)}
-                      </span>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
-                        {isZh ? '发布日期' : 'Released At'}
-                      </span>
-                      <span className="font-extrabold text-mg-text-0 text-[13px]">
-                        {model.released_at || '—'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* 计费单价与快速体验按钮：提供完整的输入/输出计费 */}
-                  <div className="flex items-end justify-between pt-3 mt-auto border-t border-mg-border/20 relative z-10">
-                    <div className="flex gap-4">
-                      <div className="space-y-0.5">
-                        <span className="text-[9px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
-                          {isZh ? '输入单价' : 'Input Price'}
-                        </span>
-                        <span className="font-mono text-[12px] font-black text-mg-text-0 tabular-nums">
-                          {formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}
-                        </span>
-                      </div>
-                      <div className="space-y-0.5">
-                        <span className="text-[9px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
-                          {isZh ? '输出单价' : 'Output Price'}
-                        </span>
-                        <span className="font-mono text-[12px] font-black text-mg-text-0 tabular-nums">
-                          {formatModelPrice(model.pricing?.output_per_1m, model.pricing?.currency)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={(e) => handleGoPlayground(model.model_id, e)}
-                        className="rounded-full h-8 px-4 text-xs font-bold text-brand-base hover:text-white border border-brand-base/20 hover:bg-brand-base flex items-center gap-1 cursor-pointer transition-all duration-300 active:scale-95 hover:shadow-sm hover:shadow-brand-glow/20 shrink-0"
-                      >
-                        {isZh ? '去体验' : 'Try'}
-                        <LuChevronRight size={12} className="transition-transform group-hover:translate-x-0.5" />
-                      </button>
-                      <div
-                        aria-hidden="true"
-                        className={cn(
-                          "w-6 h-6 rounded-full border border-mg-border/40 bg-mg-fill-0/40 flex items-center justify-center text-mg-text-2 transition-transform duration-300",
-                          isExpanded && "rotate-180 text-brand-base border-brand-base/30 bg-brand-base/10"
-                        )}
-                      >
-                        <LuChevronDown size={12} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-            {/* 展开的规格面板 */}
-            {isExpanded && (
-              <div className="absolute top-[calc(100%+8px)] left-0 right-0 z-20 rounded-2xl border border-mg-border/30 bg-mg-bg-2/80 dark:bg-mg-bg-2/95 backdrop-blur-md p-5 space-y-4 animate-in fade-in-0 slide-in-from-top-2 duration-200 shadow-xl">
-                {/* 能力标签 */}
-                {model.modalities && model.modalities.length > 0 && (
-                  <div className="space-y-1.5">
-                    <span className="text-[9px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
-                      {isZh ? '能力' : 'Capabilities'}
-                    </span>
-                    <div className="flex flex-wrap gap-1">
-                      {model.modalities.map(m => {
-                        const labelMap: Record<string, string> = {
-                          text: isZh ? '文本' : 'Text',
-                          image: isZh ? '图像' : 'Image',
-                          audio: isZh ? '音频' : 'Audio',
-                          video: isZh ? '视频' : 'Video',
-                          file: isZh ? '文件' : 'File'
-                        }
-                        const colorMap: Record<string, string> = {
-                          text: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-                          image: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20',
-                          audio: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20',
-                          video: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-                          file: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                        }
-                        const cls = colorMap[m] || 'bg-mg-fill-0/60 text-mg-text-2 border-mg-border/40'
-                        return (
-                          <span key={m} className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border", cls)}>
-                            {labelMap[m] || m}
-                          </span>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* 推荐场景 & 指标评分 */}
-                <div className="grid grid-cols-[1.4fr_1fr] gap-4">
-                  <div className="space-y-1.5">
-                    <span className="text-[9px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
-                      {isZh ? '推荐场景' : 'Suggested Use Cases'}
-                    </span>
-                    <div className="flex flex-wrap gap-1">
-                      {meta.tags.map(t => (
-                        <span key={t} className="text-[10px] font-semibold px-2 py-0.5 bg-mg-fill-0/60 border border-mg-border/30 text-mg-text-1 rounded-full leading-none">
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <span className="text-[9px] font-bold text-mg-text-2/70 uppercase tracking-wider block">
-                      {isZh ? '能力评分' : 'Scores'}
-                    </span>
-                    <div className="space-y-1.5">
-                      {Object.entries(meta.scores).map(([key, score]) => {
-                        const label = {
-                          speed: isZh ? '速度' : 'Speed',
-                          reasoning: isZh ? '推理' : 'Reasoning',
-                          cost: isZh ? '成本' : 'Cost'
-                        }[key as 'speed' | 'reasoning' | 'cost']
-                        return (
-                          <div key={key} className="flex items-center justify-between text-[10px] gap-2 leading-none">
-                            <span className="text-mg-text-2 font-bold">{label}</span>
-                            <div className="flex gap-0.5">
-                              {[1, 2, 3, 4].map(i => (
-                                <span
-                                  key={i}
-                                  className={cn(
-                                    "w-3.5 h-1.5 rounded-sm",
-                                    i <= score ? "bg-brand-base" : "bg-mg-fill-0/60 border border-mg-border/30"
-                                  )}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 底部操作按钮 */}
-                <div className="flex items-center gap-3 pt-1 border-t border-mg-border/20">
-                  <button
-                    type="button"
-                    onClick={(e) => handleCopyApiId(model.model_id, e)}
-                    className="flex-1 h-8 bg-mg-fill-0/40 hover:bg-mg-fill-0/80 border border-mg-border/40 text-mg-text-1 font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all text-xs cursor-pointer"
-                  >
-                    <LuCopy size={11} />
-                    {isZh ? '复制 API ID' : 'Copy API ID'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => handleGoPlayground(model.model_id, e)}
-                    className="flex-1 h-8 bg-brand-base hover:bg-brand-mid text-white font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all text-xs cursor-pointer"
-                  >
-                    {isZh ? '查看详情' : 'View Details'}
-                    <LuChevronRight size={12} />
-                  </button>
-                </div>
-              </div>
-            )}
+              ))}
             </div>
-          )})}
-        </div>
-      )}
-        </div>
+          )}
+        </section>
 
-        {/* 热门模型排行榜侧边栏 */}
-        {rankingItems.length > 0 && (
-          <aside className="hidden xl:block w-[340px] shrink-0 sticky top-6">
-            <Card glass className="dashboard-ranking-card flex flex-col">
-              <div className="dashboard-ranking-header">
-                <div>
-                  <h3>{isZh ? '热门模型排行' : 'Hot Models'}</h3>
-                  <p>{isZh ? '本月消费排行' : 'Monthly ranking'}</p>
-                </div>
-                <LuChartBar aria-hidden />
-              </div>
-              <div className="dashboard-ranking-list">
-                {rankingItems.map((item) => (
-                  <div className="dashboard-ranking-row" data-tone={item.tone} key={item.rank}>
-                    <span className="dashboard-ranking-rank">{item.rank}</span>
-                    <span className="dashboard-ranking-icon"><ModelIcon model={item.iconModel} size={24} /></span>
-                    <span className="dashboard-ranking-copy">
-                      <strong>{item.name}</strong>
-                      <small>{item.requests.toLocaleString()} calls</small>
-                    </span>
-                    <span className="dashboard-ranking-score">{item.score}</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </aside>
-        )}
+        <CatalogInsightPanel
+          rankingItems={rankingItems.length > 0 ? rankingItems : fallbackRankingItems}
+          hasRealRanking={rankingItems.length > 0}
+          lowCostModels={lowCostModels}
+          recentModels={recentModels}
+        />
       </div>
 
-      {/* 模型对比 Modal */}
       <ModelsCompareModal
         isOpen={isCompareOpen}
         onClose={() => setIsCompareOpen(false)}
-        allModels={allModels}
+        allModels={comparableModels}
+        initialSelectedIds={compareInitialIds}
         onConfirmCompare={(ids) => {
           if (ids.length > 0) {
             navigate('/models/compare', { state: { selectedIds: ids } })
@@ -675,5 +472,173 @@ export default function ModelsCatalogPage() {
         }}
       />
     </div>
+  )
+}
+
+interface ModelCatalogCardProps {
+  model: CatalogModelItem
+  isZh: boolean
+  copied: boolean
+  onCopy: (modelId: string, event: React.MouseEvent) => Promise<void>
+  onTry: (modelId: string, event: React.MouseEvent) => void
+  onCompare: (event: React.MouseEvent<HTMLButtonElement>) => void
+}
+
+function ModelCatalogCard({ model, isZh, copied, onCopy, onTry, onCompare }: ModelCatalogCardProps) {
+  const { t } = useTranslation()
+  const meta = getModelMeta(model.model_id, isZh)
+  const scenarioTags = model.tags?.length ? model.tags.slice(0, 3) : meta.tags.slice(0, 3)
+  const statusLabel = getStatusLabel(model.status, isZh)
+  const canCompare = isComparableModel(model)
+
+  return (
+    <article className="model-catalog-card">
+      <div className="model-catalog-card-head">
+        <ModelIcon model={model} size={42} rounded="rounded-xl" className="model-catalog-card-icon" />
+        <div className="model-catalog-card-title">
+          <span>{model.vendor || 'ModelGo'}</span>
+          <h3 title={model.display_name}>{model.display_name}</h3>
+        </div>
+        <span className={cn('model-catalog-status', model.status === 'disabled' && 'is-disabled')}>
+          {statusLabel}
+        </span>
+      </div>
+
+      <p className="model-catalog-desc">{meta.description}</p>
+
+      <div className="model-catalog-tags">
+        {model.modalities?.slice(0, 2).map((modality) => (
+          <ModalityBadge key={modality} modality={modality} />
+        ))}
+        {scenarioTags.map((tag) => (
+          <span key={tag} className="model-catalog-scenario-tag">{tag}</span>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        title={isZh ? '点击复制 API ID' : 'Click to copy API ID'}
+        onClick={(event) => onCopy(model.model_id, event)}
+        className={cn('model-catalog-api', copied && 'is-copied')}
+      >
+        <span>{t('modelsCatalog.labels.apiId')}</span>
+        <code>{model.model_id}</code>
+        {copied ? <LuCheck aria-hidden /> : <LuCopy aria-hidden />}
+      </button>
+
+      <div className="model-catalog-metrics">
+        <MetricItem label={t('modelsCatalog.labels.context')} value={formatContextLength(model.context_length)} />
+        <MetricItem
+          label={t('modelsCatalog.labels.inputPrice')}
+          value={formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}
+        />
+        <MetricItem
+          label={t('modelsCatalog.labels.outputPrice')}
+          value={formatModelPrice(model.pricing?.output_per_1m, model.pricing?.currency)}
+        />
+        <MetricItem label={t('modelsCatalog.labels.releasedAt')} value={model.released_at || '—'} />
+      </div>
+
+      <div className="model-catalog-card-actions">
+        <Button
+          size="sm"
+          variant="brand"
+          className="model-catalog-primary-action"
+          onClick={(event) => onTry(model.model_id, event)}
+        >
+          {t('modelsCatalog.button.try')}
+          <LuChevronRight size={13} />
+        </Button>
+        {canCompare ? (
+          <button type="button" className="model-catalog-compare-action" onClick={onCompare}>
+            <LuGitCompareArrows aria-hidden />
+            {t('modelsCatalog.button.compareShort')}
+          </button>
+        ) : (
+          <span className="model-catalog-muted-action">
+            {t('modelsCatalog.button.compareUnavailable')}
+          </span>
+        )}
+      </div>
+    </article>
+  )
+}
+
+function MetricItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="model-catalog-metric">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  )
+}
+
+interface CatalogInsightPanelProps {
+  rankingItems: RankingViewItem[]
+  hasRealRanking: boolean
+  lowCostModels: CatalogModelItem[]
+  recentModels: CatalogModelItem[]
+}
+
+function CatalogInsightPanel({ rankingItems, hasRealRanking, lowCostModels, recentModels }: CatalogInsightPanelProps) {
+  const { t } = useTranslation()
+
+  return (
+    <aside className="catalog-insight-panel" aria-label={t('modelsCatalog.insights.title')}>
+      <div className="catalog-insight-header">
+        <div>
+          <h2>{t('modelsCatalog.insights.title')}</h2>
+          <p>{hasRealRanking ? t('modelsCatalog.insights.subtitle') : t('modelsCatalog.insights.noRanking')}</p>
+        </div>
+        <LuZap aria-hidden />
+      </div>
+
+      <section className="catalog-insight-section">
+        <h3>{t('modelsCatalog.insights.hot')}</h3>
+        <div className="catalog-ranking-list">
+          {rankingItems.slice(0, 5).map((item) => (
+            <div className="catalog-ranking-row" data-tone={item.tone} key={`${item.rank}-${item.name}`}>
+              <span className="catalog-ranking-rank">{item.rank}</span>
+              <ModelIcon model={item.iconModel} size={28} rounded="rounded-lg" className="catalog-ranking-icon" />
+              <span className="catalog-ranking-copy">
+                <strong title={item.name}>{item.name}</strong>
+                <small>
+                  {hasRealRanking
+                    ? t('modelsCatalog.insights.calls', { count: item.requests.toLocaleString() })
+                    : t('modelsCatalog.insights.waiting')}
+                </small>
+              </span>
+              <span className="catalog-ranking-score">{item.score}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="catalog-insight-section">
+        <h3>{t('modelsCatalog.insights.lowCost')}</h3>
+        <div className="catalog-mini-model-list">
+          {lowCostModels.map((model) => (
+            <div className="catalog-mini-model" key={model.id}>
+              <ModelIcon model={model} size={24} rounded="rounded-md" />
+              <span title={model.display_name}>{model.display_name}</span>
+              <strong>{formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}</strong>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="catalog-insight-section">
+        <h3>{t('modelsCatalog.insights.recent')}</h3>
+        <div className="catalog-mini-model-list">
+          {recentModels.map((model) => (
+            <div className="catalog-mini-model" key={model.id}>
+              <ModelIcon model={model} size={24} rounded="rounded-md" />
+              <span title={model.display_name}>{model.display_name}</span>
+              <strong>{model.released_at || '—'}</strong>
+            </div>
+          ))}
+        </div>
+      </section>
+    </aside>
   )
 }

@@ -1006,8 +1006,49 @@
       "title": "All Models",
       "desc": "Browse and integrate all supported LLMs and multimodal models. Copy the model API ID with one click to configure your local agents, API requests, or server-side SDKs seamlessly."
     },
+    "hero": {
+      "kicker": "Model catalog workspace"
+    },
+    "stats": {
+      "label": "Model catalog statistics",
+      "models": "Models",
+      "vendors": "Providers",
+      "text": "Text",
+      "image": "Image",
+      "video": "Video",
+      "free": "Free"
+    },
+    "filters": {
+      "label": "Filters"
+    },
+    "results": {
+      "label": "Model list",
+      "title": "Available models",
+      "count": "Showing {{visible}} / {{total}} models"
+    },
     "button": {
-      "compare": "Compare Models"
+      "compare": "Compare Models",
+      "compareShort": "Compare",
+      "compareUnavailable": "Not comparable",
+      "docs": "Integration Docs",
+      "try": "Try"
+    },
+    "labels": {
+      "apiId": "API ID",
+      "context": "Context",
+      "inputPrice": "Input",
+      "outputPrice": "Output",
+      "releasedAt": "Released"
+    },
+    "insights": {
+      "title": "Model Insights",
+      "subtitle": "Based on this month's real usage",
+      "noRanking": "No usage yet, showing catalog picks",
+      "hot": "Hot models",
+      "lowCost": "Low cost picks",
+      "recent": "Recently updated",
+      "calls": "{{count}} calls",
+      "waiting": "Waiting for usage"
     },
     "loading": "Loading models...",
     "empty": "No matching models",

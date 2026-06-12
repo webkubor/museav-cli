@@ -1005,8 +1005,49 @@
       "title": "全部模型",
       "desc": "聚合 ModelGo 支持的全部大语言及多模态模型。一键复制 API ID，即可在您的本地智能代理、服务代码或第三方 SDK 中进行无缝配置与调用。"
     },
+    "hero": {
+      "kicker": "模型目录工作台"
+    },
+    "stats": {
+      "label": "模型目录统计",
+      "models": "模型",
+      "vendors": "厂商",
+      "text": "文本",
+      "image": "图像",
+      "video": "视频",
+      "free": "免费"
+    },
+    "filters": {
+      "label": "筛选"
+    },
+    "results": {
+      "label": "模型列表",
+      "title": "可用模型",
+      "count": "当前显示 {{visible}} / {{total}} 个模型"
+    },
     "button": {
-      "compare": "对比模型"
+      "compare": "对比模型",
+      "compareShort": "对比",
+      "compareUnavailable": "不可对比",
+      "docs": "接入文档",
+      "try": "去体验"
+    },
+    "labels": {
+      "apiId": "API ID",
+      "context": "上下文",
+      "inputPrice": "输入单价",
+      "outputPrice": "输出单价",
+      "releasedAt": "发布"
+    },
+    "insights": {
+      "title": "模型洞察",
+      "subtitle": "基于本月实际调用统计",
+      "noRanking": "暂无调用数据，先显示目录推荐",
+      "hot": "热门模型排行",
+      "lowCost": "低价推荐",
+      "recent": "近期更新",
+      "calls": "{{count}} 次调用",
+      "waiting": "等待调用数据"
     },
     "loading": "正在拉取可用模型...",
     "empty": "未找到匹配的模型",

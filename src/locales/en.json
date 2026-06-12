@@ -1024,7 +1024,17 @@
       "free": "Free"
     },
     "filters": {
-      "label": "Filters"
+      "label": "Filters",
+      "all": "All",
+      "category": "Model category",
+      "language": "Language support",
+      "languageMultilingual": "Multilingual",
+      "languageEnglish": "English",
+      "languageChinese": "Chinese",
+      "context": "Context length",
+      "provider": "Provider",
+      "scenario": "Scenario",
+      "reset": "Reset filters"
     },
     "results": {
       "label": "Model list",

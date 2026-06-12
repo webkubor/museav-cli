@@ -19,15 +19,12 @@ import {
   LuFileText,
   LuGitCompareArrows,
   LuImage,
-  LuSearch,
-  LuSlidersHorizontal,
   LuSparkles,
   LuTag,
   LuVideo,
   LuZap,
 } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import { getMarketConfig } from '@/config/market'
 import { useModels } from '@/features/models/hooks/useModels'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
@@ -42,6 +39,12 @@ import { getUsageRankingsModels } from '@/services/usage'
 import { useAuthStore } from '@/store/auth'
 import type { CatalogModelItem, UsageRankingItem } from '@/types'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
+import { ModelCatalogFilters } from './ModelCatalogFilters'
+import {
+  DEFAULT_ADVANCED_FILTERS,
+  matchesAdvancedFilters,
+  type AdvancedFilterState,
+} from './modelCatalogFilterLogic'
 import './catalog.css'
 
 interface ModelMeta {
@@ -196,6 +199,7 @@ export default function ModelsCatalogPage() {
   const docsUrl = getMarketConfig(market).docsUrl
 
   const [category, setCategory] = useState<string>('all')
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilterState>(() => ({ ...DEFAULT_ADVANCED_FILTERS }))
   const [isCompareOpen, setIsCompareOpen] = useState(false)
   const [compareInitialIds, setCompareInitialIds] = useState<string[]>([])
   const [copiedId, setCopiedId] = useState<string | null>(null)
@@ -229,12 +233,15 @@ export default function ModelsCatalogPage() {
   }, [allModels, apiTags])
 
   const visibleModels = useMemo(() => {
-    if (category === 'all') return filteredModels
     return filteredModels.filter((model) =>
-      model.tags?.some((tag) => tag.toLowerCase() === category.toLowerCase()) ||
-      model.modalities?.includes(category)
+      (
+        category === 'all' ||
+        model.tags?.some((tag) => tag.toLowerCase() === category.toLowerCase()) ||
+        model.modalities?.includes(category)
+      ) &&
+      matchesAdvancedFilters(model, advancedFilters)
     )
-  }, [category, filteredModels])
+  }, [category, advancedFilters, filteredModels])
 
   const catalogStats = useMemo(() => {
     const vendorCount = new Set(allModels.map((model) => model.vendor).filter(Boolean)).size
@@ -371,49 +378,18 @@ export default function ModelsCatalogPage() {
         </div>
       </section>
 
-      <section className="models-catalog-toolbar" aria-label={t('modelsCatalog.filters.label')}>
-        <Input
-          variant="search"
-          prefix={<LuSearch size={16} className="text-mg-text-2/80" />}
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder={t('modelsCatalog.placeholder.search')}
-          className="models-catalog-search"
-        />
-        <div className="models-catalog-filter-row">
-          <span className="models-catalog-filter-label">
-            <LuSlidersHorizontal aria-hidden />
-            {t('modelsCatalog.filters.label')}
-          </span>
-          <button
-            type="button"
-            onClick={() => setCategory('all')}
-            className={cn('models-catalog-filter-chip', category === 'all' && 'is-active')}
-          >
-            {t('modelsCatalog.filter.all')}
-          </button>
-          {apiTags.slice(0, 8).map((tag) => (
-            <button
-              key={tag.code}
-              type="button"
-              onClick={() => setCategory(tag.code)}
-              className={cn('models-catalog-filter-chip', category === tag.code && 'is-active')}
-            >
-              {isZh ? tag.name_zh : tag.name_en}
-            </button>
-          ))}
-          {modalityFilters.map((item) => (
-            <button
-              key={item.code}
-              type="button"
-              onClick={() => setCategory(item.code)}
-              className={cn('models-catalog-filter-chip', category === item.code && 'is-active')}
-            >
-              {isZh ? item.nameZh : item.nameEn}
-            </button>
-          ))}
-        </div>
-      </section>
+      <ModelCatalogFilters
+        search={search}
+        onSearchChange={setSearch}
+        category={category}
+        onCategoryChange={setCategory}
+        advancedFilters={advancedFilters}
+        onAdvancedFiltersChange={setAdvancedFilters}
+        allModels={allModels}
+        apiTags={apiTags}
+        modalityFilters={modalityFilters}
+        isZh={isZh}
+      />
 
       <div className="models-catalog-layout">
         <section className="models-catalog-results" aria-label={t('modelsCatalog.results.label')}>

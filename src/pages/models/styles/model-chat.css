@@ -131,12 +131,13 @@
   color: var(--mg-text-0);
 }
 
-.models-experience-message-bubble p {
+/* 仅作用于直接子级：用户纯文本段落；assistant 的 markdown 段落由 .cs-markdown 接管 */
+.models-experience-message-bubble > p {
   margin: 0;
   white-space: pre-wrap;
 }
 
-.models-experience-message-bubble span {
+.models-experience-message-bubble > span {
   display: block;
   margin-top: 10px;
   color: var(--mg-text-2);

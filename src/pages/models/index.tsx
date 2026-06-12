@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import Markdown from 'react-markdown'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -327,6 +328,8 @@ export default function ModelsPage() {
                       <span className="models-experience-thinking" aria-label="模型思考中">
                         <i /><i /><i />
                       </span>
+                    ) : message.role === 'assistant' ? (
+                      <div className="cs-markdown"><Markdown>{message.content}</Markdown></div>
                     ) : (
                       message.content.split('\n').map((line, lineIndex) => <p key={`${index}-${lineIndex}`}>{line}</p>)
                     )}

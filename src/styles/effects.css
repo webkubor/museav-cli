@@ -94,6 +94,9 @@ body[theme-mode='dark'] .sidebar-flow-line::after {
 .cs-markdown p { margin: 0 0 8px; }
 .cs-markdown p:last-child { margin-bottom: 0; }
 .cs-markdown ul, .cs-markdown ol { margin: 4px 0 8px; padding-left: 18px; }
+/* Tailwind preflight 重置了 list-style，这里补回，否则序号/圆点不显示 */
+.cs-markdown ul { list-style: disc; }
+.cs-markdown ol { list-style: decimal; }
 .cs-markdown li { margin-bottom: 2px; }
 .cs-markdown code { font-size: 12px; padding: 1px 5px; border-radius: 4px; background: var(--mg-fill-1); font-family: monospace; }
 .cs-markdown pre { margin: 6px 0; padding: 10px 12px; border-radius: 8px; background: #0f172a; overflow-x: auto; }

@@ -84,21 +84,28 @@
 
 .models-catalog-stat {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: 6px;
   min-height: 32px;
-  padding: 0 11px;
+  padding: 0 12px;
   border: 1px solid color-mix(in srgb, var(--brand-base) 12%, var(--mg-border));
   border-radius: 999px;
   background: rgba(var(--mg-bg-0-rgb), 0.76);
-  color: var(--mg-text-1);
+  color: var(--mg-text-2);
   font-size: 12px;
   font-weight: 800;
+  cursor: default;
+}
+
+.models-catalog-stat svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
 }
 
 .models-catalog-stat strong {
   color: var(--mg-text-0);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
 }
@@ -111,11 +118,15 @@
 }
 
 .models-catalog-action {
-  height: 38px;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  height: 36px !important;
   border-radius: 999px !important;
-  padding-inline: 15px !important;
+  padding-inline: 14px !important;
   font-size: 12px !important;
   font-weight: 800 !important;
+  white-space: nowrap !important;
 }
 
 .models-catalog-toolbar {

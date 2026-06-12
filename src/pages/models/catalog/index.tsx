@@ -11,13 +11,19 @@ import { useQuery } from '@tanstack/react-query'
 import {
   LuArrowUpRight,
   LuBookOpen,
+  LuBoxes,
+  LuBuilding2,
   LuCheck,
   LuChevronRight,
   LuCopy,
+  LuFileText,
   LuGitCompareArrows,
+  LuImage,
   LuSearch,
   LuSlidersHorizontal,
   LuSparkles,
+  LuTag,
+  LuVideo,
   LuZap,
 } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
@@ -236,12 +242,12 @@ export default function ModelsCatalogPage() {
       allModels.filter((model) => model.modalities?.includes(modality)).length
 
     return [
-      { key: 'models', label: t('modelsCatalog.stats.models'), value: allModels.length },
-      { key: 'vendors', label: t('modelsCatalog.stats.vendors'), value: vendorCount },
-      { key: 'text', label: t('modelsCatalog.stats.text'), value: countByModality('text') },
-      { key: 'image', label: t('modelsCatalog.stats.image'), value: countByModality('image') },
-      { key: 'video', label: t('modelsCatalog.stats.video'), value: countByModality('video') },
-      { key: 'free', label: t('modelsCatalog.stats.free'), value: allModels.filter(isFreeModel).length },
+      { key: 'models', label: t('modelsCatalog.stats.models'), value: allModels.length, Icon: LuBoxes },
+      { key: 'vendors', label: t('modelsCatalog.stats.vendors'), value: vendorCount, Icon: LuBuilding2 },
+      { key: 'text', label: t('modelsCatalog.stats.text'), value: countByModality('text'), Icon: LuFileText },
+      { key: 'image', label: t('modelsCatalog.stats.image'), value: countByModality('image'), Icon: LuImage },
+      { key: 'video', label: t('modelsCatalog.stats.video'), value: countByModality('video'), Icon: LuVideo },
+      { key: 'free', label: t('modelsCatalog.stats.free'), value: allModels.filter(isFreeModel).length, Icon: LuTag },
     ]
   }, [allModels, t])
 
@@ -335,10 +341,10 @@ export default function ModelsCatalogPage() {
           <h1 id="models-catalog-title">{t('modelsCatalog.allModels.title')}</h1>
           <p>{t('modelsCatalog.allModels.desc')}</p>
           <div className="models-catalog-stats" aria-label={t('modelsCatalog.stats.label')}>
-            {catalogStats.map((item) => (
-              <span key={item.key} className="models-catalog-stat">
-                <strong>{item.value}</strong>
-                {item.label}
+            {catalogStats.map(({ key, label, value, Icon }) => (
+              <span key={key} className="models-catalog-stat" title={label}>
+                <Icon aria-hidden />
+                <strong>{value}</strong>
               </span>
             ))}
           </div>

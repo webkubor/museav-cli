@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Switch } from '@/components/ui/Switch'
@@ -268,6 +269,12 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
   })
   const forwards = forwardsQuery.data?.items ?? []
 
+  // 平台 → 已配置 Destination 数量，用于在可用平台行上标记已接入状态
+  const forwardCountByPlatform = forwards.reduce<Record<string, number>>((acc, fwd) => {
+    acc[fwd.platform] = (acc[fwd.platform] ?? 0) + 1
+    return acc
+  }, {})
+
   const deleteMutation = useMutation({
     mutationFn: (forwardId: string) => deleteForward(workspaceId, forwardId),
     onSuccess: () => {
@@ -349,7 +356,7 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
                 className={`flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-mg-fill-0/40 transition-colors ${idx !== 0 ? 'border-t border-mg-border' : ''}`}
                 onClick={() => setActivePlatform({ id: p.platform, name: p.display_name })}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   {p.logo_url ? (
                     <img src={p.logo_url} alt={p.display_name} className="w-8 h-8 rounded-lg object-contain bg-mg-fill-0 shrink-0" />
                   ) : (
@@ -358,6 +365,11 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
                     </span>
                   )}
                   <span className="text-sm font-medium text-mg-text-0">{p.display_name}</span>
+                  {(forwardCountByPlatform[p.platform] ?? 0) > 0 && (
+                    <Badge variant="success" size="sm" dot className="shrink-0">
+                      已配置{forwardCountByPlatform[p.platform]! > 1 ? ` ×${forwardCountByPlatform[p.platform]}` : ''}
+                    </Badge>
+                  )}
                 </div>
                 {canManageForward && (
                   <button

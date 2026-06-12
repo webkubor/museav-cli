@@ -14,7 +14,6 @@ import {
   LuTerminal,
   LuLock,
   LuMessageSquare,
-  LuGift,
   LuClapperboard,
 } from 'react-icons/lu'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
@@ -124,7 +123,7 @@ export function DashboardLayout() {
     eye:         ic(<LuEye          size={16} />),
     mail:        ic(<LuMail         size={16} />),
     message:     ic(<LuMessageSquare  size={16} />),
-    gift:        ic(<LuGift           size={16} />),
+    gift:        ic(<span className="text-[15px] leading-none" role="img" aria-label="gift">🎁</span>),
     clapper:     ic(<LuClapperboard  size={16} />),
   }
 

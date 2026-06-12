@@ -194,47 +194,6 @@ const SidebarMenuGroup: React.FC<{
 }
 
 /**
- * 侧边栏底部信息：高颜值系统状态面板（版本、时区、实时时间）
- */
-const SidebarFooterInfo: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
-  const [time, setTime] = useState(new Date())
-
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000)
-    return () => clearInterval(timer)
-  }, [])
-
-  if (collapsed) return null
-
-  const timeStr = time.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  })
-
-  const offset = -time.getTimezoneOffset() / 60
-  const zoneStr = `GMT${offset >= 0 ? '+' : ''}${offset}`
-
-  return (
-    <div className="mx-4 mt-3 mb-6 flex items-center justify-between gap-2 select-none text-mg-text-2 text-[11px] font-mono">
-      {/* 单行：版本 + 实时时间，去掉无意义的 ONLINE */}
-      <div className="flex items-center gap-1.5 font-semibold">
-        <span className="relative flex h-1.5 w-1.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mg-success opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-mg-success"></span>
-        </span>
-        <span className="tracking-wide">v{__APP_VERSION__}</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="tabular-nums text-mg-text-1 hover:text-mg-text-0 transition-colors">{timeStr}</span>
-        <span className="px-1 py-0.5 rounded bg-mg-fill-1 text-[9px] text-mg-text-2 tracking-wide font-bold">{zoneStr}</span>
-      </div>
-    </div>
-  )
-}
-
-/**
  * 侧边栏底部设置按钮（向上弹出/向右弹出菜单）
  */
 const SidebarSettingsButton: React.FC<{
@@ -470,8 +429,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           accountLabel={t('nav.account')}
           orgLabel={t('nav.organization')}
         />
-
-        <SidebarFooterInfo collapsed={collapsed} />
       </div>
     </aside>
   )

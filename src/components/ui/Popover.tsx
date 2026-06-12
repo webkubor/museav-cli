@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 
 interface PopoverProps {
@@ -15,66 +16,89 @@ export const Popover: React.FC<PopoverProps> = ({
   className
 }) => {
   const [open, setOpen] = useState(false)
-  const [flipped, setFlipped] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [style, setStyle] = useState<React.CSSProperties>({})
+  const triggerRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
 
+  const computePosition = useCallback(() => {
+    if (!triggerRef.current) return
+    const rect = triggerRef.current.getBoundingClientRect()
+    const gap = 8
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+
+    let top: number | undefined
+    let bottom: number | undefined
+    let left = rect.left
+
+    const spaceBelow = vh - rect.bottom
+    const spaceAbove = rect.top
+    const useTop = position === 'bottom' && spaceBelow < 420 && spaceAbove > spaceBelow
+
+    if (useTop) {
+      bottom = vh - rect.top + gap
+      top = undefined
+    } else {
+      top = rect.bottom + gap
+      bottom = undefined
+    }
+
+    // 防止右侧溢出
+    const panelW = panelRef.current?.offsetWidth ?? 460
+    if (left + panelW > vw - 8) {
+      left = Math.max(8, vw - panelW - 8)
+    }
+
+    setStyle({ position: 'fixed', top, bottom, left, zIndex: 9999 })
+  }, [position])
+
   useEffect(() => {
+    if (!open) return
+    computePosition()
+
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      if (
+        triggerRef.current && !triggerRef.current.contains(target) &&
+        panelRef.current && !panelRef.current.contains(target)
+      ) {
         setOpen(false)
       }
     }
-    if (open) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
+
+    function handleScroll() { computePosition() }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    window.addEventListener('scroll', handleScroll, true)
+    window.addEventListener('resize', computePosition)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+      window.removeEventListener('scroll', handleScroll, true)
+      window.removeEventListener('resize', computePosition)
     }
-  }, [open])
-
-  // Auto-flip: measure available space after open
-  useEffect(() => {
-    if (!open || !containerRef.current) return
-    const triggerRect = containerRef.current.getBoundingClientRect()
-    const spaceBelow = window.innerHeight - triggerRect.bottom
-    const spaceAbove = triggerRect.top
-    if (position === 'bottom' && spaceBelow < 420 && spaceAbove > spaceBelow) {
-      setFlipped(true)
-    } else {
-      setFlipped(false)
-    }
-  }, [open, position])
-
-  const effectivePosition = (position === 'bottom' && flipped) ? 'top' : position
-
-  const posClasses = {
-    top: 'bottom-[calc(100%+8px)] left-0 origin-bottom',
-    bottom: 'top-[calc(100%+8px)] left-0 origin-top',
-    left: 'right-[calc(100%+8px)] top-0 origin-right',
-    right: 'left-[calc(100%+8px)] top-0 origin-left',
-  }
+  }, [open, computePosition])
 
   return (
-    <div ref={containerRef} className="relative inline-block">
-      <div onClick={() => setOpen((o) => !o)} className="cursor-pointer inline-flex">
+    <>
+      <div ref={triggerRef} className="relative w-full" onClick={() => setOpen(o => !o)}>
         {trigger}
       </div>
 
-      {open && (
+      {open && createPortal(
         <div
           ref={panelRef}
+          style={style}
           className={cn(
-            "absolute z-[999] p-4 rounded-xl glass-card-glow border border-mg-border shadow-xl select-none",
+            "p-4 rounded-xl glass-card-glow border border-mg-border shadow-xl select-none",
             "animate-in zoom-in-95 fade-in-0 duration-150",
-            posClasses[effectivePosition],
             className
           )}
         >
           {content}
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   )
 }
 

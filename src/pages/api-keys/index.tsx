@@ -397,78 +397,67 @@ export default function ApiKeysPage() {
 
 
       {/* 接入参数 */}
-      <div className="rounded-2xl border border-mg-border overflow-hidden bg-mg-bg-0 shadow-sm">
-        <div className="grid gap-5 p-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-center">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl bg-brand-base/10 flex items-center justify-center shrink-0 border border-brand-base/15">
-                <LuZap size={16} className="text-brand-base" />
-              </div>
-              <div>
-                <div className="text-sm font-bold text-mg-text-0">接入协议</div>
-                <div className="text-xs text-mg-text-2 mt-0.5">复制 Base URL 到工具、SDK 或代理配置。</div>
-              </div>
-            </div>
+      <div className="rounded-xl border border-mg-border bg-mg-bg-0 shadow-sm">
+        <div className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="grid min-w-0 flex-1 gap-1.5">
+            {GATEWAY_ENDPOINTS.map(({ label, baseUrl: value }, index) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => handleQuickCopy(label, value)}
+                className={`group flex h-9 min-w-0 items-center gap-2 rounded-lg border px-2.5 text-left transition-colors cursor-pointer ${
+                  quickCopied === label
+                    ? 'bg-mg-success/5 border-mg-success/30'
+                    : 'bg-mg-bg-1/55 border-mg-border/70 hover:border-brand-base/40 hover:bg-brand-base/5'
+                }`}
+              >
+                <span className="w-6 h-6 rounded-md bg-mg-bg-0 border border-mg-border flex items-center justify-center shrink-0">
+                  {resolveVendorIcon(index === 0 ? 'openai' : 'anthropic', 16)}
+                </span>
+                <span className="w-20 shrink-0 text-[11px] font-bold text-mg-text-0">{label}</span>
+                <code className="min-w-0 flex-1 truncate font-mono text-[12px] font-semibold text-mg-text-1">
+                  {value}
+                </code>
+                <span className={`shrink-0 text-[11px] font-bold flex items-center gap-1 transition-colors ${
+                  quickCopied === label ? 'text-mg-success' : 'text-mg-text-2 group-hover:text-brand-base'
+                }`}>
+                  {quickCopied === label
+                    ? <><LuCheck size={12} /> 已复制</>
+                    : <><LuCopy size={12} /> 复制</>}
+                </span>
+              </button>
+            ))}
+          </div>
 
-            <div className="grid gap-2">
-              {GATEWAY_ENDPOINTS.map(({ label, baseUrl: value }, index) => (
+          <div className="min-w-0 shrink-0 lg:w-[520px]">
+            <div className="mb-1.5 flex items-center justify-between gap-3">
+              <div className="text-[11px] font-bold text-mg-text-1">接入方式</div>
+              <a
+                href={docsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-base hover:text-brand-deep hover:underline"
+              >
+                开发文档
+                <LuExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 xl:grid-cols-3">
+              {CONNECT_ACTIONS.map((action) => (
                 <button
-                  key={label}
+                  key={action.key}
                   type="button"
-                  onClick={() => handleQuickCopy(label, value)}
-                  className={`group flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all cursor-pointer ${
-                    quickCopied === label
-                      ? 'bg-mg-success/5 border-mg-success/30'
-                      : 'bg-mg-bg-1/55 border-mg-border/70 hover:border-brand-base/40 hover:bg-brand-base/5'
-                  }`}
+                  onClick={handleOpenConnectWindow}
+                  className="group flex h-8 items-center gap-1.5 rounded-lg border border-mg-border bg-mg-bg-1/55 px-2 text-left transition-colors hover:border-brand-base/40 hover:bg-brand-base/5 cursor-pointer"
                 >
-                  <span className="w-8 h-8 rounded-lg bg-mg-bg-0 border border-mg-border flex items-center justify-center shrink-0">
-                    {resolveVendorIcon(index === 0 ? 'openai' : 'anthropic', 20)}
+                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-brand-base/10 text-brand-base group-hover:bg-brand-base group-hover:text-white transition-colors">
+                    {action.icon}
                   </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-xs font-bold text-mg-text-0">{label}</span>
-                    <code className="mt-1 block font-mono text-[12.5px] font-semibold text-mg-text-1 truncate">
-                      {value}
-                    </code>
-                  </span>
-                  <span className={`shrink-0 text-[11px] font-bold flex items-center gap-1 transition-colors ${
-                    quickCopied === label ? 'text-mg-success' : 'text-mg-text-2 group-hover:text-brand-base'
-                  }`}>
-                    {quickCopied === label
-                      ? <><LuCheck size={12} /> 已复制</>
-                      : <><LuCopy size={12} /> 复制</>}
+                  <span className="min-w-0 truncate text-[11px] font-bold text-mg-text-0">
+                    {action.label}
                   </span>
                 </button>
               ))}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-mg-border bg-mg-bg-1/50 p-4">
-            <div className="text-xs font-bold text-mg-text-0">更多接入方式</div>
-            <div className="mt-1 text-xs text-mg-text-2 leading-5">
-              工具配置、命令示例和完整参数说明已经整理在接入窗口和开发文档里。
-            </div>
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row xl:flex-col">
-              <Button
-                variant="brand"
-                size="sm"
-                onClick={handleOpenConnectWindow}
-                className="justify-center rounded-lg"
-              >
-                接入工具窗口
-                <LuChevronRight className="ml-1 h-3.5 w-3.5" />
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="sm"
-                className="justify-center rounded-lg"
-              >
-                <a href={docsUrl} target="_blank" rel="noreferrer">
-                  开发文档
-                  <LuExternalLink className="ml-1 h-3.5 w-3.5" />
-                </a>
-              </Button>
             </div>
           </div>
         </div>

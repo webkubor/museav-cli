@@ -24,10 +24,11 @@
 
 .models-catalog-hero {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  border-radius: 22px;
-  padding: clamp(22px, 3vw, 34px);
+  gap: 20px;
+  border-radius: 16px;
+  padding: 18px 22px;
 }
 
 .models-catalog-hero-copy {
@@ -38,75 +39,75 @@
 .models-catalog-kicker {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  min-height: 28px;
-  margin-bottom: 12px;
-  padding: 0 10px;
+  gap: 5px;
+  min-height: 22px;
+  margin-bottom: 8px;
+  padding: 0 8px;
   border: 1px solid color-mix(in srgb, var(--brand-base) 16%, var(--mg-border));
   border-radius: 999px;
   background: var(--brand-selected-bg);
   color: var(--brand-base);
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .models-catalog-kicker svg {
-  width: 14px;
-  height: 14px;
+  width: 11px;
+  height: 11px;
 }
 
 .models-catalog-hero h1 {
   margin: 0;
   color: var(--mg-text-0);
-  font-size: clamp(28px, 3.1vw, 42px);
+  font-size: 22px;
   font-weight: 900;
-  line-height: 1.05;
-  letter-spacing: 0;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
   text-wrap: balance;
 }
 
 .models-catalog-hero p {
-  max-width: 760px;
-  margin: 12px 0 0;
-  color: var(--mg-text-1);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.75;
+  max-width: 680px;
+  margin: 6px 0 0;
+  color: var(--mg-text-2);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.6;
   text-wrap: pretty;
 }
 
 .models-catalog-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 18px;
+  gap: 6px;
+  margin-top: 12px;
 }
 
 .models-catalog-stat {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 32px;
-  padding: 0 12px;
-  border: 1px solid color-mix(in srgb, var(--brand-base) 12%, var(--mg-border));
+  gap: 5px;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--mg-border);
   border-radius: 999px;
-  background: rgba(var(--mg-bg-0-rgb), 0.76);
+  background: var(--mg-fill-0);
   color: var(--mg-text-2);
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 700;
   cursor: default;
 }
 
 .models-catalog-stat svg {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
   flex-shrink: 0;
 }
 
 .models-catalog-stat strong {
   color: var(--mg-text-0);
-  font-size: 14px;
-  font-weight: 900;
+  font-size: 12px;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
@@ -691,7 +692,7 @@ body[theme-mode='dark'] .model-catalog-status {
   .models-catalog-toolbar,
   .models-catalog-results,
   .catalog-insight-panel {
-    border-radius: 16px;
+    border-radius: 12px;
   }
 
   .models-catalog-grid {

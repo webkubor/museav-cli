@@ -35,7 +35,6 @@ import {
   LuBuilding2,
   LuUsers,
   LuKey,
-  LuChevronDown,
   LuZap,
   LuChevronRight,
   LuKeyRound,
@@ -45,12 +44,12 @@ import {
   LuCode,
   LuFileJson,
   LuBookOpen,
-  LuSparkles,
+  LuExternalLink,
 } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
 import { resolveVendorIcon } from '@/features/models/components/vendor-icons'
+import { getMarketConfig } from '@/config/market'
 import { listApiKeys, createApiKey, revokeApiKey } from '@/services/api-keys'
 import { listWorkspaceMembers } from '@/services/workspaces'
 import { listGuardrails } from '@/services/guardrails'
@@ -59,6 +58,7 @@ import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
+import { useMarket } from '@/hooks/useMarket'
 import { pageItems } from '@/lib/utils'
 import { formatDateTime } from '@/lib/format-date'
 
@@ -92,25 +92,6 @@ const EXPIRATION_PRESETS = [
   { key: '7d', label: '7 天后' },
   { key: '30d', label: '30 天后' },
   { key: 'custom', label: '自定义截止日期' }
-]
-
-const FEATURED_PROVIDERS = [
-  { key: 'openai', label: 'OpenAI' },
-  { key: 'claude', label: 'Claude' },
-  { key: 'gemini', label: 'Gemini' },
-  { key: 'deepseek', label: 'DeepSeek' },
-  { key: 'qwen', label: 'Qwen' },
-  { key: 'chatglm', label: 'GLM' },
-  { key: 'moonshot', label: 'Moonshot' },
-  { key: 'bytedance', label: 'Doubao' },
-]
-
-const FEATURED_MODELS = [
-  { key: 'gpt-4.1', label: 'GPT-4.1', vendor: 'openai' },
-  { key: 'claude-4', label: 'Claude 4', vendor: 'claude' },
-  { key: 'gemini-2.5', label: 'Gemini 2.5', vendor: 'gemini' },
-  { key: 'deepseek-r1', label: 'DeepSeek-R1', vendor: 'deepseek' },
-  { key: 'qwen3', label: 'Qwen3', vendor: 'qwen' },
 ]
 
 const CONNECT_ACTIONS = [
@@ -150,8 +131,9 @@ const CONNECT_ACTIONS = [
 
 export default function ApiKeysPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const market = useMarket()
+  const docsUrl = getMarketConfig(market).docsUrl
   const [searchValue, setSearchValue] = useState('')
   const [createVisible, setCreateVisible] = useState(false)
   const [revealVisible, setRevealVisible] = useState(false)
@@ -159,7 +141,6 @@ export default function ApiKeysPage() {
   const [createdKeyText, setCreatedKeyText] = useState('')
 
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null)
-  const [quickOpen, setQuickOpen] = useState(false)
   const [quickCopied, setQuickCopied] = useState<string | null>(null)
   const [connectCopied, setConnectCopied] = useState<string | null>(null)
   const { copy: copyText, copied } = useCopy()
@@ -415,125 +396,82 @@ export default function ApiKeysPage() {
       <PageHeader title={t('apiKeys.title')} description={t('apiKeys.desc')} className="mb-0" />
 
 
-      {/* 快速接入配置 */}
+      {/* 接入参数 */}
       <div className="rounded-2xl border border-mg-border overflow-hidden bg-mg-bg-0 shadow-sm">
-        <div className="p-5">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-center">
-            <button
-              type="button"
-              onClick={() => setQuickOpen(o => !o)}
-              className="flex min-w-[220px] items-start gap-3 text-left cursor-pointer group"
-            >
-              <div className="w-10 h-10 rounded-xl bg-brand-base/10 flex items-center justify-center shrink-0 border border-brand-base/15">
-                <LuSparkles size={17} className="text-brand-base" />
+        <div className="grid gap-5 p-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-center">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-brand-base/10 flex items-center justify-center shrink-0 border border-brand-base/15">
+                <LuZap size={16} className="text-brand-base" />
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-mg-text-0">Agent 快速接入</span>
-                  <LuChevronDown
-                    size={14}
-                    className="text-mg-text-2 transition-transform duration-200 group-hover:text-brand-base"
-                    style={{ transform: quickOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                  />
-                </div>
-                <p className="mt-1 text-xs text-mg-text-2 leading-5">
-                  复制 Base URL，与常用模型和开发工具快速完成配置。
-                </p>
-              </div>
-            </button>
-
-            <div className="flex-1 min-w-0 space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-bold text-mg-text-2 mr-1">常用厂商</span>
-                {FEATURED_PROVIDERS.map((provider) => (
-                  <span
-                    key={provider.key}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-mg-border/70 bg-mg-bg-1/70 px-2.5 py-1 text-[11px] font-semibold text-mg-text-1"
-                  >
-                    <span className="flex h-4 w-4 items-center justify-center shrink-0">
-                      {resolveVendorIcon(provider.key, 16)}
-                    </span>
-                    {provider.label}
-                  </span>
-                ))}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-bold text-mg-text-2 mr-1">常用模型</span>
-                {FEATURED_MODELS.map((model) => (
-                  <span
-                    key={model.key}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-brand-base/5 border border-brand-base/15 px-2.5 py-1 text-[11px] font-bold text-brand-base"
-                  >
-                    <span className="flex h-4 w-4 items-center justify-center shrink-0">
-                      {resolveVendorIcon(model.vendor, 16)}
-                    </span>
-                    {model.label}
-                  </span>
-                ))}
+              <div>
+                <div className="text-sm font-bold text-mg-text-0">接入协议</div>
+                <div className="text-xs text-mg-text-2 mt-0.5">复制 Base URL 到工具、SDK 或代理配置。</div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/models/catalog')}
-                className="rounded-full"
-              >
-                查看模型目录
-                <LuChevronRight className="ml-1 h-3.5 w-3.5" />
-              </Button>
+            <div className="grid gap-2">
+              {GATEWAY_ENDPOINTS.map(({ label, baseUrl: value }, index) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => handleQuickCopy(label, value)}
+                  className={`group flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all cursor-pointer ${
+                    quickCopied === label
+                      ? 'bg-mg-success/5 border-mg-success/30'
+                      : 'bg-mg-bg-1/55 border-mg-border/70 hover:border-brand-base/40 hover:bg-brand-base/5'
+                  }`}
+                >
+                  <span className="w-8 h-8 rounded-lg bg-mg-bg-0 border border-mg-border flex items-center justify-center shrink-0">
+                    {resolveVendorIcon(index === 0 ? 'openai' : 'anthropic', 20)}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-bold text-mg-text-0">{label}</span>
+                    <code className="mt-1 block font-mono text-[12.5px] font-semibold text-mg-text-1 truncate">
+                      {value}
+                    </code>
+                  </span>
+                  <span className={`shrink-0 text-[11px] font-bold flex items-center gap-1 transition-colors ${
+                    quickCopied === label ? 'text-mg-success' : 'text-mg-text-2 group-hover:text-brand-base'
+                  }`}>
+                    {quickCopied === label
+                      ? <><LuCheck size={12} /> 已复制</>
+                      : <><LuCopy size={12} /> 复制</>}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-mg-border bg-mg-bg-1/50 p-4">
+            <div className="text-xs font-bold text-mg-text-0">更多接入方式</div>
+            <div className="mt-1 text-xs text-mg-text-2 leading-5">
+              工具配置、命令示例和完整参数说明已经整理在接入窗口和开发文档里。
+            </div>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row xl:flex-col">
               <Button
                 variant="brand"
                 size="sm"
                 onClick={handleOpenConnectWindow}
-                className="rounded-full"
+                className="justify-center rounded-lg"
               >
-                立即接入
+                接入工具窗口
+                <LuChevronRight className="ml-1 h-3.5 w-3.5" />
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="justify-center rounded-lg"
+              >
+                <a href={docsUrl} target="_blank" rel="noreferrer">
+                  开发文档
+                  <LuExternalLink className="ml-1 h-3.5 w-3.5" />
+                </a>
               </Button>
             </div>
           </div>
         </div>
-
-        {quickOpen && (
-          <div className="border-t border-mg-border/60 bg-mg-bg-1/30">
-            <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-mg-border/60">
-              {GATEWAY_ENDPOINTS.map(({ label, baseUrl: value }, index) => (
-                <div key={label} className="p-5 flex flex-col gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-mg-bg-0 border border-mg-border flex items-center justify-center shrink-0">
-                      {resolveVendorIcon(index === 0 ? 'openai' : 'anthropic', 20)}
-                    </div>
-                    <div>
-                      <div className="text-[13px] font-bold text-mg-text-0">{label}</div>
-                      <div className="text-[11px] text-mg-text-2">复制到 Agent 或 SDK 的 Base URL 设置</div>
-                    </div>
-                  </div>
-
-                  <div
-                    onClick={() => handleQuickCopy(label, value)}
-                    className={`group flex items-center gap-2 rounded-lg px-3.5 py-2.5 cursor-pointer transition-all duration-200 border ${
-                      quickCopied === label
-                        ? 'bg-mg-success/5 border-mg-success/30'
-                        : 'bg-mg-bg-0 border-mg-border/70 hover:border-brand-base/40 hover:bg-brand-base/3'
-                    }`}
-                  >
-                    <code className="flex-1 font-mono text-[13px] font-semibold text-mg-text-0 truncate select-all">
-                      {value}
-                    </code>
-                    <span className={`shrink-0 text-[11px] font-bold flex items-center gap-1 transition-colors ${
-                      quickCopied === label ? 'text-mg-success' : 'text-mg-text-2 group-hover:text-brand-base'
-                    }`}>
-                      {quickCopied === label
-                        ? <><LuCheck size={12} /> 已复制</>
-                        : <><LuCopy size={12} /> 复制</>}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* 新建密钥横幅 */}

@@ -16,7 +16,8 @@ export const Popover: React.FC<PopoverProps> = ({
   className
 }) => {
   const [open, setOpen] = useState(false)
-  const [style, setStyle] = useState<React.CSSProperties>({})
+  // 首帧 hidden+fixed，测量完坐标后才 visible，杜绝位置闪烁
+  const [style, setStyle] = useState<React.CSSProperties>({ position: 'fixed', visibility: 'hidden' })
   const triggerRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -49,12 +50,15 @@ export const Popover: React.FC<PopoverProps> = ({
       left = Math.max(8, vw - panelW - 8)
     }
 
-    setStyle({ position: 'fixed', top, bottom, left, zIndex: 9999 })
+    setStyle({ position: 'fixed', top, bottom, left, zIndex: 9999, visibility: 'visible' })
   }, [position])
 
-  // useLayoutEffect: 在浏览器绘制前同步计算坐标，消除首次渲染闪到左上角的问题
   useLayoutEffect(() => {
-    if (open) computePosition()
+    if (open) {
+      computePosition()
+    } else {
+      setStyle({ position: 'fixed', visibility: 'hidden' })
+    }
   }, [open, computePosition])
 
   useEffect(() => {

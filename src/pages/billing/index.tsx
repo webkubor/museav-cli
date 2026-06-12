@@ -30,6 +30,7 @@ import { formatBalance } from './formatBalance'
 import { TopUpModal } from './TopUpModal'
 import { InvoiceModal } from './invoice/InvoiceModal'
 import { renderTierBadge } from './renderTierBadge'
+import { OrderBarcode } from './OrderBarcode'
 
 export { PromoRedeemForm } from './PromoRedeemForm'
 export { OrderReceiptDrawer } from './OrderReceiptDrawer'
@@ -646,21 +647,7 @@ export default function BillingPage() {
                     )}
                   </div>
 
-                  {/* 仿真条形码 */}
-                  <div className="flex flex-col items-center pt-1 space-y-1 select-none">
-                    <div className="h-7 w-full max-w-[150px] flex items-stretch gap-[1px] opacity-20">
-                      {[2, 1, 3, 1, 4, 2, 1, 2, 3, 1, 2, 4, 1, 3, 2, 1, 3, 4, 1, 2, 1, 3, 2, 4, 1].map((w, idx) => (
-                        <div
-                          key={idx}
-                          className="bg-mg-text-0 h-full rounded-sm"
-                          style={{ flexGrow: w }}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-[7px] text-mg-text-3 font-mono tracking-widest font-semibold uppercase">
-                      * MG - {selectedOrder.order_no.slice(-6)} *
-                    </span>
-                  </div>
+                  <OrderBarcode value={selectedOrder.order_no} compact />
 
                   {/* 底部齿线 */}
                   <div className="absolute bottom-0 left-0 right-0 h-1 bg-[linear-gradient(to_right,var(--mg-border)_50%,transparent_50%)] bg-[size:10px_100%]" />

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import type { StatusConfig } from '@/components/ui/StatusBadge'
 import { formatDateTime } from '@/lib/format-date'
+import { OrderBarcode } from './OrderBarcode'
 
 // ─── Sub-components: OrderReceiptDrawer ───────────────────────────────────
 
@@ -131,21 +132,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
               )}
             </div>
 
-            {/* Fake High-Tech Barcode simulation for receipt realism */}
-            <div className="flex flex-col items-center pt-2 space-y-1">
-              <div className="h-9 w-full max-w-[200px] flex items-stretch gap-[1.5px] opacity-25">
-                {[2, 1, 3, 1, 4, 2, 1, 2, 3, 1, 2, 4, 1, 3, 2, 1, 3, 4, 1, 2, 1, 3, 2, 4, 1].map((w, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-mg-text-0 h-full rounded-sm"
-                    style={{ flexGrow: w }}
-                  />
-                ))}
-              </div>
-              <span className="text-[8px] text-mg-text-3 font-mono tracking-widest font-semibold uppercase">
-                * M G - O R D E R - {order.order_no.slice(-8)} *
-              </span>
-            </div>
+            <OrderBarcode value={order.order_no} />
 
             <div className="text-center text-[9px] text-mg-text-3 font-semibold pt-2">
               {t('billing.orders.detail.receiptFooter')}

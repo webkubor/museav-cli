@@ -14,6 +14,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import Select from '@/components/ui/Select'
 import { SelectItem } from '@/components/ui/Select'
 import {
@@ -63,6 +64,11 @@ import { formatDateTime } from '@/lib/format-date'
 type ScopeType = 'personal' | 'workspace' | 'member'
 type ConnectActionKey = 'cc-switch' | 'claude-code' | 'codex' | 'openai-sdk' | 'curl'
 
+type ConnectParam = {
+  label: string
+  value: string
+}
+
 type ConnectSnippet = {
   id: ConnectActionKey
   title: string
@@ -70,7 +76,9 @@ type ConnectSnippet = {
   launchLabel: string
   launchHref: string
   copyLabel: string
-  content: string
+  params: ConnectParam[]
+  copyText: string
+  command?: string
 }
 
 
@@ -389,19 +397,37 @@ export default function ApiKeysPage() {
       desc: '拉起 CC Switch，直接导入 Claude Provider。',
       launchLabel: '拉起 CC Switch',
       launchHref: buildCcSwitchProviderLink('claude', anthropicBaseUrl),
-      copyLabel: '复制导入链接',
-      content: [
-        buildCcSwitchProviderLink('claude', anthropicBaseUrl),
+      copyLabel: '复制参数',
+      params: [
+        { label: 'Provider Name', value: 'ModelGo' },
+        { label: 'App', value: 'Claude' },
+        { label: 'Endpoint', value: anthropicBaseUrl },
+        { label: 'API Key', value: keyForSnippet },
+      ],
+      copyText: [
+        'Provider Name: ModelGo',
+        'App: Claude',
+        `Endpoint: ${anthropicBaseUrl}`,
+        `API Key: ${keyForSnippet}`,
       ].join('\n'),
     },
     {
       id: 'claude-code',
-      title: 'Claude Code Deep Link',
+      title: 'Claude Code 参数',
       desc: '打开 Claude Code 终端，预填 ModelGo 接入提示。',
       launchLabel: '打开 Claude Code',
       launchHref: buildClaudeCodeLink(),
       copyLabel: '复制终端命令',
-      content: [
+      params: [
+        { label: 'ANTHROPIC_BASE_URL', value: anthropicBaseUrl },
+        { label: 'ANTHROPIC_API_KEY', value: keyForSnippet },
+      ],
+      copyText: [
+        `export ANTHROPIC_BASE_URL="${anthropicBaseUrl}"`,
+        `export ANTHROPIC_API_KEY="${keyForSnippet}"`,
+        'claude',
+      ].join('\n'),
+      command: [
         `export ANTHROPIC_BASE_URL="${anthropicBaseUrl}"`,
         `export ANTHROPIC_API_KEY="${keyForSnippet}"`,
         'claude',
@@ -413,9 +439,18 @@ export default function ApiKeysPage() {
       desc: '通过 CC Switch 导入 Codex Provider。',
       launchLabel: '导入 Codex 配置',
       launchHref: buildCcSwitchProviderLink('codex', openAIBaseUrl),
-      copyLabel: '复制导入链接',
-      content: [
-        buildCcSwitchProviderLink('codex', openAIBaseUrl),
+      copyLabel: '复制参数',
+      params: [
+        { label: 'Provider Name', value: 'ModelGo' },
+        { label: 'App', value: 'Codex' },
+        { label: 'Base URL', value: openAIBaseUrl },
+        { label: 'API Key', value: keyForSnippet },
+      ],
+      copyText: [
+        'Provider Name: ModelGo',
+        'App: Codex',
+        `Base URL: ${openAIBaseUrl}`,
+        `API Key: ${keyForSnippet}`,
       ].join('\n'),
     },
     {
@@ -425,7 +460,11 @@ export default function ApiKeysPage() {
       launchLabel: '打开 SDK 文档',
       launchHref: docsUrl,
       copyLabel: '复制代码示例',
-      content: [
+      params: [
+        { label: 'baseURL', value: openAIBaseUrl },
+        { label: 'apiKey', value: keyForSnippet },
+      ],
+      copyText: [
         "import OpenAI from 'openai'",
         '',
         'const client = new OpenAI({',
@@ -436,6 +475,14 @@ export default function ApiKeysPage() {
         "const models = await client.models.list()",
         'process.stdout.write(JSON.stringify(models.data, null, 2))',
       ].join('\n'),
+      command: [
+        "import OpenAI from 'openai'",
+        '',
+        'const client = new OpenAI({',
+        `  apiKey: '${keyForSnippet}',`,
+        `  baseURL: '${openAIBaseUrl}',`,
+        '})',
+      ].join('\n'),
     },
     {
       id: 'curl',
@@ -444,7 +491,16 @@ export default function ApiKeysPage() {
       launchLabel: '打开接口文档',
       launchHref: docsUrl,
       copyLabel: '复制 cURL 命令',
-      content: [
+      params: [
+        { label: 'Method', value: 'GET' },
+        { label: 'URL', value: `${openAIBaseUrl}/models` },
+        { label: 'Header', value: `Authorization: Bearer ${keyForSnippet}` },
+      ],
+      copyText: [
+        `curl "${openAIBaseUrl}/models" \\`,
+        `  -H "Authorization: Bearer ${keyForSnippet}"`,
+      ].join('\n'),
+      command: [
         `curl "${openAIBaseUrl}/models" \\`,
         `  -H "Authorization: Bearer ${keyForSnippet}"`,
       ].join('\n'),
@@ -710,7 +766,7 @@ export default function ApiKeysPage() {
         open={connectVisible}
         onClose={() => setConnectVisible(false)}
         title="立即接入"
-        description="优先通过超链或 Deep Link 拉起工具；复制只作为兜底。"
+        description="选择接入方式查看参数，按钮用于打开工具或文档。"
         size="lg"
         className="sm:max-w-[840px]"
       >
@@ -751,50 +807,89 @@ export default function ApiKeysPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <Tabs defaultValue="cc-switch">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-xs font-bold text-mg-text-1">接入方式</div>
+              <a
+                href={docsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-bold text-brand-base hover:text-brand-deep hover:underline"
+              >
+                开发文档
+                <LuExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+            <TabsList variant="pills" className="mt-2 w-full justify-start overflow-x-auto">
+              {CONNECT_ACTIONS.map((action) => (
+                <TabsTrigger key={action.key} value={action.key} variant="pills" className="shrink-0 gap-1.5 px-3">
+                  <span className="flex h-4 w-4 items-center justify-center text-mg-text-0">
+                    {action.icon}
+                  </span>
+                  {action.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
             {connectSnippets.map((item) => {
               const action = getConnectAction(item.id)
               const isWebLink = item.launchHref.startsWith('http')
 
               return (
-                <div key={item.id} className="rounded-xl border border-mg-border bg-mg-bg-0 p-4">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-mg-border bg-mg-bg-1 text-mg-text-0">
-                      {action?.icon}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-sm font-bold text-mg-text-0">{item.title}</div>
-                      <div className="mt-1 text-xs leading-5 text-mg-text-2">{item.desc}</div>
+                <TabsContent key={item.id} value={item.id}>
+                  <div className="rounded-xl border border-mg-border bg-mg-bg-0 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-mg-border bg-mg-bg-1 text-mg-text-0">
+                          {action?.icon}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="text-sm font-bold text-mg-text-0">{item.title}</div>
+                          <div className="mt-1 text-xs leading-5 text-mg-text-2">{item.desc}</div>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 flex-wrap gap-2">
+                        <a
+                          href={item.launchHref}
+                          target={isWebLink ? '_blank' : undefined}
+                          rel={isWebLink ? 'noreferrer' : undefined}
+                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-brand-base px-3 text-xs font-bold text-white shadow-sm shadow-brand-glow/15 transition-colors hover:bg-brand-deep"
+                        >
+                          {item.launchLabel}
+                          {isWebLink ? <LuExternalLink className="h-3.5 w-3.5" /> : <LuChevronRight className="h-3.5 w-3.5" />}
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => handleConnectCopy(item.id, item.copyText)}
+                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-mg-border bg-mg-bg-1 px-3 text-xs font-semibold text-mg-text-1 transition-colors hover:border-brand-base/35 hover:text-brand-base cursor-pointer"
+                        >
+                          {connectCopied === item.id ? <LuCheck className="h-3.5 w-3.5" /> : <LuCopy className="h-3.5 w-3.5" />}
+                          {connectCopied === item.id ? '已复制' : item.copyLabel}
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <a
-                      href={item.launchHref}
-                      target={isWebLink ? '_blank' : undefined}
-                      rel={isWebLink ? 'noreferrer' : undefined}
-                      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-brand-base px-3 text-xs font-bold text-white shadow-sm shadow-brand-glow/15 transition-colors hover:bg-brand-deep"
-                    >
-                      {item.launchLabel}
-                      {isWebLink ? <LuExternalLink className="h-3.5 w-3.5" /> : <LuChevronRight className="h-3.5 w-3.5" />}
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() => handleConnectCopy(item.id, item.content)}
-                      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-mg-border bg-mg-bg-1 px-3 text-xs font-semibold text-mg-text-1 transition-colors hover:border-brand-base/35 hover:text-brand-base cursor-pointer"
-                    >
-                      {connectCopied === item.id ? <LuCheck className="h-3.5 w-3.5" /> : <LuCopy className="h-3.5 w-3.5" />}
-                      {connectCopied === item.id ? '已复制' : item.copyLabel}
-                    </button>
-                  </div>
+                    <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {item.params.map((param) => (
+                        <div key={param.label} className="rounded-lg border border-mg-border/60 bg-mg-bg-1/60 px-3 py-2">
+                          <div className="mb-1 text-[11px] font-bold text-mg-text-2">{param.label}</div>
+                          <code className="block truncate font-mono text-xs font-semibold text-mg-text-0" title={param.value}>
+                            {param.value}
+                          </code>
+                        </div>
+                      ))}
+                    </div>
 
-                  <pre className="mt-3 max-h-28 overflow-auto rounded-lg border border-mg-border bg-mg-code-bg p-3 text-xs leading-5 text-mg-text-0">
-                    <code>{item.content}</code>
-                  </pre>
-                </div>
+                    {item.command && (
+                      <pre className="mt-3 max-h-32 overflow-auto rounded-lg border border-mg-border bg-mg-code-bg p-3 text-xs leading-5 text-mg-text-0">
+                        <code>{item.command}</code>
+                      </pre>
+                    )}
+                  </div>
+                </TabsContent>
               )
             })}
-          </div>
+          </Tabs>
         </div>
       </Modal>
 

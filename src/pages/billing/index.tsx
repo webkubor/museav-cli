@@ -411,8 +411,8 @@ export default function BillingPage() {
         <form onSubmit={handlePromoSubmit} className="flex items-center gap-4 flex-wrap">
           {/* 左侧图标 + 标题 */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-mg-fill-0 border border-mg-border flex items-center justify-center shrink-0">
-              <LuGift size={16} className="text-brand-base" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-base/15 to-brand-base/5 border border-brand-base/20 flex items-center justify-center shrink-0 shadow-sm">
+              <span className="text-[20px] leading-none" role="img" aria-label="gift">🎁</span>
             </div>
             <div>
               <div className="text-sm font-bold text-mg-text-0">{t('billing.promo.title')}</div>

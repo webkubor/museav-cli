@@ -223,20 +223,20 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   }
 
   const presetList = (
-    <div className="flex flex-col md:flex-row gap-4 w-[280px] md:w-[480px] text-left">
+    <div className="flex gap-0 w-[460px] text-left">
       {/* Preset List */}
-      <div className="flex flex-col gap-1 pr-0 md:pr-4 border-b md:border-b-0 md:border-r border-mg-border/40 pb-3 md:pb-0 shrink-0 w-full md:w-36">
-        <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider mb-1 px-2">{customTitle || '常用时间'}</span>
+      <div className="flex flex-col gap-0.5 pr-3 mr-3 border-r border-mg-border/50 shrink-0 w-[108px]">
+        <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider mb-1.5 px-2">{customTitle || '常用时间'}</span>
         {activePresets.map(p => (
           <button
             key={p.key}
             type="button"
             onClick={() => handlePresetSelect(p.key)}
             className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-bold text-left cursor-pointer transition-all active:scale-[0.98]",
+              "px-2.5 py-1.5 rounded-lg text-xs font-bold text-left cursor-pointer transition-colors",
               activePreset === p.key
                 ? "bg-brand-selected-bg text-brand-base"
-                : "text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/40"
+                : "text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-1"
             )}
           >
             {p.label}
@@ -245,24 +245,30 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
       </div>
 
       {/* Custom Area */}
-      <div className="flex-1 flex flex-col gap-3 pt-1 w-full min-w-[220px]">
-        <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider mb-1">{customLabel || '自定义日期区间'}</span>
-        
-        {/* Selected preview bar */}
-        <div className="text-[11px] font-semibold text-brand-base bg-brand-base/5 border border-brand-base/20 rounded-lg px-2.5 py-1.5 flex flex-col gap-0.5">
+      <div className="flex-1 flex flex-col gap-2.5 min-w-0">
+        <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">{customLabel || '自定义日期区间'}</span>
+
+        {/* Selected preview bar — 轻量纯文本 */}
+        <div className="flex items-center justify-between gap-2 px-2 py-1 rounded-lg bg-mg-fill-1 text-[11px] font-semibold text-mg-text-1">
           {hideStartDate ? (
-            <span>截止时间: {customEnd ? <span className="font-bold">{customEnd}</span> : '请在下方选择'}</span>
+            <span className={customEnd ? 'text-mg-text-0' : 'text-mg-text-3'}>
+              截止: {customEnd || '请在下方选择'}
+            </span>
           ) : (
-            <div className="flex justify-between items-center text-[10.5px]">
-              <span>始: {customStart ? <span className="font-bold">{customStart}</span> : '待选择'}</span>
-              <span>至</span>
-              <span>终: {customEnd ? <span className="font-bold">{customEnd}</span> : '待选择'}</span>
-            </div>
+            <>
+              <span className={customStart ? 'text-mg-text-0 font-bold' : 'text-mg-text-3'}>
+                始: {customStart || '待选择'}
+              </span>
+              <span className="text-mg-text-3">→</span>
+              <span className={customEnd ? 'text-mg-text-0 font-bold' : 'text-mg-text-3'}>
+                终: {customEnd || '待选择'}
+              </span>
+            </>
           )}
         </div>
 
-        {/* Inline Custom Calendar Grid */}
-        <div className="border border-mg-border/40 rounded-xl p-2.5 bg-mg-fill-0/10">
+        {/* 日历 — 去掉外层边框 */}
+        <div className="pt-0.5">
           {renderCalendar()}
         </div>
 
@@ -270,7 +276,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           variant="brand"
           disabled={activePreset !== 'custom' || (hideStartDate ? !customEnd : (!customStart || !customEnd))}
           onClick={handleApplyCustom}
-          className="mt-1 h-8 text-xs font-bold !rounded-lg w-full flex items-center justify-center gap-1 cursor-pointer"
+          className="h-8 text-xs font-bold !rounded-lg w-full flex items-center justify-center gap-1 cursor-pointer"
         >
           确定应用 <LuChevronRight size={13} />
         </Button>

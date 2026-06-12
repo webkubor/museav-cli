@@ -8,10 +8,6 @@ interface PopoverProps {
   className?: string
 }
 
-/**
- * 现代高颜值 Popover 气泡卡片组件
- * 职责：点击触发器后弹出一个磨砂玻璃卡片面板，常用于放置二次控制开关或较复杂的注解，点击外部自动收回
- */
 export const Popover: React.FC<PopoverProps> = ({
   trigger,
   content,
@@ -19,7 +15,9 @@ export const Popover: React.FC<PopoverProps> = ({
   className
 }) => {
   const [open, setOpen] = useState(false)
+  const [flipped, setFlipped] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -35,28 +33,41 @@ export const Popover: React.FC<PopoverProps> = ({
     }
   }, [open])
 
+  // Auto-flip: measure available space after open
+  useEffect(() => {
+    if (!open || !containerRef.current) return
+    const triggerRect = containerRef.current.getBoundingClientRect()
+    const spaceBelow = window.innerHeight - triggerRect.bottom
+    const spaceAbove = triggerRect.top
+    if (position === 'bottom' && spaceBelow < 420 && spaceAbove > spaceBelow) {
+      setFlipped(true)
+    } else {
+      setFlipped(false)
+    }
+  }, [open, position])
+
+  const effectivePosition = (position === 'bottom' && flipped) ? 'top' : position
+
   const posClasses = {
-    top: 'bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 origin-bottom data-[state=open]:animate-in data-[state=open]:zoom-in-95 data-[state=open]:fade-in-0',
-    bottom: 'top-[calc(100%+8px)] left-1/2 -translate-x-1/2 origin-top data-[state=open]:animate-in data-[state=open]:zoom-in-95 data-[state=open]:fade-in-0',
-    left: 'right-[calc(100%+8px)] top-1/2 -translate-y-1/2 origin-right data-[state=open]:animate-in data-[state=open]:zoom-in-95 data-[state=open]:fade-in-0',
-    right: 'left-[calc(100%+8px)] top-1/2 -translate-y-1/2 origin-left data-[state=open]:animate-in data-[state=open]:zoom-in-95 data-[state=open]:fade-in-0',
+    top: 'bottom-[calc(100%+8px)] left-0 origin-bottom',
+    bottom: 'top-[calc(100%+8px)] left-0 origin-top',
+    left: 'right-[calc(100%+8px)] top-0 origin-right',
+    right: 'left-[calc(100%+8px)] top-0 origin-left',
   }
 
   return (
     <div ref={containerRef} className="relative inline-block">
-      <div 
-        onClick={() => setOpen((o) => !o)} 
-        className="cursor-pointer inline-flex"
-      >
+      <div onClick={() => setOpen((o) => !o)} className="cursor-pointer inline-flex">
         {trigger}
       </div>
 
       {open && (
         <div
-          data-state={open ? 'open' : 'closed'}
+          ref={panelRef}
           className={cn(
-            "absolute z-[999] w-72 p-4 rounded-xl glass-card-glow border border-mg-border shadow-xl select-none",
-            posClasses[position],
+            "absolute z-[999] p-4 rounded-xl glass-card-glow border border-mg-border shadow-xl select-none",
+            "animate-in zoom-in-95 fade-in-0 duration-150",
+            posClasses[effectivePosition],
             className
           )}
         >

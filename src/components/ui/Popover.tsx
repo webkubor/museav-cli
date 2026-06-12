@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 
@@ -52,9 +52,13 @@ export const Popover: React.FC<PopoverProps> = ({
     setStyle({ position: 'fixed', top, bottom, left, zIndex: 9999 })
   }, [position])
 
+  // useLayoutEffect: 在浏览器绘制前同步计算坐标，消除首次渲染闪到左上角的问题
+  useLayoutEffect(() => {
+    if (open) computePosition()
+  }, [open, computePosition])
+
   useEffect(() => {
     if (!open) return
-    computePosition()
 
     function handleClickOutside(e: MouseEvent) {
       const target = e.target as Node

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { modelGoLogos } from '@/config/brand-assets'
+import { siteLogo } from '@/config/brand-assets'
 import { useLangStore } from '@/store/use-brand-store'
 import { cn } from '@/lib/utils'
 
@@ -51,7 +51,7 @@ export function AuthLayout({ title, subtitle, footer, children, wide = false }: 
           {/* 顶部 Logo 与文案 */}
           <div className="auth-brand-header">
             <img
-              src={modelGoLogos[market]}
+              src={siteLogo}
               alt="ModelGo"
               className="auth-brand-logo"
             />

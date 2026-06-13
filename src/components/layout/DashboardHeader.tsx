@@ -17,7 +17,7 @@ import {
 } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { modelGoIcons } from '@/config/brand-assets'
+import { siteIcon } from '@/config/brand-assets'
 import { useLangStore } from '@/store/use-brand-store'
 import { getMarketConfig } from '@/config/market'
 import { useAuthStore } from '@/store/auth'
@@ -336,7 +336,7 @@ export const DashboardHeader: React.FC = () => {
           {/* Icon mark with shimmer */}
           <div className="logo-shimmer relative rounded-sm overflow-hidden shrink-0">
             <img 
-              src={modelGoIcons[market]} 
+              src={siteIcon} 
               alt="ModelGo Icon" 
               className="h-5 w-auto object-contain block"
             />

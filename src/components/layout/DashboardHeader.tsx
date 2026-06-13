@@ -17,7 +17,7 @@ import {
 } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { siteIcon } from '@/config/brand-assets'
+import { useSiteIcon } from '@/config/brand-assets'
 import { useLangStore } from '@/store/use-brand-store'
 import { getMarketConfig } from '@/config/market'
 import { useAuth } from '@/components/auth/use-auth'
@@ -63,6 +63,7 @@ export const DashboardHeader: React.FC = () => {
   const { t } = useTranslation()
   const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setActiveWorkspaceId } = useAuthStore()
   const { signOut } = useAuth()
+  const siteIcon = useSiteIcon()
   const activeTenantType = tenants.find((t) => t.tenant_id === activeTenantId)?.type ?? 'personal'
   const isNonPersonal = activeTenantType !== 'personal'
 

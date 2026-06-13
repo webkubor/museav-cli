@@ -3,14 +3,12 @@ import { useState, useEffect, useRef } from 'react'
 
 import Markdown from 'react-markdown'
 import { LuX, LuSendHorizontal, LuRefreshCw, LuSquare } from 'react-icons/lu'
-import { siteLogo } from '@/config/brand-assets'
+import { useSiteLogo } from '@/config/brand-assets'
 import { storageKeys } from '@/lib/storage'
 import { useAuthStore } from '@/store/auth'
 import { formatChartDate, formatDate, formatShortTime } from '@/lib/format-date'
 import { useCsChat } from './use-cs-chat'
 import type { Message, ConnectionStatus } from './use-cs-chat'
-
-const logoSrc = siteLogo
 
 function formatCsTimestamp(timestamp: number) {
   const date = new Date(timestamp)
@@ -86,6 +84,7 @@ function ThinkingDots() {
 
 export function CustomerService() {
   const [isOpen, setIsOpen] = useState(false)
+  const logoSrc = useSiteLogo()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const { messages, sendMessage, stopMessage, reconnect, status, isLoading, conversationId } = useCsChat({
     source: 'console',

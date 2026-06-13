@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { siteLogo } from '@/config/brand-assets'
+import { useSiteLogo } from '@/config/brand-assets'
 import { useLangStore } from '@/store/use-brand-store'
 import { cn } from '@/lib/utils'
 
@@ -22,6 +22,7 @@ interface AuthLayoutProps {
 export function AuthLayout({ title, subtitle, footer, children, wide = false }: AuthLayoutProps) {
   const market = useLangStore((s) => s.market)
   const isDomestic = market === 'domestic'
+  const siteLogo = useSiteLogo()
 
   // 自适应双氛围球的渐变渲染
   const primaryGlow = isDomestic ? 'rgba(99, 102, 241, 0.05)' : 'rgba(16, 185, 129, 0.05)'

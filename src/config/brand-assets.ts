@@ -1,4 +1,12 @@
-import { getMarket } from '@/lib/market'
+/**
+ * 品牌资产统一入口（按 market 出对应 logo/icon）。
+ *
+ * 必须在「渲染期」通过 hook 取值——不要把 market 提到模块顶层算一次（会冻死，
+ * 且 localStorage/dev 工具条切换市场后不更新；本地 localhost 域名探测不到还会冻成 global，
+ * 导致国内站显示海外 logo）。
+ * useMarket() 读 use-brand-store 的 market：prod 初始化自 getMarket()（域名）、dev 跟随工具条切换。
+ */
+import { useMarket } from '@/hooks/useMarket'
 
 const LOGOS = {
   domestic: '/brand/modelgo-cn-logo.svg',
@@ -10,12 +18,12 @@ const ICONS = {
   global: '/brand/modelgo-global-logo.svg',
 } as const
 
-const market = getMarket()
+/** 当前 market 的站点 logo（响应式）。在组件渲染期调用。 */
+export function useSiteLogo(): string {
+  return LOGOS[useMarket()]
+}
 
-export const siteLogo = LOGOS[market]
-export const siteIcon = ICONS[market]
-
-/** @deprecated 用 siteLogo 代替 */
-export const modelGoLogos = { ...LOGOS, cn: LOGOS.domestic } as Record<string, string>
-/** @deprecated 用 siteIcon 代替 */
-export const modelGoIcons = { ...ICONS, cn: ICONS.domestic } as Record<string, string>
+/** 当前 market 的站点 icon（响应式）。在组件渲染期调用。 */
+export function useSiteIcon(): string {
+  return ICONS[useMarket()]
+}

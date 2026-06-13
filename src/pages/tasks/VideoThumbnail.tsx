@@ -16,7 +16,7 @@ interface VideoThumbnailProps {
   onPreview: (url: string) => void
 }
 
-const BOX = 'h-12 w-12 shrink-0 rounded-lg overflow-hidden'
+const BOX = 'h-12 w-12 shrink-0 rounded-lg overflow-hidden mx-auto'
 
 export function VideoThumbnail({ taskId, videoUrl, placeholder, onPreview }: VideoThumbnailProps) {
   // hooks 必须无条件调用：videoUrl 为 null 时 hook 内部自身短路，不抓帧

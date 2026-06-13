@@ -28,6 +28,7 @@ import { getLogPayload, listCallLogs } from '@/services/logs'
 import { listApiKeys } from '@/services/api-keys'
 import { listModels } from '@/services/catalog'
 import type { CallLogItem, LogPayload } from '@/types'
+import { reassembleSSE, formatSSESummary } from './reassemble-sse'
 import { formatDateTime } from '@/lib/format-date'
 import { appToast } from '@/lib/app-toast'
 import { cn, formatFriendlyAmount } from '@/lib/utils'
@@ -65,67 +66,6 @@ function decodePayload(payload: LogPayload | undefined) {
   } catch {
     return decoded
   }
-}
-
-interface SSEReassembled {
-  reasoning: string
-  content: string
-  chunkCount: number
-  finishReason?: string
-  usage?: unknown
-}
-
-/**
- * 把 OpenAI 风格的流式 SSE 响应（一堆 `data: {delta}` chunk）合并还原成完整回答。
- * 不是 SSE（如普通 JSON）时返回 null，调用方退回原始解码文本。
- */
-function reassembleSSE(text: string): SSEReassembled | null {
-  if (!/^\s*data:/.test(text)) return null
-  let reasoning = ''
-  let content = ''
-  let chunkCount = 0
-  let finishReason: string | undefined
-  let usage: unknown
-  let sawJson = false
-  for (const line of text.split(/\r?\n/)) {
-    const trimmed = line.trim()
-    if (!trimmed.startsWith('data:')) continue
-    const data = trimmed.slice(5).trim()
-    if (!data || data === '[DONE]') continue
-    chunkCount++
-    try {
-      const obj = JSON.parse(data) as {
-        choices?: Array<{
-          delta?: { content?: unknown; reasoning_content?: unknown }
-          message?: { content?: unknown; reasoning_content?: unknown }
-          finish_reason?: string | null
-        }>
-        usage?: unknown
-      }
-      sawJson = true
-      const choice = obj.choices?.[0]
-      const delta = choice?.delta ?? choice?.message
-      if (typeof delta?.reasoning_content === 'string') reasoning += delta.reasoning_content
-      if (typeof delta?.content === 'string') content += delta.content
-      if (choice?.finish_reason) finishReason = choice.finish_reason
-      if (obj.usage) usage = obj.usage
-    } catch {
-      // 非 JSON 的 data 行，跳过
-    }
-  }
-  if (!sawJson) return null
-  return { reasoning, content, chunkCount, finishReason, usage }
-}
-
-function formatSSESummary(s: SSEReassembled): string {
-  const blocks: string[] = []
-  if (s.reasoning) blocks.push(`【推理 reasoning_content】\n${s.reasoning}`)
-  blocks.push(`【回答 content】\n${s.content || '(空)'}`)
-  const meta = [`合并 ${s.chunkCount} 个 chunk`]
-  if (s.finishReason) meta.push(`finish_reason: ${s.finishReason}`)
-  if (s.usage) meta.push(`usage: ${JSON.stringify(s.usage)}`)
-  blocks.push(`──\n${meta.join('  ·  ')}`)
-  return blocks.join('\n\n')
 }
 
 /**

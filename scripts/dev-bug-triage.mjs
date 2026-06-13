@@ -18,6 +18,13 @@ import { readFileSync, existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import path from 'node:path'
 
+// cs 在交互式 shell 里是函数，execFileSync 不走 shell 会 ENOENT；
+// 直接定位 CortexOS 真身二进制，cron 等非交互环境同样可用
+const CS_BIN = (() => {
+  const real = path.join(process.env.HOME || '', 'Documents/CortexOS/bin/cs')
+  return existsSync(real) ? real : 'cs'
+})()
+
 // ── 预期噪声：命中即不计入待修清单（加一类噪声只加一行）────────────────────
 const EXPECTED_NOISE = [
   { test: (e) => e.kind === 'api' && e.code === '40101', why: '未登录/会话过期 — ProtectedRoute 预期重定向，非 bug' },
@@ -149,7 +156,7 @@ if (doNotify && ranked.length > 0) {
   const top = ranked.slice(0, 3).map((g) => `${g.sig}×${g.count}`).join('；')
   const msg = `🔎 巡检发现 ${real.length} 个待修错误（${ranked.length} 类）：${top}${ranked.length > 3 ? ' …' : ''}`
   try {
-    execFileSync('cs', ['notify', msg, '--from', 'claude'], { stdio: 'inherit' })
+    execFileSync(CS_BIN, ['notify', msg, '--from', 'claude'], { stdio: 'inherit' })
   } catch (err) {
     console.error('cs notify 失败：', err.message)
     process.exit(1)

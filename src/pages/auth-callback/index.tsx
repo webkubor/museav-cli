@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { getSession } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import { getRedirectTarget } from '@/lib/redirect'
+import { appToast } from '@/lib/app-toast'
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
@@ -50,6 +51,8 @@ export default function AuthCallbackPage() {
           )
           navigate(redirect, { replace: true })
         } catch {
+          // 回调换取与会话兜底都失败 = 登录确实没成：先提示再跳登录，不静默
+          appToast.error('登录失败，请重新登录')
           navigate('/login', { replace: true })
         }
       })

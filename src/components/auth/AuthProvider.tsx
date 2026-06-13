@@ -1,15 +1,14 @@
-/* eslint-disable react-refresh/only-export-components */
 /**
  * 中央鉴权（React 侧）。
  * - AuthProvider：挂载时拉一次 /auth/session 填充 store（并入原 SessionLoader）。
- * - useAuth：读鉴权状态 + 提供 signOut。
  * - RequireAuth：受保护路由门禁（并入原 ProtectedRoute）。
- * 状态 SSOT 仍在 store/auth.ts；会话过期的非 React 策略在 lib/auth/auth-controller.ts。
+ * useAuth（读状态 + signOut）在同目录 use-auth.ts；状态 SSOT 在 store/auth.ts；
+ * 会话过期的非 React 策略在 lib/auth/auth-controller.ts。
  */
-import { useEffect, useCallback, type ReactNode } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { useEffect, type ReactNode } from 'react'
+import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
-import { getSession, logout } from '@/services/auth'
+import { getSession } from '@/services/auth'
 import { storageKeys } from '@/lib/storage'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import ForbiddenPage from '@/pages/forbidden'
@@ -50,29 +49,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return <>{children}</>
-}
-
-/** 读鉴权状态 + 登出。登出：调后端 logout（失败也继续）→ 清态 → SPA 跳登录 */
-export function useAuth() {
-  const navigate = useNavigate()
-  const account = useAuthStore((s) => s.account)
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const isLoading = useAuthStore((s) => s.isLoading)
-  const activeTenantId = useAuthStore((s) => s.activeTenantId)
-  const clearAuth = useAuthStore((s) => s.clearAuth)
-  const hasPermission = useAuthStore((s) => s.hasPermission)
-
-  const signOut = useCallback(async () => {
-    try {
-      await logout()
-    } catch {
-      // 后端 logout 失败也继续清前端态
-    }
-    clearAuth()
-    navigate('/login', { replace: true })
-  }, [clearAuth, navigate])
-
-  return { account, isAuthenticated, isLoading, activeTenantId, hasPermission, signOut }
 }
 
 /** 受保护路由门禁：加载中占位 → 未登录跳登录 → 有身份无组织 403 → 放行 */

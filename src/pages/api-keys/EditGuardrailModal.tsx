@@ -27,11 +27,11 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
 
   const guardrailsQuery = useQuery({
     queryKey: ['guardrails', workspaceId],
-    queryFn: () => listGuardrails(workspaceId),
+    queryFn: () => listGuardrails(workspaceId).then((res) => res.items ?? []),
     enabled: open && !!workspaceId,
   })
 
-  const guardrails = guardrailsQuery.data?.items ?? []
+  const guardrails = guardrailsQuery.data ?? []
 
   useEffect(() => {
     if (!open || !apiKey || !guardrails.length) return

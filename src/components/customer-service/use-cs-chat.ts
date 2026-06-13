@@ -197,7 +197,9 @@ export function useCsChat(options?: CsChatOptions) {
       setIsLoading(false)
       activeAgentMsgIdRef.current = null
     }
-  }, [isLoading, conversationId, saveMessages])
+    // options 注入到请求头：必须进依赖，否则切换组织后 sendMessage 仍持旧闭包，
+    // 会用旧 tenantId 覆盖 injectHeaders 写入的当前租户（React Compiler 要求依赖整个 options）
+  }, [isLoading, conversationId, saveMessages, options])
 
   const stopMessage = useCallback(async () => {
     if (!isLoading) return

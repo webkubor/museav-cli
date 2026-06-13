@@ -20,8 +20,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { siteIcon } from '@/config/brand-assets'
 import { useLangStore } from '@/store/use-brand-store'
 import { getMarketConfig } from '@/config/market'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { useAuthStore } from '@/store/auth'
-import { switchTenant, logout, getSession } from '@/services/auth'
+import { switchTenant, getSession } from '@/services/auth'
 import { listTenants } from '@/services/tenants'
 import { createOrganization } from '@/services/organizations'
 import { applyTheme, getUserTheme } from '@/lib/theme'
@@ -60,7 +61,8 @@ export const DashboardHeader: React.FC = () => {
   const location = useLocation()
   const queryClient = useQueryClient()
   const { t } = useTranslation()
-  const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setActiveWorkspaceId, clearAuth } = useAuthStore()
+  const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setActiveWorkspaceId } = useAuthStore()
+  const { signOut } = useAuth()
   const activeTenantType = tenants.find((t) => t.tenant_id === activeTenantId)?.type ?? 'personal'
   const isNonPersonal = activeTenantType !== 'personal'
 
@@ -233,13 +235,7 @@ export const DashboardHeader: React.FC = () => {
   }
 
   async function handleLogout() {
-    try {
-      await logout()
-    } catch {
-      // 即使后端 logout 失败也继续清理前端状态
-    }
-    clearAuth()
-    navigate('/login', { replace: true })
+    await signOut()
   }
 
   const createOrgMutation = useMutation({

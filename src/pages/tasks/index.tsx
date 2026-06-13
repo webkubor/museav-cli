@@ -33,6 +33,8 @@ import { post } from '@/lib/request'
 import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
 import type { TaskItem, TaskStatus, TaskKind } from '@/types'
+import { VideoThumbnail } from './VideoThumbnail'
+import { VideoPreviewModal } from './VideoPreviewModal'
 
 // ─── 常量 ────────────────────────────────────────────────────────────────────
 
@@ -271,6 +273,7 @@ export default function TasksPage() {
   const [kindFilter, setKind]       = useState('all')
   const [offset, setOffset]         = useState(0)
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   const params = useMemo(() => ({
     workspace_id: undefined,
@@ -365,6 +368,7 @@ export default function TasksPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-16">预览</TableHead>
               <TableHead className="w-40">提交时间</TableHead>
               <TableHead className="w-28">类型</TableHead>
               <TableHead>模型 / 供应商</TableHead>
@@ -375,14 +379,14 @@ export default function TasksPage() {
           </TableHeader>
           <TableBody>
             {isLoading && (
-              <EmptyState colSpan={6} title="加载中…" />
+              <EmptyState colSpan={7} title="加载中…" />
             )}
             {isError && (
-              <EmptyState colSpan={6} title="加载失败，请稍后重试" />
+              <EmptyState colSpan={7} title="加载失败，请稍后重试" />
             )}
             {!isLoading && !isError && filteredItems.length === 0 && (
               <EmptyState
-                colSpan={6}
+                colSpan={7}
                 title={
                   search || statusFilter !== 'all' || kindFilter !== 'all'
                     ? '没有符合条件的任务'
@@ -393,12 +397,24 @@ export default function TasksPage() {
             {filteredItems.map((item) => {
               const kind    = resolveKind(item)
               const kindCfg = KIND_CONFIG[kind]
+              // 仅已完成的视频任务有可播放/可抓帧的地址
+              const videoUrl = kind === 'video' && isTaskDone(item.status)
+                ? videoContentUrl(item.gateway_request_id)
+                : null
               return (
                 <TableRow
                   key={item.gateway_request_id}
                   className="cursor-pointer hover:bg-mg-fill-0/50 transition-colors"
                   onClick={() => setSelectedTask(item)}
                 >
+                  <TableCell>
+                    <VideoThumbnail
+                      taskId={item.gateway_request_id}
+                      videoUrl={videoUrl}
+                      placeholder={kindCfg.icon}
+                      onPreview={setPreviewUrl}
+                    />
+                  </TableCell>
                   <TableCell className="text-[12px] text-mg-text-1">
                     {fmtDate(item.created_at)}
                   </TableCell>
@@ -440,10 +456,13 @@ export default function TasksPage() {
                         取消
                       </button>
                     )}
-                    {item.status === 'completed' && (
+                    {videoUrl && (
                       <button
                         type="button"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          window.open(videoUrl, '_blank', 'noopener')
+                        }}
                         className="text-[11px] text-brand-base hover:text-brand-deep font-semibold transition-colors"
                       >
                         下载
@@ -484,6 +503,13 @@ export default function TasksPage() {
       {selectedTask && (
         <TaskDetailSheet task={selectedTask} onClose={() => setSelectedTask(null)} />
       )}
+
+      {/* 视频预览弹窗（列表点缩略图触发） */}
+      <VideoPreviewModal
+        open={!!previewUrl}
+        url={previewUrl}
+        onClose={() => setPreviewUrl(null)}
+      />
     </div>
   )
 }

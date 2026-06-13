@@ -28,10 +28,11 @@ import {
 import type { BadgeVariant } from '@/components/ui/Badge'
 import { useAuthStore } from '@/store/auth'
 import { listTasks, getTask } from '@/services/tasks'
+import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 import { post } from '@/lib/request'
 import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
-import type { TaskItem, TaskDetail, TaskStatus, TaskKind } from '@/types'
+import type { TaskItem, TaskStatus, TaskKind } from '@/types'
 
 // ─── 常量 ────────────────────────────────────────────────────────────────────
 
@@ -40,6 +41,7 @@ const PAGE_SIZE = 20
 const STATUS_CONFIG: Record<TaskStatus, { label: string; variant: BadgeVariant; dot: boolean }> = {
   queued:    { label: '排队中', variant: 'secondary', dot: true },
   running:   { label: '执行中', variant: 'info',      dot: true },
+  succeeded: { label: '已完成', variant: 'success',   dot: false },
   completed: { label: '已完成', variant: 'success',   dot: false },
   failed:    { label: '失败',   variant: 'danger',    dot: false },
   cancelled: { label: '已取消', variant: 'outline',   dot: false },
@@ -89,40 +91,19 @@ function resolveKind(item: TaskItem): TaskKind {
   return 'video'
 }
 
+/** 任务是否处于成功完成态（后端实际返回 succeeded，旧枚举里写的是 completed，两者都兼容） */
+function isTaskDone(status: string) {
+  return status === 'succeeded' || status === 'completed'
+}
+
 /**
- * 从上游透传的 provider_response / provider_meta 中提取产物媒体 URL。
- * 后端 Row 没有类型化的产物字段，各家上游结构不一（Ark 为 content.video_url），
- * 故按「字段名含 url 且值为 http(s)」优先、媒体扩展名兜底，递归扫描。
+ * 视频产物地址：网关内容端点，凭 gateway_request_id 即可访问，
+ * 服务端 302 重定向到真实 OSS 文件。无需鉴权，直接作为 <video src>。
+ * 端点形如 https://api.test.modelgo.com/v1/videos/{id}/content
  */
-function extractMediaUrl(detail: TaskDetail | undefined): string | null {
-  if (!detail) return null
-  const named: string[] = []
-  const byExt: string[] = []
-  const seen = new Set<object>()
-  const walk = (node: unknown, depth: number) => {
-    if (node == null || depth > 6) return
-    if (typeof node === 'string') {
-      if (/^https?:\/\/\S+\.(mp4|webm|mov|m3u8|mp3|wav|m4a|png|jpe?g|webp|gif)([?#]|$)/i.test(node)) byExt.push(node)
-      return
-    }
-    if (typeof node !== 'object') return
-    if (seen.has(node as object)) return
-    seen.add(node as object)
-    if (Array.isArray(node)) {
-      node.forEach((item) => walk(item, depth + 1))
-      return
-    }
-    for (const [key, val] of Object.entries(node as Record<string, unknown>)) {
-      if (typeof val === 'string' && /^https?:\/\//.test(val) && /(?:^url$|_url$|^(video|image|audio|file|media|download)_?url)/i.test(key)) {
-        named.push(val)
-      } else {
-        walk(val, depth + 1)
-      }
-    }
-  }
-  walk(detail.provider_response, 0)
-  walk(detail.provider_meta, 0)
-  return named[0] ?? byExt[0] ?? null
+function videoContentUrl(requestId: string) {
+  const base = GATEWAY_ENDPOINTS[0]?.baseUrl ?? ''
+  return `${base}/videos/${encodeURIComponent(requestId)}/content`
 }
 
 // ─── 详情面板字段行 ───────────────────────────────────────────────────────────
@@ -148,9 +129,10 @@ function DetailRow({ label, value, hint, mono }: {
 
 // ─── 详情抽屉 ─────────────────────────────────────────────────────────────────
 
-function TaskDetailSheet({ taskId, onClose }: { taskId: string; onClose: () => void }) {
+function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose: () => void }) {
   const qc = useQueryClient()
-  const { data, isLoading } = useQuery({
+  const taskId = listTask.gateway_request_id
+  const { data } = useQuery({
     queryKey: ['task-detail', taskId],
     queryFn: () => getTask(taskId),
     enabled: !!taskId,
@@ -168,16 +150,15 @@ function TaskDetailSheet({ taskId, onClose }: { taskId: string; onClose: () => v
     },
   })
 
-  const task = data?.task
-  const kind = task ? resolveKind(task) : 'video'
+  // 详情接口能成功就用详情数据，否则用列表项兜底——视频预览本就不依赖详情接口
+  const task = data?.task ?? listTask
+  const kind = resolveKind(task)
   const kindCfg = KIND_CONFIG[kind]
-  const mediaUrl = task?.status === 'completed' ? extractMediaUrl(data) : null
+  // 视频产物：成功态直接用网关 content 端点（凭 gateway_request_id，302 转 OSS）
+  const videoUrl = kind === 'video' && isTaskDone(task.status) ? videoContentUrl(taskId) : null
 
   return (
-    <SideSheet open={!!taskId} onClose={onClose} width={460} title="任务详情">
-      {isLoading || !task ? (
-        <div className="flex items-center justify-center h-40 text-mg-text-2 text-sm">加载中…</div>
-      ) : (
+    <SideSheet open onClose={onClose} width={460} title="任务详情">
         <div className="space-y-5 px-1 py-2 text-sm">
           {/* 头部徽章 */}
           <div className="flex flex-wrap items-center gap-2">
@@ -217,33 +198,18 @@ function TaskDetailSheet({ taskId, onClose }: { taskId: string; onClose: () => v
             />
           </div>
 
-          {/* 产物预览：完成态且能从上游响应中解析出媒体 URL 时展示 */}
-          {task.status === 'completed' && mediaUrl && (
+          {/* 产物预览：视频任务成功态，直接用网关 content 端点播放 */}
+          {videoUrl && (
             <div className="rounded-xl border border-mg-border bg-card-bg p-3">
               <p className="text-[11px] font-bold text-mg-text-2 mb-2 uppercase tracking-wide">产物预览</p>
-              {kind === 'video' && (
-                <video
-                  src={mediaUrl}
-                  controls
-                  preload="metadata"
-                  playsInline
-                  className="w-full rounded-lg bg-black max-h-64"
-                />
-              )}
-              {kind === 'image' && (
-                <img src={mediaUrl} alt="生成产物" className="w-full rounded-lg max-h-64 object-contain bg-mg-fill-0" />
-              )}
-              {kind === 'audio' && (
-                <audio src={mediaUrl} controls preload="metadata" className="w-full" />
-              )}
-            </div>
-          )}
-          {task.status === 'completed' && !mediaUrl && (
-            <div className="rounded-xl border border-mg-border bg-card-bg p-4">
-              <p className="text-[11px] font-bold text-mg-text-2 mb-1.5 uppercase tracking-wide">产物预览</p>
-              <p className="text-[12px] text-mg-text-2 leading-relaxed">
-                上游响应中未找到产物地址，可能已过期或后端未透传，请通过 API 获取产物。
-              </p>
+              <video
+                key={videoUrl}
+                src={videoUrl}
+                controls
+                preload="metadata"
+                playsInline
+                className="w-full rounded-lg bg-black max-h-72"
+              />
             </div>
           )}
 
@@ -265,14 +231,12 @@ function TaskDetailSheet({ taskId, onClose }: { taskId: string; onClose: () => v
 
           {/* 操作按钮 */}
           <div className="flex gap-2 pt-1">
-            {task.status === 'completed' && (
+            {isTaskDone(task.status) && videoUrl && (
               <Button
                 variant="outline"
                 size="sm"
                 className="flex-1"
-                disabled={!mediaUrl}
-                title={mediaUrl ? undefined : '未找到产物地址'}
-                onClick={() => { if (mediaUrl) window.open(mediaUrl, '_blank', 'noopener') }}
+                onClick={() => window.open(videoUrl, '_blank', 'noopener')}
               >
                 <LuDownload size={14} />
                 下载产物
@@ -292,7 +256,6 @@ function TaskDetailSheet({ taskId, onClose }: { taskId: string; onClose: () => v
             )}
           </div>
         </div>
-      )}
     </SideSheet>
   )
 }
@@ -307,7 +270,7 @@ export default function TasksPage() {
   const [statusFilter, setStatus]   = useState('all')
   const [kindFilter, setKind]       = useState('all')
   const [offset, setOffset]         = useState(0)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null)
 
   const params = useMemo(() => ({
     workspace_id: undefined,
@@ -434,7 +397,7 @@ export default function TasksPage() {
                 <TableRow
                   key={item.gateway_request_id}
                   className="cursor-pointer hover:bg-mg-fill-0/50 transition-colors"
-                  onClick={() => setSelectedId(item.gateway_request_id)}
+                  onClick={() => setSelectedTask(item)}
                 >
                   <TableCell className="text-[12px] text-mg-text-1">
                     {fmtDate(item.created_at)}
@@ -470,7 +433,7 @@ export default function TasksPage() {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation()
-                          setSelectedId(item.gateway_request_id)
+                          setSelectedTask(item)
                         }}
                         className="text-[11px] text-mg-text-2 hover:text-[var(--mg-danger)] font-semibold transition-colors"
                       >
@@ -518,8 +481,8 @@ export default function TasksPage() {
       )}
 
       {/* 详情抽屉 */}
-      {selectedId && (
-        <TaskDetailSheet taskId={selectedId} onClose={() => setSelectedId(null)} />
+      {selectedTask && (
+        <TaskDetailSheet task={selectedTask} onClose={() => setSelectedTask(null)} />
       )}
     </div>
   )

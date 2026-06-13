@@ -1,4 +1,4 @@
-export type TaskStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
+export type TaskStatus = 'queued' | 'running' | 'succeeded' | 'completed' | 'failed' | 'cancelled'
 export type TaskKind = 'video' | 'image' | 'audio'
 
 /** 异步任务列表项（GET /async-tasks） */

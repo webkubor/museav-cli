@@ -225,7 +225,13 @@
       "submit": "立即兑换",
       "emptyWarning": "请输入 Promo Code",
       "success": "兑换成功，到账 {{amount}} {{currency}}",
-      "error": "兑换失败，请检查 Promo Code 是否有效"
+      "error": "兑换失败，请检查 Promo Code 是否有效",
+      "errorInvalid": "兑换码无效，请检查后重试",
+      "errorRedeemLimit": "该兑换码已达到当前租户的兑换上限，不能重复兑换",
+      "errorDisabled": "该兑换码已停用，请联系管理员确认",
+      "errorNotActive": "该兑换码尚未生效，请稍后再试",
+      "errorExpired": "该兑换码已过期，无法兑换",
+      "errorUnavailable": "兑换服务暂不可用，请稍后重试"
     },
     "orders": {
       "empty": "暂无充值订单",

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { redeemPromoCode } from '@/services/billing'
 import { Button } from '@/components/ui/Button'
 import { appToast } from '@/lib/app-toast'
+import { getPromoRedeemErrorMessage } from './promo-errors'
 
 // ─── Sub-components: PromoRedeemForm ──────────────────────────────────────
 
@@ -21,7 +22,7 @@ export function PromoRedeemForm({ tenantId }: { tenantId: string }) {
       setCode('')
     },
     onError: (err: Error) => {
-      appToast.error(err.message || t('billing.promo.error'))
+      appToast.error(getPromoRedeemErrorMessage(err, t))
     }
   })
 

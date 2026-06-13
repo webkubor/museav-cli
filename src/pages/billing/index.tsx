@@ -31,6 +31,7 @@ import { TopUpModal } from './TopUpModal'
 import { InvoiceModal } from './invoice/InvoiceModal'
 import { renderTierBadge } from './renderTierBadge'
 import { OrderBarcode } from './OrderBarcode'
+import { getPromoRedeemErrorMessage } from './promo-errors'
 
 export { PromoRedeemForm } from './PromoRedeemForm'
 export { OrderReceiptDrawer } from './OrderReceiptDrawer'
@@ -220,7 +221,7 @@ export default function BillingPage() {
       setPromoCode('')
     },
     onError: (err: Error) => {
-      appToast.error(err.message || t('billing.promo.error'))
+      appToast.error(getPromoRedeemErrorMessage(err, t))
     },
   })
 

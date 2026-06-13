@@ -377,13 +377,13 @@ export default function TasksPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-20 text-center">预览</TableHead>
-              <TableHead className="text-center">提交时间</TableHead>
-              <TableHead className="text-center">类型</TableHead>
-              <TableHead className="text-center">模型 / 供应商</TableHead>
-              <TableHead className="text-center">状态</TableHead>
-              <TableHead className="text-center">实际费用</TableHead>
-              <TableHead className="text-center">操作</TableHead>
+              <TableHead align="center" className="w-20">预览</TableHead>
+              <TableHead align="center">提交时间</TableHead>
+              <TableHead align="center">类型</TableHead>
+              <TableHead align="center">模型 / 供应商</TableHead>
+              <TableHead align="center">状态</TableHead>
+              <TableHead align="center">实际费用</TableHead>
+              <TableHead align="center">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -416,7 +416,7 @@ export default function TasksPage() {
                   className="cursor-pointer hover:bg-mg-fill-0/50 transition-colors"
                   onClick={() => setSelectedTask(item)}
                 >
-                  <TableCell className="text-center">
+                  <TableCell align="center">
                     <VideoThumbnail
                       taskId={item.gateway_request_id}
                       videoUrl={videoUrl}
@@ -424,16 +424,16 @@ export default function TasksPage() {
                       onPreview={setPreviewUrl}
                     />
                   </TableCell>
-                  <TableCell className="text-center text-[12px] text-mg-text-1">
+                  <TableCell align="center" className="text-[12px] text-mg-text-1">
                     {fmtDate(item.created_at)}
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell align="center">
                     <span className="inline-flex items-center gap-1.5 text-[12px] text-mg-text-1">
                       {kindCfg.icon}
                       {kindCfg.label}
                     </span>
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell align="center">
                     <p className="text-[12px] font-mono text-mg-text-0 truncate max-w-[220px] mx-auto">
                       {item.requested_model}
                     </p>
@@ -441,10 +441,10 @@ export default function TasksPage() {
                       <p className="text-[11px] text-mg-text-2 mt-0.5">{item.vendor}</p>
                     )}
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell align="center">
                     <StatusBadge status={item.status} statusMap={STATUS_CONFIG} />
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell align="center">
                     <span className={cn(
                       'text-[13px] font-semibold',
                       item.status === 'failed' && item.actual_cost ? 'text-[var(--mg-danger)]' : 'text-mg-text-0'
@@ -452,7 +452,7 @@ export default function TasksPage() {
                       {fmtCost(item)}
                     </span>
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell align="center">
                     {item.status === 'queued' && (
                       <button
                         type="button"

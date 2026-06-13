@@ -70,14 +70,23 @@ const TableRow = React.forwardRef<
 ))
 TableRow.displayName = "TableRow"
 
+/** 列水平对齐。默认 left；表头与单元格各自传相同 align 即可整列对齐统一。 */
+type CellAlign = "left" | "center" | "right"
+const ALIGN_CLASS: Record<CellAlign, string> = {
+  left: "text-left",
+  center: "text-center",
+  right: "text-right",
+}
+
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
-  React.ThHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
+  React.ThHTMLAttributes<HTMLTableCellElement> & { align?: CellAlign }
+>(({ className, align = "left", ...props }, ref) => (
   <th
     ref={ref}
     className={cn(
-      "h-10 px-4 text-left align-middle text-[11px] font-bold uppercase tracking-wide text-mg-text-2 [&:has([role=checkbox])]:pr-0 select-none",
+      "h-10 px-4 align-middle text-[11px] font-bold uppercase tracking-wide text-mg-text-2 [&:has([role=checkbox])]:pr-0 select-none",
+      ALIGN_CLASS[align],
       className
     )}
     {...props}
@@ -87,12 +96,13 @@ TableHead.displayName = "TableHead"
 
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
-  React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
+  React.TdHTMLAttributes<HTMLTableCellElement> & { align?: CellAlign }
+>(({ className, align = "left", ...props }, ref) => (
   <td
     ref={ref}
     className={cn(
       "px-4 py-3 align-middle [&:has([role=checkbox])]:pr-0 text-[13px] text-mg-text-1 leading-relaxed",
+      ALIGN_CLASS[align],
       className
     )}
     {...props}

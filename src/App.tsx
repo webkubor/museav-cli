@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Providers } from '@/components/providers'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
-import ForbiddenPage from '@/pages/forbidden'
+import { AuthProvider, RequireAuth } from '@/components/auth/AuthProvider'
 
 // 页面路由懒加载：各页面拆为独立 chunk，按需加载，缩小首屏体积
 const DashboardPage = lazy(() => import('@/pages/dashboard'))
@@ -32,14 +32,11 @@ const ModelsComparePage = lazy(() => import('@/pages/models-compare'))
 const PlatformConfigPage = lazy(() => import('@/pages/platform-config'))
 const TasksPage = lazy(() => import('@/pages/tasks'))
 const NotFoundPage = lazy(() => import('@/pages/not-found'))
-import { useAuthStore } from '@/store/auth'
-import { getSession } from '@/services/auth'
 import { storageKeys } from '@/lib/storage'
 import { getMarket, type Market } from '@/lib/market'
 import { applyBrandTheme, applyTheme, getSavedBrandTheme, getSavedTheme } from '@/lib/theme'
 import { getPlatformConfig } from '@/services/platform'
 import { useLangStore } from '@/store/use-brand-store'
-import { toLoginWithRedirect } from '@/lib/redirect'
 import { NavLogger } from '@/components/dev/NavLogger'
 import { DevToolbar } from '@/components/dev-toolbar'
 
@@ -90,45 +87,6 @@ function PlatformLoader({ onReady }: { onReady: () => void }) {
   return null
 }
 
-let isFetchingSession = false
-
-function SessionLoader() {
-  const setAuth = useAuthStore((s) => s.setAuth)
-  const setLoading = useAuthStore((s) => s.setLoading)
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-
-  useEffect(() => {
-    if (isAuthenticated || isFetchingSession) return
-    isFetchingSession = true
-    getSession()
-      .then((result) => {
-        // 刷新时优先恢复用户上次选择的工作区（持久化于 localStorage），
-        // 仅当本地无记录时才回退到会话下发的默认工作区，避免刷新后回到默认工作区。
-        const persistedWs = localStorage.getItem(storageKeys.activeWorkspaceId())
-        setAuth(
-          {
-            account_id: result.account.account_id,
-            display_name: result.account.display_name,
-            email: result.account.email,
-            avatar_url: result.account.avatar_url,
-          },
-          result.active_tenant_id,
-          result.tenants,
-          persistedWs || result.active_workspace_id,
-          result.permissions?.granted ?? null,
-          result.permissions?.menus ?? []
-        )
-      })
-      .catch(() => {
-        setLoading(false)
-      })
-      .finally(() => {
-        isFetchingSession = false
-      })
-  }, [])
-
-  return null
-}
 
 /** 懒加载页面 chunk 加载中的占位（居中 spinner，复用平台加载样式） */
 function RouteFallback() {
@@ -148,17 +106,6 @@ function RouteFallback() {
   )
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const isLoading = useAuthStore((s) => s.isLoading)
-  const activeTenantId = useAuthStore((s) => s.activeTenantId)
-
-  if (isLoading) return null
-  if (!isAuthenticated) return <Navigate to={toLoginWithRedirect()} replace />
-  // 已登录但无组织 = 有身份、无授权 → 403，而非回跳登录（回跳会造成守卫互弹）
-  if (!activeTenantId) return <ForbiddenPage />
-  return <>{children}</>
-}
 
 export default function App() {
   const [platformReady, setPlatformReady] = useState(false)
@@ -190,8 +137,8 @@ export default function App() {
             }} />
           </div>
         )}
-        <SessionLoader />
         {import.meta.env.DEV && <DevToolbar />}
+        <AuthProvider>
         <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* 认证路由（公开） */}
@@ -206,7 +153,7 @@ export default function App() {
           <Route path="/billing/wechat-cashier" element={<WechatCashierPage />} />
 
           {/* 控制台路由（需登录） */}
-          <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+          <Route path="/" element={<RequireAuth><DashboardLayout /></RequireAuth>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
 
             {/* Tenant 级 */}
@@ -243,6 +190,7 @@ export default function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
         </Suspense>
+        </AuthProvider>
       </BrowserRouter>
     </Providers>
   )

@@ -1190,7 +1190,7 @@
     "guide0.title": "创建与管理 API Key",
     "guide0.desc": "5 分钟内获取安全高可用的 Token Key 凭证",
     "guide1.title": "CLI 一键登录授权",
-    "guide1.desc": "执行 modelgo-cli auth login，浏览器扫码确认",
+    "guide1.desc": "执行 modelgo auth login，浏览器扫码确认",
     "guide2.title": "绑定支付并开具发票",
     "guide2.desc": "国内/海外双市场支付及财务开票安全指引",
     "guide3.title": "探索高性价比合规模型",

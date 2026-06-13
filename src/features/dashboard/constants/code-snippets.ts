@@ -1,11 +1,8 @@
 export const CLI_CODE = `# 1. 安装 CLI
-npm install -g modelgo-cli
+npx @model-go/cli@latest install
 
 # 2. 浏览器授权登录（无需手动复制 API Key）
-modelgo-cli auth login
-
-# 3. 在终端确认后即可直接调用
-modelgo-cli run --model deepseek-chat "你好！"`
+modelgo auth login`
 
 export const PLAIN_CODES = {
   python: `import openai

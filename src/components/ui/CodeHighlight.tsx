@@ -10,11 +10,9 @@ export const CodeHighlight: React.FC<CodeHighlightProps> = ({ language }) => {
       {language === 'cli' && (
         <code>
           <span className="code-comment"># 1. 安装 CLI</span><br />
-          npm install -g <span className="code-string">modelgo-cli</span><br /><br />
+          npx <span className="code-string">@model-go/cli@latest</span> install<br /><br />
           <span className="code-comment"># 2. 浏览器授权登录（无需手动复制 API Key）</span><br />
-          modelgo-cli auth <span className="code-builtin">login</span><br /><br />
-          <span className="code-comment"># 3. 确认后即可在终端直接调用</span><br />
-          modelgo-cli run --model <span className="code-string">deepseek-chat</span> <span className="code-string">"你好！"</span>
+          modelgo auth <span className="code-builtin">login</span>
         </code>
       )}
       {language === 'python' && (

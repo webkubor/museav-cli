@@ -17,7 +17,7 @@ function scopedWorkspacePath(workspaceId: string | null, path: string) {
 }
 
 function getCliCommandLine() {
-  return CLI_CODE.split('\n').find((line) => line.startsWith('npm install -g modelgo-cli')) ?? 'npm install -g modelgo-cli'
+  return CLI_CODE.split('\n').find((line) => line.startsWith('npx @model-go/cli')) ?? 'npx @model-go/cli@latest install'
 }
 
 export const DashboardTopPanel: React.FC = () => {

@@ -1178,7 +1178,7 @@
     "guide0.title": "Create & Manage API Keys",
     "guide0.desc": "Get a secure, highly available Token Key in 5 minutes",
     "guide1.title": "CLI One-Click Auth",
-    "guide1.desc": "Run modelgo-cli auth login, scan QR code in browser",
+    "guide1.desc": "Run modelgo auth login, scan QR code in browser",
     "guide2.title": "Bind Payment & Invoice",
     "guide2.desc": "Secure payment and invoicing guide for CN and global markets",
     "guide3.title": "Explore Cost-Effective Models",

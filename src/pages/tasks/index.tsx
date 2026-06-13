@@ -8,8 +8,6 @@ import {
   LuMusic,
   LuX,
   LuDownload,
-  LuLink,
-  LuCheck,
   LuRefreshCw,
 } from 'react-icons/lu'
 import { Badge } from '@/components/ui/Badge'
@@ -163,13 +161,6 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
   const kindCfg = KIND_CONFIG[kind]
   // 视频产物：成功态直接用网关 content 端点（凭 gateway_request_id，302 转 OSS）
   const videoUrl = kind === 'video' && isTaskDone(task.status) ? videoContentUrl(taskId) : null
-  const { copy, copied } = useCopy()
-
-  const handleCopyLink = async () => {
-    if (!videoUrl) return
-    const ok = await copy(videoUrl)
-    appToast[ok ? 'success' : 'error'](ok ? '视频链接已复制' : '复制失败')
-  }
 
   return (
     <SideSheet open onClose={onClose} width={460} title="任务详情">
@@ -246,26 +237,15 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
           {/* 操作按钮 */}
           <div className="flex gap-2 pt-1">
             {isTaskDone(task.status) && videoUrl && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCopyLink}
-                  title="复制视频链接"
-                >
-                  {copied ? <LuCheck size={14} /> : <LuLink size={14} />}
-                  复制链接
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => { void downloadVideo(videoUrl, taskId) }}
-                >
-                  <LuDownload size={14} />
-                  下载产物
-                </Button>
-              </>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => { void downloadVideo(videoUrl, taskId) }}
+              >
+                <LuDownload size={14} />
+                下载产物
+              </Button>
             )}
             {task.status === 'queued' && (
               <Button
@@ -290,6 +270,12 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
 export default function TasksPage() {
   const { t } = useTranslation()
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
+  const { copy } = useCopy()
+
+  const handleCopyVideoLink = async (url: string) => {
+    const ok = await copy(url)
+    appToast[ok ? 'success' : 'error'](ok ? '视频链接已复制' : '复制失败')
+  }
 
   const [search, setSearch]         = useState('')
   const [statusFilter, setStatus]   = useState('all')
@@ -480,16 +466,28 @@ export default function TasksPage() {
                       </button>
                     )}
                     {videoUrl && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          void downloadVideo(videoUrl, item.gateway_request_id)
-                        }}
-                        className="text-[11px] text-brand-base hover:text-brand-deep font-semibold transition-colors"
-                      >
-                        下载
-                      </button>
+                      <span className="inline-flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            void handleCopyVideoLink(videoUrl)
+                          }}
+                          className="text-[11px] text-mg-text-2 hover:text-mg-text-0 font-semibold transition-colors"
+                        >
+                          复制链接
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            void downloadVideo(videoUrl, item.gateway_request_id)
+                          }}
+                          className="text-[11px] text-brand-base hover:text-brand-deep font-semibold transition-colors"
+                        >
+                          下载
+                        </button>
+                      </span>
                     )}
                   </TableCell>
                 </TableRow>

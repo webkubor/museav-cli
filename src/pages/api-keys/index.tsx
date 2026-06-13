@@ -26,6 +26,8 @@ import { AccessCenterCard } from './AccessCenterCard'
 import { ConnectModal } from './ConnectModal'
 import { CreateKeyModal } from './CreateKeyModal'
 import { ApiKeyTable } from './ApiKeyTable'
+import { EditGuardrailModal } from './EditGuardrailModal'
+import type { ApiKeyItem } from '@/types'
 
 export default function ApiKeysPage() {
   const { t } = useTranslation()
@@ -39,6 +41,7 @@ export default function ApiKeysPage() {
   const [connectVisible, setConnectVisible] = useState(false)
   const [createdKeyText, setCreatedKeyText] = useState('')
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null)
+  const [editGuardrailKey, setEditGuardrailKey] = useState<ApiKeyItem | null>(null)
   const { copy: copyText } = useCopy()
 
   const activeWorkspaceId = useAuthStore((state) => state.activeWorkspaceId) || '01HV3KWS000000000000001'
@@ -124,6 +127,7 @@ export default function ApiKeysPage() {
         canRevoke={canRevoke}
         onCopy={handleCopyMasked}
         onRevoke={setRevokeTarget}
+        onEditGuardrail={setEditGuardrailKey}
       />
 
       <ConnectModal
@@ -164,6 +168,12 @@ export default function ApiKeysPage() {
             </Button>
           </>
         }
+      />
+      <EditGuardrailModal
+        open={!!editGuardrailKey}
+        onClose={() => setEditGuardrailKey(null)}
+        workspaceId={activeWorkspaceId}
+        apiKey={editGuardrailKey}
       />
     </div>
   )

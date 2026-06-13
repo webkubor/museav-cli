@@ -210,6 +210,7 @@ export interface ApiKeyItem {
   limit: SpendingLimit
   created_at: string
   scope: 'personal' | 'workspace' | 'member'
+  guardrail_id?: string
 }
 
 export interface CreateApiKeyRequest {

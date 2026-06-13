@@ -23,9 +23,10 @@ type Props = {
   canRevoke: boolean
   onCopy: (text: string) => void
   onRevoke: (target: { id: string; name: string }) => void
+  onEditGuardrail: (item: ApiKeyItem) => void
 }
 
-export function ApiKeyTable({ isLoading, items, canRevoke, onCopy, onRevoke }: Props) {
+export function ApiKeyTable({ isLoading, items, canRevoke, onCopy, onRevoke, onEditGuardrail }: Props) {
   const { t } = useTranslation()
 
   return (
@@ -93,6 +94,12 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onCopy, onRevoke }: P
               <TableCell className="text-xs text-mg-text-1">{formatDateTime(record.created_at)}</TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-4 text-xs font-bold">
+                  <button
+                    onClick={() => onEditGuardrail(record)}
+                    className="text-brand-base hover:text-brand-deep transition-colors cursor-pointer"
+                  >
+                    编辑
+                  </button>
                   <button
                     onClick={() => onCopy(record.masked || `${record.prefix}••••••••`)}
                     title="仅显示掩码，创建时应已复制完整密钥"

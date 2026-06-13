@@ -1150,7 +1150,8 @@
     "gitlabIid": 145,
     "gitlabLabels": [
       "BUG",
-      "已完成"
+      "已完成",
+      "待验证"
     ],
     "assignee": "webkubor"
   },
@@ -1210,12 +1211,12 @@
     "id": "gl-160",
     "title": "智能客服不可用",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-11T03:31:52.708Z",
     "gitlabIid": 160,
     "gitlabLabels": [
       "BUG",
-      "待验证"
+      "已完成"
     ],
     "assignee": "xionrenjie"
   },
@@ -1223,12 +1224,12 @@
     "id": "gl-159",
     "title": "邀请返利，被邀请人应该脱敏",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-11T03:30:00.477Z",
     "gitlabIid": 159,
     "gitlabLabels": [
       "BUG",
-      "待验证"
+      "已完成"
     ],
     "assignee": "duanlingxiao"
   },
@@ -1236,12 +1237,13 @@
     "id": "gl-158",
     "title": "后台余额调整报错，如图",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-11T03:27:52.292Z",
     "gitlabIid": 158,
     "gitlabLabels": [
       "BUG",
-      "待验证"
+      "reopen",
+      "已完成"
     ],
     "assignee": "duanlingxiao"
   },
@@ -1249,11 +1251,13 @@
     "id": "gl-157",
     "title": "被邀请人消费达到1000+，邀请人没有正确展示返佣",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-11T03:21:38.495Z",
     "gitlabIid": 157,
     "gitlabLabels": [
-      "BUG"
+      "BUG",
+      "优先级：高",
+      "已完成"
     ],
     "assignee": "duanlingxiao"
   },
@@ -1277,7 +1281,9 @@
     "createdAt": "2026-06-11T02:50:37.625Z",
     "gitlabIid": 155,
     "gitlabLabels": [
-      "BUG"
+      "BUG",
+      "优先级：低",
+      "待验证"
     ],
     "assignee": "duanlingxiao"
   },
@@ -1285,11 +1291,13 @@
     "id": "gl-154",
     "title": "兑换码没有实现部分需求",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-11T02:47:03.027Z",
     "gitlabIid": 154,
     "gitlabLabels": [
-      "BUG"
+      "BUG",
+      "优先级：中",
+      "已完成"
     ],
     "assignee": "duanlingxiao"
   },
@@ -1310,11 +1318,12 @@
     "id": "gl-152",
     "title": "解散组织 需要查看组织这个租户下的余额信息 如果存在余额解散的时候需要一个提示 当前组织还有多少余额未使用完毕。",
     "priority": "medium",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-10T11:57:35.449Z",
     "gitlabIid": 152,
     "gitlabLabels": [
-      "TASK"
+      "TASK",
+      "已完成"
     ],
     "assignee": "duanlingxiao"
   },
@@ -1364,9 +1373,11 @@
     "createdAt": "2026-06-10T07:22:46.024Z",
     "gitlabIid": 144,
     "gitlabLabels": [
-      "BUG"
+      "BUG",
+      "优先级：低",
+      "进行中"
     ],
-    "assignee": "duanlingxiao"
+    "assignee": "webkubor"
   },
   {
     "id": "gl-143",
@@ -1437,11 +1448,13 @@
     "id": "gl-138",
     "title": "邀请链接未生效",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-10T06:51:49.671Z",
     "gitlabIid": 138,
     "gitlabLabels": [
-      "BUG"
+      "BUG",
+      "优先级：高",
+      "已完成"
     ],
     "assignee": "duanlingxiao"
   },
@@ -1466,7 +1479,10 @@
     "createdAt": "2026-06-10T06:23:51.105Z",
     "gitlabIid": 136,
     "gitlabLabels": [
-      "BUG"
+      "BUG",
+      "reopen",
+      "优先级：高",
+      "待验证"
     ],
     "assignee": "duanlingxiao"
   },
@@ -1711,12 +1727,12 @@
     "id": "gl-112",
     "title": "官网双域名上线",
     "priority": "medium",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-08T02:43:11.965Z",
     "gitlabIid": 112,
     "gitlabLabels": [
       "TASK",
-      "已认领"
+      "已完成"
     ],
     "assignee": "webkubor"
   },
@@ -2065,11 +2081,12 @@
     "id": "gl-169",
     "title": "【Bug】model-gateway：/v1/responses 转发未剥离客户端专有字段，导致 Ark 上游严格解析报 unknown field \"client_metadata\"",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-11T07:44:44.020Z",
     "gitlabIid": 169,
     "gitlabLabels": [
-      "BUG"
+      "BUG",
+      "已完成"
     ],
     "assignee": "xionrenjie"
   },
@@ -2077,12 +2094,12 @@
     "id": "gl-168",
     "title": "[后端] /model-logs 接口补充游标分页字段（next_cursor / has_more），修复 #161 翻页不可用",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-11T06:34:09.805Z",
     "gitlabIid": 168,
     "gitlabLabels": [
       "BUG",
-      "待验证"
+      "已完成"
     ],
     "assignee": "xionrenjie"
   },
@@ -2090,12 +2107,13 @@
     "id": "gl-167",
     "title": "可观测性数据不全，需要保证数据完整性",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-11T06:33:40.629Z",
     "gitlabIid": 167,
     "gitlabLabels": [
       "BUG",
-      "待验证"
+      "reopen",
+      "已完成"
     ],
     "assignee": "xionrenjie"
   },
@@ -2103,11 +2121,12 @@
     "id": "gl-166",
     "title": "个人/组织之前切换不明显",
     "priority": "high",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-11T06:24:40.521Z",
     "gitlabIid": 166,
     "gitlabLabels": [
-      "BUG"
+      "BUG",
+      "已完成"
     ],
     "assignee": "webkubor"
   },
@@ -2128,12 +2147,12 @@
     "id": "gl-164",
     "title": "[护栏] 预算策略单条维护语义：首次手动创建、后续原地编辑同一条、支持删除",
     "priority": "medium",
-    "status": "pending",
+    "status": "done",
     "createdAt": "2026-06-11T05:14:54.828Z",
     "gitlabIid": 164,
     "gitlabLabels": [
       "Feature",
-      "待验证"
+      "已完成"
     ]
   },
   {
@@ -2160,5 +2179,291 @@
       "BUG",
       "已完成"
     ]
+  },
+  {
+    "id": "gl-191",
+    "title": "创建限流规则报错",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-13T08:39:56.064Z",
+    "gitlabIid": 191,
+    "gitlabLabels": [
+      "BUG",
+      "优先级：中"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-190",
+    "title": "[计费/视频阶梯价] ark/dreamina-seedance-2-0 成功生成但 actual_amount=0（tier 未生效，收入泄漏）",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-13T08:12:07.765Z",
+    "gitlabIid": 190,
+    "gitlabLabels": [
+      "BUG",
+      "优先级：高"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-189",
+    "title": "赠金规则里不应该展示兑换码数据",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-13T07:52:19.186Z",
+    "gitlabIid": 189,
+    "gitlabLabels": [
+      "BUG"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-188",
+    "title": "[Billing][Gateway] x402 支付宝 A2M 支付基础设施打通(业务无关)",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-13T07:41:30.819Z",
+    "gitlabIid": 188,
+    "gitlabLabels": [
+      "Feature",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-187",
+    "title": "[Tasks] 异步任务列表缺「实际费用」字段（actual_cost 未透出）",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-13T07:38:54.588Z",
+    "gitlabIid": 187,
+    "gitlabLabels": [
+      "BUG",
+      "优先级：中",
+      "已认领"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-186",
+    "title": "claude协议报错",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-13T07:19:42.381Z",
+    "gitlabIid": 186,
+    "gitlabLabels": [
+      "BUG",
+      "reopen",
+      "进行中"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-185",
+    "title": "[model-gateway] Codex 发送嵌套 tool {\"type\":\"function\",\"function\":{...}}，Ark 原生 /responses 严格拒绝 json: unknown field \"function\" → Codex 接入 Ark 模型整体失败",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-13T06:23:26.527Z",
+    "gitlabIid": 185,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-184",
+    "title": "sse协议的响应展示不正确，如图",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-13T06:03:46.742Z",
+    "gitlabIid": 184,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-183",
+    "title": "codex 接入 deepseek-v4-flash 报错",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-13T03:42:43.695Z",
+    "gitlabIid": 183,
+    "gitlabLabels": [
+      "BUG",
+      "进行中"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-182",
+    "title": "codex 调用日志不正确",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-13T03:40:54.757Z",
+    "gitlabIid": 182,
+    "gitlabLabels": [
+      "BUG",
+      "优先级：高",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-181",
+    "title": "[亲和性] 亲和规则配置、预期行为与边界条件提测",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-13T02:49:21.469Z",
+    "gitlabIid": 181,
+    "gitlabLabels": [
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-180",
+    "title": "[计费] Ark/Bedrock 多模态计费与入站协议一致性提测",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-13T02:41:52.851Z",
+    "gitlabIid": 180,
+    "gitlabLabels": [
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-179",
+    "title": "用户后台任务详情需要预览视频",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-06-12T08:08:50.399Z",
+    "gitlabIid": 179,
+    "gitlabLabels": [
+      "Feature"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-178",
+    "title": "[model-gateway/配置] ark/seed-translation 协议绑定错误 + ark/seededit-3-0-i2i 上游未开通，两模型经网关不可用",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-12T07:10:25.357Z",
+    "gitlabIid": 178,
+    "gitlabLabels": [
+      "BUG",
+      "优先级：中"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-177",
+    "title": "推荐计划计算金额不正确",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-06-12T06:22:10.238Z",
+    "gitlabIid": 177,
+    "gitlabLabels": [
+      "BUG",
+      "优先级：高",
+      "待验证"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-176",
+    "title": "[model-gateway] 新目录 ark 模型缺供应商实例映射，网关把逻辑名静默透传上游 → Ark 404，模型不可用（seed-translation 等）",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-12T04:06:41.791Z",
+    "gitlabIid": 176,
+    "gitlabLabels": [
+      "BUG",
+      "优先级：高",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-175",
+    "title": "编辑策略第一页无法编辑当前路由",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-12T03:12:30.152Z",
+    "gitlabIid": 175,
+    "gitlabLabels": [
+      "BUG",
+      "优先级：高",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-174",
+    "title": "[ModelGo API] Claude Code 接入时部分协议端点不支持",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-12T03:01:22.609Z",
+    "gitlabIid": 174,
+    "gitlabLabels": [
+      "BUG",
+      "优先级：高",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-173",
+    "title": "[Console] 更新日志入口 + 文档站 Changelog",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-06-11T10:36:06.280Z",
+    "gitlabIid": 173,
+    "gitlabLabels": [
+      "TASK"
+    ]
+  },
+  {
+    "id": "gl-172",
+    "title": "[model-gateway] Codex(responses-only) 发送专有 tool.type=\"namespace\"，所有上游 400 拒绝 → Codex 完全无法接入 modelgo",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-11T09:59:29.937Z",
+    "gitlabIid": 172,
+    "gitlabLabels": [
+      "BUG",
+      "优先级：高",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-171",
+    "title": "租户的余额账户安全审计存在的问题",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-11T08:43:23.972Z",
+    "gitlabIid": 171,
+    "gitlabLabels": [
+      "BUG",
+      "优先级：高",
+      "已完成"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-170",
+    "title": "[model-gateway] 对比 OpenAI/Anthropic：影响 agent 使用的能力缺失汇总（含 client_metadata 400 等）",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-11T08:11:50.819Z",
+    "gitlabIid": 170,
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
   }
 ]

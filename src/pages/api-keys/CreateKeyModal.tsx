@@ -2,6 +2,7 @@
  * 创建 API Key 弹窗：名称、作用域、成员、护栏、消费限额、过期时间，自带成员/护栏查询与创建请求
  */
 import { useEffect, useState } from 'react'
+import confetti from 'canvas-confetti'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -93,6 +94,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
     onSuccess: (newKey) => {
       appToast.success(t('apiKeys.toast.createSuccess', { name: newKey.name }))
       queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
+      confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } })
       onCreated(newKey.key)
     },
     onError: (err: unknown) => {

@@ -369,13 +369,13 @@ export default function TasksPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-16">预览</TableHead>
-              <TableHead className="w-40">提交时间</TableHead>
-              <TableHead className="w-28">类型</TableHead>
+              <TableHead className="w-20">预览</TableHead>
+              <TableHead>提交时间</TableHead>
+              <TableHead>类型</TableHead>
               <TableHead>模型 / 供应商</TableHead>
-              <TableHead className="w-28">状态</TableHead>
-              <TableHead className="text-right w-28">实际费用</TableHead>
-              <TableHead className="w-20 text-right">操作</TableHead>
+              <TableHead>状态</TableHead>
+              <TableHead className="text-right">实际费用</TableHead>
+              <TableHead className="text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

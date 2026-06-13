@@ -20,6 +20,7 @@ import { Modal } from '@/components/ui/Modal'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 import type { StatusConfig } from '@/components/ui/StatusBadge'
 import { appToast } from '@/lib/app-toast'
 import { formatDateTime } from '@/lib/format-date'
@@ -500,53 +501,53 @@ export default function BillingPage() {
                 className="py-20"
               />
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-sm">
-                  <thead>
-                    <tr className="border-b border-mg-border bg-mg-fill-0/20">
-                      <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.orderNo')}</th>
-                      <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.status')}</th>
-                      <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.channel')}</th>
-                      <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.amount')}</th>
-                      <th className="py-3 px-4 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">{t('billing.orders.table.paidAt')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('billing.orders.table.orderNo')}</TableHead>
+                      <TableHead>{t('billing.orders.table.status')}</TableHead>
+                      <TableHead>{t('billing.orders.table.channel')}</TableHead>
+                      <TableHead>{t('billing.orders.table.amount')}</TableHead>
+                      <TableHead>{t('billing.orders.table.paidAt')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {orders.map((record) => {
                       const isPending = record.status === 'pending'
                       const isPaid = record.status === 'paid'
                       return (
-                        <tr
+                        <TableRow
                           key={record.order_no}
                           onClick={() => setSelectedOrderNo(record.order_no === selectedOrderNo ? null : record.order_no)}
                           className={cn(
-                            'border-b border-mg-border/40 cursor-pointer billing-table-row',
+                            'cursor-pointer billing-table-row',
                             selectedOrderNo === record.order_no ? 'active' : ''
                           )}
                         >
-                          <td className="py-3.5 px-4 font-mono text-xs text-mg-text-1 max-w-[140px] truncate">{record.order_no}</td>
-                          <td className="py-3.5 px-4">
+                          <TableCell className="font-mono text-xs text-mg-text-1 max-w-[140px] truncate">{record.order_no}</TableCell>
+                          <TableCell>
                             <StatusBadge
                               status={record.status}
                               statusMap={rechargeStatusMap}
                               fallback={record.status}
                             />
-                          </td>
-                          <td className="py-3.5 px-4 text-xs text-mg-text-1 font-semibold whitespace-nowrap">
+                          </TableCell>
+                          <TableCell className="text-xs text-mg-text-1 font-semibold whitespace-nowrap">
                             {record.channel_label || record.channel || '-'}
-                          </td>
-                          <td className={cn(
-                            'py-3.5 px-4 text-xs font-bold font-mono',
+                          </TableCell>
+                          <TableCell className={cn(
+                            'text-xs font-bold font-mono',
                             isPaid ? 'text-mg-success' : isPending ? 'text-mg-warning' : 'text-mg-text-0'
                           )}>
                             {record.currency} {record.amount}
-                          </td>
-                          <td className="py-3.5 px-4 text-xs text-mg-text-2 font-mono">{formatDateTime(record.paid_at)}</td>
-                        </tr>
+                          </TableCell>
+                          <TableCell className="text-xs text-mg-text-2 font-mono">{formatDateTime(record.paid_at)}</TableCell>
+                        </TableRow>
                       )
                     })}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
                 {ordersQuery.hasNextPage && (
                   <div className="p-3 border-t border-mg-border/40">
                     <Button
@@ -688,32 +689,32 @@ export default function BillingPage() {
               title={t('billing.orders.gift.empty', { defaultValue: '暂无赠送记录' })}
             />
           ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-mg-border/60 bg-mg-fill-0/30">
-                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">{t('billing.orders.gift.source', { defaultValue: '来源' })}</th>
-                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">{t('billing.orders.gift.amount', { defaultValue: '金额' })}</th>
-                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">{t('billing.orders.gift.creditedAt', { defaultValue: '到账时间' })}</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('billing.orders.gift.source', { defaultValue: '来源' })}</TableHead>
+                  <TableHead>{t('billing.orders.gift.amount', { defaultValue: '金额' })}</TableHead>
+                  <TableHead>{t('billing.orders.gift.creditedAt', { defaultValue: '到账时间' })}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {giftRecords.map((record) => (
-                  <tr key={record.id} className="border-b border-mg-border/40 cursor-pointer billing-table-row">
-                    <td className="py-3.5 px-4 font-medium">
+                  <TableRow key={record.id} className="cursor-pointer billing-table-row">
+                    <TableCell className="font-medium">
                       <div className="flex items-center gap-2.5 select-none">
                         <div className="w-6 h-6 rounded-lg bg-brand-glow/10 flex items-center justify-center border border-brand-base/10 shrink-0">
                           <LuGift size={12} className="text-brand-base" />
                         </div>
                         <span className="text-xs text-mg-text-0 font-bold">{record.source}</span>
                       </div>
-                    </td>
-                    <td className="py-3.5 px-4 text-xs font-bold text-mg-success font-mono">+{record.currency} {record.amount}</td>
-                    <td className="py-3.5 px-4 text-xs text-mg-text-2 font-mono">{formatDateTime(record.credited_at)}</td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="text-xs font-bold text-mg-success font-mono">+{record.currency} {record.amount}</TableCell>
+                    <TableCell className="text-xs text-mg-text-2 font-mono">{formatDateTime(record.credited_at)}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
           )}
         </div>
@@ -723,44 +724,44 @@ export default function BillingPage() {
           {rewardRecords.length === 0 ? (
             <EmptyState title={rc.empty} />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-mg-border/60 bg-mg-fill-0/30">
-                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">{rc.colDate}</th>
-                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">{rc.colInvitee}</th>
-                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">{rc.colTier}</th>
-                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider text-right">{rc.colSpend}</th>
-                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider text-right">{rc.colRate}</th>
-                    <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider text-right">{rc.colAmount}</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{rc.colDate}</TableHead>
+                    <TableHead>{rc.colInvitee}</TableHead>
+                    <TableHead>{rc.colTier}</TableHead>
+                    <TableHead align="right">{rc.colSpend}</TableHead>
+                    <TableHead align="right">{rc.colRate}</TableHead>
+                    <TableHead align="right">{rc.colAmount}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {rewardRecords.map((rec, i) => (
-                    <tr key={i} className="border-b border-mg-border/40 cursor-pointer billing-table-row">
-                      <td className="py-3.5 px-4 text-xs text-mg-text-2 font-mono">{rec.date}</td>
-                      <td className="py-3.5 px-4 font-medium">
+                    <TableRow key={i} className="cursor-pointer billing-table-row">
+                      <TableCell className="text-xs text-mg-text-2 font-mono">{rec.date}</TableCell>
+                      <TableCell className="font-medium">
                         <div className="flex items-center gap-2.5 select-none">
                           <div className="w-6 h-6 rounded-full bg-mg-fill-1 border border-mg-border flex items-center justify-center font-bold text-[10px] text-mg-text-1 uppercase shrink-0">
                             {rec.source.slice(0, 2)}
                           </div>
                           <span className="text-xs text-mg-text-0 font-bold">{rec.source}</span>
                         </div>
-                      </td>
-                      <td className="py-3.5 px-4">
+                      </TableCell>
+                      <TableCell>
                         {renderTierBadge(rec.tierName)}
-                      </td>
-                      <td className="py-3.5 px-4 text-xs text-mg-text-1 font-mono text-right">¥{Number(rec.spend).toLocaleString('zh-CN')}</td>
-                      <td className="py-3.5 px-4 text-right">
+                      </TableCell>
+                      <TableCell align="right" className="text-xs text-mg-text-1 font-mono">¥{Number(rec.spend).toLocaleString('zh-CN')}</TableCell>
+                      <TableCell align="right">
                         <span className="bg-brand-glow/10 text-brand-base text-[10px] font-bold px-1.5 py-0.5 rounded-md border border-brand-base/10 font-mono">
                           {rec.rate}%
                         </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-xs font-bold text-mg-success font-mono text-right">+¥{Number(rec.amount).toLocaleString('zh-CN')}</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell align="right" className="text-xs font-bold text-mg-success font-mono">+¥{Number(rec.amount).toLocaleString('zh-CN')}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>

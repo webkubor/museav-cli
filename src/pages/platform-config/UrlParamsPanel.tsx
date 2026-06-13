@@ -1,3 +1,5 @@
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
+
 interface UrlParamRow {
   param: string
   module: string
@@ -57,28 +59,26 @@ export function UrlParamsPanel() {
         <div className="text-sm font-bold text-mg-text-0">认证 / OAuth URL 透传参数</div>
         <div className="text-[11px] text-mg-text-2 mt-0.5">注册 / 登录 / 邀请 / 设备授权各入口需要兼容携带的 URL 参数（均基于代码核实）</div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-mg-border bg-mg-bg-1/40">
-              <th className="py-2.5 px-5 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">参数</th>
-              <th className="py-2.5 px-5 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">业务 · 模块</th>
-              <th className="py-2.5 px-5 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">怎么用</th>
-              <th className="py-2.5 px-5 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">为什么</th>
-            </tr>
-          </thead>
-          <tbody>
+      <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>参数</TableHead>
+              <TableHead>业务 · 模块</TableHead>
+              <TableHead>怎么用</TableHead>
+              <TableHead>为什么</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {URL_PARAM_ROWS.map((row) => (
-              <tr key={row.param} className="border-b border-mg-border/40 hover:bg-mg-fill-0/20 transition-colors align-top">
-                <td className="py-3 px-5 font-mono text-xs text-brand-base whitespace-nowrap">{row.param}</td>
-                <td className="py-3 px-5 text-xs text-mg-text-1 min-w-[160px]">{row.module}</td>
-                <td className="py-3 px-5 text-xs text-mg-text-0 leading-relaxed min-w-[260px]">{row.usage}</td>
-                <td className="py-3 px-5 text-xs text-mg-text-2 leading-relaxed min-w-[240px]">{row.why}</td>
-              </tr>
+              <TableRow key={row.param} className="align-top">
+                <TableCell className="font-mono text-brand-base whitespace-nowrap">{row.param}</TableCell>
+                <TableCell className="min-w-[160px]">{row.module}</TableCell>
+                <TableCell className="text-mg-text-0 min-w-[260px]">{row.usage}</TableCell>
+                <TableCell className="text-mg-text-2 min-w-[240px]">{row.why}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
     </div>
   )
 }

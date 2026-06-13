@@ -7,6 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { LuArrowUpRight } from 'react-icons/lu'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 
 /** 格式化日期：MM-dd HH:mm:ss */
 function formatSimple(iso: string) {
@@ -50,57 +51,54 @@ export const RecentActivitySection: React.FC = () => {
         </div>
       ) : data?.items && data.items.length > 0 ? (
         <div className="overflow-x-auto w-full">
-          <table className="w-full text-left border-collapse text-sm">
-             <thead>
-              <tr className="border-b border-mg-border">
-                <th className="py-2.5 px-3 font-semibold text-mg-text-2 text-xs">{t('dashboard.recentLogs.requestId')}</th>
-                <th className="py-2.5 px-3 font-semibold text-mg-text-2 text-xs">{t('dashboard.recentLogs.model')}</th>
-                <th className="py-2.5 px-3 font-semibold text-mg-text-2 text-xs">{t('dashboard.recentLogs.status')}</th>
-                <th className="py-2.5 px-3 font-semibold text-mg-text-2 text-xs">{t('dashboard.recentLogs.duration')}</th>
-                <th className="py-2.5 px-3 font-semibold text-mg-text-2 text-xs">Token</th>
-                <th className="py-2.5 px-3 font-semibold text-mg-text-2 text-xs">Cost</th>
-                <th className="py-2.5 px-3 font-semibold text-mg-text-2 text-xs">{t('dashboard.recentLogs.time')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('dashboard.recentLogs.requestId')}</TableHead>
+                <TableHead>{t('dashboard.recentLogs.model')}</TableHead>
+                <TableHead>{t('dashboard.recentLogs.status')}</TableHead>
+                <TableHead>{t('dashboard.recentLogs.duration')}</TableHead>
+                <TableHead>Token</TableHead>
+                <TableHead>Cost</TableHead>
+                <TableHead>{t('dashboard.recentLogs.time')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {data.items.map((item) => {
                 const reqId = item.request_id.startsWith('gw_') ? item.request_id.slice(3) : item.request_id
                 const rawModelName = item.model?.display_name || '—'
                 const displayModelName = rawModelName.includes('/') ? rawModelName.split('/').pop() : rawModelName
 
                 return (
-                  <tr
-                    key={item.call_log_id}
-                    className="border-b border-mg-border hover:bg-mg-fill-0 transition-colors"
-                  >
-                    <td className="py-2.5 px-3 font-mono text-xs text-mg-text-1">
+                  <TableRow key={item.call_log_id}>
+                    <TableCell className="font-mono text-xs text-mg-text-1">
                       {reqId.slice(0, 8)}...
-                    </td>
-                    <td className="py-2.5 px-3 font-semibold text-mg-text-0 text-xs">
+                    </TableCell>
+                    <TableCell className="font-semibold text-mg-text-0 text-xs">
                       {displayModelName}
-                    </td>
-                    <td className="py-2.5 px-3">
+                    </TableCell>
+                    <TableCell>
                       <Badge variant={item.status === 'failed' ? 'destructive' : item.status === 'rejected' ? 'secondary' : 'default'} size="sm">
                         {item.status.toUpperCase()}
                       </Badge>
-                    </td>
-                    <td className="py-2.5 px-3 text-xs text-mg-text-1">
+                    </TableCell>
+                    <TableCell className="text-xs text-mg-text-1">
                       {item.duration_ms}ms
-                    </td>
-                    <td className="py-2.5 px-3 text-xs text-mg-text-1 font-mono">
+                    </TableCell>
+                    <TableCell className="text-xs text-mg-text-1 font-mono">
                       {item.usage?.total_tokens ?? 0}
-                    </td>
-                    <td className="py-2.5 px-3 text-xs text-mg-text-1 font-mono">
+                    </TableCell>
+                    <TableCell className="text-xs text-mg-text-1 font-mono">
                       {item.cost ? `${item.cost.currency === 'USD' ? '$' : '¥'}${parseFloat(item.cost.amount).toFixed(4)}` : '—'}
-                    </td>
-                    <td className="py-2.5 px-3 text-xs text-mg-text-2">
+                    </TableCell>
+                    <TableCell className="text-xs text-mg-text-2">
                       {formatSimple(item.started_at)}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center">

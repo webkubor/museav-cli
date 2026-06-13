@@ -1,3 +1,5 @@
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
+
 interface HeaderRow {
   name: string
   source: string
@@ -22,28 +24,26 @@ export function HeadersPanel() {
         <div className="text-sm font-bold text-mg-text-0">自动注入请求头</div>
         <div className="text-[11px] text-mg-text-2 mt-0.5">request-headers.ts 在 beforeRequest 钩子统一注入，业务代码无需手动携带</div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-mg-border bg-mg-bg-1/40">
-              <th className="py-2.5 px-5 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">请求头</th>
-              <th className="py-2.5 px-5 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">值来源</th>
-              <th className="py-2.5 px-5 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">范围</th>
-              <th className="py-2.5 px-5 font-bold text-mg-text-2 text-[11px] uppercase tracking-wider">作用</th>
-            </tr>
-          </thead>
-          <tbody>
-            {HEADER_ROWS.map((row) => (
-              <tr key={row.name} className="border-b border-mg-border/40 hover:bg-mg-fill-0/20 transition-colors align-top">
-                <td className="py-3 px-5 font-mono text-xs text-brand-base whitespace-nowrap">{row.name}</td>
-                <td className="py-3 px-5 text-xs text-mg-text-1">{row.source}</td>
-                <td className="py-3 px-5 text-xs text-mg-text-2 whitespace-nowrap">{row.scope}</td>
-                <td className="py-3 px-5 text-xs text-mg-text-0 leading-relaxed">{row.purpose}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>请求头</TableHead>
+            <TableHead>值来源</TableHead>
+            <TableHead>范围</TableHead>
+            <TableHead>作用</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {HEADER_ROWS.map((row) => (
+            <TableRow key={row.name}>
+              <TableCell className="font-mono text-xs text-brand-base whitespace-nowrap">{row.name}</TableCell>
+              <TableCell className="text-xs text-mg-text-1">{row.source}</TableCell>
+              <TableCell className="text-xs text-mg-text-2 whitespace-nowrap">{row.scope}</TableCell>
+              <TableCell className="text-xs text-mg-text-0">{row.purpose}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   )
 }

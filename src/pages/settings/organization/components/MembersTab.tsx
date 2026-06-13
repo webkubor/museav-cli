@@ -6,6 +6,7 @@ import { TENANT_ROLE_OPTIONS } from '@/constants/roles'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { appToast } from '@/lib/app-toast'
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 
 export function MembersTab({ tenantId, canManage }: { tenantId: string; canManage: boolean }) {
   const qc = useQueryClient()
@@ -55,26 +56,23 @@ export function MembersTab({ tenantId, canManage }: { tenantId: string; canManag
               <div className="w-6 h-6 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
             </div>
           ) : (
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-mg-border/50">
-                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">姓名 / 邮箱</th>
-                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">角色权限</th>
-                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider">加入时间</th>
-                  <th className="py-3 px-4 font-bold text-mg-text-2 text-[10px] uppercase tracking-wider text-center w-16">操作</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>姓名 / 邮箱</TableHead>
+                  <TableHead>角色权限</TableHead>
+                  <TableHead>加入时间</TableHead>
+                  <TableHead align="center" className="w-16">操作</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {members.map((record) => (
-                  <tr
-                    key={record.account.account_id}
-                    className="border-b border-mg-border/40 hover:bg-mg-fill-0/30 transition-colors"
-                  >
-                    <td className="py-3 px-4">
+                  <TableRow key={record.account.account_id}>
+                    <TableCell>
                       <div className="font-semibold text-mg-text-0">{record.account.display_name || '—'}</div>
                       <div className="text-[10px] text-mg-text-2 mt-0.5">{record.account.email}</div>
-                    </td>
-                    <td className="py-3 px-4">
+                    </TableCell>
+                    <TableCell>
                       {record.role === 'tenant_owner' ? (
                         <span className="inline-block text-[10px] text-mg-text-2 font-bold bg-mg-fill-1 border border-mg-border/40 px-2.5 py-0.5 rounded-full">Owner</span>
                       ) : canManage ? (
@@ -92,11 +90,11 @@ export function MembersTab({ tenantId, canManage }: { tenantId: string; canManag
                           {TENANT_ROLE_OPTIONS.find((o) => o.value === record.role)?.label ?? record.role}
                         </span>
                       )}
-                    </td>
-                    <td className="py-3 px-4 text-[11px] text-mg-text-1 font-medium">
+                    </TableCell>
+                    <TableCell className="text-[11px] text-mg-text-1 font-medium">
                       {formatDate(record.joined_at)}
-                    </td>
-                    <td className="py-3 px-4 text-center">
+                    </TableCell>
+                    <TableCell align="center">
                       {record.role !== 'tenant_owner' && canManage ? (
                         <button
                           type="button"
@@ -108,11 +106,11 @@ export function MembersTab({ tenantId, canManage }: { tenantId: string; canManag
                       ) : (
                         <span className="text-mg-text-3">—</span>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
         </div>
       </div>

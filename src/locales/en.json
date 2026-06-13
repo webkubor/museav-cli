@@ -228,7 +228,7 @@
       "success": "Redeemed! Credited {{amount}} {{currency}}",
       "error": "Redemption failed, please check the Promo Code",
       "errorInvalid": "Invalid promo code. Check the code and try again.",
-      "errorRedeemLimit": "This promo code has reached the redemption limit for the current account or tenant.",
+      "errorRedeemLimit": "This promo code has already been used.",
       "errorDisabled": "This promo code has been disabled. Contact support if needed.",
       "errorNotActive": "This promo code is not active yet. Try again later.",
       "errorExpired": "This promo code has expired.",

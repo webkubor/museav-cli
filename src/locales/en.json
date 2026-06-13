@@ -1224,11 +1224,12 @@
     "button.approve": "Approve",
     "button.approving": "Approving...",
     "button.backToDashboard": "Back to Console",
+    "button.goLogin": "Sign in",
     "footer": "After authorization, the CLI will obtain login credentials. Please confirm it is you operating the terminal.",
     "error.default": "Authorization failed, please try again",
     "error.40401": "Authorization code does not exist or has expired. Please re-run the login command.",
     "error.40901": "This authorization code has already been used.",
-    "error.40101": "Not logged in. Please refresh the page.",
+    "error.40101": "Your session has expired. Please sign in again to continue authorizing the device.",
     "error.40302": "CSRF validation failed. Please refresh the page."
   },
   "models": {

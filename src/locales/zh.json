@@ -1236,11 +1236,12 @@
     "button.approve": "确认授权",
     "button.approving": "授权中...",
     "button.backToDashboard": "返回控制台",
+    "button.goLogin": "去登录",
     "footer": "授权后终端 CLI 会获得登录凭证，请确认是你本人在终端操作。",
     "error.default": "授权失败，请重试",
     "error.40401": "授权码不存在或已过期，请重新在终端执行登录命令",
     "error.40901": "此授权码已被使用",
-    "error.40101": "当前未登录，请刷新页面后重试",
+    "error.40101": "登录已过期，请重新登录后继续授权设备",
     "error.40302": "CSRF 校验失败，请刷新页面后重试"
   },
   "models": {

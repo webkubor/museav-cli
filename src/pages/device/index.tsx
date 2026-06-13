@@ -21,7 +21,7 @@ type PageState =
   | { kind: 'confirming'; userCode: string; tenants: TenantItem[] }
   | { kind: 'approving'; userCode: string; tenants: TenantItem[] }
   | { kind: 'success' }
-  | { kind: 'error'; message: string }
+  | { kind: 'error'; message: string; loginRedirect?: string }
 
 const ROLE_LABELS: Record<string, { zh: string; en: string }> = {
   tenant_owner:  { zh: '拥有者', en: 'Owner' },
@@ -94,8 +94,13 @@ export default function DevicePage() {
         return
       }
       if (code === 40101) {
-        const redirect = `/device?user_code=${encodeURIComponent(userCode)}`
-        navigate(`/login?redirect=${encodeURIComponent(redirect)}`, { replace: true })
+        // 会话过期：不静默跳登录（用户会"点了没反应突然到登录页"）。
+        // 展示明确错误态 + 「去登录」按钮，由用户决定。loginRedirect 带 user_code，登录后回到本页续授权。
+        setState({
+          kind: 'error',
+          message: t('device.error.40101'),
+          loginRedirect: toLoginWithRedirect(`/device?user_code=${encodeURIComponent(userCode)}`),
+        })
         return
       }
       if (code === 40302) {
@@ -176,9 +181,15 @@ export default function DevicePage() {
       <AuthLayout title={t('device.title.error')}>
         <div style={{ textAlign: 'center', padding: '8px 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <span style={{ color: 'var(--mg-danger)', fontSize: '14px' }}>{state.message}</span>
-          <Button onClick={() => navigate('/dashboard')} className="rounded-[8px]">
-            {t('device.button.backToDashboard')}
-          </Button>
+          {state.loginRedirect ? (
+            <Button onClick={() => navigate(state.loginRedirect!, { replace: true })} className="rounded-[8px]">
+              {t('device.button.goLogin')}
+            </Button>
+          ) : (
+            <Button onClick={() => navigate('/dashboard')} className="rounded-[8px]">
+              {t('device.button.backToDashboard')}
+            </Button>
+          )}
         </div>
       </AuthLayout>
     )

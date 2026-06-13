@@ -20,8 +20,13 @@ export interface TaskItem {
   input_tokens?: number
   /** 输出 token 用量 */
   output_tokens?: number
+  /** 实际费用（decimal 字符串，如 "0.000000000000"），配合 currency 显示 */
+  final_amount?: string
+  /** 计费状态，如 settled */
+  billing_status?: string
+  /** 计费币种 CNY/USD */
+  currency?: string
   // ── 以下为后端扩展字段（非核心 Row，待接入）─────────
-  actual_cost?: number
   line?: string
   kind?: TaskKind
   vendor?: string

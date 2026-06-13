@@ -71,17 +71,26 @@ function fmtDuration(start: string | undefined, end: string | undefined) {
   return `${secs} 秒`
 }
 
+/** 解析任务实际费用：后端返回 final_amount（decimal 字符串）；非数值返回 null */
+function taskCost(item: TaskItem): number | null {
+  if (item.final_amount == null) return null
+  const n = Number.parseFloat(item.final_amount)
+  return Number.isFinite(n) ? n : null
+}
+
 function fmtCost(item: TaskItem) {
   if (item.status === 'queued' || item.status === 'running') return '—'
-  if (item.actual_cost == null) return '—'
-  const symbol = item.line === 'domestic' ? '¥' : '$'
-  return `${symbol}${item.actual_cost.toFixed(2)}`
+  const amount = taskCost(item)
+  if (amount == null) return '—'
+  const symbol = item.currency === 'USD' ? '$' : '¥'
+  return `${symbol}${amount.toFixed(2)}`
 }
 
 function costHint(item: TaskItem): string | null {
-  if (item.status === 'failed' && item.actual_cost != null && item.actual_cost > 0)
+  const amount = taskCost(item)
+  if (item.status === 'failed' && amount != null && amount > 0)
     return '调用成功但生成失败，已消耗算力、按实际计费'
-  if (item.status === 'failed' && !item.actual_cost)
+  if (item.status === 'failed' && !amount)
     return '上游调用失败，未进入生成、不计费'
   if (item.status === 'cancelled')
     return '排队中取消，未进入生成、不计费'
@@ -196,7 +205,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
             )}
             <DetailRow
               label="实际费用"
-              value={task.status === 'cancelled' || (task.status === 'failed' && !task.actual_cost)
+              value={task.status === 'cancelled' || (task.status === 'failed' && !taskCost(task))
                 ? '无费用'
                 : fmtCost(task)}
               hint={costHint(task)}
@@ -447,7 +456,7 @@ export default function TasksPage() {
                   <TableCell align="center">
                     <span className={cn(
                       'text-[13px] font-semibold',
-                      item.status === 'failed' && item.actual_cost ? 'text-[var(--mg-danger)]' : 'text-mg-text-0'
+                      item.status === 'failed' && taskCost(item) ? 'text-[var(--mg-danger)]' : 'text-mg-text-0'
                     )}>
                       {fmtCost(item)}
                     </span>

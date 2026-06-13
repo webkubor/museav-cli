@@ -35,6 +35,7 @@ import { cn } from '@/lib/utils'
 import type { TaskItem, TaskStatus, TaskKind } from '@/types'
 import { VideoThumbnail } from './VideoThumbnail'
 import { VideoPreviewModal } from './VideoPreviewModal'
+import { downloadVideo } from './download-video'
 
 // ─── 常量 ────────────────────────────────────────────────────────────────────
 
@@ -238,7 +239,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
                 variant="outline"
                 size="sm"
                 className="flex-1"
-                onClick={() => window.open(videoUrl, '_blank', 'noopener')}
+                onClick={() => { void downloadVideo(videoUrl, taskId) }}
               >
                 <LuDownload size={14} />
                 下载产物
@@ -461,7 +462,7 @@ export default function TasksPage() {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation()
-                          window.open(videoUrl, '_blank', 'noopener')
+                          void downloadVideo(videoUrl, item.gateway_request_id)
                         }}
                         className="text-[11px] text-brand-base hover:text-brand-deep font-semibold transition-colors"
                       >

@@ -26,6 +26,7 @@ import type { CatalogModelItem } from '@/types'
 import {
   categories,
   initialMessages,
+  isChatModel,
   matchesCategory,
 
   modelExperienceCopy,
@@ -83,10 +84,14 @@ export default function ModelsPage() {
     filteredModels,
   } = useModels()
 
-  const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
+  // 体验页只支持文本对话，列表只展示对话类模型（排除纯图片/视频/音频生成模型）
+  const allModels = useMemo(
+    () => (modelsQuery.data?.items ?? []).filter(isChatModel),
+    [modelsQuery.data?.items],
+  )
 
   const visibleModels = useMemo(
-    () => filteredModels.filter((model) => matchesCategory(model, category)),
+    () => filteredModels.filter((model) => isChatModel(model) && matchesCategory(model, category)),
     [category, filteredModels],
   )
   const selectedModel = allModels.find((model) => model.id === selectedId) ?? visibleModels[0] ?? allModels[0]

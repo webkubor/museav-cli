@@ -98,6 +98,16 @@ export function matchesCategory(model: CatalogModelItem, category: CategoryKey) 
   return true
 }
 
+/**
+ * 是否对话类（LLM）模型。体验页只支持文本对话（experience/chat/completions），
+ * 故排除纯图片/视频/音频生成模型。判定：含 text 模态即可对话；
+ * 无模态信息默认按文本对待（避免数据缺失误伤 LLM）。
+ */
+export function isChatModel(model: CatalogModelItem): boolean {
+  const modalities = model.modalities ?? []
+  return modalities.length === 0 || modalities.includes('text')
+}
+
 export function vendorNode(model: CatalogModelItem, size: 'sm' | 'lg' = 'sm') {
   return (
     <ModelIcon

@@ -43,8 +43,10 @@ export default function DevicePage() {
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null)
 
   useEffect(() => {
-    // 设备授权状态机：同步 URL user_code 与 auth session（外部状态）推进 state，
-    // 异步 loadTenants/审批流共用同一 state，无法拆成渲染期派生
+    // 审批/成功/错误状态下不再响应 auth 变化——避免 API 40101 触发 clearAuth 后
+    // useEffect 抢在 catch 块之前跳登录页（用户看到"点授权没反应直接跳登录"）
+    if (state.kind === 'approving' || state.kind === 'success' || state.kind === 'error') return
+
     if (!rawCode) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ kind: 'missing_code' })
@@ -63,7 +65,7 @@ export default function DevicePage() {
       return
     }
     loadTenants(rawCode.toUpperCase())
-  }, [isLoading, isAuthenticated, rawCode])
+  }, [isLoading, isAuthenticated, rawCode, state.kind])
 
   async function loadTenants(userCode: string) {
     setState({ kind: 'loading_tenants', userCode })

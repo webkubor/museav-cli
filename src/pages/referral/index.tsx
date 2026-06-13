@@ -361,6 +361,10 @@ export default function ReferralPage() {
           inviteCodeLabel={text.inviteCodeLabel}
           inviteHint={text.inviteHint}
           copySuccess={text.copySuccess}
+          copyCodeSuccess={text.copyCodeSuccess}
+          realtimeLabel={text.inviteRealtimeLabel}
+          balanceLabel={text.inviteBalanceLabel}
+          rulesLinkLabel={text.inviteRulesLink}
         />
 
         {/* 档位卡 */}
@@ -399,7 +403,10 @@ export default function ReferralPage() {
       </div>
 
       {/* 分润规则 */}
-      <div className="rounded-xl border border-[var(--brand-base)]/15 bg-gradient-to-r from-[var(--brand-base)]/5 to-transparent p-5 space-y-3.5 shadow-sm">
+      <div
+        id="referral-rules"
+        className="scroll-mt-24 rounded-xl border border-[var(--brand-base)]/15 bg-gradient-to-r from-[var(--brand-base)]/5 to-transparent p-5 space-y-3.5 shadow-sm"
+      >
         <div className="flex items-center gap-2 text-sm font-bold text-[var(--brand-base)]">
           <LuSparkles size={15} className="animate-pulse" />
           <span>{text.rulesTitle}</span>

@@ -4,6 +4,8 @@ import { injectHeaders } from '@/lib/request-headers'
 import { getMarket } from '@/lib/market'
 import { useLangStore } from '@/store/use-brand-store'
 import { useAuthStore } from '@/store/auth'
+import { toast } from '@/lib/toast'
+import i18n from '@/i18n'
 
 const API_V1_PREFIX = 'api/v1'
 const DEV_TOOLS_ENABLED = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
@@ -177,6 +179,9 @@ const client = ky.create({
             // /login <-> /dashboard 全页无限刷新）。
             if (request.url.includes('/auth/session')) return
             if (window.location.pathname === '/login') return
+            // 会话过期不静默跳登录：先给用户明确提示，再清鉴权态触发 SPA 跳转。
+            // toast 自带「相同内容 4s 去重」，多个并发请求同时 401 也只提示一次。
+            toast.warning(i18n.t('common.sessionExpired'))
             useAuthStore.getState().clearAuth()
             return
           }

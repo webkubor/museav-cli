@@ -1,5 +1,6 @@
 {
   "common": {
+    "sessionExpired": "登录已过期，请重新登录",
     "copy": "复制",
     "playground": "体验",
     "models": "模型",

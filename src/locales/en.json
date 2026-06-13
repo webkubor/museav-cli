@@ -1,5 +1,6 @@
 {
   "common": {
+    "sessionExpired": "Your session has expired. Please sign in again.",
     "copy": "Copy",
     "playground": "Playground",
     "models": "Models",

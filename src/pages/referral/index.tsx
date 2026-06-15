@@ -13,6 +13,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/Table'
+import { Pagination } from '@/components/ui/Pagination'
 import { Modal } from '@/components/ui/Modal'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { ReferralInviteCard } from '@/components/referral/ReferralInviteCard'
@@ -598,8 +599,23 @@ export default function ReferralPage() {
 
 type TextCopy = typeof referralCopy.zh
 
+const RECORD_PAGE_SIZE = 10
+
+/** 前端分页：后端这几个 referral 列表接口返回全量数组、无分页参数，故在前端切片。
+ *  用 clamp 而非 useEffect 重置页码，避免数据变化时越界 + 不触发 set-state-in-effect。 */
+function useClientPage<T>(items: T[], pageSize = RECORD_PAGE_SIZE) {
+  const [page, setPage] = useState(1)
+  const total = items.length
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const safePage = Math.min(page, totalPages)
+  const paged = items.slice((safePage - 1) * pageSize, safePage * pageSize)
+  return { paged, page: safePage, setPage, total, pageSize }
+}
+
 function InviteesTable({ invitees, text }: { invitees: ReferralInvitee[]; text: TextCopy }) {
+  const { paged, page, setPage, total, pageSize } = useClientPage(invitees)
   return (
+    <>
     <Table>
       <TableHeader>
         <TableRow>
@@ -617,7 +633,7 @@ function InviteesTable({ invitees, text }: { invitees: ReferralInvitee[]; text: 
             </TableCell>
           </TableRow>
         ) : (
-          invitees.map((inv) => (
+          paged.map((inv) => (
             <TableRow key={`${inv.email}-${inv.registeredAt}`}>
               <TableCell>
                 <div className="font-medium text-mg-text-0">{inv.name}</div>
@@ -631,6 +647,10 @@ function InviteesTable({ invitees, text }: { invitees: ReferralInvitee[]; text: 
         )}
       </TableBody>
     </Table>
+    {total > pageSize && (
+      <Pagination mode="page" page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+    )}
+    </>
   )
 }
 
@@ -641,7 +661,9 @@ function CommissionsTable({
   records: ReferralCommissionRecord[]
   text: TextCopy
 }) {
+  const { paged, page, setPage, total, pageSize } = useClientPage(records)
   return (
+    <>
     <Table>
       <TableHeader>
         <TableRow>
@@ -661,7 +683,7 @@ function CommissionsTable({
             </TableCell>
           </TableRow>
         ) : (
-          records.map((rec, index) => (
+          paged.map((rec, index) => (
             <TableRow key={`${rec.date}-${rec.source}-${index}`}>
               <TableCell className="font-mono text-xs">{rec.date}</TableCell>
               <TableCell>{rec.source}</TableCell>
@@ -680,6 +702,10 @@ function CommissionsTable({
         )}
       </TableBody>
     </Table>
+    {total > pageSize && (
+      <Pagination mode="page" page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+    )}
+    </>
   )
 }
 
@@ -695,8 +721,10 @@ function WithdrawalsTable({
     approved: text.statusApproved,
     rejected: text.statusRejected,
   }
+  const { paged, page, setPage, total, pageSize } = useClientPage(withdrawals)
 
   return (
+    <>
     <Table>
       <TableHeader>
         <TableRow>
@@ -714,7 +742,7 @@ function WithdrawalsTable({
             </TableCell>
           </TableRow>
         ) : (
-          withdrawals.map((w) => (
+          paged.map((w) => (
             <TableRow key={`${w.appliedAt}-${w.amount}-${w.status}`}>
               <TableCell>{w.appliedAt}</TableCell>
               <TableCell className="text-right font-mono">{fmt(w.amount)}</TableCell>
@@ -729,5 +757,9 @@ function WithdrawalsTable({
         )}
       </TableBody>
     </Table>
+    {total > pageSize && (
+      <Pagination mode="page" page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+    )}
+    </>
   )
 }

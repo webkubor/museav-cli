@@ -5,7 +5,6 @@
  */
 
 import { useState, useCallback } from 'react'
-import { useCopy } from '@/hooks/use-copy'
 import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -42,7 +41,6 @@ export default function ApiKeysPage() {
   const [createdKeyText, setCreatedKeyText] = useState('')
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null)
   const [editGuardrailKey, setEditGuardrailKey] = useState<ApiKeyItem | null>(null)
-  const { copy: copyText } = useCopy()
 
   const activeWorkspaceId = useAuthStore((state) => state.activeWorkspaceId) || '01HV3KWS000000000000001'
   const { hasPermission } = usePermissions()
@@ -72,15 +70,6 @@ export default function ApiKeysPage() {
       item.name.toLowerCase().includes(searchValue.toLowerCase()) ||
       (item.masked ?? '').toLowerCase().includes(searchValue.toLowerCase())
   )
-
-  const handleCopyMasked = useCallback(async (text: string) => {
-    const ok = await copyText(text)
-    if (!ok) {
-      appToast.error('复制失败，请手动复制')
-      return
-    }
-    appToast.success(t('apiKeys.table.copyMaskedSuccess'))
-  }, [copyText, t])
 
   const handleKeyCreated = useCallback((keyText: string) => {
     setCreateVisible(false)
@@ -125,7 +114,6 @@ export default function ApiKeysPage() {
         isLoading={isLoading}
         items={filteredData}
         canRevoke={canRevoke}
-        onCopy={handleCopyMasked}
         onRevoke={setRevokeTarget}
         onEditGuardrail={setEditGuardrailKey}
       />

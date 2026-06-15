@@ -129,7 +129,7 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
     <Modal
       open={open}
       onClose={onClose}
-      title="编辑护栏"
+      title="切换护栏"
       description={`为 ${apiKey.name} 选择安全护栏`}
       size="sm"
       footer={

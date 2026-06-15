@@ -11,13 +11,10 @@ import {
   LuVideoOff,
   LuDownload,
   LuLink,
-  LuCopy,
 } from 'react-icons/lu'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { useCopy } from '@/hooks/use-copy'
-import { appToast } from '@/lib/app-toast'
 import { PageHeader } from '@/components/ui/PageHeader'
 import Select from '@/components/ui/Select'
 import { SideSheet } from '@/components/ui/SideSheet'
@@ -155,7 +152,6 @@ function DetailRow({ label, value, hint, mono }: {
 
 function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose: () => void }) {
   const qc = useQueryClient()
-  const { copy } = useCopy()
   const taskId = listTask.gateway_request_id
   const { data } = useQuery({
     queryKey: ['task-detail', taskId],
@@ -249,30 +245,16 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
                   {videoUrl}
                 </span>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={async () => {
-                    const ok = await copy(videoUrl)
-                    appToast[ok ? 'success' : 'error'](ok ? '链接已复制' : '复制失败')
-                  }}
-                >
-                  <LuCopy size={14} />
-                  复制链接
-                </Button>
-                <a
-                  href={videoUrl}
-                  download
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-lg bg-mg-primary text-white text-[13px] font-semibold transition-opacity hover:opacity-90"
-                >
-                  <LuDownload size={14} />
-                  下载
-                </a>
-              </div>
+              <a
+                href={videoUrl}
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex w-full items-center justify-center gap-1.5 h-9 rounded-lg bg-mg-primary text-white text-[13px] font-semibold transition-opacity hover:opacity-90"
+              >
+                <LuDownload size={14} />
+                下载
+              </a>
             </div>
           )}
 

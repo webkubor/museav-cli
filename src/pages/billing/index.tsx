@@ -1,4 +1,4 @@
-import { LuReceipt, LuHistory, LuGift } from 'react-icons/lu'
+import { LuReceipt, LuHistory, LuGift, LuRefreshCw } from 'react-icons/lu'
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import './billing.css'
@@ -75,25 +75,22 @@ export default function BillingPage() {
     { key: 'reward' as const, label: t('billing.orders.tab.reward', { defaultValue: '奖励记录' }) },
   ], [t])
 
-  useEffect(() => {
-    const handleResize = () => {
-      const activeIndex = tabs.findIndex((tab) => tab.key === activeTab)
-      const activeEl = tabRefs.current[activeIndex]
-      if (activeEl) {
-        setUnderlineStyle({
-          left: activeEl.offsetLeft,
-          width: activeEl.offsetWidth,
-        })
-      }
-    }
-
-    const timer = setTimeout(handleResize, 50)
-    window.addEventListener('resize', handleResize)
-    return () => {
-      clearTimeout(timer)
-      window.removeEventListener('resize', handleResize)
+  const updateUnderline = useCallback(() => {
+    const activeIndex = tabs.findIndex((tab) => tab.key === activeTab)
+    const activeEl = tabRefs.current[activeIndex]
+    if (activeEl) {
+      setUnderlineStyle({
+        left: activeEl.offsetLeft,
+        width: activeEl.offsetWidth,
+      })
     }
   }, [activeTab, tabs])
+
+  useEffect(() => {
+    updateUnderline()
+    window.addEventListener('resize', updateUnderline)
+    return () => window.removeEventListener('resize', updateUnderline)
+  }, [updateUnderline])
 
   const { symbol: currencySymbol } = useCurrency()
   const qc = useQueryClient()
@@ -103,6 +100,24 @@ export default function BillingPage() {
     void qc.invalidateQueries({ queryKey: ['balance', tenantId] })
     void qc.invalidateQueries({ queryKey: ['balance', 'breakdown', tenantId] })
   }, [qc, tenantId])
+
+  // 手动刷新：余额 + 细分 + 当前列表（充值/赠送/奖励），带 loading
+  const [refreshing, setRefreshing] = useState(false)
+  const handleRefresh = useCallback(async () => {
+    if (!tenantId || refreshing) return
+    setRefreshing(true)
+    try {
+      await Promise.all([
+        qc.refetchQueries({ queryKey: ['balance', tenantId] }),
+        qc.refetchQueries({ queryKey: ['balance', 'breakdown', tenantId] }),
+        qc.refetchQueries({ queryKey: ['billing', 'recharges', tenantId] }),
+        qc.refetchQueries({ queryKey: ['billing', 'gift-records', tenantId] }),
+        qc.refetchQueries({ queryKey: ['referral', 'reward-records', tenantId] }),
+      ])
+    } finally {
+      setRefreshing(false)
+    }
+  }, [qc, tenantId, refreshing])
 
   const { data: balance, isLoading: balanceLoading } = useBalance(tenantId)
   const { main: availableMain } = formatBalance(balance?.available.amount)
@@ -128,13 +143,8 @@ export default function BillingPage() {
     queryFn: ({ pageParam }) => listRecharges(tenantId, { cursor: pageParam as string | undefined, page_size: 15 }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.next_cursor || undefined,
-    enabled: !!tenantId,
-    refetchInterval: (query) => {
-      const pages = query.state.data?.pages ?? []
-      const hasPendingOrder = pages.some((page) => page.items.some((order) => order.status === 'pending'))
-      return hasPendingOrder ? 3000 : false
-    },
-    refetchIntervalInBackground: true,
+    enabled: !!tenantId && activeTab === 'main',
+    staleTime: 30 * 1000,
   })
 
   const orders = useMemo(() => ordersQuery.data?.pages.flatMap((page) => page.items) ?? [], [ordersQuery.data])
@@ -294,6 +304,16 @@ export default function BillingPage() {
             {t('billing.balance.title')}
           </span>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              aria-label={t('common.refresh', { defaultValue: '刷新' })}
+              title={t('billing.balance.refreshHint', { defaultValue: '刷新余额与列表' })}
+              className="flex items-center justify-center h-9 w-9 rounded-xl border border-mg-border text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <LuRefreshCw size={14} className={cn(refreshing && 'animate-spin')} />
+            </button>
             <Button
               variant="outline"
               onClick={() => setInvoiceVisible(true)}
@@ -484,8 +504,9 @@ export default function BillingPage() {
       </div>
 
       {/* 5. 列表区 */}
-      <div key={activeTab} className="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-        {activeTab === 'main' ? (
+      <div className="transition-opacity duration-200">
+        {/* 主余额 - 充值记录 */}
+        <div className={cn(activeTab === 'main' ? 'block' : 'hidden')}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* 左：订单表格 */}
           <div className="lg:col-span-2 rounded-2xl border border-mg-border bg-card-bg shadow-sm overflow-hidden">
@@ -680,8 +701,10 @@ export default function BillingPage() {
             )}
           </div>
         </div>
-      ) : activeTab === 'gift' ? (
-        /* 赠送余额明细 */
+        </div>
+
+        {/* 赠送余额明细 */}
+        <div className={cn(activeTab === 'gift' ? 'block' : 'hidden')}>
         <div className="rounded-2xl border border-mg-border bg-card-bg shadow-sm overflow-hidden">
           {giftRecords.length === 0 ? (
             <EmptyState
@@ -718,8 +741,10 @@ export default function BillingPage() {
           </div>
           )}
         </div>
-      ) : (
-        /* 奖励记录（原推荐计划「返佣流水」） */
+        </div>
+
+        {/* 奖励记录 */}
+        <div className={cn(activeTab === 'reward' ? 'block' : 'hidden')}>
         <div className="rounded-2xl border border-mg-border bg-card-bg shadow-sm overflow-hidden">
           {rewardRecords.length === 0 ? (
             <EmptyState title={rc.empty} />
@@ -765,7 +790,7 @@ export default function BillingPage() {
             </div>
           )}
         </div>
-      )}
+        </div>
       </div>
     </div>
   )

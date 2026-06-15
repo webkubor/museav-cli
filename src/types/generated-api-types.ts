@@ -619,6 +619,7 @@ export interface CreditsRechargeOrder {
   paid_at?: string
   payment?: CreditsPayment
   promo_code?: string
+  source?: string
   status?: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refunded'
 }
 
@@ -1849,4 +1850,3 @@ export interface GetWorkspacesByWorkspaceIdMembersQueryParams {
   /** - */
   page_size?: number
 }
-

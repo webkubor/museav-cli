@@ -6,13 +6,10 @@ import { useCurrency, useEnabledChannels } from '@/hooks/use-platform-config'
 import { Button } from '@/components/ui/Button'
 import { appToast } from '@/lib/app-toast'
 import { cn } from '@/lib/utils'
-import { AlipayIcon, WechatIcon, StripeIcon } from '@/constants/brand-icons'
-
-const ALL_CHANNELS = [
-  { value: 'alipay', label: '支付宝',  icon: <AlipayIcon /> },
-  { value: 'wechat', label: '微信支付', icon: <WechatIcon /> },
-  { value: 'stripe', label: 'Stripe',  icon: <StripeIcon /> },
-]
+import {
+  RECHARGE_PAYMENT_CHANNELS,
+  type RechargePaymentChannel,
+} from '@/constants/recharge-channels'
 
 const WECHAT_PAYEE_NAME = 'ModelGo'
 
@@ -49,13 +46,13 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   const enabledChannels = useEnabledChannels()
 
   const CHANNELS = enabledChannels.length
-    ? ALL_CHANNELS.filter((c) => enabledChannels.includes(c.value))
-    : ALL_CHANNELS
+    ? RECHARGE_PAYMENT_CHANNELS.filter((c) => enabledChannels.includes(c.value))
+    : RECHARGE_PAYMENT_CHANNELS
 
-  const [channel, setChannel] = useState<'alipay' | 'wechat' | 'stripe'>('alipay')
-  const effectiveChannel: 'alipay' | 'wechat' | 'stripe' = (
+  const [channel, setChannel] = useState<RechargePaymentChannel>('alipay')
+  const effectiveChannel: RechargePaymentChannel = (
     CHANNELS.some((c) => c.value === channel) ? channel : (CHANNELS[0]?.value ?? 'alipay')
-  ) as 'alipay' | 'wechat' | 'stripe'
+  ) as RechargePaymentChannel
 
   const PRESETS = ['10', '50', '100', '500']
 
@@ -181,7 +178,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                 <button
                   key={c.value}
                   type="button"
-                  onClick={() => setChannel(c.value as 'alipay' | 'wechat' | 'stripe')}
+                  onClick={() => setChannel(c.value)}
                   className={channelClasses(c.value)}
                 >
                   <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>

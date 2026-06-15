@@ -38,6 +38,7 @@ export interface RechargeOrder {
   amount: string
   currency: string
   channel: string
+  source?: string
   channel_label?: string
   promo_code: string | null
   credited_amount: string

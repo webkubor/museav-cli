@@ -122,6 +122,7 @@ export default function ReferralPage() {
     queryClient.invalidateQueries({ queryKey: ['referral', 'reward-records', tenantId] })
     queryClient.invalidateQueries({ queryKey: ['balance', tenantId] })
     queryClient.invalidateQueries({ queryKey: ['balance', 'breakdown', tenantId] })
+    queryClient.invalidateQueries({ queryKey: ['billing', 'recharges', tenantId] })
   }
 
   const MIN_AMOUNT = 100

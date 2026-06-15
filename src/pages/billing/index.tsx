@@ -27,6 +27,7 @@ import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
 import { referralCopy } from '@/pages/referral/referral-data'
 import type { RechargeOrder } from '@/types'
+import { getRechargeOrderChannelDisplayName } from '@/constants/recharge-channels'
 import { formatBalance } from './formatBalance'
 import { TopUpModal } from './TopUpModal'
 import { InvoiceModal } from './invoice/InvoiceModal'
@@ -555,7 +556,7 @@ export default function BillingPage() {
                             />
                           </TableCell>
                           <TableCell className="text-xs text-mg-text-1 font-semibold whitespace-nowrap">
-                            {record.channel_label || record.channel || '-'}
+                            {getRechargeOrderChannelDisplayName(record) || '-'}
                           </TableCell>
                           <TableCell className={cn(
                             'text-xs font-bold font-mono',
@@ -647,7 +648,7 @@ export default function BillingPage() {
                       <div className="flex justify-between gap-3">
                         <span className="text-mg-text-3">{t('billing.orders.detail.channel')}:</span>
                         <span className="text-mg-text-0 font-semibold">
-                          {selectedOrder.channel_label || selectedOrder.channel}
+                          {getRechargeOrderChannelDisplayName(selectedOrder)}
                         </span>
                       </div>
                     )}

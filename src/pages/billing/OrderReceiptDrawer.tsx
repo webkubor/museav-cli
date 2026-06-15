@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import type { StatusConfig } from '@/components/ui/StatusBadge'
 import { formatDateTime } from '@/lib/format-date'
+import { getRechargeOrderChannelDisplayName } from '@/constants/recharge-channels'
 import { OrderBarcode } from './OrderBarcode'
 
 // ─── Sub-components: OrderReceiptDrawer ───────────────────────────────────
@@ -110,7 +111,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
                 <div className="flex justify-between gap-4">
                   <span className="text-mg-text-3">{t('billing.orders.detail.channel')}:</span>
                   <span className="text-mg-text-0 font-semibold">
-                    {order.channel_label || order.channel}
+                    {getRechargeOrderChannelDisplayName(order)}
                   </span>
                 </div>
               )}

@@ -112,9 +112,10 @@ function isTaskDone(status: string) {
   return status === 'succeeded' || status === 'completed'
 }
 
-/** 视频产物是否已过期（result_meta.result_expires_at 早于当前时间） */
-function isVideoExpired(item: { result_meta?: { result_expires_at?: string } } | undefined): boolean {
-  const expires = item?.result_meta?.result_expires_at
+/** 视频产物是否已过期（result_meta.result_expires_at 早于当前时间）。
+ *  入参兼容列表项(TaskItem,无 result_meta)与详情(TaskDetail,有 result_meta)，用 unknown + 安全读取。 */
+function isVideoExpired(item: unknown): boolean {
+  const expires = (item as { result_meta?: { result_expires_at?: string } } | undefined)?.result_meta?.result_expires_at
   if (!expires) return false
   return new Date(expires).getTime() < Date.now()
 }

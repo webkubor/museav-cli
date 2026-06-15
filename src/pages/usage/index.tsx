@@ -326,7 +326,8 @@ export default function UsagePage() {
         workspace_id: activeWorkspaceId || undefined,
         from,
         to,
-        granularity: range === '7d' ? 'hour' : 'day',
+        // 请求分布按天聚合：x 轴 tickFormatter 只展示日期，用 hour 粒度会让同一天出现多根柱子（#195）
+        granularity: GRANULARITY_MAP[range],
       }),
     enabled: !!activeTenantId,
   })

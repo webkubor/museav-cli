@@ -13,7 +13,6 @@
 
 .models-catalog-hero,
 .models-catalog-toolbar,
-.models-catalog-results,
 .catalog-insight-panel {
   border: 1px solid var(--mg-border);
   background:
@@ -216,10 +215,14 @@
   align-items: start;
 }
 
-.models-catalog-results,
 .catalog-insight-panel {
   border-radius: 20px;
   padding: 18px;
+}
+
+/* 结果区只是装模型卡的网格容器，本身不做成卡片（避免卡中卡套娃） */
+.models-catalog-results {
+  min-width: 0;
 }
 
 .models-catalog-results-head,

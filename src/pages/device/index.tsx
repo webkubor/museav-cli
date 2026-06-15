@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { useAuthStore } from '@/store/auth'
-import { deviceApprove } from '@/services/auth'
+import { deviceApprove, getDeviceRequest } from '@/services/auth'
 import { listTenants } from '@/services/tenants'
 import { Button } from '@/components/ui/Button'
 import { toLoginWithRedirect } from '@/lib/redirect'
@@ -16,6 +16,7 @@ type PageState =
   | { kind: 'confirming'; userCode: string; tenants: TenantItem[] }
   | { kind: 'approving'; userCode: string; tenants: TenantItem[] }
   | { kind: 'success' }
+  | { kind: 'result'; status: 'approved' | 'denied' | 'expired' }
   | { kind: 'error'; message: string; loginRedirect?: string }
 
 const ROLE_LABELS: Record<string, { zh: string; en: string }> = {
@@ -56,8 +57,51 @@ export default function DevicePage() {
       navigate(toLoginWithRedirect(`/device?user_code=${encodeURIComponent(rawCode)}`), { replace: true })
       return
     }
-    loadTenants(rawCode)
+    checkRequest(rawCode)
+    // checkRequest/navigate 故意不入依赖：本 effect 靠 state.kind==='checking_auth' 守卫只跑一次，
+    // 入依赖反而会重入触发死循环（见上方注释）。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, isAuthenticated, rawCode, state.kind])
+
+  // 加载时先查授权请求状态：仅 pending 才进入确认流程，其余直接展示结果态。
+  // 异步期间保持 checking_auth spinner，state.kind 不变故 effect 不会重入。
+  async function checkRequest(userCode: string) {
+    try {
+      const req = await getDeviceRequest(userCode)
+      switch (req.status) {
+        case 'pending':
+          loadTenants(userCode)
+          return
+        case 'approved':
+        case 'consumed':
+          setState({ kind: 'result', status: 'approved' })
+          return
+        case 'denied':
+          setState({ kind: 'result', status: 'denied' })
+          return
+        case 'expired':
+          setState({ kind: 'result', status: 'expired' })
+          return
+        default:
+          loadTenants(userCode)
+      }
+    } catch (err: unknown) {
+      const code = (err as { code?: number })?.code
+      if (code === 40401) {
+        setState({ kind: 'result', status: 'expired' })
+        return
+      }
+      if (code === 40101) {
+        setState({
+          kind: 'error',
+          message: t('device.error.40101'),
+          loginRedirect: toLoginWithRedirect(`/device?user_code=${encodeURIComponent(userCode)}`),
+        })
+        return
+      }
+      setState({ kind: 'error', message: t('device.error.default') })
+    }
+  }
 
   async function loadTenants(userCode: string) {
     setState({ kind: 'loading_tenants', userCode })
@@ -151,6 +195,25 @@ export default function DevicePage() {
           <span style={{ color: 'var(--mg-text-2)', fontSize: '13px' }}>
             {t('device.success.returnHint')}
           </span>
+        </div>
+      </AuthLayout>
+    )
+  }
+
+  if (state.kind === 'result') {
+    const view = {
+      approved: { icon: '✓', color: 'rgb(22,163,74)', title: t('device.result.approvedTitle'), desc: t('device.result.approvedDesc') },
+      denied:   { icon: '✕', color: 'var(--mg-danger)', title: t('device.result.deniedTitle'),   desc: t('device.result.deniedDesc') },
+      expired:  { icon: '⏱', color: 'var(--mg-warning)', title: t('device.result.expiredTitle'),  desc: t('device.result.expiredDesc') },
+    }[state.status]
+    return (
+      <AuthLayout title={view.title}>
+        <div style={{ textAlign: 'center', padding: '8px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ fontSize: '40px', color: view.color }}>{view.icon}</div>
+          <span style={{ color: 'var(--mg-text-2)', fontSize: '13px' }}>{view.desc}</span>
+          <Button onClick={() => navigate('/dashboard')} className="rounded-[8px]">
+            {t('device.button.backToDashboard')}
+          </Button>
         </div>
       </AuthLayout>
     )

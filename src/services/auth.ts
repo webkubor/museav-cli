@@ -102,9 +102,23 @@ export interface DeviceTokenResult {
   token_type: string
 }
 
+export type DeviceRequestStatus = 'pending' | 'approved' | 'denied' | 'consumed' | 'expired'
+
+export interface DeviceGetRequestResult {
+  status: DeviceRequestStatus
+  client_name?: string
+  scope?: string
+  expires_at?: string
+}
+
 /** CLI 设备码登录初始化，返回 device_code 和展示给用户的 user_code */
 export function deviceAuthorize(body: DeviceAuthorizeRequest = {}) {
   return post<DeviceAuthorizeResult>('auth/device/authorize', body)
+}
+
+/** 浏览器登录态查询 user_code 当前授权状态；授权页加载时预检，非 pending 直接展示结果而不显示确认按钮 */
+export function getDeviceRequest(user_code: string) {
+  return get<DeviceGetRequestResult>('auth/device/request', { user_code })
 }
 
 /** 当前登录用户批准 CLI 登录并绑定到指定租户（需携带 CSRF Token） */

@@ -7,6 +7,7 @@ import {
   BarChart, Bar,
   XAxis, CartesianGrid, Tooltip,
 } from 'recharts'
+import { DatePicker } from '@douyinfe/semi-ui'
 import { getUsageSummary, getUsageSeries } from '@/services/usage'
 import { getLogHistogram } from '@/services/logs'
 import { useAuthStore } from '@/store/auth'
@@ -21,18 +22,26 @@ import { LuTrendingUp, LuActivity, LuDatabase } from 'react-icons/lu'
 
 // ─── Types ───────────────────────────────────────────
 
-type Range = '7d' | '30d' | '90d'
+type Range = '7d' | '30d' | '90d' | 'custom'
 type Metric = 'spend' | 'requests' | 'tokens'
 
 // ─── Helpers ─────────────────────────────────────────
 
-function getRangeDates(range: Range): { from: string; to: string } {
+function getRangeDates(
+  range: Range,
+  customFrom?: string,
+  customTo?: string,
+): { from: string; to: string } {
+  if (range === 'custom' && customFrom && customTo) {
+    return { from: customFrom, to: customTo }
+  }
   const now = new Date()
-  const daysMap: Record<Range, number> = { '7d': 7, '30d': 30, '90d': 90 }
-  const from = new Date(now.getTime() - daysMap[range] * 24 * 60 * 60 * 1000)
-  return { 
-    from: from.toISOString(), 
-    to: now.toISOString() 
+  const daysMap: Record<Exclude<Range, 'custom'>, number> = { '7d': 7, '30d': 30, '90d': 90 }
+  const days = daysMap[range as Exclude<Range, 'custom'>] ?? 7
+  const from = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
+  return {
+    from: from.toISOString(),
+    to: now.toISOString(),
   }
 }
 
@@ -275,18 +284,19 @@ function MetricTab({ label, active, onClick }: MetricTabProps) {
 
 // ─── Page ─────────────────────────────────────────────
 
-const GRANULARITY_MAP: Record<Range, 'day' | 'day' | 'day'> = { '7d': 'day', '30d': 'day', '90d': 'day' }
 
 export default function UsagePage() {
   const { t } = useTranslation()
   const [range, setRange] = useState<Range>('7d')
+  const [customFrom, setCustomFrom] = useState<string | undefined>(undefined)
+  const [customTo, setCustomTo] = useState<string | undefined>(undefined)
   const [metric, setMetric] = useState<Metric>('spend')
 
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const { symbol: currencySymbol } = useCurrency()
 
-  const RANGE_LABELS: Record<Range, string> = {
+  const RANGE_LABELS: Record<Exclude<Range, 'custom'>, string> = {
     '7d': t('usage.range.7d'),
     '30d': t('usage.range.30d'),
     '90d': t('usage.range.90d'),
@@ -297,39 +307,42 @@ export default function UsagePage() {
     tokens: t('usage.metric.tokens'),
   }
 
-  const { from, to } = getRangeDates(range)
+  const { from, to } = getRangeDates(range, customFrom, customTo)
+
+  // custom 时也按 day 聚合
+  const granularity = 'day' as const
 
   const summaryQuery = useQuery({
-    queryKey: ['usage-summary', activeTenantId, activeWorkspaceId, range],
+    queryKey: ['usage-summary', activeTenantId, activeWorkspaceId, range, customFrom, customTo],
     queryFn: () =>
       getUsageSummary({ workspace_id: activeWorkspaceId || undefined, from, to }),
-    enabled: !!activeTenantId,
+    enabled: !!activeTenantId && (range !== 'custom' || (!!customFrom && !!customTo)),
   })
 
   const seriesQuery = useQuery({
-    queryKey: ['usage-series', activeTenantId, activeWorkspaceId, range, metric],
+    queryKey: ['usage-series', activeTenantId, activeWorkspaceId, range, customFrom, customTo, metric],
     queryFn: () =>
       getUsageSeries({
         workspace_id: activeWorkspaceId || undefined,
         from,
         to,
         metric,
-        granularity: GRANULARITY_MAP[range],
+        granularity,
       }),
-    enabled: !!activeTenantId,
+    enabled: !!activeTenantId && (range !== 'custom' || (!!customFrom && !!customTo)),
   })
 
   const histogramQuery = useQuery({
-    queryKey: ['log-histogram', activeTenantId, activeWorkspaceId, range],
+    queryKey: ['log-histogram', activeTenantId, activeWorkspaceId, range, customFrom, customTo],
     queryFn: () =>
       getLogHistogram({
         workspace_id: activeWorkspaceId || undefined,
         from,
         to,
         // 请求分布按天聚合：x 轴 tickFormatter 只展示日期，用 hour 粒度会让同一天出现多根柱子（#195）
-        granularity: GRANULARITY_MAP[range],
+        granularity,
       }),
-    enabled: !!activeTenantId,
+    enabled: !!activeTenantId && (range !== 'custom' || (!!customFrom && !!customTo)),
   })
 
   const summary = summaryQuery.data
@@ -356,10 +369,52 @@ export default function UsagePage() {
         title={t('usage.title')}
         description={t('usage.desc')}
         actions={
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {(['7d', '30d', '90d'] as Range[]).map((r) => (
-              <RangeBtn key={r} label={RANGE_LABELS[r]} active={range === r} onClick={() => setRange(r)} />
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {(['7d', '30d', '90d'] as Exclude<Range, 'custom'>[]).map((r) => (
+              <RangeBtn
+                key={r}
+                label={RANGE_LABELS[r]}
+                active={range === r}
+                onClick={() => {
+                  setRange(r)
+                  setCustomFrom(undefined)
+                  setCustomTo(undefined)
+                }}
+              />
             ))}
+            <DatePicker
+              type="dateRange"
+              placeholder={t('usage.customRange.placeholder')}
+              value={range === 'custom' && customFrom && customTo ? [new Date(customFrom), new Date(customTo)] : undefined}
+              onChange={(val) => {
+                if (Array.isArray(val) && val[0] && val[1]) {
+                  const d0 = val[0] instanceof Date ? val[0] : new Date(val[0])
+                  const d1 = val[1] instanceof Date ? val[1] : new Date(val[1])
+                  // 起始日 00:00:00，结束日 23:59:59
+                  d0.setHours(0, 0, 0, 0)
+                  d1.setHours(23, 59, 59, 999)
+                  setCustomFrom(d0.toISOString())
+                  setCustomTo(d1.toISOString())
+                  setRange('custom')
+                } else if (!val || (Array.isArray(val) && !val[0] && !val[1])) {
+                  // 清空自定义，回到近 7 天
+                  setRange('7d')
+                  setCustomFrom(undefined)
+                  setCustomTo(undefined)
+                }
+              }}
+              style={{
+                width: 240,
+                borderRadius: '20px',
+                fontSize: '13px',
+                borderColor: range === 'custom' ? 'var(--brand-base)' : undefined,
+              }}
+              size="small"
+              disabledDate={(date) => {
+                if (!date) return false
+                return date > new Date()
+              }}
+            />
           </div>
         }
         className="mb-7"

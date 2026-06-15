@@ -6,11 +6,20 @@ import path from 'path'
 import { devLoggerPlugin } from './scripts/dev-logger-plugin'
 import { devRequirementsPlugin } from './scripts/dev-requirements-plugin'
 import { version } from './package.json'
+import { execSync } from 'node:child_process'
+
+// 构建时注入：git 短 hash + 构建时间，每次部署都会变，用于判断线上是否走了缓存
+const buildHash = (() => {
+  try { return execSync('git rev-parse --short HEAD').toString().trim() } catch { return 'unknown' }
+})()
+const buildTime = new Date().toISOString()
 
 
 export default defineConfig(({ mode }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(version),
+    __BUILD_HASH__: JSON.stringify(buildHash),
+    __BUILD_TIME__: JSON.stringify(buildTime),
     'process.env.NODE_ENV': JSON.stringify(mode === 'test' ? 'development' : 'production'),
   },
   plugins: [

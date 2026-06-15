@@ -8,17 +8,35 @@ import {
   XAxis, CartesianGrid, Tooltip,
 } from 'recharts'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
-import { getUsageSummary, getUsageSeries } from '@/services/usage'
+import {
+  getUsageSummary,
+  getUsageSeries,
+  getUsageRankingsModels,
+  getUsageRankingsApiKeys,
+} from '@/services/usage'
+import { listWorkspaces } from '@/services/workspaces'
+import { listApiKeys } from '@/services/api-keys'
 import { getLogHistogram } from '@/services/logs'
 import { useAuthStore } from '@/store/auth'
 import { useCurrency } from '@/hooks/use-platform-config'
 import type { SeriesDataPoint } from '@/types'
 import { formatChartTooltipDate } from '@/lib/format-date'
+import { pageItems } from '@/lib/utils'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { LuTrendingUp, LuActivity, LuDatabase } from 'react-icons/lu'
+import Select from '@/components/ui/Select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/Table'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { LuTrendingUp, LuActivity, LuDatabase, LuKey, LuCpu } from 'react-icons/lu'
 
 // ─── Types ───────────────────────────────────────────
 
@@ -26,7 +44,6 @@ type Metric = 'spend' | 'requests' | 'tokens'
 
 // ─── Helpers ─────────────────────────────────────────
 
-// 预设区间天数（DateRangePicker 选 preset 只回传 key，日期在此换算）
 const USAGE_PRESET_DAYS: Record<string, number> = { '7d': 7, '30d': 30, '90d': 90 }
 
 function rangeToDates(range: DateRangeValue): { from: string; to: string } {
@@ -220,8 +237,6 @@ function HistogramChart({ buckets, noDataLabel }: HistogramChartProps) {
   )
 }
 
-
-
 // ─── Metric Tab ───────────────────────────────────────
 
 interface MetricTabProps {
@@ -252,13 +267,166 @@ function MetricTab({ label, active, onClick }: MetricTabProps) {
   )
 }
 
-// ─── Page ─────────────────────────────────────────────
+// ─── Rankings Table ───────────────────────────────────
 
+interface RankingsTableProps {
+  title: string
+  icon: React.ReactNode
+  items: Array<{
+    rank?: number
+    name?: string
+    key?: string
+    spend?: { amount: string; currency: string }
+    requests?: number
+    tokens?: number
+    share_percent?: number
+  }>
+  isLoading: boolean
+  isError: boolean
+  onRetry: () => void
+  currencySymbol: string
+}
+
+function RankingsTable({
+  title,
+  icon,
+  items,
+  isLoading,
+  isError,
+  onRetry,
+  currencySymbol,
+}: RankingsTableProps) {
+  const { t } = useTranslation()
+
+  return (
+    <Card className="p-0 flex flex-col overflow-hidden">
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--mg-border)',
+        }}
+      >
+        <span style={{ color: 'var(--mg-text-2)', display: 'flex', alignItems: 'center' }}>{icon}</span>
+        <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--mg-text-0)' }}>{title}</span>
+      </div>
+
+      {/* Body */}
+      {isError ? (
+        <div
+          style={{
+            color: 'var(--mg-danger)',
+            fontSize: '13px',
+            textAlign: 'center',
+            padding: '32px 0',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '12px',
+          }}
+        >
+          {t('usage.error.rankings')}
+          <Button variant="outline" size="sm" onClick={onRetry}>
+            {t('usage.retry')}
+          </Button>
+        </div>
+      ) : isLoading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '120px' }}>
+          <div className="w-7 h-7 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
+        </div>
+      ) : items.length === 0 ? (
+        <EmptyState
+          title={t('usage.rankings.empty')}
+          description={t('usage.rankings.emptyDesc')}
+        />
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-10">{t('usage.rankings.col.rank')}</TableHead>
+              <TableHead>{t('usage.rankings.col.name')}</TableHead>
+              <TableHead align="right">{t('usage.rankings.col.spend')}</TableHead>
+              <TableHead align="right">{t('usage.rankings.col.requests')}</TableHead>
+              <TableHead align="right">{t('usage.rankings.col.tokens')}</TableHead>
+              <TableHead align="right">{t('usage.rankings.col.share')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((item, idx) => {
+              const rankNum = item.rank ?? idx + 1
+              const spendAmt = item.spend?.amount
+                ? formatMoney(item.spend.amount, currencySymbol)
+                : '—'
+              const reqStr = item.requests != null ? formatNumber(item.requests) : '—'
+              const tokStr = item.tokens != null ? formatNumber(item.tokens) : '—'
+              const shareStr =
+                item.share_percent != null ? `${item.share_percent.toFixed(1)}%` : '—'
+              const displayName = item.name || item.key || '—'
+
+              return (
+                <TableRow key={item.key ?? idx}>
+                  <TableCell>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '6px',
+                        background: rankNum <= 3 ? 'var(--mg-primary)' : 'var(--mg-fill-1)',
+                        color: rankNum <= 3 ? '#fff' : 'var(--mg-text-2)',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                      }}
+                    >
+                      {rankNum}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      style={{
+                        maxWidth: '200px',
+                        display: 'block',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        color: 'var(--mg-text-0)',
+                        fontWeight: 500,
+                      }}
+                      title={displayName}
+                    >
+                      {displayName}
+                    </span>
+                  </TableCell>
+                  <TableCell align="right">{spendAmt}</TableCell>
+                  <TableCell align="right">{reqStr}</TableCell>
+                  <TableCell align="right">{tokStr}</TableCell>
+                  <TableCell align="right">
+                    <span style={{ color: 'var(--mg-text-2)' }}>{shareStr}</span>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      )}
+    </Card>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────
 
 export default function UsagePage() {
   const { t } = useTranslation()
   const [timeRange, setTimeRange] = useState<DateRangeValue>({ preset: '7d' })
   const [metric, setMetric] = useState<Metric>('spend')
+  // '' means "all" for workspace/api-key filters
+  const [filterWorkspaceId, setFilterWorkspaceId] = useState<string>('')
+  const [filterApiKeyId, setFilterApiKeyId] = useState<string>('')
 
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
@@ -277,26 +445,63 @@ export default function UsagePage() {
   }
 
   const { from, to } = rangeToDates(timeRange)
-  // 自定义区间需选齐起止日期才发请求
   const rangeReady = timeRange.preset !== 'custom' || (!!timeRange.startDate && !!timeRange.endDate)
 
   // 请求分布/趋势统一按天聚合（#195：hour 粒度会让同一天出现多根柱子）
   const granularity = 'day' as const
 
+  // ── 筛选器数据 ─────────────────────────────────────
+
+  // workspace_id 用于查询的实际值：筛选器有选 → 用筛选器值；否则用当前活跃 workspace
+  const effectiveWorkspaceId = filterWorkspaceId || activeWorkspaceId || undefined
+
+  const workspacesQuery = useQuery({
+    queryKey: ['workspaces-for-filter', activeTenantId],
+    queryFn: () => listWorkspaces(),
+    enabled: !!activeTenantId,
+    staleTime: 5 * 60 * 1000,
+  })
+  const workspaceList = workspacesQuery.data?.items ?? []
+
+  // API Keys 列表根据筛选器选中的 workspace 加载（无选中时用活跃 workspace）
+  const apiKeysQuery = useQuery({
+    queryKey: ['api-keys-for-filter', effectiveWorkspaceId],
+    queryFn: () => listApiKeys(effectiveWorkspaceId!).then(pageItems),
+    enabled: !!effectiveWorkspaceId,
+    staleTime: 5 * 60 * 1000,
+  })
+  const apiKeyList = apiKeysQuery.data ?? []
+
+  // 切换 workspace 时清掉 api key 筛选（避免错误的 id 传给接口）
+  function handleWorkspaceChange(val: string) {
+    setFilterWorkspaceId(val === '__all__' ? '' : val)
+    setFilterApiKeyId('')
+  }
+
+  function handleApiKeyChange(val: string) {
+    setFilterApiKeyId(val === '__all__' ? '' : val)
+  }
+
+  // ── 通用查询参数 ──────────────────────────────────
+
+  const commonParams = {
+    from,
+    to,
+    workspace_id: filterWorkspaceId || activeWorkspaceId || undefined,
+    api_key_id: filterApiKeyId || undefined,
+  }
+
   const summaryQuery = useQuery({
-    queryKey: ['usage-summary', activeTenantId, activeWorkspaceId, timeRange],
-    queryFn: () =>
-      getUsageSummary({ workspace_id: activeWorkspaceId || undefined, from, to }),
+    queryKey: ['usage-summary', activeTenantId, commonParams],
+    queryFn: () => getUsageSummary(commonParams),
     enabled: !!activeTenantId && rangeReady,
   })
 
   const seriesQuery = useQuery({
-    queryKey: ['usage-series', activeTenantId, activeWorkspaceId, timeRange, metric],
+    queryKey: ['usage-series', activeTenantId, commonParams, metric],
     queryFn: () =>
       getUsageSeries({
-        workspace_id: activeWorkspaceId || undefined,
-        from,
-        to,
+        ...commonParams,
         metric,
         granularity,
       }),
@@ -304,13 +509,33 @@ export default function UsagePage() {
   })
 
   const histogramQuery = useQuery({
-    queryKey: ['log-histogram', activeTenantId, activeWorkspaceId, timeRange],
+    queryKey: ['log-histogram', activeTenantId, commonParams],
     queryFn: () =>
       getLogHistogram({
-        workspace_id: activeWorkspaceId || undefined,
+        workspace_id: commonParams.workspace_id,
         from,
         to,
         granularity,
+      }),
+    enabled: !!activeTenantId && rangeReady,
+  })
+
+  const rankingsApiKeysQuery = useQuery({
+    queryKey: ['usage-rankings-api-keys', activeTenantId, commonParams],
+    queryFn: () =>
+      getUsageRankingsApiKeys({
+        ...commonParams,
+        limit: 10,
+      }),
+    enabled: !!activeTenantId && rangeReady,
+  })
+
+  const rankingsModelsQuery = useQuery({
+    queryKey: ['usage-rankings-models', activeTenantId, commonParams],
+    queryFn: () =>
+      getUsageRankingsModels({
+        ...commonParams,
+        limit: 10,
       }),
     enabled: !!activeTenantId && rangeReady,
   })
@@ -333,47 +558,84 @@ export default function UsagePage() {
     : '—'
   const kpiRequests = summary ? formatNumber(summary.total.requests) : '—'
 
+  // ── 筛选栏 UI ─────────────────────────────────────
+
+  const filterBar = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+      {/* 项目下拉 */}
+      <Select
+        value={filterWorkspaceId === '' ? '__all__' : filterWorkspaceId}
+        onChange={handleWorkspaceChange}
+        placeholder={t('usage.filter.allWorkspaces')}
+        className="h-9 text-sm w-40"
+      >
+        <Select.Option value="__all__">{t('usage.filter.allWorkspaces')}</Select.Option>
+        {workspaceList.map((ws) => (
+          <Select.Option key={ws.workspace_id} value={ws.workspace_id}>
+            {ws.name}
+          </Select.Option>
+        ))}
+      </Select>
+
+      {/* API Key 下拉 */}
+      <Select
+        value={filterApiKeyId === '' ? '__all__' : filterApiKeyId}
+        onChange={handleApiKeyChange}
+        placeholder={t('usage.filter.allKeys')}
+        className="h-9 text-sm w-44"
+        disabled={!effectiveWorkspaceId}
+      >
+        <Select.Option value="__all__">{t('usage.filter.allKeys')}</Select.Option>
+        {apiKeyList.map((key) => (
+          <Select.Option key={key.api_key_id} value={key.api_key_id}>
+            {key.name || key.masked}
+          </Select.Option>
+        ))}
+      </Select>
+
+      <DateRangePicker
+        value={timeRange}
+        onChange={setTimeRange}
+        presets={USAGE_PRESETS}
+        placeholder={t('usage.customRange.placeholder')}
+      />
+    </div>
+  )
+
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title={t('usage.title')}
         description={t('usage.desc')}
-        actions={
-          <DateRangePicker
-            value={timeRange}
-            onChange={setTimeRange}
-            presets={USAGE_PRESETS}
-            placeholder={t('usage.customRange.placeholder')}
-          />
-        }
+        actions={filterBar}
         className="mb-7"
       />
 
       {/* KPI 卡片行 */}
       {summaryQuery.isError ? (
-        <div style={{ color: 'var(--mg-danger)', fontSize: '13px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ color: 'var(--mg-danger)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '12px' }}>
           {t('usage.error.summary')}
           <Button variant="outline" size="sm" onClick={() => summaryQuery.refetch()}>{t('usage.retry')}</Button>
         </div>
       ) : (
-        <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
           {summaryQuery.isLoading ? (
             <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '96px' }}>
               <div className="w-8 h-8 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
             </div>
           ) : (
             <>
-              <KpiCard 
-                label={t('usage.kpi.spend')} 
-                value={kpiSpend} 
+              <KpiCard
+                label={t('usage.kpi.spend')}
+                value={kpiSpend}
                 color="var(--mg-warning)"
                 glowColor="rgba(245, 158, 11, 0.12)"
                 hoverBorderClass="hover:border-amber-500/30"
                 icon={<LuTrendingUp size={16} />}
               />
-              <KpiCard 
-                label={t('usage.kpi.requests')} 
-                value={kpiRequests} 
+              <KpiCard
+                label={t('usage.kpi.requests')}
+                value={kpiRequests}
                 color="var(--mg-success)"
                 glowColor="rgba(16, 185, 129, 0.12)"
                 hoverBorderClass="hover:border-emerald-500/30"
@@ -394,8 +656,7 @@ export default function UsagePage() {
       )}
 
       {/* 折线图区域 */}
-      <Card className="p-6 mb-4 flex flex-col">
-        {/* 指标切换 Tab */}
+      <Card className="p-6 flex flex-col">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--mg-text-0)' }}>
             {t('usage.chart.trendTitle', { metric: METRIC_LABELS[metric] })}
@@ -407,7 +668,6 @@ export default function UsagePage() {
           </div>
         </div>
 
-        {/* 图表内容 */}
         {seriesQuery.isError ? (
           <div style={{ color: 'var(--mg-danger)', fontSize: '13px', textAlign: 'center', padding: '40px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
             {t('usage.error.series')}
@@ -429,7 +689,7 @@ export default function UsagePage() {
         )}
       </Card>
 
-      {/* {t('usage.chart.histogramTitle')}直方图 */}
+      {/* 请求分布直方图 */}
       <Card className="p-6 flex flex-col">
         <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--mg-text-0)', marginBottom: '20px' }}>
           {t('usage.chart.histogramTitle')}
@@ -452,6 +712,33 @@ export default function UsagePage() {
           </div>
         )}
       </Card>
+
+      {/* 用量排行 */}
+      <div>
+        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--mg-text-0)', marginBottom: '16px' }}>
+          {t('usage.rankings.title')}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))', gap: '16px' }}>
+          <RankingsTable
+            title={t('usage.rankings.topKeys')}
+            icon={<LuKey size={15} />}
+            items={rankingsApiKeysQuery.data?.items ?? []}
+            isLoading={rankingsApiKeysQuery.isLoading}
+            isError={rankingsApiKeysQuery.isError}
+            onRetry={() => rankingsApiKeysQuery.refetch()}
+            currencySymbol={currencySymbol}
+          />
+          <RankingsTable
+            title={t('usage.rankings.topModels')}
+            icon={<LuCpu size={15} />}
+            items={rankingsModelsQuery.data?.items ?? []}
+            isLoading={rankingsModelsQuery.isLoading}
+            isError={rankingsModelsQuery.isError}
+            onRetry={() => rankingsModelsQuery.refetch()}
+            currencySymbol={currencySymbol}
+          />
+        </div>
+      </div>
     </div>
   )
 }

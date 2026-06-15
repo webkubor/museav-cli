@@ -905,9 +905,31 @@
     "error": {
       "summary": "Failed to load summary.",
       "series": "Failed to load trend data.",
-      "histogram": "Failed to load distribution data."
+      "histogram": "Failed to load distribution data.",
+      "rankings": "Failed to load rankings."
     },
-    "retry": "Retry"
+    "retry": "Retry",
+    "filter": {
+      "allWorkspaces": "All Workspaces",
+      "allKeys": "All Keys",
+      "workspace": "Workspace",
+      "apiKey": "API Key"
+    },
+    "rankings": {
+      "title": "Usage Rankings",
+      "topKeys": "Top API Keys",
+      "topModels": "Top Models",
+      "col": {
+        "rank": "#",
+        "name": "Name",
+        "spend": "Spend",
+        "requests": "Requests",
+        "tokens": "Tokens",
+        "share": "Share"
+      },
+      "empty": "No ranking data",
+      "emptyDesc": "No usage records for current filters"
+    }
   },
   "chatTest": {
     "title": "Chat Test",

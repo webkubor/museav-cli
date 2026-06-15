@@ -904,9 +904,31 @@
     "error": {
       "summary": "加载用量汇总失败，请稍后重试。",
       "series": "加载趋势数据失败，请稍后重试。",
-      "histogram": "加载分布数据失败，请稍后重试。"
+      "histogram": "加载分布数据失败，请稍后重试。",
+      "rankings": "加载排行数据失败，请稍后重试。"
     },
-    "retry": "重试"
+    "retry": "重试",
+    "filter": {
+      "allWorkspaces": "全部项目",
+      "allKeys": "全部 Key",
+      "workspace": "项目",
+      "apiKey": "API Key"
+    },
+    "rankings": {
+      "title": "用量排行",
+      "topKeys": "Top API Key",
+      "topModels": "Top 模型",
+      "col": {
+        "rank": "#",
+        "name": "名称",
+        "spend": "消费",
+        "requests": "请求数",
+        "tokens": "Token",
+        "share": "占比"
+      },
+      "empty": "暂无排行数据",
+      "emptyDesc": "当前筛选条件下没有用量记录"
+    }
   },
   "chatTest": {
     "title": "对话测试",

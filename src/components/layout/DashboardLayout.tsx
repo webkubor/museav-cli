@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useAuthStore } from '@/store/auth'
 import {
   LuHouse,
@@ -198,7 +198,17 @@ export function DashboardLayout() {
             )
           )}>
             <WorkspaceGuard currentKey={getSelectedKey()}>
-              <Outlet />
+              {/* 内容区级 Suspense：切菜单时只在内容区转圈，侧栏/头/面包屑常驻不闪，
+                  路由立即响应（不再被 App 级全屏 RouteFallback 盖住整屏） */}
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center py-24">
+                    <div className="h-7 w-7 animate-spin rounded-full border-2 border-mg-border border-t-brand-base" />
+                  </div>
+                }
+              >
+                <Outlet />
+              </Suspense>
             </WorkspaceGuard>
           </div>
         </main>

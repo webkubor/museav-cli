@@ -1,0 +1,25 @@
+{
+  "plugins": ["stylelint-declaration-strict-value"],
+  "rules": {
+    "scale-unlimited/declaration-strict-value": [
+      ["/color$/", "background-color", "fill", "stroke", "border-radius", "font-family"],
+      {
+        "ignoreValues": [
+          "transparent",
+          "currentColor",
+          "inherit",
+          "initial",
+          "unset",
+          "revert",
+          "none",
+          "auto",
+          "/^var\\(/"
+        ],
+        "severity": "warning",
+        "disableFix": true,
+        "message": "请用设计 token（var(--mg-*/--brand-*/--radius-*/--font-*)），禁止裸值（详见 DESIGN.md）"
+      }
+    ]
+  },
+  "ignoreFiles": ["src/styles/tokens.css", "src/index.css"]
+}

@@ -56,6 +56,7 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
   const guardrailIds = guardrails.map((g) => g.id).join('|')
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- 弹窗开关/空态时同步重置本地选择态、拉取前置 loading，属预期同步 */
     if (!open) {
       setSelectedId('')
       setCurrentBoundId(null)
@@ -70,8 +71,8 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
       return
     }
     let cancelled = false
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setResolving(true)
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     Promise.allSettled(
       guardrails.map((g) => getGuardrail(g.id as string))
@@ -99,6 +100,8 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
     })
 
     return () => { cancelled = true }
+    // 刻意用 api_key_id / guardrails.length / guardrailIds 等基本类型做依赖，避免对象身份变化导致重复拉取
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, apiKey?.api_key_id, guardrailsQuery.isLoading, guardrails.length, guardrailIds])
 
   const mutation = useMutation({

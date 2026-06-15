@@ -46,6 +46,15 @@ format:
     - pnpm prettier --check .
   needs: [install]
 
+# 设计 token 锁：只拦「改动行新增的裸 hex/字体/圆角」，存量不挡（见 DESIGN.md）
+css-tokens:
+  stage: validate
+  script:
+    - apk add --no-cache git
+    - git fetch --depth=50 origin "${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-main}" || true
+    - pnpm lint:css:diff "origin/${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-main}"
+  needs: [install]
+
 build:test:
   stage: build
   script:

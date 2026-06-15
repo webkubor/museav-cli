@@ -5,7 +5,10 @@
   border-radius: var(--radius-md) !important;
   border: 1px solid var(--mg-border) !important;
   background-color: var(--mg-fill-0) !important;
-  transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1) !important;
+  /* 只过渡廉价属性；box-shadow 辉光/conic 渐变改瞬时，避免切 tab 时 0.35s 重绘爆发致卡顿 */
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+              border-color 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+              background-color 0.35s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 
 .billing-glow-card:hover {

@@ -125,7 +125,7 @@ export const KpiSection: React.FC = () => {
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-9">
+    <div className="no-canvas-blur grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-9">
       {cards.map((card) => (
         <KpiCard key={card.title} {...card} />
       ))}

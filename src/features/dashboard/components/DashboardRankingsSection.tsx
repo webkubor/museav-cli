@@ -88,7 +88,7 @@ export function DashboardRankingsSection({ compact }: { compact?: boolean }) {
   const skills = (data?.skills ?? []).map(toRankingItem)
 
   return (
-    <section className={`dashboard-rankings-section${compact ? ' dashboard-rankings-section--compact' : ''}`}>
+    <section className={`no-canvas-blur dashboard-rankings-section${compact ? ' dashboard-rankings-section--compact' : ''}`}>
       <RankingCard title="热门模型排行榜" caption="近 30 天调用量 Top 3" items={models} />
       {skills.length > 0 && (
         <RankingCard title="热门 Skills" caption="开发者最常使用的工作流" items={skills} />

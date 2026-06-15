@@ -175,8 +175,22 @@ body[theme-mode='dark'] .glass-card-glow {
 
 body[theme-mode='dark'] .glass-card-glow:hover {
   border-color: color-mix(in srgb, var(--brand-base) 40%, transparent) !important; /* 深色下点亮外沿 */
-  box-shadow: 
+  box-shadow:
     inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.25),
-    0 12px 35px 0 rgba(0, 0, 0, 0.28), 
+    0 12px 35px 0 rgba(0, 0, 0, 0.28),
     0 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ── Dashboard 首屏卡片：去掉 backdrop-filter ──
+   叠在每帧动画 canvas（ParticleLinesBackground）之上的卡片会导致
+   backdrop-filter 每帧重做高斯模糊合成，严重拖慢 INP。
+   用实心 token 背景替代，视觉仍保持干净卡片风格。 */
+.no-canvas-blur .glass-card-glow {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-color: var(--mg-bg-0) !important;
+}
+
+body[theme-mode='dark'] .no-canvas-blur .glass-card-glow {
+  background-color: var(--mg-bg-0) !important;
 }

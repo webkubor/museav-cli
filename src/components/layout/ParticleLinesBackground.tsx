@@ -54,12 +54,22 @@ export const ParticleLinesBackground: React.FC = () => {
     let width = (canvas.width = window.innerWidth)
     let height = (canvas.height = window.innerHeight)
 
-    // 动态获取当前的品牌色
-    const getThemeColor = (): string => {
+    // 主题色缓存：挂载时读一次，MutationObserver 检测到属性变化时才重新读
+    const readThemeColor = (): string => {
       const computed = window.getComputedStyle(document.body)
       const color = computed.getPropertyValue('--brand-base').trim()
       return color || '#6743fd'
     }
+    let cachedBrandColor: string = readThemeColor()
+
+    // 监听 <html> 的 data-market / theme-mode 属性变化，变化时才更新缓存
+    const themeObserver = new MutationObserver(() => {
+      cachedBrandColor = readThemeColor()
+    })
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-market', 'theme-mode', 'data-theme', 'class'],
+    })
 
     // 3条极细起伏曲线的配置 (专注于中下部区域流淌，类似原本的 bottom-shimmer)
     const waves: WaveConfig[] = [
@@ -131,7 +141,8 @@ export const ParticleLinesBackground: React.FC = () => {
 
       ctx.clearRect(0, 0, width, height)
 
-      const brandColor = getThemeColor()
+      // RAF 循环里只读缓存，不调用 getComputedStyle
+      const brandColor = cachedBrandColor
 
       // 1. 绘制极细的流体波浪曲线
       waves.forEach((wave) => {
@@ -204,6 +215,7 @@ export const ParticleLinesBackground: React.FC = () => {
     return () => {
       cancelAnimationFrame(animationFrameId)
       window.removeEventListener('resize', handleResize)
+      themeObserver.disconnect()
     }
   }, [])
 

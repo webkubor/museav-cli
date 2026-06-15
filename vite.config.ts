@@ -63,6 +63,19 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return
+          if (
+            id.includes('/recharts/') ||
+            id.includes('/d3-shape/') ||
+            id.includes('/d3-scale/') ||
+            id.includes('/d3-array/') ||
+            id.includes('/d3-color/') ||
+            id.includes('/d3-format/') ||
+            id.includes('/d3-interpolate/') ||
+            id.includes('/d3-path/') ||
+            id.includes('/d3-time/') ||
+            id.includes('/d3-time-format/') ||
+            id.includes('/victory-vendor/')
+          ) return 'recharts'
           if (id.includes('react-dom') || id.includes('/react/')) return 'vendor-react'
           if (id.includes('react-router')) return 'vendor-router'
           if (id.includes('@tanstack/react-query')) return 'vendor-query'

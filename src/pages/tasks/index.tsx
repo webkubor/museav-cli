@@ -7,7 +7,6 @@ import {
   LuImage,
   LuMusic,
   LuX,
-  LuDownload,
   LuRefreshCw,
 } from 'react-icons/lu'
 import { Badge } from '@/components/ui/Badge'
@@ -37,7 +36,6 @@ import { cn } from '@/lib/utils'
 import type { TaskItem, TaskStatus, TaskKind } from '@/types'
 import { VideoThumbnail } from './VideoThumbnail'
 import { VideoPreviewModal } from './VideoPreviewModal'
-import { downloadVideo } from './download-video'
 
 // ─── 常量 ────────────────────────────────────────────────────────────────────
 
@@ -245,17 +243,6 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
 
           {/* 操作按钮 */}
           <div className="flex gap-2 pt-1">
-            {isTaskDone(task.status) && videoUrl && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => { void downloadVideo(videoUrl, taskId) }}
-              >
-                <LuDownload size={14} />
-                下载产物
-              </Button>
-            )}
             {task.status === 'queued' && (
               <Button
                 variant="destructive"
@@ -485,16 +472,6 @@ export default function TasksPage() {
                           className="text-[11px] text-mg-text-2 hover:text-mg-text-0 font-semibold transition-colors"
                         >
                           复制链接
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            void downloadVideo(videoUrl, item.gateway_request_id)
-                          }}
-                          className="text-[11px] text-brand-base hover:text-brand-deep font-semibold transition-colors"
-                        >
-                          下载
                         </button>
                       </span>
                     )}

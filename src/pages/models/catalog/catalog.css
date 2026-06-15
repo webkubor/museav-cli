@@ -428,7 +428,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--mg-text-0);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 800;
   text-overflow: ellipsis;
@@ -588,7 +588,7 @@
 
 .catalog-ranking-rank {
   color: var(--brand-base);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 16px;
   font-weight: 900;
   line-height: 1;
@@ -622,7 +622,7 @@
 .catalog-ranking-score,
 .catalog-mini-model strong {
   color: #059669;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 11.5px;
   font-weight: 900;
   white-space: nowrap;

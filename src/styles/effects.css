@@ -98,7 +98,7 @@ body[theme-mode='dark'] .sidebar-flow-line::after {
 .cs-markdown ul { list-style: disc; }
 .cs-markdown ol { list-style: decimal; }
 .cs-markdown li { margin-bottom: 2px; }
-.cs-markdown code { font-size: 12px; padding: 1px 5px; border-radius: 4px; background: var(--mg-fill-1); font-family: monospace; }
+.cs-markdown code { font-size: 12px; padding: 1px 5px; border-radius: 4px; background: var(--mg-fill-1); font-family: var(--font-mono); }
 .cs-markdown pre { margin: 6px 0; padding: 10px 12px; border-radius: 8px; background: #0f172a; overflow-x: auto; }
 .cs-markdown pre code { padding: 0; background: none; color: #e2e8f0; font-size: 12px; }
 .cs-markdown a { color: var(--brand-base); text-decoration: underline; }

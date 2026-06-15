@@ -71,7 +71,7 @@
 }
 
 .dashboard-ranking-rank {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 20px;
   font-weight: 850;
   color: var(--brand-base);

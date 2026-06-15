@@ -188,7 +188,7 @@ body[theme-mode='dark'] .billing-glow-card .shimmer-light::after {
 
 /* 金额与货币符号打磨 */
 .billing-glow-card .balance-amount {
-  font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+  font-family: var(--font-sans);
   transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
   letter-spacing: -0.02em;
 }

@@ -40,26 +40,26 @@ colors:
   code-text: "#1f2937"
 typography:
   display:
-    fontFamily: "Outfit, Inter, -apple-system, sans-serif"
+    fontFamily: "Inter, PingFang SC, MiSans, HarmonyOS Sans SC, Microsoft YaHei, system-ui, sans-serif"
     fontSize: 2rem
     fontWeight: 700
     letterSpacing: "-0.01em"
   title:
-    fontFamily: "Outfit, Inter, -apple-system, sans-serif"
+    fontFamily: "Inter, PingFang SC, MiSans, HarmonyOS Sans SC, Microsoft YaHei, system-ui, sans-serif"
     fontSize: 15px
     fontWeight: 600
   body:
-    fontFamily: "Outfit, Inter, -apple-system, sans-serif"
+    fontFamily: "Inter, PingFang SC, MiSans, HarmonyOS Sans SC, Microsoft YaHei, system-ui, sans-serif"
     fontSize: 13px
     fontWeight: 400
     lineHeight: 1.6
   label-caps:
-    fontFamily: "Outfit, Inter, -apple-system, sans-serif"
+    fontFamily: "Inter, PingFang SC, MiSans, HarmonyOS Sans SC, Microsoft YaHei, system-ui, sans-serif"
     fontSize: 11px
     fontWeight: 700
     letterSpacing: "0.05em"
   mono:
-    fontFamily: "JetBrains Mono, Fira Code, monospace"
+    fontFamily: "JetBrains Mono, Fira Code, ui-monospace, SFMono-Regular, Menlo, Monaco, monospace"
     fontSize: 12px
     fontFeature: "tabular-nums"
 rounded:
@@ -129,13 +129,15 @@ YAML front matter 里的值是 **「国内 + 浅色」** 默认态；其余三�
    - `border` / `fill-0..2`（填充用品牌色极低透明度，随市场微调色相）
 4. **状态色 `success`/`danger`/`warning`**：绿 / 红 / 黄，**明暗共用、不可改色相**（属保留例外，见 Don'ts）。
 5. **趋势色随市场反转**：国内「红涨绿跌」(`--mg-trend-up`=danger)，海外「绿涨红跌」。用 `--mg-trend-*`，别写死红绿。
+6. **深色主题采用莫兰迪暖中性色系**：背景暖灰（#262429 → #433f48）、文字暖雾白（#e9e7e3 → #66625e）、语义色用鼠尾草绿 / 陶土红 / 赭黄（降饱和、去荧光感）、品牌色蒙灰后仍可辨识为靛紫 / 翠绿。
 
 ## Typography
 
-- 正文/标题字体：**Outfit → Inter → 系统无衬线**。
+- 正文/标题字体：**Inter → 中文系统优先（PingFang SC / MiSans / HarmonyOS Sans SC / Microsoft YaHei）→ system-ui**。已去掉 Outfit webfont，减少首屏字体加载体积。
 - 数字、ID、金额、代码：**JetBrains Mono**（配合 `tabular-nums`，保证数字等宽对齐）。
 - 常用层级：`display`（2rem 700，KPI 大数）、`title`（15px 600，卡标题）、`body`（13px，正文）、`label-caps`（11px 700 + 字距，分区小标题大写）、`mono`（12px，凭证/金额/时间）。
 - 字号通过 Tailwind 工具类落地（如 `text-[13px]` / `text-sm`），上表为语义基准。
+- **字体统一走 `--font-sans` / `--font-mono` token**（定义在 `src/styles/tokens.css`）。中文系统优先、不加载重型 CJK webfont（护首屏性能）。所有 CSS 文件中禁止直接写 `font-family` 字符串，一律引用这两个 token。
 
 ## Layout
 

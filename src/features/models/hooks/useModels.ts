@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { listModels, listModelTags, getModel, listModelProviders } from '@/services/catalog'
+import type { CatalogModelListParams } from '@/interfaces/catalog'
 
-export function useModels() {
+export function useModels(params?: Omit<CatalogModelListParams, 'page_size'>) {
   const [search, setSearch] = useState('')
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const modelsQuery = useQuery({
-    queryKey: ['catalog-models'],
-    queryFn: () => listModels({ page_size: 100 }),
+    queryKey: ['catalog-models', params],
+    queryFn: () => listModels({ page_size: 100, ...params }),
     staleTime: 5 * 60_000,
   })
 

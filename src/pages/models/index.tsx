@@ -82,7 +82,7 @@ export default function ModelsPage() {
     detailQuery,
     providersQuery,
     filteredModels,
-  } = useModels()
+  } = useModels({ modality: 'text' })
 
   // 体验页只支持文本对话，列表只展示对话类模型（排除纯图片/视频/音频生成模型）
   const allModels = useMemo(

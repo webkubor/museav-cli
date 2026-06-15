@@ -12,6 +12,7 @@
     "lint": "eslint .",
     "lint:css": "stylelint \"src/**/*.css\"",
     "lint:css:diff": "node scripts/stylelint-diff.mjs",
+    "lint:style:diff": "node scripts/eslint-style-diff.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "version:patch": "npm version patch --no-git-tag-version",

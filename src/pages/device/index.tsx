@@ -9,13 +9,8 @@ import { Button } from '@/components/ui/Button'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import type { TenantItem } from '@/types'
 
-function isValidUserCode(code: string) {
-  return /^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code) || /^[A-Z0-9]{8,16}$/.test(code)
-}
-
 type PageState =
   | { kind: 'missing_code' }
-  | { kind: 'invalid_code' }
   | { kind: 'checking_auth' }
   | { kind: 'loading_tenants'; userCode: string }
   | { kind: 'confirming'; userCode: string; tenants: TenantItem[] }
@@ -43,17 +38,14 @@ export default function DevicePage() {
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null)
 
   useEffect(() => {
-    // 审批/成功/错误状态下不再响应 auth 变化——避免 API 40101 触发 clearAuth 后
-    // useEffect 抢在 catch 块之前跳登录页（用户看到"点授权没反应直接跳登录"）
-    if (state.kind === 'approving' || state.kind === 'success' || state.kind === 'error') return
+    // 只在初始决策阶段（checking_auth）跑：一旦进入 loading/confirming/approving/success/error
+    // 就不再重入，否则 state.kind 变化会触发 effect 反复调用 loadTenants 形成死循环（页面闪烁）。
+    // 也顺带避免 40101 触发 clearAuth 后 effect 抢在 catch 之前跳登录页。
+    if (state.kind !== 'checking_auth') return
 
     if (!rawCode) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ kind: 'missing_code' })
-      return
-    }
-    if (!isValidUserCode(rawCode.toUpperCase())) {
-      setState({ kind: 'invalid_code' })
       return
     }
     if (isLoading) {
@@ -64,7 +56,7 @@ export default function DevicePage() {
       navigate(toLoginWithRedirect(`/device?user_code=${encodeURIComponent(rawCode)}`), { replace: true })
       return
     }
-    loadTenants(rawCode.toUpperCase())
+    loadTenants(rawCode)
   }, [isLoading, isAuthenticated, rawCode, state.kind])
 
   async function loadTenants(userCode: string) {
@@ -125,18 +117,6 @@ export default function DevicePage() {
         <div style={{ textAlign: 'center', padding: '8px 0' }}>
           <span style={{ color: 'var(--mg-text-2)', fontSize: '14px' }}>
             {t('device.desc.missingCode')}
-          </span>
-        </div>
-      </AuthLayout>
-    )
-  }
-
-  if (state.kind === 'invalid_code') {
-    return (
-      <AuthLayout title={t('device.title.invalidCode')}>
-        <div style={{ textAlign: 'center', padding: '8px 0' }}>
-          <span style={{ color: 'var(--mg-text-2)', fontSize: '14px' }}>
-            {t('device.desc.invalidCode')}
           </span>
         </div>
       </AuthLayout>

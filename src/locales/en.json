@@ -180,9 +180,9 @@
       "mainBalance": "Main Balance",
       "mainHint": "Cash top-up",
       "giftBalance": "Gift Balance",
-      "giftHint": "Promo code / trial credit · Non-withdrawable",
+      "giftHint": "Promo code / trial credit",
       "rewardBalance": "Reward Balance",
-      "rewardHint": "Referral rebate · Withdrawable",
+      "rewardHint": "Referral rebate",
       "frozenHint": "Pre-authorization / processing"
     },
     "tabs": {

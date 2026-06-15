@@ -180,9 +180,9 @@
       "mainBalance": "主余额",
       "mainHint": "现金充值",
       "giftBalance": "赠送余额",
-      "giftHint": "兑换码/体验金 · 不可提现",
+      "giftHint": "兑换码/体验金",
       "rewardBalance": "奖励余额",
-      "rewardHint": "推荐返佣 · 可提现",
+      "rewardHint": "推荐返佣",
       "frozenHint": "预扣/处理中"
     },
     "tabs": {

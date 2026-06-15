@@ -8,6 +8,10 @@ import {
   LuMusic,
   LuX,
   LuRefreshCw,
+  LuVideoOff,
+  LuDownload,
+  LuLink,
+  LuCopy,
 } from 'react-icons/lu'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -108,6 +112,13 @@ function isTaskDone(status: string) {
   return status === 'succeeded' || status === 'completed'
 }
 
+/** 视频产物是否已过期（result_meta.result_expires_at 早于当前时间） */
+function isVideoExpired(item: { result_meta?: { result_expires_at?: string } } | undefined): boolean {
+  const expires = item?.result_meta?.result_expires_at
+  if (!expires) return false
+  return new Date(expires).getTime() < Date.now()
+}
+
 /**
  * 视频产物地址：网关内容端点，凭 gateway_request_id 即可访问，
  * 服务端 302 重定向到真实 OSS 文件。无需鉴权，直接作为 <video src>。
@@ -143,6 +154,7 @@ function DetailRow({ label, value, hint, mono }: {
 
 function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose: () => void }) {
   const qc = useQueryClient()
+  const { copy } = useCopy()
   const taskId = listTask.gateway_request_id
   const { data } = useQuery({
     queryKey: ['task-detail', taskId],
@@ -166,8 +178,9 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
   const task = data?.task ?? listTask
   const kind = resolveKind(task)
   const kindCfg = KIND_CONFIG[kind]
-  // 视频产物：成功态直接用网关 content 端点（凭 gateway_request_id，302 转 OSS）
-  const videoUrl = kind === 'video' && isTaskDone(task.status) ? videoContentUrl(taskId) : null
+  const expired = isVideoExpired(task) || isVideoExpired(data)
+  // 视频产物：成功态直接用网关 content 端点（凭 gateway_request_id，302 转 OSS）；过期则不展示
+  const videoUrl = kind === 'video' && isTaskDone(task.status) && !expired ? videoContentUrl(taskId) : null
 
   return (
     <SideSheet open onClose={onClose} width={460} title="任务详情">
@@ -225,6 +238,52 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
             </div>
           )}
 
+          {/* 产物链接 + 下载 */}
+          {videoUrl && (
+            <div className="rounded-xl border border-mg-border bg-card-bg p-4 space-y-2.5">
+              <p className="text-[11px] font-bold text-mg-text-2 uppercase tracking-wide">产物链接</p>
+              <div className="flex items-center gap-2 rounded-lg border border-mg-border bg-mg-fill-0/40 px-3 py-2">
+                <LuLink size={13} className="shrink-0 text-mg-text-3" />
+                <span className="flex-1 truncate text-[12px] font-mono text-mg-text-1" title={videoUrl}>
+                  {videoUrl}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={async () => {
+                    const ok = await copy(videoUrl)
+                    appToast[ok ? 'success' : 'error'](ok ? '链接已复制' : '复制失败')
+                  }}
+                >
+                  <LuCopy size={14} />
+                  复制链接
+                </Button>
+                <a
+                  href={videoUrl}
+                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-lg bg-mg-primary text-white text-[13px] font-semibold transition-opacity hover:opacity-90"
+                >
+                  <LuDownload size={14} />
+                  下载
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* 产物已过期 */}
+          {expired && (
+            <div className="rounded-xl border border-mg-border bg-card-bg p-6 flex flex-col items-center gap-2 text-mg-text-3">
+              <LuVideoOff size={32} />
+              <p className="text-[13px] font-semibold">产物已过期</p>
+              <p className="text-[11px] text-mg-text-2">视频文件已自动清理</p>
+            </div>
+          )}
+
           {/* Prompt */}
           {task.prompt && (
             <div className="rounded-xl border border-mg-border bg-card-bg p-4">
@@ -266,12 +325,6 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
 export default function TasksPage() {
   const { t } = useTranslation()
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
-  const { copy } = useCopy()
-
-  const handleCopyVideoLink = async (url: string) => {
-    const ok = await copy(url)
-    appToast[ok ? 'success' : 'error'](ok ? '视频链接已复制' : '复制失败')
-  }
 
   const [search, setSearch]         = useState('')
   const [statusFilter, setStatus]   = useState('all')
@@ -402,8 +455,9 @@ export default function TasksPage() {
             {filteredItems.map((item) => {
               const kind    = resolveKind(item)
               const kindCfg = KIND_CONFIG[kind]
-              // 仅已完成的视频任务有可播放/可抓帧的地址
-              const videoUrl = kind === 'video' && isTaskDone(item.status)
+              const expired = isVideoExpired(item)
+              // 仅已完成的视频任务有可播放/可抓帧的地址；过期则不展示
+              const videoUrl = kind === 'video' && isTaskDone(item.status) && !expired
                 ? videoContentUrl(item.gateway_request_id)
                 : null
               return (
@@ -413,12 +467,18 @@ export default function TasksPage() {
                   onClick={() => setSelectedTask(item)}
                 >
                   <TableCell align="center">
-                    <VideoThumbnail
-                      taskId={item.gateway_request_id}
-                      videoUrl={videoUrl}
-                      placeholder={kindCfg.icon}
-                      onPreview={setPreviewUrl}
-                    />
+                    {expired ? (
+                      <div className="h-12 w-12 shrink-0 rounded-lg mx-auto flex items-center justify-center bg-mg-fill-1 text-mg-text-3" title="产物已过期">
+                        <LuVideoOff size={20} />
+                      </div>
+                    ) : (
+                      <VideoThumbnail
+                        taskId={item.gateway_request_id}
+                        videoUrl={videoUrl}
+                        placeholder={kindCfg.icon}
+                        onPreview={setPreviewUrl}
+                      />
+                    )}
                   </TableCell>
                   <TableCell align="center" className="text-[12px] text-mg-text-1">
                     {fmtDate(item.created_at)}
@@ -449,32 +509,16 @@ export default function TasksPage() {
                     </span>
                   </TableCell>
                   <TableCell align="center">
-                    {item.status === 'queued' && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setSelectedTask(item)
-                        }}
-                        className="text-[11px] text-mg-text-2 hover:text-[var(--mg-danger)] font-semibold transition-colors"
-                      >
-                        取消
-                      </button>
-                    )}
-                    {videoUrl && (
-                      <span className="inline-flex items-center gap-3">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            void handleCopyVideoLink(videoUrl)
-                          }}
-                          className="text-[11px] text-mg-text-2 hover:text-mg-text-0 font-semibold transition-colors"
-                        >
-                          复制链接
-                        </button>
-                      </span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedTask(item)
+                      }}
+                      className="text-[11px] text-mg-text-2 hover:text-mg-text-0 font-semibold transition-colors"
+                    >
+                      详情
+                    </button>
                   </TableCell>
                 </TableRow>
               )

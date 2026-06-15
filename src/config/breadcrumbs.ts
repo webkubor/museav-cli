@@ -27,4 +27,4 @@ export const breadcrumbConfig: BreadcrumbConfig = {
   'settings/organization': [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.settings' }, { label: 'nav.organization' }],
 }
 
-export const FLAT_ROUTES = ['logs', 'usage', 'observability', 'billing', 'referral', 'tasks', 'dev-config', 'settings/organization']
+export const FLAT_ROUTES = ['logs', 'usage', 'observability', 'billing', 'referral', 'tasks', 'dev-config', 'settings/organization', 'models/catalog', 'models/playground', 'models/compare']

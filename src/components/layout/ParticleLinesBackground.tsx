@@ -22,23 +22,41 @@ interface Particle {
   phaseSpeed: number
 }
 
-// 十六进制转 RGBA 辅助函数
-function hexToRgba(hex: string, alpha: number): string {
-  const cleanHex = hex.trim().replace('#', '')
-  let r = 103
-  let g = 67
-  let b = 253
-  
-  if (cleanHex.length === 3) {
-    r = parseInt(cleanHex[0] + cleanHex[0], 16)
-    g = parseInt(cleanHex[1] + cleanHex[1], 16)
-    b = parseInt(cleanHex[2] + cleanHex[2], 16)
-  } else if (cleanHex.length === 6) {
-    r = parseInt(cleanHex.substring(0, 2), 16)
-    g = parseInt(cleanHex.substring(2, 4), 16)
-    b = parseInt(cleanHex.substring(4, 6), 16)
+interface RGB { r: number; g: number; b: number }
+
+// 十六进制 → RGB（只在换色时解析一次，热路径不再 parseInt）
+function parseHex(hex: string): RGB {
+  const clean = hex.trim().replace('#', '')
+  if (clean.length === 3) {
+    return {
+      r: parseInt(clean[0] + clean[0], 16),
+      g: parseInt(clean[1] + clean[1], 16),
+      b: parseInt(clean[2] + clean[2], 16),
+    }
   }
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+  if (clean.length === 6) {
+    return {
+      r: parseInt(clean.substring(0, 2), 16),
+      g: parseInt(clean.substring(2, 4), 16),
+      b: parseInt(clean.substring(4, 6), 16),
+    }
+  }
+  return { r: 103, g: 67, b: 253 }
+}
+
+// 预渲染一张发光粒子精灵，替代每帧的 ctx.shadowBlur（canvas 最昂贵的操作）
+function makeGlowSprite({ r, g, b }: RGB): HTMLCanvasElement {
+  const S = 32
+  const c = document.createElement('canvas')
+  c.width = c.height = S
+  const cx = c.getContext('2d')!
+  const grad = cx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2)
+  grad.addColorStop(0, `rgba(${r},${g},${b},1)`)
+  grad.addColorStop(0.35, `rgba(${r},${g},${b},0.55)`)
+  grad.addColorStop(1, `rgba(${r},${g},${b},0)`)
+  cx.fillStyle = grad
+  cx.fillRect(0, 0, S, S)
+  return c
 }
 
 export const ParticleLinesBackground: React.FC = () => {
@@ -54,163 +72,133 @@ export const ParticleLinesBackground: React.FC = () => {
     let width = (canvas.width = window.innerWidth)
     let height = (canvas.height = window.innerHeight)
 
-    // 主题色缓存：挂载时读一次，MutationObserver 检测到属性变化时才重新读
+    // ── 主题色缓存：挂载读一次，仅在 <html> 属性变化时重建 rgb/精灵/渐变 ──
     const readThemeColor = (): string => {
-      const computed = window.getComputedStyle(document.body)
-      const color = computed.getPropertyValue('--brand-base').trim()
+      const color = window.getComputedStyle(document.body).getPropertyValue('--brand-base').trim()
       return color || '#6743fd'
     }
-    let cachedBrandColor: string = readThemeColor()
+    let cachedBrandColor = readThemeColor()
+    let rgb = parseHex(cachedBrandColor)
+    let glowSprite = makeGlowSprite(rgb)
+    let needsRebuild = false // 颜色或尺寸变化时置位，下一帧重建渐变/精灵
 
-    // 监听 <html> 的 data-market / theme-mode 属性变化，变化时才更新缓存
     const themeObserver = new MutationObserver(() => {
-      cachedBrandColor = readThemeColor()
+      const next = readThemeColor()
+      if (next !== cachedBrandColor) {
+        cachedBrandColor = next
+        rgb = parseHex(next)
+        glowSprite = makeGlowSprite(rgb)
+        needsRebuild = true
+      }
     })
     themeObserver.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-market', 'theme-mode', 'data-theme', 'class'],
     })
 
-    // 3条极细起伏曲线的配置 (专注于中下部区域流淌，类似原本的 bottom-shimmer)
     const waves: WaveConfig[] = [
-      {
-        yPercent: 0.88,
-        amplitude: 28,
-        length: 0.003,
-        speed: 0.004,
-        angle: 0,
-        opacity: 0.16,
-        lineWidth: 1.2,
-      },
-      {
-        yPercent: 0.86,
-        amplitude: 18,
-        length: 0.004,
-        speed: -0.005,
-        angle: Math.PI / 3,
-        opacity: 0.10,
-        lineWidth: 0.9,
-      },
-      {
-        yPercent: 0.90,
-        amplitude: 22,
-        length: 0.002,
-        speed: 0.003,
-        angle: Math.PI / 1.5,
-        opacity: 0.06,
-        lineWidth: 0.8,
-      },
+      { yPercent: 0.88, amplitude: 28, length: 0.003, speed: 0.004, angle: 0, opacity: 0.16, lineWidth: 1.2 },
+      { yPercent: 0.86, amplitude: 18, length: 0.004, speed: -0.005, angle: Math.PI / 3, opacity: 0.10, lineWidth: 0.9 },
+      { yPercent: 0.90, amplitude: 22, length: 0.002, speed: 0.003, angle: Math.PI / 1.5, opacity: 0.06, lineWidth: 0.8 },
     ]
 
-    // 初始化 35 个微弱粒子
+    // 波浪水平渐变只依赖 width + 颜色，预建缓存，不每帧 createLinearGradient
+    let waveGradients: CanvasGradient[] = []
+    const buildWaveGradients = () => {
+      const { r, g, b } = rgb
+      waveGradients = waves.map((wave) => {
+        const grad = ctx.createLinearGradient(0, 0, width, 0)
+        grad.addColorStop(0, `rgba(${r},${g},${b},0)`)
+        grad.addColorStop(0.25, `rgba(${r},${g},${b},${wave.opacity})`)
+        grad.addColorStop(0.75, `rgba(${r},${g},${b},${wave.opacity})`)
+        grad.addColorStop(1, `rgba(${r},${g},${b},0)`)
+        return grad
+      })
+    }
+    buildWaveGradients()
+
     const particleCount = 35
     const particles: Particle[] = []
+    const createParticle = (initYAtBottom = false): Particle => ({
+      x: Math.random() * width,
+      y: initYAtBottom ? height + Math.random() * 20 : Math.random() * height,
+      size: 0.6 + Math.random() * 1.4,
+      speedX: (Math.random() - 0.5) * 0.15,
+      speedY: -(0.1 + Math.random() * 0.25),
+      alpha: 0,
+      maxAlpha: 0.15 + Math.random() * 0.35,
+      phase: Math.random() * Math.PI * 2,
+      phaseSpeed: 0.005 + Math.random() * 0.015,
+    })
+    for (let i = 0; i < particleCount; i++) particles.push(createParticle(false))
 
-    const createParticle = (initYAtBottom = false): Particle => {
-      return {
-        x: Math.random() * width,
-        y: initYAtBottom ? height + Math.random() * 20 : Math.random() * height,
-        size: 0.6 + Math.random() * 1.4, // 0.6px ~ 2px
-        speedX: (Math.random() - 0.5) * 0.15, // 极慢横向
-        speedY: -(0.1 + Math.random() * 0.25), // 极慢向上浮动
-        alpha: 0,
-        maxAlpha: 0.15 + Math.random() * 0.35, // 保持透明度克制
-        phase: Math.random() * Math.PI * 2,
-        phaseSpeed: 0.005 + Math.random() * 0.015,
-      }
-    }
-
-    for (let i = 0; i < particleCount; i++) {
-      particles.push(createParticle(false))
-    }
-
-    // 窗口尺寸自适应
     const handleResize = () => {
       width = canvas.width = window.innerWidth
       height = canvas.height = window.innerHeight
+      needsRebuild = true
     }
     window.addEventListener('resize', handleResize)
 
-    // 主渲染循环
-    const render = () => {
-      // 检查页面可见性，如果页面在后台运行，暂停绘制以节省 CPU 消耗
-      if (document.visibilityState === 'hidden') {
-        animationFrameId = requestAnimationFrame(render)
-        return
+    const drawFrame = () => {
+      if (needsRebuild) {
+        buildWaveGradients()
+        needsRebuild = false
       }
-
       ctx.clearRect(0, 0, width, height)
 
-      // RAF 循环里只读缓存，不调用 getComputedStyle
-      const brandColor = cachedBrandColor
-
-      // 1. 绘制极细的流体波浪曲线
-      waves.forEach((wave) => {
+      // 1. 流体波浪曲线（复用缓存渐变）
+      waves.forEach((wave, i) => {
         ctx.beginPath()
         ctx.lineWidth = wave.lineWidth
-        
-        // 创建水平渐变，让曲线两端淡入淡出，极其优雅
-        const gradient = ctx.createLinearGradient(0, 0, width, 0)
-        gradient.addColorStop(0, hexToRgba(brandColor, 0))
-        gradient.addColorStop(0.25, hexToRgba(brandColor, wave.opacity))
-        gradient.addColorStop(0.75, hexToRgba(brandColor, wave.opacity))
-        gradient.addColorStop(1, hexToRgba(brandColor, 0))
-        
-        ctx.strokeStyle = gradient
-
+        ctx.strokeStyle = waveGradients[i]
         const baseY = height * wave.yPercent
-        
-        for (let x = 0; x < width; x += 4) {
+        for (let x = 0; x < width; x += 6) {
           const y = baseY + Math.sin(x * wave.length + wave.angle) * wave.amplitude
-          if (x === 0) {
-            ctx.moveTo(x, y)
-          } else {
-            ctx.lineTo(x, y)
-          }
+          if (x === 0) ctx.moveTo(x, y)
+          else ctx.lineTo(x, y)
         }
         ctx.stroke()
-        
-        // 更新相位角度使线条流动
         wave.angle += wave.speed
       })
 
-      // 2. 绘制飘散的发光粒子
-      particles.forEach((p, idx) => {
-        // 浮动与布朗运动
-        p.x += p.x < 0 || p.x > width ? -p.x : p.speedX + (Math.random() - 0.5) * 0.08
+      // 2. 发光粒子：drawImage 预渲染精灵 + globalAlpha，替代 shadowBlur
+      for (let idx = 0; idx < particles.length; idx++) {
+        const p = particles[idx]
+        p.x += p.speedX + (Math.random() - 0.5) * 0.08
         p.y += p.speedY
-
-        // 忽明忽暗的闪烁特效
         p.phase += p.phaseSpeed
-        const sinVal = Math.sin(p.phase)
-        p.alpha = Math.max(0.02, p.maxAlpha * (0.6 + sinVal * 0.4))
+        p.alpha = Math.max(0.02, p.maxAlpha * (0.6 + Math.sin(p.phase) * 0.4))
 
-        // 重新循环边界处理
-        if (p.y < -10) {
-          particles[idx] = createParticle(true)
-          return
-        }
-        if (p.x < -10 || p.x > width + 10) {
-          p.x = Math.random() * width
-        }
+        if (p.y < -10) { particles[idx] = createParticle(true); continue }
+        if (p.x < -10 || p.x > width + 10) p.x = Math.random() * width
 
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-
-        // 针对粒子添加微微的玻璃发光阴影效果
-        ctx.shadowBlur = 3
-        ctx.shadowColor = brandColor
-        ctx.fillStyle = hexToRgba(brandColor, p.alpha)
-        ctx.fill()
-        
-        // 重置 shadow 以免影响后续绘制
-        ctx.shadowBlur = 0
-      })
-
-      animationFrameId = requestAnimationFrame(render)
+        const d = p.size * 6 // 精灵覆盖发光半径
+        ctx.globalAlpha = p.alpha
+        ctx.drawImage(glowSprite, p.x - d / 2, p.y - d / 2, d, d)
+      }
+      ctx.globalAlpha = 1
     }
 
-    render()
+    // prefers-reduced-motion：只画一帧静态，不进动画循环
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      drawFrame()
+      return () => {
+        window.removeEventListener('resize', handleResize)
+        themeObserver.disconnect()
+      }
+    }
+
+    // 节流到 ~30fps（装饰动画，半帧率肉眼无差，CPU 减半）
+    const frameInterval = 1000 / 30
+    let lastFrame = 0
+    const render = (now: number) => {
+      animationFrameId = requestAnimationFrame(render)
+      if (document.visibilityState === 'hidden') return
+      if (now - lastFrame < frameInterval) return
+      lastFrame = now
+      drawFrame()
+    }
+    animationFrameId = requestAnimationFrame(render)
 
     return () => {
       cancelAnimationFrame(animationFrameId)

@@ -7,7 +7,8 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import { listGuardrails, replaceAssignments, getGuardrail } from '@/services/guardrails'
+import { listGuardrails, getGuardrail } from '@/services/guardrails'
+import { updateApiKey } from '@/services/api-keys'
 import { listWorkspaces } from '@/services/workspaces'
 import { appToast } from '@/lib/app-toast'
 import type { ApiKeyItem } from '@/types'
@@ -72,11 +73,14 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setResolving(true)
 
-    Promise.all(
+    Promise.allSettled(
       guardrails.map((g) => getGuardrail(g.id as string))
-    ).then((details) => {
+    ).then((results) => {
       if (cancelled) return
       let boundId: string | null = null
+      const details = results
+        .filter((result): result is PromiseFulfilledResult<GuardrailDetail> => result.status === 'fulfilled')
+        .map((result) => result.value)
       for (const d of details) {
         if (!d) continue
         const bound = d.assignments?.some(
@@ -103,34 +107,8 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
       const newGuardrailId = selectedId
       if (!newGuardrailId) return
 
-      if (currentBoundId && currentBoundId !== newGuardrailId) {
-        const detail = await getGuardrail(currentBoundId)
-        const remaining = (detail.assignments ?? []).filter(
-          (a) => !(a.subject_type === 'api_key' && a.api_key_id === apiKey.api_key_id)
-        )
-        await replaceAssignments(currentBoundId, remaining.map((a) => ({
-          subject_type: a.subject_type,
-          account_id: a.account_id,
-          api_key_id: a.api_key_id,
-        })))
-      }
-
-      if (newGuardrailId && newGuardrailId !== currentBoundId) {
-        const detail = await getGuardrail(newGuardrailId)
-        const existing = (detail.assignments ?? []).some(
-          (a) => a.subject_type === 'api_key' && a.api_key_id === apiKey.api_key_id
-        )
-        if (!existing) {
-          const updated = [
-            ...(detail.assignments ?? []).map((a) => ({
-              subject_type: a.subject_type,
-              account_id: a.account_id,
-              api_key_id: a.api_key_id,
-            })),
-            { subject_type: 'api_key' as const, api_key_id: apiKey.api_key_id },
-          ]
-          await replaceAssignments(newGuardrailId, updated)
-        }
+      if (newGuardrailId !== currentBoundId) {
+        await updateApiKey(workspaceId, apiKey.api_key_id, { guardrail_id: newGuardrailId })
       }
     },
     onSuccess: () => {
@@ -141,7 +119,7 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
       onClose()
     },
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : '护栏更新失败')
+      appToast.requestError(err, '护栏更新失败')
     },
   })
 

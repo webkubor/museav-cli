@@ -198,6 +198,7 @@ export interface ApikeyOwner {
 
 export interface ApikeyUpdateRequest {
   expires_at?: ApikeyNullableString
+  guardrail_id?: ApikeyNullableString
   name?: string
   spending_limit?: ApikeyNullableLimit
 }

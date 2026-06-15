@@ -7,7 +7,7 @@ import {
   BarChart, Bar,
   XAxis, CartesianGrid, Tooltip,
 } from 'recharts'
-import { DatePicker } from '@douyinfe/semi-ui'
+import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
 import { getUsageSummary, getUsageSeries } from '@/services/usage'
 import { getLogHistogram } from '@/services/logs'
 import { useAuthStore } from '@/store/auth'
@@ -22,25 +22,24 @@ import { LuTrendingUp, LuActivity, LuDatabase } from 'react-icons/lu'
 
 // ─── Types ───────────────────────────────────────────
 
-type Range = '7d' | '30d' | '90d' | 'custom'
 type Metric = 'spend' | 'requests' | 'tokens'
 
 // ─── Helpers ─────────────────────────────────────────
 
-function getRangeDates(
-  range: Range,
-  customFrom?: string,
-  customTo?: string,
-): { from: string; to: string } {
-  if (range === 'custom' && customFrom && customTo) {
-    return { from: customFrom, to: customTo }
-  }
+// 预设区间天数（DateRangePicker 选 preset 只回传 key，日期在此换算）
+const USAGE_PRESET_DAYS: Record<string, number> = { '7d': 7, '30d': 30, '90d': 90 }
+
+function rangeToDates(range: DateRangeValue): { from: string; to: string } {
   const now = new Date()
-  const daysMap: Record<Exclude<Range, 'custom'>, number> = { '7d': 7, '30d': 30, '90d': 90 }
-  const days = daysMap[range as Exclude<Range, 'custom'>] ?? 7
-  const from = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
+  if (range.preset === 'custom' && range.startDate && range.endDate) {
+    return {
+      from: new Date(`${range.startDate}T00:00:00`).toISOString(),
+      to: new Date(`${range.endDate}T23:59:59.999`).toISOString(),
+    }
+  }
+  const days = USAGE_PRESET_DAYS[range.preset ?? '7d'] ?? 7
   return {
-    from: from.toISOString(),
+    from: new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString(),
     to: now.toISOString(),
   }
 }
@@ -223,35 +222,6 @@ function HistogramChart({ buckets, noDataLabel }: HistogramChartProps) {
 
 
 
-// ─── Range Button ─────────────────────────────────────
-
-interface RangeBtnProps {
-  label: string
-  active: boolean
-  onClick: () => void
-}
-
-function RangeBtn({ label, active, onClick }: RangeBtnProps) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        padding: '5px 16px',
-        borderRadius: '20px',
-        border: active ? '1px solid var(--brand-base)' : '1px solid var(--mg-border)',
-        background: active ? 'var(--brand-base)' : 'var(--mg-bg-0)',
-        color: active ? '#fff' : 'var(--mg-text-1)',
-        fontSize: '13px',
-        fontWeight: active ? 600 : 400,
-        cursor: 'pointer',
-        transition: 'all 0.15s ease',
-      }}
-    >
-      {label}
-    </button>
-  )
-}
-
 // ─── Metric Tab ───────────────────────────────────────
 
 interface MetricTabProps {
@@ -287,40 +257,41 @@ function MetricTab({ label, active, onClick }: MetricTabProps) {
 
 export default function UsagePage() {
   const { t } = useTranslation()
-  const [range, setRange] = useState<Range>('7d')
-  const [customFrom, setCustomFrom] = useState<string | undefined>(undefined)
-  const [customTo, setCustomTo] = useState<string | undefined>(undefined)
+  const [timeRange, setTimeRange] = useState<DateRangeValue>({ preset: '7d' })
   const [metric, setMetric] = useState<Metric>('spend')
 
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const { symbol: currencySymbol } = useCurrency()
 
-  const RANGE_LABELS: Record<Exclude<Range, 'custom'>, string> = {
-    '7d': t('usage.range.7d'),
-    '30d': t('usage.range.30d'),
-    '90d': t('usage.range.90d'),
-  }
+  const USAGE_PRESETS = [
+    { key: '7d', label: t('usage.range.7d') },
+    { key: '30d', label: t('usage.range.30d') },
+    { key: '90d', label: t('usage.range.90d') },
+    { key: 'custom', label: t('usage.range.custom') },
+  ]
   const METRIC_LABELS: Record<Metric, string> = {
     spend: t('usage.metric.spend'),
     requests: t('usage.metric.requests'),
     tokens: t('usage.metric.tokens'),
   }
 
-  const { from, to } = getRangeDates(range, customFrom, customTo)
+  const { from, to } = rangeToDates(timeRange)
+  // 自定义区间需选齐起止日期才发请求
+  const rangeReady = timeRange.preset !== 'custom' || (!!timeRange.startDate && !!timeRange.endDate)
 
-  // custom 时也按 day 聚合
+  // 请求分布/趋势统一按天聚合（#195：hour 粒度会让同一天出现多根柱子）
   const granularity = 'day' as const
 
   const summaryQuery = useQuery({
-    queryKey: ['usage-summary', activeTenantId, activeWorkspaceId, range, customFrom, customTo],
+    queryKey: ['usage-summary', activeTenantId, activeWorkspaceId, timeRange],
     queryFn: () =>
       getUsageSummary({ workspace_id: activeWorkspaceId || undefined, from, to }),
-    enabled: !!activeTenantId && (range !== 'custom' || (!!customFrom && !!customTo)),
+    enabled: !!activeTenantId && rangeReady,
   })
 
   const seriesQuery = useQuery({
-    queryKey: ['usage-series', activeTenantId, activeWorkspaceId, range, customFrom, customTo, metric],
+    queryKey: ['usage-series', activeTenantId, activeWorkspaceId, timeRange, metric],
     queryFn: () =>
       getUsageSeries({
         workspace_id: activeWorkspaceId || undefined,
@@ -329,20 +300,19 @@ export default function UsagePage() {
         metric,
         granularity,
       }),
-    enabled: !!activeTenantId && (range !== 'custom' || (!!customFrom && !!customTo)),
+    enabled: !!activeTenantId && rangeReady,
   })
 
   const histogramQuery = useQuery({
-    queryKey: ['log-histogram', activeTenantId, activeWorkspaceId, range, customFrom, customTo],
+    queryKey: ['log-histogram', activeTenantId, activeWorkspaceId, timeRange],
     queryFn: () =>
       getLogHistogram({
         workspace_id: activeWorkspaceId || undefined,
         from,
         to,
-        // 请求分布按天聚合：x 轴 tickFormatter 只展示日期，用 hour 粒度会让同一天出现多根柱子（#195）
         granularity,
       }),
-    enabled: !!activeTenantId && (range !== 'custom' || (!!customFrom && !!customTo)),
+    enabled: !!activeTenantId && rangeReady,
   })
 
   const summary = summaryQuery.data
@@ -369,53 +339,12 @@ export default function UsagePage() {
         title={t('usage.title')}
         description={t('usage.desc')}
         actions={
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-            {(['7d', '30d', '90d'] as Exclude<Range, 'custom'>[]).map((r) => (
-              <RangeBtn
-                key={r}
-                label={RANGE_LABELS[r]}
-                active={range === r}
-                onClick={() => {
-                  setRange(r)
-                  setCustomFrom(undefined)
-                  setCustomTo(undefined)
-                }}
-              />
-            ))}
-            <DatePicker
-              type="dateRange"
-              placeholder={t('usage.customRange.placeholder')}
-              value={range === 'custom' && customFrom && customTo ? [new Date(customFrom), new Date(customTo)] : undefined}
-              onChange={(val) => {
-                if (Array.isArray(val) && val[0] && val[1]) {
-                  const d0 = val[0] instanceof Date ? val[0] : new Date(val[0])
-                  const d1 = val[1] instanceof Date ? val[1] : new Date(val[1])
-                  // 起始日 00:00:00，结束日 23:59:59
-                  d0.setHours(0, 0, 0, 0)
-                  d1.setHours(23, 59, 59, 999)
-                  setCustomFrom(d0.toISOString())
-                  setCustomTo(d1.toISOString())
-                  setRange('custom')
-                } else if (!val || (Array.isArray(val) && !val[0] && !val[1])) {
-                  // 清空自定义，回到近 7 天
-                  setRange('7d')
-                  setCustomFrom(undefined)
-                  setCustomTo(undefined)
-                }
-              }}
-              style={{
-                width: 240,
-                borderRadius: '20px',
-                fontSize: '13px',
-                borderColor: range === 'custom' ? 'var(--brand-base)' : undefined,
-              }}
-              size="small"
-              disabledDate={(date) => {
-                if (!date) return false
-                return date > new Date()
-              }}
-            />
-          </div>
+          <DateRangePicker
+            value={timeRange}
+            onChange={setTimeRange}
+            presets={USAGE_PRESETS}
+            placeholder={t('usage.customRange.placeholder')}
+          />
         }
         className="mb-7"
       />

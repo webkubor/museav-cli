@@ -8,8 +8,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { listGuardrails, replaceAssignments, getGuardrail } from '@/services/guardrails'
+import { listWorkspaces } from '@/services/workspaces'
 import { appToast } from '@/lib/app-toast'
 import type { ApiKeyItem } from '@/types'
+import type { GuardrailDetail } from '@/interfaces/guardrails'
 
 interface Props {
   open: boolean
@@ -26,8 +28,26 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
   const [resolving, setResolving] = useState(false)
 
   const guardrailsQuery = useQuery({
-    queryKey: ['guardrails', workspaceId],
-    queryFn: () => listGuardrails(workspaceId).then((res) => res.items ?? []),
+    queryKey: ['api-key-guardrail-options', workspaceId],
+    queryFn: async () => {
+      let workspaceIds = [workspaceId]
+      try {
+        const workspaces = await listWorkspaces()
+        const ids = (workspaces.items ?? []).map((w) => w.workspace_id).filter(Boolean)
+        workspaceIds = ids.length ? ids : workspaceIds
+      } catch {
+        workspaceIds = [workspaceId]
+      }
+      const results = await Promise.allSettled(workspaceIds.map((id) => listGuardrails(id)))
+      const byId = new Map<string, GuardrailDetail>()
+      for (const result of results) {
+        if (result.status !== 'fulfilled') continue
+        for (const guardrail of result.value.items ?? []) {
+          if (guardrail.id) byId.set(guardrail.id, guardrail)
+        }
+      }
+      return Array.from(byId.values())
+    },
     enabled: open && !!workspaceId,
   })
 
@@ -116,7 +136,8 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
     onSuccess: () => {
       appToast.success('护栏更新成功')
       queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
-      queryClient.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
+      queryClient.invalidateQueries({ queryKey: ['guardrails'] })
+      queryClient.invalidateQueries({ queryKey: ['api-key-guardrail-options', workspaceId] })
       onClose()
     },
     onError: (err: unknown) => {
@@ -155,7 +176,7 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
         </div>
       ) : guardrails.length === 0 ? (
         <div className="rounded-lg border border-mg-border bg-mg-fill-0/40 px-4 py-5 text-sm text-mg-text-2">
-          当前工作区暂无可选择的护栏
+          当前租户暂无可选择的护栏
         </div>
       ) : (
         <div className="flex flex-col gap-2">

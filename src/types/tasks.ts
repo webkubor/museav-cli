@@ -32,6 +32,11 @@ export interface TaskItem {
   vendor?: string
   prompt?: string
   from_image?: boolean
+  /** 产物有效期信息（后端填充后才有值） */
+  result_meta?: {
+    result_expires_at?: string
+    result_ttl_seconds?: number
+  }
 }
 
 /** 异步任务详情（GET /async-tasks/{requestId}） */
@@ -41,6 +46,11 @@ export interface TaskDetail {
   /** 上游原始响应透传（未类型化），视频任务的产物 URL 一般在其中（如 Ark 的 content.video_url） */
   provider_response?: Record<string, unknown>
   call_log_snapshot?: Record<string, unknown>
+  /** 产物有效期信息（详情接口独立返回，可能与 task.result_meta 不同步） */
+  result_meta?: {
+    result_expires_at?: string
+    result_ttl_seconds?: number
+  }
 }
 
 /** 任务列表查询参数 */

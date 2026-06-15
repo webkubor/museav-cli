@@ -37,7 +37,7 @@ import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 import { post } from '@/lib/request'
 import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
-import type { TaskItem, TaskStatus, TaskKind } from '@/types'
+import type { TaskItem, TaskDetail, TaskStatus, TaskKind } from '@/types'
 import { VideoThumbnail } from './VideoThumbnail'
 import { VideoPreviewModal } from './VideoPreviewModal'
 
@@ -113,9 +113,9 @@ function isTaskDone(status: string) {
 }
 
 /** 视频产物是否已过期（result_meta.result_expires_at 早于当前时间）。
- *  入参兼容列表项(TaskItem,无 result_meta)与详情(TaskDetail,有 result_meta)，用 unknown + 安全读取。 */
-function isVideoExpired(item: unknown): boolean {
-  const expires = (item as { result_meta?: { result_expires_at?: string } } | undefined)?.result_meta?.result_expires_at
+ *  列表项(TaskItem)与详情(TaskDetail)均带同形 result_meta，可能为空时安全读取。 */
+function isVideoExpired(item: TaskItem | TaskDetail | null | undefined): boolean {
+  const expires = item?.result_meta?.result_expires_at
   if (!expires) return false
   return new Date(expires).getTime() < Date.now()
 }

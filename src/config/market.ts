@@ -50,7 +50,7 @@ const configs: Record<Market, MarketConfig> = {
       : (import.meta.env.VITE_SITE_URL || 'https://modelgo.com'),
     consoleUrl: import.meta.env.VITE_DOMESTIC_CONSOLE || 'https://console.modelgo.com',
     docsUrl: isTestOrDev()
-      ? 'https://doc.test.modelgo.com'
+      ? 'https://docs.test.modelgo.com'
       : (import.meta.env.VITE_DOMESTIC_DOCS || 'https://doc.modelgo.com'),
   },
 
@@ -68,7 +68,7 @@ const configs: Record<Market, MarketConfig> = {
       : (import.meta.env.VITE_SITE_URL || 'https://modelgo.ai'),
     consoleUrl: import.meta.env.VITE_GLOBAL_CONSOLE || 'https://console.modelgo.ai',
     docsUrl: isTestOrDev()
-      ? 'https://doc.test.modelgo.com'
+      ? 'https://docs.test.modelgo.com'
       : (import.meta.env.VITE_GLOBAL_DOCS || 'https://doc.modelgo.ai'),
   },
 }

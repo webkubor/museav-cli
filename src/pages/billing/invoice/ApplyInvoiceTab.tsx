@@ -24,6 +24,7 @@ const TITLE_TYPE_LABEL: Record<InvoiceTitleType, string> = {
 
 const RECHARGE_INVOICE_STATUS: Record<RechargeInvoiceStatus, { label: string; cls: string }> = {
   billable: { label: '可开票', cls: 'text-brand-base' },
+  pending: { label: '待开票', cls: 'bg-mg-fill-0 text-mg-text-1' },
   invoicing: { label: '开票中', cls: 'bg-mg-warning/10 text-mg-warning' },
   invoiced: { label: '已开票', cls: 'bg-mg-success/10 text-mg-success' },
   failed: { label: '开票失败', cls: 'bg-mg-danger/10 text-mg-danger' },
@@ -84,9 +85,9 @@ export function ApplyInvoiceTab({
         recharge_ids: selected,
         title_id: titleId,
         title_type: activeTitle?.type ?? 'vat_normal',
-      }),
+    }),
     onSuccess: () => {
-      appToast.success('已提交开票，状态为「开票中」')
+      appToast.success('已提交开票申请，等待运营开票')
       qc.invalidateQueries({ queryKey: ['invoice'] })
       setSelected([])
       setView('list')
@@ -176,7 +177,7 @@ export function ApplyInvoiceTab({
         )}
 
         <p className="text-[11px] leading-relaxed text-mg-text-3">
-          提交后由服务商出票（含扫脸/验证码校验），通常几分钟、最长 1 个工作日，出票后推送至接收邮箱。
+          提交后进入运营开票队列。平台开票员会在管理后台完成验证码或扫脸认证，出票后推送至接收邮箱。
         </p>
 
         <Button
@@ -198,7 +199,7 @@ export function ApplyInvoiceTab({
   return (
     <div className="space-y-4">
       <p className="text-xs leading-relaxed text-mg-text-2">
-        国内开具增值税发票（普票/专票）。平台统一承担增值税，所有充值可开票；勾选充值 →「合并开票」选择抬头与票种出票。
+        国内开具增值税发票（普票/专票）。平台统一承担增值税，所有充值可申请开票；勾选充值 →「合并开票」选择抬头与票种后提交申请。
       </p>
 
       <div className="rounded-xl border border-mg-border p-4">

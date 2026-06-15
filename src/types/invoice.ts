@@ -21,7 +21,7 @@ export interface InvoiceTitle {
 }
 
 /** 充值单开票状态 */
-export type RechargeInvoiceStatus = 'billable' | 'invoicing' | 'invoiced' | 'failed' | 'voided'
+export type RechargeInvoiceStatus = 'billable' | 'pending' | 'invoicing' | 'invoiced' | 'failed' | 'voided'
 
 /** 申请开票页：可开票 / 已开票的充值单 */
 export interface InvoiceableRecharge {
@@ -34,7 +34,7 @@ export interface InvoiceableRecharge {
 }
 
 /** 发票记录状态 */
-export type InvoiceStatus = 'invoicing' | 'invoiced' | 'failed' | 'voided'
+export type InvoiceStatus = 'pending' | 'invoicing' | 'invoiced' | 'failed' | 'voided'
 
 /** 发票记录 */
 export interface InvoiceRecord {

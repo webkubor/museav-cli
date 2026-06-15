@@ -1,19 +1,18 @@
 /**
  * 发票记录页（FR-B1）
- * 状态筛选 + 发票号/抬头搜索 + 列表（下载/重新开具）+ 加载更多。客户端无红冲入口（D-INV15）。
+ * 状态筛选 + 发票号/抬头搜索 + 列表（下载）+ 加载更多。客户端无红冲/开票执行入口（D-INV15）。
  */
 import { useEffect, useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
 import { LuDownload } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { appToast } from '@/lib/app-toast'
-import { listInvoiceRecords, retryInvoice, getInvoiceDownloadUrl } from '@/services/invoice'
+import { listInvoiceRecords, getInvoiceDownloadUrl } from '@/services/invoice'
 import type { InvoiceRecord, InvoiceStatus, InvoiceTitleType } from '@/types'
 
 const STATUS_MAP: Record<InvoiceStatus, { label: string; cls: string }> = {
+  pending: { label: '待开票', cls: 'bg-mg-fill-0 text-mg-text-1' },
   invoiced: { label: '已开票', cls: 'bg-mg-success/10 text-mg-success' },
   failed: { label: '开票失败', cls: 'bg-mg-danger/10 text-mg-danger' },
   voided: { label: '已红冲', cls: 'bg-mg-fill-1 text-mg-text-2' },
@@ -37,7 +36,6 @@ export function InvoiceRecordsTab({
   const [records, setRecords] = useState<InvoiceRecord[]>([])
   const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     let alive = true
@@ -60,7 +58,7 @@ export function InvoiceRecordsTab({
     return () => {
       alive = false
     }
-  }, [tenantId, status, keyword, refreshKey])
+  }, [tenantId, status, keyword])
 
   const loadMore = () => {
     listInvoiceRecords(tenantId, { status: status === 'all' ? undefined : status, keyword: keyword || undefined, cursor: 'next' })
@@ -70,15 +68,6 @@ export function InvoiceRecordsTab({
       })
       .catch(() => setHasMore(false))
   }
-
-  const retry = useMutation({
-    mutationFn: (invoiceNo: string) => retryInvoice(tenantId, invoiceNo),
-    onSuccess: () => {
-      appToast.success('已重新提交开票')
-      setRefreshKey((k) => k + 1)
-    },
-    onError: () => appToast.error('重试失败，请稍后再试'),
-  })
 
   const download = async (invoiceNo: string) => {
     const { url } = await getInvoiceDownloadUrl(tenantId, invoiceNo)
@@ -91,6 +80,7 @@ export function InvoiceRecordsTab({
       <div className="flex gap-2">
         <Select value={status} onChange={setStatus} className="w-[130px]" placeholder="全部状态">
           <Select.Option value="all">全部状态</Select.Option>
+          <Select.Option value="pending">待开票</Select.Option>
           <Select.Option value="invoiced">已开票</Select.Option>
           <Select.Option value="invoicing">开票中</Select.Option>
           <Select.Option value="failed">开票失败</Select.Option>
@@ -140,6 +130,11 @@ export function InvoiceRecordsTab({
                   {r.status === 'failed' && r.error_msg && (
                     <p className="text-xs text-mg-danger">{r.error_msg}</p>
                   )}
+                  {r.status === 'pending' && (
+                    <p className="text-xs text-mg-text-2">
+                      申请已提交，平台开票员会在管理后台完成开票、验证码或扫脸认证。
+                    </p>
+                  )}
                   {r.status === 'voided' && (
                     <p className="text-xs text-mg-text-2">
                       该票已由运营红冲；如需重开请在「申请开票」重新发起。
@@ -150,16 +145,6 @@ export function InvoiceRecordsTab({
                   {r.status === 'invoiced' && (
                     <Button variant="outline" size="sm" onClick={() => download(r.invoice_no)}>
                       <LuDownload size={13} className="mr-1" /> 下载
-                    </Button>
-                  )}
-                  {r.status === 'failed' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      loading={retry.isPending && retry.variables === r.invoice_no}
-                      onClick={() => retry.mutate(r.invoice_no)}
-                    >
-                      重新开具
                     </Button>
                   )}
                 </div>

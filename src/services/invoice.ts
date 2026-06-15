@@ -34,12 +34,12 @@ export function listInvoiceRecords(
 
 /** 合并开票 */
 export function createInvoice(tenantId: string, body: CreateInvoiceRequest) {
-  return post<{ invoice_no: string }>(`tenants/${tenantId}/invoices`, body)
+  return post<{ invoice_no: string; status?: string }>(`tenants/${tenantId}/invoices`, body)
 }
 
-/** 重新开具（失败时） */
+/** 重新提交开票申请（失败时，不直接触发销方开票） */
 export function retryInvoice(tenantId: string, invoiceNo: string) {
-  return post<{ ok?: boolean }>(`tenants/${tenantId}/invoices/${invoiceNo}/retry`, {})
+  return post<{ invoice_no?: string; status?: string; ok?: boolean }>(`tenants/${tenantId}/invoices/${invoiceNo}/retry`, {})
 }
 
 /** 下载发票（返回文件直链） */

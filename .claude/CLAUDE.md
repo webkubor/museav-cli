@@ -8,7 +8,7 @@ ModelGo 客户控制台，从官网（website）拆出的独立 SPA。用户登�
 
 | 环境 | 地址 |
 |------|------|
-| 本地开发 | `pnpm dev` → `http://localhost:5175`，`/api` 代理到 `test.modelgo.com` |
+| 本地开发 | `pnpm dev` → `http://localhost:5175`，`/api` 代理到 `modelgo-web-api.test.modelgo.com`（test.modelgo.com 网关已收紧白名单返回 invalid domain，勿用） |
 | 测试 | `https://console.test.modelgo.com`（`pnpm build:test`） |
 | 生产-国内 | `https://console.modelgo.com` |
 | 生产-海外 | `https://console.modelgo.ai` |

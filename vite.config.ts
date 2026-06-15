@@ -103,10 +103,12 @@ export default defineConfig(({ mode }) => ({
     port: process.env.PORT ? parseInt(process.env.PORT) : undefined,
     proxy: {
       '/api': {
-        target: 'https://test.modelgo.com',
+        // test.modelgo.com 网关已收紧域名白名单，对该域一律返回 {"message":"invalid domain"}；
+        // 真 API 网关是 modelgo-web-api.test.modelgo.com（与 .env.test 的 VITE_API_URL 一致）
+        target: 'https://modelgo-web-api.test.modelgo.com',
         changeOrigin: true,
         secure: true,
-        cookieDomainRewrite: { 'test.modelgo.com': '' },
+        cookieDomainRewrite: { 'modelgo-web-api.test.modelgo.com': '' },
       },
     },
   },

@@ -1,5 +1,5 @@
 /**
- * 编辑 API Key 护栏弹窗：选择或取消绑定护栏
+ * 编辑 API Key 护栏弹窗：选择绑定护栏
  * 后端 API Key 列表不返回 guardrail_id，需从护栏侧反查当前绑定关系。
  */
 import { useState, useEffect } from 'react'
@@ -21,7 +21,7 @@ interface Props {
 export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const [selectedId, setSelectedId] = useState<string>('none')
+  const [selectedId, setSelectedId] = useState<string>('')
   const [currentBoundId, setCurrentBoundId] = useState<string | null>(null)
   const [resolving, setResolving] = useState(false)
 
@@ -31,16 +31,29 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
     enabled: open && !!workspaceId,
   })
 
-  const guardrails = guardrailsQuery.data ?? []
+  const guardrails = (guardrailsQuery.data ?? []).filter((g) => !!g.id)
+  const guardrailIds = guardrails.map((g) => g.id).join('|')
 
   useEffect(() => {
-    if (!open || !apiKey || !guardrails.length) return
+    if (!open) {
+      setSelectedId('')
+      setCurrentBoundId(null)
+      setResolving(false)
+      return
+    }
+    if (!apiKey || guardrailsQuery.isLoading) return
+    if (!guardrails.length) {
+      setSelectedId('')
+      setCurrentBoundId(null)
+      setResolving(false)
+      return
+    }
     let cancelled = false
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setResolving(true)
 
     Promise.all(
-      guardrails.map((g) => g.id ? getGuardrail(g.id) : null)
+      guardrails.map((g) => getGuardrail(g.id as string))
     ).then((details) => {
       if (cancelled) return
       let boundId: string | null = null
@@ -55,20 +68,20 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
         }
       }
       setCurrentBoundId(boundId)
-       
-      setSelectedId(boundId ?? 'none')
+      setSelectedId(boundId ?? '')
       setResolving(false)
     }).catch(() => {
       if (!cancelled) setResolving(false)
     })
 
     return () => { cancelled = true }
-  }, [open, apiKey?.api_key_id, guardrails.length])
+  }, [open, apiKey?.api_key_id, guardrailsQuery.isLoading, guardrails.length, guardrailIds])
 
   const mutation = useMutation({
     mutationFn: async () => {
       if (!apiKey) return
-      const newGuardrailId = selectedId === 'none' ? null : selectedId
+      const newGuardrailId = selectedId
+      if (!newGuardrailId) return
 
       if (currentBoundId && currentBoundId !== newGuardrailId) {
         const detail = await getGuardrail(currentBoundId)
@@ -128,7 +141,7 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
           <Button
             variant="brand"
             loading={mutation.isPending}
-            disabled={resolving}
+            disabled={resolving || guardrailsQuery.isLoading || !selectedId}
             onClick={() => mutation.mutate()}
           >
             保存
@@ -136,34 +149,18 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
         </>
       }
     >
-      {resolving ? (
+      {guardrailsQuery.isLoading || resolving ? (
         <div className="flex justify-center py-8">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-mg-border border-t-mg-primary" />
         </div>
+      ) : guardrails.length === 0 ? (
+        <div className="rounded-lg border border-mg-border bg-mg-fill-0/40 px-4 py-5 text-sm text-mg-text-2">
+          当前工作区暂无可选择的护栏
+        </div>
       ) : (
         <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={() => setSelectedId('none')}
-            className="flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition-all"
-            style={{
-              borderColor: selectedId === 'none' ? 'var(--mg-primary)' : 'var(--mg-border)',
-              background: selectedId === 'none' ? 'var(--mg-bg-1)' : 'transparent',
-            }}
-          >
-            <div
-              className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
-              style={{ border: `2px solid ${selectedId === 'none' ? 'var(--mg-primary)' : 'var(--mg-border)'}` }}
-            >
-              {selectedId === 'none' && (
-                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--mg-primary)' }} />
-              )}
-            </div>
-            <span className="text-sm text-mg-text-1">不绑定护栏</span>
-          </button>
-
           {guardrails.map((g) => {
-            const gId = g.id ?? ''
+            const gId = g.id as string
             const selected = selectedId === gId
             return (
               <button

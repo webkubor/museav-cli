@@ -80,6 +80,7 @@ body[theme-mode='dark'] {
   --mg-primary-active:   var(--brand-deep);
   --mg-primary-disabled: var(--brand-light);
   --mg-primary-light:    var(--brand-pale);
+  --mg-on-primary:       #ffffff; /* 品牌底上的前景（白），与主按钮文字同源 */
   --mg-link:             var(--brand-base);
   --mg-link-hover:       var(--brand-mid);
   --mg-nav-text-active:  var(--brand-deep);
@@ -134,6 +135,7 @@ body[theme-mode='dark'] {
   --mg-success: #00d68f;
   --mg-danger:  #ef4444;
   --mg-warning: #f59e0b;
+  --mg-info:    #3b82f6; /* 信息/图表第三色（蓝） */
 
   /* 阴影 */
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
@@ -209,10 +211,11 @@ body[theme-mode='dark'] {
   --mg-code-bg:   #201e23;
   --mg-code-text: #cfc9c2;
 
-  /* 语义色（莫兰迪降饱和：鼠尾草绿 / 陶土红 / 赭黄） */
+  /* 语义色（莫兰迪降饱和：鼠尾草绿 / 陶土红 / 赭黄 / 雾霾蓝） */
   --mg-success: #8fae9b;
   --mg-danger:  #c98b85;
   --mg-warning: #cda971;
+  --mg-info:    #8aa0c4; /* 信息/图表第三色（莫兰迪雾蓝） */
 
   /* 阴影 — 减弱硬黑阴影，改用与背景相融合的柔和烟灰阴影 */
   --shadow-sm: 0 1px 2px rgba(12, 13, 17, 0.18);

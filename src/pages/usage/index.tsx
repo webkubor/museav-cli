@@ -75,16 +75,17 @@ function formatNumber(n: number): string {
 
 // ─── Chart Colors ─────────────────────────────────────
 
+// 指标配色与 KPI 卡片保持一致：消费=琥珀、请求=绿、Token=蓝
 const METRIC_COLOR: Record<Metric, string> = {
-  spend: 'var(--mg-primary)',
-  requests: '#0ea5e9',
-  tokens: 'var(--mg-success)',
+  spend: 'var(--mg-warning)',
+  requests: 'var(--mg-success)',
+  tokens: 'var(--mg-info)',
 }
 
 const TOOLTIP_STYLE = {
   background: 'var(--mg-bg-1)',
   border: '1px solid var(--mg-border)',
-  borderRadius: '8px',
+  borderRadius: 'var(--radius-sm)',
   padding: '8px 12px',
   fontSize: '12px',
   boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
@@ -151,7 +152,7 @@ function Sparkline({ data, metric, noDataLabel, currencySymbol }: SparklineProps
         <XAxis
           dataKey="bucket_start"
           tickFormatter={formatChartTooltipDate}
-          tick={{ fontSize: 11, fill: 'var(--mg-text-2)', fontFamily: 'system-ui' }}
+          tick={{ fontSize: 11, fill: 'var(--mg-text-2)', fontFamily: 'var(--font-sans)' }}
           tickLine={false}
           axisLine={false}
           interval="preserveStartEnd"
@@ -217,7 +218,7 @@ function HistogramChart({ buckets, noDataLabel }: HistogramChartProps) {
         <XAxis
           dataKey="bucket_start"
           tickFormatter={formatChartTooltipDate}
-          tick={{ fontSize: 11, fill: 'var(--mg-text-2)', fontFamily: 'system-ui' }}
+          tick={{ fontSize: 11, fill: 'var(--mg-text-2)', fontFamily: 'var(--font-sans)' }}
           tickLine={false}
           axisLine={false}
           interval="preserveStartEnd"
@@ -251,7 +252,7 @@ function MetricTab({ label, active, onClick }: MetricTabProps) {
       onClick={onClick}
       style={{
         padding: '7px 20px',
-        borderRadius: '8px',
+        borderRadius: 'var(--radius-sm)',
         border: 'none',
         background: active ? 'var(--mg-bg-1)' : 'transparent',
         color: active ? 'var(--mg-text-0)' : 'var(--mg-text-1)',
@@ -376,9 +377,9 @@ function RankingsTable({
                         justifyContent: 'center',
                         width: '22px',
                         height: '22px',
-                        borderRadius: '6px',
+                        borderRadius: 'var(--radius-sm)',
                         background: rankNum <= 3 ? 'var(--mg-primary)' : 'var(--mg-fill-1)',
-                        color: rankNum <= 3 ? '#fff' : 'var(--mg-text-2)',
+                        color: rankNum <= 3 ? 'var(--mg-on-primary)' : 'var(--mg-text-2)',
                         fontSize: '11px',
                         fontWeight: 700,
                       }}
@@ -446,6 +447,12 @@ export default function UsagePage() {
 
   const { from, to } = rangeToDates(timeRange)
   const rangeReady = timeRange.preset !== 'custom' || (!!timeRange.startDate && !!timeRange.endDate)
+
+  // 当前时间范围的人话标签，给图表/排行标注，避免用户不知道看的是哪段
+  const rangeLabel =
+    timeRange.preset === 'custom' && timeRange.startDate && timeRange.endDate
+      ? `${timeRange.startDate} ~ ${timeRange.endDate}`
+      : (USAGE_PRESETS.find((p) => p.key === (timeRange.preset ?? '7d'))?.label ?? '')
 
   // 请求分布/趋势统一按天聚合（#195：hour 粒度会让同一天出现多根柱子）
   const granularity = 'day' as const
@@ -607,9 +614,10 @@ export default function UsagePage() {
       <PageHeader
         title={t('usage.title')}
         description={t('usage.desc')}
-        actions={filterBar}
-        className="mb-7"
       />
+
+      {/* 筛选栏：项目 / API Key / 时间范围，独立一行铺开（不再挤在标题右上角） */}
+      {filterBar}
 
       {/* KPI 卡片行 */}
       {summaryQuery.isError ? (
@@ -645,7 +653,7 @@ export default function UsagePage() {
                 label={t('usage.kpi.tokens')}
                 value={summary ? formatNumber(summary.total.tokens) : '—'}
                 sub={summary ? `${t('usage.metric.requests').toLowerCase()}: ${formatNumber(summary.total.input_tokens)} · ${formatNumber(summary.total.output_tokens)}` : undefined}
-                color="#3b82f6"
+                color="var(--mg-info)"
                 glowColor="rgba(59, 130, 246, 0.12)"
                 hoverBorderClass="hover:border-blue-500/30"
                 icon={<LuDatabase size={16} />}
@@ -660,8 +668,9 @@ export default function UsagePage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--mg-text-0)' }}>
             {t('usage.chart.trendTitle', { metric: METRIC_LABELS[metric] })}
+            <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: 400, color: 'var(--mg-text-2)' }}>· {rangeLabel}</span>
           </div>
-          <div style={{ display: 'flex', gap: '4px', background: 'var(--mg-bg-1)', padding: '3px', borderRadius: '10px' }}>
+          <div style={{ display: 'flex', gap: '4px', background: 'var(--mg-bg-1)', padding: '3px', borderRadius: 'var(--radius-sm)' }}>
             {(['spend', 'requests', 'tokens'] as Metric[]).map((m) => (
               <MetricTab key={m} label={METRIC_LABELS[m]} active={metric === m} onClick={() => setMetric(m)} />
             ))}
@@ -693,6 +702,7 @@ export default function UsagePage() {
       <Card className="p-6 flex flex-col">
         <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--mg-text-0)', marginBottom: '20px' }}>
           {t('usage.chart.histogramTitle')}
+          <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: 400, color: 'var(--mg-text-2)' }}>· {rangeLabel}</span>
         </div>
         {histogramQuery.isError ? (
           <div style={{ color: 'var(--mg-danger)', fontSize: '13px', textAlign: 'center', padding: '40px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
@@ -717,6 +727,7 @@ export default function UsagePage() {
       <div>
         <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--mg-text-0)', marginBottom: '16px' }}>
           {t('usage.rankings.title')}
+          <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: 400, color: 'var(--mg-text-2)' }}>· {rangeLabel}</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))', gap: '16px' }}>
           <RankingsTable

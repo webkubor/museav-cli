@@ -215,7 +215,7 @@ export default function UsagePage() {
   }
 
   const filterBar = (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2 shrink-0">
       <Select
         value={filterWorkspaceId === '' ? '__all__' : filterWorkspaceId}
         onChange={handleWorkspaceChange}
@@ -264,7 +264,11 @@ export default function UsagePage() {
         onChange={setTimeRange}
         presets={usagePresets}
         placeholder={t('usage.customRange.placeholder')}
+        className="h-9 w-52 shrink-0"
       />
+      <Button variant="outline" size="sm" onClick={refetchUsageData} icon={<LuRefreshCw size={14} />}>
+        {t('usage.refresh')}
+      </Button>
     </div>
   )
 
@@ -272,12 +276,7 @@ export default function UsagePage() {
     <div className="space-y-5">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <PageHeader title={t('usage.title')} description={t('usage.desc')} />
-        <div className="flex flex-wrap items-center gap-2">
-          {filterBar}
-          <Button variant="outline" size="sm" onClick={refetchUsageData} icon={<LuRefreshCw size={14} />}>
-            {t('usage.refresh')}
-          </Button>
-        </div>
+        {filterBar}
       </div>
 
       {summaryQuery.isError && (

@@ -4,7 +4,6 @@ import { LuCalendarDays, LuCoins, LuTrendingUp, LuUsers, LuWallet, LuSparkles, L
 import { KpiCard } from '@/components/ui/KpiCard'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { ProgressBar } from '@/components/ui/ProgressBar'
 import {
   Table,
   TableHeader,
@@ -238,25 +237,6 @@ export default function ReferralPage() {
     </div>
   )
 
-  // 顶级档位时后端返回空 nextTierName（无下一档），隐藏升级进度文案。
-  const hasNextTier = !!tier.nextTierName
-  const remain = hasNextTier
-    ? Math.max(0, Number(tier.nextThreshold) - Number(tier.cumulativeSpend))
-    : 0
-
-  const tierProgressText = hasNextTier
-    ? text.tierProgress
-        .replace('{cur}', fmt(tier.cumulativeSpend))
-        .replace('{target}', fmt(tier.nextThreshold))
-    : text.tierProgress.replace('{cur}', fmt(tier.cumulativeSpend)).replace('{target}', '—')
-
-  const tierUpgradeText = hasNextTier
-    ? text.tierUpgrade
-        .replace('{remain}', fmt(remain))
-        .replace('{nextTier}', tier.nextTierName)
-        .replace('{nextRate}', String(tier.nextRate))
-    : ''
-
   const tabs: { key: TabKey; label: string }[] = [
     { key: 'invitees', label: text.tabInvitees },
     { key: 'commissions', label: text.tabCommissions },
@@ -264,10 +244,12 @@ export default function ReferralPage() {
   ]
 
   const isZh = i18n.language.startsWith('zh')
-  const referralMilestones = [
-    { value: 10000, label: isZh ? '普通伙伴' : 'Partner', subLabel: isZh ? '10% 返佣' : '10% Comm.' },
-    { value: 50000, label: isZh ? '核心伙伴' : 'Core Partner', subLabel: isZh ? '13% 返佣' : '13% Comm.' },
-    { value: 200000, label: isZh ? '战略伙伴' : 'Strategic Partner', subLabel: isZh ? '15% 返佣' : '15% Comm.' },
+
+  // 档位阶梯配置——后端接口就绪后替换为 API 数据（#220）
+  const tierConfig = [
+    { name: isZh ? '成长伙伴' : 'Growth Partner', threshold: 0, rate: 10 },
+    { name: isZh ? '核心伙伴' : 'Core Partner', threshold: 50000, rate: 13 },
+    { name: isZh ? '战略伙伴' : 'Strategic Partner', threshold: 200000, rate: 15 },
   ]
 
   return (
@@ -341,38 +323,44 @@ export default function ReferralPage() {
           />
         </FirstChargeLockGate>
 
-        {/* 档位卡 */}
-        <div className="relative overflow-hidden rounded-2xl border border-mg-border bg-card-bg p-5 space-y-4">
+        {/* 档位阶梯卡 */}
+        <div className="relative overflow-hidden rounded-2xl border border-mg-border bg-card-bg p-5 space-y-3">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-brand-base/35 via-brand-base/10 to-transparent" />
-          <p className="text-sm font-bold text-mg-text-0">{text.tierLabel}</p>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold" style={{ color: 'var(--brand-base)' }}>
-              {tier.name}
-            </span>
-            <span className="text-xs text-mg-text-2">·</span>
-            <span className="text-sm font-bold" style={{ color: 'var(--brand-base)' }}>
-              {tier.rate}%
-            </span>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold text-mg-text-0">{text.tierTableLabel}</p>
+            <span className="text-xs text-mg-text-2">{text.tierTableHint}</span>
           </div>
-
-          {/* 进度条 */}
-          <div className="pt-2 pb-6">
-            <ProgressBar
-              value={Number(tier.cumulativeSpend)}
-              min={0}
-              max={250000}
-              variant="rainbow"
-              size="sm"
-              showGlow={true}
-              milestones={referralMilestones}
-              milestoneLayout="bottom"
-            />
-            <div className="mt-8 space-y-1">
-              <p className="text-xs text-mg-text-2 font-medium">{tierProgressText}</p>
-              {tierUpgradeText && (
-                <p className="text-xs text-mg-text-2 font-medium">{tierUpgradeText}</p>
-              )}
-            </div>
+          <div className="divide-y divide-mg-border/50">
+            {tierConfig.map((t) => {
+              const isActive = tier.name === t.name
+              return (
+                <div
+                  key={t.name}
+                  className={`flex items-center justify-between py-2.5 px-3 -mx-3 rounded-lg transition-colors ${
+                    isActive ? 'bg-brand-base/5' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {isActive && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-brand-base shrink-0" />
+                    )}
+                    <span className={`text-sm font-semibold ${isActive ? 'text-brand-base' : 'text-mg-text-1'}`}>
+                      {t.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-xs text-mg-text-2">
+                      {t.threshold === 0
+                        ? (isZh ? '累计消费 ≥ ¥0' : 'Spend ≥ ¥0')
+                        : (isZh ? `累计消费 ≥ ¥${t.threshold.toLocaleString()}` : `Spend ≥ ¥${t.threshold.toLocaleString()}`)}
+                    </span>
+                    <span className={`text-sm font-bold tabular-nums ${isActive ? 'text-brand-base' : 'text-mg-text-0'}`}>
+                      {t.rate}%
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>

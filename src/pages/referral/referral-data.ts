@@ -118,6 +118,8 @@ export const referralCopy = {
     inviteBalanceLabel: '满 ¥100 可转入余额',
     inviteRulesLink: '查看分润规则',
     tierLabel: '返佣档位',
+    tierTableLabel: '返佣档位阶梯',
+    tierTableHint: '按被邀请人各自消费定档',
     /** 模板：再邀请 ¥{remain} 升级 {nextTier}（{nextRate}%） */
     tierUpgrade: '再邀请 {remain} 升级 {nextTier}（{nextRate}%）',
     tierProgress: '累计邀请消费 {cur} / {target}',
@@ -192,6 +194,8 @@ export const referralCopy = {
     inviteBalanceLabel: 'Transfer at ¥100',
     inviteRulesLink: 'View rules',
     tierLabel: 'Commission Tier',
+    tierTableLabel: 'Commission Tiers',
+    tierTableHint: 'Per-invitee spend determines tier',
     tierUpgrade: 'Invite {remain} more to reach {nextTier} ({nextRate}%)',
     tierProgress: 'Invited spend {cur} / {target}',
     rulesTitle: 'Commission rules: ',

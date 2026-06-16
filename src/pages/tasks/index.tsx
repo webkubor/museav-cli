@@ -200,6 +200,10 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
   const expiry = resultExpiry(data) ?? resultExpiry(task)
   // 视频产物：成功态直接用网关 content 端点（凭 gateway_request_id，302 转 OSS）；过期则不展示
   const videoUrl = kind === 'video' && isTaskDone(task.status) && !expired ? videoContentUrl(taskId) : null
+  // 运行时兜底：老任务无 result_meta 但视频实际已被清理（404）→ 当作不可用
+  const [videoUnavailable, setVideoUnavailable] = useState(false)
+  const showVideo = !!videoUrl && !videoUnavailable
+  const gone = expired || videoUnavailable
 
   return (
     <SideSheet open onClose={onClose} width={460} title="任务详情">
@@ -258,22 +262,23 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
           </div>
 
           {/* 产物预览：视频任务成功态，直接用网关 content 端点播放 */}
-          {videoUrl && (
+          {showVideo && (
             <div className="rounded-xl border border-mg-border bg-card-bg p-3">
               <p className="text-[11px] font-bold text-mg-text-2 mb-2 uppercase tracking-wide">产物预览</p>
               <video
                 key={videoUrl}
-                src={videoUrl}
+                src={videoUrl ?? undefined}
                 controls
                 preload="metadata"
                 playsInline
                 className="w-full rounded-lg bg-black max-h-72"
+                onError={() => setVideoUnavailable(true)}
               />
             </div>
           )}
 
           {/* 产物链接 + 下载 */}
-          {videoUrl && (
+          {showVideo && (
             <div className="rounded-xl border border-mg-border bg-card-bg p-4 space-y-2.5">
               <p className="text-[11px] font-bold text-mg-text-2 uppercase tracking-wide">产物链接</p>
               <button
@@ -304,12 +309,12 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
             </div>
           )}
 
-          {/* 产物已过期 */}
-          {expired && (
+          {/* 产物已过期 / 已被清理 */}
+          {gone && kind === 'video' && isTaskDone(task.status) && (
             <div className="rounded-xl border border-mg-border bg-card-bg p-6 flex flex-col items-center gap-2 text-mg-text-3">
               <LuVideoOff size={32} />
               <p className="text-[13px] font-semibold">产物已过期</p>
-              <p className="text-[11px] text-mg-text-2">视频文件已自动清理</p>
+              <p className="text-[11px] text-mg-text-2">视频文件已自动清理，不支持预览与下载</p>
             </div>
           )}
 
@@ -608,7 +613,7 @@ export default function TasksPage() {
 
       {/* 详情抽屉 */}
       {selectedTask && (
-        <TaskDetailSheet task={selectedTask} onClose={() => setSelectedTask(null)} />
+        <TaskDetailSheet key={selectedTask.gateway_request_id} task={selectedTask} onClose={() => setSelectedTask(null)} />
       )}
 
       {/* 视频预览弹窗（列表点缩略图触发） */}

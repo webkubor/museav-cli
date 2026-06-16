@@ -4,7 +4,8 @@
  * - 其余任务（未完成 / 图片 / 音乐）：类型图标占位，不可点
  */
 
-import { LuPlay } from 'react-icons/lu'
+import { useState } from 'react'
+import { LuPlay, LuVideoOff } from 'react-icons/lu'
 import { useVideoThumbnail } from './video-thumbnail-cache'
 
 interface VideoThumbnailProps {
@@ -21,11 +22,16 @@ const BOX = 'h-12 w-12 shrink-0 rounded-lg overflow-hidden mx-auto'
 export function VideoThumbnail({ taskId, videoUrl, placeholder, onPreview }: VideoThumbnailProps) {
   // hooks 必须无条件调用：videoUrl 为 null 时 hook 内部自身短路，不抓帧
   const thumb = useVideoThumbnail(taskId, videoUrl)
+  // 产物 404（已过期/被清理）：兜底显示过期图标，不可点
+  const [failed, setFailed] = useState(false)
 
-  if (!videoUrl) {
+  if (!videoUrl || failed) {
     return (
-      <div className={`${BOX} flex items-center justify-center bg-mg-fill-1 text-mg-text-2`}>
-        {placeholder}
+      <div
+        className={`${BOX} flex items-center justify-center bg-mg-fill-1 text-mg-text-3`}
+        title={failed ? '产物已过期' : undefined}
+      >
+        {failed ? <LuVideoOff size={20} /> : placeholder}
       </div>
     )
   }
@@ -40,13 +46,14 @@ export function VideoThumbnail({ taskId, videoUrl, placeholder, onPreview }: Vid
       {thumb ? (
         <img src={thumb} alt="视频首帧" className="h-full w-full object-cover" />
       ) : (
-        // 抓取中或抓帧失败（CORS）：直接用 <video> 显示首帧兜底
+        // 抓取中或抓帧失败（CORS）：直接用 <video> 显示首帧兜底；真 404 则标记已过期
         <video
           src={`${videoUrl}#t=0.1`}
           muted
           preload="metadata"
           playsInline
           className="h-full w-full object-cover"
+          onError={() => setFailed(true)}
         />
       )}
       <span className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-90 transition-opacity group-hover:bg-black/35">

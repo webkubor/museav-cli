@@ -106,6 +106,7 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
                     statusMap={{
                       active: { label: t('apiKeys.table.active'), variant: 'success', dot: true },
                       inactive: { label: t('apiKeys.table.disabled'), variant: 'outline' },
+                      revoked: { label: t('apiKeys.table.revoked'), variant: 'danger' },
                     }}
                     fallback={record.status}
                   />

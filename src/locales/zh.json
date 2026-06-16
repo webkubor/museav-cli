@@ -120,6 +120,7 @@
       "actions": "操作",
       "active": "启用中",
       "disabled": "已禁用",
+      "revoked": "已吊销",
       "copy": "复制",
       "revoke": "删除",
       "copyMaskedSuccess": "遮蔽凭证已复制到剪贴板",

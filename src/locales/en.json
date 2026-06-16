@@ -120,6 +120,7 @@
       "actions": "Actions",
       "active": "Active",
       "disabled": "Disabled",
+      "revoked": "Revoked",
       "copy": "Copy",
       "revoke": "Delete",
       "copyMaskedSuccess": "Masked credentials copied to clipboard",

@@ -461,7 +461,7 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
                   <TableBody>
                     {rewardPage.paged.map((rec, i) => (
                       <TableRow key={i} className="cursor-pointer billing-table-row">
-                        <TableCell className="text-xs text-mg-text-2 font-mono">{rec.date}</TableCell>
+                        <TableCell className="text-xs text-mg-text-2 font-mono">{formatDateTime(rec.date)}</TableCell>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2.5 select-none">
                             <div className="w-6 h-6 rounded-full bg-mg-fill-1 border border-mg-border flex items-center justify-center font-bold text-[10px] text-mg-text-1 uppercase shrink-0">

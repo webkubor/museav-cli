@@ -21,6 +21,7 @@ import { appToast } from '@/lib/app-toast'
 import { useAuthStore } from '@/store/auth'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
+import { useClientPage } from '@/hooks/use-client-page'
 import { PERMS } from '@/config/permissions'
 
 import {
@@ -598,19 +599,6 @@ export default function ReferralPage() {
 // ── 子表格组件 ──────────────────────────────────────────────
 
 type TextCopy = typeof referralCopy.zh
-
-const RECORD_PAGE_SIZE = 10
-
-/** 前端分页：后端这几个 referral 列表接口返回全量数组、无分页参数，故在前端切片。
- *  用 clamp 而非 useEffect 重置页码，避免数据变化时越界 + 不触发 set-state-in-effect。 */
-function useClientPage<T>(items: T[], pageSize = RECORD_PAGE_SIZE) {
-  const [page, setPage] = useState(1)
-  const total = items.length
-  const totalPages = Math.max(1, Math.ceil(total / pageSize))
-  const safePage = Math.min(page, totalPages)
-  const paged = items.slice((safePage - 1) * pageSize, safePage * pageSize)
-  return { paged, page: safePage, setPage, total, pageSize }
-}
 
 function InviteesTable({ invitees, text }: { invitees: ReferralInvitee[]; text: TextCopy }) {
   const { paged, page, setPage, total, pageSize } = useClientPage(invitees)

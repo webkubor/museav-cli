@@ -9,6 +9,7 @@ import {
   redeemPromoCode,
 } from '@/services/billing'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
+import { useClientPage } from '@/hooks/use-client-page'
 import { listRewardRecords } from '@/services/referral'
 import { listGiftRecords } from '@/services/billing'
 import { useCurrency, useSite } from '@/hooks/use-platform-config'
@@ -21,6 +22,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
+import { Pagination } from '@/components/ui/Pagination'
 import type { StatusConfig } from '@/components/ui/StatusBadge'
 import { appToast } from '@/lib/app-toast'
 import { formatDateTime } from '@/lib/format-date'
@@ -130,6 +132,8 @@ export default function BillingPage() {
     queryFn: () => listRewardRecords(tenantId),
     enabled: !!tenantId && activeTab === 'reward',
   })
+  // 该接口返回全量、无分页参数（与推荐计划同接口）→ 客户端分页，避免全量渲染卡顿（#213）。
+  const rewardPage = useClientPage(rewardRecords)
 
   // 赠送明细（grant 桶入账 journal，#93）
   const { data: giftRecordsPage } = useQuery({
@@ -763,7 +767,7 @@ export default function BillingPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rewardRecords.map((rec, i) => (
+                  {rewardPage.paged.map((rec, i) => (
                     <TableRow key={i} className="cursor-pointer billing-table-row">
                       <TableCell className="text-xs text-mg-text-2 font-mono">{rec.date}</TableCell>
                       <TableCell className="font-medium">
@@ -788,6 +792,15 @@ export default function BillingPage() {
                   ))}
                 </TableBody>
               </Table>
+              {rewardPage.total > rewardPage.pageSize && (
+                <Pagination
+                  mode="page"
+                  page={rewardPage.page}
+                  total={rewardPage.total}
+                  pageSize={rewardPage.pageSize}
+                  onPageChange={rewardPage.setPage}
+                />
+              )}
             </div>
           )}
         </div>

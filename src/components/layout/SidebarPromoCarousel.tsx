@@ -1,51 +1,28 @@
 /**
- * 侧边栏底部促销小卡轮播
- * - 自动轮播（悬停暂停）、圆点指示、点击跳转
- * - 卡片由 PROMO_CARDS 数组驱动，改文案/增减卡片只需动数组
- * - 侧边栏折叠时不渲染
+ * 侧边栏底部「免费模型」推荐小卡轮播
+ * - 动态：从模型目录拉取免费模型，每个免费模型一张卡（不再写死）
+ * - 自动轮播（悬停暂停）、圆点指示、点击进 Playground 免费体验该模型
+ * - 侧边栏折叠 / 无免费模型时不渲染
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LuArrowRight, LuSparkles } from 'react-icons/lu'
-
-type PromoCard = {
-  id: string
-  title: string
-  subtitle: string
-  icon: React.ReactNode
-  to: string
-  /** 卡片渐变底（Tailwind 渐变工具类） */
-  gradient: string
-}
-
-const PROMO_CARDS: PromoCard[] = [
-  {
-    id: 'referral',
-    title: '邀请返佣',
-    subtitle: '分润最高 15%，不封顶',
-    icon: <span role="img" aria-label="gift">🎁</span>,
-    to: '/referral',
-    gradient: 'from-orange-500 to-rose-500',
-  },
-  {
-    id: 'playground',
-    title: '模型体验',
-    subtitle: '免费额度试用模型',
-    icon: <span role="img" aria-label="rocket">🚀</span>,
-    to: '/models/playground',
-    gradient: 'from-indigo-500 to-violet-600',
-  },
-  {
-    id: 'promo-code',
-    title: '兑换优惠码',
-    subtitle: '促销码自助秒到账',
-    icon: <span role="img" aria-label="ticket">🎟️</span>,
-    to: '/billing',
-    gradient: 'from-emerald-600 to-teal-700',
-  },
-]
+import { useQuery } from '@tanstack/react-query'
+import { LuArrowRight } from 'react-icons/lu'
+import { listModels } from '@/services/catalog'
+import { ModelIcon } from '@/features/models/components/ModelIcon'
+import type { CatalogModelItem } from '@/types'
 
 const ROTATE_MS = 5000
+const MAX_CARDS = 8
+
+/** 免费模型：标签含 free，或输入/输出最低价均为 0。 */
+function isFreeModel(m: CatalogModelItem): boolean {
+  const tags = (m.tags ?? []).map((t) => t.toLowerCase())
+  if (tags.includes('free')) return true
+  const inp = Number.parseFloat(m.pricing?.input_per_1m ?? '')
+  const out = Number.parseFloat(m.pricing?.output_per_1m ?? '')
+  return (!Number.isFinite(inp) || inp <= 0) && (!Number.isFinite(out) || out <= 0)
+}
 
 export function SidebarPromoCarousel({ collapsed }: { collapsed: boolean }) {
   const navigate = useNavigate()
@@ -53,13 +30,22 @@ export function SidebarPromoCarousel({ collapsed }: { collapsed: boolean }) {
   const [paused, setPaused] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const count = PROMO_CARDS.length
+  const { data } = useQuery({
+    queryKey: ['sidebar-free-models'],
+    queryFn: () => listModels({ page_size: 100 }),
+    enabled: !collapsed,
+    staleTime: 10 * 60_000,
+  })
+
+  const freeModels = useMemo(
+    () => (data?.items ?? []).filter(isFreeModel).slice(0, MAX_CARDS),
+    [data?.items],
+  )
+  const count = freeModels.length
 
   useEffect(() => {
     if (collapsed || paused || count <= 1) return
-    timerRef.current = setInterval(() => {
-      setIndex((i) => (i + 1) % count)
-    }, ROTATE_MS)
+    timerRef.current = setInterval(() => setIndex((i) => (i + 1) % count), ROTATE_MS)
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
     }
@@ -67,24 +53,43 @@ export function SidebarPromoCarousel({ collapsed }: { collapsed: boolean }) {
 
   if (collapsed || count === 0) return null
 
-  const active = PROMO_CARDS[index]
+  // 渲染期 clamp，避免 count 变化后 index 越界（不在 effect 里 setState）
+  const activeIndex = Math.min(index, count - 1)
+  const model = freeModels[activeIndex]
+  const goExperience = () =>
+    navigate('/models/playground', { state: { selectedModelId: model.model_id } })
 
   return (
     <div className="px-3 pb-2.5">
       <button
         type="button"
-        onClick={() => navigate(active.to)}
+        onClick={goExperience}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
-        className={`group relative flex w-full items-center gap-2.5 overflow-hidden rounded-xl bg-gradient-to-br ${active.gradient} px-3 py-2.5 text-left shadow-sm transition-transform duration-200 hover:-translate-y-0.5 cursor-pointer`}
+        title={`免费体验 ${model.display_name}`}
+        className="group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl px-3.5 py-3 text-left shadow-md transition-transform duration-200 hover:-translate-y-0.5 cursor-pointer"
+        style={{ background: 'linear-gradient(135deg, var(--brand-base), var(--brand-deep))' }}
       >
-        <LuSparkles className="pointer-events-none absolute right-9 top-2 h-3.5 w-3.5 text-white/30" />
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15 text-[18px] leading-none backdrop-blur-sm">
-          {active.icon}
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
+          <ModelIcon
+            model={{ display_name: model.display_name, vendor: model.provider || model.vendor }}
+            size={24}
+            rounded="rounded-lg"
+          />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13px] font-bold leading-tight text-white">{active.title}</span>
-          <span className="mt-0.5 block truncate text-[11px] font-medium leading-tight text-white/85">{active.subtitle}</span>
+          <span className="inline-flex items-center rounded-full bg-white/22 px-1.5 text-[10px] font-extrabold leading-[17px] text-white">
+            限时免费
+          </span>
+          <span
+            className="mt-1 block truncate text-[13px] font-bold leading-tight text-white"
+            title={model.display_name}
+          >
+            {model.display_name}
+          </span>
+          <span className="block truncate text-[11px] font-medium leading-tight text-white/80">
+            点击免费体验
+          </span>
         </span>
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition-transform duration-200 group-hover:translate-x-0.5">
           <LuArrowRight size={13} />
@@ -93,14 +98,14 @@ export function SidebarPromoCarousel({ collapsed }: { collapsed: boolean }) {
 
       {count > 1 && (
         <div className="mt-2 flex items-center justify-center gap-1.5">
-          {PROMO_CARDS.map((card, i) => (
+          {freeModels.map((m, i) => (
             <button
-              key={card.id}
+              key={m.id}
               type="button"
-              aria-label={`切换到 ${card.title}`}
+              aria-label={`切换到 ${m.display_name}`}
               onClick={() => setIndex(i)}
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === index ? 'w-4 bg-brand-base' : 'w-1.5 bg-mg-border hover:bg-mg-text-3'
+                i === activeIndex ? 'w-4 bg-brand-base' : 'w-1.5 bg-mg-border hover:bg-mg-text-3'
               }`}
             />
           ))}

@@ -445,7 +445,9 @@ export default function UsagePage() {
     tokens: t('usage.metric.tokens'),
   }
 
-  const { from, to } = rangeToDates(timeRange)
+  // 必须 memo：rangeToDates 内部用 new Date()，直接调用会每次渲染产出新的 from/to，
+  // 导致 query key 每帧都变 → react-query 无限重拉（疯狂重试）。仅在 timeRange 变化时重算。
+  const { from, to } = useMemo(() => rangeToDates(timeRange), [timeRange])
   const rangeReady = timeRange.preset !== 'custom' || (!!timeRange.startDate && !!timeRange.endDate)
 
   // 当前时间范围的人话标签，给图表/排行标注，避免用户不知道看的是哪段

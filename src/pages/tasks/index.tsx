@@ -452,7 +452,6 @@ export default function TasksPage() {
       {/* 页头 */}
       <PageHeader
         title={t('nav.tasks')}
-        description="查看异步任务的执行状态与产物（视频生成等媒体任务）。任务由 API 发起，本页用于监控与取片；排队中的任务可取消。"
         className="mb-6"
         actions={
           <Button

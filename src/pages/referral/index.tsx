@@ -257,7 +257,7 @@ export default function ReferralPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* 页头 */}
-      <PageHeader title={text.title} description={text.desc} />
+      <PageHeader title={text.title} />
 
       {/* KPI 行 */}
       <div className="no-canvas-blur grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">

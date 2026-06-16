@@ -494,10 +494,7 @@ export default function ObservabilityPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={t('observability.title')}
-        description={t('observability.desc')}
-      />
+      <PageHeader title={t('observability.title')} />
 
       {loggingQuery.isLoading && (
         <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border p-6 max-w-3xl space-y-4 animate-pulse">

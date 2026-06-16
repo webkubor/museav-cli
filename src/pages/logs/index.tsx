@@ -305,7 +305,6 @@ export default function LogsPage() {
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       <PageHeader
         title={t('logs.title')}
-        description={t('logs.desc')}
         actions={
           <Button
             variant="outline"

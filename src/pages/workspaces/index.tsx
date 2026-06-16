@@ -89,10 +89,7 @@ export default function WorkspacesPage() {
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       {/* 头部标题与描述 */}
-      <PageHeader
-        title={t('workspaces.title')}
-        description={t('workspaces.desc')}
-      />
+      <PageHeader title={t('workspaces.title')} />
 
       {/* 控制台操作区域 */}
       <div className="flex justify-between items-center gap-4">

@@ -51,10 +51,7 @@ export default function AccountSettingsPage() {
 
   return (
     <div style={{ maxWidth: '800px' }}>
-      <PageHeader
-        title={t('account.title')}
-        description={t('account.desc')}
-      />
+      <PageHeader title={t('account.title')} />
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as Tab)}>
         <TabsList variant="pills" className="mb-6">

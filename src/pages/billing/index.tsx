@@ -50,7 +50,7 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('billing.title')} description={t('billing.desc')} />
+      <PageHeader title={t('billing.title')} />
 
       <BalanceCard
         tenantId={tenantId}

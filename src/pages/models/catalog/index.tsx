@@ -4,15 +4,15 @@
  * API：GET /api/v1/catalog/models、GET /api/v1/catalog/model-tags、GET /api/v1/usage/rankings/models
  */
 
-import { useMemo, useState, useCallback, useEffect } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import {
-  LuArrowUpRight,
-  LuBookOpen,
   LuCheck,
+  LuChevronDown,
   LuChevronRight,
+  LuChevronUp,
   LuCopy,
   LuGift,
   LuLockKeyhole,
@@ -21,14 +21,12 @@ import {
   LuZap,
 } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
-import { getMarketConfig } from '@/config/market'
 import { useModels } from '@/features/models/hooks/useModels'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
 import { resolveVendorBrand } from '@/features/models/components/vendor-icons'
 import { FlameIcon } from '@/components/ui/FlameIcon'
 import { ModalityBadge } from '@/features/models/components/ModalityBadge'
 import { useCopy } from '@/hooks/use-copy'
-import { useMarket } from '@/hooks/useMarket'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { appToast } from '@/lib/app-toast'
 import { cn, formatContextLength, formatModelPrice } from '@/lib/utils'
@@ -196,8 +194,6 @@ export default function ModelsCatalogPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const isZh = i18n.language.startsWith('zh')
-  const market = useMarket()
-  const docsUrl = getMarketConfig(market).docsUrl
 
   const [category, setCategory] = useState<string>('all')
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilterState>(() => ({ ...DEFAULT_ADVANCED_FILTERS }))
@@ -206,6 +202,7 @@ export default function ModelsCatalogPage() {
   const [isCompareOpen, setIsCompareOpen] = useState(false)
   const [compareInitialIds, setCompareInitialIds] = useState<string[]>([])
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [noticeCollapsed, setNoticeCollapsed] = useState(() => localStorage.getItem('mg_catalog_notice_collapsed') === '1')
   const { copy } = useCopy()
 
   const {
@@ -273,32 +270,6 @@ export default function ModelsCatalogPage() {
     )
   }, [category, advancedFilters, filteredModels])
 
-  // 我们支持的官方厂商（去重的 model.provider）：只保留能解析到 lobehub 品牌图标的，
-  // 无法识别的（会回退首字母）不展示，单独收集供补图标映射。
-  const { supportedProviders, unknownProviders } = useMemo(() => {
-    // 按「规范品牌」去重：deepseek/deepseek-v4、claude/anthropic、seedream/ark 等
-    // 都收敛到同一品牌，只展示一个图标
-    const known = new Map<string, ModelIconLike>()
-    const unknown = new Set<string>()
-    for (const model of allModels) {
-      const name = model.provider
-      if (!name) continue
-      const brand = resolveVendorBrand(name)
-      if (brand) {
-        if (!known.has(brand)) known.set(brand, { vendor: name, display_name: name })
-      } else {
-        unknown.add(name)
-      }
-    }
-    return { supportedProviders: Array.from(known.values()), unknownProviders: Array.from(unknown) }
-  }, [allModels])
-
-  // 无法识别的厂商（无对应 lobehub 图标）→ dev 控制台列出，便于在 vendor-icons 补映射
-  useEffect(() => {
-    if (import.meta.env.DEV && unknownProviders.length > 0) {
-      console.warn('[catalog] 无法识别的厂商（无 lobehub 图标，未展示）:', unknownProviders)
-    }
-  }, [unknownProviders])
 
   const { data: rankingsData } = useQuery({
     queryKey: ['usage-rankings', 'models', tenantId],
@@ -389,60 +360,29 @@ export default function ModelsCatalogPage() {
 
   return (
     <div className="models-catalog-page">
-      <section className="models-catalog-hero" aria-labelledby="models-catalog-title">
-        <div className="models-catalog-hero-copy">
-          <div className="models-catalog-kicker">
-            <LuSparkles aria-hidden />
-            {t('modelsCatalog.hero.kicker')}
-          </div>
-          <h1 id="models-catalog-title">{t('modelsCatalog.allModels.title')}</h1>
-          <p>{t('modelsCatalog.allModels.desc')}</p>
-          {supportedProviders.length > 0 && (
-            <div className="models-catalog-providers" aria-label={t('modelsCatalog.stats.vendors')}>
-              {supportedProviders.map((provider) => (
-                <ModelIcon
-                  key={provider.vendor}
-                  model={provider}
-                  size={26}
-                  rounded="rounded-lg"
-                  className="models-catalog-provider-icon"
-                />
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="models-catalog-actions">
-          <Button
-            variant="outline"
-            className="models-catalog-action"
-            onClick={() => handleOpenCompare()}
-          >
-            <LuGitCompareArrows size={15} />
-            {t('modelsCatalog.button.compare')}
-          </Button>
-          <a
-            href={docsUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="models-catalog-action models-catalog-action--link"
-          >
-            <LuBookOpen size={15} />
-            {t('modelsCatalog.button.docs')}
-            <LuArrowUpRight size={13} />
-          </a>
-        </div>
-      </section>
-
       <div className="models-catalog-notice" role="note">
         <LuLockKeyhole aria-hidden />
         <div className="models-catalog-notice-body">
           <p>
-            <strong>免费模型需首次充值后解锁</strong>：完成任意金额的首次充值即可解锁全部免费模型；付费模型不受此门槛影响。
+            <strong>免费模型需首次充值后解锁</strong>{noticeCollapsed ? '' : '：完成任意金额的首次充值即可解锁全部免费模型；付费模型不受此门槛影响。'}
           </p>
-          <p className="models-catalog-notice-sub">
-            注：免费模型 ≠ Free Tier 套餐——前者是按模型粒度的限免，后者是账户级套餐机制，两者互不等同。
-          </p>
+          {!noticeCollapsed && (
+            <p className="models-catalog-notice-sub">
+              注：免费模型 ≠ Free Tier 套餐——前者是按模型粒度的限免，后者是账户级套餐机制，两者互不等同。
+            </p>
+          )}
         </div>
+        <button
+          className="models-catalog-notice-toggle"
+          onClick={() => {
+            const next = !noticeCollapsed
+            setNoticeCollapsed(next)
+            localStorage.setItem('mg_catalog_notice_collapsed', next ? '1' : '0')
+          }}
+          aria-label={noticeCollapsed ? 'Expand' : 'Collapse'}
+        >
+          {noticeCollapsed ? <LuChevronDown size={14} /> : <LuChevronUp size={14} />}
+        </button>
       </div>
 
       <ModelCatalogFilters

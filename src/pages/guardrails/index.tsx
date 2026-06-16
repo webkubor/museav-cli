@@ -371,7 +371,6 @@ export default function GuardrailsPage() {
     <div className="space-y-6">
       <PageHeader
         title={t('guardrails.title')}
-        description={t('guardrails.desc')}
         actions={canCreate && (
           <Button
             variant="brand"

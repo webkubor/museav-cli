@@ -276,7 +276,7 @@ export default function UsagePage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title={t('usage.title')} description={t('usage.desc')} />
+      <PageHeader title={t('usage.title')} />
       {filterBar}
 
       {summaryQuery.isError && (

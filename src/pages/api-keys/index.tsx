@@ -102,7 +102,7 @@ export default function ApiKeysPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('apiKeys.title')} description={t('apiKeys.desc')} />
+      <PageHeader title={t('apiKeys.title')} />
 
       <AccessCenterCard
         docsUrl={docsUrl}

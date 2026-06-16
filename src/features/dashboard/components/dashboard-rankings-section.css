@@ -53,61 +53,53 @@
 .dashboard-ranking-list {
   position: relative;
   z-index: 1;
-  display: grid;
-  grid-auto-rows: min-content;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
   min-height: 340px;
 }
 
 .dashboard-ranking-row {
   display: grid;
-  grid-template-columns: 42px 38px minmax(0, 1fr) auto;
+  grid-template-columns: 28px 36px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
-  padding: 11px 12px;
-  border: 1px solid color-mix(in srgb, var(--mg-border) 82%, transparent);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--mg-bg-0) 82%, transparent);
+  padding: 11px 4px;
+  border-bottom: 1px solid color-mix(in srgb, var(--mg-border) 50%, transparent);
+  transition: background 0.15s;
+}
+
+.dashboard-ranking-row:last-child {
+  border-bottom: 0;
+}
+
+.dashboard-ranking-row:hover {
+  background: color-mix(in srgb, var(--mg-fill-0) 60%, transparent);
+  border-radius: 10px;
 }
 
 .dashboard-ranking-rank {
   font-family: var(--font-mono);
-  font-size: 20px;
-  font-weight: 850;
-  color: var(--brand-base);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mg-text-3);
+  text-align: center;
 }
 
 .dashboard-ranking-icon {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 13px;
-  color: var(--rank-tone);
-  background: color-mix(in srgb, var(--rank-tone) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--rank-tone) 24%, transparent);
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--mg-fill-1);
+  border: 1px solid var(--mg-border);
   overflow: hidden;
 }
 
 .dashboard-ranking-icon svg {
-  width: 18px;
-  height: 18px;
-}
-
-.dashboard-ranking-row[data-tone="emerald"] {
-  --rank-tone: #35d98c;
-}
-
-.dashboard-ranking-row[data-tone="cyan"] {
-  --rank-tone: #22c7e8;
-}
-
-.dashboard-ranking-row[data-tone="violet"] {
-  --rank-tone: #8b6cf6;
-}
-
-.dashboard-ranking-row[data-tone="amber"] {
-  --rank-tone: #f5b84b;
+  width: 16px;
+  height: 16px;
+  color: var(--mg-text-2);
 }
 
 .dashboard-ranking-copy {
@@ -133,15 +125,6 @@
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.dashboard-ranking-score {
-  padding: 5px 9px;
-  border-radius: 999px;
-  color: var(--rank-tone);
-  background: color-mix(in srgb, var(--rank-tone) 10%, transparent);
-  font-size: 11px;
-  font-weight: 850;
 }
 
 .dashboard-ranking-note {

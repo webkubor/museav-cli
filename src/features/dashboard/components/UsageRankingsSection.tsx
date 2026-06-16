@@ -5,38 +5,28 @@ import { useAuthStore } from '@/store/auth'
 import { useNavigate } from 'react-router-dom'
 import { getUsageRankingsModels, getUsageRankingsApiKeys } from '@/services/usage'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
-import { useCurrency } from '@/hooks/use-platform-config'
 import type { UsageRankingItem } from '@/types'
 import './dashboard-rankings-section.css'
-
-type RankingTone = 'emerald' | 'cyan' | 'violet' | 'amber'
 
 interface DisplayItem {
   rank: string
   name: string
   meta: string
-  score: string
-  tone: RankingTone
   key: string
   iconModel?: ModelIconLike
 }
 
-const TONES: RankingTone[] = ['emerald', 'cyan', 'violet', 'amber']
-
 function toDisplay(
   item: UsageRankingItem,
   index: number,
-  symbol: string,
   iconMap: Map<string, ModelIconLike>
 ): DisplayItem {
-  const amount = item.spend?.amount ? `${symbol}${parseFloat(item.spend.amount).toFixed(4)}` : '—'
-  const tokens = item.tokens ? `${(item.tokens / 1000).toFixed(1)}K` : ''
+  const tokens = item.tokens ? `${(item.tokens / 1000).toFixed(1)}K tokens` : ''
+  const calls = `${item.requests ?? 0} calls`
   return {
     rank: String(item.rank ?? index + 1).padStart(2, '0'),
     name: item.name || item.key || '—',
-    meta: tokens ? `${tokens} tokens · ${item.requests ?? 0} calls` : `${item.requests ?? 0} calls`,
-    score: amount,
-    tone: TONES[index % TONES.length],
+    meta: tokens ? `${tokens} · ${calls}` : calls,
     key: item.key ?? '',
     iconModel: item.key
       ? (iconMap.get(item.key) ?? { display_name: item.name || item.key, vendor: item.key })
@@ -74,7 +64,6 @@ const CONFIG = {
 export function UsageRankingsSection({ type }: { type: 'models' | 'api-keys' }) {
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
   const navigate = useNavigate()
-  const { symbol } = useCurrency()
   const { from, to } = getMonthRange()
   const cfg = CONFIG[type]
 
@@ -88,7 +77,7 @@ export function UsageRankingsSection({ type }: { type: 'models' | 'api-keys' }) 
     staleTime: 5 * 60_000,
   })
 
-  const items = (data?.items ?? []).map((item, i) => toDisplay(item, i, symbol, new Map()))
+  const items = (data?.items ?? []).map((item, i) => toDisplay(item, i, new Map()))
 
   function handleRowClick(item: DisplayItem) {
     if (type === 'models' && item.key) {
@@ -119,15 +108,14 @@ export function UsageRankingsSection({ type }: { type: 'models' | 'api-keys' }) 
         ) : (
           items.map((item) => (
             <div
-              className="dashboard-ranking-row cursor-pointer hover:shadow-sm transition-shadow"
-              data-tone={item.tone}
+              className="dashboard-ranking-row cursor-pointer"
               key={item.rank}
               onClick={() => handleRowClick(item)}
             >
               <span className="dashboard-ranking-rank">{item.rank}</span>
               <span className="dashboard-ranking-icon">
                 {item.iconModel ? (
-                  <ModelIcon model={item.iconModel} size={24} />
+                  <ModelIcon model={item.iconModel} size={22} />
                 ) : (
                   cfg.icon
                 )}
@@ -136,7 +124,6 @@ export function UsageRankingsSection({ type }: { type: 'models' | 'api-keys' }) 
                 <strong>{item.name}</strong>
                 <small>{item.meta}</small>
               </span>
-              <span className="dashboard-ranking-score">{item.score}</span>
             </div>
           ))
         )}

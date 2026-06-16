@@ -106,7 +106,10 @@ export function TagInput({
     if (!showDropdown) return
     const update = () => {
       const r = containerRef.current?.getBoundingClientRect()
-      if (r) setMenuPos({ left: r.left, top: r.bottom + 4, width: r.width })
+      if (r) {
+        const maxWidth = window.innerWidth - r.left - 8
+        setMenuPos({ left: r.left, top: r.bottom + 4, width: Math.min(r.width, maxWidth) })
+      }
     }
     update()
     window.addEventListener('scroll', update, true)

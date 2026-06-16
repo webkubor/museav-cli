@@ -1,5 +1,5 @@
 /**
- * 创建 API Key 弹窗：名称、作用域、成员、护栏、消费限额、过期时间
+ * 创建 API Key 弹窗：作用域（Tab）、名称、护栏、消费限额、过期时间
  */
 import { useEffect, useState } from 'react'
 import confetti from 'canvas-confetti'
@@ -52,7 +52,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const membersQuery = useQuery({
     queryKey: ['workspace-members', workspaceId],
     queryFn: () => listWorkspaceMembers(workspaceId, { page_size: 100 }),
-    enabled: !!workspaceId && open,
+    enabled: !!workspaceId && open && scope === 'member',
     staleTime: 60_000,
   })
 
@@ -67,10 +67,10 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   useEffect(() => {
     const guardrails = Array.isArray(guardrailsQuery.data) ? guardrailsQuery.data : []
     if (!guardrails.length) return
-    const defaultGuardrail = guardrails.find((g) => g.is_default)
-    if (defaultGuardrail && !guardrailIds.includes(defaultGuardrail.id)) {
+    const def = guardrails.find((g) => g.is_default)
+    if (def && !guardrailIds.includes(def.id)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setGuardrailIds((prev) => [defaultGuardrail.id, ...prev.filter((id) => id !== defaultGuardrail.id)])
+      setGuardrailIds((prev) => [def.id, ...prev.filter((id) => id !== def.id)])
     }
   }, [guardrailIds, guardrailsQuery.data])
 
@@ -124,7 +124,13 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
     setGuardrailIds((prev) => prev.includes(g.id) ? prev : [...prev, g.id])
   }
 
-  const allGuardrails = Array.isArray(guardrailsQuery.data) ? guardrailsQuery.data : []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawData = guardrailsQuery.data as any
+  const allGuardrails: GuardrailDetail[] = Array.isArray(rawData)
+    ? rawData
+    : Array.isArray(rawData?.items)
+      ? rawData.items
+      : []
   const defaultGuardrail = allGuardrails.find((g) => g.is_default)
   const defaultId = defaultGuardrail?.id ?? ''
   const extraIds = guardrailIds.filter((id) => id !== defaultId)
@@ -148,6 +154,29 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
         }
       >
         <div className="flex flex-col gap-7 py-3">
+          {/* 作用域 Tab — 无 label，直接在顶部 */}
+          <div className="flex gap-1 p-1 rounded-xl bg-mg-fill-0 border border-mg-border">
+            {SCOPE_OPTIONS.map((opt) => {
+              const active = scope === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => { setScope(opt.value); setMemberAccountId('') }}
+                  className={[
+                    'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all duration-150',
+                    active
+                      ? 'bg-mg-bg-0 text-brand-base shadow-sm border border-mg-border'
+                      : 'text-mg-text-2 hover:text-mg-text-1',
+                  ].join(' ')}
+                >
+                  <span className="shrink-0">{opt.icon}</span>
+                  {opt.label}
+                </button>
+              )
+            })}
+          </div>
+
           {/* 名称 */}
           <div>
             <label className="block text-xs font-bold text-mg-text-1 mb-2">
@@ -158,37 +187,6 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
               onChange={(e) => setName(e.target.value)}
               placeholder={t('apiKeys.createModal.namePlaceholder')}
             />
-          </div>
-
-          {/* 作用域 */}
-          <div>
-            <label className="block text-xs font-bold text-mg-text-1 mb-2">作用域</label>
-            <div className="flex gap-1 p-1 rounded-xl bg-mg-fill-0 border border-mg-border">
-              {SCOPE_OPTIONS.map((opt) => {
-                const active = scope === opt.value
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => { setScope(opt.value); setMemberAccountId('') }}
-                    className={[
-                      'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all duration-150',
-                      active
-                        ? 'bg-mg-bg-0 text-brand-base shadow-sm border border-mg-border'
-                        : 'text-mg-text-2 hover:text-mg-text-1',
-                    ].join(' ')}
-                  >
-                    <span className="shrink-0">{opt.icon}</span>
-                    {opt.label}
-                  </button>
-                )
-              })}
-            </div>
-            {scope && (
-              <p className="text-[11px] text-mg-text-2 mt-1.5">
-                {SCOPE_OPTIONS.find((o) => o.value === scope)?.desc}
-              </p>
-            )}
           </div>
 
           {/* 成员（仅 scope=member） */}
@@ -223,7 +221,6 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                 新建护栏
               </button>
             </div>
-
             <div className="space-y-2">
               {defaultGuardrail && (
                 <div className="flex items-center gap-1.5">

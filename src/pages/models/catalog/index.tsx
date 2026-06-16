@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/Button'
 import { getMarketConfig } from '@/config/market'
 import { useModels } from '@/features/models/hooks/useModels'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
-import { resolveVendorIcon } from '@/features/models/components/vendor-icons'
+import { resolveVendorKey } from '@/features/models/components/vendor-icons'
 import { ModalityBadge } from '@/features/models/components/ModalityBadge'
 import { useCopy } from '@/hooks/use-copy'
 import { useMarket } from '@/hooks/useMarket'
@@ -255,14 +255,15 @@ export default function ModelsCatalogPage() {
   // 我们支持的官方厂商（去重的 model.provider）：只保留能解析到 lobehub 品牌图标的，
   // 无法识别的（会回退首字母）不展示，单独收集供补图标映射。
   const { supportedProviders, unknownProviders } = useMemo(() => {
+    // 按「品牌 key」去重：deepseek / deepseek-v4 / deepseek-chat 命中同一品牌，只展示一个图标
     const known = new Map<string, ModelIconLike>()
     const unknown = new Set<string>()
     for (const model of allModels) {
       const name = model.provider
       if (!name) continue
-      if (resolveVendorIcon(name)) {
-        // 不传 logo_url → ModelIcon 走 resolveVendorIcon(vendor) 拿品牌图标
-        if (!known.has(name)) known.set(name, { vendor: name, display_name: name })
+      const key = resolveVendorKey(name)
+      if (key) {
+        if (!known.has(key)) known.set(key, { vendor: name, display_name: name })
       } else {
         unknown.add(name)
       }

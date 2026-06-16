@@ -70,14 +70,23 @@ const ICON_FACTORY: Record<string, (size: number) => React.ReactNode> = {
  * 按厂商名解析本地图标：先精确命中，再做包含匹配（如 "OpenAI GPT-4" 命中 openai）。
  * 命中返回对应尺寸的图标节点，否则返回 null（交由调用方走文字兜底）。
  */
+/**
+ * 解析厂商名命中的品牌 key（ICON_FACTORY 的键，如 "deepseek"）。
+ * 先精确命中再包含匹配，未命中返回 null。用于「同品牌去重」——多个 provider 值
+ * （deepseek / deepseek-v4 / deepseek-chat）会命中同一 key，只需展示一个图标。
+ */
+export function resolveVendorKey(vendor: string | null | undefined): string | null {
+  if (!vendor) return null
+  const v = vendor.toLowerCase()
+  if (ICON_FACTORY[v]) return v
+  return Object.keys(ICON_FACTORY).find((k) => v.includes(k)) ?? null
+}
+
 export function resolveVendorIcon(
   vendor: string | null | undefined,
   size = 28
 ): React.ReactNode | null {
-  if (!vendor) return null
-  const v = vendor.toLowerCase()
-  if (ICON_FACTORY[v]) return ICON_FACTORY[v](size)
-  const key = Object.keys(ICON_FACTORY).find((k) => v.includes(k))
+  const key = resolveVendorKey(vendor)
   return key ? ICON_FACTORY[key](size) : null
 }
 

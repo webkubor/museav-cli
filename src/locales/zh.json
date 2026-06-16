@@ -1095,6 +1095,9 @@
       "noRanking": "暂无调用数据，先显示目录推荐",
       "hot": "热门模型排行",
       "lowCost": "低价推荐",
+      "free": "免费模型推荐",
+      "freeTag": "免费",
+      "freeEmpty": "暂无免费模型",
       "recent": "近期更新",
       "calls": "{{count}} 次调用",
       "waiting": "等待调用数据"

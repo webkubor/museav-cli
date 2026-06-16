@@ -1096,6 +1096,9 @@
       "noRanking": "No usage yet, showing catalog picks",
       "hot": "Hot models",
       "lowCost": "Low cost picks",
+      "free": "Free models",
+      "freeTag": "Free",
+      "freeEmpty": "No free models yet",
       "recent": "Recently updated",
       "calls": "{{count}} calls",
       "waiting": "Waiting for usage"

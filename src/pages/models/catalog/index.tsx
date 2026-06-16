@@ -15,6 +15,7 @@ import {
   LuChevronRight,
   LuCopy,
   LuFlame,
+  LuGift,
   LuLockKeyhole,
   LuGitCompareArrows,
   LuSparkles,
@@ -167,6 +168,11 @@ function getModelMinPrice(model: CatalogModelItem) {
   return Math.min(input, output)
 }
 
+/** 免费模型：标签含 free 或最低价为 0。 */
+function isFreeModel(model: CatalogModelItem) {
+  const tags = (model.tags ?? []).map((t) => t.toLowerCase())
+  return tags.includes('free') || getModelMinPrice(model) <= 0
+}
 
 function isComparableModel(model: CatalogModelItem) {
   const modalities = model.modalities ?? []
@@ -314,18 +320,26 @@ export default function ModelsCatalogPage() {
         display_name: model.display_name,
       })
     }
-    return (rankingsData?.items ?? []).map((item: UsageRankingItem, index: number) => {
-      const amount = item.spend?.amount ? `${currencySymbol}${Number.parseFloat(item.spend.amount).toFixed(4)}` : '—'
-      const key = item.key ?? ''
-      return {
-        rank: String(item.rank ?? index + 1).padStart(2, '0'),
-        name: item.name || key || '—',
-        requests: item.requests ?? 0,
-        score: amount,
+    // 热门 = 按调用次数(requests)降序，名次据此重排
+    return (rankingsData?.items ?? [])
+      .map((item: UsageRankingItem) => {
+        const key = item.key ?? ''
+        return {
+          requests: item.requests ?? 0,
+          name: item.name || key || '—',
+          score: item.spend?.amount ? `${currencySymbol}${Number.parseFloat(item.spend.amount).toFixed(4)}` : '—',
+          iconModel: iconMap.get(key) ?? { display_name: item.name || key, vendor: key.split('/')[0] },
+        }
+      })
+      .sort((a, b) => b.requests - a.requests)
+      .map((it, index) => ({
+        rank: String(index + 1).padStart(2, '0'),
+        name: it.name,
+        requests: it.requests,
+        score: it.score,
         tone: tones[index % tones.length],
-        iconModel: iconMap.get(key) ?? { display_name: item.name || key, vendor: key.split('/')[0] },
-      }
-    })
+        iconModel: it.iconModel,
+      }))
   }, [rankingsData, allModels, currencySymbol])
 
   const fallbackRankingItems = useMemo<RankingViewItem[]>(() => {
@@ -340,8 +354,8 @@ export default function ModelsCatalogPage() {
     }))
   }, [allModels])
 
-  const lowCostModels = useMemo(
-    () => [...allModels].sort((a, b) => getModelMinPrice(a) - getModelMinPrice(b)).slice(0, 3),
+  const freeModels = useMemo(
+    () => allModels.filter(isFreeModel).slice(0, 4),
     [allModels],
   )
 
@@ -495,7 +509,7 @@ export default function ModelsCatalogPage() {
         <CatalogInsightPanel
           rankingItems={rankingItems.length > 0 ? rankingItems : fallbackRankingItems}
           hasRealRanking={rankingItems.length > 0}
-          lowCostModels={lowCostModels}
+          freeModels={freeModels}
           recentModels={recentModels}
         />
       </div>
@@ -611,11 +625,11 @@ function ModelCatalogCard({ model, isZh, copied, onCopy, onTry, onCompare }: Mod
 interface CatalogInsightPanelProps {
   rankingItems: RankingViewItem[]
   hasRealRanking: boolean
-  lowCostModels: CatalogModelItem[]
+  freeModels: CatalogModelItem[]
   recentModels: CatalogModelItem[]
 }
 
-function CatalogInsightPanel({ rankingItems, hasRealRanking, lowCostModels, recentModels }: CatalogInsightPanelProps) {
+function CatalogInsightPanel({ rankingItems, hasRealRanking, freeModels, recentModels }: CatalogInsightPanelProps) {
   const { t } = useTranslation()
 
   return (
@@ -669,26 +683,36 @@ function CatalogInsightPanel({ rankingItems, hasRealRanking, lowCostModels, rece
       </section>
 
       <section className="catalog-insight-section">
-        <h3>{t('modelsCatalog.insights.lowCost')}</h3>
+        <h3 className="catalog-insight-stitle catalog-insight-stitle--free">
+          <LuGift aria-hidden />
+          {t('modelsCatalog.insights.free')}
+        </h3>
         <div className="catalog-mini-model-list">
-          {lowCostModels.map((model) => (
-            <div className="catalog-mini-model" key={model.id}>
-              <ModelIcon model={model} size={24} rounded="rounded-md" />
-              <span title={model.display_name}>{model.display_name}</span>
-              <strong>{formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}</strong>
-            </div>
-          ))}
+          {freeModels.length === 0 ? (
+            <p className="catalog-insight-empty">{t('modelsCatalog.insights.freeEmpty')}</p>
+          ) : (
+            freeModels.map((model) => (
+              <div className="catalog-mini-model" key={model.id}>
+                <ModelIcon model={model} size={24} rounded="rounded-md" />
+                <span title={model.display_name}>{model.display_name}</span>
+                <span className="catalog-mini-badge is-free">{t('modelsCatalog.insights.freeTag')}</span>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
       <section className="catalog-insight-section">
-        <h3>{t('modelsCatalog.insights.recent')}</h3>
+        <h3 className="catalog-insight-stitle catalog-insight-stitle--recent">
+          <LuSparkles aria-hidden />
+          {t('modelsCatalog.insights.recent')}
+        </h3>
         <div className="catalog-mini-model-list">
           {recentModels.map((model) => (
             <div className="catalog-mini-model" key={model.id}>
               <ModelIcon model={model} size={24} rounded="rounded-md" />
               <span title={model.display_name}>{model.display_name}</span>
-              <strong>{model.released_at || '—'}</strong>
+              <span className="catalog-mini-badge is-date">{model.released_at || '—'}</span>
             </div>
           ))}
         </div>

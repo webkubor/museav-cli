@@ -412,6 +412,65 @@
   color: var(--mg-warning);
 }
 
+.catalog-insight-stitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.catalog-insight-stitle svg {
+  width: 14px;
+  height: 14px;
+}
+
+.catalog-insight-stitle--free svg {
+  color: var(--mg-success);
+}
+
+.catalog-insight-stitle--recent svg {
+  color: var(--brand-base);
+}
+
+.catalog-mini-model {
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.catalog-mini-model:hover {
+  border-color: color-mix(in srgb, var(--brand-base) 24%, var(--mg-border));
+  background: var(--mg-fill-0);
+}
+
+.catalog-mini-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.catalog-mini-badge.is-free {
+  background: color-mix(in srgb, var(--mg-success) 14%, transparent);
+  color: var(--mg-success);
+}
+
+.catalog-mini-badge.is-date {
+  background: var(--mg-fill-0);
+  color: var(--mg-text-2);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.catalog-insight-empty {
+  margin: 0;
+  padding: 6px 2px;
+  color: var(--mg-text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .catalog-ranking-copy,
 .catalog-mini-model span {
   min-width: 0;

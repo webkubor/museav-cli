@@ -511,9 +511,11 @@ function ModelCatalogCard({ model, isZh, copied, onCopy, onTry, onCompare }: Mod
           <span>{model.provider || 'ModelGo'}</span>
           <h3 title={model.display_name}>{model.display_name}</h3>
         </div>
-        <span className={cn('model-catalog-status', model.status === 'disabled' && 'is-disabled')}>
-          {statusLabel}
-        </span>
+        {model.status && model.status !== 'enabled' && (
+          <span className={cn('model-catalog-status', model.status === 'disabled' && 'is-disabled')}>
+            {statusLabel}
+          </span>
+        )}
       </div>
 
       <p className="model-catalog-desc">{meta.description}</p>
@@ -538,17 +540,19 @@ function ModelCatalogCard({ model, isZh, copied, onCopy, onTry, onCompare }: Mod
         {copied ? <LuCheck aria-hidden /> : <LuCopy aria-hidden />}
       </button>
 
-      <div className="model-catalog-metrics">
-        <MetricItem label={t('modelsCatalog.labels.context')} value={formatContextLength(model.context_length)} />
-        <MetricItem
-          label={t('modelsCatalog.labels.inputPrice')}
-          value={formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}
-        />
-        <MetricItem
-          label={t('modelsCatalog.labels.outputPrice')}
-          value={formatModelPrice(model.pricing?.output_per_1m, model.pricing?.currency)}
-        />
-        <MetricItem label={t('modelsCatalog.labels.releasedAt')} value={model.released_at || '—'} />
+      <div className="model-catalog-specs">
+        <div className="model-catalog-spec">
+          <span>{t('modelsCatalog.labels.context')}</span>
+          <strong>{formatContextLength(model.context_length)}</strong>
+        </div>
+        <div className="model-catalog-spec">
+          <span>{t('modelsCatalog.labels.inputPrice')}</span>
+          <strong>{formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}</strong>
+        </div>
+        <div className="model-catalog-spec">
+          <span>{t('modelsCatalog.labels.outputPrice')}</span>
+          <strong>{formatModelPrice(model.pricing?.output_per_1m, model.pricing?.currency)}</strong>
+        </div>
       </div>
 
       <div className="model-catalog-card-actions">
@@ -573,15 +577,6 @@ function ModelCatalogCard({ model, isZh, copied, onCopy, onTry, onCompare }: Mod
         )}
       </div>
     </article>
-  )
-}
-
-function MetricItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="model-catalog-metric">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
   )
 }
 

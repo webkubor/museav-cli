@@ -423,37 +423,43 @@
   height: 14px;
 }
 
-.model-catalog-metrics {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+/* 规格条：上下文 / 输入价 / 输出价，三列等分，1px 细分隔线，不做成卡中卡盒子 */
+.model-catalog-specs {
+  display: flex;
+  border-top: 1px solid var(--mg-border);
+  padding-top: 12px;
 }
 
-.model-catalog-metric {
+.model-catalog-spec {
+  flex: 1;
   min-width: 0;
-  border: 1px solid var(--mg-border);
-  border-radius: 12px;
-  background: rgba(var(--mg-bg-0-rgb), 0.7);
-  padding: 9px 10px;
+  padding: 0 12px;
+  border-left: 1px solid var(--mg-border);
 }
 
-.model-catalog-metric span {
+.model-catalog-spec:first-child {
+  padding-left: 0;
+  border-left: none;
+}
+
+.model-catalog-spec span {
   display: block;
   color: var(--mg-text-2);
   font-size: 10.5px;
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1.2;
 }
 
-.model-catalog-metric strong {
+.model-catalog-spec strong {
   display: block;
   min-width: 0;
-  margin-top: 4px;
+  margin-top: 5px;
   overflow: hidden;
   color: var(--mg-text-0);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
   line-height: 1.25;
+  font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -693,10 +699,6 @@ body[theme-mode='dark'] .model-catalog-status {
   }
 
   .models-catalog-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .model-catalog-metrics {
     grid-template-columns: 1fr;
   }
 }

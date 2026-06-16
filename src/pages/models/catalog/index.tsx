@@ -15,6 +15,7 @@ import {
   LuChevronRight,
   LuCopy,
   LuFlame,
+  LuLockKeyhole,
   LuGitCompareArrows,
   LuSparkles,
   LuZap,
@@ -42,6 +43,7 @@ import {
   type AdvancedFilterState,
 } from './modelCatalogFilterLogic'
 import './catalog.css'
+import './catalog-card.css'
 
 interface ModelMeta {
   descriptionZh: string
@@ -415,6 +417,18 @@ export default function ModelsCatalogPage() {
           </a>
         </div>
       </section>
+
+      <div className="models-catalog-notice" role="note">
+        <LuLockKeyhole aria-hidden />
+        <div className="models-catalog-notice-body">
+          <p>
+            <strong>免费模型需首次充值后解锁</strong>：完成任意金额的首次充值即可解锁全部免费模型；付费模型不受此门槛影响。
+          </p>
+          <p className="models-catalog-notice-sub">
+            注：免费模型 ≠ Free Tier 套餐——前者是按模型粒度的限免，后者是账户级套餐机制，两者互不等同。
+          </p>
+        </div>
+      </div>
 
       <ModelCatalogFilters
         search={search}

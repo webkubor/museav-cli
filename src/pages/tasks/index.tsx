@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -44,6 +44,7 @@ import { VideoPreviewModal } from './VideoPreviewModal'
 // ─── 常量 ────────────────────────────────────────────────────────────────────
 
 const PAGE_SIZE = 20
+const REFRESH_INTERVAL = 10 // 列表可见倒计时刷新间隔（秒）
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; variant: BadgeVariant; dot: boolean }> = {
   queued:    { label: '排队中', variant: 'secondary', dot: true },
@@ -372,8 +373,28 @@ export default function TasksPage() {
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['tasks', tenantId, params],
     queryFn: () => listTasks(params),
-    refetchInterval: 5000,
+    // 不再静默后台轮询；改为页头可见的 10s 倒计时刷新（见下方 countdown）
   })
+
+  // 可见倒计时刷新：每 10s 自动刷新一次，手动刷新会重置倒计时
+  const [countdown, setCountdown] = useState(REFRESH_INTERVAL)
+  useEffect(() => {
+    // setState 全部放进 setTimeout 回调（异步），不在 effect 体内同步触发
+    const id = setTimeout(() => {
+      if (countdown <= 1) {
+        void refetch()
+        setCountdown(REFRESH_INTERVAL)
+      } else {
+        setCountdown(countdown - 1)
+      }
+    }, 1000)
+    return () => clearTimeout(id)
+  }, [countdown, refetch])
+
+  const handleRefresh = () => {
+    void refetch()
+    setCountdown(REFRESH_INTERVAL)
+  }
 
   const items  = data?.items ?? []
   const total  = data?.total ?? 0
@@ -400,11 +421,12 @@ export default function TasksPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => refetch()}
+            onClick={handleRefresh}
             disabled={isFetching}
+            title={`每 ${REFRESH_INTERVAL}s 自动刷新；点击立即刷新并重新计时`}
           >
             <LuRefreshCw size={13} className={cn(isFetching && 'animate-spin')} />
-            刷新
+            {isFetching ? '刷新中' : `刷新 · ${countdown}s`}
           </Button>
         }
       />

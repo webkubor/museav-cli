@@ -70,7 +70,7 @@ export function SidebarPromoCarousel({ collapsed }: { collapsed: boolean }) {
         className="group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl px-3.5 py-3 text-left shadow-md transition-transform duration-200 hover:-translate-y-0.5 cursor-pointer"
         style={{ background: 'linear-gradient(135deg, var(--brand-base), var(--brand-deep))' }}
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/5">
           <ModelIcon
             model={{ display_name: model.display_name, vendor: model.provider || model.vendor }}
             size={24}

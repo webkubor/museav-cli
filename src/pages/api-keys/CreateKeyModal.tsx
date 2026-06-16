@@ -3,7 +3,7 @@
  */
 import { useEffect, useState } from 'react'
 import confetti from 'canvas-confetti'
-import { LuPlus, LuShieldCheck, LuX } from 'react-icons/lu'
+import { LuLock, LuPlus, LuShieldCheck, LuX } from 'react-icons/lu'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -35,7 +35,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const [name, setName] = useState('')
   const [scope, setScope] = useState<ScopeType>('workspace')
   const [memberAccountId, setMemberAccountId] = useState('')
-  const [guardrailId, setGuardrailId] = useState('')
+  const [guardrailIds, setGuardrailIds] = useState<string[]>([])
 
   // 内嵌新建护栏
   const [showNewGuardrail, setShowNewGuardrail] = useState(false)
@@ -88,7 +88,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
       }),
     onSuccess: (g) => {
       queryClient.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
-      setGuardrailId(g.id)
+      setGuardrailIds((prev) => prev.includes(g.id) ? prev : [...prev, g.id])
       setShowNewGuardrail(false)
       setNewGName('')
       setNewGModelBlacklist([])
@@ -128,11 +128,11 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   useEffect(() => {
     if (!guardrailsQuery.data?.length) return
     const defaultGuardrail = guardrailsQuery.data.find((g) => g.is_default)
-    if (defaultGuardrail && !guardrailId) {
+    if (defaultGuardrail && !guardrailIds.includes(defaultGuardrail.id)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setGuardrailId(defaultGuardrail.id ?? '')
+      setGuardrailIds((prev) => [defaultGuardrail.id, ...prev.filter((id) => id !== defaultGuardrail.id)])
     }
-  }, [guardrailId, guardrailsQuery.data])
+  }, [guardrailIds, guardrailsQuery.data])
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -155,7 +155,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
           else if (expiryRange.preset === '30d') now.setDate(now.getDate() + 30)
           return now.toISOString()
         })(),
-        guardrail_id: guardrailId && guardrailId !== 'none' ? guardrailId : undefined,
+        guardrail_ids: guardrailIds.length > 0 ? guardrailIds : undefined,
       }),
     onSuccess: (newKey) => {
       appToast.success(t('apiKeys.toast.createSuccess', { name: newKey.name }))
@@ -286,20 +286,38 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
             )}
           </div>
 
-          {!showNewGuardrail ? (
-            <Select
-              value={guardrailId}
-              onChange={setGuardrailId}
-              placeholder={t('apiKeys.createModal.guardrailPlaceholder')}
-              className="w-full"
-            >
-              {(guardrailsQuery.data ?? []).map((g) => (
-                <SelectItem key={g.id} value={g.id}>
-                  {g.name}
-                </SelectItem>
-              ))}
-            </Select>
-          ) : (
+          {!showNewGuardrail ? (() => {
+            const allGuardrails = guardrailsQuery.data ?? []
+            const defaultGuardrail = allGuardrails.find((g) => g.is_default)
+            const defaultId = defaultGuardrail?.id ?? ''
+            const extraIds = guardrailIds.filter((id) => id !== defaultId)
+            return (
+              <div className="space-y-2">
+                {defaultGuardrail && (
+                  <div className="flex items-center gap-1.5">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-base/10 border border-brand-base/20 text-xs font-bold text-brand-base">
+                      <LuLock className="w-3 h-3 shrink-0" />
+                      {defaultGuardrail.name}
+                      <span className="font-normal text-mg-text-2 ml-0.5">默认</span>
+                    </div>
+                  </div>
+                )}
+                <TagInput
+                  allowFreeText={false}
+                  value={extraIds.map((id) => allGuardrails.find((g) => g.id === id)?.name ?? id)}
+                  onChange={(names) => {
+                    const addIds = names.map((n) => allGuardrails.find((g) => g.name === n)?.id).filter(Boolean) as string[]
+                    setGuardrailIds([...(defaultId ? [defaultId] : []), ...addIds])
+                  }}
+                  suggestions={allGuardrails
+                    .filter((g) => !g.is_default && !guardrailIds.includes(g.id))
+                    .map((g) => g.name)}
+                  placeholder="可选：叠加其他护栏"
+                  hint="默认护栏始终绑定，可继续叠加多个护栏共同生效"
+                />
+              </div>
+            )
+          })() : (
             <div className="rounded-xl border border-mg-border bg-mg-bg-1/40 p-4 flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

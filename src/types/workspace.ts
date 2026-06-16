@@ -219,7 +219,7 @@ export interface CreateApiKeyRequest {
   spending_limit?: SpendingLimit
   scope?: 'personal' | 'workspace' | 'member'
   member_account_id?: string
-  guardrail_id?: string
+  guardrail_ids?: string[]
 }
 
 export interface ApiKeyCreated {

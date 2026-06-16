@@ -39,7 +39,7 @@ import Hailuo from '@lobehub/icons/es/Hailuo'
  * 新增厂商：import 对应 lobehub 图标后，在此追加一行即可。
  */
 const ICON_FACTORY: Record<string, (size: number) => React.ReactNode> = {
-  anthropic: (s) => <Anthropic size={s} />,
+  anthropic: (s) => <Claude.Color size={s} />,
   claude:    (s) => <Claude.Color size={s} />,
   openai:    (s) => <OpenAI size={s} />,
   chatgpt:   (s) => <OpenAI size={s} />,

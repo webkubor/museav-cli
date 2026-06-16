@@ -16,6 +16,7 @@ export interface KpiCardProps {
   trend?: { value: string; up: boolean } // 涨跌 badge
   rawNumber?: number // 传入原始数值时启用 countUp 动画
   formatter?: (n: number) => string // 配合 rawNumber 使用的格式化函数
+  action?: { label: string; onClick: () => void } // 卡片内快捷操作按钮（如充值）
 }
 
 function Sparkline({ data, color }: { data: number[]; color: string }) {
@@ -60,6 +61,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   trend,
   rawNumber,
   formatter,
+  action,
 }) => {
   const displayTitle = title || label || ''
   const animated = useCountUp(loading ? 0 : (rawNumber ?? 0))
@@ -164,6 +166,22 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         <div className="z-10 mt-3 -mx-1 opacity-80">
           <Sparkline data={sparkData} color={color} />
         </div>
+      )}
+
+      {/* 快捷操作按钮（如充值） */}
+      {action && !loading && (
+        <button
+          onClick={(e) => { e.stopPropagation(); action.onClick() }}
+          className="z-10 mt-3 self-start inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full border transition-all duration-200 hover:opacity-80 active:scale-95"
+          style={{
+            color: color,
+            borderColor: `color-mix(in srgb, ${color} 25%, transparent)`,
+            backgroundColor: glowColor,
+          }}
+        >
+          {action.label}
+          <span className="opacity-50 text-[10px]">→</span>
+        </button>
       )}
     </Card>
   )

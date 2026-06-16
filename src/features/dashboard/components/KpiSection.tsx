@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
@@ -6,7 +6,10 @@ import { useBalance } from '@/hooks/use-balance'
 import { getUsageSummary, getUsageSeries } from '@/services/usage'
 import { getBillingMoneyStats } from '@/services/overview'
 import { useCurrency } from '@/hooks/use-platform-config'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 import { KpiCard } from '@/components/ui/KpiCard'
+import { TopUpModal } from '@/pages/billing/TopUpModal'
 import { LuWallet, LuTrendingUp, LuActivity, LuDatabase } from 'react-icons/lu'
 import { formatFriendlyAmount } from '@/lib/utils'
 import type { UsageSeries } from '@/types'
@@ -15,6 +18,9 @@ export const KpiSection: React.FC = () => {
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const { symbol: currencySymbol } = useCurrency()
+  const { hasPermission } = usePermissions()
+  const canRecharge = hasPermission(PERMS.BILLING_RECHARGE_CREATE)
+  const [topUpVisible, setTopUpVisible] = useState(false)
 
   const { data: balance, isLoading: balanceLoading } = useBalance(activeTenantId)
 
@@ -80,6 +86,7 @@ export const KpiSection: React.FC = () => {
       glowColor: 'var(--brand-glow)',
       hoverBorderClass: 'hover:border-brand-base/30',
       icon: <LuWallet size={16} />,
+      action: canRecharge ? { label: t('billing.balance.recharge'), onClick: () => setTopUpVisible(true) } : undefined,
     },
     {
       title: t('dashboard.kpi.monthlySpend'),
@@ -125,10 +132,13 @@ export const KpiSection: React.FC = () => {
   ]
 
   return (
-    <div className="no-canvas-blur grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-9">
-      {cards.map((card) => (
-        <KpiCard key={card.title} {...card} />
-      ))}
-    </div>
+    <>
+      <TopUpModal visible={topUpVisible} onClose={() => setTopUpVisible(false)} tenantId={activeTenantId ?? ''} />
+      <div className="no-canvas-blur grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-9">
+        {cards.map((card) => (
+          <KpiCard key={card.title} {...card} />
+        ))}
+      </div>
+    </>
   )
 }

@@ -14,7 +14,10 @@ import { getUsageSeries } from '@/services/usage'
 import { useAuthStore } from '@/store/auth'
 import { Card } from '@/components/ui/Card'
 import { formatChartTooltipDate } from '@/lib/format-date'
+import { densifyDailyBuckets } from '@/lib/chart-buckets'
 import type { SeriesDataPoint } from '@/types/usage'
+
+const RANGE_DAYS = 5
 
 interface UsageTooltipProps {
   active?: boolean
@@ -43,34 +46,40 @@ export const UsageChartSection: React.FC = () => {
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
 
+  const range = useMemo(() => {
+    const to = new Date()
+    const from = new Date()
+    from.setDate(from.getDate() - RANGE_DAYS)
+    return { from: from.toISOString(), to: to.toISOString() }
+  }, [])
+
   const { data, isLoading } = useQuery({
     queryKey: ['usage', 'series', 'requests', activeTenantId],
-    queryFn: () => {
-      const to = new Date()
-      const from = new Date()
-      from.setDate(from.getDate() - 5)
-      return getUsageSeries({
+    queryFn: () =>
+      getUsageSeries({
         metric: 'requests',
         granularity: 'day',
-        from: from.toISOString(),
-        to: to.toISOString(),
-      })
-    },
+        from: range.from,
+        to: range.to,
+      }),
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })
 
   const chartData = useMemo((): SeriesDataPoint[] => {
+    let points: SeriesDataPoint[]
     if (data?.groups?.[0]?.points) {
-      return data.groups[0].points.map((p) => ({
+      points = data.groups[0].points.map((p) => ({
         bucket_start: p.bucket_start,
         value: String(p.requests ?? 0),
       }))
+    } else {
+      // 旧版接口兼容：扁平 series 数组（无 groups 包装）
+      points = (data as unknown as { series?: SeriesDataPoint[] } | undefined)?.series ?? []
     }
-    // 旧版接口兼容：扁平 series 数组（无 groups 包装）
-    const legacy = (data as unknown as { series?: SeriesDataPoint[] } | undefined)?.series
-    return legacy ?? []
-  }, [data])
+    // 后端按天稀疏返回 → 补齐到完整区间（缺失天 value=0），让“近 5 天”画满
+    return densifyDailyBuckets(points, range.from, range.to, (bucket_start) => ({ bucket_start, value: '0' }))
+  }, [data, range])
 
   return (
     <Card className="p-6 flex flex-col h-full">

@@ -1,4 +1,5 @@
 import type { DateRangeValue } from '@/components/ui/DateRangePicker'
+import { densifyDailyBuckets as densifyDaily } from '@/lib/chart-buckets'
 
 export type Metric = 'spend' | 'requests' | 'tokens'
 
@@ -31,30 +32,11 @@ export function formatNumber(n: number): string {
   return String(n)
 }
 
-/**
- * 后端只返回有数据的天（稀疏），导致"近 N 天"直方图只画出几根柱。
- * 在 [from, to] 区间内按天补齐缺失的天（count=0），让分布与时间范围一致。
- * 仅在确有数据时补齐；完全无数据返回空数组以保留"暂无数据"空态。
- */
+/** 直方图按天补齐缺失天（count=0）。见 @/lib/chart-buckets。 */
 export function densifyDailyBuckets(
   buckets: { bucket_start: string; count: number }[],
   fromISO: string,
   toISO: string,
 ): { bucket_start: string; count: number }[] {
-  if (!buckets.length) return []
-  const byDay = new Map(buckets.map((b) => [b.bucket_start.slice(0, 10), b.count]))
-  const from = new Date(fromISO)
-  const to = new Date(toISO)
-  if (isNaN(from.getTime()) || isNaN(to.getTime())) return buckets
-  const cur = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()))
-  const end = new Date(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()))
-  const out: { bucket_start: string; count: number }[] = []
-  let guard = 0
-  while (cur <= end && guard < 400) {
-    const key = cur.toISOString().slice(0, 10)
-    out.push({ bucket_start: `${key}T00:00:00Z`, count: byDay.get(key) ?? 0 })
-    cur.setUTCDate(cur.getUTCDate() + 1)
-    guard++
-  }
-  return out
+  return densifyDaily(buckets, fromISO, toISO, (bucket_start) => ({ bucket_start, count: 0 }))
 }

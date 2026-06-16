@@ -16,7 +16,10 @@ import { getLogHistogram } from '@/services/logs'
 import { useAuthStore } from '@/store/auth'
 import { Card } from '@/components/ui/Card'
 import { formatChartTooltipDate } from '@/lib/format-date'
+import { densifyDailyBuckets } from '@/lib/chart-buckets'
 import type { HistogramBucket } from '@/types/logs'
+
+const RANGE_DAYS = 5
 
 interface HistogramTooltipProps {
   active?: boolean
@@ -43,24 +46,37 @@ export const HistogramChartSection: React.FC = () => {
   const { t } = useTranslation()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
 
+  const range = React.useMemo(() => {
+    const to = new Date()
+    const from = new Date()
+    from.setDate(from.getDate() - RANGE_DAYS)
+    return { from: from.toISOString(), to: to.toISOString() }
+  }, [])
+
   const { data, isLoading } = useQuery({
     queryKey: ['usage', 'histogram', activeWorkspaceId],
-    queryFn: () => {
-      const to = new Date()
-      const from = new Date()
-      from.setDate(from.getDate() - 5)
-      return getLogHistogram({
+    queryFn: () =>
+      getLogHistogram({
         workspace_id: activeWorkspaceId ?? undefined,
         granularity: 'day',
-        from: from.toISOString(),
-        to: to.toISOString(),
-      })
-    },
+        from: range.from,
+        to: range.to,
+      }),
     enabled: !!activeWorkspaceId,
     staleTime: 60_000,
   })
 
-  const buckets = data?.buckets ?? []
+  // 后端按天稀疏返回 → 补齐到完整区间（缺失天 count=0），让“近 5 天”画满
+  const buckets = React.useMemo(
+    () =>
+      densifyDailyBuckets<HistogramBucket>(
+        data?.buckets ?? [],
+        range.from,
+        range.to,
+        (bucket_start) => ({ bucket_start, count: 0 }) as HistogramBucket,
+      ),
+    [data?.buckets, range],
+  )
   const maxCount = Math.max(...buckets.map((b) => b.count), 1)
 
   return (

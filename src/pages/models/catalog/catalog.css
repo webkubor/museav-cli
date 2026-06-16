@@ -82,6 +82,21 @@
   margin-top: 12px;
 }
 
+/* 支持的官方厂商品牌图标排（替代原"厂商个数"统计） */
+.models-catalog-providers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.models-catalog-provider-icon {
+  border: 1px solid var(--mg-border);
+  background: var(--mg-bg-0);
+  padding: 4px;
+}
+
 .models-catalog-stat {
   display: inline-flex;
   align-items: center;

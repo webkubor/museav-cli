@@ -12,7 +12,6 @@ import {
   LuArrowUpRight,
   LuBookOpen,
   LuBoxes,
-  LuBuilding2,
   LuCheck,
   LuChevronRight,
   LuCopy,
@@ -262,19 +261,29 @@ export default function ModelsCatalogPage() {
   }, [category, advancedFilters, filteredModels])
 
   const catalogStats = useMemo(() => {
-    const vendorCount = new Set(allModels.map((model) => model.provider).filter(Boolean)).size
     const countByModality = (modality: string) =>
       allModels.filter((model) => model.modalities?.includes(modality)).length
 
     return [
       { key: 'models', label: t('modelsCatalog.stats.models'), value: allModels.length, Icon: LuBoxes },
-      { key: 'vendors', label: t('modelsCatalog.stats.vendors'), value: vendorCount, Icon: LuBuilding2 },
       { key: 'text', label: t('modelsCatalog.stats.text'), value: countByModality('text'), Icon: LuFileText },
       { key: 'image', label: t('modelsCatalog.stats.image'), value: countByModality('image'), Icon: LuImage },
       { key: 'video', label: t('modelsCatalog.stats.video'), value: countByModality('video'), Icon: LuVideo },
       { key: 'free', label: t('modelsCatalog.stats.free'), value: allModels.filter(isFreeModel).length, Icon: LuTag },
     ]
   }, [allModels, t])
+
+  // 我们支持的官方厂商（去重的 model.provider），展示品牌 LLM 图标，替代原"厂商个数"
+  const supportedProviders = useMemo<ModelIconLike[]>(() => {
+    const map = new Map<string, ModelIconLike>()
+    for (const model of allModels) {
+      const name = model.provider
+      if (!name || map.has(name)) continue
+      // 不传 logo_url → ModelIcon 走 resolveVendorIcon(vendor) 拿 lobehub 品牌图标
+      map.set(name, { vendor: name, display_name: name })
+    }
+    return Array.from(map.values())
+  }, [allModels])
 
   const { data: rankingsData } = useQuery({
     queryKey: ['usage-rankings', 'models', tenantId],
@@ -373,6 +382,19 @@ export default function ModelsCatalogPage() {
               </span>
             ))}
           </div>
+          {supportedProviders.length > 0 && (
+            <div className="models-catalog-providers" aria-label={t('modelsCatalog.stats.vendors')}>
+              {supportedProviders.map((provider) => (
+                <ModelIcon
+                  key={provider.vendor}
+                  model={provider}
+                  size={26}
+                  rounded="rounded-lg"
+                  className="models-catalog-provider-icon"
+                />
+              ))}
+            </div>
+          )}
         </div>
         <div className="models-catalog-actions">
           <Button

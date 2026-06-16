@@ -1,6 +1,11 @@
-import Lottie from 'lottie-react'
+import LottieLib from 'lottie-react'
 import { cn } from '@/lib/utils'
 import fireAnimation from './fire-lottie.json'
+
+// Vite CJS interop: default import can be the module object in some build scenarios
+const Lottie = (typeof LottieLib === 'function'
+  ? LottieLib
+  : (LottieLib as unknown as { default: typeof LottieLib }).default) as typeof LottieLib
 
 /**
  * 火焰动效图标：用现成 Lottie 火焰动画（fire-lottie.json）。

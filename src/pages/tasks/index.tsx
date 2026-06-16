@@ -124,16 +124,22 @@ function isVideoExpired(item: TaskItem | TaskDetail | null | undefined): boolean
 /** 产物有效期：基于 result_meta.result_expires_at。无 result_meta 返回 null（不展示）。 */
 function resultExpiry(
   item: TaskItem | TaskDetail | null | undefined,
-): { expired: boolean; expiresAt: string; remain: string } | null {
+): { expired: boolean; urgent: boolean; expiresAt: string; remain: string } | null {
   const expiresAt = item?.result_meta?.result_expires_at
   if (!expiresAt) return null
   const t = new Date(expiresAt).getTime()
   if (Number.isNaN(t)) return null
   const ms = t - Date.now()
-  if (ms <= 0) return { expired: true, expiresAt, remain: '' }
+  if (ms <= 0) return { expired: true, urgent: false, expiresAt, remain: '' }
   const days = Math.floor(ms / 86_400_000)
   const hours = Math.floor((ms % 86_400_000) / 3_600_000)
-  return { expired: false, expiresAt, remain: days > 0 ? `剩 ${days} 天` : hours > 0 ? `剩 ${hours} 小时` : '剩 <1 小时' }
+  // 剩 1 天以内 = 紧急（列表飘红）
+  return {
+    expired: false,
+    urgent: ms <= 86_400_000,
+    expiresAt,
+    remain: days > 0 ? `剩 ${days} 天` : hours > 0 ? `剩 ${hours} 小时` : '剩 <1 小时',
+  }
 }
 
 /**
@@ -366,6 +372,8 @@ export default function TasksPage() {
   const [offset, setOffset]         = useState(0)
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  // 视频 404（无 result_meta 的老任务，产物已被清理）：列表据此显示「已过期」文案
+  const [expiredIds, setExpiredIds] = useState<Set<string>>(new Set())
 
   const params = useMemo(() => ({
     workspace_id: undefined,
@@ -510,10 +518,11 @@ export default function TasksPage() {
             {filteredItems.map((item) => {
               const kind    = resolveKind(item)
               const kindCfg = KIND_CONFIG[kind]
-              const expired = isVideoExpired(item)
               const expiry  = resultExpiry(item)
+              // 过期 = 元数据已过期 ∪ 运行时 404（老任务无 result_meta 但产物已清理）
+              const isExpired = isVideoExpired(item) || expiredIds.has(item.gateway_request_id)
               // 仅已完成的视频任务有可播放/可抓帧的地址；过期则不展示
-              const videoUrl = kind === 'video' && isTaskDone(item.status) && !expired
+              const videoUrl = kind === 'video' && isTaskDone(item.status) && !isExpired
                 ? videoContentUrl(item.gateway_request_id)
                 : null
               return (
@@ -523,7 +532,7 @@ export default function TasksPage() {
                   onClick={() => setSelectedTask(item)}
                 >
                   <TableCell align="center">
-                    {expired ? (
+                    {isExpired ? (
                       <div className="h-12 w-12 shrink-0 rounded-lg mx-auto flex items-center justify-center bg-mg-fill-1 text-mg-text-3" title="产物已过期">
                         <LuVideoOff size={20} />
                       </div>
@@ -533,14 +542,28 @@ export default function TasksPage() {
                         videoUrl={videoUrl}
                         placeholder={kindCfg.icon}
                         onPreview={setPreviewUrl}
+                        onExpired={() =>
+                          setExpiredIds((prev) =>
+                            prev.has(item.gateway_request_id) ? prev : new Set(prev).add(item.gateway_request_id),
+                          )
+                        }
                       />
                     )}
                   </TableCell>
                   <TableCell align="center" className="text-[12px] text-mg-text-1">
                     {fmtDate(item.created_at)}
-                    {expiry && (
-                      <p className={cn('text-[11px] mt-0.5', expiry.expired ? 'text-mg-text-3' : 'text-mg-text-2')}>
-                        {expiry.expired ? '产物已过期' : `产物有效 ${expiry.remain}`}
+                    {(expiry || isExpired) && (
+                      <p
+                        className={cn(
+                          'text-[11px] mt-0.5',
+                          isExpired
+                            ? 'text-[var(--mg-warning)]'        // 已过期 → 黄
+                            : expiry?.urgent
+                              ? 'text-[var(--mg-danger)]'        // 剩 ≤1 天 → 红
+                              : 'text-mg-text-2',
+                        )}
+                      >
+                        {isExpired ? '产物已过期' : `产物有效 ${expiry?.remain}`}
                       </p>
                     )}
                   </TableCell>

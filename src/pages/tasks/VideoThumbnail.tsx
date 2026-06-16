@@ -15,11 +15,13 @@ interface VideoThumbnailProps {
   /** 占位图标（非视频/未完成时显示） */
   placeholder: React.ReactNode
   onPreview: (url: string) => void
+  /** 视频 404（已被清理）时通知父级，用于列表显示「已过期」文案 */
+  onExpired?: () => void
 }
 
 const BOX = 'h-12 w-12 shrink-0 rounded-lg overflow-hidden mx-auto'
 
-export function VideoThumbnail({ taskId, videoUrl, placeholder, onPreview }: VideoThumbnailProps) {
+export function VideoThumbnail({ taskId, videoUrl, placeholder, onPreview, onExpired }: VideoThumbnailProps) {
   // hooks 必须无条件调用：videoUrl 为 null 时 hook 内部自身短路，不抓帧
   const thumb = useVideoThumbnail(taskId, videoUrl)
   // 产物 404（已过期/被清理）：兜底显示过期图标，不可点
@@ -53,7 +55,7 @@ export function VideoThumbnail({ taskId, videoUrl, placeholder, onPreview }: Vid
           preload="metadata"
           playsInline
           className="h-full w-full object-cover"
-          onError={() => setFailed(true)}
+          onError={() => { setFailed(true); onExpired?.() }}
         />
       )}
       <span className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-90 transition-opacity group-hover:bg-black/35">

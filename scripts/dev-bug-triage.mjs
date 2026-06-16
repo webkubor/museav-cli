@@ -2,14 +2,14 @@
 /**
  * 开发错误半自动巡检
  *
- * 用途：扫 log/dev-errors.log，过滤预期噪声（如未登录 40101），按签名聚类，
+ * 用途：扫 log/errors.log，过滤预期噪声（如未登录 40101），按签名聚类，
  *       产出「待修清单 + 根因初判」。只发现、不自动修——修复仍由人把关。
  *
  * 用法：
  *   node scripts/dev-bug-triage.mjs            打印巡检报告到 stdout
  *   node scripts/dev-bug-triage.mjs --notify   报告同时经 cs notify 推送（仅在有真实问题时发）
  *   node scripts/dev-bug-triage.mjs --since 2026-06-12  只看该日期(含)之后的条目
- *   node scripts/dev-bug-triage.mjs --file <路径>       指定日志文件（默认 log/dev-errors.log）
+ *   node scripts/dev-bug-triage.mjs --file <路径>       指定日志文件（默认 log/errors.log）
  *
  * 设计：预期噪声规则集中在 EXPECTED_NOISE 数组，新增一类噪声只加一行。
  */
@@ -83,7 +83,7 @@ const doNotify = args.includes('--notify')
 const sinceIdx = args.indexOf('--since')
 const since = sinceIdx >= 0 ? args[sinceIdx + 1] : null
 const fileIdx = args.indexOf('--file')
-const LOG_PATH = path.resolve(fileIdx >= 0 ? args[fileIdx + 1] : 'log/dev-errors.log')
+const LOG_PATH = path.resolve(fileIdx >= 0 ? args[fileIdx + 1] : 'log/errors.log')
 
 if (!existsSync(LOG_PATH)) {
   console.log(`无日志文件：${LOG_PATH}（本地未跑过 pnpm dev 或尚无错误落盘）`)

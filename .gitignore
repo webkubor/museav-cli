@@ -34,3 +34,6 @@ dist-ssr
 /*.jpeg
 /*.webp
 .claude/settings.local.json
+
+# vite-plugin-agent-eyes 运行时生成（自愈遥测），不入库
+/log/

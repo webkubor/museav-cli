@@ -3,11 +3,10 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
-import { devLoggerPlugin } from './scripts/dev-logger-plugin'
+import { agentDebugger, agentProxy } from 'vite-plugin-agent-eyes'
 import { devRequirementsPlugin } from './scripts/dev-requirements-plugin'
 import { version } from './package.json'
 import { execSync } from 'node:child_process'
-import { appendFileSync, writeFileSync, mkdirSync } from 'node:fs'
 
 // 构建时注入：git 短 hash + 构建时间，每次部署都会变，用于判断线上是否走了缓存
 const buildHash = (() => {
@@ -26,7 +25,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     tailwindcss(),
     react(),
-    devLoggerPlugin(),
+    agentDebugger(),
     devRequirementsPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
@@ -103,46 +102,9 @@ export default defineConfig(({ mode }) => ({
   server: {
     port: process.env.PORT ? parseInt(process.env.PORT) : undefined,
     proxy: {
-      '/api': {
-        // test.modelgo.com 网关已收紧域名白名单，对该域一律返回 {"message":"invalid domain"}；
-        // 真 API 网关是 modelgo-web-api.test.modelgo.com（与 .env.test 的 VITE_API_URL 一致）
-        target: 'https://modelgo-web-api.test.modelgo.com',
-        changeOrigin: true,
-        secure: true,
-        // 上游 cookie 实为 Domain=test.modelgo.com（父域）+ Secure + SameSite=None，
-        // 在 http://localhost 上域不匹配且 Secure 被丢弃 → 存不住 → 登录成功却 401。
-        // 故在 proxyRes 里：去掉 Domain（变 localhost host-only）、剥 Secure、SameSite=None→Lax。
-        configure: (proxy) => {
-          // log/proxy.log —— 代理层 header 真相（前端 fetch 看不到 Cookie/Set-Cookie）。
-          // 每次启动清空；cookie 值脱敏，只留名字 + 属性（Domain/Secure/SameSite/HttpOnly）。
-          mkdirSync('log', { recursive: true })
-          writeFileSync('log/proxy.log', `# Proxy Log — started ${new Date().toISOString()}\n\n`)
-          const log = (msg: string) => {
-            try { appendFileSync('log/proxy.log', `[${new Date().toISOString()}] ${msg}\n`) } catch { /* ignore */ }
-          }
-          proxy.on('proxyRes', (proxyRes, req) => {
-            const reqCookie = req.headers?.cookie
-            const reqNames = reqCookie ? reqCookie.split(';').map((s) => s.split('=')[0].trim()).join(',') : '无'
-            const setCookie = proxyRes.headers['set-cookie']
-            const scSummary = setCookie
-              ? setCookie.map((c) => c.replace(/^([^=]+)=[^;]*/, '$1=<redacted>')).join(' || ')
-              : '无'
-            log(`${req.method} ${req.url} → ${proxyRes.statusCode} | Cookie(req): ${reqNames} | Set-Cookie: ${scSummary}`)
-
-            // 修复：上游 cookie 是父域 Domain=test.modelgo.com + Secure + SameSite=None，
-            // 在 http://localhost 上域不匹配且 Secure 被丢弃 → 存不住 → 登录成功却 401。
-            // 开发态：去 Domain（变 localhost host-only）、剥 Secure、SameSite=None→Lax。
-            if (setCookie) {
-              proxyRes.headers['set-cookie'] = setCookie.map((c) =>
-                c
-                  .replace(/;\s*Domain=[^;]+/gi, '')
-                  .replace(/;\s*Secure/gi, '')
-                  .replace(/;\s*SameSite=None/gi, '; SameSite=Lax'),
-              )
-            }
-          })
-        },
-      },
+      // 真 API 网关是 modelgo-web-api.test.modelgo.com（test.modelgo.com 网关白名单已收紧会返回 invalid domain）。
+      // agentProxy 自带：proxy.log（header 真相）+ 本地 cookie 修复（去 Domain/剥 Secure/SameSite=None→Lax）。
+      '/api': agentProxy('https://modelgo-web-api.test.modelgo.com'),
     },
   },
 }))

@@ -120,6 +120,21 @@ function isVideoExpired(item: TaskItem | TaskDetail | null | undefined): boolean
   return new Date(expires).getTime() < Date.now()
 }
 
+/** 产物有效期：基于 result_meta.result_expires_at。无 result_meta 返回 null（不展示）。 */
+function resultExpiry(
+  item: TaskItem | TaskDetail | null | undefined,
+): { expired: boolean; expiresAt: string; remain: string } | null {
+  const expiresAt = item?.result_meta?.result_expires_at
+  if (!expiresAt) return null
+  const t = new Date(expiresAt).getTime()
+  if (Number.isNaN(t)) return null
+  const ms = t - Date.now()
+  if (ms <= 0) return { expired: true, expiresAt, remain: '' }
+  const days = Math.floor(ms / 86_400_000)
+  const hours = Math.floor((ms % 86_400_000) / 3_600_000)
+  return { expired: false, expiresAt, remain: days > 0 ? `剩 ${days} 天` : hours > 0 ? `剩 ${hours} 小时` : '剩 <1 小时' }
+}
+
 /**
  * 视频产物地址：网关内容端点，凭 gateway_request_id 即可访问，
  * 服务端 302 重定向到真实 OSS 文件。无需鉴权，直接作为 <video src>。
@@ -180,6 +195,8 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
   const kind = resolveKind(task)
   const kindCfg = KIND_CONFIG[kind]
   const expired = isVideoExpired(task) || isVideoExpired(data)
+  // 产物有效期：详情接口优先（result_meta 可能比列表项新），回落到列表项
+  const expiry = resultExpiry(data) ?? resultExpiry(task)
   // 视频产物：成功态直接用网关 content 端点（凭 gateway_request_id，302 转 OSS）；过期则不展示
   const videoUrl = kind === 'video' && isTaskDone(task.status) && !expired ? videoContentUrl(taskId) : null
 
@@ -222,6 +239,21 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
                 : fmtCost(task)}
               hint={costHint(task)}
             />
+            {expiry && (
+              <DetailRow
+                label="产物有效期"
+                value={
+                  expiry.expired ? (
+                    <span className="text-mg-text-3">已过期 · 已自动清理</span>
+                  ) : (
+                    <span className="text-mg-text-1">
+                      至 {fmtDate(expiry.expiresAt)} <span className="text-mg-text-2">· {expiry.remain}</span>
+                    </span>
+                  )
+                }
+                hint={expiry.expired ? undefined : '产物到期后自动清理，平台不长期存储'}
+              />
+            )}
           </div>
 
           {/* 产物预览：视频任务成功态，直接用网关 content 端点播放 */}
@@ -452,6 +484,7 @@ export default function TasksPage() {
               const kind    = resolveKind(item)
               const kindCfg = KIND_CONFIG[kind]
               const expired = isVideoExpired(item)
+              const expiry  = resultExpiry(item)
               // 仅已完成的视频任务有可播放/可抓帧的地址；过期则不展示
               const videoUrl = kind === 'video' && isTaskDone(item.status) && !expired
                 ? videoContentUrl(item.gateway_request_id)
@@ -478,6 +511,11 @@ export default function TasksPage() {
                   </TableCell>
                   <TableCell align="center" className="text-[12px] text-mg-text-1">
                     {fmtDate(item.created_at)}
+                    {expiry && (
+                      <p className={cn('text-[11px] mt-0.5', expiry.expired ? 'text-mg-text-3' : 'text-mg-text-2')}>
+                        {expiry.expired ? '产物已过期' : `产物有效 ${expiry.remain}`}
+                      </p>
+                    )}
                   </TableCell>
                   <TableCell align="center">
                     <span className="inline-flex items-center gap-1.5 text-[12px] text-mg-text-1">

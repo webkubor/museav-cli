@@ -33,6 +33,7 @@ export function TagInput({
   const [focusIdx, setFocusIdx] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const inputBoxRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   // Position the options menu via a fixed-position portal so it is never
   // clipped by a scrollable/overflow-hidden ancestor (e.g. the guardrail
@@ -105,10 +106,10 @@ export function TagInput({
     // 重新打开时本 effect 会在绘制前先 update() 取到新位置
     if (!showDropdown) return
     const update = () => {
-      const r = containerRef.current?.getBoundingClientRect()
+      const r = (inputBoxRef.current ?? containerRef.current)?.getBoundingClientRect()
       if (r) {
         const maxWidth = window.innerWidth - r.left - 8
-        setMenuPos({ left: r.left, top: r.bottom + 4, width: Math.min(r.width, maxWidth) })
+        setMenuPos({ left: r.left, top: r.bottom + 2, width: Math.min(r.width, maxWidth) })
       }
     }
     update()
@@ -127,6 +128,7 @@ export function TagInput({
   return (
     <div ref={containerRef} className={`relative ${className ?? ''}`}>
       <div
+        ref={inputBoxRef}
         className="flex flex-wrap items-center gap-1.5 min-h-[38px] px-2.5 py-1.5 rounded-lg border border-mg-border bg-mg-bg-0 cursor-text transition-colors focus-within:border-brand-base"
         onClick={() => inputRef.current?.focus()}
       >

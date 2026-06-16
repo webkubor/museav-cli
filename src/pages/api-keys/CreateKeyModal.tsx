@@ -269,15 +269,20 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
             </div>
             {spendingEnabled && (
               <div className="flex gap-3">
-                <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-mg-text-2 font-mono select-none">{symbol}</span>
-                  <Input type="number" min="0" step="0.01" value={spendingAmount} onChange={(e) => setSpendingAmount(e.target.value)} placeholder="0.00" className="pl-7" />
-                </div>
+                <Input
+                  type="number" min="0" step="0.01"
+                  value={spendingAmount}
+                  onChange={(e) => setSpendingAmount(e.target.value)}
+                  placeholder="0.00"
+                  prefix={<span className="text-xs text-mg-text-2 font-mono select-none">{symbol}</span>}
+                  className="flex-1"
+                />
                 <Select value={spendingPeriod} onChange={(v) => setSpendingPeriod(v as 'total' | 'monthly')} className="w-28">
                   <SelectItem value="monthly">每月</SelectItem>
                   <SelectItem value="total">总计</SelectItem>
                 </Select>
               </div>
+
             )}
           </div>
 

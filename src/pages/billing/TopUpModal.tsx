@@ -10,6 +10,7 @@ import {
   RECHARGE_PAYMENT_CHANNELS,
   type RechargePaymentChannel,
 } from '@/constants/recharge-channels'
+import { AlipayIcon, WechatIcon, StripeIcon } from '@/constants/brand-icons'
 
 const WECHAT_PAYEE_NAME = 'ModelGo'
 
@@ -41,6 +42,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [amount, setAmount] = useState('100')
+  const [customMode, setCustomMode] = useState(false)
 
   const { currency, symbol: currencySymbol } = useCurrency()
   const enabledChannels = useEnabledChannels()
@@ -54,7 +56,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
     CHANNELS.some((c) => c.value === channel) ? channel : (CHANNELS[0]?.value ?? 'alipay')
   ) as RechargePaymentChannel
 
-  const PRESETS = ['10', '50', '100', '500']
+  const PRESETS = ['10', '50', '100', '200', '500', '1000']
 
   const recharge = useMutation({
     mutationFn: () =>
@@ -105,100 +107,113 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
     })
   }
 
-  const presetClasses = (p: string) => {
-    const isActive = amount === p
-    return cn(
-      "flex-1 rounded-xl border text-xs py-2.5 px-3 cursor-pointer transition-all duration-300 text-center font-semibold active:scale-[0.96]",
-      isActive
-        ? "border-brand-base bg-brand-glow/10 dark:bg-brand-glow/5 text-brand-base font-bold shadow-sm shadow-brand-glow/5 hover:translate-y-[-1px]"
-        : "border-mg-border bg-mg-fill-0 text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-0/80 hover:translate-y-[-1px]"
-    )
-  }
-
-  const channelClasses = (cValue: string) => {
-    const isActive = effectiveChannel === cValue
-    if (!isActive) {
-      return "flex-1 rounded-xl border border-mg-border bg-mg-fill-0 text-mg-text-2 hover:text-mg-text-0 text-xs py-3 px-4 cursor-pointer transition-all duration-300 text-center font-medium active:scale-[0.98] hover:bg-mg-fill-0/80 hover:translate-y-[-1px]"
-    }
-    if (cValue === 'alipay') {
-      return "flex-1 rounded-xl border border-blue-500/80 bg-blue-500/5 text-blue-500 text-xs py-3 px-4 cursor-pointer transition-all duration-300 text-center font-bold shadow-md shadow-blue-500/10 active:scale-[0.98]"
-    }
-    if (cValue === 'wechat') {
-      return "flex-1 rounded-xl border border-emerald-500/80 bg-emerald-500/5 text-emerald-500 text-xs py-3 px-4 cursor-pointer transition-all duration-300 text-center font-bold shadow-md shadow-emerald-500/10 active:scale-[0.98]"
-    }
-    return "flex-1 rounded-xl border border-indigo-500/80 bg-indigo-500/5 text-indigo-500 text-xs py-3 px-4 cursor-pointer transition-all duration-300 text-center font-bold shadow-md shadow-indigo-500/10 active:scale-[0.98]"
-  }
+  const numAmount = parseFloat(amount) || 0
 
   if (!visible) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* 遮罩 */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose} />
 
-      {/* 窗体 - 极致流光边框 */}
-      <div className="relative bg-card-bg/95 backdrop-blur-xl modal-glow-flow rounded-2xl w-full max-w-[400px] shadow-2xl overflow-visible animate-in fade-in zoom-in-95 duration-300">
-        <div className="p-5 border-b border-mg-border/80 flex justify-between items-center bg-mg-fill-0/40 rounded-t-2xl">
-          <h2 className="text-sm font-bold text-mg-text-0 tracking-tight">{t('billing.rechargeModal.title')}</h2>
-          <button className="text-mg-text-2 hover:text-mg-text-0 text-xs font-semibold transition-colors outline-none cursor-pointer" onClick={onClose}>✕</button>
+      <div className="relative bg-card-bg backdrop-blur-xl modal-glow-flow rounded-2xl w-full max-w-[480px] shadow-2xl overflow-visible animate-in fade-in zoom-in-95 duration-300">
+        {/* 头部 */}
+        <div className="px-6 pt-5 pb-4 flex justify-between items-center border-b border-mg-border/60">
+          <h2 className="text-[15px] font-bold text-mg-text-0">{t('billing.rechargeModal.title')}</h2>
+          <button className="text-mg-text-2 hover:text-mg-text-0 transition-colors outline-none cursor-pointer w-7 h-7 flex items-center justify-center rounded-lg hover:bg-mg-fill-0" onClick={onClose}>
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </button>
         </div>
 
-        <div className="p-5 space-y-6">
+        <div className="px-6 py-5 space-y-5">
+          {/* 金额选择标签 */}
           <div>
-            <div className="text-[11px] text-mg-text-3 font-bold mb-2.5 uppercase tracking-wider">{t('billing.rechargeModal.amount')}</div>
-            <div className="flex gap-2 mb-3">
-              {PRESETS.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setAmount(p)}
-                  className={presetClasses(p)}
-                >
-                  {currencySymbol}{p}
-                </button>
-              ))}
+            <div className="text-[11px] text-mg-text-3 font-bold mb-2.5 tracking-wider">{t('billing.rechargeModal.amount')}</div>
+            <div className="grid grid-cols-3 gap-2">
+              {PRESETS.map((p) => {
+                const active = amount === p && !customMode
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => { setAmount(p); setCustomMode(false) }}
+                    className={cn(
+                      "rounded-lg border py-2.5 cursor-pointer transition-all duration-150 text-center active:scale-[0.97]",
+                      active
+                        ? "border-brand-base bg-brand-glow text-brand-base"
+                        : "border-mg-border text-mg-text-1 hover:text-mg-text-0 hover:border-mg-text-2/30"
+                    )}
+                  >
+                    <span className={cn("text-[15px] font-bold font-mono", active && "text-brand-base")}>{currencySymbol}{p}</span>
+                  </button>
+                )
+              })}
             </div>
-            <div className="relative mt-3">
+            {/* 自定义金额 */}
+            <div className="relative mt-2.5">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-mg-text-2 text-sm font-medium">{currencySymbol}</span>
               <input
                 type="number"
                 min="1"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full h-[38px] pl-7 pr-3 rounded-xl border border-mg-border bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-brand-glow focus:border-brand-base transition-all font-semibold font-mono text-mg-text-0"
+                value={customMode ? amount : ''}
+                onFocus={() => setCustomMode(true)}
+                onChange={(e) => { setAmount(e.target.value); setCustomMode(true) }}
+                className="w-full h-10 pl-7 pr-3 rounded-lg border border-mg-border bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-brand-base/40 focus:border-brand-base transition-all font-semibold font-mono text-mg-text-0"
                 placeholder={t('billing.rechargeModal.customAmount')}
               />
             </div>
           </div>
 
+          {/* 支付方式 */}
           <div>
-            <div className="text-[11px] text-mg-text-3 font-bold mb-2.5 uppercase tracking-wider">{t('billing.rechargeModal.method')}</div>
-            <div className="flex gap-3">
-              {CHANNELS.map((c) => (
-                <button
-                  key={c.value}
-                  type="button"
-                  onClick={() => setChannel(c.value)}
-                  className={channelClasses(c.value)}
-                >
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                    {c.icon}
-                    {c.label}
-                  </span>
-                </button>
-              ))}
+            <div className="text-[11px] text-mg-text-3 font-bold mb-2.5 tracking-wider">{t('billing.rechargeModal.method')}</div>
+            <div className="flex gap-2.5">
+              {CHANNELS.map((c) => {
+                const active = effectiveChannel === c.value
+                const brandColor: Record<string, string> = { alipay: '#1677FF', wechat: '#07C160', stripe: '#635BFF' }
+                const color = brandColor[c.value]
+                const channelIcon: Record<string, React.ReactNode> = {
+                  alipay: <AlipayIcon size={22} />,
+                  wechat: <WechatIcon size={22} />,
+                  stripe: <StripeIcon size={22} />,
+                }
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => setChannel(c.value)}
+                    className={cn(
+                      "flex-1 rounded-lg border py-2.5 px-3 cursor-pointer transition-all duration-150 active:scale-[0.97]",
+                      active
+                        ? "shadow-sm"
+                        : "border-mg-border text-mg-text-2 hover:border-mg-text-2/30"
+                    )}
+                    style={active && color ? {
+                      borderColor: color,
+                      backgroundColor: `${color}0D`,
+                    } : undefined}
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      {channelIcon[c.value] ?? c.icon}
+                      <span className={cn("text-[13px] font-bold", active ? "" : "text-mg-text-1")} style={active && color ? { color } : undefined}>{c.label}</span>
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
+          {/* 提交 */}
           <Button
             variant="brand"
-            disabled={!parseFloat(amount) || parseFloat(amount) <= 0 || recharge.isPending}
+            disabled={numAmount <= 0 || recharge.isPending}
             onClick={handleSubmit}
-            className="w-full h-11 text-xs rounded-xl"
+            className="w-full h-11 text-sm font-bold rounded-xl"
           >
-            {recharge.isPending ? t('billing.rechargeModal.submitting') : t('billing.rechargeModal.submit', { amount })}
+            {recharge.isPending
+              ? t('billing.rechargeModal.submitting')
+              : t('billing.rechargeModal.submit', { amount: numAmount > 0 ? amount : '0' })
+            }
           </Button>
-
         </div>
       </div>
     </div>

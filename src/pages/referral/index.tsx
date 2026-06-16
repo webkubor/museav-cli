@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LuCalendarDays, LuCoins, LuTrendingUp, LuUsers, LuWallet, LuSparkles, LuLock } from 'react-icons/lu'
+import { LuCoins, LuTrendingUp, LuUsers, LuWallet, LuSparkles, LuLock } from 'react-icons/lu'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -255,13 +256,10 @@ export default function ReferralPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* 页头 */}
-      <div>
-        <h1 className="text-xl font-bold text-mg-text-0">{text.title}</h1>
-        <p className="mt-1 text-sm text-mg-text-2">{text.desc}</p>
-      </div>
+      <PageHeader title={text.title} description={text.desc} />
 
       {/* KPI 行 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         <KpiCard
           title={text.kpiTotalCommission}
           value={fmt(stats.totalCommission)}
@@ -277,15 +275,8 @@ export default function ReferralPage() {
           glowColor="var(--brand-glow)"
         />
         <KpiCard
-          title={text.kpiTodayCommission}
-          value={fmt(stats.todayCommission)}
-          icon={<LuCalendarDays size={16} />}
-          color="var(--brand-base)"
-          glowColor="var(--brand-glow)"
-        />
-        <KpiCard
           title={text.kpiActive}
-          value={`${stats.invitedTotal}`}
+          value={`${stats.activeInvited} / ${stats.invitedTotal}`}
           icon={<LuUsers size={16} />}
           color="var(--brand-base)"
           glowColor="var(--brand-glow)"

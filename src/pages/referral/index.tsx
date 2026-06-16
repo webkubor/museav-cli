@@ -19,6 +19,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { ReferralInviteCard } from '@/components/referral/ReferralInviteCard'
 import { FirstChargeLockGate } from '@/components/ui/FirstChargeLockGate'
 import { appToast } from '@/lib/app-toast'
+import { formatDateTime } from '@/lib/format-date'
 import { useAuthStore } from '@/store/auth'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
@@ -686,7 +687,7 @@ function CommissionsTable({
         ) : (
           paged.map((rec, index) => (
             <TableRow key={`${rec.date}-${rec.source}-${index}`}>
-              <TableCell className="font-mono text-xs">{rec.date}</TableCell>
+              <TableCell className="font-mono text-xs">{formatDateTime(rec.date)}</TableCell>
               <TableCell>{rec.source}</TableCell>
               <TableCell>
                 <TierBadge name={rec.tierName} fallback={text.notYet} />

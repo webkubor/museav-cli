@@ -337,12 +337,12 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
                       </div>
                       <div className="flex justify-between gap-3">
                         <span className="text-mg-text-3">{t('billing.orders.detail.amount')}:</span>
-                        <span className="text-mg-text-0 font-extrabold text-xs">{selectedOrder.currency} {selectedOrder.amount}</span>
+                        <span className="text-mg-text-0 font-extrabold text-xs font-mono tabular-nums">{selectedOrder.currency} {selectedOrder.amount}</span>
                       </div>
                       {selectedOrder.credited_amount && (
                         <div className="flex justify-between gap-3">
                           <span className="text-mg-text-3">{t('billing.orders.detail.credited')}:</span>
-                          <span className="text-mg-success font-extrabold">{selectedOrder.currency} {selectedOrder.credited_amount}</span>
+                          <span className="text-mg-success font-extrabold font-mono tabular-nums">{selectedOrder.currency} {selectedOrder.credited_amount}</span>
                         </div>
                       )}
                       {selectedOrder.channel && (

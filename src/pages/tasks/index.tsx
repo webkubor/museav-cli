@@ -39,6 +39,7 @@ import { post } from '@/lib/request'
 import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
 import type { TaskItem, TaskDetail, TaskStatus, TaskKind } from '@/types'
+import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { VideoThumbnail } from './VideoThumbnail'
 import { VideoPreviewModal } from './VideoPreviewModal'
 
@@ -230,7 +231,19 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
           {/* 字段列表 */}
           <div className="rounded-xl border border-mg-border bg-card-bg px-4">
             <DetailRow label="任务 ID"   value={task.gateway_request_id} mono />
-            <DetailRow label="模型"      value={task.requested_model}    mono />
+            <DetailRow
+              label="模型"
+              value={
+                <span className="inline-flex items-center gap-1.5">
+                  <ModelIcon
+                    model={{ display_name: task.requested_model, vendor: task.requested_model }}
+                    size={18}
+                    rounded="rounded-md"
+                  />
+                  <span className="font-mono">{task.requested_model}</span>
+                </span>
+              }
+            />
             {task.vendor && <DetailRow label="供应商" value={task.vendor} />}
             <DetailRow label="提交时间" value={fmtDate(task.created_at)} />
             <DetailRow label="结束时间" value={fmtDate(task.completed_at)} />
@@ -590,9 +603,17 @@ export default function TasksPage() {
                     </span>
                   </TableCell>
                   <TableCell align="center">
-                    <p className="text-[12px] font-mono text-mg-text-0 truncate max-w-[220px] mx-auto">
-                      {item.requested_model}
-                    </p>
+                    <span className="inline-flex items-center gap-1.5 max-w-[220px] mx-auto truncate">
+                      <ModelIcon
+                        model={{ display_name: item.requested_model, vendor: item.requested_model }}
+                        size={18}
+                        rounded="rounded-md"
+                        className="shrink-0"
+                      />
+                      <p className="text-[12px] font-mono text-mg-text-0 truncate">
+                        {item.requested_model}
+                      </p>
+                    </span>
                     {item.vendor && (
                       <p className="text-[11px] text-mg-text-2 mt-0.5">{item.vendor}</p>
                     )}

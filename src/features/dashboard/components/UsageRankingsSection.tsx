@@ -39,7 +39,7 @@ function toDisplay(
     tone: TONES[index % TONES.length],
     key: item.key ?? '',
     iconModel: item.key
-      ? (iconMap.get(item.key) ?? { display_name: item.name || item.key, vendor: item.key.split('/')[0] })
+      ? (iconMap.get(item.key) ?? { display_name: item.name || item.key, vendor: item.key })
       : undefined,
   }
 }

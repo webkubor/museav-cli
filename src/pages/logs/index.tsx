@@ -413,7 +413,7 @@ export default function LogsPage() {
                     </TableCell>
                     <TableCell>
                       <span className="flex items-center gap-2">
-                        <ModelIcon model={{ display_name: row.model.display_name, vendor: row.model.display_name }} size={18} />
+                        <ModelIcon model={{ display_name: row.model.display_name, vendor: row.provider?.name ?? row.requested_model ?? row.model.display_name }} size={18} />
                         <span className="font-semibold text-mg-text-0 text-[13.5px]">{row.model.display_name}</span>
                       </span>
                     </TableCell>
@@ -502,12 +502,26 @@ export default function LogsPage() {
 
             <div className="space-y-1 select-all">
               <DetailRow label="Request ID" value={selectedLog.request_id} mono />
-              <DetailRow label={t('logs.detail.model')} value={selectedLog.model.display_name} />
+              <DetailRow label={t('logs.detail.model')} value={
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <ModelIcon model={{ display_name: selectedLog.model.display_name, vendor: selectedLog.provider?.name ?? selectedLog.requested_model ?? selectedLog.model.display_name }} size={18} rounded="rounded-md" />
+                  <span className="truncate">{selectedLog.model.display_name}</span>
+                </span>
+              } />
               <DetailRow label={t('logs.detail.time')} value={formatDateTime(selectedLog.started_at)} />
               <DetailRow label={t('logs.detail.apiKeyName')} value={selectedLog.api_key.name || '—'} />
               <DetailRow label={t('logs.detail.tokens')} value={selectedLog.usage ? `${selectedLog.usage.total_tokens} (Prompt: ${selectedLog.usage.input_tokens} / Completion: ${selectedLog.usage.output_tokens})` : '—'} />
               <DetailRow label="追踪 ID" value={selectedLog.trace_id || '—'} mono />
-              <DetailRow label="请求模型" value={selectedLog.requested_model || '—'} />
+              <DetailRow label="请求模型" value={
+                selectedLog.requested_model
+                  ? (
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <ModelIcon model={{ display_name: selectedLog.requested_model, vendor: selectedLog.provider?.name ?? selectedLog.requested_model }} size={18} rounded="rounded-md" />
+                      <span className="truncate">{selectedLog.requested_model}</span>
+                    </span>
+                  )
+                  : '—'
+              } />
               <DetailRow label="调用类型" value={selectedLog.call_type || '—'} />
               <DetailRow label="HTTP 状态" value={selectedLog.http_status ? String(selectedLog.http_status) : '—'} mono />
               <DetailRow label="计费状态" value={selectedLog.billing_status || '—'} />
@@ -602,7 +616,7 @@ export default function LogsPage() {
   )
 }
 
-function DetailRow({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+function DetailRow({ label, value, mono = false }: { label: string; value: React.ReactNode; mono?: boolean }) {
   return (
     <div className="flex justify-between items-center py-2.5 border-b border-mg-border/40 gap-4">
       <span className="text-xs font-bold text-mg-text-2 shrink-0">{label}</span>

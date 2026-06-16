@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/Table'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LuTrendingUp, LuActivity, LuDatabase, LuKey, LuCpu } from 'react-icons/lu'
+import { ModelIcon } from '@/features/models/components/ModelIcon'
 
 // ─── Types ───────────────────────────────────────────
 
@@ -286,6 +287,7 @@ interface RankingsTableProps {
   isError: boolean
   onRetry: () => void
   currencySymbol: string
+  showModelIcon?: boolean
 }
 
 function RankingsTable({
@@ -296,6 +298,7 @@ function RankingsTable({
   isError,
   onRetry,
   currencySymbol,
+  showModelIcon,
 }: RankingsTableProps) {
   const { t } = useTranslation()
 
@@ -391,7 +394,9 @@ function RankingsTable({
                     <span
                       style={{
                         maxWidth: '200px',
-                        display: 'block',
+                        display: showModelIcon ? 'inline-flex' : 'block',
+                        alignItems: showModelIcon ? 'center' : undefined,
+                        gap: showModelIcon ? '8px' : undefined,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -400,6 +405,15 @@ function RankingsTable({
                       }}
                       title={displayName}
                     >
+                      {showModelIcon && (
+                        <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center' }}>
+                          <ModelIcon
+                            model={{ display_name: displayName, vendor: item.name || item.key || '' }}
+                            size={18}
+                            rounded="rounded-md"
+                          />
+                        </span>
+                      )}
                       {displayName}
                     </span>
                   </TableCell>
@@ -749,6 +763,7 @@ export default function UsagePage() {
             isError={rankingsModelsQuery.isError}
             onRetry={() => rankingsModelsQuery.refetch()}
             currencySymbol={currencySymbol}
+            showModelIcon
           />
         </div>
       </div>

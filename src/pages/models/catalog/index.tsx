@@ -223,7 +223,18 @@ export default function ModelsCatalogPage() {
       .sort((a, b) => a.sort_order - b.sort_order)
     return [
       { code: 'all', label: t('modelsCatalog.filters.all') },
-      ...items.map((f) => ({ code: f.code, label: isZh ? f.name_zh : f.name_en })),
+      ...items.map((f) => {
+        const label = isZh ? f.name_zh : f.name_en
+        // 系列名/code 任一能解析到品牌就在选项前加图标，解析不到则纯文字
+        const iconVendor = [f.code, f.name_en, f.name_zh].find((v) => resolveVendorBrand(v))
+        return {
+          code: f.code,
+          label,
+          icon: iconVendor
+            ? <ModelIcon model={{ display_name: label, vendor: iconVendor }} size={16} rounded="rounded" />
+            : undefined,
+        }
+      }),
     ]
   }, [familiesQuery.data?.items, isZh, t])
 

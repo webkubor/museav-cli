@@ -4,7 +4,7 @@
  * API：无直接请求，消费模型目录页已获取的模型与标签数据
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LuSearch, LuSlidersHorizontal, LuX } from 'react-icons/lu'
 import { Input } from '@/components/ui/Input'
@@ -21,6 +21,8 @@ interface FilterOption {
   code: string
   label: string
   count?: number
+  /** 选项前的图标（如模型系列的品牌 logo），仅部分筛选维度用 */
+  icon?: ReactNode
 }
 
 interface ModalityFilterOption {
@@ -227,6 +229,9 @@ function AdvancedFilterRow({ label, options, value, onChange }: AdvancedFilterRo
             className={cn('models-catalog-filter-chip', value === option.code && 'is-active')}
             title={option.count != null ? `${option.label} (${option.count})` : option.label}
           >
+            {option.icon && (
+              <span className="models-catalog-filter-chip-icon" aria-hidden>{option.icon}</span>
+            )}
             {option.label}
           </button>
         ))}

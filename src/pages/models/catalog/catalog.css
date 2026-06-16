@@ -175,6 +175,12 @@
   transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
 }
 
+.models-catalog-filter-chip-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+}
+
 .models-catalog-filter-chip:hover {
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--brand-base) 22%, var(--mg-border));

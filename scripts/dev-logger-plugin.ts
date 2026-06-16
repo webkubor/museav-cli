@@ -2,10 +2,16 @@ import fs from 'fs'
 import path from 'path'
 import type { Plugin } from 'vite'
 
+/**
+ * 开发日志（log/ 目录，仅 dev、每次启动清空）。全项目共 3 类实时调试流，详见 log/README.md：
+ *  1. api-calls.log —— 本插件写：全部 API（成功+失败）+ 路由跳转，带请求/响应体。查接口契约、定字段。
+ *  2. dev-errors.log —— 本插件写：API 失败 + 前端运行时错误（uncaught/rejection/console.error）。只看"哪坏了"。
+ *  3. proxy.log —— vite.config 代理 configure 写：代理层 header 真相（Cookie / Set-Cookie / status）。查 cookie/网络层。
+ * 前端运行时错误来源：src/lib/dev-error-reporter.ts → POST /dev/log；本插件落盘。
+ */
 const LOG_DIR = path.resolve(process.cwd(), 'log')
 const ERROR_LOG_PATH = path.join(LOG_DIR, 'dev-errors.log')
 const API_LOG_PATH = path.join(LOG_DIR, 'api-calls.log')
-const LEGACY_ERROR_LOG_PATH = path.resolve(process.cwd(), '.dev-errors.log')
 const LOG_HEADER_SEPARATOR = '\n\n'
 
 type DevLogPayload =
@@ -66,7 +72,6 @@ function writeNewest(file: string, block: string) {
 
 function writeError(line: string) {
   writeNewest(ERROR_LOG_PATH, line)
-  writeNewest(LEGACY_ERROR_LOG_PATH, line)
 }
 
 function formatApiLog(payload: Extract<DevLogPayload, { kind: 'api' }>) {
@@ -139,7 +144,6 @@ export function devLoggerPlugin(): Plugin {
       // 每次 dev server 启动清空日志，保证 AI 看到的是本次会话的记录
       fs.writeFileSync(ERROR_LOG_PATH, header)
       fs.writeFileSync(API_LOG_PATH, header)
-      fs.writeFileSync(LEGACY_ERROR_LOG_PATH, header)
 
       server.middlewares.use('/dev/log', (req, res) => {
         if (req.method !== 'POST') {

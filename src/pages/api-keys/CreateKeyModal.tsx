@@ -3,16 +3,19 @@
  */
 import { useEffect, useState } from 'react'
 import confetti from 'canvas-confetti'
+import { LuPlus, LuShieldCheck, LuX } from 'react-icons/lu'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import Select, { SelectItem } from '@/components/ui/Select'
+import { TagInput } from '@/components/ui/TagInput'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { createApiKey } from '@/services/api-keys'
 import { listWorkspaceMembers } from '@/services/workspaces'
-import { listGuardrails } from '@/services/guardrails'
+import { listGuardrails, createGuardrail } from '@/services/guardrails'
+import { listModels } from '@/services/catalog'
 import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { SCOPE_OPTIONS, EXPIRATION_PRESETS, type ScopeType } from './constants'
@@ -33,6 +36,14 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const [scope, setScope] = useState<ScopeType>('workspace')
   const [memberAccountId, setMemberAccountId] = useState('')
   const [guardrailId, setGuardrailId] = useState('')
+
+  // 内嵌新建护栏
+  const [showNewGuardrail, setShowNewGuardrail] = useState(false)
+  const [newGName, setNewGName] = useState('')
+  const [newGModelBlacklist, setNewGModelBlacklist] = useState<string[]>([])
+  const [newGIpWhitelist, setNewGIpWhitelist] = useState<string[]>([])
+  const [ipError, setIpError] = useState('')
+
   const [spendingEnabled, setSpendingEnabled] = useState(false)
   const [spendingAmount, setSpendingAmount] = useState('')
   const [spendingPeriod, setSpendingPeriod] = useState<'total' | 'monthly'>('monthly')
@@ -58,6 +69,61 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
     enabled: !!workspaceId && open,
     staleTime: 60_000,
   })
+
+  const modelsQuery = useQuery({
+    queryKey: ['models-catalog'],
+    queryFn: () => listModels({ page_size: 100 }),
+    staleTime: 5 * 60_000,
+  })
+  const modelSuggestions = modelsQuery.data?.items?.map((m) => m.model_id) ?? []
+
+  const createGuardrailMutation = useMutation({
+    mutationFn: () =>
+      createGuardrail(workspaceId, {
+        name: newGName.trim(),
+        metadata: {
+          model_blacklist: newGModelBlacklist,
+          ip_whitelist: newGIpWhitelist,
+        },
+      }),
+    onSuccess: (g) => {
+      queryClient.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
+      setGuardrailId(g.id)
+      setShowNewGuardrail(false)
+      setNewGName('')
+      setNewGModelBlacklist([])
+      setNewGIpWhitelist([])
+      appToast.success(`护栏「${g.name}」已创建并绑定`)
+    },
+    onError: (err: unknown) => {
+      appToast.error(err instanceof Error ? err.message : '护栏创建失败')
+    },
+  })
+
+  const ipValidator = (v: string) => {
+    const s = v.trim()
+    const m4 = s.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?:\/(\d{1,2}))?$/)
+    if (m4) {
+      const octetsOk = [m4[1], m4[2], m4[3], m4[4]].every((o) => Number(o) <= 255)
+      const cidrOk = m4[5] === undefined || Number(m4[5]) <= 32
+      return octetsOk && cidrOk
+    }
+    const m6 = s.match(/^([0-9a-fA-F:]+)(?:\/(\d{1,3}))?$/)
+    if (m6 && s.includes(':')) {
+      const segsOk = m6[1].split(':').filter(Boolean).every((seg) => /^[0-9a-fA-F]{1,4}$/.test(seg))
+      const cidrOk = m6[2] === undefined || Number(m6[2]) <= 128
+      return segsOk && cidrOk
+    }
+    return false
+  }
+
+  function handleCreateGuardrail() {
+    if (!newGName.trim()) {
+      appToast.error('请填写护栏名称')
+      return
+    }
+    createGuardrailMutation.mutate()
+  }
 
   useEffect(() => {
     if (!guardrailsQuery.data?.length) return
@@ -204,21 +270,106 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
 
         {/* 绑定护栏 */}
         <div>
-          <label className="block text-xs font-bold text-mg-text-1 mb-2">
-            {t('apiKeys.createModal.guardrailLabel')}
-          </label>
-          <Select
-            value={guardrailId}
-            onChange={setGuardrailId}
-            placeholder={t('apiKeys.createModal.guardrailPlaceholder')}
-            className="w-full"
-          >
-            {(guardrailsQuery.data ?? []).map((g) => (
-              <SelectItem key={g.id} value={g.id}>
-                {g.name}
-              </SelectItem>
-            ))}
-          </Select>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-bold text-mg-text-1">
+              {t('apiKeys.createModal.guardrailLabel')}
+            </label>
+            {!showNewGuardrail && (
+              <button
+                type="button"
+                onClick={() => setShowNewGuardrail(true)}
+                className="flex items-center gap-1 text-xs text-brand-base hover:opacity-70 transition-opacity"
+              >
+                <LuPlus className="w-3.5 h-3.5" />
+                新建护栏
+              </button>
+            )}
+          </div>
+
+          {!showNewGuardrail ? (
+            <Select
+              value={guardrailId}
+              onChange={setGuardrailId}
+              placeholder={t('apiKeys.createModal.guardrailPlaceholder')}
+              className="w-full"
+            >
+              {(guardrailsQuery.data ?? []).map((g) => (
+                <SelectItem key={g.id} value={g.id}>
+                  {g.name}
+                </SelectItem>
+              ))}
+            </Select>
+          ) : (
+            <div className="rounded-xl border border-mg-border bg-mg-bg-1/40 p-4 flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <LuShieldCheck className="w-4 h-4 text-brand-base" />
+                  <span className="text-xs font-bold text-mg-text-1">新建护栏</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowNewGuardrail(false)}
+                  className="text-mg-text-2 hover:text-mg-text-1 transition-colors"
+                >
+                  <LuX className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-mg-text-1 mb-2">
+                  护栏名称 <span className="text-mg-danger ml-0.5">*</span>
+                </label>
+                <Input
+                  value={newGName}
+                  onChange={(e) => setNewGName(e.target.value)}
+                  placeholder="输入护栏名称"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-mg-text-1 mb-2">模型黑名单</label>
+                <TagInput
+                  value={newGModelBlacklist}
+                  onChange={setNewGModelBlacklist}
+                  suggestions={modelSuggestions}
+                  placeholder="选择要屏蔽的模型"
+                  hint="选中的模型将被禁止通过此护栏调用"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-mg-text-1 mb-2">IP 白名单</label>
+                <TagInput
+                  value={newGIpWhitelist}
+                  onChange={(v) => { setIpError(''); setNewGIpWhitelist(v) }}
+                  allowFreeText
+                  tagVariant="mono"
+                  validator={ipValidator}
+                  onValidationError={() => {
+                    setIpError('无效的 IP 地址格式')
+                    setTimeout(() => setIpError(''), 3000)
+                  }}
+                  placeholder="输入 IP 或 CIDR，回车确认"
+                  hint="为空则允许所有 IP"
+                />
+                {ipError && <p className="text-xs text-mg-danger mt-1">{ipError}</p>}
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-1 border-t border-mg-border">
+                <Button variant="outline" size="sm" onClick={() => setShowNewGuardrail(false)}>
+                  取消
+                </Button>
+                <Button
+                  variant="brand"
+                  size="sm"
+                  loading={createGuardrailMutation.isPending}
+                  onClick={handleCreateGuardrail}
+                >
+                  创建并绑定
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 消费限额 */}

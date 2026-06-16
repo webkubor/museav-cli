@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
 import { LuCalendarDays, LuCoins, LuTrendingUp, LuUsers, LuWallet, LuSparkles, LuLock } from 'react-icons/lu'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { Button } from '@/components/ui/Button'
@@ -18,6 +17,7 @@ import { Pagination } from '@/components/ui/Pagination'
 import { Modal } from '@/components/ui/Modal'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { ReferralInviteCard } from '@/components/referral/ReferralInviteCard'
+import { FirstChargeLockGate } from '@/components/ui/FirstChargeLockGate'
 import { appToast } from '@/lib/app-toast'
 import { useAuthStore } from '@/store/auth'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -61,7 +61,6 @@ const WITHDRAWAL_STATUS_VARIANT: Record<WithdrawalStatus, 'warning' | 'success' 
 export default function ReferralPage() {
   const { i18n } = useTranslation()
   const text = i18n.language.startsWith('zh') ? referralCopy.zh : referralCopy.en
-  const navigate = useNavigate()
 
   // 推荐计划按当前租户隔离：从哪个租户发出邀请，返佣就进入哪个租户的奖励余额。
   const tenantId = useAuthStore(
@@ -322,9 +321,12 @@ export default function ReferralPage() {
 
       {/* 邀请区 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {!isQualified ? (
-          <ReferralGateCard title={text.gateTitle} desc={text.gateDesc} cta={text.gateCta} onCta={() => navigate('/billing')} />
-        ) : (
+        <FirstChargeLockGate
+          locked={!isQualified}
+          title={text.gateTitle}
+          desc={text.gateDesc}
+          cta={text.gateCta}
+        >
           <ReferralInviteCard
             inviteLink={inviteLink}
             inviteCode={inviteCode}
@@ -337,10 +339,11 @@ export default function ReferralPage() {
             balanceLabel={text.inviteBalanceLabel}
             rulesLinkLabel={text.inviteRulesLink}
           />
-        )}
+        </FirstChargeLockGate>
 
         {/* 档位卡 */}
-        <div className="rounded-2xl border border-mg-border bg-card-bg p-5 space-y-4">
+        <div className="relative overflow-hidden rounded-2xl border border-mg-border bg-card-bg p-5 space-y-4">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-brand-base/35 via-brand-base/10 to-transparent" />
           <p className="text-sm font-bold text-mg-text-0">{text.tierLabel}</p>
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold" style={{ color: 'var(--brand-base)' }}>
@@ -377,7 +380,7 @@ export default function ReferralPage() {
       {/* 分润规则 */}
       <div
         id="referral-rules"
-        className="scroll-mt-24 rounded-xl border border-[var(--brand-base)]/15 bg-gradient-to-r from-[var(--brand-base)]/5 to-transparent p-5 space-y-3.5 shadow-sm"
+        className="scroll-mt-24 rounded-2xl border border-mg-border bg-card-bg p-5 space-y-3.5"
       >
         <div className="flex items-center gap-2 text-sm font-bold text-[var(--brand-base)]">
           <LuSparkles size={15} className="animate-pulse" />
@@ -569,20 +572,6 @@ export default function ReferralPage() {
 
 type TextCopy = typeof referralCopy.zh
 
-function ReferralGateCard({ title, desc, cta, onCta }: { title: string; desc: string; cta: string; onCta: () => void }) {
-  return (
-    <div className="rounded-2xl border border-mg-border bg-card-bg p-6 flex flex-col items-center justify-center gap-4 text-center min-h-[180px]">
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--brand-glow)', color: 'var(--brand-base)' }}>
-        <LuLock size={18} />
-      </div>
-      <div>
-        <p className="font-bold text-mg-text-0 text-sm">{title}</p>
-        <p className="text-xs text-mg-text-2 mt-1 max-w-[280px]">{desc}</p>
-      </div>
-      <Button variant="brand" size="sm" onClick={onCta}>{cta}</Button>
-    </div>
-  )
-}
 
 function InviteesTable({ invitees, text, isQualified }: { invitees: ReferralInvitee[]; text: TextCopy; isQualified: boolean }) {
   const { paged, page, setPage, total, pageSize } = useClientPage(invitees)

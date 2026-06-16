@@ -38,6 +38,7 @@ import { useAuthStore } from '@/store/auth'
 import type { CatalogModelItem, UsageRankingItem } from '@/types'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
 import { ModelCatalogFilters } from './ModelCatalogFilters'
+import { FirstChargeLockGate } from '@/components/ui/FirstChargeLockGate'
 import {
   DEFAULT_ADVANCED_FILTERS,
   matchesAdvancedFilters,
@@ -630,7 +631,10 @@ interface CatalogInsightPanelProps {
 }
 
 function CatalogInsightPanel({ rankingItems, hasRealRanking, freeModels, recentModels }: CatalogInsightPanelProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const isZh = i18n.language.startsWith('zh')
+  // FR-C2: account.has_recharged 由后端 FR-C1 接入后补全；字段缺失时默认 true（不拦截已有用户）
+  const hasRecharged = useAuthStore((s) => (s.account as { has_recharged?: boolean } | null)?.has_recharged ?? true)
 
   return (
     <aside className="catalog-insight-panel" aria-label={t('modelsCatalog.insights.title')}>
@@ -687,19 +691,27 @@ function CatalogInsightPanel({ rankingItems, hasRealRanking, freeModels, recentM
           <LuGift aria-hidden />
           {t('modelsCatalog.insights.free')}
         </h3>
-        <div className="catalog-mini-model-list">
-          {freeModels.length === 0 ? (
-            <p className="catalog-insight-empty">{t('modelsCatalog.insights.freeEmpty')}</p>
-          ) : (
-            freeModels.map((model) => (
-              <div className="catalog-mini-model" key={model.id}>
-                <ModelIcon model={model} size={24} rounded="rounded-md" />
-                <span title={model.display_name}>{model.display_name}</span>
-                <span className="catalog-mini-badge is-free">{t('modelsCatalog.insights.freeTag')}</span>
-              </div>
-            ))
-          )}
-        </div>
+        <FirstChargeLockGate
+          locked={!hasRecharged}
+          title={isZh ? '充值后解锁免费模型' : 'Unlock free models'}
+          desc={isZh ? '首次充值任意金额，即可免费调用此分类下的模型。' : 'Complete your first top-up to access free-tier models at no cost.'}
+          cta={isZh ? '去充值' : 'Top up now'}
+          className="rounded-xl border-0"
+        >
+          <div className="catalog-mini-model-list">
+            {freeModels.length === 0 ? (
+              <p className="catalog-insight-empty">{t('modelsCatalog.insights.freeEmpty')}</p>
+            ) : (
+              freeModels.map((model) => (
+                <div className="catalog-mini-model" key={model.id}>
+                  <ModelIcon model={model} size={24} rounded="rounded-md" />
+                  <span title={model.display_name}>{model.display_name}</span>
+                  <span className="catalog-mini-badge is-free">{t('modelsCatalog.insights.freeTag')}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </FirstChargeLockGate>
       </section>
 
       <section className="catalog-insight-section">

@@ -175,7 +175,9 @@ pnpm build:production
 
 线上地址：[https://gitlab.ops.modelgo.com/groups/qa/-/boards](https://gitlab.ops.modelgo.com/groups/qa/-/boards)
 
-Group: `qa`（ID 8） · Board: `Development`（ID 2） · 默认项目: `ai-quality-platform`（ID 1）
+Group: `qa`（ID 8） · Board: `Development`（ID 2） · **唯一目标项目: `ai-quality-platform`（ID 1）**
+
+> ⚠️ **所有需求/BUG 必须创建在 `project_id=1`（qa group / ai-quality-platform）**，不要创建在本代码仓库（`frontend/modelgo-console-web`，project_id=31）的 issue tracker 里。
 
 | 看板列 | GitLab Label | 说明 |
 | :--- | :--- | :--- |
@@ -184,13 +186,64 @@ Group: `qa`（ID 8） · Board: `Development`（ID 2） · 默认项目: `ai-qua
 | 待验证 | `待验证` | 等待 QA 验收 |
 | 已完成 | `已完成` | 验收通过，关闭 |
 
-业务标签：`BUG`（缺陷）、`TASK`（需求）、`前端就绪`（前端已完成待后端/QA）
+业务标签：`BUG`（缺陷）、`TASK`（需求）、`Feature`（功能需求）、`前端就绪`（前端已完成待后端/QA）
 
 > 控制台 `platform-config` 页面的需求看板与此 GitLab Board 对应，issue 状态同步。
 
-### Agent / CLI 入口
+### Task Skills（Agent 操作入口）
 
-本项目不再通过 README 安装或加载外部技能包。研发流程、规则和看板操作统一走 CortexOS `cs` 系统与 GitLab/TestMgr API。
+本项目所有任务管理操作通过以下 Skill 执行：
+
+| Skill | 触发方式 | 用途 |
+| :--- | :--- | :--- |
+| `gitlab-board` | `/gitlab-board` | QA 看板全操作：查/创建/移动 issue、换列、分配责任人 |
+| `testmgr-api` | `/testmgr-api` | TestMgr REST API：测试用例、任务、BUG、看板数据 |
+
+#### gitlab-board
+
+操作 `https://gitlab.ops.modelgo.com/groups/qa/-/boards` 的唯一 Skill。调用前置：`glab` 已认证 `gitlab.ops.modelgo.com`。
+
+```bash
+# 开工：直接喊 /gitlab-board，让 Agent 帮你查/建/移动 issue
+# 或手动执行：
+
+# 查指派给自己的 issue
+glab api "issues?state=opened&scope=assigned_to_me&per_page=100" --hostname gitlab.ops.modelgo.com
+
+# 查指派给自己的 BUG
+glab api "issues?state=opened&scope=assigned_to_me&labels=BUG&per_page=100" --hostname gitlab.ops.modelgo.com
+
+# 创建需求
+glab api -X POST "projects/1/issues" --hostname gitlab.ops.modelgo.com \
+  --field "title=[Console] 需求标题" --field "labels=TASK,已认领"
+
+# 移动到「进行中」
+glab api -X PUT "projects/1/issues/{iid}" --hostname gitlab.ops.modelgo.com \
+  --field "labels=TASK,进行中"
+
+# 完成并关闭
+glab api -X PUT "projects/1/issues/{iid}" --hostname gitlab.ops.modelgo.com \
+  --field "labels=TASK,已完成" --field "state_event=close"
+```
+
+#### testmgr-api
+
+直连 `https://qa.ops.modelgo.com` 的 TestMgr REST API，管理测试用例、任务、BUG。
+
+```bash
+# 查 board 全貌
+curl https://qa.ops.modelgo.com/api/testmgr/board
+
+# 查所有版本
+curl https://qa.ops.modelgo.com/api/testmgr/versions
+
+# 任务列表
+curl https://qa.ops.modelgo.com/api/testmgr/tasks
+```
+
+> 状态字段统一：`todo` / `in_progress` / `blocked`（显示为「待验证」）/ `done` / `canceled`。禁止发 DELETE 请求。
+
+### Agent / CLI 入口
 
 ```bash
 # 开工快照
@@ -199,31 +252,6 @@ cs brief
 # 查看研发流程和规则
 cs flow
 cs rule
-
-# 查指派给自己的 GitLab QA issue
-glab api "issues?state=opened&scope=assigned_to_me&per_page=100" --hostname gitlab.ops.modelgo.com
-
-# 查指派给自己的 BUG
-glab api "issues?state=opened&scope=assigned_to_me&labels=BUG&per_page=100" --hostname gitlab.ops.modelgo.com
-```
-
-常用 GitLab 看板操作：
-
-```bash
-# 查看所有 open issues
-glab api "groups/qa/issues?state=opened&per_page=100" --hostname gitlab.ops.modelgo.com
-
-# 创建 issue
-glab api -X POST "projects/1/issues" --hostname gitlab.ops.modelgo.com \
-  --field "title=[Console] 需求标题" --field "labels=TASK,已认领"
-
-# 移动 issue 到「进行中」
-glab api -X PUT "projects/1/issues/{iid}" --hostname gitlab.ops.modelgo.com \
-  --field "labels=TASK,进行中"
-
-# 完成并关闭
-glab api -X PUT "projects/1/issues/{iid}" --hostname gitlab.ops.modelgo.com \
-  --field "labels=TASK,已完成" --field "state_event=close"
 ```
 
 ---

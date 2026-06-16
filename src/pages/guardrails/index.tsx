@@ -29,7 +29,6 @@ import type {
   UpdateBudgetPolicyRequest,
 } from '@/interfaces/guardrails'
 import { useCurrency } from '@/hooks/use-platform-config'
-import { pageItems } from '@/lib/utils'
 import { GuardrailTable } from './components/GuardrailTable'
 import { GuardrailDetailSheet } from './components/GuardrailDetailSheet'
 import { GuardrailConfirmModals } from './components/GuardrailConfirmModals'
@@ -146,10 +145,7 @@ export default function GuardrailsPage() {
 
   const apiKeysQuery = useQuery({
     queryKey: ['api-keys', activeWorkspaceId],
-    // pageItems normalizes the api-keys endpoint, which returns a bare array
-    // (not a {items} CursorPage) — reading .data.items left the binding
-    // dropdown empty so no API key could be selected.
-    queryFn: () => listApiKeys(activeWorkspaceId!).then(pageItems),
+    queryFn: () => listApiKeys(activeWorkspaceId!),
     enabled: !!activeWorkspaceId && detailOpen,
     staleTime: 60_000,
   })
@@ -362,7 +358,7 @@ export default function GuardrailsPage() {
   // API key picker options (id-based, like members): label by name, fall back to
   // id. Only active keys are selectable; an already-bound key that is no longer
   // active still resolves its label for display.
-  const apiKeyOptions = (apiKeysQuery.data ?? []).map((k) => ({
+  const apiKeyOptions = (apiKeysQuery.data?.items ?? []).map((k) => ({
     id: k.api_key_id,
     name: k.name || k.api_key_id,
     active: k.status === 'active',

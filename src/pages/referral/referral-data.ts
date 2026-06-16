@@ -41,6 +41,10 @@ export interface ReferralInvitee {
   registeredAt: string
   totalSpend: string
   commission: string
+  /** 该被邀请人自身累计消费对应的当前档位名 */
+  currentTier?: string
+  /** 返佣窗口截止日期（ISO date string，如 "2026-09-15"），由后端按注册日 + N 天计算 */
+  windowExpireAt?: string
 }
 
 export interface ReferralCommissionRecord {
@@ -125,7 +129,9 @@ export const referralCopy = {
     colInvitee: '被邀请人',
     colRegisteredAt: '注册时间',
     colTotalSpend: '累计消费',
-    colCommission: '我的返佣',
+    colCommission: '返佣合计',
+    colCurrentTier: '当前档位',
+    colWindow: '返佣窗口',
     colDate: '日期',
     colSpend: '消费',
     colRate: '比例',
@@ -140,6 +146,10 @@ export const referralCopy = {
     statusRejected: '已驳回',
     notYet: '—',
     empty: '暂无记录',
+    gateTitle: '充值后开通推荐返佣',
+    gateDesc: '首次充值任意金额后，立即解锁专属邀请链接与实时返佣资格。',
+    gateCta: '去充值',
+    gateInviteePlaceholder: '充值后开通，被邀请人记录将在此显示',
   },
   en: {
     title: 'Referral Program',
@@ -192,7 +202,9 @@ export const referralCopy = {
     colInvitee: 'Invitee',
     colRegisteredAt: 'Registered',
     colTotalSpend: 'Total Spend',
-    colCommission: 'My Commission',
+    colCommission: 'Commission',
+    colCurrentTier: 'Tier',
+    colWindow: 'Window',
     colDate: 'Date',
     colSpend: 'Spend',
     colRate: 'Rate',
@@ -207,5 +219,9 @@ export const referralCopy = {
     statusRejected: 'Rejected',
     notYet: '—',
     empty: 'No records',
+    gateTitle: 'Unlock referral program',
+    gateDesc: 'Make your first top-up to unlock your personal referral link and start earning real-time commission.',
+    gateCta: 'Top up now',
+    gateInviteePlaceholder: 'Unlock with your first top-up to see invitee records here',
   },
 }

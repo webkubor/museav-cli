@@ -40,6 +40,7 @@
     "copy-to-clipboard": "^4.0.2",
     "i18next": "^26.2.0",
     "ky": "^2.0.2",
+    "lottie-react": "^2.4.1",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

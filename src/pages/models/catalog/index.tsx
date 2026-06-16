@@ -11,16 +11,11 @@ import { useQuery } from '@tanstack/react-query'
 import {
   LuArrowUpRight,
   LuBookOpen,
-  LuBoxes,
   LuCheck,
   LuChevronRight,
   LuCopy,
-  LuFileText,
   LuGitCompareArrows,
-  LuImage,
   LuSparkles,
-  LuTag,
-  LuVideo,
   LuZap,
 } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
@@ -169,10 +164,6 @@ function getModelMinPrice(model: CatalogModelItem) {
   return Math.min(input, output)
 }
 
-function isFreeModel(model: CatalogModelItem) {
-  const tags = (model.tags ?? []).map((tag) => tag.toLowerCase())
-  return tags.includes('free') || getModelMinPrice(model) <= 0
-}
 
 function isComparableModel(model: CatalogModelItem) {
   const modalities = model.modalities ?? []
@@ -260,19 +251,6 @@ export default function ModelsCatalogPage() {
       matchesAdvancedFilters(model, advancedFilters)
     )
   }, [category, advancedFilters, filteredModels])
-
-  const catalogStats = useMemo(() => {
-    const countByModality = (modality: string) =>
-      allModels.filter((model) => model.modalities?.includes(modality)).length
-
-    return [
-      { key: 'models', label: t('modelsCatalog.stats.models'), value: allModels.length, Icon: LuBoxes },
-      { key: 'text', label: t('modelsCatalog.stats.text'), value: countByModality('text'), Icon: LuFileText },
-      { key: 'image', label: t('modelsCatalog.stats.image'), value: countByModality('image'), Icon: LuImage },
-      { key: 'video', label: t('modelsCatalog.stats.video'), value: countByModality('video'), Icon: LuVideo },
-      { key: 'free', label: t('modelsCatalog.stats.free'), value: allModels.filter(isFreeModel).length, Icon: LuTag },
-    ]
-  }, [allModels, t])
 
   // 我们支持的官方厂商（去重的 model.provider）：只保留能解析到 lobehub 品牌图标的，
   // 无法识别的（会回退首字母）不展示，单独收集供补图标映射。
@@ -388,14 +366,6 @@ export default function ModelsCatalogPage() {
           </div>
           <h1 id="models-catalog-title">{t('modelsCatalog.allModels.title')}</h1>
           <p>{t('modelsCatalog.allModels.desc')}</p>
-          <div className="models-catalog-stats" aria-label={t('modelsCatalog.stats.label')}>
-            {catalogStats.map(({ key, label, value, Icon }) => (
-              <span key={key} className="models-catalog-stat" title={label}>
-                <Icon aria-hidden />
-                <strong>{value}</strong>
-              </span>
-            ))}
-          </div>
           {supportedProviders.length > 0 && (
             <div className="models-catalog-providers" aria-label={t('modelsCatalog.stats.vendors')}>
               {supportedProviders.map((provider) => (

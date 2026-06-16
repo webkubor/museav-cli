@@ -75,14 +75,7 @@
   text-wrap: pretty;
 }
 
-.models-catalog-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 12px;
-}
-
-/* 支持的官方厂商品牌图标排（替代原"厂商个数"统计） */
+/* 支持的官方厂商品牌图标排（替代整排统计标签） */
 .models-catalog-providers {
   display: flex;
   flex-wrap: wrap;
@@ -95,34 +88,6 @@
   border: 1px solid var(--mg-border);
   background: var(--mg-bg-0);
   padding: 4px;
-}
-
-.models-catalog-stat {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-height: 26px;
-  padding: 0 10px;
-  border: 1px solid var(--mg-border);
-  border-radius: 999px;
-  background: var(--mg-fill-0);
-  color: var(--mg-text-2);
-  font-size: 11px;
-  font-weight: 700;
-  cursor: default;
-}
-
-.models-catalog-stat svg {
-  width: 12px;
-  height: 12px;
-  flex-shrink: 0;
-}
-
-.models-catalog-stat strong {
-  color: var(--mg-text-0);
-  font-size: 12px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
 }
 
 .models-catalog-actions {

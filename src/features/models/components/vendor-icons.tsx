@@ -82,6 +82,29 @@ export function resolveVendorKey(vendor: string | null | undefined): string | nu
   return Object.keys(ICON_FACTORY).find((k) => v.includes(k)) ?? null
 }
 
+/**
+ * 别名 → 规范品牌：多个 ICON_FACTORY key 实际是同一品牌/同一 logo，
+ * 去重时需收敛到同一品牌，避免头部排出多个相同/同家图标。
+ */
+const BRAND_ALIASES: Record<string, string> = {
+  claude: 'anthropic',
+  chatgpt: 'openai',
+  llama: 'meta',
+  kimi: 'moonshot',
+  ernie: 'baidu',
+  seedream: 'doubao',
+  skylark: 'doubao',
+  bytedance: 'doubao',
+  ark: 'doubao',
+}
+
+/** 解析厂商名命中的「规范品牌」（别名已收敛）。用于同品牌去重，只展示一个图标。 */
+export function resolveVendorBrand(vendor: string | null | undefined): string | null {
+  const key = resolveVendorKey(vendor)
+  if (!key) return null
+  return BRAND_ALIASES[key] ?? key
+}
+
 export function resolveVendorIcon(
   vendor: string | null | undefined,
   size = 28

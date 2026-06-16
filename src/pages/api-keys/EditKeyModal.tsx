@@ -1,9 +1,9 @@
 /**
  * 编辑 API Key 弹窗：名称、护栏（多选）、消费限额、过期时间
- * 作用域只读（创建后不可变），不重新挂载——通过 apiKey prop 变化重置表单。
+ * 作用域只读（创建后不可变）。
  */
 import { useEffect, useState } from 'react'
-import { LuLock, LuPlus, LuShieldCheck, LuX } from 'react-icons/lu'
+import { LuLock, LuPlus } from 'react-icons/lu'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -12,12 +12,13 @@ import { TagInput } from '@/components/ui/TagInput'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { updateApiKey } from '@/services/api-keys'
-import { listGuardrails, createGuardrail } from '@/services/guardrails'
-import { listModels } from '@/services/catalog'
+import { listGuardrails } from '@/services/guardrails'
 import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { SCOPE_OPTIONS, EXPIRATION_PRESETS } from './constants'
+import { CreateGuardrailDialog } from './CreateGuardrailDialog'
 import type { ApiKeyItem } from '@/types'
+import type { GuardrailDetail } from '@/interfaces/guardrails'
 
 type Props = {
   open: boolean
@@ -32,10 +33,7 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
 
   const [name, setName] = useState('')
   const [guardrailIds, setGuardrailIds] = useState<string[]>([])
-  const [showNewGuardrail, setShowNewGuardrail] = useState(false)
-  const [newGName, setNewGName] = useState('')
-  const [newGModelBlacklist, setNewGModelBlacklist] = useState<string[]>([])
-  const [newGIpWhitelist, setNewGIpWhitelist] = useState<string[]>([])
+  const [guardrailDialogOpen, setGuardrailDialogOpen] = useState(false)
   const [spendingEnabled, setSpendingEnabled] = useState(false)
   const [spendingAmount, setSpendingAmount] = useState('')
   const [spendingPeriod, setSpendingPeriod] = useState<'total' | 'monthly'>('monthly')
@@ -49,22 +47,11 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
     staleTime: 60_000,
   })
 
-  const modelsQuery = useQuery({
-    queryKey: ['models-catalog'],
-    queryFn: () => listModels({ page_size: 100 }),
-    staleTime: 5 * 60_000,
-  })
-  const modelSuggestions = modelsQuery.data?.items?.map((m) => m.model_id) ?? []
-
   // 打开时用当前 apiKey 数据填充表单
   useEffect(() => {
     if (!open || !apiKey) return
-    /* eslint-disable react-hooks/set-state-in-effect -- 弹窗打开时同步重置表单，属预期行为 */
+    /* eslint-disable react-hooks/set-state-in-effect -- 弹窗打开时同步重置表单 */
     setName(apiKey.name)
-    setShowNewGuardrail(false)
-    setNewGName('')
-    setNewGModelBlacklist([])
-    setNewGIpWhitelist([])
     const limit = apiKey.limit
     if (limit?.amount && parseFloat(limit.amount) > 0) {
       setSpendingEnabled(true)
@@ -94,7 +81,6 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
       )
       if (isAssigned) bound.push(g.id)
     }
-    // 默认护栏排首位
     const defaultId = guardrails.find((g) => g.is_default)?.id
     const ordered = defaultId
       ? [defaultId, ...bound.filter((id) => id !== defaultId)]
@@ -102,26 +88,6 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setGuardrailIds(ordered.length > 0 ? ordered : defaultId ? [defaultId] : [])
   }, [guardrailsQuery.data, apiKey?.api_key_id])  // eslint-disable-line react-hooks/exhaustive-deps
-
-  const createGuardrailMutation = useMutation({
-    mutationFn: () =>
-      createGuardrail(workspaceId, {
-        name: newGName.trim(),
-        metadata: { model_blacklist: newGModelBlacklist, ip_whitelist: newGIpWhitelist },
-      }),
-    onSuccess: (g) => {
-      queryClient.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
-      setGuardrailIds((prev) => prev.includes(g.id) ? prev : [...prev, g.id])
-      setShowNewGuardrail(false)
-      setNewGName('')
-      setNewGModelBlacklist([])
-      setNewGIpWhitelist([])
-      appToast.success(`护栏「${g.name}」已创建并绑定`)
-    },
-    onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : '护栏创建失败')
-    },
-  })
 
   const updateMutation = useMutation({
     mutationFn: () => {
@@ -157,6 +123,10 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
     updateMutation.mutate()
   }
 
+  function handleGuardrailCreated(g: GuardrailDetail) {
+    setGuardrailIds((prev) => prev.includes(g.id) ? prev : [...prev, g.id])
+  }
+
   const allGuardrails = Array.isArray(guardrailsQuery.data) ? guardrailsQuery.data : []
   const defaultGuardrail = allGuardrails.find((g) => g.is_default)
   const defaultId = defaultGuardrail?.id ?? ''
@@ -164,52 +134,49 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
   const scopeOpt = SCOPE_OPTIONS.find((o) => o.value === apiKey?.scope)
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="编辑 API Key"
-      size="lg"
-      footer={
-        <>
-          <Button variant="outline" onClick={onClose}>取消</Button>
-          <Button variant="brand" loading={updateMutation.isPending} onClick={handleSubmit}>保存修改</Button>
-        </>
-      }
-    >
-      <div className="flex flex-col gap-7 py-3">
-        {/* 名称 */}
-        <div>
-          <label className="block text-xs font-bold text-mg-text-1 mb-2">名称</label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="API Key 名称" />
-        </div>
-
-        {/* 作用域（只读）*/}
-        <div>
-          <label className="block text-xs font-bold text-mg-text-1 mb-2">
-            作用域 <span className="text-mg-text-2 font-normal ml-1">（创建后不可更改）</span>
-          </label>
-          <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-mg-border bg-mg-fill-0/50 text-xs text-mg-text-1">
-            {scopeOpt && <span className="text-mg-text-2">{scopeOpt.icon}</span>}
-            {scopeOpt?.label ?? apiKey?.scope ?? '—'}
+    <>
+      <Modal
+        open={open}
+        onClose={onClose}
+        title="编辑 API Key"
+        size="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={onClose}>取消</Button>
+            <Button variant="brand" loading={updateMutation.isPending} onClick={handleSubmit}>保存修改</Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-7 py-3">
+          {/* 名称 */}
+          <div>
+            <label className="block text-xs font-bold text-mg-text-1 mb-2">名称</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="API Key 名称" />
           </div>
-        </div>
 
-        {/* 护栏（多选，默认锁定）*/}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-bold text-mg-text-1">安全护栏</label>
-            {!showNewGuardrail && (
+          {/* 作用域（只读）*/}
+          <div>
+            <label className="block text-xs font-bold text-mg-text-1 mb-2">
+              作用域 <span className="text-mg-text-2 font-normal ml-1">（创建后不可更改）</span>
+            </label>
+            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-mg-border bg-mg-fill-0/50 text-xs text-mg-text-1">
+              {scopeOpt && <span className="text-mg-text-2">{scopeOpt.icon}</span>}
+              {scopeOpt?.label ?? apiKey?.scope ?? '—'}
+            </div>
+          </div>
+
+          {/* 安全护栏 */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold text-mg-text-1">安全护栏</label>
               <button
                 type="button"
-                onClick={() => setShowNewGuardrail(true)}
+                onClick={() => setGuardrailDialogOpen(true)}
                 className="flex items-center gap-1 text-xs text-brand-base hover:opacity-70 transition-opacity"
               >
                 <LuPlus className="w-3.5 h-3.5" />新建护栏
               </button>
-            )}
-          </div>
-
-          {!showNewGuardrail ? (
+            </div>
             <div className="space-y-2">
               {defaultGuardrail && (
                 <div className="flex items-center gap-1.5">
@@ -234,74 +201,59 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
                 hint="默认护栏始终绑定，可继续叠加多个护栏共同生效"
               />
             </div>
-          ) : (
-            <div className="rounded-xl border border-mg-border bg-mg-bg-1/40 p-4 flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <LuShieldCheck className="w-4 h-4 text-brand-base" />
-                  <span className="text-xs font-bold text-mg-text-1">新建护栏</span>
-                </div>
-                <button type="button" onClick={() => setShowNewGuardrail(false)} className="text-mg-text-2 hover:text-mg-text-1 transition-colors">
-                  <LuX className="w-4 h-4" />
-                </button>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-mg-text-1 mb-2">护栏名称 <span className="text-mg-danger ml-0.5">*</span></label>
-                <Input value={newGName} onChange={(e) => setNewGName(e.target.value)} placeholder="输入护栏名称" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-mg-text-1 mb-2">模型黑名单</label>
-                <TagInput value={newGModelBlacklist} onChange={setNewGModelBlacklist} suggestions={modelSuggestions} placeholder="选择要屏蔽的模型" />
-              </div>
-              <div className="flex items-center justify-end gap-2 pt-1 border-t border-mg-border">
-                <Button variant="outline" size="sm" onClick={() => setShowNewGuardrail(false)}>取消</Button>
-                <Button variant="brand" size="sm" loading={createGuardrailMutation.isPending} onClick={() => { if (!newGName.trim()) { appToast.error('请填写护栏名称'); return } createGuardrailMutation.mutate() }}>创建并绑定</Button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 消费限额 */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-xs font-bold text-mg-text-1">消费限额</label>
-            <button
-              type="button"
-              onClick={() => setSpendingEnabled(!spendingEnabled)}
-              className={['relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200', spendingEnabled ? 'bg-brand-base' : 'bg-mg-fill-2'].join(' ')}
-            >
-              <span className={['pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200', spendingEnabled ? 'translate-x-4' : 'translate-x-0'].join(' ')} />
-            </button>
           </div>
-          {spendingEnabled && (
-            <div className="flex gap-3">
-              <div className="relative flex-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-mg-text-2 font-mono select-none">{symbol}</span>
-                <Input type="number" min="0" step="0.01" value={spendingAmount} onChange={(e) => setSpendingAmount(e.target.value)} placeholder="0.00" className="pl-7" />
-              </div>
-              <Select value={spendingPeriod} onChange={(v) => setSpendingPeriod(v as 'total' | 'monthly')} className="w-28">
-                <SelectItem value="monthly">每月</SelectItem>
-                <SelectItem value="total">总计</SelectItem>
-              </Select>
-            </div>
-          )}
-        </div>
 
-        {/* 过期时间 */}
-        <div>
-          <label className="block text-xs font-bold text-mg-text-1 mb-2">过期时间 <span className="text-mg-text-2 font-normal">（可选，不填则永不过期）</span></label>
-          <DateRangePicker
-            value={expiryRange}
-            onChange={setExpiryRange}
-            presets={EXPIRATION_PRESETS}
-            customTitle="过期预设"
-            customLabel="选择截止时间"
-            hideStartDate={true}
-            placeholder="选择过期失效时间"
-            className="w-full rounded-xl h-10 justify-between"
-          />
+          {/* 消费限额 */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-xs font-bold text-mg-text-1">消费限额</label>
+              <button
+                type="button"
+                onClick={() => setSpendingEnabled(!spendingEnabled)}
+                className={['relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200', spendingEnabled ? 'bg-brand-base' : 'bg-mg-fill-2'].join(' ')}
+              >
+                <span className={['pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200', spendingEnabled ? 'translate-x-4' : 'translate-x-0'].join(' ')} />
+              </button>
+            </div>
+            {spendingEnabled && (
+              <div className="flex gap-3">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-mg-text-2 font-mono select-none">{symbol}</span>
+                  <Input type="number" min="0" step="0.01" value={spendingAmount} onChange={(e) => setSpendingAmount(e.target.value)} placeholder="0.00" className="pl-7" />
+                </div>
+                <Select value={spendingPeriod} onChange={(v) => setSpendingPeriod(v as 'total' | 'monthly')} className="w-28">
+                  <SelectItem value="monthly">每月</SelectItem>
+                  <SelectItem value="total">总计</SelectItem>
+                </Select>
+              </div>
+            )}
+          </div>
+
+          {/* 过期时间 */}
+          <div>
+            <label className="block text-xs font-bold text-mg-text-1 mb-2">
+              过期时间 <span className="text-mg-text-2 font-normal">（可选，不填则永不过期）</span>
+            </label>
+            <DateRangePicker
+              value={expiryRange}
+              onChange={setExpiryRange}
+              presets={EXPIRATION_PRESETS}
+              customTitle="过期预设"
+              customLabel="选择截止时间"
+              hideStartDate={true}
+              placeholder="选择过期失效时间"
+              className="w-full rounded-xl h-10 justify-between"
+            />
+          </div>
         </div>
-      </div>
-    </Modal>
+      </Modal>
+
+      <CreateGuardrailDialog
+        open={guardrailDialogOpen}
+        onClose={() => setGuardrailDialogOpen(false)}
+        workspaceId={workspaceId}
+        onCreated={handleGuardrailCreated}
+      />
+    </>
   )
 }

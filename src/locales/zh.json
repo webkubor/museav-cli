@@ -1066,7 +1066,7 @@
       "languageChinese": "中文",
       "context": "推理上下文长度",
       "provider": "模型提供方",
-      "family": "模型组",
+      "family": "模型系列",
       "scenario": "模型场景",
       "reset": "重置筛选"
     },

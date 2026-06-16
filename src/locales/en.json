@@ -1067,7 +1067,7 @@
       "languageChinese": "Chinese",
       "context": "Context length",
       "provider": "Provider",
-      "family": "Model Group",
+      "family": "Model Family",
       "scenario": "Scenario",
       "reset": "Reset filters"
     },

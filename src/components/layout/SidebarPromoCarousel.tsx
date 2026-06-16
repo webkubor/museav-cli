@@ -77,18 +77,12 @@ export function SidebarPromoCarousel({ collapsed }: { collapsed: boolean }) {
             rounded="rounded-lg"
           />
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="inline-flex items-center rounded-full bg-white/22 px-1.5 text-[10px] font-extrabold leading-[17px] text-white">
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="inline-flex w-fit items-center rounded-full bg-white/22 px-1.5 text-[9px] font-extrabold leading-[15px] text-white">
             限时免费
           </span>
-          <span
-            className="mt-1 block truncate text-[13px] font-bold leading-tight text-white"
-            title={model.display_name}
-          >
+          <span className="truncate text-[13px] font-bold leading-tight text-white" title={model.display_name}>
             {model.display_name}
-          </span>
-          <span className="block truncate text-[11px] font-medium leading-tight text-white/80">
-            点击免费体验
           </span>
         </span>
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition-transform duration-200 group-hover:translate-x-0.5">

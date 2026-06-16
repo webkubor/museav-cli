@@ -23,6 +23,7 @@ const messages: Record<string, string> = {
   'modelsCatalog.filters.languageChinese': '中文',
   'modelsCatalog.filters.context': '推理上下文长度',
   'modelsCatalog.filters.provider': '模型提供方',
+  'modelsCatalog.filters.family': '模型组',
   'modelsCatalog.filters.scenario': '模型场景',
   'modelsCatalog.filters.reset': '重置筛选',
 }
@@ -76,6 +77,9 @@ describe('ModelCatalogFilters', () => {
         onCategoryChange={vi.fn()}
         advancedFilters={{ ...DEFAULT_ADVANCED_FILTERS }}
         onAdvancedFiltersChange={vi.fn()}
+        familyOptions={[{ code: 'all', label: '全部' }, { code: 'claude', label: 'Claude' }]}
+        family="all"
+        onFamilyChange={vi.fn()}
         allModels={[model]}
         apiTags={[tag]}
         modalityFilters={[{ code: 'text', nameZh: '文本生成', nameEn: 'Text' }]}
@@ -90,7 +94,7 @@ describe('ModelCatalogFilters', () => {
     expect(screen.queryByText('模型类别')).not.toBeInTheDocument()
     expect(screen.getByText('语言支持')).toBeInTheDocument()
     expect(screen.getByText('推理上下文长度')).toBeInTheDocument()
-    expect(screen.getByText('模型提供方')).toBeInTheDocument()
+    expect(screen.getByText('模型组')).toBeInTheDocument()
     expect(screen.getByText('模型场景')).toBeInTheDocument()
   })
 })

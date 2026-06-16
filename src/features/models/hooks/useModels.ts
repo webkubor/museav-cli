@@ -40,7 +40,7 @@ export function useModels(params?: Omit<CatalogModelListParams, 'page_size'>) {
   const filteredModels = allModels.filter((m) => {
     const matchSearch = !search.trim() ||
       m.display_name.toLowerCase().includes(search.toLowerCase()) ||
-      (m.vendor ?? '').toLowerCase().includes(search.toLowerCase()) ||
+      (m.provider ?? '').toLowerCase().includes(search.toLowerCase()) ||
       m.model_id.toLowerCase().includes(search.toLowerCase())
     const matchTag = !activeTag || m.tags.includes(activeTag)
     return matchSearch && matchTag

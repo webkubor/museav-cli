@@ -11,6 +11,9 @@ export interface CatalogModelItem {
   id: string
   model_id: string
   display_name: string
+  /** 官方模型提供方（厂商）——对外展示用，替代暴露上游的 vendor */
+  provider?: string
+  /** 上游供应方（内部/图标解析用，勿直接对外展示） */
   vendor?: string
   modalities: string[]
   tags: string[]

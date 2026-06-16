@@ -7,6 +7,7 @@ import { get } from '@/lib/request'
 import type {
   CatalogModelListParams,
   CatalogModelTagsResponse,
+  CatalogModelFamiliesResponse,
   CatalogProviderListParams,
 } from '@/interfaces/catalog'
 import type {
@@ -40,6 +41,11 @@ export function listModelProviders(modelId: string) {
 /** 获取模型标签目录（用于模型筛选和分类入口） */
 export function listModelTags(enabled = true) {
   return get<CatalogModelTagsResponse>('catalog/model-tags', { enabled })
+}
+
+/** 获取模型族（模型组）目录，用于「模型组」官方筛选 */
+export function listModelFamilies(enabled = true) {
+  return get<CatalogModelFamiliesResponse>('catalog/model-families', { enabled })
 }
 
 // ─── 供应商列表 ───────────────────────────────────

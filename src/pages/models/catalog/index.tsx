@@ -34,7 +34,7 @@ import { useMarket } from '@/hooks/useMarket'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { appToast } from '@/lib/app-toast'
 import { cn, formatContextLength, formatModelPrice } from '@/lib/utils'
-import { listModelTags } from '@/services/catalog'
+import { listModelTags, listModelFamilies } from '@/services/catalog'
 import { getUsageRankingsModels } from '@/services/usage'
 import { useAuthStore } from '@/store/auth'
 import type { CatalogModelItem, UsageRankingItem } from '@/types'
@@ -200,6 +200,8 @@ export default function ModelsCatalogPage() {
 
   const [category, setCategory] = useState<string>('all')
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilterState>(() => ({ ...DEFAULT_ADVANCED_FILTERS }))
+  // 模型组（family）：官方分组，服务端筛选，替代暴露上游的 vendor
+  const [family, setFamily] = useState<string>('all')
   const [isCompareOpen, setIsCompareOpen] = useState(false)
   const [compareInitialIds, setCompareInitialIds] = useState<string[]>([])
   const [copiedId, setCopiedId] = useState<string | null>(null)
@@ -210,13 +212,29 @@ export default function ModelsCatalogPage() {
     setSearch,
     modelsQuery,
     filteredModels,
-  } = useModels()
+  } = useModels({ family: family !== 'all' ? family : undefined })
 
   const tagsQuery = useQuery({
     queryKey: ['catalog-model-tags'],
     queryFn: () => listModelTags(true),
     staleTime: 5 * 60_000,
   })
+
+  // 模型组（family）筛选项：官方分组，替代暴露上游的 vendor
+  const familiesQuery = useQuery({
+    queryKey: ['catalog-model-families'],
+    queryFn: () => listModelFamilies(true),
+    staleTime: 5 * 60_000,
+  })
+  const familyOptions = useMemo(() => {
+    const items = (familiesQuery.data?.items ?? [])
+      .filter((f) => f.enabled)
+      .sort((a, b) => a.sort_order - b.sort_order)
+    return [
+      { code: 'all', label: t('modelsCatalog.filters.all') },
+      ...items.map((f) => ({ code: f.code, label: isZh ? f.name_zh : f.name_en })),
+    ]
+  }, [familiesQuery.data?.items, isZh, t])
 
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
   const { symbol: currencySymbol } = useCurrency()
@@ -244,7 +262,7 @@ export default function ModelsCatalogPage() {
   }, [category, advancedFilters, filteredModels])
 
   const catalogStats = useMemo(() => {
-    const vendorCount = new Set(allModels.map((model) => model.vendor).filter(Boolean)).size
+    const vendorCount = new Set(allModels.map((model) => model.provider).filter(Boolean)).size
     const countByModality = (modality: string) =>
       allModels.filter((model) => model.modalities?.includes(modality)).length
 
@@ -385,6 +403,9 @@ export default function ModelsCatalogPage() {
         onCategoryChange={setCategory}
         advancedFilters={advancedFilters}
         onAdvancedFiltersChange={setAdvancedFilters}
+        familyOptions={familyOptions}
+        family={family}
+        onFamilyChange={setFamily}
         allModels={allModels}
         apiTags={apiTags}
         modalityFilters={modalityFilters}
@@ -481,7 +502,7 @@ function ModelCatalogCard({ model, isZh, copied, onCopy, onTry, onCompare }: Mod
       <div className="model-catalog-card-head">
         <ModelIcon model={model} size={42} rounded="rounded-xl" className="model-catalog-card-icon" />
         <div className="model-catalog-card-title">
-          <span>{model.vendor || 'ModelGo'}</span>
+          <span>{model.provider || 'ModelGo'}</span>
           <h3 title={model.display_name}>{model.display_name}</h3>
         </div>
         <span className={cn('model-catalog-status', model.status === 'disabled' && 'is-disabled')}>

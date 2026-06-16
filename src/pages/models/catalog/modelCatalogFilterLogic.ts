@@ -10,7 +10,6 @@ import type { CatalogModelItem } from '@/types'
 export interface AdvancedFilterState {
   language: string
   context: string
-  provider: string
   scenario: string
 }
 
@@ -18,7 +17,6 @@ export interface AdvancedFilterState {
 export const DEFAULT_ADVANCED_FILTERS: AdvancedFilterState = {
   language: 'all',
   context: 'all',
-  provider: 'all',
   scenario: 'all',
 }
 
@@ -74,7 +72,7 @@ function getModelSearchText(model: CatalogModelItem) {
   return [
     model.model_id,
     model.display_name,
-    model.vendor,
+    model.provider,
     ...(model.tags ?? []),
     ...(model.modalities ?? []),
   ].filter(Boolean).join(' ').toLowerCase()
@@ -113,10 +111,6 @@ export function matchesAdvancedFilters(model: CatalogModelItem, filters: Advance
   return (
     matchesLanguage(model, filters.language) &&
     matchesContext(model, filters.context) &&
-    (
-      filters.provider === 'all' ||
-      model.vendor?.toLowerCase() === filters.provider.toLowerCase()
-    ) &&
     (
       filters.scenario === 'all' ||
       model.tags?.some((tag) => tag.toLowerCase() === filters.scenario.toLowerCase())

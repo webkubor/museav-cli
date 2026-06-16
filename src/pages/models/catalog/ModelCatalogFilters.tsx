@@ -38,6 +38,10 @@ interface ModelCatalogFiltersProps {
   onCategoryChange: (value: string) => void
   advancedFilters: AdvancedFilterState
   onAdvancedFiltersChange: (filters: AdvancedFilterState) => void
+  /** 模型组（family）筛选：选项来自 /catalog/model-families，服务端精确筛选 */
+  familyOptions: FilterOption[]
+  family: string
+  onFamilyChange: (value: string) => void
   allModels: CatalogModelItem[]
   apiTags: CatalogModelTag[]
   modalityFilters: ModalityFilterOption[]
@@ -52,6 +56,9 @@ export function ModelCatalogFilters({
   onCategoryChange,
   advancedFilters,
   onAdvancedFiltersChange,
+  familyOptions,
+  family,
+  onFamilyChange,
   allModels,
   apiTags,
   modalityFilters,
@@ -90,22 +97,6 @@ export function ModelCatalogFilters({
     [t],
   )
 
-  const providerOptions = useMemo<FilterOption[]>(() => {
-    const counts = new Map<string, number>()
-    allModels.forEach((model) => {
-      if (!model.vendor) return
-      counts.set(model.vendor, (counts.get(model.vendor) ?? 0) + 1)
-    })
-
-    return [
-      { code: 'all', label: t('modelsCatalog.filters.all') },
-      ...Array.from(counts.entries())
-        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-        .slice(0, 18)
-        .map(([code, count]) => ({ code, label: code, count })),
-    ]
-  }, [allModels, t])
-
   const scenarioOptions = useMemo<FilterOption[]>(() => {
     const tagNameMap = new Map(
       apiTags.map((tag) => [tag.code.toLowerCase(), isZh ? tag.name_zh : tag.name_en]),
@@ -128,10 +119,10 @@ export function ModelCatalogFilters({
     () => [
       advancedFilters.language !== 'all',
       advancedFilters.context !== 'all',
-      advancedFilters.provider !== 'all',
+      family !== 'all',
       advancedFilters.scenario !== 'all',
     ].filter(Boolean).length,
-    [advancedFilters],
+    [advancedFilters, family],
   )
 
   const handleAdvancedFilterChange = (key: AdvancedFilterKey, value: string) => {
@@ -140,6 +131,7 @@ export function ModelCatalogFilters({
 
   const handleResetFilters = () => {
     onAdvancedFiltersChange({ ...DEFAULT_ADVANCED_FILTERS })
+    onFamilyChange('all')
   }
 
   return (
@@ -189,10 +181,10 @@ export function ModelCatalogFilters({
             onChange={(value) => handleAdvancedFilterChange('context', value)}
           />
           <AdvancedFilterRow
-            label={t('modelsCatalog.filters.provider')}
-            options={providerOptions}
-            value={advancedFilters.provider}
-            onChange={(value) => handleAdvancedFilterChange('provider', value)}
+            label={t('modelsCatalog.filters.family')}
+            options={familyOptions}
+            value={family}
+            onChange={onFamilyChange}
           />
           <AdvancedFilterRow
             label={t('modelsCatalog.filters.scenario')}

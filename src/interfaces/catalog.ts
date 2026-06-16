@@ -16,6 +16,8 @@ export interface CatalogModelListParams extends QueryParams {
   provider_type?: string
   /** 模型作者多选，逗号分隔 */
   author?: string
+  /** 按模型族（模型组）精确筛选，大小写不敏感，取 family 的 code */
+  family?: string
   /** 是否仅返回支持零数据留存的模型 */
   zero_data_retention?: boolean
   /** 是否仅返回支持区域内路由的模型 */
@@ -39,5 +41,20 @@ export interface CatalogProviderListParams extends QueryParams {
 
 export interface CatalogModelTagsResponse {
   items: CatalogModelTag[]
+  total: number
+}
+
+/** 模型族（模型组）—— 官方分组，用于「模型组」筛选，替代暴露上游的 vendor */
+export interface CatalogModelFamily {
+  id: string
+  code: string
+  name_zh: string
+  name_en: string
+  sort_order: number
+  enabled: boolean
+}
+
+export interface CatalogModelFamiliesResponse {
+  items: CatalogModelFamily[]
   total: number
 }

@@ -4,7 +4,7 @@
  * API：GET /api/v1/catalog/models、GET /api/v1/catalog/model-tags、GET /api/v1/usage/rankings/models
  */
 
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/Button'
 import { getMarketConfig } from '@/config/market'
 import { useModels } from '@/features/models/hooks/useModels'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
+import { resolveVendorIcon } from '@/features/models/components/vendor-icons'
 import { ModalityBadge } from '@/features/models/components/ModalityBadge'
 import { useCopy } from '@/hooks/use-copy'
 import { useMarket } from '@/hooks/useMarket'
@@ -273,17 +274,30 @@ export default function ModelsCatalogPage() {
     ]
   }, [allModels, t])
 
-  // 我们支持的官方厂商（去重的 model.provider），展示品牌 LLM 图标，替代原"厂商个数"
-  const supportedProviders = useMemo<ModelIconLike[]>(() => {
-    const map = new Map<string, ModelIconLike>()
+  // 我们支持的官方厂商（去重的 model.provider）：只保留能解析到 lobehub 品牌图标的，
+  // 无法识别的（会回退首字母）不展示，单独收集供补图标映射。
+  const { supportedProviders, unknownProviders } = useMemo(() => {
+    const known = new Map<string, ModelIconLike>()
+    const unknown = new Set<string>()
     for (const model of allModels) {
       const name = model.provider
-      if (!name || map.has(name)) continue
-      // 不传 logo_url → ModelIcon 走 resolveVendorIcon(vendor) 拿 lobehub 品牌图标
-      map.set(name, { vendor: name, display_name: name })
+      if (!name) continue
+      if (resolveVendorIcon(name)) {
+        // 不传 logo_url → ModelIcon 走 resolveVendorIcon(vendor) 拿品牌图标
+        if (!known.has(name)) known.set(name, { vendor: name, display_name: name })
+      } else {
+        unknown.add(name)
+      }
     }
-    return Array.from(map.values())
+    return { supportedProviders: Array.from(known.values()), unknownProviders: Array.from(unknown) }
   }, [allModels])
+
+  // 无法识别的厂商（无对应 lobehub 图标）→ dev 控制台列出，便于在 vendor-icons 补映射
+  useEffect(() => {
+    if (import.meta.env.DEV && unknownProviders.length > 0) {
+      console.warn('[catalog] 无法识别的厂商（无 lobehub 图标，未展示）:', unknownProviders)
+    }
+  }, [unknownProviders])
 
   const { data: rankingsData } = useQuery({
     queryKey: ['usage-rankings', 'models', tenantId],

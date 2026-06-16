@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LuCalendarDays, LuCoins, LuTrendingUp, LuUsers, LuWallet, LuSparkles } from 'react-icons/lu'
+import { useNavigate } from 'react-router-dom'
+import { LuCalendarDays, LuCoins, LuTrendingUp, LuUsers, LuWallet, LuSparkles, LuLock } from 'react-icons/lu'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -60,6 +61,7 @@ const WITHDRAWAL_STATUS_VARIANT: Record<WithdrawalStatus, 'warning' | 'success' 
 export default function ReferralPage() {
   const { i18n } = useTranslation()
   const text = i18n.language.startsWith('zh') ? referralCopy.zh : referralCopy.en
+  const navigate = useNavigate()
 
   // 推荐计划按当前租户隔离：从哪个租户发出邀请，返佣就进入哪个租户的奖励余额。
   const tenantId = useAuthStore(
@@ -68,7 +70,6 @@ export default function ReferralPage() {
   const queryClient = useQueryClient()
   const { hasPermission } = usePermissions()
   const canTransfer = hasPermission(PERMS.REFERRAL_REWARD_TRANSFER)
-  const canWithdraw = hasPermission(PERMS.REFERRAL_REWARD_WITHDRAW)
 
   const { data: overview } = useQuery({
     queryKey: ['referral', 'overview', tenantId],
@@ -116,6 +117,8 @@ export default function ReferralPage() {
   const inviteCode = overview?.inviteCode ?? ''
   const inviteLink = inviteCode ? `${window.location.origin}/signup?aff=${inviteCode}` : ''
   const rewardBalance = Number(stats.rewardBalance)
+  // 未首充时 inviteCode 为空字符串：整页门槛态
+  const isQualified = !!inviteCode
 
   /** 转出/提现成功后刷新所有受影响的余额与记录视图 */
   const invalidateMoneyViews = () => {
@@ -196,20 +199,6 @@ export default function ReferralPage() {
     transferMutation.mutate()
   }
 
-  const handleWithdraw = () => {
-    if (rewardBalance < MIN_AMOUNT) {
-      appToast.info(text.belowMin)
-      return
-    }
-    setIdempotencyKey(crypto.randomUUID())
-    setWithdrawAmount(String(rewardBalance))
-    setPayMethod('alipay')
-    setAlipayAccount('')
-    setBankName('')
-    setBankCard('')
-    setBankHolder('')
-    setWithdrawOpen(true)
-  }
 
   const withdrawMutation = useMutation({
     mutationFn: () =>
@@ -321,54 +310,34 @@ export default function ReferralPage() {
           glowColor="var(--brand-glow)"
         />
 
-        {/* 奖励余额卡（自定义，含按钮） */}
-        <div className="rounded-2xl border border-mg-border bg-card-bg p-4 flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[12px] font-semibold text-mg-text-2 tracking-wide">
-              {text.kpiRewardBalance}
-            </span>
-            <div
-              className="p-2 rounded-xl shrink-0"
-              style={{ backgroundColor: 'var(--brand-glow)', color: 'var(--brand-base)' }}
-            >
-              <LuWallet size={16} />
-            </div>
-          </div>
-          <span
-            className="text-[28px] font-bold tracking-tight font-mono"
-            style={{ color: 'var(--brand-base)', fontVariantNumeric: 'tabular-nums' }}
-          >
-            {fmt(rewardBalance)}
-          </span>
-          <div className="flex gap-2 mt-auto">
-            {canTransfer && (
-              <Button variant="brand" size="sm" disabled={rewardBalance <= 0} onClick={handleTransfer}>
-                {text.transferToBalance}
-              </Button>
-            )}
-            {canWithdraw && WITHDRAW_ENABLED && (
-              <Button variant="outline" size="sm" onClick={handleWithdraw}>
-                {text.requestWithdrawal}
-              </Button>
-            )}
-          </div>
-        </div>
+        <KpiCard
+          title={text.kpiRewardBalance}
+          value={fmt(rewardBalance)}
+          icon={<LuWallet size={16} />}
+          color="var(--brand-base)"
+          glowColor="var(--brand-glow)"
+          action={canTransfer && rewardBalance > 0 ? { label: text.transferToBalance, onClick: handleTransfer } : undefined}
+        />
       </div>
 
       {/* 邀请区 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <ReferralInviteCard
-          inviteLink={inviteLink}
-          inviteCode={inviteCode}
-          inviteLinkLabel={text.inviteLinkLabel}
-          inviteCodeLabel={text.inviteCodeLabel}
-          inviteHint={text.inviteHint}
-          copySuccess={text.copySuccess}
-          copyCodeSuccess={text.copyCodeSuccess}
-          realtimeLabel={text.inviteRealtimeLabel}
-          balanceLabel={text.inviteBalanceLabel}
-          rulesLinkLabel={text.inviteRulesLink}
-        />
+        {!isQualified ? (
+          <ReferralGateCard title={text.gateTitle} desc={text.gateDesc} cta={text.gateCta} onCta={() => navigate('/billing')} />
+        ) : (
+          <ReferralInviteCard
+            inviteLink={inviteLink}
+            inviteCode={inviteCode}
+            inviteLinkLabel={text.inviteLinkLabel}
+            inviteCodeLabel={text.inviteCodeLabel}
+            inviteHint={text.inviteHint}
+            copySuccess={text.copySuccess}
+            copyCodeSuccess={text.copyCodeSuccess}
+            realtimeLabel={text.inviteRealtimeLabel}
+            balanceLabel={text.inviteBalanceLabel}
+            rulesLinkLabel={text.inviteRulesLink}
+          />
+        )}
 
         {/* 档位卡 */}
         <div className="rounded-2xl border border-mg-border bg-card-bg p-5 space-y-4">
@@ -484,7 +453,7 @@ export default function ReferralPage() {
             </TabsList>
           </div>
           <TabsContent value="invitees" className="mt-0">
-            <InviteesTable invitees={invitees} text={text} />
+            <InviteesTable invitees={invitees} text={text} isQualified={isQualified} />
           </TabsContent>
           <TabsContent value="commissions" className="mt-0">
             <CommissionsTable records={rewardRecords} text={text} />
@@ -600,23 +569,48 @@ export default function ReferralPage() {
 
 type TextCopy = typeof referralCopy.zh
 
-function InviteesTable({ invitees, text }: { invitees: ReferralInvitee[]; text: TextCopy }) {
+function ReferralGateCard({ title, desc, cta, onCta }: { title: string; desc: string; cta: string; onCta: () => void }) {
+  return (
+    <div className="rounded-2xl border border-mg-border bg-card-bg p-6 flex flex-col items-center justify-center gap-4 text-center min-h-[180px]">
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--brand-glow)', color: 'var(--brand-base)' }}>
+        <LuLock size={18} />
+      </div>
+      <div>
+        <p className="font-bold text-mg-text-0 text-sm">{title}</p>
+        <p className="text-xs text-mg-text-2 mt-1 max-w-[280px]">{desc}</p>
+      </div>
+      <Button variant="brand" size="sm" onClick={onCta}>{cta}</Button>
+    </div>
+  )
+}
+
+function InviteesTable({ invitees, text, isQualified }: { invitees: ReferralInvitee[]; text: TextCopy; isQualified: boolean }) {
   const { paged, page, setPage, total, pageSize } = useClientPage(invitees)
+  if (!isQualified) {
+    return (
+      <div className="py-12 flex flex-col items-center gap-3 text-center">
+        <LuLock size={20} className="text-mg-text-3" />
+        <p className="text-sm text-mg-text-2">{text.gateInviteePlaceholder}</p>
+      </div>
+    )
+  }
   return (
     <>
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>{text.colInvitee}</TableHead>
-          <TableHead>{text.colRegisteredAt}</TableHead>
           <TableHead className="text-right">{text.colTotalSpend}</TableHead>
           <TableHead className="text-right">{text.colCommission}</TableHead>
+          <TableHead>{text.colRegisteredAt}</TableHead>
+          <TableHead>{text.colCurrentTier}</TableHead>
+          <TableHead>{text.colWindow}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {invitees.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={4} className="text-center text-mg-text-2 py-8">
+            <TableCell colSpan={6} className="text-center text-mg-text-2 py-8">
               {text.empty}
             </TableCell>
           </TableRow>
@@ -627,9 +621,17 @@ function InviteesTable({ invitees, text }: { invitees: ReferralInvitee[]; text: 
                 <div className="font-medium text-mg-text-0">{inv.name}</div>
                 <div className="text-[11px] text-mg-text-2 mt-0.5">{inv.email}</div>
               </TableCell>
-              <TableCell>{inv.registeredAt}</TableCell>
               <TableCell className="text-right font-mono">{fmt(inv.totalSpend)}</TableCell>
               <TableCell className="text-right font-mono">{fmt(inv.commission)}</TableCell>
+              <TableCell>{inv.registeredAt}</TableCell>
+              <TableCell>
+                {inv.currentTier ? (
+                  <Badge variant="purple" size="sm">{inv.currentTier}</Badge>
+                ) : (
+                  <span className="text-mg-text-3">{text.notYet}</span>
+                )}
+              </TableCell>
+              <TableCell className="text-xs text-mg-text-2">{inv.windowExpireAt ?? text.notYet}</TableCell>
             </TableRow>
           ))
         )}

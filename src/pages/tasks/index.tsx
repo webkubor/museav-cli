@@ -12,6 +12,7 @@ import {
   LuDownload,
   LuLink,
   LuCopy,
+  LuTriangleAlert,
 } from 'react-icons/lu'
 import { useCopy } from '@/hooks/use-copy'
 import { appToast } from '@/lib/app-toast'
@@ -315,6 +316,13 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
                 <LuDownload size={14} />
                 下载
               </a>
+              <p className="flex items-start gap-1.5 text-[11px] leading-relaxed text-[var(--mg-warning)]">
+                <LuTriangleAlert size={13} className="shrink-0 mt-0.5" />
+                <span>
+                  视频地址有有效期{expiry ? `（至 ${fmtDate(expiry.expiresAt)}，${expiry.remain}）` : ''}，
+                  过期后平台不再保留，请尽快下载保存到本地。
+                </span>
+              </p>
             </div>
           )}
 
@@ -431,7 +439,7 @@ export default function TasksPage() {
       {/* 页头 */}
       <PageHeader
         title={t('nav.tasks')}
-        description="查看异步任务的执行状态与产物（视频生成等媒体任务）。任务由 API 发起，本页用于监控与取片；排队中的任务可取消。"
+        description="查看异步任务的执行状态与产物（视频生成等媒体任务）。任务由 API 发起，本页用于监控与取片；排队中的任务可取消。视频产物有有效期，过期后平台不再保留，请及时下载保存。"
         className="mb-6"
         actions={
           <Button

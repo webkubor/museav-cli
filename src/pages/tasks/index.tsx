@@ -493,6 +493,7 @@ export default function TasksPage() {
       {/* 提示条 */}
       <p className="text-[11px] text-mg-text-2 mb-4 px-1">
         提示：本页为「任务」一级菜单（只读监控）。任务经 API 发起；视频生成首个落地，后续图片、音乐等媒体生成任务复用同一列表。
+        <span className="text-[var(--mg-warning)]">视频产物有有效期（见各任务「产物有效期」），过期后平台不再保留，请及时下载保存到本地。</span>
       </p>
 
       {/* 表格 */}

@@ -259,13 +259,15 @@ export default function UsagePage() {
         ))}
       </Select>
 
-      <DateRangePicker
-        value={timeRange}
-        onChange={setTimeRange}
-        presets={usagePresets}
-        placeholder={t('usage.customRange.placeholder')}
-        className="h-9 w-52 shrink-0"
-      />
+      <div className="w-48 shrink-0">
+        <DateRangePicker
+          value={timeRange}
+          onChange={setTimeRange}
+          presets={usagePresets}
+          placeholder={t('usage.customRange.placeholder')}
+          className="h-9"
+        />
+      </div>
       <Button variant="outline" size="sm" onClick={refetchUsageData} icon={<LuRefreshCw size={14} />}>
         {t('usage.refresh')}
       </Button>

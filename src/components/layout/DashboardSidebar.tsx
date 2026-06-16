@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { LuSettings, LuChevronLeft, LuChevronRight } from 'react-icons/lu'
-
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { SidebarSettingsPopup } from './SidebarSettingsPopup'
 import { SidebarPromoCarousel } from './SidebarPromoCarousel'
+import { WorkspaceSwitcher } from './WorkspaceSwitcher'
 
 type NavItem = {
   itemKey: string
@@ -359,7 +359,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         </div>
 
         {/* 工作区折叠标题 */}
-        <div 
+        <div
           role="button"
           onClick={() => !collapsed && setWorkspaceOpen(!workspaceOpen)}
           className={cn(
@@ -385,12 +385,15 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         </div>
 
         {/* Workspace 级导航 */}
-        <div 
+        <div
           className={cn(
             "relative flex flex-col gap-0.5 transition-all duration-300 overflow-hidden flex-1",
             (!collapsed && !workspaceOpen) ? "max-h-0 opacity-0 pointer-events-none" : "max-h-[500px] opacity-100"
           )}
         >
+          {/* 工作区切换器 */}
+          <WorkspaceSwitcher collapsed={collapsed} />
+
           {workspaceNavItems.map((item) => {
             if (item.items && item.items.length > 0) {
               return (

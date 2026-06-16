@@ -8,14 +8,13 @@ import {
   LuSettings,
   LuGlobe,
   LuBookOpen,
-  LuLayers,
   LuLogOut,
   LuUser,
   LuBuilding2,
   LuScrollText,
   LuZap,
 } from 'react-icons/lu'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSiteIcon } from '@/config/brand-assets'
 import { useLangStore } from '@/store/use-brand-store'
@@ -27,9 +26,9 @@ import { listTenants } from '@/services/tenants'
 import { createOrganization } from '@/services/organizations'
 import { applyTheme, getUserTheme } from '@/lib/theme'
 import { useTranslation } from 'react-i18next'
-import { listWorkspaces, createWorkspace } from '@/services/workspaces'
+import { listWorkspaces } from '@/services/workspaces'
 import { GATEWAY_ENDPOINTS } from '@/config/gateway'
-import type { TenantBrief, TenantItem, WorkspaceItem, SessionResult } from '@/types'
+import type { TenantBrief, TenantItem, SessionResult } from '@/types'
 import type { TenantListResponse } from '@/interfaces'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -58,7 +57,7 @@ export const DashboardHeader: React.FC = () => {
   const navigate = useNavigate()
   const market = useLangStore((s) => s.market)
   const marketConfig = getMarketConfig(market)
-  const location = useLocation()
+
   const queryClient = useQueryClient()
   const { t } = useTranslation()
   const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setActiveWorkspaceId } = useAuthStore()
@@ -97,11 +96,7 @@ export const DashboardHeader: React.FC = () => {
   const [orgModalVisible, setOrgModalVisible] = useState(false)
   const [newOrgName, setNewOrgName] = useState('')
 
-  const [workspaceModalVisible, setWorkspaceModalVisible] = useState(false)
   const [connectModalVisible, setConnectModalVisible] = useState(false)
-  const [wsName, setWsName] = useState('')
-  const [wsSlug, setWsSlug] = useState('')
-  const [wsDesc, setWsDesc] = useState('')
 
   const { data: tenantsData } = useQuery({
     queryKey: ['tenants'],
@@ -131,43 +126,12 @@ export const DashboardHeader: React.FC = () => {
     (tn) => tn.type === 'enterprise' && (tn as { role?: string }).role === 'tenant_owner',
   )
 
-  const { data: workspaces = [] } = useQuery<WorkspaceItem[]>({
-    queryKey: ['workspaces', activeTenantId],
-    queryFn: () => listWorkspaces().then(res => res.items || []),
-    enabled: !!activeTenantId,
-    staleTime: 60_000,
-  })
-
-  const createWorkspaceMutation = useMutation({
-    mutationFn: (vals: { name: string; slug: string; description?: string }) => {
-      return createWorkspace({
-        name: vals.name,
-        slug: vals.slug,
-        description: vals.description,
-        kind: 'team'
-      })
-    },
-    onSuccess: (newWorkspace) => {
-      toast.success(t('header.createWorkspaceSuccess', { name: newWorkspace.name }))
-      setActiveWorkspaceId(newWorkspace.workspace_id)
-      setWorkspaceModalVisible(false)
-      setWsName('')
-      setWsSlug('')
-      setWsDesc('')
-      queryClient.invalidateQueries({ queryKey: ['workspaces'] })
-    },
-    onError: (err: unknown) => {
-      toast.error((err as { message?: string })?.message || t('header.createWorkspaceError'))
-    }
-  })
-
   useEffect(() => {
     if (!account) return
     applyTheme(getUserTheme(account.account_id))
   }, [account])
 
-  const activeWorkspace = workspaces.find((w) => w.workspace_id === activeWorkspaceId) || workspaces.find((w) => w.is_default) || workspaces[0]
-  const avatarLetter = (account?.display_name || account?.email || 'U').charAt(0).toUpperCase()
+  const avatarLetter =(account?.display_name || account?.email || 'U').charAt(0).toUpperCase()
 
   // 会话重拉后完整回写 store：granted + menus + tenants 身份，与登录时的 setAuth 对齐。
   // 仅缺 granted 时旧逻辑会漏掉新组织的 menus 和 enterprise 身份，导致企业管理不出现。
@@ -215,18 +179,6 @@ export const DashboardHeader: React.FC = () => {
       toast.success(t('header.switchedOrg', { name: tenant.name }))
     } catch {
       toast.error(t('switchTenantFailed') || '切换组织失败')
-    }
-  }
-
-  function handleSwitchWorkspace(workspaceId: string) {
-    if (workspaceId === activeWorkspaceId) return
-    setActiveWorkspaceId(workspaceId)
-    queryClient.removeQueries({ queryKey: ['api-keys'] })
-    queryClient.removeQueries({ queryKey: ['guardrails'] })
-    queryClient.removeQueries({ queryKey: ['observability'] })
-    const wsMatch = location.pathname.match(/^\/workspace\/[^/]+\/(.+)$/)
-    if (wsMatch) {
-      navigate(`/workspace/${workspaceId}/${wsMatch[1]}`, { replace: true })
     }
   }
 
@@ -301,22 +253,6 @@ export const DashboardHeader: React.FC = () => {
     createOrgMutation.mutate()
   }
 
-  const handleCreateWorkspaceSubmit = () => {
-    if (!wsName.trim()) {
-      toast.error(t('header.wsNameRequired'))
-      return
-    }
-    if (!wsSlug.trim()) {
-      toast.error(t('header.wsSlugRequired'))
-      return
-    }
-    createWorkspaceMutation.mutate({
-      name: wsName.trim(),
-      slug: wsSlug.trim(),
-      description: wsDesc.trim() || undefined
-    })
-  }
-
   return (
     <header className={cn(
       "h-[60px] border-b px-6 flex items-center justify-between z-40 relative select-none transition-all duration-300 ease-out",
@@ -345,59 +281,6 @@ export const DashboardHeader: React.FC = () => {
           {/* Live status green dot */}
           <span className="logo-status-dot" />
         </div>
-
-        {/* 一级菜单极细分隔线 */}
-        <div className="w-[1.5px] h-4 bg-mg-border/85 pointer-events-none rounded-full shrink-0" />
-
-        {/* 极雅工作区切换选择 Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <div className="group flex items-center gap-2 bg-mg-fill-0/40 hover:bg-mg-fill-0/70 hover:border-brand-base/30 px-3.5 py-1.5 rounded-full border border-mg-border/60 text-xs text-mg-text-1 transition-all duration-300 hover:shadow-sm cursor-pointer select-none active:scale-[0.97]">
-              <LuLayers size={12} className="text-brand-base shrink-0 transition-transform duration-300 group-hover:scale-110" />
-              <span className="font-bold text-mg-text-0 truncate max-w-[110px] md:max-w-[160px]" title={activeWorkspace?.name ?? t('header.defaultWorkspace')}>
-                {activeWorkspace?.name ?? t('header.defaultWorkspace')}
-              </span>
-              <LuChevronDown size={10} className="text-mg-text-3 group-hover:text-mg-text-1 transition-colors shrink-0" />
-            </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[220px]">
-            {workspaces.map((ws) => (
-              <DropdownMenuItem
-                key={ws.workspace_id}
-                onClick={() => handleSwitchWorkspace(ws.workspace_id)}
-                style={{
-                  fontWeight: ws.workspace_id === activeWorkspaceId ? 700 : 500,
-                  color: ws.workspace_id === activeWorkspaceId ? 'var(--brand-base)' : 'var(--mg-text-1)',
-                  backgroundColor: ws.workspace_id === activeWorkspaceId ? 'var(--brand-selected-bg)' : undefined,
-                }}
-              >
-                <div className="flex items-center justify-between w-full gap-3 min-w-0" title={ws.name}>
-                  <span className="truncate flex-1 pr-1">{ws.name}</span>
-                  {ws.is_default && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-mg-fill-1 text-mg-text-2 font-bold tracking-wide uppercase shrink-0 scale-95">
-                      {t('header.default')}
-                    </span>
-                  )}
-                </div>
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => setWorkspaceModalVisible(true)}
-            >
-              <LuPlus size={14} className="mr-2 text-mg-text-2 shrink-0" />
-              <span>{t('header.createWorkspace')}</span>
-            </DropdownMenuItem>
-            {isNonPersonal && (
-              <DropdownMenuItem
-                onClick={() => navigate('/settings/workspace')}
-              >
-                <LuSettings size={14} className="mr-2 text-mg-text-2 shrink-0" />
-                <span>{t('header.workspaceMgmt')}</span>
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
 
         <button
           type="button"
@@ -632,57 +515,6 @@ export const DashboardHeader: React.FC = () => {
               {t('apiKeys.createModal.cancel')}
             </Button>
             <Button variant="brand" loading={createOrgMutation.isPending} onClick={handleCreateOrgSubmit}>
-              {t('apiKeys.createModal.confirm')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ─── Dialog 2. 创建新工作区 ───────────────── */}
-      <Dialog open={workspaceModalVisible} onOpenChange={setWorkspaceModalVisible}>
-        <DialogContent className="max-w-[420px] modal-glow-flow">
-          <DialogHeader>
-            <DialogTitle>{t('header.createWorkspace')}</DialogTitle>
-            <DialogDescription className="sr-only">{t('header.createWorkspace')}</DialogDescription>
-          </DialogHeader>
-          <div className="py-4 flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <div className="text-xs font-bold text-mg-text-1">
-                {t('header.wsNameLabel')}
-              </div>
-              <Input
-                value={wsName}
-                onChange={e => setWsName(e.target.value)}
-                placeholder={t('header.wsNamePlaceholder')}
-                autoFocus
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <div className="text-xs font-bold text-mg-text-1">
-                {t('header.wsSlugLabel')}
-              </div>
-              <Input
-                value={wsSlug}
-                onChange={e => setWsSlug(e.target.value)}
-                placeholder={t('header.wsSlugPlaceholder')}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <div className="text-xs font-bold text-mg-text-1">
-                {t('header.wsDescLabel')}
-              </div>
-              <Input
-                value={wsDesc}
-                onChange={e => setWsDesc(e.target.value)}
-                placeholder={t('header.wsDescPlaceholder')}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setWorkspaceModalVisible(false)}>
-              {t('apiKeys.createModal.cancel')}
-            </Button>
-            <Button variant="brand" loading={createWorkspaceMutation.isPending} onClick={handleCreateWorkspaceSubmit}>
               {t('apiKeys.createModal.confirm')}
             </Button>
           </DialogFooter>

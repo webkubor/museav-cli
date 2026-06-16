@@ -260,7 +260,7 @@ export default function ReferralPage() {
       <PageHeader title={text.title} description={text.desc} />
 
       {/* KPI 行 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="no-canvas-blur grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         <KpiCard
           title={text.kpiTotalCommission}
           value={fmt(stats.totalCommission)}

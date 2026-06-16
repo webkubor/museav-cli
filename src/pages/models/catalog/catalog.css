@@ -54,9 +54,7 @@
 .models-catalog-toolbar,
 .catalog-insight-panel {
   border: 1px solid var(--mg-border);
-  background:
-    linear-gradient(135deg, rgba(var(--brand-base-rgb), 0.045), transparent 42%),
-    rgba(var(--mg-bg-0-rgb), 0.86);
+  background: var(--card-bg);
   box-shadow: 0 10px 30px -24px rgba(15, 23, 42, 0.28);
 }
 

@@ -14,7 +14,6 @@ import {
   LuCheck,
   LuChevronRight,
   LuCopy,
-  LuFlame,
   LuGift,
   LuLockKeyhole,
   LuGitCompareArrows,
@@ -26,6 +25,7 @@ import { getMarketConfig } from '@/config/market'
 import { useModels } from '@/features/models/hooks/useModels'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
 import { resolveVendorBrand } from '@/features/models/components/vendor-icons'
+import { FlameIcon } from '@/components/ui/FlameIcon'
 import { ModalityBadge } from '@/features/models/components/ModalityBadge'
 import { useCopy } from '@/hooks/use-copy'
 import { useMarket } from '@/hooks/useMarket'
@@ -644,7 +644,7 @@ function CatalogInsightPanel({ rankingItems, hasRealRanking, freeModels, recentM
 
       <section className="catalog-insight-section">
         <h3 className="catalog-insight-hot-title">
-          <LuFlame aria-hidden />
+          <FlameIcon size={15} />
           {t('modelsCatalog.insights.hot')}
         </h3>
         <div className="catalog-ranking-list">
@@ -664,7 +664,7 @@ function CatalogInsightPanel({ rankingItems, hasRealRanking, freeModels, recentM
                   />
                 )}
                 <span className="catalog-ranking-rank">
-                  {idx === 0 && hasRealRanking ? <LuFlame size={15} aria-hidden /> : item.rank}
+                  {idx === 0 && hasRealRanking ? <FlameIcon size={16} /> : item.rank}
                 </span>
                 <ModelIcon model={item.iconModel} size={28} rounded="rounded-lg" className="catalog-ranking-icon" />
                 <span className="catalog-ranking-copy">

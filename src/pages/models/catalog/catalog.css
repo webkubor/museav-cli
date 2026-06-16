@@ -406,34 +406,6 @@
   gap: 6px;
 }
 
-.catalog-insight-hot-title svg {
-  width: 15px;
-  height: 15px;
-  color: var(--mg-warning);
-}
-
-/* 火苗跳动：标题 + 榜首 #1 */
-@keyframes flame-flicker {
-  0%,
-  100% {
-    transform: scale(1) rotate(-2deg);
-    opacity: 0.92;
-  }
-  35% {
-    transform: scale(1.16) rotate(2deg);
-    opacity: 1;
-  }
-  70% {
-    transform: scale(0.95) rotate(-1deg);
-    opacity: 0.86;
-  }
-}
-
-.catalog-insight-hot-title svg,
-.catalog-ranking-row.is-top .catalog-ranking-rank svg {
-  transform-origin: 50% 80%;
-  animation: flame-flicker 1.6s ease-in-out infinite;
-}
 
 .catalog-insight-stitle {
   display: inline-flex;
@@ -625,10 +597,5 @@ body[theme-mode='dark'] .model-catalog-status {
   .model-catalog-card:hover,
   .models-catalog-filter-chip:hover {
     transform: none;
-  }
-
-  .catalog-insight-hot-title svg,
-  .catalog-ranking-row.is-top .catalog-ranking-rank svg {
-    animation: none;
   }
 }

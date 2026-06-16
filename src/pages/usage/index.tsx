@@ -274,10 +274,8 @@ export default function UsagePage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <PageHeader title={t('usage.title')} description={t('usage.desc')} />
-        {filterBar}
-      </div>
+      <PageHeader title={t('usage.title')} description={t('usage.desc')} />
+      {filterBar}
 
       {summaryQuery.isError && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-mg-danger/30 bg-mg-bg-0 px-4 py-3 text-sm text-mg-danger">

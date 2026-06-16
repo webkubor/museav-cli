@@ -561,7 +561,52 @@ export default function ReferralPage() {
 type TextCopy = typeof referralCopy.zh
 
 
+function TierBadge({ name, fallback }: { name?: string; fallback: string }) {
+  if (!name) return <span className="text-mg-text-3">{fallback}</span>
+  const colorMap: Record<string, string> = {
+    '成长伙伴': 'bg-green-500/10 text-green-600 border-green-500/20',
+    'Growth Partner': 'bg-green-500/10 text-green-600 border-green-500/20',
+    '核心伙伴': 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+    'Core Partner': 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+    '战略伙伴': 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+    'Strategic Partner': 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+  }
+  const cls = colorMap[name] ?? 'bg-mg-fill-0 text-mg-text-1 border-mg-border'
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${cls}`}>
+      {name}
+    </span>
+  )
+}
+
+function WindowBadge({ expireAt, fallback, isZh }: { expireAt?: string; fallback: string; isZh: boolean }) {
+  if (!expireAt) return <span className="text-mg-text-3">{fallback}</span>
+  const expireDate = new Date(expireAt)
+  const nowDate = new Date()
+  const msLeft = expireDate.getTime() - nowDate.getTime()
+  const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24))
+  if (daysLeft <= 0) {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-mg-fill-0 text-mg-text-2 border border-mg-border">
+        {isZh ? '已结束' : 'Ended'}
+      </span>
+    )
+  }
+  const urgent = daysLeft <= 14
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${
+      urgent
+        ? 'bg-orange-500/10 text-orange-600 border-orange-500/20'
+        : 'bg-green-500/10 text-green-600 border-green-500/20'
+    }`}>
+      {isZh ? `返佣中·剩 ${daysLeft} 天` : `Active·${daysLeft}d left`}
+    </span>
+  )
+}
+
 function InviteesTable({ invitees, text, isQualified }: { invitees: ReferralInvitee[]; text: TextCopy; isQualified: boolean }) {
+  const { i18n } = useTranslation()
+  const isZh = i18n.language.startsWith('zh')
   const { paged, page, setPage, total, pageSize } = useClientPage(invitees)
   if (!isQualified) {
     return (
@@ -602,13 +647,11 @@ function InviteesTable({ invitees, text, isQualified }: { invitees: ReferralInvi
               <TableCell className="text-right font-mono">{fmt(inv.commission)}</TableCell>
               <TableCell>{inv.registeredAt}</TableCell>
               <TableCell>
-                {inv.currentTier ? (
-                  <Badge variant="purple" size="sm">{inv.currentTier}</Badge>
-                ) : (
-                  <span className="text-mg-text-3">{text.notYet}</span>
-                )}
+                <TierBadge name={inv.currentTier} fallback={text.notYet} />
               </TableCell>
-              <TableCell className="text-xs text-mg-text-2">{inv.windowExpireAt ?? text.notYet}</TableCell>
+              <TableCell>
+                <WindowBadge expireAt={inv.windowExpireAt} fallback={text.notYet} isZh={isZh} />
+              </TableCell>
             </TableRow>
           ))
         )}
@@ -655,11 +698,7 @@ function CommissionsTable({
               <TableCell className="font-mono text-xs">{rec.date}</TableCell>
               <TableCell>{rec.source}</TableCell>
               <TableCell>
-                {rec.tierName ? (
-                  <Badge variant="purple" size="sm">{rec.tierName}</Badge>
-                ) : (
-                  <span className="text-mg-text-3">{text.notYet}</span>
-                )}
+                <TierBadge name={rec.tierName} fallback={text.notYet} />
               </TableCell>
               <TableCell className="text-right font-mono">{fmt(rec.spend)}</TableCell>
               <TableCell className="text-right font-mono">{rec.rate}%</TableCell>

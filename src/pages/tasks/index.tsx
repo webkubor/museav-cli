@@ -439,7 +439,7 @@ export default function TasksPage() {
       {/* 页头 */}
       <PageHeader
         title={t('nav.tasks')}
-        description="查看异步任务的执行状态与产物（视频生成等媒体任务）。任务由 API 发起，本页用于监控与取片；排队中的任务可取消。视频产物有有效期，过期后平台不再保留，请及时下载保存。"
+        description="查看异步任务的执行状态与产物（视频生成等媒体任务）。任务由 API 发起，本页用于监控与取片；排队中的任务可取消。"
         className="mb-6"
         actions={
           <Button
@@ -490,10 +490,10 @@ export default function TasksPage() {
         )}
       </div>
 
-      {/* 提示条 */}
-      <p className="text-[11px] text-mg-text-2 mb-4 px-1">
-        提示：本页为「任务」一级菜单（只读监控）。任务经 API 发起；视频生成首个落地，后续图片、音乐等媒体生成任务复用同一列表。
-        <span className="text-[var(--mg-warning)]">视频产物有有效期（见各任务「产物有效期」），过期后平台不再保留，请及时下载保存到本地。</span>
+      {/* 提示条：只放唯一注意事项（有效期/保存），不与页头描述重复 */}
+      <p className="flex items-start gap-1.5 text-[11px] text-[var(--mg-warning)] mb-4 px-1">
+        <LuTriangleAlert size={13} className="shrink-0 mt-0.5" />
+        <span>视频产物有有效期（见各任务「产物有效期」），过期后平台不再保留，请及时下载保存到本地。</span>
       </p>
 
       {/* 表格 */}

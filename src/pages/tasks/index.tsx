@@ -204,12 +204,15 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
   const expired = isVideoExpired(task) || isVideoExpired(data)
   // 产物有效期：详情接口优先（result_meta 可能比列表项新），回落到列表项
   const expiry = resultExpiry(data) ?? resultExpiry(task)
-  // 视频产物：成功态直接用网关 content 端点（凭 gateway_request_id，302 转 OSS）；过期则不展示
-  const videoUrl = kind === 'video' && isTaskDone(task.status) && !expired ? videoContentUrl(taskId) : null
-  // 运行时兜底：老任务无 result_meta 但视频实际已被清理（404）→ 当作不可用
+  const isVideoTask = kind === 'video' && isTaskDone(task.status)
+  // 无 result_meta 字段（空）= 按已过期算（与列表一致）
+  const noMeta = isVideoTask && !data?.result_meta?.result_expires_at && !task.result_meta?.result_expires_at
+  // 视频产物：成功态直接用网关 content 端点（凭 gateway_request_id，302 转 OSS）；过期/无字段则不展示
+  const videoUrl = isVideoTask && !expired && !noMeta ? videoContentUrl(taskId) : null
+  // 运行时兜底：result_meta 在有效期内但视频实际已被清理（404）→ 当作不可用
   const [videoUnavailable, setVideoUnavailable] = useState(false)
   const showVideo = !!videoUrl && !videoUnavailable
-  const gone = expired || videoUnavailable
+  const gone = (isVideoTask && (expired || noMeta)) || videoUnavailable
 
   return (
     <SideSheet open onClose={onClose} width={460} title="任务详情">
@@ -519,10 +522,14 @@ export default function TasksPage() {
               const kind    = resolveKind(item)
               const kindCfg = KIND_CONFIG[kind]
               const expiry  = resultExpiry(item)
-              // 过期 = 元数据已过期 ∪ 运行时 404（老任务无 result_meta 但产物已清理）
-              const isExpired = isVideoExpired(item) || expiredIds.has(item.gateway_request_id)
-              // 仅已完成的视频任务有可播放/可抓帧的地址；过期则不展示
-              const videoUrl = kind === 'video' && isTaskDone(item.status) && !isExpired
+              const isVideoTask = kind === 'video' && isTaskDone(item.status)
+              // 过期 = 元数据已过期 ∪ 无 result_meta 字段（空＝按已过期算）∪ 运行时 404
+              const isExpired =
+                isVideoExpired(item) ||
+                (isVideoTask && !item.result_meta?.result_expires_at) ||
+                expiredIds.has(item.gateway_request_id)
+              // 仅未过期的已完成视频任务有可播放/可抓帧的地址
+              const videoUrl = isVideoTask && !isExpired
                 ? videoContentUrl(item.gateway_request_id)
                 : null
               return (

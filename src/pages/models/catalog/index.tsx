@@ -14,6 +14,7 @@ import {
   LuCheck,
   LuChevronRight,
   LuCopy,
+  LuFlame,
   LuGitCompareArrows,
   LuSparkles,
   LuZap,
@@ -614,23 +615,42 @@ function CatalogInsightPanel({ rankingItems, hasRealRanking, lowCostModels, rece
       </div>
 
       <section className="catalog-insight-section">
-        <h3>{t('modelsCatalog.insights.hot')}</h3>
+        <h3 className="catalog-insight-hot-title">
+          <LuFlame aria-hidden />
+          {t('modelsCatalog.insights.hot')}
+        </h3>
         <div className="catalog-ranking-list">
-          {rankingItems.slice(0, 5).map((item) => (
-            <div className="catalog-ranking-row" data-tone={item.tone} key={`${item.rank}-${item.name}`}>
-              <span className="catalog-ranking-rank">{item.rank}</span>
-              <ModelIcon model={item.iconModel} size={28} rounded="rounded-lg" className="catalog-ranking-icon" />
-              <span className="catalog-ranking-copy">
-                <strong title={item.name}>{item.name}</strong>
-                <small>
-                  {hasRealRanking
-                    ? t('modelsCatalog.insights.calls', { count: item.requests.toLocaleString() })
-                    : t('modelsCatalog.insights.waiting')}
-                </small>
-              </span>
-              <span className="catalog-ranking-score">{item.score}</span>
-            </div>
-          ))}
+          {(() => {
+            const top = rankingItems.slice(0, 5)
+            const maxReq = Math.max(1, ...top.map((it) => it.requests))
+            return top.map((item, idx) => (
+              <div
+                className={cn('catalog-ranking-row', idx === 0 && hasRealRanking && 'is-top')}
+                key={`${item.rank}-${item.name}`}
+              >
+                {hasRealRanking && (
+                  <span
+                    className="catalog-ranking-heat"
+                    style={{ width: `${Math.max(8, (item.requests / maxReq) * 100)}%` }}
+                    aria-hidden
+                  />
+                )}
+                <span className="catalog-ranking-rank">
+                  {idx === 0 && hasRealRanking ? <LuFlame size={15} aria-hidden /> : item.rank}
+                </span>
+                <ModelIcon model={item.iconModel} size={28} rounded="rounded-lg" className="catalog-ranking-icon" />
+                <span className="catalog-ranking-copy">
+                  <strong title={item.name}>{item.name}</strong>
+                  <small>
+                    {hasRealRanking
+                      ? t('modelsCatalog.insights.calls', { count: item.requests.toLocaleString() })
+                      : t('modelsCatalog.insights.waiting')}
+                  </small>
+                </span>
+                <span className="catalog-ranking-score">{item.score}</span>
+              </div>
+            ))
+          })()}
         </div>
       </section>
 

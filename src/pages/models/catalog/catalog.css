@@ -575,6 +575,33 @@
 
 .catalog-ranking-row {
   grid-template-columns: auto auto minmax(0, 1fr) auto;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 热度条：宽度 ∝ 调用量，暖色低透明度填充，直观体现"爆火"程度 */
+.catalog-ranking-heat {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--mg-warning) 20%, transparent),
+    color-mix(in srgb, var(--mg-warning) 3%, transparent)
+  );
+  pointer-events: none;
+}
+
+/* 内容压在热度条之上 */
+.catalog-ranking-row > *:not(.catalog-ranking-heat) {
+  position: relative;
+  z-index: 1;
+}
+
+/* 榜首强调：暖色描边 */
+.catalog-ranking-row.is-top {
+  border-color: color-mix(in srgb, var(--mg-warning) 36%, var(--mg-border));
 }
 
 .catalog-mini-model {
@@ -582,11 +609,32 @@
 }
 
 .catalog-ranking-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--brand-base);
   font-family: var(--font-mono);
   font-size: 16px;
   font-weight: 900;
   line-height: 1;
+}
+
+/* 榜首火苗用暖色 */
+.catalog-ranking-row.is-top .catalog-ranking-rank {
+  color: var(--mg-warning);
+}
+
+/* 爆火区标题火苗 */
+.catalog-insight-hot-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.catalog-insight-hot-title svg {
+  width: 15px;
+  height: 15px;
+  color: var(--mg-warning);
 }
 
 .catalog-ranking-copy,

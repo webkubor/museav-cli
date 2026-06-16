@@ -1,4 +1,10 @@
-import { useState, useMemo } from 'react'
+/**
+ * 用量分析页
+ * 路由：/usage
+ * API 来源：GET /usage/summary、GET /usage/series、GET /usage/rankings/*、GET /logs/histogram
+ */
+
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
@@ -10,238 +16,74 @@ import {
 } from '@/services/usage'
 import { listWorkspaces } from '@/services/workspaces'
 import { listApiKeys } from '@/services/api-keys'
-import { getLogHistogram } from '@/services/logs'
+import { listModels } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { useCurrency } from '@/hooks/use-platform-config'
-import type { SeriesDataPoint } from '@/types'
+import type { SeriesDataPoint, UsageRankingItem } from '@/types'
 import { pageItems } from '@/lib/utils'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
 import Select from '@/components/ui/Select'
+import { LuActivity, LuDatabase, LuGauge, LuRefreshCw, LuWallet } from 'react-icons/lu'
 import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
-} from '@/components/ui/Table'
-import { EmptyState } from '@/components/ui/EmptyState'
-import { LuTrendingUp, LuActivity, LuDatabase, LuKey, LuCpu } from 'react-icons/lu'
-import { ModelIcon } from '@/features/models/components/ModelIcon'
-import { type Metric, rangeToDates, formatMoney, formatNumber, densifyDailyBuckets } from './usage-utils'
-import { Sparkline, HistogramChart, MetricTab } from './usage-charts'
+  ApiKeyRankingPanel,
+  CostSourcePanel,
+  type CostSourceSection,
+  ModelDistributionPanel,
+  UsageHealthPanel,
+} from './usage-panels'
+import {
+  type Metric,
+  rangeToDates,
+  formatMoney,
+  formatNumber,
+  formatAverageMoney,
+} from './usage-utils'
+import { Sparkline, MetricTab } from './usage-charts'
 
-// ─── Rankings Table ───────────────────────────────────
-
-interface RankingsTableProps {
-  title: string
-  icon: React.ReactNode
-  items: Array<{
-    rank?: number
-    name?: string
-    key?: string
-    spend?: { amount: string; currency: string }
-    requests?: number
-    tokens?: number
-    share_percent?: number
-  }>
-  isLoading: boolean
-  isError: boolean
-  onRetry: () => void
-  currencySymbol: string
-  showModelIcon?: boolean
-}
-
-function RankingsTable({
-  title,
-  icon,
-  items,
-  isLoading,
-  isError,
-  onRetry,
-  currencySymbol,
-  showModelIcon,
-}: RankingsTableProps) {
-  const { t } = useTranslation()
-
-  return (
-    <Card className="p-0 flex flex-col overflow-hidden">
-      {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '16px 20px',
-          borderBottom: '1px solid var(--mg-border)',
-        }}
-      >
-        <span style={{ color: 'var(--mg-text-2)', display: 'flex', alignItems: 'center' }}>{icon}</span>
-        <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--mg-text-0)' }}>{title}</span>
-      </div>
-
-      {/* Body */}
-      {isError ? (
-        <div
-          style={{
-            color: 'var(--mg-danger)',
-            fontSize: '13px',
-            textAlign: 'center',
-            padding: '32px 0',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '12px',
-          }}
-        >
-          {t('usage.error.rankings')}
-          <Button variant="outline" size="sm" onClick={onRetry}>
-            {t('usage.retry')}
-          </Button>
-        </div>
-      ) : isLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '120px' }}>
-          <div className="w-7 h-7 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
-        </div>
-      ) : items.length === 0 ? (
-        <EmptyState
-          title={t('usage.rankings.empty')}
-          description={t('usage.rankings.emptyDesc')}
-        />
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10">{t('usage.rankings.col.rank')}</TableHead>
-              <TableHead>{t('usage.rankings.col.name')}</TableHead>
-              <TableHead align="right">{t('usage.rankings.col.spend')}</TableHead>
-              <TableHead align="right">{t('usage.rankings.col.requests')}</TableHead>
-              <TableHead align="right">{t('usage.rankings.col.tokens')}</TableHead>
-              <TableHead align="right">{t('usage.rankings.col.share')}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item, idx) => {
-              const rankNum = item.rank ?? idx + 1
-              const spendAmt = item.spend?.amount
-                ? formatMoney(item.spend.amount, currencySymbol)
-                : '—'
-              const reqStr = item.requests != null ? formatNumber(item.requests) : '—'
-              const tokStr = item.tokens != null ? formatNumber(item.tokens) : '—'
-              const shareStr =
-                item.share_percent != null ? `${item.share_percent.toFixed(1)}%` : '—'
-              const displayName = item.name || item.key || '—'
-
-              return (
-                <TableRow key={item.key ?? idx}>
-                  <TableCell>
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '22px',
-                        height: '22px',
-                        borderRadius: 'var(--radius-sm)',
-                        background: rankNum <= 3 ? 'var(--mg-primary)' : 'var(--mg-fill-1)',
-                        color: rankNum <= 3 ? 'var(--mg-on-primary)' : 'var(--mg-text-2)',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                      }}
-                    >
-                      {rankNum}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      style={{
-                        maxWidth: '200px',
-                        display: showModelIcon ? 'inline-flex' : 'block',
-                        alignItems: showModelIcon ? 'center' : undefined,
-                        gap: showModelIcon ? '8px' : undefined,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        color: 'var(--mg-text-0)',
-                        fontWeight: 500,
-                      }}
-                      title={displayName}
-                    >
-                      {showModelIcon && (
-                        <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center' }}>
-                          <ModelIcon
-                            model={{ display_name: displayName, vendor: item.name || item.key || '' }}
-                            size={18}
-                            rounded="rounded-md"
-                          />
-                        </span>
-                      )}
-                      {displayName}
-                    </span>
-                  </TableCell>
-                  <TableCell align="right">{spendAmt}</TableCell>
-                  <TableCell align="right">{reqStr}</TableCell>
-                  <TableCell align="right">{tokStr}</TableCell>
-                  <TableCell align="right">
-                    <span style={{ color: 'var(--mg-text-2)' }}>{shareStr}</span>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-      )}
-    </Card>
-  )
-}
-
-// ─── Page ─────────────────────────────────────────────
-
+/** 用量分析页面入口。 */
 export default function UsagePage() {
   const { t } = useTranslation()
   const [timeRange, setTimeRange] = useState<DateRangeValue>({ preset: '7d' })
   const [metric, setMetric] = useState<Metric>('spend')
-  // '' means "all" for workspace/api-key filters
   const [filterWorkspaceId, setFilterWorkspaceId] = useState<string>('')
   const [filterApiKeyId, setFilterApiKeyId] = useState<string>('')
+  const [filterModelId, setFilterModelId] = useState<string>('')
 
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const { symbol: currencySymbol } = useCurrency()
 
-  const USAGE_PRESETS = [
+  const usagePresets = [
     { key: '7d', label: t('usage.range.7d') },
     { key: '30d', label: t('usage.range.30d') },
     { key: '90d', label: t('usage.range.90d') },
     { key: 'custom', label: t('usage.range.custom') },
   ]
-  const METRIC_LABELS: Record<Metric, string> = {
+  const metricLabels: Record<Metric, string> = {
     spend: t('usage.metric.spend'),
     requests: t('usage.metric.requests'),
     tokens: t('usage.metric.tokens'),
   }
 
-  // 必须 memo：rangeToDates 内部用 new Date()，直接调用会每次渲染产出新的 from/to，
-  // 导致 query key 每帧都变 → react-query 无限重拉（疯狂重试）。仅在 timeRange 变化时重算。
+  // rangeToDates 内部依赖当前时间，必须只在筛选变化时重算，避免 query key 抖动。
   const { from, to } = useMemo(() => rangeToDates(timeRange), [timeRange])
   const rangeReady = timeRange.preset !== 'custom' || (!!timeRange.startDate && !!timeRange.endDate)
-
-  // 当前时间范围的人话标签，给图表/排行标注，避免用户不知道看的是哪段
   const rangeLabel =
     timeRange.preset === 'custom' && timeRange.startDate && timeRange.endDate
       ? `${timeRange.startDate} ~ ${timeRange.endDate}`
-      : (USAGE_PRESETS.find((p) => p.key === (timeRange.preset ?? '7d'))?.label ?? '')
+      : (usagePresets.find((preset) => preset.key === (timeRange.preset ?? '7d'))?.label ?? '')
 
-  // 请求分布/趋势统一按天聚合（#195：hour 粒度会让同一天出现多根柱子）
-  const granularity = 'day' as const
-
-  // ── 筛选器数据 ─────────────────────────────────────
-
-  // workspace_id 用于查询的实际值：筛选器有选 → 用筛选器值；否则用当前活跃 workspace
   const effectiveWorkspaceId = filterWorkspaceId || activeWorkspaceId || undefined
+  const commonParams = useMemo(() => ({
+    from,
+    to,
+    workspace_id: filterWorkspaceId || activeWorkspaceId || undefined,
+    api_key_id: filterApiKeyId || undefined,
+    model_id: filterModelId || undefined,
+  }), [activeWorkspaceId, filterApiKeyId, filterModelId, filterWorkspaceId, from, to])
 
   const workspacesQuery = useQuery({
     queryKey: ['workspaces-for-filter', activeTenantId],
@@ -251,7 +93,6 @@ export default function UsagePage() {
   })
   const workspaceList = workspacesQuery.data?.items ?? []
 
-  // API Keys 列表根据筛选器选中的 workspace 加载（无选中时用活跃 workspace）
   const apiKeysQuery = useQuery({
     queryKey: ['api-keys-for-filter', effectiveWorkspaceId],
     queryFn: () => listApiKeys(effectiveWorkspaceId!).then(pageItems),
@@ -260,7 +101,13 @@ export default function UsagePage() {
   })
   const apiKeyList = apiKeysQuery.data ?? []
 
-  // 切换 workspace 时清掉 api key 筛选（避免错误的 id 传给接口）
+  const modelsQuery = useQuery({
+    queryKey: ['usage-models-for-filter'],
+    queryFn: () => listModels({ page_size: 100, sort: 'popular' }).then(pageItems),
+    staleTime: 5 * 60 * 1000,
+  })
+  const modelList = modelsQuery.data ?? []
+
   function handleWorkspaceChange(val: string) {
     setFilterWorkspaceId(val === '__all__' ? '' : val)
     setFilterApiKeyId('')
@@ -270,13 +117,8 @@ export default function UsagePage() {
     setFilterApiKeyId(val === '__all__' ? '' : val)
   }
 
-  // ── 通用查询参数 ──────────────────────────────────
-
-  const commonParams = {
-    from,
-    to,
-    workspace_id: filterWorkspaceId || activeWorkspaceId || undefined,
-    api_key_id: filterApiKeyId || undefined,
+  function handleModelChange(val: string) {
+    setFilterModelId(val === '__all__' ? '' : val)
   }
 
   const summaryQuery = useQuery({
@@ -287,50 +129,25 @@ export default function UsagePage() {
 
   const seriesQuery = useQuery({
     queryKey: ['usage-series', activeTenantId, commonParams, metric],
-    queryFn: () =>
-      getUsageSeries({
-        ...commonParams,
-        metric,
-        granularity,
-      }),
+    queryFn: () => getUsageSeries({ ...commonParams, metric, granularity: 'day' }),
     enabled: !!activeTenantId && rangeReady,
   })
-
-  const histogramQuery = useQuery({
-    queryKey: ['log-histogram', activeTenantId, commonParams],
-    queryFn: () =>
-      getLogHistogram({
-        workspace_id: commonParams.workspace_id,
-        from,
-        to,
-        granularity,
-      }),
-    enabled: !!activeTenantId && rangeReady,
-  })
-
-  // 后端按天稀疏返回 → 补齐到完整区间（缺失天补 0），让"近 N 天"图与范围一致
-  const histogramBuckets = useMemo(
-    () => densifyDailyBuckets(histogramQuery.data?.buckets ?? [], from, to),
-    [histogramQuery.data, from, to],
-  )
 
   const rankingsApiKeysQuery = useQuery({
     queryKey: ['usage-rankings-api-keys', activeTenantId, commonParams],
-    queryFn: () =>
-      getUsageRankingsApiKeys({
-        ...commonParams,
-        limit: 10,
-      }),
+    queryFn: () => getUsageRankingsApiKeys({ ...commonParams, limit: 10 }),
     enabled: !!activeTenantId && rangeReady,
   })
 
   const rankingsModelsQuery = useQuery({
     queryKey: ['usage-rankings-models', activeTenantId, commonParams],
-    queryFn: () =>
-      getUsageRankingsModels({
-        ...commonParams,
-        limit: 10,
-      }),
+    queryFn: () => getUsageRankingsModels({ ...commonParams, limit: 10 }),
+    enabled: !!activeTenantId && rangeReady,
+  })
+
+  const workspaceSourceQuery = useQuery({
+    queryKey: ['usage-source-workspaces', activeTenantId, commonParams],
+    queryFn: () => getUsageSummary({ ...commonParams, group_by: 'workspace' }),
     enabled: !!activeTenantId && rangeReady,
   })
 
@@ -339,50 +156,105 @@ export default function UsagePage() {
   const seriesData = useMemo<SeriesDataPoint[]>(() => {
     const points = seriesQuery.data?.groups?.[0]?.points
     if (!points) return []
-    return points.map((p) => ({
-      bucket_start: p.bucket_start,
+    return points.map((point) => ({
+      bucket_start: point.bucket_start,
       value: metric === 'spend'
-        ? (p.spend?.amount ?? '0')
-        : String(metric === 'requests' ? (p.requests ?? 0) : (p.tokens ?? 0)),
+        ? (point.spend?.amount ?? '0')
+        : String(metric === 'requests' ? (point.requests ?? 0) : (point.tokens ?? 0)),
     }))
-  }, [seriesQuery.data, metric])
+  }, [metric, seriesQuery.data])
 
-  const kpiSpend = summary
-    ? formatMoney(summary.total.spend.amount, currencySymbol)
-    : '—'
-  const kpiRequests = summary ? formatNumber(summary.total.requests) : '—'
+  const spendAmount = parseFloat(summary?.total.spend.amount ?? '0')
+  const requestCount = summary?.total.requests ?? 0
+  const totalSpend = summary ? formatMoney(summary.total.spend.amount, currencySymbol) : '—'
+  const totalRequests = summary ? formatNumber(summary.total.requests) : '—'
+  const totalTokens = summary ? formatNumber(summary.total.tokens) : '—'
+  const averageCost = formatAverageMoney(requestCount > 0 ? spendAmount / requestCount : 0, currencySymbol)
 
-  // ── 筛选栏 UI ─────────────────────────────────────
+  const workspaceSourceItems = useMemo<UsageRankingItem[]>(() => {
+    const groups = workspaceSourceQuery.data?.groups ?? []
+    const total = groups.reduce((sum, group) => sum + parseFloat(group.spend.amount || '0'), 0)
+    return groups.map((group, index) => {
+      const amount = parseFloat(group.spend.amount || '0')
+      return {
+        rank: index + 1,
+        key: group.key,
+        name: group.label,
+        spend: group.spend,
+        requests: group.requests,
+        tokens: group.tokens,
+        share_percent: total > 0 ? (amount / total) * 100 : undefined,
+      }
+    })
+  }, [workspaceSourceQuery.data])
+
+  const sourceSections: CostSourceSection[] = [
+    {
+      title: t('usage.sources.topProject'),
+      items: workspaceSourceItems,
+      emptyLabel: t('usage.sources.empty'),
+    },
+    {
+      title: t('usage.sources.topApiKey'),
+      items: rankingsApiKeysQuery.data?.items ?? [],
+      emptyLabel: t('usage.sources.empty'),
+    },
+    {
+      title: t('usage.sources.topModel'),
+      items: rankingsModelsQuery.data?.items ?? [],
+      emptyLabel: t('usage.sources.empty'),
+    },
+  ]
+
+  function refetchUsageData() {
+    void summaryQuery.refetch()
+    void seriesQuery.refetch()
+    void rankingsApiKeysQuery.refetch()
+    void rankingsModelsQuery.refetch()
+    void workspaceSourceQuery.refetch()
+  }
 
   const filterBar = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-      {/* 项目下拉 */}
+    <div className="flex flex-wrap items-center gap-2">
       <Select
         value={filterWorkspaceId === '' ? '__all__' : filterWorkspaceId}
         onChange={handleWorkspaceChange}
         placeholder={t('usage.filter.allWorkspaces')}
-        className="h-9 text-sm w-40"
+        className="h-9 w-40 text-sm"
       >
         <Select.Option value="__all__">{t('usage.filter.allWorkspaces')}</Select.Option>
-        {workspaceList.map((ws) => (
-          <Select.Option key={ws.workspace_id} value={ws.workspace_id}>
-            {ws.name}
+        {workspaceList.map((workspace) => (
+          <Select.Option key={workspace.workspace_id} value={workspace.workspace_id}>
+            {workspace.name}
           </Select.Option>
         ))}
       </Select>
 
-      {/* API Key 下拉 */}
       <Select
         value={filterApiKeyId === '' ? '__all__' : filterApiKeyId}
         onChange={handleApiKeyChange}
         placeholder={t('usage.filter.allKeys')}
-        className="h-9 text-sm w-44"
+        className="h-9 w-44 text-sm"
         disabled={!effectiveWorkspaceId}
       >
         <Select.Option value="__all__">{t('usage.filter.allKeys')}</Select.Option>
-        {apiKeyList.map((key) => (
-          <Select.Option key={key.api_key_id} value={key.api_key_id}>
-            {key.name || key.masked}
+        {apiKeyList.map((apiKey) => (
+          <Select.Option key={apiKey.api_key_id} value={apiKey.api_key_id}>
+            {apiKey.name || apiKey.masked}
+          </Select.Option>
+        ))}
+      </Select>
+
+      <Select
+        value={filterModelId === '' ? '__all__' : filterModelId}
+        onChange={handleModelChange}
+        placeholder={t('usage.filter.allModels')}
+        className="h-9 w-44 text-sm"
+      >
+        <Select.Option value="__all__">{t('usage.filter.allModels')}</Select.Option>
+        {modelList.map((model) => (
+          <Select.Option key={model.model_id} value={model.model_id}>
+            {model.display_name || model.model_id}
           </Select.Option>
         ))}
       </Select>
@@ -390,153 +262,152 @@ export default function UsagePage() {
       <DateRangePicker
         value={timeRange}
         onChange={setTimeRange}
-        presets={USAGE_PRESETS}
+        presets={usagePresets}
         placeholder={t('usage.customRange.placeholder')}
       />
     </div>
   )
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={t('usage.title')}
-        description={t('usage.desc')}
-      />
-
-      {/* 筛选栏：项目 / API Key / 时间范围，独立一行铺开（不再挤在标题右上角） */}
-      {filterBar}
-
-      {/* KPI 卡片行 */}
-      {summaryQuery.isError ? (
-        <div style={{ color: 'var(--mg-danger)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {t('usage.error.summary')}
-          <Button variant="outline" size="sm" onClick={() => summaryQuery.refetch()}>{t('usage.retry')}</Button>
+    <div className="space-y-5">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <PageHeader title={t('usage.title')} description={t('usage.desc')} />
+        <div className="flex flex-wrap items-center gap-2">
+          {filterBar}
+          <Button variant="outline" size="sm" onClick={refetchUsageData} icon={<LuRefreshCw size={14} />}>
+            {t('usage.refresh')}
+          </Button>
         </div>
-      ) : (
-        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-          {summaryQuery.isLoading ? (
-            <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '96px' }}>
-              <div className="w-8 h-8 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
-            </div>
-          ) : (
-            <>
-              <KpiCard
-                label={t('usage.kpi.spend')}
-                value={kpiSpend}
-                color="var(--mg-warning)"
-                glowColor="rgba(245, 158, 11, 0.12)"
-                hoverBorderClass="hover:border-amber-500/30"
-                icon={<LuTrendingUp size={16} />}
-              />
-              <KpiCard
-                label={t('usage.kpi.requests')}
-                value={kpiRequests}
-                color="var(--mg-success)"
-                glowColor="rgba(16, 185, 129, 0.12)"
-                hoverBorderClass="hover:border-emerald-500/30"
-                icon={<LuActivity size={16} />}
-              />
-              <KpiCard
-                label={t('usage.kpi.tokens')}
-                value={summary ? formatNumber(summary.total.tokens) : '—'}
-                sub={summary ? `${t('usage.metric.requests').toLowerCase()}: ${formatNumber(summary.total.input_tokens)} · ${formatNumber(summary.total.output_tokens)}` : undefined}
-                color="var(--mg-info)"
-                glowColor="rgba(59, 130, 246, 0.12)"
-                hoverBorderClass="hover:border-blue-500/30"
-                icon={<LuDatabase size={16} />}
-              />
-            </>
-          )}
+      </div>
+
+      {summaryQuery.isError && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-mg-danger/30 bg-mg-bg-0 px-4 py-3 text-sm text-mg-danger">
+          {t('usage.error.summary')}
+          <Button variant="outline" size="sm" onClick={() => summaryQuery.refetch()}>
+            {t('usage.retry')}
+          </Button>
         </div>
       )}
 
-      {/* 折线图区域 */}
-      <Card className="p-6 flex flex-col">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--mg-text-0)' }}>
-            {t('usage.chart.trendTitle', { metric: METRIC_LABELS[metric] })}
-            <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: 400, color: 'var(--mg-text-2)' }}>· {rangeLabel}</span>
-          </div>
-          <div style={{ display: 'flex', gap: '4px', background: 'var(--mg-bg-1)', padding: '3px', borderRadius: 'var(--radius-sm)' }}>
-            {(['spend', 'requests', 'tokens'] as Metric[]).map((m) => (
-              <MetricTab key={m} label={METRIC_LABELS[m]} active={metric === m} onClick={() => setMetric(m)} />
-            ))}
-          </div>
-        </div>
+      <UsageHealthPanel
+        rangeLabel={rangeLabel}
+        totalSpend={totalSpend}
+        totalRequests={totalRequests}
+        totalTokens={totalTokens}
+      />
 
-        {seriesQuery.isError ? (
-          <div style={{ color: 'var(--mg-danger)', fontSize: '13px', textAlign: 'center', padding: '40px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-            {t('usage.error.series')}
-            <Button variant="outline" size="sm" onClick={() => seriesQuery.refetch()}>{t('usage.retry')}</Button>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <KpiCard
+          label={t('usage.kpi.spend')}
+          value={totalSpend}
+          loading={summaryQuery.isLoading}
+          color="var(--mg-warning)"
+          glowColor="rgba(245, 158, 11, 0.12)"
+          hoverBorderClass="hover:border-amber-500/30"
+          icon={<LuWallet size={16} />}
+        />
+        <KpiCard
+          label={t('usage.kpi.requests')}
+          value={totalRequests}
+          loading={summaryQuery.isLoading}
+          color="var(--mg-success)"
+          glowColor="rgba(16, 185, 129, 0.12)"
+          hoverBorderClass="hover:border-emerald-500/30"
+          icon={<LuActivity size={16} />}
+        />
+        <KpiCard
+          label={t('usage.kpi.tokens')}
+          value={totalTokens}
+          loading={summaryQuery.isLoading}
+          sub={summary ? t('usage.kpi.tokenBreakdown', {
+            input: formatNumber(summary.total.input_tokens),
+            output: formatNumber(summary.total.output_tokens),
+          }) : undefined}
+          color="var(--mg-info)"
+          glowColor="rgba(59, 130, 246, 0.12)"
+          hoverBorderClass="hover:border-blue-500/30"
+          icon={<LuDatabase size={16} />}
+        />
+        <KpiCard
+          label={t('usage.kpi.averageCost')}
+          value={averageCost}
+          loading={summaryQuery.isLoading}
+          sub={t('usage.kpi.averageCostDesc')}
+          color="var(--brand-base)"
+          glowColor="var(--brand-glow)"
+          hoverBorderClass="hover:border-brand-base/30"
+          icon={<LuGauge size={16} />}
+        />
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <Card className="min-w-0 p-5 sm:p-6">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-mg-text-0">
+                {t('usage.chart.trendTitle', { metric: metricLabels[metric] })}
+              </div>
+              <div className="mt-1 text-[12px] text-mg-text-2">{rangeLabel}</div>
+            </div>
+            <div className="flex gap-1 rounded-lg bg-mg-bg-1 p-1">
+              {(['spend', 'requests', 'tokens'] as Metric[]).map((item) => (
+                <MetricTab
+                  key={item}
+                  label={metricLabels[item]}
+                  active={metric === item}
+                  onClick={() => setMetric(item)}
+                />
+              ))}
+            </div>
           </div>
-        ) : seriesQuery.isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-            <div className="w-8 h-8 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
-          </div>
-        ) : (
-          <div style={{ width: '100%' }}>
+
+          {seriesQuery.isError ? (
+            <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 text-center text-sm text-mg-danger">
+              {t('usage.error.series')}
+              <Button variant="outline" size="sm" onClick={() => seriesQuery.refetch()}>
+                {t('usage.retry')}
+              </Button>
+            </div>
+          ) : seriesQuery.isLoading ? (
+            <div className="flex h-[220px] items-center justify-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-mg-border border-t-brand-base" />
+            </div>
+          ) : (
             <Sparkline
               data={seriesData}
               metric={metric}
               noDataLabel={t('usage.noData')}
               currencySymbol={currencySymbol}
+              requestUnitLabel={t('usage.unit.requests')}
+              tokenUnitLabel={t('usage.unit.tokens')}
             />
-          </div>
-        )}
-      </Card>
+          )}
+        </Card>
 
-      {/* 请求分布直方图 */}
-      <Card className="p-6 flex flex-col">
-        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--mg-text-0)', marginBottom: '20px' }}>
-          {t('usage.chart.histogramTitle')}
-          <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: 400, color: 'var(--mg-text-2)' }}>· {rangeLabel}</span>
-        </div>
-        {histogramQuery.isError ? (
-          <div style={{ color: 'var(--mg-danger)', fontSize: '13px', textAlign: 'center', padding: '40px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-            {t('usage.error.histogram')}
-            <Button variant="outline" size="sm" onClick={() => histogramQuery.refetch()}>{t('usage.retry')}</Button>
-          </div>
-        ) : histogramQuery.isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '160px' }}>
-            <div className="w-8 h-8 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
-          </div>
-        ) : (
-          <div style={{ width: '100%' }}>
-            <HistogramChart
-              buckets={histogramBuckets}
-              noDataLabel={t('usage.noData')}
-            />
-          </div>
-        )}
-      </Card>
+        <CostSourcePanel
+          sections={sourceSections}
+          currencySymbol={currencySymbol}
+          isLoading={rankingsModelsQuery.isLoading || rankingsApiKeysQuery.isLoading || workspaceSourceQuery.isLoading}
+          isError={rankingsModelsQuery.isError || rankingsApiKeysQuery.isError || workspaceSourceQuery.isError}
+          onRetry={refetchUsageData}
+        />
+      </div>
 
-      {/* 用量排行 */}
-      <div>
-        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--mg-text-0)', marginBottom: '16px' }}>
-          {t('usage.rankings.title')}
-          <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: 400, color: 'var(--mg-text-2)' }}>· {rangeLabel}</span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))', gap: '16px' }}>
-          <RankingsTable
-            title={t('usage.rankings.topKeys')}
-            icon={<LuKey size={15} />}
-            items={rankingsApiKeysQuery.data?.items ?? []}
-            isLoading={rankingsApiKeysQuery.isLoading}
-            isError={rankingsApiKeysQuery.isError}
-            onRetry={() => rankingsApiKeysQuery.refetch()}
-            currencySymbol={currencySymbol}
-          />
-          <RankingsTable
-            title={t('usage.rankings.topModels')}
-            icon={<LuCpu size={15} />}
-            items={rankingsModelsQuery.data?.items ?? []}
-            isLoading={rankingsModelsQuery.isLoading}
-            isError={rankingsModelsQuery.isError}
-            onRetry={() => rankingsModelsQuery.refetch()}
-            currencySymbol={currencySymbol}
-            showModelIcon
-          />
-        </div>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+        <ModelDistributionPanel
+          items={rankingsModelsQuery.data?.items ?? []}
+          isLoading={rankingsModelsQuery.isLoading}
+          isError={rankingsModelsQuery.isError}
+          onRetry={() => rankingsModelsQuery.refetch()}
+          currencySymbol={currencySymbol}
+        />
+        <ApiKeyRankingPanel
+          items={rankingsApiKeysQuery.data?.items ?? []}
+          isLoading={rankingsApiKeysQuery.isLoading}
+          isError={rankingsApiKeysQuery.isError}
+          onRetry={() => rankingsApiKeysQuery.refetch()}
+          currencySymbol={currencySymbol}
+        />
       </div>
     </div>
   )

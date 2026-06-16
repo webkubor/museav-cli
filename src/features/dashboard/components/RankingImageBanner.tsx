@@ -4,7 +4,7 @@ import ambientBanner from '@/assets/modelgo-web3-ambient.png'
 
 export function RankingImageBanner() {
   return (
-    <section className="relative mb-8 overflow-hidden rounded-[22px] border border-mg-border bg-mg-surface shadow-[0_18px_44px_rgba(15,23,42,0.10)]">
+    <section className="relative mb-8 overflow-hidden rounded-[var(--radius-lg)] border border-mg-border bg-mg-bg-0 shadow-[0_18px_44px_rgba(15,23,42,0.10)]">
       <img
         src={ambientBanner}
         alt=""

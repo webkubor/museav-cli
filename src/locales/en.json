@@ -879,6 +879,8 @@
     "title": "Usage Analytics",
     "desc": "View API calls, token usage, and cost trends.",
     "noData": "No data",
+    "emptyValue": "None",
+    "refresh": "Refresh",
     "range": {
       "7d": "Last 7 days",
       "30d": "Last 30 days",
@@ -893,10 +895,66 @@
       "requests": "Requests",
       "tokens": "Tokens"
     },
+    "unit": {
+      "requests": "requests",
+      "tokens": "tokens"
+    },
     "kpi": {
       "spend": "Total Spend",
       "requests": "Total Requests",
-      "tokens": "Total Tokens"
+      "tokens": "Total Tokens",
+      "averageCost": "Avg Cost / Request",
+      "averageCostDesc": "Total spend / requests",
+      "tokenBreakdown": "Input {{input}} / Output {{output}}"
+    },
+    "health": {
+      "title": "Quota Health",
+      "safe": "Safe",
+      "period": "Period spend",
+      "activity": "Activity",
+      "tokensInline": "Tokens {{tokens}}",
+      "desc": "Summarizes real spend, requests, and tokens for {{range}}. The backend supports usage summary, trends, and rankings, but does not return weekly or 5-hour quota limits yet.",
+      "realData": "Real API data",
+      "quotaPending": "Limit data pending",
+      "quotaPendingDesc": "This page does not fake quota percentages. When total quota is exhausted, calls stop even if short-cycle limits are not hit.",
+      "topModel": "Primary model",
+      "topApiKey": "Primary API Key",
+      "metric": {
+        "spend": "Period spend",
+        "requests": "Period requests",
+        "tokens": "Period tokens",
+        "averageCost": "Avg cost"
+      }
+    },
+    "insights": {
+      "title": "Key Insights",
+      "desc": "Uses returned rankings and quality metrics to identify the main usage drivers.",
+      "topModel": "Top model",
+      "topApiKey": "Top API Key",
+      "averageLatency": "Average latency",
+      "errorRate": "Error rate"
+    },
+    "sources": {
+      "title": "Cost Sources",
+      "viewAll": "View all",
+      "topProject": "Top Project",
+      "topApiKey": "Top API Key",
+      "topModel": "Top Model",
+      "empty": "No source data"
+    },
+    "distribution": {
+      "title": "Model Distribution",
+      "bySpend": "By spend"
+    },
+    "apiKeyRank": {
+      "title": "API Key Ranking",
+      "col": {
+        "rank": "Rank",
+        "apiKey": "API Key",
+        "requests": "Requests",
+        "tokens": "Total Tokens",
+        "spend": "Spend"
+      }
     },
     "chart": {
       "trendTitle": "{{metric}} Trend",
@@ -912,6 +970,7 @@
     "filter": {
       "allWorkspaces": "All Workspaces",
       "allKeys": "All Keys",
+      "allModels": "All Models",
       "workspace": "Workspace",
       "apiKey": "API Key"
     },
@@ -919,6 +978,8 @@
       "title": "Usage Rankings",
       "topKeys": "Top API Keys",
       "topModels": "Top Models",
+      "topKeysDesc": "Ranked by spend share in {{range}}",
+      "topModelsDesc": "Model spend share in {{range}}",
       "col": {
         "rank": "#",
         "name": "Name",

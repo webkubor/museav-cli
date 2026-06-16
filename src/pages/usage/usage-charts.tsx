@@ -1,3 +1,9 @@
+/**
+ * 用量分析图表组件
+ * 路由：/usage
+ * API 来源：GET /usage/series、GET /logs/histogram
+ */
+
 import {
   ResponsiveContainer,
   AreaChart, Area,
@@ -31,6 +37,8 @@ interface SparklineProps {
   metric: Metric
   noDataLabel: string
   currencySymbol: string
+  requestUnitLabel: string
+  tokenUnitLabel: string
 }
 
 interface SparklineTooltipProps {
@@ -38,16 +46,25 @@ interface SparklineTooltipProps {
   payload?: Array<{ payload: SeriesDataPoint }>
   metric: Metric
   currencySymbol: string
+  requestUnitLabel: string
+  tokenUnitLabel: string
 }
 
-function SparklineTooltip({ active, payload, metric, currencySymbol }: SparklineTooltipProps) {
+function SparklineTooltip({
+  active,
+  payload,
+  metric,
+  currencySymbol,
+  requestUnitLabel,
+  tokenUnitLabel,
+}: SparklineTooltipProps) {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
   const val = parseFloat(d.value) || 0
   const formatted =
     metric === 'spend'
       ? `${currencySymbol}${val.toFixed(4)}`
-      : `${formatNumber(Math.round(val))}${metric === 'tokens' ? ' tokens' : ' 次'}`
+      : `${formatNumber(Math.round(val))} ${metric === 'tokens' ? tokenUnitLabel : requestUnitLabel}`
   return (
     <div style={TOOLTIP_STYLE}>
       <div style={{ fontWeight: 700, color: METRIC_COLOR[metric as Metric], marginBottom: '2px' }}>
@@ -60,7 +77,14 @@ function SparklineTooltip({ active, payload, metric, currencySymbol }: Sparkline
   )
 }
 
-export function Sparkline({ data, metric, noDataLabel, currencySymbol }: SparklineProps) {
+export function Sparkline({
+  data,
+  metric,
+  noDataLabel,
+  currencySymbol,
+  requestUnitLabel,
+  tokenUnitLabel,
+}: SparklineProps) {
   if (data.length === 0) {
     return (
       <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mg-text-2)', fontSize: '13px' }}>
@@ -91,7 +115,14 @@ export function Sparkline({ data, metric, noDataLabel, currencySymbol }: Sparkli
           interval="preserveStartEnd"
         />
         <Tooltip
-          content={<SparklineTooltip metric={metric} currencySymbol={currencySymbol} />}
+          content={(
+            <SparklineTooltip
+              metric={metric}
+              currencySymbol={currencySymbol}
+              requestUnitLabel={requestUnitLabel}
+              tokenUnitLabel={tokenUnitLabel}
+            />
+          )}
           cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: '4 3', strokeOpacity: 0.6 }}
         />
         <Area
@@ -113,20 +144,22 @@ export function Sparkline({ data, metric, noDataLabel, currencySymbol }: Sparkli
 interface HistogramChartProps {
   buckets: { bucket_start: string; count: number }[]
   noDataLabel: string
+  requestUnitLabel: string
 }
 
 interface HistogramTooltipProps {
   active?: boolean
   payload?: Array<{ payload: { bucket_start: string; count: number } }>
+  requestUnitLabel: string
 }
 
-function HistogramTooltip({ active, payload }: HistogramTooltipProps) {
+function HistogramTooltip({ active, payload, requestUnitLabel }: HistogramTooltipProps) {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
   return (
     <div style={TOOLTIP_STYLE}>
       <div style={{ fontWeight: 700, color: 'var(--mg-primary)', marginBottom: '2px' }}>
-        {d.count.toLocaleString()} 次
+        {d.count.toLocaleString()} {requestUnitLabel}
       </div>
       <div style={{ color: 'var(--mg-text-2)', fontSize: '11px' }}>
         {formatChartTooltipDate(d.bucket_start)}
@@ -135,7 +168,7 @@ function HistogramTooltip({ active, payload }: HistogramTooltipProps) {
   )
 }
 
-export function HistogramChart({ buckets, noDataLabel }: HistogramChartProps) {
+export function HistogramChart({ buckets, noDataLabel, requestUnitLabel }: HistogramChartProps) {
   if (buckets.length === 0) {
     return (
       <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mg-text-2)', fontSize: '13px' }}>
@@ -157,7 +190,7 @@ export function HistogramChart({ buckets, noDataLabel }: HistogramChartProps) {
           interval="preserveStartEnd"
         />
         <Tooltip
-          content={<HistogramTooltip />}
+          content={<HistogramTooltip requestUnitLabel={requestUnitLabel} />}
           cursor={{ fill: 'var(--mg-fill-0)', opacity: 0.6 }}
         />
         <Bar

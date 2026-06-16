@@ -1,10 +1,19 @@
+/**
+ * 用量分析工具函数
+ * 路由：/usage
+ * API 来源：GET /usage/summary、GET /usage/series、GET /usage/rankings/*
+ */
+
 import type { DateRangeValue } from '@/components/ui/DateRangePicker'
 import { densifyDailyBuckets as densifyDaily } from '@/lib/chart-buckets'
 
+/** 用量趋势支持的指标类型。 */
 export type Metric = 'spend' | 'requests' | 'tokens'
 
+/** 用量页快捷时间范围对应天数。 */
 export const USAGE_PRESET_DAYS: Record<string, number> = { '7d': 7, '30d': 30, '90d': 90 }
 
+/** 将日期选择器状态转换成后端接口需要的 ISO 时间范围。 */
 export function rangeToDates(range: DateRangeValue): { from: string; to: string } {
   const now = new Date()
   if (range.preset === 'custom' && range.startDate && range.endDate) {
@@ -20,16 +29,37 @@ export function rangeToDates(range: DateRangeValue): { from: string; to: string 
   }
 }
 
+/** 格式化金额字符串。 */
 export function formatMoney(amount: string, symbol: string): string {
   const num = parseFloat(amount)
   if (isNaN(num)) return `${symbol}0.00`
   return `${symbol}${num.toFixed(4)}`
 }
 
+/** 格式化数字为页面短展示。 */
 export function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
   return String(n)
+}
+
+/** 格式化低金额均值，避免小额单次成本全部显示成 0。 */
+export function formatAverageMoney(amount: number, symbol: string): string {
+  if (!Number.isFinite(amount) || amount <= 0) return `${symbol}0.0000`
+  const decimals = amount < 0.0001 ? 6 : 4
+  return `${symbol}${amount.toFixed(decimals)}`
+}
+
+/** 格式化百分比。 */
+export function formatPercent(value: number): string {
+  if (!Number.isFinite(value)) return '0.00%'
+  return `${value.toFixed(2)}%`
+}
+
+/** 格式化毫秒延迟。 */
+export function formatLatency(ms: number): string {
+  if (!Number.isFinite(ms) || ms <= 0) return '—'
+  return `${Math.round(ms)}ms`
 }
 
 /** 直方图按天补齐缺失天（count=0）。见 @/lib/chart-buckets。 */

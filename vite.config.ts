@@ -107,7 +107,19 @@ export default defineConfig(({ mode }) => ({
     proxy: {
       // 真 API 网关是 modelgo-web-api.test.modelgo.com（test.modelgo.com 网关白名单已收紧会返回 invalid domain）。
       // agentProxy 自带：proxy.log（header 真相）+ 本地 cookie 修复（去 Domain/剥 Secure/SameSite=None→Lax）。
-      '/api': agentProxy('https://modelgo-web-api.test.modelgo.com'),
+      // proxyReq 钩子：把浏览器发出的 Origin: http://localhost:5175 改写为后端允许的白名单 Origin，
+      // 避免 CORS 策略在 POST /auth/login 等写请求上返回 403（GET 请求不带 Origin，不受影响）。
+      '/api': (() => {
+        const p = agentProxy('https://modelgo-web-api.test.modelgo.com')
+        const orig = p.configure
+        p.configure = (proxy, opts) => {
+          orig?.(proxy, opts)
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('Origin', 'https://console.test.modelgo.com')
+          })
+        }
+        return p
+      })(),
     },
   },
 }))

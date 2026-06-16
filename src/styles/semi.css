@@ -275,7 +275,7 @@ html, body, #root {
 /* 针对页面中手动编写的卡片类容器注入阴影，但不破坏其 padding */
 .card-shadow-adaptive {
   border: 1px solid var(--mg-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   background-color: var(--mg-bg-0);
   transition: box-shadow 0.3s ease;

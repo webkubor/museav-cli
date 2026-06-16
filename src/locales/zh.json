@@ -878,6 +878,8 @@
     "title": "用量分析",
     "desc": "查看 API 调用量、Token 消耗及费用趋势，帮助您精准掌握使用成本。",
     "noData": "暂无数据",
+    "emptyValue": "暂无",
+    "refresh": "刷新",
     "range": {
       "7d": "近 7 天",
       "30d": "近 30 天",
@@ -892,10 +894,66 @@
       "requests": "请求数",
       "tokens": "Token"
     },
+    "unit": {
+      "requests": "次",
+      "tokens": "tokens"
+    },
     "kpi": {
       "spend": "总消费",
       "requests": "总请求数",
-      "tokens": "总 Token 数"
+      "tokens": "总 Token 数",
+      "averageCost": "平均单次费用",
+      "averageCostDesc": "总消费 / 请求数",
+      "tokenBreakdown": "输入 {{input}} / 输出 {{output}}"
+    },
+    "health": {
+      "title": "额度健康",
+      "safe": "安全",
+      "period": "区间消费",
+      "activity": "调用活跃度",
+      "tokensInline": "Token {{tokens}}",
+      "desc": "{{range}} 内按真实用量汇总消费、请求和 Token。当前后端已支持用量汇总、趋势与排行，暂未返回周额度或近 5 小时额度。",
+      "realData": "真实接口数据",
+      "quotaPending": "限额数据待接入",
+      "quotaPendingDesc": "页面不会伪造配额百分比。总额度耗尽后，即使近 5 小时或周额度还没触顶，也会停止调用。",
+      "topModel": "主要模型",
+      "topApiKey": "主要 API Key",
+      "metric": {
+        "spend": "区间消费",
+        "requests": "区间请求",
+        "tokens": "区间 Token",
+        "averageCost": "单次均价"
+      }
+    },
+    "insights": {
+      "title": "关键洞察",
+      "desc": "用接口已返回的排行和质量指标判断主要消耗来源。",
+      "topModel": "消耗最高模型",
+      "topApiKey": "消耗最高 Key",
+      "averageLatency": "平均延迟",
+      "errorRate": "错误率"
+    },
+    "sources": {
+      "title": "成本来源",
+      "viewAll": "查看全部",
+      "topProject": "Top Project",
+      "topApiKey": "Top API Key",
+      "topModel": "Top Model",
+      "empty": "暂无来源数据"
+    },
+    "distribution": {
+      "title": "模型分布",
+      "bySpend": "按费用"
+    },
+    "apiKeyRank": {
+      "title": "API Key 排行",
+      "col": {
+        "rank": "排名",
+        "apiKey": "API Key",
+        "requests": "请求数",
+        "tokens": "Token 总数",
+        "spend": "费用"
+      }
     },
     "chart": {
       "trendTitle": "{{metric}}趋势",
@@ -911,6 +969,7 @@
     "filter": {
       "allWorkspaces": "全部项目",
       "allKeys": "全部 Key",
+      "allModels": "全部模型",
       "workspace": "项目",
       "apiKey": "API Key"
     },
@@ -918,6 +977,8 @@
       "title": "用量排行",
       "topKeys": "Top API Key",
       "topModels": "Top 模型",
+      "topKeysDesc": "{{range}} 内按消费占比排序",
+      "topModelsDesc": "{{range}} 内按模型消费占比排序",
       "col": {
         "rank": "#",
         "name": "名称",

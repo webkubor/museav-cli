@@ -13,9 +13,11 @@ import './i18n'
 import App from './App.tsx'
 import { installDevErrorReporter } from './lib/dev-error-reporter'
 import { initDeviceFingerprint } from './lib/device-fingerprint'
+import { installDevAuth } from './lib/dev-auth'
 
 installDevErrorReporter()
 initDeviceFingerprint()
+if (import.meta.env.DEV) installDevAuth()
 
 const DEV_SW_RESET_KEY = 'modelgo:dev-sw-reset'
 

@@ -19,7 +19,7 @@ const Card = React.forwardRef<
     ref={ref}
     className={cn(
       "text-mg-text-0 shadow-sm transition-all duration-300",
-      level === 1 ? "rounded-xl bg-mg-bg-0" : "rounded-2xl bg-mg-bg-2",
+      level === 1 ? "rounded-[var(--radius-lg)] bg-mg-bg-0" : "rounded-[var(--radius-lg)] bg-mg-bg-2",
       !noBorder && "border border-mg-border",
       hoverable && !glass && (
         level === 1 

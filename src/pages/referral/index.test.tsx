@@ -28,8 +28,15 @@ vi.mock('@/services/referral', () => ({
 
 // The page consumes useTranslation ONLY for i18n.language (zh/en copy + region).
 // Pin it to zh so we can target the Chinese labels deterministically.
+// The page uses i18n.language for zh/en copy; the shared Pagination component
+// uses t('common.pagination.*'). Pin language to zh and pass keys through so the
+// pager renders without pulling the full i18n catalog.
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ i18n: { language: 'zh' } }),
+  useTranslation: () => ({
+    t: (key: string, opts?: Record<string, unknown>) =>
+      opts && 'count' in opts ? `${key}:${String(opts.count)}` : key,
+    i18n: { language: 'zh' },
+  }),
 }))
 
 // appToast wraps sonner (DOM portals/timers) — silence it, we assert behavior
@@ -95,7 +102,7 @@ function renderPage() {
 beforeEach(() => {
   getReferralOverview.mockReset().mockResolvedValue(OVERVIEW)
   listReferralInvitees.mockClear()
-  listRewardRecords.mockClear()
+  listRewardRecords.mockReset().mockResolvedValue([])
   listWithdrawals.mockClear()
   transferRewardToBalance.mockReset()
   requestWithdrawal.mockClear()
@@ -261,5 +268,76 @@ describe('ReferralPage — render', () => {
     expect(empties.length).toBeGreaterThan(0)
     // exactly one cell carries it within the active table body
     expect(within(empties[0].closest('table') as HTMLElement).getByText('暂无记录')).toBeInTheDocument()
+  })
+})
+
+// ── commission log pagination (#199) ─────────────────────────────────────────
+
+describe('ReferralPage — commission log pagination (#199)', () => {
+  // 23 records → 3 pages at COMMISSIONS_PAGE_SIZE=10 (10 / 10 / 3).
+  const RECORDS = Array.from({ length: 23 }, (_, i) => ({
+    date: `2026-06-${String(i + 1).padStart(2, '0')}`,
+    source: `src-${i}`,
+    spend: '100',
+    rate: 10,
+    amount: '10',
+    tierName: '普通伙伴',
+  }))
+
+  // Switch from the default invitees tab to the commission-log tab and return
+  // the commissions table element (scoped by the unique 档位/Tier header).
+  async function openCommissionsTab() {
+    renderPage()
+    await screen.findByText('推荐计划')
+    // Radix Tabs.Trigger activates on mouseDown/focus, not click.
+    fireEvent.mouseDown(screen.getByRole('tab', { name: '返佣流水' }))
+    const tierHeader = await screen.findByText('档位')
+    return tierHeader.closest('table') as HTMLElement
+  }
+
+  it('renders only the first page of records with a working pager', async () => {
+    listRewardRecords.mockResolvedValue(RECORDS)
+    const table = await openCommissionsTab()
+
+    // page 1: 10 body rows + 1 header row; pager reads 1 / 3
+    expect(within(table).getAllByRole('row')).toHaveLength(11)
+    expect(screen.getByText('1 / 3')).toBeInTheDocument()
+    expect(within(table).getByText('src-0')).toBeInTheDocument()
+    expect(within(table).queryByText('src-10')).not.toBeInTheDocument()
+    expect(within(table).queryByText('src-22')).not.toBeInTheDocument()
+  })
+
+  it('pages forward to the last (partial) page and back', async () => {
+    listRewardRecords.mockResolvedValue(RECORDS)
+    const table = await openCommissionsTab()
+
+    const next = screen.getByRole('button', { name: 'common.pagination.next' })
+    fireEvent.click(next)
+    expect(await screen.findByText('2 / 3')).toBeInTheDocument()
+    expect(within(table).getByText('src-10')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.pagination.next' }))
+    expect(await screen.findByText('3 / 3')).toBeInTheDocument()
+    // last page is partial: 3 body rows + 1 header
+    expect(within(table).getAllByRole('row')).toHaveLength(4)
+    expect(within(table).getByText('src-22')).toBeInTheDocument()
+
+    // next is disabled on the last page; prev walks back
+    expect(screen.getByRole('button', { name: 'common.pagination.next' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'common.pagination.prev' }))
+    expect(await screen.findByText('2 / 3')).toBeInTheDocument()
+  })
+
+  it('omits the pager when records fit on a single page', async () => {
+    listRewardRecords.mockResolvedValue(RECORDS.slice(0, 8))
+    const table = await openCommissionsTab()
+    // 8 ≤ page size → all rows shown, no pager controls rendered
+    expect(within(table).getAllByRole('row')).toHaveLength(9) // 8 body + header
+    expect(
+      screen.queryByRole('button', { name: 'common.pagination.next' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'common.pagination.prev' })
+    ).not.toBeInTheDocument()
   })
 })

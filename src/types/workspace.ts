@@ -237,5 +237,5 @@ export interface UpdateApiKeyRequest {
   name?: string
   expires_at?: string | null
   spending_limit?: SpendingLimit
-  guardrail_id?: string | null
+  guardrail_ids?: string[] | null
 }

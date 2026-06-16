@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { LuShieldCheck } from 'react-icons/lu'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { listGuardrails, getGuardrail } from '@/services/guardrails'
@@ -111,7 +112,7 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
       if (!newGuardrailId) return
 
       if (newGuardrailId !== currentBoundId) {
-        await updateApiKey(workspaceId, apiKey.api_key_id, { guardrail_id: newGuardrailId })
+        await updateApiKey(workspaceId, apiKey.api_key_id, { guardrail_ids: [newGuardrailId] })
       }
     },
     onSuccess: () => {
@@ -184,6 +185,7 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
                   )}
                 </div>
                 <div className="min-w-0 flex items-center gap-2">
+                  <LuShieldCheck className="w-3.5 h-3.5 text-green-500 shrink-0" />
                   <span className="text-sm font-semibold text-mg-text-0">{g.name}</span>
                   {g.is_default && (
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-mg-primary/10 text-mg-primary">默认</span>

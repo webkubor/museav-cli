@@ -3,7 +3,7 @@
  */
 import { useEffect, useState } from 'react'
 import confetti from 'canvas-confetti'
-import { LuLock, LuPlus, LuShieldCheck, LuX } from 'react-icons/lu'
+import { LuPlus, LuShieldCheck, LuX } from 'react-icons/lu'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -126,8 +126,9 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   }
 
   useEffect(() => {
-    if (!guardrailsQuery.data?.length) return
-    const defaultGuardrail = guardrailsQuery.data.find((g) => g.is_default)
+    const guardrails = Array.isArray(guardrailsQuery.data) ? guardrailsQuery.data : []
+    if (!guardrails.length) return
+    const defaultGuardrail = guardrails.find((g) => g.is_default)
     if (defaultGuardrail && !guardrailIds.includes(defaultGuardrail.id)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setGuardrailIds((prev) => [defaultGuardrail.id, ...prev.filter((id) => id !== defaultGuardrail.id)])
@@ -287,7 +288,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
           </div>
 
           {!showNewGuardrail ? (() => {
-            const allGuardrails = guardrailsQuery.data ?? []
+            const allGuardrails = Array.isArray(guardrailsQuery.data) ? guardrailsQuery.data : []
             const defaultGuardrail = allGuardrails.find((g) => g.is_default)
             const defaultId = defaultGuardrail?.id ?? ''
             const extraIds = guardrailIds.filter((id) => id !== defaultId)
@@ -295,10 +296,10 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
               <div className="space-y-2">
                 {defaultGuardrail && (
                   <div className="flex items-center gap-1.5">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-base/10 border border-brand-base/20 text-xs font-bold text-brand-base">
-                      <LuLock className="w-3 h-3 shrink-0" />
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-green-500/10 border border-green-500/20 text-xs font-bold text-green-600">
+                      <LuShieldCheck className="w-3 h-3 shrink-0" />
                       {defaultGuardrail.name}
-                      <span className="font-normal text-mg-text-2 ml-0.5">默认</span>
+                      <span className="font-normal text-green-500/70 ml-0.5">默认</span>
                     </div>
                   </div>
                 )}

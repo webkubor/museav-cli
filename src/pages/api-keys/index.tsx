@@ -15,6 +15,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { getMarketConfig } from '@/config/market'
 import { listApiKeys, revokeApiKey } from '@/services/api-keys'
+import { listGuardrails } from '@/services/guardrails'
+import type { GuardrailDetail } from '@/interfaces/guardrails'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
@@ -25,7 +27,7 @@ import { AccessCenterCard } from './AccessCenterCard'
 import { ConnectModal } from './ConnectModal'
 import { CreateKeyModal } from './CreateKeyModal'
 import { ApiKeyTable } from './ApiKeyTable'
-import { EditGuardrailModal } from './EditGuardrailModal'
+import { EditKeyModal } from './EditKeyModal'
 import type { ApiKeyItem } from '@/types'
 
 export default function ApiKeysPage() {
@@ -52,6 +54,24 @@ export default function ApiKeysPage() {
     queryFn: () => listApiKeys(activeWorkspaceId).then(pageItems),
     enabled: !!activeWorkspaceId,
   })
+
+  const { data: guardrailsData } = useQuery({
+    queryKey: ['guardrails', activeWorkspaceId],
+    queryFn: () => listGuardrails(activeWorkspaceId).then((res) => res.items ?? []),
+    enabled: !!activeWorkspaceId,
+    staleTime: 60_000,
+  })
+  // 反查：api_key_id → 非默认护栏名称列表（默认护栏全局生效，不单独展示）
+  const guardrailsByKey: Record<string, string[]> = {}
+  for (const g of (Array.isArray(guardrailsData) ? guardrailsData : []) as GuardrailDetail[]) {
+    if (g.is_default) continue
+    for (const a of g.assignments ?? []) {
+      if (a.subject_type === 'api_key' && a.api_key_id) {
+        guardrailsByKey[a.api_key_id] ??= []
+        guardrailsByKey[a.api_key_id].push(g.name)
+      }
+    }
+  }
 
   const revokeMutation = useMutation({
     mutationFn: (keyId: string) => revokeApiKey(activeWorkspaceId, keyId),
@@ -116,6 +136,7 @@ export default function ApiKeysPage() {
         canRevoke={canRevoke}
         onRevoke={setRevokeTarget}
         onEditGuardrail={setEditGuardrailKey}
+        guardrailsByKey={guardrailsByKey}
       />
 
       <ConnectModal
@@ -157,7 +178,7 @@ export default function ApiKeysPage() {
           </>
         }
       />
-      <EditGuardrailModal
+      <EditKeyModal
         open={!!editGuardrailKey}
         onClose={() => setEditGuardrailKey(null)}
         workspaceId={activeWorkspaceId}

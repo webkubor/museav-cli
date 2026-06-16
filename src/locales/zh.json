@@ -909,13 +909,8 @@
     "health": {
       "title": "额度健康",
       "safe": "安全",
-      "period": "区间消费",
-      "activity": "调用活跃度",
-      "tokensInline": "Token {{tokens}}",
-      "desc": "{{range}} 内按真实用量汇总消费、请求和 Token。当前后端已支持用量汇总、趋势与排行，暂未返回周额度或近 5 小时额度。",
+      "desc": "{{range}} 内按真实用量汇总消费、请求和 Token。",
       "realData": "真实接口数据",
-      "quotaPending": "限额数据待接入",
-      "quotaPendingDesc": "页面不会伪造配额百分比。总额度耗尽后，即使近 5 小时或周额度还没触顶，也会停止调用。",
       "topModel": "主要模型",
       "topApiKey": "主要 API Key",
       "metric": {
@@ -935,7 +930,6 @@
     },
     "sources": {
       "title": "成本来源",
-      "viewAll": "查看全部",
       "topProject": "Top Project",
       "topApiKey": "Top API Key",
       "topModel": "Top Model",

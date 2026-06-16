@@ -13,7 +13,6 @@ import type { UsageRankingItem } from '@/types'
 import { cn } from '@/lib/utils'
 import { formatMoney, formatNumber } from './usage-utils'
 import {
-  LuCircleAlert,
   LuKey,
   LuShieldCheck,
   LuTable2,
@@ -160,7 +159,7 @@ function ApiKeyRankBadge({ rank }: { rank: number }) {
   )
 }
 
-/** 设计稿中的额度健康横条。限额接口未返回时只展示真实用量和待接入口径。 */
+/** 用量概览横条，只展示接口已返回的真实汇总数据。 */
 export function UsageHealthPanel({
   rangeLabel,
   totalSpend,
@@ -171,7 +170,7 @@ export function UsageHealthPanel({
 
   return (
     <Card className="overflow-hidden border-brand-base/20 bg-mg-bg-0 p-0">
-      <div className="grid gap-0 xl:grid-cols-[188px_minmax(0,1fr)_minmax(0,1fr)_360px]">
+      <div className="grid gap-0 xl:grid-cols-[188px_repeat(3,minmax(0,1fr))]">
         <div className="flex items-center gap-3 border-b border-mg-border px-4 py-4 xl:border-b-0 xl:border-r">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-selected-bg text-brand-base">
             <LuShieldCheck size={17} />
@@ -184,29 +183,26 @@ export function UsageHealthPanel({
 
         <div className="border-b border-mg-border px-4 py-4 xl:border-b-0 xl:border-r">
           <div className="flex items-center justify-between gap-3 text-sm">
-            <span className="text-mg-text-2">{t('usage.health.period')}</span>
+            <span className="text-mg-text-2">{t('usage.health.metric.spend')}</span>
             <strong className="font-mono text-mg-text-0">{totalSpend}</strong>
-          </div>
-          <div className="mt-2 h-1.5 rounded-full bg-mg-fill-1">
-            <div className="h-full w-[42%] rounded-full bg-brand-base" />
           </div>
           <div className="mt-1 text-[12px] text-mg-text-2">{rangeLabel}</div>
         </div>
 
         <div className="border-b border-mg-border px-4 py-4 xl:border-b-0 xl:border-r">
           <div className="flex items-center justify-between gap-3 text-sm">
-            <span className="text-mg-text-2">{t('usage.health.activity')}</span>
+            <span className="text-mg-text-2">{t('usage.health.metric.requests')}</span>
             <strong className="font-mono text-mg-text-0">{totalRequests}</strong>
           </div>
-          <div className="mt-2 h-1.5 rounded-full bg-mg-fill-1">
-            <div className="h-full w-[18%] rounded-full bg-mg-info" />
-          </div>
-          <div className="mt-1 text-[12px] text-mg-text-2">{t('usage.health.tokensInline', { tokens: totalTokens })}</div>
+          <div className="mt-1 text-[12px] text-mg-text-2">{rangeLabel}</div>
         </div>
 
-        <div className="flex min-w-0 items-start gap-2 px-4 py-4">
-          <LuCircleAlert size={15} className="mt-0.5 shrink-0 text-mg-warning" />
-          <p className="text-[12px] leading-5 text-mg-text-2">{t('usage.health.quotaPendingDesc')}</p>
+        <div className="px-4 py-4">
+          <div className="flex items-center justify-between gap-3 text-sm">
+            <span className="text-mg-text-2">{t('usage.health.metric.tokens')}</span>
+            <strong className="font-mono text-mg-text-0">{totalTokens}</strong>
+          </div>
+          <div className="mt-1 text-[12px] text-mg-text-2">{rangeLabel}</div>
         </div>
       </div>
     </Card>
@@ -225,12 +221,7 @@ export function CostSourcePanel({
 
   return (
     <Card className="min-w-0 p-5 sm:p-6">
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <div className="text-sm font-semibold text-mg-text-0">{t('usage.sources.title')}</div>
-        <Button variant="ghost" size="sm" className="h-7 px-2 text-[12px] text-brand-base">
-          {t('usage.sources.viewAll')}
-        </Button>
-      </div>
+      <div className="mb-5 text-sm font-semibold text-mg-text-0">{t('usage.sources.title')}</div>
 
       {isError ? (
         <ErrorBlock message={t('usage.error.rankings')} onRetry={onRetry} />
@@ -240,10 +231,7 @@ export function CostSourcePanel({
         <div className="space-y-4">
           {sections.map((section) => (
             <section key={section.title} className="rounded-xl border border-mg-border bg-mg-bg-1 p-3">
-              <div className="mb-3 flex items-center justify-between text-[12px]">
-                <span className="font-semibold text-mg-text-0">{section.title}</span>
-                <span className="text-brand-base">{t('usage.sources.viewAll')}</span>
-              </div>
+              <div className="mb-3 text-[12px] font-semibold text-mg-text-0">{section.title}</div>
               {section.items.length === 0 ? (
                 <div className="text-[12px] text-mg-text-2">{section.emptyLabel}</div>
               ) : (
@@ -313,14 +301,9 @@ export function ApiKeyRankingPanel({
 
   return (
     <Card className="min-w-0 p-5 sm:p-6">
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-mg-text-0">
-          <LuTable2 size={15} className="text-brand-base" />
-          {t('usage.apiKeyRank.title')}
-        </div>
-        <Button variant="ghost" size="sm" className="h-7 px-2 text-[12px] text-brand-base">
-          {t('usage.sources.viewAll')}
-        </Button>
+      <div className="mb-5 flex items-center gap-2 text-sm font-semibold text-mg-text-0">
+        <LuTable2 size={15} className="text-brand-base" />
+        {t('usage.apiKeyRank.title')}
       </div>
       {isError ? (
         <ErrorBlock message={t('usage.error.rankings')} onRetry={onRetry} />

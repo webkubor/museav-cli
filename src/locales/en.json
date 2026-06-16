@@ -910,13 +910,8 @@
     "health": {
       "title": "Quota Health",
       "safe": "Safe",
-      "period": "Period spend",
-      "activity": "Activity",
-      "tokensInline": "Tokens {{tokens}}",
-      "desc": "Summarizes real spend, requests, and tokens for {{range}}. The backend supports usage summary, trends, and rankings, but does not return weekly or 5-hour quota limits yet.",
+      "desc": "Summarizes real spend, requests, and tokens for {{range}}.",
       "realData": "Real API data",
-      "quotaPending": "Limit data pending",
-      "quotaPendingDesc": "This page does not fake quota percentages. When total quota is exhausted, calls stop even if short-cycle limits are not hit.",
       "topModel": "Primary model",
       "topApiKey": "Primary API Key",
       "metric": {
@@ -936,7 +931,6 @@
     },
     "sources": {
       "title": "Cost Sources",
-      "viewAll": "View all",
       "topProject": "Top Project",
       "topApiKey": "Top API Key",
       "topModel": "Top Model",

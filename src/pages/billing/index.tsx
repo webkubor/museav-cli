@@ -1,6 +1,6 @@
 import { LuReceipt, LuHistory, LuGift, LuRefreshCw } from 'react-icons/lu'
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import './billing.css'
 import { useTranslation } from 'react-i18next'
 import {
@@ -10,6 +10,7 @@ import {
 } from '@/services/billing'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
 import { useClientPage } from '@/hooks/use-client-page'
+import { useCursorPager } from '@/hooks/use-cursor-pager'
 import { listRewardRecords } from '@/services/referral'
 import { listGiftRecords } from '@/services/billing'
 import { useCurrency, useSite } from '@/hooks/use-platform-config'
@@ -135,25 +136,38 @@ export default function BillingPage() {
   // 该接口返回全量、无分页参数（与推荐计划同接口）→ 客户端分页，避免全量渲染卡顿（#213）。
   const rewardPage = useClientPage(rewardRecords)
 
-  // 赠送明细（grant 桶入账 journal，#93）
-  const { data: giftRecordsPage } = useQuery({
-    queryKey: ['billing', 'gift-records', tenantId],
-    queryFn: () => listGiftRecords(tenantId),
+  // 赠送明细（grant 桶入账 journal，#93）——游标翻页。
+  const giftPager = useCursorPager()
+  const { data: giftRecordsPage, isFetching: giftFetching } = useQuery({
+    queryKey: ['billing', 'gift-records', tenantId, giftPager.page, giftPager.cursor],
+    queryFn: () => listGiftRecords(tenantId, { cursor: giftPager.cursor, page_size: 15 }),
     enabled: !!tenantId && activeTab === 'gift',
+    placeholderData: keepPreviousData,
   })
   const giftRecords = giftRecordsPage?.items ?? []
+  const giftHasMore = Boolean(giftRecordsPage?.next_cursor)
 
-  const ordersQuery = useInfiniteQuery({
-    queryKey: ['billing', 'recharges', tenantId],
-    queryFn: ({ pageParam }) => listRecharges(tenantId, { cursor: pageParam as string | undefined, page_size: 15 }),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (last) => last.next_cursor || undefined,
+  // 充值记录——游标翻页（上一页/下一页 + 页码），替代旧的「加载更多」。
+  const rechargePager = useCursorPager()
+  const ordersQuery = useQuery({
+    queryKey: ['billing', 'recharges', tenantId, rechargePager.page, rechargePager.cursor],
+    queryFn: () => listRecharges(tenantId, { cursor: rechargePager.cursor, page_size: 15 }),
     enabled: !!tenantId && activeTab === 'main',
     staleTime: 30 * 1000,
+    placeholderData: keepPreviousData,
   })
 
-  const orders = useMemo(() => ordersQuery.data?.pages.flatMap((page) => page.items) ?? [], [ordersQuery.data])
+  const orders = useMemo(() => ordersQuery.data?.items ?? [], [ordersQuery.data])
+  const ordersHasMore = Boolean(ordersQuery.data?.has_more && ordersQuery.data?.next_cursor)
   const refetchOrders = ordersQuery.refetch
+
+  // 切租户后回到第一页：游标按租户隔离，旧 cursor 发给新租户会拿错数据。
+  const { reset: resetRechargePager } = rechargePager
+  const { reset: resetGiftPager } = giftPager
+  useEffect(() => {
+    resetRechargePager()
+    resetGiftPager()
+  }, [tenantId, resetRechargePager, resetGiftPager])
 
   const cancelMutation = useMutation({
     mutationFn: (orderNo: string) => cancelRecharge(tenantId, orderNo),
@@ -574,18 +588,19 @@ export default function BillingPage() {
                     })}
                   </TableBody>
                 </Table>
-                {ordersQuery.hasNextPage && (
-                  <div className="p-3 border-t border-mg-border/40">
-                    <Button
-                      variant="outline"
-                      className="w-full h-9 rounded-xl font-bold text-xs border border-mg-border hover:bg-mg-fill-0 transition-all text-mg-text-1"
-                      onClick={() => ordersQuery.fetchNextPage()}
-                    >
-                      {t('billing.orders.loadMore')}
-                    </Button>
-                  </div>
-                )}
               </div>
+            )}
+            {/* 翻页器移出空状态分支：空的第 N 页也要能点上一页（#214）。翻页清掉选中行，
+                避免详情面板指向不在当前页的订单而空白。 */}
+            {(rechargePager.page > 1 || ordersHasMore) && (
+              <Pagination
+                mode="cursor"
+                page={rechargePager.page}
+                hasMore={ordersHasMore}
+                loading={ordersQuery.isFetching}
+                onPrev={() => { setSelectedOrderNo(null); rechargePager.prev() }}
+                onNext={() => { setSelectedOrderNo(null); rechargePager.next(ordersQuery.data?.next_cursor) }}
+              />
             )}
           </div>
 
@@ -744,6 +759,17 @@ export default function BillingPage() {
               </TableBody>
             </Table>
           </div>
+          )}
+          {/* 翻页器移出空状态分支：空的第 N 页也要能点上一页（#214）。 */}
+          {(giftPager.page > 1 || giftHasMore) && (
+            <Pagination
+              mode="cursor"
+              page={giftPager.page}
+              hasMore={giftHasMore}
+              loading={giftFetching}
+              onPrev={giftPager.prev}
+              onNext={() => giftPager.next(giftRecordsPage?.next_cursor)}
+            />
           )}
         </div>
         </div>

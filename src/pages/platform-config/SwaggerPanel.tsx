@@ -72,7 +72,7 @@ export function SwaggerPanel() {
 
   if (isLoading) {
     return (
-      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden">
+      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-md overflow-hidden">
         <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40">
           <div className="text-sm font-bold text-mg-text-0">Swagger API Spec</div>
           <div className="text-[11px] text-mg-text-2 mt-0.5 font-mono">{SWAGGER_URL}</div>
@@ -86,7 +86,7 @@ export function SwaggerPanel() {
 
   if (error) {
     return (
-      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden">
+      <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-md overflow-hidden">
         <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40">
           <div className="text-sm font-bold text-mg-text-0">Swagger API Spec</div>
           <div className="text-[11px] text-mg-text-2 mt-0.5 font-mono">{SWAGGER_URL}</div>
@@ -100,7 +100,7 @@ export function SwaggerPanel() {
   }
 
   return (
-    <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden">
+    <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-md overflow-hidden">
       <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-sm font-bold text-mg-text-0">{title}</span>
@@ -131,7 +131,7 @@ export function SwaggerPanel() {
           <span className="text-[11px] text-mg-text-2 shrink-0 tabular-nums">{filtered.length} / {endpoints.length}</span>
         </div>
 
-        <div className="border border-mg-border rounded-xl overflow-hidden divide-y divide-mg-border/40">
+        <div className="border border-mg-border rounded-md overflow-hidden divide-y divide-mg-border/40">
           {filtered.length === 0 ? (
             <div className="px-5 py-8 text-center text-xs text-mg-text-2">无匹配接口</div>
           ) : (
@@ -145,7 +145,7 @@ export function SwaggerPanel() {
                     onClick={() => setExpandedIdx(isExpanded ? null : idx)}
                     className="w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-mg-fill-0/40 transition-colors cursor-pointer"
                   >
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono shrink-0 select-none border ${METHOD_COLORS[ep.method] ?? 'bg-mg-fill-0 text-mg-text-2 border-mg-border'}`}>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-sm font-mono shrink-0 select-none border ${METHOD_COLORS[ep.method] ?? 'bg-mg-fill-0 text-mg-text-2 border-mg-border'}`}>
                       {ep.method}
                     </span>
                     <code className="text-[11px] font-mono text-mg-text-0 flex-1 truncate">{ep.path}</code>

@@ -170,7 +170,7 @@ export function PreferencesTab() {
 
   return (
     <div className="flex max-w-[620px] flex-col gap-2 pt-2 animate-in fade-in duration-300">
-      <div className="bg-mg-bg-1 border border-mg-border/60 rounded-2xl p-6 shadow-sm flex flex-col">
+      <div className="bg-mg-bg-1 border border-mg-border/60 rounded-lg p-6 shadow-sm flex flex-col">
         
         {/* 界面语言（Language） */}
         <div className="pb-5 border-b border-mg-border/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -184,7 +184,7 @@ export function PreferencesTab() {
           </div>
 
           {/* 语言 Segmented 控制器 */}
-          <div className="flex bg-mg-fill-0/30 p-1 rounded-xl border border-mg-border/40 shrink-0 self-start md:self-center">
+          <div className="flex bg-mg-fill-0/30 p-1 rounded-md border border-mg-border/40 shrink-0 self-start md:self-center">
             {LANGUAGE_OPTIONS.map((option) => {
               const isSelected = language === option.value
               return (
@@ -237,7 +237,7 @@ export function PreferencesTab() {
                   type="button"
                   onClick={() => handleThemeChange(option.value)}
                   className={cn(
-                    "flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border cursor-pointer select-none transition-all active:scale-[0.96]",
+                    "flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold border cursor-pointer select-none transition-all active:scale-[0.96]",
                     isSelected
                       ? "bg-brand-selected-bg text-brand-base border-brand-base/40 shadow-sm shadow-brand-glow/5"
                       : "bg-mg-fill-0/30 text-mg-text-2 border-mg-border/50 hover:bg-mg-fill-0/50 hover:text-mg-text-0 hover:translate-y-[-1px]"
@@ -294,7 +294,7 @@ export function PreferencesTab() {
             </Select>
 
             {/* 高端时间预览小面板：磨砂质感和科技绿点 */}
-            <div className="rounded-xl border border-mg-border/40 bg-mg-fill-0/40 px-3.5 py-2.5 flex items-center justify-between text-xs select-none">
+            <div className="rounded-md border border-mg-border/40 bg-mg-fill-0/40 px-3.5 py-2.5 flex items-center justify-between text-xs select-none">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0 animate-pulse" />
                 <span className="text-mg-text-2 uppercase text-[9.5px] font-bold tracking-wider truncate" title={resolvedTimeZone}>
@@ -332,7 +332,7 @@ export function PreferencesTab() {
           variant="brand"
           loading={saveMutation.isPending}
           onClick={() => saveMutation.mutate()}
-          className="rounded-xl px-6 h-10 font-bold active:scale-[0.97] transition-all"
+          className="rounded-md px-6 h-10 font-bold active:scale-[0.97] transition-all"
         >
           {t('account.preferences.save')}
         </Button>

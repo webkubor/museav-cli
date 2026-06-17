@@ -108,6 +108,10 @@ components:
 
 ## Overview
 
+> **设计身份（一句话）**：一套代码 × 两条视觉轴 —— **市场轴**（国内靛紫 / 海外翠绿 → 两个域名）× **主题轴**（深 / 浅），同一套 UX 设计语言，4 套外观全部由**单一 token 源**驱动。
+>
+> 「同一套语言」靠的是**只有一把尺**：所有视觉值收口到 `tokens.css` 一个源（圆角已物理单尺，见 Shapes），不存在框架默认刻度这第二把尺。
+
 ModelGo 客户控制台（modelgo-console-web）的设计系统。设计目标：**反 AI 味、克制的高级感、严格的 token 驱动**。
 
 两条独立的视觉轴，组合出 4 套外观，全部由 CSS 变量驱动（`src/styles/tokens.css`），切换时只改 `<html>` 的属性：
@@ -154,12 +158,25 @@ YAML front matter 里的值是 **「国内 + 浅色」** 默认态；其余三�
 
 ## Shapes
 
-圆角 token：`sm` 8px（输入/小按钮/标签）、`md` 14px、`lg` 18px（卡片/容器）、`full` 9999px（品牌主按钮/胶囊）。**禁止用裸数值圆角**，一律引用 `--radius-*`。
+圆角 token：`sm` 8px（输入/小按钮/标签）、`md` 14px（中等内部块/容器/中控件）、`lg` 18px（卡片/面板/弹窗/抽屉/浮层）、`full` 9999px（品牌主按钮/胶囊/纯圆）。**禁止用裸数值圆角**，一律引用 `--radius-*`（Tailwind 类即 `rounded-sm/md/lg/full`，已由 `@theme` 绑到 token）。
+
+**单尺铁律**：项目只有这 4 档圆角，**禁止使用 Tailwind 默认刻度** `rounded`(4)/`rounded-xl`(12)/`rounded-2xl`(16)/`rounded-3xl`(24) —— 它们是「第二把尺」，与 token 刻度并存即漂移。`@theme` 已 reset 掉这些默认刻度，写了等于无效类。
+
+**元素 → 档位 迁移映射**（确定化，机械可执行）：
+
+| 当前（第二把尺） | → 档位 | 元素归属 |
+|---|---|---|
+| `rounded-2xl`(16) · `rounded-3xl`(24) | **`rounded-lg`** (18) | 卡片 / 面板 / 弹窗 / 抽屉 / 下拉浮层 |
+| `rounded-xl`(12) | **`rounded-md`** (14) | 中等内部块 / 次级容器 / 中等控件 |
+| 裸 `rounded`(4) | **`rounded-sm`** (8) | 小元素 / 标签 / 内嵌小块 |
+| `rounded-[Npx]` 任意值 | → 最近档位 | 按数值就近归并 |
+| 品牌主按钮 / 胶囊 | **`rounded-full`** | 不变（既有规则） |
+| 输入 / outline 按钮 / 标签 | **`rounded-sm`** | 不变（既有规则） |
 
 ## Components
 
 - **Button**：主操作用 `variant="brand"`（品牌底 + 白字 + `rounded-full`，hover→mid、active→deep）；次级用 `variant="outline"`。禁止自写 `<button>` 替代。
-- **Card**：`bg-0` + `border` + `rounded-2xl` + `shadow-sm`。操作型界面**不要嵌套卡片**、不要装饰性 card garden。
+- **Card**：`bg-0` + `border` + `rounded-lg`(18) + `shadow-sm`。操作型界面**不要嵌套卡片**、不要装饰性 card garden。
 - **Input / Select / Table / Modal / Drawer / Tabs / Badge / Pagination / DateRangePicker**：一律用 `src/components/ui/*` 既有组件，保持 hover/focus/disabled/loading/empty/error 状态一致。
 - **状态优先**：交互注册第一——路由/Tab 切换立即给反馈（骨架 + loading），不让用户干等请求。
 

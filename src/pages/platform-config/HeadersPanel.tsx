@@ -19,7 +19,7 @@ const HEADER_ROWS: HeaderRow[] = [
 
 export function HeadersPanel() {
   return (
-    <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
+    <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-md overflow-hidden shadow-sm">
       <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40">
         <div className="text-sm font-bold text-mg-text-0">自动注入请求头</div>
         <div className="text-[11px] text-mg-text-2 mt-0.5">request-headers.ts 在 beforeRequest 钩子统一注入，业务代码无需手动携带</div>

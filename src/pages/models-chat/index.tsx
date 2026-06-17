@@ -97,7 +97,7 @@ export default function ModelsChatPage() {
   return (
     <div className="flex h-[calc(100vh-220px)] min-h-[500px] gap-4">
       {/* 左侧：历史列表 */}
-      <div className="w-[260px] shrink-0 flex flex-col bg-mg-bg-1/30 border border-mg-border rounded-xl overflow-hidden">
+      <div className="w-[260px] shrink-0 flex flex-col bg-mg-bg-1/30 border border-mg-border rounded-md overflow-hidden">
         <div className="p-3 border-b border-mg-border/50 flex items-center justify-between shrink-0">
           <span className="text-[12px] font-bold text-mg-text-0">{t('modelsChat.history')}</span>
           <button
@@ -143,7 +143,7 @@ export default function ModelsChatPage() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* 消息区 */}
         <div className={cn(
-          'flex-1 overflow-y-auto p-4 bg-mg-fill-0/30 border border-mg-border rounded-xl mb-3 flex flex-col gap-3',
+          'flex-1 overflow-y-auto p-4 bg-mg-fill-0/30 border border-mg-border rounded-md mb-3 flex flex-col gap-3',
           messages.length === 0 && 'justify-center',
         )}>
           {messages.length === 0 && !chatMutation.isPending && (
@@ -187,7 +187,7 @@ export default function ModelsChatPage() {
             onKeyDown={handleKeyDown}
             placeholder={t('modelsChat.input.placeholder')}
             rows={1}
-            className="flex-1 rounded-xl resize-none min-h-[44px] h-[44px] py-3.5 transition-[height] duration-150 ease-out scrollbar-none"
+            className="flex-1 rounded-md resize-none min-h-[44px] h-[44px] py-3.5 transition-[height] duration-150 ease-out scrollbar-none"
             disabled={chatMutation.isPending}
           />
           <Button
@@ -195,7 +195,7 @@ export default function ModelsChatPage() {
             onClick={handleSend}
             loading={chatMutation.isPending}
             disabled={!input.trim() || chatMutation.isPending}
-            className="h-[44px] w-[44px] rounded-xl p-0 flex items-center justify-center shrink-0 transition-transform active:scale-95"
+            className="h-[44px] w-[44px] rounded-md p-0 flex items-center justify-center shrink-0 transition-transform active:scale-95"
           >
             {!chatMutation.isPending && <LuSend size={15} />}
           </Button>

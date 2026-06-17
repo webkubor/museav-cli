@@ -116,7 +116,7 @@ export function vendorNode(model: CatalogModelItem, size: 'sm' | 'lg' = 'sm') {
     <ModelIcon
       model={model}
       size={size === 'lg' ? 44 : 32}
-      rounded={size === 'lg' ? 'rounded-xl' : 'rounded-lg'}
+      rounded={size === 'lg' ? 'rounded-md' : 'rounded-lg'}
       className="bg-mg-bg-0"
     />
   )

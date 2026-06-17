@@ -12,9 +12,9 @@ export function EndpointCard({ def, state, onCall }: EndpointCardProps) {
   const { t } = useTranslation()
 
   return (
-    <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden mb-3">
+    <div className="card-shadow-adaptive bg-card-bg rounded-md border border-mg-border overflow-hidden mb-3">
       <div className="flex items-center gap-3 px-5 py-3 border-b border-mg-border/40">
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono shrink-0 select-none ${
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-sm font-mono shrink-0 select-none ${
           def.method === 'GET'
             ? 'bg-blue-500/10 text-blue-600 border border-blue-500/20'
             : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
@@ -52,7 +52,7 @@ export function EndpointCard({ def, state, onCall }: EndpointCardProps) {
 
       {state?.status === 'success' && (
         <div className="relative bg-mg-code-bg overflow-hidden">
-          <div className="absolute top-3 right-3 text-[10px] font-bold text-mg-success bg-mg-success/10 border border-mg-success/20 px-2 py-0.5 rounded">
+          <div className="absolute top-3 right-3 text-[10px] font-bold text-mg-success bg-mg-success/10 border border-mg-success/20 px-2 py-0.5 rounded-sm">
             200 OK
           </div>
           <pre className="m-0 p-5 text-xs font-mono text-mg-text-1 overflow-auto max-h-[360px] leading-relaxed shadow-inner select-all w-full min-w-0">
@@ -63,7 +63,7 @@ export function EndpointCard({ def, state, onCall }: EndpointCardProps) {
 
       {state?.status === 'error' && (
         <div className="px-5 py-3.5 bg-rose-500/5 border-t border-rose-500/10 flex items-center gap-3">
-          <span className="text-[10px] font-bold text-rose-600 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded">
+          <span className="text-[10px] font-bold text-rose-600 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-sm">
             ERROR
           </span>
           <span className="text-xs font-mono text-rose-500 break-all">{state.error}</span>

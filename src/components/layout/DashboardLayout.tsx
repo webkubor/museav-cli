@@ -194,7 +194,7 @@ export function DashboardLayout() {
             isDashboardRoute || isFlatRoute ? (
               "bg-transparent border-none shadow-none p-0"
             ) : (
-              "bg-mg-bg-0 rounded-2xl border border-mg-border/60 shadow-sm shadow-black/2 p-6 md:p-9 min-h-[520px] mb-8"
+              "bg-mg-bg-0 rounded-lg border border-mg-border/60 shadow-sm shadow-black/2 p-6 md:p-9 min-h-[520px] mb-8"
             )
           )}>
             <WorkspaceGuard currentKey={getSelectedKey()}>

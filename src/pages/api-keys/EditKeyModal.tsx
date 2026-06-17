@@ -159,7 +159,7 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
             <label className="block text-xs font-bold text-mg-text-1 mb-2">
               作用域 <span className="text-mg-text-2 font-normal ml-1">（创建后不可更改）</span>
             </label>
-            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-mg-border bg-mg-fill-0/50 text-xs text-mg-text-1">
+            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-mg-border bg-mg-fill-0/50 text-xs text-mg-text-1">
               {scopeOpt && <span className="text-mg-text-2">{scopeOpt.icon}</span>}
               {scopeOpt?.label ?? apiKey?.scope ?? '—'}
             </div>
@@ -246,7 +246,7 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
               customLabel="选择截止时间"
               hideStartDate={true}
               placeholder="选择过期失效时间"
-              className="w-full rounded-xl h-10 justify-between"
+              className="w-full rounded-md h-10 justify-between"
             />
           </div>
         </div>

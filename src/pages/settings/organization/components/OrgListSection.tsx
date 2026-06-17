@@ -89,14 +89,14 @@ export function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
     const index = Math.abs(id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % gradients.length;
     const bgGradient = gradients[index];
     return (
-      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${bgGradient} flex items-center justify-center text-white font-bold text-base shadow-sm shrink-0`}>
+      <div className={`w-10 h-10 rounded-md bg-gradient-to-br ${bgGradient} flex items-center justify-center text-white font-bold text-base shadow-sm shrink-0`}>
         {firstLetter}
       </div>
     );
   };
 
   return (
-    <div className="bg-mg-bg-0 border border-mg-border/50 rounded-2xl shadow-xs overflow-hidden">
+    <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg shadow-xs overflow-hidden">
       {/* 头部 */}
       <div className="flex items-center justify-between p-4 border-b border-mg-border/50 bg-mg-fill-0/20">
         <div className="flex items-center gap-2">
@@ -136,7 +136,7 @@ export function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
               <div
                 key={record.tenant_id}
                 onClick={() => onSelect(record.tenant_id)}
-                className={`relative flex items-start gap-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
+                className={`relative flex items-start gap-3 p-3 rounded-md border transition-all duration-200 cursor-pointer ${
                   isSelected
                     ? 'border-brand-base bg-brand-glow/8 shadow-[0_4px_12px_rgba(var(--brand-base-rgb),0.04)] translate-x-[2px]'
                     : 'border-mg-border/40 bg-mg-bg-0 hover:border-brand-base/20 hover:bg-mg-fill-0 hover:translate-x-[2px] active:scale-[0.98]'
@@ -152,7 +152,7 @@ export function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
                   <img
                     src={record.logo_url}
                     alt={record.name}
-                    className="w-10 h-10 rounded-xl object-cover border border-mg-border/50 shadow-sm shrink-0"
+                    className="w-10 h-10 rounded-md object-cover border border-mg-border/50 shadow-sm shrink-0"
                   />
                 ) : (
                   getFallbackAvatar(record.name, record.tenant_id)
@@ -190,7 +190,7 @@ export function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
       {createVisible && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setCreateVisible(false)} />
-          <div className="relative bg-card-bg modal-glow-flow rounded-2xl w-full max-w-[420px] shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="relative bg-card-bg modal-glow-flow rounded-lg w-full max-w-[420px] shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="p-4 border-b border-mg-border flex justify-between items-center bg-mg-fill-0/30">
               <h2 className="text-sm font-bold text-mg-text-0">创建新组织</h2>
               <button className="text-mg-text-2 hover:text-mg-text-0 text-xs font-bold transition-colors" onClick={() => setCreateVisible(false)}>✕</button>

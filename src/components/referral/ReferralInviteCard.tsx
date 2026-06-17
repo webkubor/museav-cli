@@ -70,7 +70,7 @@ export function ReferralInviteCard({
 
     return (
       <div className="flex items-center gap-3">
-        <div className="flex-1 min-w-0 flex items-center gap-2 rounded-xl border border-mg-border bg-mg-fill-0/40 px-4 py-2.5">
+        <div className="flex-1 min-w-0 flex items-center gap-2 rounded-md border border-mg-border bg-mg-fill-0/40 px-4 py-2.5">
           <LuLink size={14} className="shrink-0 text-brand-base" />
           <span className="truncate text-xs font-mono text-mg-text-1">{inviteLink || '—'}</span>
         </div>
@@ -79,7 +79,7 @@ export function ReferralInviteCard({
           size="sm"
           onClick={() => handleCopy(inviteLink, 'link', copySuccess)}
           disabled={!inviteLink}
-          className="shrink-0 rounded-xl px-4"
+          className="shrink-0 rounded-md px-4"
         >
           {copied ? <LuCheck size={13} className="mr-1" /> : <LuCopy size={13} className="mr-1" />}
           {copied ? '已复制' : '复制'}
@@ -92,12 +92,12 @@ export function ReferralInviteCard({
   const copiedCode = copiedTarget === 'code'
 
   return (
-    <div className="relative h-full overflow-hidden rounded-2xl border border-mg-border bg-card-bg p-5">
+    <div className="relative h-full overflow-hidden rounded-lg border border-mg-border bg-card-bg p-5">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-brand-base/35 via-brand-base/10 to-transparent" />
       <div className="relative flex h-full flex-col gap-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-brand-base/15 bg-brand-base/10 text-brand-base">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-brand-base/15 bg-brand-base/10 text-brand-base">
               <LuLink size={17} />
             </div>
             <div className="min-w-0 space-y-1">
@@ -126,7 +126,7 @@ export function ReferralInviteCard({
           </button>
         </div>
 
-        <div className="flex min-h-[54px] flex-col gap-2 rounded-xl border border-mg-border bg-mg-bg-1 p-2 transition-colors hover:border-brand-base/35 focus-within:border-brand-base/45 sm:flex-row sm:items-center sm:gap-0 sm:p-0">
+        <div className="flex min-h-[54px] flex-col gap-2 rounded-md border border-mg-border bg-mg-bg-1 p-2 transition-colors hover:border-brand-base/35 focus-within:border-brand-base/45 sm:flex-row sm:items-center sm:gap-0 sm:p-0">
           <div className="flex min-w-0 flex-1 items-center gap-2.5 px-2 py-1 sm:px-4 sm:py-3">
             <LuShare2 size={15} className="shrink-0 text-brand-base" />
             <span className="truncate font-mono text-[13px] font-medium text-mg-text-0" title={inviteLink}>

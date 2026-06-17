@@ -30,7 +30,7 @@ function HistogramTooltip({ active, payload }: HistogramTooltipProps) {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
   return (
-    <div className="rounded-xl border border-mg-border bg-mg-bg-2/98 backdrop-blur-md p-3 shadow-[0_8px_30px_rgb(0,0,0,0.06)] text-left select-none min-w-[120px] space-y-1">
+    <div className="rounded-md border border-mg-border bg-mg-bg-2/98 backdrop-blur-md p-3 shadow-[0_8px_30px_rgb(0,0,0,0.06)] text-left select-none min-w-[120px] space-y-1">
       <div className="text-[10px] text-mg-text-2 font-medium">请求次数</div>
       <div className="text-sm font-mono font-black text-brand-base tabular-nums">
         {d.count.toLocaleString()}

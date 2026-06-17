@@ -62,11 +62,11 @@ export function GuardrailTable({
   const { t } = useTranslation()
 
   return (
-    <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden">
+    <div className="card-shadow-adaptive bg-card-bg rounded-md border border-mg-border overflow-hidden">
       {isLoading ? (
         <div className="p-10 space-y-4 animate-pulse">
-          <div className="h-6 bg-mg-fill-0 rounded w-1/4" />
-          <div className="h-4 bg-mg-fill-0 rounded w-full" />
+          <div className="h-6 bg-mg-fill-0 rounded-sm w-1/4" />
+          <div className="h-4 bg-mg-fill-0 rounded-sm w-full" />
         </div>
       ) : guardrails.length === 0 ? (
         <div className="py-20 text-center text-xs italic text-mg-text-2">{t('guardrails.empty')}</div>

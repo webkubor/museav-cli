@@ -143,7 +143,7 @@ export default function WorkspacesPage() {
                   </div>
                   <span className="text-[11px] font-mono text-mg-text-2 mt-1 block truncate">{ws.workspace_id}</span>
                 </div>
-                <div className="shrink-0 w-9 h-9 rounded-xl bg-brand-base/8 border border-brand-base/15 flex items-center justify-center text-brand-base">
+                <div className="shrink-0 w-9 h-9 rounded-md bg-brand-base/8 border border-brand-base/15 flex items-center justify-center text-brand-base">
                   <LuKey size={16} />
                 </div>
               </div>

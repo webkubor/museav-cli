@@ -53,7 +53,7 @@ function ModelTypeBadge({ modalities, className }: { modalities: string[]; class
   const type = getModelType(modalities)
   return (
     <span className={cn(
-      'text-[10px] font-bold font-mono px-1.5 py-0.5 rounded border',
+      'text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-sm border',
       MODEL_TYPE_STYLE[type] ?? MODEL_TYPE_STYLE.LLM,
       className
     )}>
@@ -81,7 +81,7 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
 
   if (selected) {
     return (
-      <div className="border border-[var(--mg-border)] rounded-xl p-4 bg-card-bg min-h-[120px] relative">
+      <div className="border border-[var(--mg-border)] rounded-md p-4 bg-card-bg min-h-[120px] relative">
         <button
           onClick={onClear}
           className="absolute top-2.5 right-2.5 bg-none border-none cursor-pointer text-[var(--mg-text-2)] hover:text-[var(--mg-text-1)] p-0.5 flex items-center transition-colors"
@@ -111,7 +111,7 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full border-2 border-dashed border-[var(--mg-border)] rounded-xl p-6 bg-transparent cursor-pointer flex flex-col items-center gap-2 text-[var(--mg-text-2)] hover:border-[var(--brand-base)] hover:text-[var(--brand-base)] hover:bg-[var(--mg-fill-0)]/50 transition-all duration-150"
+        className="w-full border-2 border-dashed border-[var(--mg-border)] rounded-md p-6 bg-transparent cursor-pointer flex flex-col items-center gap-2 text-[var(--mg-text-2)] hover:border-[var(--brand-base)] hover:text-[var(--brand-base)] hover:bg-[var(--mg-fill-0)]/50 transition-all duration-150"
       >
         <LuPlus size={20} />
         <span className="text-[13px]">{t('modelsCompare.button.select')}</span>
@@ -136,7 +136,7 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
                 onClick={() => { onSelect(m); setOpen(false); onSearch('') }}
                 className="px-3 py-2 cursor-pointer flex items-center gap-2 hover:bg-[var(--mg-fill-0)] transition-colors"
               >
-                <ModelIcon model={m} size={20} rounded="rounded" />
+                <ModelIcon model={m} size={20} rounded="rounded-sm" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[13px] font-medium text-[var(--mg-text-0)] truncate">
                     {m.display_name}
@@ -412,7 +412,7 @@ export default function ModelsComparePage() {
 
           {/* Comparison table */}
           {hasAny && (
-            <div className="border border-[var(--mg-border)] rounded-xl overflow-hidden shadow-sm bg-card-bg">
+            <div className="border border-[var(--mg-border)] rounded-md overflow-hidden shadow-sm bg-card-bg">
               {/* Header */}
               <div
                 className="grid items-center border-b border-[var(--mg-border)] bg-[var(--mg-fill-0)]"
@@ -426,7 +426,7 @@ export default function ModelsComparePage() {
                 {selectedModels.map((m) => (
                   <div key={m.model_id} className="p-3.5 px-4 border-l border-[var(--mg-border)]">
                     <div className="flex items-center gap-2">
-                      <ModelIcon model={m} size={22} rounded="rounded" />
+                      <ModelIcon model={m} size={22} rounded="rounded-sm" />
                       <div className="min-w-0">
                         <div className="font-bold text-[13px] text-[var(--mg-text-0)] truncate">{m.display_name}</div>
                         <div className="text-[10px] text-[var(--mg-text-2)] font-mono truncate">{m.vendor}</div>
@@ -507,11 +507,11 @@ export default function ModelsComparePage() {
                   return (
                     <div 
                       key={`${m.id}-${idx}`} 
-                      className="glass-card-glow flex flex-col h-[440px] overflow-hidden rounded-xl border border-[var(--mg-border)]"
+                      className="glass-card-glow flex flex-col h-[440px] overflow-hidden rounded-md border border-[var(--mg-border)]"
                     >
                       {/* 栏头部 */}
                       <div className="p-3 bg-[var(--mg-fill-0)]/40 border-b border-[var(--mg-border)]/65 flex items-center gap-2 shrink-0 select-none">
-                        <ModelIcon model={m} size={20} rounded="rounded" />
+                        <ModelIcon model={m} size={20} rounded="rounded-sm" />
                         <div className="min-w-0 flex-1">
                           <div className="text-xs font-bold text-[var(--mg-text-0)] truncate">{m.display_name}</div>
                           <div className="text-[9.5px] text-[var(--mg-text-2)] font-mono truncate">{m.model_id}</div>
@@ -530,7 +530,7 @@ export default function ModelsComparePage() {
                           >
                             <div 
                               className={cn(
-                                "p-2.5 rounded-xl text-xs leading-relaxed shadow-sm",
+                                "p-2.5 rounded-md text-xs leading-relaxed shadow-sm",
                                 msg.role === 'user'
                                   ? "bg-[var(--brand-selected-bg)] border border-[var(--brand-mid)]/10 text-[var(--mg-text-0)]"
                                   : "bg-[var(--mg-bg-0)] border border-[var(--mg-border)] text-[var(--mg-text-1)] border-l-[3px] border-l-[var(--brand-base)]"
@@ -566,8 +566,8 @@ export default function ModelsComparePage() {
 
                       {/* 卡片底部输入框（复用渐变流光样式，紧凑版） */}
                       <div className="shrink-0 p-2 border-t border-[var(--mg-border)]/65 bg-[var(--mg-bg-0)]/30">
-                        <div className="rounded-xl p-[1.5px] bg-gradient-to-r from-[#4285f4] via-[#9b72cb] to-[#d96570] transition-all focus-within:shadow-[0_0_14px_rgba(155,114,203,0.12)]">
-                          <div className="rounded-[10px] bg-[var(--mg-bg-0)] p-2 flex items-end gap-2">
+                        <div className="rounded-md p-[1.5px] bg-gradient-to-r from-[#4285f4] via-[#9b72cb] to-[#d96570] transition-all focus-within:shadow-[0_0_14px_rgba(155,114,203,0.12)]">
+                          <div className="rounded-sm bg-[var(--mg-bg-0)] p-2 flex items-end gap-2">
                             <textarea
                               value={chatInputs[idx]}
                               onChange={(e) => handleInputChange(idx, e.target.value)}

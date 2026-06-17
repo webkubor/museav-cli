@@ -43,11 +43,11 @@ export const RecentActivitySection: React.FC = () => {
 
       {isLoading ? (
         <div className="flex flex-col gap-3 py-4">
-          <div className="animate-pulse bg-mg-fill-2 rounded h-5 w-full" />
-          <div className="animate-pulse bg-mg-fill-2 rounded h-5 w-full" />
-          <div className="animate-pulse bg-mg-fill-2 rounded h-5 w-full" />
-          <div className="animate-pulse bg-mg-fill-2 rounded h-5 w-full" />
-          <div className="animate-pulse bg-mg-fill-2 rounded h-5 w-full" />
+          <div className="animate-pulse bg-mg-fill-2 rounded-sm h-5 w-full" />
+          <div className="animate-pulse bg-mg-fill-2 rounded-sm h-5 w-full" />
+          <div className="animate-pulse bg-mg-fill-2 rounded-sm h-5 w-full" />
+          <div className="animate-pulse bg-mg-fill-2 rounded-sm h-5 w-full" />
+          <div className="animate-pulse bg-mg-fill-2 rounded-sm h-5 w-full" />
         </div>
       ) : data?.items && data.items.length > 0 ? (
         <div className="overflow-x-auto w-full">

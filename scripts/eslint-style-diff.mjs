@@ -66,7 +66,7 @@ for (const f of report) {
 }
 
 if (failed) {
-  console.error(`\n❌ ${failed} 处新增 inline style 裸 hex —— 请用设计 token（见 DESIGN.md）。存量不受影响。`)
+  console.error(`\n❌ ${failed} 处新增样式违规（裸 hex / 非 token 圆角）—— 请用设计 token（见 DESIGN.md）。存量不受影响。`)
   process.exit(1)
 }
-console.log('✅ eslint-style-diff: 改动行无新增 inline style 裸 hex')
+console.log('✅ eslint-style-diff: 改动行无新增样式违规（裸 hex / 非 token 圆角）')

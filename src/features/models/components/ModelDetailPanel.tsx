@@ -22,7 +22,7 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
         <ModelIcon
           model={{ logo_url: detail.logo_url, vendor, display_name: detail.display_name }}
           size={48}
-          rounded="rounded-[10px]"
+          rounded="rounded-sm"
           className="border border-[var(--mg-border)] bg-card-bg"
         />
         <div className="min-w-0 flex-1">
@@ -30,7 +30,7 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
             {detail.display_name}
           </h2>
           {detail.model_id && (
-            <code className="text-[11px] font-mono text-[var(--mg-text-2)] bg-[var(--mg-fill-0)] px-1.5 py-0.5 rounded mb-1 inline-block">
+            <code className="text-[11px] font-mono text-[var(--mg-text-2)] bg-[var(--mg-fill-0)] px-1.5 py-0.5 rounded-sm mb-1 inline-block">
               {detail.model_id}
             </code>
           )}
@@ -44,7 +44,7 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
             {detail.tags?.length > 0 && (
               <div className="flex gap-1 flex-wrap">
                 {detail.tags.map((tag) => (
-                  <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--mg-fill-0)] text-[var(--mg-text-2)] border border-[var(--mg-border)]">{tag}</span>
+                  <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[var(--mg-fill-0)] text-[var(--mg-text-2)] border border-[var(--mg-border)]">{tag}</span>
                 ))}
               </div>
             )}
@@ -63,7 +63,7 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
           <div className="pt-5 flex flex-col gap-5">
             {/* 描述 */}
             {detail.description && (
-              <div className="bg-[var(--mg-fill-0)] rounded-xl border border-[var(--mg-border)] p-4">
+              <div className="bg-[var(--mg-fill-0)] rounded-md border border-[var(--mg-border)] p-4">
                 <p className="m-0 text-[13px] text-[var(--mg-text-1)] leading-relaxed">
                   {detail.description}
                 </p>
@@ -77,20 +77,20 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
                 <span>{t('models.detail.pricing')}</span>
               </div>
               <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
-                <div className="bg-card-bg border border-[var(--mg-border)] rounded-[10px] p-3.5">
+                <div className="bg-card-bg border border-[var(--mg-border)] rounded-sm p-3.5">
                   <div className="text-[11px] text-[var(--mg-text-2)] mb-1">{t('models.detail.pricingInput')}</div>
                   <div className="text-[15px] font-bold text-[var(--mg-text-0)]">
                     {formatModelPrice(detail.pricing?.input_per_1m, detail.pricing?.currency)}
                   </div>
                 </div>
-                <div className="bg-card-bg border border-[var(--mg-border)] rounded-[10px] p-3.5">
+                <div className="bg-card-bg border border-[var(--mg-border)] rounded-sm p-3.5">
                   <div className="text-[11px] text-[var(--mg-text-2)] mb-1">{t('models.detail.pricingOutput')}</div>
                   <div className="text-[15px] font-bold text-[var(--mg-text-0)]">
                     {formatModelPrice(detail.pricing?.output_per_1m, detail.pricing?.currency)}
                   </div>
                 </div>
                 {detail.pricing?.cache_read_per_1m && parseFloat(detail.pricing.cache_read_per_1m) > 0 && (
-                  <div className="bg-card-bg border border-[var(--mg-border)] rounded-[10px] p-3.5">
+                  <div className="bg-card-bg border border-[var(--mg-border)] rounded-sm p-3.5">
                     <div className="text-[11px] text-[var(--mg-text-2)] mb-1">{t('models.detail.pricingCacheRead')}</div>
                     <div className="text-[15px] font-bold text-[var(--mg-text-0)]">
                       {formatModelPrice(detail.pricing.cache_read_per_1m, detail.pricing.currency)}
@@ -106,7 +106,7 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
                 <LuWorkflow size={14} className="text-[var(--mg-text-2)]" />
                 <span>{t('models.detail.specs')}</span>
               </div>
-              <div className="grid grid-cols-2 gap-4 bg-card-bg border border-[var(--mg-border)] rounded-xl p-5">
+              <div className="grid grid-cols-2 gap-4 bg-card-bg border border-[var(--mg-border)] rounded-md p-5">
                 <div className="flex flex-col gap-1">
                   <span className="text-[11px] text-[var(--mg-text-2)] flex items-center gap-1">
                     <LuWorkflow size={12} /> {t('models.detail.contextLength')}
@@ -129,9 +129,9 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
                   </span>
                   <div>
                     {detail.zero_data_retention ? (
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[10px] bg-mg-success/10 text-mg-success border border-mg-success/20">{t('models.detail.supported')}</span>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-sm bg-mg-success/10 text-mg-success border border-mg-success/20">{t('models.detail.supported')}</span>
                     ) : (
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[10px] bg-[var(--mg-fill-0)] text-[var(--mg-text-2)] border border-[var(--mg-border)]">{t('models.detail.notSupported')}</span>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-sm bg-[var(--mg-fill-0)] text-[var(--mg-text-2)] border border-[var(--mg-border)]">{t('models.detail.notSupported')}</span>
                     )}
                   </div>
                 </div>
@@ -142,9 +142,9 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
                     </span>
                     <div>
                       {detail.in_region_routing ? (
-                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[10px] bg-blue-500/10 text-blue-600 border border-blue-500/20">{t('models.detail.supported')}</span>
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-sm bg-blue-500/10 text-blue-600 border border-blue-500/20">{t('models.detail.supported')}</span>
                       ) : (
-                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[10px] bg-[var(--mg-fill-0)] text-[var(--mg-text-2)] border border-[var(--mg-border)]">{t('models.detail.notSupported')}</span>
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-sm bg-[var(--mg-fill-0)] text-[var(--mg-text-2)] border border-[var(--mg-border)]">{t('models.detail.notSupported')}</span>
                       )}
                     </div>
                   </div>
@@ -180,7 +180,7 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
               providers.map((p) => {
                 const isEnabled = p.status === 'enabled'
                 return (
-                  <div key={p.provider_id} className="bg-card-bg border border-[var(--mg-border)] rounded-xl p-4 flex flex-col gap-3.5">
+                  <div key={p.provider_id} className="bg-card-bg border border-[var(--mg-border)] rounded-md p-4 flex flex-col gap-3.5">
                     {/* 提供商头部：名称 + 状态点 */}
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
@@ -188,7 +188,7 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
                           {p.provider_name}
                         </span>
                         {p.region && (
-                          <span className="text-[11px] text-[var(--mg-text-2)] bg-[var(--mg-fill-0)] px-1.5 py-0.5 rounded">
+                          <span className="text-[11px] text-[var(--mg-text-2)] bg-[var(--mg-fill-0)] px-1.5 py-0.5 rounded-sm">
                             {p.region}
                           </span>
                         )}

@@ -63,7 +63,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
           {/* Visual Invoice Page style */}
-          <div className="rounded-xl border border-mg-border bg-mg-fill-0/30 p-5 space-y-5 relative shadow-inner overflow-hidden">
+          <div className="rounded-md border border-mg-border bg-mg-fill-0/30 p-5 space-y-5 relative shadow-inner overflow-hidden">
             {/* Top decorative receipt cut lines */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-[linear-gradient(to_right,var(--mg-border)_50%,transparent_50%)] bg-[size:10px_100%]" />
 
@@ -126,7 +126,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
               {order.promo_code && (
                 <div className="flex justify-between gap-4">
                   <span className="text-mg-text-3">{t('billing.orders.detail.promo')}:</span>
-                  <span className="text-brand-base font-bold bg-brand-glow/10 px-1.5 rounded text-[11px]">
+                  <span className="text-brand-base font-bold bg-brand-glow/10 px-1.5 rounded-sm text-[11px]">
                     {order.promo_code}
                   </span>
                 </div>
@@ -148,7 +148,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
             {site === 'china' && order.invoice_url && (
               <Button
                 variant="outline"
-                className="w-full h-10 text-xs font-bold rounded-xl border border-mg-border hover:bg-mg-fill-0 transition-all select-none text-mg-text-1"
+                className="w-full h-10 text-xs font-bold rounded-md border border-mg-border hover:bg-mg-fill-0 transition-all select-none text-mg-text-1"
                 onClick={() => window.open(order.invoice_url!, '_blank')}
               >
                 {t('billing.orders.detail.viewInvoice')}
@@ -159,7 +159,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
               <Button
                 variant="destructive"
                 disabled={cancelMutation.isPending}
-                className="w-full h-10 text-xs font-bold rounded-xl bg-mg-danger/10 hover:bg-mg-danger/20 text-mg-danger border border-mg-danger/20 active:scale-[0.98] transition-all select-none"
+                className="w-full h-10 text-xs font-bold rounded-md bg-mg-danger/10 hover:bg-mg-danger/20 text-mg-danger border border-mg-danger/20 active:scale-[0.98] transition-all select-none"
                 onClick={() => {
                   if (onCancelRequest) {
                     onCancelRequest(order.order_no)

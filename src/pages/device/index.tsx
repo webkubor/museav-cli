@@ -211,7 +211,7 @@ export default function DevicePage() {
         <div style={{ textAlign: 'center', padding: '8px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ fontSize: '40px', color: view.color }}>{view.icon}</div>
           <span style={{ color: 'var(--mg-text-2)', fontSize: '13px' }}>{view.desc}</span>
-          <Button onClick={() => navigate('/dashboard')} className="rounded-[8px]">
+          <Button onClick={() => navigate('/dashboard')} className="rounded-sm">
             {t('device.button.backToDashboard')}
           </Button>
         </div>
@@ -225,11 +225,11 @@ export default function DevicePage() {
         <div style={{ textAlign: 'center', padding: '8px 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <span style={{ color: 'var(--mg-danger)', fontSize: '14px' }}>{state.message}</span>
           {state.loginRedirect ? (
-            <Button onClick={() => navigate(state.loginRedirect!, { replace: true })} className="rounded-[8px]">
+            <Button onClick={() => navigate(state.loginRedirect!, { replace: true })} className="rounded-sm">
               {t('device.button.goLogin')}
             </Button>
           ) : (
-            <Button onClick={() => navigate('/dashboard')} className="rounded-[8px]">
+            <Button onClick={() => navigate('/dashboard')} className="rounded-sm">
               {t('device.button.backToDashboard')}
             </Button>
           )}

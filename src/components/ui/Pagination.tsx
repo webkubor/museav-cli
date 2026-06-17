@@ -53,7 +53,7 @@ export type PaginationProps =
 const WRAP =
   'flex items-center justify-between px-5 py-4 border-t border-mg-border gap-4 flex-wrap select-none'
 const PAGE_BADGE =
-  'text-xs font-mono text-mg-text-1 bg-mg-fill-0 border border-mg-border px-3 py-1 rounded'
+  'text-xs font-mono text-mg-text-1 bg-mg-fill-0 border border-mg-border px-3 py-1 rounded-sm'
 
 export function Pagination(props: PaginationProps) {
   const { t } = useTranslation()

@@ -316,7 +316,7 @@ export default function ReferralPage() {
         </FirstChargeLockGate>
 
         {/* 档位阶梯卡 */}
-        <div className="relative overflow-hidden rounded-2xl border border-mg-border bg-card-bg p-5 space-y-3">
+        <div className="relative overflow-hidden rounded-lg border border-mg-border bg-card-bg p-5 space-y-3">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-brand-base/35 via-brand-base/10 to-transparent" />
           <div className="flex items-center justify-between">
             <p className="text-sm font-bold text-mg-text-0">{text.tierTableLabel}</p>
@@ -360,7 +360,7 @@ export default function ReferralPage() {
       {/* 分润规则 */}
       <div
         id="referral-rules"
-        className="scroll-mt-24 rounded-2xl border border-mg-border bg-card-bg p-5 space-y-3.5"
+        className="scroll-mt-24 rounded-lg border border-mg-border bg-card-bg p-5 space-y-3.5"
       >
         <div className="flex items-center gap-2 text-sm font-bold text-[var(--brand-base)]">
           <LuSparkles size={15} className="animate-pulse" />
@@ -424,7 +424,7 @@ export default function ReferralPage() {
       </div>
 
       {/* 三 Tab */}
-      <div className="rounded-2xl border border-mg-border bg-card-bg overflow-hidden">
+      <div className="rounded-lg border border-mg-border bg-card-bg overflow-hidden">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)}>
           <div className="border-b border-mg-border/60 px-5 pt-3">
             <TabsList variant="pills">

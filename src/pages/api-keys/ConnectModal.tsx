@@ -50,7 +50,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
       className="sm:max-w-[840px]"
     >
       <div className="space-y-4 py-2">
-        <div className="rounded-xl border border-mg-border bg-mg-bg-1/60 p-4">
+        <div className="rounded-md border border-mg-border bg-mg-bg-1/60 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-lg bg-brand-base/10 flex items-center justify-center shrink-0">
@@ -130,7 +130,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
 
             return (
               <TabsContent key={item.id} value={item.id}>
-                <div className="rounded-xl border border-mg-border bg-mg-bg-0 p-4">
+                <div className="rounded-md border border-mg-border bg-mg-bg-0 p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex min-w-0 items-start gap-3">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-mg-border bg-mg-bg-1 text-mg-text-0">

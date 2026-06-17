@@ -53,7 +53,7 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
     }
 
     return (
-      <div className={cn('composer-rainbow-flow rounded-xl p-3 flex flex-col gap-3 relative transition-all duration-300', className)}>
+      <div className={cn('composer-rainbow-flow rounded-md p-3 flex flex-col gap-3 relative transition-all duration-300', className)}>
         {/* 输入域 */}
         <Textarea
           ref={ref}

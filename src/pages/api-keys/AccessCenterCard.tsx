@@ -56,7 +56,7 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-mg-border bg-mg-bg-0 shadow-sm">
+    <div className="overflow-hidden rounded-md border border-mg-border bg-mg-bg-0 shadow-sm">
       <div className={`${revealVisible ? 'border-b border-mg-border/45' : ''} px-4 py-3`}>
         <div className="mb-2 flex items-center justify-between gap-3">
           <div>

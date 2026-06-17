@@ -97,7 +97,7 @@ export function OrgInfoTab({
 
   if (tenantQuery.isLoading) {
     return (
-      <div className="h-48 bg-mg-fill-1 rounded-2xl animate-pulse" />
+      <div className="h-48 bg-mg-fill-1 rounded-lg animate-pulse" />
     )
   }
 
@@ -107,7 +107,7 @@ export function OrgInfoTab({
 
   return (
     <>
-    <div className="bg-mg-bg-0 border border-mg-border/50 rounded-2xl p-6 shadow-sm space-y-6">
+    <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-6 shadow-sm space-y-6">
       {/* 企业头像 */}
       <div className="flex items-center gap-4 pb-6 border-b border-mg-border/40">
         <AvatarUpload
@@ -203,7 +203,7 @@ export function OrgInfoTab({
 
       {canDissolveOrg && tenant.type === 'enterprise' && (
         <div className="pt-6 border-t border-mg-border/40">
-          <div className="flex flex-col gap-4 rounded-xl border border-mg-danger/25 bg-mg-danger/5 p-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-4 rounded-md border border-mg-danger/25 bg-mg-danger/5 p-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-1">
               <div className="text-xs font-bold text-mg-danger">解散组织</div>
               <div className="text-xs leading-relaxed text-mg-text-1">

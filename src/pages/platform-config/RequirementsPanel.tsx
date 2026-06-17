@@ -250,7 +250,7 @@ export function RequirementsPanel() {
 
   return (
     <div className="space-y-4 pt-2">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-mg-border bg-card-bg px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-mg-border bg-card-bg px-4 py-3">
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-base font-bold text-mg-text-0">我的问题</h2>
@@ -283,25 +283,25 @@ export function RequirementsPanel() {
       </div>
 
       {error && (
-        <div className="rounded-xl border border-mg-danger/20 bg-mg-danger/10 px-4 py-3 text-sm font-medium text-mg-danger">
+        <div className="rounded-md border border-mg-danger/20 bg-mg-danger/10 px-4 py-3 text-sm font-medium text-mg-danger">
           {error}
         </div>
       )}
 
       {isLoading ? (
-        <div className="rounded-xl border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-2">
+        <div className="rounded-md border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-2">
           正在读取本地问题列表...
         </div>
       ) : myBugs.length === 0 ? (
-        <div className="rounded-xl border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-2">
+        <div className="rounded-md border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-2">
           暂无指派给你的 BUG。点击同步 GitLab 后再查看。
         </div>
       ) : visibleBugs.length === 0 ? (
-        <div className="rounded-xl border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-2">
+        <div className="rounded-md border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-2">
           当前筛选下没有问题。
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-mg-border bg-card-bg">
+        <div className="overflow-hidden rounded-md border border-mg-border bg-card-bg">
           <div className="grid grid-cols-[84px_1fr_92px_86px] gap-3 border-b border-mg-border bg-mg-fill-0 px-4 py-2.5 text-[11px] font-bold text-mg-text-2">
             <span>Issue</span>
             <span>标题</span>

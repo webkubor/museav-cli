@@ -499,7 +499,7 @@ export default function LogsPage() {
               </div>
             </div>
 
-            <div className="space-y-1 select-all">
+            <div className="space-y-1 select-text">
               <DetailRow label="Request ID" value={selectedLog.request_id} mono />
               <DetailRow label={t('logs.detail.model')} value={
                 <span className="flex items-center gap-1.5 min-w-0">
@@ -537,7 +537,7 @@ export default function LogsPage() {
                   <IoAlertCircle className="w-4 h-4 shrink-0" />
                   {t('logs.detail.errorTitle')}
                 </p>
-                <pre className="text-xs text-mg-danger font-mono break-all whitespace-pre-wrap leading-relaxed select-all">
+                <pre className="text-xs text-mg-danger font-mono break-all whitespace-pre-wrap leading-relaxed select-text">
                   {selectedLog.error}
                 </pre>
               </div>
@@ -619,7 +619,7 @@ function DetailRow({ label, value, mono = false }: { label: string; value: React
   return (
     <div className="flex justify-between items-center py-2.5 border-b border-mg-border/40 gap-4">
       <span className="text-xs font-bold text-mg-text-2 shrink-0">{label}</span>
-      <span className={`text-xs text-mg-text-0 font-semibold text-right break-all max-w-[340px] select-all ${mono ? 'font-mono' : ''}`}>
+      <span className={`text-xs text-mg-text-0 font-semibold text-right break-all max-w-[340px] select-text ${mono ? 'font-mono' : ''}`}>
         {value}
       </span>
     </div>

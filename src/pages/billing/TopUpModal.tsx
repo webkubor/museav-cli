@@ -21,6 +21,7 @@ function buildWechatCashierURL(params: {
   currency: string
   payee: string
   returnTo: string
+  tenant: string
 }) {
   const url = new URL('/billing/wechat-cashier', window.location.origin)
   url.searchParams.set('qr', params.qrCodeUrl)
@@ -29,6 +30,8 @@ function buildWechatCashierURL(params: {
   url.searchParams.set('currency', params.currency)
   url.searchParams.set('payee', params.payee)
   url.searchParams.set('return_to', params.returnTo)
+  // tenant lets the cashier poll the recharge order status to auto-confirm + redirect.
+  url.searchParams.set('tenant', params.tenant)
   return url.toString()
 }
 
@@ -86,6 +89,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
               currency,
               payee: WECHAT_PAYEE_NAME,
               returnTo: window.location.href,
+              tenant: tenantId,
             })
           : data.payment.redirect_url || data.payment.qr_code_url
         if (!redirectURL) {

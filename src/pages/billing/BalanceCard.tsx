@@ -115,15 +115,6 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
                 {balanceLoading ? '...' : availableMain}
               </span>
             </div>
-            {canRecharge && !balanceLoading && (
-              <button
-                onClick={() => setTopUpVisible(true)}
-                className="flex items-center gap-0.5 text-[11px] font-bold text-brand-base/60 hover:text-brand-base transition-colors"
-              >
-                <LuPlus size={10} />
-                {t('billing.balance.recharge')}
-              </button>
-            )}
           </div>
         </div>
 

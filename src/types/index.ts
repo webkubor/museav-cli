@@ -60,6 +60,7 @@ export type {
   TenantInviteLinkPreview,
   TenantInviteLinkAcceptResult,
   SpendingLimit,
+  SpendingPeriodUnit,
   ApiKeyItem,
   CreateApiKeyRequest,
   ApiKeyCreated,

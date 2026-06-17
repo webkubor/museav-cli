@@ -190,10 +190,16 @@ export interface TenantInviteLinkAcceptResult {
 
 // ─── API Key ────────────────────────────────────────
 
+/** 消费限额时间维度 —— 与安全护栏 budget policy 的 period_unit 完全一致 */
+export type SpendingPeriodUnit = 'hour' | 'day' | 'week' | 'month'
+
 export interface SpendingLimit {
   amount: string
   currency: string
-  period: 'total' | 'monthly'
+  /** 时间维度，对齐护栏（每小时/每日/每周/每月）；与 period_length 组合 */
+  period_unit: SpendingPeriodUnit
+  /** 周期长度，默认 1（如 period_unit=month, period_length=1 即每月） */
+  period_length: number
 }
 
 export interface ApiKeyItem {

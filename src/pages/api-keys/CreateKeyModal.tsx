@@ -19,7 +19,9 @@ import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { SCOPE_OPTIONS, EXPIRATION_PRESETS, type ScopeType } from './constants'
 import { CreateGuardrailDialog } from './CreateGuardrailDialog'
+import { PERIOD_LABEL } from '@/constants/status'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
+import type { SpendingPeriodUnit } from '@/types'
 
 type Props = {
   open: boolean
@@ -39,9 +41,8 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const [guardrailIds, setGuardrailIds] = useState<string[]>([])
   const [guardrailDialogOpen, setGuardrailDialogOpen] = useState(false)
 
-  const [spendingEnabled, setSpendingEnabled] = useState(false)
   const [spendingAmount, setSpendingAmount] = useState('')
-  const [spendingPeriod, setSpendingPeriod] = useState<'total' | 'monthly'>('monthly')
+  const [spendingPeriodUnit, setSpendingPeriodUnit] = useState<SpendingPeriodUnit>('month')
   const todayStr = new Date().toISOString().split('T')[0]
   const [expiryRange, setExpiryRange] = useState<DateRangeValue>({
     preset: 'all',
@@ -80,8 +81,8 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
         name: name.trim(),
         scope,
         member_account_id: scope === 'member' ? memberAccountId : undefined,
-        spending_limit: spendingEnabled && spendingAmount
-          ? { amount: spendingAmount, currency, period: spendingPeriod }
+        spending_limit: spendingAmount
+          ? { amount: spendingAmount, currency, period_unit: spendingPeriodUnit, period_length: 1 }
           : undefined,
         expires_at: (() => {
           if (expiryRange.preset === 'all' || !expiryRange.preset) return undefined
@@ -249,41 +250,26 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
             </div>
           </div>
 
-          {/* 消费限额 */}
+          {/* 消费限额 —— 直接显示，留空即不限额；时间维度对齐安全护栏 */}
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <label className="text-xs font-bold text-mg-text-1">消费限额</label>
-              <button
-                type="button"
-                onClick={() => setSpendingEnabled(!spendingEnabled)}
-                className={[
-                  'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none',
-                  spendingEnabled ? 'bg-brand-base' : 'bg-mg-fill-2',
-                ].join(' ')}
-              >
-                <span className={[
-                  'pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200',
-                  spendingEnabled ? 'translate-x-4' : 'translate-x-0',
-                ].join(' ')} />
-              </button>
+            <label className="block text-xs font-bold text-mg-text-1 mb-3">
+              消费限额 <span className="text-mg-text-2 font-normal">（可选，留空则不限额）</span>
+            </label>
+            <div className="flex gap-3">
+              <Input
+                type="number" min="0" step="0.01"
+                value={spendingAmount}
+                onChange={(e) => setSpendingAmount(e.target.value)}
+                placeholder="0.00"
+                prefix={<span className="text-xs text-mg-text-2 font-mono select-none">{symbol}</span>}
+                className="flex-1"
+              />
+              <Select value={spendingPeriodUnit} onChange={(v) => setSpendingPeriodUnit(v as SpendingPeriodUnit)} className="w-28">
+                {(Object.entries(PERIOD_LABEL) as [SpendingPeriodUnit, string][]).map(([k, label]) => (
+                  <SelectItem key={k} value={k}>每{label}</SelectItem>
+                ))}
+              </Select>
             </div>
-            {spendingEnabled && (
-              <div className="flex gap-3">
-                <Input
-                  type="number" min="0" step="0.01"
-                  value={spendingAmount}
-                  onChange={(e) => setSpendingAmount(e.target.value)}
-                  placeholder="0.00"
-                  prefix={<span className="text-xs text-mg-text-2 font-mono select-none">{symbol}</span>}
-                  className="flex-1"
-                />
-                <Select value={spendingPeriod} onChange={(v) => setSpendingPeriod(v as 'total' | 'monthly')} className="w-28">
-                  <SelectItem value="monthly">每月</SelectItem>
-                  <SelectItem value="total">总计</SelectItem>
-                </Select>
-              </div>
-
-            )}
           </div>
 
           {/* 过期时间 */}

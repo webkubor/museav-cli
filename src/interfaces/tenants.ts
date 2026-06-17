@@ -15,4 +15,5 @@ export interface TenantMemberListParams extends QueryParams {
 
 export interface TenantListResponse {
   items: TenantItem[]
+  can_create_org?: boolean
 }

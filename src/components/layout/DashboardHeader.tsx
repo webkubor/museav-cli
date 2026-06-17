@@ -108,7 +108,7 @@ export const DashboardHeader: React.FC = () => {
   })
 
   const displayTenants = (() => {
-    const map = new Map<string, typeof tenants[0]>()
+    const map = new Map<string, TenantBrief | TenantItem>()
     tenants.forEach((t) => map.set(t.tenant_id, t))
     if (tenantsData?.items) {
       tenantsData.items.forEach((t) => map.set(t.tenant_id, t))
@@ -125,6 +125,7 @@ export const DashboardHeader: React.FC = () => {
   const ownsEnterprise = displayTenants.some(
     (tn) => tn.type === 'enterprise' && (tn as { role?: string }).role === 'tenant_owner',
   )
+  const canCreateOrg = tenantsData?.can_create_org ?? !ownsEnterprise
 
   useEffect(() => {
     if (!account) return
@@ -232,7 +233,8 @@ export const DashboardHeader: React.FC = () => {
     const ownsEnterprise = items.some(
       (it) => it.type === 'enterprise' && (it as { role?: string }).role === 'tenant_owner',
     )
-    if (ownsEnterprise) {
+    const canCreateOrg = tenantsData?.can_create_org ?? !ownsEnterprise
+    if (!canCreateOrg) {
       toast.warning(t('header.orgOwnerLimitWarning'))
       return
     }
@@ -435,7 +437,7 @@ export const DashboardHeader: React.FC = () => {
               )
             })}
 
-            {!ownsEnterprise && (
+            {canCreateOrg && (
               <DropdownMenuItem
                 onClick={handleOpenOrgModal}
               >

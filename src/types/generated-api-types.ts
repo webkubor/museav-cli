@@ -1223,6 +1223,7 @@ export interface TenantListItem {
 }
 
 export interface TenantListResponse {
+  can_create_org?: boolean
   items?: TenantListItem[]
 }
 

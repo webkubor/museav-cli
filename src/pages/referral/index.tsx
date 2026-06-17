@@ -553,7 +553,7 @@ export default function ReferralPage() {
 type TextCopy = typeof referralCopy.zh
 
 
-function TierBadge({ name, fallback }: { name?: string; fallback: string }) {
+function TierBadge({ name, rate, fallback }: { name?: string; rate?: number; fallback: string }) {
   if (!name) return <span className="text-mg-text-3">{fallback}</span>
   const colorMap: Record<string, string> = {
     '成长伙伴': 'bg-green-500/10 text-green-600 border-green-500/20',
@@ -564,9 +564,10 @@ function TierBadge({ name, fallback }: { name?: string; fallback: string }) {
     'Strategic Partner': 'bg-purple-500/10 text-purple-600 border-purple-500/20',
   }
   const cls = colorMap[name] ?? 'bg-mg-fill-0 text-mg-text-1 border-mg-border'
+  const label = typeof rate === 'number' && rate > 0 ? `${name} · ${rate}%` : name
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${cls}`}>
-      {name}
+      {label}
     </span>
   )
 }
@@ -629,23 +630,28 @@ function InviteesTable({ invitees, text, isQualified }: { invitees: ReferralInvi
             </TableCell>
           </TableRow>
         ) : (
-          paged.map((inv) => (
-            <TableRow key={`${inv.email}-${inv.registeredAt}`}>
-              <TableCell>
-                <div className="font-medium text-mg-text-0">{inv.name}</div>
-                <div className="text-[11px] text-mg-text-2 mt-0.5">{inv.email}</div>
-              </TableCell>
-              <TableCell className="text-right font-mono">{fmt(inv.totalSpend)}</TableCell>
-              <TableCell className="text-right font-mono">{fmt(inv.commission)}</TableCell>
-              <TableCell>{inv.registeredAt}</TableCell>
-              <TableCell>
-                <TierBadge name={inv.currentTier} fallback={text.notYet} />
-              </TableCell>
-              <TableCell>
-                <WindowBadge expireAt={inv.windowExpireAt} fallback={text.notYet} isZh={isZh} />
-              </TableCell>
-            </TableRow>
-          ))
+          paged.map((inv) => {
+            const tierName = inv.tierName ?? inv.tier_name ?? inv.currentTier
+            const tierRate = inv.tierRate ?? inv.tier_rate
+            const windowEnd = inv.windowExpireAt ?? inv.commissionWindowEnd ?? inv.commission_window_end
+            return (
+              <TableRow key={`${inv.email}-${inv.registeredAt}`}>
+                <TableCell>
+                  <div className="font-medium text-mg-text-0">{inv.name}</div>
+                  <div className="text-[11px] text-mg-text-2 mt-0.5">{inv.email}</div>
+                </TableCell>
+                <TableCell className="text-right font-mono">{fmt(inv.totalSpend)}</TableCell>
+                <TableCell className="text-right font-mono">{fmt(inv.commission)}</TableCell>
+                <TableCell>{inv.registeredAt}</TableCell>
+                <TableCell>
+                  <TierBadge name={tierName} rate={tierRate} fallback={text.notYet} />
+                </TableCell>
+                <TableCell>
+                  <WindowBadge expireAt={windowEnd} fallback={text.notYet} isZh={isZh} />
+                </TableCell>
+              </TableRow>
+            )
+          })
         )}
       </TableBody>
     </Table>

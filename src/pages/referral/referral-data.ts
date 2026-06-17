@@ -43,8 +43,18 @@ export interface ReferralInvitee {
   commission: string
   /** 该被邀请人自身累计消费对应的当前档位名 */
   currentTier?: string
+  /** 后端当前推荐字段：该被邀请租户当前档位名 */
+  tierName?: string
+  /** 兼容后端阶段性 snake_case 字段 */
+  tier_name?: string
+  /** 后端当前推荐字段：当前档位返佣比例（百分比，如 13 表示 13%） */
+  tierRate?: number
+  /** 兼容后端阶段性 snake_case 字段 */
+  tier_rate?: number
   /** 返佣窗口截止日期（ISO date string，如 "2026-09-15"），由后端按注册日 + N 天计算 */
   windowExpireAt?: string
+  commissionWindowEnd?: string
+  commission_window_end?: string
 }
 
 export interface ReferralCommissionRecord {

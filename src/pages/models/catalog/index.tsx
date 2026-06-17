@@ -608,7 +608,7 @@ function CatalogInsightPanel({ rankingItems, hasRealRanking, freeModels, recentM
                   />
                 )}
                 <span className="catalog-ranking-rank">
-                  {idx === 0 && hasRealRanking ? <FlameIcon size={16} /> : item.rank}
+                  {item.rank}
                 </span>
                 <ModelIcon model={item.iconModel} size={28} rounded="rounded-lg" className="catalog-ranking-icon" />
                 <span className="catalog-ranking-copy">

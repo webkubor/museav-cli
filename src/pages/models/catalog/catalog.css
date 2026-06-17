@@ -374,16 +374,16 @@
 }
 
 /* 热度条：宽度 ∝ 调用量，暖色低透明度填充，直观体现"爆火"程度 */
+/* 相对热度：底部一条极细品牌色细条（宽度∝调用量），不再铺在文字背后 */
 .catalog-ranking-heat {
   position: absolute;
-  inset: 0 auto 0 0;
+  left: 8px;
+  right: auto;
+  bottom: 0;
   z-index: 0;
-  border-radius: inherit;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--mg-warning) 20%, transparent),
-    color-mix(in srgb, var(--mg-warning) 3%, transparent)
-  );
+  height: 2px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--brand-base) 30%, transparent);
   pointer-events: none;
 }
 
@@ -393,9 +393,9 @@
   z-index: 1;
 }
 
-/* 榜首强调：暖色描边 */
+/* 榜首强调：品牌色淡描边（单一强调，不叠色块/图标） */
 .catalog-ranking-row.is-top {
-  border-color: color-mix(in srgb, var(--mg-warning) 36%, var(--mg-border));
+  border-color: color-mix(in srgb, var(--brand-base) 30%, var(--mg-border));
 }
 
 .catalog-mini-model {
@@ -406,16 +406,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--brand-base);
+  color: var(--mg-text-2);
   font-family: var(--font-mono);
-  font-size: 16px;
-  font-weight: 900;
+  font-size: 13px;
+  font-weight: 700;
   line-height: 1;
 }
 
-/* 榜首火苗用暖色 */
+/* 榜首序号用品牌色（单一强调点） */
 .catalog-ranking-row.is-top .catalog-ranking-rank {
-  color: var(--mg-warning);
+  color: var(--brand-base);
 }
 
 /* 爆火区标题火苗 */

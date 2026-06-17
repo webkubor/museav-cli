@@ -110,7 +110,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
               variant="brand"
               disabled={!isDirty || updateMutation.isPending}
               onClick={() => updateMutation.mutate()}
-              className="rounded-[8px] px-5 font-semibold transition-all"
+              className="rounded-sm px-5 font-semibold transition-all"
             >
               {updateMutation.isPending ? t('common.loading') : t('common.save')}
             </Button>

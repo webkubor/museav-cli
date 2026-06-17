@@ -64,7 +64,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
         currencySymbol={currencySymbol}
       />
 
-      <div className="rounded-2xl border border-mg-border bg-card-bg p-6 space-y-5 shadow-sm">
+      <div className="rounded-lg border border-mg-border bg-card-bg p-6 space-y-5 shadow-sm">
         {/* 顶部标题 + 操作按钮 */}
         <div className="flex justify-between items-center">
           <span className="text-sm font-bold text-mg-text-0">{t('billing.balance.title')}</span>
@@ -75,7 +75,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
               disabled={refreshing}
               aria-label={t('common.refresh', { defaultValue: '刷新' })}
               title={t('billing.balance.refreshHint', { defaultValue: '刷新余额与列表' })}
-              className="flex items-center justify-center h-9 w-9 rounded-xl border border-mg-border text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              className="flex items-center justify-center h-9 w-9 rounded-md border border-mg-border text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <LuRefreshCw size={14} className={cn(refreshing && 'animate-spin')} />
             </button>
@@ -83,7 +83,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
               <Button
                 variant="outline"
                 onClick={() => setInvoiceVisible(true)}
-                className="rounded-xl h-9 px-4 text-xs"
+                className="rounded-md h-9 px-4 text-xs"
               >
                 <LuReceipt size={14} className="mr-1.5" />
                 {t('billing.invoice.title', { defaultValue: '发票' })}
@@ -93,7 +93,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
               <Button
                 variant="brand"
                 onClick={() => setTopUpVisible(true)}
-                className="rounded-xl h-9 px-5 gap-1.5"
+                className="rounded-md h-9 px-5 gap-1.5"
               >
                 <LuPlus size={14} />
                 {t('billing.balance.recharge')}

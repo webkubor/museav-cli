@@ -28,7 +28,7 @@ function UsageTooltip({ active, payload }: UsageTooltipProps) {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
   return (
-    <div className="rounded-xl border border-mg-border bg-mg-bg-2/98 backdrop-blur-md p-3 shadow-[0_8px_30px_rgb(0,0,0,0.06)] text-left select-none min-w-[120px] space-y-1">
+    <div className="rounded-md border border-mg-border bg-mg-bg-2/98 backdrop-blur-md p-3 shadow-[0_8px_30px_rgb(0,0,0,0.06)] text-left select-none min-w-[120px] space-y-1">
       <div className="text-[10px] text-mg-text-2 font-medium">
         调用次数
       </div>
@@ -90,7 +90,7 @@ export const UsageChartSection: React.FC = () => {
 
       <div className="flex-1 outline-none select-none" style={{ minHeight: 200 }}>
         {isLoading ? (
-          <div className="animate-pulse bg-mg-fill-2 rounded w-full h-[200px]" />
+          <div className="animate-pulse bg-mg-fill-2 rounded-sm w-full h-[200px]" />
         ) : chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={200} style={{ outline: 'none' }}>
             <AreaChart data={chartData} margin={{ top: 8, right: 4, bottom: 0, left: 4 }}>

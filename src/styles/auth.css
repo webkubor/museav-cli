@@ -282,7 +282,7 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 }
 
 .auth-email-preview {
-  @apply flex items-center gap-2 p-3 rounded-xl text-[13px] border;
+  @apply flex items-center gap-2 p-3 rounded-md text-[13px] border;
   background-color: var(--mg-fill-0);
   border-color: var(--mg-border);
 }
@@ -392,7 +392,7 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 }
 
 .social-btn {
-  @apply flex-1 flex items-center justify-center gap-2 h-11 border rounded-xl text-sm font-semibold;
+  @apply flex-1 flex items-center justify-center gap-2 h-11 border rounded-md text-sm font-semibold;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   border-color: var(--mg-border) !important;
   background-color: rgba(var(--mg-bg-0-rgb), 0.56) !important;

@@ -155,7 +155,7 @@ export const QuickAccessSection: React.FC = () => {
             glass
             hoverable
             onClick={() => navigate(quickPath(link.path, activeWorkspaceId))}
-            className="quick-access-card flex items-center justify-between relative group rounded-2xl border border-mg-border text-left"
+            className="quick-access-card flex items-center justify-between relative group rounded-lg border border-mg-border text-left"
           >
             <div className="flex items-center gap-3 min-w-0 flex-1 z-10">
               <div className="w-12 h-12 flex items-center justify-center shrink-0">

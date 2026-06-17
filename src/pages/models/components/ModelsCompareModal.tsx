@@ -92,7 +92,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
 
   // 厂商 Logo 渲染，提供精美后备
   const renderLogo = (m: CatalogModelItem) => (
-    <ModelIcon model={m} size={24} rounded="rounded" className="bg-white border border-mg-border/40" />
+    <ModelIcon model={m} size={24} rounded="rounded-sm" className="bg-white border border-mg-border/40" />
   )
 
   // 属性对比定义，在 t() 中增加中文默认后备以解决 key 缺失带来的重叠灾难
@@ -130,7 +130,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="glass-card-glow w-full max-w-5xl h-[80vh] max-h-[660px] rounded-2xl flex flex-col overflow-hidden relative shadow-2xl animate-in zoom-in-95 duration-200"
+        className="glass-card-glow w-full max-w-5xl h-[80vh] max-h-[660px] rounded-lg flex flex-col overflow-hidden relative shadow-2xl animate-in zoom-in-95 duration-200"
       >
         {/* 顶栏 */}
         <div className="px-6 py-4 border-b border-mg-border flex items-center justify-between shrink-0 bg-mg-fill-0/20">
@@ -215,7 +215,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                 {selectedModels.map((m) => (
                   <div
                     key={m.id}
-                    className="border border-mg-border bg-mg-bg-0 rounded-xl p-4.5 relative shadow-sm hover:border-brand-base transition-all duration-300"
+                    className="border border-mg-border bg-mg-bg-0 rounded-md p-4.5 relative shadow-sm hover:border-brand-base transition-all duration-300"
                   >
                     {/* 卡片头部 */}
                     <div className="flex items-start justify-between">
@@ -285,7 +285,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
               <div className="flex items-center gap-3">
                 <button
                   onClick={onClose}
-                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-mg-fill-0 hover:bg-mg-fill-1 text-mg-text-1 hover:text-mg-text-0 border border-mg-border/30 transition-all cursor-pointer active:scale-95 outline-none"
+                  className="px-5 py-2 rounded-md text-xs font-semibold bg-mg-fill-0 hover:bg-mg-fill-1 text-mg-text-1 hover:text-mg-text-0 border border-mg-border/30 transition-all cursor-pointer active:scale-95 outline-none"
                 >
                   取消
                 </button>
@@ -296,7 +296,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                     }
                     onClose()
                   }}
-                  className="px-6 py-2 rounded-xl text-xs font-bold bg-brand-base text-white hover:bg-brand-deep shadow-md hover:shadow-brand-glow/15 transition-all cursor-pointer active:scale-95 border-none outline-none"
+                  className="px-6 py-2 rounded-md text-xs font-bold bg-brand-base text-white hover:bg-brand-deep shadow-md hover:shadow-brand-glow/15 transition-all cursor-pointer active:scale-95 border-none outline-none"
                 >
                   确认对比
                 </button>

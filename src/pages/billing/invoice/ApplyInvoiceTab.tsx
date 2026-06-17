@@ -109,7 +109,7 @@ export function ApplyInvoiceTab({
         </button>
 
         {/* 合并汇总 */}
-        <div className="flex items-center justify-between rounded-xl bg-mg-fill-0 px-4 py-3">
+        <div className="flex items-center justify-between rounded-md bg-mg-fill-0 px-4 py-3">
           <div className="space-y-1 text-xs text-mg-text-2">
             <div>合并笔数</div>
             <div>价税合计</div>
@@ -124,7 +124,7 @@ export function ApplyInvoiceTab({
         </div>
 
         {/* 包含充值单 */}
-        <div className="rounded-xl border border-mg-border p-4">
+        <div className="rounded-md border border-mg-border p-4">
           <div className="mb-2 text-xs font-semibold text-mg-text-1">包含充值单（{selected.length}）</div>
           {selectedRecharges.map((r) => (
             <div key={r.recharge_id} className="flex items-center justify-between py-1 text-sm">
@@ -160,7 +160,7 @@ export function ApplyInvoiceTab({
 
         {/* 选中抬头详情 */}
         {activeTitle && (
-          <div className="rounded-xl border border-mg-border p-4">
+          <div className="rounded-md border border-mg-border p-4">
             <div className="mb-2 text-sm font-bold text-mg-text-0">{TITLE_TYPE_LABEL[activeTitle.type]}</div>
             <div className="space-y-1 text-xs text-mg-text-2">
               <div>税号：{activeTitle.tax_id}</div>
@@ -202,7 +202,7 @@ export function ApplyInvoiceTab({
         国内开具增值税发票（普票/专票）。平台统一承担增值税，所有充值可申请开票；勾选充值 →「合并开票」选择抬头与票种后提交申请。
       </p>
 
-      <div className="rounded-xl border border-mg-border p-4">
+      <div className="rounded-md border border-mg-border p-4">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm font-bold text-mg-text-0">
             <span className="text-brand-base">₣</span> 充值 · 申请开票
@@ -244,7 +244,7 @@ export function ApplyInvoiceTab({
                   disabled={!billable}
                   checked={selected.includes(r.recharge_id)}
                   onChange={() => billable && toggle(r.recharge_id)}
-                  className="h-4 w-4 rounded border-mg-border accent-brand-base"
+                  className="h-4 w-4 rounded-sm border-mg-border accent-brand-base"
                 />
                 <span className="font-medium text-mg-text-0">{r.order_no}</span>
                 <span className="text-right font-bold tabular-nums text-mg-text-0">

@@ -206,7 +206,7 @@ export default function PlatformConfigPage() {
                 return (
                   <div
                     key={r.path}
-                    className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border px-5 py-3 flex items-center gap-4 cursor-pointer hover:border-brand-base/30 transition-colors"
+                    className="card-shadow-adaptive bg-card-bg rounded-md border border-mg-border px-5 py-3 flex items-center gap-4 cursor-pointer hover:border-brand-base/30 transition-colors"
                     onClick={async () => { if (await copy(full)) appToast.success(`已复制 ${r.path}`) }}
                   >
                     <code className="text-xs font-mono text-brand-base shrink-0 select-all">{r.path}</code>

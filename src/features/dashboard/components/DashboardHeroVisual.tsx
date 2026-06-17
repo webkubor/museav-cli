@@ -11,7 +11,7 @@ export function DashboardHeroVisual() {
   return (
     <div
       aria-hidden="true"
-      className="relative w-full min-w-[320px] max-w-[620px] overflow-hidden rounded-[18px] border border-mg-border bg-mg-bg-0 shadow-lg"
+      className="relative w-full min-w-[320px] max-w-[620px] overflow-hidden rounded-lg border border-mg-border bg-mg-bg-0 shadow-lg"
       style={{ aspectRatio: '21 / 9' }}
     >
       <svg className="h-full w-full" viewBox="0 0 2100 900" fill="none" xmlns="http://www.w3.org/2000/svg">

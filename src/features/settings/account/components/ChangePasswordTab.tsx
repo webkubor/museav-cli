@@ -127,14 +127,14 @@ export const ChangePasswordTab: React.FC = () => {
         <Button
           variant="brand"
           onClick={handleSubmit}
-          className="rounded-[8px] px-6 font-semibold transition-all"
+          className="rounded-sm px-6 font-semibold transition-all"
         >
           {mutation.isPending ? t('common.loading') : t('common.save')}
         </Button>
       </div>
 
       <div
-        className="rounded-xl border border-mg-danger/30 bg-mg-danger/5 p-5"
+        className="rounded-md border border-mg-danger/30 bg-mg-danger/5 p-5"
         style={{ marginTop: '12px' }}
       >
         <div style={{ marginBottom: '14px' }}>
@@ -148,7 +148,7 @@ export const ChangePasswordTab: React.FC = () => {
         <Button
           variant="destructive"
           onClick={() => setDeleteModalOpen(true)}
-          className="rounded-[8px] px-5 font-semibold"
+          className="rounded-sm px-5 font-semibold"
         >
           {t('account.security.deleteAction')}
         </Button>

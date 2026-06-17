@@ -17,10 +17,20 @@
   --color-card-bg: var(--card-bg);
   --color-grid-color: var(--grid-color);
   
-  --radius-lg: var(--radius-lg);
-  --radius-md: var(--radius-md);
+  /* 单尺铁律（DESIGN.md#Shapes）：项目圆角只有 sm/md/lg/full 四档。
+     下面把 Tailwind 默认多余刻度 reset 掉——rounded-xl/2xl/3xl/4xl/xs 物理不再生成，
+     写了等于无效类。第二把尺彻底消失（全前端已迁完，零残留）。新用法另由
+     eslint.style-guard 门控在改动行拦截。 */
   --radius-sm: var(--radius-sm);
-  
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-full: var(--radius-full);
+  --radius-xs: initial;
+  --radius-xl: initial;
+  --radius-2xl: initial;
+  --radius-3xl: initial;
+  --radius-4xl: initial;
+
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);

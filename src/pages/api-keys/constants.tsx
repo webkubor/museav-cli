@@ -67,7 +67,7 @@ export const CONNECT_ACTIONS: {
     key: 'cc-switch',
     label: 'CC Switch',
     desc: '一键切换',
-    icon: <img src="/tools/cc-switch.png" alt="" className="h-4 w-4 rounded-[4px]" />,
+    icon: <img src="/tools/cc-switch.png" alt="" className="h-4 w-4 rounded-sm" />,
   },
   {
     key: 'claude-code',

@@ -26,7 +26,7 @@ export function CustomRequestPanel() {
   }
 
   return (
-    <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden mb-6">
+    <div className="card-shadow-adaptive bg-card-bg rounded-md border border-mg-border overflow-hidden mb-6">
       <div className="flex items-center gap-2 p-3 border-b border-mg-border/40 bg-mg-bg-1/30">
         {(['GET', 'POST'] as const).map((m) => (
           <button
@@ -71,7 +71,7 @@ export function CustomRequestPanel() {
 
       {state.status === 'success' && (
         <div className="relative bg-mg-code-bg overflow-hidden">
-          <div className="absolute top-3 right-3 text-[10px] font-bold text-mg-success bg-mg-success/10 border border-mg-success/20 px-2 py-0.5 rounded z-10">
+          <div className="absolute top-3 right-3 text-[10px] font-bold text-mg-success bg-mg-success/10 border border-mg-success/20 px-2 py-0.5 rounded-sm z-10">
             OK
           </div>
           <pre className="m-0 p-5 text-xs font-mono text-mg-text-1 overflow-auto max-h-[400px] w-full min-w-0 leading-relaxed select-all">
@@ -81,7 +81,7 @@ export function CustomRequestPanel() {
       )}
       {state.status === 'error' && (
         <div className="px-5 py-3.5 bg-rose-500/5 border-t border-rose-500/10 flex items-center gap-3">
-          <span className="text-[10px] font-bold text-rose-600 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded">ERROR</span>
+          <span className="text-[10px] font-bold text-rose-600 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-sm">ERROR</span>
           <span className="text-xs font-mono text-rose-500 break-all">{state.error}</span>
         </div>
       )}

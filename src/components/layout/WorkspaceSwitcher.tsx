@@ -150,7 +150,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
                 {ws.name}
               </span>
               {ws.is_default && (
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-mg-fill-1 text-mg-text-2 font-bold tracking-wide uppercase shrink-0 mx-1">
+                <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-mg-fill-1 text-mg-text-2 font-bold tracking-wide uppercase shrink-0 mx-1">
                   {t('header.default')}
                 </span>
               )}

@@ -20,6 +20,14 @@ export default defineConfig([
           message:
             'inline style 禁止裸 hex —— 请用设计 token（var(--mg-*/--brand-*)，box-shadow 的 rgba 例外），见 DESIGN.md',
         },
+        {
+          // 单尺铁律：禁止 Tailwind 默认圆角刻度（第二把尺）—— 只允许 token 档位 rounded-sm/md/lg/full。
+          // 命中 rounded-xl / rounded-2xl / rounded-3xl / 裸 rounded / rounded-[数值]，放过 rounded-[var(...)]。
+          selector:
+            'Literal[value=/(^|\\s)rounded(-(xl|2xl|3xl))?(\\s|$)/], Literal[value=/rounded(-[a-z]+)?-\\[[0-9]/]',
+          message:
+            '禁止 Tailwind 默认圆角刻度（第二把尺）—— 只用 token 档位 rounded-sm/md/lg/full，映射见 DESIGN.md#Shapes',
+        },
       ],
     },
   },

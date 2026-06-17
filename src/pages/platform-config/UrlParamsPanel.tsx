@@ -54,7 +54,7 @@ const URL_PARAM_ROWS: UrlParamRow[] = [
 
 export function UrlParamsPanel() {
   return (
-    <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-xl overflow-hidden shadow-sm">
+    <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-md overflow-hidden shadow-sm">
       <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40">
         <div className="text-sm font-bold text-mg-text-0">认证 / OAuth URL 透传参数</div>
         <div className="text-[11px] text-mg-text-2 mt-0.5">注册 / 登录 / 邀请 / 设备授权各入口需要兼容携带的 URL 参数（均基于代码核实）</div>

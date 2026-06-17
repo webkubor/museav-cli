@@ -187,13 +187,13 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
         title={t('billing.orders.cancelConfirm.title')}
         footer={
           <div className="flex justify-end gap-2">
-            <Button variant="outline" className="h-9 px-4 text-xs rounded-xl" onClick={() => setCancelTarget(null)}>
+            <Button variant="outline" className="h-9 px-4 text-xs rounded-md" onClick={() => setCancelTarget(null)}>
               {t('billing.orders.cancelConfirm.no')}
             </Button>
             <Button
               variant="destructive"
               disabled={cancelMutation.isPending}
-              className="h-9 px-4 text-xs rounded-xl bg-mg-danger/10 hover:bg-mg-danger/20 text-mg-danger border border-mg-danger/20"
+              className="h-9 px-4 text-xs rounded-md bg-mg-danger/10 hover:bg-mg-danger/20 text-mg-danger border border-mg-danger/20"
               onClick={() => {
                 if (cancelTarget) {
                   cancelMutation.mutate(cancelTarget)
@@ -211,7 +211,7 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
       </Modal>
 
       {/* Tab 切换 */}
-      <div className="relative p-1 bg-mg-fill-0/50 border border-mg-border/30 rounded-xl flex gap-1 w-fit select-none">
+      <div className="relative p-1 bg-mg-fill-0/50 border border-mg-border/30 rounded-md flex gap-1 w-fit select-none">
         <div
           className={cn(
             'absolute top-1 bottom-1 bg-card-bg rounded-lg transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] z-0 border',
@@ -245,7 +245,7 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
         {/* 充值记录 */}
         <div className={cn(activeTab === 'main' ? 'block' : 'hidden')}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <div className="lg:col-span-2 rounded-2xl border border-mg-border bg-card-bg shadow-sm overflow-hidden">
+            <div className="lg:col-span-2 rounded-lg border border-mg-border bg-card-bg shadow-sm overflow-hidden">
               {ordersQuery.isLoading ? (
                 <div className="py-20 flex justify-center items-center">
                   <div className="w-8 h-8 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
@@ -312,7 +312,7 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
             </div>
 
             {/* 订单详情侧栏 */}
-            <div className="lg:col-span-1 rounded-2xl border border-mg-border bg-card-bg shadow-sm p-5">
+            <div className="lg:col-span-1 rounded-lg border border-mg-border bg-card-bg shadow-sm p-5">
               <div className="flex items-center gap-2 mb-4">
                 <LuReceipt size={14} className="text-brand-base" />
                 <span className="text-xs font-bold text-mg-text-0">{t('billing.orders.detailTitle')}</span>
@@ -360,7 +360,7 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
                       {selectedOrder.promo_code && (
                         <div className="flex justify-between gap-3">
                           <span className="text-mg-text-3">{t('billing.orders.detail.promo')}:</span>
-                          <span className="text-brand-base font-bold bg-brand-glow/10 px-1.5 rounded text-[10px]">{selectedOrder.promo_code}</span>
+                          <span className="text-brand-base font-bold bg-brand-glow/10 px-1.5 rounded-sm text-[10px]">{selectedOrder.promo_code}</span>
                         </div>
                       )}
                     </div>
@@ -372,7 +372,7 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
                       <Button
                         variant="destructive"
                         disabled={cancelMutation.isPending}
-                        className="w-full h-9 text-xs font-bold rounded-xl bg-mg-danger/10 hover:bg-mg-danger/20 text-mg-danger border border-mg-danger/20 active:scale-[0.98] transition-all"
+                        className="w-full h-9 text-xs font-bold rounded-md bg-mg-danger/10 hover:bg-mg-danger/20 text-mg-danger border border-mg-danger/20 active:scale-[0.98] transition-all"
                         onClick={() => setCancelTarget(selectedOrder.order_no)}
                       >
                         {cancelMutation.isPending ? t('billing.rechargeModal.submitting') : t('billing.orders.table.cancel')}
@@ -381,7 +381,7 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
                     {canInvoice && site === 'china' && selectedOrder.invoice_url && (
                       <Button
                         variant="outline"
-                        className="w-full h-9 text-xs font-bold rounded-xl border border-mg-border hover:bg-mg-fill-0 transition-all text-mg-text-1"
+                        className="w-full h-9 text-xs font-bold rounded-md border border-mg-border hover:bg-mg-fill-0 transition-all text-mg-text-1"
                         onClick={() => window.open(selectedOrder.invoice_url!, '_blank')}
                       >
                         {t('billing.orders.detail.viewInvoice')}
@@ -396,7 +396,7 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
 
         {/* 赠送余额明细 */}
         <div className={cn(activeTab === 'gift' ? 'block' : 'hidden')}>
-          <div className="rounded-2xl border border-mg-border bg-card-bg shadow-sm overflow-hidden">
+          <div className="rounded-lg border border-mg-border bg-card-bg shadow-sm overflow-hidden">
             {giftRecords.length === 0 ? (
               <EmptyState icon={<LuGift />} title={t('billing.orders.gift.empty', { defaultValue: '暂无赠送记录' })} />
             ) : (
@@ -442,7 +442,7 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
 
         {/* 奖励记录 */}
         <div className={cn(activeTab === 'reward' ? 'block' : 'hidden')}>
-          <div className="rounded-2xl border border-mg-border bg-card-bg shadow-sm overflow-hidden">
+          <div className="rounded-lg border border-mg-border bg-card-bg shadow-sm overflow-hidden">
             {rewardRecords.length === 0 ? (
               <EmptyState title={rc.empty} />
             ) : (

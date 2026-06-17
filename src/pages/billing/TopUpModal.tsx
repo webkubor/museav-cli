@@ -115,7 +115,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose} />
 
-      <div className="relative bg-card-bg backdrop-blur-xl modal-glow-flow rounded-2xl w-full max-w-[480px] shadow-2xl overflow-visible animate-in fade-in zoom-in-95 duration-300">
+      <div className="relative bg-card-bg backdrop-blur-xl modal-glow-flow rounded-lg w-full max-w-[480px] shadow-2xl overflow-visible animate-in fade-in zoom-in-95 duration-300">
         {/* 头部 */}
         <div className="px-6 pt-5 pb-4 flex justify-between items-center border-b border-mg-border/60">
           <h2 className="text-[15px] font-bold text-mg-text-0">{t('billing.rechargeModal.title')}</h2>
@@ -207,7 +207,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
             variant="brand"
             disabled={numAmount <= 0 || recharge.isPending}
             onClick={handleSubmit}
-            className="w-full h-11 text-sm font-bold rounded-xl"
+            className="w-full h-11 text-sm font-bold rounded-md"
           >
             {recharge.isPending
               ? t('billing.rechargeModal.submitting')

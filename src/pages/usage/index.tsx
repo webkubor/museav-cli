@@ -280,7 +280,7 @@ export default function UsagePage() {
       {filterBar}
 
       {summaryQuery.isError && (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-mg-danger/30 bg-mg-bg-0 px-4 py-3 text-sm text-mg-danger">
+        <div className="flex flex-wrap items-center gap-3 rounded-md border border-mg-danger/30 bg-mg-bg-0 px-4 py-3 text-sm text-mg-danger">
           {t('usage.error.summary')}
           <Button variant="outline" size="sm" onClick={() => summaryQuery.refetch()}>
             {t('usage.retry')}

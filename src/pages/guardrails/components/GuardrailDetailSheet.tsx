@@ -155,8 +155,8 @@ export function GuardrailDetailSheet({
         {!isCreating && sheetTab === 'scope' && (
           detailLoading ? (
             <div className="space-y-4 animate-pulse">
-              <div className="h-5 bg-mg-fill-0 rounded w-1/2" />
-              <div className="h-4 bg-mg-fill-0 rounded w-full" />
+              <div className="h-5 bg-mg-fill-0 rounded-sm w-1/2" />
+              <div className="h-4 bg-mg-fill-0 rounded-sm w-full" />
             </div>
           ) : detail ? (
             <div className="space-y-7">
@@ -187,7 +187,7 @@ export function GuardrailDetailSheet({
         {!isCreating && sheetTab === 'budget' && (
           detailLoading ? (
             <div className="space-y-4 animate-pulse">
-              <div className="h-5 bg-mg-fill-0 rounded w-1/3" />
+              <div className="h-5 bg-mg-fill-0 rounded-sm w-1/3" />
             </div>
           ) : detail && budgetConflict ? (
             // 单条不变量被破坏（接口返回多条生效策略）：直接报错，禁止任何

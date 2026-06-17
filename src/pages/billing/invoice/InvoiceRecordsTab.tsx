@@ -104,7 +104,7 @@ export function InvoiceRecordsTab({
         records.map((r) => {
           const st = STATUS_MAP[r.status]
           return (
-            <div key={r.invoice_no} className="rounded-xl border border-mg-border p-4">
+            <div key={r.invoice_no} className="rounded-md border border-mg-border p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
@@ -158,7 +158,7 @@ export function InvoiceRecordsTab({
         <button
           type="button"
           onClick={loadMore}
-          className="w-full rounded-xl border border-mg-border py-2.5 text-sm font-semibold text-mg-text-1 transition-colors hover:bg-mg-fill-0"
+          className="w-full rounded-md border border-mg-border py-2.5 text-sm font-semibold text-mg-text-1 transition-colors hover:bg-mg-fill-0"
         >
           加载更多
         </button>

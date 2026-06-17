@@ -43,9 +43,9 @@ export const WelcomeBanner: React.FC = () => {
   }
 
   return (
-    <div className="welcome-aurora-card flex flex-wrap items-center gap-6 md:gap-8 p-6 md:p-8 mb-8 rounded-[24px] relative overflow-hidden">
+    <div className="welcome-aurora-card flex flex-wrap items-center gap-6 md:gap-8 p-6 md:p-8 mb-8 rounded-lg relative overflow-hidden">
       {/* Web3 极客装饰网格线 */}
-      <div className="absolute inset-0 overflow-hidden rounded-[24px] pointer-events-none z-0">
+      <div className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none z-0">
         <div className="aurora-grid-pattern" />
       </div>
 

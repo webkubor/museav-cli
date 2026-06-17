@@ -24,7 +24,7 @@ export const SidebarSettingsPopup: React.FC<SidebarSettingsPopupProps> = ({
   return (
     <div
       className={cn(
-        "absolute bg-mg-bg-1/90 backdrop-blur-xl modal-glow-flow rounded-2xl p-2 flex flex-col gap-1 transition-all duration-300 ease-out animate-in fade-in slide-in-from-bottom-2 z-[70]",
+        "absolute bg-mg-bg-1/90 backdrop-blur-xl modal-glow-flow rounded-lg p-2 flex flex-col gap-1 transition-all duration-300 ease-out animate-in fade-in slide-in-from-bottom-2 z-[70]",
         collapsed
           ? "left-full bottom-0 ml-3 w-48"
           : "bottom-full left-2 right-2 mb-2"

@@ -25,8 +25,8 @@ export function OrgManagePanel({
 
   if (!tenantId) {
     return (
-      <div className="bg-mg-bg-0 border border-mg-border/50 border-dashed rounded-2xl p-12 text-center flex flex-col items-center justify-center min-h-[360px] space-y-4">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-base/5 to-brand-base/10 border border-brand-base/10 flex items-center justify-center shadow-inner relative overflow-hidden">
+      <div className="bg-mg-bg-0 border border-mg-border/50 border-dashed rounded-lg p-12 text-center flex flex-col items-center justify-center min-h-[360px] space-y-4">
+        <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-brand-base/5 to-brand-base/10 border border-brand-base/10 flex items-center justify-center shadow-inner relative overflow-hidden">
           <div className="w-6 h-6 rounded-lg border border-brand-base/20 flex items-center justify-center">
             <span className="text-brand-base font-bold text-xs">M</span>
           </div>
@@ -54,7 +54,7 @@ export function OrgManagePanel({
   return (
     <div className="space-y-6">
       {/* 正在管理展示 */}
-      <div className="flex items-center justify-between p-4 bg-mg-bg-0 border border-mg-border/50 rounded-2xl shadow-xs">
+      <div className="flex items-center justify-between p-4 bg-mg-bg-0 border border-mg-border/50 rounded-lg shadow-xs">
         <div className="flex items-center gap-3">
           <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">正在管理</span>
           <div className="flex items-center gap-2">

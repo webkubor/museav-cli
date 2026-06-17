@@ -208,5 +208,5 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function cnCard(isDefault: boolean) {
-  return `rounded-xl border p-4 ${isDefault ? 'border-brand-base/40 bg-brand-base/[0.02]' : 'border-mg-border'}`
+  return `rounded-md border p-4 ${isDefault ? 'border-brand-base/40 bg-brand-base/[0.02]' : 'border-mg-border'}`
 }

@@ -36,7 +36,7 @@ export const FirstChargeLockGate: React.FC<FirstChargeLockGateProps> = ({
   if (!locked) return <>{children}</>
 
   return (
-    <div className={cn('relative rounded-2xl border border-mg-border bg-card-bg overflow-hidden', className)}>
+    <div className={cn('relative rounded-lg border border-mg-border bg-card-bg overflow-hidden', className)}>
       {/* 模糊背景内容 */}
       {children && (
         <div className="pointer-events-none select-none blur-[6px] opacity-30 saturate-50">
@@ -50,7 +50,7 @@ export const FirstChargeLockGate: React.FC<FirstChargeLockGateProps> = ({
         children ? 'absolute inset-0 bg-mg-bg-0/70 backdrop-blur-sm' : ''
       )}>
         <div
-          className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+          className="w-11 h-11 rounded-md flex items-center justify-center shrink-0"
           style={{ backgroundColor: 'var(--brand-glow)', color: 'var(--brand-base)' }}
         >
           <LuLock size={20} />

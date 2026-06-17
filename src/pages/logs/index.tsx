@@ -141,7 +141,7 @@ const ModelSelectCombobox: React.FC<{
       </div>
 
       {isOpen && (
-        <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-mg-bg-1/90 backdrop-blur-xl border border-mg-border/50 rounded-2xl p-2 shadow-[0_16px_36px_-6px_rgba(0,0,0,0.2)] flex flex-col gap-1 max-h-56 overflow-y-auto z-[80] animate-in fade-in slide-in-from-top-2 no-scrollbar">
+        <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-mg-bg-1/90 backdrop-blur-xl border border-mg-border/50 rounded-lg p-2 shadow-[0_16px_36px_-6px_rgba(0,0,0,0.2)] flex flex-col gap-1 max-h-56 overflow-y-auto z-[80] animate-in fade-in slide-in-from-top-2 no-scrollbar">
           {/* Subtle top border highlight */}
           <div className="absolute top-0 left-4 right-4 h-[1.5px] bg-gradient-to-r from-transparent via-brand-base/20 to-transparent rounded-full" />
 
@@ -319,7 +319,7 @@ export default function LogsPage() {
       />
 
       {/* 综合过滤面板 */}
-      <div className="bg-mg-bg-0 p-5 rounded-xl border border-mg-border/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end shadow-sm select-none">
+      <div className="bg-mg-bg-0 p-5 rounded-md border border-mg-border/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end shadow-sm select-none">
         <div className="flex flex-col gap-1.5">
           <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">{t('logs.filter.statusLabel')}</label>
           <Select
@@ -380,7 +380,7 @@ export default function LogsPage() {
       </div>
 
       {/* 极简细线条无框 Table 视图 */}
-      <div className="rounded-xl border border-mg-border/60 overflow-x-auto bg-mg-bg-0">
+      <div className="rounded-md border border-mg-border/60 overflow-x-auto bg-mg-bg-0">
         {isLoading ? (
           <TableSkeleton />
         ) : filteredLogs.length === 0 ? (
@@ -532,7 +532,7 @@ export default function LogsPage() {
             </div>
 
             {selectedLog.error && (
-              <div className="border border-mg-danger/10 bg-mg-danger/[0.03] p-4 rounded-xl space-y-2 border-l-4 border-l-mg-danger">
+              <div className="border border-mg-danger/10 bg-mg-danger/[0.03] p-4 rounded-md space-y-2 border-l-4 border-l-mg-danger">
                 <p className="text-xs font-bold text-mg-danger flex items-center gap-1.5">
                   <IoAlertCircle className="w-4 h-4 shrink-0" />
                   {t('logs.detail.errorTitle')}

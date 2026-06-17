@@ -238,7 +238,7 @@ export default function ModelsCatalogPage() {
           code: f.code,
           label,
           icon: iconVendor
-            ? <ModelIcon model={{ display_name: label, vendor: iconVendor }} size={16} rounded="rounded" />
+            ? <ModelIcon model={{ display_name: label, vendor: iconVendor }} size={16} rounded="rounded-sm" />
             : undefined,
         }
       }),
@@ -489,7 +489,7 @@ function ModelCatalogCard({ model, isZh, copied, onCopy, onTry, onCompare }: Mod
   return (
     <article className="model-catalog-card">
       <div className="model-catalog-card-head">
-        <ModelIcon model={model} size={42} rounded="rounded-xl" className="model-catalog-card-icon" />
+        <ModelIcon model={model} size={42} rounded="rounded-md" className="model-catalog-card-icon" />
         <div className="model-catalog-card-title">
           <span>{model.provider || 'ModelGo'}</span>
           <h3 title={model.display_name}>{model.display_name}</h3>
@@ -636,7 +636,7 @@ function CatalogInsightPanel({ rankingItems, hasRealRanking, freeModels, recentM
           title={isZh ? '充值后解锁免费模型' : 'Unlock free models'}
           desc={isZh ? '首次充值任意金额，即可免费调用此分类下的模型。' : 'Complete your first top-up to access free-tier models at no cost.'}
           cta={isZh ? '去充值' : 'Top up now'}
-          className="rounded-xl border-0"
+          className="rounded-md border-0"
         >
           <div className="catalog-mini-model-list">
             {freeModels.length === 0 ? (

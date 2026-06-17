@@ -155,7 +155,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
       >
         <div className="flex flex-col gap-7 py-3">
           {/* 作用域 Tab — 无 label，直接在顶部 */}
-          <div className="flex gap-1 p-1 rounded-xl bg-mg-fill-0 border border-mg-border">
+          <div className="flex gap-1 p-1 rounded-md bg-mg-fill-0 border border-mg-border">
             {SCOPE_OPTIONS.map((opt) => {
               const active = scope === opt.value
               return (
@@ -299,7 +299,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
               customLabel="选择截止时间"
               hideStartDate={true}
               placeholder="选择过期失效时间"
-              className="w-full rounded-xl h-10 justify-between"
+              className="w-full rounded-md h-10 justify-between"
             />
           </div>
         </div>

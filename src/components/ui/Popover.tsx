@@ -99,7 +99,7 @@ export const Popover: React.FC<PopoverProps> = ({
           ref={panelRef}
           style={style}
           className={cn(
-            "p-4 rounded-xl glass-card-glow border border-mg-border shadow-xl select-none",
+            "p-4 rounded-md glass-card-glow border border-mg-border shadow-xl select-none",
             "animate-in zoom-in-95 fade-in-0 duration-150",
             className
           )}

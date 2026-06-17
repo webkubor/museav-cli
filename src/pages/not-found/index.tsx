@@ -7,8 +7,8 @@ export default function NotFoundPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-mg-bg-1 px-6">
-      <div className="w-full max-w-sm rounded-2xl border border-mg-border bg-card-bg p-8 text-center shadow-sm space-y-5">
-        <div className="mx-auto w-14 h-14 rounded-2xl bg-mg-fill-1 border border-mg-border flex items-center justify-center">
+      <div className="w-full max-w-sm rounded-lg border border-mg-border bg-card-bg p-8 text-center shadow-sm space-y-5">
+        <div className="mx-auto w-14 h-14 rounded-lg bg-mg-fill-1 border border-mg-border flex items-center justify-center">
           <LuCompass size={26} className="text-mg-text-2" />
         </div>
         <div className="space-y-1.5">
@@ -17,7 +17,7 @@ export default function NotFoundPage() {
             你访问的页面不存在或已被移除。
           </p>
         </div>
-        <Button variant="brand" onClick={() => navigate('/', { replace: true })} className="w-full h-10 rounded-xl font-semibold">
+        <Button variant="brand" onClick={() => navigate('/', { replace: true })} className="w-full h-10 rounded-md font-semibold">
           返回首页
         </Button>
       </div>

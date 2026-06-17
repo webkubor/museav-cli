@@ -300,7 +300,7 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
   return (
     <>
       {forwards.length > 0 && (
-        <div className="rounded-xl border border-mg-border overflow-hidden bg-card-bg">
+        <div className="rounded-md border border-mg-border overflow-hidden bg-card-bg">
           <div className="px-5 py-3 border-b border-mg-border">
             <p className="text-[11px] font-bold text-mg-text-2 uppercase tracking-widest">已配置的 Destination</p>
           </div>
@@ -340,7 +340,7 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
         </div>
       )}
 
-      <div className="rounded-xl border border-mg-border overflow-hidden bg-card-bg">
+      <div className="rounded-md border border-mg-border overflow-hidden bg-card-bg">
         <div className="px-5 py-3 border-b border-mg-border">
           <p className="text-[11px] font-bold text-mg-text-2 uppercase tracking-widest">可用平台</p>
         </div>
@@ -444,7 +444,7 @@ function ObservabilityContent({
   return (
     <div className="max-w-3xl space-y-6">
       {/* 输入/输出日志 + 广播转发：两个并列开关（同级，不嵌套） */}
-      <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border overflow-hidden">
+      <div className="card-shadow-adaptive bg-card-bg rounded-md border border-mg-border overflow-hidden">
         <ToggleRow
           title={t('observability.logging.title')}
           description={t('observability.logging.desc')}
@@ -497,10 +497,10 @@ export default function ObservabilityPage() {
       <PageHeader title={t('observability.title')} />
 
       {loggingQuery.isLoading && (
-        <div className="card-shadow-adaptive bg-card-bg rounded-xl border border-mg-border p-6 max-w-3xl space-y-4 animate-pulse">
-          <div className="h-5 bg-mg-fill-0 rounded w-1/3" />
-          <div className="h-4 bg-mg-fill-0 rounded w-full" />
-          <div className="h-4 bg-mg-fill-0 rounded w-2/3" />
+        <div className="card-shadow-adaptive bg-card-bg rounded-md border border-mg-border p-6 max-w-3xl space-y-4 animate-pulse">
+          <div className="h-5 bg-mg-fill-0 rounded-sm w-1/3" />
+          <div className="h-4 bg-mg-fill-0 rounded-sm w-full" />
+          <div className="h-4 bg-mg-fill-0 rounded-sm w-2/3" />
         </div>
       )}
 

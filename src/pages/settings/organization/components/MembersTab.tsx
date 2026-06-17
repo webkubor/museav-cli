@@ -40,7 +40,7 @@ export function MembersTab({ tenantId, canManage }: { tenantId: string; canManag
 
   return (
     <>
-      <div className="bg-mg-bg-0 border border-mg-border/50 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg overflow-hidden shadow-sm">
         {/* 头部 */}
         <div className="flex items-center justify-between p-4 border-b border-mg-border/50 bg-mg-fill-0/20">
           <span className="text-xs font-bold text-mg-text-0">组织成员</span>

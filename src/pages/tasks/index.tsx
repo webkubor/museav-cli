@@ -229,7 +229,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
           </div>
 
           {/* 字段列表 */}
-          <div className="rounded-xl border border-mg-border bg-card-bg px-4">
+          <div className="rounded-md border border-mg-border bg-card-bg px-4">
             <DetailRow label="任务 ID"   value={task.gateway_request_id} mono />
             <DetailRow
               label="模型"
@@ -286,7 +286,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
 
           {/* 产物预览：视频任务成功态，直接用网关 content 端点播放 */}
           {showVideo && (
-            <div className="rounded-xl border border-mg-border bg-card-bg p-3">
+            <div className="rounded-md border border-mg-border bg-card-bg p-3">
               <p className="text-[11px] font-bold text-mg-text-2 mb-2 uppercase tracking-wide">产物预览</p>
               <video
                 key={videoUrl}
@@ -302,7 +302,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
 
           {/* 产物链接 + 下载 */}
           {showVideo && (
-            <div className="rounded-xl border border-mg-border bg-card-bg p-4 space-y-2.5">
+            <div className="rounded-md border border-mg-border bg-card-bg p-4 space-y-2.5">
               <p className="text-[11px] font-bold text-mg-text-2 uppercase tracking-wide">产物链接</p>
               <button
                 type="button"
@@ -341,7 +341,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
 
           {/* 产物已过期 / 已被清理 */}
           {gone && kind === 'video' && isTaskDone(task.status) && (
-            <div className="rounded-xl border border-mg-border bg-card-bg p-6 flex flex-col items-center gap-2 text-mg-text-3">
+            <div className="rounded-md border border-mg-border bg-card-bg p-6 flex flex-col items-center gap-2 text-mg-text-3">
               <LuVideoOff size={32} />
               <p className="text-[13px] font-semibold">产物已过期</p>
               <p className="text-[11px] text-mg-text-2">视频文件已自动清理，不支持预览与下载</p>
@@ -350,7 +350,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
 
           {/* Prompt */}
           {task.prompt && (
-            <div className="rounded-xl border border-mg-border bg-card-bg p-4">
+            <div className="rounded-md border border-mg-border bg-card-bg p-4">
               <p className="text-[11px] font-bold text-mg-text-2 mb-2 uppercase tracking-wide">Prompt</p>
               <p className="text-[13px] text-mg-text-1 leading-relaxed">{task.prompt}</p>
             </div>
@@ -358,7 +358,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
 
           {/* 失败原因 */}
           {task.status === 'failed' && task.error_message && (
-            <div className="rounded-xl border border-[var(--mg-danger)]/20 bg-[var(--mg-danger)]/5 p-4">
+            <div className="rounded-md border border-[var(--mg-danger)]/20 bg-[var(--mg-danger)]/5 p-4">
               <p className="text-[11px] font-bold text-[var(--mg-danger)] mb-1.5 uppercase tracking-wide">失败原因</p>
               <p className="text-[12px] text-mg-text-1 leading-relaxed">{task.error_message}</p>
             </div>
@@ -509,7 +509,7 @@ export default function TasksPage() {
       </p>
 
       {/* 表格 */}
-      <div className="rounded-xl border border-mg-border overflow-hidden">
+      <div className="rounded-md border border-mg-border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

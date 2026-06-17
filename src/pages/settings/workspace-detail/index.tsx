@@ -74,7 +74,7 @@ export default function WorkspaceDetailPage() {
         ) : (
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-bold text-mg-text-0 tracking-tight">{ws.name}</h1>
-            <span className="font-mono text-xs bg-mg-fill-0 px-2 py-0.5 rounded border border-mg-border/60 text-mg-text-2">
+            <span className="font-mono text-xs bg-mg-fill-0 px-2 py-0.5 rounded-sm border border-mg-border/60 text-mg-text-2">
               {ws.workspace_id}
             </span>
             {ws.is_default && <Badge variant="secondary">{t('workspaces.defaultBadge')}</Badge>}
@@ -120,13 +120,13 @@ function OverviewTab({ ws }: { ws: WorkspaceDetail }) {
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {cards.map((c) => (
-          <div key={c.label} className="bg-mg-bg-0 border border-mg-border/50 rounded-2xl p-5 shadow-xs">
+          <div key={c.label} className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-5 shadow-xs">
             <div className="text-[11px] font-bold text-mg-text-2 uppercase tracking-wider mb-2">{c.label}</div>
             <div className="text-xl font-bold text-mg-text-0">{c.value}</div>
           </div>
         ))}
       </div>
-      <div className="bg-mg-bg-0 border border-mg-border/50 rounded-2xl p-6 shadow-xs grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-6 shadow-xs grid grid-cols-1 md:grid-cols-2 gap-6">
         {infos.map((i) => (
           <div key={i.label} className="space-y-1">
             <div className="text-[10px] font-bold text-mg-text-1 uppercase tracking-wider">{i.label}</div>
@@ -216,7 +216,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5" style={{ minHeight: 420 }}>
       {/* 项目成员 */}
-      <div className="bg-card-bg border border-mg-border rounded-xl overflow-hidden flex flex-col">
+      <div className="bg-card-bg border border-mg-border rounded-md overflow-hidden flex flex-col">
         <div className="px-4 py-3 border-b border-mg-border flex items-center gap-2 bg-mg-fill-0/20 shrink-0">
           <LuUsers size={14} className="text-mg-text-2" />
           <span className="text-[13px] font-bold text-mg-text-0">{t('workspaces.detail.members.title')}</span>
@@ -244,7 +244,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
                     <Select
                       value={m.role}
                       onChange={(role) => setRoleChangeTarget({ accountId: m.account.account_id, role })}
-                      className="h-6 text-[10px] w-20 rounded"
+                      className="h-6 text-[10px] w-20 rounded-sm"
                     >
                       {WS_ROLE_OPTIONS.map((o) => (
                         <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>
@@ -257,7 +257,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
                     <button
                       type="button"
                       onClick={() => setRemoveTarget(m.account.account_id)}
-                      className="shrink-0 p-1 rounded text-mg-text-2 hover:text-mg-danger hover:bg-mg-danger/5 transition-colors cursor-pointer border-none bg-transparent"
+                      className="shrink-0 p-1 rounded-sm text-mg-text-2 hover:text-mg-danger hover:bg-mg-danger/5 transition-colors cursor-pointer border-none bg-transparent"
                       title={t('workspaces.detail.members.remove')}
                     >
                       <LuX size={13} />
@@ -271,7 +271,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
       </div>
 
       {/* 从企业成员中添加 */}
-      <div className="bg-card-bg border border-mg-border rounded-xl overflow-hidden flex flex-col">
+      <div className="bg-card-bg border border-mg-border rounded-md overflow-hidden flex flex-col">
         <div className="px-4 py-3 border-b border-mg-border flex items-center gap-2 bg-mg-fill-0/20 shrink-0">
           <LuBuilding2 size={14} className="text-mg-text-2" />
           <span className="text-[13px] font-bold text-mg-text-0">{t('workspaces.detail.members.addTitle')}</span>
@@ -424,7 +424,7 @@ function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => 
   return (
     <div className="space-y-6 max-w-2xl">
       {/* 改名 */}
-      <div className="bg-mg-bg-0 border border-mg-border/50 rounded-2xl p-6 shadow-xs space-y-3">
+      <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-6 shadow-xs space-y-3">
         <label className="text-[10px] font-bold text-mg-text-1 uppercase tracking-wider block">
           {t('workspaces.detail.settings.renameLabel')}
         </label>
@@ -444,7 +444,7 @@ function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => 
       </div>
 
       {/* 危险操作 */}
-      <div className="bg-mg-bg-0 border border-mg-danger/30 rounded-2xl p-6 shadow-xs space-y-3">
+      <div className="bg-mg-bg-0 border border-mg-danger/30 rounded-lg p-6 shadow-xs space-y-3">
         <div className="text-xs font-bold text-mg-danger uppercase tracking-wider">
           {t('workspaces.detail.settings.dangerTitle')}
         </div>

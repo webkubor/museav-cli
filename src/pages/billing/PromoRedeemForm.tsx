@@ -43,13 +43,13 @@ export function PromoRedeemForm({ tenantId }: { tenantId: string }) {
         onChange={(e) => setCode(e.target.value)}
         placeholder={t('billing.promo.placeholder')}
         disabled={redeem.isPending}
-        className="flex-1 min-w-0 h-10 px-3 rounded-xl border border-mg-border bg-mg-fill-0/30 hover:bg-mg-fill-0 focus:bg-mg-fill-0 text-xs focus:outline-none focus:ring-1 focus:ring-brand-glow focus:border-brand-base transition-all font-medium text-mg-text-0"
+        className="flex-1 min-w-0 h-10 px-3 rounded-md border border-mg-border bg-mg-fill-0/30 hover:bg-mg-fill-0 focus:bg-mg-fill-0 text-xs focus:outline-none focus:ring-1 focus:ring-brand-glow focus:border-brand-base transition-all font-medium text-mg-text-0"
       />
       <Button
         type="submit"
         variant="outline"
         disabled={redeem.isPending || !code.trim()}
-        className="h-10 px-4 text-xs font-semibold rounded-xl hover:bg-mg-fill-0 border border-mg-border shrink-0 transition-all select-none text-mg-text-1"
+        className="h-10 px-4 text-xs font-semibold rounded-md hover:bg-mg-fill-0 border border-mg-border shrink-0 transition-all select-none text-mg-text-1"
       >
         {redeem.isPending ? t('billing.rechargeModal.submitting') : t('billing.promo.submit')}
       </Button>

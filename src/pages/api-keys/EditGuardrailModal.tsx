@@ -188,10 +188,10 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
                   <LuShieldCheck className="w-3.5 h-3.5 text-green-500 shrink-0" />
                   <span className="text-sm font-semibold text-mg-text-0">{g.name}</span>
                   {g.is_default && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-mg-primary/10 text-mg-primary">默认</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-sm bg-mg-primary/10 text-mg-primary">默认</span>
                   )}
                   {currentBoundId === gId && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-500/10 text-green-600">当前</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-sm bg-green-500/10 text-green-600">当前</span>
                   )}
                 </div>
               </button>

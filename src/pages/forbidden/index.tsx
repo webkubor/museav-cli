@@ -13,8 +13,8 @@ export default function ForbiddenPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-mg-bg-1 px-6">
-      <div className="w-full max-w-sm rounded-2xl border border-mg-border bg-card-bg p-8 text-center shadow-sm space-y-5">
-        <div className="mx-auto w-14 h-14 rounded-2xl bg-mg-warning/10 border border-mg-warning/20 flex items-center justify-center">
+      <div className="w-full max-w-sm rounded-lg border border-mg-border bg-card-bg p-8 text-center shadow-sm space-y-5">
+        <div className="mx-auto w-14 h-14 rounded-lg bg-mg-warning/10 border border-mg-warning/20 flex items-center justify-center">
           <LuShieldAlert size={26} className="text-mg-warning" />
         </div>
         <div className="space-y-1.5">
@@ -23,7 +23,7 @@ export default function ForbiddenPage() {
             你的账号当前不属于任何组织，无权访问控制台。请联系管理员邀请加入后再使用。
           </p>
         </div>
-        <Button variant="outline" onClick={signOut} className="w-full h-10 rounded-xl font-semibold">
+        <Button variant="outline" onClick={signOut} className="w-full h-10 rounded-md font-semibold">
           退出登录
         </Button>
       </div>

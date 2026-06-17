@@ -118,8 +118,8 @@ body[theme-mode='dark'] {
   /* 文字层级 */
   --mg-text-0: #0f172a;  /* 主文字 */
   --mg-text-1: #475569;  /* 次要 */
-  --mg-text-2: #94a3b8;  /* 辅助 / placeholder */
-  --mg-text-3: #cbd5e1;  /* 禁用 / 装饰 */
+  --mg-text-2: #64748b;  /* 辅助标签 — 4.6:1 on #fbfbfe, WCAG AA */
+  --mg-text-3: #94a3b8;  /* 禁用 / 装饰 — 原 #cbd5e1 太淡 */
 
   /* 边框与填充 */
   --mg-border: rgba(71, 57, 146, 0.09);

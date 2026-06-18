@@ -13,7 +13,6 @@ dist-ssr
 *.local
 
 # Claude Code
-.claude/worktrees/
 
 # Editor directories and files
 .vscode/*
@@ -33,7 +32,9 @@ dist-ssr
 /*.jpg
 /*.jpeg
 /*.webp
-.claude/settings.local.json
 
 # vite-plugin-agent-eyes 运行时生成（自愈遥测），不入库
 /log/
+
+# 个人 agent 工作区,不随项目仓上传(团队 skill 走 ai-skills,个人走 ~/.claude)
+.claude/

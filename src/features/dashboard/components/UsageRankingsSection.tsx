@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/auth'
 import { useNavigate } from 'react-router-dom'
 import { getUsageRankingsModels, getUsageRankingsApiKeys } from '@/services/usage'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
+import { Money } from '@/components/ui/Money'
 import type { UsageRankingItem } from '@/types'
 import './dashboard-rankings-section.css'
 
@@ -12,6 +13,8 @@ interface DisplayItem {
   rank: string
   name: string
   meta: string
+  spendAmount?: string
+  spendCurrency?: string
   key: string
   iconModel?: ModelIconLike
 }
@@ -19,7 +22,7 @@ interface DisplayItem {
 function toDisplay(
   item: UsageRankingItem,
   index: number,
-  iconMap: Map<string, ModelIconLike>
+  type: 'models' | 'api-keys'
 ): DisplayItem {
   const tokens = item.tokens ? `${(item.tokens / 1000).toFixed(1)}K tokens` : ''
   const calls = `${item.requests ?? 0} calls`
@@ -27,9 +30,12 @@ function toDisplay(
     rank: String(item.rank ?? index + 1).padStart(2, '0'),
     name: item.name || item.key || '—',
     meta: tokens ? `${tokens} · ${calls}` : calls,
+    spendAmount: item.spend?.amount,
+    spendCurrency: item.spend?.currency,
     key: item.key ?? '',
-    iconModel: item.key
-      ? (iconMap.get(item.key) ?? { display_name: item.name || item.key, vendor: item.key })
+    // 仅模型排行用模型图标；API Key 排行用 key 图标（cfg.icon），避免把 key id 当模型渲染
+    iconModel: type === 'models' && item.key
+      ? { display_name: item.name || item.key, vendor: item.key }
       : undefined,
   }
 }
@@ -43,7 +49,7 @@ function getMonthRange() {
 const CONFIG = {
   models: {
     title: '模型消费排行',
-    caption: '本月模型调用量排行',
+    caption: '本月',
     icon: <LuBot aria-hidden />,
     emptyTitle: '暂无数据',
     emptyDesc: '本月还没有模型调用记录',
@@ -52,7 +58,7 @@ const CONFIG = {
   },
   'api-keys': {
     title: 'API Key 消费排行',
-    caption: '本月 API Key 调用量排行',
+    caption: '本月',
     icon: <LuKeyRound aria-hidden />,
     emptyTitle: '暂无数据',
     emptyDesc: '本月还没有 API Key 调用记录',
@@ -77,7 +83,7 @@ export function UsageRankingsSection({ type }: { type: 'models' | 'api-keys' }) 
     staleTime: 5 * 60_000,
   })
 
-  const items = (data?.items ?? []).map((item, i) => toDisplay(item, i, new Map()))
+  const items = (data?.items ?? []).map((item, i) => toDisplay(item, i, type))
 
   function handleRowClick(item: DisplayItem) {
     if (type === 'models' && item.key) {
@@ -124,6 +130,11 @@ export function UsageRankingsSection({ type }: { type: 'models' | 'api-keys' }) 
                 <strong>{item.name}</strong>
                 <small>{item.meta}</small>
               </span>
+              <Money
+                amount={item.spendAmount}
+                currency={item.spendCurrency}
+                className="dashboard-ranking-value"
+              />
             </div>
           ))
         )}

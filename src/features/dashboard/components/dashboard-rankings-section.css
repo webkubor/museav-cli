@@ -60,7 +60,7 @@
 
 .dashboard-ranking-row {
   display: grid;
-  grid-template-columns: 28px 36px minmax(0, 1fr);
+  grid-template-columns: 28px 36px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   padding: 11px 4px;
@@ -125,6 +125,11 @@
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 消费金额 —— 排行的核心值；外观由 <Money> 组件统一管，CSS 只负责定位 */
+.dashboard-ranking-value {
+  justify-self: end;
 }
 
 .dashboard-ranking-note {

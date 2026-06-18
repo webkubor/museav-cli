@@ -64,9 +64,12 @@ export function getReferralOverview(tenantId: string): Promise<ReferralOverview>
   return get<ReferralOverview>(`tenants/${tenantId}/referral/overview`)
 }
 
-/** GET /tenants/:tenantId/referral/invitees — 被邀请人列表 */
-export function listReferralInvitees(tenantId: string): Promise<ReferralInvitee[]> {
-  return get<ReferralInvitee[]>(`tenants/${tenantId}/referral/invitees`)
+/** GET /tenants/:tenantId/referral/invitees — 被邀请人列表，游标翻页 */
+export function listReferralInvitees(
+  tenantId: string,
+  params?: { cursor?: string; page_size?: number }
+): Promise<CursorPage<ReferralInvitee>> {
+  return get<CursorPage<ReferralInvitee>>(`tenants/${tenantId}/referral/invitees`, params)
 }
 
 /** GET /tenants/:tenantId/referral/reward-records — 奖励记录（即返佣流水），游标翻页 */

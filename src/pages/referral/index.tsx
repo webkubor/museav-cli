@@ -78,12 +78,25 @@ export default function ReferralPage() {
     enabled: !!tenantId,
     staleTime: 60_000,
   })
-  const { data: invitees = [] } = useQuery({
-    queryKey: ['referral', 'invitees', tenantId],
-    queryFn: () => listReferralInvitees(tenantId),
+  // 被邀请人列表——游标翻页（替代旧的客户端切片）。pager 必须与 useQuery 同级，
+  // 这样点击翻页才能驱动 queryKey 变化并触发重新拉取。
+  const inviteesPager = useCursorPager()
+  const { data: inviteesPage, isFetching: inviteesFetching } = useQuery({
+    queryKey: ['referral', 'invitees', tenantId, inviteesPager.page, inviteesPager.cursor],
+    queryFn: () => listReferralInvitees(tenantId, { cursor: inviteesPager.cursor, page_size: 15 }),
     enabled: !!tenantId,
     staleTime: 60_000,
+    placeholderData: keepPreviousData,
   })
+  const invitees = inviteesPage?.items ?? []
+  const inviteesHasMore = Boolean(inviteesPage?.has_more && inviteesPage?.next_cursor)
+
+  // 切租户后回到第一页：游标按租户隔离，旧 cursor 发给新租户会拿错数据。
+  const { reset: resetInviteesPager } = inviteesPager
+  useEffect(() => {
+    resetInviteesPager()
+  }, [tenantId, resetInviteesPager])
+
   // 返佣流水——游标翻页（替代旧的客户端切片）。pager 必须与 useQuery 同级，
   // 这样点击翻页才能驱动 queryKey 变化并触发重新拉取。
   const rewardPager = useCursorPager()
@@ -449,7 +462,16 @@ export default function ReferralPage() {
             </TabsList>
           </div>
           <TabsContent value="invitees" className="mt-0">
-            <InviteesTable invitees={invitees} text={text} isQualified={isQualified} />
+            <InviteesTable
+              invitees={invitees}
+              text={text}
+              isQualified={isQualified}
+              page={inviteesPager.page}
+              hasMore={inviteesHasMore}
+              loading={inviteesFetching}
+              onPrev={inviteesPager.prev}
+              onNext={() => inviteesPager.next(inviteesPage?.next_cursor)}
+            />
           </TabsContent>
           <TabsContent value="commissions" className="mt-0">
             <CommissionsTable
@@ -618,10 +640,28 @@ function WindowBadge({ expireAt, fallback, isZh }: { expireAt?: string; fallback
   )
 }
 
-function InviteesTable({ invitees, text, isQualified }: { invitees: ReferralInvitee[]; text: TextCopy; isQualified: boolean }) {
+function InviteesTable({
+  invitees,
+  text,
+  isQualified,
+  page,
+  hasMore,
+  loading,
+  onPrev,
+  onNext,
+}: {
+  /** 当前页的被邀请人（后端游标翻页，已是单页数据） */
+  invitees: ReferralInvitee[]
+  text: TextCopy
+  isQualified: boolean
+  page: number
+  hasMore: boolean
+  loading: boolean
+  onPrev: () => void
+  onNext: () => void
+}) {
   const { i18n } = useTranslation()
   const isZh = i18n.language.startsWith('zh')
-  const { paged, page, setPage, total, pageSize } = useClientPage(invitees)
   if (!isQualified) {
     return (
       <div className="py-12 flex flex-col items-center gap-3 text-center">
@@ -651,7 +691,7 @@ function InviteesTable({ invitees, text, isQualified }: { invitees: ReferralInvi
             </TableCell>
           </TableRow>
         ) : (
-          paged.map((inv) => {
+          invitees.map((inv) => {
             const tierName = inv.tierName ?? inv.tier_name ?? inv.currentTier
             const tierRate = inv.tierRate ?? inv.tier_rate
             const windowEnd = inv.windowExpireAt ?? inv.commissionWindowEnd ?? inv.commission_window_end
@@ -676,8 +716,16 @@ function InviteesTable({ invitees, text, isQualified }: { invitees: ReferralInvi
         )}
       </TableBody>
     </Table>
-    {total > pageSize && (
-      <Pagination mode="page" page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+    {/* 翻页器移出空状态分支：空的第 N 页也要能点上一页（#214）。 */}
+    {(page > 1 || hasMore) && (
+      <Pagination
+        mode="cursor"
+        page={page}
+        hasMore={hasMore}
+        loading={loading}
+        onPrev={onPrev}
+        onNext={onNext}
+      />
     )}
     </>
   )

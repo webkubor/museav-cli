@@ -6,7 +6,7 @@ import { MemoryRouter } from 'react-router-dom'
 
 import type { CursorPage, TenantBrief } from '@/types'
 import type { ReferralOverview } from '@/services/referral'
-import type { ReferralCommissionRecord } from '@/pages/referral/referral-data'
+import type { ReferralCommissionRecord, ReferralInvitee } from '@/pages/referral/referral-data'
 
 // reward-records is now a server-side cursor page; default = single empty page.
 const emptyRewardPage: CursorPage<ReferralCommissionRecord> = {
@@ -16,9 +16,23 @@ const emptyRewardPage: CursorPage<ReferralCommissionRecord> = {
   next_cursor: null,
 }
 
+// invitees is now a server-side cursor page; default = single empty page.
+const emptyInviteesPage: CursorPage<ReferralInvitee> = {
+  items: [],
+  page_size: 15,
+  has_more: false,
+  next_cursor: null,
+}
+
 // ── service mock: the page is a read+mutate view over @/services/referral ────
 const getReferralOverview = vi.fn<(tenantId: string) => Promise<ReferralOverview>>()
-const listReferralInvitees = vi.fn().mockResolvedValue([])
+const listReferralInvitees =
+  vi.fn<
+    (
+      tenantId: string,
+      params?: { cursor?: string; page_size?: number }
+    ) => Promise<CursorPage<ReferralInvitee>>
+  >().mockResolvedValue(emptyInviteesPage)
 const listRewardRecords =
   vi.fn<
     (
@@ -33,7 +47,8 @@ const requestWithdrawal = vi.fn().mockResolvedValue({})
 
 vi.mock('@/services/referral', () => ({
   getReferralOverview: (tenantId: string) => getReferralOverview(tenantId),
-  listReferralInvitees: (tenantId: string) => listReferralInvitees(tenantId),
+  listReferralInvitees: (tenantId: string, params?: { cursor?: string; page_size?: number }) =>
+    listReferralInvitees(tenantId, params),
   listRewardRecords: (tenantId: string, params?: { cursor?: string; page_size?: number }) =>
     listRewardRecords(tenantId, params),
   listWithdrawals: (tenantId: string) => listWithdrawals(tenantId),
@@ -117,7 +132,7 @@ function renderPage() {
 
 beforeEach(() => {
   getReferralOverview.mockReset().mockResolvedValue(OVERVIEW)
-  listReferralInvitees.mockClear()
+  listReferralInvitees.mockReset().mockResolvedValue(emptyInviteesPage)
   listRewardRecords.mockReset().mockResolvedValue(emptyRewardPage)
   listWithdrawals.mockClear()
   transferRewardToBalance.mockReset()
@@ -148,7 +163,10 @@ describe('ReferralPage — active-tenant scoping (#157)', () => {
     expect(getReferralOverview).toHaveBeenCalledWith(ORG_TENANT_ID)
     expect(getReferralOverview).not.toHaveBeenCalledWith(DEFAULT_TENANT_ID)
     // invitees + withdrawals queries are scoped identically
-    expect(listReferralInvitees).toHaveBeenCalledWith(ORG_TENANT_ID)
+    expect(listReferralInvitees).toHaveBeenCalledWith(ORG_TENANT_ID, {
+      cursor: undefined,
+      page_size: 15,
+    })
     expect(listWithdrawals).toHaveBeenCalledWith(ORG_TENANT_ID)
   })
 
@@ -284,6 +302,103 @@ describe('ReferralPage — render', () => {
     expect(empties.length).toBeGreaterThan(0)
     // exactly one cell carries it within the active table body
     expect(within(empties[0].closest('table') as HTMLElement).getByText('暂无记录')).toBeInTheDocument()
+  })
+})
+
+// ── invitees pagination — server-side cursor flow ────────────────────────────
+
+describe('ReferralPage — invitees cursor pagination', () => {
+  // 23 invitees served by the backend over 2 cursor pages at page_size=15 (15 / 8).
+  const INVITEES: ReferralInvitee[] = Array.from({ length: 23 }, (_, i) => ({
+    name: `invitee-${i}`,
+    email: `invitee-${i}@example.com`,
+    registeredAt: `2026-06-${String(i + 1).padStart(2, '0')}`,
+    totalSpend: '100',
+    commission: '10',
+    tierName: '成长伙伴',
+    tierRate: 10,
+  }))
+
+  // Cursor-aware fake: first page (no cursor) → 0..14 has_more; cursor 'c1' → 15..22 last.
+  function pageInvitees(cursor: string | undefined): CursorPage<ReferralInvitee> {
+    if (!cursor) {
+      return { items: INVITEES.slice(0, 15), page_size: 15, has_more: true, next_cursor: 'c1' }
+    }
+    return { items: INVITEES.slice(15), page_size: 15, has_more: false, next_cursor: null }
+  }
+  const cursorMock = (
+    _tenantId: string,
+    params?: { cursor?: string; page_size?: number }
+  ) => Promise.resolve(pageInvitees(params?.cursor))
+
+  // Invitees is the default tab; scope to its table via the unique 返佣窗口 header.
+  async function openInviteesTab() {
+    renderPage()
+    await screen.findByText('推荐计划')
+    const windowHeader = await screen.findByText('返佣窗口')
+    return windowHeader.closest('table') as HTMLElement
+  }
+
+  it('renders only the first backend page with a working cursor pager', async () => {
+    listReferralInvitees.mockImplementation(cursorMock)
+    const table = await openInviteesTab()
+
+    // page 1: first cursor request carries no cursor + page_size=15
+    await waitFor(() => expect(within(table).getByText('invitee-0')).toBeInTheDocument())
+    expect(listReferralInvitees).toHaveBeenCalledWith(ORG_TENANT_ID, {
+      cursor: undefined,
+      page_size: 15,
+    })
+    // 15 body rows + 1 header; the cursor page badge shows
+    expect(within(table).getAllByRole('row')).toHaveLength(16)
+    expect(screen.getByText('common.pagination.page')).toBeInTheDocument()
+    expect(within(table).queryByText('invitee-15')).not.toBeInTheDocument()
+    // next enabled (has_more), prev disabled on page 1
+    expect(screen.getByRole('button', { name: 'common.pagination.next' })).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: 'common.pagination.prev' })).toBeDisabled()
+  })
+
+  it('pages forward via next_cursor to the last page and back', async () => {
+    listReferralInvitees.mockImplementation(cursorMock)
+    const table = await openInviteesTab()
+    await waitFor(() => expect(within(table).getByText('invitee-0')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.pagination.next' }))
+    // page 2 requests the next_cursor returned by page 1
+    await waitFor(() =>
+      expect(listReferralInvitees).toHaveBeenCalledWith(ORG_TENANT_ID, {
+        cursor: 'c1',
+        page_size: 15,
+      })
+    )
+    await waitFor(() => expect(within(table).getByText('invitee-22')).toBeInTheDocument())
+    // last page: 8 body rows + 1 header
+    expect(within(table).getAllByRole('row')).toHaveLength(9)
+    // next disabled on the last page (has_more=false); prev walks back
+    expect(screen.getByRole('button', { name: 'common.pagination.next' })).toBeDisabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.pagination.prev' }))
+    await waitFor(() => expect(within(table).getByText('invitee-0')).toBeInTheDocument())
+    expect(screen.getByRole('button', { name: 'common.pagination.prev' })).toBeDisabled()
+  })
+
+  it('omits the pager when the only page has no more results', async () => {
+    listReferralInvitees.mockResolvedValue({
+      items: INVITEES.slice(0, 8),
+      page_size: 15,
+      has_more: false,
+      next_cursor: null,
+    })
+    const table = await openInviteesTab()
+    await waitFor(() => expect(within(table).getByText('invitee-0')).toBeInTheDocument())
+    // 8 body + header; single page with no more → no pager controls
+    expect(within(table).getAllByRole('row')).toHaveLength(9)
+    expect(
+      screen.queryByRole('button', { name: 'common.pagination.next' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'common.pagination.prev' })
+    ).not.toBeInTheDocument()
   })
 })
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LuCoins, LuTrendingUp, LuUsers, LuWallet, LuSparkles, LuLock } from 'react-icons/lu'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -21,9 +21,10 @@ import { FirstChargeLockGate } from '@/components/ui/FirstChargeLockGate'
 import { appToast } from '@/lib/app-toast'
 import { formatDateTime } from '@/lib/format-date'
 import { useAuthStore } from '@/store/auth'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
 import { useClientPage } from '@/hooks/use-client-page'
+import { useCursorPager } from '@/hooks/use-cursor-pager'
 import { PERMS } from '@/config/permissions'
 
 import {
@@ -83,12 +84,24 @@ export default function ReferralPage() {
     enabled: !!tenantId,
     staleTime: 60_000,
   })
-  const { data: rewardRecords = [] } = useQuery({
-    queryKey: ['referral', 'reward-records', tenantId],
-    queryFn: () => listRewardRecords(tenantId),
+  // 返佣流水——游标翻页（替代旧的客户端切片）。pager 必须与 useQuery 同级，
+  // 这样点击翻页才能驱动 queryKey 变化并触发重新拉取。
+  const rewardPager = useCursorPager()
+  const { data: rewardRecordsPage, isFetching: rewardFetching } = useQuery({
+    queryKey: ['referral', 'reward-records', tenantId, rewardPager.page, rewardPager.cursor],
+    queryFn: () => listRewardRecords(tenantId, { cursor: rewardPager.cursor, page_size: 15 }),
     enabled: !!tenantId,
     staleTime: 60_000,
+    placeholderData: keepPreviousData,
   })
+  const rewardRecords = rewardRecordsPage?.items ?? []
+  const rewardHasMore = Boolean(rewardRecordsPage?.has_more && rewardRecordsPage?.next_cursor)
+
+  // 切租户后回到第一页：游标按租户隔离，旧 cursor 发给新租户会拿错数据。
+  const { reset: resetRewardPager } = rewardPager
+  useEffect(() => {
+    resetRewardPager()
+  }, [tenantId, resetRewardPager])
   const { data: withdrawalList = [] } = useQuery({
     queryKey: ['referral', 'withdrawals', tenantId],
     queryFn: () => listWithdrawals(tenantId),
@@ -439,7 +452,15 @@ export default function ReferralPage() {
             <InviteesTable invitees={invitees} text={text} isQualified={isQualified} />
           </TabsContent>
           <TabsContent value="commissions" className="mt-0">
-            <CommissionsTable records={rewardRecords} text={text} />
+            <CommissionsTable
+              records={rewardRecords}
+              text={text}
+              page={rewardPager.page}
+              hasMore={rewardHasMore}
+              loading={rewardFetching}
+              onPrev={rewardPager.prev}
+              onNext={() => rewardPager.next(rewardRecordsPage?.next_cursor)}
+            />
           </TabsContent>
           {WITHDRAW_ENABLED && (
             <TabsContent value="withdrawals" className="mt-0">
@@ -665,11 +686,21 @@ function InviteesTable({ invitees, text, isQualified }: { invitees: ReferralInvi
 function CommissionsTable({
   records,
   text,
+  page,
+  hasMore,
+  loading,
+  onPrev,
+  onNext,
 }: {
+  /** 当前页的返佣流水（后端游标翻页，已是单页数据） */
   records: ReferralCommissionRecord[]
   text: TextCopy
+  page: number
+  hasMore: boolean
+  loading: boolean
+  onPrev: () => void
+  onNext: () => void
 }) {
-  const { paged, page, setPage, total, pageSize } = useClientPage(records)
   return (
     <>
     <Table>
@@ -691,7 +722,7 @@ function CommissionsTable({
             </TableCell>
           </TableRow>
         ) : (
-          paged.map((rec, index) => (
+          records.map((rec, index) => (
             <TableRow key={`${rec.date}-${rec.source}-${index}`}>
               <TableCell className="font-mono text-xs">{formatDateTime(rec.date)}</TableCell>
               <TableCell>{rec.source}</TableCell>
@@ -706,8 +737,16 @@ function CommissionsTable({
         )}
       </TableBody>
     </Table>
-    {total > pageSize && (
-      <Pagination mode="page" page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+    {/* 翻页器移出空状态分支：空的第 N 页也要能点上一页（#214）。 */}
+    {(page > 1 || hasMore) && (
+      <Pagination
+        mode="cursor"
+        page={page}
+        hasMore={hasMore}
+        loading={loading}
+        onPrev={onPrev}
+        onNext={onNext}
+      />
     )}
     </>
   )

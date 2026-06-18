@@ -7,6 +7,7 @@
  * 生成一个 uuid 并在重试时复用），否则超时重试可能产生双重转账。
  */
 import { get, post } from '@/lib/request'
+import type { CursorPage } from '@/types'
 import type {
   ReferralStats,
   ReferralTier,
@@ -68,9 +69,12 @@ export function listReferralInvitees(tenantId: string): Promise<ReferralInvitee[
   return get<ReferralInvitee[]>(`tenants/${tenantId}/referral/invitees`)
 }
 
-/** GET /tenants/:tenantId/referral/reward-records — 奖励记录（即返佣流水） */
-export function listRewardRecords(tenantId: string): Promise<ReferralCommissionRecord[]> {
-  return get<ReferralCommissionRecord[]>(`tenants/${tenantId}/referral/reward-records`)
+/** GET /tenants/:tenantId/referral/reward-records — 奖励记录（即返佣流水），游标翻页 */
+export function listRewardRecords(
+  tenantId: string,
+  params?: { cursor?: string; page_size?: number }
+): Promise<CursorPage<ReferralCommissionRecord>> {
+  return get<CursorPage<ReferralCommissionRecord>>(`tenants/${tenantId}/referral/reward-records`, params)
 }
 
 /** GET /tenants/:tenantId/referral/withdrawals — 提现记录 */

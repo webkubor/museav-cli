@@ -4,13 +4,28 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 
-import type { TenantBrief } from '@/types'
+import type { CursorPage, TenantBrief } from '@/types'
 import type { ReferralOverview } from '@/services/referral'
+import type { ReferralCommissionRecord } from '@/pages/referral/referral-data'
+
+// reward-records is now a server-side cursor page; default = single empty page.
+const emptyRewardPage: CursorPage<ReferralCommissionRecord> = {
+  items: [],
+  page_size: 15,
+  has_more: false,
+  next_cursor: null,
+}
 
 // ── service mock: the page is a read+mutate view over @/services/referral ────
 const getReferralOverview = vi.fn<(tenantId: string) => Promise<ReferralOverview>>()
 const listReferralInvitees = vi.fn().mockResolvedValue([])
-const listRewardRecords = vi.fn().mockResolvedValue([])
+const listRewardRecords =
+  vi.fn<
+    (
+      tenantId: string,
+      params?: { cursor?: string; page_size?: number }
+    ) => Promise<CursorPage<ReferralCommissionRecord>>
+  >().mockResolvedValue(emptyRewardPage)
 const listWithdrawals = vi.fn().mockResolvedValue([])
 const transferRewardToBalance =
   vi.fn<(tenantId: string, body: { amount: string; idempotency_key: string }) => Promise<unknown>>()
@@ -19,7 +34,8 @@ const requestWithdrawal = vi.fn().mockResolvedValue({})
 vi.mock('@/services/referral', () => ({
   getReferralOverview: (tenantId: string) => getReferralOverview(tenantId),
   listReferralInvitees: (tenantId: string) => listReferralInvitees(tenantId),
-  listRewardRecords: (tenantId: string) => listRewardRecords(tenantId),
+  listRewardRecords: (tenantId: string, params?: { cursor?: string; page_size?: number }) =>
+    listRewardRecords(tenantId, params),
   listWithdrawals: (tenantId: string) => listWithdrawals(tenantId),
   transferRewardToBalance: (tenantId: string, body: { amount: string; idempotency_key: string }) =>
     transferRewardToBalance(tenantId, body),
@@ -102,7 +118,7 @@ function renderPage() {
 beforeEach(() => {
   getReferralOverview.mockReset().mockResolvedValue(OVERVIEW)
   listReferralInvitees.mockClear()
-  listRewardRecords.mockReset().mockResolvedValue([])
+  listRewardRecords.mockReset().mockResolvedValue(emptyRewardPage)
   listWithdrawals.mockClear()
   transferRewardToBalance.mockReset()
   requestWithdrawal.mockClear()
@@ -271,11 +287,11 @@ describe('ReferralPage — render', () => {
   })
 })
 
-// ── commission log pagination (#199) ─────────────────────────────────────────
+// ── commission log pagination (#199) — server-side cursor flow ───────────────
 
-describe('ReferralPage — commission log pagination (#199)', () => {
-  // 23 records → 3 pages at COMMISSIONS_PAGE_SIZE=10 (10 / 10 / 3).
-  const RECORDS = Array.from({ length: 23 }, (_, i) => ({
+describe('ReferralPage — commission log cursor pagination (#199)', () => {
+  // 23 records served by the backend over 2 cursor pages at page_size=15 (15 / 8).
+  const RECORDS: ReferralCommissionRecord[] = Array.from({ length: 23 }, (_, i) => ({
     date: `2026-06-${String(i + 1).padStart(2, '0')}`,
     source: `src-${i}`,
     spend: '100',
@@ -283,6 +299,18 @@ describe('ReferralPage — commission log pagination (#199)', () => {
     amount: '10',
     tierName: '普通伙伴',
   }))
+
+  // Cursor-aware fake: first page (no cursor) → 0..14 has_more; cursor 'c1' → 15..22 last.
+  function pageRecords(cursor: string | undefined): CursorPage<ReferralCommissionRecord> {
+    if (!cursor) {
+      return { items: RECORDS.slice(0, 15), page_size: 15, has_more: true, next_cursor: 'c1' }
+    }
+    return { items: RECORDS.slice(15), page_size: 15, has_more: false, next_cursor: null }
+  }
+  const cursorMock = (
+    _tenantId: string,
+    params?: { cursor?: string; page_size?: number }
+  ) => Promise.resolve(pageRecords(params?.cursor))
 
   // Switch from the default invitees tab to the commission-log tab and return
   // the commissions table element (scoped by the unique 档位/Tier header).
@@ -295,44 +323,54 @@ describe('ReferralPage — commission log pagination (#199)', () => {
     return tierHeader.closest('table') as HTMLElement
   }
 
-  it('renders only the first page of records with a working pager', async () => {
-    listRewardRecords.mockResolvedValue(RECORDS)
+  it('renders only the first backend page with a working cursor pager', async () => {
+    listRewardRecords.mockImplementation(cursorMock)
     const table = await openCommissionsTab()
 
-    // page 1: 10 body rows + 1 header row; pager reads 1 / 3
-    expect(within(table).getAllByRole('row')).toHaveLength(11)
-    expect(screen.getByText('1 / 3')).toBeInTheDocument()
-    expect(within(table).getByText('src-0')).toBeInTheDocument()
-    expect(within(table).queryByText('src-10')).not.toBeInTheDocument()
-    expect(within(table).queryByText('src-22')).not.toBeInTheDocument()
+    // page 1: first cursor request carries no cursor + page_size=15
+    await waitFor(() => expect(within(table).getByText('src-0')).toBeInTheDocument())
+    expect(listRewardRecords).toHaveBeenCalledWith(ORG_TENANT_ID, { cursor: undefined, page_size: 15 })
+    // 15 body rows + 1 header; pager shows the cursor page badge
+    expect(within(table).getAllByRole('row')).toHaveLength(16)
+    expect(screen.getByText('common.pagination.page')).toBeInTheDocument()
+    expect(within(table).queryByText('src-15')).not.toBeInTheDocument()
+    // next enabled (has_more), prev disabled on page 1
+    expect(screen.getByRole('button', { name: 'common.pagination.next' })).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: 'common.pagination.prev' })).toBeDisabled()
   })
 
-  it('pages forward to the last (partial) page and back', async () => {
-    listRewardRecords.mockResolvedValue(RECORDS)
+  it('pages forward via next_cursor to the last page and back', async () => {
+    listRewardRecords.mockImplementation(cursorMock)
     const table = await openCommissionsTab()
-
-    const next = screen.getByRole('button', { name: 'common.pagination.next' })
-    fireEvent.click(next)
-    expect(await screen.findByText('2 / 3')).toBeInTheDocument()
-    expect(within(table).getByText('src-10')).toBeInTheDocument()
+    await waitFor(() => expect(within(table).getByText('src-0')).toBeInTheDocument())
 
     fireEvent.click(screen.getByRole('button', { name: 'common.pagination.next' }))
-    expect(await screen.findByText('3 / 3')).toBeInTheDocument()
-    // last page is partial: 3 body rows + 1 header
-    expect(within(table).getAllByRole('row')).toHaveLength(4)
-    expect(within(table).getByText('src-22')).toBeInTheDocument()
-
-    // next is disabled on the last page; prev walks back
+    // page 2 requests the next_cursor returned by page 1
+    await waitFor(() =>
+      expect(listRewardRecords).toHaveBeenCalledWith(ORG_TENANT_ID, { cursor: 'c1', page_size: 15 })
+    )
+    await waitFor(() => expect(within(table).getByText('src-22')).toBeInTheDocument())
+    // last page: 8 body rows + 1 header
+    expect(within(table).getAllByRole('row')).toHaveLength(9)
+    // next disabled on the last page (has_more=false); prev walks back
     expect(screen.getByRole('button', { name: 'common.pagination.next' })).toBeDisabled()
+
     fireEvent.click(screen.getByRole('button', { name: 'common.pagination.prev' }))
-    expect(await screen.findByText('2 / 3')).toBeInTheDocument()
+    await waitFor(() => expect(within(table).getByText('src-0')).toBeInTheDocument())
+    expect(screen.getByRole('button', { name: 'common.pagination.prev' })).toBeDisabled()
   })
 
-  it('omits the pager when records fit on a single page', async () => {
-    listRewardRecords.mockResolvedValue(RECORDS.slice(0, 8))
+  it('omits the pager when the only page has no more results', async () => {
+    listRewardRecords.mockResolvedValue({
+      items: RECORDS.slice(0, 8),
+      page_size: 15,
+      has_more: false,
+      next_cursor: null,
+    })
     const table = await openCommissionsTab()
-    // 8 ≤ page size → all rows shown, no pager controls rendered
-    expect(within(table).getAllByRole('row')).toHaveLength(9) // 8 body + header
+    await waitFor(() => expect(within(table).getByText('src-0')).toBeInTheDocument())
+    // 8 body + header; single page with no more → no pager controls
+    expect(within(table).getAllByRole('row')).toHaveLength(9)
     expect(
       screen.queryByRole('button', { name: 'common.pagination.next' })
     ).not.toBeInTheDocument()

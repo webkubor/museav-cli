@@ -17,7 +17,6 @@ import type { RechargeOrder } from '@/types'
 import { getRechargeOrderChannelDisplayName } from '@/constants/recharge-channels'
 import { listRecharges, cancelRecharge, listGiftRecords } from '@/services/billing'
 import { listRewardRecords } from '@/services/referral'
-import { useClientPage } from '@/hooks/use-client-page'
 import { useCursorPager } from '@/hooks/use-cursor-pager'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
@@ -103,20 +102,26 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
   const ordersHasMore = Boolean(ordersQuery.data?.has_more && ordersQuery.data?.next_cursor)
   const refetchOrders = ordersQuery.refetch
 
+  // 奖励记录——游标翻页（替代旧的客户端切片）。
+  const rewardPager = useCursorPager()
+  const { data: rewardRecordsPage, isFetching: rewardFetching } = useQuery({
+    queryKey: ['referral', 'reward-records', tenantId, rewardPager.page, rewardPager.cursor],
+    queryFn: () => listRewardRecords(tenantId, { cursor: rewardPager.cursor, page_size: 15 }),
+    enabled: !!tenantId && activeTab === 'reward',
+    placeholderData: keepPreviousData,
+  })
+  const rewardRecords = rewardRecordsPage?.items ?? []
+  const rewardHasMore = Boolean(rewardRecordsPage?.has_more && rewardRecordsPage?.next_cursor)
+
   // 切租户后回到第一页：游标按租户隔离，旧 cursor 发给新租户会拿错数据。
   const { reset: resetRechargePager } = rechargePager
   const { reset: resetGiftPager } = giftPager
+  const { reset: resetRewardPager } = rewardPager
   useEffect(() => {
     resetRechargePager()
     resetGiftPager()
-  }, [tenantId, resetRechargePager, resetGiftPager])
-
-  const { data: rewardRecords = [] } = useQuery({
-    queryKey: ['referral', 'reward-records', tenantId],
-    queryFn: () => listRewardRecords(tenantId),
-    enabled: !!tenantId && activeTab === 'reward',
-  })
-  const rewardPage = useClientPage(rewardRecords)
+    resetRewardPager()
+  }, [tenantId, resetRechargePager, resetGiftPager, resetRewardPager])
 
   const cancelMutation = useMutation({
     mutationFn: (orderNo: string) => cancelRecharge(tenantId, orderNo),
@@ -446,50 +451,50 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
             {rewardRecords.length === 0 ? (
               <EmptyState title={rc.empty} />
             ) : (
-              <div>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{rc.colDate}</TableHead>
-                      <TableHead>{rc.colInvitee}</TableHead>
-                      <TableHead>{rc.colTier}</TableHead>
-                      <TableHead align="right">{rc.colSpend}</TableHead>
-                      <TableHead align="right">{rc.colRate}</TableHead>
-                      <TableHead align="right">{rc.colAmount}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rewardPage.paged.map((rec, i) => (
-                      <TableRow key={i} className="cursor-pointer billing-table-row">
-                        <TableCell className="text-xs text-mg-text-2 font-mono">{formatDateTime(rec.date)}</TableCell>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2.5 select-none">
-                            <div className="w-6 h-6 rounded-full bg-mg-fill-1 border border-mg-border flex items-center justify-center font-bold text-[10px] text-mg-text-1 uppercase shrink-0">
-                              {rec.source.slice(0, 2)}
-                            </div>
-                            <span className="text-xs text-mg-text-0 font-bold">{rec.source}</span>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{rc.colDate}</TableHead>
+                    <TableHead>{rc.colInvitee}</TableHead>
+                    <TableHead>{rc.colTier}</TableHead>
+                    <TableHead align="right">{rc.colSpend}</TableHead>
+                    <TableHead align="right">{rc.colRate}</TableHead>
+                    <TableHead align="right">{rc.colAmount}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rewardRecords.map((rec, i) => (
+                    <TableRow key={i} className="cursor-pointer billing-table-row">
+                      <TableCell className="text-xs text-mg-text-2 font-mono">{formatDateTime(rec.date)}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2.5 select-none">
+                          <div className="w-6 h-6 rounded-full bg-mg-fill-1 border border-mg-border flex items-center justify-center font-bold text-[10px] text-mg-text-1 uppercase shrink-0">
+                            {rec.source.slice(0, 2)}
                           </div>
-                        </TableCell>
-                        <TableCell>{renderTierBadge(rec.tierName)}</TableCell>
-                        <TableCell align="right" className="text-xs text-mg-text-1 font-mono">¥{Number(rec.spend).toLocaleString('zh-CN')}</TableCell>
-                        <TableCell align="right">
-                          <span className="bg-brand-glow/10 text-brand-base text-[10px] font-bold px-1.5 py-0.5 rounded-md border border-brand-base/10 font-mono">{rec.rate}%</span>
-                        </TableCell>
-                        <TableCell align="right" className="text-xs font-bold text-mg-success font-mono">+¥{Number(rec.amount).toLocaleString('zh-CN')}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {rewardPage.total > rewardPage.pageSize && (
-                  <Pagination
-                    mode="page"
-                    page={rewardPage.page}
-                    total={rewardPage.total}
-                    pageSize={rewardPage.pageSize}
-                    onPageChange={rewardPage.setPage}
-                  />
-                )}
-              </div>
+                          <span className="text-xs text-mg-text-0 font-bold">{rec.source}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{renderTierBadge(rec.tierName)}</TableCell>
+                      <TableCell align="right" className="text-xs text-mg-text-1 font-mono">¥{Number(rec.spend).toLocaleString('zh-CN')}</TableCell>
+                      <TableCell align="right">
+                        <span className="bg-brand-glow/10 text-brand-base text-[10px] font-bold px-1.5 py-0.5 rounded-md border border-brand-base/10 font-mono">{rec.rate}%</span>
+                      </TableCell>
+                      <TableCell align="right" className="text-xs font-bold text-mg-success font-mono">+¥{Number(rec.amount).toLocaleString('zh-CN')}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            {/* 翻页器移出空状态分支：空的第 N 页也要能点上一页（#214）。 */}
+            {(rewardPager.page > 1 || rewardHasMore) && (
+              <Pagination
+                mode="cursor"
+                page={rewardPager.page}
+                hasMore={rewardHasMore}
+                loading={rewardFetching}
+                onPrev={rewardPager.prev}
+                onNext={() => rewardPager.next(rewardRecordsPage?.next_cursor)}
+              />
             )}
           </div>
         </div>

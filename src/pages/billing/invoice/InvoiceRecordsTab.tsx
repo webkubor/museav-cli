@@ -132,7 +132,7 @@ export function InvoiceRecordsTab({
                   )}
                   {r.status === 'pending' && (
                     <p className="text-xs text-mg-text-2">
-                      申请已提交，平台开票员会在管理后台完成开票、验证码或扫脸认证。
+                      申请已提交，系统会自动发起 FAPI 开票任务。
                     </p>
                   )}
                   {r.status === 'voided' && (

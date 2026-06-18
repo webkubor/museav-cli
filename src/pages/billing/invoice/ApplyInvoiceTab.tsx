@@ -87,7 +87,7 @@ export function ApplyInvoiceTab({
         title_type: activeTitle?.type ?? 'vat_normal',
     }),
     onSuccess: () => {
-      appToast.success('已提交开票申请，等待运营开票')
+      appToast.success('已提交开票申请，系统正在自动开票')
       qc.invalidateQueries({ queryKey: ['invoice'] })
       setSelected([])
       setView('list')
@@ -177,7 +177,7 @@ export function ApplyInvoiceTab({
         )}
 
         <p className="text-[11px] leading-relaxed text-mg-text-3">
-          提交后进入运营开票队列。平台开票员会在管理后台完成验证码或扫脸认证，出票后推送至接收邮箱。
+          提交后系统会自动发起 FAPI 开票任务，出票后推送至接收邮箱。
         </p>
 
         <Button

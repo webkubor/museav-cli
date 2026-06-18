@@ -37,7 +37,7 @@ export function createInvoice(tenantId: string, body: CreateInvoiceRequest) {
   return post<{ invoice_no: string; status?: string }>(`tenants/${tenantId}/invoices`, body)
 }
 
-/** 重新提交开票申请（失败时，不直接触发销方开票） */
+/** 重新提交开票申请并自动触发销方开票 */
 export function retryInvoice(tenantId: string, invoiceNo: string) {
   return post<{ invoice_no?: string; status?: string; ok?: boolean }>(`tenants/${tenantId}/invoices/${invoiceNo}/retry`, {})
 }

@@ -1126,6 +1126,12 @@
       "provider": "Provider",
       "family": "Model Family",
       "scenario": "Scenario",
+      "sort": {
+        "label": "Sort",
+        "popular": "Default",
+        "newest": "Newest",
+        "cheapest": "Cheapest"
+      },
       "reset": "Reset filters"
     },
     "results": {

@@ -25,6 +25,10 @@ const messages: Record<string, string> = {
   'modelsCatalog.filters.provider': '模型提供方',
   'modelsCatalog.filters.family': '模型系列',
   'modelsCatalog.filters.scenario': '模型场景',
+  'modelsCatalog.filters.sort.label': '排序',
+  'modelsCatalog.filters.sort.popular': '综合排序',
+  'modelsCatalog.filters.sort.newest': '最新发布',
+  'modelsCatalog.filters.sort.cheapest': '最低价格',
   'modelsCatalog.filters.reset': '重置筛选',
 }
 
@@ -84,6 +88,8 @@ describe('ModelCatalogFilters', () => {
         apiTags={[tag]}
         modalityFilters={[{ code: 'text', nameZh: '文本生成', nameEn: 'Text' }]}
         isZh
+        sort="popular"
+        onSortChange={vi.fn()}
       />,
     )
 

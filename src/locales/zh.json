@@ -1125,6 +1125,12 @@
       "provider": "模型提供方",
       "family": "模型系列",
       "scenario": "模型场景",
+      "sort": {
+        "label": "排序",
+        "popular": "综合排序",
+        "newest": "最新发布",
+        "cheapest": "最低价格"
+      },
       "reset": "重置筛选"
     },
     "results": {

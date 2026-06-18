@@ -48,6 +48,8 @@ interface ModelCatalogFiltersProps {
   apiTags: CatalogModelTag[]
   modalityFilters: ModalityFilterOption[]
   isZh: boolean
+  sort: string
+  onSortChange: (value: string) => void
 }
 
 /** 渲染模型目录搜索、快捷分类与高级筛选面板。 */
@@ -65,6 +67,8 @@ export function ModelCatalogFilters({
   apiTags,
   modalityFilters,
   isZh,
+  sort,
+  onSortChange,
 }: ModelCatalogFiltersProps) {
   const { t } = useTranslation()
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -117,14 +121,24 @@ export function ModelCatalogFilters({
     ]
   }, [allModels, apiTags, isZh, t])
 
+  const sortOptions = useMemo<FilterOption[]>(
+    () => [
+      { code: 'popular', label: t('modelsCatalog.filters.sort.popular') },
+      { code: 'newest', label: t('modelsCatalog.filters.sort.newest') },
+      { code: 'cheapest', label: t('modelsCatalog.filters.sort.cheapest') },
+    ],
+    [t],
+  )
+
   const activeFilterCount = useMemo(
     () => [
       advancedFilters.language !== 'all',
       advancedFilters.context !== 'all',
       family !== 'all',
       advancedFilters.scenario !== 'all',
+      sort !== 'popular',
     ].filter(Boolean).length,
-    [advancedFilters, family],
+    [advancedFilters, family, sort],
   )
 
   const handleAdvancedFilterChange = (key: AdvancedFilterKey, value: string) => {
@@ -134,6 +148,7 @@ export function ModelCatalogFilters({
   const handleResetFilters = () => {
     onAdvancedFiltersChange({ ...DEFAULT_ADVANCED_FILTERS })
     onFamilyChange('all')
+    onSortChange('popular')
   }
 
   return (
@@ -193,6 +208,12 @@ export function ModelCatalogFilters({
             options={scenarioOptions}
             value={advancedFilters.scenario}
             onChange={(value) => handleAdvancedFilterChange('scenario', value)}
+          />
+          <AdvancedFilterRow
+            label={t('modelsCatalog.filters.sort.label')}
+            options={sortOptions}
+            value={sort}
+            onChange={onSortChange}
           />
           <button
             type="button"

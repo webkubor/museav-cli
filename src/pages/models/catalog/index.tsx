@@ -199,6 +199,7 @@ export default function ModelsCatalogPage() {
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilterState>(() => ({ ...DEFAULT_ADVANCED_FILTERS }))
   // 模型组（family）：官方分组，服务端筛选，替代暴露上游的 vendor
   const [family, setFamily] = useState<string>('all')
+  const [sort, setSort] = useState<'popular' | 'newest' | 'cheapest'>('popular')
   const [isCompareOpen, setIsCompareOpen] = useState(false)
   const [compareInitialIds, setCompareInitialIds] = useState<string[]>([])
   const [copiedId, setCopiedId] = useState<string | null>(null)
@@ -210,7 +211,7 @@ export default function ModelsCatalogPage() {
     setSearch,
     modelsQuery,
     filteredModels,
-  } = useModels({ family: family !== 'all' ? family : undefined })
+  } = useModels({ family: family !== 'all' ? family : undefined, sort: sort !== 'popular' ? sort : undefined })
 
   const tagsQuery = useQuery({
     queryKey: ['catalog-model-tags'],
@@ -399,6 +400,8 @@ export default function ModelsCatalogPage() {
         apiTags={apiTags}
         modalityFilters={modalityFilters}
         isZh={isZh}
+        sort={sort}
+        onSortChange={(v) => setSort(v as 'popular' | 'newest' | 'cheapest')}
       />
 
       <div className="models-catalog-layout">

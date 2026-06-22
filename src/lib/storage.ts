@@ -33,6 +33,7 @@ export const storageKeys = {
   activeTenantId: () => buildKey('active_tenant_id', 'market'),
   activeWorkspaceId: () => buildKey('active_workspace_id', 'market'),
   rememberedLogin: () => buildKey('remembered_login', 'market'),
+  authGuard:      (scope: string) => buildKey(`auth_guard:${scope}`, 'market'),
 
   // ── 主题（app 全局，与市场无关） ──────────────────────────────────────────
   theme:           ()           => buildKey('theme', 'app'),

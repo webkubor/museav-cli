@@ -12,6 +12,7 @@ const WorkspacesPage = lazy(() => import('@/pages/workspaces'))
 const WorkspaceDetailPage = lazy(() => import('@/pages/settings/workspace-detail'))
 const LoginPage = lazy(() => import('@/pages/login'))
 const SignupPage = lazy(() => import('@/pages/signup'))
+const LegalPage = lazy(() => import('@/pages/legal'))
 const ForgotPasswordPage = lazy(() => import('@/pages/forgot-password'))
 const ResetPasswordPage = lazy(() => import('@/pages/reset-password'))
 const AuthCallbackPage = lazy(() => import('@/pages/auth-callback'))
@@ -144,6 +145,8 @@ export default function App() {
           {/* 认证路由（公开） */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/legal/privacy" element={<LegalPage docType="privacy" />} />
+          <Route path="/legal/terms" element={<LegalPage docType="terms" />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />

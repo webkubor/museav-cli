@@ -17,6 +17,12 @@ import { AuthLayout } from '@/components/auth/AuthLayout'
 import { SocialLogin } from '@/components/auth/SocialLogin'
 import { checkLoginEmail, login, getSession } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
+import {
+  checkAuthGuard,
+  clearAuthGuard,
+  recordAuthGuardFailure,
+  type AuthGuardAction,
+} from '@/lib/auth/front-guard'
 import { getRedirectTarget } from '@/lib/redirect'
 import { storageKeys } from '@/lib/storage'
 
@@ -91,11 +97,20 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, isSessionLoading, navigate, redirectAfterLogin])
 
+  const canSubmitAuth = (action: AuthGuardAction, subject: string) => {
+    const decision = checkAuthGuard({ action, subject })
+    if (decision.allowed) return true
+    setServerError(decision.message ?? '操作过于频繁，请稍后再试')
+    return false
+  }
+
   const onEmailSubmit = async (data: EmailFields) => {
+    if (!canSubmitAuth('login-email', data.email)) return
     setLoading(true)
     setServerError('')
     try {
       const result = await checkLoginEmail(data.email)
+      clearAuthGuard({ action: 'login-email', subject: data.email })
       if (!result.registered) {
         navigate(`/signup?email=${encodeURIComponent(data.email)}`)
         return
@@ -103,6 +118,7 @@ export default function LoginPage() {
       setEmail(data.email)
       setStep('password')
     } catch {
+      recordAuthGuardFailure({ action: 'login-email', subject: data.email })
       setServerError('邮箱验证失败，请稍后重试')
     } finally {
       setLoading(false)
@@ -110,6 +126,7 @@ export default function LoginPage() {
   }
 
   const onPasswordSubmit = async (data: PasswordFields) => {
+    if (!canSubmitAuth('login-password', email)) return
     setLoading(true)
     setServerError('')
     let loginOk = false
@@ -117,6 +134,7 @@ export default function LoginPage() {
       await login({ email, password: data.password })
       loginOk = true
       const session = await getSession()
+      clearAuthGuard({ action: 'login-password', subject: email })
       if (rememberPassword) {
         saveRememberedEmail(email)
       } else {
@@ -136,6 +154,9 @@ export default function LoginPage() {
       )
       navigate(redirectAfterLogin, { replace: true })
     } catch {
+      if (!loginOk) {
+        recordAuthGuardFailure({ action: 'login-password', subject: email })
+      }
       setServerError(loginOk ? '登录成功但获取会话失败，请刷新重试' : '邮箱或密码错误')
     } finally {
       setLoading(false)

@@ -1,4 +1,4 @@
-import ky from 'ky'
+import ky, { type ResponsePromise } from 'ky'
 import type { ApiError, ApiResponse, QueryParams } from '@/types'
 import { injectHeaders } from '@/lib/request-headers'
 import { getMarket } from '@/lib/market'
@@ -216,8 +216,11 @@ export async function get<T>(path: string, params?: QueryParams): Promise<T> {
   const url = apiUrl(normalizedPath)
   const startedAt = nowMs()
   try {
-    const envelope = await client.get(url, { searchParams: searchParams(params) }).json<ApiResponse<T>>()
+    const httpResp = await client.get(url, { searchParams: searchParams(params) })
+    const traceId = httpResp.headers.get('x-request-id') ?? httpResp.headers.get('x-trace-id') ?? httpResp.headers.get('traceparent') ?? undefined
+    const envelope = await httpResp.json<ApiResponse<T>>()
     const result = unwrapEnvelope(envelope)
+    const rawForLog: Record<string, unknown> = { code: 0, data: result }
     devLogApiCall({
       method: 'GET',
       path: normalizedPath,
@@ -225,9 +228,10 @@ export async function get<T>(path: string, params?: QueryParams): Promise<T> {
       ok: true,
       duration_ms: durationMs(startedAt),
       code: 0,
+      request_id: traceId ?? envelope.request_id,
       trace_id: envelope.trace_id,
       request: params,
-      response: { code: 0, data: result },
+      response: traceId ? { __trace_id: traceId, ...rawForLog } : rawForLog,
     })
     return result
   } catch (error) {
@@ -239,25 +243,25 @@ export async function get<T>(path: string, params?: QueryParams): Promise<T> {
 
 export async function post<T>(path: string, body: unknown): Promise<T> {
   return requestWithJsonBody('POST', path, body, (url) =>
-    client.post(url, { json: body }).json<ApiResponse<T>>()
+    client.post(url, { json: body })
   )
 }
 
 export async function patch<T>(path: string, body: unknown): Promise<T> {
   return requestWithJsonBody('PATCH', path, body, (url) =>
-    client.patch(url, { json: body }).json<ApiResponse<T>>()
+    client.patch(url, { json: body })
   )
 }
 
 export async function put<T>(path: string, body: unknown): Promise<T> {
   return requestWithJsonBody('PUT', path, body, (url) =>
-    client.put(url, { json: body }).json<ApiResponse<T>>()
+    client.put(url, { json: body })
   )
 }
 
 export async function del<T>(path: string, body?: unknown): Promise<T> {
   return requestWithJsonBody('DELETE', path, body, (url) =>
-    client.delete(url, body !== undefined ? { json: body } : undefined).json<ApiResponse<T>>()
+    client.delete(url, body !== undefined ? { json: body } : undefined)
   )
 }
 
@@ -274,10 +278,13 @@ export async function upload<T>(
   const normalizedPath = normalizePath(path)
   const url = apiUrl(normalizedPath)
   const startedAt = nowMs()
-  const sendRaw = () => client[method](url, { body: formData }).json<ApiResponse<T>>()
+  const sendRaw = () => client[method](url, { body: formData })
   try {
-    const envelope = await sendRaw()
+    const httpResp = await sendRaw()
+    const traceId = httpResp.headers.get('x-request-id') ?? httpResp.headers.get('x-trace-id') ?? httpResp.headers.get('traceparent') ?? undefined
+    const envelope = await httpResp.json<ApiResponse<T>>()
     const result = unwrapEnvelope(envelope)
+    const rawForLog: Record<string, unknown> = { code: 0, data: result }
     devLogApiCall({
       method: method.toUpperCase(),
       path: normalizedPath,
@@ -285,15 +292,16 @@ export async function upload<T>(
       ok: true,
       duration_ms: durationMs(startedAt),
       code: 0,
+      request_id: traceId ?? envelope.request_id,
       trace_id: envelope.trace_id,
       request: formData,
-      response: { code: 0, data: result },
+      response: traceId ? { __trace_id: traceId, ...rawForLog } : rawForLog,
     })
     return result
   } catch (error) {
     if (error instanceof ModelGoApiError && error.code === 40302) {
       await refreshCsrf()
-      return unwrapEnvelope(await sendRaw())
+      return unwrapEnvelope(await (await sendRaw()).json<ApiResponse<T>>())
     }
     if (error instanceof ModelGoApiError) error.path = normalizedPath
     devLogApiError(method.toUpperCase(), normalizedPath, url, startedAt, error, formData)
@@ -305,14 +313,17 @@ async function requestWithJsonBody<T>(
   method: string,
   path: string,
   body: unknown,
-  send: (url: string) => Promise<ApiResponse<T>>
+  send: (url: string) => ResponsePromise
 ) {
   const normalizedPath = normalizePath(path)
   const url = apiUrl(normalizedPath)
   const startedAt = nowMs()
   try {
-    const envelope = await send(url)
+    const httpResp = await send(url)
+    const traceId = httpResp.headers.get('x-request-id') ?? httpResp.headers.get('x-trace-id') ?? httpResp.headers.get('traceparent') ?? undefined
+    const envelope = await httpResp.json<ApiResponse<T>>()
     const result = unwrapEnvelope(envelope)
+    const rawForLog: Record<string, unknown> = { code: 0, data: result }
     devLogApiCall({
       method,
       path: normalizedPath,
@@ -320,15 +331,16 @@ async function requestWithJsonBody<T>(
       ok: true,
       duration_ms: durationMs(startedAt),
       code: 0,
+      request_id: traceId ?? envelope.request_id,
       trace_id: envelope.trace_id,
       request: body,
-      response: { code: 0, data: result },
+      response: traceId ? { __trace_id: traceId, ...rawForLog } : rawForLog,
     })
     return result
   } catch (error) {
     if (error instanceof ModelGoApiError && error.code === 40302) {
       await refreshCsrf()
-      return unwrapEnvelope(await send(url))
+      return unwrapEnvelope(await (await send(url)).json<ApiResponse<T>>())
     }
     if (error instanceof ModelGoApiError) error.path = normalizedPath
     devLogApiError(method, normalizedPath, url, startedAt, error, body)

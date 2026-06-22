@@ -1,8 +1,15 @@
+/**
+ * 控制台注册页面
+ * 职责：负责账号注册、邮箱验证码、推荐码归属和前端提交拦截
+ * 路由：/signup
+ * API：POST /auth/email-code/send、POST /auth/register
+ */
+
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LuEye, LuEyeOff } from 'react-icons/lu'
@@ -15,6 +22,7 @@ import { sendEmailCode, register } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import { ModelGoApiError } from '@/lib/request'
 import { toast } from '@/lib/toast'
+import { checkAuthGuard, clearAuthGuard, recordAuthGuardFailure } from '@/lib/auth/front-guard'
 import { getRedirectTarget } from '@/lib/redirect'
 import { referralCodeFromSearchParams } from './referral-code'
 
@@ -48,7 +56,7 @@ export default function SignupPage() {
   const {
     register: field,
     handleSubmit,
-    watch,
+    control,
     formState: { errors, touchedFields },
   } = useForm<Fields>({
     resolver: zodResolver(schema),
@@ -59,10 +67,10 @@ export default function SignupPage() {
     },
   })
 
-  const emailValue = watch('email')
-  const emailCodeValue = watch('email_code')
-  const passwordValue = watch('password', '')
-  const confirmPasswordValue = watch('confirm_password')
+  const emailValue = useWatch({ control, name: 'email' })
+  const emailCodeValue = useWatch({ control, name: 'email_code' })
+  const passwordValue = useWatch({ control, name: 'password', defaultValue: '' })
+  const confirmPasswordValue = useWatch({ control, name: 'confirm_password' })
   const isEmailValid = !!emailValue && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)
 
 
@@ -75,11 +83,35 @@ export default function SignupPage() {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return
     }
-    const result = await sendEmailCode(email)
-    return result.expires_in
+    const decision = checkAuthGuard({
+      action: 'signup-code',
+      subject: email,
+    })
+    if (!decision.allowed) {
+      setServerError(decision.message ?? '操作过于频繁，请稍后再试')
+      return
+    }
+
+    try {
+      const result = await sendEmailCode(email)
+      clearAuthGuard({ action: 'signup-code', subject: email })
+      return result.expires_in
+    } catch (error) {
+      recordAuthGuardFailure({ action: 'signup-code', subject: email })
+      throw error
+    }
   }
 
   const onSubmit = async (data: Fields) => {
+    const decision = checkAuthGuard({
+      action: 'signup',
+      subject: data.email,
+    })
+    if (!decision.allowed) {
+      setServerError(decision.message ?? '操作过于频繁，请稍后再试')
+      return
+    }
+
     setLoading(true)
     setServerError('')
     try {
@@ -105,8 +137,10 @@ export default function SignupPage() {
         [],
         result.default_workspace_id
       )
+      clearAuthGuard({ action: 'signup', subject: data.email })
       navigate('/dashboard')
     } catch (e) {
+      recordAuthGuardFailure({ action: 'signup', subject: data.email })
       const msg = e instanceof ModelGoApiError ? e.message : '注册失败，请稍后重试'
       setServerError(msg)
       toast.error(msg)

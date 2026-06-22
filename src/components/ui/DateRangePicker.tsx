@@ -95,20 +95,22 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     return placeholder
   }
 
-  const handlePresetSelect = (key: string) => {
+  const handlePresetSelect = (key: string, close: () => void) => {
     setActivePreset(key)
     if (key !== 'custom') {
       onChange({ preset: key })
+      close() // 选中非自定义预设即收起弹层
     }
   }
 
-  const handleApplyCustom = () => {
+  const handleApplyCustom = (close: () => void) => {
     if (!customStart || !customEnd) return
     onChange({
       preset: 'custom',
       startDate: customStart,
       endDate: customEnd
     })
+    close()
   }
 
   // Inline calendar calculations
@@ -232,7 +234,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
   const isCustomActive = activePreset === 'custom'
 
-  const presetList = (
+  const renderPanel = (close: () => void) => (
     <div className={cn('flex gap-0 text-left', isCustomActive ? 'w-[460px]' : 'w-[140px]')}>
       {/* Preset List */}
       <div className={cn(
@@ -244,7 +246,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           <button
             key={p.key}
             type="button"
-            onClick={() => handlePresetSelect(p.key)}
+            onClick={() => handlePresetSelect(p.key, close)}
             className={cn(
               "px-2.5 py-1.5 rounded-lg text-xs font-bold text-left cursor-pointer transition-colors",
               activePreset === p.key
@@ -289,7 +291,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         <Button
           variant="brand"
           disabled={hideStartDate ? !customEnd : (!customStart || !customEnd)}
-          onClick={handleApplyCustom}
+          onClick={() => handleApplyCustom(close)}
           className="h-8 text-xs font-bold !rounded-lg w-full flex items-center justify-center gap-1 cursor-pointer"
         >
           确定应用 <LuChevronRight size={13} />
@@ -315,7 +317,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   return (
     <Popover
       trigger={triggerButton}
-      content={presetList}
+      content={renderPanel}
       position="bottom"
       className="!w-auto !p-4"
     />

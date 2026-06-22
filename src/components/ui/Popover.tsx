@@ -4,7 +4,8 @@ import { cn } from '@/lib/utils'
 
 interface PopoverProps {
   trigger: React.ReactNode
-  content: React.ReactNode
+  /** 内容；传函数可拿到 close()，用于点击「确定」后主动收起弹层 */
+  content: React.ReactNode | ((close: () => void) => React.ReactNode)
   position?: 'top' | 'bottom' | 'left' | 'right'
   className?: string
 }
@@ -99,12 +100,14 @@ export const Popover: React.FC<PopoverProps> = ({
           ref={panelRef}
           style={style}
           className={cn(
-            "p-4 rounded-md glass-card-glow border border-mg-border shadow-xl select-none",
+            // pointer-events-auto: Radix Dialog(modal) 打开时会把 body 设为 pointer-events:none，
+            // 而本组件 portal 到 body，必须显式恢复，否则弹层内（如日期选择）全部无法点击
+            "pointer-events-auto p-4 rounded-md glass-card-glow border border-mg-border shadow-xl select-none",
             "animate-in zoom-in-95 fade-in-0 duration-150",
             className
           )}
         >
-          {content}
+          {typeof content === 'function' ? content(() => setOpen(false)) : content}
         </div>,
         document.body
       )}

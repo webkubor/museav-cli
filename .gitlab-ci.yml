@@ -74,7 +74,7 @@ build:test:
 build:production:
   stage: build
   script:
-    - pnpm build:production
+    - pnpm build:prod
   needs: [type-check, lint, format]
   artifacts:
     paths:

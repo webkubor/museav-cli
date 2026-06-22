@@ -133,7 +133,7 @@ pnpm check:api-contract
 
 | 变量 | 本地开发 | 测试构建 | 生产构建 |
 | :--- | :--- | :--- | :--- |
-| `VITE_API_URL` | 空（手动配置） | `https://test.modelgo.com` | 空（运行时推断） |
+| `VITE_API_URL` | 空（手动配置） | `https://modelgo-web-api.test.modelgo.com` | 空（运行时推断） |
 | `VITE_SITE_URL` | `https://test.modelgo.com` | `https://test.modelgo.com` | 空（按市场回退到正式官网） |
 | `VITE_DOMESTIC_CONSOLE` | `https://console.test.modelgo.com` | `https://console.test.modelgo.com` | `https://console.modelgo.com` |
 | `VITE_DOMESTIC_DOCS` | `https://doc.test.modelgo.com` | `https://doc.test.modelgo.com` | `https://doc.modelgo.com` |
@@ -164,7 +164,7 @@ pnpm dev
 pnpm build:test
 
 # 生产环境打包（加载 .env.production）
-pnpm build:production
+pnpm build:prod
 ```
 
 ---

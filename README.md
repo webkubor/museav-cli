@@ -144,13 +144,17 @@ pnpm check:api-contract
 
 ## 🚀 启动与构建
 
-### 测试账号
+### 登录账号
 
-| 字段 | 值 |
-| :--- | :--- |
-| Email | `api-test-static-owner@test.modelgo.com` |
-| Password | `Homebrew02` |
-| 环境 | 测试环境（test） |
+账号清单（test / prod，JSON 数组，支持多账户）存在 cs secrets，不落仓库明文：
+
+```bash
+cs secrets get secret://modelgo/accounts        # 全部账户
+cs secrets get secret://modelgo/accounts | python3 -c "import sys,json;[print(a['env'],a['email'],a['password']) for a in json.load(sys.stdin)]"
+```
+
+字段：`env`(test/prod) · `email` · `password` · `role` · `note`。
+本地一键登录（dev console）：`await window.__mg_login(email, password)`（见 `src/lib/dev-auth.ts`，仅 DEV 挂载）。
 
 ### 本地启动
 

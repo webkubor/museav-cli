@@ -23,10 +23,9 @@ type Props = {
   canRevoke: boolean
   onRevoke: (target: { id: string; name: string }) => void
   onEditGuardrail: (item: ApiKeyItem) => void
-  guardrailsByKey?: Record<string, string[]>
 }
 
-export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuardrail, guardrailsByKey = {} }: Props) {
+export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuardrail }: Props) {
   const { t } = useTranslation()
 
   return (
@@ -60,7 +59,7 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
           />
         ) : (
           items.map((record) => {
-            const guardrailNames = guardrailsByKey[record.api_key_id] ?? []
+            const guardrailNames = (record.guardrails ?? []).map((guardrail) => guardrail.name).filter(Boolean)
             return (
               <TableRow key={record.api_key_id}>
                 <TableCell className="font-semibold text-mg-text-0 text-[13.5px]">{record.name}</TableCell>

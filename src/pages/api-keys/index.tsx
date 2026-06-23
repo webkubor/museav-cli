@@ -15,8 +15,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { getMarketConfig } from '@/config/market'
 import { listApiKeys, revokeApiKey } from '@/services/api-keys'
-import { listGuardrails } from '@/services/guardrails'
-import type { GuardrailDetail } from '@/interfaces/guardrails'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
@@ -55,33 +53,7 @@ export default function ApiKeysPage() {
     enabled: !!activeWorkspaceId,
   })
 
-  const { data: guardrailsData } = useQuery({
-    queryKey: ['guardrails', activeWorkspaceId],
-    queryFn: () => listGuardrails(activeWorkspaceId).then((res) => res.items ?? []),
-    enabled: !!activeWorkspaceId,
-    staleTime: 60_000,
-  })
   const apiKeyItems = pageItems(data)
-  const defaultGuardrailNames = ((Array.isArray(guardrailsData) ? guardrailsData : []) as GuardrailDetail[])
-    .filter((g) => g.is_default)
-    .map((g) => g.name)
-
-  // 反查：api_key_id → 护栏名称列表。默认护栏对每个 key 始终生效，先展示默认护栏，再展示额外绑定。
-  const guardrailsByKey: Record<string, string[]> = {}
-  for (const key of apiKeyItems) {
-    guardrailsByKey[key.api_key_id] = [...defaultGuardrailNames]
-  }
-  for (const g of (Array.isArray(guardrailsData) ? guardrailsData : []) as GuardrailDetail[]) {
-    if (g.is_default) continue
-    for (const a of g.assignments ?? []) {
-      if (a.subject_type === 'api_key' && a.api_key_id) {
-        guardrailsByKey[a.api_key_id] ??= []
-        if (!guardrailsByKey[a.api_key_id].includes(g.name)) {
-          guardrailsByKey[a.api_key_id].push(g.name)
-        }
-      }
-    }
-  }
 
   const revokeMutation = useMutation({
     mutationFn: (keyId: string) => revokeApiKey(activeWorkspaceId, keyId),
@@ -146,7 +118,6 @@ export default function ApiKeysPage() {
         canRevoke={canRevoke}
         onRevoke={setRevokeTarget}
         onEditGuardrail={setEditGuardrailKey}
-        guardrailsByKey={guardrailsByKey}
       />
 
       <ConnectModal

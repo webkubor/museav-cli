@@ -217,6 +217,13 @@ export interface ApiKeyItem {
   created_at: string
   scope: 'personal' | 'workspace' | 'member'
   guardrail_id?: string
+  guardrails?: ApiKeyGuardrailSummary[]
+}
+
+export interface ApiKeyGuardrailSummary {
+  id: string
+  name: string
+  is_default: boolean
 }
 
 export interface CreateApiKeyRequest {

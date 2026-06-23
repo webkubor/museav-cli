@@ -34,7 +34,7 @@ export interface InvoiceableRecharge {
 }
 
 /** 发票记录状态 */
-export type InvoiceStatus = 'pending' | 'invoicing' | 'invoiced' | 'failed' | 'voided'
+export type InvoiceStatus = 'invoicing' | 'invoiced' | 'failed'
 
 /** 发票记录 */
 export interface InvoiceRecord {

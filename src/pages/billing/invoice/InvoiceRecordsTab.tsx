@@ -9,14 +9,12 @@ import { Input } from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { listInvoiceRecords, getInvoiceDownloadUrl } from '@/services/invoice'
-import type { InvoiceRecord, InvoiceStatus, InvoiceTitleType } from '@/types'
+import type { InvoiceRecord, InvoiceTitleType } from '@/types'
 
-const STATUS_MAP: Record<InvoiceStatus, { label: string; cls: string }> = {
-  pending: { label: '待开票', cls: 'bg-mg-fill-0 text-mg-text-1' },
+const STATUS_MAP: Record<InvoiceRecord['status'], { label: string; cls: string }> = {
+  invoicing: { label: '开票中', cls: 'bg-mg-warning/10 text-mg-warning' },
   invoiced: { label: '已开票', cls: 'bg-mg-success/10 text-mg-success' },
   failed: { label: '开票失败', cls: 'bg-mg-danger/10 text-mg-danger' },
-  voided: { label: '已红冲', cls: 'bg-mg-fill-1 text-mg-text-2' },
-  invoicing: { label: '开票中', cls: 'bg-mg-warning/10 text-mg-warning' },
 }
 const TITLE_TYPE_LABEL: Record<InvoiceTitleType, string> = {
   vat_normal: '增值税普票',
@@ -80,11 +78,9 @@ export function InvoiceRecordsTab({
       <div className="flex gap-2">
         <Select value={status} onChange={setStatus} className="w-[130px]" placeholder="全部状态">
           <Select.Option value="all">全部状态</Select.Option>
-          <Select.Option value="pending">待开票</Select.Option>
-          <Select.Option value="invoiced">已开票</Select.Option>
           <Select.Option value="invoicing">开票中</Select.Option>
+          <Select.Option value="invoiced">已开票</Select.Option>
           <Select.Option value="failed">开票失败</Select.Option>
-          <Select.Option value="voided">已红冲</Select.Option>
         </Select>
         <Input
           variant="search"
@@ -129,16 +125,6 @@ export function InvoiceRecordsTab({
                   </div>
                   {r.status === 'failed' && r.error_msg && (
                     <p className="text-xs text-mg-danger">{r.error_msg}</p>
-                  )}
-                  {r.status === 'pending' && (
-                    <p className="text-xs text-mg-text-2">
-                      申请已提交，系统会自动发起 FAPI 开票任务。
-                    </p>
-                  )}
-                  {r.status === 'voided' && (
-                    <p className="text-xs text-mg-text-2">
-                      该票已由运营红冲；如需重开请在「申请开票」重新发起。
-                    </p>
                   )}
                 </div>
                 <div className="shrink-0">

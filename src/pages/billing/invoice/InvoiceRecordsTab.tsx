@@ -123,9 +123,6 @@ export function InvoiceRecordsTab({
                     </span>
                     {r.tax_serial && <span>发票号 {r.tax_serial}</span>}
                   </div>
-                  {r.status === 'failed' && r.error_msg && (
-                    <p className="text-xs text-mg-danger">{r.error_msg}</p>
-                  )}
                 </div>
                 <div className="shrink-0">
                   {r.status === 'invoiced' && (

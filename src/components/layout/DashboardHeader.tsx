@@ -98,24 +98,10 @@ export const DashboardHeader: React.FC = () => {
     })
   }
 
+  // 与官网一致：静止时滑块隐藏（active 仅靠品牌色+粗体体现），pill 仅 hover 滑入
   const resetSlider = () => {
-    if (!navRef.current) return
-    const activeEl = navRef.current.querySelector('[aria-current="page"]') as HTMLElement
-    if (activeEl) {
-      setSliderStyle({
-        left: activeEl.offsetLeft,
-        width: activeEl.offsetWidth,
-        opacity: 1,
-      })
-    } else {
-      setSliderStyle((prev) => ({ ...prev, opacity: 0 }))
-    }
+    setSliderStyle((prev) => ({ ...prev, opacity: 0 }))
   }
-
-  useEffect(() => {
-    const timer = setTimeout(resetSlider, 100)
-    return () => clearTimeout(timer)
-  }, [location.pathname])
 
   const navClass = (active: boolean) =>
     cn(
@@ -369,7 +355,7 @@ export const DashboardHeader: React.FC = () => {
           {/* 磁性悬浮滑块（胶囊气泡） */}
           <div
             style={sliderStyle}
-            className="pointer-events-none absolute top-1.5 bottom-1.5 rounded-lg bg-brand-base/[0.08] transition-all duration-380 cubic-bezier(0.25, 1, 0.33, 1)"
+            className="pointer-events-none absolute top-1.5 bottom-1.5 rounded-lg bg-brand-base/[0.08] transition-all duration-[380ms] ease-[cubic-bezier(0.25,1,0.33,1)]"
           />
 
           {syncedNav.map((item) => {
@@ -384,9 +370,6 @@ export const DashboardHeader: React.FC = () => {
                 className={navClass(active)}
               >
                 {item.label}
-                {active && (
-                  <span className="pointer-events-none absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-brand-base" />
-                )}
               </button>
             ) : (
               <a

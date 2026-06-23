@@ -61,14 +61,24 @@ export default function ApiKeysPage() {
     enabled: !!activeWorkspaceId,
     staleTime: 60_000,
   })
-  // 反查：api_key_id → 非默认护栏名称列表（默认护栏全局生效，不单独展示）
+  const apiKeyItems = pageItems(data)
+  const defaultGuardrailNames = ((Array.isArray(guardrailsData) ? guardrailsData : []) as GuardrailDetail[])
+    .filter((g) => g.is_default)
+    .map((g) => g.name)
+
+  // 反查：api_key_id → 护栏名称列表。默认护栏对每个 key 始终生效，先展示默认护栏，再展示额外绑定。
   const guardrailsByKey: Record<string, string[]> = {}
+  for (const key of apiKeyItems) {
+    guardrailsByKey[key.api_key_id] = [...defaultGuardrailNames]
+  }
   for (const g of (Array.isArray(guardrailsData) ? guardrailsData : []) as GuardrailDetail[]) {
     if (g.is_default) continue
     for (const a of g.assignments ?? []) {
       if (a.subject_type === 'api_key' && a.api_key_id) {
         guardrailsByKey[a.api_key_id] ??= []
-        guardrailsByKey[a.api_key_id].push(g.name)
+        if (!guardrailsByKey[a.api_key_id].includes(g.name)) {
+          guardrailsByKey[a.api_key_id].push(g.name)
+        }
       }
     }
   }
@@ -85,7 +95,7 @@ export default function ApiKeysPage() {
     },
   })
 
-  const filteredData = pageItems(data).filter(
+  const filteredData = apiKeyItems.filter(
     (item) =>
       item.name.toLowerCase().includes(searchValue.toLowerCase()) ||
       (item.masked ?? '').toLowerCase().includes(searchValue.toLowerCase())

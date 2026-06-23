@@ -242,6 +242,6 @@ export interface ApiKeyCreated {
 export interface UpdateApiKeyRequest {
   name?: string
   expires_at?: string | null
-  spending_limit?: SpendingLimit
+  spending_limit?: SpendingLimit | null
   guardrail_ids?: string[] | null
 }

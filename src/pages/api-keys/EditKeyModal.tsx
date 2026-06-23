@@ -94,7 +94,7 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
         name: name.trim(),
         spending_limit: spendingAmount
           ? { amount: spendingAmount, currency, period_unit: spendingPeriodUnit, period_length: 1 }
-          : undefined,
+          : null,
         expires_at: (() => {
           if (expiryRange.preset === 'all' || !expiryRange.preset) return null
           if (expiryRange.preset === 'custom' && expiryRange.endDate) {

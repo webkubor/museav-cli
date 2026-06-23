@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -15,7 +15,23 @@ const buildHash = (() => {
 const buildTime = new Date().toISOString()
 
 
-export default defineConfig(({ mode }) => ({
+// 跳转地址（官网/控制台/文档）每个环境都必须按市场配齐——缺一个就中断构建，
+// 不允许带着空配置/硬编码兜底上线（兜底的真正含义：配置缺失就不让过）。
+const REQUIRED_URL_ENV = [
+  'VITE_DOMESTIC_SITE', 'VITE_DOMESTIC_CONSOLE', 'VITE_DOMESTIC_DOCS',
+  'VITE_GLOBAL_SITE', 'VITE_GLOBAL_CONSOLE', 'VITE_GLOBAL_DOCS',
+] as const
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), 'VITE_')
+  const missing = REQUIRED_URL_ENV.filter((k) => !env[k]?.trim())
+  if (missing.length) {
+    throw new Error(
+      `[vite] 缺少必需的跳转地址环境变量（mode=${mode}）：${missing.join(', ')}。` +
+      `请在 .env.${mode} 按市场配齐，禁止留空或依赖硬编码兜底。`,
+    )
+  }
+  return {
   define: {
     __APP_VERSION__: JSON.stringify(version),
     __BUILD_HASH__: JSON.stringify(buildHash),
@@ -122,7 +138,8 @@ export default defineConfig(({ mode }) => ({
       })(),
     },
   },
-}))
+  }
+})
 
 
 

@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge, type BadgeVariant } from '@/components/ui/Badge'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   LuChevronDown,
   LuPlus,
@@ -82,6 +82,41 @@ export const DashboardHeader: React.FC = () => {
     { key: 'docs', label: t('nav.docsMenu'), href: marketConfig.docsUrl },
     { key: 'changelog', label: t('common.changelog'), href: `${marketConfig.docsUrl}/changelog` },
   ]
+  const navRef = useRef<HTMLDivElement>(null)
+  const [sliderStyle, setSliderStyle] = useState<React.CSSProperties>({
+    left: 0,
+    width: 0,
+    opacity: 0,
+  })
+
+  const updateSlider = (el: HTMLElement) => {
+    if (!el) return
+    setSliderStyle({
+      left: el.offsetLeft,
+      width: el.offsetWidth,
+      opacity: 1,
+    })
+  }
+
+  const resetSlider = () => {
+    if (!navRef.current) return
+    const activeEl = navRef.current.querySelector('[aria-current="page"]') as HTMLElement
+    if (activeEl) {
+      setSliderStyle({
+        left: activeEl.offsetLeft,
+        width: activeEl.offsetWidth,
+        opacity: 1,
+      })
+    } else {
+      setSliderStyle((prev) => ({ ...prev, opacity: 0 }))
+    }
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(resetSlider, 100)
+    return () => clearTimeout(timer)
+  }, [location.pathname])
+
   const navClass = (active: boolean) =>
     cn(
       'relative px-3 py-1.5 rounded-lg text-[13px] font-medium whitespace-nowrap select-none',
@@ -90,7 +125,7 @@ export const DashboardHeader: React.FC = () => {
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base/40',
       active
         ? 'text-brand-base font-semibold'
-        : 'text-mg-text-1 hover:text-brand-base hover:bg-brand-base/[0.06]',
+        : 'text-mg-text-1 hover:text-brand-base',
     )
 
   const [scrolled, setScrolled] = useState(false)
@@ -326,13 +361,24 @@ export const DashboardHeader: React.FC = () => {
       {/* 右侧：功能控制区 + 组织 Switcher + 用户头像 */}
       <div className="flex items-center gap-4">
         {/* 1. 三端同步导航（官网为基准的同一组栏目，#251）；窄屏折叠进头像下拉 */}
-        <nav className="hidden md:flex items-center gap-0.5">
+        <nav
+          ref={navRef}
+          onMouseLeave={resetSlider}
+          className="hidden md:flex items-center gap-0.5 relative"
+        >
+          {/* 磁性悬浮滑块（胶囊气泡） */}
+          <div
+            style={sliderStyle}
+            className="pointer-events-none absolute top-1.5 bottom-1.5 rounded-lg bg-brand-base/[0.08] transition-all duration-380 cubic-bezier(0.25, 1, 0.33, 1)"
+          />
+
           {syncedNav.map((item) => {
             const active = !!item.match?.(location.pathname)
             return item.to ? (
               <button
                 key={item.key}
                 type="button"
+                onMouseEnter={(e) => updateSlider(e.currentTarget)}
                 onClick={() => navigate(item.to!)}
                 aria-current={active ? 'page' : undefined}
                 className={navClass(active)}
@@ -348,6 +394,7 @@ export const DashboardHeader: React.FC = () => {
                 href={item.href}
                 target="_blank"
                 rel="noopener noreferrer"
+                onMouseEnter={(e) => updateSlider(e.currentTarget)}
                 className={navClass(false)}
               >
                 {item.label}

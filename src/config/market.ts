@@ -35,6 +35,19 @@ const isTestOrDev = (): boolean => {
   return false
 }
 
+/**
+ * 读取「必需」的 URL 环境变量。缺失即抛错——不留硬编码兜底。
+ * 跳转地址（官网/控制台/文档）每个环境都在对应 .env 文件按市场配齐，
+ * 配置缺了就该启动失败，而不是悄悄跳到一个写死的、可能早已腐烂的域名。
+ * （vite.config 另有构建前校验，缺 key 直接中断构建。）
+ */
+function requireEnv(value: string | undefined, key: string): string {
+  if (!value) {
+    throw new Error(`[market] 缺少必需环境变量 ${key}，请在对应 .env 文件配置（禁止留空或硬编码兜底）`)
+  }
+  return value
+}
+
 const configs: Record<Market, MarketConfig> = {
   domestic: {
     domain: 'modelgo.com',
@@ -45,13 +58,9 @@ const configs: Record<Market, MarketConfig> = {
     icp: import.meta.env.VITE_ICP || null,
     locales: ['zh'],
     defaultLocale: 'zh',
-    siteUrl: isTestOrDev()
-      ? 'https://web.test.modelgo.com'
-      : (import.meta.env.VITE_SITE_URL || 'https://modelgo.com'),
-    consoleUrl: import.meta.env.VITE_DOMESTIC_CONSOLE || 'https://console.modelgo.com',
-    docsUrl: isTestOrDev()
-      ? 'https://docs.test.modelgo.com'
-      : (import.meta.env.VITE_DOMESTIC_DOCS || 'https://docs.modelgo.com'),
+    siteUrl: requireEnv(import.meta.env.VITE_DOMESTIC_SITE, 'VITE_DOMESTIC_SITE'),
+    consoleUrl: requireEnv(import.meta.env.VITE_DOMESTIC_CONSOLE, 'VITE_DOMESTIC_CONSOLE'),
+    docsUrl: requireEnv(import.meta.env.VITE_DOMESTIC_DOCS, 'VITE_DOMESTIC_DOCS'),
   },
 
   global: {
@@ -63,13 +72,9 @@ const configs: Record<Market, MarketConfig> = {
     icp: null,
     locales: ['zh', 'en'],
     defaultLocale: 'en',
-    siteUrl: isTestOrDev()
-      ? 'https://global-web.test.modelgo.com'
-      : (import.meta.env.VITE_SITE_URL || 'https://modelgo.ai'),
-    consoleUrl: import.meta.env.VITE_GLOBAL_CONSOLE || 'https://console.modelgo.ai',
-    docsUrl: isTestOrDev()
-      ? 'https://docs.test.modelgo.com'
-      : (import.meta.env.VITE_GLOBAL_DOCS || 'https://docs.modelgo.ai'),
+    siteUrl: requireEnv(import.meta.env.VITE_GLOBAL_SITE, 'VITE_GLOBAL_SITE'),
+    consoleUrl: requireEnv(import.meta.env.VITE_GLOBAL_CONSOLE, 'VITE_GLOBAL_CONSOLE'),
+    docsUrl: requireEnv(import.meta.env.VITE_GLOBAL_DOCS, 'VITE_GLOBAL_DOCS'),
   },
 }
 

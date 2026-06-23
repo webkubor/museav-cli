@@ -285,8 +285,8 @@ export const DashboardHeader: React.FC = () => {
   return (
     <header className={cn(
       "h-[60px] border-b px-6 flex items-center justify-between z-40 relative select-none transition-all duration-300 ease-out",
-      "bg-[rgba(var(--mg-bg-0-rgb),0.85)] border-mg-border/80 backdrop-blur-md",
-      scrolled && "bg-[rgba(var(--mg-bg-0-rgb),0.92)] border-mg-border shadow-sm shadow-black/3"
+      "bg-[rgba(var(--mg-bg-0-rgb),0.45)] border-mg-border/30 backdrop-blur-xl saturate-150 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]",
+      scrolled && "bg-[rgba(var(--mg-bg-0-rgb),0.85)] border-mg-border/80 shadow-md shadow-black/5"
     )}>
       {/* 左侧：Logo & 工作区选择器 */}
       <div className="flex items-center gap-6">

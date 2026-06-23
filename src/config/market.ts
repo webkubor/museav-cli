@@ -46,12 +46,12 @@ const configs: Record<Market, MarketConfig> = {
     locales: ['zh'],
     defaultLocale: 'zh',
     siteUrl: isTestOrDev()
-      ? 'https://test.modelgo.com'
+      ? 'https://web.test.modelgo.com'
       : (import.meta.env.VITE_SITE_URL || 'https://modelgo.com'),
     consoleUrl: import.meta.env.VITE_DOMESTIC_CONSOLE || 'https://console.modelgo.com',
     docsUrl: isTestOrDev()
       ? 'https://docs.test.modelgo.com'
-      : (import.meta.env.VITE_DOMESTIC_DOCS || 'https://doc.modelgo.com'),
+      : (import.meta.env.VITE_DOMESTIC_DOCS || 'https://docs.modelgo.com'),
   },
 
   global: {
@@ -64,12 +64,12 @@ const configs: Record<Market, MarketConfig> = {
     locales: ['zh', 'en'],
     defaultLocale: 'en',
     siteUrl: isTestOrDev()
-      ? 'https://test.modelgo.com'
+      ? 'https://global-web.test.modelgo.com'
       : (import.meta.env.VITE_SITE_URL || 'https://modelgo.ai'),
     consoleUrl: import.meta.env.VITE_GLOBAL_CONSOLE || 'https://console.modelgo.ai',
     docsUrl: isTestOrDev()
       ? 'https://docs.test.modelgo.com'
-      : (import.meta.env.VITE_GLOBAL_DOCS || 'https://doc.modelgo.ai'),
+      : (import.meta.env.VITE_GLOBAL_DOCS || 'https://docs.modelgo.ai'),
   },
 }
 

@@ -23,7 +23,7 @@ const TITLE_TYPE_LABEL: Record<InvoiceTitleType, string> = {
 }
 
 const RECHARGE_INVOICE_STATUS: Record<RechargeInvoiceStatus, { label: string; cls: string }> = {
-  billable: { label: '可开票', cls: 'text-brand-base' },
+  billable: { label: '可开票', cls: 'bg-brand-base/10 text-brand-base' },
   pending: { label: '待开票', cls: 'bg-mg-fill-0 text-mg-text-1' },
   invoicing: { label: '开票中', cls: 'bg-mg-warning/10 text-mg-warning' },
   invoiced: { label: '已开票', cls: 'bg-mg-success/10 text-mg-success' },
@@ -46,6 +46,7 @@ export function ApplyInvoiceTab({
   const [view, setView] = useState<'list' | 'confirm'>('list')
   const [selected, setSelected] = useState<string[]>([])
   const [titleId, setTitleId] = useState('')
+  const [expandRecharges, setExpandRecharges] = useState(false)
 
   const { data: rechargeData, isLoading } = useQuery({
     queryKey: ['invoice', 'recharges', tenantId],
@@ -57,8 +58,18 @@ export function ApplyInvoiceTab({
     queryFn: () => listInvoiceTitles(tenantId),
     enabled: Boolean(tenantId),
   })
-  const recharges = rechargeData?.items ?? []
-  const titles = titleData?.items ?? []
+
+  const recharges = useMemo(() => rechargeData?.items ?? [], [rechargeData])
+  const titles = useMemo(() => titleData?.items ?? [], [titleData])
+
+  const allBillableIds = useMemo(
+    () => recharges.filter((r) => r.invoice_status === 'billable').map((r) => r.recharge_id),
+    [recharges]
+  )
+  const isAllSelected = useMemo(
+    () => allBillableIds.length > 0 && allBillableIds.every((id) => selected.includes(id)),
+    [allBillableIds, selected]
+  )
 
   const selectedRecharges = useMemo(
     () => recharges.filter((r) => selected.includes(r.recharge_id)),
@@ -68,7 +79,7 @@ export function ApplyInvoiceTab({
     () => selectedRecharges.reduce((sum, r) => sum + Number(r.amount), 0),
     [selectedRecharges]
   )
-  const activeTitle = titles.find((t) => t.id === titleId)
+  const activeTitle = useMemo(() => titles.find((t) => t.id === titleId), [titles, titleId])
 
   const toggle = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
@@ -124,17 +135,32 @@ export function ApplyInvoiceTab({
         </div>
 
         {/* 包含充值单 */}
-        <div className="rounded-md border border-mg-border p-4">
-          <div className="mb-2 text-xs font-semibold text-mg-text-1">包含充值单（{selected.length}）</div>
-          {selectedRecharges.map((r) => (
-            <div key={r.recharge_id} className="flex items-center justify-between py-1 text-sm">
-              <span className="text-mg-text-1">{r.order_no}</span>
-              <span className="font-semibold tabular-nums text-mg-text-0">
-                {currencySymbol}
-                {r.amount}
-              </span>
-            </div>
-          ))}
+        <div className="rounded-md border border-mg-border p-4 bg-mg-fill-0/10">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold text-mg-text-1">包含充值单（{selected.length}）</span>
+            {selected.length > 3 && (
+              <button
+                type="button"
+                onClick={() => setExpandRecharges(!expandRecharges)}
+                className="text-xs font-semibold text-brand-base hover:text-brand-mid transition-colors"
+              >
+                {expandRecharges ? '收起' : `展开其余 ${selected.length - 3} 笔`}
+              </button>
+            )}
+          </div>
+          <div className="space-y-1">
+            {selectedRecharges
+              .slice(0, expandRecharges ? selectedRecharges.length : 3)
+              .map((r) => (
+                <div key={r.recharge_id} className="flex items-center justify-between py-1 text-sm">
+                  <span className="text-mg-text-1 font-mono">{r.order_no}</span>
+                  <span className="font-semibold tabular-nums text-mg-text-0">
+                    {currencySymbol}
+                    {r.amount}
+                  </span>
+                </div>
+              ))}
+          </div>
         </div>
 
         {/* 抬头选择 */}
@@ -160,18 +186,44 @@ export function ApplyInvoiceTab({
 
         {/* 选中抬头详情 */}
         {activeTitle && (
-          <div className="rounded-md border border-mg-border p-4">
-            <div className="mb-2 text-sm font-bold text-mg-text-0">{TITLE_TYPE_LABEL[activeTitle.type]}</div>
-            <div className="space-y-1 text-xs text-mg-text-2">
-              <div>税号：{activeTitle.tax_id}</div>
-              {activeTitle.reg_address && <div>地址：{activeTitle.reg_address}</div>}
-              {activeTitle.reg_phone && <div>电话：{activeTitle.reg_phone}</div>}
-              {activeTitle.bank_name && (
-                <div>
-                  开行：{activeTitle.bank_name} {activeTitle.bank_account}
+          <div className="rounded-md border border-mg-border p-4 bg-mg-fill-0/30">
+            <div className="mb-3 text-[11px] font-bold uppercase tracking-wider text-mg-text-1 border-b border-mg-border pb-1.5 flex items-center justify-between">
+              <span>抬头详细信息</span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-mg-fill-0 text-mg-text-2">
+                {TITLE_TYPE_LABEL[activeTitle.type]}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+              <div className="flex justify-between sm:justify-start gap-2 py-1 border-b border-mg-border/30 sm:border-none">
+                <span className="text-mg-text-2 shrink-0">纳税人识别号:</span>
+                <span className="font-medium text-mg-text-0 font-mono">{activeTitle.tax_id}</span>
+              </div>
+              {activeTitle.email && (
+                <div className="flex justify-between sm:justify-start gap-2 py-1 border-b border-mg-border/30 sm:border-none">
+                  <span className="text-mg-text-2 shrink-0">接收邮箱:</span>
+                  <span className="font-medium text-mg-text-0">{activeTitle.email}</span>
                 </div>
               )}
-              <div>接收邮箱：{activeTitle.email}</div>
+              {activeTitle.reg_address && (
+                <div className="flex justify-between sm:justify-start gap-2 py-1 border-b border-mg-border/30 sm:border-none sm:col-span-2">
+                  <span className="text-mg-text-2 shrink-0">注册地址:</span>
+                  <span className="font-medium text-mg-text-0">{activeTitle.reg_address}</span>
+                </div>
+              )}
+              {activeTitle.reg_phone && (
+                <div className="flex justify-between sm:justify-start gap-2 py-1 border-b border-mg-border/30 sm:border-none">
+                  <span className="text-mg-text-2 shrink-0">电话号码:</span>
+                  <span className="font-medium text-mg-text-0">{activeTitle.reg_phone}</span>
+                </div>
+              )}
+              {activeTitle.bank_name && (
+                <div className="flex justify-between sm:justify-start gap-2 py-1 sm:border-none sm:col-span-2">
+                  <span className="text-mg-text-2 shrink-0">开户银行及账号:</span>
+                  <span className="font-medium text-mg-text-0">
+                    {activeTitle.bank_name} <span className="font-mono">{activeTitle.bank_account}</span>
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -196,76 +248,101 @@ export function ApplyInvoiceTab({
   }
 
   // ─── 列表页 ───────────────────────────────────────
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelected((prev) => Array.from(new Set([...prev, ...allBillableIds])))
+    } else {
+      setSelected((prev) => prev.filter((id) => !allBillableIds.includes(id)))
+    }
+  }
+
   return (
     <div className="space-y-4">
       <p className="text-xs leading-relaxed text-mg-text-2">
         国内开具增值税发票（普票/专票）。平台统一承担增值税，所有充值可申请开票；勾选充值 →「合并开票」选择抬头与票种后提交申请。
       </p>
 
-      <div className="rounded-md border border-mg-border p-4">
-        <div className="mb-3 flex items-center justify-between">
+      <div className="rounded-md border border-mg-border bg-mg-card overflow-hidden relative">
+        <div className="p-4 pb-3 flex items-center justify-between border-b border-mg-border">
           <div className="flex items-center gap-2 text-sm font-bold text-mg-text-0">
             <span className="text-brand-base">₣</span> 充值 · 申请开票
           </div>
-          {selected.length > 0 && (
-            <Button variant="brand" size="sm" onClick={goConfirm}>
-              合并开票（{selected.length} 笔 · {currencySymbol}
-              {selectedTotal.toFixed(2)}）
-            </Button>
-          )}
         </div>
 
-        <div className="grid grid-cols-[24px_1fr_auto_120px] items-center gap-x-3 px-1 pb-2 text-[11px] font-semibold uppercase tracking-wider text-mg-text-2">
-          <span />
+        <div className="grid grid-cols-[24px_1fr_auto_120px] items-center gap-x-3 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-mg-text-2 bg-mg-fill-0/30">
+          <input
+            type="checkbox"
+            checked={isAllSelected}
+            onChange={(e) => handleSelectAll(e.target.checked)}
+            className="h-4 w-4 rounded-sm border-mg-border accent-brand-base cursor-pointer"
+            disabled={allBillableIds.length === 0}
+          />
           <span>充值单号</span>
           <span className="text-right">金额</span>
           <span className="text-right">开票状态</span>
         </div>
 
-        {isLoading ? (
-          <div className="py-8 text-center text-sm text-mg-text-2">加载中…</div>
-        ) : recharges.length === 0 ? (
-          <div className="py-8 text-center text-sm text-mg-text-2">暂无可开票充值</div>
-        ) : (
-          recharges.map((r) => {
-            const billable = r.invoice_status === 'billable'
-            const status = RECHARGE_INVOICE_STATUS[r.invoice_status]
-            const statusText = billable || !r.invoice_no ? status.label : `${status.label} · ${r.invoice_no}`
-            return (
-              <label
-                key={r.recharge_id}
-                className={cn(
-                  'grid grid-cols-[24px_1fr_auto_120px] items-center gap-x-3 border-t border-mg-border px-1 py-3 text-sm',
-                  billable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
-                )}
-              >
-                <input
-                  type="checkbox"
-                  disabled={!billable}
-                  checked={selected.includes(r.recharge_id)}
-                  onChange={() => billable && toggle(r.recharge_id)}
-                  className="h-4 w-4 rounded-sm border-mg-border accent-brand-base"
-                />
-                <span className="font-medium text-mg-text-0">{r.order_no}</span>
-                <span className="text-right font-bold tabular-nums text-mg-text-0">
-                  {currencySymbol}
-                  {r.amount}
-                </span>
-                <span className="min-w-0 text-right text-xs">
-                  {billable ? (
-                    <span className={cn('font-semibold', status.cls)}>{status.label}</span>
-                  ) : (
+        <div className="divide-y divide-mg-border px-4">
+          {isLoading ? (
+            <div className="py-8 text-center text-sm text-mg-text-2">加载中…</div>
+          ) : recharges.length === 0 ? (
+            <div className="py-8 text-center text-sm text-mg-text-2">暂无可开票充值</div>
+          ) : (
+            recharges.map((r) => {
+              const billable = r.invoice_status === 'billable'
+              const status = RECHARGE_INVOICE_STATUS[r.invoice_status]
+              const statusText = billable || !r.invoice_no ? status.label : `${status.label} · ${r.invoice_no}`
+              return (
+                <label
+                  key={r.recharge_id}
+                  className={cn(
+                    'grid grid-cols-[24px_1fr_auto_120px] items-center gap-x-3 py-3 text-sm transition-opacity duration-150',
+                    billable ? 'cursor-pointer hover:bg-mg-fill-0/20' : 'cursor-not-allowed opacity-60'
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    disabled={!billable}
+                    checked={selected.includes(r.recharge_id)}
+                    onChange={() => billable && toggle(r.recharge_id)}
+                    className="h-4 w-4 rounded-sm border-mg-border accent-brand-base cursor-pointer"
+                  />
+                  <span className="font-medium text-mg-text-0 font-mono">{r.order_no}</span>
+                  <span className="text-right font-bold tabular-nums text-mg-text-0">
+                    {currencySymbol}
+                    {r.amount}
+                  </span>
+                  <span className="min-w-0 text-right">
                     <span
-                      className={cn('inline-block max-w-full truncate rounded-full px-2 py-0.5 text-[11px] font-semibold', status.cls)}
+                      className={cn(
+                        'inline-block max-w-full truncate rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                        status.cls
+                      )}
                       title={statusText}
                     >
                       {statusText}
                     </span>
-                  )}
-                </span>
-              </label>
-            )
-          })
+                  </span>
+                </label>
+              )
+            })
+          )}
+        </div>
+
+        {/* Sticky Action Footer */}
+        {selected.length > 0 && (
+          <div className="sticky bottom-0 left-0 right-0 border-t border-mg-border bg-mg-card/95 backdrop-blur-sm p-4 flex items-center justify-between z-10 shadow-lg shadow-black/5 animate-in slide-in-from-bottom-2 duration-200">
+            <div className="text-xs text-mg-text-2">
+              已选 <span className="font-bold text-brand-base">{selected.length}</span> 笔充值单，合计金额：
+              <span className="text-sm font-bold text-mg-text-0 tabular-nums ml-1">
+                {currencySymbol}
+                {selectedTotal.toFixed(2)}
+              </span>
+            </div>
+            <Button variant="brand" size="sm" onClick={goConfirm}>
+              合并开票
+            </Button>
+          </div>
         )}
       </div>
     </div>

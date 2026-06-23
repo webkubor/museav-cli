@@ -53,6 +53,8 @@
     "invoices": "Invoices",
     "settings": "Settings",
     "referral": "Referral",
+    "enterprise": "Enterprise",
+    "docsMenu": "Docs",
     "account": "Account Settings",
     "workspace": "Manage Workspace",
     "organization": "Organization Mgmt",

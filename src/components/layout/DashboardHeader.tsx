@@ -7,14 +7,12 @@ import {
   LuPlus,
   LuSettings,
   LuGlobe,
-  LuBookOpen,
   LuLogOut,
   LuUser,
   LuBuilding2,
-  LuScrollText,
   LuZap,
 } from 'react-icons/lu'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSiteIcon } from '@/config/brand-assets'
 import { useLangStore } from '@/store/use-brand-store'
@@ -55,6 +53,7 @@ import {
  */
 export const DashboardHeader: React.FC = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const market = useLangStore((s) => s.market)
   const marketConfig = getMarketConfig(market)
 
@@ -65,6 +64,34 @@ export const DashboardHeader: React.FC = () => {
   const siteIcon = useSiteIcon()
   const activeTenantType = tenants.find((t) => t.tenant_id === activeTenantId)?.type ?? 'personal'
   const isNonPersonal = activeTenantType !== 'personal'
+
+  // 三端同步导航（#251）：与官网右上角同一组栏目，「有本端页跳本端、无则跨端跳官网/文档」。
+  // 最右槽位仍是头像下拉（app 专属），不进这套同步菜单。
+  const syncedNav: Array<{
+    key: string
+    label: string
+    to?: string
+    href?: string
+    match?: (path: string) => boolean
+  }> = [
+    // 站内 dashboard 由左上角 logo 承担；这里第一项给「官网」外链（与官网右上角风格统一的入口）
+    { key: 'website', label: t('common.website'), href: marketConfig.siteUrl },
+    { key: 'models', label: t('nav.models'), to: '/models/catalog', match: (p) => p.startsWith('/models') },
+    { key: 'enterprise', label: t('nav.enterprise'), to: '/settings/organization', match: (p) => p.startsWith('/settings/organization') },
+    { key: 'referral', label: t('nav.referral'), to: '/referral', match: (p) => p.startsWith('/referral') },
+    { key: 'docs', label: t('nav.docsMenu'), href: marketConfig.docsUrl },
+    { key: 'changelog', label: t('common.changelog'), href: `${marketConfig.docsUrl}/changelog` },
+  ]
+  const navClass = (active: boolean) =>
+    cn(
+      'relative px-3 py-1.5 rounded-lg text-[13px] font-medium whitespace-nowrap select-none',
+      'transition-all duration-200 active:scale-[0.96]',
+      'motion-reduce:transition-none motion-reduce:active:scale-100',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base/40',
+      active
+        ? 'text-brand-base font-semibold'
+        : 'text-mg-text-1 hover:text-brand-base hover:bg-brand-base/[0.06]',
+    )
 
   const [scrolled, setScrolled] = useState(false)
 
@@ -266,7 +293,8 @@ export const DashboardHeader: React.FC = () => {
         {/* Logo 展现 */}
         <div 
           className="flex items-center gap-2 cursor-pointer active:scale-[0.97] transition-transform duration-150 select-none"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/dashboard')}
+          title={t('nav.dashboard')}
         >
           {/* Icon mark with shimmer */}
           <div className="logo-shimmer relative rounded-sm overflow-hidden shrink-0">
@@ -297,38 +325,36 @@ export const DashboardHeader: React.FC = () => {
 
       {/* 右侧：功能控制区 + 组织 Switcher + 用户头像 */}
       <div className="flex items-center gap-4">
-        {/* 1. 官网 & 文档外链 */}
-        <div className="flex items-center gap-0.5">
-          <a
-            href={marketConfig.siteUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/60 transition-all duration-150 select-none"
-          >
-            <LuGlobe size={13} className="shrink-0" />
-            <span>{t('common.website')}</span>
-          </a>
-          <a
-            href={marketConfig.docsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/60 transition-all duration-150 select-none"
-          >
-            <LuBookOpen size={13} className="shrink-0" />
-            <span>{t('common.docs')}</span>
-          </a>
-          <a
-            href={`${marketConfig.docsUrl}/changelog`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/60 transition-all duration-150 select-none"
-          >
-            <LuScrollText size={13} className="shrink-0" />
-            <span>{t('common.changelog')}</span>
-          </a>
-        </div>
-        {/* 一级菜单极细分隔线 */}
-        <div className="w-[1.5px] h-4 bg-mg-border/85 pointer-events-none rounded-full shrink-0" />
+        {/* 1. 三端同步导航（官网为基准的同一组栏目，#251）；窄屏折叠进头像下拉 */}
+        <nav className="hidden md:flex items-center gap-0.5">
+          {syncedNav.map((item) => {
+            const active = !!item.match?.(location.pathname)
+            return item.to ? (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => navigate(item.to!)}
+                aria-current={active ? 'page' : undefined}
+                className={navClass(active)}
+              >
+                {item.label}
+                {active && (
+                  <span className="pointer-events-none absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-brand-base" />
+                )}
+              </button>
+            ) : (
+              <a
+                key={item.key}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={navClass(false)}
+              >
+                {item.label}
+              </a>
+            )
+          })}
+        </nav>
 
         {/* 2. 用户头像一站式 Dropdown */}
         <DropdownMenu>
@@ -364,6 +390,23 @@ export const DashboardHeader: React.FC = () => {
                 </div>
                 <div className="text-[11px] text-mg-text-2 truncate">{account?.email}</div>
               </div>
+            </div>
+
+            {/* 窄屏兜底：≥md 顶栏直接展示的同步导航，在 <md 折叠进此处 */}
+            <div className="md:hidden">
+              {syncedNav.map((item) => (
+                <DropdownMenuItem
+                  key={item.key}
+                  onClick={() =>
+                    item.to
+                      ? navigate(item.to)
+                      : window.open(item.href, '_blank', 'noopener,noreferrer')
+                  }
+                >
+                  <span className="flex-1 truncate">{item.label}</span>
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
             </div>
 
             {/* 个人 + 企业：平级可切换列表 */}

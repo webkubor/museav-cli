@@ -7,6 +7,7 @@ import { handleSessionExpired } from '@/lib/auth/auth-controller'
 
 const API_V1_PREFIX = 'api/v1'
 const DEV_TOOLS_ENABLED = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
+export const SERVER_ERROR_MESSAGE = '服务暂时不可用，请稍后再试'
 
 function normalizeApiHost(value: string | undefined): string | null {
   if (!value) return null
@@ -130,19 +131,26 @@ function searchParams(params?: QueryParams) {
 
 export class ModelGoApiError extends Error {
   code: number
+  rawMessage: string
   requestId?: string
   traceId?: string
   data?: ApiError['data']
   path?: string
 
   constructor(error: ApiError) {
-    super(error.msg)
+    const rawMessage = error.msg
+    super(isServerErrorCode(error.code) ? SERVER_ERROR_MESSAGE : rawMessage)
     this.name = 'ModelGoApiError'
     this.code = error.code
+    this.rawMessage = rawMessage
     this.requestId = error.request_id
     this.traceId = error.trace_id
     this.data = error.data
   }
+}
+
+export function isServerErrorCode(code: number) {
+  return code >= 50000 && code < 60000
 }
 
 async function refreshCsrf() {
@@ -356,8 +364,8 @@ function devLogApiError(method: string, path: string, url: string, startedAt: nu
     entry.code = error.code
     entry.request_id = error.requestId
     entry.trace_id = error.traceId
-    entry.error = error.message
-    entry.response = { code: error.code, msg: error.message, data: error.data ?? null, request_id: error.requestId, trace_id: error.traceId }
+    entry.error = error.rawMessage
+    entry.response = { code: error.code, msg: error.rawMessage, data: error.data ?? null, request_id: error.requestId, trace_id: error.traceId }
   } else if (error instanceof Error) {
     entry.status = getHttpStatus(error)
     entry.error = error.message

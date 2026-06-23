@@ -342,7 +342,7 @@
       "desc": "绑定第三方社交或代码托管平台账户，支持使用对应的快捷登录入口免密码接入控制台。",
       "google": "Google 账号",
       "github": "GitHub 账号",
-      "wechat": "微信 账号",
+      "wechat": "微信账号",
       "bound": "已绑定",
       "notBound": "未绑定",
       "emailLabel": "账号邮箱: {{email}}",
@@ -351,6 +351,7 @@
       "processing": "处理中",
       "unbindSuccess": "第三方账号已解绑",
       "bindError": "发起绑定失败，请稍后重试",
+      "identityAlreadyLinked": "该{{provider}}已被其他账户绑定，无法继续绑定",
       "unbindError": "解绑失败，请稍后重试"
     },
     "preferences": {

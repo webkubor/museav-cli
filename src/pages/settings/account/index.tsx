@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
@@ -8,18 +9,27 @@ import { BasicInfoTab } from '@/features/settings/account/components/BasicInfoTa
 import { ChangePasswordTab } from '@/features/settings/account/components/ChangePasswordTab'
 import { OAuthBindingTab } from '@/features/settings/account/components/OAuthBindingTab'
 import { PreferencesTab } from '@/features/settings/account/components/PreferencesTab'
+import { appToast } from '@/lib/app-toast'
+import type { OAuthProvider } from '@/interfaces/account'
 
 type Tab = 'info' | 'security' | 'oauth' | 'preferences'
 const TABS = new Set<Tab>(['info', 'security', 'oauth', 'preferences'])
+const OAUTH_PROVIDERS = new Set<OAuthProvider>(['google', 'github', 'wechat'])
 
 function normalizeTab(value: string | null): Tab {
   return TABS.has(value as Tab) ? (value as Tab) : 'info'
+}
+
+function normalizeOAuthProvider(value: string | null): OAuthProvider | null {
+  return OAUTH_PROVIDERS.has(value as OAuthProvider) ? (value as OAuthProvider) : null
 }
 
 export default function AccountSettingsPage() {
   const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = normalizeTab(searchParams.get('tab'))
+  const oauthError = searchParams.get('oauth_error')
+  const oauthProvider = normalizeOAuthProvider(searchParams.get('provider'))
 
   const setActiveTab = (tab: Tab) => {
     setSearchParams(tab === 'info' ? {} : { tab })
@@ -29,6 +39,21 @@ export default function AccountSettingsPage() {
     queryKey: ['account-profile'],
     queryFn: getProfile,
   })
+
+  useEffect(() => {
+    if (oauthError !== 'identity_already_linked') {
+      return
+    }
+    const providerLabel = oauthProvider
+      ? t(`account.oauth.${oauthProvider}`)
+      : t('account.tabs.oauth')
+    appToast.error(t('account.oauth.identityAlreadyLinked', { provider: providerLabel }))
+
+    const next = new URLSearchParams(searchParams)
+    next.delete('oauth_error')
+    next.delete('provider')
+    setSearchParams(next, { replace: true })
+  }, [oauthError, oauthProvider, searchParams, setSearchParams, t])
 
   if (isLoading) {
     return (

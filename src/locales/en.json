@@ -351,6 +351,7 @@
       "processing": "Processing",
       "unbindSuccess": "Connected account disconnected",
       "bindError": "Failed to start connection. Please try again.",
+      "identityAlreadyLinked": "This {{provider}} is already connected to another account and cannot be connected here.",
       "unbindError": "Failed to disconnect. Please try again."
     },
     "preferences": {

@@ -22,7 +22,9 @@ export function LowBalanceAlert() {
   const navigate = useNavigate()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const { symbol: currencySymbol } = useCurrency()
-  const { data: balance } = useBalance(activeTenantId)
+  // 预警条用：余额健康时每 60s 轮询一次，及时捕捉「余额被消费烧穿阈值」（消费不经控制台，无事件可挂，只能轮询）；
+  // 一旦进入低余额态即停轮，恢复正常靠充值后的 invalidate 刷新。
+  const { data: balance } = useBalance(activeTenantId, { pollWhileHealthyMs: 60_000 })
 
   const availableAmount = parseAmount(balance?.available.amount)
   const thresholdAmount = parseAmount(balance?.low_balance_threshold.amount)

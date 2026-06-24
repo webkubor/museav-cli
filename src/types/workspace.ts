@@ -246,9 +246,21 @@ export interface ApiKeyCreated {
   scope: 'personal' | 'workspace' | 'member'
 }
 
+/** 后端 PATCH 更新用「可空包装」区分「设值/清空」与「不变」：set=true 表示本次设置 value（含清空）。 */
+export interface NullableExpiry {
+  set: boolean
+  /** ISO 时间；空串表示永不过期 */
+  value?: string
+}
+export interface NullableSpendingLimit {
+  set: boolean
+  /** null 表示不限额 */
+  value?: SpendingLimit | null
+}
+
 export interface UpdateApiKeyRequest {
   name?: string
-  expires_at?: string | null
-  spending_limit?: SpendingLimit | null
+  expires_at?: NullableExpiry
+  spending_limit?: NullableSpendingLimit
   guardrail_ids?: string[] | null
 }

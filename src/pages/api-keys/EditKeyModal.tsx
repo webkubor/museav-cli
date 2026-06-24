@@ -90,25 +90,30 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
   const updateMutation = useMutation({
     mutationFn: () => {
       if (!apiKey) throw new Error('no key')
+      // PATCH 契约用可空包装 {set,value}（发裸值会被后端判为「参数校验失败 _root」）。set=true=本次设置(含清空)。
+      const expiresValue = (() => {
+        if (expiryRange.preset === 'all' || !expiryRange.preset) return '' // 永不过期
+        if (expiryRange.preset === 'custom' && expiryRange.endDate) {
+          return new Date(expiryRange.endDate).toISOString()
+        }
+        // 相对预设（24h/7d/30d 等）折算成绝对时间，否则会漏存为永不过期
+        const now = new Date()
+        if (expiryRange.preset === '1h') now.setHours(now.getHours() + 1)
+        else if (expiryRange.preset === '24h') now.setDate(now.getDate() + 1)
+        else if (expiryRange.preset === '7d') now.setDate(now.getDate() + 7)
+        else if (expiryRange.preset === '30d') now.setDate(now.getDate() + 30)
+        else return ''
+        return now.toISOString()
+      })()
       return updateApiKey(workspaceId, apiKey.api_key_id, {
         name: name.trim(),
-        spending_limit: spendingAmount
-          ? { amount: spendingAmount, currency, period_unit: spendingPeriodUnit, period_length: 1 }
-          : null,
-        expires_at: (() => {
-          if (expiryRange.preset === 'all' || !expiryRange.preset) return null
-          if (expiryRange.preset === 'custom' && expiryRange.endDate) {
-            return new Date(expiryRange.endDate).toISOString()
-          }
-          // 相对预设（24h/7d/30d 等）需折算成绝对时间，否则会漏存为永不过期
-          const now = new Date()
-          if (expiryRange.preset === '1h') now.setHours(now.getHours() + 1)
-          else if (expiryRange.preset === '24h') now.setDate(now.getDate() + 1)
-          else if (expiryRange.preset === '7d') now.setDate(now.getDate() + 7)
-          else if (expiryRange.preset === '30d') now.setDate(now.getDate() + 30)
-          else return null
-          return now.toISOString()
-        })(),
+        spending_limit: {
+          set: true,
+          value: spendingAmount
+            ? { amount: spendingAmount, currency, period_unit: spendingPeriodUnit, period_length: 1 }
+            : null,
+        },
+        expires_at: { set: true, value: expiresValue },
         guardrail_ids: guardrailIds.length > 0 ? guardrailIds : null,
       })
     },

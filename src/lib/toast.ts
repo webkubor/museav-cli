@@ -16,16 +16,26 @@ function formattedContent(description?: string) {
   }
 }
 
+interface ToastErrorOptions {
+  /** toast 内联操作按钮，如「复制详情」 */
+  action?: { label: string; onClick: () => void }
+  /** 覆盖默认去重 key（默认 `error:${title}`）。服务端错误用 request_id 去重，避免同标题不同请求被吞掉 */
+  dedupKey?: string
+}
+
 export const toast = {
   success(title: string, description?: string) {
     const key = `success:${title}`
     if (dedup(key)) return
     sonnerToast.success(title, formattedContent(description))
   },
-  error(title: string, description?: string) {
-    const key = `error:${title}`
+  error(title: string, description?: string, options?: ToastErrorOptions) {
+    const key = options?.dedupKey ?? `error:${title}`
     if (dedup(key)) return
-    sonnerToast.error(title, formattedContent(description))
+    sonnerToast.error(title, {
+      description: description || undefined,
+      action: options?.action,
+    })
   },
   warning(title: string, description?: string) {
     const key = `warning:${title}`

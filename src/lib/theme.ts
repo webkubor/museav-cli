@@ -49,10 +49,14 @@ export function resolveTheme(theme: Theme): 'dark' | 'light' {
 export function applyTheme(theme: Theme) {
   const resolved = resolveTheme(theme)
   if (resolved === 'dark') {
+    document.documentElement.setAttribute('theme-mode', 'dark')
     document.body.setAttribute('theme-mode', 'dark')
   } else {
+    document.documentElement.removeAttribute('theme-mode')
     document.body.removeAttribute('theme-mode')
   }
+  // 重新计算并应用品牌色，以适配新主题的莫兰迪转换
+  applyBrandTheme(getSavedBrandTheme())
 }
 
 export function getSavedBrandTheme(): BrandThemeConfig {
@@ -101,16 +105,72 @@ function mixColor(hex: string, target: [number, number, number], amount: number)
   ])
 }
 
-function buildBrandPalette(base: string) {
-  const [r, g, b] = hexToRgb(base)
+function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+  r /= 255; g /= 255; b /= 255
+  const max = Math.max(r, g, b), min = Math.min(r, g, b)
+  let h = 0, s = 0
+  const l = (max + min) / 2
+
+  if (max !== min) {
+    const d = max - min
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break
+      case g: h = (b - r) / d + 2; break
+      case b: h = (r - g) / d + 4; break
+    }
+    h /= 6
+  }
+  return [h * 360, s, l]
+}
+
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  let r: number
+  let g: number
+  let b: number
+  h /= 360
+  if (s === 0) {
+    r = g = b = l // achromatic
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1
+      if (t > 1) t -= 1
+      if (t < 1/6) return p + (q - p) * 6 * t
+      if (t < 1/2) return q
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6
+      return p
+    }
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s
+    const p = 2 * l - q
+    r = hue2rgb(p, q, h + 1/3)
+    g = hue2rgb(p, q, h)
+    b = hue2rgb(p, q, h - 1/3)
+  }
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)]
+}
+
+function adjustColorForDark(hex: string): string {
+  const [r, g, b] = hexToRgb(hex)
+  const [h, rawS, rawL] = rgbToHsl(r, g, b)
+  // 不大幅降低饱和度，只乘以 0.92 保持高饱满度的品牌色，与 Logo 一致
+  const s = Math.max(0, rawS * 0.92)
+  // 亮度调整: 限制在 46% - 58% 之间，既能在暗底上有活力，又防刺眼
+  const l = Math.max(0.46, Math.min(0.58, rawL))
+  const [nr, ng, nb] = hslToRgb(h, s, l)
+  return rgbToHex([nr, ng, nb])
+}
+
+function buildBrandPalette(base: string, isDark: boolean) {
+  const adjustedBase = isDark ? adjustColorForDark(base) : base
+  const [r, g, b] = hexToRgb(adjustedBase)
   return {
-    '--brand-deep': mixColor(base, [0, 0, 0], 0.18),
-    '--brand-base': base,
-    '--brand-mid': mixColor(base, [255, 255, 255], 0.22),
-    '--brand-light': mixColor(base, [255, 255, 255], 0.48),
-    '--brand-pale': `color-mix(in srgb, ${base} 10%, var(--mg-bg-0))`,
-    '--brand-glow': `rgba(${r}, ${g}, ${b}, 0.18)`,
-    '--brand-selected-bg': `color-mix(in srgb, ${base} 9%, transparent)`,
+    '--brand-deep': isDark ? mixColor(adjustedBase, [0, 0, 0], 0.25) : mixColor(adjustedBase, [0, 0, 0], 0.18),
+    '--brand-base': adjustedBase,
+    '--brand-mid': isDark ? mixColor(adjustedBase, [255, 255, 255], 0.12) : mixColor(adjustedBase, [255, 255, 255], 0.22),
+    '--brand-light': isDark ? mixColor(adjustedBase, [255, 255, 255], 0.25) : mixColor(adjustedBase, [255, 255, 255], 0.48),
+    '--brand-pale': isDark ? `color-mix(in srgb, ${adjustedBase} 12%, var(--mg-bg-0))` : `color-mix(in srgb, ${adjustedBase} 10%, var(--mg-bg-0))`,
+    '--brand-glow': `rgba(${r}, ${g}, ${b}, 0.16)`,
+    '--brand-selected-bg': `color-mix(in srgb, ${adjustedBase} 10%, transparent)`,
   }
 }
 
@@ -132,7 +192,8 @@ export function applyBrandTheme(config: BrandThemeConfig) {
     return
   }
 
-  const palette = buildBrandPalette(config.base)
+  const isDark = document.documentElement.getAttribute('theme-mode') === 'dark' || document.body.getAttribute('theme-mode') === 'dark'
+  const palette = buildBrandPalette(config.base, isDark)
   Object.entries(palette).forEach(([name, value]) => {
     rootStyle.setProperty(name, value)
   })

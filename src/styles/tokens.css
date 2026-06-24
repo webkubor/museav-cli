@@ -15,17 +15,19 @@
   --cn-glow: rgba(103, 67, 253, 0.14);
   --cn-selected-bg: rgba(103, 67, 253, 0.07);
 }
-/* 国内 — CN 雾霾紫（深色，莫兰迪暖中性；蒙灰但仍可辨识为紫） */
+/* 国内 — CN 靛紫（深色，饱满科技紫，与 Logo 颜色对齐） */
+[data-market='domestic'] [theme-mode='dark'],
 [data-market='domestic'] body[theme-mode='dark'],
+[theme-mode='dark'],
 body[theme-mode='dark'] {
-  --cn-deep: #6d6494;
-  --cn-base: #8d84b4;
-  --cn-base-rgb: 141, 132, 180;
-  --cn-mid:  #a59cc2;
-  --cn-light: #bdb6d2;
-  --cn-pale: #2a2733;
-  --cn-glow: rgba(141, 132, 180, 0.16);
-  --cn-selected-bg: rgba(141, 132, 180, 0.10);
+  --cn-deep: #5433e8;
+  --cn-base: #7c5cfc;
+  --cn-base-rgb: 124, 92, 252;
+  --cn-mid:  #957aff;
+  --cn-light: #c0b0ff;
+  --cn-pale: #201a3b;
+  --cn-glow: rgba(124, 92, 252, 0.16);
+  --cn-selected-bg: rgba(124, 92, 252, 0.10);
 }
 
 /* 国际 — GO 翠绿（浅色 - 匹配 Logo 纯正翠绿 #0DAA5C / #13DA74） */
@@ -40,6 +42,7 @@ body[theme-mode='dark'] {
   --go-selected-bg: rgba(16, 185, 104, 0.09);
 }
 /* 国际 — GO 雾霾翠绿（深色 - 莫兰迪降饱和，与 Logo 翠绿同色相） */
+[data-market='global'] [theme-mode='dark'],
 [data-market='global'] body[theme-mode='dark'] {
   --go-deep: #38855e;
   --go-base: #52b788;
@@ -185,6 +188,7 @@ body[theme-mode='dark'] {
 
 /* 深色主题 — 提亮版温和科技炭灰系，保证视觉透气不沉重，去俗气偏色 */
 
+[theme-mode='dark'],
 body[theme-mode='dark'] {
   /* 背景层级 (温和炭灰，防止画面过黑过闷) */
   --site-bg:  #18181c;   /* 页面底层 — 温和暗炭灰 */
@@ -229,12 +233,14 @@ body[theme-mode='dark'] {
 }
 
 /* 国内市场特有趋势 (红涨绿跌) */
+[data-market='domestic'] [theme-mode='dark'],
 [data-market='domestic'] body[theme-mode='dark'] {
   --mg-trend-up:   var(--mg-danger);
   --mg-trend-down: var(--mg-success);
 }
 
 /* 国际市场特有趋势 (绿涨红跌) */
+[data-market='global'] [theme-mode='dark'],
 [data-market='global'] body[theme-mode='dark'] {
   --mg-trend-up:   var(--mg-success);
   --mg-trend-down: var(--mg-danger);

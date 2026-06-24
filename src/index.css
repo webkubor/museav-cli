@@ -3,7 +3,7 @@
 
 @import "tailwindcss";
 
-@custom-variant dark (&:where(body[theme-mode="dark"], body[theme-mode="dark"] *));
+@custom-variant dark (&:where([theme-mode="dark"], [theme-mode="dark"] *));
 
 @theme inline {
   --color-brand-base: var(--brand-base);
@@ -64,4 +64,21 @@
 @import "./styles/auth.css";        /* 登录/注册/鉴权页样式 */
 @import "./styles/components.css";  /* modern-* 自定义组件 + 液态玻璃搜索 */
 @import "./styles/effects.css";     /* 动画、侧边栏流光、客服 markdown */
+
+
+/* ── 🚀 全局主题切换丝滑过渡（防瞬间闪眼） ── */
+body, 
+main, 
+header, 
+aside, 
+.card, 
+.glass-card, 
+.semi-navigation, 
+.semi-button, 
+.semi-input-wrapper {
+  transition: background-color 0.22s cubic-bezier(0.25, 1, 0.5, 1), 
+              border-color 0.22s cubic-bezier(0.25, 1, 0.5, 1), 
+              color 0.18s ease-out, 
+              box-shadow 0.22s cubic-bezier(0.25, 1, 0.5, 1);
+}
 

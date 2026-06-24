@@ -1,0 +1,110 @@
+/**
+ * 服务端错误诊断信息。
+ *
+ * 线上 5xx 对用户隐藏原始报错（panic 堆栈等），但 request_id / trace_id 是我们
+ * 排查问题的唯一抓手。这里把可定位标识 + 前端版本归集成一份「可复制」的信息块，
+ * 用户报障时一键复制给客服即可精准定位。
+ *
+ * 来源：src/lib/request.ts 抛出的 ModelGoApiError 与 ky HTTPError。
+ */
+import { ModelGoApiError, isServerErrorCode } from '@/lib/request'
+
+export interface ServerErrorDiagnostics {
+  requestId?: string
+  traceId?: string
+  /** 后端业务码（5xxxx） */
+  code?: number
+  /** HTTP 传输层状态码（500~599） */
+  status?: number
+  /** 出错接口路径 */
+  path?: string
+  /** 出错时所在页面 */
+  page?: string
+  /** 前端版本（package.json version） */
+  version: string
+  /** 构建标识（git hash），用于精确定位线上部署版本 */
+  build?: string
+  /** 本地时间，YYYY-MM-DD HH:mm:ss */
+  time: string
+}
+
+function appVersion(): string {
+  return typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'unknown'
+}
+
+function buildHash(): string | undefined {
+  return typeof __BUILD_HASH__ === 'string' && __BUILD_HASH__ ? __BUILD_HASH__ : undefined
+}
+
+function pad(value: number): string {
+  return String(value).padStart(2, '0')
+}
+
+function nowText(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
+function currentPage(): string | undefined {
+  if (typeof window === 'undefined') return undefined
+  return `${window.location.pathname}${window.location.search}`
+}
+
+function envBase(): Pick<ServerErrorDiagnostics, 'page' | 'version' | 'build' | 'time'> {
+  return { page: currentPage(), version: appVersion(), build: buildHash(), time: nowText() }
+}
+
+/**
+ * 仅「服务端级错误」（5xxxx 业务码 / HTTP 5xx）返回诊断信息；
+ * 普通业务错误（如校验失败、未授权）返回 null —— 那类错误文案本身可读，无需诊断包。
+ */
+export function getServerErrorDiagnostics(error: unknown): ServerErrorDiagnostics | null {
+  if (error instanceof ModelGoApiError) {
+    if (!isServerErrorCode(error.code)) return null
+    return {
+      requestId: error.requestId,
+      traceId: error.traceId,
+      code: error.code,
+      path: error.path,
+      ...envBase(),
+    }
+  }
+
+  if (error instanceof Error) {
+    const resp = (error as Error & { response?: Response }).response
+    const status = resp?.status
+    if (typeof status === 'number' && status >= 500 && status < 600) {
+      return {
+        status,
+        requestId: resp?.headers?.get('x-request-id') ?? undefined,
+        traceId: resp?.headers?.get('x-trace-id') ?? resp?.headers?.get('traceparent') ?? undefined,
+        ...envBase(),
+      }
+    }
+  }
+
+  return null
+}
+
+/** toast 描述行：短而可读，优先露出 request_id（最常用的报障抓手）。 */
+export function formatDiagnosticLine(d: ServerErrorDiagnostics): string {
+  const id = d.requestId ?? d.traceId
+  return id ? `请求 ID：${id}` : `版本 v${d.version}`
+}
+
+/** 复制到剪贴板的完整信息块。 */
+export function formatDiagnosticsForCopy(d: ServerErrorDiagnostics): string {
+  return [
+    'ModelGo 控制台错误信息',
+    d.requestId && `请求 ID：${d.requestId}`,
+    d.traceId && `Trace ID：${d.traceId}`,
+    typeof d.code === 'number' && `错误码：${d.code}`,
+    typeof d.status === 'number' && `HTTP 状态：${d.status}`,
+    d.path && `接口：${d.path}`,
+    d.page && `页面：${d.page}`,
+    `版本：v${d.version}${d.build ? ` (${d.build})` : ''}`,
+    `时间：${d.time}`,
+  ]
+    .filter(Boolean)
+    .join('\n')
+}

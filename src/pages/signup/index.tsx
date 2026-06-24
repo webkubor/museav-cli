@@ -7,7 +7,7 @@
 
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
@@ -18,6 +18,7 @@ import { AuthLayout } from '@/components/auth/AuthLayout'
 import { SocialLogin } from '@/components/auth/SocialLogin'
 import { PasswordStrength } from '@/components/auth/PasswordStrength'
 import { VerificationCodeButton } from '@/components/auth/VerificationCodeButton'
+import { TurnstileChallenge } from '@/components/auth/TurnstileChallenge'
 import { sendEmailCode, register } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import { ModelGoApiError } from '@/lib/request'
@@ -25,6 +26,9 @@ import { toast } from '@/lib/toast'
 import { checkAuthGuard, clearAuthGuard, recordAuthGuardFailure } from '@/lib/auth/front-guard'
 import { getRedirectTarget } from '@/lib/redirect'
 import { referralCodeFromSearchParams } from './referral-code'
+
+const CHALLENGE_REQUIRED_CODE = 40305
+const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() ?? ''
 
 const schema = z.object({
   email: z.string().email('请填写有效的邮箱'),
@@ -49,6 +53,8 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [challengeRequired, setChallengeRequired] = useState(false)
+  const [challengeToken, setChallengeToken] = useState('')
 
   const defaultReferralCode = referralCodeFromSearchParams(searchParams)
   const hasReferralCode = !!defaultReferralCode
@@ -72,11 +78,36 @@ export default function SignupPage() {
   const passwordValue = useWatch({ control, name: 'password', defaultValue: '' })
   const confirmPasswordValue = useWatch({ control, name: 'confirm_password' })
   const isEmailValid = !!emailValue && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)
+  const challengeAvailable = Boolean(turnstileSiteKey)
+  const waitingForChallenge = challengeRequired && challengeAvailable && !challengeToken
 
 
   useEffect(() => {
     if (!isSessionLoading && isAuthenticated) navigate('/dashboard', { replace: true })
   }, [isAuthenticated, isSessionLoading, navigate])
+
+  useEffect(() => {
+    setChallengeRequired(false)
+    setChallengeToken('')
+  }, [emailValue])
+
+  const clearChallenge = useCallback(() => {
+    setChallengeRequired(false)
+    setChallengeToken('')
+  }, [])
+
+  const markChallengeRequired = useCallback(() => {
+    setChallengeRequired(true)
+    setChallengeToken('')
+    const msg = challengeAvailable ? '请先完成人机验证后重试' : '请求过于频繁，请稍后再试'
+    setServerError(msg)
+    return msg
+  }, [challengeAvailable])
+
+  const handleChallengeToken = useCallback((token: string) => {
+    setChallengeToken(token)
+    if (token) setServerError('')
+  }, [])
 
   const handleSendCode = async () => {
     const email = emailValue
@@ -93,11 +124,15 @@ export default function SignupPage() {
     }
 
     try {
-      const result = await sendEmailCode(email)
+      const result = await sendEmailCode(email, challengeToken || undefined)
       clearAuthGuard({ action: 'signup-code', subject: email })
+      clearChallenge()
       return result.expires_in
     } catch (error) {
       recordAuthGuardFailure({ action: 'signup-code', subject: email })
+      if (error instanceof ModelGoApiError && error.code === CHALLENGE_REQUIRED_CODE) {
+        throw new Error(markChallengeRequired())
+      }
       throw error
     }
   }
@@ -125,6 +160,7 @@ export default function SignupPage() {
         invitation_token: invitationToken,
         // 推荐计划邀请码：?aff= 预填或用户手填，注册时做返佣归属
         referral_code: data.referral_code?.trim() || undefined,
+        challenge_token: challengeToken || undefined,
       })
       setAuth(
         {
@@ -138,9 +174,15 @@ export default function SignupPage() {
         result.default_workspace_id
       )
       clearAuthGuard({ action: 'signup', subject: data.email })
+      clearChallenge()
       navigate('/dashboard')
     } catch (e) {
       recordAuthGuardFailure({ action: 'signup', subject: data.email })
+      if (e instanceof ModelGoApiError && e.code === CHALLENGE_REQUIRED_CODE) {
+        const msg = markChallengeRequired()
+        toast.error(msg)
+        return
+      }
       const msg = e instanceof ModelGoApiError ? e.message : '注册失败，请稍后重试'
       setServerError(msg)
       toast.error(msg)
@@ -198,7 +240,7 @@ export default function SignupPage() {
               success={touchedFields.email_code && !errors.email_code && !!emailCodeValue}
               suffix={
                 <div className="flex items-center transition-all duration-300 ease-out min-h-[20px] pr-0.5">
-                  <VerificationCodeButton onSend={handleSendCode} disabled={!isEmailValid} />
+                  <VerificationCodeButton onSend={handleSendCode} disabled={!isEmailValid || waitingForChallenge} />
                 </div>
               }
             />
@@ -266,6 +308,10 @@ export default function SignupPage() {
           )}
         </div>
 
+        {challengeRequired && challengeAvailable && (
+          <TurnstileChallenge siteKey={turnstileSiteKey} onToken={handleChallengeToken} />
+        )}
+
         {serverError && <p className="auth-error-message">{serverError}</p>}
 
         <Button
@@ -273,6 +319,7 @@ export default function SignupPage() {
           variant="brand"
           size="lg"
           loading={loading}
+          disabled={waitingForChallenge}
           className="mt-2"
         >
           免费注册

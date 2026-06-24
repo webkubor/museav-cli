@@ -307,6 +307,8 @@ export interface AuthLoginResponse {
 }
 
 export interface AuthRegisterRequest {
+  /** ChallengeToken is supplied after the backend asks the frontend to solve an anti-abuse challenge. */
+  challenge_token?: string
   /** DisplayName is shown in account/profile and tenant default naming. */
   display_name: string
   /** Email is the account login email and must match the email used for the verification code when email verification is enabled. */
@@ -337,6 +339,8 @@ export interface AuthResetPasswordRequest {
 }
 
 export interface AuthSendEmailCodeRequest {
+  /** ChallengeToken is supplied after the backend asks the frontend to solve an anti-abuse challenge. */
+  challenge_token?: string
   /** Email receives the 6-digit registration verification code. */
   email: string
 }

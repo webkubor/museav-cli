@@ -100,7 +100,14 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
           if (expiryRange.preset === 'custom' && expiryRange.endDate) {
             return new Date(expiryRange.endDate).toISOString()
           }
-          return null
+          // 相对预设（24h/7d/30d 等）需折算成绝对时间，否则会漏存为永不过期
+          const now = new Date()
+          if (expiryRange.preset === '1h') now.setHours(now.getHours() + 1)
+          else if (expiryRange.preset === '24h') now.setDate(now.getDate() + 1)
+          else if (expiryRange.preset === '7d') now.setDate(now.getDate() + 7)
+          else if (expiryRange.preset === '30d') now.setDate(now.getDate() + 30)
+          else return null
+          return now.toISOString()
         })(),
         guardrail_ids: guardrailIds.length > 0 ? guardrailIds : null,
       })

@@ -381,12 +381,6 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   opacity: 1;
 }
 
-/* 确保子内容在流光图层之上 */
-.mouse-glow-card > * {
-  position: relative;
-  z-index: 2;
-}
-
 .magnetic-hover {
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
               box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),

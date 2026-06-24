@@ -28,27 +28,27 @@ body[theme-mode='dark'] {
   --cn-selected-bg: rgba(141, 132, 180, 0.10);
 }
 
-/* 国际 — GO 翠绿（浅色） */
+/* 国际 — GO 翠绿（浅色 - 匹配 Logo 纯正翠绿 #0DAA5C / #13DA74） */
 :root, [data-market='global'] {
-  --go-deep: #159b7c;
-  --go-base: #1DC39B;
-  --go-base-rgb: 29, 195, 155;
-  --go-mid:  #4ad1b3;
-  --go-light: #8ee4d1;
-  --go-pale: #e6faf5;
-  --go-glow: rgba(29, 195, 155, 0.18);
-  --go-selected-bg: rgba(29, 195, 155, 0.09);
+  --go-deep: #0c8e4f;
+  --go-base: #10b968;
+  --go-base-rgb: 16, 185, 104;
+  --go-mid:  #39cc85;
+  --go-light: #8ae0b6;
+  --go-pale: #e7faf0;
+  --go-glow: rgba(16, 185, 104, 0.18);
+  --go-selected-bg: rgba(16, 185, 104, 0.09);
 }
-/* 国际 — GO 雾霾青绿（深色，莫兰迪暖中性；蒙灰但仍可辨识为绿） */
+/* 国际 — GO 雾霾翠绿（深色 - 莫兰迪降饱和，与 Logo 翠绿同色相） */
 [data-market='global'] body[theme-mode='dark'] {
-  --go-deep: #4f8576;
-  --go-base: #6fa899;
-  --go-base-rgb: 111, 168, 153;
-  --go-mid:  #8fb8ad;
-  --go-light: #aecabf;
-  --go-pale: #1c2925;
-  --go-glow: rgba(111, 168, 153, 0.16);
-  --go-selected-bg: rgba(111, 168, 153, 0.11);
+  --go-deep: #38855e;
+  --go-base: #52b788;
+  --go-base-rgb: 82, 183, 136;
+  --go-mid:  #74c69d;
+  --go-light: #95d5b2;
+  --go-pale: #1b2921;
+  --go-glow: rgba(82, 183, 136, 0.16);
+  --go-selected-bg: rgba(82, 183, 136, 0.10);
 }
 
 /* 品牌色路由 — brand-* 指向当前市场的原色 */
@@ -183,33 +183,33 @@ body[theme-mode='dark'] {
   --grid-color: rgba(29, 195, 155, 0.025);
 }
 
-/* 深色主题 — 莫兰迪暖中性色系，暖灰底、暖雾白文字、降饱和语义色 */
+/* 深色主题 — 提亮版温和科技炭灰系，保证视觉透气不沉重，去俗气偏色 */
 
 body[theme-mode='dark'] {
-  /* 背景层级 */
-  --site-bg:  #262429;
-  --card-bg:  #2f2d33;
-  --mg-bg-0:  #2f2d33;
-  --mg-bg-0-rgb: 47, 45, 51;
-  --mg-bg-1:  #262429;
-  --mg-bg-2:  #38353d;
-  --mg-bg-3:  #433f48;
+  /* 背景层级 (温和炭灰，防止画面过黑过闷) */
+  --site-bg:  #18181c;   /* 页面底层 — 温和暗炭灰 */
+  --card-bg:  #232329;   /* 卡片背景 — 稍亮的炭灰 */
+  --mg-bg-0:  #232329;   /* 主背景 */
+  --mg-bg-0-rgb: 35, 35, 41;
+  --mg-bg-1:  #18181c;   /* 页面底层 */
+  --mg-bg-2:  #2e2e36;   /* 悬浮层 (Dropdown / 菜单等) */
+  --mg-bg-3:  #3b3b44;   /* 顶层面板 (Modal / Tooltip 等) */
 
-  /* 文字层级 */
-  --mg-text-0: #e9e7e3;
-  --mg-text-1: #c4c0bb;
-  --mg-text-2: #9a9590;  /* 4.58:1 on bg-0 — WCAG AA（原 #918c87 仅 4.08，微调提亮） */
-  --mg-text-3: #66625e;
+  /* 文字层级 (冷银白，高可读且消除发黄的脏感) */
+  --mg-text-0: #f4f4f5;  /* 主文字 (Zinc-100) */
+  --mg-text-1: #d4d4d8;  /* 次要文字 (Zinc-300) */
+  --mg-text-2: #a1a1aa;  /* 辅助文字 (Zinc-400, 对比度 5.2:1 符合 WCAG AA 规范) */
+  --mg-text-3: #52525b;  /* 禁用 / 装饰文字 (Zinc-600) */
 
-  /* 边框与填充 */
-  --mg-border: rgba(190, 184, 178, 0.13);
-  --mg-fill-0: rgba(255, 252, 248, 0.025);
-  --mg-fill-1: rgba(255, 252, 248, 0.055);
-  --mg-fill-2: rgba(255, 252, 248, 0.085);
+  /* 边框与填充 (纯净中性透亮) */
+  --mg-border: rgba(255, 255, 255, 0.08);
+  --mg-fill-0: rgba(255, 255, 255, 0.025);
+  --mg-fill-1: rgba(255, 255, 255, 0.05);
+  --mg-fill-2: rgba(255, 255, 255, 0.08);
 
-  /* 代码块面（payload 查看器）：极深暗沉浸感 */
-  --mg-code-bg:   #201e23;
-  --mg-code-text: #cfc9c2;
+  /* 代码块面（payload 查看器）：清透极黑 */
+  --mg-code-bg:   #131316;
+  --mg-code-text: #e4e4e7;
 
   /* 语义色（莫兰迪降饱和：鼠尾草绿 / 陶土红 / 赭黄 / 雾霾蓝） */
   --mg-success: #8fae9b;
@@ -217,13 +217,13 @@ body[theme-mode='dark'] {
   --mg-warning: #cda971;
   --mg-info:    #8aa0c4; /* 信息/图表第三色（莫兰迪雾蓝） */
 
-  /* 阴影 — 减弱硬黑阴影，改用与背景相融合的柔和烟灰阴影 */
-  --shadow-sm: 0 1px 2px rgba(12, 13, 17, 0.18);
-  --shadow-md: 0 10px 28px rgba(12, 13, 17, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.025);
-  --shadow-lg: 0 22px 52px rgba(12, 13, 17, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.025);
+  /* 阴影 — 减弱硬黑阴影，改用与背景相融合的柔和烟灰阴影，加极细 1px 中性高光 */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
 
   /* 导航 */
-  --nav-item-hover-bg: rgba(255, 252, 248, 0.035);
+  --nav-item-hover-bg: rgba(255, 255, 255, 0.04);
   --grid-color: rgba(255, 255, 255, 0.01);
   --ambient-particle-opacity: 0.38;
 }

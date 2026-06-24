@@ -1,8 +1,10 @@
-import { LuCheck, LuCopy, LuTriangleAlert } from 'react-icons/lu'
+import { LuCheck, LuCopy, LuHeadset, LuTriangleAlert } from 'react-icons/lu'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { useCopy } from '@/hooks/use-copy'
+import { useAuthStore } from '@/store/auth'
 import { useServerErrorStore } from '@/store/use-server-error-store'
+import { useCustomerServiceStore } from '@/store/use-customer-service-store'
 import { formatDiagnosticsForCopy } from '@/lib/error-diagnostics'
 
 function CopyIconButton({ value, label }: { value: string; label: string }) {
@@ -38,11 +40,19 @@ function Row({ label, value, copyable }: { label: string; value: string; copyabl
 export function ServerErrorDialog() {
   const current = useServerErrorStore((s) => s.current)
   const dismiss = useServerErrorStore((s) => s.dismiss)
+  const activeTenantId = useAuthStore((s) => s.activeTenantId)
+  const openCustomerService = useCustomerServiceStore((s) => s.openWithDraft)
   const { copy, copied } = useCopy()
 
   if (!current) return null
 
   const versionLine = `v${current.version}${current.build ? ` (${current.build})` : ''} · ${current.time}`
+
+  // 把诊断信息预填进客服输入框并打开窗口，用户补充描述后再发送。
+  const sendToCustomerService = () => {
+    openCustomerService(`我在使用控制台时遇到了错误，麻烦帮我排查，以下是诊断信息：\n\n${formatDiagnosticsForCopy(current)}`)
+    dismiss()
+  }
 
   return (
     <Modal
@@ -65,6 +75,12 @@ export function ServerErrorDialog() {
             {copied ? <LuCheck size={14} /> : <LuCopy size={14} />}
             {copied ? '已复制' : '复制全部'}
           </Button>
+          {activeTenantId && (
+            <Button variant="default" onClick={sendToCustomerService}>
+              <LuHeadset size={14} />
+              转给客服
+            </Button>
+          )}
         </>
       }
     >

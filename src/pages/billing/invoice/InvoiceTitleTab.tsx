@@ -70,6 +70,9 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
   const handleSave = () => {
     if (!form.company_name.trim()) return appToast.warning('请填写抬头名称')
     if (!form.tax_id.trim()) return appToast.warning('请填写税号')
+    // 发票将推送到接收邮箱，邮箱必填且需为有效格式
+    if (!form.email.trim()) return appToast.warning('请填写接收邮箱')
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return appToast.warning('请填写有效的接收邮箱')
     create.mutate()
   }
 

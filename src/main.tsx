@@ -11,11 +11,13 @@ import { toast } from 'sonner'
 import './index.css'
 import './i18n'
 import App from './App.tsx'
-import { installDevErrorReporter } from './lib/dev-error-reporter'
+import { installAgentErrorReporter } from 'vite-plugin-agent-eyes/client'
 import { initDeviceFingerprint } from './lib/device-fingerprint'
 import { installDevAuth } from './lib/dev-auth'
 
-installDevErrorReporter()
+// 前端运行时错误上报（仅 DEV）：未捕获异常 / rejection / 全控制台 + DOM 快照，
+// 内置 5s 去重 + 去 HMR 戳防刷爆。统一由 vite-plugin-agent-eyes 提供，替代原 dev-error-reporter。
+installAgentErrorReporter()
 initDeviceFingerprint()
 if (import.meta.env.DEV) installDevAuth()
 

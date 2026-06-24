@@ -48,7 +48,7 @@ export function ServerErrorDialog() {
     <Modal
       open
       onClose={dismiss}
-      size="sm"
+      size="md"
       title={
         <span className="flex items-center gap-2">
           <LuTriangleAlert size={18} className="text-mg-danger" />
@@ -71,6 +71,7 @@ export function ServerErrorDialog() {
       <div className="overflow-hidden rounded-lg border border-mg-border">
         {current.requestId && <Row label="请求 ID" value={current.requestId} copyable />}
         {current.traceId && <Row label="Trace ID" value={current.traceId} copyable />}
+        {current.tenantId && <Row label="租户 ID" value={current.tenantId} copyable />}
         <Row label="版本" value={versionLine} />
       </div>
     </Modal>

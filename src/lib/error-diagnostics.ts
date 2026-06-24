@@ -8,6 +8,7 @@
  * 来源：src/lib/request.ts 抛出的 ModelGoApiError 与 ky HTTPError。
  */
 import { ModelGoApiError, isServerErrorCode } from '@/lib/request'
+import { useAuthStore } from '@/store/auth'
 
 export interface ServerErrorDiagnostics {
   requestId?: string
@@ -20,6 +21,8 @@ export interface ServerErrorDiagnostics {
   path?: string
   /** 出错时所在页面 */
   page?: string
+  /** 当前租户 ID（tenant_id） */
+  tenantId?: string
   /** 前端版本（package.json version） */
   version: string
   /** 构建标识（git hash），用于精确定位线上部署版本 */
@@ -50,8 +53,14 @@ function currentPage(): string | undefined {
   return `${window.location.pathname}${window.location.search}`
 }
 
-function envBase(): Pick<ServerErrorDiagnostics, 'page' | 'version' | 'build' | 'time'> {
-  return { page: currentPage(), version: appVersion(), build: buildHash(), time: nowText() }
+function envBase(): Pick<ServerErrorDiagnostics, 'page' | 'tenantId' | 'version' | 'build' | 'time'> {
+  return {
+    page: currentPage(),
+    tenantId: useAuthStore.getState().activeTenantId ?? undefined,
+    version: appVersion(),
+    build: buildHash(),
+    time: nowText(),
+  }
 }
 
 /**
@@ -96,6 +105,7 @@ export function formatDiagnosticsForCopy(d: ServerErrorDiagnostics): string {
     typeof d.status === 'number' && `HTTP 状态：${d.status}`,
     d.path && `接口：${d.path}`,
     d.page && `页面：${d.page}`,
+    d.tenantId && `租户 ID：${d.tenantId}`,
     `版本：v${d.version}${d.build ? ` (${d.build})` : ''}`,
     `时间：${d.time}`,
   ]

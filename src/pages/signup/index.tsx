@@ -18,12 +18,14 @@ import { AuthLayout } from '@/components/auth/AuthLayout'
 import { SocialLogin } from '@/components/auth/SocialLogin'
 import { PasswordStrength } from '@/components/auth/PasswordStrength'
 import { VerificationCodeButton } from '@/components/auth/VerificationCodeButton'
+import { SliderCaptcha } from '@/components/auth/SliderCaptcha'
 import { sendEmailCode, register } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import { ModelGoApiError } from '@/lib/request'
 import { toast } from '@/lib/toast'
 import { checkAuthGuard, clearAuthGuard, recordAuthGuardFailure } from '@/lib/auth/front-guard'
 import { getRedirectTarget } from '@/lib/redirect'
+import { useFormValid } from '@/hooks/use-form-valid'
 import { referralCodeFromSearchParams } from './referral-code'
 
 const schema = z.object({
@@ -49,6 +51,9 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  // 人机校验：前端轻量防刷（减速带）。后端 #234 就绪后，把 SliderCaptcha 回传的 proof
+  // 透传给 register/sendEmailCode 做服务端校验；当前仅做 UI 闸门。
+  const [captchaVerified, setCaptchaVerified] = useState(false)
 
   const defaultReferralCode = referralCodeFromSearchParams(searchParams)
   const hasReferralCode = !!defaultReferralCode
@@ -72,6 +77,15 @@ export default function SignupPage() {
   const passwordValue = useWatch({ control, name: 'password', defaultValue: '' })
   const confirmPasswordValue = useWatch({ control, name: 'confirm_password' })
   const isEmailValid = !!emailValue && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)
+  // 是否整表通过校验（含密码一致）——直接复用 zod schema，与提交条件同源，避免重复实现
+  const isFormValid = useFormValid(control, schema)
+
+  // 表单从有效变回无效时，撤销已通过的人机校验（避免隐藏后再出现仍顶着旧的“已验证”被绕过）
+  const [prevFormValid, setPrevFormValid] = useState(isFormValid)
+  if (prevFormValid !== isFormValid) {
+    setPrevFormValid(isFormValid)
+    if (!isFormValid && captchaVerified) setCaptchaVerified(false)
+  }
 
 
   useEffect(() => {
@@ -103,6 +117,10 @@ export default function SignupPage() {
   }
 
   const onSubmit = async (data: Fields) => {
+    if (!captchaVerified) {
+      setServerError('请先完成滑块验证')
+      return
+    }
     const decision = checkAuthGuard({
       action: 'signup',
       subject: data.email,
@@ -266,6 +284,13 @@ export default function SignupPage() {
           )}
         </div>
 
+        {isFormValid && (
+          <div className="mt-1 auth-fade-in">
+            <label className="modern-auth-label">安全验证</label>
+            <SliderCaptcha onChange={(verified) => setCaptchaVerified(verified)} />
+          </div>
+        )}
+
         {serverError && <p className="auth-error-message">{serverError}</p>}
 
         <Button
@@ -273,6 +298,7 @@ export default function SignupPage() {
           variant="brand"
           size="lg"
           loading={loading}
+          disabled={!captchaVerified}
           className="mt-2"
         >
           免费注册

@@ -30,7 +30,6 @@ import { usePlatformConfig, useSite } from '@/hooks/use-platform-config'
 import { usePermissions } from '@/hooks/use-permissions'
 import { cn } from '@/lib/utils'
 import { ParticleLinesBackground } from './ParticleLinesBackground'
-import { useDevStore } from '@/store/use-dev-store'
 import './layout.css'
 
 
@@ -129,14 +128,12 @@ export function DashboardLayout() {
     clapper:     ic(<LuClapperboard  size={16} />),
   }
 
-  const showPlatformConfig = useDevStore((s) => s.showPlatformConfig)
   const tenantNavItems    = filterNavItems(navConfig.tenantItems(navCtx, t, icons))
   const baseWorkspaceNavItems = filterNavItems(navConfig.workspaceItems(navCtx, t, icons))
   const workspaceNavItems = [
     ...baseWorkspaceNavItems,
-    ...(import.meta.env.DEV && showPlatformConfig
-      ? navConfig.sandboxItems(navCtx, icons)
-      : []),
+    // 开发环境下始终展示接口调试菜单
+    ...(import.meta.env.DEV ? navConfig.sandboxItems(navCtx, icons) : []),
   ]
 
   const getSelectedKey = () => {

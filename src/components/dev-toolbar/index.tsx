@@ -1,17 +1,10 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import type { PlatformConfig } from '@/services/platform'
-import { Switch } from '@/components/ui/Switch'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  DropdownMenuItem,
-} from '@/components/ui/DropdownMenu'
 import { cn } from '@/lib/utils'
 import { useLangStore } from '@/store/use-brand-store'
-import { useDevStore } from '@/store/use-dev-store'
-import { applyBrandTheme, saveBrandTheme } from '@/lib/theme'
+import { applyBrandTheme, applyTheme, getSavedTheme, resolveTheme, saveBrandTheme, saveTheme } from '@/lib/theme'
 import type { Market, Lang } from '@/lib/market'
 
 interface SegOption<T extends string> {
@@ -49,8 +42,8 @@ function Seg<T extends string>({
 
 /**
  * 开发者工具栏（仅 DEV 环境，悬浮底部居中）。
- * 只保留切换国内/海外、语言——市场切换一把带动 logo / 品牌 / 主题色（主题色按 data-market 走 CSS）。
- * 主题色挑选与深浅切换已移除：dev 不再手动覆盖，主题色完全由市场驱动。
+ * 切换国内/海外、语言——市场切换一把带动 logo / 品牌 / 主题色（主题色按 data-market 走 CSS）。
+ * 另含黑/白主题快速切换，方便本地调样式（接口调试菜单 dev 下始终常驻侧边栏）。
  */
 export function DevToolbar() {
   const { i18n } = useTranslation()
@@ -59,8 +52,7 @@ export function DevToolbar() {
   const setMarket = useLangStore((s) => s.setMarket)
   const setLang = useLangStore((s) => s.setLang)
   const qc = useQueryClient()
-  const showPlatformConfig = useDevStore((s) => s.showPlatformConfig)
-  const setShowPlatformConfig = useDevStore((s) => s.setShowPlatformConfig)
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => resolveTheme(getSavedTheme()))
 
   const switchMarket = (m: Market) => {
     setMarket(m)
@@ -86,14 +78,24 @@ export function DevToolbar() {
     i18n.changeLanguage(l)
   }
 
+  const switchTheme = (next: 'light' | 'dark') => {
+    setThemeState(next)
+    applyTheme(next)
+    saveTheme(next)
+  }
+
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[2000] flex items-center gap-3 px-4 py-2 rounded-full bg-mg-bg-0/95 backdrop-blur border border-mg-border shadow-lg shadow-black/5 select-none">
       <span className="text-[10px] font-bold text-brand-base tracking-widest uppercase">DEV</span>
       <div className="h-4 w-px bg-mg-border" />
-      <div className="flex items-center gap-1.5">
-        <span className="text-[11px] font-semibold text-mg-text-2">开发者菜单</span>
-        <Switch checked={showPlatformConfig} onChange={setShowPlatformConfig} />
-      </div>
+      <Seg
+        value={theme}
+        options={[
+          { v: 'light', l: '白' },
+          { v: 'dark', l: '黑' },
+        ]}
+        onChange={switchTheme}
+      />
       <div className="h-4 w-px bg-mg-border" />
       <Seg
         value={market}
@@ -111,39 +113,6 @@ export function DevToolbar() {
         ]}
         onChange={switchLang}
       />
-      <div className="h-4 w-px bg-mg-border" />
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className="flex items-center gap-1 rounded-full bg-mg-fill-0 px-3 py-1 text-[11px] font-bold text-mg-text-1 transition-colors hover:text-mg-text-0"
-          >
-            链接
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent side="top" align="end" className="w-48">
-          <DropdownMenuItem asChild>
-            <a href="https://cloud.umami.is/share/LG5OU5ibCRxc2w3j" target="_blank" rel="noopener noreferrer" className="cursor-pointer">
-              📊 埋点数据
-            </a>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <a href="https://test.modelgo.com" target="_blank" rel="noopener noreferrer" className="cursor-pointer">
-              🌐 测试官网
-            </a>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <a href="https://modelgo-docs-cn.pages.dev" target="_blank" rel="noopener noreferrer" className="cursor-pointer">
-              📖 测试文档
-            </a>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <a href="https://admin.test.modelgo.com" target="_blank" rel="noopener noreferrer" className="cursor-pointer">
-              🛠 测试后台
-            </a>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
     </div>
   )
 }

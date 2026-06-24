@@ -342,3 +342,51 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   flex-shrink: 0;
 }
 
+
+/* ── 🚀 鼠标流光追踪与磁性物理卡片微交互（高品质 SaaS 触感） ── */
+.mouse-glow-card {
+  position: relative;
+}
+
+.mouse-glow-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    380px circle at var(--mouse-x, 0px) var(--mouse-y, 0px),
+    var(--brand-glow),
+    transparent 80%
+  );
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.mouse-glow-card:hover::before {
+  opacity: 1;
+}
+
+/* 确保子内容在流光图层之上 */
+.mouse-glow-card > * {
+  position: relative;
+  z-index: 2;
+}
+
+.magnetic-hover {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease-out !important;
+}
+
+.magnetic-hover:hover {
+  transform: translateY(-2.5px);
+  box-shadow: var(--shadow-md) !important;
+  border-color: color-mix(in srgb, var(--brand-base) 18%, var(--mg-border)) !important;
+}
+
+.magnetic-hover:active {
+  transform: translateY(0px) scale(0.982);
+  transition-duration: 0.08s;
+}
+

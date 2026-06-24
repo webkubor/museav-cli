@@ -1,6 +1,7 @@
 import React from 'react'
 import { Card } from '@/components/ui/Card'
 import { useCountUp } from '@/hooks/use-count-up'
+import { useMouseGlow } from '@/hooks/use-mouse-glow'
 
 export interface KpiCardProps {
   title?: string
@@ -69,6 +70,8 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     ? (formatter ? formatter(animated) : String(Math.round(animated)))
     : value
 
+  const glowRef = useMouseGlow<HTMLDivElement>()
+
   const computedTrend = !trend && sparkData && sparkData.length >= 2
     ? (() => {
         const first = sparkData[0]
@@ -81,9 +84,10 @@ export const KpiCard: React.FC<KpiCardProps> = ({
 
   return (
     <Card
+      ref={glowRef}
       hoverable
       glass
-      className={`p-4 flex flex-col justify-center rounded-lg relative overflow-hidden group transition-all duration-500 flex-1 min-w-[200px] ${hoverBorderClass}`}
+      className={`p-4 flex flex-col justify-center rounded-lg relative overflow-hidden group transition-all duration-500 flex-1 min-w-[200px] mouse-glow-card magnetic-hover ${hoverBorderClass}`}
     >
       {/* 专属高精密几何光环与微弱环境底色 (线与光的结合) */}
       <div className="absolute right-[-20px] bottom-[-20px] w-32 h-32 pointer-events-none z-0 opacity-25 group-hover:opacity-75 transition-all duration-700">

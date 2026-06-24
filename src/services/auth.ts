@@ -16,11 +16,8 @@ import type {
 } from '@/types'
 
 /** 发送注册邮箱验证码（5 分钟有效；邮箱已注册返回 40901） */
-export function sendEmailCode(email: string, challengeToken?: string) {
-  return post<AuthMailTTLResponse>('auth/email-code/send', {
-    email,
-    challenge_token: challengeToken || undefined,
-  })
+export function sendEmailCode(email: string) {
+  return post<AuthMailTTLResponse>('auth/email-code/send', { email })
 }
 
 /** 邮箱密码注册（注册即登录，自动下发 session cookie） */

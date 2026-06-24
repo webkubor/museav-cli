@@ -96,7 +96,6 @@ export interface RegisterRequest {
   email_code: string
   invitation_token?: string
   referral_code?: string
-  challenge_token?: string
 }
 
 export interface LoginRequest {

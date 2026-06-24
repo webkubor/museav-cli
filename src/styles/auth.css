@@ -281,10 +281,6 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
   @apply text-rose-500 text-[11.5px] mt-1.5 font-medium block tracking-tight;
 }
 
-.auth-turnstile {
-  @apply flex flex-col items-start min-h-[70px] mt-0.5;
-}
-
 .auth-email-preview {
   @apply flex items-center gap-2 p-3 rounded-md text-[13px] border;
   background-color: var(--mg-fill-0);
@@ -536,5 +532,6 @@ body[theme-mode='dark'] .auth-form-container .modern-input-wrapper.is-error {
   border-color: #10b981 !important;
   box-shadow: 0 0 0 1px #10b981, 0 0 0 4px rgba(16, 185, 129, 0.14) !important;
 }
+
 
 

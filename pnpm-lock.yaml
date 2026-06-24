@@ -175,8 +175,8 @@ importers:
         specifier: ^8.0.12
         version: 8.0.14(@types/node@24.12.4)(jiti@2.7.0)(terser@5.48.0)
       vite-plugin-agent-eyes:
-        specifier: ^0.5.0
-        version: 0.5.0(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0)(terser@5.48.0))
+        specifier: ^0.6.0
+        version: 0.6.0(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0)(terser@5.48.0))
       vite-plugin-pwa:
         specifier: ^1.3.0
         version: 1.3.0(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0)(terser@5.48.0))(workbox-build@7.4.1)(workbox-window@7.4.1)
@@ -5693,8 +5693,8 @@ packages:
       vue:
         optional: true
 
-  vite-plugin-agent-eyes@0.5.0:
-    resolution: {integrity: sha512-9BXl1z0LiJtMSD5YhJT+46GHzNHg3r5JyE5dLwQFg/V+drXXxH71hTmM0ED1ZO7o3W938NhMuv+YiKRHlkzjWw==}
+  vite-plugin-agent-eyes@0.6.0:
+    resolution: {integrity: sha512-17P5YTfRSJ9UT0hm5ywb+J9AHhEXZYQeNWXEELdMr6LRMHyvt8IkAE8vKLcEx1JE7xhmMYwisnST618Ib5vF3g==}
     peerDependencies:
       vite: '>=4'
 
@@ -12484,7 +12484,7 @@ snapshots:
       react: 19.2.6
       react-dom: 19.2.6(react@19.2.6)
 
-  vite-plugin-agent-eyes@0.5.0(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0)(terser@5.48.0)):
+  vite-plugin-agent-eyes@0.6.0(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0)(terser@5.48.0)):
     dependencies:
       vite: 8.0.14(@types/node@24.12.4)(jiti@2.7.0)(terser@5.48.0)
       ws: 8.21.0

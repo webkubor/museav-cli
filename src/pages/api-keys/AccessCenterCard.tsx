@@ -131,53 +131,50 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
 
       {revealVisible && (
         <div className="animate-in fade-in slide-in-from-top-1 bg-mg-success/5 px-4 py-3 duration-300">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div className="min-w-0 flex-1">
-              <div className="mb-2 flex items-start justify-between gap-3">
-                <div className="flex min-w-0 items-start gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-mg-success/15 flex items-center justify-center shrink-0 border border-mg-success/20">
-                    <LuKey size={15} className="text-mg-success" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-bold text-mg-text-0">您的新 API Key 已就绪</div>
-                    <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-mg-warning">
-                      <LuTriangleAlert size={12} className="shrink-0" />
-                      请立即复制并保存，关闭后将无法再查看完整密钥
-                    </div>
-                  </div>
+          {/* 标题 + 关闭（整行） */}
+          <div className="mb-2 flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-mg-success/15 flex items-center justify-center shrink-0 border border-mg-success/20">
+                <LuKey size={15} className="text-mg-success" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-sm font-bold text-mg-text-0">您的新 API Key 已就绪</div>
+                <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-mg-warning">
+                  <LuTriangleAlert size={12} className="shrink-0" />
+                  请立即复制并保存，关闭后将无法再查看完整密钥
                 </div>
-                <button
-                  type="button"
-                  onClick={onDismissReveal}
-                  className="text-mg-text-3 hover:text-mg-text-1 p-1.5 rounded-lg hover:bg-mg-fill-1 transition-colors cursor-pointer shrink-0"
-                >
-                  <LuX className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="flex min-w-0 items-center gap-2 rounded-lg border border-mg-border bg-mg-code-bg px-3 py-2 font-mono text-sm font-bold tracking-wider">
-                <span className="min-w-0 flex-1 truncate text-mg-success select-all">{createdKeyText}</span>
-                <button
-                  type="button"
-                  onClick={() => handleCopyKey(createdKeyText)}
-                  className={[
-                    'shrink-0 flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer',
-                    copied
-                      ? 'bg-mg-success/15 text-mg-success'
-                      : 'bg-mg-fill-1 text-mg-text-1 hover:bg-mg-fill-2 hover:text-mg-text-0',
-                  ].join(' ')}
-                >
-                  {copied ? <LuCheck className="w-3.5 h-3.5" /> : <LuCopy className="w-3.5 h-3.5" />}
-                  {copied ? '已复制' : '复制'}
-                </button>
               </div>
             </div>
+            <button
+              type="button"
+              onClick={onDismissReveal}
+              className="text-mg-text-3 hover:text-mg-text-1 p-1.5 rounded-lg hover:bg-mg-fill-1 transition-colors cursor-pointer shrink-0"
+            >
+              <LuX className="w-4 h-4" />
+            </button>
+          </div>
 
-            <div className="flex shrink-0 items-center xl:items-stretch">
-              <Button variant="brand" onClick={onOpenConnect} className="h-9 w-full rounded-lg px-5 text-sm font-semibold cursor-pointer">
-                快速接入
-              </Button>
+          {/* 密钥框 + 快速接入：紧挨同一行（小屏堆叠，大屏按钮跟随密钥框，不留空当） */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-mg-border bg-mg-code-bg px-3 py-2 font-mono text-sm font-bold tracking-wider">
+              <span className="min-w-0 flex-1 truncate text-mg-success select-all">{createdKeyText}</span>
+              <button
+                type="button"
+                onClick={() => handleCopyKey(createdKeyText)}
+                className={[
+                  'shrink-0 flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer',
+                  copied
+                    ? 'bg-mg-success/15 text-mg-success'
+                    : 'bg-mg-fill-1 text-mg-text-1 hover:bg-mg-fill-2 hover:text-mg-text-0',
+                ].join(' ')}
+              >
+                {copied ? <LuCheck className="w-3.5 h-3.5" /> : <LuCopy className="w-3.5 h-3.5" />}
+                {copied ? '已复制' : '复制'}
+              </button>
             </div>
+            <Button variant="brand" onClick={onOpenConnect} className="shrink-0 h-auto rounded-lg px-5 text-sm font-semibold cursor-pointer">
+              快速接入
+            </Button>
           </div>
         </div>
       )}

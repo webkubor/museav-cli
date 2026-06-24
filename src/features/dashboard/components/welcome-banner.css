@@ -109,3 +109,61 @@ body[theme-mode='dark'] .aurora-grid-pattern {
   0% { transform: translate(0, 0) scale(0.9); }
   100% { transform: translate(-30px, 50px) scale(1.2); }
 }
+
+
+/* ── 🚀 流体极光微发光团样式（与品牌 Logo 渐变对齐） ── */
+.aurora-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(65px);
+  mix-blend-mode: screen; /* 深色下极具穿透力，与炭灰底融合 */
+  pointer-events: none;
+  opacity: 0.18;
+  transition: opacity 0.5s ease;
+  z-index: 0;
+}
+
+body[theme-mode='dark'] .aurora-orb {
+  opacity: 0.28;
+}
+
+/* 浅色模式下采用 multiply 模式防过曝，提供水彩晕染 */
+:root:not([theme-mode='dark']) .aurora-orb {
+  mix-blend-mode: multiply;
+  opacity: 0.08;
+  filter: blur(80px);
+}
+
+/* 极光球 1：主色偏深色 */
+.aurora-orb.orb-1 {
+  width: 280px;
+  height: 280px;
+  top: -80px;
+  left: -40px;
+  background: radial-gradient(circle, var(--brand-base) 0%, var(--brand-deep) 100%);
+  animation: welcome-orb-move-1 25s alternate infinite ease-in-out;
+}
+
+/* 极光球 2：炫彩辅助色（国内为品红紫，海外为靛蓝） */
+.aurora-orb.orb-2 {
+  width: 320px;
+  height: 320px;
+  bottom: -100px;
+  right: 12%;
+  background: radial-gradient(circle, var(--brand-mid) 0%, color-mix(in srgb, var(--brand-base) 50%, #d946ef) 100%);
+  animation: welcome-orb-move-2 28s alternate infinite ease-in-out;
+}
+
+[data-market='global'] .aurora-orb.orb-2 {
+  background: radial-gradient(circle, var(--brand-mid) 0%, #3b82f6 100%);
+}
+
+/* 极光球 3：高亮发散点 */
+.aurora-orb.orb-3 {
+  width: 200px;
+  height: 200px;
+  top: 20%;
+  right: -50px;
+  background: radial-gradient(circle, var(--brand-light) 0%, transparent 100%);
+  animation: welcome-orb-move-3 20s alternate infinite ease-in-out;
+}

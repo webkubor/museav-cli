@@ -348,19 +348,33 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   position: relative;
 }
 
+/* 默认国内市场：炫彩紫色渐变流光追踪（紫 → 粉紫） */
 .mouse-glow-card::before {
   content: '';
   position: absolute;
   inset: 0;
   background: radial-gradient(
     380px circle at var(--mouse-x, 0px) var(--mouse-y, 0px),
-    var(--brand-glow),
-    transparent 80%
+    color-mix(in srgb, var(--brand-base) 18%, transparent) 0%,
+    color-mix(in srgb, var(--brand-mid) 8%, transparent) 35%,
+    color-mix(in srgb, #d946ef 5%, transparent) 60%,
+    transparent 85%
   );
   opacity: 0;
-  transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1);
   pointer-events: none;
   z-index: 1;
+}
+
+/* 国际市场：炫彩绿色渐变流光追踪（翠绿 → 亮蓝） */
+[data-market='global'] .mouse-glow-card::before {
+  background: radial-gradient(
+    380px circle at var(--mouse-x, 0px) var(--mouse-y, 0px),
+    color-mix(in srgb, var(--brand-base) 18%, transparent) 0%,
+    color-mix(in srgb, var(--brand-mid) 8%, transparent) 35%,
+    color-mix(in srgb, #3b82f6 5%, transparent) 60%,
+    transparent 85%
+  );
 }
 
 .mouse-glow-card:hover::before {
@@ -388,5 +402,26 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
 .magnetic-hover:active {
   transform: translateY(0px) scale(0.982);
   transition-duration: 0.08s;
+}
+
+/* ── 🚀 KPI 卡片主数值大字 Hover 品牌色渐变（与 Logo 渐变呼应，视觉极具张力） ── */
+.kpi-value-text {
+  transition: color 0.3s cubic-bezier(0.25, 1, 0.5, 1), background 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.mouse-glow-card:hover .kpi-value-text {
+  background: linear-gradient(135deg, var(--brand-base) 0%, var(--brand-mid) 60%, color-mix(in srgb, var(--brand-light) 80%, #d946ef) 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+}
+
+[data-market='global'] .mouse-glow-card:hover .kpi-value-text {
+  background: linear-gradient(135deg, var(--brand-base) 0%, var(--brand-mid) 60%, #3b82f6 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
 }
 

@@ -40,6 +40,7 @@ import { getPlatformConfig } from '@/services/platform'
 import { useLangStore } from '@/store/use-brand-store'
 import { NavLogger } from '@/components/dev/NavLogger'
 import { DevToolbar } from '@/components/dev-toolbar'
+import { ServerErrorDialog } from '@/components/server-error/ServerErrorDialog'
 
 import { Toaster } from 'sonner'
 
@@ -119,6 +120,7 @@ export default function App() {
   return (
     <Providers>
       <Toaster richColors position="top-right" closeButton />
+      <ServerErrorDialog />
       <BrowserRouter>
         {import.meta.env.DEV && <NavLogger />}
         <PlatformLoader onReady={() => setPlatformReady(true)} />

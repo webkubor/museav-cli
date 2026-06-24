@@ -136,7 +136,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
           <div>
             <div className="flex items-end gap-2">
               <span
-                className="text-[28px] font-bold tracking-tight block font-mono select-all"
+                className="text-[28px] font-bold tracking-tight block font-mono select-all kpi-value-text"
                 style={{
                   color: color === 'var(--mg-text-0)' ? 'var(--mg-text-0)' : color,
                   fontVariantNumeric: 'tabular-nums'

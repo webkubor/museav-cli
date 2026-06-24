@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ModelGoApiError } from '@/lib/request'
-import {
-  formatDiagnosticLine,
-  formatDiagnosticsForCopy,
-  getServerErrorDiagnostics,
-} from '@/lib/error-diagnostics'
+import { formatDiagnosticsForCopy, getServerErrorDiagnostics } from '@/lib/error-diagnostics'
 
 describe('server error diagnostics', () => {
   it('extracts diagnostics from 5xx business errors', () => {
@@ -56,14 +52,6 @@ describe('server error diagnostics', () => {
       response: { status: 400, headers: new Headers() },
     })
     expect(getServerErrorDiagnostics(error)).toBeNull()
-  })
-
-  it('formats a readable one-line summary preferring request id', () => {
-    const line = formatDiagnosticLine({ requestId: 'req-123', version: '1.2.3', time: 't' })
-    expect(line).toBe('请求 ID：req-123')
-
-    const fallback = formatDiagnosticLine({ version: '1.2.3', time: 't' })
-    expect(fallback).toContain('1.2.3')
   })
 
   it('formats a copyable block with ids, version and build', () => {

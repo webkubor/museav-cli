@@ -86,12 +86,6 @@ export function getServerErrorDiagnostics(error: unknown): ServerErrorDiagnostic
   return null
 }
 
-/** toast 描述行：短而可读，优先露出 request_id（最常用的报障抓手）。 */
-export function formatDiagnosticLine(d: ServerErrorDiagnostics): string {
-  const id = d.requestId ?? d.traceId
-  return id ? `请求 ID：${id}` : `版本 v${d.version}`
-}
-
 /** 复制到剪贴板的完整信息块。 */
 export function formatDiagnosticsForCopy(d: ServerErrorDiagnostics): string {
   return [

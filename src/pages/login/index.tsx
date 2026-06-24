@@ -15,11 +15,13 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { SocialLogin } from '@/components/auth/SocialLogin'
+import { SliderCaptcha } from '@/components/auth/SliderCaptcha'
 import { checkLoginEmail, login, getSession } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import {
   checkAuthGuard,
   clearAuthGuard,
+  getAuthGuardFailures,
   recordAuthGuardFailure,
   type AuthGuardAction,
 } from '@/lib/auth/front-guard'
@@ -83,6 +85,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [rememberPassword, setRememberPassword] = useState(Boolean(remembered))
+  // 人机校验：同一邮箱连续 3 次密码错误后要求滑块（按邮箱计数，换邮箱各自归零）
+  const [captchaVerified, setCaptchaVerified] = useState(false)
+  // 失败后 bump 触发重渲染，从而重读 localStorage 里的失败次数
+  const [, setFailureTick] = useState(0)
+  // 当前邮箱的连续密码失败次数（每次渲染直接读，按邮箱各自计数）
+  const pwdFailures = getAuthGuardFailures({ action: 'login-password', subject: email })
+  const captchaRequired = pwdFailures >= 3
 
   const emailForm = useForm<EmailFields>({
     resolver: zodResolver(emailSchema),
@@ -126,6 +135,10 @@ export default function LoginPage() {
   }
 
   const onPasswordSubmit = async (data: PasswordFields) => {
+    if (captchaRequired && !captchaVerified) {
+      setServerError('请先完成滑块验证')
+      return
+    }
     if (!canSubmitAuth('login-password', email)) return
     setLoading(true)
     setServerError('')
@@ -156,6 +169,9 @@ export default function LoginPage() {
     } catch {
       if (!loginOk) {
         recordAuthGuardFailure({ action: 'login-password', subject: email })
+        // 失败后重置滑块并 bump，重读次数（达到 3 次即显示滑块）
+        setCaptchaVerified(false)
+        setFailureTick((t) => t + 1)
       }
       setServerError(loginOk ? '登录成功但获取会话失败，请刷新重试' : '邮箱或密码错误')
     } finally {
@@ -236,7 +252,7 @@ export default function LoginPage() {
             <span className="auth-email-text">{email}</span>
             <button
               type="button"
-              onClick={() => { setStep('email'); setServerError('') }}
+              onClick={() => { setStep('email'); setServerError(''); setCaptchaVerified(false) }}
               className="auth-email-modify-btn"
             >
               修改
@@ -283,13 +299,22 @@ export default function LoginPage() {
             </label>
           </div>
           
+          {captchaRequired && (
+            <div className="auth-fade-in">
+              <label className="modern-auth-label">安全验证</label>
+              <p className="mb-2 text-xs text-mg-text-2">多次密码错误，请完成下方验证后再登录</p>
+              <SliderCaptcha onChange={(verified) => setCaptchaVerified(verified)} />
+            </div>
+          )}
+
           {serverError && <p className="auth-error-message">{serverError}</p>}
-          
+
           <Button
             type="submit"
             variant="brand"
             size="lg"
             loading={loading}
+            disabled={captchaRequired && !captchaVerified}
           >
             登录
           </Button>

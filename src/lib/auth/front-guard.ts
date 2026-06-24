@@ -135,6 +135,11 @@ export function recordAuthGuardFailure(input: Pick<AuthGuardInput, 'action' | 's
   })
 }
 
+/** 读取某动作 + 主体当前的连续失败次数（只读，不改状态）。按 subject(邮箱) 各自计数。 */
+export function getAuthGuardFailures(input: Pick<AuthGuardInput, 'action' | 'subject'>): number {
+  return readState(input.action, input.subject).failures
+}
+
 /** 清除本地失败状态，通常在后端鉴权成功后调用。 */
 export function clearAuthGuard(input: Pick<AuthGuardInput, 'action' | 'subject'>): void {
   if (typeof window === 'undefined') return

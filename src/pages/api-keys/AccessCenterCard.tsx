@@ -12,7 +12,6 @@ import {
   LuCheck,
   LuX,
   LuKey,
-  LuChevronRight,
   LuTriangleAlert,
   LuExternalLink,
 } from 'react-icons/lu'
@@ -48,11 +47,6 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
       return
     }
     appToast.success(t('apiKeys.table.copyMaskedSuccess'))
-  }
-
-  async function handleConfirmSaved() {
-    await copy(createdKeyText)
-    onDismissReveal()
   }
 
   return (
@@ -179,16 +173,9 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
               </div>
             </div>
 
-            <div className="flex shrink-0 items-center justify-between gap-3 xl:flex-col xl:items-stretch">
-              <button
-                type="button"
-                onClick={onOpenConnect}
-                className="inline-flex items-center justify-center gap-1 text-xs font-semibold text-brand-base transition-colors hover:text-brand-deep hover:underline cursor-pointer"
-              >
-                打开接入工具窗口 <LuChevronRight size={12} />
-              </button>
-              <Button variant="brand" onClick={handleConfirmSaved} className="h-9 rounded-lg px-5 text-sm font-semibold cursor-pointer">
-                我已复制并妥善保存
+            <div className="flex shrink-0 items-center xl:items-stretch">
+              <Button variant="brand" onClick={onOpenConnect} className="h-9 w-full rounded-lg px-5 text-sm font-semibold cursor-pointer">
+                快速接入
               </Button>
             </div>
           </div>

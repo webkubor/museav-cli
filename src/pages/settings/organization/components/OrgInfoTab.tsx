@@ -18,7 +18,7 @@ export function OrgInfoTab({
 }: {
   tenantId: string
   tenantRole?: 'tenant_owner' | 'tenant_admin' | 'tenant_member'
-  onDissolved?: () => void
+  onDissolved?: () => void | Promise<void>
 }) {
   const { hasPermission } = usePermissions()
   const canEditOrg = hasPermission(PERMS.ORG_SETTINGS_EDIT)
@@ -90,7 +90,7 @@ export function OrgInfoTab({
       } catch {
         await qc.invalidateQueries({ queryKey: ['auth-session'] })
       }
-      onDissolved?.()
+      await onDissolved?.()
     },
     onError: (err: Error) => appToast.error(err?.message || '解散组织失败'),
   })

@@ -14,7 +14,7 @@ export function OrgManagePanel({
   onDissolved,
 }: {
   tenantId: string | null
-  onDissolved?: (nextTenantId: string | null) => void
+  onDissolved?: (dissolvedTenantId: string) => void | Promise<void>
 }) {
   const tenantsQuery = useQuery({ queryKey: ['tenants'], queryFn: listTenants, staleTime: 30_000 })
   // Hooks 必须无条件调用（rules-of-hooks）：原先位于 early-return 之后，
@@ -107,11 +107,7 @@ export function OrgManagePanel({
           <OrgInfoTab
             tenantId={tenantId}
             tenantRole={tenant?.role}
-            onDissolved={() => {
-              const nextTenant = (tenantsQuery.data?.items ?? sessionTenants)
-                .find((item) => item.tenant_id !== tenantId && item.type === 'enterprise')
-              onDissolved?.(nextTenant?.tenant_id ?? null)
-            }}
+            onDissolved={() => onDissolved?.(tenantId)}
           />
         )}
         {activeSubTab === 'members' && <MembersTab tenantId={tenantId} canManage={canManage} />}

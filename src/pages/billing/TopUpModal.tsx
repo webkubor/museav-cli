@@ -141,10 +141,10 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                     type="button"
                     onClick={() => { setAmount(p); setCustomMode(false) }}
                     className={cn(
-                      "rounded-lg border py-2.5 cursor-pointer transition-all duration-150 text-center active:scale-[0.97]",
+                      "rounded-lg border py-2.5 cursor-pointer text-center magnetic-hover",
                       active
                         ? "border-brand-base bg-brand-glow text-brand-base"
-                        : "border-mg-border text-mg-text-1 hover:text-mg-text-0 hover:border-mg-text-2/30"
+                        : "border-mg-border text-mg-text-1 hover:text-mg-text-0 hover:border-brand-base/40"
                     )}
                   >
                     <span className={cn("text-[15px] font-bold font-mono", active && "text-brand-base")}>{currencySymbol}{p}</span>
@@ -186,7 +186,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                     type="button"
                     onClick={() => setChannel(c.value)}
                     className={cn(
-                      "flex-1 rounded-lg border py-2.5 px-3 cursor-pointer transition-all duration-150 active:scale-[0.97]",
+                      "flex-1 rounded-lg border py-2.5 px-3 cursor-pointer magnetic-hover",
                       active
                         ? "shadow-sm"
                         : "border-mg-border text-mg-text-2 hover:border-mg-text-2/30"

@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
+import { useMouseGlow } from '@/hooks/use-mouse-glow'
 import { TopUpModal } from './TopUpModal'
 import { InvoiceModal } from './invoice/InvoiceModal'
 import { formatBalance } from './formatBalance'
@@ -35,8 +36,15 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
   const { main: availableMain } = formatBalance(balance?.available.amount)
   const { data: breakdown } = useBalanceBreakdown(tenantId)
 
+  const mainRef = useMouseGlow<HTMLButtonElement>()
+  const giftRef = useMouseGlow<HTMLButtonElement>()
+  const rewardRef = useMouseGlow<HTMLButtonElement>()
+
   const cardCls = (active: boolean) =>
-    cn('billing-glow-card p-4 space-y-1.5 text-left w-full cursor-pointer outline-none select-none', active ? 'active' : '')
+    cn(
+      'billing-glow-card p-4 space-y-1.5 text-left w-full cursor-pointer outline-none select-none mouse-glow-card magnetic-hover',
+      active ? 'active' : ''
+    )
 
   const handleRefresh = useCallback(async () => {
     if (!tenantId || refreshing) return
@@ -121,6 +129,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
         {/* 余额细分 */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <button
+            ref={mainRef}
             type="button"
             onClick={() => onTabChange('main')}
             className={cn(cardCls(activeTab === 'main'), activeTab === 'main' && 'active-main')}
@@ -139,6 +148,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
           </button>
 
           <button
+            ref={giftRef}
             type="button"
             onClick={() => onTabChange('gift')}
             className={cn(cardCls(activeTab === 'gift'), activeTab === 'gift' && 'active-gift')}
@@ -157,6 +167,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
           </button>
 
           <button
+            ref={rewardRef}
             type="button"
             onClick={() => onTabChange('reward')}
             className={cn(cardCls(activeTab === 'reward'), activeTab === 'reward' && 'active-reward')}

@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
-import { agentDebugger, agentProxy } from 'vite-plugin-agent-eyes'
+import { agentDebugger, agentProxy, agentGit } from 'vite-plugin-agent-eyes'
 import { devRequirementsPlugin } from './scripts/dev-requirements-plugin'
 import { version } from './package.json'
 import { execSync } from 'node:child_process'
@@ -42,6 +42,14 @@ export default defineConfig(({ mode }) => {
     tailwindcss(),
     react(),
     agentDebugger(),
+    // 提交成功后推送飞书通知（dev 启动时幂等安装 post-commit 钩子；不动已有 pre-commit）
+    agentGit({
+      projectLabel: '控制台',
+      webhook: {
+        url: 'https://open.feishu.cn/open-apis/bot/v2/hook/4bd3a5cb-3bc3-4e07-b61c-541e94d826b6',
+        format: 'feishu',
+      },
+    }),
     devRequirementsPlugin(),
     VitePWA({
       registerType: 'autoUpdate',

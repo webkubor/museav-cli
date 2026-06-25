@@ -4,8 +4,14 @@ import { injectHeaders } from '@/lib/request-headers'
 import { getMarket } from '@/lib/market'
 import { useLangStore } from '@/store/use-brand-store'
 import { handleSessionExpired } from '@/lib/auth/auth-controller'
+import { encryptRequest, decryptResponse } from '@/lib/crypto/secure-transport'
 
 const API_V1_PREFIX = 'api/v1'
+
+// #267 注册登录密码不能传明文: these password-bearing endpoints send an encrypted
+// RSA+AES envelope instead of a plaintext JSON body, and receive an encrypted
+// {iv,data} response. Normalized (no leading slash) to match normalizePath.
+const SECURE_PATHS = new Set(['auth/login', 'auth/register', 'auth/password/reset'])
 const DEV_TOOLS_ENABLED = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
 export const SERVER_ERROR_MESSAGE = '服务暂时不可用，请稍后再试'
 
@@ -250,9 +256,78 @@ export async function get<T>(path: string, params?: QueryParams): Promise<T> {
 }
 
 export async function post<T>(path: string, body: unknown): Promise<T> {
+  if (SECURE_PATHS.has(normalizePath(path))) {
+    return postSecure<T>(path, body)
+  }
   return requestWithJsonBody('POST', path, body, (url) =>
     client.post(url, { json: body })
   )
+}
+
+// cachedPublicKey holds the server RSA public key (PEM) fetched once from
+// /auth/crypto/public-key and reused for the session.
+let cachedPublicKey: string | null = null
+
+async function loadPublicKey(): Promise<string> {
+  if (cachedPublicKey) return cachedPublicKey
+  const resp = await client
+    .get(apiUrl('auth/crypto/public-key'))
+    .json<ApiResponse<{ public_key: string; alg?: string }>>()
+  if (resp.code !== 0 || !resp.data?.public_key) {
+    throw new ModelGoApiError({
+      code: resp.code ?? -1,
+      msg: '无法获取加密公钥，请稍后重试',
+      request_id: resp.request_id,
+      trace_id: resp.trace_id,
+      data: null,
+    })
+  }
+  cachedPublicKey = resp.data.public_key
+  return cachedPublicKey
+}
+
+// postSecure encrypts the request body into an RSA+AES envelope and decrypts the
+// {iv,data} response under the same AES key. The plaintext body (it carries the
+// password) is NEVER passed to the dev logger.
+async function postSecure<T>(path: string, body: unknown): Promise<T> {
+  const normalizedPath = normalizePath(path)
+  const url = apiUrl(normalizedPath)
+  const startedAt = nowMs()
+  try {
+    const publicKey = await loadPublicKey()
+    const { envelope, aesKeyB64 } = encryptRequest(body, publicKey)
+    const httpResp = await client.post(url, { json: envelope })
+    const traceId =
+      httpResp.headers.get('x-request-id') ??
+      httpResp.headers.get('x-trace-id') ??
+      httpResp.headers.get('traceparent') ??
+      undefined
+    const raw = await httpResp.json<Record<string, unknown>>()
+    // Encrypted response is {iv,data}; a middleware-stage rejection is a plaintext
+    // {code,msg} envelope — branch on iv/data presence, not status.
+    const envelopeResp: ApiResponse<T> =
+      typeof raw.iv === 'string' && typeof raw.data === 'string'
+        ? decryptResponse<ApiResponse<T>>(raw.data as string, aesKeyB64, raw.iv as string)
+        : (raw as unknown as ApiResponse<T>)
+    const result = unwrapEnvelope(envelopeResp)
+    devLogApiCall({
+      method: 'POST',
+      path: normalizedPath,
+      url,
+      ok: true,
+      duration_ms: durationMs(startedAt),
+      code: 0,
+      request_id: traceId ?? envelopeResp.request_id,
+      trace_id: envelopeResp.trace_id,
+      request: '[encrypted]',
+      response: '[encrypted]',
+    })
+    return result
+  } catch (error) {
+    if (error instanceof ModelGoApiError) error.path = normalizedPath
+    devLogApiError('POST', normalizedPath, url, startedAt, error, '[encrypted]')
+    throw error
+  }
 }
 
 export async function patch<T>(path: string, body: unknown): Promise<T> {

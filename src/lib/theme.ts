@@ -46,6 +46,34 @@ export function resolveTheme(theme: Theme): 'dark' | 'light' {
   return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
 }
 
+/** 当前页面实际生效的主题（读 DOM 真值，反映用户的即时切换） */
+export function getActiveTheme(): 'dark' | 'light' {
+  if (typeof document === 'undefined') return 'light'
+  return document.documentElement.getAttribute('theme-mode') === 'dark' ? 'dark' : 'light'
+}
+
+/**
+ * 给跨站链接（文档站）拼上当前主题参数，实现跳转时主题同步。
+ * 文档站读 `?theme=dark|light` 初始化自身主题；非法或异常时原样返回。
+ */
+export function appendThemeParam(url: string): string {
+  if (!url) return url
+  try {
+    const u = new URL(url)
+    u.searchParams.set('theme', getActiveTheme())
+    return u.toString()
+  } catch {
+    return url
+  }
+}
+
+/** 跳转来源（文档站）通过 `?theme=` 带来的主题，仅接受合法值 */
+export function readThemeFromUrl(): 'dark' | 'light' | null {
+  if (typeof window === 'undefined') return null
+  const v = new URLSearchParams(window.location.search).get('theme')
+  return v === 'dark' || v === 'light' ? v : null
+}
+
 export function applyTheme(theme: Theme) {
   const resolved = resolveTheme(theme)
   if (resolved === 'dark') {

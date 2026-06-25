@@ -9,6 +9,7 @@ import { useCopy } from '@/hooks/use-copy'
 import { appToast } from '@/lib/app-toast'
 import { useTranslation } from 'react-i18next'
 import { LuCopy, LuCheck, LuZap, LuChevronRight, LuExternalLink, LuKey } from 'react-icons/lu'
+import { appendThemeParam } from '@/lib/theme'
 import { CONNECT_ACTIONS, buildConnectSnippets, getConnectAction } from './constants'
 
 type Props = {
@@ -38,7 +39,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
     setTimeout(() => setConnectCopied(null), 2000)
   }
 
-  const connectSnippets = buildConnectSnippets({ openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl })
+  const connectSnippets = buildConnectSnippets({ openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl: appendThemeParam(docsUrl) })
 
   return (
     <Modal
@@ -104,7 +105,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
           <div className="flex items-center justify-between gap-3">
             <div className="text-xs font-bold text-mg-text-1">接入方式</div>
             <a
-              href={docsUrl}
+              href={appendThemeParam(docsUrl)}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1 text-xs font-bold text-brand-base hover:text-brand-deep hover:underline"

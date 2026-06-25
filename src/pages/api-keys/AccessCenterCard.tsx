@@ -15,6 +15,7 @@ import {
   LuTriangleAlert,
   LuExternalLink,
 } from 'react-icons/lu'
+import { appendThemeParam } from '@/lib/theme'
 import { CONNECT_ACTIONS, formatEndpointDisplay, getGatewayVisual } from './constants'
 
 type Props = {
@@ -58,7 +59,7 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
             <div className="mt-0.5 text-xs text-mg-text-2">复制必要地址，或直接打开工具。</div>
           </div>
           <a
-            href={docsUrl}
+            href={appendThemeParam(docsUrl)}
             target="_blank"
             rel="noreferrer"
             className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-brand-base hover:text-brand-deep hover:underline"
@@ -114,7 +115,7 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
                   key={action.key}
                   type="button"
                   onClick={onOpenConnect}
-                  className="group flex h-8 items-center gap-1.5 rounded-lg border border-mg-border bg-mg-bg-1/55 px-2 text-left transition-colors hover:border-brand-base/40 hover:bg-brand-base/5 cursor-pointer"
+                  className="group flex h-9 items-center gap-1.5 rounded-lg border border-mg-border bg-mg-bg-1/55 px-2 text-left transition-colors hover:border-brand-base/40 hover:bg-brand-base/5 cursor-pointer"
                 >
                   <span className="flex h-5 w-5 items-center justify-center rounded-md bg-mg-bg-0 border border-mg-border/60 text-mg-text-0">
                     {action.icon}

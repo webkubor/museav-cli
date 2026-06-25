@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
 import { useLangStore } from '@/store/use-brand-store'
 import { getMarketConfig } from '@/config/market'
+import { appendThemeParam } from '@/lib/theme'
 import { TerminalSection } from './TerminalSection'
 import './welcome-banner.css'
 
@@ -101,7 +102,7 @@ export const WelcomeBanner: React.FC = () => {
         </ol>
 
         <a
-          href={marketConfig.docsUrl}
+          href={appendThemeParam(marketConfig.docsUrl)}
           target="_blank"
           rel="noreferrer"
           className="text-[12px] text-mg-text-2 hover:text-brand-base transition-colors self-start"

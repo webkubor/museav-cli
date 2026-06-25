@@ -35,7 +35,7 @@ const TasksPage = lazy(() => import('@/pages/tasks'))
 const NotFoundPage = lazy(() => import('@/pages/not-found'))
 import { storageKeys } from '@/lib/storage'
 import { getMarket, type Market } from '@/lib/market'
-import { applyBrandTheme, applyTheme, getSavedBrandTheme, getSavedTheme } from '@/lib/theme'
+import { applyBrandTheme, applyTheme, getSavedBrandTheme, getSavedTheme, readThemeFromUrl, saveTheme } from '@/lib/theme'
 import { getPlatformConfig } from '@/services/platform'
 import { useLangStore } from '@/store/use-brand-store'
 import { NavLogger } from '@/components/dev/NavLogger'
@@ -113,7 +113,20 @@ export default function App() {
   const [platformReady, setPlatformReady] = useState(false)
 
   useEffect(() => {
-    applyTheme(getSavedTheme())
+    // 从文档站跳转过来时 URL 带 ?theme=dark|light：优先采用并持久化，实现跨站主题同步。
+    // 账号就绪后 DashboardHeader 会回写到用户偏好 key（见 mg:theme_from_url），避免被 getUserTheme 覆盖。
+    const fromUrl = readThemeFromUrl()
+    if (fromUrl) {
+      saveTheme(fromUrl)
+      sessionStorage.setItem('mg:theme_from_url', fromUrl)
+      applyTheme(fromUrl)
+      // 清掉 query，避免刷新/收藏时残留
+      const url = new URL(window.location.href)
+      url.searchParams.delete('theme')
+      window.history.replaceState({}, '', url)
+    } else {
+      applyTheme(getSavedTheme())
+    }
     applyBrandTheme(getSavedBrandTheme())
   }, [])
 

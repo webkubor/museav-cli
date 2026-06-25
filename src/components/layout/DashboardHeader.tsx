@@ -22,7 +22,7 @@ import { useAuthStore } from '@/store/auth'
 import { switchTenant, getSession } from '@/services/auth'
 import { listTenants } from '@/services/tenants'
 import { createOrganization } from '@/services/organizations'
-import { applyTheme, getUserTheme } from '@/lib/theme'
+import { applyTheme, getUserTheme, saveTheme, appendThemeParam } from '@/lib/theme'
 import { useTranslation } from 'react-i18next'
 import { listWorkspaces } from '@/services/workspaces'
 import { GATEWAY_ENDPOINTS } from '@/config/gateway'
@@ -79,8 +79,8 @@ export const DashboardHeader: React.FC = () => {
     { key: 'models', label: t('nav.models'), to: '/models/catalog', match: (p) => p.startsWith('/models') },
     { key: 'enterprise', label: t('nav.enterprise'), to: '/settings/organization', match: (p) => p.startsWith('/settings/organization') },
     { key: 'referral', label: t('nav.referral'), to: '/referral', match: (p) => p.startsWith('/referral') },
-    { key: 'docs', label: t('nav.docsMenu'), href: marketConfig.docsUrl },
-    { key: 'changelog', label: t('common.changelog'), href: `${marketConfig.docsUrl}/changelog` },
+    { key: 'docs', label: t('nav.docsMenu'), href: appendThemeParam(marketConfig.docsUrl) },
+    { key: 'changelog', label: t('common.changelog'), href: appendThemeParam(`${marketConfig.docsUrl}/changelog`) },
   ]
   const navRef = useRef<HTMLDivElement>(null)
   const [sliderStyle, setSliderStyle] = useState<React.CSSProperties>({
@@ -177,6 +177,14 @@ export const DashboardHeader: React.FC = () => {
 
   useEffect(() => {
     if (!account) return
+    // 若本次是从文档站带 ?theme= 跳转进来的，让该主题成为此用户的偏好（否则会被 getUserTheme 覆盖）
+    const fromUrl = sessionStorage.getItem('mg:theme_from_url')
+    if (fromUrl === 'dark' || fromUrl === 'light') {
+      sessionStorage.removeItem('mg:theme_from_url')
+      saveTheme(fromUrl, account.account_id)
+      applyTheme(fromUrl)
+      return
+    }
     applyTheme(getUserTheme(account.account_id))
   }, [account])
 

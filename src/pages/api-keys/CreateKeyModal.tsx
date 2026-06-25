@@ -17,6 +17,7 @@ import { listWorkspaceMembers } from '@/services/workspaces'
 import { listGuardrails } from '@/services/guardrails'
 import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
+import { useAuthStore } from '@/store/auth'
 import { SCOPE_OPTIONS, EXPIRATION_PRESETS, resolveExpiryISO, type ScopeType } from './constants'
 import { CreateGuardrailDialog } from './CreateGuardrailDialog'
 import { PERIOD_LABEL } from '@/constants/status'
@@ -34,9 +35,15 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { currency, symbol } = useCurrency()
+  // 个人租户没有「企业/工作区/成员」概念，作用域固定为个人、不展示选择
+  const activeTenantId = useAuthStore((s) => s.activeTenantId)
+  const tenants = useAuthStore((s) => s.tenants)
+  const isPersonalTenant = tenants.find((t) => t.tenant_id === activeTenantId)?.type === 'personal'
 
   const [name, setName] = useState('')
   const [scope, setScope] = useState<ScopeType>('workspace')
+  // 个人租户强制 personal，兜底防止 Tab 隐藏后残留的 workspace/member 被提交
+  const effectiveScope: ScopeType = isPersonalTenant ? 'personal' : scope
   const [memberAccountId, setMemberAccountId] = useState('')
   const [guardrailIds, setGuardrailIds] = useState<string[]>([])
   const [guardrailDialogOpen, setGuardrailDialogOpen] = useState(false)
@@ -53,7 +60,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const membersQuery = useQuery({
     queryKey: ['workspace-members', workspaceId],
     queryFn: () => listWorkspaceMembers(workspaceId, { page_size: 100 }),
-    enabled: !!workspaceId && open && scope === 'member',
+    enabled: !!workspaceId && open && effectiveScope === 'member',
     staleTime: 60_000,
   })
 
@@ -79,8 +86,8 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
     mutationFn: () =>
       createApiKey(workspaceId, {
         name: name.trim(),
-        scope,
-        member_account_id: scope === 'member' ? memberAccountId : undefined,
+        scope: effectiveScope,
+        member_account_id: effectiveScope === 'member' ? memberAccountId : undefined,
         spending_limit: spendingAmount
           ? { amount: spendingAmount, currency, period_unit: spendingPeriodUnit, period_length: 1 }
           : undefined,
@@ -103,7 +110,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
       appToast.error(t('apiKeys.createModal.nameRequired'))
       return
     }
-    if (scope === 'member' && !memberAccountId) {
+    if (effectiveScope === 'member' && !memberAccountId) {
       appToast.error('请选择目标成员')
       return
     }
@@ -144,7 +151,8 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
         }
       >
         <div className="flex flex-col gap-7 py-3">
-          {/* 作用域 Tab — 无 label，直接在顶部 */}
+          {/* 作用域 Tab — 个人租户无企业作用域，整条隐藏 */}
+          {!isPersonalTenant && (
           <div className="flex gap-1 p-1 rounded-md bg-mg-fill-0 border border-mg-border">
             {SCOPE_OPTIONS.map((opt) => {
               const active = scope === opt.value
@@ -166,6 +174,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
               )
             })}
           </div>
+          )}
 
           {/* 名称 */}
           <div>
@@ -180,7 +189,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
           </div>
 
           {/* 成员（仅 scope=member） */}
-          {scope === 'member' && (
+          {effectiveScope === 'member' && (
             <div>
               <label className="block text-xs font-bold text-mg-text-1 mb-2">目标成员</label>
               <Select value={memberAccountId} onChange={setMemberAccountId} placeholder="请选择工作区成员" className="w-full">

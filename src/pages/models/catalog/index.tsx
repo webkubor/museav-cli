@@ -14,29 +14,21 @@ import {
   LuChevronRight,
   LuChevronUp,
   LuCopy,
-  LuGift,
   LuLockKeyhole,
   LuGitCompareArrows,
-  LuSparkles,
-  LuZap,
 } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { useModels } from '@/features/models/hooks/useModels'
-import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
+import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { resolveVendorBrand } from '@/features/models/components/vendor-icons'
-import { FlameIcon } from '@/components/ui/FlameIcon'
 import { ModalityBadge } from '@/features/models/components/ModalityBadge'
 import { useCopy } from '@/hooks/use-copy'
-import { useCurrency } from '@/hooks/use-platform-config'
 import { appToast } from '@/lib/app-toast'
 import { cn, formatContextLength, formatModelPrice } from '@/lib/utils'
 import { listModelTags, listModelFamilies } from '@/services/catalog'
-import { getUsageRankingsModels } from '@/services/usage'
-import { useAuthStore } from '@/store/auth'
-import type { CatalogModelItem, UsageRankingItem } from '@/types'
+import type { CatalogModelItem } from '@/types'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
 import { ModelCatalogFilters } from './ModelCatalogFilters'
-import { FirstChargeLockGate } from '@/components/ui/FirstChargeLockGate'
 import {
   DEFAULT_ADVANCED_FILTERS,
   matchesAdvancedFilters,
@@ -55,17 +47,6 @@ interface ModelMeta {
     reasoning: number
     cost: number
   }
-}
-
-type InsightTone = 'emerald' | 'cyan' | 'violet' | 'amber'
-
-interface RankingViewItem {
-  rank: string
-  name: string
-  requests: number
-  score: string
-  tone: InsightTone
-  iconModel: ModelIconLike
 }
 
 const MODALITY_FILTERS = [
@@ -152,35 +133,9 @@ function getModelMeta(modelId: string, isZh: boolean) {
   }
 }
 
-function parsePrice(amount: string | number | null | undefined) {
-  if (amount == null || amount === '') return 0
-  const parsed = typeof amount === 'string' ? Number.parseFloat(amount) : amount
-  return Number.isFinite(parsed) ? parsed : 0
-}
-
-function getModelMinPrice(model: CatalogModelItem) {
-  const input = parsePrice(model.pricing?.input_per_1m)
-  const output = parsePrice(model.pricing?.output_per_1m)
-  if (input <= 0 && output <= 0) return 0
-  if (input <= 0) return output
-  if (output <= 0) return input
-  return Math.min(input, output)
-}
-
-/** 免费模型：标签含 free 或最低价为 0。 */
-function isFreeModel(model: CatalogModelItem) {
-  const tags = (model.tags ?? []).map((t) => t.toLowerCase())
-  return tags.includes('free') || getModelMinPrice(model) <= 0
-}
-
 function isComparableModel(model: CatalogModelItem) {
   const modalities = model.modalities ?? []
   return !modalities.some((modality) => modality === 'image' || modality === 'audio' || modality === 'video')
-}
-
-function getReleaseTime(model: CatalogModelItem) {
-  const time = Date.parse(model.released_at)
-  return Number.isFinite(time) ? time : 0
 }
 
 function getStatusLabel(status: string, isZh: boolean) {
@@ -246,8 +201,6 @@ export default function ModelsCatalogPage() {
     ]
   }, [familiesQuery.data?.items, isZh, t])
 
-  const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
-  const { symbol: currencySymbol } = useCurrency()
   const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
   const comparableModels = useMemo(() => allModels.filter(isComparableModel), [allModels])
   const apiTags = useMemo(() => tagsQuery.data?.items ?? [], [tagsQuery.data?.items])
@@ -270,72 +223,6 @@ export default function ModelsCatalogPage() {
       matchesAdvancedFilters(model, advancedFilters)
     )
   }, [category, advancedFilters, filteredModels])
-
-
-  const { data: rankingsData } = useQuery({
-    queryKey: ['usage-rankings', 'models', tenantId],
-    queryFn: () => {
-      const now = new Date()
-      const from = new Date(now.getFullYear(), now.getMonth(), 1)
-      return getUsageRankingsModels({ from: from.toISOString(), to: now.toISOString(), limit: 5 })
-    },
-    enabled: !!tenantId,
-    staleTime: 5 * 60_000,
-  })
-
-  const rankingItems = useMemo<RankingViewItem[]>(() => {
-    const tones: InsightTone[] = ['emerald', 'cyan', 'violet', 'amber']
-    const iconMap = new Map<string, ModelIconLike>()
-    for (const model of allModels) {
-      iconMap.set(model.model_id, {
-        logo_url: model.logo_url,
-        vendor: model.vendor,
-        display_name: model.display_name,
-      })
-    }
-    // 热门 = 按调用次数(requests)降序，名次据此重排
-    return (rankingsData?.items ?? [])
-      .map((item: UsageRankingItem) => {
-        const key = item.key ?? ''
-        return {
-          requests: item.requests ?? 0,
-          name: item.name || key || '—',
-          score: item.spend?.amount ? `${currencySymbol}${Number.parseFloat(item.spend.amount).toFixed(4)}` : '—',
-          iconModel: iconMap.get(key) ?? { display_name: item.name || key, vendor: key.split('/')[0] },
-        }
-      })
-      .sort((a, b) => b.requests - a.requests)
-      .map((it, index) => ({
-        rank: String(index + 1).padStart(2, '0'),
-        name: it.name,
-        requests: it.requests,
-        score: it.score,
-        tone: tones[index % tones.length],
-        iconModel: it.iconModel,
-      }))
-  }, [rankingsData, allModels, currencySymbol])
-
-  const fallbackRankingItems = useMemo<RankingViewItem[]>(() => {
-    const tones: InsightTone[] = ['emerald', 'cyan', 'violet', 'amber']
-    return allModels.slice(0, 5).map((model, index) => ({
-      rank: String(index + 1).padStart(2, '0'),
-      name: model.display_name || model.model_id,
-      requests: 0,
-      score: '—',
-      tone: tones[index % tones.length],
-      iconModel: model,
-    }))
-  }, [allModels])
-
-  const freeModels = useMemo(
-    () => allModels.filter(isFreeModel).slice(0, 4),
-    [allModels],
-  )
-
-  const recentModels = useMemo(
-    () => [...allModels].sort((a, b) => getReleaseTime(b) - getReleaseTime(a)).slice(0, 2),
-    [allModels],
-  )
 
   const handleCopyApiId = async (modelId: string, event: React.MouseEvent) => {
     event.stopPropagation()
@@ -449,13 +336,6 @@ export default function ModelsCatalogPage() {
             </div>
           )}
         </section>
-
-        <CatalogInsightPanel
-          rankingItems={rankingItems.length > 0 ? rankingItems : fallbackRankingItems}
-          hasRealRanking={rankingItems.length > 0}
-          freeModels={freeModels}
-          recentModels={recentModels}
-        />
       </div>
 
       <ModelsCompareModal
@@ -563,115 +443,5 @@ function ModelCatalogCard({ model, isZh, copied, onCopy, onTry, onCompare }: Mod
         )}
       </div>
     </article>
-  )
-}
-
-interface CatalogInsightPanelProps {
-  rankingItems: RankingViewItem[]
-  hasRealRanking: boolean
-  freeModels: CatalogModelItem[]
-  recentModels: CatalogModelItem[]
-}
-
-function CatalogInsightPanel({ rankingItems, hasRealRanking, freeModels, recentModels }: CatalogInsightPanelProps) {
-  const { t, i18n } = useTranslation()
-  const isZh = i18n.language.startsWith('zh')
-  // FR-C2: account.has_recharged 由后端 FR-C1 接入后补全；字段缺失时默认 true（不拦截已有用户）
-  const hasRecharged = useAuthStore((s) => (s.account as { has_recharged?: boolean } | null)?.has_recharged ?? true)
-
-  return (
-    <aside className="catalog-insight-panel" aria-label={t('modelsCatalog.insights.title')}>
-      <div className="catalog-insight-header">
-        <div>
-          <h2>{t('modelsCatalog.insights.title')}</h2>
-          <p>{hasRealRanking ? t('modelsCatalog.insights.subtitle') : t('modelsCatalog.insights.noRanking')}</p>
-        </div>
-        <LuZap aria-hidden />
-      </div>
-
-      <section className="catalog-insight-section">
-        <h3 className="catalog-insight-hot-title">
-          <FlameIcon size={15} />
-          {t('modelsCatalog.insights.hot')}
-        </h3>
-        <div className="catalog-ranking-list">
-          {(() => {
-            const top = rankingItems.slice(0, 5)
-            const maxReq = Math.max(1, ...top.map((it) => it.requests))
-            return top.map((item, idx) => (
-              <div
-                className={cn('catalog-ranking-row', idx === 0 && hasRealRanking && 'is-top')}
-                key={`${item.rank}-${item.name}`}
-              >
-                {hasRealRanking && (
-                  <span
-                    className="catalog-ranking-heat"
-                    style={{ width: `${Math.max(8, (item.requests / maxReq) * 100)}%` }}
-                    aria-hidden
-                  />
-                )}
-                <span className="catalog-ranking-rank">
-                  {item.rank}
-                </span>
-                <ModelIcon model={item.iconModel} size={28} rounded="rounded-lg" className="catalog-ranking-icon" />
-                <span className="catalog-ranking-copy">
-                  <strong title={item.name}>{item.name}</strong>
-                  <small>
-                    {hasRealRanking
-                      ? t('modelsCatalog.insights.calls', { count: item.requests.toLocaleString() })
-                      : t('modelsCatalog.insights.waiting')}
-                  </small>
-                </span>
-                <span className="catalog-ranking-score">{item.score}</span>
-              </div>
-            ))
-          })()}
-        </div>
-      </section>
-
-      <section className="catalog-insight-section">
-        <h3 className="catalog-insight-stitle catalog-insight-stitle--free">
-          <LuGift aria-hidden />
-          {t('modelsCatalog.insights.free')}
-        </h3>
-        <FirstChargeLockGate
-          locked={!hasRecharged}
-          title={isZh ? '充值后解锁免费模型' : 'Unlock free models'}
-          desc={isZh ? '首次充值任意金额，即可免费调用此分类下的模型。' : 'Complete your first top-up to access free-tier models at no cost.'}
-          cta={isZh ? '去充值' : 'Top up now'}
-          className="rounded-md border-0"
-        >
-          <div className="catalog-mini-model-list">
-            {freeModels.length === 0 ? (
-              <p className="catalog-insight-empty">{t('modelsCatalog.insights.freeEmpty')}</p>
-            ) : (
-              freeModels.map((model) => (
-                <div className="catalog-mini-model" key={model.id}>
-                  <ModelIcon model={model} size={24} rounded="rounded-md" />
-                  <span title={model.display_name}>{model.display_name}</span>
-                  <span className="catalog-mini-badge is-free">{t('modelsCatalog.insights.freeTag')}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </FirstChargeLockGate>
-      </section>
-
-      <section className="catalog-insight-section">
-        <h3 className="catalog-insight-stitle catalog-insight-stitle--recent">
-          <LuSparkles aria-hidden />
-          {t('modelsCatalog.insights.recent')}
-        </h3>
-        <div className="catalog-mini-model-list">
-          {recentModels.map((model) => (
-            <div className="catalog-mini-model" key={model.id}>
-              <ModelIcon model={model} size={24} rounded="rounded-md" />
-              <span title={model.display_name}>{model.display_name}</span>
-              <span className="catalog-mini-badge is-date">{model.released_at || '—'}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-    </aside>
   )
 }

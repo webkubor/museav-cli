@@ -252,16 +252,9 @@
   box-shadow: 0 8px 18px -14px var(--brand-base);
 }
 
+/* 结果区占满整行（已移除模型洞察侧栏） */
 .models-catalog-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
-  gap: 18px;
-  align-items: start;
-}
-
-.catalog-insight-panel {
-  border-radius: 20px;
-  padding: 18px;
+  min-width: 0;
 }
 
 /* 结果区只是装模型卡的网格容器，本身不做成卡片（避免卡中卡套娃） */
@@ -269,8 +262,7 @@
   min-width: 0;
 }
 
-.models-catalog-results-head,
-.catalog-insight-header {
+.models-catalog-results-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -278,8 +270,7 @@
   margin-bottom: 16px;
 }
 
-.models-catalog-results-head h2,
-.catalog-insight-header h2 {
+.models-catalog-results-head h2 {
   margin: 0;
   color: var(--mg-text-0);
   font-size: 16px;
@@ -287,8 +278,7 @@
   line-height: 1.2;
 }
 
-.models-catalog-results-head p,
-.catalog-insight-header p {
+.models-catalog-results-head p {
   margin: 5px 0 0;
   color: var(--mg-text-2);
   font-size: 12px;

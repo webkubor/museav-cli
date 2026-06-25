@@ -126,6 +126,9 @@
       "copy": "Copy",
       "revoke": "Delete",
       "copyMaskedSuccess": "Masked credentials copied to clipboard",
+      "expiresAt": "Expires At",
+      "neverExpires": "Never expires",
+      "expired": "Expired",
       "totalSpend": "Total Spend",
       "noData": "No data"
     },

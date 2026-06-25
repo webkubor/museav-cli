@@ -126,6 +126,9 @@
       "copy": "复制",
       "revoke": "删除",
       "copyMaskedSuccess": "遮蔽凭证已复制到剪贴板",
+      "expiresAt": "过期时间",
+      "neverExpires": "永不过期",
+      "expired": "已过期",
       "totalSpend": "累计消费",
       "noData": "无数据"
     },

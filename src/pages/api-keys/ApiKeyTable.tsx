@@ -17,6 +17,11 @@ import { formatDateTime } from '@/lib/format-date'
 import type { ApiKeyItem } from '@/types'
 import { SCOPE_OPTIONS } from './constants'
 
+/** key 是否已过期：瞬时点比较（expires_at 为带 Z 的 UTC ISO）。放组件外避免 render 期调 Date.now。 */
+function isExpired(iso: string): boolean {
+  return new Date(iso).getTime() < Date.now()
+}
+
 type Props = {
   isLoading: boolean
   items: ApiKeyItem[]
@@ -43,19 +48,20 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
           <TableHead>{t('apiKeys.table.status')}</TableHead>
           <TableHead>{t('apiKeys.table.totalSpend')}</TableHead>
           <TableHead>{t('apiKeys.table.createdAt')}</TableHead>
+          <TableHead>{t('apiKeys.table.expiresAt')}</TableHead>
           <TableHead className="text-right">{t('apiKeys.table.actions')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {isLoading ? (
           <TableRow>
-            <TableCell colSpan={7} className="text-center py-10 text-mg-text-2">{t('common.loading')}</TableCell>
+            <TableCell colSpan={8} className="text-center py-10 text-mg-text-2">{t('common.loading')}</TableCell>
           </TableRow>
         ) : items.length === 0 ? (
           <EmptyState
             icon={<LuKeyRound />}
             title={t('apiKeys.table.noData')}
-            colSpan={7}
+            colSpan={8}
           />
         ) : (
           items.map((record) => {
@@ -116,6 +122,20 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
                     : <span className="text-mg-text-2">—</span>}
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-1">{formatDateTime(record.created_at)}</TableCell>
+                <TableCell className="text-xs">
+                  {!record.expires_at ? (
+                    <span className="text-mg-text-2">{t('apiKeys.table.neverExpires')}</span>
+                  ) : isExpired(record.expires_at) ? (
+                    <span className="inline-flex items-center gap-1.5 text-mg-danger font-semibold">
+                      {formatDateTime(record.expires_at)}
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-mg-danger/10 border border-mg-danger/20">
+                        {t('apiKeys.table.expired')}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-mg-text-1">{formatDateTime(record.expires_at)}</span>
+                  )}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-4 text-xs font-bold">
                     <button

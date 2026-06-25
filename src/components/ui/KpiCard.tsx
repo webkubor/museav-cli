@@ -184,7 +184,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
           }}
         >
           {action.label}
-          <span className="opacity-50 text-[10px]">→</span>
+          <span aria-hidden className="opacity-50 text-[10px]">→</span>
         </button>
       )}
     </Card>

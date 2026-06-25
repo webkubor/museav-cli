@@ -1,7 +1,10 @@
 // ─── Format Balance Helper ────────────────────────────────────────────────
 
+import { formatMoney } from '@/lib/utils'
+
 export function formatBalance(amountStr: string | undefined): { main: string; exact: string } {
   if (!amountStr) return { main: '—', exact: '—' }
-  // 原样显示后端金额字符串，不舍入/截断/补零/加千分位；main 与 exact 一致。
-  return { main: amountStr, exact: amountStr }
+  // 与全站同口径（4 位小数 + 千分位 + 极小值「< 0.0001」）；symbol 由 BalanceCard 单独渲染。
+  const s = formatMoney(amountStr, '')
+  return { main: s, exact: s }
 }

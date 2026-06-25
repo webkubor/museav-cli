@@ -16,7 +16,7 @@ import {
   updateWorkspaceMemberRole,
 } from '@/services/workspaces'
 import { listTenantMembers } from '@/services/tenants'
-import { pageItems } from '@/lib/utils'
+import { pageItems, formatMoney as fmtMoney } from '@/lib/utils'
 import { formatDateTime } from '@/lib/format-date'
 import { WS_ROLE_LABEL, WS_ROLE_OPTIONS, TENANT_ROLE_LABEL } from '@/constants/roles'
 import type { Money, TenantMember, WorkspaceDetail, WorkspaceMember } from '@/types'
@@ -33,7 +33,7 @@ type DetailTab = 'overview' | 'members' | 'settings'
 
 function formatMoney(m?: Money) {
   if (!m) return '—'
-  return `${m.currency} ${Number(m.amount).toFixed(2)}`
+  return `${m.currency} ${fmtMoney(m.amount, '')}`
 }
 
 export default function WorkspaceDetailPage() {

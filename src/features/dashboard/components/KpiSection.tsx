@@ -11,7 +11,7 @@ import { PERMS } from '@/config/permissions'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { TopUpModal } from '@/pages/billing/TopUpModal'
 import { LuWallet, LuTrendingUp, LuActivity, LuDatabase } from 'react-icons/lu'
-import { formatExactMoney } from '@/lib/utils'
+import { formatMoney } from '@/lib/utils'
 import type { UsageSeries } from '@/types'
 
 export const KpiSection: React.FC = () => {
@@ -77,7 +77,7 @@ export const KpiSection: React.FC = () => {
     {
       title: t('dashboard.kpi.balance'),
       // 余额按后端原值显示，不舍入小数（不走数字滚动，避免长小数滚动）
-      value: balance ? formatExactMoney(balance.available.amount, currencySymbol) : undefined,
+      value: balance ? formatMoney(balance.available.amount, currencySymbol) : undefined,
       loading: balanceLoading,
       color: 'var(--mg-primary)',
       glowColor: 'var(--brand-glow)',
@@ -88,7 +88,7 @@ export const KpiSection: React.FC = () => {
     {
       title: t('dashboard.kpi.monthlySpend'),
       // 本月消费按后端原值显示，不舍入小数
-      value: billingStats ? formatExactMoney(billingStats.monthly_spend.amount, currencySymbol) : undefined,
+      value: billingStats ? formatMoney(billingStats.monthly_spend.amount, currencySymbol) : undefined,
       loading: billingLoading,
       color: 'var(--mg-warning)',
       glowColor: 'rgba(245, 158, 11, 0.12)',

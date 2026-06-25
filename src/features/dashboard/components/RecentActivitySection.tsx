@@ -8,6 +8,7 @@ import { LuArrowUpRight } from 'react-icons/lu'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
+import { formatMoney } from '@/lib/utils'
 
 /** 格式化日期：MM-dd HH:mm:ss */
 function formatSimple(iso: string) {
@@ -89,7 +90,7 @@ export const RecentActivitySection: React.FC = () => {
                       {item.usage?.total_tokens ?? 0}
                     </TableCell>
                     <TableCell className="text-xs text-mg-text-1 font-mono">
-                      {item.cost ? `${item.cost.currency === 'USD' ? '$' : '¥'}${item.cost.amount}` : '—'}
+                      {item.cost ? formatMoney(item.cost.amount, item.cost.currency === 'USD' ? '$' : '¥') : '—'}
                     </TableCell>
                     <TableCell className="text-xs text-mg-text-2">
                       {formatSimple(item.started_at)}

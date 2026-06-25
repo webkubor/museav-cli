@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/Table'
 import { LuKeyRound, LuShieldCheck } from 'react-icons/lu'
 import { formatDateTime } from '@/lib/format-date'
+import { formatMoney } from '@/lib/utils'
 import type { ApiKeyItem } from '@/types'
 import { SCOPE_OPTIONS } from './constants'
 
@@ -118,7 +119,7 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
                 </TableCell>
                 <TableCell className="font-mono text-xs text-mg-text-0 tabular-nums">
                   {record.total_spend?.amount
-                    ? `${record.total_spend.currency} ${record.total_spend.amount}`
+                    ? `${record.total_spend.currency} ${formatMoney(record.total_spend.amount, '')}`
                     : <span className="text-mg-text-2">—</span>}
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-1">{formatDateTime(record.created_at)}</TableCell>

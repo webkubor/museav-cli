@@ -110,12 +110,15 @@ export function getSystemThemePreference(): 'dark' | 'light' {
 }
 
 /**
- * 金额原样显示：后端给什么就显示什么，绝不四舍五入/截断/补零/加千分位。
- * 后端金额是字符串，直接透传以保全精度（parseFloat→toFixed 会丢精度且改变值）。
+ * 金额展示（与 referral #273 同口径，全站统一）：
+ * 最多 4 位小数 + 千分位；正向极小值（0<n<0.0001）显示 "< {symbol}0.0001" 而非舍入成 0；
+ * 非数字按 0。symbol 传 '' 则只出数字（调用方自带货币符号时用）。
  */
-export function formatExactMoney(amount: string | number | null | undefined, symbol = ''): string {
-  if (amount == null || amount === '') return '—'
-  return `${symbol}${amount}`
+export function formatMoney(amount: string | number | null | undefined, symbol = '¥'): string {
+  const v = Number(amount)
+  if (!Number.isFinite(v)) return `${symbol}0`
+  if (v > 0 && v < 0.0001) return `< ${symbol}0.0001`
+  return `${symbol}${v.toLocaleString('zh-CN', { maximumFractionDigits: 4 })}`
 }
 
 /**

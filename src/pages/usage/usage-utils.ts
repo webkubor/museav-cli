@@ -30,10 +30,8 @@ export function rangeToDates(range: DateRangeValue): { from: string; to: string 
   }
 }
 
-/** 金额原样显示：后端给什么显示什么，不舍入/截断。 */
-export function formatMoney(amount: string, symbol: string): string {
-  return amount ? `${symbol}${amount}` : '—'
-}
+/** 金额格式化统一走 @/lib/utils（4 位小数 + 千分位 + 极小值「< symbol0.0001」）。 */
+export { formatMoney } from '@/lib/utils'
 
 /** 格式化数字为页面短展示。 */
 export function formatNumber(n: number): string {

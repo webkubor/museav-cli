@@ -1,7 +1,7 @@
 import React from 'react'
 import { LuLock } from 'react-icons/lu'
-import { useNavigate } from 'react-router-dom'
 import { Button } from './Button'
+import { useRechargeStore } from '@/store/use-recharge-store'
 import { cn } from '@/lib/utils'
 
 interface FirstChargeLockGateProps {
@@ -31,7 +31,7 @@ export const FirstChargeLockGate: React.FC<FirstChargeLockGateProps> = ({
   className,
   children,
 }) => {
-  const navigate = useNavigate()
+  const openRecharge = useRechargeStore((s) => s.open)
 
   if (!locked) return <>{children}</>
 
@@ -59,7 +59,7 @@ export const FirstChargeLockGate: React.FC<FirstChargeLockGateProps> = ({
           <p className="font-bold text-mg-text-0 text-sm">{title}</p>
           <p className="text-xs text-mg-text-2 leading-relaxed">{desc}</p>
         </div>
-        <Button variant="brand" size="sm" onClick={() => navigate('/billing')}>
+        <Button variant="brand" size="sm" onClick={openRecharge}>
           {cta}
         </Button>
       </div>

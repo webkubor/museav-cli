@@ -23,6 +23,8 @@ import { DashboardSidebar } from './DashboardSidebar'
 import { LowBalanceAlert } from './LowBalanceAlert'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { CustomerService } from '@/components/customer-service'
+import { TopUpModal } from '@/pages/billing/TopUpModal'
+import { useRechargeStore } from '@/store/use-recharge-store'
 import { navConfig } from '@/config/nav'
 import type { NavItem } from '@/config/nav'
 import { breadcrumbConfig, FLAT_ROUTES } from '@/config/breadcrumbs'
@@ -83,6 +85,8 @@ export function DashboardLayout() {
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
+  const rechargeOpen = useRechargeStore((s) => s.isOpen)
+  const closeRecharge = useRechargeStore((s) => s.close)
 
   const { hasPermission } = usePermissions()
   const site = useSite()
@@ -184,6 +188,9 @@ export function DashboardLayout() {
           <Breadcrumb items={getBreadcrumbs()} />
 
           <CustomerService />
+
+          {/* 全局充值弹框：任意入口经 useRechargeStore.open() 就地弹出，挂一次即可 */}
+          <TopUpModal visible={rechargeOpen} onClose={closeRecharge} tenantId={activeTenantId ?? ''} />
 
           {/* 渲染主视图区域 */}
           <div className={cn(

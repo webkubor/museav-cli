@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
 import { LuTriangleAlert, LuArrowRight } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
+import { useRechargeStore } from '@/store/use-recharge-store'
 import { useBalance } from '@/hooks/use-balance'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { formatFriendlyAmount } from '@/lib/utils'
@@ -19,7 +19,7 @@ function parseAmount(amount?: string) {
  */
 export function LowBalanceAlert() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
+  const openRecharge = useRechargeStore((s) => s.open)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const { symbol: currencySymbol } = useCurrency()
   // 预警条用：余额健康时每 60s 轮询一次，及时捕捉「余额被消费烧穿阈值」（消费不经控制台，无事件可挂，只能轮询）；
@@ -44,7 +44,7 @@ export function LowBalanceAlert() {
         <strong>{t('dashboardTop.status.lowTitle')}</strong>
         <span>{t('dashboardTop.status.lowDesc', { amount: balanceText })}</span>
       </div>
-      <button type="button" className="low-balance-alert-action" onClick={() => navigate('/billing')}>
+      <button type="button" className="low-balance-alert-action" onClick={openRecharge}>
         {t('dashboardTop.status.rechargeAction')}
         <LuArrowRight size={14} />
       </button>

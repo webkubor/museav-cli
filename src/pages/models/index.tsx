@@ -13,6 +13,7 @@ import {
   LuRefreshCw,
 } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
+import { useRechargeStore } from '@/store/use-recharge-store'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
 import { streamExperienceChat } from '@/services/experience'
 import { Button } from '@/components/ui/Button'
@@ -49,6 +50,7 @@ export default function ModelsPage() {
   const { i18n } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
+  const openRecharge = useRechargeStore((s) => s.open)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const text = i18n.language.startsWith('zh') ? modelExperienceCopy.zh : modelExperienceCopy.en
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
@@ -171,7 +173,7 @@ export default function ModelsPage() {
         <div className="models-experience-warning">
           <LuTriangleAlert size={15} />
           <span>{text.warning}</span>
-          <button type="button" onClick={() => navigate('/billing')}>{text.recharge}</button>
+          <button type="button" onClick={openRecharge}>{text.recharge}</button>
         </div>
       )}
 

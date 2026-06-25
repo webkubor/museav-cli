@@ -5,6 +5,7 @@ import { LuArrowRight, LuCheck, LuCopy, LuSparkles, LuTerminal } from 'react-ico
 import { useNavigate } from 'react-router-dom'
 import { appToast } from '@/lib/app-toast'
 import { useAuthStore } from '@/store/auth'
+import { useRechargeStore } from '@/store/use-recharge-store'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS, type Permission } from '@/config/permissions'
 import { CLI_CODE } from '@/features/dashboard/constants/code-snippets'
@@ -27,6 +28,7 @@ export const DashboardTopPanel: React.FC = () => {
   const account = useAuthStore((s) => s.account)
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const { hasPermission } = usePermissions()
+  const openRecharge = useRechargeStore((s) => s.open)
 
   const greetingKey = useMemo(() => {
     const hour = new Date().getHours()
@@ -38,9 +40,9 @@ export const DashboardTopPanel: React.FC = () => {
   const displayName = account?.display_name || account?.email || t('dashboardTop.greeting.defaultName')
   const cliCommand = getCliCommandLine()
 
-  const allQuickActions: Array<{ icon: QuickIconType; label: string; path: string; primary?: boolean; permission?: Permission }> = [
+  const allQuickActions: Array<{ icon: QuickIconType; label: string; path: string; primary?: boolean; permission?: Permission; onClick?: () => void }> = [
     { icon: 'keys',        label: t('dashboardTop.quick.createKey'),   path: scopedWorkspacePath(activeWorkspaceId, 'api-keys'),   primary: true, permission: PERMS.API_KEYS_VIEW },
-    { icon: 'usage',       label: t('dashboardTop.quick.recharge'),    path: '/billing',                                           permission: PERMS.BILLING_VIEW },
+    { icon: 'usage',       label: t('dashboardTop.quick.recharge'),    path: '/billing',                                           permission: PERMS.BILLING_VIEW, onClick: openRecharge },
     { icon: 'observability',label: t('dashboardTop.quick.logs'),       path: '/logs',                                              permission: PERMS.LOGS_VIEW },
     { icon: 'models',      label: t('dashboardTop.quick.models'),      path: '/models/catalog',                                    permission: PERMS.MODELS_VIEW },
     { icon: 'guardrails',  label: t('dashboardTop.quick.guardrails'),  path: scopedWorkspacePath(activeWorkspaceId, 'guardrails'), permission: PERMS.GUARDRAILS_VIEW },
@@ -110,7 +112,7 @@ export const DashboardTopPanel: React.FC = () => {
               type="button"
               className="dashboard-top-quick-button"
               data-primary={action.primary ? 'true' : 'false'}
-              onClick={() => navigate(action.path)}
+              onClick={action.onClick ?? (() => navigate(action.path))}
             >
               <span className="dashboard-top-quick-icon">
                 <QuickWeb3Icon type={action.icon} />

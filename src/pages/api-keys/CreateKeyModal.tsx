@@ -17,7 +17,7 @@ import { listWorkspaceMembers } from '@/services/workspaces'
 import { listGuardrails } from '@/services/guardrails'
 import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
-import { SCOPE_OPTIONS, EXPIRATION_PRESETS, type ScopeType } from './constants'
+import { SCOPE_OPTIONS, EXPIRATION_PRESETS, resolveExpiryISO, type ScopeType } from './constants'
 import { CreateGuardrailDialog } from './CreateGuardrailDialog'
 import { PERIOD_LABEL } from '@/constants/status'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
@@ -84,18 +84,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
         spending_limit: spendingAmount
           ? { amount: spendingAmount, currency, period_unit: spendingPeriodUnit, period_length: 1 }
           : undefined,
-        expires_at: (() => {
-          if (expiryRange.preset === 'all' || !expiryRange.preset) return undefined
-          if (expiryRange.preset === 'custom' && expiryRange.endDate) {
-            return new Date(expiryRange.endDate).toISOString()
-          }
-          const now = new Date()
-          if (expiryRange.preset === '1h') now.setHours(now.getHours() + 1)
-          else if (expiryRange.preset === '24h') now.setDate(now.getDate() + 1)
-          else if (expiryRange.preset === '7d') now.setDate(now.getDate() + 7)
-          else if (expiryRange.preset === '30d') now.setDate(now.getDate() + 30)
-          return now.toISOString()
-        })(),
+        expires_at: resolveExpiryISO(expiryRange) ?? undefined,
         guardrail_ids: guardrailIds.length > 0 ? guardrailIds : undefined,
       }),
     onSuccess: (newKey) => {

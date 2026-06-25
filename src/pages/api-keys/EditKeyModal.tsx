@@ -15,7 +15,7 @@ import { updateApiKey } from '@/services/api-keys'
 import { listGuardrails } from '@/services/guardrails'
 import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
-import { SCOPE_OPTIONS, EXPIRATION_PRESETS } from './constants'
+import { SCOPE_OPTIONS, EXPIRATION_PRESETS, resolveExpiryISO } from './constants'
 import { CreateGuardrailDialog } from './CreateGuardrailDialog'
 import { PERIOD_LABEL } from '@/constants/status'
 import type { ApiKeyItem, SpendingPeriodUnit } from '@/types'
@@ -91,20 +91,8 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
     mutationFn: () => {
       if (!apiKey) throw new Error('no key')
       // PATCH 契约用可空包装 {set,value}（发裸值会被后端判为「参数校验失败 _root」）。set=true=本次设置(含清空)。
-      const expiresValue = (() => {
-        if (expiryRange.preset === 'all' || !expiryRange.preset) return '' // 永不过期
-        if (expiryRange.preset === 'custom' && expiryRange.endDate) {
-          return new Date(expiryRange.endDate).toISOString()
-        }
-        // 相对预设（24h/7d/30d 等）折算成绝对时间，否则会漏存为永不过期
-        const now = new Date()
-        if (expiryRange.preset === '1h') now.setHours(now.getHours() + 1)
-        else if (expiryRange.preset === '24h') now.setDate(now.getDate() + 1)
-        else if (expiryRange.preset === '7d') now.setDate(now.getDate() + 7)
-        else if (expiryRange.preset === '30d') now.setDate(now.getDate() + 30)
-        else return ''
-        return now.toISOString()
-      })()
+      // 永不过期 → ''（清空）；其余折算成绝对 ISO 时刻，自定义日按本地当天结束（见 resolveExpiryISO）。
+      const expiresValue = resolveExpiryISO(expiryRange) ?? ''
       return updateApiKey(workspaceId, apiKey.api_key_id, {
         name: name.trim(),
         spending_limit: {

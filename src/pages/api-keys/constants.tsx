@@ -3,6 +3,8 @@
  */
 import { LuUser, LuBuilding2, LuUsers } from 'react-icons/lu'
 import { SiCurl } from 'react-icons/si'
+import type { DateRangeValue } from '@/components/ui/DateRangePicker'
+import { addFromNowISO, endOfLocalDayISO, type TimeUnit } from '@/lib/datetime'
 import Claude from '@lobehub/icons/es/Claude'
 import ClaudeCode from '@lobehub/icons/es/ClaudeCode'
 import Codex from '@lobehub/icons/es/Codex'
@@ -56,6 +58,29 @@ export const EXPIRATION_PRESETS = [
   { key: '30d', label: '30 天后' },
   { key: 'custom', label: '自定义截止日期' },
 ]
+
+/**
+ * 把过期时间选择器的值解析成后端要的 ISO 时刻；永不过期返回 null。
+ * 创建/编辑两处共用，避免各写一份导致行为漂移。
+ *
+ * 自定义截止日：取「用户显示时区下所选日的当天结束」再转 UTC（见 @/lib/datetime）。
+ * 原生 new Date 按浏览器时区解析裸日期，用户改过显示时区就会偏、密钥提前失效。
+ * 相对预设：从当前时刻往后推。
+ */
+export function resolveExpiryISO(range: DateRangeValue): string | null {
+  if (!range.preset || range.preset === 'all') return null
+  if (range.preset === 'custom') {
+    return range.endDate ? endOfLocalDayISO(range.endDate) : null
+  }
+  const offsets: Record<string, [number, TimeUnit]> = {
+    '1h': [1, 'hour'],
+    '24h': [1, 'day'],
+    '7d': [7, 'day'],
+    '30d': [30, 'day'],
+  }
+  const offset = offsets[range.preset]
+  return offset ? addFromNowISO(offset[0], offset[1]) : null
+}
 
 export const CONNECT_ACTIONS: {
   key: ConnectActionKey

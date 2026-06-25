@@ -30,6 +30,7 @@ import { listModels } from '@/services/catalog'
 import type { CallLogItem, LogPayload } from '@/types'
 import { reassembleSSE, formatSSESummary } from './reassemble-sse'
 import { formatDateTime } from '@/lib/format-date'
+import { endOfLocalDayISO } from '@/lib/datetime'
 import { appToast } from '@/lib/app-toast'
 import { cn, formatFriendlyAmount } from '@/lib/utils'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
@@ -257,7 +258,7 @@ export default function LogsPage() {
         api_key_id: apiKeyFilter === 'all' ? undefined : apiKeyFilter,
         request_id: searchValue.trim() || undefined,
         preset: timeRange.preset !== 'all' ? (timeRange.preset as '1h' | '24h' | '7d' | '30d' | 'custom') : undefined,
-        before_started_at: currentCursor ?? (timeRange.preset === 'custom' && timeRange.endDate ? timeRange.endDate : undefined),
+        before_started_at: currentCursor ?? (timeRange.preset === 'custom' && timeRange.endDate ? endOfLocalDayISO(timeRange.endDate) : undefined),
         limit: pageSize,
       }),
     enabled: Boolean(activeWorkspaceId),

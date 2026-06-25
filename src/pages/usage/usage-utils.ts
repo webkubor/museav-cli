@@ -6,6 +6,7 @@
 
 import type { DateRangeValue } from '@/components/ui/DateRangePicker'
 import { densifyDailyBuckets as densifyDaily } from '@/lib/chart-buckets'
+import { addFromNowISO, endOfLocalDayISO, nowISO, startOfLocalDayISO } from '@/lib/datetime'
 
 /** 用量趋势支持的指标类型。 */
 export type Metric = 'spend' | 'requests' | 'tokens'
@@ -15,17 +16,17 @@ export const USAGE_PRESET_DAYS: Record<string, number> = { '7d': 7, '30d': 30, '
 
 /** 将日期选择器状态转换成后端接口需要的 ISO 时间范围。 */
 export function rangeToDates(range: DateRangeValue): { from: string; to: string } {
-  const now = new Date()
   if (range.preset === 'custom' && range.startDate && range.endDate) {
+    // 自定义区间：按用户显示时区取首日起点 ~ 末日终点
     return {
-      from: new Date(`${range.startDate}T00:00:00`).toISOString(),
-      to: new Date(`${range.endDate}T23:59:59.999`).toISOString(),
+      from: startOfLocalDayISO(range.startDate),
+      to: endOfLocalDayISO(range.endDate),
     }
   }
   const days = USAGE_PRESET_DAYS[range.preset ?? '7d'] ?? 7
   return {
-    from: new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString(),
-    to: now.toISOString(),
+    from: addFromNowISO(-days, 'day'),
+    to: nowISO(),
   }
 }
 

@@ -30,11 +30,9 @@ export function rangeToDates(range: DateRangeValue): { from: string; to: string 
   }
 }
 
-/** 格式化金额字符串。 */
+/** 金额原样显示：后端给什么显示什么，不舍入/截断。 */
 export function formatMoney(amount: string, symbol: string): string {
-  const num = parseFloat(amount)
-  if (isNaN(num)) return `${symbol}0.00`
-  return `${symbol}${num.toFixed(4)}`
+  return amount ? `${symbol}${amount}` : '—'
 }
 
 /** 格式化数字为页面短展示。 */

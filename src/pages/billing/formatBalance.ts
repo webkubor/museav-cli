@@ -1,17 +1,7 @@
 // ─── Format Balance Helper ────────────────────────────────────────────────
 
 export function formatBalance(amountStr: string | undefined): { main: string; exact: string } {
-  if (!amountStr) return { main: '0.00', exact: '0.00' }
-  const num = parseFloat(amountStr)
-  if (isNaN(num)) return { main: '0.00', exact: '0.00' }
-
-  // Format with thousands separator and exactly 2 decimals
-  const mainVal = num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-
-  // High precision exact value (trim redundant trailing zeros if dot exists)
-  let exactVal = amountStr
-  if (exactVal.includes('.')) {
-    exactVal = exactVal.replace(/0+$/, '').replace(/\.$/, '')
-  }
-  return { main: mainVal, exact: exactVal }
+  if (!amountStr) return { main: '—', exact: '—' }
+  // 原样显示后端金额字符串，不舍入/截断/补零/加千分位；main 与 exact 一致。
+  return { main: amountStr, exact: amountStr }
 }

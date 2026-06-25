@@ -11,7 +11,7 @@ import { PERMS } from '@/config/permissions'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { TopUpModal } from '@/pages/billing/TopUpModal'
 import { LuWallet, LuTrendingUp, LuActivity, LuDatabase } from 'react-icons/lu'
-import { formatFriendlyAmount } from '@/lib/utils'
+import { formatExactMoney } from '@/lib/utils'
 import type { UsageSeries } from '@/types'
 
 export const KpiSection: React.FC = () => {
@@ -70,17 +70,14 @@ export const KpiSection: React.FC = () => {
   const reqSparkData = extractPoints(reqSeries, 'requests')
   const tokenSparkData = extractPoints(tokenSeries, 'tokens')
 
-  const rawBalance = balance ? parseFloat(balance.available.amount) : undefined
-  const rawSpend = billingStats ? parseFloat(billingStats.monthly_spend.amount) : undefined
   const rawRequests = usage?.total.requests
   const rawTokens = usage?.total.tokens
 
   const cards = [
     {
       title: t('dashboard.kpi.balance'),
-      value: rawBalance !== undefined ? formatFriendlyAmount(rawBalance, currencySymbol) : undefined,
-      rawNumber: rawBalance,
-      formatter: (n: number) => formatFriendlyAmount(n, currencySymbol),
+      // 余额按后端原值显示，不舍入小数（不走数字滚动，避免长小数滚动）
+      value: balance ? formatExactMoney(balance.available.amount, currencySymbol) : undefined,
       loading: balanceLoading,
       color: 'var(--mg-primary)',
       glowColor: 'var(--brand-glow)',
@@ -90,9 +87,8 @@ export const KpiSection: React.FC = () => {
     },
     {
       title: t('dashboard.kpi.monthlySpend'),
-      value: rawSpend !== undefined ? formatFriendlyAmount(rawSpend, currencySymbol, { maxDecimals: 4 }) : undefined,
-      rawNumber: rawSpend,
-      formatter: (n: number) => formatFriendlyAmount(n, currencySymbol, { maxDecimals: 4 }),
+      // 本月消费按后端原值显示，不舍入小数
+      value: billingStats ? formatExactMoney(billingStats.monthly_spend.amount, currencySymbol) : undefined,
       loading: billingLoading,
       color: 'var(--mg-warning)',
       glowColor: 'rgba(245, 158, 11, 0.12)',

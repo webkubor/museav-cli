@@ -1,4 +1,4 @@
-import { cn, formatFriendlyAmount } from '@/lib/utils'
+import { cn, formatExactMoney } from '@/lib/utils'
 
 /**
  * 金额统一显示组件 —— 金额样式的唯一真源（对齐 DESIGN.md「数字/金额 → JetBrains Mono + tabular-nums」）。
@@ -24,7 +24,6 @@ export function Money({
   amount,
   currency,
   symbol,
-  decimals = 2,
   size = 'sm',
   tone = 'default',
   className,
@@ -41,7 +40,7 @@ export function Money({
     return <span className={cn('font-mono tabular-nums text-mg-text-3', SIZE[size], className)}>—</span>
   }
   const sym = symbol ?? (currency === 'USD' ? '$' : '¥')
-  const text = formatFriendlyAmount(amount, '', { maxDecimals: decimals })
+  const text = formatExactMoney(amount, '')
   return (
     <span className={cn('font-mono tabular-nums whitespace-nowrap font-bold', SIZE[size], TONE[tone], className)}>
       <span className="text-[0.82em] font-semibold text-mg-text-2 mr-[0.12em]">{sym}</span>

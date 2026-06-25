@@ -89,7 +89,7 @@ export const RecentActivitySection: React.FC = () => {
                       {item.usage?.total_tokens ?? 0}
                     </TableCell>
                     <TableCell className="text-xs text-mg-text-1 font-mono">
-                      {item.cost ? `${item.cost.currency === 'USD' ? '$' : '¥'}${parseFloat(item.cost.amount).toFixed(4)}` : '—'}
+                      {item.cost ? `${item.cost.currency === 'USD' ? '$' : '¥'}${item.cost.amount}` : '—'}
                     </TableCell>
                     <TableCell className="text-xs text-mg-text-2">
                       {formatSimple(item.started_at)}

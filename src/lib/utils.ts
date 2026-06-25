@@ -53,7 +53,8 @@ export function formatModelPrice(
   if (amount == null || amount === '') return '免费'
   const parsed = typeof amount === 'string' ? parseFloat(amount) : amount
   if (isNaN(parsed) || parsed <= 0) return '免费'
-  return `${currency}${parsed.toFixed(2)}${suffix}`
+  // 原样显示后端价格，不舍入；仅用 parsed 判断免费/有效
+  return `${currency}${amount}${suffix}`
 }
 
 /** 提取名称首字母并大写做为备选头像文字 */
@@ -106,6 +107,15 @@ export function getSystemThemePreference(): 'dark' | 'light' {
   if (typeof window === 'undefined' || !window.matchMedia) return 'light'
   const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
   return isDark ? 'dark' : 'light'
+}
+
+/**
+ * 金额原样显示：后端给什么就显示什么，绝不四舍五入/截断/补零/加千分位。
+ * 后端金额是字符串，直接透传以保全精度（parseFloat→toFixed 会丢精度且改变值）。
+ */
+export function formatExactMoney(amount: string | number | null | undefined, symbol = ''): string {
+  if (amount == null || amount === '') return '—'
+  return `${symbol}${amount}`
 }
 
 /**

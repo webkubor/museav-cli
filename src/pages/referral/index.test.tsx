@@ -187,14 +187,17 @@ describe('ReferralPage — active-tenant scoping (#157)', () => {
 // is disabled (rewardBalance <= 0) until the overview query settles, so wait for
 // the enabled state before clicking. Returns the confirm button + the page's
 // invalidateQueries spy.
+// 较长超时：异步 query 落定 + 弹窗渲染，在全量并发/高 CPU 负载下默认 1000ms 易超时（flaky）
+const ASYNC_TIMEOUT = { timeout: 5000 }
+
 async function openTransferModal() {
   const utils = renderPage()
-  await screen.findByText('推荐计划')
-  const open = await screen.findByRole('button', { name: '转入主余额' })
-  await waitFor(() => expect(open).not.toBeDisabled())
+  await screen.findByText('推荐计划', undefined, ASYNC_TIMEOUT)
+  const open = await screen.findByRole('button', { name: '转入主余额' }, ASYNC_TIMEOUT)
+  await waitFor(() => expect(open).not.toBeDisabled(), ASYNC_TIMEOUT)
   fireEvent.click(open)
   // modal footer confirm button proves the modal is open
-  const confirm = await screen.findByRole('button', { name: '确认转入' })
+  const confirm = await screen.findByRole('button', { name: '确认转入' }, ASYNC_TIMEOUT)
   return { confirm, ...utils }
 }
 

@@ -46,8 +46,15 @@ import {
   type WithdrawalStatus,
 } from './referral-data'
 
-// 金额字段为字符串（后端约定），统一在此解析为数字再格式化
-const fmt = (n: number | string) => '¥' + Number(n).toLocaleString('zh-CN')
+// 金额字段为字符串（后端约定），统一在此解析为数字再格式化。
+// 返佣多为亚分级（#273）：最多保留 4 位小数；正向极小值（0<n<0.0001）显示
+// "< ¥0.0001" 而非被舍入成 0，避免"已产生返佣却展示 0"。
+const fmt = (n: number | string) => {
+  const v = Number(n)
+  if (!Number.isFinite(v)) return '¥0'
+  if (v > 0 && v < 0.0001) return '< ¥0.0001'
+  return '¥' + v.toLocaleString('zh-CN', { maximumFractionDigits: 4 })
+}
 
 type TabKey = 'invitees' | 'commissions' | 'withdrawals'
 

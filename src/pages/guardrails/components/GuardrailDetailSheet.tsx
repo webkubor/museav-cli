@@ -166,15 +166,9 @@ export function GuardrailDetailSheet({
                   <LuKey className="w-3.5 h-3.5" /> API Keys
                 </div>
                 <TagInput
-                  value={apiKeyIds.map((id) => apiKeyOptions.find((o) => o.id === id)?.name ?? id)}
-                  onChange={(names) =>
-                    onApiKeyIdsChange(
-                      names.map((n) => apiKeyOptions.find((o) => o.name === n)?.id).filter(Boolean) as string[],
-                    )
-                  }
-                  suggestions={apiKeyOptions
-                    .filter((o) => o.active && !apiKeyIds.includes(o.id))
-                    .map((o) => o.name)}
+                  value={apiKeyIds}
+                  onChange={onApiKeyIdsChange}
+                  options={apiKeyOptions.map((o) => ({ value: o.id, label: o.name, disabled: !o.active }))}
                   placeholder="从下拉批量选择该工作区的 API Key"
                   hint="选中的 Key 将绑定到该护栏，点击底部「保存修改」生效，供网关护栏鉴权使用"
                 />

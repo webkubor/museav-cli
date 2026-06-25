@@ -2,12 +2,24 @@ import React, { useRef, useState, useEffect, useLayoutEffect, useCallback } from
 import { createPortal } from 'react-dom'
 import { LuX, LuChevronDown } from 'react-icons/lu'
 
+/** 选项型用法：tag 的真实值是稳定 id，界面展示 label。避免按 name 反查导致重名时绑错对象。 */
+export interface TagOption {
+  value: string
+  label: string
+  /** 不可再被选入（仍保留在列表里以便已选项能解析出 label），如已停用的 Key */
+  disabled?: boolean
+}
+
 interface TagInputProps {
+  /** 受控值：选项模式下为各 option.value（id），自由文本/字符串建议模式下即原始字符串 */
   value: string[]
   onChange: (tags: string[]) => void
   placeholder?: string
   hint?: string
+  /** 字符串建议模式：候选即最终值（如模型名） */
   suggestions?: string[]
+  /** 选项模式：value 为 id、label 为展示名。传了它就按 id 工作，重名也不会绑错 */
+  options?: TagOption[]
   allowFreeText?: boolean
   validator?: (value: string) => boolean
   onValidationError?: (value: string) => void
@@ -21,13 +33,16 @@ export function TagInput({
   placeholder = '',
   hint,
   suggestions,
+  options,
   allowFreeText = true,
   validator,
   onValidationError,
   className,
   tagVariant = 'brand',
 }: TagInputProps) {
-  const hasSuggestions = suggestions && suggestions.length > 0
+  const optionMode = Array.isArray(options)
+  // 选项模式禁用自由文本：只能从候选里选既有 id，避免把随手输入当成 id 提交
+  const freeText = allowFreeText && !optionMode
   const [input, setInput] = useState('')
   const [open, setOpen] = useState(false)
   const [focusIdx, setFocusIdx] = useState(-1)
@@ -40,10 +55,23 @@ export function TagInput({
   // drawer body). Recomputed on open + on scroll/resize.
   const [menuPos, setMenuPos] = useState<{ left: number; top: number; width: number } | null>(null)
 
-  const filtered = hasSuggestions
-    ? suggestions.filter((s) => s != null && !value.includes(s) && s.toLowerCase().includes(input.toLowerCase()))
-    : []
+  // 已选 chip 的展示文案：选项模式按 id 查 label（查不到回退原值），否则值即文案
+  const labelOf = useCallback(
+    (v: string) => (optionMode ? options!.find((o) => o.value === v)?.label ?? v : v),
+    [optionMode, options],
+  )
 
+  // 候选池统一成 {value,label}：选项模式取未禁用的 options，否则把字符串建议升格
+  const pool: TagOption[] = optionMode
+    ? options!.filter((o) => !o.disabled)
+    : (suggestions ?? []).map((s) => ({ value: s, label: s }))
+  const hasSuggestions = pool.length > 0
+
+  const filtered = pool.filter(
+    (o) => o.value != null && !value.includes(o.value) && o.label.toLowerCase().includes(input.toLowerCase()),
+  )
+
+  // 统一按「值」提交：选项模式传 option.value(id)，自由文本模式传输入文本本身
   const addTag = useCallback((tag: string) => {
     const trimmed = tag.trim()
     if (!trimmed || value.includes(trimmed)) return
@@ -65,8 +93,8 @@ export function TagInput({
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault()
       if (hasSuggestions && focusIdx >= 0 && filtered[focusIdx]) {
-        addTag(filtered[focusIdx])
-      } else if (allowFreeText && input.trim()) {
+        addTag(filtered[focusIdx].value)
+      } else if (freeText && input.trim()) {
         addTag(input)
       }
       return
@@ -134,7 +162,7 @@ export function TagInput({
       >
         {value.map((tag) => (
           <span key={tag} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold border ${tagClass}`}>
-            <code className="font-mono">{tag}</code>
+            <code className="font-mono">{labelOf(tag)}</code>
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); removeTag(tag) }}
@@ -159,7 +187,7 @@ export function TagInput({
               // Save (e.g. IP whitelist). Scoped to pure free-text inputs;
               // suggestion-backed inputs still require explicit selection so
               // half-typed queries don't get committed as junk tags.
-              if (allowFreeText && !hasSuggestions && input.trim()) addTag(input)
+              if (freeText && !hasSuggestions && input.trim()) addTag(input)
             }}
             onKeyDown={handleKeyDown}
             placeholder={value.length === 0 ? placeholder : ''}
@@ -190,16 +218,16 @@ export function TagInput({
         >
           {filtered.map((item, idx) => (
             <button
-              key={item}
+              key={item.value}
               type="button"
-              onMouseDown={(e) => { e.preventDefault(); addTag(item) }}
+              onMouseDown={(e) => { e.preventDefault(); addTag(item.value) }}
               className={`block w-full text-left px-3 py-1.5 text-xs font-mono transition-colors cursor-pointer ${
                 idx === focusIdx
                   ? 'bg-brand-base/10 text-brand-base'
                   : 'text-mg-text-0 hover:bg-mg-fill-0'
               }`}
             >
-              {item}
+              {item.label}
             </button>
           ))}
         </div>,

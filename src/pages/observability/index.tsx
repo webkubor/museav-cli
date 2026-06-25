@@ -226,10 +226,9 @@ function PlatformConfigModal({
           <div>
             <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">按 API Key 过滤（留空 = 全部）</label>
             <TagInput
-              value={apiKeyIds.map((id) => keyOptions.find((o) => o.id === id)?.name ?? id)}
-              onChange={(names) => setApiKeyIds(names.map((n) => keyOptions.find((o) => o.name === n)?.id).filter(Boolean) as string[])}
-              suggestions={keyOptions.filter((o) => !apiKeyIds.includes(o.id)).map((o) => o.name)}
-              allowFreeText={false}
+              value={apiKeyIds}
+              onChange={setApiKeyIds}
+              options={keyOptions.map((o) => ({ value: o.id, label: o.name }))}
               placeholder="选择 API Key…"
             />
           </div>

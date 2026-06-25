@@ -233,17 +233,11 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                 </div>
               )}
               <TagInput
-                allowFreeText={false}
-                value={extraIds.map((id) => allGuardrails.find((g) => g.id === id)?.name ?? id)}
-                onChange={(names) => {
-                  const addIds = names
-                    .map((n) => allGuardrails.find((g) => g.name === n)?.id)
-                    .filter(Boolean) as string[]
-                  setGuardrailIds([...(defaultId ? [defaultId] : []), ...addIds])
-                }}
-                suggestions={allGuardrails
-                  .filter((g) => !g.is_default && !guardrailIds.includes(g.id))
-                  .map((g) => g.name)}
+                value={extraIds}
+                onChange={(addIds) => setGuardrailIds([...(defaultId ? [defaultId] : []), ...addIds])}
+                options={allGuardrails
+                  .filter((g) => !g.is_default)
+                  .map((g) => ({ value: g.id, label: g.name }))}
                 placeholder="可选：叠加其他护栏"
                 hint="默认护栏始终绑定，可继续叠加多个护栏共同生效"
               />

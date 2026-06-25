@@ -108,13 +108,9 @@ export function GuardrailFormFields({
           </span>
         </label>
         <TagInput
-          value={memberIds.map((id) => memberOptions.find((o) => o.id === id)?.name ?? id)}
-          onChange={(names) =>
-            onMemberIdsChange(
-              names.map((n) => memberOptions.find((o) => o.name === n)?.id).filter(Boolean) as string[],
-            )
-          }
-          suggestions={memberOptions.filter((o) => !memberIds.includes(o.id)).map((o) => o.name)}
+          value={memberIds}
+          onChange={onMemberIdsChange}
+          options={memberOptions.map((o) => ({ value: o.id, label: o.name }))}
           placeholder={t('guardrails.form.membersPlaceholder')}
           hint={t('guardrails.form.membersHint')}
         />

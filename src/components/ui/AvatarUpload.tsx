@@ -225,16 +225,16 @@ function CropModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center mg-panel">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
       <div className="relative bg-card-bg border border-mg-border rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 w-[380px]">
         {/* 标题 */}
-        <div className="px-5 py-3.5 border-b border-mg-border text-sm font-bold text-mg-text-0">
+        <div className="px-[var(--mg-panel-padding-lg)] py-[var(--mg-space-3)] border-b border-mg-border mg-text-body font-bold text-mg-text-0">
           {t('account.info.avatarCropTitle')}
         </div>
 
         {/* 裁剪区 */}
-        <div className="flex justify-center py-5 bg-mg-bg-1/50">
+        <div className="flex justify-center py-[var(--mg-panel-padding-lg)] bg-mg-bg-1/50">
           <div style={{ position: 'relative', width: CANVAS_SIZE, height: CANVAS_SIZE, borderRadius: '50%', overflow: 'hidden', cursor: 'grab' }}>
             <canvas
               ref={canvasRef}
@@ -250,7 +250,7 @@ function CropModal({
         </div>
 
         {/* 缩放条 */}
-        <div className="flex items-center justify-center gap-3 px-5 py-3 border-t border-mg-border/40">
+        <div className="flex items-center justify-center gap-3 px-[var(--mg-panel-padding-lg)] py-[var(--mg-space-3)] border-t border-mg-border/40">
           <button onClick={() => setScale((s) => Math.max(MIN_SCALE, s - 0.15))} className="p-1.5 rounded-md text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-0 transition-colors cursor-pointer">
             <LuZoomOut size={16} />
           </button>
@@ -268,11 +268,11 @@ function CropModal({
         </div>
 
         {/* 操作 */}
-        <div className="flex justify-end gap-2 px-5 py-3 border-t border-mg-border">
-          <Button variant="outline" onClick={onCancel} className="h-8 px-4 text-xs rounded-lg">
+        <div className="flex justify-end gap-2 px-[var(--mg-panel-padding-lg)] py-[var(--mg-space-3)] border-t border-mg-border">
+          <Button variant="outline" onClick={onCancel} size="sm" className="rounded-lg">
             {t('common.cancel')}
           </Button>
-          <Button variant="default" onClick={handleConfirm} className="h-8 px-4 text-xs rounded-lg font-semibold">
+          <Button variant="default" onClick={handleConfirm} size="sm" className="rounded-lg font-semibold">
             {t('common.confirm')}
           </Button>
         </div>

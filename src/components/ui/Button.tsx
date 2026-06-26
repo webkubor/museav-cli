@@ -33,12 +33,12 @@ const buttonVariants = cva(
           "modern-btn-brand",
       },
       size: {
-        default: "h-10 px-5 py-2",
-        xs: "h-7 rounded-md px-2 text-[10px] font-bold uppercase tracking-wider",
-        sm: "h-8 rounded-md px-3 text-xs",
-        lg: "h-12 rounded-lg px-8 text-base",
-        xl: "h-14 rounded-md px-10 text-lg font-bold",
-        icon: "h-10 w-10",
+        default: "h-[var(--mg-control-h-md)] px-[var(--mg-control-px-md)]",
+        xs: "h-[var(--mg-control-h-xs)] rounded-md px-[var(--mg-control-px-xs)] mg-compact-badge uppercase tracking-wider",
+        sm: "h-[var(--mg-control-h-sm)] rounded-md px-[var(--mg-control-px-sm)] mg-text-caption",
+        lg: "h-[var(--mg-control-h-lg)] rounded-lg px-[var(--mg-control-px-lg)] mg-text-value",
+        xl: "h-[var(--mg-control-h-xl)] rounded-md px-[var(--mg-control-px-xl)] mg-text-title-sm font-bold",
+        icon: "h-[var(--mg-control-h-md)] w-[var(--mg-control-h-md)]",
       },
     },
     defaultVariants: {
@@ -138,5 +138,4 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = "Button"
 
 export { Button }
-
 

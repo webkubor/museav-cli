@@ -51,9 +51,9 @@ export type PaginationProps =
   | LoadMorePaginationProps
 
 const WRAP =
-  'flex items-center justify-between px-5 py-4 border-t border-mg-border gap-4 flex-wrap select-none'
+  'flex items-center justify-between mg-panel border-t border-mg-border gap-4 flex-wrap select-none'
 const PAGE_BADGE =
-  'text-xs font-mono text-mg-text-1 bg-mg-fill-0 border border-mg-border px-3 py-1 rounded-sm'
+  'mg-text-code text-mg-text-1 bg-mg-fill-0 border border-mg-border px-[var(--mg-control-px-sm)] py-[var(--mg-space-1)] rounded-sm'
 
 export function Pagination(props: PaginationProps) {
   const { t } = useTranslation()
@@ -62,8 +62,8 @@ export function Pagination(props: PaginationProps) {
     const { hasMore, onLoadMore, loading } = props
     if (!hasMore) return null
     return (
-      <div className="flex justify-center px-5 py-4">
-        <Button size="sm" variant="outline" disabled={loading} onClick={onLoadMore} className="h-8 font-semibold">
+      <div className="flex justify-center mg-panel">
+        <Button size="sm" variant="outline" disabled={loading} onClick={onLoadMore} className="font-semibold">
           {t('common.pagination.loadMore')}
         </Button>
       </div>
@@ -75,14 +75,14 @@ export function Pagination(props: PaginationProps) {
     const totalPages = Math.max(1, Math.ceil(total / pageSize))
     return (
       <div className={WRAP}>
-        <span className="text-xs text-mg-text-2">{t('common.pagination.total', { count: total })}</span>
+        <span className="mg-text-caption text-mg-text-2">{t('common.pagination.total', { count: total })}</span>
         <div className="flex items-center gap-2">
           <Button
             size="sm"
             variant="outline"
             disabled={loading || page <= 1}
             onClick={() => onPageChange(page - 1)}
-            className="h-8 font-semibold"
+            className="font-semibold"
           >
             {t('common.pagination.prev')}
           </Button>
@@ -92,7 +92,7 @@ export function Pagination(props: PaginationProps) {
             variant="outline"
             disabled={loading || page >= totalPages}
             onClick={() => onPageChange(page + 1)}
-            className="h-8 font-semibold"
+            className="font-semibold"
           >
             {t('common.pagination.next')}
           </Button>
@@ -105,7 +105,7 @@ export function Pagination(props: PaginationProps) {
   const { page, hasMore, onPrev, onNext, loading, total } = props
   return (
     <div className={WRAP}>
-      <span className="text-xs text-mg-text-2">
+      <span className="mg-text-caption text-mg-text-2">
         {typeof total === 'number' ? t('common.pagination.total', { count: total }) : ''}
       </span>
       <div className="flex items-center gap-2">
@@ -114,7 +114,7 @@ export function Pagination(props: PaginationProps) {
           variant="outline"
           disabled={loading || page <= 1}
           onClick={onPrev}
-          className="h-8 font-semibold"
+          className="font-semibold"
         >
           {t('common.pagination.prev')}
         </Button>
@@ -124,7 +124,7 @@ export function Pagination(props: PaginationProps) {
           variant="outline"
           disabled={loading || !hasMore}
           onClick={onNext}
-          className="h-8 font-semibold"
+          className="font-semibold"
         >
           {t('common.pagination.next')}
         </Button>

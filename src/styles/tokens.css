@@ -100,6 +100,58 @@ body[theme-mode='dark'] {
   /* 字体（统一入口；中文系统优先，拉丁 Inter，去掉 Outfit） */
   --font-sans: 'Inter', 'PingFang SC', 'MiSans', 'HarmonyOS Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  --mg-font-size-caption: 0.75rem;
+  --mg-line-height-caption: 1rem;
+  --mg-font-size-body: 0.875rem;
+  --mg-line-height-body: 1.375rem;
+  --mg-font-size-title-sm: 1.125rem;
+  --mg-line-height-title-sm: 1.5rem;
+  --mg-font-size-value: 1rem;
+  --mg-line-height-value: 1.5rem;
+  --mg-font-size-display-sm: 1.75rem;
+  --mg-line-height-display-sm: 2.25rem;
+  --mg-font-size-page-title: 1.5rem;
+  --mg-line-height-page-title: 2rem;
+  --mg-letter-spacing-label: 0.04em;
+
+  /* 密度尺寸（控件/卡片间距统一入口） */
+  --mg-space-1: 0.25rem;
+  --mg-space-2: 0.5rem;
+  --mg-space-3: 0.75rem;
+  --mg-space-4: 1rem;
+  --mg-space-5: 1.25rem;
+  --mg-space-6: 1.5rem;
+  --mg-control-h-xs: 1.75rem;
+  --mg-control-h-sm: 2rem;
+  --mg-control-h-md: 2.5rem;
+  --mg-control-h-lg: 3rem;
+  --mg-control-h-xl: 3.5rem;
+  --mg-control-px-xs: var(--mg-space-2);
+  --mg-control-px-sm: var(--mg-space-3);
+  --mg-control-px-md: var(--mg-space-5);
+  --mg-control-px-lg: 2rem;
+  --mg-control-px-xl: 2.5rem;
+  --mg-control-py-sm: var(--mg-space-2);
+  --mg-textarea-min-h: 5rem;
+  --mg-table-head-h: var(--mg-control-h-md);
+  --mg-table-cell-px: var(--mg-space-4);
+  --mg-table-cell-py: var(--mg-space-3);
+  --mg-menu-padding: 0.375rem;
+  --mg-menu-item-px: var(--mg-space-3);
+  --mg-menu-item-py: var(--mg-space-2);
+  --mg-calendar-cell-size: 1.75rem;
+  --mg-progress-milestone-h: 2rem;
+  --mg-sparkline-h: 1.75rem;
+  --mg-skeleton-h-md: 2rem;
+  --mg-avatar-size-md: 2.5rem;
+  --mg-icon-empty-size: 2rem;
+  --mg-preview-thumb-size: 3rem;
+  --mg-empty-min-h: 12.5rem;
+  --mg-panel-padding-sm: var(--mg-space-3);
+  --mg-panel-padding-md: var(--mg-space-4);
+  --mg-panel-padding-lg: var(--mg-space-5);
+  --mg-panel-padding-xl: var(--mg-space-6);
+  --mg-panel-padding: var(--mg-panel-padding-md);
 
   /* 账号浮层：只定义语义，不跨主题写死色值 */
   --account-menu-bg: var(--mg-bg-0);

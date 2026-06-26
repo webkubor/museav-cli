@@ -157,11 +157,11 @@ export function TagInput({
     <div ref={containerRef} className={`relative ${className ?? ''}`}>
       <div
         ref={inputBoxRef}
-        className="flex flex-wrap items-center gap-1.5 min-h-[38px] px-2.5 py-1.5 rounded-lg border border-mg-border bg-mg-bg-0 cursor-text transition-colors focus-within:border-brand-base"
+        className="flex flex-wrap items-center gap-1.5 min-h-[var(--mg-control-h-md)] px-[var(--mg-control-px-xs)] py-1.5 rounded-lg border border-mg-border bg-mg-bg-0 cursor-text transition-colors focus-within:border-brand-base"
         onClick={() => inputRef.current?.focus()}
       >
         {value.map((tag) => (
-          <span key={tag} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold border ${tagClass}`}>
+          <span key={tag} className={`inline-flex items-center gap-1 px-[var(--mg-control-px-xs)] py-0.5 rounded-md mg-compact-badge border ${tagClass}`}>
             <code className="font-mono">{labelOf(tag)}</code>
             <button
               type="button"
@@ -191,7 +191,7 @@ export function TagInput({
             }}
             onKeyDown={handleKeyDown}
             placeholder={value.length === 0 ? placeholder : ''}
-            className="flex-1 bg-transparent text-sm text-mg-text-0 outline-none placeholder:text-mg-text-2/60 min-w-0 font-mono"
+            className="flex-1 bg-transparent mg-text-body text-mg-text-0 outline-none placeholder:text-mg-text-2/60 min-w-0 font-mono"
           />
           {hasSuggestions && (
             <button
@@ -205,7 +205,7 @@ export function TagInput({
         </div>
       </div>
 
-      {hint && <p className="text-[10px] text-mg-text-2 mt-1.5">{hint}</p>}
+      {hint && <p className="mg-text-caption text-mg-text-2 mt-1.5">{hint}</p>}
 
       {/* Portaled to document.body so position:fixed is relative to the viewport,
           not to any transformed ancestor (e.g. the Dialog's translate-x/y-[-50%]).
@@ -221,7 +221,7 @@ export function TagInput({
               key={item.value}
               type="button"
               onMouseDown={(e) => { e.preventDefault(); addTag(item.value) }}
-              className={`block w-full text-left px-3 py-1.5 text-xs font-mono transition-colors cursor-pointer ${
+              className={`block w-full text-left px-[var(--mg-menu-item-px)] py-1.5 mg-text-code transition-colors cursor-pointer ${
                 idx === focusIdx
                   ? 'bg-brand-base/10 text-brand-base'
                   : 'text-mg-text-0 hover:bg-mg-fill-0'

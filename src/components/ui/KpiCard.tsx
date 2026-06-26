@@ -35,7 +35,7 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
   const linePath = `M ${pts.join(' L ')}`
   const areaPath = `${linePath} L ${w},${h} L 0,${h} Z`
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-7" preserveAspectRatio="none">
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-[var(--mg-sparkline-h)]" preserveAspectRatio="none">
       <defs>
         <linearGradient id={`sg-${color.replace(/[^a-z0-9]/gi, '')}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.25" />
@@ -87,7 +87,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       ref={glowRef}
       hoverable
       glass
-      className={`p-4 flex flex-col justify-center rounded-lg relative overflow-hidden group transition-all duration-500 flex-1 min-w-[200px] mouse-glow-card magnetic-hover ${hoverBorderClass}`}
+      className={`mg-panel flex flex-col justify-center rounded-lg relative overflow-hidden group transition-all duration-500 flex-1 min-w-[200px] mouse-glow-card magnetic-hover ${hoverBorderClass}`}
     >
       {/* 专属高精密几何光环与微弱环境底色 (线与光的结合) */}
       <div className="absolute right-[-20px] bottom-[-20px] w-32 h-32 pointer-events-none z-0 opacity-25 group-hover:opacity-75 transition-all duration-700">
@@ -113,7 +113,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       </div>
 
       <div className="flex items-center justify-between gap-4 mb-2 z-10">
-        <span className="text-[12px] font-semibold text-mg-text-2 tracking-wide select-none">
+        <span className="mg-text-caption font-semibold text-mg-text-2 tracking-wide select-none">
           {displayTitle}
         </span>
         {icon && (
@@ -131,12 +131,12 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       
       <div className="z-10 mt-1">
         {loading ? (
-          <div className="animate-pulse bg-mg-fill-2 rounded-full h-8 w-2/3" />
+          <div className="animate-pulse bg-mg-fill-2 rounded-full h-[var(--mg-skeleton-h-md)] w-2/3" />
         ) : (
           <div>
             <div className="flex items-end gap-2">
               <span
-                className="text-[28px] font-bold tracking-tight block font-mono select-all kpi-value-text"
+                className="mg-text-display-sm font-bold tracking-tight block font-mono select-all kpi-value-text"
                 style={{
                   color: color === 'var(--mg-text-0)' ? 'var(--mg-text-0)' : color,
                   fontVariantNumeric: 'tabular-nums'
@@ -146,7 +146,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
               </span>
               {computedTrend && !loading && (
                 <span
-                  className="text-[11px] font-bold mb-1.5 px-1.5 py-0.5 rounded-md"
+                  className="mg-compact-badge mb-1.5 px-1.5 py-0.5 rounded-md"
                   style={{
                     color: computedTrend.up ? '#10b981' : '#f59e0b',
                     backgroundColor: computedTrend.up ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
@@ -157,7 +157,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
               )}
             </div>
             {sub && (
-              <span className="text-[11px] text-mg-text-2 mt-1.5 block select-none">
+              <span className="mg-text-caption text-mg-text-2 mt-1.5 block select-none">
                 {sub}
               </span>
             )}
@@ -176,7 +176,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       {action && !loading && (
         <button
           onClick={(e) => { e.stopPropagation(); action.onClick() }}
-          className="z-10 mt-3 self-start inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full border transition-all duration-200 hover:opacity-80 active:scale-95"
+          className="z-10 mt-3 self-start inline-flex items-center gap-1.5 mg-compact-badge px-[var(--mg-control-px-sm)] py-[var(--mg-space-1)] rounded-full border transition-all duration-200 hover:opacity-80 active:scale-95"
           style={{
             color: color,
             borderColor: `color-mix(in srgb, ${color} 25%, transparent)`,
@@ -184,7 +184,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
           }}
         >
           {action.label}
-          <span aria-hidden className="opacity-50 text-[10px]">→</span>
+          <span aria-hidden className="opacity-50 mg-text-caption">→</span>
         </button>
       )}
     </Card>

@@ -16,14 +16,14 @@ const tabsListVariants = cva("select-none", {
 })
 
 const tabsTriggerVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap text-sm font-semibold transition-all duration-200 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 outline-none cursor-pointer",
+  "inline-flex items-center justify-center whitespace-nowrap mg-text-body font-semibold transition-all duration-200 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 outline-none cursor-pointer",
   {
     variants: {
       variant: {
         underline:
-          "py-3 border-b-2 border-transparent text-mg-text-2 hover:text-mg-text-0 data-[state=active]:border-brand-base data-[state=active]:text-brand-base tracking-tight",
+          "py-[var(--mg-space-3)] border-b-2 border-transparent text-mg-text-2 hover:text-mg-text-0 data-[state=active]:border-brand-base data-[state=active]:text-brand-base tracking-tight",
         pills:
-          "rounded-md px-4 py-1.5 text-mg-text-2 hover:text-mg-text-0 data-[state=active]:bg-brand-base data-[state=active]:text-white data-[state=active]:shadow-sm",
+          "rounded-md px-[var(--mg-control-px-md)] py-1.5 text-mg-text-2 hover:text-mg-text-0 data-[state=active]:bg-brand-base data-[state=active]:text-white data-[state=active]:shadow-sm",
       },
     },
     defaultVariants: { variant: "underline" },

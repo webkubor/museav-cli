@@ -14,7 +14,7 @@ const Avatar = React.forwardRef<
   <AvatarPrimitive.Root
     ref={ref}
     className={cn(
-      "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-mg-border/40 select-none bg-mg-fill-0",
+      "relative flex h-[var(--mg-avatar-size-md)] w-[var(--mg-avatar-size-md)] shrink-0 overflow-hidden rounded-full border border-mg-border/40 select-none bg-mg-fill-0",
       className
     )}
     {...props}
@@ -41,7 +41,7 @@ const AvatarFallback = React.forwardRef<
   <AvatarPrimitive.Fallback
     ref={ref}
     className={cn(
-      "flex h-full w-full items-center justify-center rounded-full bg-mg-fill-1 text-xs font-bold text-mg-text-1 uppercase",
+      "flex h-full w-full items-center justify-center rounded-full bg-mg-fill-1 mg-compact-badge text-mg-text-1 uppercase",
       className
     )}
     {...props}

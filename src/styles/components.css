@@ -1,6 +1,114 @@
 /* ── 💎 通用元组件样式抽离与大厂极简现代美学（硅谷风格） ── */
+.mg-text-caption {
+  font-size: var(--mg-font-size-caption);
+  line-height: var(--mg-line-height-caption);
+}
+
+.mg-text-body {
+  font-size: var(--mg-font-size-body);
+  line-height: var(--mg-line-height-body);
+}
+
+.mg-text-title-sm {
+  font-size: var(--mg-font-size-title-sm);
+  line-height: var(--mg-line-height-title-sm);
+}
+
+.mg-text-value {
+  font-size: var(--mg-font-size-value);
+  line-height: var(--mg-line-height-value);
+}
+
+.mg-text-display-sm {
+  font-size: var(--mg-font-size-display-sm);
+  line-height: var(--mg-line-height-display-sm);
+}
+
+.mg-text-page-title {
+  font-size: var(--mg-font-size-page-title);
+  line-height: var(--mg-line-height-page-title);
+}
+
+.mg-text-label {
+  font-size: var(--mg-font-size-caption);
+  line-height: var(--mg-line-height-caption);
+  font-weight: 700;
+  letter-spacing: var(--mg-letter-spacing-label);
+  text-transform: uppercase;
+}
+
+.mg-text-code {
+  font-family: var(--font-mono);
+  font-size: var(--mg-font-size-caption);
+  line-height: var(--mg-line-height-caption);
+}
+
+.mg-compact-badge {
+  font-size: var(--mg-font-size-caption);
+  line-height: var(--mg-line-height-caption);
+  font-weight: 700;
+}
+
+.mg-panel {
+  padding: var(--mg-panel-padding);
+}
+
+.mg-panel-tight {
+  padding: var(--mg-panel-padding-sm);
+}
+
+.mg-panel-relaxed {
+  padding: var(--mg-panel-padding-lg);
+}
+
+.mg-panel-roomy {
+  padding: var(--mg-panel-padding-xl);
+}
+
+.mg-control-xs {
+  min-height: var(--mg-control-h-xs);
+}
+
+.mg-control-sm {
+  min-height: var(--mg-control-h-sm);
+}
+
+.mg-control-md {
+  min-height: var(--mg-control-h-md);
+}
+
+.mg-control-lg {
+  min-height: var(--mg-control-h-lg);
+}
+
+.mg-control-xl {
+  min-height: var(--mg-control-h-xl);
+}
+
+.mg-control-pad-xs {
+  padding-inline: var(--mg-control-px-xs);
+}
+
+.mg-control-pad-sm {
+  padding-inline: var(--mg-control-px-sm);
+}
+
+.mg-control-pad-md {
+  padding-inline: var(--mg-control-px-md);
+}
+
+.mg-control-pad-lg {
+  padding-inline: var(--mg-control-px-lg);
+}
+
+.mg-control-pad-xl {
+  padding-inline: var(--mg-control-px-xl);
+}
+
 .modern-btn {
-  @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-glow disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0;
+  @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-glow disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0;
+  font-size: var(--mg-font-size-body);
+  line-height: var(--mg-line-height-body);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -136,7 +244,11 @@ body[theme-mode='dark'] .modern-btn-default:hover {
 /* 通用输入框与复合输入框极雅样式抽离 */
 .modern-input-field,
 .modern-input-wrapper {
-  @apply flex h-10 w-full rounded-lg border px-3.5 py-2 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50;
+  @apply flex w-full rounded-lg border outline-none disabled:cursor-not-allowed disabled:opacity-50;
+  min-height: var(--mg-control-h-md);
+  padding: var(--mg-control-py-sm) var(--mg-control-px-sm);
+  font-size: var(--mg-font-size-body);
+  line-height: var(--mg-line-height-body);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   border-color: var(--mg-border) !important;
   background-color: var(--mg-bg-1) !important;
@@ -418,4 +530,3 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   -webkit-text-fill-color: transparent !important;
   color: transparent !important;
 }
-

@@ -160,7 +160,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
     // Empty spaces for previous month's trailing days
     for (let i = 0; i < firstDay; i++) {
-      cells.push(<div key={`empty-${i}`} className="h-7 w-7" />)
+      cells.push(<div key={`empty-${i}`} className="h-[var(--mg-calendar-cell-size)] w-[var(--mg-calendar-cell-size)]" />)
     }
 
     // Days grid
@@ -183,7 +183,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           disabled={isDisabled}
           onClick={() => handleDateClick(dateStr)}
           className={cn(
-            "h-7 w-7 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer active:scale-95",
+            "h-[var(--mg-calendar-cell-size)] w-[var(--mg-calendar-cell-size)] rounded-lg mg-compact-badge transition-all flex items-center justify-center cursor-pointer active:scale-95",
             isSelected && "bg-brand-base text-white shadow-sm shadow-brand-glow",
             isInRange && "bg-brand-base/15 text-brand-base rounded-none",
             !isSelected && !isInRange && !isDisabled && "text-mg-text-0 hover:bg-mg-fill-0/40",
@@ -203,17 +203,17 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           <button
             type="button"
             onClick={handlePrevMonth}
-            className="p-1 rounded-lg hover:bg-mg-fill-0 text-mg-text-2 hover:text-mg-text-0 cursor-pointer text-xs"
+            className="p-[var(--mg-space-1)] rounded-lg hover:bg-mg-fill-0 text-mg-text-2 hover:text-mg-text-0 cursor-pointer mg-text-caption"
           >
             &lt;
           </button>
-          <span className="text-xs font-bold text-mg-text-0">
+          <span className="mg-compact-badge text-mg-text-0">
             {currentYear}年 {currentMonth + 1}月
           </span>
           <button
             type="button"
             onClick={handleNextMonth}
-            className="p-1 rounded-lg hover:bg-mg-fill-0 text-mg-text-2 hover:text-mg-text-0 cursor-pointer text-xs"
+            className="p-[var(--mg-space-1)] rounded-lg hover:bg-mg-fill-0 text-mg-text-2 hover:text-mg-text-0 cursor-pointer mg-text-caption"
           >
             &gt;
           </button>
@@ -221,7 +221,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
         <div className="grid grid-cols-7 gap-1 text-center">
           {weekDays.map(w => (
-            <span key={w} className="text-[10px] font-bold text-mg-text-2">{w}</span>
+            <span key={w} className="mg-compact-badge text-mg-text-2">{w}</span>
           ))}
         </div>
 
@@ -241,14 +241,14 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         'flex flex-col gap-0.5 shrink-0',
         isCustomActive ? 'pr-3 mr-3 border-r border-mg-border/50 w-[108px]' : 'w-full'
       )}>
-        <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider mb-1.5 px-2">{customTitle || '常用时间'}</span>
+        <span className="mg-text-label text-mg-text-2 mb-1.5 px-[var(--mg-control-px-xs)]">{customTitle || '常用时间'}</span>
         {activePresets.map(p => (
           <button
             key={p.key}
             type="button"
             onClick={() => handlePresetSelect(p.key, close)}
             className={cn(
-              "px-2.5 py-1.5 rounded-lg text-xs font-bold text-left cursor-pointer transition-colors",
+              "px-[var(--mg-control-px-xs)] py-1.5 rounded-lg mg-compact-badge text-left cursor-pointer transition-colors",
               activePreset === p.key
                 ? "bg-brand-selected-bg text-brand-base"
                 : "text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-1"
@@ -262,10 +262,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
       {/* Custom Area：仅选中「自定义范围」时展开，切回其他预设自动收起 */}
       {isCustomActive && (
       <div className="flex-1 flex flex-col gap-2.5 min-w-0">
-        <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">{customLabel || '自定义日期区间'}</span>
+        <span className="mg-text-label text-mg-text-2">{customLabel || '自定义日期区间'}</span>
 
         {/* Selected preview bar — 轻量纯文本 */}
-        <div className="flex items-center justify-between gap-2 px-2 py-1 rounded-lg bg-mg-fill-1 text-[11px] font-semibold text-mg-text-1">
+        <div className="flex items-center justify-between gap-2 px-[var(--mg-control-px-xs)] py-[var(--mg-space-1)] rounded-lg bg-mg-fill-1 mg-text-caption font-semibold text-mg-text-1">
           {hideStartDate ? (
             <span className={customEnd ? 'text-mg-text-0' : 'text-mg-text-3'}>
               截止: {customEnd || '请在下方选择'}
@@ -292,7 +292,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           variant="brand"
           disabled={hideStartDate ? !customEnd : (!customStart || !customEnd)}
           onClick={() => handleApplyCustom(close)}
-          className="h-8 text-xs font-bold !rounded-lg w-full flex items-center justify-center gap-1 cursor-pointer"
+          className="mg-control-sm mg-compact-badge !rounded-lg w-full flex items-center justify-center gap-1 cursor-pointer"
         >
           确定应用 <LuChevronRight size={13} />
         </Button>
@@ -305,7 +305,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     <button
       type="button"
       className={cn(
-        "group flex items-center gap-2 px-4 py-2 border border-mg-border/70 rounded-full bg-mg-fill-0/20 hover:bg-mg-fill-0/40 text-[13px] font-bold text-mg-text-1 hover:text-mg-text-0 hover:border-brand-mid transition-all duration-300 shadow-inner select-none active:scale-[0.97]",
+        "group flex items-center gap-2 px-[var(--mg-control-px-md)] py-[var(--mg-control-py-sm)] border border-mg-border/70 rounded-full bg-mg-fill-0/20 hover:bg-mg-fill-0/40 mg-text-body font-bold text-mg-text-1 hover:text-mg-text-0 hover:border-brand-mid transition-all duration-300 shadow-inner select-none active:scale-[0.97]",
         className
       )}
     >
@@ -319,7 +319,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
       trigger={triggerButton}
       content={renderPanel}
       position="bottom"
-      className="!w-auto !p-4"
+      className="!w-auto mg-panel"
     />
   )
 }

@@ -15,8 +15,8 @@ export function CodeBlock({ children, className }: CodeBlockProps) {
   return (
     <pre
       className={cn(
-        'text-[11.5px] font-mono leading-relaxed text-mg-code-text bg-mg-code-bg',
-        'p-4 rounded-md border border-mg-border overflow-x-auto select-all',
+        'mg-text-code text-mg-code-text bg-mg-code-bg',
+        'mg-panel rounded-md border border-mg-border overflow-x-auto select-all',
         className,
       )}
     >

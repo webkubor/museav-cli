@@ -79,7 +79,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         )}
         <input
           type={resolvedType}
-          className="modern-input-inner flex-1 w-full h-full bg-transparent border-none outline-none p-0 text-sm focus:ring-0 focus:outline-none placeholder:text-mg-text-2/70 text-mg-text-0 disabled:cursor-not-allowed"
+          className="modern-input-inner flex-1 w-full h-full bg-transparent border-none outline-none p-0 mg-text-body focus:ring-0 focus:outline-none placeholder:text-mg-text-2/70 text-mg-text-0 disabled:cursor-not-allowed"
           ref={ref}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
@@ -98,6 +98,5 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 Input.displayName = "Input"
 
 export { Input }
-
 
 

@@ -121,7 +121,7 @@ const ModelSelectCombobox: React.FC<{
 
   return (
     <div ref={containerRef} className="relative w-full flex flex-col gap-1.5 z-40 select-none">
-      <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">模型名称</label>
+      <label className="block mg-text-label text-mg-text-2">模型名称</label>
       <div className="relative">
         <Input
           value={inputValue}
@@ -134,7 +134,7 @@ const ModelSelectCombobox: React.FC<{
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-mg-text-2 hover:text-mg-text-0 text-[11px] font-bold cursor-pointer transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-mg-text-2 hover:text-mg-text-0 mg-compact-badge cursor-pointer transition-colors"
           >
             ✕
           </button>
@@ -147,7 +147,7 @@ const ModelSelectCombobox: React.FC<{
           <div className="absolute top-0 left-4 right-4 h-[1.5px] bg-gradient-to-r from-transparent via-brand-base/20 to-transparent rounded-full" />
 
           {filtered.length === 0 ? (
-            <div className="py-3 text-center text-xs italic text-mg-text-2">
+            <div className="py-[var(--mg-space-3)] text-center mg-text-caption italic text-mg-text-2">
               未找到匹配模型
             </div>
           ) : (
@@ -159,16 +159,16 @@ const ModelSelectCombobox: React.FC<{
                 onClick={() => handleSelect(m.id, m.display_name)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect(m.id, m.display_name) }}
                 className={cn(
-                  "group/item flex flex-col gap-0.5 px-3 py-2 rounded-lg cursor-pointer select-none transition-all outline-none",
+                  "group/item flex flex-col gap-0.5 px-[var(--mg-menu-item-px)] py-[var(--mg-menu-item-py)] rounded-lg cursor-pointer select-none transition-all outline-none",
                   value === m.id
                     ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
                     : "text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-0/30 active:scale-[0.98] hover:translate-x-[2px]"
                 )}
               >
-                <span className="text-[13.5px] font-bold leading-none truncate">
+                <span className="mg-text-body font-bold leading-none truncate">
                   {m.display_name}
                 </span>
-                <span className="text-[10px] text-mg-text-3 font-mono truncate mt-0.5">
+                <span className="mg-text-code text-mg-text-3 truncate mt-0.5">
                   {m.id}
                 </span>
               </div>
@@ -184,9 +184,9 @@ const ModelSelectCombobox: React.FC<{
  * 极具科技设计感的高颜值数据加载骨架屏（Skeleton）
  */
 const TableSkeleton = () => (
-  <div className="p-5 flex flex-col gap-4 animate-pulse select-none">
+  <div className="mg-panel-relaxed flex flex-col gap-4 animate-pulse select-none">
     {[...Array(5)].map((_, i) => (
-      <div key={i} className="flex items-center justify-between gap-4 py-4 border-b border-mg-border/30 last:border-none animate-in fade-in duration-300">
+      <div key={i} className="flex items-center justify-between gap-4 py-[var(--mg-panel-padding-md)] border-b border-mg-border/30 last:border-none animate-in fade-in duration-300">
         <div className="flex flex-col gap-2 w-1/4">
           <div className="h-3.5 bg-mg-fill-0/40 rounded-full w-full" />
           <div className="h-2.5 bg-mg-fill-0/20 rounded-full w-2/3" />
@@ -311,7 +311,7 @@ export default function LogsPage() {
             variant="outline"
             disabled={isLoading || isFetching}
             onClick={() => refetch()}
-            className="rounded-full px-5 h-10 shrink-0 font-semibold"
+            className="rounded-full shrink-0 font-semibold"
           >
             <LuRefreshCw className={`w-4 h-4 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
             {t('logs.refresh')}
@@ -320,9 +320,9 @@ export default function LogsPage() {
       />
 
       {/* 综合过滤面板 */}
-      <div className="bg-mg-bg-0 p-5 rounded-md border border-mg-border/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end shadow-sm select-none">
+      <div className="bg-mg-bg-0 mg-panel-relaxed rounded-md border border-mg-border/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end shadow-sm select-none">
         <div className="flex flex-col gap-1.5">
-          <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">{t('logs.filter.statusLabel')}</label>
+          <label className="block mg-text-label text-mg-text-2">{t('logs.filter.statusLabel')}</label>
           <Select
             value={statusFilter}
             onChange={(v) => { setStatusFilter(v as LogStatusFilter); resetPagination() }}
@@ -343,7 +343,7 @@ export default function LogsPage() {
         />
 
         <div className="flex flex-col gap-1.5">
-          <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">API 密钥</label>
+          <label className="block mg-text-label text-mg-text-2">API 密钥</label>
           <Select
             value={apiKeyFilter}
             onChange={(v) => { setApiKeyFilter(v); resetPagination() }}
@@ -360,7 +360,7 @@ export default function LogsPage() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">时间范围</label>
+          <label className="block mg-text-label text-mg-text-2">时间范围</label>
           <DateRangePicker
             value={timeRange}
             onChange={(val) => { setTimeRange(val); resetPagination() }}
@@ -369,7 +369,7 @@ export default function LogsPage() {
         </div>
 
         <div className="flex flex-col gap-1.5 lg:col-span-2">
-          <label className="block text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">Request ID</label>
+          <label className="block mg-text-label text-mg-text-2">Request ID</label>
           <Input
             placeholder="输入完整的 Request ID 进行精确检索"
             prefix={<LuSearch className="opacity-50" />}
@@ -405,19 +405,19 @@ export default function LogsPage() {
               <TableBody>
                 {filteredLogs.map((row) => (
                   <TableRow key={row.call_log_id}>
-                    <TableCell className="font-mono text-xs text-mg-text-0 max-w-[160px] truncate select-all">
+                    <TableCell className="mg-text-code text-mg-text-0 max-w-[160px] truncate select-all">
                       {row.request_id}
                     </TableCell>
-                    <TableCell className="text-xs text-mg-text-1 whitespace-nowrap">
+                    <TableCell className="mg-text-caption text-mg-text-1 whitespace-nowrap">
                       {formatDateTime(row.started_at)}
                     </TableCell>
                     <TableCell>
                       <span className="flex items-center gap-2">
                         <ModelIcon model={{ display_name: row.model.display_name, vendor: row.provider?.name ?? row.requested_model ?? row.model.display_name }} size={18} />
-                        <span className="font-semibold text-mg-text-0 text-[13.5px]">{row.model.display_name}</span>
+                        <span className="font-semibold text-mg-text-0 mg-text-body">{row.model.display_name}</span>
                       </span>
                     </TableCell>
-                    <TableCell className="text-xs whitespace-nowrap">
+                    <TableCell className="mg-text-caption whitespace-nowrap">
                       {row.usage ? (
                         <div className="space-y-0.5">
                           <div className="text-mg-text-2">{t('logs.table.tokenTotal')} <strong className="text-mg-text-0 tabular-nums">{row.usage.total_tokens}</strong></div>
@@ -428,20 +428,20 @@ export default function LogsPage() {
                         <span className="text-mg-text-2">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="font-mono text-xs tabular-nums whitespace-nowrap">
+                    <TableCell className="mg-text-code tabular-nums whitespace-nowrap">
                       {Number(row.cost.amount) > 0 ? (
                         <span className="text-mg-text-0 font-semibold">
-                          <span className="text-[10px] text-mg-text-2 mr-0.5">{row.cost.currency}</span>
+                          <span className="mg-text-caption text-mg-text-2 mr-0.5">{row.cost.currency}</span>
                           {formatMoney(row.cost.amount, '')}
                         </span>
                       ) : (
                         <span className="text-mg-text-2">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="font-mono text-xs text-mg-text-1 tabular-nums whitespace-nowrap">
+                    <TableCell className="mg-text-code text-mg-text-1 tabular-nums whitespace-nowrap">
                       {(row.speed.first_token_ms / 1000).toFixed(2)}s
                     </TableCell>
-                    <TableCell className="font-mono text-xs text-mg-text-1 tabular-nums whitespace-nowrap">
+                    <TableCell className="mg-text-code text-mg-text-1 tabular-nums whitespace-nowrap">
                       {(row.duration_ms / 1000).toFixed(2)}s
                     </TableCell>
                     <TableCell>
@@ -455,7 +455,7 @@ export default function LogsPage() {
                           setSelectedLog(row)
                           setPayloadKind('request')
                         }}
-                        className="h-7 text-xs font-semibold"
+                        className="mg-control-sm mg-compact-badge"
                       >
                         <LuEye className="w-3.5 h-3.5 mr-1" />
                         {t('logs.table.detail')}
@@ -490,13 +490,13 @@ export default function LogsPage() {
         {selectedLog && (
           <div className="space-y-6 mt-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="border border-mg-border/60 p-3.5 rounded-lg bg-mg-fill-0/20">
-                <p className="text-[10px] text-mg-text-2 uppercase font-bold tracking-widest">{t('logs.detail.status')}</p>
+              <div className="border border-mg-border/60 mg-panel-tight rounded-lg bg-mg-fill-0/20">
+                <p className="mg-text-label text-mg-text-2">{t('logs.detail.status')}</p>
                 <div className="mt-1.5"><StatusBadge status={getLogStatus(selectedLog)} statusMap={LOG_STATUS_MAP} /></div>
               </div>
-              <div className="border border-mg-border/60 p-3.5 rounded-lg bg-mg-fill-0/20">
-                <p className="text-[10px] text-mg-text-2 uppercase font-bold tracking-widest">{t('logs.detail.duration')}</p>
-                <p className="text-base font-bold text-mg-text-0 font-mono mt-1">{selectedLog.duration_ms}ms</p>
+              <div className="border border-mg-border/60 mg-panel-tight rounded-lg bg-mg-fill-0/20">
+                <p className="mg-text-label text-mg-text-2">{t('logs.detail.duration')}</p>
+                <p className="mg-text-value font-bold text-mg-text-0 font-mono mt-1">{selectedLog.duration_ms}ms</p>
               </div>
             </div>
 
@@ -533,12 +533,12 @@ export default function LogsPage() {
             </div>
 
             {selectedLog.error && (
-              <div className="border border-mg-danger/10 bg-mg-danger/[0.03] p-4 rounded-md space-y-2 border-l-4 border-l-mg-danger">
-                <p className="text-xs font-bold text-mg-danger flex items-center gap-1.5">
+              <div className="border border-mg-danger/10 bg-mg-danger/[0.03] mg-panel rounded-md space-y-2 border-l-4 border-l-mg-danger">
+                <p className="mg-compact-badge text-mg-danger flex items-center gap-1.5">
                   <IoAlertCircle className="w-4 h-4 shrink-0" />
                   {t('logs.detail.errorTitle')}
                 </p>
-                <pre className="text-xs text-mg-danger font-mono break-all whitespace-pre-wrap leading-relaxed select-text">
+                <pre className="mg-text-code text-mg-danger break-all whitespace-pre-wrap select-text">
                   {selectedLog.error}
                 </pre>
               </div>
@@ -547,7 +547,7 @@ export default function LogsPage() {
             <div className="space-y-4">
               <div>
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <p className="text-[10px] text-mg-text-2 uppercase font-bold tracking-widest flex items-center gap-1">
+                  <p className="mg-text-label text-mg-text-2 flex items-center gap-1">
                     <LuCalendar className="w-3.5 h-3.5" />
                     {t('logs.detail.rawPayload')}
                   </p>
@@ -557,7 +557,7 @@ export default function LogsPage() {
                         key={kind}
                         type="button"
                         onClick={() => setPayloadKind(kind)}
-                        className={`h-7 rounded-md px-2.5 text-[11px] font-semibold transition-colors ${
+                        className={`mg-control-sm rounded-md px-2.5 mg-compact-badge transition-colors ${
                           payloadKind === kind
                             ? 'bg-brand-base text-white'
                             : 'border border-mg-border bg-mg-fill-0 text-mg-text-1 hover:text-mg-text-0'
@@ -570,7 +570,7 @@ export default function LogsPage() {
                       <button
                         type="button"
                         onClick={() => setPayloadView((v) => (v === 'parsed' ? 'raw' : 'parsed'))}
-                        className="h-7 rounded-md border border-mg-border bg-mg-fill-0 px-2.5 text-[11px] font-semibold text-mg-text-1 transition-colors hover:text-mg-text-0"
+                        className="mg-control-sm rounded-md border border-mg-border bg-mg-fill-0 px-2.5 mg-compact-badge text-mg-text-1 transition-colors hover:text-mg-text-0"
                         title="在合并回答与原始 SSE 流之间切换"
                       >
                         {payloadView === 'parsed' ? '原始 SSE' : '合并回答'}
@@ -581,7 +581,7 @@ export default function LogsPage() {
                       variant="outline"
                       disabled={!displayedPayload || payloadQuery.isLoading}
                       onClick={copyPayload}
-                      className="h-7 min-w-[76px] transition-all duration-300 active:scale-[0.95]"
+                      className="mg-control-sm min-w-[76px] transition-all duration-300 active:scale-[0.95]"
                     >
                       {copiedPayload ? (
                         <LuCheck className="mr-1 h-3 w-3 text-mg-success animate-in zoom-in-50 duration-300" />
@@ -592,7 +592,7 @@ export default function LogsPage() {
                     </Button>
                   </div>
                 </div>
-                <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px] text-mg-text-2">
+                <div className="mb-2 flex flex-wrap items-center gap-2 mg-text-caption text-mg-text-2">
                   <span>{payloadQuery.data?.content_type || '—'}</span>
                   <span>·</span>
                   <span>{payloadQuery.data ? `${payloadQuery.data.size} bytes` : '—'}</span>
@@ -620,9 +620,9 @@ function DetailRow({ label, value, mono = false }: { label: string; value: React
   // 后端字段为空字符串 / null / undefined 时，整行不显示（调用日志关闭等场景）
   if (value == null || value === '') return null
   return (
-    <div className="flex justify-between items-center py-2.5 border-b border-mg-border/40 gap-4">
-      <span className="text-xs font-bold text-mg-text-2 shrink-0">{label}</span>
-      <span className={`text-xs text-mg-text-0 font-semibold text-right break-all max-w-[340px] select-text ${mono ? 'font-mono' : ''}`}>
+    <div className="flex justify-between items-center py-[var(--mg-table-cell-py)] border-b border-mg-border/40 gap-4">
+      <span className="mg-text-caption font-bold text-mg-text-2 shrink-0">{label}</span>
+      <span className={`mg-text-caption text-mg-text-0 font-semibold text-right break-all max-w-[340px] select-text ${mono ? 'font-mono' : ''}`}>
         {value}
       </span>
     </div>

@@ -21,7 +21,7 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-10 w-full items-center justify-between rounded-lg border border-mg-border bg-mg-bg-1 px-3.5 py-2 text-sm outline-none transition-all duration-200 placeholder:text-mg-text-2/70 text-mg-text-0 hover:border-brand-mid/50 focus:border-brand-base focus:ring-2 focus:ring-brand-glow disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      "flex h-[var(--mg-control-h-md)] w-full items-center justify-between rounded-lg border border-mg-border bg-mg-bg-1 px-[var(--mg-control-px-sm)] mg-text-body outline-none transition-all duration-200 placeholder:text-mg-text-2/70 text-mg-text-0 hover:border-brand-mid/50 focus:border-brand-base focus:ring-2 focus:ring-brand-glow disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
       className
     )}
     {...props}
@@ -88,7 +88,7 @@ const SelectContent = React.forwardRef<
       <SelectScrollUpButton />
       <SelectPrimitive.Viewport
         className={cn(
-          "p-1",
+          "p-[var(--mg-menu-padding)]",
           position === "popper" &&
             "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
         )}
@@ -107,7 +107,7 @@ const SelectLabel = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Label
     ref={ref}
-    className={cn("py-1.5 pl-8 pr-2 text-xs font-bold tracking-wider uppercase text-mg-text-2", className)}
+    className={cn("py-1.5 pl-8 pr-2 mg-text-label text-mg-text-2", className)}
     {...props}
   />
 ))
@@ -120,7 +120,7 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-lg py-2 pl-8 pr-2 text-sm text-mg-text-1 outline-none transition-colors duration-150 focus:bg-mg-fill-0 focus:text-mg-text-0 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex w-full cursor-default select-none items-center rounded-lg py-[var(--mg-menu-item-py)] pl-8 pr-2 mg-text-body text-mg-text-1 outline-none transition-colors duration-150 focus:bg-mg-fill-0 focus:text-mg-text-0 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}
     {...props}

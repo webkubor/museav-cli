@@ -47,6 +47,7 @@ import { VideoPreviewModal } from './VideoPreviewModal'
 
 const PAGE_SIZE = 20
 const REFRESH_INTERVAL = 10 // 列表可见倒计时刷新间隔（秒）
+const EMPTY_TASK_ITEMS: TaskItem[] = []
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; variant: BadgeVariant; dot: boolean }> = {
   queued:    { label: '排队中', variant: 'secondary', dot: true },
@@ -163,13 +164,13 @@ function DetailRow({ label, value, hint, mono }: {
   mono?: boolean
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-2.5 border-b border-mg-border/50 last:border-0">
-      <span className="text-[12px] font-semibold text-mg-text-2 shrink-0 w-20">{label}</span>
+    <div className="flex items-start justify-between gap-4 py-[var(--mg-table-cell-py)] border-b border-mg-border/50 last:border-0">
+      <span className="mg-text-caption font-semibold text-mg-text-2 shrink-0 w-20">{label}</span>
       <div className="flex-1 text-right">
-        <span className={cn('text-[13px] text-mg-text-0', mono && 'font-mono text-xs')}>
+        <span className={cn('mg-text-body text-mg-text-0', mono && 'font-mono mg-text-code')}>
           {value}
         </span>
-        {hint && <p className="text-[11px] text-mg-text-2 mt-0.5">{hint}</p>}
+        {hint && <p className="mg-text-caption text-mg-text-2 mt-0.5">{hint}</p>}
       </div>
     </div>
   )
@@ -218,7 +219,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
 
   return (
     <SideSheet open onClose={onClose} width={460} title="任务详情">
-        <div className="space-y-5 px-1 py-2 text-sm">
+        <div className="space-y-5 px-[var(--mg-space-1)] py-[var(--mg-control-py-sm)] mg-text-body">
           {/* 头部徽章 */}
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={task.status} statusMap={STATUS_CONFIG} />
@@ -229,7 +230,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
           </div>
 
           {/* 字段列表 */}
-          <div className="rounded-md border border-mg-border bg-card-bg px-4">
+          <div className="rounded-md border border-mg-border bg-card-bg px-[var(--mg-panel-padding-md)]">
             <DetailRow label="任务 ID"   value={task.gateway_request_id} mono />
             <DetailRow
               label="模型"
@@ -252,7 +253,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
               <DetailRow
                 label="Token 用量"
                 value={
-                  <span className="text-[12px] text-mg-text-1">
+                  <span className="mg-text-caption text-mg-text-1">
                     输入 <strong className="text-mg-text-0">{(task.input_tokens ?? 0).toLocaleString()}</strong>
                     {' · '}
                     输出 <strong className="text-mg-text-0">{(task.output_tokens ?? 0).toLocaleString()}</strong>
@@ -286,8 +287,8 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
 
           {/* 产物预览：视频任务成功态，直接用网关 content 端点播放 */}
           {showVideo && (
-            <div className="rounded-md border border-mg-border bg-card-bg p-3">
-              <p className="text-[11px] font-bold text-mg-text-2 mb-2 uppercase tracking-wide">产物预览</p>
+            <div className="rounded-md border border-mg-border bg-card-bg mg-panel-tight">
+              <p className="mg-text-label text-mg-text-2 mb-2">产物预览</p>
               <video
                 key={videoUrl}
                 src={videoUrl ?? undefined}
@@ -302,8 +303,8 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
 
           {/* 产物链接 + 下载 */}
           {showVideo && (
-            <div className="rounded-md border border-mg-border bg-card-bg p-4 space-y-2.5">
-              <p className="text-[11px] font-bold text-mg-text-2 uppercase tracking-wide">产物链接</p>
+            <div className="rounded-md border border-mg-border bg-card-bg mg-panel space-y-2.5">
+              <p className="mg-text-label text-mg-text-2">产物链接</p>
               <button
                 type="button"
                 onClick={async () => {
@@ -311,10 +312,10 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
                   appToast[ok ? 'success' : 'error'](ok ? '链接已复制' : '复制失败')
                 }}
                 title="点击复制链接"
-                className="group flex w-full items-center gap-2 rounded-lg border border-mg-border bg-mg-fill-0/40 px-3 py-2 text-left transition-colors hover:bg-mg-fill-0 hover:border-brand-base/40 cursor-pointer"
+                className="group flex w-full items-center gap-2 rounded-lg border border-mg-border bg-mg-fill-0/40 px-[var(--mg-control-px-sm)] py-[var(--mg-control-py-sm)] text-left transition-colors hover:bg-mg-fill-0 hover:border-brand-base/40 cursor-pointer"
               >
                 <LuLink size={13} className="shrink-0 text-mg-text-3" />
-                <span className="flex-1 truncate text-[12px] font-mono text-mg-text-1" title={videoUrl}>
+                <span className="flex-1 truncate mg-text-code text-mg-text-1" title={videoUrl}>
                   {videoUrl}
                 </span>
                 <LuCopy size={13} className="shrink-0 text-mg-text-3 group-hover:text-brand-base transition-colors" />
@@ -324,12 +325,12 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
                 download
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex w-full items-center justify-center gap-1.5 h-9 rounded-lg bg-mg-primary text-white text-[13px] font-semibold transition-opacity hover:opacity-90"
+                className="inline-flex w-full items-center justify-center gap-1.5 mg-control-md rounded-lg bg-mg-primary text-white mg-text-body font-semibold transition-opacity hover:opacity-90"
               >
                 <LuDownload size={14} />
                 下载
               </a>
-              <p className="flex items-start gap-1.5 text-[11px] leading-relaxed text-[var(--mg-warning)]">
+              <p className="flex items-start gap-1.5 mg-text-caption text-[var(--mg-warning)]">
                 <LuTriangleAlert size={13} className="shrink-0 mt-0.5" />
                 <span>
                   视频地址有有效期{expiry ? `（至 ${fmtDate(expiry.expiresAt)}，${expiry.remain}）` : ''}，
@@ -341,26 +342,26 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
 
           {/* 产物已过期 / 已被清理 */}
           {gone && kind === 'video' && isTaskDone(task.status) && (
-            <div className="rounded-md border border-mg-border bg-card-bg p-6 flex flex-col items-center gap-2 text-mg-text-3">
+            <div className="rounded-md border border-mg-border bg-card-bg mg-panel-relaxed flex flex-col items-center gap-2 text-mg-text-3">
               <LuVideoOff size={32} />
-              <p className="text-[13px] font-semibold">产物已过期</p>
-              <p className="text-[11px] text-mg-text-2">视频文件已自动清理，不支持预览与下载</p>
+              <p className="mg-text-body font-semibold">产物已过期</p>
+              <p className="mg-text-caption text-mg-text-2">视频文件已自动清理，不支持预览与下载</p>
             </div>
           )}
 
           {/* Prompt */}
           {task.prompt && (
-            <div className="rounded-md border border-mg-border bg-card-bg p-4">
-              <p className="text-[11px] font-bold text-mg-text-2 mb-2 uppercase tracking-wide">Prompt</p>
-              <p className="text-[13px] text-mg-text-1 leading-relaxed">{task.prompt}</p>
+            <div className="rounded-md border border-mg-border bg-card-bg mg-panel">
+              <p className="mg-text-label text-mg-text-2 mb-2">Prompt</p>
+              <p className="mg-text-body text-mg-text-1">{task.prompt}</p>
             </div>
           )}
 
           {/* 失败原因 */}
           {task.status === 'failed' && task.error_message && (
-            <div className="rounded-md border border-[var(--mg-danger)]/20 bg-[var(--mg-danger)]/5 p-4">
-              <p className="text-[11px] font-bold text-[var(--mg-danger)] mb-1.5 uppercase tracking-wide">失败原因</p>
-              <p className="text-[12px] text-mg-text-1 leading-relaxed">{task.error_message}</p>
+            <div className="rounded-md border border-[var(--mg-danger)]/20 bg-[var(--mg-danger)]/5 mg-panel">
+              <p className="mg-text-label text-[var(--mg-danger)] mb-1.5">失败原因</p>
+              <p className="mg-text-caption text-mg-text-1">{task.error_message}</p>
             </div>
           )}
 
@@ -433,7 +434,7 @@ export default function TasksPage() {
     setCountdown(REFRESH_INTERVAL)
   }
 
-  const items  = data?.items ?? []
+  const items  = data?.items ?? EMPTY_TASK_ITEMS
   const total  = data?.total ?? 0
   const pages  = Math.ceil(total / PAGE_SIZE)
   const page   = Math.floor(offset / PAGE_SIZE) + 1
@@ -475,18 +476,18 @@ export default function TasksPage() {
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
             placeholder="搜索任务 ID / 模型"
-            className="h-9 w-60 rounded-lg border border-mg-border bg-mg-bg-1 pl-8 pr-3 text-sm focus:border-brand-base focus:outline-none focus:ring-1 focus:ring-brand-glow/30 text-mg-text-0 placeholder:text-mg-text-2"
+            className="mg-control-md w-60 rounded-lg border border-mg-border bg-mg-bg-1 pl-8 pr-3 mg-text-body focus:border-brand-base focus:outline-none focus:ring-1 focus:ring-brand-glow/30 text-mg-text-0 placeholder:text-mg-text-2"
           />
         </div>
 
-        <Select value={kindFilter} onChange={handleKind} className="h-9 w-32 text-sm">
+        <Select value={kindFilter} onChange={handleKind} className="mg-control-md w-32 mg-text-body">
           <Select.Option value="all">全部类型</Select.Option>
           <Select.Option value="video">视频生成</Select.Option>
           <Select.Option value="image">图片生成</Select.Option>
           <Select.Option value="audio">音乐生成</Select.Option>
         </Select>
 
-        <Select value={statusFilter} onChange={handleStatus} className="h-9 w-32 text-sm">
+        <Select value={statusFilter} onChange={handleStatus} className="mg-control-md w-32 mg-text-body">
           <Select.Option value="all">全部状态</Select.Option>
           <Select.Option value="queued">排队中</Select.Option>
           <Select.Option value="running">执行中</Select.Option>
@@ -496,14 +497,14 @@ export default function TasksPage() {
         </Select>
 
         {total > 0 && (
-          <span className="ml-auto text-[12px] text-mg-text-2">
+          <span className="ml-auto mg-text-caption text-mg-text-2">
             共 {total} 条
           </span>
         )}
       </div>
 
       {/* 提示条：只放唯一注意事项（有效期/保存），不与页头描述重复 */}
-      <p className="flex items-start gap-1.5 text-[11px] text-[var(--mg-warning)] mb-4 px-1">
+      <p className="flex items-start gap-1.5 mg-text-caption text-[var(--mg-warning)] mb-4 px-1">
         <LuTriangleAlert size={13} className="shrink-0 mt-0.5" />
         <span>视频产物有有效期（见各任务「产物有效期」），过期后平台不再保留，请及时下载保存到本地。</span>
       </p>
@@ -561,7 +562,7 @@ export default function TasksPage() {
                 >
                   <TableCell align="center">
                     {isExpired ? (
-                      <div className="h-12 w-12 shrink-0 rounded-lg mx-auto flex items-center justify-center bg-mg-fill-1 text-mg-text-3" title="产物已过期">
+                      <div className="h-[var(--mg-preview-thumb-size)] w-[var(--mg-preview-thumb-size)] shrink-0 rounded-lg mx-auto flex items-center justify-center bg-mg-fill-1 text-mg-text-3" title="产物已过期">
                         <LuVideoOff size={20} />
                       </div>
                     ) : (
@@ -578,12 +579,12 @@ export default function TasksPage() {
                       />
                     )}
                   </TableCell>
-                  <TableCell align="center" className="text-[12px] text-mg-text-1">
+                  <TableCell align="center" className="mg-text-caption text-mg-text-1">
                     {fmtDate(item.created_at)}
                     {(expiry || isExpired) && (
                       <p
                         className={cn(
-                          'text-[11px] mt-0.5',
+                          'mg-text-caption mt-0.5',
                           isExpired
                             ? 'text-[var(--mg-warning)]'        // 已过期 → 黄
                             : expiry?.urgent
@@ -596,7 +597,7 @@ export default function TasksPage() {
                     )}
                   </TableCell>
                   <TableCell align="center">
-                    <span className="inline-flex items-center gap-1.5 text-[12px] text-mg-text-1">
+                    <span className="inline-flex items-center gap-1.5 mg-text-caption text-mg-text-1">
                       {kindCfg.icon}
                       {kindCfg.label}
                     </span>
@@ -609,12 +610,12 @@ export default function TasksPage() {
                         rounded="rounded-md"
                         className="shrink-0"
                       />
-                      <p className="text-[12px] font-mono text-mg-text-0 truncate">
+                      <p className="mg-text-code text-mg-text-0 truncate">
                         {item.requested_model}
                       </p>
                     </span>
                     {item.vendor && (
-                      <p className="text-[11px] text-mg-text-2 mt-0.5">{item.vendor}</p>
+                      <p className="mg-text-caption text-mg-text-2 mt-0.5">{item.vendor}</p>
                     )}
                   </TableCell>
                   <TableCell align="center">
@@ -622,7 +623,7 @@ export default function TasksPage() {
                   </TableCell>
                   <TableCell align="center">
                     <span className={cn(
-                      'text-[13px] font-semibold',
+                      'mg-text-body font-semibold',
                       item.status === 'failed' && taskCost(item) ? 'text-[var(--mg-danger)]' : 'text-mg-text-0'
                     )}>
                       {fmtCost(item)}
@@ -635,7 +636,7 @@ export default function TasksPage() {
                         e.stopPropagation()
                         setSelectedTask(item)
                       }}
-                      className="text-[11px] text-mg-text-2 hover:text-mg-text-0 font-semibold transition-colors"
+                      className="mg-text-caption text-mg-text-2 hover:text-mg-text-0 font-semibold transition-colors"
                     >
                       详情
                     </button>
@@ -649,7 +650,7 @@ export default function TasksPage() {
 
       {/* 分页 */}
       {pages > 1 && (
-        <div className="flex items-center justify-between mt-4 text-[12px] text-mg-text-2">
+        <div className="flex items-center justify-between mt-4 mg-text-caption text-mg-text-2">
           <span>第 {page} / {pages} 页</span>
           <div className="flex gap-2">
             <Button

@@ -12,7 +12,7 @@ import { cn, formatMoney } from '@/lib/utils'
  * size: sm(默认,列表/行内) | md(卡片次要) | lg(KPI/余额大数)
  * tone: default(text-0) | muted(text-1) | brand(品牌色) | danger(扣费/负向)
  */
-const SIZE = { sm: 'text-sm', md: 'text-base', lg: 'text-2xl' } as const
+const SIZE = { sm: 'mg-text-body', md: 'mg-text-value', lg: 'mg-text-display-sm' } as const
 const TONE = {
   default: 'text-mg-text-0',
   muted: 'text-mg-text-1',

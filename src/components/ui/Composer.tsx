@@ -53,7 +53,7 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
     }
 
     return (
-      <div className={cn('composer-rainbow-flow rounded-md p-3 flex flex-col gap-3 relative transition-all duration-300', className)}>
+      <div className={cn('composer-rainbow-flow rounded-md mg-panel-tight flex flex-col gap-3 relative transition-all duration-300', className)}>
         {/* 输入域 */}
         <Textarea
           ref={ref}
@@ -62,7 +62,7 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled || isStreaming}
-          className="min-h-[74px] max-h-[168px] resize-none border-0 bg-transparent p-1 shadow-none focus:ring-0 focus-visible:ring-0 hover:border-transparent focus:border-transparent text-sm w-full outline-none"
+          className="min-h-[var(--mg-textarea-min-h)] max-h-[168px] resize-none border-0 bg-transparent p-[var(--mg-space-1)] shadow-none focus:ring-0 focus-visible:ring-0 hover:border-transparent focus:border-transparent mg-text-body w-full outline-none"
         />
 
         {/* 底部动作栏 */}
@@ -71,7 +71,7 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
             {activeChip ? (
               activeChip
             ) : (
-              <div className="inline-flex items-center gap-1.5 min-w-0 text-mg-text-1 text-xs font-bold">
+              <div className="inline-flex items-center gap-1.5 min-w-0 text-mg-text-1 mg-compact-badge">
                 <LuMessageSquare size={13} className="shrink-0" />
                 <span className="truncate">对话测试</span>
               </div>
@@ -83,7 +83,7 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
               size="sm"
               onClick={onClear}
               disabled={loading || disabled || isStreaming}
-              className="h-8 rounded-lg cursor-pointer"
+              className="rounded-lg cursor-pointer"
             >
               <LuEraser size={14} />
               {clearLabel}
@@ -93,7 +93,7 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
                 variant="destructive"
                 size="sm"
                 onClick={onStop}
-                className="h-8 rounded-lg px-4 cursor-pointer"
+                className="rounded-lg cursor-pointer"
               >
                 {stopLabel}
               </Button>
@@ -104,7 +104,7 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
                 onClick={onSend}
                 loading={loading}
                 disabled={!value.trim() || disabled}
-                className="h-8 rounded-lg px-4 cursor-pointer"
+                className="rounded-lg cursor-pointer"
               >
                 {!loading && <LuSend size={14} className="mr-1" />}
                 {sendLabel}
@@ -115,7 +115,7 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
 
         {/* 底部备注提示 */}
         {note && (
-          <p className="margin-0 mt-1 text-center text-[10.5px] font-bold text-mg-text-2/80 tracking-wide select-none">
+          <p className="margin-0 mt-1 text-center mg-compact-badge text-mg-text-2/80 tracking-wide select-none">
             {note}
           </p>
         )}

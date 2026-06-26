@@ -13,7 +13,7 @@ interface FirstChargeLockGateProps {
   desc?: string
   /** 去充值按钮文案 */
   cta?: string
-  /** 占位高度样式（默认 min-h-[200px]） */
+  /** 占位高度样式（默认使用 --mg-empty-min-h） */
   className?: string
   children?: React.ReactNode
 }
@@ -46,18 +46,18 @@ export const FirstChargeLockGate: React.FC<FirstChargeLockGateProps> = ({
 
       {/* 锁定态覆盖层 */}
       <div className={cn(
-        'flex flex-col items-center justify-center gap-4 text-center px-6 py-10',
+        'flex flex-col items-center justify-center gap-4 text-center min-h-[var(--mg-empty-min-h)] mg-panel-roomy',
         children ? 'absolute inset-0 bg-mg-bg-0/70 backdrop-blur-sm' : ''
       )}>
         <div
-          className="w-11 h-11 rounded-md flex items-center justify-center shrink-0"
+          className="w-[var(--mg-control-h-xl)] h-[var(--mg-control-h-xl)] rounded-md flex items-center justify-center shrink-0"
           style={{ backgroundColor: 'var(--brand-glow)', color: 'var(--brand-base)' }}
         >
           <LuLock size={20} />
         </div>
         <div className="space-y-1.5 max-w-[280px]">
-          <p className="font-bold text-mg-text-0 text-sm">{title}</p>
-          <p className="text-xs text-mg-text-2 leading-relaxed">{desc}</p>
+          <p className="font-bold text-mg-text-0 mg-text-body">{title}</p>
+          <p className="mg-text-caption text-mg-text-2">{desc}</p>
         </div>
         <Button variant="brand" size="sm" onClick={openRecharge}>
           {cta}

@@ -58,14 +58,14 @@ export function ConfirmModal({
       {children}
       {requireTyping !== undefined && (
         <div className="mt-3 space-y-1.5">
-          <p className="text-xs text-mg-text-2">
+          <p className="mg-text-caption text-mg-text-2">
             请输入 <span className="font-mono font-semibold text-mg-text-0">{requireTyping}</span> 以确认
           </p>
           <Input
             value={typedValue}
             onChange={(e) => setTypedValue(e.target.value)}
             placeholder={requireTyping}
-            className="h-9 text-xs rounded-lg"
+            className="mg-control-md mg-text-caption rounded-lg"
           />
         </div>
       )}

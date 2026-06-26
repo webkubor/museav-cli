@@ -1,5 +1,5 @@
 /**
- * 模型广场（公开页 /plaza 使用）
+ * 模型广场（公开页 /models 使用）
  * 布局参考国外官网：左侧筛选 chip 栏 + 右侧吸顶搜索/排序卡 + 竖向宽卡片列表。
  * 数据：GET /api/v1/catalog/models | catalog/model-tags | catalog/model-families（均公开）
  */

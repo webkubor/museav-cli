@@ -5,11 +5,13 @@ import React, { useState, useEffect, useRef } from 'react'
 import {
   LuPlus,
   LuSettings,
-  LuGlobe,
   LuLogOut,
   LuUser,
-  LuUserPlus,
   LuZap,
+  LuBuilding2,
+  LuCheck,
+  LuShield,
+  LuChevronRight,
 } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -75,7 +77,7 @@ export const DashboardHeader: React.FC = () => {
   }> = [
     // 站内 dashboard 由左上角 logo 承担；这里第一项给「官网」外链（与官网右上角风格统一的入口）
     { key: 'website', label: t('common.website'), href: marketConfig.siteUrl },
-    { key: 'models', label: t('nav.models'), to: '/plaza', match: (p) => p.startsWith('/plaza') },
+    { key: 'models', label: t('nav.models'), to: '/models', match: (p) => p.startsWith('/models') },
     { key: 'enterprise', label: t('nav.enterprise'), to: '/settings/organization', match: (p) => p.startsWith('/settings/organization') },
     { key: 'referral', label: t('nav.referral'), to: '/referral', match: (p) => p.startsWith('/referral') },
     { key: 'docs', label: t('nav.docsMenu'), href: appendThemeParam(marketConfig.docsUrl) },
@@ -174,6 +176,41 @@ export const DashboardHeader: React.FC = () => {
     (tn) => tn.type === 'enterprise' && (tn as { role?: string }).role === 'tenant_owner',
   )
   const canCreateOrg = tenantsData?.can_create_org ?? !ownsEnterprise
+  const accountRole = activeTenant?.type === 'personal'
+    ? t('header.personalTag')
+    : getTenantRoleLabel((activeTenant as TenantItem | undefined)?.role)
+  const menuTenants = [...displayTenants].sort((a, b) => {
+    if (a.tenant_id === activeTenantId) return -1
+    if (b.tenant_id === activeTenantId) return 1
+    if (a.type === 'enterprise' && b.type !== 'enterprise') return -1
+    if (a.type !== 'enterprise' && b.type === 'enterprise') return 1
+    return getTenantDisplayName(a).localeCompare(getTenantDisplayName(b))
+  })
+
+  function getTenantDisplayName(tenant: TenantBrief | TenantItem) {
+    if (tenant.type === 'personal') {
+      return account?.display_name || t('header.personalTag')
+    }
+    return tenant.name || tenant.slug || tenant.tenant_id
+  }
+
+  function getTenantRoleLabel(role?: string) {
+    const roleLabel: Record<string, string> = {
+      tenant_owner: t('header.roleOwner'),
+      tenant_admin: t('header.roleAdmin'),
+      tenant_member: t('header.roleMember'),
+    }
+    return role ? (roleLabel[role] ?? role) : t('header.roleMember')
+  }
+
+  function getTenantRoleVariant(role?: string): BadgeVariant {
+    const roleBadgeVariant: Record<string, BadgeVariant> = {
+      tenant_owner: 'warning',
+      tenant_admin: 'info',
+      tenant_member: 'secondary',
+    }
+    return role ? (roleBadgeVariant[role] ?? 'secondary') : 'secondary'
+  }
 
   useEffect(() => {
     if (!account) return
@@ -322,7 +359,7 @@ export const DashboardHeader: React.FC = () => {
         {/* Logo 展现 */}
         <div 
           className="flex items-center gap-2 cursor-pointer active:scale-[0.97] transition-transform duration-150 select-none"
-          onClick={() => navigate(isAuthenticated ? '/dashboard' : '/plaza')}
+          onClick={() => navigate(isAuthenticated ? '/dashboard' : '/models')}
           title={t('nav.dashboard')}
         >
           {/* Icon mark with shimmer */}
@@ -418,21 +455,37 @@ export const DashboardHeader: React.FC = () => {
               </Avatar>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[292px] p-2">
-            {/* 当前登录账户卡片 */}
-            <div className="mb-1.5 flex items-center gap-3 rounded-xl bg-mg-fill-0/70 px-3 py-3 select-none">
-              <Avatar className="h-10 w-10 ring-1 ring-mg-border shrink-0">
-                {account?.avatar_url && <AvatarImage src={account.avatar_url} alt={account.display_name} />}
-                <AvatarFallback className="bg-brand-pale text-brand-base font-bold text-sm">
-                  {avatarLetter}
-                </AvatarFallback>
-              </Avatar>
+          <DropdownMenuContent
+            align="end"
+            className={cn(
+              'w-[332px] rounded-lg border border-mg-border/80 p-3',
+              'bg-[linear-gradient(180deg,var(--mg-bg-2)_0%,var(--mg-bg-0)_100%)]',
+              'shadow-[0_24px_80px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.06)]',
+            )}
+          >
+            <div className="flex items-center gap-3.5 rounded-lg px-2.5 pb-3 pt-2 select-none">
+              <div className="relative shrink-0">
+                <Avatar className="h-12 w-12 ring-1 ring-white/10 shadow-md shadow-black/20">
+                  {account?.avatar_url && <AvatarImage src={account.avatar_url} alt={account.display_name} />}
+                  <AvatarFallback className="bg-brand-pale text-brand-base font-bold text-sm">
+                    {avatarLetter}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-mg-bg-2 bg-mg-success shadow-sm shadow-black/20" />
+              </div>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[14px] font-semibold leading-tight text-mg-text-0">
+                <div className="truncate text-[15px] font-bold leading-tight text-mg-text-0">
                   {account?.display_name || '—'}
                 </div>
-                <div className="mt-0.5 truncate text-[12px] text-mg-text-2">{account?.email}</div>
+                <div className="mt-1 truncate text-[12px] leading-none text-mg-text-2">{account?.email}</div>
               </div>
+              <Badge
+                variant={activeTenant?.type === 'personal' ? 'secondary' : getTenantRoleVariant((activeTenant as TenantItem | undefined)?.role)}
+                size="sm"
+                className="shrink-0 border-brand-base/25 bg-brand-base/[0.11] px-2.5 py-1 text-[11px] text-brand-base"
+              >
+                {accountRole}
+              </Badge>
             </div>
 
             {/* 窄屏兜底：≥md 顶栏直接展示的同步导航，在 <md 折叠进此处 */}
@@ -452,137 +505,98 @@ export const DashboardHeader: React.FC = () => {
               <DropdownMenuSeparator />
             </div>
 
-            {/* 切换上下文分组标题（有可切目标时才显示） */}
-            {displayTenants.some((tn) => tn.tenant_id !== activeTenantId) && (
-              <div className="select-none px-2 pb-1 pt-1.5 text-[10.5px] font-medium uppercase tracking-wide text-mg-text-3">
-                {t('header.switchContext', '切换上下文')}
-              </div>
-            )}
-
-            {/* 可切换列表：只列「能切过去的」，当前所在租户不重复显示（顶部账户头已表明） */}
-            {(() => {
-              const personalTenant = displayTenants.find((t) => t.type === 'personal')
-              // 已在个人上下文 → 不再列个人
-              if (!personalTenant || personalTenant.tenant_id === activeTenantId) return null
-              return (
-                <DropdownMenuItem onClick={() => handleSwitchTenant(personalTenant)}>
-                  <div className="flex items-center gap-2.5 w-full">
-                    <span className="h-6 w-6 rounded-full bg-mg-fill-1 flex items-center justify-center shrink-0">
-                      <LuUser size={13} className="text-mg-text-1" />
-                    </span>
-                    <span className="flex-1 truncate">{account?.display_name || t('header.personalTag')}</span>
-                    <Badge variant="outline" size="xs" className="shrink-0">
-                      {t('header.personalTag')}
-                    </Badge>
-                  </div>
-                </DropdownMenuItem>
-              )
-            })()}
-
-            {displayTenants.filter((t) => t.type === 'enterprise' && t.tenant_id !== activeTenantId).map((tenant) => {
-              const displayName = tenant.name || tenant.slug || tenant.tenant_id
-              const letter = displayName.charAt(0).toUpperCase()
-              const isActive = tenant.tenant_id === activeTenantId
-              const tenantRole = (tenant as TenantItem).role
-              const roleLabel: Record<string, string> = {
-                tenant_owner: t('header.roleOwner'),
-                tenant_admin: t('header.roleAdmin'),
-                tenant_member: t('header.roleMember'),
-              }
-              // 角色按权限分级着色：所有者最突出 → 管理员 → 成员
-              const roleBadgeVariant: Record<string, BadgeVariant> = {
-                tenant_owner: 'warning',
-                tenant_admin: 'info',
-                tenant_member: 'secondary',
-              }
-              return (
-                <DropdownMenuItem
-                  key={tenant.tenant_id}
-                  onClick={() => handleSwitchTenant(tenant)}
-                  style={{
-                    fontWeight: isActive ? 700 : 500,
-                    color: isActive ? 'var(--brand-base)' : 'var(--mg-text-1)',
-                    backgroundColor: isActive ? 'var(--brand-selected-bg)' : undefined,
-                  }}
-                >
-                  <div className="flex items-center gap-2.5 w-full">
-                    <Avatar className="h-6 w-6 border-none">
-                      {tenant.logo_url && <AvatarImage src={tenant.logo_url} />}
-                      <AvatarFallback className="text-[10px] bg-mg-fill-1 text-mg-text-1 font-bold">
-                        {letter}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="flex-1 truncate">{displayName}</span>
-                    {tenantRole && (
-                      <Badge variant={roleBadgeVariant[tenantRole] ?? 'secondary'} size="xs" className="shrink-0">
-                        {roleLabel[tenantRole] ?? tenantRole}
-                      </Badge>
+            <div className="px-2 pb-2 pt-3 text-[12px] font-semibold text-mg-text-2 select-none">
+              {t('header.organizations')}
+            </div>
+            <div className="overflow-hidden rounded-lg border border-mg-border/70 bg-mg-fill-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+              {menuTenants.map((tenant) => {
+                const displayName = getTenantDisplayName(tenant)
+                const isActive = tenant.tenant_id === activeTenantId
+                const tenantRole = (tenant as TenantItem).role
+                return (
+                  <DropdownMenuItem
+                    key={tenant.tenant_id}
+                    onClick={() => handleSwitchTenant(tenant)}
+                    className={cn(
+                      'h-14 rounded-none px-3 text-[14px] font-bold',
+                      'border-b border-mg-border/45 last:border-b-0',
+                      'hover:bg-mg-fill-1 focus:bg-mg-fill-1',
+                      isActive && 'bg-brand-base/[0.09] text-mg-text-0 hover:bg-brand-base/[0.11] focus:bg-brand-base/[0.11]',
                     )}
-                  </div>
+                  >
+                    {tenant.type === 'personal' ? (
+                      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-mg-fill-1 text-mg-text-2 shrink-0">
+                        <LuUser size={15} />
+                      </span>
+                    ) : (
+                      <Avatar className="h-9 w-9 rounded-lg border-none shrink-0">
+                        {tenant.logo_url && <AvatarImage src={tenant.logo_url} />}
+                        <AvatarFallback className="rounded-lg bg-brand-base/[0.13] text-brand-base">
+                          <LuBuilding2 size={18} />
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                    <span className="min-w-0 flex-1 truncate">{displayName}</span>
+                    <Badge
+                      variant={tenant.type === 'personal' ? 'secondary' : getTenantRoleVariant(tenantRole)}
+                      size="xs"
+                      className="shrink-0 border-mg-border/60 bg-mg-fill-1 px-2 py-0.5 text-[10px] text-mg-text-1"
+                    >
+                      {tenant.type === 'personal' ? t('header.personalTag') : getTenantRoleLabel(tenantRole)}
+                    </Badge>
+                    {isActive && <LuCheck size={18} className="text-brand-base shrink-0" />}
+                  </DropdownMenuItem>
+                )
+              })}
+
+              {canCreateOrg && (
+                <DropdownMenuItem
+                  onClick={handleOpenOrgModal}
+                  className="h-14 rounded-none px-3 text-[14px] font-bold text-mg-text-1"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-mg-fill-1 text-mg-text-2 shrink-0">
+                    <LuPlus size={18} />
+                  </span>
+                  <span className="flex-1">{t('header.createOrg')}</span>
                 </DropdownMenuItem>
-              )
-            })}
+              )}
+            </div>
 
-            {canCreateOrg && (
-              <DropdownMenuItem
-                onClick={handleOpenOrgModal}
-              >
-                <LuPlus size={14} className="mr-2 text-mg-text-2 shrink-0" />
-                <span>{t('header.createOrg')}</span>
-              </DropdownMenuItem>
-            )}
-
-            {/* 系统快捷菜单 */}
-            <DropdownMenuSeparator />
-            {isNonPersonal && (
-              <DropdownMenuItem
-                onClick={() => navigate('/settings/organization')}
-                style={{ color: 'var(--brand-base)' }}
-              >
-                <LuUserPlus size={14} className="mr-2 shrink-0" />
-                <span>{t('header.inviteMembers', '邀请成员')}</span>
-              </DropdownMenuItem>
-            )}
-            {isNonPersonal && (
-              <DropdownMenuItem
-                onClick={() => navigate('/settings/organization')}
-              >
-                <LuSettings size={14} className="mr-2 text-mg-text-2 shrink-0" />
-                <span>{t('header.orgSettings')}</span>
-              </DropdownMenuItem>
-            )}
-            {isNonPersonal && (
-              <DropdownMenuItem
-                onClick={() => navigate('/settings/workspace')}
-              >
-                <LuGlobe size={14} className="mr-2 text-mg-text-2 shrink-0" />
-                <span>{t('header.workspaceMgmt')}</span>
-              </DropdownMenuItem>
-            )}
+            <div className="px-2 pb-1.5 pt-4 text-[12px] font-semibold text-mg-text-2 select-none">
+              {t('nav.account')}
+            </div>
             <DropdownMenuItem
               onClick={() => navigate('/settings/account')}
+              className="h-11 px-2.5 text-[14px] font-bold"
             >
-              <LuSettings size={14} className="mr-2 text-mg-text-2 shrink-0" />
-              <span>{t('nav.settings')}</span>
+              <LuSettings size={18} className="text-mg-text-2 shrink-0" />
+              <span className="flex-1">{t('nav.account')}</span>
+              <LuChevronRight size={15} className="text-mg-text-3 shrink-0" />
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => navigate('/settings/account?tab=security')}
+              className="h-11 px-2.5 text-[14px] font-bold"
+            >
+              <LuShield size={18} className="text-mg-text-2 shrink-0" />
+              <span className="flex-1">{t('account.tabs.security')}</span>
+              <LuChevronRight size={15} className="text-mg-text-3 shrink-0" />
             </DropdownMenuItem>
 
-            {/* 退出登录 */}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleLogout}
-              className="text-rose-500 focus:text-rose-500"
+              className="h-12 px-2.5 text-[14px] font-bold text-mg-danger focus:text-mg-danger hover:text-mg-danger"
             >
-              <LuLogOut size={14} className="mr-2 shrink-0" />
+              <LuLogOut size={18} className="shrink-0" />
               <span>{t('common.logout')}</span>
             </DropdownMenuItem>
 
-            {/* 版本号：v版本 · 构建短hash · 构建时间，用于核对线上是否为缓存版本 */}
             <DropdownMenuSeparator />
             <div
-              className="px-2 py-1.5 text-[10px] leading-tight text-mg-text-3 select-text"
+              className="px-2.5 pb-2 pt-1.5 text-[11px] leading-relaxed text-mg-text-3/80 select-text"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="font-mono">v{__APP_VERSION__} · {__BUILD_HASH__}</div>
+              <div className="font-mono">v{__APP_VERSION__} · {__BUILD_HASH__} · DEV</div>
               <div className="font-mono opacity-70">{__BUILD_TIME__.slice(0, 16).replace('T', ' ')} UTC</div>
             </div>
           </DropdownMenuContent>

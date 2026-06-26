@@ -44,7 +44,7 @@ export const DashboardTopPanel: React.FC = () => {
     { icon: 'keys',        label: t('dashboardTop.quick.createKey'),   path: scopedWorkspacePath(activeWorkspaceId, 'api-keys'),   primary: true, permission: PERMS.API_KEYS_VIEW },
     { icon: 'usage',       label: t('dashboardTop.quick.recharge'),    path: '/billing',                                           permission: PERMS.BILLING_VIEW, onClick: openRecharge },
     { icon: 'observability',label: t('dashboardTop.quick.logs'),       path: '/logs',                                              permission: PERMS.LOGS_VIEW },
-    { icon: 'models',      label: t('dashboardTop.quick.models'),      path: '/plaza',                                             permission: PERMS.MODELS_VIEW },
+    { icon: 'models',      label: t('dashboardTop.quick.models'),      path: '/models',                                            permission: PERMS.MODELS_VIEW },
     { icon: 'guardrails',  label: t('dashboardTop.quick.guardrails'),  path: scopedWorkspacePath(activeWorkspaceId, 'guardrails'), permission: PERMS.GUARDRAILS_VIEW },
     { icon: 'compare',     label: t('dashboardTop.quick.compare'),     path: '/models/compare',                                    permission: PERMS.MODELS_VIEW },
     { icon: 'workspaces',  label: t('dashboardTop.quick.workspaces'),  path: '/settings/workspace' },
@@ -96,7 +96,7 @@ export const DashboardTopPanel: React.FC = () => {
             {copied ? <LuCheck size={15} /> : <LuCopy size={15} />}
           </button>
         </div>
-        <button type="button" className="dashboard-top-secondary-action" onClick={() => navigate('/plaza')}>
+        <button type="button" className="dashboard-top-secondary-action" onClick={() => navigate('/models')}>
           {t('dashboardTop.onboarding.action')}
           <LuArrowRight size={14} />
         </button>

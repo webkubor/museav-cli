@@ -171,8 +171,8 @@ export default function App() {
           <Route path="/device" element={<DevicePage />} />
           <Route path="/billing/wechat-cashier" element={<WechatCashierPage />} />
 
-          {/* 模型广场（公开，免登录，双主题）— 官网跳转入口 */}
-          <Route path="/plaza" element={<PublicShell />}>
+          {/* 模型广场（公开，免登录，双主题）— 与官网同路径 /models，官网「模型」直接跳此 */}
+          <Route path="/models" element={<PublicShell />}>
             <Route index element={<ModelsCatalogPage />} />
           </Route>
 
@@ -182,8 +182,8 @@ export default function App() {
 
             {/* Tenant 级 */}
             <Route path="dashboard" element={<DashboardPage />} />
+            {/* /models 公开广场已在登录组外；此处仅登录态子页 */}
             <Route path="models">
-              <Route index element={<Navigate to="playground" replace />} />
               <Route path="playground" element={<ModelsPage />} />
               <Route path="compare" element={<ModelsComparePage />} />
             </Route>

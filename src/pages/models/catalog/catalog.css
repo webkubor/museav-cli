@@ -11,6 +11,48 @@
   padding: 2px 0 32px;
 }
 
+/* 左侧栏 / 搜索卡 桌面端吸顶（避开 PublicShell 56px 顶栏） */
+@media (min-width: 1024px) {
+  .models-sticky,
+  .models-sticky-card {
+    position: sticky;
+    top: 72px;
+    align-self: start;
+    z-index: 10;
+  }
+}
+
+/* ── 与国外官网一致的光效 / 微交互（brand 辉光，浅色克制、深色提亮）── */
+.catalog-card { border-color: var(--mg-border); }
+.catalog-card:hover {
+  border-color: color-mix(in oklab, var(--brand-base) 40%, var(--mg-border));
+  box-shadow: 0 16px 36px -14px color-mix(in oklab, var(--brand-base) 35%, transparent);
+}
+
+.catalog-search-input {
+  border-color: var(--mg-border);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.catalog-search-input:focus {
+  border-color: var(--brand-base);
+  box-shadow:
+    0 0 0 4px color-mix(in oklab, var(--brand-base) 12%, transparent),
+    0 0 22px -6px color-mix(in oklab, var(--brand-base) 45%, transparent);
+}
+.catalog-search-icon { color: var(--mg-text-3); transition: color 0.2s ease; }
+.catalog-search-wrap:focus-within .catalog-search-icon { color: var(--brand-base); }
+
+.catalog-title {
+  text-shadow:
+    0 6px 30px color-mix(in oklab, var(--brand-base) 22%, transparent),
+    0 14px 60px color-mix(in oklab, var(--brand-base) 12%, transparent);
+}
+[theme-mode='dark'] .catalog-title {
+  text-shadow:
+    0 0 20px color-mix(in oklab, var(--brand-base) 60%, transparent),
+    0 0 45px color-mix(in oklab, var(--brand-base) 50%, transparent);
+}
+
 /* 免费模型首充解锁政策提示条 */
 .models-catalog-notice {
   display: flex;

@@ -30,28 +30,28 @@ body[theme-mode='dark'] {
   --cn-selected-bg: rgba(124, 92, 252, 0.10);
 }
 
-/* 国际 — GO 翠绿（浅色 - 匹配 Logo 纯正翠绿 #0DAA5C / #13DA74） */
+/* 国际 — 对齐国外官网浅色 emerald（#059669，白底对比度安全；见 global-web html.light[data-market=global]） */
 :root, [data-market='global'] {
-  --go-deep: #0c8e4f;
-  --go-base: #10b968;
-  --go-base-rgb: 16, 185, 104;
-  --go-mid:  #39cc85;
-  --go-light: #8ae0b6;
-  --go-pale: #e7faf0;
-  --go-glow: rgba(16, 185, 104, 0.18);
-  --go-selected-bg: rgba(16, 185, 104, 0.09);
+  --go-deep: #064e3b;
+  --go-base: #059669;
+  --go-base-rgb: 5, 150, 105;
+  --go-mid:  #047857;
+  --go-light: #059669;
+  --go-pale: #ecfdf5;
+  --go-glow: rgba(5, 150, 105, 0.18);
+  --go-selected-bg: rgba(5, 150, 105, 0.09);
 }
-/* 国际 — GO 雾霾翠绿（深色 - 莫兰迪降饱和，与 Logo 翠绿同色相） */
+/* 国际 — 对齐国外官网深色亮草绿（#68e657；见 global-web [data-market=global] 默认深色块） */
 [data-market='global'] [theme-mode='dark'],
 [data-market='global'] body[theme-mode='dark'] {
-  --go-deep: #38855e;
-  --go-base: #52b788;
-  --go-base-rgb: 82, 183, 136;
-  --go-mid:  #74c69d;
-  --go-light: #95d5b2;
+  --go-deep: #34a52a;
+  --go-base: #68e657;
+  --go-base-rgb: 104, 230, 87;
+  --go-mid:  #8aec7d;
+  --go-light: #68e657;
   --go-pale: #1b2921;
-  --go-glow: rgba(82, 183, 136, 0.16);
-  --go-selected-bg: rgba(82, 183, 136, 0.10);
+  --go-glow: rgba(104, 230, 87, 0.16);
+  --go-selected-bg: rgba(104, 230, 87, 0.10);
 }
 
 /* 品牌色路由 — brand-* 指向当前市场的原色 */

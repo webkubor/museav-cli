@@ -9,9 +9,8 @@ export const HOME_CRUMB: BreadcrumbItem[] = [{ label: 'nav.home', path: '/dashbo
 
 export const breadcrumbConfig: BreadcrumbConfig = {
   dashboard: [{ label: 'nav.home', path: '/dashboard' }],
-  'models/catalog':    [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.models' }, { label: 'nav.modelCatalog' }],
-  'models/playground': [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.models', path: '/models/catalog' }, { label: 'nav.modelExplore' }],
-  'models/compare':    [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.models', path: '/models/catalog' }, { label: 'nav.modelCompare' }],
+  'models/playground': [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.models' }, { label: 'nav.modelExplore' }],
+  'models/compare':    [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.models', path: '/models/playground' }, { label: 'nav.modelCompare' }],
   'api-keys':       [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.workspace', path: '/settings/workspace' }, { label: 'nav.apiKeys' }],
   usage:            [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.analytics' }, { label: 'nav.usage' }],
   logs:             [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.analytics' }, { label: 'nav.logs' }],
@@ -27,4 +26,4 @@ export const breadcrumbConfig: BreadcrumbConfig = {
   'settings/organization': [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.settings' }, { label: 'nav.organization' }],
 }
 
-export const FLAT_ROUTES = ['logs', 'usage', 'observability', 'billing', 'referral', 'tasks', 'dev-config', 'settings/organization', 'models/catalog', 'models/playground', 'models/compare']
+export const FLAT_ROUTES = ['logs', 'usage', 'observability', 'billing', 'referral', 'tasks', 'dev-config', 'settings/organization', 'models/playground', 'models/compare']

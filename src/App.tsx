@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Providers } from '@/components/providers'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
+import { PublicShell } from '@/components/layout/PublicShell'
 import { AuthProvider, RequireAuth } from '@/components/auth/AuthProvider'
 
 // 页面路由懒加载：各页面拆为独立 chunk，按需加载，缩小首屏体积
@@ -170,6 +171,11 @@ export default function App() {
           <Route path="/device" element={<DevicePage />} />
           <Route path="/billing/wechat-cashier" element={<WechatCashierPage />} />
 
+          {/* 模型广场（公开，免登录，双主题）— 官网跳转入口 */}
+          <Route path="/plaza" element={<PublicShell />}>
+            <Route index element={<ModelsCatalogPage />} />
+          </Route>
+
           {/* 控制台路由（需登录） */}
           <Route path="/" element={<RequireAuth><DashboardLayout /></RequireAuth>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
@@ -177,8 +183,7 @@ export default function App() {
             {/* Tenant 级 */}
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="models">
-              <Route index element={<Navigate to="catalog" replace />} />
-              <Route path="catalog" element={<ModelsCatalogPage />} />
+              <Route index element={<Navigate to="playground" replace />} />
               <Route path="playground" element={<ModelsPage />} />
               <Route path="compare" element={<ModelsComparePage />} />
             </Route>

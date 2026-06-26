@@ -53,7 +53,7 @@ const CONFIG = {
     icon: <LuBot aria-hidden />,
     emptyTitle: '暂无数据',
     emptyDesc: '本月还没有模型调用记录',
-    link: '/models/catalog',
+    link: '/plaza',
     linkLabel: '查看全部模型',
   },
   'api-keys': {

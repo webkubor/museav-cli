@@ -52,14 +52,10 @@ export const navConfig: NavConfig = {
   tenantItems: (_ctx, t, icons) => [
     { itemKey: 'dashboard',    text: t('nav.dashboard'),  icon: icons.home,       permission: PERMS.DASHBOARD_VIEW },
     {
-      itemKey: 'models',
-      text: t('nav.models'),
-      icon: icons.apps,
+      itemKey: 'models/playground',
+      text: t('nav.modelExplore'),
+      icon: icons.message,
       permission: PERMS.MODELS_VIEW,
-      items: [
-        { itemKey: 'models/catalog',    text: t('nav.modelCatalog'), icon: icons.list },
-        { itemKey: 'models/playground', text: t('nav.modelExplore'), icon: icons.message },
-      ],
     },
     {
       itemKey: 'analytics',

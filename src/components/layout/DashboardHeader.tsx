@@ -3,13 +3,12 @@ import { Input } from '@/components/ui/Input'
 import { Badge, type BadgeVariant } from '@/components/ui/Badge'
 import React, { useState, useEffect, useRef } from 'react'
 import {
-  LuChevronDown,
   LuPlus,
   LuSettings,
   LuGlobe,
   LuLogOut,
   LuUser,
-  LuBuilding2,
+  LuUserPlus,
   LuZap,
 } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -59,7 +58,7 @@ export const DashboardHeader: React.FC = () => {
 
   const queryClient = useQueryClient()
   const { t } = useTranslation()
-  const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setActiveWorkspaceId } = useAuthStore()
+  const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setActiveWorkspaceId, isAuthenticated } = useAuthStore()
   const { signOut } = useAuth()
   const siteIcon = useSiteIcon()
   const activeTenantType = tenants.find((t) => t.tenant_id === activeTenantId)?.type ?? 'personal'
@@ -76,7 +75,7 @@ export const DashboardHeader: React.FC = () => {
   }> = [
     // 站内 dashboard 由左上角 logo 承担；这里第一项给「官网」外链（与官网右上角风格统一的入口）
     { key: 'website', label: t('common.website'), href: marketConfig.siteUrl },
-    { key: 'models', label: t('nav.models'), to: '/models/catalog', match: (p) => p.startsWith('/models') },
+    { key: 'models', label: t('nav.models'), to: '/plaza', match: (p) => p.startsWith('/plaza') },
     { key: 'enterprise', label: t('nav.enterprise'), to: '/settings/organization', match: (p) => p.startsWith('/settings/organization') },
     { key: 'referral', label: t('nav.referral'), to: '/referral', match: (p) => p.startsWith('/referral') },
     { key: 'docs', label: t('nav.docsMenu'), href: appendThemeParam(marketConfig.docsUrl) },
@@ -150,6 +149,8 @@ export const DashboardHeader: React.FC = () => {
     queryKey: ['tenants'],
     queryFn: listTenants,
     staleTime: 60_000,
+    enabled: isAuthenticated, // 匿名（公开广场）不拉租户，避免 401
+
     // session 的 tenants 不含 role，仅作即时占位；placeholderData 不写缓存、仍会拉取带 role 的真实列表
     // 占位数据是 TenantBrief（缺 role 等字段），断言为完整类型；role 由真实请求补全
     placeholderData: tenants.length > 0 ? ({ items: tenants } as TenantListResponse) : undefined,
@@ -164,11 +165,10 @@ export const DashboardHeader: React.FC = () => {
     return Array.from(map.values())
   })()
 
-  // 右上角切换器当前上下文标签：组织显示组织名，个人显示「个人」
+  // 当前所在租户：企业上下文时头像改用组织 logo / 首字母，个人则用账户头像（无需额外图标即可区分上下文）
   const activeTenant = displayTenants.find((tn) => tn.tenant_id === activeTenantId)
-  const activeTenantLabel = isNonPersonal
-    ? (activeTenant?.name || activeTenant?.slug || t('header.organizations'))
-    : t('header.personalTag')
+  const orgInitial = (activeTenant?.name || activeTenant?.slug || 'O').charAt(0).toUpperCase()
+
   // 已作为 owner 创建过企业的账户隐藏「创建企业」入口（一人最多创建 1 个）
   const ownsEnterprise = displayTenants.some(
     (tn) => tn.type === 'enterprise' && (tn as { role?: string }).role === 'tenant_owner',
@@ -322,7 +322,7 @@ export const DashboardHeader: React.FC = () => {
         {/* Logo 展现 */}
         <div 
           className="flex items-center gap-2 cursor-pointer active:scale-[0.97] transition-transform duration-150 select-none"
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate(isAuthenticated ? '/dashboard' : '/plaza')}
           title={t('nav.dashboard')}
         >
           {/* Icon mark with shimmer */}
@@ -341,15 +341,17 @@ export const DashboardHeader: React.FC = () => {
           <span className="logo-status-dot" />
         </div>
 
-        <button
-          type="button"
-          onClick={() => setConnectModalVisible(true)}
-          title={t('header.quickAccess')}
-          className="inline-flex items-center gap-1.5 rounded-full border border-brand-base/20 bg-brand-base/[0.06] px-2.5 py-1.5 text-xs font-bold text-brand-base transition-all duration-200 hover:border-brand-base/35 hover:bg-brand-base/[0.1] hover:shadow-sm active:scale-[0.97] md:px-3"
-        >
-          <LuZap size={12} className="shrink-0" />
-          <span className="hidden md:inline">{t('header.quickAccess')}</span>
-        </button>
+        {isAuthenticated && (
+          <button
+            type="button"
+            onClick={() => setConnectModalVisible(true)}
+            title={t('header.quickAccess')}
+            className="inline-flex items-center gap-1.5 rounded-full border border-brand-base/20 bg-brand-base/[0.06] px-2.5 py-1.5 text-xs font-bold text-brand-base transition-all duration-200 hover:border-brand-base/35 hover:bg-brand-base/[0.1] hover:shadow-sm active:scale-[0.97] md:px-3"
+          >
+            <LuZap size={12} className="shrink-0" />
+            <span className="hidden md:inline">{t('header.quickAccess')}</span>
+          </button>
+        )}
       </div>
 
       {/* 右侧：功能控制区 + 组织 Switcher + 用户头像 */}
@@ -394,39 +396,42 @@ export const DashboardHeader: React.FC = () => {
           })}
         </nav>
 
-        {/* 2. 用户头像一站式 Dropdown */}
+        {/* 2. 用户头像一站式 Dropdown（匿名 → 登录/注册入口） */}
+        {!isAuthenticated ? (
+          <Button variant="brand" size="sm" onClick={() => navigate('/login')}>
+            {t('common.login', '登录 / 注册')}
+          </Button>
+        ) : (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full border border-mg-border hover:border-brand-base/40 hover:bg-mg-fill-0/60 active:scale-95 transition-all duration-150 select-none">
-              <Avatar className="h-7 w-7 border border-brand-light/30 shadow-sm">
-                {account?.avatar_url && <AvatarImage src={account.avatar_url} alt={account.display_name} />}
-                <AvatarFallback className="bg-brand-pale text-brand-base font-bold text-xs">
-                  {avatarLetter}
+            <button
+              className="rounded-full outline-none ring-2 ring-mg-border/70 transition-all duration-200 select-none hover:ring-brand-base/60 hover:shadow-[0_0_0_4px_var(--brand-selected-bg)] focus-visible:ring-brand-base active:scale-[0.93]"
+              title={isNonPersonal ? (activeTenant?.name || t('header.organizations')) : (account?.display_name || t('header.personalTag'))}
+            >
+              <Avatar className="h-9 w-9 block">
+                {isNonPersonal
+                  ? (activeTenant?.logo_url && <AvatarImage src={activeTenant.logo_url} alt={activeTenant?.name || ''} />)
+                  : (account?.avatar_url && <AvatarImage src={account.avatar_url} alt={account.display_name} />)}
+                <AvatarFallback className="bg-brand-pale text-brand-base font-bold text-sm">
+                  {isNonPersonal ? orgInitial : avatarLetter}
                 </AvatarFallback>
               </Avatar>
-              <span className="flex items-center gap-1 max-w-[130px]">
-                {isNonPersonal
-                  ? <LuBuilding2 size={12} className="text-brand-base shrink-0" />
-                  : <LuUser size={12} className="text-mg-text-2 shrink-0" />}
-                <span className="text-[12px] font-semibold text-mg-text-0 truncate">{activeTenantLabel}</span>
-              </span>
-              <LuChevronDown size={13} className="text-mg-text-2 shrink-0" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[230px]">
-            {/* 当前登录账户（纯信息头部，不参与切换） */}
-            <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-mg-border/40 mb-1 select-none">
-              <Avatar className="h-7 w-7 border border-brand-light/30 shrink-0">
+          <DropdownMenuContent align="end" className="w-[292px] p-2">
+            {/* 当前登录账户卡片 */}
+            <div className="mb-1.5 flex items-center gap-3 rounded-xl bg-mg-fill-0/70 px-3 py-3 select-none">
+              <Avatar className="h-10 w-10 ring-1 ring-mg-border shrink-0">
                 {account?.avatar_url && <AvatarImage src={account.avatar_url} alt={account.display_name} />}
-                <AvatarFallback className="bg-brand-pale text-brand-base font-bold text-xs">
+                <AvatarFallback className="bg-brand-pale text-brand-base font-bold text-sm">
                   {avatarLetter}
                 </AvatarFallback>
               </Avatar>
-              <div className="min-w-0">
-                <div className="font-bold text-[13px] text-mg-text-0 leading-tight truncate">
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[14px] font-semibold leading-tight text-mg-text-0">
                   {account?.display_name || '—'}
                 </div>
-                <div className="text-[11px] text-mg-text-2 truncate">{account?.email}</div>
+                <div className="mt-0.5 truncate text-[12px] text-mg-text-2">{account?.email}</div>
               </div>
             </div>
 
@@ -447,25 +452,25 @@ export const DashboardHeader: React.FC = () => {
               <DropdownMenuSeparator />
             </div>
 
-            {/* 个人 + 企业：平级可切换列表 */}
+            {/* 切换上下文分组标题（有可切目标时才显示） */}
+            {displayTenants.some((tn) => tn.tenant_id !== activeTenantId) && (
+              <div className="select-none px-2 pb-1 pt-1.5 text-[10.5px] font-medium uppercase tracking-wide text-mg-text-3">
+                {t('header.switchContext', '切换上下文')}
+              </div>
+            )}
+
+            {/* 可切换列表：只列「能切过去的」，当前所在租户不重复显示（顶部账户头已表明） */}
             {(() => {
               const personalTenant = displayTenants.find((t) => t.type === 'personal')
-              if (!personalTenant) return null
-              const isActive = personalTenant.tenant_id === activeTenantId
+              // 已在个人上下文 → 不再列个人
+              if (!personalTenant || personalTenant.tenant_id === activeTenantId) return null
               return (
-                <DropdownMenuItem
-                  onClick={() => handleSwitchTenant(personalTenant)}
-                  style={{
-                    fontWeight: isActive ? 700 : 500,
-                    color: isActive ? 'var(--brand-base)' : 'var(--mg-text-1)',
-                    backgroundColor: isActive ? 'var(--brand-selected-bg)' : undefined,
-                  }}
-                >
+                <DropdownMenuItem onClick={() => handleSwitchTenant(personalTenant)}>
                   <div className="flex items-center gap-2.5 w-full">
                     <span className="h-6 w-6 rounded-full bg-mg-fill-1 flex items-center justify-center shrink-0">
                       <LuUser size={13} className="text-mg-text-1" />
                     </span>
-                    <span className="flex-1 truncate max-w-[100px]">{account?.display_name || t('header.personalTag')}</span>
+                    <span className="flex-1 truncate">{account?.display_name || t('header.personalTag')}</span>
                     <Badge variant="outline" size="xs" className="shrink-0">
                       {t('header.personalTag')}
                     </Badge>
@@ -474,7 +479,7 @@ export const DashboardHeader: React.FC = () => {
               )
             })()}
 
-            {displayTenants.filter((t) => t.type === 'enterprise').map((tenant) => {
+            {displayTenants.filter((t) => t.type === 'enterprise' && t.tenant_id !== activeTenantId).map((tenant) => {
               const displayName = tenant.name || tenant.slug || tenant.tenant_id
               const letter = displayName.charAt(0).toUpperCase()
               const isActive = tenant.tenant_id === activeTenantId
@@ -507,7 +512,7 @@ export const DashboardHeader: React.FC = () => {
                         {letter}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="flex-1 truncate max-w-[100px]">{displayName}</span>
+                    <span className="flex-1 truncate">{displayName}</span>
                     {tenantRole && (
                       <Badge variant={roleBadgeVariant[tenantRole] ?? 'secondary'} size="xs" className="shrink-0">
                         {roleLabel[tenantRole] ?? tenantRole}
@@ -529,6 +534,15 @@ export const DashboardHeader: React.FC = () => {
 
             {/* 系统快捷菜单 */}
             <DropdownMenuSeparator />
+            {isNonPersonal && (
+              <DropdownMenuItem
+                onClick={() => navigate('/settings/organization')}
+                style={{ color: 'var(--brand-base)' }}
+              >
+                <LuUserPlus size={14} className="mr-2 shrink-0" />
+                <span>{t('header.inviteMembers', '邀请成员')}</span>
+              </DropdownMenuItem>
+            )}
             {isNonPersonal && (
               <DropdownMenuItem
                 onClick={() => navigate('/settings/organization')}
@@ -573,6 +587,7 @@ export const DashboardHeader: React.FC = () => {
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
+        )}
       </div>
 
       {/* ─── Dialog 1. 创建新组织 ───────────────── */}

@@ -1,341 +1,235 @@
 /**
- * 模型目录页
- * 路由：/models/catalog
- * API：GET /api/v1/catalog/models、GET /api/v1/catalog/model-tags、GET /api/v1/usage/rankings/models
+ * 模型广场（公开页 /plaza 使用）
+ * 布局参考国外官网：左侧筛选 chip 栏 + 右侧吸顶搜索/排序卡 + 竖向宽卡片列表。
+ * 数据：GET /api/v1/catalog/models | catalog/model-tags | catalog/model-families（均公开）
  */
-
-import { useMemo, useState, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import {
-  LuCheck,
-  LuChevronDown,
-  LuChevronRight,
-  LuChevronUp,
-  LuCopy,
-  LuLockKeyhole,
-  LuGitCompareArrows,
-} from 'react-icons/lu'
-import { Button } from '@/components/ui/Button'
-import { useModels } from '@/features/models/hooks/useModels'
-import { ModelIcon } from '@/features/models/components/ModelIcon'
-import { resolveVendorBrand } from '@/features/models/components/vendor-icons'
-import { ModalityBadge } from '@/features/models/components/ModalityBadge'
-import { useCopy } from '@/hooks/use-copy'
-import { appToast } from '@/lib/app-toast'
-import { cn, formatContextLength, formatModelPrice } from '@/lib/utils'
-import { listModelTags, listModelFamilies } from '@/services/catalog'
+import { LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers } from 'react-icons/lu'
+import { listModels, listModelTags, listModelFamilies } from '@/services/catalog'
+import { useAuthStore } from '@/store/auth'
+import { toLoginWithRedirect } from '@/lib/redirect'
 import type { CatalogModelItem } from '@/types'
+import { CatalogCard } from './CatalogCard'
+import { CatalogSidebar } from './CatalogSidebar'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
-import { ModelCatalogFilters } from './ModelCatalogFilters'
-import {
-  DEFAULT_ADVANCED_FILTERS,
-  matchesAdvancedFilters,
-  type AdvancedFilterState,
-} from './modelCatalogFilterLogic'
 import './catalog.css'
-import './catalog-card.css'
 
-interface ModelMeta {
-  descriptionZh: string
-  descriptionEn: string
-  tagsZh: string[]
-  tagsEn: string[]
-  scores: {
-    speed: number
-    reasoning: number
-    cost: number
-  }
-}
-
-const MODALITY_FILTERS = [
-  { code: 'text', nameZh: '文本生成', nameEn: 'Text' },
-  { code: 'image', nameZh: '图像生成', nameEn: 'Image' },
-  { code: 'audio', nameZh: '音频生成', nameEn: 'Audio' },
-  { code: 'video', nameZh: '视频生成', nameEn: 'Video' },
-] as const
-
-const MODEL_META_MAP: Record<string, ModelMeta> = {
-  'qwen/qwen3.7-max': {
-    descriptionZh: '适合中文长上下文，复杂推理与企业知识库检索。',
-    descriptionEn: 'Tailored for long Chinese context, complex reasoning, and enterprise knowledge base retrieval.',
-    tagsZh: ['客服知识库', '代码理解', '长文档分析'],
-    tagsEn: ['Customer Support', 'Code Analysis', 'Long Document'],
-    scores: { speed: 2, reasoning: 3, cost: 2 },
-  },
-  'qwen/qwen3.6-flash': {
-    descriptionZh: '极速响应的轻量级模型，适合高频对话、文本分类及实时交互。',
-    descriptionEn: 'Ultra-fast lightweight model, ideal for high-frequency chats, classification, and real-time interactions.',
-    tagsZh: ['即时客服', '日常对话', '文本分类'],
-    tagsEn: ['Live Chat', 'General Chat', 'Classification'],
-    scores: { speed: 4, reasoning: 1, cost: 4 },
-  },
-  'openai/gpt-5.5': {
-    descriptionZh: '前沿的通用智能旗舰模型，在逻辑推理、代码生成与多模态任务中表现卓越。',
-    descriptionEn: 'Cutting-edge flagship general model, excelling in logic, code generation, and multimodal tasks.',
-    tagsZh: ['复杂逻辑', '智能Agent', '多模态交互'],
-    tagsEn: ['Complex Logic', 'AI Agents', 'Multimodal'],
-    scores: { speed: 3, reasoning: 4, cost: 1 },
-  },
-  'anthropic/claude-opus-4.7-fast': {
-    descriptionZh: '长文本理解与精细逻辑的代表作，适合深度阅读、学术分析及复杂指令遵循。',
-    descriptionEn: 'Masterpiece of long context and fine-grained logic, perfect for reading comprehension and complex instructions.',
-    tagsZh: ['论文精读', '长文本分析', '高精指令'],
-    tagsEn: ['Paper Reading', 'Long Text', 'Fine Instruction'],
-    scores: { speed: 3, reasoning: 4, cost: 1 },
-  },
-  'mistralai/mistral-medium-3-5': {
-    descriptionZh: '欧洲明星大模型，平衡了出色的推理能力与合理的运行成本。',
-    descriptionEn: 'European star model balancing outstanding reasoning capabilities with reasonable operation costs.',
-    tagsZh: ['内容创作', '逻辑分析', '多语言翻译'],
-    tagsEn: ['Content Creation', 'Logic Analysis', 'Translation'],
-    scores: { speed: 3, reasoning: 3, cost: 3 },
-  },
-}
-
-function getModelMeta(modelId: string, isZh: boolean) {
-  const matched = MODEL_META_MAP[modelId]
-  if (matched) {
-    return {
-      description: isZh ? matched.descriptionZh : matched.descriptionEn,
-      tags: isZh ? matched.tagsZh : matched.tagsEn,
-      scores: matched.scores,
-    }
-  }
-
-  const idLower = modelId.toLowerCase()
-  const isReasoning = idLower.includes('reason') || idLower.includes('think') || idLower.includes('opus') || idLower.includes('max')
-  const isFlash = idLower.includes('flash') || idLower.includes('speed') || idLower.includes('lite') || idLower.includes('mini')
-
-  let speed = 3
-  let reasoning = 2
-  let cost = 3
-
-  if (isReasoning) {
-    speed = 2
-    reasoning = 4
-    cost = 1
-  } else if (isFlash) {
-    speed = 4
-    reasoning = 1
-    cost = 4
-  }
-
-  return {
-    description: isZh
-      ? '支持高并发的多功能通用智能模型，可灵活对接企业级生产业务。'
-      : 'A versatile general model supporting high concurrency and flexible business integration.',
-    tags: isZh
-      ? ['业务对接', '接口测试', '快速集成']
-      : ['Business Integration', 'API Testing', 'Fast Setup'],
-    scores: { speed, reasoning, cost },
-  }
+type SortKey = 'default' | 'popular' | 'newest' | 'cheapest'
+const CTX_THRESHOLDS: Record<string, number> = {
+  '8k': 8000, '32k': 32000, '128k': 128000, '256k': 256000, '1m': 1000000,
 }
 
 function isComparableModel(model: CatalogModelItem) {
-  const modalities = model.modalities ?? []
-  return !modalities.some((modality) => modality === 'image' || modality === 'audio' || modality === 'video')
-}
-
-function getStatusLabel(status: string, isZh: boolean) {
-  if (status === 'enabled') return isZh ? '可用' : 'Available'
-  if (status === 'disabled') return isZh ? '停用' : 'Disabled'
-  if (status === 'test') return 'Test'
-  return status || (isZh ? '可用' : 'Available')
+  return !(model.modalities ?? []).some((m) => m === 'image' || m === 'audio' || m === 'video')
 }
 
 export default function ModelsCatalogPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const isZh = i18n.language.startsWith('zh')
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
-  const [category, setCategory] = useState<string>('all')
-  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilterState>(() => ({ ...DEFAULT_ADVANCED_FILTERS }))
-  // 模型组（family）：官方分组，服务端筛选，替代暴露上游的 vendor
-  const [family, setFamily] = useState<string>('all')
-  const [sort, setSort] = useState<'popular' | 'newest' | 'cheapest'>('popular')
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<string[]>([])
+  const [sort, setSort] = useState<SortKey>('default')
+  const [sortOpen, setSortOpen] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [isCompareOpen, setIsCompareOpen] = useState(false)
   const [compareInitialIds, setCompareInitialIds] = useState<string[]>([])
-  const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [noticeCollapsed, setNoticeCollapsed] = useState(() => localStorage.getItem('mg_catalog_notice_collapsed') === '1')
-  const { copy } = useCopy()
+  const sortRef = useRef<HTMLDivElement>(null)
 
-  const {
-    search,
-    setSearch,
-    modelsQuery,
-    filteredModels,
-  } = useModels({ family: family !== 'all' ? family : undefined, sort: sort !== 'popular' ? sort : undefined })
+  const sortLabels: Record<SortKey, string> = isZh
+    ? { default: '推荐', popular: '热门', newest: '最新', cheapest: '最便宜' }
+    : { default: 'Default', popular: 'Popular', newest: 'Newest', cheapest: 'Cheapest' }
 
-  const tagsQuery = useQuery({
-    queryKey: ['catalog-model-tags'],
-    queryFn: () => listModelTags(true),
+  const selectedFamily = selected.find((k) => k.startsWith('family:'))?.split(':')[1]
+  const selectedModalities = selected.filter((k) => k.startsWith('mod:')).map((k) => k.split(':')[1])
+  const selectedTags = selected.filter((k) => k.startsWith('tag:')).map((k) => k.split(':')[1])
+  const selectedCtx = selected.find((k) => k.startsWith('ctx:'))?.split(':')[1]
+
+  const modelsQuery = useQuery({
+    queryKey: ['catalog-models', { family: selectedFamily }],
+    queryFn: () => listModels({ page_size: 100, family: selectedFamily || undefined }),
     staleTime: 5 * 60_000,
   })
-
-  // 模型组（family）筛选项：官方分组，替代暴露上游的 vendor
-  const familiesQuery = useQuery({
-    queryKey: ['catalog-model-families'],
-    queryFn: () => listModelFamilies(true),
-    staleTime: 5 * 60_000,
-  })
-  const familyOptions = useMemo(() => {
-    const items = (familiesQuery.data?.items ?? [])
-      .filter((f) => f.enabled)
-      .sort((a, b) => a.sort_order - b.sort_order)
-    return [
-      { code: 'all', label: t('modelsCatalog.filters.all') },
-      ...items.map((f) => {
-        const label = isZh ? f.name_zh : f.name_en
-        // 系列名/code 任一能解析到品牌就在选项前加图标，解析不到则纯文字
-        const iconVendor = [f.code, f.name_en, f.name_zh].find((v) => resolveVendorBrand(v))
-        return {
-          code: f.code,
-          label,
-          icon: iconVendor
-            ? <ModelIcon model={{ display_name: label, vendor: iconVendor }} size={16} rounded="rounded-sm" />
-            : undefined,
-        }
-      }),
-    ]
-  }, [familiesQuery.data?.items, isZh, t])
+  const tagsQuery = useQuery({ queryKey: ['catalog-model-tags'], queryFn: () => listModelTags(true), staleTime: 5 * 60_000 })
+  const familiesQuery = useQuery({ queryKey: ['catalog-model-families'], queryFn: () => listModelFamilies(true), staleTime: 5 * 60_000 })
 
   const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
+  const families = useMemo(
+    () => (familiesQuery.data?.items ?? []).filter((f) => f.enabled).sort((a, b) => a.sort_order - b.sort_order),
+    [familiesQuery.data?.items],
+  )
+  const tags = useMemo(() => (tagsQuery.data?.items ?? []).filter((tg) => tg.enabled !== false), [tagsQuery.data?.items])
   const comparableModels = useMemo(() => allModels.filter(isComparableModel), [allModels])
-  const apiTags = useMemo(() => tagsQuery.data?.items ?? [], [tagsQuery.data?.items])
 
-  const modalityFilters = useMemo(() => {
-    const existingTagCodes = new Set(apiTags.map((tag) => tag.code.toLowerCase()))
-    const existingModalities = new Set(allModels.flatMap((model) => model.modalities ?? []))
-    return MODALITY_FILTERS.filter((item) =>
-      existingModalities.has(item.code) && !existingTagCodes.has(item.code)
-    )
-  }, [allModels, apiTags])
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [])
 
   const visibleModels = useMemo(() => {
-    return filteredModels.filter((model) =>
-      (
-        category === 'all' ||
-        model.tags?.some((tag) => tag.toLowerCase() === category.toLowerCase()) ||
-        model.modalities?.includes(category)
-      ) &&
-      matchesAdvancedFilters(model, advancedFilters)
-    )
-  }, [category, advancedFilters, filteredModels])
-
-  const handleCopyApiId = async (modelId: string, event: React.MouseEvent) => {
-    event.stopPropagation()
-    const ok = await copy(modelId)
-    if (!ok) {
-      appToast.error(t('modelsCatalog.toast.copyFailed'))
-      return
+    const q = search.trim().toLowerCase()
+    let list = allModels.filter((m) => {
+      if (q && !(
+        m.display_name.toLowerCase().includes(q) ||
+        m.model_id.toLowerCase().includes(q) ||
+        (m.provider ?? '').toLowerCase().includes(q)
+      )) return false
+      if (selectedModalities.length && !selectedModalities.every((mod) => m.modalities?.includes(mod))) return false
+      if (selectedTags.length && !selectedTags.every((tag) => m.tags?.includes(tag))) return false
+      if (selectedCtx && CTX_THRESHOLDS[selectedCtx] && (m.context_length ?? 0) < CTX_THRESHOLDS[selectedCtx]) return false
+      return true
+    })
+    switch (sort) {
+      case 'cheapest':
+        list = [...list].sort((a, b) => Number(a.pricing?.input_per_1m ?? 0) - Number(b.pricing?.input_per_1m ?? 0))
+        break
+      case 'newest':
+        list = [...list].sort((a, b) => (b.released_at ?? '').localeCompare(a.released_at ?? ''))
+        break
+      case 'popular':
+        list = [...list].sort((a, b) => (b.providers_count ?? 0) + (b.tags?.length ?? 0) - ((a.providers_count ?? 0) + (a.tags?.length ?? 0)))
+        break
     }
-    setCopiedId(modelId)
-    appToast.success(t('modelsCatalog.toast.copied'))
-    setTimeout(() => setCopiedId(null), 2000)
-  }
+    return list
+  }, [allModels, search, selectedModalities, selectedTags, selectedCtx, sort])
 
-  const handleGoPlayground = (modelId: string, event?: React.MouseEvent) => {
-    event?.stopPropagation()
+  const toggle = (key: string) => {
+    setSelected((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
+  }
+  const reset = () => { setSelected([]); setSearch(''); setSort('default') }
+
+  const handleGoPlayground = (modelId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    if (!isAuthenticated) { navigate(toLoginWithRedirect()); return }
     navigate('/models/playground', { state: { selectedModelId: modelId } })
   }
-
-  const handleOpenCompare = useCallback((initialIds: string[] = []) => {
-    setCompareInitialIds(initialIds)
-    setIsCompareOpen(true)
-  }, [])
+  const openCompare = (initialIds: string[] = []) => { setCompareInitialIds(initialIds); setIsCompareOpen(true) }
 
   return (
     <div className="models-catalog-page">
-      <div className="models-catalog-notice" role="note">
-        <LuLockKeyhole aria-hidden />
-        <div className="models-catalog-notice-body">
-          <p>
-            <strong>免费模型需首次充值后解锁</strong>{noticeCollapsed ? '' : '：完成任意金额的首次充值即可解锁全部免费模型；付费模型不受此门槛影响。'}
-          </p>
-          {!noticeCollapsed && (
-            <p className="models-catalog-notice-sub">
-              注：免费模型 ≠ Free Tier 套餐——前者是按模型粒度的限免，后者是账户级套餐机制，两者互不等同。
-            </p>
-          )}
-        </div>
-        <button
-          className="models-catalog-notice-toggle"
-          onClick={() => {
-            const next = !noticeCollapsed
-            setNoticeCollapsed(next)
-            localStorage.setItem('mg_catalog_notice_collapsed', next ? '1' : '0')
-          }}
-          aria-label={noticeCollapsed ? 'Expand' : 'Collapse'}
-        >
-          {noticeCollapsed ? <LuChevronDown size={14} /> : <LuChevronUp size={14} />}
-        </button>
+      {/* 标题 */}
+      <div className="mb-7">
+        <h1 className="catalog-title text-[34px] font-bold tracking-tight" style={{ color: 'var(--mg-text-0)' }}>
+          {isZh ? '模型广场' : 'Models'}
+        </h1>
+        <p className="mt-1.5 text-[14px]" style={{ color: 'var(--mg-text-2)' }}>
+          {isZh ? '一个 API，接入主流大模型' : 'One API, access leading models'}
+        </p>
       </div>
 
-      <ModelCatalogFilters
-        search={search}
-        onSearchChange={setSearch}
-        category={category}
-        onCategoryChange={setCategory}
-        advancedFilters={advancedFilters}
-        onAdvancedFiltersChange={setAdvancedFilters}
-        familyOptions={familyOptions}
-        family={family}
-        onFamilyChange={setFamily}
-        allModels={allModels}
-        apiTags={apiTags}
-        modalityFilters={modalityFilters}
-        isZh={isZh}
-        sort={sort}
-        onSortChange={(v) => setSort(v as 'popular' | 'newest' | 'cheapest')}
-      />
+      {/* 移动端筛选按钮 */}
+      <button
+        type="button"
+        onClick={() => { const n = !filtersOpen; if (n) window.scrollTo(0, 0); setFiltersOpen(n) }}
+        aria-expanded={filtersOpen}
+        className="fixed bottom-6 right-5 z-40 inline-flex h-11 items-center gap-2 rounded-full border px-6 text-[14px] font-medium shadow-lg backdrop-blur lg:hidden"
+        style={{ background: 'var(--mg-bg-0)', borderColor: filtersOpen ? 'var(--brand-base)' : 'var(--mg-border)', color: filtersOpen ? 'var(--brand-base)' : 'var(--mg-text-1)' }}
+      >
+        <LuSlidersHorizontal size={15} />
+        {isZh ? '筛选' : 'Filters'}
+      </button>
 
-      <div className="models-catalog-layout">
-        <section className="models-catalog-results" aria-label={t('modelsCatalog.results.label')}>
-          <div className="models-catalog-results-head">
-            <div>
-              <h2>{t('modelsCatalog.results.title')}</h2>
-              <p>
-                {t('modelsCatalog.results.count', {
-                  visible: visibleModels.length,
-                  total: allModels.length,
-                })}
-              </p>
+      {/* 主体：左 sidebar + 右内容 */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[260px_1fr] lg:items-start">
+        <div className={`models-sticky ${filtersOpen ? 'block rounded-2xl border p-4 lg:border-0 lg:p-0' : 'hidden lg:block'}`} style={filtersOpen ? { background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' } : undefined}>
+          <CatalogSidebar families={families} tags={tags} selected={selected} onToggle={toggle} isZh={isZh} />
+        </div>
+
+        <div>
+          {/* 搜索 + 排序 + 计数（吸顶卡片） */}
+          <div className="models-sticky-card mb-6 rounded-2xl border p-4" style={{ background: 'var(--mg-bg-0)', borderColor: 'color-mix(in oklab, var(--brand-base) 14%, var(--mg-border))', boxShadow: '0 10px 40px -16px color-mix(in oklab, var(--brand-base) 30%, transparent)' }}>
+            <div className="flex items-center gap-3">
+              <div className="catalog-search-wrap relative flex-1">
+                <LuSearch size={14} className="catalog-search-icon absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder={isZh ? '搜索模型名、API ID 或厂商' : 'Search model, API ID or provider'}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="catalog-search-input h-10 w-full rounded-full border pl-10 pr-4 text-[13px] outline-none"
+                  style={{ background: 'var(--mg-bg-1)', color: 'var(--mg-text-0)' }}
+                />
+              </div>
+              <div className="relative" ref={sortRef}>
+                <button
+                  type="button"
+                  onClick={() => setSortOpen((v) => !v)}
+                  className="flex h-10 items-center gap-1.5 rounded-full border px-4 text-[13px] transition-colors"
+                  style={{ background: 'var(--mg-bg-1)', borderColor: 'var(--mg-border)', color: 'var(--mg-text-1)' }}
+                >
+                  {sortLabels[sort]}
+                  <LuChevronDown size={11} className={sortOpen ? 'rotate-180' : ''} />
+                </button>
+                {sortOpen && (
+                  <div className="absolute right-0 top-full z-20 mt-1.5 min-w-[140px] overflow-hidden rounded-xl border py-1 shadow-lg" style={{ background: 'var(--mg-bg-2)', borderColor: 'var(--mg-border)' }}>
+                    {(['default', 'popular', 'newest', 'cheapest'] as SortKey[]).map((key) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => { setSort(key); setSortOpen(false) }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-[12.5px] transition-colors hover:bg-[color:var(--mg-fill-1)]"
+                        style={sort === key ? { color: 'var(--brand-base)' } : { color: 'var(--mg-text-1)' }}
+                      >
+                        {sort === key ? <LuCheck size={11} /> : <span className="w-[11px]" />}
+                        {sortLabels[key]}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-            <span className="models-catalog-results-badge">
-              {category === 'all' ? t('modelsCatalog.filter.all') : category}
-            </span>
+            {!modelsQuery.isLoading && !modelsQuery.isError && (
+              <>
+                <div className="mb-3 mt-4 h-px w-full" style={{ background: 'var(--mg-border)' }} />
+                <p className="text-[12.5px]" style={{ color: 'var(--mg-text-2)' }}>
+                  {isZh ? `共 ${visibleModels.length} 个模型` : `${visibleModels.length} models`}
+                </p>
+              </>
+            )}
           </div>
 
+          {/* 列表状态 */}
           {modelsQuery.isLoading ? (
-            <div className="models-catalog-state">
-              <div className="models-catalog-spinner" />
-              <span>{t('modelsCatalog.loading')}</span>
+            <div className="flex flex-col gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-[150px] animate-pulse rounded-[14px] border" style={{ background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' }} />
+              ))}
             </div>
           ) : modelsQuery.isError ? (
-            <div className="models-catalog-state">{t('modelsCatalog.error.load')}</div>
+            <div className="rounded-xl border p-6 text-center text-[13px]" style={{ borderColor: 'var(--mg-border)', color: 'var(--mg-text-2)' }}>
+              {t('modelsCatalog.error.load')}
+            </div>
           ) : visibleModels.length === 0 ? (
-            <div className="models-catalog-state">{t('modelsCatalog.empty')}</div>
+            <div className="flex flex-col items-center justify-center rounded-[14px] border py-20 text-center" style={{ background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' }}>
+              <LuLayers size={28} className="mb-3" style={{ color: 'var(--mg-text-3)' }} />
+              <p className="text-[13px]" style={{ color: 'var(--mg-text-2)' }}>{isZh ? '没有符合筛选条件的模型' : 'No models match your filters'}</p>
+              <button type="button" onClick={reset} className="mt-3 text-[12px] underline-offset-2 hover:underline" style={{ color: 'var(--mg-text-2)' }}>
+                {isZh ? '清除所有筛选' : 'Clear all filters'}
+              </button>
+            </div>
           ) : (
-            <div className="models-catalog-grid">
+            <div className="flex flex-col gap-3">
               {visibleModels.map((model) => (
-                <ModelCatalogCard
+                <CatalogCard
                   key={model.id}
                   model={model}
                   isZh={isZh}
-                  copied={copiedId === model.model_id}
-                  onCopy={handleCopyApiId}
                   onTry={handleGoPlayground}
-                  onCompare={(event) => {
-                    event.stopPropagation()
-                    handleOpenCompare([model.id])
-                  }}
+                  canCompare={isComparableModel(model)}
+                  onCompare={(e) => { e.stopPropagation(); openCompare([model.id]) }}
                 />
               ))}
             </div>
           )}
-        </section>
+        </div>
       </div>
 
       <ModelsCompareModal
@@ -344,104 +238,11 @@ export default function ModelsCatalogPage() {
         allModels={comparableModels}
         initialSelectedIds={compareInitialIds}
         onConfirmCompare={(ids) => {
-          if (ids.length > 0) {
-            navigate('/models/compare', { state: { selectedIds: ids } })
-          }
+          if (ids.length === 0) return
+          if (!isAuthenticated) { navigate(toLoginWithRedirect()); return }
+          navigate('/models/compare', { state: { selectedIds: ids } })
         }}
       />
     </div>
-  )
-}
-
-interface ModelCatalogCardProps {
-  model: CatalogModelItem
-  isZh: boolean
-  copied: boolean
-  onCopy: (modelId: string, event: React.MouseEvent) => Promise<void>
-  onTry: (modelId: string, event: React.MouseEvent) => void
-  onCompare: (event: React.MouseEvent<HTMLButtonElement>) => void
-}
-
-function ModelCatalogCard({ model, isZh, copied, onCopy, onTry, onCompare }: ModelCatalogCardProps) {
-  const { t } = useTranslation()
-  const meta = getModelMeta(model.model_id, isZh)
-  const scenarioTags = model.tags?.length ? model.tags.slice(0, 3) : meta.tags.slice(0, 3)
-  const statusLabel = getStatusLabel(model.status, isZh)
-  const canCompare = isComparableModel(model)
-
-  return (
-    <article className="model-catalog-card">
-      <div className="model-catalog-card-head">
-        <ModelIcon model={model} size={42} rounded="rounded-md" className="model-catalog-card-icon" />
-        <div className="model-catalog-card-title">
-          <span>{model.provider || 'ModelGo'}</span>
-          <h3 title={model.display_name}>{model.display_name}</h3>
-        </div>
-        {model.status && model.status !== 'enabled' && (
-          <span className={cn('model-catalog-status', model.status === 'disabled' && 'is-disabled')}>
-            {statusLabel}
-          </span>
-        )}
-      </div>
-
-      <p className="model-catalog-desc">{meta.description}</p>
-
-      <div className="model-catalog-tags">
-        {model.modalities?.slice(0, 2).map((modality) => (
-          <ModalityBadge key={modality} modality={modality} />
-        ))}
-        {scenarioTags.map((tag) => (
-          <span key={tag} className="model-catalog-scenario-tag">{tag}</span>
-        ))}
-      </div>
-
-      <button
-        type="button"
-        title={isZh ? '点击复制 API ID' : 'Click to copy API ID'}
-        onClick={(event) => onCopy(model.model_id, event)}
-        className={cn('model-catalog-api', copied && 'is-copied')}
-      >
-        <span>{t('modelsCatalog.labels.apiId')}</span>
-        <code>{model.model_id}</code>
-        {copied ? <LuCheck aria-hidden /> : <LuCopy aria-hidden />}
-      </button>
-
-      <div className="model-catalog-specs">
-        <div className="model-catalog-spec">
-          <span>{t('modelsCatalog.labels.context')}</span>
-          <strong>{formatContextLength(model.context_length)}</strong>
-        </div>
-        <div className="model-catalog-spec">
-          <span>{t('modelsCatalog.labels.inputPrice')}</span>
-          <strong>{formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}</strong>
-        </div>
-        <div className="model-catalog-spec">
-          <span>{t('modelsCatalog.labels.outputPrice')}</span>
-          <strong>{formatModelPrice(model.pricing?.output_per_1m, model.pricing?.currency)}</strong>
-        </div>
-      </div>
-
-      <div className="model-catalog-card-actions">
-        <Button
-          size="sm"
-          variant="brand"
-          className="model-catalog-primary-action"
-          onClick={(event) => onTry(model.model_id, event)}
-        >
-          {t('modelsCatalog.button.try')}
-          <LuChevronRight size={13} />
-        </Button>
-        {canCompare ? (
-          <button type="button" className="model-catalog-compare-action" onClick={onCompare}>
-            <LuGitCompareArrows aria-hidden />
-            {t('modelsCatalog.button.compareShort')}
-          </button>
-        ) : (
-          <span className="model-catalog-muted-action">
-            {t('modelsCatalog.button.compareUnavailable')}
-          </span>
-        )}
-      </div>
-    </article>
   )
 }

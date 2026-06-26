@@ -35,15 +35,15 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { currency, symbol } = useCurrency()
-  // 个人租户没有「企业/工作区/成员」概念，作用域固定为个人、不展示选择
+  // 个人租户可选 个人/项目 作用域，但没有「成员」（企业专属）
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const tenants = useAuthStore((s) => s.tenants)
   const isPersonalTenant = tenants.find((t) => t.tenant_id === activeTenantId)?.type === 'personal'
 
   const [name, setName] = useState('')
   const [scope, setScope] = useState<ScopeType>('workspace')
-  // 个人租户强制 personal，兜底防止 Tab 隐藏后残留的 workspace/member 被提交
-  const effectiveScope: ScopeType = isPersonalTenant ? 'personal' : scope
+  // 个人租户可选 个人/项目（无成员）；兜底防止残留的 member 被提交
+  const effectiveScope: ScopeType = isPersonalTenant && scope === 'member' ? 'workspace' : scope
   const [memberAccountId, setMemberAccountId] = useState('')
   const [guardrailIds, setGuardrailIds] = useState<string[]>([])
   const [guardrailDialogOpen, setGuardrailDialogOpen] = useState(false)
@@ -151,10 +151,9 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
         }
       >
         <div className="flex flex-col gap-7 py-3">
-          {/* 作用域 Tab — 个人租户无企业作用域，整条隐藏 */}
-          {!isPersonalTenant && (
+          {/* 作用域 Tab — 个人租户保留 个人/项目，仅去掉「成员」（企业专属） */}
           <div className="flex gap-1 p-1 rounded-md bg-mg-fill-0 border border-mg-border">
-            {SCOPE_OPTIONS.map((opt) => {
+            {(isPersonalTenant ? SCOPE_OPTIONS.filter((o) => o.value !== 'member') : SCOPE_OPTIONS).map((opt) => {
               const active = scope === opt.value
               return (
                 <button
@@ -174,7 +173,6 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
               )
             })}
           </div>
-          )}
 
           {/* 名称 */}
           <div>

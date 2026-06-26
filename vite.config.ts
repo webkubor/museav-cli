@@ -45,10 +45,20 @@ export default defineConfig(({ mode }) => {
     // 提交成功后推送飞书通知（dev 启动时幂等安装 post-commit 钩子；不动已有 pre-commit）
     agentGit({
       projectLabel: '控制台',
-      webhook: {
-        url: 'https://open.feishu.cn/open-apis/bot/v2/hook/4bd3a5cb-3bc3-4e07-b61c-541e94d826b6',
-        format: 'feishu',
-      },
+      webhook: [
+        {
+          url: 'https://open.feishu.cn/open-apis/bot/v2/hook/4bd3a5cb-3bc3-4e07-b61c-541e94d826b6',
+          format: 'feishu',
+        },
+        // 可添加更多 webhook，例如：
+        // {
+        //   url: 'https://oapi.dingtalk.com/robot/send?access_token=xxxx',
+        //   format: (info) => ({
+        //     msgtype: 'text',
+        //     text: { content: `📝 [${info.project}] ${info.author} 提交（${info.branch}）\n🕐 ${info.timestamp}\n${info.message}` }
+        //   }),
+        // },
+      ],
     }),
     devRequirementsPlugin(),
     VitePWA({

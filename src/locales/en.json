@@ -24,6 +24,7 @@
     "confirm": "Confirm",
     "collapse": "Collapse",
     "expand": "Expand",
+    "online": "Online",
     "website": "Website",
     "pagination": {
       "prev": "Prev",
@@ -56,7 +57,7 @@
     "enterprise": "Enterprise",
     "docsMenu": "Docs",
     "account": "Account Settings",
-    "workspace": "Manage Workspace",
+    "workspace": "Workspace Management",
     "organization": "Organization Mgmt",
     "apiKeys": "API Keys",
     "guardrails": "Guardrails",
@@ -65,13 +66,19 @@
     "sidebarWorkspace": "WORKSPACE",
     "tasks": "Tasks"
   },
+  "sidebarSettings": {
+    "accountHint": "Profile, security, and bindings",
+    "personalSpaceHint": "Follows account settings",
+    "organizationHint": "Members, invites, and organization info",
+    "workspaceHint": "Keys, guardrails, and workspace members"
+  },
   "header": {
     "openPlatform": "Open Platform",
     "switchWorkspace": "Switch Workspace",
     "quickAccess": "Quick Access",
     "default": "Default",
     "createWorkspace": "Create Workspace",
-    "workspaceMgmt": "Manage Workspace",
+    "workspaceMgmt": "Workspace Management",
     "workspaceLabel": "Workspace",
     "defaultWorkspace": "Default Workspace",
     "langZh": "简体中文",

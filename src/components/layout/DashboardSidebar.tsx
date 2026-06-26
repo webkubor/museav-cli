@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { SidebarSettingsPopup } from './SidebarSettingsPopup'
 import { SidebarPromoCarousel } from './SidebarPromoCarousel'
 import { WorkspaceSwitcher } from './WorkspaceSwitcher'
+import { useAuthStore } from '@/store/auth'
 
 type NavItem = {
   itemKey: string
@@ -23,8 +24,43 @@ interface DashboardSidebarProps {
   settingsLabel: string
 }
 
-const WORKSPACE_KEYS = ['api-keys', 'guardrails', 'observability', 'settings/workspace', 'dev-config']
-const SETTINGS_KEYS = ['settings', 'settings/account', 'settings/organization']
+const WORKSPACE_KEYS = ['api-keys', 'guardrails', 'observability', 'dev-config']
+const SETTINGS_KEYS = ['settings', 'settings/account', 'settings/organization', 'settings/workspace']
+
+const SidebarSystemStatus: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
+  const { t } = useTranslation()
+  const buildTime = __BUILD_TIME__.slice(0, 16).replace('T', ' ')
+  const buildMode = import.meta.env.MODE.toUpperCase()
+
+  if (collapsed) {
+    return (
+      <div
+        className="flex justify-center pb-3 pt-1"
+        title={`v${__APP_VERSION__} · ${buildMode} · ${t('common.online')}`}
+      >
+        <span className="h-2 w-2 rounded-full bg-mg-success shadow-[0_0_0_3px_color-mix(in_srgb,var(--mg-success)_14%,transparent)]" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="mx-3 mb-3 mt-1 px-1.5 py-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="truncate font-mono text-[11px] leading-none text-mg-text-2">
+          v{__APP_VERSION__} · {__BUILD_HASH__}
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-[9px] font-bold leading-none text-mg-success">
+          <span className="h-1.5 w-1.5 rounded-full bg-mg-success" />
+          {t('common.online')}
+        </span>
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-2 font-mono text-[10px] leading-none text-mg-text-3">
+        <span>{buildMode}</span>
+        <span>{buildTime} UTC</span>
+      </div>
+    </div>
+  )
+}
 
 /**
  * 极简高颜值自定义 Sidebar 导航单项
@@ -202,8 +238,11 @@ const SidebarSettingsButton: React.FC<{
   onSelect: (data: { itemKey: string | number }) => void
   label: string
   accountLabel: string
-  orgLabel: string
-}> = ({ collapsed, selectedKey, onSelect, label, accountLabel, orgLabel }) => {
+  spaceLabel: string
+  spaceHint: string
+  spaceTargetKey: string
+  workspaceLabel: string
+}> = ({ collapsed, selectedKey, onSelect, label, accountLabel, spaceLabel, spaceHint, spaceTargetKey, workspaceLabel }) => {
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -271,7 +310,10 @@ const SidebarSettingsButton: React.FC<{
         collapsed={collapsed}
         selectedKey={selectedKey}
         accountLabel={accountLabel}
-        orgLabel={orgLabel}
+        spaceLabel={spaceLabel}
+        spaceHint={spaceHint}
+        spaceTargetKey={spaceTargetKey}
+        workspaceLabel={workspaceLabel}
         handleItemClick={handleItemClick}
       />
     </div>
@@ -291,12 +333,15 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   settingsLabel,
 }) => {
   const { t } = useTranslation()
+  const { activeTenantId, tenants } = useAuthStore()
   const [hovered, setHovered] = useState(false)
   const [workspaceOpen, setWorkspaceOpen] = useState(true)
   const leaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const isWorkspaceSelected = WORKSPACE_KEYS.includes(selectedKey)
   const isSettingsSelected = SETTINGS_KEYS.includes(selectedKey)
+  const activeTenant = tenants.find((tenant) => tenant.tenant_id === activeTenantId)
+  const isPersonalTenant = activeTenant?.type === 'personal'
 
   const onEnter = () => {
     clearTimeout(leaveTimer.current)
@@ -430,8 +475,12 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           onSelect={onSelect}
           label={settingsLabel}
           accountLabel={t('nav.account')}
-          orgLabel={t('nav.organization')}
+          spaceLabel={isPersonalTenant ? t('header.personalSpace') : t('nav.organization')}
+          spaceHint={isPersonalTenant ? t('sidebarSettings.personalSpaceHint') : t('sidebarSettings.organizationHint')}
+          spaceTargetKey={isPersonalTenant ? 'settings/account' : 'settings/organization'}
+          workspaceLabel={t('nav.workspace')}
         />
+        <SidebarSystemStatus collapsed={collapsed} />
       </div>
     </aside>
   )

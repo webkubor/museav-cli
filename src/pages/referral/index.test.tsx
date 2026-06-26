@@ -334,12 +334,12 @@ describe('ReferralPage — invitees cursor pagination', () => {
     params?: { cursor?: string; page_size?: number }
   ) => Promise.resolve(pageInvitees(params?.cursor))
 
-  // Invitees is the default tab; scope to its table via the unique 返佣窗口 header.
+  // Invitees is the default tab; scope to its table via the unique 当前档位 header.
   async function openInviteesTab() {
     renderPage()
     await screen.findByText('推荐计划')
-    const windowHeader = await screen.findByText('返佣窗口')
-    return windowHeader.closest('table') as HTMLElement
+    const tierHeader = await screen.findByText('当前档位')
+    return tierHeader.closest('table') as HTMLElement
   }
 
   it('renders only the first backend page with a working cursor pager', async () => {

@@ -41,7 +41,6 @@ import {
   type ReferralCommissionRecord,
   type ReferralInvitee,
   type ReferralStats,
-  type ReferralTier,
   type ReferralWithdrawal,
   type WithdrawalStatus,
 } from './referral-data'
@@ -137,16 +136,7 @@ export default function ReferralPage() {
     invitedTotal: 0,
     rewardBalance: '0',
   }
-  const emptyTier: ReferralTier = {
-    name: '—',
-    rate: 0,
-    cumulativeSpend: '0',
-    nextThreshold: '0',
-    nextTierName: '',
-    nextRate: 0,
-  }
   const stats = overview?.stats ?? emptyStats
-  const tier = overview?.tier ?? emptyTier
   const inviteCode = overview?.inviteCode ?? ''
   const inviteLink = inviteCode ? `${window.location.origin}/signup?aff=${inviteCode}` : ''
   const rewardBalance = Number(stats.rewardBalance)
@@ -357,19 +347,13 @@ export default function ReferralPage() {
           </div>
           <div className="divide-y divide-mg-border/50">
             {tierConfig.map((t) => {
-              const isActive = tier.name === t.name
               return (
                 <div
                   key={t.name}
-                  className={`flex items-center justify-between py-2.5 px-3 -mx-3 rounded-lg transition-colors ${
-                    isActive ? 'bg-brand-base/5' : ''
-                  }`}
+                  className="flex items-center justify-between py-2.5 px-3 -mx-3 rounded-lg transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    {isActive && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-base shrink-0" />
-                    )}
-                    <span className={`text-sm font-semibold ${isActive ? 'text-brand-base' : 'text-mg-text-1'}`}>
+                    <span className="text-sm font-semibold text-mg-text-1">
                       {t.name}
                     </span>
                   </div>
@@ -379,7 +363,7 @@ export default function ReferralPage() {
                         ? (isZh ? '累计消费 ≥ ¥0' : 'Spend ≥ ¥0')
                         : (isZh ? `累计消费 ≥ ¥${t.threshold.toLocaleString()}` : `Spend ≥ ¥${t.threshold.toLocaleString()}`)}
                     </span>
-                    <span className={`text-sm font-bold tabular-nums ${isActive ? 'text-brand-base' : 'text-mg-text-0'}`}>
+                    <span className="text-sm font-bold tabular-nums text-mg-text-0">
                       {t.rate}%
                     </span>
                   </div>
@@ -622,31 +606,6 @@ function TierBadge({ name, rate, fallback }: { name?: string; rate?: number; fal
   )
 }
 
-function WindowBadge({ expireAt, fallback, isZh }: { expireAt?: string; fallback: string; isZh: boolean }) {
-  if (!expireAt) return <span className="text-mg-text-3">{fallback}</span>
-  const expireDate = new Date(expireAt)
-  const nowDate = new Date()
-  const msLeft = expireDate.getTime() - nowDate.getTime()
-  const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24))
-  if (daysLeft <= 0) {
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-mg-fill-0 text-mg-text-2 border border-mg-border">
-        {isZh ? '已结束' : 'Ended'}
-      </span>
-    )
-  }
-  const urgent = daysLeft <= 14
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${
-      urgent
-        ? 'bg-orange-500/10 text-orange-600 border-orange-500/20'
-        : 'bg-green-500/10 text-green-600 border-green-500/20'
-    }`}>
-      {isZh ? `返佣中·剩 ${daysLeft} 天` : `Active·${daysLeft}d left`}
-    </span>
-  )
-}
-
 function InviteesTable({
   invitees,
   text,
@@ -667,8 +626,6 @@ function InviteesTable({
   onPrev: () => void
   onNext: () => void
 }) {
-  const { i18n } = useTranslation()
-  const isZh = i18n.language.startsWith('zh')
   if (!isQualified) {
     return (
       <div className="py-12 flex flex-col items-center gap-3 text-center">
@@ -687,13 +644,12 @@ function InviteesTable({
           <TableHead className="text-right">{text.colCommission}</TableHead>
           <TableHead>{text.colRegisteredAt}</TableHead>
           <TableHead>{text.colCurrentTier}</TableHead>
-          <TableHead>{text.colWindow}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {invitees.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={6} className="text-center text-mg-text-2 py-8">
+            <TableCell colSpan={5} className="text-center text-mg-text-2 py-8">
               {text.empty}
             </TableCell>
           </TableRow>
@@ -701,7 +657,6 @@ function InviteesTable({
           invitees.map((inv) => {
             const tierName = inv.tierName ?? inv.tier_name ?? inv.currentTier
             const tierRate = inv.tierRate ?? inv.tier_rate
-            const windowEnd = inv.windowExpireAt ?? inv.commissionWindowEnd ?? inv.commission_window_end
             return (
               <TableRow key={`${inv.email}-${inv.registeredAt}`}>
                 <TableCell>
@@ -713,9 +668,6 @@ function InviteesTable({
                 <TableCell>{inv.registeredAt}</TableCell>
                 <TableCell>
                   <TierBadge name={tierName} rate={tierRate} fallback={text.notYet} />
-                </TableCell>
-                <TableCell>
-                  <WindowBadge expireAt={windowEnd} fallback={text.notYet} isZh={isZh} />
                 </TableCell>
               </TableRow>
             )

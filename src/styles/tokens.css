@@ -100,6 +100,18 @@ body[theme-mode='dark'] {
   /* 字体（统一入口；中文系统优先，拉丁 Inter，去掉 Outfit） */
   --font-sans: 'Inter', 'PingFang SC', 'MiSans', 'HarmonyOS Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+
+  /* 账号浮层：只定义语义，不跨主题写死色值 */
+  --account-menu-bg: var(--mg-bg-0);
+  --account-menu-bg-2: var(--mg-bg-2);
+  --account-menu-panel: var(--mg-fill-0);
+  --account-menu-panel-strong: var(--mg-fill-1);
+  --account-menu-border: var(--mg-border);
+  --account-menu-text-0: var(--mg-text-0);
+  --account-menu-text-1: var(--mg-text-1);
+  --account-menu-text-2: var(--mg-text-2);
+  --account-menu-text-3: var(--mg-text-3);
+  --account-menu-danger: var(--mg-danger);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -230,6 +242,18 @@ body[theme-mode='dark'] {
   --nav-item-hover-bg: rgba(255, 255, 255, 0.04);
   --grid-color: rgba(255, 255, 255, 0.01);
   --ambient-particle-opacity: 0.38;
+
+  /* 深色主题下账号浮层使用石墨层级，浅色主题不继承这组色值 */
+  --account-menu-bg: #171820;
+  --account-menu-bg-2: #20212b;
+  --account-menu-panel: rgba(255, 255, 255, 0.045);
+  --account-menu-panel-strong: rgba(255, 255, 255, 0.075);
+  --account-menu-border: rgba(255, 255, 255, 0.13);
+  --account-menu-text-0: #f4f4f7;
+  --account-menu-text-1: #d6d7df;
+  --account-menu-text-2: #9da0ad;
+  --account-menu-text-3: #6f7280;
+  --account-menu-danger: #ff6b6b;
 }
 
 /* 国内市场特有趋势 (红涨绿跌) */

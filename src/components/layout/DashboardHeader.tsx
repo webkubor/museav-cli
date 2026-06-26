@@ -458,26 +458,26 @@ export const DashboardHeader: React.FC = () => {
           <DropdownMenuContent
             align="end"
             className={cn(
-              'w-[332px] rounded-lg border border-mg-border/80 p-3',
-              'bg-[linear-gradient(180deg,var(--mg-bg-2)_0%,var(--mg-bg-0)_100%)]',
-              'shadow-[0_24px_80px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.06)]',
+              'w-[332px] rounded-lg border p-3',
+              'border-[var(--account-menu-border)] bg-[linear-gradient(180deg,var(--account-menu-bg-2)_0%,var(--account-menu-bg)_100%)]',
+              'shadow-[0_24px_72px_rgba(15,23,42,0.16),inset_0_1px_0_rgba(255,255,255,0.08)]',
             )}
           >
             <div className="flex items-center gap-3.5 rounded-lg px-2.5 pb-3 pt-2 select-none">
               <div className="relative shrink-0">
-                <Avatar className="h-12 w-12 ring-1 ring-white/10 shadow-md shadow-black/20">
+                <Avatar className="h-12 w-12 ring-1 ring-[var(--account-menu-border)] shadow-[0_10px_24px_rgba(15,23,42,0.12)]">
                   {account?.avatar_url && <AvatarImage src={account.avatar_url} alt={account.display_name} />}
                   <AvatarFallback className="bg-brand-pale text-brand-base font-bold text-sm">
                     {avatarLetter}
                   </AvatarFallback>
                 </Avatar>
-                <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-mg-bg-2 bg-mg-success shadow-sm shadow-black/20" />
+                <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-[var(--account-menu-bg-2)] bg-mg-success shadow-sm shadow-[rgba(15,23,42,0.14)]" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[15px] font-bold leading-tight text-mg-text-0">
+                <div className="truncate text-[15px] font-bold leading-tight text-[var(--account-menu-text-0)]">
                   {account?.display_name || '—'}
                 </div>
-                <div className="mt-1 truncate text-[12px] leading-none text-mg-text-2">{account?.email}</div>
+                <div className="mt-1 truncate text-[12px] leading-none text-[var(--account-menu-text-2)]">{account?.email}</div>
               </div>
               <Badge
                 variant={activeTenant?.type === 'personal' ? 'secondary' : getTenantRoleVariant((activeTenant as TenantItem | undefined)?.role)}
@@ -508,7 +508,7 @@ export const DashboardHeader: React.FC = () => {
             <div className="px-2 pb-2 pt-3 text-[12px] font-semibold text-mg-text-2 select-none">
               {t('header.organizations')}
             </div>
-            <div className="overflow-hidden rounded-lg border border-mg-border/70 bg-mg-fill-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+            <div className="overflow-hidden rounded-lg border border-[var(--account-menu-border)] bg-[var(--account-menu-panel)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
               {menuTenants.map((tenant) => {
                 const displayName = getTenantDisplayName(tenant)
                 const isActive = tenant.tenant_id === activeTenantId
@@ -519,13 +519,13 @@ export const DashboardHeader: React.FC = () => {
                     onClick={() => handleSwitchTenant(tenant)}
                     className={cn(
                       'h-14 rounded-none px-3 text-[14px] font-bold',
-                      'border-b border-mg-border/45 last:border-b-0',
-                      'hover:bg-mg-fill-1 focus:bg-mg-fill-1',
-                      isActive && 'bg-brand-base/[0.09] text-mg-text-0 hover:bg-brand-base/[0.11] focus:bg-brand-base/[0.11]',
+                      'border-b border-[var(--account-menu-border)] last:border-b-0',
+                      'text-[var(--account-menu-text-0)] hover:bg-[var(--account-menu-panel-strong)] focus:bg-[var(--account-menu-panel-strong)]',
+                      isActive && 'bg-brand-base/[0.09] hover:bg-brand-base/[0.11] focus:bg-brand-base/[0.11]',
                     )}
                   >
                     {tenant.type === 'personal' ? (
-                      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-mg-fill-1 text-mg-text-2 shrink-0">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--account-menu-panel-strong)] text-[var(--account-menu-text-2)] shrink-0">
                         <LuUser size={15} />
                       </span>
                     ) : (
@@ -540,7 +540,7 @@ export const DashboardHeader: React.FC = () => {
                     <Badge
                       variant={tenant.type === 'personal' ? 'secondary' : getTenantRoleVariant(tenantRole)}
                       size="xs"
-                      className="shrink-0 border-mg-border/60 bg-mg-fill-1 px-2 py-0.5 text-[10px] text-mg-text-1"
+                      className="shrink-0 border-[var(--account-menu-border)] bg-[var(--account-menu-panel-strong)] px-2 py-0.5 text-[10px] text-[var(--account-menu-text-1)]"
                     >
                       {tenant.type === 'personal' ? t('header.personalTag') : getTenantRoleLabel(tenantRole)}
                     </Badge>
@@ -552,9 +552,9 @@ export const DashboardHeader: React.FC = () => {
               {canCreateOrg && (
                 <DropdownMenuItem
                   onClick={handleOpenOrgModal}
-                  className="h-14 rounded-none px-3 text-[14px] font-bold text-mg-text-1"
+                  className="h-14 rounded-none px-3 text-[14px] font-bold text-[var(--account-menu-text-1)]"
                 >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-mg-fill-1 text-mg-text-2 shrink-0">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--account-menu-panel-strong)] text-[var(--account-menu-text-2)] shrink-0">
                     <LuPlus size={18} />
                   </span>
                   <span className="flex-1">{t('header.createOrg')}</span>
@@ -567,25 +567,25 @@ export const DashboardHeader: React.FC = () => {
             </div>
             <DropdownMenuItem
               onClick={() => navigate('/settings/account')}
-              className="h-11 px-2.5 text-[14px] font-bold"
+              className="h-11 px-2.5 text-[14px] font-bold text-[var(--account-menu-text-0)]"
             >
-              <LuSettings size={18} className="text-mg-text-2 shrink-0" />
+              <LuSettings size={18} className="text-[var(--account-menu-text-2)] shrink-0" />
               <span className="flex-1">{t('nav.account')}</span>
-              <LuChevronRight size={15} className="text-mg-text-3 shrink-0" />
+              <LuChevronRight size={15} className="text-[var(--account-menu-text-3)] shrink-0" />
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => navigate('/settings/account?tab=security')}
-              className="h-11 px-2.5 text-[14px] font-bold"
+              className="h-11 px-2.5 text-[14px] font-bold text-[var(--account-menu-text-0)]"
             >
-              <LuShield size={18} className="text-mg-text-2 shrink-0" />
+              <LuShield size={18} className="text-[var(--account-menu-text-2)] shrink-0" />
               <span className="flex-1">{t('account.tabs.security')}</span>
-              <LuChevronRight size={15} className="text-mg-text-3 shrink-0" />
+              <LuChevronRight size={15} className="text-[var(--account-menu-text-3)] shrink-0" />
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleLogout}
-              className="h-12 px-2.5 text-[14px] font-bold text-mg-danger focus:text-mg-danger hover:text-mg-danger"
+              className="h-12 px-2.5 text-[14px] font-bold text-[var(--account-menu-danger)] focus:text-[var(--account-menu-danger)] hover:text-[var(--account-menu-danger)]"
             >
               <LuLogOut size={18} className="shrink-0" />
               <span>{t('common.logout')}</span>

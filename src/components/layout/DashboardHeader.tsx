@@ -6,7 +6,6 @@ import {
   LuPlus,
   LuSettings,
   LuLogOut,
-  LuUser,
   LuZap,
   LuBuilding2,
   LuCheck,
@@ -167,9 +166,24 @@ export const DashboardHeader: React.FC = () => {
     return Array.from(map.values())
   })()
 
-  // 当前所在租户：企业上下文时头像改用组织 logo / 首字母，个人则用账户头像（无需额外图标即可区分上下文）
+  // 当前所在租户：个人上下文直接复用账号头像；企业上下文才使用组织 logo。
   const activeTenant = displayTenants.find((tn) => tn.tenant_id === activeTenantId)
-  const orgInitial = (activeTenant?.name || activeTenant?.slug || 'O').charAt(0).toUpperCase()
+  const avatarLetter = (account?.display_name || account?.email || 'U').charAt(0).toUpperCase()
+
+  function getTenantAvatarUrl(tenant?: TenantBrief | TenantItem | null) {
+    if (!tenant) return undefined
+    if (tenant.type === 'personal') return account?.avatar_url ?? undefined
+    return tenant.logo_url ?? undefined
+  }
+
+  function getTenantAvatarFallback(tenant?: TenantBrief | TenantItem | null) {
+    if (!tenant) return avatarLetter
+    if (tenant.type === 'personal') return avatarLetter
+    return (tenant.name || tenant.slug || 'O').charAt(0).toUpperCase()
+  }
+
+  const activeTenantAvatarUrl = getTenantAvatarUrl(activeTenant)
+  const activeTenantFallback = getTenantAvatarFallback(activeTenant)
 
   // 已作为 owner 创建过企业的账户隐藏「创建企业」入口（一人最多创建 1 个）
   const ownsEnterprise = displayTenants.some(
@@ -186,6 +200,8 @@ export const DashboardHeader: React.FC = () => {
     if (a.type !== 'enterprise' && b.type === 'enterprise') return 1
     return getTenantDisplayName(a).localeCompare(getTenantDisplayName(b))
   })
+  const personalMenuTenants = menuTenants.filter((tenant) => tenant.type === 'personal')
+  const enterpriseMenuTenants = menuTenants.filter((tenant) => tenant.type === 'enterprise')
 
   function getTenantDisplayName(tenant: TenantBrief | TenantItem) {
     if (tenant.type === 'personal') {
@@ -224,8 +240,6 @@ export const DashboardHeader: React.FC = () => {
     }
     applyTheme(getUserTheme(account.account_id))
   }, [account])
-
-  const avatarLetter =(account?.display_name || account?.email || 'U').charAt(0).toUpperCase()
 
   // 会话重拉后完整回写 store：granted + menus + tenants 身份，与登录时的 setAuth 对齐。
   // 仅缺 granted 时旧逻辑会漏掉新组织的 menus 和 enterprise 身份，导致企业管理不出现。
@@ -348,6 +362,43 @@ export const DashboardHeader: React.FC = () => {
     createOrgMutation.mutate()
   }
 
+  function renderTenantMenuItem(tenant: TenantBrief | TenantItem) {
+    const displayName = getTenantDisplayName(tenant)
+    const isActive = tenant.tenant_id === activeTenantId
+    const tenantRole = (tenant as TenantItem).role
+    const tenantAvatarUrl = getTenantAvatarUrl(tenant)
+    const tenantAvatarFallback = getTenantAvatarFallback(tenant)
+
+    return (
+      <DropdownMenuItem
+        key={tenant.tenant_id}
+        onClick={() => handleSwitchTenant(tenant)}
+        className={cn(
+          'h-14 rounded-none px-3 text-[14px] font-bold',
+          'border-b border-[var(--account-menu-border)] last:border-b-0',
+          'text-[var(--account-menu-text-0)] hover:bg-[var(--account-menu-panel-strong)] focus:bg-[var(--account-menu-panel-strong)]',
+          isActive && 'bg-brand-base/[0.09] hover:bg-brand-base/[0.11] focus:bg-brand-base/[0.11]',
+        )}
+      >
+        <Avatar className="h-9 w-9 rounded-lg border-none shrink-0">
+          {tenantAvatarUrl && <AvatarImage src={tenantAvatarUrl} alt={displayName} />}
+          <AvatarFallback className="rounded-lg bg-brand-base/[0.13] text-brand-base">
+            {tenant.type === 'personal' ? tenantAvatarFallback : <LuBuilding2 size={18} />}
+          </AvatarFallback>
+        </Avatar>
+        <span className="min-w-0 flex-1 truncate">{displayName}</span>
+        <Badge
+          variant={tenant.type === 'personal' ? 'secondary' : getTenantRoleVariant(tenantRole)}
+          size="xs"
+          className="shrink-0 border-[var(--account-menu-border)] bg-[var(--account-menu-panel-strong)] px-2 py-0.5 text-[10px] text-[var(--account-menu-text-1)]"
+        >
+          {tenant.type === 'personal' ? t('header.personalTag') : getTenantRoleLabel(tenantRole)}
+        </Badge>
+        {isActive && <LuCheck size={18} className="text-brand-base shrink-0" />}
+      </DropdownMenuItem>
+    )
+  }
+
   return (
     <header className={cn(
       "h-[60px] border-b px-6 flex items-center justify-between z-40 relative select-none transition-all duration-300 ease-out",
@@ -446,11 +497,14 @@ export const DashboardHeader: React.FC = () => {
               title={isNonPersonal ? (activeTenant?.name || t('header.organizations')) : (account?.display_name || t('header.personalTag'))}
             >
               <Avatar className="h-9 w-9 block">
-                {isNonPersonal
-                  ? (activeTenant?.logo_url && <AvatarImage src={activeTenant.logo_url} alt={activeTenant?.name || ''} />)
-                  : (account?.avatar_url && <AvatarImage src={account.avatar_url} alt={account.display_name} />)}
+                {activeTenantAvatarUrl && (
+                  <AvatarImage
+                    src={activeTenantAvatarUrl}
+                    alt={isNonPersonal ? (activeTenant?.name || '') : (account?.display_name || '')}
+                  />
+                )}
                 <AvatarFallback className="bg-brand-pale text-brand-base font-bold text-sm">
-                  {isNonPersonal ? orgInitial : avatarLetter}
+                  {activeTenantFallback}
                 </AvatarFallback>
               </Avatar>
             </button>
@@ -505,50 +559,22 @@ export const DashboardHeader: React.FC = () => {
               <DropdownMenuSeparator />
             </div>
 
+            {personalMenuTenants.length > 0 && (
+              <>
+                <div className="px-2 pb-2 pt-3 text-[12px] font-semibold text-mg-text-2 select-none">
+                  {t('header.personalSpace')}
+                </div>
+                <div className="overflow-hidden rounded-lg border border-[var(--account-menu-border)] bg-[var(--account-menu-panel)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                  {personalMenuTenants.map(renderTenantMenuItem)}
+                </div>
+              </>
+            )}
+
             <div className="px-2 pb-2 pt-3 text-[12px] font-semibold text-mg-text-2 select-none">
               {t('header.organizations')}
             </div>
             <div className="overflow-hidden rounded-lg border border-[var(--account-menu-border)] bg-[var(--account-menu-panel)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-              {menuTenants.map((tenant) => {
-                const displayName = getTenantDisplayName(tenant)
-                const isActive = tenant.tenant_id === activeTenantId
-                const tenantRole = (tenant as TenantItem).role
-                return (
-                  <DropdownMenuItem
-                    key={tenant.tenant_id}
-                    onClick={() => handleSwitchTenant(tenant)}
-                    className={cn(
-                      'h-14 rounded-none px-3 text-[14px] font-bold',
-                      'border-b border-[var(--account-menu-border)] last:border-b-0',
-                      'text-[var(--account-menu-text-0)] hover:bg-[var(--account-menu-panel-strong)] focus:bg-[var(--account-menu-panel-strong)]',
-                      isActive && 'bg-brand-base/[0.09] hover:bg-brand-base/[0.11] focus:bg-brand-base/[0.11]',
-                    )}
-                  >
-                    {tenant.type === 'personal' ? (
-                      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--account-menu-panel-strong)] text-[var(--account-menu-text-2)] shrink-0">
-                        <LuUser size={15} />
-                      </span>
-                    ) : (
-                      <Avatar className="h-9 w-9 rounded-lg border-none shrink-0">
-                        {tenant.logo_url && <AvatarImage src={tenant.logo_url} />}
-                        <AvatarFallback className="rounded-lg bg-brand-base/[0.13] text-brand-base">
-                          <LuBuilding2 size={18} />
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                    <span className="min-w-0 flex-1 truncate">{displayName}</span>
-                    <Badge
-                      variant={tenant.type === 'personal' ? 'secondary' : getTenantRoleVariant(tenantRole)}
-                      size="xs"
-                      className="shrink-0 border-[var(--account-menu-border)] bg-[var(--account-menu-panel-strong)] px-2 py-0.5 text-[10px] text-[var(--account-menu-text-1)]"
-                    >
-                      {tenant.type === 'personal' ? t('header.personalTag') : getTenantRoleLabel(tenantRole)}
-                    </Badge>
-                    {isActive && <LuCheck size={18} className="text-brand-base shrink-0" />}
-                  </DropdownMenuItem>
-                )
-              })}
-
+              {enterpriseMenuTenants.map(renderTenantMenuItem)}
               {canCreateOrg && (
                 <DropdownMenuItem
                   onClick={handleOpenOrgModal}

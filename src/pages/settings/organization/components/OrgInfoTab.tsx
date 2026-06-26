@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { AvatarUpload } from '@/components/ui/AvatarUpload'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar'
 import { appToast } from '@/lib/app-toast'
 
 export function OrgInfoTab({
@@ -23,6 +24,7 @@ export function OrgInfoTab({
   const { hasPermission } = usePermissions()
   const canEditOrg = hasPermission(PERMS.ORG_SETTINGS_EDIT)
   const canDissolveOrg = tenantRole === 'tenant_owner'
+  const account = useAuthStore((s) => s.account)
   const setAuth = useAuthStore((s) => s.setAuth)
   const qc = useQueryClient()
   const [name, setName] = useState('')
@@ -104,26 +106,39 @@ export function OrgInfoTab({
   if (!tenant) return null
 
   const confirmMatched = confirmName.trim() === tenant.name
+  const isPersonalTenant = tenant.type === 'personal'
+  const personalAvatarFallback = (account?.display_name || account?.email || tenant.name || 'U').charAt(0).toUpperCase()
 
   return (
     <>
     <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-6 shadow-sm space-y-6">
-      {/* 企业头像 */}
+      {/* 个人租户跟随账号头像；企业租户才有独立 logo */}
       <div className="flex items-center gap-4 pb-6 border-b border-mg-border/40">
-        <AvatarUpload
-          src={tenant.logo_url}
-          fallback={tenant.name.charAt(0).toUpperCase()}
-          size={64}
-          loading={logoMutation.isPending}
-          disabled={!canEditOrg}
-          onUpload={(file) => logoMutation.mutate(file)}
-        />
+        {isPersonalTenant ? (
+          <Avatar className="h-16 w-16 border border-mg-border/50">
+            {account?.avatar_url && <AvatarImage src={account.avatar_url} alt={account.display_name || ''} />}
+            <AvatarFallback className="bg-brand-pale text-brand-base text-base font-bold">
+              {personalAvatarFallback}
+            </AvatarFallback>
+          </Avatar>
+        ) : (
+          <AvatarUpload
+            src={tenant.logo_url}
+            fallback={tenant.name.charAt(0).toUpperCase()}
+            size={64}
+            loading={logoMutation.isPending}
+            disabled={!canEditOrg}
+            onUpload={(file) => logoMutation.mutate(file)}
+          />
+        )}
         <div className="space-y-1">
           <div className="text-sm font-bold text-mg-text-0">
-            {tenant?.name}
+            {isPersonalTenant ? (account?.display_name || tenant.name) : tenant.name}
           </div>
           <div className="text-xs text-mg-text-2">
-            点击头像更换 · 支持 PNG/JPEG/WebP，最大 2MB
+            {isPersonalTenant
+              ? '个人空间头像跟随账号头像，请在账号设置中修改'
+              : '点击头像更换 · 支持 PNG/JPEG/WebP，最大 2MB'}
           </div>
         </div>
       </div>

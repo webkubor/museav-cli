@@ -34,7 +34,8 @@ body[theme-mode='dark'] .semi-input-textarea-wrapper:hover {
 .semi-input,
 .semi-input-textarea {
   color: var(--mg-text-0) !important;
-  font-size: 13.5px !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
   font-family: inherit !important;
 }
 
@@ -236,7 +237,9 @@ body[theme-mode='dark'] .semi-button-borderless:not(.semi-button-disabled):not(.
 }
 
 html {
-  font-size: 15px;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 button:not(:disabled),
@@ -253,6 +256,8 @@ html, body, #root {
   width: 100%;
   height: 100%;
   font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
   background-color: var(--site-bg);
   color: var(--mg-text-0);
   -webkit-font-smoothing: antialiased;
@@ -445,7 +450,7 @@ html, body, #root {
   background-color: var(--mg-bg-1) !important;
   color: var(--mg-text-1) !important;
   font-weight: 700 !important;
-  font-size: 12px !important;
+  font-size: 12.5px !important;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   border-bottom: 1px solid var(--mg-border) !important;
@@ -457,7 +462,8 @@ html, body, #root {
 .semi-table-tbody > tr > td {
   padding: 16px !important;
   border-bottom: 1px solid var(--mg-border) !important;
-  font-size: 13px !important;
+  font-size: 14px !important;
+  line-height: 1.55 !important;
   color: var(--mg-text-1);
 }
 
@@ -474,4 +480,3 @@ html, body, #root {
 .semi-table-wrapper {
   border: none !important;
 }
-

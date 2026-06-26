@@ -83,7 +83,7 @@ body[theme-mode='dark'] .glass-auth-card .auth-policy-text {
 /* ── 💎 鉴权中心输入框与表单高级优化 ── */
 .modern-auth-label {
   display: block;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--mg-text-1) !important;
   margin-bottom: 8px;
@@ -95,7 +95,7 @@ body[theme-mode='dark'] .glass-auth-card .auth-policy-text {
   border-radius: 8px;
   border: 1px solid var(--mg-border) !important;
   padding: 0 14px;
-  font-size: 13.5px;
+  font-size: 14px;
   outline: none;
   box-sizing: border-box;
   color: var(--mg-text-0) !important;
@@ -218,7 +218,7 @@ body[theme-mode='dark'] .auth-layout-container {
 .auth-subtitle {
   margin: 10px 0 0;
   color: var(--mg-text-2);
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.5;
 }
@@ -227,7 +227,7 @@ body[theme-mode='dark'] .auth-layout-container {
   margin-top: 20px;
   text-align: center;
   color: var(--mg-text-2);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0;
 }
@@ -246,7 +246,7 @@ body[theme-mode='dark'] .auth-layout-container {
   height: 44px;
   border-radius: 10px;
   padding-inline: 14px;
-  font-size: 13.5px;
+  font-size: 14px;
   background-color: rgba(var(--mg-bg-0-rgb), 0.62) !important;
   border-color: rgba(100, 116, 139, 0.22) !important;
   box-shadow: none !important;
@@ -278,11 +278,11 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 }
 
 .auth-error-message {
-  @apply text-rose-500 text-[11.5px] mt-1.5 font-medium block tracking-tight;
+  @apply text-rose-500 text-xs mt-1.5 font-medium block tracking-tight;
 }
 
 .auth-email-preview {
-  @apply flex items-center gap-2 p-3 rounded-md text-[13px] border;
+  @apply flex items-center gap-2 p-3 rounded-md text-sm border;
   background-color: var(--mg-fill-0);
   border-color: var(--mg-border);
 }
@@ -290,7 +290,7 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 /* 发送验证码内嵌文字按钮，Stripe/Vercel 风格极简化设计 */
 .auth-code-link-btn {
   color: var(--brand-base) !important;
-  font-size: 13px !important;
+  font-size: 14px !important;
   font-weight: 700 !important;
   padding: 0 4px !important;
   height: auto !important;
@@ -414,19 +414,19 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 
 /* 覆盖 input type="password" 下的 placeholder 样式，避免它继承密码状态的大字号与字距 */
 .auth-form-container input[type="password"]::placeholder {
-  font-size: 13px !important;
+  font-size: 14px !important;
   letter-spacing: normal !important;
 }
 .auth-form-container input[type="password"]::-webkit-input-placeholder {
-  font-size: 13px !important;
+  font-size: 14px !important;
   letter-spacing: normal !important;
 }
 .auth-form-container input[type="password"]::-moz-placeholder {
-  font-size: 13px !important;
+  font-size: 14px !important;
   letter-spacing: normal !important;
 }
 .auth-form-container input[type="password"]:-ms-input-placeholder {
-  font-size: 13px !important;
+  font-size: 14px !important;
   letter-spacing: normal !important;
 }
 
@@ -532,6 +532,5 @@ body[theme-mode='dark'] .auth-form-container .modern-input-wrapper.is-error {
   border-color: #10b981 !important;
   box-shadow: 0 0 0 1px #10b981, 0 0 0 4px rgba(16, 185, 129, 0.14) !important;
 }
-
 
 

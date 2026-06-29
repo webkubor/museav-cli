@@ -49,9 +49,9 @@
   --radius-lg: 18px;
   --radius-full: 9999px;
 
-  /* 字体（统一入口；中文系统优先，拉丁 Inter，去掉 Outfit） */
-  --font-sans: var(--mg-font-sans);
-  --font-mono: var(--mg-font-mono);
+  /* 字体（控制台特调：拉丁 Inter 优先，UI 更紧凑清晰；与官网 PingFang 优先不同，不收敛 SSOT） */
+  --font-sans: 'Inter', 'PingFang SC', 'MiSans', 'HarmonyOS Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
   --mg-font-size-caption: 0.75rem;
   --mg-line-height-caption: 1rem;
   --mg-font-size-body: 0.875rem;
@@ -135,10 +135,11 @@
   --mg-bg-3:  var(--mg-surface-3);   /* Modal / Tooltip 顶层 */
 
   /* 文字层级 — 控制台 text-0=主，整体对共享 text-1/2/3/4 错位 +1 */
-  --mg-text-0: var(--mg-text-1);  /* 主文字 */
-  --mg-text-1: var(--mg-text-2);  /* 次要 */
-  --mg-text-2: var(--mg-text-3);  /* 辅助标签 */
-  --mg-text-3: var(--mg-text-4);  /* 禁用 / 装饰 */
+  /* 文字层级保留控制台本地特调值（AA 校过；共享 1-indexed 与控制台 0-indexed 同名冲突，不收敛） */
+  --mg-text-0: #0f172a;  /* 主文字 */
+  --mg-text-1: #475569;  /* 次要 */
+  --mg-text-2: #64748b;  /* 辅助标签 — 4.6:1 on 白，AA */
+  --mg-text-3: #94a3b8;  /* 禁用 / 装饰 */
 
   /* 边框 — 保留控制台市场色调（不在本轮 token 收敛范围）。
      填充 --mg-fill-0/1/2 同名共享，不在此覆盖（自引用会失效），直接用共享值 */
@@ -181,8 +182,12 @@
 
 [theme-mode='dark'],
 body[theme-mode='dark'] {
-  /* bg-0/1/2/3、text-0/1/2/3、fill-*、success/warning/info、border、danger
-     全部交共享 [data-theme='dark']（theme.ts 已同步设 data-theme=dark），本块只保留控制台特有项 */
+  /* bg-0/1/2/3、fill-*、success/warning/info、danger 交共享 [data-theme='dark']（theme.ts 已同步设 data-theme=dark）。
+     文字层为 app 特调本地值（共享 1-indexed 与控制台 0-indexed 同名冲突，不收敛），深色需在此显式翻转 */
+  --mg-text-0: #f4f4f5;  /* 主文字 zinc-100 */
+  --mg-text-1: #d4d4d8;  /* 次要 zinc-300 */
+  --mg-text-2: #a1a1aa;  /* 辅助 zinc-400（AA 5.2:1） */
+  --mg-text-3: #52525b;  /* 禁用 zinc-600 */
   --mg-bg-0-rgb: 35, 35, 41;  /* surface 暗值的 RGB，供玻璃态 rgba() */
 
   /* 代码块面（payload 查看器）：清透极黑 */

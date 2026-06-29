@@ -7,29 +7,6 @@
   overflow: hidden;
 }
 
-.models-experience-warning {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 34px;
-  padding: 8px 13px;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--mg-warning) 26%, transparent);
-  background: color-mix(in srgb, var(--mg-warning) 13%, var(--mg-bg-0));
-  color: var(--mg-warning);
-  font-size: 12px;
-  font-weight: 650;
-}
-
-.models-experience-warning button {
-  border: 0;
-  background: transparent;
-  color: var(--brand-base);
-  font: inherit;
-  cursor: pointer;
-  padding: 0;
-}
-
 .models-experience-header {
   display: flex;
   align-items: flex-end;

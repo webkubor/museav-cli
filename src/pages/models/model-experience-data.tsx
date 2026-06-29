@@ -22,8 +22,6 @@ export const previewImages: Record<CategoryKey, string> = {
 
 export const modelExperienceCopy = {
   zh: {
-    warning: '您的余额不足，目标模型的免费试用额度消耗完后将无法继续体验，请及时充值。',
-    recharge: '去充值',
     title: '模型体验',
     desc: '选择模型，立即测试输出效果、成本与接口参数',
     compare: '模型对比',
@@ -48,8 +46,6 @@ export const modelExperienceCopy = {
     categories: { all: '全部', standard: '上下文 ≤32K', high: '上下文 ≤128K', ultra: '上下文 128K+' },
   },
   en: {
-    warning: 'Your balance is low. Once the free trial quota is used, this model experience may stop.',
-    recharge: 'Recharge',
     title: 'Model Experience',
     desc: 'Select a model and test output quality, cost, and API parameters.',
     compare: 'Compare Models',

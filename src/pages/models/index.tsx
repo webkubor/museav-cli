@@ -3,7 +3,6 @@ import Markdown from 'react-markdown'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  LuTriangleAlert,
   LuCopy,
   LuGitCompareArrows,
   LuMessageSquare,
@@ -13,8 +12,7 @@ import {
   LuRefreshCw,
 } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
-import { useRechargeStore } from '@/store/use-recharge-store'
-import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
+import { useBalanceBreakdown } from '@/hooks/use-balance'
 import { streamExperienceChat } from '@/services/experience'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -50,7 +48,6 @@ export default function ModelsPage() {
   const { i18n } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
-  const openRecharge = useRechargeStore((s) => s.open)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const text = i18n.language.startsWith('zh') ? modelExperienceCopy.zh : modelExperienceCopy.en
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
@@ -58,13 +55,6 @@ export default function ModelsPage() {
   // 与后端多桶账本的真实扣费顺序一致（grant→cash，#97/#93）。
   const { data: breakdown } = useBalanceBreakdown(tenantId)
   const giftBalance = Number(breakdown?.gift.amount ?? 0)
-  // 充值提示完全由真实余额数据驱动：主余额 ≤ 后端配置的预警阈值（low_balance_threshold）时才显示。
-  // 阈值是后端配置项，前端不写死任何固定数值；阈值未配置（无数据）时不显示，交由后端决定。
-  const { data: mainBalance } = useBalance(tenantId)
-  const availableAmount = Number(mainBalance?.available?.amount ?? NaN)
-  const thresholdAmount = Number(mainBalance?.low_balance_threshold?.amount ?? NaN)
-  const showRechargeWarning =
-    Number.isFinite(availableAmount) && Number.isFinite(thresholdAmount) && availableAmount <= thresholdAmount
   const [category, setCategory] = useState<CategoryKey>('all')
   const [isCompareOpen, setIsCompareOpen] = useState(false)
   const [input, setInput] = useState('')
@@ -169,14 +159,6 @@ export default function ModelsPage() {
 
   return (
     <div className="models-experience-page">
-      {showRechargeWarning && (
-        <div className="models-experience-warning">
-          <LuTriangleAlert size={15} />
-          <span>{text.warning}</span>
-          <button type="button" onClick={openRecharge}>{text.recharge}</button>
-        </div>
-      )}
-
       <div className="models-experience-header">
         <div>
           <h1>{text.title}</h1>

@@ -14,7 +14,7 @@ import {
 } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSiteIcon } from '@/config/brand-assets'
+import { useSiteLogo } from '@/config/brand-assets'
 import { useLangStore } from '@/store/use-brand-store'
 import { getMarketConfig } from '@/config/market'
 import { useAuth } from '@/components/auth/use-auth'
@@ -61,7 +61,7 @@ export const DashboardHeader: React.FC = () => {
   const { t } = useTranslation()
   const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setActiveWorkspaceId, isAuthenticated } = useAuthStore()
   const { signOut } = useAuth()
-  const siteIcon = useSiteIcon()
+  const siteLogo = useSiteLogo()
   const activeTenantType = tenants.find((t) => t.tenant_id === activeTenantId)?.type ?? 'personal'
   const isNonPersonal = activeTenantType !== 'personal'
 
@@ -408,25 +408,28 @@ export const DashboardHeader: React.FC = () => {
       {/* 左侧：Logo & 工作区选择器 */}
       <div className="flex items-center gap-6">
         {/* Logo 展现 */}
-        <div 
-          className="flex items-center gap-2 cursor-pointer active:scale-[0.97] transition-transform duration-150 select-none"
+        <div
+          className="group flex items-center gap-2.5 cursor-pointer active:scale-[0.97] transition-transform duration-150 select-none"
           onClick={() => navigate(isAuthenticated ? '/dashboard' : '/models')}
           title={t('nav.dashboard')}
         >
-          {/* Icon mark with shimmer */}
-          <div className="logo-shimmer relative rounded-sm overflow-hidden shrink-0">
-            <img 
-              src={siteIcon} 
-              alt="ModelGo Icon" 
-              className="h-5 w-auto object-contain block"
-            />
-          </div>
-          {/* Brand name text */}
-          <span className="font-bold text-[16px] tracking-tight text-brand-base leading-none">
-            {t(market === 'global' ? 'welcomeBanner.brandNameGlobal' : 'welcomeBanner.brandNameDomestic')}
+          {/* Logo：32px，漂浮 + 品牌色光晕呼吸（对齐官网 LogoPremiumM） */}
+          <span className="brand-logo-premium shrink-0" style={{ width: 32, height: 32 }}>
+            <img src={siteLogo} alt="ModelGo" className="h-8 w-auto object-contain block" />
           </span>
-          {/* Live status green dot */}
-          <span className="logo-status-dot" />
+          {/* Wordmark：双色品牌字 + 脉冲（对齐官网 BrandWordmark） */}
+          {market === 'global' ? (
+            <span className="brand-wordmark brand-wordmark-global text-base">
+              <span className="brand-wordmark-global-base">Model</span>
+              <span className="brand-wordmark-global-go">Go</span>
+              <span className="brand-wordmark-pulse" aria-hidden />
+            </span>
+          ) : (
+            <span className="brand-wordmark brand-wordmark-domestic text-base">
+              <span>词元共生</span>
+              <span className="brand-wordmark-pulse" aria-hidden />
+            </span>
+          )}
         </div>
 
         {isAuthenticated && (

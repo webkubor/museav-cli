@@ -1,0 +1,117 @@
+/* 品牌区（左上角 logo + wordmark）—— 对齐国外官网视觉：双色渐变 wordmark + 脉冲 + 漂浮光晕 logo。
+   不引入自定义品牌字体（官网那套 MiSans 7.8MB 不划算），统一用系统字 var(--font-sans)，
+   "高级感"靠渐变+动效+尺寸，与字体无关。 */
+
+/* ── wordmark ── */
+.brand-wordmark {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: baseline;
+  white-space: nowrap;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* 国内「词元共生」：紫色阶渐变 shimmer */
+.brand-wordmark-domestic {
+  font-family: var(--font-sans);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  background: linear-gradient(90deg, #4f46e5 0%, #6366f1 20%, #8b5cf6 40%, #d946ef 50%, #8b5cf6 60%, #6366f1 80%, #4f46e5 100%);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 0.6px #6366f1, 0 0 0.6px #6366f1;
+  animation: brand-shimmer 4s linear infinite;
+}
+
+/* 国外「ModelGo」：Model 实色 + Go 草绿渐变 */
+.brand-wordmark-global {
+  font-family: var(--font-sans);
+  font-weight: 800;
+}
+.brand-wordmark-global-base {
+  color: var(--mg-text-0);
+}
+.brand-wordmark-global-go {
+  margin-left: 0.08em;
+  background: linear-gradient(90deg, var(--brand-deep) 0%, var(--brand-base) 25%, var(--brand-mid) 50%, var(--brand-base) 75%, var(--brand-deep) 100%);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: brand-shimmer 4s linear infinite;
+}
+
+/* 跟随脉冲点 */
+.brand-wordmark-pulse {
+  position: relative;
+  margin-left: 0.42em;
+  margin-bottom: 0.16em;
+  width: 0.42em;
+  height: 0.42em;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--brand-base);
+  box-shadow: 0 0 18px var(--brand-glow);
+  animation: pulse-breathing 3s ease-in-out infinite;
+}
+.brand-wordmark-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: inherit;
+  opacity: 0.4;
+  filter: blur(2px);
+  animation: pulse-ring 3s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* ── logo（32px，漂浮 + 品牌色光晕呼吸 + hover 提亮，CSS 复刻 LogoPremiumM，无 motion 依赖）── */
+.brand-logo-premium {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.brand-logo-premium::before {
+  content: '';
+  position: absolute;
+  inset: -22%;
+  border-radius: 999px;
+  background: radial-gradient(circle, var(--brand-glow) 0%, transparent 65%);
+  z-index: 0;
+  pointer-events: none;
+  animation: brand-logo-glow 4s ease-in-out infinite;
+}
+.brand-logo-premium img {
+  position: relative;
+  z-index: 1;
+  animation: brand-logo-float 4s ease-in-out infinite;
+  transition: filter 0.2s ease;
+}
+.brand-logo-premium:hover img {
+  filter: brightness(1.15) drop-shadow(0 0 8px var(--brand-glow));
+}
+
+@keyframes brand-shimmer {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+@keyframes pulse-breathing {
+  0%, 100% { transform: scale(1); opacity: 0.8; filter: brightness(1); }
+  50% { transform: scale(1.15); opacity: 1; filter: brightness(1.2); }
+}
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.5; }
+  80%, 100% { transform: scale(2.5); opacity: 0; }
+}
+@keyframes brand-logo-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1.5px); }
+}
+@keyframes brand-logo-glow {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.6; }
+}

@@ -59,6 +59,7 @@
 
 /* 按职责拆分的样式表（每个 <800 行，详见 src/styles/） */
 @import "./styles/tokens.css";      /* CSS 变量：品牌色 + 明暗主题 token */
+@import "./styles/brand.css";       /* 左上角品牌区：品牌字体 + 双色 wordmark + 漂浮光晕 logo */
 @import "./styles/semi.css";        /* Semi Design 组件覆盖 */
 @import "./styles/auth.css";        /* 登录/注册/鉴权页样式 */
 @import "./styles/components.css";  /* modern-* 自定义组件 + 液态玻璃搜索 */

@@ -24,7 +24,7 @@ export function PublicShell() {
       <div className="sticky top-0 z-40">
         <DashboardHeader />
       </div>
-      <main className="mx-auto w-full max-w-[1280px] px-4 py-6 md:px-8">
+      <main className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8">
         <Outlet />
       </main>
     </div>

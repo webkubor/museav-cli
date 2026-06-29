@@ -3,6 +3,7 @@
  * 适配控制台数据 CatalogModelItem + --mg-* token + ModelIcon。
  */
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   LuCopy, LuCheck, LuFileText, LuImage, LuMic, LuVideo,
@@ -12,7 +13,7 @@ import type { IconType } from 'react-icons'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { useCopy } from '@/hooks/use-copy'
 import { appToast } from '@/lib/app-toast'
-import { formatContextLength, formatModelPrice } from '@/lib/utils'
+import { formatContextLength, formatModelPrice, prettyModelName } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 
 const MODALITY_ICON: Record<string, IconType> = { text: LuFileText, image: LuImage, audio: LuMic, video: LuVideo }
@@ -32,6 +33,8 @@ function tagIcon(tag: string): IconType {
 }
 
 const MODALITY_CODES = ['text', 'image', 'audio', 'video']
+// 内部/无意义标签：不当用户向能力标签展示
+const TAG_DENYLIST = new Set(['modelgo_tool', 'test', 'free', 'internal', 'tool'])
 
 function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
@@ -59,9 +62,12 @@ interface Props {
 
 export function CatalogCard({ model, isZh, onTry, onCompare, canCompare }: Props) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { copy } = useCopy()
   const [copied, setCopied] = useState(false)
 
+  // 0 / 缺失的 token 指标显示「—」，不堆一排 0
+  const fmtTok = (n?: number) => (n && n > 0 ? formatContextLength(n) : '—')
   const currency = model.pricing?.currency
   const isFree =
     Number(model.pricing?.input_per_1m ?? 0) === 0 && Number(model.pricing?.output_per_1m ?? 0) === 0
@@ -69,7 +75,11 @@ export function CatalogCard({ model, isZh, onTry, onCompare, canCompare }: Props
   const released = model.released_at?.slice(0, 10)
 
   const modalities = (model.modalities ?? []).filter((m) => MODALITY_CODES.includes(m))
-  const capabilities = (model.tags ?? []).filter((tg) => !MODALITY_CODES.includes(tg)).slice(0, 6)
+  const vendorish = new Set([model.provider, model.vendor].filter(Boolean).map((s) => String(s).toLowerCase()))
+  const capabilities = (model.tags ?? [])
+    .filter((tg) => !MODALITY_CODES.includes(tg))
+    .filter((tg) => !TAG_DENYLIST.has(tg.toLowerCase()) && !vendorish.has(tg.toLowerCase()))
+    .slice(0, 6)
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -83,7 +93,8 @@ export function CatalogCard({ model, isZh, onTry, onCompare, canCompare }: Props
 
   return (
     <article
-      className="catalog-card group relative overflow-hidden rounded-[14px] border px-5 py-4 transition-all duration-300 ease-out hover:-translate-y-[2px]"
+      onClick={() => navigate(`/models/${model.id}`)}
+      className="catalog-card group relative cursor-pointer overflow-hidden rounded-[14px] border px-5 py-4 transition-all duration-300 ease-out hover:-translate-y-[2px]"
       style={{ background: 'var(--mg-bg-0)' }}
     >
       {/* hover 顶部高光线 */}
@@ -99,8 +110,8 @@ export function CatalogCard({ model, isZh, onTry, onCompare, canCompare }: Props
           <ModelIcon model={model} size={36} rounded="rounded-[10px]" className="shrink-0" />
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="truncate text-[16px] font-semibold leading-tight tracking-tight" style={{ color: 'var(--mg-text-0)' }} title={model.display_name}>
-                {model.display_name}
+              <h3 className="truncate text-[16px] font-semibold leading-tight tracking-tight" style={{ color: 'var(--mg-text-0)' }} title={prettyModelName(model.display_name, model.model_id)}>
+                {prettyModelName(model.display_name, model.model_id)}
               </h3>
               {isFree && (
                 <span className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold" style={{ background: 'color-mix(in oklab, var(--brand-base) 14%, transparent)', color: 'var(--brand-base)' }}>
@@ -120,8 +131,10 @@ export function CatalogCard({ model, isZh, onTry, onCompare, canCompare }: Props
 
         {/* 行2：指标横排 */}
         <div className="flex flex-wrap items-end gap-x-7 gap-y-2.5">
-          <Stat label={isZh ? '上下文' : 'Context'} value={formatContextLength(model.context_length)} />
-          <Stat label={isZh ? '最大输出' : 'Max output'} value={formatContextLength(model.max_output_tokens)} />
+          <Stat label={isZh ? '上下文' : 'Context'} value={fmtTok(model.context_length)} />
+          {model.max_output_tokens > 0 && (
+            <Stat label={isZh ? '最大输出' : 'Max output'} value={fmtTok(model.max_output_tokens)} />
+          )}
           <Stat label={isZh ? '输入' : 'Input'} value={formatModelPrice(model.pricing?.input_per_1m, currency)} accent />
           <Stat label={isZh ? '输出' : 'Output'} value={formatModelPrice(model.pricing?.output_per_1m, currency)} accent />
           {cacheRead > 0 && (

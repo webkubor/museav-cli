@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { CatalogModelDetail, ProviderForModel } from '@/types'
 import { ModalityBadge } from './ModalityBadge'
 import { ModelIcon } from './ModelIcon'
-import { formatContextLength, formatModelPrice, formatNumber } from '@/lib/utils'
+import { formatContextLength, formatModelPrice, formatNumber, prettyModelName } from '@/lib/utils'
 
 interface ModelDetailPanelProps {
   detail: CatalogModelDetail
@@ -27,7 +27,7 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
         />
         <div className="min-w-0 flex-1">
           <h2 className="mg-text-title-sm font-bold text-[var(--mg-text-0)] mb-1.5">
-            {detail.display_name}
+            {prettyModelName(detail.display_name, detail.model_id)}
           </h2>
           {detail.model_id && (
             <code className="mg-text-code text-[var(--mg-text-2)] bg-[var(--mg-fill-0)] px-1.5 py-0.5 rounded-sm mb-1 inline-block">

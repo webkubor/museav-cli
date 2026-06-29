@@ -44,6 +44,19 @@ export function formatContextLength(length: number | null | undefined): string {
   return String(length)
 }
 
+/** 模型展示名兜底：缺 display_name（或与 model_id 相同）时，取 model_id 末段转标题式。
+ *  deepseek-v4-flash → DeepSeek V4 Flash；modelgo/web_fetch → Web Fetch */
+export function prettyModelName(displayName?: string | null, modelId?: string | null): string {
+  const dn = (displayName ?? '').trim()
+  const id = (modelId ?? '').trim()
+  if (dn && dn !== id) return dn
+  const last = (id.split('/').pop() || id).trim()
+  if (!last) return dn || id
+  return last
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b([a-z])/g, (_, c: string) => c.toUpperCase())
+}
+
 /** 格式化计费价格，若零额或空则返回 "免费"，带货币符号及自适应后缀 */
 export function formatModelPrice(
   amount: number | string | null | undefined,

@@ -30,6 +30,7 @@ const GuardrailsPage = lazy(() => import('@/pages/guardrails'))
 const ObservabilityPage = lazy(() => import('@/pages/observability'))
 const ModelsPage = lazy(() => import('@/pages/models'))
 const ModelsCatalogPage = lazy(() => import('@/pages/models/catalog'))
+const ModelDetailPage = lazy(() => import('@/pages/models/detail'))
 const ModelsComparePage = lazy(() => import('@/pages/models-compare'))
 const PlatformConfigPage = lazy(() => import('@/pages/platform-config'))
 const TasksPage = lazy(() => import('@/pages/tasks'))
@@ -174,6 +175,7 @@ export default function App() {
           {/* 模型广场（公开，免登录，双主题）— 与官网同路径 /models，官网「模型」直接跳此 */}
           <Route path="/models" element={<PublicShell />}>
             <Route index element={<ModelsCatalogPage />} />
+            <Route path=":modelId" element={<ModelDetailPage />} />
           </Route>
 
           {/* 控制台路由（需登录） */}

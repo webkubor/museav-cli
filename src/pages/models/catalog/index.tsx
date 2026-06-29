@@ -58,7 +58,11 @@ export default function ModelsCatalogPage() {
   const tagsQuery = useQuery({ queryKey: ['catalog-model-tags'], queryFn: () => listModelTags(true), staleTime: 5 * 60_000 })
   const familiesQuery = useQuery({ queryKey: ['catalog-model-families'], queryFn: () => listModelFamilies(true), staleTime: 5 * 60_000 })
 
-  const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
+  // 过滤后端测试数据（pytest-* 不该出现在公开广场）
+  const allModels = useMemo(
+    () => (modelsQuery.data?.items ?? []).filter((m) => !/^pytest/i.test(m.model_id)),
+    [modelsQuery.data?.items],
+  )
   const families = useMemo(
     () => (familiesQuery.data?.items ?? []).filter((f) => f.enabled).sort((a, b) => a.sort_order - b.sort_order),
     [familiesQuery.data?.items],

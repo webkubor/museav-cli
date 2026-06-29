@@ -36,7 +36,7 @@ function appVersion(): string {
 }
 
 function buildHash(): string | undefined {
-  return typeof __BUILD_HASH__ === 'string' && __BUILD_HASH__ ? __BUILD_HASH__ : undefined
+  return typeof __BUILD_COMMIT__ === 'string' && __BUILD_COMMIT__ ? __BUILD_COMMIT__ : undefined
 }
 
 function pad(value: number): string {

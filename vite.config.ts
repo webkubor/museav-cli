@@ -3,17 +3,8 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
-import { agentDebugger, agentProxy, agentGit } from 'vite-plugin-agent-eyes'
+import { agentDebugger, agentProxy, agentGit, agentVersion } from 'vite-plugin-agent-eyes'
 import { devRequirementsPlugin } from './scripts/dev-requirements-plugin'
-import { version } from './package.json'
-import { execSync } from 'node:child_process'
-
-// 构建时注入：git 短 hash + 构建时间，每次部署都会变，用于判断线上是否走了缓存
-const buildHash = (() => {
-  try { return execSync('git rev-parse --short HEAD').toString().trim() } catch { return 'unknown' }
-})()
-const buildTime = new Date().toISOString()
-
 
 // 跳转地址（官网/控制台/文档）每个环境都必须按市场配齐——缺一个就中断构建，
 // 不允许带着空配置/硬编码兜底上线（兜底的真正含义：配置缺失就不让过）。
@@ -33,14 +24,13 @@ export default defineConfig(({ mode }) => {
   }
   return {
   define: {
-    __APP_VERSION__: JSON.stringify(version),
-    __BUILD_HASH__: JSON.stringify(buildHash),
-    __BUILD_TIME__: JSON.stringify(buildTime),
     'process.env.NODE_ENV': JSON.stringify(mode === 'test' ? 'development' : 'production'),
   },
   plugins: [
     tailwindcss(),
     react(),
+    // 构建戳记：__APP_VERSION__/__BUILD_TAG__(最新 make-tag)/__BUILD_COMMIT__/__BUILD_TIME__ + dev GET /__version
+    agentVersion(),
     agentDebugger(),
     // 提交成功后推送飞书通知（dev 启动时幂等安装 post-commit 钩子；不动已有 pre-commit）
     agentGit({

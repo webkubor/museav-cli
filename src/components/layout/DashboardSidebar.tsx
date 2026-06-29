@@ -47,7 +47,7 @@ const SidebarSystemStatus: React.FC<{ collapsed: boolean }> = ({ collapsed }) =>
     <div className="mx-3 mb-3 mt-1 px-1.5 py-1.5">
       <div className="flex items-center justify-between gap-2">
         <span className="truncate font-mono text-[11px] leading-none text-mg-text-2">
-          v{__APP_VERSION__} · {__BUILD_HASH__}
+          v{__APP_VERSION__} · {__BUILD_TAG__ || __BUILD_COMMIT__}
         </span>
         <span className="inline-flex items-center gap-1.5 text-[9px] font-bold leading-none text-mg-success">
           <span className="h-1.5 w-1.5 rounded-full bg-mg-success" />

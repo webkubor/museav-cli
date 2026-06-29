@@ -85,9 +85,12 @@ export function applyTheme(theme: Theme) {
   if (resolved === 'dark') {
     document.documentElement.setAttribute('theme-mode', 'dark')
     document.body.setAttribute('theme-mode', 'dark')
+    // 同步共享 token 的主题开关（modelgo-design-tokens 用 [data-theme] 切深浅）
+    document.documentElement.setAttribute('data-theme', 'dark')
   } else {
     document.documentElement.removeAttribute('theme-mode')
     document.body.removeAttribute('theme-mode')
+    document.documentElement.removeAttribute('data-theme')
   }
   // 重新计算并应用品牌色，以适配新主题的莫兰迪转换
   applyBrandTheme(getSavedBrandTheme())

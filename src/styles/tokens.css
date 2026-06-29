@@ -1,79 +1,31 @@
 /* ══════════════════════════════════════════════════════════════
-   轴 1 — 市场品牌色
-   domestic = CN 靛紫 | global = GO 翠绿
-   每套各写一次浅色 + 深色，换色板只改这里
+   轴 1 — 市场品牌色 —— 单一真源 modelgo-design-tokens（见 index.css 先 import 共享）
+   市场(data-market) × 主题(data-theme) 全部由共享包解析；控制台只引用、不再自维护色值。
+   深浅自适应：App.tsx 设 data-market，theme.ts 切主题时同步 data-theme，共享原子自动切深浅。
    ══════════════════════════════════════════════════════════════ */
 
-/* 国内 — CN 靛紫（浅色） */
-:root, [data-market='domestic'] {
-  --cn-deep: #5433e8;
-  --cn-base: #6743fd;
-  --cn-base-rgb: 103, 67, 253;
-  --cn-mid:  #8b6aff;
-  --cn-light: #b8a4ff;
-  --cn-pale: #f0ecff;
-  --cn-glow: rgba(103, 67, 253, 0.14);
-  --cn-selected-bg: rgba(103, 67, 253, 0.07);
-}
-/* 国内 — CN 靛紫（深色，饱满科技紫，与 Logo 颜色对齐） */
-[data-market='domestic'] [theme-mode='dark'],
-[data-market='domestic'] body[theme-mode='dark'],
-[theme-mode='dark'],
-body[theme-mode='dark'] {
-  --cn-deep: #5433e8;
-  --cn-base: #7c5cfc;
-  --cn-base-rgb: 124, 92, 252;
-  --cn-mid:  #957aff;
-  --cn-light: #c0b0ff;
-  --cn-pale: #201a3b;
-  --cn-glow: rgba(124, 92, 252, 0.16);
-  --cn-selected-bg: rgba(124, 92, 252, 0.10);
-}
+/* 市场锁定原子（保留给需固定某市场色的少数场景，如 OAuth 厂商徽标）；值=共享原子，随主题切 */
+:root {
+  --cn-deep:  var(--mg-brand-cn-deep);
+  --cn-base:  var(--mg-brand-cn-base);
+  --cn-mid:   var(--mg-brand-cn-mid);
+  --cn-light: var(--mg-brand-cn-light);
+  --cn-pale:  var(--mg-brand-cn-pale);
+  --go-deep:  var(--mg-brand-global-deep);
+  --go-base:  var(--mg-brand-global-base);
+  --go-mid:   var(--mg-brand-global-mid);
+  --go-light: var(--mg-brand-global-light);
+  --go-pale:  var(--mg-brand-global-pale);
 
-/* 国际 — 对齐国外官网浅色 emerald（#059669，白底对比度安全；见 global-web html.light[data-market=global]） */
-:root, [data-market='global'] {
-  --go-deep: #064e3b;
-  --go-base: #059669;
-  --go-base-rgb: 5, 150, 105;
-  --go-mid:  #047857;
-  --go-light: #059669;
-  --go-pale: #ecfdf5;
-  --go-glow: rgba(5, 150, 105, 0.18);
-  --go-selected-bg: rgba(5, 150, 105, 0.09);
-}
-/* 国际 — 对齐国外官网深色亮草绿（#68e657；见 global-web [data-market=global] 默认深色块） */
-[data-market='global'] [theme-mode='dark'],
-[data-market='global'] body[theme-mode='dark'] {
-  --go-deep: #34a52a;
-  --go-base: #68e657;
-  --go-base-rgb: 104, 230, 87;
-  --go-mid:  #8aec7d;
-  --go-light: #68e657;
-  --go-pale: #1b2921;
-  --go-glow: rgba(104, 230, 87, 0.16);
-  --go-selected-bg: rgba(104, 230, 87, 0.10);
-}
-
-/* 品牌色路由 — brand-* 指向当前市场的原色 */
-:root, [data-market='domestic'] {
-  --brand-deep: var(--cn-deep);
-  --brand-base: var(--cn-base);
-  --brand-base-rgb: var(--cn-base-rgb);
-  --brand-mid:  var(--cn-mid);
-  --brand-light: var(--cn-light);
-  --brand-pale: var(--cn-pale);
-  --brand-glow: var(--cn-glow);
-  --brand-selected-bg: var(--cn-selected-bg);
-}
-[data-market='global'] {
-  --brand-deep: var(--go-deep);
-  --brand-base: var(--go-base);
-  --brand-base-rgb: var(--go-base-rgb);
-  --brand-mid:  var(--go-mid);
-  --brand-light: var(--go-light);
-  --brand-pale: var(--go-pale);
-  --brand-glow: var(--go-glow);
-  --brand-selected-bg: var(--go-selected-bg);
+  /* 当前市场品牌（共享已按 data-market 解析；主题由 data-theme 自动切深浅） */
+  --brand-deep:        var(--mg-brand-deep);
+  --brand-base:        var(--mg-brand-base);
+  --brand-base-rgb:    var(--mg-brand-base-rgb);
+  --brand-mid:         var(--mg-brand-mid);
+  --brand-light:       var(--mg-brand-light);
+  --brand-pale:        var(--mg-brand-pale);
+  --brand-glow:        var(--mg-brand-glow);
+  --brand-selected-bg: var(--mg-brand-selected-bg);
 }
 
 /* 主色 / 链接（跟随 brand-*，自动响应市场切换） */
@@ -98,8 +50,8 @@ body[theme-mode='dark'] {
   --radius-full: 9999px;
 
   /* 字体（统一入口；中文系统优先，拉丁 Inter，去掉 Outfit） */
-  --font-sans: 'Inter', 'PingFang SC', 'MiSans', 'HarmonyOS Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  --font-sans: var(--mg-font-sans);
+  --font-mono: var(--mg-font-mono);
   --mg-font-size-caption: 0.75rem;
   --mg-line-height-caption: 1rem;
   --mg-font-size-body: 0.875rem;

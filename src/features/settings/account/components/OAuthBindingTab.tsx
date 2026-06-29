@@ -72,7 +72,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
   return (
     <>
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '520px', paddingTop: '8px' }}>
-      <div style={{ fontSize: '13px', color: 'var(--mg-text-1)', marginBottom: '8px', lineHeight: '1.5' }}>
+      <div style={{ fontSize: '13px', color: 'var(--mg-text-2)', marginBottom: '8px', lineHeight: '1.5' }}>
         {t('account.oauth.desc')}
       </div>
 
@@ -122,7 +122,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 600, color: 'var(--mg-text-0)', fontSize: '14.5px', letterSpacing: '-0.01em' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--mg-text-1)', fontSize: '14.5px', letterSpacing: '-0.01em' }}>
                       {t(`account.oauth.${provider}`)}
                     </span>
                     {isBound ? (
@@ -141,7 +141,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
                     ) : (
                       <span style={{
                         fontSize: '11px',
-                        color: 'var(--mg-text-2)',
+                        color: 'var(--mg-text-3)',
                         marginLeft: '10px',
                         backgroundColor: 'var(--mg-fill-0)',
                         padding: '1px 6px',
@@ -154,7 +154,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
                     )}
                   </div>
                   {isBound && conn.external_email && (
-                    <span style={{ fontSize: '12px', color: 'var(--mg-text-2)' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--mg-text-3)' }}>
                       {t('account.oauth.emailLabel', { email: conn.external_email })}
                     </span>
                   )}
@@ -203,7 +203,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
           </div>
         }
       >
-        <p style={{ fontSize: '14px', color: isOnlyLoginMethod ? 'var(--mg-danger)' : 'var(--mg-text-1)', margin: 0 }}>
+        <p style={{ fontSize: '14px', color: isOnlyLoginMethod ? 'var(--mg-danger)' : 'var(--mg-text-2)', margin: 0 }}>
           {confirmMessage}
         </p>
       </Modal>

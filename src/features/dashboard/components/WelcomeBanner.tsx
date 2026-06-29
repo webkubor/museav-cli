@@ -57,7 +57,7 @@ export const WelcomeBanner: React.FC = () => {
       <button
         type="button"
         onClick={handleClose}
-        className="absolute top-4 right-4 text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-1 p-1.5 rounded-full transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center z-20"
+        className="absolute top-4 right-4 text-mg-text-3 hover:text-mg-text-1 hover:bg-mg-fill-1 p-1.5 rounded-full transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center z-20"
         title="关闭欢迎横幅"
       >
         <LuX size={15} />
@@ -66,8 +66,8 @@ export const WelcomeBanner: React.FC = () => {
       {/* 左侧：极简引导 */}
       <div className="flex flex-col justify-center gap-5 flex-1 min-w-[260px] relative z-10">
         <div>
-          <p className="text-[11px] font-bold tracking-widest uppercase text-mg-text-2 mb-1.5">快速开始</p>
-          <h2 className="text-[22px] font-bold tracking-tight text-mg-text-0 m-0">
+          <p className="text-[11px] font-bold tracking-widest uppercase text-mg-text-3 mb-1.5">快速开始</p>
+          <h2 className="text-[22px] font-bold tracking-tight text-mg-text-1 m-0">
             你好，{name} 👋
           </h2>
         </div>
@@ -85,13 +85,13 @@ export const WelcomeBanner: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => navigate(step.to!)}
-                    className="flex items-center gap-1.5 text-[13px] font-semibold text-mg-text-1 hover:text-brand-base transition-colors cursor-pointer bg-transparent border-none p-0"
+                    className="flex items-center gap-1.5 text-[13px] font-semibold text-mg-text-2 hover:text-brand-base transition-colors cursor-pointer bg-transparent border-none p-0"
                   >
                     <Icon size={13} />
                     {step.label}
                   </button>
                 ) : (
-                  <span className="flex items-center gap-1.5 text-[13px] font-semibold text-mg-text-2">
+                  <span className="flex items-center gap-1.5 text-[13px] font-semibold text-mg-text-3">
                     <Icon size={13} />
                     {step.label}
                   </span>
@@ -105,7 +105,7 @@ export const WelcomeBanner: React.FC = () => {
           href={appendThemeParam(marketConfig.docsUrl)}
           target="_blank"
           rel="noreferrer"
-          className="text-[12px] text-mg-text-2 hover:text-brand-base transition-colors self-start"
+          className="text-[12px] text-mg-text-3 hover:text-brand-base transition-colors self-start"
         >
           查看完整文档 →
         </a>

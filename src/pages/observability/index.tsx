@@ -52,10 +52,10 @@ function ToggleRow({
   return (
     <div className={`flex items-center justify-between p-5 gap-6 ${isFirst ? '' : 'border-t border-mg-border'}`}>
       <div>
-        <p className="text-sm font-semibold text-mg-text-0 mb-1">
+        <p className="text-sm font-semibold text-mg-text-1 mb-1">
           {title}
         </p>
-        <p className="text-xs text-mg-text-2">
+        <p className="text-xs text-mg-text-3">
           {description}
         </p>
       </div>
@@ -166,11 +166,11 @@ function PlatformConfigModal({
       <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-6">
         {/* 左：说明 */}
         <div>
-          <div className="flex items-center gap-2 text-sm font-bold text-mg-text-0">
+          <div className="flex items-center gap-2 text-sm font-bold text-mg-text-1">
             <LuLink size={15} className="text-brand-base" />
             连接配置
           </div>
-          <p className="mt-2 text-xs text-mg-text-2 leading-relaxed">
+          <p className="mt-2 text-xs text-mg-text-3 leading-relaxed">
             配置凭证与端点，保存前可测试连接。
           </p>
         </div>
@@ -178,16 +178,16 @@ function PlatformConfigModal({
         {/* 右：表单 */}
         <div className="space-y-4">
           <div>
-            <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">名称</label>
+            <label className="block text-[11px] font-bold text-mg-text-2 uppercase tracking-widest mb-2">名称</label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Webhook" />
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">URL</label>
+            <label className="block text-[11px] font-bold text-mg-text-2 uppercase tracking-widest mb-2">URL</label>
             <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://api.example.com/v1/traces" />
-            <p className="text-[11px] text-mg-text-2 mt-1 leading-relaxed">需填完整 OTLP traces 地址，以 <code className="text-mg-text-1">/v1/traces</code> 结尾</p>
+            <p className="text-[11px] text-mg-text-3 mt-1 leading-relaxed">需填完整 OTLP traces 地址，以 <code className="text-mg-text-2">/v1/traces</code> 结尾</p>
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">方法（可选）</label>
+            <label className="block text-[11px] font-bold text-mg-text-2 uppercase tracking-widest mb-2">方法（可选）</label>
             <Select value={method} onChange={setMethod} className="w-full">
               <Select.Option value="POST">POST</Select.Option>
               <Select.Option value="GET">GET</Select.Option>
@@ -196,7 +196,7 @@ function PlatformConfigModal({
             </Select>
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">请求头（可选）</label>
+            <label className="block text-[11px] font-bold text-mg-text-2 uppercase tracking-widest mb-2">请求头（可选）</label>
             <Textarea
               value={headers}
               onChange={(e) => setHeaders(e.target.value)}
@@ -206,13 +206,13 @@ function PlatformConfigModal({
           </div>
           <div className="flex items-start justify-between gap-4 pt-1">
             <div>
-              <p className="text-sm font-semibold text-mg-text-0">隐私模式</p>
-              <p className="text-xs text-mg-text-2 mt-0.5 leading-relaxed">开启后，traces 中将排除 prompt 与 completion 数据。</p>
+              <p className="text-sm font-semibold text-mg-text-1">隐私模式</p>
+              <p className="text-xs text-mg-text-3 mt-0.5 leading-relaxed">开启后，traces 中将排除 prompt 与 completion 数据。</p>
             </div>
             <Switch checked={privacyMode} onChange={setPrivacyMode} />
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">采样率（%）</label>
+            <label className="block text-[11px] font-bold text-mg-text-2 uppercase tracking-widest mb-2">采样率（%）</label>
             <Input
               type="number"
               min={0}
@@ -221,10 +221,10 @@ function PlatformConfigModal({
               onChange={(e) => setSampling(e.target.value)}
               placeholder="100"
             />
-            <p className="text-xs text-mg-text-2 mt-1.5">按比例采样上报，100 = 全量。</p>
+            <p className="text-xs text-mg-text-3 mt-1.5">按比例采样上报，100 = 全量。</p>
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-mg-text-1 uppercase tracking-widest mb-2">按 API Key 过滤（留空 = 全部）</label>
+            <label className="block text-[11px] font-bold text-mg-text-2 uppercase tracking-widest mb-2">按 API Key 过滤（留空 = 全部）</label>
             <TagInput
               value={apiKeyIds}
               onChange={setApiKeyIds}
@@ -301,7 +301,7 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
       {forwards.length > 0 && (
         <div className="rounded-md border border-mg-border overflow-hidden bg-card-bg">
           <div className="px-5 py-3 border-b border-mg-border">
-            <p className="text-[11px] font-bold text-mg-text-2 uppercase tracking-widest">已配置的 Destination</p>
+            <p className="text-[11px] font-bold text-mg-text-3 uppercase tracking-widest">已配置的 Destination</p>
           </div>
           <ul>
             {forwards.map((fwd, idx) => (
@@ -315,20 +315,20 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
                     statusMap={FORWARD_STATUS_MAP}
                   />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-mg-text-0 truncate">{fwd.name}</p>
-                    <p className="text-xs text-mg-text-2 truncate">{fwd.config?.endpoint as string ?? ''}</p>
+                    <p className="text-sm font-medium text-mg-text-1 truncate">{fwd.name}</p>
+                    <p className="text-xs text-mg-text-3 truncate">{fwd.config?.endpoint as string ?? ''}</p>
                   </div>
                 </div>
                 {canManageForward && (
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
-                      className="text-xs text-mg-text-2 hover:text-brand-base transition-colors"
+                      className="text-xs text-mg-text-3 hover:text-brand-base transition-colors"
                       onClick={() => handleEditForward(fwd)}
                     >编辑</button>
                     <button
                       type="button"
-                      className="text-xs text-mg-text-2 hover:text-mg-danger transition-colors"
+                      className="text-xs text-mg-text-3 hover:text-mg-danger transition-colors"
                       onClick={() => deleteMutation.mutate(fwd.forward_id)}
                     >删除</button>
                   </div>
@@ -341,7 +341,7 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
 
       <div className="rounded-md border border-mg-border overflow-hidden bg-card-bg">
         <div className="px-5 py-3 border-b border-mg-border">
-          <p className="text-[11px] font-bold text-mg-text-2 uppercase tracking-widest">可用平台</p>
+          <p className="text-[11px] font-bold text-mg-text-3 uppercase tracking-widest">可用平台</p>
         </div>
         {platformsQuery.isLoading ? (
           <EmptyState title="加载中…" className="py-10" />
@@ -359,11 +359,11 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
                   {p.logo_url ? (
                     <img src={p.logo_url} alt={p.display_name} className="w-8 h-8 rounded-lg object-contain bg-mg-fill-0 shrink-0" />
                   ) : (
-                    <span className="w-8 h-8 rounded-lg bg-mg-fill-0 text-mg-text-1 flex items-center justify-center text-sm font-bold shrink-0">
+                    <span className="w-8 h-8 rounded-lg bg-mg-fill-0 text-mg-text-2 flex items-center justify-center text-sm font-bold shrink-0">
                       {p.display_name.charAt(0)}
                     </span>
                   )}
-                  <span className="text-sm font-medium text-mg-text-0">{p.display_name}</span>
+                  <span className="text-sm font-medium text-mg-text-1">{p.display_name}</span>
                   {(forwardCountByPlatform[p.platform] ?? 0) > 0 && (
                     <Badge variant="success" size="sm" dot className="shrink-0">
                       已配置{forwardCountByPlatform[p.platform]! > 1 ? ` ×${forwardCountByPlatform[p.platform]}` : ''}
@@ -373,7 +373,7 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
                 {canManageForward && (
                   <button
                     type="button"
-                    className="flex items-center gap-1 text-xs text-mg-text-2 hover:text-brand-base transition-colors"
+                    className="flex items-center gap-1 text-xs text-mg-text-3 hover:text-brand-base transition-colors"
                     onClick={(e) => { e.stopPropagation(); setActivePlatform({ id: p.platform, name: p.display_name }) }}
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">

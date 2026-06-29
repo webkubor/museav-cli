@@ -28,7 +28,7 @@ const buttonVariants = cva(
         link:
           "modern-btn-link",
         glass:
-          "bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 text-mg-text-0 hover:bg-white/20 dark:hover:bg-black/30 shadow-sm",
+          "bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 text-mg-text-1 hover:bg-white/20 dark:hover:bg-black/30 shadow-sm",
         brand:
           "modern-btn-brand",
       },

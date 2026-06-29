@@ -49,11 +49,11 @@ function WorkspaceGuard({
   if (!activeWorkspaceId && navConfig.workspaceScopedKeys.has(currentKey)) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4 select-none animate-in fade-in duration-300">
-        <LuLock size={36} className="text-mg-text-2" />
-        <div className="text-base font-bold text-mg-text-0">
+        <LuLock size={36} className="text-mg-text-3" />
+        <div className="text-base font-bold text-mg-text-1">
           无可用工作区
         </div>
-        <div className="text-[13px] text-mg-text-2 text-center max-w-[320px] leading-relaxed">
+        <div className="text-[13px] text-mg-text-3 text-center max-w-[320px] leading-relaxed">
           当前账号尚未加入任何工作区。请联系企业管理员将你加入工作区，或前往设置创建一个新工作区。
         </div>
       </div>

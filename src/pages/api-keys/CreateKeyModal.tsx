@@ -164,7 +164,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                     'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all duration-150',
                     active
                       ? 'bg-mg-bg-0 text-brand-base shadow-sm border border-mg-border'
-                      : 'text-mg-text-2 hover:text-mg-text-1',
+                      : 'text-mg-text-3 hover:text-mg-text-2',
                   ].join(' ')}
                 >
                   <span className="shrink-0">{opt.icon}</span>
@@ -176,7 +176,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
 
           {/* 名称 */}
           <div>
-            <label className="block text-xs font-bold text-mg-text-1 mb-2">
+            <label className="block text-xs font-bold text-mg-text-2 mb-2">
               {t('apiKeys.createModal.nameLabel')}
             </label>
             <Input
@@ -189,7 +189,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
           {/* 成员（仅 scope=member） */}
           {effectiveScope === 'member' && (
             <div>
-              <label className="block text-xs font-bold text-mg-text-1 mb-2">目标成员</label>
+              <label className="block text-xs font-bold text-mg-text-2 mb-2">目标成员</label>
               <Select value={memberAccountId} onChange={setMemberAccountId} placeholder="请选择工作区成员" className="w-full">
                 {(membersQuery.data?.items ?? []).map((m) => (
                   <SelectItem key={m.account.account_id} value={m.account.account_id}>
@@ -198,7 +198,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                 ))}
               </Select>
               {membersQuery.data?.items.length === 0 && (
-                <p className="text-xs text-mg-text-2 mt-1.5">该工作区暂无成员</p>
+                <p className="text-xs text-mg-text-3 mt-1.5">该工作区暂无成员</p>
               )}
             </div>
           )}
@@ -206,7 +206,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
           {/* 安全护栏 */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-bold text-mg-text-1">
+              <label className="text-xs font-bold text-mg-text-2">
                 {t('apiKeys.createModal.guardrailLabel')}
               </label>
               <button
@@ -242,8 +242,8 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
 
           {/* 消费限额 —— 直接显示，留空即不限额；时间维度对齐安全护栏 */}
           <div>
-            <label className="block text-xs font-bold text-mg-text-1 mb-3">
-              消费限额 <span className="text-mg-text-2 font-normal">（可选，留空则不限额）</span>
+            <label className="block text-xs font-bold text-mg-text-2 mb-3">
+              消费限额 <span className="text-mg-text-3 font-normal">（可选，留空则不限额）</span>
             </label>
             <div className="flex gap-3">
               <Input
@@ -251,7 +251,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                 value={spendingAmount}
                 onChange={(e) => setSpendingAmount(e.target.value)}
                 placeholder="0.00"
-                prefix={<span className="text-xs text-mg-text-2 font-mono select-none">{symbol}</span>}
+                prefix={<span className="text-xs text-mg-text-3 font-mono select-none">{symbol}</span>}
                 className="flex-1"
               />
               <Select value={spendingPeriodUnit} onChange={(v) => setSpendingPeriodUnit(v as SpendingPeriodUnit)} className="w-28">
@@ -264,8 +264,8 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
 
           {/* 过期时间 */}
           <div>
-            <label className="block text-xs font-bold text-mg-text-1 mb-2">
-              过期时间 <span className="text-mg-text-2 font-normal">（可选，不填则永不过期）</span>
+            <label className="block text-xs font-bold text-mg-text-2 mb-2">
+              过期时间 <span className="text-mg-text-3 font-normal">（可选，不填则永不过期）</span>
             </label>
             <DateRangePicker
               value={expiryRange}

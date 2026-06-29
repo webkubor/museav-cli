@@ -43,11 +43,11 @@
   --nav-item-active-bg:  var(--brand-selected-bg);
   --shadow-focus: 0 0 0 3px var(--brand-glow);
 
-  /* 圆角（静态） */
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 18px;
-  --radius-full: 9999px;
+  /* 圆角 — 转发共享 --mg-radius-*（控制台特有命名 --radius-* 保留，值对齐 SSoT） */
+  --radius-sm:   var(--mg-radius-sm);    /* 8px */
+  --radius-md:   var(--mg-radius-md);    /* 14px */
+  --radius-lg:   var(--mg-radius-lg);    /* 18px */
+  --radius-full: var(--mg-radius-pill);  /* 999px（原本地 9999px，对齐 SSoT） */
 
   /* 字体（控制台特调：拉丁 Inter 优先，UI 更紧凑清晰；与官网 PingFang 优先不同，不收敛 SSOT） */
   --font-sans: 'Inter', 'PingFang SC', 'MiSans', 'HarmonyOS Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
@@ -66,13 +66,9 @@
   --mg-line-height-page-title: 2rem;
   --mg-letter-spacing-label: 0.04em;
 
-  /* 密度尺寸（控件/卡片间距统一入口） */
-  --mg-space-1: 0.25rem;
-  --mg-space-2: 0.5rem;
-  --mg-space-3: 0.75rem;
-  --mg-space-4: 1rem;
-  --mg-space-5: 1.25rem;
-  --mg-space-6: 1.5rem;
+  /* 密度尺寸 — space-1/2/3/4/6 用共享同名变量（不再本地重复定义，避免 rem/px 单位分歧与覆盖）；
+     space-5(20px) 共享无，保留控制台特有 */
+  --mg-space-5: 1.25rem;            /* 20px，控制台特有，SSoT 无 */
   --mg-control-h-xs: 1.75rem;
   --mg-control-h-sm: 2rem;
   --mg-control-h-md: 2.5rem;
@@ -111,10 +107,10 @@
   --account-menu-panel: var(--mg-fill-0);
   --account-menu-panel-strong: var(--mg-fill-1);
   --account-menu-border: var(--mg-border);
-  --account-menu-text-0: var(--mg-text-0);
-  --account-menu-text-1: var(--mg-text-1);
-  --account-menu-text-2: var(--mg-text-2);
-  --account-menu-text-3: var(--mg-text-3);
+  --account-menu-text-0: var(--mg-text-1);
+  --account-menu-text-1: var(--mg-text-2);
+  --account-menu-text-2: var(--mg-text-3);
+  --account-menu-text-3: var(--mg-text-4);
   --account-menu-danger: var(--mg-danger);
 }
 
@@ -134,16 +130,10 @@
   --mg-bg-2:  var(--mg-surface-2);   /* 悬浮卡片 / Dropdown */
   --mg-bg-3:  var(--mg-surface-3);   /* Modal / Tooltip 顶层 */
 
-  /* 文字层级 — 控制台 text-0=主，整体对共享 text-1/2/3/4 错位 +1 */
-  /* 文字层级保留控制台本地特调值（AA 校过；共享 1-indexed 与控制台 0-indexed 同名冲突，不收敛） */
-  --mg-text-0: #0f172a;  /* 主文字 */
-  --mg-text-1: #475569;  /* 次要 */
-  --mg-text-2: #64748b;  /* 辅助标签 — 4.6:1 on 白，AA */
-  --mg-text-3: #94a3b8;  /* 禁用 / 装饰 */
+  /* 文字层级 — 直接用共享 --mg-text-1/2/3/4（主/次/辅/禁用），本地不再覆盖，避免盖掉 SSoT */
 
-  /* 边框 — 保留控制台市场色调（不在本轮 token 收敛范围）。
-     填充 --mg-fill-0/1/2 同名共享，不在此覆盖（自引用会失效），直接用共享值 */
-  --mg-border: rgba(71, 57, 146, 0.09);
+  /* 边框 — 用共享 --mg-border（已上提市场分色：随 [data-market] 品牌色自动切紫/绿） */
+  /* 填充 --mg-fill-0/1/2 同名共享，不在此覆盖（自引用会失效），直接用共享值 */
 
   /* 代码块面（payload 查看器） */
   --mg-code-bg:   #e9ecf1;
@@ -163,17 +153,15 @@
   --ambient-particle-opacity: 0.72;
 }
 
-/* 国内市场：边框/代码块/网格的品牌色调（bg/fill/语义交共享，本块只留控制台特有项） */
+/* 国内市场：代码块/网格的品牌色调（border/fill/语义交共享，本块只留控制台特有项） */
 :root,
 [data-market='domestic'] {
-  --mg-border: rgba(71, 57, 146, 0.09);
   --mg-code-bg: #eef0f8;
   --grid-color: rgba(103, 67, 253, 0.025);
 }
 
-/* 国际市场：边框/代码块/网格的品牌色调 */
+/* 国际市场：代码块/网格的品牌色调（border 交共享 [data-market] 分色） */
 [data-market='global'] {
-  --mg-border: rgba(20, 91, 78, 0.09);
   --mg-code-bg: #eaf3f1;
   --grid-color: rgba(29, 195, 155, 0.025);
 }
@@ -183,11 +171,7 @@
 [theme-mode='dark'],
 body[theme-mode='dark'] {
   /* bg-0/1/2/3、fill-*、success/warning/info、danger 交共享 [data-theme='dark']（theme.ts 已同步设 data-theme=dark）。
-     文字层为 app 特调本地值（共享 1-indexed 与控制台 0-indexed 同名冲突，不收敛），深色需在此显式翻转 */
-  --mg-text-0: #f4f4f5;  /* 主文字 zinc-100 */
-  --mg-text-1: #d4d4d8;  /* 次要 zinc-300 */
-  --mg-text-2: #a1a1aa;  /* 辅助 zinc-400（AA 5.2:1） */
-  --mg-text-3: #52525b;  /* 禁用 zinc-600 */
+     文字层也直接用共享 --mg-text-1/2/3/4（共享 [data-theme=dark] 已定义 zinc-100/300/400/600），不再本地覆盖。*/
   --mg-bg-0-rgb: 35, 35, 41;  /* surface 暗值的 RGB，供玻璃态 rgba() */
 
   /* 代码块面（payload 查看器）：清透极黑 */

@@ -159,7 +159,7 @@ export default function DevicePage() {
     return (
       <AuthLayout title={t('device.title.missingCode')}>
         <div style={{ textAlign: 'center', padding: '8px 0' }}>
-          <span style={{ color: 'var(--mg-text-2)', fontSize: '14px' }}>
+          <span style={{ color: 'var(--mg-text-3)', fontSize: '14px' }}>
             {t('device.desc.missingCode')}
           </span>
         </div>
@@ -186,13 +186,13 @@ export default function DevicePage() {
       <AuthLayout title={t('device.title.success')}>
         <div style={{ textAlign: 'center', padding: '8px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ fontSize: '40px' }}>✓</div>
-          <span style={{ color: 'var(--mg-text-0)', fontSize: '15px', fontWeight: 600 }}>
+          <span style={{ color: 'var(--mg-text-1)', fontSize: '15px', fontWeight: 600 }}>
             {t('device.success.title')}
           </span>
-          <span style={{ color: 'var(--mg-text-2)', fontSize: '13px' }}>
+          <span style={{ color: 'var(--mg-text-3)', fontSize: '13px' }}>
             {t('device.success.desc')}
           </span>
-          <span style={{ color: 'var(--mg-text-2)', fontSize: '13px' }}>
+          <span style={{ color: 'var(--mg-text-3)', fontSize: '13px' }}>
             {t('device.success.returnHint')}
           </span>
         </div>
@@ -210,7 +210,7 @@ export default function DevicePage() {
       <AuthLayout title={view.title}>
         <div style={{ textAlign: 'center', padding: '8px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ fontSize: '40px', color: view.color }}>{view.icon}</div>
-          <span style={{ color: 'var(--mg-text-2)', fontSize: '13px' }}>{view.desc}</span>
+          <span style={{ color: 'var(--mg-text-3)', fontSize: '13px' }}>{view.desc}</span>
           <Button onClick={() => navigate('/dashboard')} className="rounded-sm">
             {t('device.button.backToDashboard')}
           </Button>
@@ -269,10 +269,10 @@ export default function DevicePage() {
               {initials}
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-0)' }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-1)' }}>
                 {account?.display_name ?? '—'}
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--mg-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: '11px', color: 'var(--mg-text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {account?.email ?? '—'}
               </div>
             </div>
@@ -293,7 +293,7 @@ export default function DevicePage() {
             <div style={{
               width: '1px', height: '14px', background: 'var(--mg-border)', flexShrink: 0,
             }} />
-            <span style={{ fontSize: '11px', color: 'var(--mg-text-2)' }}>
+            <span style={{ fontSize: '11px', color: 'var(--mg-text-3)' }}>
               {t('device.flow.arrow')}
             </span>
           </div>
@@ -308,7 +308,7 @@ export default function DevicePage() {
           }}>
             {selectedTenant ? (
               <>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-0)' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-1)' }}>
                   {selectedTenant.name}
                 </span>
                 <span style={{
@@ -323,7 +323,7 @@ export default function DevicePage() {
                 </span>
               </>
             ) : (
-              <span style={{ fontSize: '12px', color: 'var(--mg-text-2)', fontStyle: 'italic' }}>
+              <span style={{ fontSize: '12px', color: 'var(--mg-text-3)', fontStyle: 'italic' }}>
                 {t('device.tenant.placeholder')}
               </span>
             )}
@@ -333,7 +333,7 @@ export default function DevicePage() {
         {/* ② 企业选择器 */}
         {tenants.length > 1 && (
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--mg-text-2)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--mg-text-3)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               {t('device.tenant.label')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -368,7 +368,7 @@ export default function DevicePage() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-0)' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-1)' }}>
                           {tenant.name}
                         </span>
                         {tenant.is_default && (
@@ -380,7 +380,7 @@ export default function DevicePage() {
                           </span>
                         )}
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--mg-text-2)', marginTop: '1px' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--mg-text-3)', marginTop: '1px' }}>
                         {tenant.slug} · {roleLabel ? (isZh ? roleLabel.zh : roleLabel.en) : tenant.role}
                       </div>
                     </div>
@@ -412,7 +412,7 @@ export default function DevicePage() {
           </Button>
         </div>
 
-        <span style={{ fontSize: '11px', color: 'var(--mg-text-2)', textAlign: 'center', display: 'block' }}>
+        <span style={{ fontSize: '11px', color: 'var(--mg-text-3)', textAlign: 'center', display: 'block' }}>
           {t('device.footer')}
         </span>
       </div>

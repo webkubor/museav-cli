@@ -62,7 +62,7 @@ export function InvoiceModal({
             onClick={() => setTab(t.key)}
             className={cn(
               'relative pb-2.5 text-sm font-semibold transition-colors',
-              tab === t.key ? 'text-brand-base' : 'text-mg-text-2 hover:text-mg-text-1'
+              tab === t.key ? 'text-brand-base' : 'text-mg-text-3 hover:text-mg-text-2'
             )}
           >
             {t.label}

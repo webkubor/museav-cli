@@ -145,7 +145,7 @@ export const QuickAccessSection: React.FC = () => {
 
   return (
     <section className="quick-access-section">
-      <p className="text-[11px] font-bold tracking-widest uppercase text-mg-text-2 mb-3">
+      <p className="text-[11px] font-bold tracking-widest uppercase text-mg-text-3 mb-3">
         {t('quickAccess.sectionTitle')}
       </p>
       <div className="quick-access-grid">
@@ -162,10 +162,10 @@ export const QuickAccessSection: React.FC = () => {
                 <QuickWeb3Icon type={link.icon} />
               </div>
               <div className="flex items-center gap-2 min-w-0 overflow-hidden pr-2">
-                <strong className="text-[14px] font-extrabold text-mg-text-0 whitespace-nowrap leading-none shrink-0">
+                <strong className="text-[14px] font-extrabold text-mg-text-1 whitespace-nowrap leading-none shrink-0">
                   {t(link.titleKey)}
                 </strong>
-                <span className="quick-access-desc text-[11.5px] text-mg-text-2 font-medium whitespace-nowrap opacity-0 max-w-0 translate-x-2 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-100 group-hover:max-w-[180px] group-hover:translate-x-0 flex items-center leading-none">
+                <span className="quick-access-desc text-[11.5px] text-mg-text-3 font-medium whitespace-nowrap opacity-0 max-w-0 translate-x-2 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-100 group-hover:max-w-[180px] group-hover:translate-x-0 flex items-center leading-none">
                   <span className="text-mg-border/60 mr-1 select-none font-light">—</span>
                   {t(link.descKey)}
                 </span>

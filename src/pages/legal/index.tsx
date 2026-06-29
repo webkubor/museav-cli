@@ -154,16 +154,16 @@ interface LegalPageProps {
 function LegalSectionBlock({ section }: { section: LegalSection }) {
   return (
     <section className="space-y-3 border-t border-mg-border pt-6">
-      <h2 className="text-base font-bold text-mg-text-0">{section.title}</h2>
+      <h2 className="text-base font-bold text-mg-text-1">{section.title}</h2>
       {section.paragraphs?.map((text) => (
-        <p key={text} className="text-sm leading-7 text-mg-text-1">
+        <p key={text} className="text-sm leading-7 text-mg-text-2">
           {text}
         </p>
       ))}
       {section.items && (
         <ul className="space-y-2">
           {section.items.map((item) => (
-            <li key={item} className="flex gap-2 text-sm leading-7 text-mg-text-1">
+            <li key={item} className="flex gap-2 text-sm leading-7 text-mg-text-2">
               <span className="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-base" />
               <span>{item}</span>
             </li>
@@ -181,7 +181,7 @@ export default function LegalPage({ docType }: LegalPageProps) {
   const switchLabel = docType === 'privacy' ? '查看服务条款' : '查看隐私政策'
 
   return (
-    <main className="min-h-screen bg-mg-bg-1 px-4 py-8 text-mg-text-0 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-mg-bg-1 px-4 py-8 text-mg-text-1 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Button asChild variant="ghost" size="sm" className="gap-2">
@@ -198,9 +198,9 @@ export default function LegalPage({ docType }: LegalPageProps) {
         <article className="rounded-md border border-mg-border bg-card-bg shadow-sm">
           <header className="border-b border-mg-border px-6 py-7 sm:px-8">
             <div className="mb-2 text-xs font-semibold text-brand-base">{document.subtitle}</div>
-            <h1 className="text-3xl font-bold tracking-tight text-mg-text-0">{document.title}</h1>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-mg-text-1">{document.summary}</p>
-            <p className="mt-4 text-xs font-medium text-mg-text-2">{document.updatedAt}</p>
+            <h1 className="text-3xl font-bold tracking-tight text-mg-text-1">{document.title}</h1>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-mg-text-2">{document.summary}</p>
+            <p className="mt-4 text-xs font-medium text-mg-text-3">{document.updatedAt}</p>
           </header>
 
           <div className="space-y-7 px-6 py-7 sm:px-8">

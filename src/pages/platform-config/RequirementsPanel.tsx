@@ -253,10 +253,10 @@ export function RequirementsPanel() {
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-mg-border bg-card-bg px-4 py-3">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-bold text-mg-text-0">我的问题</h2>
+            <h2 className="text-base font-bold text-mg-text-1">我的问题</h2>
             <Badge variant="danger" size="sm">BUG {myBugs.length}</Badge>
           </div>
-          <p className="mt-1 text-xs text-mg-text-2">
+          <p className="mt-1 text-xs text-mg-text-3">
             来源于 .requirements.json，支持完成、评论和重新指派 GitLab QA 缺陷。
           </p>
         </div>
@@ -268,7 +268,7 @@ export function RequirementsPanel() {
                 type="button"
                 onClick={() => setIssueFilter(option.value)}
                 className={cn(
-                  'h-7 rounded-md px-2.5 text-xs font-bold text-mg-text-2 transition-colors hover:text-mg-text-0',
+                  'h-7 rounded-md px-2.5 text-xs font-bold text-mg-text-3 transition-colors hover:text-mg-text-1',
                   issueFilter === option.value && 'bg-card-bg text-brand-base shadow-sm'
                 )}
               >
@@ -289,20 +289,20 @@ export function RequirementsPanel() {
       )}
 
       {isLoading ? (
-        <div className="rounded-md border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-2">
+        <div className="rounded-md border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-3">
           正在读取本地问题列表...
         </div>
       ) : myBugs.length === 0 ? (
-        <div className="rounded-md border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-2">
+        <div className="rounded-md border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-3">
           暂无指派给你的 BUG。点击同步 GitLab 后再查看。
         </div>
       ) : visibleBugs.length === 0 ? (
-        <div className="rounded-md border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-2">
+        <div className="rounded-md border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-3">
           当前筛选下没有问题。
         </div>
       ) : (
         <div className="overflow-hidden rounded-md border border-mg-border bg-card-bg">
-          <div className="grid grid-cols-[84px_1fr_92px_86px] gap-3 border-b border-mg-border bg-mg-fill-0 px-4 py-2.5 text-[11px] font-bold text-mg-text-2">
+          <div className="grid grid-cols-[84px_1fr_92px_86px] gap-3 border-b border-mg-border bg-mg-fill-0 px-4 py-2.5 text-[11px] font-bold text-mg-text-3">
             <span>Issue</span>
             <span>标题</span>
             <span>状态</span>
@@ -328,8 +328,8 @@ export function RequirementsPanel() {
                       #{item.gitlabIid ?? item.id}
                     </a>
                     <div className="min-w-0">
-                      <p className="truncate font-semibold text-mg-text-0">{item.title}</p>
-                      <p className="mt-1 truncate text-xs text-mg-text-2">
+                      <p className="truncate font-semibold text-mg-text-1">{item.title}</p>
+                      <p className="mt-1 truncate text-xs text-mg-text-3">
                         {item.gitlabLabels?.join(' / ') || '本地问题'}
                       </p>
                     </div>
@@ -352,12 +352,12 @@ export function RequirementsPanel() {
                     </Button>
 
                     <div className="flex min-w-0 items-center gap-2 rounded-lg border border-mg-border bg-card-bg px-2 py-1.5">
-                      <LuMessageSquare className="h-3.5 w-3.5 shrink-0 text-mg-text-2" />
+                      <LuMessageSquare className="h-3.5 w-3.5 shrink-0 text-mg-text-3" />
                       <input
                         value={comments[item.id] ?? ''}
                         onChange={(event) => setComments((current) => ({ ...current, [item.id]: event.target.value }))}
                         placeholder="写一条 GitLab 评论"
-                        className="min-w-0 flex-1 bg-transparent text-xs text-mg-text-0 outline-none placeholder:text-mg-text-2"
+                        className="min-w-0 flex-1 bg-transparent text-xs text-mg-text-1 outline-none placeholder:text-mg-text-3"
                       />
                     </div>
                     <Button
@@ -373,7 +373,7 @@ export function RequirementsPanel() {
                     <select
                       value={selectedAssignee}
                       onChange={(event) => setAssigneeIds((current) => ({ ...current, [item.id]: event.target.value }))}
-                      className="h-7 rounded-md border border-mg-border bg-card-bg px-2 text-xs font-semibold text-mg-text-1 outline-none transition-colors focus:border-brand-base focus:ring-2 focus:ring-brand-glow"
+                      className="h-7 rounded-md border border-mg-border bg-card-bg px-2 text-xs font-semibold text-mg-text-2 outline-none transition-colors focus:border-brand-base focus:ring-2 focus:ring-brand-glow"
                       aria-label={`指派 issue #${item.gitlabIid}`}
                     >
                       <option value="">选择指派人</option>
@@ -396,7 +396,7 @@ export function RequirementsPanel() {
                           href={gitlabIssueUrl(item.gitlabIid)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-mg-text-2 transition-colors hover:bg-mg-fill-1 hover:text-mg-text-0"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-mg-text-3 transition-colors hover:bg-mg-fill-1 hover:text-mg-text-1"
                           aria-label={`打开 GitLab issue #${item.gitlabIid}`}
                         >
                           <LuExternalLink className="h-3.5 w-3.5" />

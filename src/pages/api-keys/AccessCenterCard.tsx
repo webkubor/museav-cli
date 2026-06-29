@@ -55,8 +55,8 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
       <div className={`${revealVisible ? 'border-b border-mg-border/45' : ''} px-4 py-3`}>
         <div className="mb-2 flex items-center justify-between gap-3">
           <div>
-            <div className="text-sm font-bold text-mg-text-0">接入中心</div>
-            <div className="mt-0.5 text-xs text-mg-text-2">复制必要地址，或直接打开工具。</div>
+            <div className="text-sm font-bold text-mg-text-1">接入中心</div>
+            <div className="mt-0.5 text-xs text-mg-text-3">复制必要地址，或直接打开工具。</div>
           </div>
           <a
             href={appendThemeParam(docsUrl)}
@@ -71,7 +71,7 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
 
         <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
           <div className="w-full shrink-0 xl:w-[420px]">
-            <div className="mb-1.5 text-[11px] font-bold text-mg-text-1">协议地址</div>
+            <div className="mb-1.5 text-[11px] font-bold text-mg-text-2">协议地址</div>
             <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-1">
               {GATEWAY_ENDPOINTS.map(({ label, baseUrl: value }, index) => {
                 const visual = getGatewayVisual(index)
@@ -87,15 +87,15 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
                         : 'bg-mg-bg-1/55 border-mg-border/70 hover:border-brand-base/40 hover:bg-brand-base/5'
                     }`}
                   >
-                    <span className="w-6 h-6 rounded-md bg-mg-bg-0 border border-mg-border flex items-center justify-center shrink-0 text-mg-text-0">
+                    <span className="w-6 h-6 rounded-md bg-mg-bg-0 border border-mg-border flex items-center justify-center shrink-0 text-mg-text-1">
                       {visual.icon}
                     </span>
-                    <span className="w-20 shrink-0 text-[11px] font-bold text-mg-text-0">{visual.label}</span>
-                    <code className="min-w-0 flex-1 truncate font-mono text-[12px] font-semibold text-mg-text-1">
+                    <span className="w-20 shrink-0 text-[11px] font-bold text-mg-text-1">{visual.label}</span>
+                    <code className="min-w-0 flex-1 truncate font-mono text-[12px] font-semibold text-mg-text-2">
                       {formatEndpointDisplay(value)}
                     </code>
                     <span className={`shrink-0 text-[11px] font-bold flex items-center gap-1 transition-colors ${
-                      quickCopied === label ? 'text-mg-success' : 'text-mg-text-2 group-hover:text-brand-base'
+                      quickCopied === label ? 'text-mg-success' : 'text-mg-text-3 group-hover:text-brand-base'
                     }`}>
                       {quickCopied === label
                         ? <><LuCheck size={12} /> 已复制</>
@@ -108,7 +108,7 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="mb-1.5 text-[11px] font-bold text-mg-text-1">接入方式</div>
+            <div className="mb-1.5 text-[11px] font-bold text-mg-text-2">接入方式</div>
             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
               {CONNECT_ACTIONS.map((action) => (
                 <button
@@ -117,10 +117,10 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
                   onClick={onOpenConnect}
                   className="group flex h-9 items-center gap-1.5 rounded-lg border border-mg-border bg-mg-bg-1/55 px-2 text-left transition-colors hover:border-brand-base/40 hover:bg-brand-base/5 cursor-pointer"
                 >
-                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-mg-bg-0 border border-mg-border/60 text-mg-text-0">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-mg-bg-0 border border-mg-border/60 text-mg-text-1">
                     {action.icon}
                   </span>
-                  <span className="min-w-0 truncate text-[11px] font-bold text-mg-text-0">
+                  <span className="min-w-0 truncate text-[11px] font-bold text-mg-text-1">
                     {action.label}
                   </span>
                 </button>
@@ -139,7 +139,7 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
                 <LuKey size={15} className="text-mg-success" />
               </div>
               <div className="min-w-0">
-                <div className="text-sm font-bold text-mg-text-0">您的新 API Key 已就绪</div>
+                <div className="text-sm font-bold text-mg-text-1">您的新 API Key 已就绪</div>
                 <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-mg-warning">
                   <LuTriangleAlert size={12} className="shrink-0" />
                   请立即复制并保存，关闭后将无法再查看完整密钥
@@ -149,7 +149,7 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
             <button
               type="button"
               onClick={onDismissReveal}
-              className="text-mg-text-3 hover:text-mg-text-1 p-1.5 rounded-lg hover:bg-mg-fill-1 transition-colors cursor-pointer shrink-0"
+              className="text-mg-text-4 hover:text-mg-text-2 p-1.5 rounded-lg hover:bg-mg-fill-1 transition-colors cursor-pointer shrink-0"
             >
               <LuX className="w-4 h-4" />
             </button>
@@ -166,7 +166,7 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
                   'shrink-0 flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer',
                   copied
                     ? 'bg-mg-success/15 text-mg-success'
-                    : 'bg-mg-fill-1 text-mg-text-1 hover:bg-mg-fill-2 hover:text-mg-text-0',
+                    : 'bg-mg-fill-1 text-mg-text-2 hover:bg-mg-fill-2 hover:text-mg-text-1',
                 ].join(' ')}
               >
                 {copied ? <LuCheck className="w-3.5 h-3.5" /> : <LuCopy className="w-3.5 h-3.5" />}

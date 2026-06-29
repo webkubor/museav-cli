@@ -24,7 +24,7 @@
   border-radius: 999px;
   border: 1px solid var(--mg-border);
   background: var(--mg-fill-0);
-  color: var(--mg-text-1);
+  color: var(--mg-text-2);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -43,13 +43,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  color: var(--mg-text-0);
+  color: var(--mg-text-1);
   font-size: 12px;
   font-weight: 800;
 }
 
 .models-experience-count {
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
   font-size: 11px;
   font-weight: 700;
 }

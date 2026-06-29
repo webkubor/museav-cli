@@ -121,7 +121,7 @@ export const GuideSection: React.FC = () => {
                 style={{
                   fontSize: '14px',
                   fontWeight: 700,
-                  color: 'var(--mg-text-0)',
+                  color: 'var(--mg-text-1)',
                   letterSpacing: '-0.01em',
                   lineHeight: 1.3
                 }}
@@ -132,7 +132,7 @@ export const GuideSection: React.FC = () => {
                 style={{
                   display: 'block',
                   fontSize: '12px',
-                  color: 'var(--mg-text-2)',
+                  color: 'var(--mg-text-3)',
                   marginTop: '6px',
                   lineHeight: 1.4
                 }}

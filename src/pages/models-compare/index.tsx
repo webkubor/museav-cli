@@ -84,7 +84,7 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
       <div className="border border-[var(--mg-border)] rounded-md p-4 bg-card-bg min-h-[120px] relative">
         <button
           onClick={onClear}
-          className="absolute top-2.5 right-2.5 bg-none border-none cursor-pointer text-[var(--mg-text-2)] hover:text-[var(--mg-text-1)] p-0.5 flex items-center transition-colors"
+          className="absolute top-2.5 right-2.5 bg-none border-none cursor-pointer text-[var(--mg-text-3)] hover:text-[var(--mg-text-2)] p-0.5 flex items-center transition-colors"
         >
           <LuX size={14} />
         </button>
@@ -92,10 +92,10 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
           <ModelIcon model={selected} size={28} rounded="rounded-md" />
           <ModelTypeBadge modalities={selected.modalities} />
         </div>
-        <div className="font-semibold text-sm text-[var(--mg-text-0)] mb-1">
+        <div className="font-semibold text-sm text-[var(--mg-text-1)] mb-1">
           {selected.display_name}
         </div>
-        <div className="text-[11px] text-[var(--mg-text-2)] font-mono mb-1.5 truncate">
+        <div className="text-[11px] text-[var(--mg-text-3)] font-mono mb-1.5 truncate">
           {selected.model_id}
         </div>
         <div className="flex gap-1 flex-wrap">
@@ -111,7 +111,7 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full border-2 border-dashed border-[var(--mg-border)] rounded-md p-6 bg-transparent cursor-pointer flex flex-col items-center gap-2 text-[var(--mg-text-2)] hover:border-[var(--brand-base)] hover:text-[var(--brand-base)] hover:bg-[var(--mg-fill-0)]/50 transition-all duration-150"
+        className="w-full border-2 border-dashed border-[var(--mg-border)] rounded-md p-6 bg-transparent cursor-pointer flex flex-col items-center gap-2 text-[var(--mg-text-3)] hover:border-[var(--brand-base)] hover:text-[var(--brand-base)] hover:bg-[var(--mg-fill-0)]/50 transition-all duration-150"
       >
         <LuPlus size={20} />
         <span className="text-[13px]">{t('modelsCompare.button.select')}</span>
@@ -138,17 +138,17 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
               >
                 <ModelIcon model={m} size={20} rounded="rounded-sm" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-medium text-[var(--mg-text-0)] truncate">
+                  <div className="text-[13px] font-medium text-[var(--mg-text-1)] truncate">
                     {m.display_name}
                   </div>
-                  <div className="text-[11px] text-[var(--mg-text-2)] truncate font-mono">
+                  <div className="text-[11px] text-[var(--mg-text-3)] truncate font-mono">
                     {m.model_id}
                   </div>
                 </div>
               </div>
             ))}
             {filtered.length === 0 && (
-              <div className="p-4 text-center text-[13px] text-[var(--mg-text-2)]">
+              <div className="p-4 text-center text-[13px] text-[var(--mg-text-3)]">
                 {t('modelsCompare.empty.noMatch')}
               </div>
             )}
@@ -171,12 +171,12 @@ function renderCell(model: CatalogModelItem, key: string) {
   if (key === 'zero_data_retention') {
     return model.zero_data_retention
       ? <Badge variant="success" size="sm">支持</Badge>
-      : <span className="text-[var(--mg-text-2)]">—</span>
+      : <span className="text-[var(--mg-text-3)]">—</span>
   }
   if (key === 'in_region_routing') {
     return model.in_region_routing
       ? <Badge variant="success" size="sm">支持</Badge>
-      : <span className="text-[var(--mg-text-2)]">—</span>
+      : <span className="text-[var(--mg-text-3)]">—</span>
   }
   if (key === 'modalities') {
     return (
@@ -379,10 +379,10 @@ export default function ModelsComparePage() {
   return (
     <div>
       <div className="mb-7">
-        <h1 className="text-2xl font-bold text-[var(--mg-text-0)] m-0 mb-1.5 tracking-tight">
+        <h1 className="text-2xl font-bold text-[var(--mg-text-1)] m-0 mb-1.5 tracking-tight">
           {t('modelsCompare.title')}
         </h1>
-        <p className="text-[13px] text-[var(--mg-text-1)] m-0">
+        <p className="text-[13px] text-[var(--mg-text-2)] m-0">
           {t('modelsCompare.desc', { max: MAX_COMPARE })}
         </p>
       </div>
@@ -420,7 +420,7 @@ export default function ModelsComparePage() {
                   gridTemplateColumns: `180px repeat(${selectedModels.length}, 1fr)`,
                 }}
               >
-                <div className="p-3.5 px-4 text-xs font-semibold text-[var(--mg-text-2)]">
+                <div className="p-3.5 px-4 text-xs font-semibold text-[var(--mg-text-3)]">
                   {t('modelsCompare.table.attr')}
                 </div>
                 {selectedModels.map((m) => (
@@ -428,8 +428,8 @@ export default function ModelsComparePage() {
                     <div className="flex items-center gap-2">
                       <ModelIcon model={m} size={22} rounded="rounded-sm" />
                       <div className="min-w-0">
-                        <div className="font-bold text-[13px] text-[var(--mg-text-0)] truncate">{m.display_name}</div>
-                        <div className="text-[10px] text-[var(--mg-text-2)] font-mono truncate">{m.vendor}</div>
+                        <div className="font-bold text-[13px] text-[var(--mg-text-1)] truncate">{m.display_name}</div>
+                        <div className="text-[10px] text-[var(--mg-text-3)] font-mono truncate">{m.vendor}</div>
                       </div>
                     </div>
                   </div>
@@ -449,11 +449,11 @@ export default function ModelsComparePage() {
                     gridTemplateColumns: `180px repeat(${selectedModels.length}, 1fr)`,
                   }}
                 >
-                  <div className="p-3.5 px-4 text-xs font-semibold text-[var(--mg-text-1)]">
+                  <div className="p-3.5 px-4 text-xs font-semibold text-[var(--mg-text-2)]">
                     {t(row.labelKey)}
                   </div>
                   {selectedModels.map((m) => (
-                    <div key={m.model_id} className="p-3.5 px-4 border-l border-[var(--mg-border)] text-[13px] text-[var(--mg-text-0)] flex items-center">
+                    <div key={m.model_id} className="p-3.5 px-4 border-l border-[var(--mg-border)] text-[13px] text-[var(--mg-text-1)] flex items-center">
                       {renderCell(m, row.key)}
                     </div>
                   ))}
@@ -467,11 +467,11 @@ export default function ModelsComparePage() {
             <div className="mt-8 pt-8 border-t border-[var(--mg-border)]">
               <div className="mb-5 flex items-start justify-between gap-4 flex-wrap">
                 <div>
-                  <h2 className="text-sm font-bold text-[var(--mg-text-0)] m-0 flex items-center gap-2">
+                  <h2 className="text-sm font-bold text-[var(--mg-text-1)] m-0 flex items-center gap-2">
                     <LuMessageSquare size={15} className="text-[var(--brand-base)]" />
                     实时对话对比 (Chat Arena)
                   </h2>
-                  <p className="text-[11.5px] text-[var(--mg-text-2)] m-0 mt-1">
+                  <p className="text-[11.5px] text-[var(--mg-text-3)] m-0 mt-1">
                     每个模型卡片底部独立输入框；开启「同步输入」则一处输入分发给所有已选模型，分栏并行对比。
                   </p>
                 </div>
@@ -480,14 +480,14 @@ export default function ModelsComparePage() {
                     <button
                       onClick={handleClearChat}
                       title="清空对话历史"
-                      className="h-8 px-3 rounded-lg cursor-pointer text-[var(--mg-text-2)] hover:text-[var(--mg-danger)] hover:bg-[var(--mg-fill-0)] transition-all flex items-center gap-1.5 border border-[var(--mg-border)] bg-transparent text-xs font-semibold"
+                      className="h-8 px-3 rounded-lg cursor-pointer text-[var(--mg-text-3)] hover:text-[var(--mg-danger)] hover:bg-[var(--mg-fill-0)] transition-all flex items-center gap-1.5 border border-[var(--mg-border)] bg-transparent text-xs font-semibold"
                     >
                       <LuTrash2 size={14} />
                       清空
                     </button>
                   )}
                   <label className="flex items-center gap-2 select-none cursor-pointer">
-                    <span className="text-[11.5px] font-semibold text-[var(--mg-text-2)]">同步输入</span>
+                    <span className="text-[11.5px] font-semibold text-[var(--mg-text-3)]">同步输入</span>
                     <Switch checked={syncInput} onChange={setSyncInput} />
                   </label>
                 </div>
@@ -513,8 +513,8 @@ export default function ModelsComparePage() {
                       <div className="p-3 bg-[var(--mg-fill-0)]/40 border-b border-[var(--mg-border)]/65 flex items-center gap-2 shrink-0 select-none">
                         <ModelIcon model={m} size={20} rounded="rounded-sm" />
                         <div className="min-w-0 flex-1">
-                          <div className="text-xs font-bold text-[var(--mg-text-0)] truncate">{m.display_name}</div>
-                          <div className="text-[9.5px] text-[var(--mg-text-2)] font-mono truncate">{m.model_id}</div>
+                          <div className="text-xs font-bold text-[var(--mg-text-1)] truncate">{m.display_name}</div>
+                          <div className="text-[9.5px] text-[var(--mg-text-3)] font-mono truncate">{m.model_id}</div>
                         </div>
                       </div>
 
@@ -532,15 +532,15 @@ export default function ModelsComparePage() {
                               className={cn(
                                 "p-2.5 rounded-md text-xs leading-relaxed shadow-sm",
                                 msg.role === 'user'
-                                  ? "bg-[var(--brand-selected-bg)] border border-[var(--brand-mid)]/10 text-[var(--mg-text-0)]"
-                                  : "bg-[var(--mg-bg-0)] border border-[var(--mg-border)] text-[var(--mg-text-1)] border-l-[3px] border-l-[var(--brand-base)]"
+                                  ? "bg-[var(--brand-selected-bg)] border border-[var(--brand-mid)]/10 text-[var(--mg-text-1)]"
+                                  : "bg-[var(--mg-bg-0)] border border-[var(--mg-border)] text-[var(--mg-text-2)] border-l-[3px] border-l-[var(--brand-base)]"
                               )}
                             >
                               {msg.role === 'assistant' && msg.content === '' && streaming[idx] ? (
                                 <span className="inline-flex gap-1 py-1 items-center" aria-label="生成中">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--mg-text-2)] animate-bounce [animation-delay:-0.3s]" />
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--mg-text-2)] animate-bounce [animation-delay:-0.15s]" />
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--mg-text-2)] animate-bounce" />
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--mg-text-3)] animate-bounce [animation-delay:-0.3s]" />
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--mg-text-3)] animate-bounce [animation-delay:-0.15s]" />
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--mg-text-3)] animate-bounce" />
                                 </span>
                               ) : (
                                 msg.content.split('\n').map((line, lIdx) => (
@@ -548,7 +548,7 @@ export default function ModelsComparePage() {
                                 ))
                               )}
                               {msg.meta && (
-                                <span className="block text-[9.5px] text-[var(--mg-text-2)] mt-1.5 font-bold tracking-wide">
+                                <span className="block text-[9.5px] text-[var(--mg-text-3)] mt-1.5 font-bold tracking-wide">
                                   {msg.meta}
                                 </span>
                               )}
@@ -558,8 +558,8 @@ export default function ModelsComparePage() {
 
                         {history.length === 0 && (
                           <div className="h-full flex flex-col items-center justify-center text-center p-4 select-none opacity-40">
-                            <LuMessageSquare size={20} className="text-mg-text-2 mb-2" />
-                            <span className="text-[10.5px] text-[var(--mg-text-2)]">等待发送提问</span>
+                            <LuMessageSquare size={20} className="text-mg-text-3 mb-2" />
+                            <span className="text-[10.5px] text-[var(--mg-text-3)]">等待发送提问</span>
                           </div>
                         )}
                       </div>
@@ -579,7 +579,7 @@ export default function ModelsComparePage() {
                               }}
                               placeholder={syncInput ? '输入分发给全部模型…' : `仅向 ${m.display_name} 提问…`}
                               rows={1}
-                              className="flex-1 w-full bg-transparent border-none outline-none resize-none text-[12.5px] text-[var(--mg-text-0)] placeholder-[var(--mg-text-2)] focus:ring-0 leading-relaxed max-h-20"
+                              className="flex-1 w-full bg-transparent border-none outline-none resize-none text-[12.5px] text-[var(--mg-text-1)] placeholder-[var(--mg-text-3)] focus:ring-0 leading-relaxed max-h-20"
                             />
                             <button
                               onClick={() => handleSendFrom(idx)}
@@ -589,7 +589,7 @@ export default function ModelsComparePage() {
                                 "h-7 w-7 shrink-0 rounded-full flex items-center justify-center border-none transition-all",
                                 chatInputs[idx].trim() && !streaming[idx]
                                   ? "bg-gradient-to-r from-[#9b72cb] to-[#d96570] text-white hover:opacity-90 active:scale-95 cursor-pointer"
-                                  : "bg-[var(--mg-fill-0)] text-[var(--mg-text-2)]/50 cursor-not-allowed"
+                                  : "bg-[var(--mg-fill-0)] text-[var(--mg-text-3)]/50 cursor-not-allowed"
                               )}
                             >
                               <LuSparkles size={13} className={streaming[idx] ? 'animate-pulse' : ''} />
@@ -607,7 +607,7 @@ export default function ModelsComparePage() {
 
           {!hasAny && (
             <div className="text-center py-12">
-              <span className="text-[var(--mg-text-2)] text-[13px]">
+              <span className="text-[var(--mg-text-3)] text-[13px]">
                 {t('modelsCompare.empty.hint')}
               </span>
             </div>

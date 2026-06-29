@@ -33,7 +33,7 @@ body[theme-mode='dark'] .semi-input-textarea-wrapper:hover {
 
 .semi-input,
 .semi-input-textarea {
-  color: var(--mg-text-0) !important;
+  color: var(--mg-text-1) !important;
   font-size: 14px !important;
   line-height: 1.5 !important;
   font-family: inherit !important;
@@ -41,7 +41,7 @@ body[theme-mode='dark'] .semi-input-textarea-wrapper:hover {
 
 .semi-input::placeholder,
 .semi-input-textarea::placeholder {
-  color: var(--mg-text-2) !important;
+  color: var(--mg-text-3) !important;
   opacity: 0.65;
 }
 
@@ -50,13 +50,13 @@ body[theme-mode='dark'] .semi-input-textarea-wrapper:hover {
 .semi-input-wrapper:focus-within .semi-input-prefix,
 .semi-input-wrapper-focus .semi-input-suffix,
 .semi-input-wrapper:focus-within .semi-input-suffix {
-  color: var(--mg-text-0) !important;
+  color: var(--mg-text-1) !important;
   transition: color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .semi-input-prefix,
 .semi-input-suffix {
-  color: var(--mg-text-2) !important;
+  color: var(--mg-text-3) !important;
   transition: color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   display: inline-flex;
   align-items: center;
@@ -142,7 +142,7 @@ body[theme-mode='dark'] .semi-input-textarea-wrapper:hover {
 .semi-button-default.semi-button-solid {
   background-color: rgba(15, 23, 42, 0.035) !important;
   border: 1px solid rgba(15, 23, 42, 0.06) !important;
-  color: var(--mg-text-0) !important;
+  color: var(--mg-text-1) !important;
   box-shadow: var(--shadow-sm) !important;
 }
 
@@ -198,13 +198,13 @@ body[theme-mode='dark'] .semi-button-default.semi-button-solid:not(.semi-button-
 /* 5. Borderless 主题按钮 (Ghost) */
 .semi-button-borderless {
   background-color: transparent !important;
-  color: var(--mg-text-1) !important;
+  color: var(--mg-text-2) !important;
 }
 
 .semi-button-borderless:not(.semi-button-disabled):not(.semi-button-loading):hover {
   transform: translateY(-0.5px);
   background-color: rgba(15, 23, 42, 0.04) !important;
-  color: var(--mg-text-0) !important;
+  color: var(--mg-text-1) !important;
 }
 
 body[theme-mode='dark'] .semi-button-borderless:not(.semi-button-disabled):not(.semi-button-loading):hover {
@@ -217,7 +217,7 @@ body[theme-mode='dark'] .semi-button-borderless:not(.semi-button-disabled):not(.
   cursor: not-allowed !important;
   background-color: var(--mg-fill-0) !important;
   border-color: var(--mg-border) !important;
-  color: var(--mg-text-2) !important;
+  color: var(--mg-text-3) !important;
   opacity: 0.55 !important;
   transform: none !important;
   box-shadow: none !important;
@@ -259,7 +259,7 @@ html, body, #root {
   font-size: 1rem;
   line-height: 1.5;
   background-color: var(--site-bg);
-  color: var(--mg-text-0);
+  color: var(--mg-text-1);
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -431,13 +431,13 @@ html, body, #root {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--mg-text-2) !important;
+  background: var(--mg-text-3) !important;
   opacity: 0.3 !important;
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--mg-text-1) !important;
+  background: var(--mg-text-2) !important;
 }
 
 /* ── 💎 Semi UI Table 极雅大厂化定制 ── */
@@ -448,7 +448,7 @@ html, body, #root {
 /* 表头微碳灰高级扁平 */
 .semi-table-thead > tr > th {
   background-color: var(--mg-bg-1) !important;
-  color: var(--mg-text-1) !important;
+  color: var(--mg-text-2) !important;
   font-weight: 700 !important;
   font-size: 12.5px !important;
   letter-spacing: 0.02em;
@@ -464,7 +464,7 @@ html, body, #root {
   border-bottom: 1px solid var(--mg-border) !important;
   font-size: 14px !important;
   line-height: 1.55 !important;
-  color: var(--mg-text-1);
+  color: var(--mg-text-2);
 }
 
 /* 悬停行极其微弱高透变色 */

@@ -104,19 +104,19 @@ export function InvoiceRecordsTab({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-bold text-mg-text-0">{r.invoice_no}</span>
+                    <span className="font-bold text-mg-text-1">{r.invoice_no}</span>
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${st.cls}`}>
                       {st.label}
                     </span>
-                    <span className="rounded-md bg-mg-fill-0 px-2 py-0.5 text-[11px] text-mg-text-1">
+                    <span className="rounded-md bg-mg-fill-0 px-2 py-0.5 text-[11px] text-mg-text-2">
                       {TITLE_TYPE_LABEL[r.title_type]}
                     </span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-mg-text-2">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-mg-text-3">
                     <span>{r.company_name}</span>
                     <span>
                       价税合计{' '}
-                      <span className="font-semibold text-mg-text-1">
+                      <span className="font-semibold text-mg-text-2">
                         {currencySymbol}
                         {r.total_amount}
                       </span>
@@ -141,13 +141,13 @@ export function InvoiceRecordsTab({
         <button
           type="button"
           onClick={loadMore}
-          className="w-full rounded-md border border-mg-border py-2.5 text-sm font-semibold text-mg-text-1 transition-colors hover:bg-mg-fill-0"
+          className="w-full rounded-md border border-mg-border py-2.5 text-sm font-semibold text-mg-text-2 transition-colors hover:bg-mg-fill-0"
         >
           加载更多
         </button>
       )}
 
-      <p className="pt-1 text-[11px] leading-relaxed text-mg-text-3">
+      <p className="pt-1 text-[11px] leading-relaxed text-mg-text-4">
         红冲为不可逆财税操作，仅运营端可发起；如需作废重开，请联系客服 / 由运营处理（D-INV15）。
       </p>
     </div>

@@ -16,7 +16,7 @@
 
 .models-experience-header h1 {
   margin: 0 0 4px;
-  color: var(--mg-text-0);
+  color: var(--mg-text-1);
   font-size: 26px;
   font-weight: 800;
   letter-spacing: 0;
@@ -24,7 +24,7 @@
 
 .models-experience-header p {
   margin: 0;
-  color: var(--mg-text-1);
+  color: var(--mg-text-2);
   font-size: 13px;
   font-weight: 520;
 }

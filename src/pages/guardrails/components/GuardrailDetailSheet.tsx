@@ -118,7 +118,7 @@ export function GuardrailDetailSheet({
               className={`px-4 py-2.5 text-xs font-bold transition-colors border-b-2 -mb-px cursor-pointer ${
                 sheetTab === tab.key
                   ? 'border-brand-base text-brand-base'
-                  : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
+                  : 'border-transparent text-mg-text-3 hover:text-mg-text-1'
               }`}
             >
               {tab.label}
@@ -162,7 +162,7 @@ export function GuardrailDetailSheet({
             <div className="space-y-7">
               {/* API Keys — 下拉多选（与成员一致，id 风格；统一由底部保存） */}
               <section>
-                <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider mb-3">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-2 uppercase tracking-wider mb-3">
                   <LuKey className="w-3.5 h-3.5" /> API Keys
                 </div>
                 <TagInput
@@ -187,7 +187,7 @@ export function GuardrailDetailSheet({
             // 单条不变量被破坏（接口返回多条生效策略）：直接报错，禁止任何
             // 预算编辑——在脏数据上替换/清除只会加深不一致 (qa#162)
             <section className="space-y-4">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-2 uppercase tracking-wider">
                 <LuDollarSign className="w-3.5 h-3.5" /> 预算策略
               </div>
               <div role="alert" className="p-3 rounded-lg border border-mg-danger/40 bg-mg-danger/5 text-xs text-mg-danger">
@@ -196,7 +196,7 @@ export function GuardrailDetailSheet({
             </section>
           ) : detail ? (
             <section className="space-y-4">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-1 uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-2 uppercase tracking-wider">
                 <LuDollarSign className="w-3.5 h-3.5" /> 预算策略
               </div>
               <div className="flex items-center gap-2">
@@ -228,7 +228,7 @@ export function GuardrailDetailSheet({
                   {budget && (
                     <button
                       onClick={onShowClearBudget}
-                      className="text-[11px] text-mg-text-2 hover:text-mg-danger transition-colors cursor-pointer"
+                      className="text-[11px] text-mg-text-3 hover:text-mg-danger transition-colors cursor-pointer"
                     >
                       清除预算
                     </button>
@@ -236,7 +236,7 @@ export function GuardrailDetailSheet({
                 </div>
               )}
               {budget && (
-                <div className="p-3 rounded-lg border border-mg-border bg-mg-fill-0/50 text-xs text-mg-text-1">
+                <div className="p-3 rounded-lg border border-mg-border bg-mg-fill-0/50 text-xs text-mg-text-2">
                   当前生效：<span className="font-semibold text-brand-base">{currencySymbol}{parseFloat(budget.spend_limit_amount).toLocaleString()} / {PERIOD_LABEL[budget.period_unit]}</span>
                 </div>
               )}

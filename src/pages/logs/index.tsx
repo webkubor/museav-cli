@@ -121,7 +121,7 @@ const ModelSelectCombobox: React.FC<{
 
   return (
     <div ref={containerRef} className="relative w-full flex flex-col gap-1.5 z-40 select-none">
-      <label className="block mg-text-label text-mg-text-2">模型名称</label>
+      <label className="block mg-text-label text-mg-text-3">模型名称</label>
       <div className="relative">
         <Input
           value={inputValue}
@@ -134,7 +134,7 @@ const ModelSelectCombobox: React.FC<{
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-mg-text-2 hover:text-mg-text-0 mg-compact-badge cursor-pointer transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-mg-text-3 hover:text-mg-text-1 mg-compact-badge cursor-pointer transition-colors"
           >
             ✕
           </button>
@@ -147,7 +147,7 @@ const ModelSelectCombobox: React.FC<{
           <div className="absolute top-0 left-4 right-4 h-[1.5px] bg-gradient-to-r from-transparent via-brand-base/20 to-transparent rounded-full" />
 
           {filtered.length === 0 ? (
-            <div className="py-[var(--mg-space-3)] text-center mg-text-caption italic text-mg-text-2">
+            <div className="py-[var(--mg-space-3)] text-center mg-text-caption italic text-mg-text-3">
               未找到匹配模型
             </div>
           ) : (
@@ -162,13 +162,13 @@ const ModelSelectCombobox: React.FC<{
                   "group/item flex flex-col gap-0.5 px-[var(--mg-menu-item-px)] py-[var(--mg-menu-item-py)] rounded-lg cursor-pointer select-none transition-all outline-none",
                   value === m.id
                     ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
-                    : "text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-0/30 active:scale-[0.98] hover:translate-x-[2px]"
+                    : "text-mg-text-3 hover:text-mg-text-1 hover:bg-mg-fill-0/30 active:scale-[0.98] hover:translate-x-[2px]"
                 )}
               >
                 <span className="mg-text-body font-bold leading-none truncate">
                   {m.display_name}
                 </span>
-                <span className="mg-text-code text-mg-text-3 truncate mt-0.5">
+                <span className="mg-text-code text-mg-text-4 truncate mt-0.5">
                   {m.id}
                 </span>
               </div>
@@ -322,7 +322,7 @@ export default function LogsPage() {
       {/* 综合过滤面板 */}
       <div className="bg-mg-bg-0 mg-panel-relaxed rounded-md border border-mg-border/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end shadow-sm select-none">
         <div className="flex flex-col gap-1.5">
-          <label className="block mg-text-label text-mg-text-2">{t('logs.filter.statusLabel')}</label>
+          <label className="block mg-text-label text-mg-text-3">{t('logs.filter.statusLabel')}</label>
           <Select
             value={statusFilter}
             onChange={(v) => { setStatusFilter(v as LogStatusFilter); resetPagination() }}
@@ -343,7 +343,7 @@ export default function LogsPage() {
         />
 
         <div className="flex flex-col gap-1.5">
-          <label className="block mg-text-label text-mg-text-2">API 密钥</label>
+          <label className="block mg-text-label text-mg-text-3">API 密钥</label>
           <Select
             value={apiKeyFilter}
             onChange={(v) => { setApiKeyFilter(v); resetPagination() }}
@@ -360,7 +360,7 @@ export default function LogsPage() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="block mg-text-label text-mg-text-2">时间范围</label>
+          <label className="block mg-text-label text-mg-text-3">时间范围</label>
           <DateRangePicker
             value={timeRange}
             onChange={(val) => { setTimeRange(val); resetPagination() }}
@@ -369,7 +369,7 @@ export default function LogsPage() {
         </div>
 
         <div className="flex flex-col gap-1.5 lg:col-span-2">
-          <label className="block mg-text-label text-mg-text-2">Request ID</label>
+          <label className="block mg-text-label text-mg-text-3">Request ID</label>
           <Input
             placeholder="输入完整的 Request ID 进行精确检索"
             prefix={<LuSearch className="opacity-50" />}
@@ -405,43 +405,43 @@ export default function LogsPage() {
               <TableBody>
                 {filteredLogs.map((row) => (
                   <TableRow key={row.call_log_id}>
-                    <TableCell className="mg-text-code text-mg-text-0 max-w-[160px] truncate select-all">
+                    <TableCell className="mg-text-code text-mg-text-1 max-w-[160px] truncate select-all">
                       {row.request_id}
                     </TableCell>
-                    <TableCell className="mg-text-caption text-mg-text-1 whitespace-nowrap">
+                    <TableCell className="mg-text-caption text-mg-text-2 whitespace-nowrap">
                       {formatDateTime(row.started_at)}
                     </TableCell>
                     <TableCell>
                       <span className="flex items-center gap-2">
                         <ModelIcon model={{ display_name: row.model.display_name, vendor: row.provider?.name ?? row.requested_model ?? row.model.display_name }} size={18} />
-                        <span className="font-semibold text-mg-text-0 mg-text-body">{row.model.display_name}</span>
+                        <span className="font-semibold text-mg-text-1 mg-text-body">{row.model.display_name}</span>
                       </span>
                     </TableCell>
                     <TableCell className="mg-text-caption whitespace-nowrap">
                       {row.usage ? (
                         <div className="space-y-0.5">
-                          <div className="text-mg-text-2">{t('logs.table.tokenTotal')} <strong className="text-mg-text-0 tabular-nums">{row.usage.total_tokens}</strong></div>
-                          <div className="text-mg-text-2">{t('logs.table.tokenInput')} <strong className="text-mg-text-0 tabular-nums">{row.usage.input_tokens}</strong></div>
-                          <div className="text-mg-text-2">{t('logs.table.tokenOutput')} <strong className="text-mg-text-0 tabular-nums">{row.usage.output_tokens}</strong></div>
+                          <div className="text-mg-text-3">{t('logs.table.tokenTotal')} <strong className="text-mg-text-1 tabular-nums">{row.usage.total_tokens}</strong></div>
+                          <div className="text-mg-text-3">{t('logs.table.tokenInput')} <strong className="text-mg-text-1 tabular-nums">{row.usage.input_tokens}</strong></div>
+                          <div className="text-mg-text-3">{t('logs.table.tokenOutput')} <strong className="text-mg-text-1 tabular-nums">{row.usage.output_tokens}</strong></div>
                         </div>
                       ) : (
-                        <span className="text-mg-text-2">—</span>
+                        <span className="text-mg-text-3">—</span>
                       )}
                     </TableCell>
                     <TableCell className="mg-text-code tabular-nums whitespace-nowrap">
                       {Number(row.cost.amount) > 0 ? (
-                        <span className="text-mg-text-0 font-semibold">
-                          <span className="mg-text-caption text-mg-text-2 mr-0.5">{row.cost.currency}</span>
+                        <span className="text-mg-text-1 font-semibold">
+                          <span className="mg-text-caption text-mg-text-3 mr-0.5">{row.cost.currency}</span>
                           {formatMoney(row.cost.amount, '')}
                         </span>
                       ) : (
-                        <span className="text-mg-text-2">—</span>
+                        <span className="text-mg-text-3">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="mg-text-code text-mg-text-1 tabular-nums whitespace-nowrap">
+                    <TableCell className="mg-text-code text-mg-text-2 tabular-nums whitespace-nowrap">
                       {(row.speed.first_token_ms / 1000).toFixed(2)}s
                     </TableCell>
-                    <TableCell className="mg-text-code text-mg-text-1 tabular-nums whitespace-nowrap">
+                    <TableCell className="mg-text-code text-mg-text-2 tabular-nums whitespace-nowrap">
                       {(row.duration_ms / 1000).toFixed(2)}s
                     </TableCell>
                     <TableCell>
@@ -491,12 +491,12 @@ export default function LogsPage() {
           <div className="space-y-6 mt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="border border-mg-border/60 mg-panel-tight rounded-lg bg-mg-fill-0/20">
-                <p className="mg-text-label text-mg-text-2">{t('logs.detail.status')}</p>
+                <p className="mg-text-label text-mg-text-3">{t('logs.detail.status')}</p>
                 <div className="mt-1.5"><StatusBadge status={getLogStatus(selectedLog)} statusMap={LOG_STATUS_MAP} /></div>
               </div>
               <div className="border border-mg-border/60 mg-panel-tight rounded-lg bg-mg-fill-0/20">
-                <p className="mg-text-label text-mg-text-2">{t('logs.detail.duration')}</p>
-                <p className="mg-text-value font-bold text-mg-text-0 font-mono mt-1">{selectedLog.duration_ms}ms</p>
+                <p className="mg-text-label text-mg-text-3">{t('logs.detail.duration')}</p>
+                <p className="mg-text-value font-bold text-mg-text-1 font-mono mt-1">{selectedLog.duration_ms}ms</p>
               </div>
             </div>
 
@@ -547,7 +547,7 @@ export default function LogsPage() {
             <div className="space-y-4">
               <div>
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <p className="mg-text-label text-mg-text-2 flex items-center gap-1">
+                  <p className="mg-text-label text-mg-text-3 flex items-center gap-1">
                     <LuCalendar className="w-3.5 h-3.5" />
                     {t('logs.detail.rawPayload')}
                   </p>
@@ -560,7 +560,7 @@ export default function LogsPage() {
                         className={`mg-control-sm rounded-md px-2.5 mg-compact-badge transition-colors ${
                           payloadKind === kind
                             ? 'bg-brand-base text-white'
-                            : 'border border-mg-border bg-mg-fill-0 text-mg-text-1 hover:text-mg-text-0'
+                            : 'border border-mg-border bg-mg-fill-0 text-mg-text-2 hover:text-mg-text-1'
                         }`}
                       >
                         {t(`logs.detail.payloadKind.${kind}`)}
@@ -570,7 +570,7 @@ export default function LogsPage() {
                       <button
                         type="button"
                         onClick={() => setPayloadView((v) => (v === 'parsed' ? 'raw' : 'parsed'))}
-                        className="mg-control-sm rounded-md border border-mg-border bg-mg-fill-0 px-2.5 mg-compact-badge text-mg-text-1 transition-colors hover:text-mg-text-0"
+                        className="mg-control-sm rounded-md border border-mg-border bg-mg-fill-0 px-2.5 mg-compact-badge text-mg-text-2 transition-colors hover:text-mg-text-1"
                         title="在合并回答与原始 SSE 流之间切换"
                       >
                         {payloadView === 'parsed' ? '原始 SSE' : '合并回答'}
@@ -592,7 +592,7 @@ export default function LogsPage() {
                     </Button>
                   </div>
                 </div>
-                <div className="mb-2 flex flex-wrap items-center gap-2 mg-text-caption text-mg-text-2">
+                <div className="mb-2 flex flex-wrap items-center gap-2 mg-text-caption text-mg-text-3">
                   <span>{payloadQuery.data?.content_type || '—'}</span>
                   <span>·</span>
                   <span>{payloadQuery.data ? `${payloadQuery.data.size} bytes` : '—'}</span>
@@ -621,8 +621,8 @@ function DetailRow({ label, value, mono = false }: { label: string; value: React
   if (value == null || value === '') return null
   return (
     <div className="flex justify-between items-center py-[var(--mg-table-cell-py)] border-b border-mg-border/40 gap-4">
-      <span className="mg-text-caption font-bold text-mg-text-2 shrink-0">{label}</span>
-      <span className={`mg-text-caption text-mg-text-0 font-semibold text-right break-all max-w-[340px] select-text ${mono ? 'font-mono' : ''}`}>
+      <span className="mg-text-caption font-bold text-mg-text-3 shrink-0">{label}</span>
+      <span className={`mg-text-caption text-mg-text-1 font-semibold text-right break-all max-w-[340px] select-text ${mono ? 'font-mono' : ''}`}>
         {value}
       </span>
     </div>

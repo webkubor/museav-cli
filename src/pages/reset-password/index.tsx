@@ -30,7 +30,7 @@ const inputStyle: React.CSSProperties = {
   fontSize: '14px',
   outline: 'none',
   boxSizing: 'border-box',
-  color: 'var(--mg-text-0)',
+  color: 'var(--mg-text-1)',
   background: 'var(--mg-bg-0)',
 }
 
@@ -38,7 +38,7 @@ const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: '13px',
   fontWeight: 600,
-  color: 'var(--mg-text-1)',
+  color: 'var(--mg-text-2)',
   marginBottom: '6px',
 }
 
@@ -89,7 +89,7 @@ export default function ResetPasswordPage() {
           重新发送重置邮件
         </Link>
       }>
-        <p style={{ textAlign: 'center', fontSize: '14px', color: 'var(--mg-text-2)' }}>
+        <p style={{ textAlign: 'center', fontSize: '14px', color: 'var(--mg-text-3)' }}>
           重置链接无效或已过期，请重新申请。
         </p>
       </AuthLayout>

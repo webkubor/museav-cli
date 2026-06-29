@@ -75,7 +75,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
       <div className="rounded-lg border border-mg-border bg-card-bg p-6 space-y-5 shadow-sm">
         {/* 顶部标题 + 操作按钮 */}
         <div className="flex justify-between items-center">
-          <span className="text-sm font-bold text-mg-text-0">{t('billing.balance.title')}</span>
+          <span className="text-sm font-bold text-mg-text-1">{t('billing.balance.title')}</span>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -83,7 +83,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
               disabled={refreshing}
               aria-label={t('common.refresh', { defaultValue: '刷新' })}
               title={t('billing.balance.refreshHint', { defaultValue: '刷新余额与列表' })}
-              className="flex items-center justify-center h-9 w-9 rounded-md border border-mg-border text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              className="flex items-center justify-center h-9 w-9 rounded-md border border-mg-border text-mg-text-3 hover:text-mg-text-1 hover:bg-mg-fill-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <LuRefreshCw size={14} className={cn(refreshing && 'animate-spin')} />
             </button>
@@ -112,13 +112,13 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
 
         {/* 可消费合计 */}
         <div className="space-y-1">
-          <p className="text-xs text-mg-text-2">
+          <p className="text-xs text-mg-text-3">
             {t('billing.balance.spendableTotal')}
-            <span className="ml-1 text-mg-text-3">({t('billing.balance.spendableHint')})</span>
+            <span className="ml-1 text-mg-text-4">({t('billing.balance.spendableHint')})</span>
           </p>
           <div className="flex items-baseline gap-3 flex-wrap">
             <div className="flex items-baseline gap-1">
-              <span className="text-lg font-medium text-mg-text-1">{currencySymbol}</span>
+              <span className="text-lg font-medium text-mg-text-2">{currencySymbol}</span>
               <span className="text-4xl font-bold tracking-tight tabular-nums leading-none spendable-amount-glow">
                 {balanceLoading ? '...' : availableMain}
               </span>
@@ -135,16 +135,16 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             className={cn(cardCls(activeTab === 'main'), activeTab === 'main' && 'active-main')}
           >
             <div className="shimmer-light" />
-            <div className={cn('text-xs transition-colors duration-300', activeTab === 'main' ? 'text-brand-base font-semibold' : 'text-mg-text-2')}>
+            <div className={cn('text-xs transition-colors duration-300', activeTab === 'main' ? 'text-brand-base font-semibold' : 'text-mg-text-3')}>
               {t('billing.balance.mainBalance')}
             </div>
             <div className="flex items-baseline gap-0.5 mt-1 select-none">
-              <span className="text-xs font-semibold text-mg-text-2">{currencySymbol}</span>
-              <span className={cn('text-lg font-bold text-mg-text-0 tabular-nums balance-amount', activeTab === 'main' ? 'amount-main-active' : '')}>
+              <span className="text-xs font-semibold text-mg-text-3">{currencySymbol}</span>
+              <span className={cn('text-lg font-bold text-mg-text-1 tabular-nums balance-amount', activeTab === 'main' ? 'amount-main-active' : '')}>
                 {formatBalance(breakdown?.main.amount).main}
               </span>
             </div>
-            <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.mainHint')}</div>
+            <div className="text-[10px] text-mg-text-3 leading-snug">{t('billing.balance.mainHint')}</div>
           </button>
 
           <button
@@ -154,16 +154,16 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             className={cn(cardCls(activeTab === 'gift'), activeTab === 'gift' && 'active-gift')}
           >
             <div className="shimmer-light" />
-            <div className={cn('text-xs transition-colors duration-300', activeTab === 'gift' ? 'text-sky-600 font-semibold' : 'text-mg-text-2')}>
+            <div className={cn('text-xs transition-colors duration-300', activeTab === 'gift' ? 'text-sky-600 font-semibold' : 'text-mg-text-3')}>
               {t('billing.balance.giftBalance')}
             </div>
             <div className="flex items-baseline gap-0.5 mt-1 select-none">
-              <span className="text-xs font-semibold text-mg-text-2">{currencySymbol}</span>
-              <span className={cn('text-lg font-bold text-mg-text-0 tabular-nums balance-amount', activeTab === 'gift' ? 'amount-gift-active' : '')}>
+              <span className="text-xs font-semibold text-mg-text-3">{currencySymbol}</span>
+              <span className={cn('text-lg font-bold text-mg-text-1 tabular-nums balance-amount', activeTab === 'gift' ? 'amount-gift-active' : '')}>
                 {formatBalance(breakdown?.gift.amount).main}
               </span>
             </div>
-            <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.giftHint')}</div>
+            <div className="text-[10px] text-mg-text-3 leading-snug">{t('billing.balance.giftHint')}</div>
           </button>
 
           <button
@@ -173,16 +173,16 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             className={cn(cardCls(activeTab === 'reward'), activeTab === 'reward' && 'active-reward')}
           >
             <div className="shimmer-light" />
-            <div className={cn('text-xs transition-colors duration-300', activeTab === 'reward' ? 'text-amber-500 font-semibold' : 'text-mg-text-2')}>
+            <div className={cn('text-xs transition-colors duration-300', activeTab === 'reward' ? 'text-amber-500 font-semibold' : 'text-mg-text-3')}>
               {t('billing.balance.rewardBalance')}
             </div>
             <div className="flex items-baseline gap-0.5 mt-1 select-none">
-              <span className="text-xs font-semibold text-mg-text-2">{currencySymbol}</span>
-              <span className={cn('text-lg font-bold text-mg-text-0 tabular-nums balance-amount', activeTab === 'reward' ? 'amount-reward-active' : '')}>
+              <span className="text-xs font-semibold text-mg-text-3">{currencySymbol}</span>
+              <span className={cn('text-lg font-bold text-mg-text-1 tabular-nums balance-amount', activeTab === 'reward' ? 'amount-reward-active' : '')}>
                 {formatBalance(breakdown?.reward.amount).main}
               </span>
             </div>
-            <div className="text-[10px] text-mg-text-2 leading-snug">{t('billing.balance.rewardHint')}</div>
+            <div className="text-[10px] text-mg-text-3 leading-snug">{t('billing.balance.rewardHint')}</div>
           </button>
         </div>
       </div>

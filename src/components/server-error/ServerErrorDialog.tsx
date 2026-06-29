@@ -14,7 +14,7 @@ function CopyIconButton({ value, label }: { value: string; label: string }) {
       type="button"
       aria-label={label}
       onClick={() => copy(value)}
-      className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border border-mg-border text-mg-text-2 transition-colors hover:text-mg-text-0"
+      className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border border-mg-border text-mg-text-3 transition-colors hover:text-mg-text-1"
     >
       {copied ? <LuCheck size={13} className="text-mg-success" /> : <LuCopy size={13} />}
     </button>
@@ -24,8 +24,8 @@ function CopyIconButton({ value, label }: { value: string; label: string }) {
 function Row({ label, value, copyable }: { label: string; value: string; copyable?: boolean }) {
   return (
     <div className="flex items-center gap-2 border-b border-mg-border px-3 py-2 last:border-b-0">
-      <span className="w-16 flex-shrink-0 text-xs text-mg-text-2">{label}</span>
-      <span className="min-w-0 flex-1 truncate font-mono text-xs text-mg-text-0" title={value}>
+      <span className="w-16 flex-shrink-0 text-xs text-mg-text-3">{label}</span>
+      <span className="min-w-0 flex-1 truncate font-mono text-xs text-mg-text-1" title={value}>
         {value}
       </span>
       {copyable && <CopyIconButton value={value} label={`复制${label}`} />}

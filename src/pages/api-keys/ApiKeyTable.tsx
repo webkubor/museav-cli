@@ -56,7 +56,7 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
       <TableBody>
         {isLoading ? (
           <TableRow>
-            <TableCell colSpan={8} className="text-center py-10 text-mg-text-2">{t('common.loading')}</TableCell>
+            <TableCell colSpan={8} className="text-center py-10 text-mg-text-3">{t('common.loading')}</TableCell>
           </TableRow>
         ) : items.length === 0 ? (
           <EmptyState
@@ -69,7 +69,7 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
             const guardrailNames = (record.guardrails ?? []).map((guardrail) => guardrail.name).filter(Boolean)
             return (
               <TableRow key={record.api_key_id}>
-                <TableCell className="font-semibold text-mg-text-0 text-[13.5px]">{record.name}</TableCell>
+                <TableCell className="font-semibold text-mg-text-1 text-[13.5px]">{record.name}</TableCell>
                 <TableCell>
                   {guardrailNames.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
@@ -83,13 +83,13 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
                         </span>
                       ))}
                       {guardrailNames.length > 3 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-mg-fill-0 border border-mg-border text-mg-text-2">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-mg-fill-0 border border-mg-border text-mg-text-3">
                           +{guardrailNames.length - 3}
                         </span>
                       )}
                     </div>
                   ) : (
-                    <span className="text-mg-text-2 text-xs">—</span>
+                    <span className="text-mg-text-3 text-xs">—</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -97,13 +97,13 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
                     ? (() => {
                         const opt = SCOPE_OPTIONS.find((o) => o.value === record.scope)
                         return opt ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-mg-text-1">
-                            <span className="text-mg-text-2">{opt.icon}</span>
+                          <span className="inline-flex items-center gap-1 text-xs text-mg-text-2">
+                            <span className="text-mg-text-3">{opt.icon}</span>
                             {opt.label}
                           </span>
-                        ) : <span className="text-mg-text-2 text-xs">—</span>
+                        ) : <span className="text-mg-text-3 text-xs">—</span>
                       })()
-                    : <span className="text-mg-text-2 text-xs">—</span>
+                    : <span className="text-mg-text-3 text-xs">—</span>
                   }
                 </TableCell>
                 <TableCell>
@@ -117,15 +117,15 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
                     fallback={record.status}
                   />
                 </TableCell>
-                <TableCell className="font-mono text-xs text-mg-text-0 tabular-nums">
+                <TableCell className="font-mono text-xs text-mg-text-1 tabular-nums">
                   {record.total_spend?.amount
                     ? `${record.total_spend.currency} ${formatMoney(record.total_spend.amount, '')}`
-                    : <span className="text-mg-text-2">—</span>}
+                    : <span className="text-mg-text-3">—</span>}
                 </TableCell>
-                <TableCell className="text-xs text-mg-text-1">{formatDateTime(record.created_at)}</TableCell>
+                <TableCell className="text-xs text-mg-text-2">{formatDateTime(record.created_at)}</TableCell>
                 <TableCell className="text-xs">
                   {!record.expires_at ? (
-                    <span className="text-mg-text-2">{t('apiKeys.table.neverExpires')}</span>
+                    <span className="text-mg-text-3">{t('apiKeys.table.neverExpires')}</span>
                   ) : isExpired(record.expires_at) ? (
                     <span className="inline-flex items-center gap-1.5 text-mg-danger font-semibold">
                       {formatDateTime(record.expires_at)}
@@ -134,7 +134,7 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
                       </span>
                     </span>
                   ) : (
-                    <span className="text-mg-text-1">{formatDateTime(record.expires_at)}</span>
+                    <span className="text-mg-text-2">{formatDateTime(record.expires_at)}</span>
                   )}
                 </TableCell>
                 <TableCell className="text-right">

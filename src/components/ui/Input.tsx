@@ -73,13 +73,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         )}
       >
         {prefix && (
-          <span className="modern-input-prefix inline-flex items-center text-mg-text-2 shrink-0 transition-colors duration-200">
+          <span className="modern-input-prefix inline-flex items-center text-mg-text-3 shrink-0 transition-colors duration-200">
             {prefix}
           </span>
         )}
         <input
           type={resolvedType}
-          className="modern-input-inner flex-1 w-full h-full bg-transparent border-none outline-none p-0 mg-text-body focus:ring-0 focus:outline-none placeholder:text-mg-text-2/70 text-mg-text-0 disabled:cursor-not-allowed"
+          className="modern-input-inner flex-1 w-full h-full bg-transparent border-none outline-none p-0 mg-text-body focus:ring-0 focus:outline-none placeholder:text-mg-text-3/70 text-mg-text-1 disabled:cursor-not-allowed"
           ref={ref}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
@@ -87,7 +87,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {...props}
         />
         {suffix && (
-          <span className="modern-input-suffix inline-flex items-center text-mg-text-2 shrink-0 transition-colors duration-200">
+          <span className="modern-input-suffix inline-flex items-center text-mg-text-3 shrink-0 transition-colors duration-200">
             {suffix}
           </span>
         )}

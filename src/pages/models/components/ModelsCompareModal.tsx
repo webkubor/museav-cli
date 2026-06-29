@@ -139,17 +139,17 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
               <LuGitCompareArrows size={18} />
             </div>
             <div>
-              <h2 className="text-[14.5px] font-bold text-mg-text-0 m-0 leading-tight">
+              <h2 className="text-[14.5px] font-bold text-mg-text-1 m-0 leading-tight">
                 {t('modelsCompare.title') || '模型性能对比'}
               </h2>
-              <p className="text-[11px] text-mg-text-2 m-0 mt-0.5">
+              <p className="text-[11px] text-mg-text-3 m-0 mt-0.5">
                 最多可选 3 个模型进行对比，当前已选择 <strong className="text-brand-base">{selectedIds.length}</strong> / 3 个
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-mg-fill-0 hover:bg-mg-fill-1 text-mg-text-2 hover:text-mg-text-0 flex items-center justify-center cursor-pointer transition-all active:scale-90"
+            className="w-8 h-8 rounded-full bg-mg-fill-0 hover:bg-mg-fill-1 text-mg-text-3 hover:text-mg-text-1 flex items-center justify-center cursor-pointer transition-all active:scale-90"
           >
             <LuX size={16} />
           </button>
@@ -162,7 +162,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
             {/* 搜索框 */}
             <div className="p-3 border-b border-mg-border shrink-0">
               <Input
-                prefix={<LuSearch size={14} className="text-mg-text-2" />}
+                prefix={<LuSearch size={14} className="text-mg-text-3" />}
                 placeholder="搜索模型、ID 或厂商..."
                 className="h-8 text-xs rounded-lg bg-mg-fill-0"
                 value={searchQuery}
@@ -184,17 +184,17 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                     className={cn(
                       "flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer transition-all select-none border border-transparent",
                       isSelected
-                        ? "bg-brand-selected-bg border-brand-mid/15 border-l-2 border-l-brand-base text-mg-text-0 font-bold"
-                        : "hover:bg-mg-fill-0/40 text-mg-text-1",
+                        ? "bg-brand-selected-bg border-brand-mid/15 border-l-2 border-l-brand-base text-mg-text-1 font-bold"
+                        : "hover:bg-mg-fill-0/40 text-mg-text-2",
                       isDisabled && "opacity-30 cursor-not-allowed pointer-events-none"
                     )}
                   >
                     {renderLogo(m)}
                     <div className="min-w-0 flex-1">
-                      <div className="text-[12px] font-bold text-mg-text-0 truncate leading-tight">
+                      <div className="text-[12px] font-bold text-mg-text-1 truncate leading-tight">
                         {m.display_name}
                       </div>
-                      <div className="text-[10px] text-mg-text-2 truncate font-mono mt-0.5">
+                      <div className="text-[10px] text-mg-text-3 truncate font-mono mt-0.5">
                         {m.vendor || 'ModelGo'} · {m.model_id}
                       </div>
                     </div>
@@ -223,13 +223,13 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                         {renderLogo(m)}
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-[13px] text-mg-text-0 leading-none">{m.display_name}</span>
+                            <span className="font-bold text-[13px] text-mg-text-1 leading-none">{m.display_name}</span>
                             <span className="text-[9.5px] text-brand-base font-semibold px-2 py-0.5 rounded-full bg-brand-selected-bg border border-brand-mid/10">
                               {m.vendor || 'ModelGo'}
                             </span>
                           </div>
-                          <div className="text-[10px] text-mg-text-2 font-mono mt-1.5">
-                            ID: <span className="select-all text-mg-text-1 font-medium">{m.model_id}</span>
+                          <div className="text-[10px] text-mg-text-3 font-mono mt-1.5">
+                            ID: <span className="select-all text-mg-text-2 font-medium">{m.model_id}</span>
                           </div>
                         </div>
                       </div>
@@ -237,7 +237,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                       {/* 取消对比按钮 */}
                       <button
                         onClick={() => handleToggleModel(m.id)}
-                        className="w-5.5 h-5.5 rounded-full bg-mg-fill-0 hover:bg-mg-fill-2 text-mg-text-2 hover:text-mg-text-0 flex items-center justify-center transition-colors cursor-pointer"
+                        className="w-5.5 h-5.5 rounded-full bg-mg-fill-0 hover:bg-mg-fill-2 text-mg-text-3 hover:text-mg-text-1 flex items-center justify-center transition-colors cursor-pointer"
                         title="取消对比"
                       >
                         <LuX size={12} />
@@ -248,10 +248,10 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5 mt-3.5 pt-3.5 border-t border-mg-border">
                       {ROWS.map((row, idx) => (
                         <div key={idx} className="flex flex-col gap-1 min-w-0">
-                          <span className="text-[10px] font-bold text-mg-text-2 tracking-wide">
+                          <span className="text-[10px] font-bold text-mg-text-3 tracking-wide">
                             {row.label}
                           </span>
-                          <span className="text-[12px] font-semibold text-mg-text-0 truncate">
+                          <span className="text-[12px] font-semibold text-mg-text-1 truncate">
                             {row.render(m)}
                           </span>
                         </div>
@@ -274,7 +274,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
               {selectedModels.length > 0 ? (
                 <button
                   onClick={handleClearSelected}
-                  className="text-xs text-mg-text-2 hover:text-brand-base font-semibold transition-colors bg-none border-none cursor-pointer active:scale-95"
+                  className="text-xs text-mg-text-3 hover:text-brand-base font-semibold transition-colors bg-none border-none cursor-pointer active:scale-95"
                 >
                   清空对比槽位
                 </button>
@@ -285,7 +285,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
               <div className="flex items-center gap-3">
                 <button
                   onClick={onClose}
-                  className="px-5 py-2 rounded-md text-xs font-semibold bg-mg-fill-0 hover:bg-mg-fill-1 text-mg-text-1 hover:text-mg-text-0 border border-mg-border/30 transition-all cursor-pointer active:scale-95 outline-none"
+                  className="px-5 py-2 rounded-md text-xs font-semibold bg-mg-fill-0 hover:bg-mg-fill-1 text-mg-text-2 hover:text-mg-text-1 border border-mg-border/30 transition-all cursor-pointer active:scale-95 outline-none"
                 >
                   取消
                 </button>

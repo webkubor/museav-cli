@@ -155,7 +155,7 @@ export function ModelCatalogFilters({
     <section className="models-catalog-toolbar" aria-label={t('modelsCatalog.filters.label')}>
       <Input
         variant="search"
-        prefix={<LuSearch size={16} className="text-mg-text-2/80" />}
+        prefix={<LuSearch size={16} className="text-mg-text-3/80" />}
         value={search}
         onChange={(event) => onSearchChange(event.target.value)}
         placeholder={t('modelsCatalog.placeholder.search')}

@@ -250,14 +250,14 @@ export default function ReferralPage() {
 
   const moneyField = (value: string, onChange: (v: string) => void) => (
     <div className="flex items-center rounded-lg border border-mg-border bg-mg-fill-0 px-3 focus-within:border-brand-base">
-      <span className="mr-1 text-sm text-mg-text-2">¥</span>
+      <span className="mr-1 text-sm text-mg-text-3">¥</span>
       <input
         type="number"
         min={MIN_AMOUNT}
         max={rewardBalance}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="min-w-0 flex-1 bg-transparent py-2 font-mono text-sm text-mg-text-0 outline-none"
+        className="min-w-0 flex-1 bg-transparent py-2 font-mono text-sm text-mg-text-1 outline-none"
       />
     </div>
   )
@@ -342,8 +342,8 @@ export default function ReferralPage() {
         <div className="relative overflow-hidden rounded-lg border border-mg-border bg-card-bg p-5 space-y-3">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-brand-base/35 via-brand-base/10 to-transparent" />
           <div className="flex items-center justify-between">
-            <p className="text-sm font-bold text-mg-text-0">{text.tierTableLabel}</p>
-            <span className="text-xs text-mg-text-2">{text.tierTableHint}</span>
+            <p className="text-sm font-bold text-mg-text-1">{text.tierTableLabel}</p>
+            <span className="text-xs text-mg-text-3">{text.tierTableHint}</span>
           </div>
           <div className="divide-y divide-mg-border/50">
             {tierConfig.map((t) => {
@@ -353,17 +353,17 @@ export default function ReferralPage() {
                   className="flex items-center justify-between py-2.5 px-3 -mx-3 rounded-lg transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-mg-text-1">
+                    <span className="text-sm font-semibold text-mg-text-2">
                       {t.name}
                     </span>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="text-xs text-mg-text-2">
+                    <span className="text-xs text-mg-text-3">
                       {t.threshold === 0
                         ? (isZh ? '累计消费 ≥ ¥0' : 'Spend ≥ ¥0')
                         : (isZh ? `累计消费 ≥ ¥${t.threshold.toLocaleString()}` : `Spend ≥ ¥${t.threshold.toLocaleString()}`)}
                     </span>
-                    <span className="text-sm font-bold tabular-nums text-mg-text-0">
+                    <span className="text-sm font-bold tabular-nums text-mg-text-1">
                       {t.rate}%
                     </span>
                   </div>
@@ -384,7 +384,7 @@ export default function ReferralPage() {
           <span>{text.rulesTitle}</span>
         </div>
         {isZh ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-mg-text-2 leading-relaxed">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-mg-text-3 leading-relaxed">
             <div className="flex gap-2.5 items-start">
               <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-[10px] font-bold shrink-0">01</span>
               <div>
@@ -411,7 +411,7 @@ export default function ReferralPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-mg-text-2 leading-relaxed">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-mg-text-3 leading-relaxed">
             <div className="flex gap-2.5 items-start">
               <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-[10px] font-bold shrink-0">01</span>
               <div>
@@ -496,7 +496,7 @@ export default function ReferralPage() {
         }
       >
         <div className="space-y-3 py-1">
-          <p className="text-xs text-mg-text-2">
+          <p className="text-xs text-mg-text-3">
             {text.transferModalHint.replace('{balance}', fmt(rewardBalance))}
           </p>
           {moneyField(transferAmount, onTransferAmountChange)}
@@ -516,17 +516,17 @@ export default function ReferralPage() {
         }
       >
         <div className="space-y-4 py-1">
-          <p className="text-xs text-mg-text-2">
+          <p className="text-xs text-mg-text-3">
             {text.withdrawModalHint.replace('{balance}', fmt(rewardBalance))}
           </p>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-mg-text-1">{text.withdrawAmountLabel}</label>
+            <label className="text-xs font-semibold text-mg-text-2">{text.withdrawAmountLabel}</label>
             {moneyField(withdrawAmount, onWithdrawAmountChange)}
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-mg-text-1">{text.withdrawMethodLabel}</label>
+            <label className="text-xs font-semibold text-mg-text-2">{text.withdrawMethodLabel}</label>
             <div className="flex gap-2">
               {(['alipay', 'bank'] as const).map((m) => (
                 <button
@@ -536,7 +536,7 @@ export default function ReferralPage() {
                   className={`flex-1 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
                     payMethod === m
                       ? 'border-brand-base text-brand-base bg-[var(--brand-base)]/5'
-                      : 'border-mg-border text-mg-text-1 hover:text-mg-text-0'
+                      : 'border-mg-border text-mg-text-2 hover:text-mg-text-1'
                   }`}
                 >
                   {m === 'alipay' ? text.methodAlipay : text.methodBank}
@@ -549,7 +549,7 @@ export default function ReferralPage() {
                 value={alipayAccount}
                 onChange={(e) => setAlipayAccount(e.target.value)}
                 placeholder={text.alipayPlaceholder}
-                className="w-full rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 text-sm text-mg-text-0 outline-none placeholder:text-mg-text-2 focus:border-brand-base"
+                className="w-full rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 text-sm text-mg-text-1 outline-none placeholder:text-mg-text-3 focus:border-brand-base"
               />
             ) : (
               <div className="space-y-2">
@@ -557,25 +557,25 @@ export default function ReferralPage() {
                   value={bankName}
                   onChange={(e) => setBankName(e.target.value)}
                   placeholder={text.bankNamePlaceholder}
-                  className="w-full rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 text-sm text-mg-text-0 outline-none placeholder:text-mg-text-2 focus:border-brand-base"
+                  className="w-full rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 text-sm text-mg-text-1 outline-none placeholder:text-mg-text-3 focus:border-brand-base"
                 />
                 <input
                   value={bankCard}
                   onChange={(e) => setBankCard(e.target.value)}
                   placeholder={text.bankCardPlaceholder}
-                  className="w-full rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 font-mono text-sm text-mg-text-0 outline-none placeholder:text-mg-text-2 focus:border-brand-base"
+                  className="w-full rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 font-mono text-sm text-mg-text-1 outline-none placeholder:text-mg-text-3 focus:border-brand-base"
                 />
                 <input
                   value={bankHolder}
                   onChange={(e) => setBankHolder(e.target.value)}
                   placeholder={text.bankHolderPlaceholder}
-                  className="w-full rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 text-sm text-mg-text-0 outline-none placeholder:text-mg-text-2 focus:border-brand-base"
+                  className="w-full rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 text-sm text-mg-text-1 outline-none placeholder:text-mg-text-3 focus:border-brand-base"
                 />
               </div>
             )}
           </div>
 
-          <p className="text-xs leading-relaxed text-mg-text-2">{text.withdrawNote}</p>
+          <p className="text-xs leading-relaxed text-mg-text-3">{text.withdrawNote}</p>
         </div>
       </Modal>
     </div>
@@ -588,7 +588,7 @@ type TextCopy = typeof referralCopy.zh
 
 
 function TierBadge({ name, rate, fallback }: { name?: string; rate?: number; fallback: string }) {
-  if (!name) return <span className="text-mg-text-3">{fallback}</span>
+  if (!name) return <span className="text-mg-text-4">{fallback}</span>
   const colorMap: Record<string, string> = {
     '成长伙伴': 'bg-green-500/10 text-green-600 border-green-500/20',
     'Growth Partner': 'bg-green-500/10 text-green-600 border-green-500/20',
@@ -597,7 +597,7 @@ function TierBadge({ name, rate, fallback }: { name?: string; rate?: number; fal
     '战略伙伴': 'bg-purple-500/10 text-purple-600 border-purple-500/20',
     'Strategic Partner': 'bg-purple-500/10 text-purple-600 border-purple-500/20',
   }
-  const cls = colorMap[name] ?? 'bg-mg-fill-0 text-mg-text-1 border-mg-border'
+  const cls = colorMap[name] ?? 'bg-mg-fill-0 text-mg-text-2 border-mg-border'
   const label = typeof rate === 'number' && rate > 0 ? `${name} · ${rate}%` : name
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${cls}`}>
@@ -629,8 +629,8 @@ function InviteesTable({
   if (!isQualified) {
     return (
       <div className="py-12 flex flex-col items-center gap-3 text-center">
-        <LuLock size={20} className="text-mg-text-3" />
-        <p className="text-sm text-mg-text-2">{text.gateInviteePlaceholder}</p>
+        <LuLock size={20} className="text-mg-text-4" />
+        <p className="text-sm text-mg-text-3">{text.gateInviteePlaceholder}</p>
       </div>
     )
   }
@@ -649,7 +649,7 @@ function InviteesTable({
       <TableBody>
         {invitees.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={5} className="text-center text-mg-text-2 py-8">
+            <TableCell colSpan={5} className="text-center text-mg-text-3 py-8">
               {text.empty}
             </TableCell>
           </TableRow>
@@ -660,8 +660,8 @@ function InviteesTable({
             return (
               <TableRow key={`${inv.email}-${inv.registeredAt}`}>
                 <TableCell>
-                  <div className="font-medium text-mg-text-0">{inv.name}</div>
-                  <div className="text-[11px] text-mg-text-2 mt-0.5">{inv.email}</div>
+                  <div className="font-medium text-mg-text-1">{inv.name}</div>
+                  <div className="text-[11px] text-mg-text-3 mt-0.5">{inv.email}</div>
                 </TableCell>
                 <TableCell className="text-right font-mono">{fmt(inv.totalSpend)}</TableCell>
                 <TableCell className="text-right font-mono">{fmt(inv.commission)}</TableCell>
@@ -724,7 +724,7 @@ function CommissionsTable({
       <TableBody>
         {records.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={6} className="text-center text-mg-text-2 py-8">
+            <TableCell colSpan={6} className="text-center text-mg-text-3 py-8">
               {text.empty}
             </TableCell>
           </TableRow>
@@ -787,7 +787,7 @@ function WithdrawalsTable({
       <TableBody>
         {withdrawals.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={4} className="text-center text-mg-text-2 py-8">
+            <TableCell colSpan={4} className="text-center text-mg-text-3 py-8">
               {text.empty}
             </TableCell>
           </TableRow>

@@ -82,7 +82,7 @@ export default function InvitationsPage() {
   if (loading) {
     return (
       <AuthLayout title="正在加载邀请…">
-        <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--mg-text-2)', fontSize: '14px' }}>
+        <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--mg-text-3)', fontSize: '14px' }}>
           加载中…
         </div>
       </AuthLayout>
@@ -99,7 +99,7 @@ export default function InvitationsPage() {
           </Link>
         }
       >
-        <p style={{ textAlign: 'center', fontSize: '14px', color: 'var(--mg-text-2)' }}>
+        <p style={{ textAlign: 'center', fontSize: '14px', color: 'var(--mg-text-3)' }}>
           {loadError || '邀请链接无效或已过期'}
         </p>
       </AuthLayout>
@@ -111,7 +111,7 @@ export default function InvitationsPage() {
       title="你被邀请加入"
       footer={
         !isAuthenticated && !isSessionLoading ? (
-          <span style={{ fontSize: '13px', color: 'var(--mg-text-2)' }}>
+          <span style={{ fontSize: '13px', color: 'var(--mg-text-3)' }}>
             还没有账号？{' '}
             <Link
               to={`/signup?invitation=${encodeURIComponent(token)}`}
@@ -133,19 +133,19 @@ export default function InvitationsPage() {
             border: '1px solid var(--mg-border)',
           }}
         >
-          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--mg-text-0)', marginBottom: '4px' }}>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--mg-text-1)', marginBottom: '4px' }}>
             {preview.workspace.name}
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--mg-text-2)' }}>
+          <div style={{ fontSize: '12px', color: 'var(--mg-text-3)' }}>
             {preview.tenant.name} · {preview.role === 'ws_admin' ? '管理员' : '成员'}
           </div>
           {preview.invited_by && (
-            <div style={{ fontSize: '12px', color: 'var(--mg-text-2)', marginTop: '8px' }}>
-              由 <strong style={{ color: 'var(--mg-text-1)' }}>{preview.invited_by.display_name}</strong> 邀请
+            <div style={{ fontSize: '12px', color: 'var(--mg-text-3)', marginTop: '8px' }}>
+              由 <strong style={{ color: 'var(--mg-text-2)' }}>{preview.invited_by.display_name}</strong> 邀请
             </div>
           )}
           {preview.email && (
-            <div style={{ fontSize: '12px', color: 'var(--mg-text-2)', marginTop: '2px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--mg-text-3)', marginTop: '2px' }}>
               邀请邮箱：{preview.email}
             </div>
           )}

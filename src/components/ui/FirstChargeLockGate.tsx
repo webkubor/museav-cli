@@ -56,8 +56,8 @@ export const FirstChargeLockGate: React.FC<FirstChargeLockGateProps> = ({
           <LuLock size={20} />
         </div>
         <div className="space-y-1.5 max-w-[280px]">
-          <p className="font-bold text-mg-text-0 mg-text-body">{title}</p>
-          <p className="mg-text-caption text-mg-text-2">{desc}</p>
+          <p className="font-bold text-mg-text-1 mg-text-body">{title}</p>
+          <p className="mg-text-caption text-mg-text-3">{desc}</p>
         </div>
         <Button variant="brand" size="sm" onClick={openRecharge}>
           {cta}

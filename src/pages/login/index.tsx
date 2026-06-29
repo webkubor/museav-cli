@@ -302,7 +302,7 @@ export default function LoginPage() {
           {captchaRequired && (
             <div className="auth-fade-in">
               <label className="modern-auth-label">安全验证</label>
-              <p className="mb-2 text-xs text-mg-text-2">多次密码错误，请完成下方验证后再登录</p>
+              <p className="mb-2 text-xs text-mg-text-3">多次密码错误，请完成下方验证后再登录</p>
               <SliderCaptcha onChange={(verified) => setCaptchaVerified(verified)} />
             </div>
           )}

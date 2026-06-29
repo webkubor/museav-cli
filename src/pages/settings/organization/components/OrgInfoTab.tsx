@@ -132,10 +132,10 @@ export function OrgInfoTab({
           />
         )}
         <div className="space-y-1">
-          <div className="text-sm font-bold text-mg-text-0">
+          <div className="text-sm font-bold text-mg-text-1">
             {isPersonalTenant ? (account?.display_name || tenant.name) : tenant.name}
           </div>
-          <div className="text-xs text-mg-text-2">
+          <div className="text-xs text-mg-text-3">
             {isPersonalTenant
               ? '个人空间头像跟随账号头像，请在账号设置中修改'
               : '点击头像更换 · 支持 PNG/JPEG/WebP，最大 2MB'}
@@ -145,7 +145,7 @@ export function OrgInfoTab({
 
       {/* 组织名称 */}
       <div className="space-y-2">
-        <label className="text-[10px] font-bold text-mg-text-1 uppercase tracking-wider block">组织名称</label>
+        <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">组织名称</label>
         {editing ? (
           <div className="flex items-center gap-2">
             <Input
@@ -167,7 +167,7 @@ export function OrgInfoTab({
           </div>
         ) : (
           <div className="flex items-center gap-3">
-            <span className="text-lg font-bold text-mg-text-0">{tenant.name}</span>
+            <span className="text-lg font-bold text-mg-text-1">{tenant.name}</span>
             {canEditOrg && (
               <button
                 type="button"
@@ -184,11 +184,11 @@ export function OrgInfoTab({
       {/* 信息网络 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-mg-border/40">
         <div className="space-y-1">
-          <label className="text-[10px] font-bold text-mg-text-1 uppercase tracking-wider block">唯一标识 (Slug)</label>
-          <span className="font-mono text-xs text-mg-text-0">@{tenant.slug}</span>
+          <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">唯一标识 (Slug)</label>
+          <span className="font-mono text-xs text-mg-text-1">@{tenant.slug}</span>
         </div>
         <div className="space-y-1">
-          <label className="text-[10px] font-bold text-mg-text-1 uppercase tracking-wider block">账户类型</label>
+          <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">账户类型</label>
           <div>
             <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-brand-glow/8 text-brand-base border border-brand-base/15">
               {tenant.type === 'personal' ? '个人账户' : '企业组织'}
@@ -196,23 +196,23 @@ export function OrgInfoTab({
           </div>
         </div>
         <div className="space-y-1">
-          <label className="text-[10px] font-bold text-mg-text-1 uppercase tracking-wider block">Owner (所有者)</label>
+          <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">Owner (所有者)</label>
           {owner ? (
             <div className="space-y-0.5">
-              <div className="text-xs font-semibold text-mg-text-0">{owner.account.display_name || '—'}</div>
-              <div className="text-[10px] text-mg-text-2">{owner.account.email}</div>
+              <div className="text-xs font-semibold text-mg-text-1">{owner.account.display_name || '—'}</div>
+              <div className="text-[10px] text-mg-text-3">{owner.account.email}</div>
             </div>
           ) : (
-            <span className="text-xs text-mg-text-2">{membersQuery.isLoading ? '…' : '—'}</span>
+            <span className="text-xs text-mg-text-3">{membersQuery.isLoading ? '…' : '—'}</span>
           )}
         </div>
         <div className="space-y-1">
-          <label className="text-[10px] font-bold text-mg-text-1 uppercase tracking-wider block">最大工作区限制</label>
-          <span className="text-xs text-mg-text-0 font-medium">{tenant.max_workspaces} 个</span>
+          <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">最大工作区限制</label>
+          <span className="text-xs text-mg-text-1 font-medium">{tenant.max_workspaces} 个</span>
         </div>
         <div className="space-y-1">
-          <label className="text-[10px] font-bold text-mg-text-1 uppercase tracking-wider block">最大成员数限制</label>
-          <span className="text-xs text-mg-text-0 font-medium">{tenant.max_members} 人</span>
+          <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">最大成员数限制</label>
+          <span className="text-xs text-mg-text-1 font-medium">{tenant.max_members} 人</span>
         </div>
       </div>
 
@@ -221,7 +221,7 @@ export function OrgInfoTab({
           <div className="flex flex-col gap-4 rounded-md border border-mg-danger/25 bg-mg-danger/5 p-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-1">
               <div className="text-xs font-bold text-mg-danger">解散组织</div>
-              <div className="text-xs leading-relaxed text-mg-text-1">
+              <div className="text-xs leading-relaxed text-mg-text-2">
                 解散后该组织和其工作区将停止访问，并从成员的组织列表中移除。
               </div>
             </div>
@@ -274,11 +274,11 @@ export function OrgInfoTab({
       )}
     >
       <div className="space-y-3">
-        <div className="rounded-lg border border-mg-danger/20 bg-mg-danger/5 p-3 text-xs leading-relaxed text-mg-text-1">
+        <div className="rounded-lg border border-mg-danger/20 bg-mg-danger/5 p-3 text-xs leading-relaxed text-mg-text-2">
           该操作会让所有成员失去此组织下工作区、密钥和配置入口的访问权限。
         </div>
         <div>
-          <label className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-mg-text-1">
+          <label className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-mg-text-2">
             组织名称
           </label>
           <Input

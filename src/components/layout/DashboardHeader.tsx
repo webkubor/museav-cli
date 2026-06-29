@@ -110,7 +110,7 @@ export const DashboardHeader: React.FC = () => {
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base/40',
       active
         ? 'text-brand-base font-semibold'
-        : 'text-mg-text-1 hover:text-brand-base',
+        : 'text-mg-text-2 hover:text-brand-base',
     )
 
   const [scrolled, setScrolled] = useState(false)
@@ -548,7 +548,7 @@ export const DashboardHeader: React.FC = () => {
 
             {personalMenuTenants.length > 0 && (
               <>
-                <div className="px-2 pb-2 pt-3 text-[12px] font-semibold text-mg-text-2 select-none">
+                <div className="px-2 pb-2 pt-3 text-[12px] font-semibold text-mg-text-3 select-none">
                   {t('header.personalSpace')}
                 </div>
                 <div className="overflow-hidden rounded-lg border border-[var(--account-menu-border)] bg-[var(--account-menu-panel)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
@@ -557,7 +557,7 @@ export const DashboardHeader: React.FC = () => {
               </>
             )}
 
-            <div className="px-2 pb-2 pt-3 text-[12px] font-semibold text-mg-text-2 select-none">
+            <div className="px-2 pb-2 pt-3 text-[12px] font-semibold text-mg-text-3 select-none">
               {t('header.organizations')}
             </div>
             <div className="overflow-hidden rounded-lg border border-[var(--account-menu-border)] bg-[var(--account-menu-panel)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
@@ -575,7 +575,7 @@ export const DashboardHeader: React.FC = () => {
               )}
             </div>
 
-            <div className="px-2 pb-1.5 pt-4 text-[12px] font-semibold text-mg-text-2 select-none">
+            <div className="px-2 pb-1.5 pt-4 text-[12px] font-semibold text-mg-text-3 select-none">
               {t('nav.account')}
             </div>
             <DropdownMenuItem
@@ -606,7 +606,7 @@ export const DashboardHeader: React.FC = () => {
 
             <DropdownMenuSeparator />
             <div
-              className="px-2.5 pb-2 pt-1.5 text-[11px] leading-relaxed text-mg-text-3/80 select-text"
+              className="px-2.5 pb-2 pt-1.5 text-[11px] leading-relaxed text-mg-text-4/80 select-text"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="font-mono">v{__APP_VERSION__} · {__BUILD_TAG__ || __BUILD_COMMIT__} · DEV</div>
@@ -625,7 +625,7 @@ export const DashboardHeader: React.FC = () => {
             <DialogDescription className="sr-only">{t('header.createOrg')}</DialogDescription>
           </DialogHeader>
           <div className="py-4 flex flex-col gap-2">
-            <div className="text-xs font-bold text-mg-text-1">
+            <div className="text-xs font-bold text-mg-text-2">
               {t('header.orgNameLabel')}
             </div>
             <Input

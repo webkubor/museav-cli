@@ -30,7 +30,7 @@ export function VideoThumbnail({ taskId, videoUrl, placeholder, onPreview, onExp
   if (!videoUrl || failed) {
     return (
       <div
-        className={`${BOX} flex items-center justify-center bg-mg-fill-1 text-mg-text-3`}
+        className={`${BOX} flex items-center justify-center bg-mg-fill-1 text-mg-text-4`}
         title={failed ? '产物已过期' : undefined}
       >
         {failed ? <LuVideoOff size={20} /> : placeholder}

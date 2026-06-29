@@ -50,29 +50,29 @@ export function GuardrailFormFields({
     <div className="flex flex-col gap-5 py-2">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.nameLabel')}<span className="text-mg-danger ml-1">*</span></label>
+          <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.nameLabel')}<span className="text-mg-danger ml-1">*</span></label>
           <Input value={name} onChange={(e) => onNameChange(e.target.value)} placeholder={t('guardrails.form.namePlaceholder')} />
         </div>
         <div>
-          <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.priorityLabel')}</label>
+          <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.priorityLabel')}</label>
           <Input type="number" value={priority} onChange={(e) => onPriorityChange(Number(e.target.value))} placeholder={t('guardrails.form.priorityPlaceholder')} />
         </div>
       </div>
       <div>
-        <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.descLabel')}</label>
+        <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.descLabel')}</label>
         <Input value={description} onChange={(e) => onDescriptionChange(e.target.value)} placeholder={t('guardrails.form.descPlaceholder')} />
       </div>
       {/* 设为默认 — Switch 开关 */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-bold text-mg-text-1">{t('guardrails.form.isDefaultLabel')}</p>
-          <p className="text-xs text-mg-text-2 mt-0.5">{t('guardrails.form.isDefaultHint')}</p>
+          <p className="text-xs font-bold text-mg-text-2">{t('guardrails.form.isDefaultLabel')}</p>
+          <p className="text-xs text-mg-text-3 mt-0.5">{t('guardrails.form.isDefaultHint')}</p>
         </div>
         <Switch checked={isDefault} onChange={onIsDefaultChange} />
       </div>
       {/* 模型黑名单 — 下拉多选 */}
       <div>
-        <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.modelBlacklistLabel')}</label>
+        <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.modelBlacklistLabel')}</label>
         <TagInput
           value={modelBlacklist}
           onChange={onModelBlacklistChange}
@@ -83,7 +83,7 @@ export function GuardrailFormFields({
       </div>
       {/* IP 白名单 — 自由输入标签 */}
       <div>
-        <label className="block text-xs font-bold text-mg-text-1 mb-2">{t('guardrails.form.ipWhitelistLabel')}</label>
+        <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.ipWhitelistLabel')}</label>
         <TagInput
           value={ipWhitelist}
           onChange={(v) => { setIpError(''); onIpWhitelistChange(v) }}
@@ -101,7 +101,7 @@ export function GuardrailFormFields({
       </div>
       {/* 成员 — 下拉多选 */}
       <div>
-        <label className="block text-xs font-bold text-mg-text-1 mb-2">
+        <label className="block text-xs font-bold text-mg-text-2 mb-2">
           <span className="inline-flex items-center gap-1.5">
             <LuUsers className="w-3.5 h-3.5" />
             {t('guardrails.form.membersLabel')}

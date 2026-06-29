@@ -10,7 +10,7 @@ const MODALITY_CLASSES: Record<string, string> = {
   audio:     'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
   video:     'bg-orange-500/10 text-orange-600 border-orange-500/20',
   embedding: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
-  reranker:  'bg-mg-fill-0 text-mg-text-1 border-mg-fill-1',
+  reranker:  'bg-mg-fill-0 text-mg-text-2 border-mg-fill-1',
 }
 
 export function ModalityBadge({ modality }: ModalityBadgeProps) {

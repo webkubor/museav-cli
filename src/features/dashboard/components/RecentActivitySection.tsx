@@ -33,7 +33,7 @@ export const RecentActivitySection: React.FC = () => {
   return (
     <Card className="p-6 h-full flex flex-col">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h3 style={{ fontWeight: 700, fontSize: '16px', color: 'var(--mg-text-0)', margin: 0 }}>{t('dashboard.recentLogs.title')}</h3>
+        <h3 style={{ fontWeight: 700, fontSize: '16px', color: 'var(--mg-text-1)', margin: 0 }}>{t('dashboard.recentLogs.title')}</h3>
         <button
           onClick={() => navigate('/logs')}
           className="text-xs bg-none border-none text-brand-base hover:text-brand-deep cursor-pointer font-semibold p-0 flex items-center gap-1 transition-colors"
@@ -72,10 +72,10 @@ export const RecentActivitySection: React.FC = () => {
 
                 return (
                   <TableRow key={item.call_log_id}>
-                    <TableCell className="font-mono text-xs text-mg-text-1">
+                    <TableCell className="font-mono text-xs text-mg-text-2">
                       {reqId.slice(0, 8)}...
                     </TableCell>
-                    <TableCell className="font-semibold text-mg-text-0 text-xs">
+                    <TableCell className="font-semibold text-mg-text-1 text-xs">
                       {displayModelName}
                     </TableCell>
                     <TableCell>
@@ -83,16 +83,16 @@ export const RecentActivitySection: React.FC = () => {
                         {item.status.toUpperCase()}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs text-mg-text-1">
+                    <TableCell className="text-xs text-mg-text-2">
                       {item.duration_ms}ms
                     </TableCell>
-                    <TableCell className="text-xs text-mg-text-1 font-mono">
+                    <TableCell className="text-xs text-mg-text-2 font-mono">
                       {item.usage?.total_tokens ?? 0}
                     </TableCell>
-                    <TableCell className="text-xs text-mg-text-1 font-mono">
+                    <TableCell className="text-xs text-mg-text-2 font-mono">
                       {item.cost ? formatMoney(item.cost.amount, item.cost.currency === 'USD' ? '$' : '¥') : '—'}
                     </TableCell>
-                    <TableCell className="text-xs text-mg-text-2">
+                    <TableCell className="text-xs text-mg-text-3">
                       {formatSimple(item.started_at)}
                     </TableCell>
                   </TableRow>
@@ -104,7 +104,7 @@ export const RecentActivitySection: React.FC = () => {
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <span className="text-2xl mb-2">📭</span>
-          <p className="text-xs text-mg-text-2 font-medium">{t('dashboard.recentLogs.empty')}</p>
+          <p className="text-xs text-mg-text-3 font-medium">{t('dashboard.recentLogs.empty')}</p>
         </div>
       )}
     </Card>

@@ -20,7 +20,7 @@ function boundApiKeyCount(row: GuardrailDetail) {
 
 function LimitCell({ values, emptyLabel }: { values: string[]; emptyLabel: string }) {
   if (values.length === 0) {
-    return <span className="text-xs text-mg-text-2">{emptyLabel}</span>
+    return <span className="text-xs text-mg-text-3">{emptyLabel}</span>
   }
 
   return (
@@ -28,13 +28,13 @@ function LimitCell({ values, emptyLabel }: { values: string[]; emptyLabel: strin
       {values.slice(0, 3).map((value) => (
         <span
           key={value}
-          className="rounded-full border border-mg-border bg-mg-fill-0 px-2 py-0.5 font-mono text-[11px] font-semibold text-mg-text-1"
+          className="rounded-full border border-mg-border bg-mg-fill-0 px-2 py-0.5 font-mono text-[11px] font-semibold text-mg-text-2"
         >
           {value}
         </span>
       ))}
       {values.length > 3 && (
-        <span className="rounded-full bg-mg-fill-1 px-2 py-0.5 text-[11px] font-bold text-mg-text-2">
+        <span className="rounded-full bg-mg-fill-1 px-2 py-0.5 text-[11px] font-bold text-mg-text-3">
           +{values.length - 3}
         </span>
       )}
@@ -69,7 +69,7 @@ export function GuardrailTable({
           <div className="h-4 bg-mg-fill-0 rounded-sm w-full" />
         </div>
       ) : guardrails.length === 0 ? (
-        <div className="py-20 text-center text-xs italic text-mg-text-2">{t('guardrails.empty')}</div>
+        <div className="py-20 text-center text-xs italic text-mg-text-3">{t('guardrails.empty')}</div>
       ) : (
         <Table>
           <TableHeader>
@@ -98,11 +98,11 @@ export function GuardrailTable({
                       className="group flex max-w-[260px] items-center gap-2 text-left"
                     >
                       <span className="min-w-0">
-                        <span className="block truncate text-[13.5px] font-bold text-mg-text-0 group-hover:text-brand-base">
+                        <span className="block truncate text-[13.5px] font-bold text-mg-text-1 group-hover:text-brand-base">
                           {row.name}
                         </span>
                         {row.description && (
-                          <span className="mt-0.5 block truncate text-[11px] font-medium text-mg-text-2">
+                          <span className="mt-0.5 block truncate text-[11px] font-medium text-mg-text-3">
                             {row.description}
                           </span>
                         )}
@@ -134,7 +134,7 @@ export function GuardrailTable({
                       }
                     />
                   </TableCell>
-                  <TableCell className="text-xs text-mg-text-2">{formatDateTime(row.created_at)}</TableCell>
+                  <TableCell className="text-xs text-mg-text-3">{formatDateTime(row.created_at)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       {canEdit && (

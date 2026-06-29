@@ -63,7 +63,7 @@ export function OrderBarcode({ value, compact = false, className }: OrderBarcode
           {orderNo}
         </div>
       )}
-      <span className="max-w-full select-all truncate text-center font-mono text-[8px] font-semibold tracking-widest text-mg-text-3">
+      <span className="max-w-full select-all truncate text-center font-mono text-[8px] font-semibold tracking-widest text-mg-text-4">
         {barcode?.value ?? orderNo}
       </span>
     </div>

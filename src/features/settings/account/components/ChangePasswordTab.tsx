@@ -85,7 +85,7 @@ export const ChangePasswordTab: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '480px', paddingTop: '8px' }}>
       <div>
-        <span style={{ fontSize: '12.5px', color: 'var(--mg-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <span style={{ fontSize: '12.5px', color: 'var(--mg-text-2)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           {t('account.security.currentPassword')}
         </span>
         <Input
@@ -98,7 +98,7 @@ export const ChangePasswordTab: React.FC = () => {
       </div>
 
       <div>
-        <span style={{ fontSize: '12.5px', color: 'var(--mg-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <span style={{ fontSize: '12.5px', color: 'var(--mg-text-2)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           {t('account.security.newPassword')}
         </span>
         <Input
@@ -111,7 +111,7 @@ export const ChangePasswordTab: React.FC = () => {
       </div>
 
       <div>
-        <span style={{ fontSize: '12.5px', color: 'var(--mg-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <span style={{ fontSize: '12.5px', color: 'var(--mg-text-2)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           {t('account.security.confirmPassword')}
         </span>
         <Input
@@ -141,7 +141,7 @@ export const ChangePasswordTab: React.FC = () => {
           <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--mg-danger)', marginBottom: '6px' }}>
             {t('account.security.deleteTitle')}
           </div>
-          <div style={{ fontSize: '12.5px', lineHeight: 1.6, color: 'var(--mg-text-1)' }}>
+          <div style={{ fontSize: '12.5px', lineHeight: 1.6, color: 'var(--mg-text-2)' }}>
             {t('account.security.deleteDesc')}
           </div>
         </div>
@@ -171,7 +171,7 @@ export const ChangePasswordTab: React.FC = () => {
       >
         <div className="space-y-4">
           <div>
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-mg-text-1">
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-mg-text-2">
               {t('account.security.deletePassword')}
             </span>
             <Input
@@ -183,7 +183,7 @@ export const ChangePasswordTab: React.FC = () => {
             />
           </div>
           <div>
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-mg-text-1">
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-mg-text-2">
               {t('account.security.deleteReason')}
             </span>
             <Textarea

@@ -113,7 +113,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       </div>
 
       <div className="flex items-center justify-between gap-4 mb-2 z-10">
-        <span className="mg-text-caption font-semibold text-mg-text-2 tracking-wide select-none">
+        <span className="mg-text-caption font-semibold text-mg-text-3 tracking-wide select-none">
           {displayTitle}
         </span>
         {icon && (
@@ -138,7 +138,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
               <span
                 className="mg-text-display-sm font-bold tracking-tight block font-mono select-all kpi-value-text"
                 style={{
-                  color: color === 'var(--mg-text-0)' ? 'var(--mg-text-0)' : color,
+                  color: color === 'var(--mg-text-1)' ? 'var(--mg-text-1)' : color,
                   fontVariantNumeric: 'tabular-nums'
                 }}
               >
@@ -157,7 +157,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
               )}
             </div>
             {sub && (
-              <span className="mg-text-caption text-mg-text-2 mt-1.5 block select-none">
+              <span className="mg-text-caption text-mg-text-3 mt-1.5 block select-none">
                 {sub}
               </span>
             )}

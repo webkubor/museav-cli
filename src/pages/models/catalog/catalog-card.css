@@ -39,7 +39,7 @@
 
 .model-catalog-card-title span {
   display: block;
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
   font-size: 11px;
   font-weight: 900;
   line-height: 1.2;
@@ -47,7 +47,7 @@
 
 .model-catalog-card-title h3 {
   margin: 3px 0 0;
-  color: var(--mg-text-0);
+  color: var(--mg-text-1);
   font-size: 16px;
   font-weight: 900;
   line-height: 1.25;
@@ -82,7 +82,7 @@
 .model-catalog-status.is-disabled {
   border-color: rgba(148, 163, 184, 0.26);
   background: var(--mg-fill-0);
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
 }
 
 .model-catalog-desc {
@@ -90,7 +90,7 @@
   min-height: 40px;
   margin: 0;
   overflow: hidden;
-  color: var(--mg-text-1);
+  color: var(--mg-text-2);
   font-size: 12.5px;
   font-weight: 600;
   line-height: 1.6;
@@ -113,7 +113,7 @@
   border: 1px solid var(--mg-border);
   border-radius: 999px;
   background: var(--mg-fill-0);
-  color: var(--mg-text-1);
+  color: var(--mg-text-2);
   font-size: 11px;
   font-weight: 800;
 }
@@ -128,7 +128,7 @@
   border-radius: 12px;
   background: var(--mg-bg-1);
   padding: 0 10px;
-  color: var(--mg-text-1);
+  color: var(--mg-text-2);
   cursor: pointer;
   transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
 }
@@ -156,7 +156,7 @@
 .model-catalog-api code {
   min-width: 0;
   overflow: hidden;
-  color: var(--mg-text-0);
+  color: var(--mg-text-1);
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 800;
@@ -190,7 +190,7 @@
 
 .model-catalog-spec span {
   display: block;
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
   font-size: 10.5px;
   font-weight: 800;
   line-height: 1.2;
@@ -201,7 +201,7 @@
   min-width: 0;
   margin-top: 5px;
   overflow: hidden;
-  color: var(--mg-text-0);
+  color: var(--mg-text-1);
   font-size: 13px;
   font-weight: 900;
   line-height: 1.25;
@@ -233,7 +233,7 @@
   border-radius: 999px;
   background: transparent;
   padding: 0 12px;
-  color: var(--mg-text-1);
+  color: var(--mg-text-2);
   font-size: 12px;
   font-weight: 900;
   cursor: pointer;
@@ -259,7 +259,7 @@
   border-radius: 999px;
   background: var(--mg-fill-0);
   padding: 0 12px;
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
   font-size: 12px;
   font-weight: 900;
 }

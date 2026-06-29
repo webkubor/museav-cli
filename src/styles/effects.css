@@ -103,7 +103,7 @@ body[theme-mode='dark'] .sidebar-flow-line::after {
 .cs-markdown pre code { padding: 0; background: none; color: #e2e8f0; font-size: 12px; }
 .cs-markdown a { color: var(--brand-base); text-decoration: underline; }
 .cs-markdown h1, .cs-markdown h2, .cs-markdown h3 { font-size: 13px; font-weight: 700; margin: 8px 0 4px; }
-.cs-markdown blockquote { margin: 4px 0; padding-left: 10px; border-left: 3px solid var(--mg-border); color: var(--mg-text-2); }
+.cs-markdown blockquote { margin: 4px 0; padding-left: 10px; border-left: 3px solid var(--mg-border); color: var(--mg-text-3); }
 .cs-markdown hr { border: none; border-top: 1px solid var(--mg-border); margin: 8px 0; }
 
 .shimmer-line {

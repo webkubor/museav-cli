@@ -148,17 +148,17 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
         <div className="flex flex-col gap-7 py-3">
           {/* 名称 */}
           <div>
-            <label className="block text-xs font-bold text-mg-text-1 mb-2">名称</label>
+            <label className="block text-xs font-bold text-mg-text-2 mb-2">名称</label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="API Key 名称" />
           </div>
 
           {/* 作用域（只读）*/}
           <div>
-            <label className="block text-xs font-bold text-mg-text-1 mb-2">
-              作用域 <span className="text-mg-text-2 font-normal ml-1">（创建后不可更改）</span>
+            <label className="block text-xs font-bold text-mg-text-2 mb-2">
+              作用域 <span className="text-mg-text-3 font-normal ml-1">（创建后不可更改）</span>
             </label>
-            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-mg-border bg-mg-fill-0/50 text-xs text-mg-text-1">
-              {scopeOpt && <span className="text-mg-text-2">{scopeOpt.icon}</span>}
+            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-mg-border bg-mg-fill-0/50 text-xs text-mg-text-2">
+              {scopeOpt && <span className="text-mg-text-3">{scopeOpt.icon}</span>}
               {scopeOpt?.label ?? apiKey?.scope ?? '—'}
             </div>
           </div>
@@ -166,7 +166,7 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
           {/* 安全护栏 */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-bold text-mg-text-1">安全护栏</label>
+              <label className="text-xs font-bold text-mg-text-2">安全护栏</label>
               <button
                 type="button"
                 onClick={() => setGuardrailDialogOpen(true)}
@@ -181,7 +181,7 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-base/10 border border-brand-base/20 text-xs font-bold text-brand-base">
                     <LuLock className="w-3 h-3 shrink-0" />
                     {defaultGuardrail.name}
-                    <span className="font-normal text-mg-text-2 ml-0.5">默认</span>
+                    <span className="font-normal text-mg-text-3 ml-0.5">默认</span>
                   </div>
                 </div>
               )}
@@ -199,8 +199,8 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
 
           {/* 消费限额 —— 直接显示，留空即不限额；时间维度对齐安全护栏 */}
           <div>
-            <label className="block text-xs font-bold text-mg-text-1 mb-3">
-              消费限额 <span className="text-mg-text-2 font-normal">（可选，留空则不限额）</span>
+            <label className="block text-xs font-bold text-mg-text-2 mb-3">
+              消费限额 <span className="text-mg-text-3 font-normal">（可选，留空则不限额）</span>
             </label>
             <div className="flex gap-3">
               <Input
@@ -208,7 +208,7 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
                 value={spendingAmount}
                 onChange={(e) => setSpendingAmount(e.target.value)}
                 placeholder="0.00"
-                prefix={<span className="text-xs text-mg-text-2 font-mono select-none">{symbol}</span>}
+                prefix={<span className="text-xs text-mg-text-3 font-mono select-none">{symbol}</span>}
                 className="flex-1"
               />
               <Select value={spendingPeriodUnit} onChange={(v) => setSpendingPeriodUnit(v as SpendingPeriodUnit)} className="w-28">
@@ -221,8 +221,8 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
 
           {/* 过期时间 */}
           <div>
-            <label className="block text-xs font-bold text-mg-text-1 mb-2">
-              过期时间 <span className="text-mg-text-2 font-normal">（可选，不填则永不过期）</span>
+            <label className="block text-xs font-bold text-mg-text-2 mb-2">
+              过期时间 <span className="text-mg-text-3 font-normal">（可选，不填则永不过期）</span>
             </label>
             <DateRangePicker
               value={expiryRange}

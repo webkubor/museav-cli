@@ -122,8 +122,8 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
       <div className="relative bg-card-bg backdrop-blur-xl modal-glow-flow rounded-lg w-full max-w-[480px] shadow-2xl overflow-visible animate-in fade-in zoom-in-95 duration-300">
         {/* 头部 */}
         <div className="px-6 pt-5 pb-4 flex justify-between items-center border-b border-mg-border/60">
-          <h2 className="text-[15px] font-bold text-mg-text-0">{t('billing.rechargeModal.title')}</h2>
-          <button className="text-mg-text-2 hover:text-mg-text-0 transition-colors outline-none cursor-pointer w-7 h-7 flex items-center justify-center rounded-lg hover:bg-mg-fill-0" onClick={onClose}>
+          <h2 className="text-[15px] font-bold text-mg-text-1">{t('billing.rechargeModal.title')}</h2>
+          <button className="text-mg-text-3 hover:text-mg-text-1 transition-colors outline-none cursor-pointer w-7 h-7 flex items-center justify-center rounded-lg hover:bg-mg-fill-0" onClick={onClose}>
             <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
           </button>
         </div>
@@ -131,7 +131,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
         <div className="px-6 py-5 space-y-5">
           {/* 金额选择标签 */}
           <div>
-            <div className="text-[11px] text-mg-text-3 font-bold mb-2.5 tracking-wider">{t('billing.rechargeModal.amount')}</div>
+            <div className="text-[11px] text-mg-text-4 font-bold mb-2.5 tracking-wider">{t('billing.rechargeModal.amount')}</div>
             <div className="grid grid-cols-3 gap-2">
               {PRESETS.map((p) => {
                 const active = amount === p && !customMode
@@ -144,7 +144,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                       "rounded-lg border py-2.5 cursor-pointer text-center magnetic-hover",
                       active
                         ? "border-brand-base bg-brand-glow text-brand-base"
-                        : "border-mg-border text-mg-text-1 hover:text-mg-text-0 hover:border-brand-base/40"
+                        : "border-mg-border text-mg-text-2 hover:text-mg-text-1 hover:border-brand-base/40"
                     )}
                   >
                     <span className={cn("text-[15px] font-bold font-mono", active && "text-brand-base")}>{currencySymbol}{p}</span>
@@ -154,14 +154,14 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
             </div>
             {/* 自定义金额 */}
             <div className="relative mt-2.5">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-mg-text-2 text-sm font-medium">{currencySymbol}</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-mg-text-3 text-sm font-medium">{currencySymbol}</span>
               <input
                 type="number"
                 min="1"
                 value={customMode ? amount : ''}
                 onFocus={() => setCustomMode(true)}
                 onChange={(e) => { setAmount(e.target.value); setCustomMode(true) }}
-                className="w-full h-10 pl-7 pr-3 rounded-lg border border-mg-border bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-brand-base/40 focus:border-brand-base transition-all font-semibold font-mono text-mg-text-0"
+                className="w-full h-10 pl-7 pr-3 rounded-lg border border-mg-border bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-brand-base/40 focus:border-brand-base transition-all font-semibold font-mono text-mg-text-1"
                 placeholder={t('billing.rechargeModal.customAmount')}
               />
             </div>
@@ -169,7 +169,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
 
           {/* 支付方式 */}
           <div>
-            <div className="text-[11px] text-mg-text-3 font-bold mb-2.5 tracking-wider">{t('billing.rechargeModal.method')}</div>
+            <div className="text-[11px] text-mg-text-4 font-bold mb-2.5 tracking-wider">{t('billing.rechargeModal.method')}</div>
             <div className="flex gap-2.5">
               {CHANNELS.map((c) => {
                 const active = effectiveChannel === c.value
@@ -189,7 +189,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                       "flex-1 rounded-lg border py-2.5 px-3 cursor-pointer magnetic-hover",
                       active
                         ? "shadow-sm"
-                        : "border-mg-border text-mg-text-2 hover:border-mg-text-2/30"
+                        : "border-mg-border text-mg-text-3 hover:border-mg-text-3/30"
                     )}
                     style={active && color ? {
                       borderColor: color,
@@ -198,7 +198,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                   >
                     <span className="flex items-center justify-center gap-2">
                       {channelIcon[c.value] ?? c.icon}
-                      <span className={cn("text-[13px] font-bold", active ? "" : "text-mg-text-1")} style={active && color ? { color } : undefined}>{c.label}</span>
+                      <span className={cn("text-[13px] font-bold", active ? "" : "text-mg-text-2")} style={active && color ? { color } : undefined}>{c.label}</span>
                     </span>
                   </button>
                 )

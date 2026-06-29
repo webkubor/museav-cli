@@ -31,11 +31,11 @@ function HistogramTooltip({ active, payload }: HistogramTooltipProps) {
   const d = payload[0].payload
   return (
     <div className="rounded-md border border-mg-border bg-mg-bg-2/98 backdrop-blur-md p-3 shadow-[0_8px_30px_rgb(0,0,0,0.06)] text-left select-none min-w-[120px] space-y-1">
-      <div className="text-[10px] text-mg-text-2 font-medium">请求次数</div>
+      <div className="text-[10px] text-mg-text-3 font-medium">请求次数</div>
       <div className="text-sm font-mono font-black text-brand-base tabular-nums">
         {d.count.toLocaleString()}
       </div>
-      <div className="text-[10px] text-mg-text-2 font-semibold font-mono pt-1 border-t border-mg-border">
+      <div className="text-[10px] text-mg-text-3 font-semibold font-mono pt-1 border-t border-mg-border">
         {formatChartTooltipDate(d.bucket_start)}
       </div>
     </div>
@@ -82,8 +82,8 @@ export const HistogramChartSection: React.FC = () => {
   return (
     <Card className="p-6 flex flex-col h-full">
       <div className="mb-5">
-        <h3 className="font-bold text-base text-mg-text-0 m-0">{t('dashboard.histogramChart.title')}</h3>
-        <span className="text-xs text-mg-text-2 block mt-1">{t('dashboard.histogramChart.requestsLabel')}</span>
+        <h3 className="font-bold text-base text-mg-text-1 m-0">{t('dashboard.histogramChart.title')}</h3>
+        <span className="text-xs text-mg-text-3 block mt-1">{t('dashboard.histogramChart.requestsLabel')}</span>
       </div>
 
       <div className="flex-1 outline-none select-none" style={{ minHeight: 200 }}>
@@ -119,13 +119,13 @@ export const HistogramChartSection: React.FC = () => {
               <XAxis
                 dataKey="bucket_start"
                 tickFormatter={formatChartTooltipDate}
-                tick={{ fontSize: 10, fill: 'var(--mg-text-2)', fontFamily: 'monospace', fontWeight: 600 }}
+                tick={{ fontSize: 10, fill: 'var(--mg-text-3)', fontFamily: 'monospace', fontWeight: 600 }}
                 tickLine={false}
                 axisLine={false}
                 interval="preserveStartEnd"
               />
               <YAxis
-                tick={{ fontSize: 10, fill: 'var(--mg-text-2)', fontFamily: 'monospace' }}
+                tick={{ fontSize: 10, fill: 'var(--mg-text-3)', fontFamily: 'monospace' }}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)}
@@ -147,8 +147,8 @@ export const HistogramChartSection: React.FC = () => {
           </ResponsiveContainer>
         ) : (
           <div className="flex flex-col items-center justify-center h-[200px] text-center">
-            <LuActivity size={24} className="mb-2 text-mg-text-2" />
-            <p className="text-xs text-mg-text-2 font-medium">{t('dashboard.histogramChart.empty')}</p>
+            <LuActivity size={24} className="mb-2 text-mg-text-3" />
+            <p className="text-xs text-mg-text-3 font-medium">{t('dashboard.histogramChart.empty')}</p>
           </div>
         )}
       </div>

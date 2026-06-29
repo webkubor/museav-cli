@@ -101,7 +101,7 @@ function SourceMiniRow({
   const name = displayRankingName(item)
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_74px_48px] items-center gap-3">
-      <span className="truncate text-[12px] font-medium text-mg-text-0" title={name}>
+      <span className="truncate text-[12px] font-medium text-mg-text-1" title={name}>
         {name}
       </span>
       <div className="h-1.5 overflow-hidden rounded-full bg-mg-fill-1">
@@ -110,7 +110,7 @@ function SourceMiniRow({
           style={{ width: share > 0 ? `${share}%` : '0%' }}
         />
       </div>
-      <span className="text-right text-[12px] text-mg-text-2">{formatRankingSpend(item, currencySymbol)}</span>
+      <span className="text-right text-[12px] text-mg-text-3">{formatRankingSpend(item, currencySymbol)}</span>
     </div>
   )
 }
@@ -130,7 +130,7 @@ function ModelDistributionRow({
     <div className="grid grid-cols-[minmax(130px,180px)_minmax(120px,1fr)_72px_46px] items-center gap-3">
       <div className="flex min-w-0 items-center gap-2">
         <ModelIcon model={{ display_name: name, vendor: item.name || item.key || '' }} size={22} rounded="rounded-md" />
-        <span className="truncate text-sm font-medium text-mg-text-0" title={name}>
+        <span className="truncate text-sm font-medium text-mg-text-1" title={name}>
           {name}
         </span>
       </div>
@@ -140,8 +140,8 @@ function ModelDistributionRow({
           style={{ width: share > 0 ? `${share}%` : '0%' }}
         />
       </div>
-      <span className="text-right text-sm text-mg-text-1">{formatRankingSpend(item, currencySymbol)}</span>
-      <span className="text-right text-sm text-mg-text-2">{share > 0 ? `${share.toFixed(0)}%` : '—'}</span>
+      <span className="text-right text-sm text-mg-text-2">{formatRankingSpend(item, currencySymbol)}</span>
+      <span className="text-right text-sm text-mg-text-3">{share > 0 ? `${share.toFixed(0)}%` : '—'}</span>
     </div>
   )
 }
@@ -151,7 +151,7 @@ function ApiKeyRankBadge({ rank }: { rank: number }) {
     <span
       className={cn(
         'inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold',
-        rank <= 3 ? 'bg-brand-selected-bg text-brand-base' : 'bg-mg-fill-1 text-mg-text-2',
+        rank <= 3 ? 'bg-brand-selected-bg text-brand-base' : 'bg-mg-fill-1 text-mg-text-3',
       )}
     >
       {rank.toString().padStart(2, '0')}
@@ -176,33 +176,33 @@ export function UsageHealthPanel({
             <LuShieldCheck size={17} />
           </span>
           <div>
-            <div className="text-sm font-semibold text-mg-text-0">{t('usage.health.title')}</div>
+            <div className="text-sm font-semibold text-mg-text-1">{t('usage.health.title')}</div>
             <div className="mt-1 text-[12px] text-mg-success">{t('usage.health.safe')}</div>
           </div>
         </div>
 
         <div className="border-b border-mg-border px-4 py-4 xl:border-b-0 xl:border-r">
           <div className="flex items-center justify-between gap-3 text-sm">
-            <span className="text-mg-text-2">{t('usage.health.metric.spend')}</span>
-            <strong className="font-mono text-mg-text-0">{totalSpend}</strong>
+            <span className="text-mg-text-3">{t('usage.health.metric.spend')}</span>
+            <strong className="font-mono text-mg-text-1">{totalSpend}</strong>
           </div>
-          <div className="mt-1 text-[12px] text-mg-text-2">{rangeLabel}</div>
+          <div className="mt-1 text-[12px] text-mg-text-3">{rangeLabel}</div>
         </div>
 
         <div className="border-b border-mg-border px-4 py-4 xl:border-b-0 xl:border-r">
           <div className="flex items-center justify-between gap-3 text-sm">
-            <span className="text-mg-text-2">{t('usage.health.metric.requests')}</span>
-            <strong className="font-mono text-mg-text-0">{totalRequests}</strong>
+            <span className="text-mg-text-3">{t('usage.health.metric.requests')}</span>
+            <strong className="font-mono text-mg-text-1">{totalRequests}</strong>
           </div>
-          <div className="mt-1 text-[12px] text-mg-text-2">{rangeLabel}</div>
+          <div className="mt-1 text-[12px] text-mg-text-3">{rangeLabel}</div>
         </div>
 
         <div className="px-4 py-4">
           <div className="flex items-center justify-between gap-3 text-sm">
-            <span className="text-mg-text-2">{t('usage.health.metric.tokens')}</span>
-            <strong className="font-mono text-mg-text-0">{totalTokens}</strong>
+            <span className="text-mg-text-3">{t('usage.health.metric.tokens')}</span>
+            <strong className="font-mono text-mg-text-1">{totalTokens}</strong>
           </div>
-          <div className="mt-1 text-[12px] text-mg-text-2">{rangeLabel}</div>
+          <div className="mt-1 text-[12px] text-mg-text-3">{rangeLabel}</div>
         </div>
       </div>
     </Card>
@@ -221,7 +221,7 @@ export function CostSourcePanel({
 
   return (
     <Card className="min-w-0 p-5 sm:p-6">
-      <div className="mb-5 text-sm font-semibold text-mg-text-0">{t('usage.sources.title')}</div>
+      <div className="mb-5 text-sm font-semibold text-mg-text-1">{t('usage.sources.title')}</div>
 
       {isError ? (
         <ErrorBlock message={t('usage.error.rankings')} onRetry={onRetry} />
@@ -231,9 +231,9 @@ export function CostSourcePanel({
         <div className="space-y-4">
           {sections.map((section) => (
             <section key={section.title} className="rounded-md border border-mg-border bg-mg-bg-1 p-3">
-              <div className="mb-3 text-[12px] font-semibold text-mg-text-0">{section.title}</div>
+              <div className="mb-3 text-[12px] font-semibold text-mg-text-1">{section.title}</div>
               {section.items.length === 0 ? (
-                <div className="text-[12px] text-mg-text-2">{section.emptyLabel}</div>
+                <div className="text-[12px] text-mg-text-3">{section.emptyLabel}</div>
               ) : (
                 <div className="space-y-2.5">
                   {section.items.slice(0, 3).map((item, idx) => (
@@ -262,8 +262,8 @@ export function ModelDistributionPanel({
   return (
     <Card className="min-w-0 p-5 sm:p-6">
       <div className="mb-5 flex items-center justify-between gap-3">
-        <div className="text-sm font-semibold text-mg-text-0">{t('usage.distribution.title')}</div>
-        <span className="rounded-lg border border-mg-border bg-mg-bg-1 px-2.5 py-1 text-[12px] text-mg-text-2">
+        <div className="text-sm font-semibold text-mg-text-1">{t('usage.distribution.title')}</div>
+        <span className="rounded-lg border border-mg-border bg-mg-bg-1 px-2.5 py-1 text-[12px] text-mg-text-3">
           {t('usage.distribution.bySpend')}
         </span>
       </div>
@@ -301,7 +301,7 @@ export function ApiKeyRankingPanel({
 
   return (
     <Card className="min-w-0 p-5 sm:p-6">
-      <div className="mb-5 flex items-center gap-2 text-sm font-semibold text-mg-text-0">
+      <div className="mb-5 flex items-center gap-2 text-sm font-semibold text-mg-text-1">
         <LuTable2 size={15} className="text-brand-base" />
         {t('usage.apiKeyRank.title')}
       </div>
@@ -314,7 +314,7 @@ export function ApiKeyRankingPanel({
       ) : (
         <div className="overflow-x-auto">
           <div className="min-w-[620px]">
-            <div className="grid grid-cols-[58px_minmax(120px,1fr)_100px_110px_96px] gap-3 border-b border-mg-border pb-3 text-[12px] font-semibold text-mg-text-2">
+            <div className="grid grid-cols-[58px_minmax(120px,1fr)_100px_110px_96px] gap-3 border-b border-mg-border pb-3 text-[12px] font-semibold text-mg-text-3">
               <span>{t('usage.apiKeyRank.col.rank')}</span>
               <span>{t('usage.apiKeyRank.col.apiKey')}</span>
               <span>{t('usage.apiKeyRank.col.requests')}</span>
@@ -335,11 +335,11 @@ export function ApiKeyRankingPanel({
                       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-selected-bg text-brand-base">
                         <LuKey size={14} />
                       </span>
-                      <span className="truncate font-medium text-mg-text-0" title={name}>{name}</span>
+                      <span className="truncate font-medium text-mg-text-1" title={name}>{name}</span>
                     </div>
-                    <span className="font-mono text-mg-text-1">{formatNumber(item.requests ?? 0)}</span>
-                    <span className="font-mono text-mg-text-1">{formatNumber(item.tokens ?? 0)}</span>
-                    <span className="text-right font-mono text-mg-text-0">{formatRankingSpend(item, currencySymbol)}</span>
+                    <span className="font-mono text-mg-text-2">{formatNumber(item.requests ?? 0)}</span>
+                    <span className="font-mono text-mg-text-2">{formatNumber(item.tokens ?? 0)}</span>
+                    <span className="text-right font-mono text-mg-text-1">{formatRankingSpend(item, currencySymbol)}</span>
                   </div>
                 )
               })}

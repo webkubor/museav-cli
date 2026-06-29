@@ -18,8 +18,8 @@ export default function ForbiddenPage() {
           <LuShieldAlert size={26} className="text-mg-warning" />
         </div>
         <div className="space-y-1.5">
-          <h1 className="text-lg font-bold text-mg-text-0">无法访问</h1>
-          <p className="text-sm text-mg-text-2 leading-relaxed">
+          <h1 className="text-lg font-bold text-mg-text-1">无法访问</h1>
+          <p className="text-sm text-mg-text-3 leading-relaxed">
             你的账号当前不属于任何组织，无权访问控制台。请联系管理员邀请加入后再使用。
           </p>
         </div>

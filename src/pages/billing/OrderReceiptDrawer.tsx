@@ -47,13 +47,13 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
 
         {/* Drawer Header */}
         <div className="p-4 border-b border-mg-border/60 flex items-center justify-between bg-mg-fill-0/20">
-          <span className="text-xs font-bold text-mg-text-2 uppercase tracking-wider flex items-center gap-1.5">
+          <span className="text-xs font-bold text-mg-text-3 uppercase tracking-wider flex items-center gap-1.5">
             <LuReceipt size={14} className="text-brand-base" />
             {t('billing.orders.detailTitle')}
           </span>
           <button
             onClick={onClose}
-            className="text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-0/80 p-1.5 rounded-lg transition-colors cursor-pointer outline-none"
+            className="text-mg-text-3 hover:text-mg-text-1 hover:bg-mg-fill-0/80 p-1.5 rounded-lg transition-colors cursor-pointer outline-none"
           >
             <LuX size={16} />
           </button>
@@ -72,36 +72,36 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
               <div className="text-[10px] font-bold text-brand-base uppercase tracking-widest">
                 ModelGo Ledger
               </div>
-              <div className="text-sm font-mono font-bold tracking-tight text-mg-text-0">
+              <div className="text-sm font-mono font-bold tracking-tight text-mg-text-1">
                 {t('billing.orders.detail.receiptTitle')}
               </div>
             </div>
 
             {/* Status Big Badge */}
             <div className="flex flex-col items-center py-2 space-y-1">
-              <div className="text-[10px] uppercase tracking-wider text-mg-text-3 font-bold">
+              <div className="text-[10px] uppercase tracking-wider text-mg-text-4 font-bold">
                 {t('billing.orders.detail.status')}
               </div>
               <StatusBadge status={order.status} statusMap={orderStatusMap} />
             </div>
 
             {/* Receipt Details rows inside monospace grid */}
-            <div className="font-mono text-xs space-y-3.5 border-t border-b border-dashed border-mg-border/80 py-4 text-mg-text-1">
+            <div className="font-mono text-xs space-y-3.5 border-t border-b border-dashed border-mg-border/80 py-4 text-mg-text-2">
               <div className="flex justify-between gap-4">
-                <span className="text-mg-text-3">{t('billing.orders.detail.orderNo')}:</span>
-                <span className="text-mg-text-0 font-bold select-all truncate max-w-[180px]" title={order.order_no}>
+                <span className="text-mg-text-4">{t('billing.orders.detail.orderNo')}:</span>
+                <span className="text-mg-text-1 font-bold select-all truncate max-w-[180px]" title={order.order_no}>
                   {order.order_no}
                 </span>
               </div>
               <div className="flex justify-between gap-4">
-                <span className="text-mg-text-3">{t('billing.orders.detail.amount')}:</span>
-                <span className="text-mg-text-0 font-extrabold text-sm leading-none">
+                <span className="text-mg-text-4">{t('billing.orders.detail.amount')}:</span>
+                <span className="text-mg-text-1 font-extrabold text-sm leading-none">
                   {order.currency} {order.amount}
                 </span>
               </div>
               {order.credited_amount && (
                 <div className="flex justify-between gap-4">
-                  <span className="text-mg-text-3">{t('billing.orders.detail.credited')}:</span>
+                  <span className="text-mg-text-4">{t('billing.orders.detail.credited')}:</span>
                   <span className="text-mg-success font-extrabold">
                     {order.currency} {order.credited_amount}
                   </span>
@@ -109,23 +109,23 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
               )}
               {order.channel && (
                 <div className="flex justify-between gap-4">
-                  <span className="text-mg-text-3">{t('billing.orders.detail.channel')}:</span>
-                  <span className="text-mg-text-0 font-semibold">
+                  <span className="text-mg-text-4">{t('billing.orders.detail.channel')}:</span>
+                  <span className="text-mg-text-1 font-semibold">
                     {getRechargeOrderChannelDisplayName(order)}
                   </span>
                 </div>
               )}
               {order.paid_at && (
                 <div className="flex justify-between gap-4">
-                  <span className="text-mg-text-3">{t('billing.orders.detail.paidAt')}:</span>
-                  <span className="text-mg-text-2 text-[11px]">
+                  <span className="text-mg-text-4">{t('billing.orders.detail.paidAt')}:</span>
+                  <span className="text-mg-text-3 text-[11px]">
                     {formatDateTime(order.paid_at)}
                   </span>
                 </div>
               )}
               {order.promo_code && (
                 <div className="flex justify-between gap-4">
-                  <span className="text-mg-text-3">{t('billing.orders.detail.promo')}:</span>
+                  <span className="text-mg-text-4">{t('billing.orders.detail.promo')}:</span>
                   <span className="text-brand-base font-bold bg-brand-glow/10 px-1.5 rounded-sm text-[11px]">
                     {order.promo_code}
                   </span>
@@ -135,7 +135,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
 
             <OrderBarcode value={order.order_no} />
 
-            <div className="text-center text-[9px] text-mg-text-3 font-semibold pt-2">
+            <div className="text-center text-[9px] text-mg-text-4 font-semibold pt-2">
               {t('billing.orders.detail.receiptFooter')}
             </div>
 
@@ -148,7 +148,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
             {site === 'china' && order.invoice_url && (
               <Button
                 variant="outline"
-                className="w-full h-10 text-xs font-bold rounded-md border border-mg-border hover:bg-mg-fill-0 transition-all select-none text-mg-text-1"
+                className="w-full h-10 text-xs font-bold rounded-md border border-mg-border hover:bg-mg-fill-0 transition-all select-none text-mg-text-2"
                 onClick={() => window.open(order.invoice_url!, '_blank')}
               >
                 {t('billing.orders.detail.viewInvoice')}

@@ -343,10 +343,10 @@ export default function UsagePage() {
         <Card className="min-w-0 p-5 sm:p-6">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div className="text-sm font-semibold text-mg-text-0">
+              <div className="text-sm font-semibold text-mg-text-1">
                 {t('usage.chart.trendTitle', { metric: metricLabels[metric] })}
               </div>
-              <div className="mt-1 text-[12px] text-mg-text-2">{rangeLabel}</div>
+              <div className="mt-1 text-[12px] text-mg-text-3">{rangeLabel}</div>
             </div>
             <div className="flex gap-1 rounded-lg bg-mg-bg-1 p-1">
               {(['spend', 'requests', 'tokens'] as Metric[]).map((item) => (

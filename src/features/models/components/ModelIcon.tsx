@@ -67,7 +67,7 @@ export function ModelIcon({ model, size = 32, rounded = 'rounded-md', className 
   return (
     <span
       style={{ width: size, height: size, fontSize: Math.round(size * 0.4) }}
-      className={cn(box, 'bg-mg-fill-0 font-bold text-mg-text-2 uppercase')}
+      className={cn(box, 'bg-mg-fill-0 font-bold text-mg-text-3 uppercase')}
     >
       {getFallbackAvatarText(model.vendor ?? model.display_name)}
     </span>

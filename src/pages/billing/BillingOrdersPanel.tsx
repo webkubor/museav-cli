@@ -212,7 +212,7 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
           </div>
         }
       >
-        <p className="text-sm text-mg-text-1">{t('billing.orders.cancelConfirm.message')}</p>
+        <p className="text-sm text-mg-text-2">{t('billing.orders.cancelConfirm.message')}</p>
       </Modal>
 
       {/* Tab 切换 */}
@@ -237,7 +237,7 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
               'px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 cursor-pointer outline-none z-10 select-none',
               activeTab === tab.key
                 ? tab.key === 'main' ? 'text-brand-base' : tab.key === 'gift' ? 'text-sky-600' : 'text-amber-500'
-                : 'text-mg-text-2 hover:text-mg-text-1',
+                : 'text-mg-text-3 hover:text-mg-text-2',
             )}
           >
             {tab.label}
@@ -284,17 +284,17 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
                             onClick={() => setSelectedOrderNo(record.order_no === selectedOrderNo ? null : record.order_no)}
                             className={cn('cursor-pointer billing-table-row', selectedOrderNo === record.order_no ? 'active' : '')}
                           >
-                            <TableCell className="font-mono text-xs text-mg-text-1 max-w-[140px] truncate">{record.order_no}</TableCell>
+                            <TableCell className="font-mono text-xs text-mg-text-2 max-w-[140px] truncate">{record.order_no}</TableCell>
                             <TableCell>
                               <StatusBadge status={record.status} statusMap={rechargeStatusMap} fallback={record.status} />
                             </TableCell>
-                            <TableCell className="text-xs text-mg-text-1 font-semibold whitespace-nowrap">
+                            <TableCell className="text-xs text-mg-text-2 font-semibold whitespace-nowrap">
                               {getRechargeOrderChannelDisplayName(record) || '-'}
                             </TableCell>
-                            <TableCell className={cn('text-xs font-bold font-mono', isPaid ? 'text-mg-success' : isPending ? 'text-mg-warning' : 'text-mg-text-0')}>
+                            <TableCell className={cn('text-xs font-bold font-mono', isPaid ? 'text-mg-success' : isPending ? 'text-mg-warning' : 'text-mg-text-1')}>
                               {record.currency} {record.amount}
                             </TableCell>
-                            <TableCell className="text-xs text-mg-text-2 font-mono">{formatDateTime(record.paid_at)}</TableCell>
+                            <TableCell className="text-xs text-mg-text-3 font-mono">{formatDateTime(record.paid_at)}</TableCell>
                           </TableRow>
                         )
                       })}
@@ -320,7 +320,7 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
             <div className="lg:col-span-1 rounded-lg border border-mg-border bg-card-bg shadow-sm p-5">
               <div className="flex items-center gap-2 mb-4">
                 <LuReceipt size={14} className="text-brand-base" />
-                <span className="text-xs font-bold text-mg-text-0">{t('billing.orders.detailTitle')}</span>
+                <span className="text-xs font-bold text-mg-text-1">{t('billing.orders.detailTitle')}</span>
               </div>
               {!selectedOrder ? (
                 <EmptyState icon={<LuReceipt />} title={t('billing.orders.detailPlaceholder', { defaultValue: '点击左侧订单查看详情' })} />
@@ -330,41 +330,41 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
                     <div className="absolute top-0 left-0 right-0 h-1 bg-[linear-gradient(to_right,var(--mg-border)_50%,transparent_50%)] bg-[size:10px_100%]" />
                     <div className="text-center pt-1 pb-3 border-b border-dashed border-mg-border/80 space-y-1">
                       <div className="text-[9px] font-bold text-brand-base uppercase tracking-widest">ModelGo Ledger</div>
-                      <div className="text-xs font-mono font-bold tracking-tight text-mg-text-0">{t('billing.orders.detail.receiptTitle')}</div>
+                      <div className="text-xs font-mono font-bold tracking-tight text-mg-text-1">{t('billing.orders.detail.receiptTitle')}</div>
                     </div>
                     <div className="flex flex-col items-center py-1 space-y-1">
                       <StatusBadge status={selectedOrder.status} statusMap={rechargeStatusMap} fallback={selectedOrder.status} />
                     </div>
-                    <div className="font-mono text-[11px] space-y-3 border-t border-b border-dashed border-mg-border/80 py-3.5 text-mg-text-1">
+                    <div className="font-mono text-[11px] space-y-3 border-t border-b border-dashed border-mg-border/80 py-3.5 text-mg-text-2">
                       <div className="flex justify-between gap-3">
-                        <span className="text-mg-text-3">{t('billing.orders.detail.orderNo')}:</span>
-                        <span className="text-mg-text-0 font-bold select-all truncate max-w-[130px]" title={selectedOrder.order_no}>{selectedOrder.order_no}</span>
+                        <span className="text-mg-text-4">{t('billing.orders.detail.orderNo')}:</span>
+                        <span className="text-mg-text-1 font-bold select-all truncate max-w-[130px]" title={selectedOrder.order_no}>{selectedOrder.order_no}</span>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <span className="text-mg-text-3">{t('billing.orders.detail.amount')}:</span>
-                        <span className="text-mg-text-0 font-extrabold text-xs font-mono tabular-nums">{selectedOrder.currency} {selectedOrder.amount}</span>
+                        <span className="text-mg-text-4">{t('billing.orders.detail.amount')}:</span>
+                        <span className="text-mg-text-1 font-extrabold text-xs font-mono tabular-nums">{selectedOrder.currency} {selectedOrder.amount}</span>
                       </div>
                       {selectedOrder.credited_amount && (
                         <div className="flex justify-between gap-3">
-                          <span className="text-mg-text-3">{t('billing.orders.detail.credited')}:</span>
+                          <span className="text-mg-text-4">{t('billing.orders.detail.credited')}:</span>
                           <span className="text-mg-success font-extrabold font-mono tabular-nums">{selectedOrder.currency} {selectedOrder.credited_amount}</span>
                         </div>
                       )}
                       {selectedOrder.channel && (
                         <div className="flex justify-between gap-3">
-                          <span className="text-mg-text-3">{t('billing.orders.detail.channel')}:</span>
-                          <span className="text-mg-text-0 font-semibold">{getRechargeOrderChannelDisplayName(selectedOrder)}</span>
+                          <span className="text-mg-text-4">{t('billing.orders.detail.channel')}:</span>
+                          <span className="text-mg-text-1 font-semibold">{getRechargeOrderChannelDisplayName(selectedOrder)}</span>
                         </div>
                       )}
                       {selectedOrder.paid_at && (
                         <div className="flex justify-between gap-3">
-                          <span className="text-mg-text-3">{t('billing.orders.detail.paidAt')}:</span>
-                          <span className="text-mg-text-2 text-[10px] text-right">{formatDateTime(selectedOrder.paid_at)}</span>
+                          <span className="text-mg-text-4">{t('billing.orders.detail.paidAt')}:</span>
+                          <span className="text-mg-text-3 text-[10px] text-right">{formatDateTime(selectedOrder.paid_at)}</span>
                         </div>
                       )}
                       {selectedOrder.promo_code && (
                         <div className="flex justify-between gap-3">
-                          <span className="text-mg-text-3">{t('billing.orders.detail.promo')}:</span>
+                          <span className="text-mg-text-4">{t('billing.orders.detail.promo')}:</span>
                           <span className="text-brand-base font-bold bg-brand-glow/10 px-1.5 rounded-sm text-[10px]">{selectedOrder.promo_code}</span>
                         </div>
                       )}
@@ -386,7 +386,7 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
                     {canInvoice && site === 'china' && selectedOrder.invoice_url && (
                       <Button
                         variant="outline"
-                        className="w-full h-9 text-xs font-bold rounded-md border border-mg-border hover:bg-mg-fill-0 transition-all text-mg-text-1"
+                        className="w-full h-9 text-xs font-bold rounded-md border border-mg-border hover:bg-mg-fill-0 transition-all text-mg-text-2"
                         onClick={() => window.open(selectedOrder.invoice_url!, '_blank')}
                       >
                         {t('billing.orders.detail.viewInvoice')}
@@ -421,11 +421,11 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
                           <div className="w-6 h-6 rounded-lg bg-brand-glow/10 flex items-center justify-center border border-brand-base/10 shrink-0">
                             <LuGift size={12} className="text-brand-base" />
                           </div>
-                          <span className="text-xs text-mg-text-0 font-bold">{record.source}</span>
+                          <span className="text-xs text-mg-text-1 font-bold">{record.source}</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-xs font-bold text-mg-success font-mono">+{record.currency} {record.amount}</TableCell>
-                      <TableCell className="text-xs text-mg-text-2 font-mono">{formatDateTime(record.credited_at)}</TableCell>
+                      <TableCell className="text-xs text-mg-text-3 font-mono">{formatDateTime(record.credited_at)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -465,17 +465,17 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
                 <TableBody>
                   {rewardRecords.map((rec, i) => (
                     <TableRow key={i} className="cursor-pointer billing-table-row">
-                      <TableCell className="text-xs text-mg-text-2 font-mono">{formatDateTime(rec.date)}</TableCell>
+                      <TableCell className="text-xs text-mg-text-3 font-mono">{formatDateTime(rec.date)}</TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2.5 select-none">
-                          <div className="w-6 h-6 rounded-full bg-mg-fill-1 border border-mg-border flex items-center justify-center font-bold text-[10px] text-mg-text-1 uppercase shrink-0">
+                          <div className="w-6 h-6 rounded-full bg-mg-fill-1 border border-mg-border flex items-center justify-center font-bold text-[10px] text-mg-text-2 uppercase shrink-0">
                             {rec.source.slice(0, 2)}
                           </div>
-                          <span className="text-xs text-mg-text-0 font-bold">{rec.source}</span>
+                          <span className="text-xs text-mg-text-1 font-bold">{rec.source}</span>
                         </div>
                       </TableCell>
                       <TableCell>{renderTierBadge(rec.tierName)}</TableCell>
-                      <TableCell align="right" className="text-xs text-mg-text-1 font-mono">¥{Number(rec.spend).toLocaleString('zh-CN')}</TableCell>
+                      <TableCell align="right" className="text-xs text-mg-text-2 font-mono">¥{Number(rec.spend).toLocaleString('zh-CN')}</TableCell>
                       <TableCell align="right">
                         <span className="bg-brand-glow/10 text-brand-base text-[10px] font-bold px-1.5 py-0.5 rounded-md border border-brand-base/10 font-mono">{rec.rate}%</span>
                       </TableCell>

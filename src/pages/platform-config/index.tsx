@@ -136,10 +136,10 @@ export default function PlatformConfigPage() {
     <div className="space-y-5">
       <div className="flex items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-mg-text-0">
+          <h1 className="text-2xl font-bold tracking-tight text-mg-text-1">
             {t('platformConfig.title')}
           </h1>
-          <p className="text-sm text-mg-text-1 mt-1.5">
+          <p className="text-sm text-mg-text-2 mt-1.5">
             {t('platformConfig.desc')}
           </p>
         </div>
@@ -161,13 +161,13 @@ export default function PlatformConfigPage() {
           <div className="space-y-8 pt-2">
             <section className="space-y-6">
               <div>
-                <h2 className="text-base font-bold text-mg-text-0">接口调试</h2>
-                <p className="mt-1 text-xs text-mg-text-2">本地调用常用接口，查看真实返回和错误日志。</p>
+                <h2 className="text-base font-bold text-mg-text-1">接口调试</h2>
+                <p className="mt-1 text-xs text-mg-text-3">本地调用常用接口，查看真实返回和错误日志。</p>
               </div>
               <CustomRequestPanel />
               {groups.map((group) => (
                 <div key={group} className="space-y-3">
-                  <div className="text-[11px] font-bold text-mg-text-2 tracking-widest uppercase">
+                  <div className="text-[11px] font-bold text-mg-text-3 tracking-widest uppercase">
                     {group}
                   </div>
                   <div className="space-y-3">
@@ -186,8 +186,8 @@ export default function PlatformConfigPage() {
 
             <section className="space-y-3">
               <div>
-                <h2 className="text-base font-bold text-mg-text-0">Swagger</h2>
-                <p className="mt-1 text-xs text-mg-text-2">同一个接口入口里检索 Swagger 契约，避免在多个 tab 间来回切换。</p>
+                <h2 className="text-base font-bold text-mg-text-1">Swagger</h2>
+                <p className="mt-1 text-xs text-mg-text-3">同一个接口入口里检索 Swagger 契约，避免在多个 tab 间来回切换。</p>
               </div>
               <SwaggerPanel />
             </section>
@@ -198,8 +198,8 @@ export default function PlatformConfigPage() {
           <div className="space-y-8 pt-2">
             <section className="space-y-3">
               <div>
-                <h2 className="text-base font-bold text-mg-text-0">公共路由</h2>
-                <p className="mt-1 text-xs text-mg-text-2">无需登录即可访问的页面路由，点击复制完整 URL。</p>
+                <h2 className="text-base font-bold text-mg-text-1">公共路由</h2>
+                <p className="mt-1 text-xs text-mg-text-3">无需登录即可访问的页面路由，点击复制完整 URL。</p>
               </div>
               {PUBLIC_ROUTES.map((r) => {
                 const full = `${window.location.origin}${r.path}`
@@ -210,9 +210,9 @@ export default function PlatformConfigPage() {
                     onClick={async () => { if (await copy(full)) appToast.success(`已复制 ${r.path}`) }}
                   >
                     <code className="text-xs font-mono text-brand-base shrink-0 select-all">{r.path}</code>
-                    <span className="text-xs text-mg-text-2">—</span>
-                    <span className="text-xs text-mg-text-1">{r.desc}</span>
-                    <span className="ml-auto text-[10px] text-mg-text-2 shrink-0">点击复制</span>
+                    <span className="text-xs text-mg-text-3">—</span>
+                    <span className="text-xs text-mg-text-2">{r.desc}</span>
+                    <span className="ml-auto text-[10px] text-mg-text-3 shrink-0">点击复制</span>
                   </div>
                 )
               })}
@@ -220,8 +220,8 @@ export default function PlatformConfigPage() {
 
             <section className="space-y-3">
               <div>
-                <h2 className="text-base font-bold text-mg-text-0">菜单同步</h2>
-                <p className="mt-1 text-xs text-mg-text-2">查看当前菜单声明并同步到后端权限菜单。</p>
+                <h2 className="text-base font-bold text-mg-text-1">菜单同步</h2>
+                <p className="mt-1 text-xs text-mg-text-3">查看当前菜单声明并同步到后端权限菜单。</p>
               </div>
               <MenusSyncPanel />
             </section>

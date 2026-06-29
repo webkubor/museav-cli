@@ -22,12 +22,12 @@ function TenantMemberCountBadge({ tenantId }: { tenantId: string }) {
   })
 
   if (membersQuery.isLoading) {
-    return <span className="text-[10px] text-mg-text-2 shrink-0">· 成员 …</span>
+    return <span className="text-[10px] text-mg-text-3 shrink-0">· 成员 …</span>
   }
 
   const count = membersQuery.data?.items.length ?? 0
   return (
-    <span className="text-[10px] text-mg-text-2 shrink-0">
+    <span className="text-[10px] text-mg-text-3 shrink-0">
       · 成员 {count} 人
     </span>
   )
@@ -101,9 +101,9 @@ export function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
       {/* 头部 */}
       <div className="flex items-center justify-between p-4 border-b border-mg-border/50 bg-mg-fill-0/20">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-mg-text-0">我的组织</span>
+          <span className="text-sm font-bold text-mg-text-1">我的组织</span>
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-            atLimit ? 'bg-mg-danger/10 text-mg-danger border border-mg-danger/20' : 'bg-mg-fill-1 text-mg-text-2 border border-mg-border/40'
+            atLimit ? 'bg-mg-danger/10 text-mg-danger border border-mg-danger/20' : 'bg-mg-fill-1 text-mg-text-3 border border-mg-border/40'
           }`}>
             {tenants.length} / {MAX_TENANTS}
           </span>
@@ -127,7 +127,7 @@ export function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
             <div className="w-6 h-6 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
           </div>
         ) : tenants.length === 0 ? (
-          <div className="py-8 text-center text-xs text-mg-text-2">
+          <div className="py-8 text-center text-xs text-mg-text-3">
             暂无组织，请先创建一个组织
           </div>
         ) : (
@@ -163,7 +163,7 @@ export function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center gap-1.5 justify-between">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-xs font-bold text-mg-text-0 truncate">
+                      <span className="text-xs font-bold text-mg-text-1 truncate">
                         {record.name}
                       </span>
                       {record.is_default && (
@@ -173,7 +173,7 @@ export function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
                     <RoleBadge role={record.role} />
                   </div>
 
-                  <div className="flex items-center justify-between text-[10px] text-mg-text-2">
+                  <div className="flex items-center justify-between text-[10px] text-mg-text-3">
                     <span className="font-mono truncate max-w-[80px]">@{record.slug}</span>
                     <span className="flex items-center gap-1">
                       <span>工作区 {record.current_workspace_count ?? 0}/{record.max_workspaces ?? '—'}</span>
@@ -193,12 +193,12 @@ export function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setCreateVisible(false)} />
           <div className="relative bg-card-bg modal-glow-flow rounded-lg w-full max-w-[420px] shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="p-4 border-b border-mg-border flex justify-between items-center bg-mg-fill-0/30">
-              <h2 className="text-sm font-bold text-mg-text-0">创建新组织</h2>
-              <button className="text-mg-text-2 hover:text-mg-text-0 text-xs font-bold transition-colors" onClick={() => setCreateVisible(false)}>✕</button>
+              <h2 className="text-sm font-bold text-mg-text-1">创建新组织</h2>
+              <button className="text-mg-text-3 hover:text-mg-text-1 text-xs font-bold transition-colors" onClick={() => setCreateVisible(false)}>✕</button>
             </div>
             <div className="p-5 space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-mg-text-1 uppercase tracking-wider block">组织名称</label>
+                <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">组织名称</label>
                 <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="如：我的团队" className="rounded-lg w-full text-xs h-9" />
               </div>
             </div>

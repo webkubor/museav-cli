@@ -229,7 +229,7 @@ function CropModal({
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
       <div className="relative bg-card-bg border border-mg-border rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 w-[380px]">
         {/* 标题 */}
-        <div className="px-[var(--mg-panel-padding-lg)] py-[var(--mg-space-3)] border-b border-mg-border mg-text-body font-bold text-mg-text-0">
+        <div className="px-[var(--mg-panel-padding-lg)] py-[var(--mg-space-3)] border-b border-mg-border mg-text-body font-bold text-mg-text-1">
           {t('account.info.avatarCropTitle')}
         </div>
 
@@ -251,7 +251,7 @@ function CropModal({
 
         {/* 缩放条 */}
         <div className="flex items-center justify-center gap-3 px-[var(--mg-panel-padding-lg)] py-[var(--mg-space-3)] border-t border-mg-border/40">
-          <button onClick={() => setScale((s) => Math.max(MIN_SCALE, s - 0.15))} className="p-1.5 rounded-md text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-0 transition-colors cursor-pointer">
+          <button onClick={() => setScale((s) => Math.max(MIN_SCALE, s - 0.15))} className="p-1.5 rounded-md text-mg-text-3 hover:text-mg-text-1 hover:bg-mg-fill-0 transition-colors cursor-pointer">
             <LuZoomOut size={16} />
           </button>
           <input
@@ -262,7 +262,7 @@ function CropModal({
             onChange={(e) => setScale(Number(e.target.value) / 100)}
             className="flex-1 h-1 accent-brand-base cursor-pointer"
           />
-          <button onClick={() => setScale((s) => Math.min(MAX_SCALE, s + 0.15))} className="p-1.5 rounded-md text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-0 transition-colors cursor-pointer">
+          <button onClick={() => setScale((s) => Math.min(MAX_SCALE, s + 0.15))} className="p-1.5 rounded-md text-mg-text-3 hover:text-mg-text-1 hover:bg-mg-fill-0 transition-colors cursor-pointer">
             <LuZoomIn size={16} />
           </button>
         </div>

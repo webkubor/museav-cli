@@ -84,18 +84,18 @@ export const SidebarSettingsPopup: React.FC<SidebarSettingsPopupProps> = ({
               "group/item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer select-none transition-all outline-none",
               isSelected
                 ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
-                : "text-mg-text-2 hover:text-mg-text-0 hover:bg-mg-fill-0/30 active:scale-[0.98] hover:translate-x-[2px]"
+                : "text-mg-text-3 hover:text-mg-text-1 hover:bg-mg-fill-0/30 active:scale-[0.98] hover:translate-x-[2px]"
             )}
           >
             <span className={cn(
-              "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-mg-fill-0 text-mg-text-3 transition-all duration-300 group-hover/item:scale-105 group-hover/item:text-mg-text-0",
+              "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-mg-fill-0 text-mg-text-4 transition-all duration-300 group-hover/item:scale-105 group-hover/item:text-mg-text-1",
               isSelected && "bg-brand-selected-bg text-brand-base"
             )}>
               {item.icon}
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[13.5px] font-bold leading-tight">{item.label}</span>
-              <span className="mt-1 block truncate text-[11px] font-medium leading-none text-mg-text-3">
+              <span className="mt-1 block truncate text-[11px] font-medium leading-none text-mg-text-4">
                 {item.hint}
               </span>
             </span>

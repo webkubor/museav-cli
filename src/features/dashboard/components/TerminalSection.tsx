@@ -59,7 +59,7 @@ export const TerminalSection: React.FC = () => {
                 key={tab.key}
                 variant="pills"
                 value={tab.key}
-                className="px-3 py-1 text-[11px] font-mono data-[state=active]:bg-brand-base/20 data-[state=active]:text-brand-base data-[state=active]:shadow-none text-mg-text-2 hover:text-white"
+                className="px-3 py-1 text-[11px] font-mono data-[state=active]:bg-brand-base/20 data-[state=active]:text-brand-base data-[state=active]:shadow-none text-mg-text-3 hover:text-white"
               >
                 {tab.label}
               </TabsTrigger>
@@ -72,9 +72,9 @@ export const TerminalSection: React.FC = () => {
           variant="ghost"
           size="xs"
           onClick={handleCopy}
-          className="text-mg-text-2 hover:bg-white/5 rounded-full px-3 py-1 h-7 transition-all border-none flex items-center gap-1 hover:text-white"
+          className="text-mg-text-3 hover:bg-white/5 rounded-full px-3 py-1 h-7 transition-all border-none flex items-center gap-1 hover:text-white"
         >
-          {copied ? <LuCheck className="text-[var(--mg-success)]" /> : <LuCopy className="text-mg-text-2" />}
+          {copied ? <LuCheck className="text-[var(--mg-success)]" /> : <LuCopy className="text-mg-text-3" />}
           {copied ? t('terminalSection.copied') : t('terminalSection.copy')}
         </Button>
       </div>

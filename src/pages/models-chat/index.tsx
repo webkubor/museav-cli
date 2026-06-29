@@ -99,10 +99,10 @@ export default function ModelsChatPage() {
       {/* 左侧：历史列表 */}
       <div className="w-[260px] shrink-0 flex flex-col bg-mg-bg-1/30 border border-mg-border rounded-md overflow-hidden">
         <div className="p-3 border-b border-mg-border/50 flex items-center justify-between shrink-0">
-          <span className="text-[12px] font-bold text-mg-text-0">{t('modelsChat.history')}</span>
+          <span className="text-[12px] font-bold text-mg-text-1">{t('modelsChat.history')}</span>
           <button
             onClick={handleNewConversation}
-            className="p-1.5 rounded-md text-mg-text-2 hover:text-brand-base hover:bg-brand-base/5 transition-colors cursor-pointer"
+            className="p-1.5 rounded-md text-mg-text-3 hover:text-brand-base hover:bg-brand-base/5 transition-colors cursor-pointer"
             title={t('modelsChat.button.new')}
           >
             <LuPlus size={14} />
@@ -114,7 +114,7 @@ export default function ModelsChatPage() {
               <div className="w-5 h-5 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
             </div>
           ) : conversations.length === 0 ? (
-            <div className="py-10 text-center text-[11px] text-mg-text-2">{t('modelsHistory.empty')}</div>
+            <div className="py-10 text-center text-[11px] text-mg-text-3">{t('modelsHistory.empty')}</div>
           ) : (
             <div className="p-1.5 space-y-0.5">
               {conversations.map((conv) => (
@@ -125,13 +125,13 @@ export default function ModelsChatPage() {
                     'w-full text-left px-3 py-2.5 rounded-lg transition-colors cursor-pointer',
                     activeConvId === conv.id
                       ? 'bg-brand-base/10 text-brand-base'
-                      : 'text-mg-text-1 hover:bg-mg-fill-0',
+                      : 'text-mg-text-2 hover:bg-mg-fill-0',
                   )}
                 >
                   <div className="text-[12px] font-semibold truncate leading-tight">
                     {conv.title || t('modelsHistory.noTitle')}
                   </div>
-                  <div className="text-[10px] text-mg-text-2 mt-1">{formatDateTime(conv.updated_at)}</div>
+                  <div className="text-[10px] text-mg-text-3 mt-1">{formatDateTime(conv.updated_at)}</div>
                 </button>
               ))}
             </div>
@@ -148,9 +148,9 @@ export default function ModelsChatPage() {
         )}>
           {messages.length === 0 && !chatMutation.isPending && (
             <div className="flex flex-col items-center justify-center text-center">
-              <LuMessageSquare size={28} className="text-mg-text-2 mb-3" />
-              <p className="text-sm font-semibold text-mg-text-0 mb-1">{t('modelsChat.title')}</p>
-              <p className="text-[12px] text-mg-text-2">{t('modelsChat.empty')}</p>
+              <LuMessageSquare size={28} className="text-mg-text-3 mb-3" />
+              <p className="text-sm font-semibold text-mg-text-1 mb-1">{t('modelsChat.title')}</p>
+              <p className="text-[12px] text-mg-text-3">{t('modelsChat.empty')}</p>
             </div>
           )}
 
@@ -160,7 +160,7 @@ export default function ModelsChatPage() {
                 'max-w-[72%] px-3.5 py-2.5 text-sm leading-relaxed shadow-sm break-words',
                 msg.role === 'user'
                   ? 'rounded-[14px_14px_4px_14px] bg-[var(--mg-primary)] text-white whitespace-pre-wrap'
-                  : 'rounded-[14px_14px_14px_4px] bg-card-bg text-mg-text-0',
+                  : 'rounded-[14px_14px_14px_4px] bg-card-bg text-mg-text-1',
               )}>
                 {msg.role === 'user' ? msg.content : <div className="cs-markdown"><Markdown>{msg.content}</Markdown></div>}
               </div>
@@ -171,7 +171,7 @@ export default function ModelsChatPage() {
             <div className="flex justify-start animate-in fade-in duration-200">
               <div className="px-3.5 py-2.5 rounded-[14px_14px_14px_4px] bg-card-bg shadow-sm flex items-center gap-2.5">
                 <PulsingDots />
-                <span className="text-mg-text-2 text-[13px]">{t('modelsChat.thinking')}</span>
+                <span className="text-mg-text-3 text-[13px]">{t('modelsChat.thinking')}</span>
               </div>
             </div>
           )}

@@ -62,7 +62,7 @@ export default function WorkspaceDetailPage() {
         <button
           type="button"
           onClick={() => navigate('/settings/workspace')}
-          className="flex items-center gap-1.5 text-xs font-bold text-mg-text-2 hover:text-mg-text-0 bg-transparent border-none p-0 cursor-pointer transition-colors"
+          className="flex items-center gap-1.5 text-xs font-bold text-mg-text-3 hover:text-mg-text-1 bg-transparent border-none p-0 cursor-pointer transition-colors"
         >
           <LuArrowLeft size={14} /> {t('workspaces.detail.back')}
         </button>
@@ -70,11 +70,11 @@ export default function WorkspaceDetailPage() {
         {detailQuery.isLoading ? (
           <div className="h-9 w-60 bg-mg-fill-1 rounded-lg animate-pulse" />
         ) : !ws ? (
-          <div className="text-sm text-mg-text-2">{t('workspaces.detail.notFound')}</div>
+          <div className="text-sm text-mg-text-3">{t('workspaces.detail.notFound')}</div>
         ) : (
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-mg-text-0 tracking-tight">{ws.name}</h1>
-            <span className="font-mono text-xs bg-mg-fill-0 px-2 py-0.5 rounded-sm border border-mg-border/60 text-mg-text-2">
+            <h1 className="text-2xl font-bold text-mg-text-1 tracking-tight">{ws.name}</h1>
+            <span className="font-mono text-xs bg-mg-fill-0 px-2 py-0.5 rounded-sm border border-mg-border/60 text-mg-text-3">
               {ws.workspace_id}
             </span>
             {ws.is_default && <Badge variant="secondary">{t('workspaces.defaultBadge')}</Badge>}
@@ -121,16 +121,16 @@ function OverviewTab({ ws }: { ws: WorkspaceDetail }) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {cards.map((c) => (
           <div key={c.label} className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-5 shadow-xs">
-            <div className="text-[11px] font-bold text-mg-text-2 uppercase tracking-wider mb-2">{c.label}</div>
-            <div className="text-xl font-bold text-mg-text-0">{c.value}</div>
+            <div className="text-[11px] font-bold text-mg-text-3 uppercase tracking-wider mb-2">{c.label}</div>
+            <div className="text-xl font-bold text-mg-text-1">{c.value}</div>
           </div>
         ))}
       </div>
       <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-6 shadow-xs grid grid-cols-1 md:grid-cols-2 gap-6">
         {infos.map((i) => (
           <div key={i.label} className="space-y-1">
-            <div className="text-[10px] font-bold text-mg-text-1 uppercase tracking-wider">{i.label}</div>
-            <div className="text-xs text-mg-text-0 font-medium">{i.value}</div>
+            <div className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">{i.label}</div>
+            <div className="text-xs text-mg-text-1 font-medium">{i.value}</div>
           </div>
         ))}
       </div>
@@ -218,9 +218,9 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
       {/* 项目成员 */}
       <div className="bg-card-bg border border-mg-border rounded-md overflow-hidden flex flex-col">
         <div className="px-4 py-3 border-b border-mg-border flex items-center gap-2 bg-mg-fill-0/20 shrink-0">
-          <LuUsers size={14} className="text-mg-text-2" />
-          <span className="text-[13px] font-bold text-mg-text-0">{t('workspaces.detail.members.title')}</span>
-          <span className="text-[11px] text-mg-text-2 ml-auto">
+          <LuUsers size={14} className="text-mg-text-3" />
+          <span className="text-[13px] font-bold text-mg-text-1">{t('workspaces.detail.members.title')}</span>
+          <span className="text-[11px] text-mg-text-3 ml-auto">
             {t('workspaces.detail.members.count', { count: members.length })}
           </span>
         </div>
@@ -230,15 +230,15 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
               <div className="w-6 h-6 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
             </div>
           ) : members.length === 0 ? (
-            <div className="py-12 text-center text-xs text-mg-text-2">{t('workspaces.detail.members.empty')}</div>
+            <div className="py-12 text-center text-xs text-mg-text-3">{t('workspaces.detail.members.empty')}</div>
           ) : (
             <div className="divide-y divide-mg-border/40">
               {members.map((m) => (
                 <div key={m.account.account_id} className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-mg-fill-0/30 transition-colors">
                   <MemberAvatar member={m} accent="emerald" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-semibold text-mg-text-0 truncate">{m.account.display_name}</div>
-                    <div className="text-[10px] text-mg-text-2 truncate">{m.account.email}</div>
+                    <div className="text-[12px] font-semibold text-mg-text-1 truncate">{m.account.display_name}</div>
+                    <div className="text-[10px] text-mg-text-3 truncate">{m.account.email}</div>
                   </div>
                   {m.role !== 'ws_owner' && canManageMembers ? (
                     <Select
@@ -257,7 +257,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
                     <button
                       type="button"
                       onClick={() => setRemoveTarget(m.account.account_id)}
-                      className="shrink-0 p-1 rounded-sm text-mg-text-2 hover:text-mg-danger hover:bg-mg-danger/5 transition-colors cursor-pointer border-none bg-transparent"
+                      className="shrink-0 p-1 rounded-sm text-mg-text-3 hover:text-mg-danger hover:bg-mg-danger/5 transition-colors cursor-pointer border-none bg-transparent"
                       title={t('workspaces.detail.members.remove')}
                     >
                       <LuX size={13} />
@@ -273,8 +273,8 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
       {/* 从企业成员中添加 */}
       <div className="bg-card-bg border border-mg-border rounded-md overflow-hidden flex flex-col">
         <div className="px-4 py-3 border-b border-mg-border flex items-center gap-2 bg-mg-fill-0/20 shrink-0">
-          <LuBuilding2 size={14} className="text-mg-text-2" />
-          <span className="text-[13px] font-bold text-mg-text-0">{t('workspaces.detail.members.addTitle')}</span>
+          <LuBuilding2 size={14} className="text-mg-text-3" />
+          <span className="text-[13px] font-bold text-mg-text-1">{t('workspaces.detail.members.addTitle')}</span>
           <div className="ml-auto">
             <Input
               prefix={<LuSearch className="w-3 h-3" />}
@@ -291,15 +291,15 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
               <div className="w-6 h-6 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
             </div>
           ) : candidates.length === 0 ? (
-            <div className="py-12 text-center text-xs text-mg-text-2">{t('workspaces.detail.members.addEmpty')}</div>
+            <div className="py-12 text-center text-xs text-mg-text-3">{t('workspaces.detail.members.addEmpty')}</div>
           ) : (
             <div className="divide-y divide-mg-border/40">
               {candidates.map((m: TenantMember) => (
                 <div key={m.account.account_id} className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-mg-fill-0/30 transition-colors">
                   <MemberAvatar member={m} accent="brand" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-semibold text-mg-text-0 truncate">{m.account.display_name}</div>
-                    <div className="text-[10px] text-mg-text-2 truncate">{m.account.email}</div>
+                    <div className="text-[12px] font-semibold text-mg-text-1 truncate">{m.account.display_name}</div>
+                    <div className="text-[10px] text-mg-text-3 truncate">{m.account.email}</div>
                   </div>
                   <Badge variant="outline" size="xs" className="shrink-0">{TENANT_ROLE_LABEL[m.role]}</Badge>
                   {canManageMembers && (
@@ -344,7 +344,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
           </div>
         }
       >
-        <p className="text-sm text-mg-text-1">{t('workspaces.detail.members.removeConfirmDesc')}</p>
+        <p className="text-sm text-mg-text-2">{t('workspaces.detail.members.removeConfirmDesc')}</p>
       </Modal>
 
       {/* 修改角色确认弹窗 */}
@@ -371,7 +371,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
           </div>
         }
       >
-        <p className="text-sm text-mg-text-1">
+        <p className="text-sm text-mg-text-2">
           {t('workspaces.detail.members.roleConfirmDesc', { role: WS_ROLE_LABEL[roleChangeTarget?.role as keyof typeof WS_ROLE_LABEL] ?? roleChangeTarget?.role })}
         </p>
       </Modal>
@@ -425,7 +425,7 @@ function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => 
     <div className="space-y-6 max-w-2xl">
       {/* 改名 */}
       <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-6 shadow-xs space-y-3">
-        <label className="text-[10px] font-bold text-mg-text-1 uppercase tracking-wider block">
+        <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">
           {t('workspaces.detail.settings.renameLabel')}
         </label>
         <div className="flex items-center gap-2">
@@ -449,10 +449,10 @@ function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => 
           {t('workspaces.detail.settings.dangerTitle')}
         </div>
         {ws.is_default ? (
-          <p className="text-xs text-mg-text-2">{t('workspaces.detail.settings.defaultCannotDelete')}</p>
+          <p className="text-xs text-mg-text-3">{t('workspaces.detail.settings.defaultCannotDelete')}</p>
         ) : canDelete ? (
           <>
-            <p className="text-xs text-mg-text-2">{t('workspaces.detail.settings.deleteHint')}</p>
+            <p className="text-xs text-mg-text-3">{t('workspaces.detail.settings.deleteHint')}</p>
             <Button
               variant="outline"
               onClick={() => setDeleteOpen(true)}

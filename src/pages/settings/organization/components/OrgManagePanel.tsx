@@ -33,8 +33,8 @@ export function OrgManagePanel({
           <div className="absolute inset-0 bg-radial-gradient from-brand-base/10 to-transparent animate-pulse" />
         </div>
         <div className="space-y-1">
-          <h3 className="text-sm font-bold text-mg-text-0">暂无选中的管理组织</h3>
-          <p className="text-xs text-mg-text-2 max-w-xs mx-auto leading-relaxed">
+          <h3 className="text-sm font-bold text-mg-text-1">暂无选中的管理组织</h3>
+          <p className="text-xs text-mg-text-3 max-w-xs mx-auto leading-relaxed">
             请在左侧“我的组织”列表中选择需要管理的组织，查看并更新其基本信息、成员列表或邀请其他成员加入。
           </p>
         </div>
@@ -56,9 +56,9 @@ export function OrgManagePanel({
       {/* 正在管理展示 */}
       <div className="flex items-center justify-between p-4 bg-mg-bg-0 border border-mg-border/50 rounded-lg shadow-xs">
         <div className="flex items-center gap-3">
-          <span className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">正在管理</span>
+          <span className="text-[10px] font-bold text-mg-text-3 uppercase tracking-wider">正在管理</span>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-mg-text-0">
+            <span className="text-sm font-bold text-mg-text-1">
               {tenantName}
             </span>
             {tenant && <RoleBadge role={tenant.role} />}
@@ -73,7 +73,7 @@ export function OrgManagePanel({
           className={`pb-3 font-bold transition-all border-b-2 cursor-pointer bg-transparent border-none text-xs ${
             activeSubTab === 'info'
               ? 'border-brand-base text-brand-base'
-              : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
+              : 'border-transparent text-mg-text-3 hover:text-mg-text-1'
           }`}
         >
           基本信息
@@ -83,7 +83,7 @@ export function OrgManagePanel({
           className={`pb-3 font-bold transition-all border-b-2 cursor-pointer bg-transparent border-none text-xs ${
             activeSubTab === 'members'
               ? 'border-brand-base text-brand-base'
-              : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
+              : 'border-transparent text-mg-text-3 hover:text-mg-text-1'
           }`}
         >
           组织成员
@@ -94,7 +94,7 @@ export function OrgManagePanel({
             className={`pb-3 font-bold transition-all border-b-2 cursor-pointer bg-transparent border-none text-xs ${
               activeSubTab === 'invite'
                 ? 'border-brand-base text-brand-base'
-                : 'border-transparent text-mg-text-2 hover:text-mg-text-0'
+                : 'border-transparent text-mg-text-3 hover:text-mg-text-1'
             }`}
           >
             邀请成员

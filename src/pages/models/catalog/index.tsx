@@ -127,7 +127,7 @@ export default function ModelsCatalogPage() {
         onClick={() => { const n = !filtersOpen; if (n) window.scrollTo(0, 0); setFiltersOpen(n) }}
         aria-expanded={filtersOpen}
         className="fixed bottom-6 right-5 z-40 inline-flex h-11 items-center gap-2 rounded-full border px-6 text-[14px] font-medium shadow-lg backdrop-blur lg:hidden"
-        style={{ background: 'var(--mg-bg-0)', borderColor: filtersOpen ? 'var(--brand-base)' : 'var(--mg-border)', color: filtersOpen ? 'var(--brand-base)' : 'var(--mg-text-1)' }}
+        style={{ background: 'var(--mg-bg-0)', borderColor: filtersOpen ? 'var(--brand-base)' : 'var(--mg-border)', color: filtersOpen ? 'var(--brand-base)' : 'var(--mg-text-2)' }}
       >
         <LuSlidersHorizontal size={15} />
         {isZh ? '筛选' : 'Filters'}
@@ -142,10 +142,10 @@ export default function ModelsCatalogPage() {
         <div>
           {/* 标题 */}
           <div className="mb-6">
-            <h1 className="catalog-title text-[34px] font-bold tracking-tight" style={{ color: 'var(--mg-text-0)' }}>
+            <h1 className="catalog-title text-[34px] font-bold tracking-tight" style={{ color: 'var(--mg-text-1)' }}>
               {isZh ? '模型广场' : 'Models'}
             </h1>
-            <p className="mt-1.5 text-[14px]" style={{ color: 'var(--mg-text-2)' }}>
+            <p className="mt-1.5 text-[14px]" style={{ color: 'var(--mg-text-3)' }}>
               {isZh ? '一个 API，接入主流大模型' : 'One API, access leading models'}
             </p>
           </div>
@@ -182,7 +182,7 @@ export default function ModelsCatalogPage() {
                       type="button"
                       onClick={() => { setSort(key); setSortOpen(false) }}
                       className="flex w-full items-center gap-2 px-4 py-2 text-left text-[12.5px] transition-colors hover:bg-[color:var(--mg-fill-1)]"
-                      style={sort === key ? { color: 'var(--brand-base)' } : { color: 'var(--mg-text-1)' }}
+                      style={sort === key ? { color: 'var(--brand-base)' } : { color: 'var(--mg-text-2)' }}
                     >
                       {sort === key ? <LuCheck size={11} /> : <span className="w-[11px]" />}
                       {sortLabels[key]}
@@ -204,14 +204,14 @@ export default function ModelsCatalogPage() {
               ))}
             </div>
           ) : modelsQuery.isError ? (
-            <div className="rounded-xl border p-6 text-center text-[13px]" style={{ borderColor: 'var(--mg-border)', color: 'var(--mg-text-2)' }}>
+            <div className="rounded-xl border p-6 text-center text-[13px]" style={{ borderColor: 'var(--mg-border)', color: 'var(--mg-text-3)' }}>
               {t('modelsCatalog.error.load')}
             </div>
           ) : visibleModels.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-[14px] border py-20 text-center" style={{ background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' }}>
-              <LuLayers size={28} className="mb-3" style={{ color: 'var(--mg-text-3)' }} />
-              <p className="text-[13px]" style={{ color: 'var(--mg-text-2)' }}>{isZh ? '没有符合筛选条件的模型' : 'No models match your filters'}</p>
-              <button type="button" onClick={reset} className="mt-3 text-[12px] underline-offset-2 hover:underline" style={{ color: 'var(--mg-text-2)' }}>
+              <LuLayers size={28} className="mb-3" style={{ color: 'var(--mg-text-4)' }} />
+              <p className="text-[13px]" style={{ color: 'var(--mg-text-3)' }}>{isZh ? '没有符合筛选条件的模型' : 'No models match your filters'}</p>
+              <button type="button" onClick={reset} className="mt-3 text-[12px] underline-offset-2 hover:underline" style={{ color: 'var(--mg-text-3)' }}>
                 {isZh ? '清除所有筛选' : 'Clear all filters'}
               </button>
             </div>

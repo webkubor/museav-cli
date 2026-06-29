@@ -150,7 +150,7 @@ export function TagInput({
   }, [showDropdown, filtered.length])
 
   const tagClass = tagVariant === 'mono'
-    ? 'bg-mg-fill-0 text-mg-text-0 border-mg-border'
+    ? 'bg-mg-fill-0 text-mg-text-1 border-mg-border'
     : 'bg-brand-base/10 text-brand-base border-brand-base/20'
 
   return (
@@ -191,13 +191,13 @@ export function TagInput({
             }}
             onKeyDown={handleKeyDown}
             placeholder={value.length === 0 ? placeholder : ''}
-            className="flex-1 bg-transparent mg-text-body text-mg-text-0 outline-none placeholder:text-mg-text-2/60 min-w-0 font-mono"
+            className="flex-1 bg-transparent mg-text-body text-mg-text-1 outline-none placeholder:text-mg-text-3/60 min-w-0 font-mono"
           />
           {hasSuggestions && (
             <button
               type="button"
               onClick={() => { setOpen((o) => !o); inputRef.current?.focus() }}
-              className="shrink-0 p-0.5 text-mg-text-2 hover:text-mg-text-0 transition-colors cursor-pointer"
+              className="shrink-0 p-0.5 text-mg-text-3 hover:text-mg-text-1 transition-colors cursor-pointer"
             >
               <LuChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
@@ -205,7 +205,7 @@ export function TagInput({
         </div>
       </div>
 
-      {hint && <p className="mg-text-caption text-mg-text-2 mt-1.5">{hint}</p>}
+      {hint && <p className="mg-text-caption text-mg-text-3 mt-1.5">{hint}</p>}
 
       {/* Portaled to document.body so position:fixed is relative to the viewport,
           not to any transformed ancestor (e.g. the Dialog's translate-x/y-[-50%]).
@@ -224,7 +224,7 @@ export function TagInput({
               className={`block w-full text-left px-[var(--mg-menu-item-px)] py-1.5 mg-text-code transition-colors cursor-pointer ${
                 idx === focusIdx
                   ? 'bg-brand-base/10 text-brand-base'
-                  : 'text-mg-text-0 hover:bg-mg-fill-0'
+                  : 'text-mg-text-1 hover:bg-mg-fill-0'
               }`}
             >
               {item.label}

@@ -28,13 +28,13 @@
 }
 
 .low-balance-alert-copy strong {
-  color: var(--mg-text-0);
+  color: var(--mg-text-1);
   font-size: 13px;
   font-weight: 850;
 }
 
 .low-balance-alert-copy span {
-  color: var(--mg-text-1);
+  color: var(--mg-text-2);
   font-size: 13px;
   font-weight: 620;
   line-height: 1.5;

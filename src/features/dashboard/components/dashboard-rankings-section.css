@@ -32,7 +32,7 @@
 
 .dashboard-ranking-header h3 {
   margin: 0;
-  color: var(--mg-text-0);
+  color: var(--mg-text-1);
   font-size: 16px;
   font-weight: 850;
   letter-spacing: 0;
@@ -40,7 +40,7 @@
 
 .dashboard-ranking-header p {
   margin: 5px 0 0;
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
   font-size: 12px;
   font-weight: 650;
 }
@@ -81,7 +81,7 @@
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 700;
-  color: var(--mg-text-3);
+  color: var(--mg-text-4);
   text-align: center;
 }
 
@@ -99,7 +99,7 @@
 .dashboard-ranking-icon svg {
   width: 16px;
   height: 16px;
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
 }
 
 .dashboard-ranking-copy {
@@ -109,7 +109,7 @@
 .dashboard-ranking-copy strong {
   display: block;
   overflow: hidden;
-  color: var(--mg-text-0);
+  color: var(--mg-text-1);
   font-size: 13px;
   font-weight: 800;
   text-overflow: ellipsis;
@@ -120,7 +120,7 @@
   display: block;
   overflow: hidden;
   margin-top: 3px;
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
   font-size: 11px;
   font-weight: 650;
   text-overflow: ellipsis;
@@ -137,7 +137,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
   font-size: 12px;
   font-weight: 650;
 }

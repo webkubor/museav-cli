@@ -32,11 +32,11 @@ export function ModelCard({ model, onSelect }: ModelCardProps) {
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <ModelIcon model={model} size={28} />
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--mg-text-0)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--mg-text-1)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {model.display_name}
           </div>
           {model.vendor && (
-            <div style={{ fontSize: '11.5px', color: 'var(--mg-text-2)', marginTop: '1px' }}>{model.vendor}</div>
+            <div style={{ fontSize: '11.5px', color: 'var(--mg-text-3)', marginTop: '1px' }}>{model.vendor}</div>
           )}
         </div>
       </div>
@@ -47,13 +47,13 @@ export function ModelCard({ model, onSelect }: ModelCardProps) {
       </div>
 
       {/* 参数行 */}
-      <div style={{ display: 'flex', gap: '8px 16px', fontSize: '12px', color: 'var(--mg-text-1)', flexWrap: 'wrap' }}>
-        <span>{t('models.card.context')} <b style={{ color: 'var(--mg-text-0)' }}>{formatContextLength(model.context_length)}</b></span>
+      <div style={{ display: 'flex', gap: '8px 16px', fontSize: '12px', color: 'var(--mg-text-2)', flexWrap: 'wrap' }}>
+        <span>{t('models.card.context')} <b style={{ color: 'var(--mg-text-1)' }}>{formatContextLength(model.context_length)}</b></span>
         {model.pricing?.input_per_1m && (
-          <span>{t('models.card.inputPrice')} <b style={{ color: 'var(--mg-text-0)' }}>{formatModelPrice(model.pricing.input_per_1m, model.pricing.currency)}</b></span>
+          <span>{t('models.card.inputPrice')} <b style={{ color: 'var(--mg-text-1)' }}>{formatModelPrice(model.pricing.input_per_1m, model.pricing.currency)}</b></span>
         )}
         {model.pricing?.output_per_1m && (
-          <span>{t('models.card.outputPrice')} <b style={{ color: 'var(--mg-text-0)' }}>{formatModelPrice(model.pricing.output_per_1m, model.pricing.currency)}</b></span>
+          <span>{t('models.card.outputPrice')} <b style={{ color: 'var(--mg-text-1)' }}>{formatModelPrice(model.pricing.output_per_1m, model.pricing.currency)}</b></span>
         )}
       </div>
     </div>

@@ -67,8 +67,8 @@ export default function BillingPage() {
               <span className="text-[20px] leading-none" role="img" aria-label="gift">🎁</span>
             </div>
             <div>
-              <div className="text-sm font-bold text-mg-text-0">{t('billing.promo.title')}</div>
-              <div className="text-[11px] text-mg-text-2 mt-0.5">{t('billing.promo.subtitle', { defaultValue: '线下收款 / 促销码自助到账' })}</div>
+              <div className="text-sm font-bold text-mg-text-1">{t('billing.promo.title')}</div>
+              <div className="text-[11px] text-mg-text-3 mt-0.5">{t('billing.promo.subtitle', { defaultValue: '线下收款 / 促销码自助到账' })}</div>
             </div>
           </div>
           <input
@@ -77,13 +77,13 @@ export default function BillingPage() {
             onChange={(e) => setPromoCode(e.target.value)}
             placeholder={t('billing.promo.placeholder')}
             disabled={redeemMutation.isPending}
-            className="flex-1 min-w-[180px] h-9 px-3 rounded-md border border-mg-border bg-mg-fill-0/30 hover:bg-mg-fill-0 focus:bg-mg-fill-0 text-xs focus:outline-none focus:ring-1 focus:ring-brand-glow focus:border-brand-base transition-all font-medium text-mg-text-0"
+            className="flex-1 min-w-[180px] h-9 px-3 rounded-md border border-mg-border bg-mg-fill-0/30 hover:bg-mg-fill-0 focus:bg-mg-fill-0 text-xs focus:outline-none focus:ring-1 focus:ring-brand-glow focus:border-brand-base transition-all font-medium text-mg-text-1"
           />
           <Button
             type="submit"
             variant="outline"
             disabled={redeemMutation.isPending || !promoCode.trim()}
-            className="h-9 px-4 text-xs font-semibold rounded-md border border-mg-border shrink-0 hover:bg-mg-fill-0 transition-all text-mg-text-1"
+            className="h-9 px-4 text-xs font-semibold rounded-md border border-mg-border shrink-0 hover:bg-mg-fill-0 transition-all text-mg-text-2"
           >
             {redeemMutation.isPending ? t('billing.rechargeModal.submitting') : t('billing.promo.submit')}
           </Button>

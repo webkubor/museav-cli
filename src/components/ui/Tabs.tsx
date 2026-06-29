@@ -21,9 +21,9 @@ const tabsTriggerVariants = cva(
     variants: {
       variant: {
         underline:
-          "py-[var(--mg-space-3)] border-b-2 border-transparent text-mg-text-2 hover:text-mg-text-0 data-[state=active]:border-brand-base data-[state=active]:text-brand-base tracking-tight",
+          "py-[var(--mg-space-3)] border-b-2 border-transparent text-mg-text-3 hover:text-mg-text-1 data-[state=active]:border-brand-base data-[state=active]:text-brand-base tracking-tight",
         pills:
-          "rounded-md px-[var(--mg-control-px-md)] py-1.5 text-mg-text-2 hover:text-mg-text-0 data-[state=active]:bg-brand-base data-[state=active]:text-white data-[state=active]:shadow-sm",
+          "rounded-md px-[var(--mg-control-px-md)] py-1.5 text-mg-text-3 hover:text-mg-text-1 data-[state=active]:bg-brand-base data-[state=active]:text-white data-[state=active]:shadow-sm",
       },
     },
     defaultVariants: { variant: "underline" },

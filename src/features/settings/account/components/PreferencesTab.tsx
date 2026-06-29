@@ -153,7 +153,7 @@ export function PreferencesTab() {
 
   if (preferencesQuery.isLoading) {
     return (
-      <div className="flex items-center gap-2 py-8 text-sm text-mg-text-1">
+      <div className="flex items-center gap-2 py-8 text-sm text-mg-text-2">
         <div className="w-4 h-4 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
         {t('common.loading')}
       </div>
@@ -175,10 +175,10 @@ export function PreferencesTab() {
         {/* 界面语言（Language） */}
         <div className="pb-5 border-b border-mg-border/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="max-w-xs">
-            <div className="text-[14px] font-bold text-mg-text-0">
+            <div className="text-[14px] font-bold text-mg-text-1">
               {t('account.preferences.languageTitle')}
             </div>
-            <div className="mt-1 text-[11.5px] leading-relaxed text-mg-text-2">
+            <div className="mt-1 text-[11.5px] leading-relaxed text-mg-text-3">
               {t('account.preferences.languageDesc')}
             </div>
           </div>
@@ -201,7 +201,7 @@ export function PreferencesTab() {
                     "px-4 py-2 rounded-lg text-xs font-bold transition-all duration-300 cursor-pointer select-none active:scale-[0.96]",
                     isSelected
                       ? "bg-mg-bg-1 text-brand-base shadow-sm font-black border border-mg-border/30"
-                      : "text-mg-text-2 hover:text-mg-text-0"
+                      : "text-mg-text-3 hover:text-mg-text-1"
                   )}
                 >
                   {t(option.titleKey)}
@@ -214,10 +214,10 @@ export function PreferencesTab() {
         {/* 界面主题（Theme） */}
         <div className="py-5 border-b border-mg-border/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="max-w-xs">
-            <div className="text-[14px] font-bold text-mg-text-0">
+            <div className="text-[14px] font-bold text-mg-text-1">
               {t('account.preferences.themeTitle')}
             </div>
-            <div className="mt-1 text-[11.5px] leading-relaxed text-mg-text-2">
+            <div className="mt-1 text-[11.5px] leading-relaxed text-mg-text-3">
               {t('account.preferences.themeDesc')}
             </div>
           </div>
@@ -240,7 +240,7 @@ export function PreferencesTab() {
                     "flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold border cursor-pointer select-none transition-all active:scale-[0.96]",
                     isSelected
                       ? "bg-brand-selected-bg text-brand-base border-brand-base/40 shadow-sm shadow-brand-glow/5"
-                      : "bg-mg-fill-0/30 text-mg-text-2 border-mg-border/50 hover:bg-mg-fill-0/50 hover:text-mg-text-0 hover:translate-y-[-1px]"
+                      : "bg-mg-fill-0/30 text-mg-text-3 border-mg-border/50 hover:bg-mg-fill-0/50 hover:text-mg-text-1 hover:translate-y-[-1px]"
                   )}
                 >
                   {themeIcons[option.value]}
@@ -254,10 +254,10 @@ export function PreferencesTab() {
         {/* 显示时区（Time Zone） */}
         <div className="py-5 border-b border-mg-border/40 flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div className="max-w-xs">
-            <div className="text-[14px] font-bold text-mg-text-0">
+            <div className="text-[14px] font-bold text-mg-text-1">
               {t('account.preferences.timeZoneTitle')}
             </div>
-            <div className="mt-1 text-[11.5px] leading-relaxed text-mg-text-2">
+            <div className="mt-1 text-[11.5px] leading-relaxed text-mg-text-3">
               {t('account.preferences.timeZoneDesc', { timezone: browserTimeZone })}
             </div>
           </div>
@@ -271,10 +271,10 @@ export function PreferencesTab() {
             >
               <Select.Option value={BROWSER_TIME_ZONE}>
                 <div className="flex flex-col gap-0.5 py-0.5">
-                  <span className="text-[13px] font-bold text-mg-text-0">
+                  <span className="text-[13px] font-bold text-mg-text-1">
                     {t('account.preferences.timeZoneBrowser')}
                   </span>
-                  <span className="text-[10px] text-mg-text-2 leading-none">
+                  <span className="text-[10px] text-mg-text-3 leading-none">
                     {t('account.preferences.timeZoneBrowserDesc', { timezone: formatTimeZoneTitle(browserTimeZone, locale) })}
                   </span>
                 </div>
@@ -282,10 +282,10 @@ export function PreferencesTab() {
               {concreteTimeZones.map((item) => (
                 <Select.Option key={item} value={item}>
                   <div className="flex flex-col gap-0.5 py-0.5">
-                    <span className="text-[13px] font-bold text-mg-text-0">
+                    <span className="text-[13px] font-bold text-mg-text-1">
                       {formatTimeZoneTitle(item, locale)}
                     </span>
-                    <span className="text-[10px] text-mg-text-2 leading-none">
+                    <span className="text-[10px] text-mg-text-3 leading-none">
                       {t('account.preferences.timeZoneFixedDesc')}
                     </span>
                   </div>
@@ -297,7 +297,7 @@ export function PreferencesTab() {
             <div className="rounded-md border border-mg-border/40 bg-mg-fill-0/40 px-3.5 py-2.5 flex items-center justify-between text-xs select-none">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0 animate-pulse" />
-                <span className="text-mg-text-2 uppercase text-[9.5px] font-bold tracking-wider truncate" title={resolvedTimeZone}>
+                <span className="text-mg-text-3 uppercase text-[9.5px] font-bold tracking-wider truncate" title={resolvedTimeZone}>
                   {resolvedTimeZone.split('/').pop()?.replace(/_/g, ' ') || 'Local'}
                 </span>
               </div>
@@ -311,10 +311,10 @@ export function PreferencesTab() {
         {/* 低余额提醒（Low Balance Alerts） */}
         <div className="py-5 flex items-center justify-between gap-5">
           <div className="max-w-xs">
-            <div className="text-[14px] font-bold text-mg-text-0">
+            <div className="text-[14px] font-bold text-mg-text-1">
               {t('account.preferences.lowBalanceTitle')}
             </div>
-            <div className="mt-1 text-[11.5px] leading-relaxed text-mg-text-2">
+            <div className="mt-1 text-[11.5px] leading-relaxed text-mg-text-3">
               {t('account.preferences.lowBalanceDesc')}
             </div>
           </div>

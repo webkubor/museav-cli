@@ -21,8 +21,8 @@ export function HeadersPanel() {
   return (
     <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-md overflow-hidden shadow-sm">
       <div className="px-5 py-3 border-b border-mg-border bg-mg-bg-1/40">
-        <div className="text-sm font-bold text-mg-text-0">自动注入请求头</div>
-        <div className="text-[11px] text-mg-text-2 mt-0.5">request-headers.ts 在 beforeRequest 钩子统一注入，业务代码无需手动携带</div>
+        <div className="text-sm font-bold text-mg-text-1">自动注入请求头</div>
+        <div className="text-[11px] text-mg-text-3 mt-0.5">request-headers.ts 在 beforeRequest 钩子统一注入，业务代码无需手动携带</div>
       </div>
       <Table>
         <TableHeader>
@@ -37,9 +37,9 @@ export function HeadersPanel() {
           {HEADER_ROWS.map((row) => (
             <TableRow key={row.name}>
               <TableCell className="font-mono text-xs text-brand-base whitespace-nowrap">{row.name}</TableCell>
-              <TableCell className="text-xs text-mg-text-1">{row.source}</TableCell>
-              <TableCell className="text-xs text-mg-text-2 whitespace-nowrap">{row.scope}</TableCell>
-              <TableCell className="text-xs text-mg-text-0">{row.purpose}</TableCell>
+              <TableCell className="text-xs text-mg-text-2">{row.source}</TableCell>
+              <TableCell className="text-xs text-mg-text-3 whitespace-nowrap">{row.scope}</TableCell>
+              <TableCell className="text-xs text-mg-text-1">{row.purpose}</TableCell>
             </TableRow>
           ))}
         </TableBody>

@@ -46,7 +46,7 @@ const SidebarSystemStatus: React.FC<{ collapsed: boolean }> = ({ collapsed }) =>
   return (
     <div className="mx-3 mb-3 mt-1 px-1.5 py-1.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="truncate font-mono text-[11px] leading-none text-mg-text-2">
+        <span className="truncate font-mono text-[11px] leading-none text-mg-text-3">
           v{__APP_VERSION__} · {__BUILD_TAG__ || __BUILD_COMMIT__}
         </span>
         <span className="inline-flex items-center gap-1.5 text-[9px] font-bold leading-none text-mg-success">
@@ -54,7 +54,7 @@ const SidebarSystemStatus: React.FC<{ collapsed: boolean }> = ({ collapsed }) =>
           {t('common.online')}
         </span>
       </div>
-      <div className="mt-2 flex items-center justify-between gap-2 font-mono text-[10px] leading-none text-mg-text-3">
+      <div className="mt-2 flex items-center justify-between gap-2 font-mono text-[10px] leading-none text-mg-text-4">
         <span>{buildMode}</span>
         <span>{buildTime} UTC</span>
       </div>
@@ -86,12 +86,12 @@ const SidebarNavItem: React.FC<{
         collapsed ? "justify-center" : "justify-start",
         isSelected
           ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
-          : "text-mg-text-1 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.96] hover:translate-x-[2px]"
+          : "text-mg-text-2 hover:bg-mg-fill-0/50 hover:text-mg-text-1 active:scale-[0.96] hover:translate-x-[2px]"
       )}
     >
       <span className={cn(
         "inline-flex items-center justify-center text-base leading-none shrink-0 transition-all duration-300 ease-out",
-        isSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:scale-105 group-hover:translate-x-[1.5px]"
+        isSelected ? "text-brand-base scale-110" : "text-mg-text-3 group-hover:text-mg-text-1 group-hover:scale-105 group-hover:translate-x-[1.5px]"
       )}>
         {item.icon}
       </span>
@@ -125,7 +125,7 @@ const SidebarMenuGroup: React.FC<{
         <div
           role="button"
           className={cn(
-            "group flex items-center justify-center mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer text-mg-text-2 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.96] transition-all duration-300",
+            "group flex items-center justify-center mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer text-mg-text-3 hover:bg-mg-fill-0/50 hover:text-mg-text-1 active:scale-[0.96] transition-all duration-300",
             isChildSelected && "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
           )}
           title={item.text}
@@ -138,7 +138,7 @@ const SidebarMenuGroup: React.FC<{
         >
           <span className={cn(
             "inline-flex items-center justify-center text-base leading-none shrink-0 transition-all duration-300 ease-out",
-            isChildSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:scale-105 group-hover:translate-x-[1px]"
+            isChildSelected ? "text-brand-base scale-110" : "text-mg-text-3 group-hover:text-mg-text-1 group-hover:scale-105 group-hover:translate-x-[1px]"
           )}>
             {item.icon}
           </span>
@@ -168,14 +168,14 @@ const SidebarMenuGroup: React.FC<{
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsOpen(!isOpen) }}
         className={cn(
-          "group flex items-center justify-between mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-300 select-none outline-none text-mg-text-1 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.98]",
+          "group flex items-center justify-between mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-300 select-none outline-none text-mg-text-2 hover:bg-mg-fill-0/50 hover:text-mg-text-1 active:scale-[0.98]",
           isChildSelected && "text-brand-base font-bold"
         )}
       >
         <div className="flex items-center gap-3 min-w-0">
           <span className={cn(
             "inline-flex items-center justify-center text-base leading-none shrink-0 transition-all duration-300 ease-out",
-            isChildSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:scale-105 group-hover:translate-x-[1.5px]"
+            isChildSelected ? "text-brand-base scale-110" : "text-mg-text-3 group-hover:text-mg-text-1 group-hover:scale-105 group-hover:translate-x-[1.5px]"
           )}>
             {item.icon}
           </span>
@@ -184,8 +184,8 @@ const SidebarMenuGroup: React.FC<{
           </span>
         </div>
         <span className={cn(
-          "text-mg-text-2 shrink-0 transition-all duration-300 ml-2",
-          isOpen ? "rotate-90 text-brand-base" : "group-hover:text-mg-text-0"
+          "text-mg-text-3 shrink-0 transition-all duration-300 ml-2",
+          isOpen ? "rotate-90 text-brand-base" : "group-hover:text-mg-text-1"
         )}>
           <LuChevronRight size={14} />
         </span>
@@ -213,7 +213,7 @@ const SidebarMenuGroup: React.FC<{
                     "flex items-center gap-3 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-150 select-none outline-none",
                     isSubSelected
                       ? "text-brand-base font-bold bg-brand-selected-bg/60"
-                      : "text-mg-text-1 hover:text-mg-text-0 hover:bg-mg-fill-0/30 active:scale-[0.98] hover:translate-x-[2px]"
+                      : "text-mg-text-2 hover:text-mg-text-1 hover:bg-mg-fill-0/30 active:scale-[0.98] hover:translate-x-[2px]"
                   )}
                 >
                   <span className="text-[14px] truncate tracking-tight font-medium leading-none">
@@ -279,13 +279,13 @@ const SidebarSettingsButton: React.FC<{
           "group flex items-center gap-3 mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-300 select-none outline-none focus-visible:ring-1 focus-visible:ring-brand-glow justify-between",
           isSelected
             ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
-            : "text-mg-text-1 hover:bg-mg-fill-0/50 hover:text-mg-text-0 active:scale-[0.96] hover:translate-x-[2px]"
+            : "text-mg-text-2 hover:bg-mg-fill-0/50 hover:text-mg-text-1 active:scale-[0.96] hover:translate-x-[2px]"
         )}
       >
         <div className={cn("flex items-center gap-3 min-w-0", collapsed && "w-full justify-center")}>
           <span className={cn(
             "inline-flex items-center justify-center text-base leading-none shrink-0 transition-transform duration-500 ease-out",
-            isSelected ? "text-brand-base scale-110" : "text-mg-text-2 group-hover:text-mg-text-0 group-hover:rotate-[60deg]"
+            isSelected ? "text-brand-base scale-110" : "text-mg-text-3 group-hover:text-mg-text-1 group-hover:rotate-[60deg]"
           )}>
             <LuSettings />
           </span>
@@ -297,8 +297,8 @@ const SidebarSettingsButton: React.FC<{
         </div>
         {!collapsed && (
           <span className={cn(
-            "text-mg-text-2 shrink-0 transition-all duration-300 ml-2",
-            isOpen ? "rotate-90 text-brand-base" : "group-hover:text-mg-text-0"
+            "text-mg-text-3 shrink-0 transition-all duration-300 ml-2",
+            isOpen ? "rotate-90 text-brand-base" : "group-hover:text-mg-text-1"
           )}>
             <LuChevronRight size={14} />
           </span>
@@ -366,7 +366,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         onClick={() => setCollapsed(!collapsed)}
         title={collapsed ? t('common.expand') : t('common.collapse')}
         className={cn(
-          "absolute right-[-11px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-mg-bg-0 border border-mg-border hover:border-brand-mid text-mg-text-2 hover:text-brand-base flex items-center justify-center cursor-pointer transition-all duration-300 z-50 shadow-sm active:scale-90",
+          "absolute right-[-11px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-mg-bg-0 border border-mg-border hover:border-brand-mid text-mg-text-3 hover:text-brand-base flex items-center justify-center cursor-pointer transition-all duration-300 z-50 shadow-sm active:scale-90",
           hovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-[-4px] pointer-events-none"
         )}
       >
@@ -409,18 +409,18 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           onClick={() => !collapsed && setWorkspaceOpen(!workspaceOpen)}
           className={cn(
             "flex items-center gap-2 py-4 select-none px-4 group/section justify-between transition-colors",
-            !collapsed && "cursor-pointer hover:text-mg-text-0",
+            !collapsed && "cursor-pointer hover:text-mg-text-1",
             collapsed && "px-2 pointer-events-none"
           )}
         >
           <div className="flex-1 h-[1px] bg-mg-border/40" />
           {!collapsed && (
-            <span className="text-[11px] font-bold text-mg-text-2/80 tracking-wider uppercase whitespace-nowrap shrink-0 flex items-center gap-1 group-hover/section:text-mg-text-1 transition-colors">
+            <span className="text-[11px] font-bold text-mg-text-3/80 tracking-wider uppercase whitespace-nowrap shrink-0 flex items-center gap-1 group-hover/section:text-mg-text-2 transition-colors">
               {t('nav.sidebarWorkspace')}
               <LuChevronRight 
                 size={11} 
                 className={cn(
-                  "transition-transform duration-300 text-mg-text-2", 
+                  "transition-transform duration-300 text-mg-text-3", 
                   workspaceOpen ? "rotate-90 text-brand-base" : "rotate-0"
                 )} 
               />

@@ -20,7 +20,7 @@ export function PublicShell() {
   }, [])
 
   return (
-    <div className="flex min-h-screen flex-col bg-mg-bg-1 text-mg-text-0">
+    <div className="flex min-h-screen flex-col bg-mg-bg-1 text-mg-text-1">
       <div className="sticky top-0 z-40">
         <DashboardHeader />
       </div>

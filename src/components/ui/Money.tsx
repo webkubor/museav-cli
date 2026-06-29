@@ -14,8 +14,8 @@ import { cn, formatMoney } from '@/lib/utils'
  */
 const SIZE = { sm: 'mg-text-body', md: 'mg-text-value', lg: 'mg-text-display-sm' } as const
 const TONE = {
-  default: 'text-mg-text-0',
-  muted: 'text-mg-text-1',
+  default: 'text-mg-text-1',
+  muted: 'text-mg-text-2',
   brand: 'text-brand-base',
   danger: 'text-mg-danger',
 } as const
@@ -37,13 +37,13 @@ export function Money({
   className?: string
 }) {
   if (amount == null || amount === '') {
-    return <span className={cn('font-mono tabular-nums text-mg-text-3', SIZE[size], className)}>—</span>
+    return <span className={cn('font-mono tabular-nums text-mg-text-4', SIZE[size], className)}>—</span>
   }
   const sym = symbol ?? (currency === 'USD' ? '$' : '¥')
   const text = formatMoney(amount, '')
   return (
     <span className={cn('font-mono tabular-nums whitespace-nowrap font-bold', SIZE[size], TONE[tone], className)}>
-      <span className="text-[0.82em] font-semibold text-mg-text-2 mr-[0.12em]">{sym}</span>
+      <span className="text-[0.82em] font-semibold text-mg-text-3 mr-[0.12em]">{sym}</span>
       {text}
     </span>
   )

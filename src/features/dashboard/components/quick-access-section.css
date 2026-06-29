@@ -12,7 +12,7 @@
 
 .quick-access-heading h3 {
   margin: 0;
-  color: var(--mg-text-0);
+  color: var(--mg-text-1);
   font-size: 16px;
   font-weight: 800;
   letter-spacing: 0;
@@ -20,7 +20,7 @@
 
 .quick-access-heading p {
   margin: 4px 0 0;
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -90,7 +90,7 @@
 }
 
 .quick-web3-grid {
-  stroke: var(--mg-text-2);
+  stroke: var(--mg-text-3);
   stroke-width: 2;
   stroke-linecap: round;
   opacity: 0.18;

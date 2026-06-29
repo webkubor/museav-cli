@@ -43,8 +43,8 @@ export function MembersTab({ tenantId, canManage }: { tenantId: string; canManag
       <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg overflow-hidden shadow-sm">
         {/* 头部 */}
         <div className="flex items-center justify-between p-4 border-b border-mg-border/50 bg-mg-fill-0/20">
-          <span className="text-xs font-bold text-mg-text-0">组织成员</span>
-          <span className="text-[10px] text-mg-text-2 bg-mg-fill-1 border border-mg-border/40 px-2 py-0.5 rounded-full font-medium">
+          <span className="text-xs font-bold text-mg-text-1">组织成员</span>
+          <span className="text-[10px] text-mg-text-3 bg-mg-fill-1 border border-mg-border/40 px-2 py-0.5 rounded-full font-medium">
             {membersQuery.isLoading ? '…' : `${members.length} 位成员`}
           </span>
         </div>
@@ -69,12 +69,12 @@ export function MembersTab({ tenantId, canManage }: { tenantId: string; canManag
                 {members.map((record) => (
                   <TableRow key={record.account.account_id}>
                     <TableCell>
-                      <div className="font-semibold text-mg-text-0">{record.account.display_name || '—'}</div>
-                      <div className="text-[10px] text-mg-text-2 mt-0.5">{record.account.email}</div>
+                      <div className="font-semibold text-mg-text-1">{record.account.display_name || '—'}</div>
+                      <div className="text-[10px] text-mg-text-3 mt-0.5">{record.account.email}</div>
                     </TableCell>
                     <TableCell>
                       {record.role === 'tenant_owner' ? (
-                        <span className="inline-block text-[10px] text-mg-text-2 font-bold bg-mg-fill-1 border border-mg-border/40 px-2.5 py-0.5 rounded-full">Owner</span>
+                        <span className="inline-block text-[10px] text-mg-text-3 font-bold bg-mg-fill-1 border border-mg-border/40 px-2.5 py-0.5 rounded-full">Owner</span>
                       ) : canManage ? (
                         <select
                           value={record.role}
@@ -86,12 +86,12 @@ export function MembersTab({ tenantId, canManage }: { tenantId: string; canManag
                           ))}
                         </select>
                       ) : (
-                        <span className="inline-block text-[11px] text-mg-text-1 font-semibold px-2.5 py-0.5">
+                        <span className="inline-block text-[11px] text-mg-text-2 font-semibold px-2.5 py-0.5">
                           {TENANT_ROLE_OPTIONS.find((o) => o.value === record.role)?.label ?? record.role}
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="text-[11px] text-mg-text-1 font-medium">
+                    <TableCell className="text-[11px] text-mg-text-2 font-medium">
                       {formatDate(record.joined_at)}
                     </TableCell>
                     <TableCell align="center">
@@ -99,12 +99,12 @@ export function MembersTab({ tenantId, canManage }: { tenantId: string; canManag
                         <button
                           type="button"
                           onClick={() => setRemoveTarget(record.account.account_id)}
-                          className="text-mg-text-2 hover:text-mg-danger hover:bg-mg-danger/5 p-1 rounded-lg transition-all border-none bg-transparent cursor-pointer font-bold text-xs"
+                          className="text-mg-text-3 hover:text-mg-danger hover:bg-mg-danger/5 p-1 rounded-lg transition-all border-none bg-transparent cursor-pointer font-bold text-xs"
                         >
                           ✕
                         </button>
                       ) : (
-                        <span className="text-mg-text-3">—</span>
+                        <span className="text-mg-text-4">—</span>
                       )}
                     </TableCell>
                   </TableRow>

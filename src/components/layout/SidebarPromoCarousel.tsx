@@ -99,7 +99,7 @@ export function SidebarPromoCarousel({ collapsed }: { collapsed: boolean }) {
               aria-label={`切换到 ${m.display_name}`}
               onClick={() => setIndex(i)}
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === activeIndex ? 'w-4 bg-brand-base' : 'w-1.5 bg-mg-border hover:bg-mg-text-3'
+                i === activeIndex ? 'w-4 bg-brand-base' : 'w-1.5 bg-mg-border hover:bg-mg-text-4'
               }`}
             />
           ))}

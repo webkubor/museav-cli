@@ -68,7 +68,7 @@ export default function AuthCallbackPage() {
         background: 'var(--mg-bg-1)',
       }}
     >
-      <div style={{ textAlign: 'center', color: 'var(--mg-text-2)', fontSize: '14px' }}>
+      <div style={{ textAlign: 'center', color: 'var(--mg-text-3)', fontSize: '14px' }}>
         <div
           style={{
             width: '32px',

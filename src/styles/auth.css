@@ -85,7 +85,7 @@ body[theme-mode='dark'] .glass-auth-card .auth-policy-text {
   display: block;
   font-size: 14px;
   font-weight: 700;
-  color: var(--mg-text-1) !important;
+  color: var(--mg-text-2) !important;
   margin-bottom: 8px;
 }
 
@@ -98,13 +98,13 @@ body[theme-mode='dark'] .glass-auth-card .auth-policy-text {
   font-size: 14px;
   outline: none;
   box-sizing: border-box;
-  color: var(--mg-text-0) !important;
+  color: var(--mg-text-1) !important;
   background-color: var(--mg-bg-1) !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .modern-auth-input::placeholder {
-  color: var(--mg-text-2) !important;
+  color: var(--mg-text-3) !important;
   opacity: 0.7;
 }
 
@@ -208,7 +208,7 @@ body[theme-mode='dark'] .auth-layout-container {
 
 .auth-title {
   margin: 0;
-  color: var(--mg-text-0);
+  color: var(--mg-text-1);
   font-size: 24px;
   font-weight: 850;
   line-height: 1.15;
@@ -217,7 +217,7 @@ body[theme-mode='dark'] .auth-layout-container {
 
 .auth-subtitle {
   margin: 10px 0 0;
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
   font-size: 14px;
   font-weight: 700;
   line-height: 1.5;
@@ -226,7 +226,7 @@ body[theme-mode='dark'] .auth-layout-container {
 .auth-footer {
   margin-top: 20px;
   text-align: center;
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0;
@@ -306,7 +306,7 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 }
 
 .auth-code-link-btn:disabled {
-  color: var(--mg-text-2) !important;
+  color: var(--mg-text-3) !important;
   opacity: 0.65;
   cursor: not-allowed !important;
 }
@@ -314,14 +314,14 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 .auth-policy-text {
   margin: -2px 0 0;
   text-align: center;
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
   font-size: 11.5px;
   font-weight: 600;
   line-height: 1.7;
 }
 
 .auth-muted-link {
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
   text-decoration: none;
 }
 
@@ -331,7 +331,7 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 
 .auth-email-text {
   @apply flex-1 overflow-hidden text-ellipsis font-semibold;
-  color: var(--mg-text-1);
+  color: var(--mg-text-2);
 }
 
 .auth-email-modify-btn {
@@ -348,20 +348,20 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 
 .auth-password-visibility-btn {
   @apply inline-flex items-center justify-center border-0 bg-transparent p-0 cursor-pointer transition-colors duration-200;
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
 }
 
 .auth-password-visibility-btn:hover {
-  color: var(--mg-text-0);
+  color: var(--mg-text-1);
 }
 
 .auth-remember-password {
   @apply mt-2 inline-flex items-center gap-2 text-xs font-semibold cursor-pointer select-none;
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
 }
 
 .auth-remember-password:hover {
-  color: var(--mg-text-1);
+  color: var(--mg-text-2);
 }
 
 .auth-remember-password input {
@@ -384,7 +384,7 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 
 .social-divider-text {
   @apply text-[11px] font-bold tracking-widest uppercase;
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
 }
 
 .social-btn-group {
@@ -396,13 +396,13 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   border-color: var(--mg-border) !important;
   background-color: rgba(var(--mg-bg-0-rgb), 0.56) !important;
-  color: var(--mg-text-1);
+  color: var(--mg-text-2);
 }
 
 .social-btn:hover {
   background-color: var(--mg-fill-0) !important;
   border-color: var(--mg-border-2) !important;
-  color: var(--mg-text-0);
+  color: var(--mg-text-1);
 }
 
 /* ── 🔒 密码输入圆点高级视觉打磨 ── */

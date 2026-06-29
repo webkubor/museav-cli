@@ -84,11 +84,11 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
         <button
           type="button"
           onClick={() => setView('list')}
-          className="flex items-center gap-1 text-sm text-mg-text-2 transition-colors hover:text-mg-text-0"
+          className="flex items-center gap-1 text-sm text-mg-text-3 transition-colors hover:text-mg-text-1"
         >
           <LuArrowLeft size={15} /> 返回
         </button>
-        <h3 className="text-base font-bold text-mg-text-0">新增发票抬头</h3>
+        <h3 className="text-base font-bold text-mg-text-1">新增发票抬头</h3>
 
         <Field label="票种">
           <Select value={form.type} onChange={(v) => set('type', v)} className="w-full">
@@ -139,7 +139,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
   return (
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-xs leading-relaxed text-mg-text-2">
+        <p className="text-xs leading-relaxed text-mg-text-3">
           增值税发票抬头（普票/专票），与「组织设置 → 开票信息」同源；默认抬头在开票时自动带出。
         </p>
         <Button variant="outline" size="sm" className="shrink-0" onClick={() => setView('form')}>
@@ -148,7 +148,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
       </div>
 
       {isLoading ? (
-        <div className="py-10 text-center text-sm text-mg-text-2">加载中…</div>
+        <div className="py-10 text-center text-sm text-mg-text-3">加载中…</div>
       ) : (
         titles.map((t) => (
           <div
@@ -158,17 +158,17 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-bold text-mg-text-0">{t.company_name}</span>
+                  <span className="font-bold text-mg-text-1">{t.company_name}</span>
                   {t.is_default && (
                     <span className="rounded-full bg-brand-base px-2 py-0.5 text-[11px] font-semibold text-white">
                       默认
                     </span>
                   )}
-                  <span className="rounded-md bg-mg-fill-0 px-2 py-0.5 text-[11px] text-mg-text-1">
+                  <span className="rounded-md bg-mg-fill-0 px-2 py-0.5 text-[11px] text-mg-text-2">
                     {TITLE_TYPE_LABEL[t.type]}
                   </span>
                 </div>
-                <div className="space-y-0.5 text-xs text-mg-text-2">
+                <div className="space-y-0.5 text-xs text-mg-text-3">
                   <div>税号 {t.tax_id}</div>
                   {t.reg_address && <div>{t.reg_address}</div>}
                   {t.bank_name && (
@@ -181,7 +181,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
               </div>
               <div className="shrink-0 text-xs">
                 {t.is_default ? (
-                  <span className="text-mg-text-3">默认抬头</span>
+                  <span className="text-mg-text-4">默认抬头</span>
                 ) : (
                   <Button
                     variant="outline"
@@ -204,7 +204,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-semibold text-mg-text-1">{label}</label>
+      <label className="block text-xs font-semibold text-mg-text-2">{label}</label>
       {children}
     </div>
   )

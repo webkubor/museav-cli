@@ -70,7 +70,7 @@ function SparklineTooltip({
       <div style={{ fontWeight: 700, color: METRIC_COLOR[metric as Metric], marginBottom: '2px' }}>
         {formatted}
       </div>
-      <div style={{ color: 'var(--mg-text-2)', fontSize: '11px' }}>
+      <div style={{ color: 'var(--mg-text-3)', fontSize: '11px' }}>
         {formatChartTooltipDate(d.bucket_start)}
       </div>
     </div>
@@ -87,7 +87,7 @@ export function Sparkline({
 }: SparklineProps) {
   if (data.length === 0) {
     return (
-      <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mg-text-2)', fontSize: '13px' }}>
+      <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mg-text-3)', fontSize: '13px' }}>
         {noDataLabel}
       </div>
     )
@@ -109,7 +109,7 @@ export function Sparkline({
         <XAxis
           dataKey="bucket_start"
           tickFormatter={formatChartTooltipDate}
-          tick={{ fontSize: 11, fill: 'var(--mg-text-2)', fontFamily: 'var(--font-sans)' }}
+          tick={{ fontSize: 11, fill: 'var(--mg-text-3)', fontFamily: 'var(--font-sans)' }}
           tickLine={false}
           axisLine={false}
           interval="preserveStartEnd"
@@ -161,7 +161,7 @@ function HistogramTooltip({ active, payload, requestUnitLabel }: HistogramToolti
       <div style={{ fontWeight: 700, color: 'var(--mg-primary)', marginBottom: '2px' }}>
         {d.count.toLocaleString()} {requestUnitLabel}
       </div>
-      <div style={{ color: 'var(--mg-text-2)', fontSize: '11px' }}>
+      <div style={{ color: 'var(--mg-text-3)', fontSize: '11px' }}>
         {formatChartTooltipDate(d.bucket_start)}
       </div>
     </div>
@@ -171,7 +171,7 @@ function HistogramTooltip({ active, payload, requestUnitLabel }: HistogramToolti
 export function HistogramChart({ buckets, noDataLabel, requestUnitLabel }: HistogramChartProps) {
   if (buckets.length === 0) {
     return (
-      <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mg-text-2)', fontSize: '13px' }}>
+      <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mg-text-3)', fontSize: '13px' }}>
         {noDataLabel}
       </div>
     )
@@ -184,7 +184,7 @@ export function HistogramChart({ buckets, noDataLabel, requestUnitLabel }: Histo
         <XAxis
           dataKey="bucket_start"
           tickFormatter={formatChartTooltipDate}
-          tick={{ fontSize: 11, fill: 'var(--mg-text-2)', fontFamily: 'var(--font-sans)' }}
+          tick={{ fontSize: 11, fill: 'var(--mg-text-3)', fontFamily: 'var(--font-sans)' }}
           tickLine={false}
           axisLine={false}
           interval="preserveStartEnd"
@@ -221,7 +221,7 @@ export function MetricTab({ label, active, onClick }: MetricTabProps) {
         borderRadius: 'var(--radius-sm)',
         border: 'none',
         background: active ? 'var(--mg-bg-1)' : 'transparent',
-        color: active ? 'var(--mg-text-0)' : 'var(--mg-text-1)',
+        color: active ? 'var(--mg-text-1)' : 'var(--mg-text-2)',
         fontSize: '13.5px',
         fontWeight: active ? 600 : 400,
         cursor: 'pointer',

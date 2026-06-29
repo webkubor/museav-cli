@@ -21,11 +21,11 @@ const badgeVariants = cva(
         default:
           "border-transparent bg-brand-base text-white hover:bg-brand-mid shadow-sm",
         secondary:
-          "border-transparent bg-mg-fill-1 text-mg-text-1 hover:bg-mg-fill-2",
+          "border-transparent bg-mg-fill-1 text-mg-text-2 hover:bg-mg-fill-2",
         destructive:
           "border-transparent bg-rose-500 text-white hover:bg-rose-600 shadow-sm",
         outline: 
-          "text-mg-text-1 border-mg-border hover:bg-mg-fill-0",
+          "text-mg-text-2 border-mg-border hover:bg-mg-fill-0",
         success:
           "border-transparent bg-mg-success/10 text-mg-success border-mg-success/20",
         warning:
@@ -37,7 +37,7 @@ const badgeVariants = cva(
         info:
           "border-transparent bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
         glass:
-          "bg-white/10 backdrop-blur-md border-white/20 text-mg-text-1",
+          "bg-white/10 backdrop-blur-md border-white/20 text-mg-text-2",
       },
     },
     defaultVariants: {

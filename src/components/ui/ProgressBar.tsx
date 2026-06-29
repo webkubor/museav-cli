@@ -105,7 +105,7 @@ export const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
         {/* 上方标签 */}
         {showLabel && labelPosition === "top" && (
           <div className="flex justify-between items-center mg-text-caption font-semibold">
-            <span className="text-[var(--mg-text-2)]">当前进度</span>
+            <span className="text-[var(--mg-text-3)]">当前进度</span>
             <span className={cn("font-mono", currentStyle.text)}>
               {renderDefaultLabel()} ({percentString})
             </span>
@@ -127,13 +127,13 @@ export const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
                   <span
                     className={cn(
                       "mg-compact-badge tracking-tight block whitespace-nowrap",
-                      isReached ? currentStyle.text : "text-[var(--mg-text-2)]"
+                      isReached ? currentStyle.text : "text-[var(--mg-text-3)]"
                     )}
                   >
                     {ms.label}
                   </span>
                   {ms.subLabel && (
-                    <span className="mg-text-caption text-[var(--mg-text-2)] scale-90 whitespace-nowrap block mt-0.5 font-medium">
+                    <span className="mg-text-caption text-[var(--mg-text-3)] scale-90 whitespace-nowrap block mt-0.5 font-medium">
                       {ms.subLabel}
                     </span>
                   )}
@@ -199,7 +199,7 @@ export const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
                           "rounded-full w-full h-full scale-[0.45] transition-all duration-300",
                           isReached
                             ? currentStyle.bar
-                            : "bg-[var(--mg-text-2)]/30"
+                            : "bg-[var(--mg-text-3)]/30"
                         )}
                       />
                     </div>
@@ -237,13 +237,13 @@ export const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
                   <span
                     className={cn(
                       "mg-compact-badge tracking-tight block whitespace-nowrap",
-                      isReached ? currentStyle.text : "text-[var(--mg-text-2)]"
+                      isReached ? currentStyle.text : "text-[var(--mg-text-3)]"
                     )}
                   >
                     {ms.label}
                   </span>
                   {ms.subLabel && (
-                    <span className="mg-text-caption text-[var(--mg-text-2)] scale-90 whitespace-nowrap block mt-0.5 font-medium">
+                    <span className="mg-text-caption text-[var(--mg-text-3)] scale-90 whitespace-nowrap block mt-0.5 font-medium">
                       {ms.subLabel}
                     </span>
                   )}
@@ -256,7 +256,7 @@ export const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
         {/* 下方标签 */}
         {showLabel && labelPosition === "bottom" && (
           <div className="flex justify-between items-center mg-text-caption font-semibold mt-0.5">
-            <span className="text-[var(--mg-text-2)]">当前用量</span>
+            <span className="text-[var(--mg-text-3)]">当前用量</span>
             <span className={cn("font-mono", currentStyle.text)}>
               {renderDefaultLabel()} ({percentString})
             </span>

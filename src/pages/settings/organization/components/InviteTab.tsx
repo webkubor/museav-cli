@@ -62,26 +62,26 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
     <div className="space-y-6">
       {/* ── 邀请配置 ── */}
       <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-4 flex items-center justify-between flex-wrap gap-4 shadow-sm">
-        <span className="text-xs font-bold text-mg-text-1 uppercase tracking-wider">邀请配置</span>
+        <span className="text-xs font-bold text-mg-text-2 uppercase tracking-wider">邀请配置</span>
         <div className="flex gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-mg-border/40 bg-mg-fill-0/30 text-[11px] text-mg-text-2 font-semibold">
+          <div className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-mg-border/40 bg-mg-fill-0/30 text-[11px] text-mg-text-3 font-semibold">
             初始角色
             <select
               value={inviteRole}
               onChange={(e) => setInviteRole(e.target.value as 'tenant_admin' | 'tenant_member')}
-              className="bg-transparent border-none outline-none font-bold text-[11px] ml-1 cursor-pointer text-mg-text-0"
+              className="bg-transparent border-none outline-none font-bold text-[11px] ml-1 cursor-pointer text-mg-text-1"
             >
               {TENANT_ROLE_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
           </div>
-          <div className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-mg-border/40 bg-mg-fill-0/30 text-[11px] text-mg-text-2 font-semibold">
+          <div className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-mg-border/40 bg-mg-fill-0/30 text-[11px] text-mg-text-3 font-semibold">
             有效期
             <select
               value={expiresInHours}
               onChange={(e) => setExpiresInHours(Number(e.target.value))}
-              className="bg-transparent border-none outline-none font-bold text-[11px] ml-1 cursor-pointer text-mg-text-0"
+              className="bg-transparent border-none outline-none font-bold text-[11px] ml-1 cursor-pointer text-mg-text-1"
             >
               <option value={24}>24 小时</option>
               <option value={72}>3 天</option>
@@ -96,8 +96,8 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
       <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg overflow-hidden shadow-sm">
         <div className="p-4 border-b border-mg-border/50 bg-mg-fill-0/20 flex items-center justify-between">
           <div className="space-y-0.5">
-            <div className="text-xs font-bold text-mg-text-0">快速邀请链接</div>
-            <span className="text-[10px] text-mg-text-2">将此链接发送给同事，他们点击后可直接申请加入</span>
+            <div className="text-xs font-bold text-mg-text-1">快速邀请链接</div>
+            <span className="text-[10px] text-mg-text-3">将此链接发送给同事，他们点击后可直接申请加入</span>
           </div>
           {canInvite && (
             <Button
@@ -111,8 +111,8 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
         </div>
         <div className="p-4">
           <div className="flex items-center gap-2">
-            <div className="flex-1 p-2.5 rounded-lg border border-mg-border/40 bg-mg-fill-0/30 font-mono text-[11px] text-mg-text-1 overflow-hidden text-overflow-ellipsis white-space-nowrap select-all">
-              {inviteLinkUrl ?? <span className="text-mg-text-3 italic">加载中…</span>}
+            <div className="flex-1 p-2.5 rounded-lg border border-mg-border/40 bg-mg-fill-0/30 font-mono text-[11px] text-mg-text-2 overflow-hidden text-overflow-ellipsis white-space-nowrap select-all">
+              {inviteLinkUrl ?? <span className="text-mg-text-4 italic">加载中…</span>}
             </div>
             <Button
               variant="brand"
@@ -133,12 +133,12 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
       {/* ── 邮箱邀请 ── */}
       <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg overflow-hidden shadow-sm">
         <div className="p-4 border-b border-mg-border/50 bg-mg-fill-0/20">
-          <div className="text-xs font-bold text-mg-text-0">邮箱邀请</div>
-          <span className="text-[10px] text-mg-text-2">直接向特定邮箱发送邀请邮件</span>
+          <div className="text-xs font-bold text-mg-text-1">邮箱邀请</div>
+          <span className="text-[10px] text-mg-text-3">直接向特定邮箱发送邀请邮件</span>
         </div>
         <div className="p-4 flex gap-2 items-end flex-wrap md:flex-nowrap">
           <div className="flex-1 min-w-[200px] space-y-1">
-            <label className="text-[10px] font-bold text-mg-text-1 uppercase tracking-wider block">成员邮箱</label>
+            <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">成员邮箱</label>
             <Input
               type="email"
               placeholder="example@company.com，多个用逗号分隔"

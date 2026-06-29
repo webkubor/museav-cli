@@ -72,7 +72,7 @@ export function ReferralInviteCard({
       <div className="flex items-center gap-3">
         <div className="flex-1 min-w-0 flex items-center gap-2 rounded-md border border-mg-border bg-mg-fill-0/40 px-4 py-2.5">
           <LuLink size={14} className="shrink-0 text-brand-base" />
-          <span className="truncate text-xs font-mono text-mg-text-1">{inviteLink || '—'}</span>
+          <span className="truncate text-xs font-mono text-mg-text-2">{inviteLink || '—'}</span>
         </div>
         <Button
           variant={copied ? 'outline' : 'brand'}
@@ -101,8 +101,8 @@ export function ReferralInviteCard({
               <LuLink size={17} />
             </div>
             <div className="min-w-0 space-y-1">
-              <p className="text-sm font-bold text-mg-text-0">{inviteLinkLabel}</p>
-              <p className="max-w-[52ch] text-xs leading-relaxed text-mg-text-2">{inviteHint}</p>
+              <p className="text-sm font-bold text-mg-text-1">{inviteLinkLabel}</p>
+              <p className="max-w-[52ch] text-xs leading-relaxed text-mg-text-3">{inviteHint}</p>
             </div>
           </div>
 
@@ -114,14 +114,14 @@ export function ReferralInviteCard({
             aria-label={`复制${inviteCodeLabel}`}
           >
             <LuTicketPercent size={13} className="shrink-0 text-brand-base" />
-            <span className="shrink-0 text-mg-text-2">{inviteCodeLabel}</span>
-            <span className="min-w-0 max-w-[9rem] truncate font-mono font-bold tracking-wider text-mg-text-0">
+            <span className="shrink-0 text-mg-text-3">{inviteCodeLabel}</span>
+            <span className="min-w-0 max-w-[9rem] truncate font-mono font-bold tracking-wider text-mg-text-1">
               {inviteCode || '—'}
             </span>
             {copiedCode ? (
               <LuCheck size={13} className="shrink-0 text-brand-base" />
             ) : (
-              <LuCopy size={13} className="shrink-0 text-mg-text-2 transition-colors group-hover:text-brand-base" />
+              <LuCopy size={13} className="shrink-0 text-mg-text-3 transition-colors group-hover:text-brand-base" />
             )}
           </button>
         </div>
@@ -129,7 +129,7 @@ export function ReferralInviteCard({
         <div className="flex min-h-[54px] flex-col gap-2 rounded-md border border-mg-border bg-mg-bg-1 p-2 transition-colors hover:border-brand-base/35 focus-within:border-brand-base/45 sm:flex-row sm:items-center sm:gap-0 sm:p-0">
           <div className="flex min-w-0 flex-1 items-center gap-2.5 px-2 py-1 sm:px-4 sm:py-3">
             <LuShare2 size={15} className="shrink-0 text-brand-base" />
-            <span className="truncate font-mono text-[13px] font-medium text-mg-text-0" title={inviteLink}>
+            <span className="truncate font-mono text-[13px] font-medium text-mg-text-1" title={inviteLink}>
               {inviteLink || '—'}
             </span>
           </div>
@@ -147,11 +147,11 @@ export function ReferralInviteCard({
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-mg-border bg-mg-fill-0/45 px-2.5 py-1 text-[11px] font-semibold text-mg-text-1">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-mg-border bg-mg-fill-0/45 px-2.5 py-1 text-[11px] font-semibold text-mg-text-2">
               <LuBadgePercent size={12} className="text-brand-base" />
               {realtimeLabel}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-mg-border bg-mg-fill-0/45 px-2.5 py-1 text-[11px] font-semibold text-mg-text-1">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-mg-border bg-mg-fill-0/45 px-2.5 py-1 text-[11px] font-semibold text-mg-text-2">
               <LuCheck size={12} className="text-brand-base" />
               {balanceLabel}
             </span>

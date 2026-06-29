@@ -39,7 +39,7 @@ export function CustomRequestPanel() {
                 ? m === 'GET'
                   ? 'bg-blue-500/15 border-blue-500/30 text-blue-500'
                   : 'bg-amber-500/15 border-amber-500/30 text-amber-500'
-                : 'border-mg-border text-mg-text-2 hover:border-mg-border/80',
+                : 'border-mg-border text-mg-text-3 hover:border-mg-border/80',
             ].join(' ')}
           >
             {m}
@@ -47,7 +47,7 @@ export function CustomRequestPanel() {
         ))}
 
         <input
-          className="flex-1 bg-transparent text-sm font-mono text-mg-text-0 placeholder:text-mg-text-2/60 outline-none border-none min-w-0"
+          className="flex-1 bg-transparent text-sm font-mono text-mg-text-1 placeholder:text-mg-text-3/60 outline-none border-none min-w-0"
           placeholder="粘贴路径或完整 URL，例如 /api/v1/auth/session"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
@@ -56,7 +56,7 @@ export function CustomRequestPanel() {
         />
 
         {state.duration != null && (
-          <span className="text-[10px] font-mono text-mg-text-2 shrink-0">{state.duration}ms</span>
+          <span className="text-[10px] font-mono text-mg-text-3 shrink-0">{state.duration}ms</span>
         )}
 
         <button
@@ -74,7 +74,7 @@ export function CustomRequestPanel() {
           <div className="absolute top-3 right-3 text-[10px] font-bold text-mg-success bg-mg-success/10 border border-mg-success/20 px-2 py-0.5 rounded-sm z-10">
             OK
           </div>
-          <pre className="m-0 p-5 text-xs font-mono text-mg-text-1 overflow-auto max-h-[400px] w-full min-w-0 leading-relaxed select-all">
+          <pre className="m-0 p-5 text-xs font-mono text-mg-text-2 overflow-auto max-h-[400px] w-full min-w-0 leading-relaxed select-all">
             {JSON.stringify(state.data, null, 2)}
           </pre>
         </div>

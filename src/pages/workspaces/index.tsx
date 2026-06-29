@@ -114,7 +114,7 @@ export default function WorkspacesPage() {
 
       {/* 卡片网格 */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-20 text-mg-text-2 gap-2">
+        <div className="flex items-center justify-center py-20 text-mg-text-3 gap-2">
           <svg className="animate-spin h-5 w-5 text-brand-base" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -136,12 +136,12 @@ export default function WorkspacesPage() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-mg-text-0 text-[15px] truncate">{ws.name}</h3>
+                    <h3 className="font-bold text-mg-text-1 text-[15px] truncate">{ws.name}</h3>
                     {ws.is_default && (
                       <Badge variant="warning" dot className="shrink-0">{t('workspaces.defaultBadge')}</Badge>
                     )}
                   </div>
-                  <span className="text-[11px] font-mono text-mg-text-2 mt-1 block truncate">{ws.workspace_id}</span>
+                  <span className="text-[11px] font-mono text-mg-text-3 mt-1 block truncate">{ws.workspace_id}</span>
                 </div>
                 <div className="shrink-0 w-9 h-9 rounded-md bg-brand-base/8 border border-brand-base/15 flex items-center justify-center text-brand-base">
                   <LuKey size={16} />
@@ -149,15 +149,15 @@ export default function WorkspacesPage() {
               </div>
 
               {ws.description && (
-                <p className="text-xs text-mg-text-2 leading-relaxed line-clamp-2">{ws.description}</p>
+                <p className="text-xs text-mg-text-3 leading-relaxed line-clamp-2">{ws.description}</p>
               )}
 
-              <div className="flex items-center gap-4 text-[11px] text-mg-text-2 font-medium mt-auto">
+              <div className="flex items-center gap-4 text-[11px] text-mg-text-3 font-medium mt-auto">
                 <span className="flex items-center gap-1"><LuShield size={12} />{formatDateTime(ws.created_at)}</span>
               </div>
 
               <div className="flex items-center justify-between pt-3 border-t border-mg-border/30">
-                <div className="flex items-center gap-3 text-[11px] text-mg-text-2">
+                <div className="flex items-center gap-3 text-[11px] text-mg-text-3">
                   <span className="flex items-center gap-1"><LuKey size={11} />API Keys</span>
                   <span className="flex items-center gap-1"><LuShield size={11} />Guardrails</span>
                   <span className="flex items-center gap-1"><LuActivity size={11} />Logs</span>
@@ -185,7 +185,7 @@ export default function WorkspacesPage() {
       >
         <div className="py-4 flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <div className="text-xs font-bold text-mg-text-1">{t('workspaces.modal.nameLabel')}</div>
+              <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.nameLabel')}</div>
               <Input 
                 value={name} 
                 onChange={e => setName(e.target.value)} 
@@ -193,7 +193,7 @@ export default function WorkspacesPage() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <div className="text-xs font-bold text-mg-text-1">{t('workspaces.modal.slugLabel')}</div>
+              <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.slugLabel')}</div>
               <Input 
                 value={slug} 
                 onChange={e => setSlug(e.target.value)} 
@@ -201,7 +201,7 @@ export default function WorkspacesPage() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <div className="text-xs font-bold text-mg-text-1">{t('workspaces.modal.descLabel')}</div>
+              <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.descLabel')}</div>
               <Input 
                 value={description} 
                 onChange={e => setDescription(e.target.value)} 

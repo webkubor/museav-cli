@@ -198,7 +198,7 @@ body[theme-mode='dark'] .models-experience-featured-shade {
   color: #fef9c3 !important;
 }
 
-.models-experience-featured .badge-interactive[class*='text-mg-text-1'] {
+.models-experience-featured .badge-interactive[class*='text-mg-text-2'] {
   background: rgba(255, 255, 255, 0.08) !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
   color: #e4e4e7 !important;

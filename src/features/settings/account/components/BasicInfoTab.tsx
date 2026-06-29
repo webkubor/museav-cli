@@ -70,10 +70,10 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
           onUpload={(file) => avatarMutation.mutate(file)}
         />
         <div>
-          <div style={{ fontWeight: 700, color: 'var(--mg-text-0)', fontSize: '16px', letterSpacing: '-0.01em' }}>
+          <div style={{ fontWeight: 700, color: 'var(--mg-text-1)', fontSize: '16px', letterSpacing: '-0.01em' }}>
             {profile.display_name || '—'}
           </div>
-          <div style={{ color: 'var(--mg-text-1)', fontSize: '13px', marginTop: '3.5px' }}>
+          <div style={{ color: 'var(--mg-text-2)', fontSize: '13px', marginTop: '3.5px' }}>
             {profile.email}
           </div>
         </div>
@@ -82,7 +82,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
       {/* 表单 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '480px' }}>
         <div>
-          <span style={{ fontSize: '12.5px', color: 'var(--mg-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <span style={{ fontSize: '12.5px', color: 'var(--mg-text-2)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             {t('account.info.emailLabel')}
           </span>
           <Input
@@ -90,13 +90,13 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             disabled
             style={{ backgroundColor: 'var(--mg-bg-1)', borderRadius: '8px', border: '1px solid var(--mg-border)' }}
           />
-          <span style={{ fontSize: '11.5px', color: 'var(--mg-text-2)', marginTop: '6px', display: 'block' }}>
+          <span style={{ fontSize: '11.5px', color: 'var(--mg-text-3)', marginTop: '6px', display: 'block' }}>
             {t('account.info.emailHint')}
           </span>
         </div>
 
         <div>
-          <span style={{ fontSize: '12.5px', color: 'var(--mg-text-1)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <span style={{ fontSize: '12.5px', color: 'var(--mg-text-2)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             {t('account.info.nameLabel')}
           </span>
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -119,7 +119,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
 
         {referral?.inviteLink && (
           <div className="pt-4 border-t border-mg-border/40">
-            <p className="text-xs font-bold text-mg-text-2 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <p className="text-xs font-bold text-mg-text-3 uppercase tracking-wider mb-3 flex items-center gap-1.5">
               <LuGift className="h-3.5 w-3.5 text-mg-brand" />
               {t('account.info.referralLabel') || '邀请链接'}
             </p>

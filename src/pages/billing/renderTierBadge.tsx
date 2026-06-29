@@ -17,7 +17,7 @@ function resolveTierKey(tierName: string): string {
 }
 
 export function renderTierBadge(tierName?: string) {
-  if (!tierName) return <span className="text-mg-text-3">—</span>
+  if (!tierName) return <span className="text-mg-text-4">—</span>
 
   const key = resolveTierKey(tierName)
   const cfg = TIER_STATUS_MAP[key]

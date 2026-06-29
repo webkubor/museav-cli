@@ -45,7 +45,7 @@ function MessageBubble({ msg }: { msg: Message }) {
         padding: '10px 14px',
         borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
         background: isUser ? 'var(--mg-fill-1)' : 'var(--mg-fill-0)',
-        color: 'var(--mg-text-0)',
+        color: 'var(--mg-text-1)',
         fontSize: 13,
         lineHeight: '1.6',
         wordBreak: 'break-word',
@@ -58,10 +58,10 @@ function MessageBubble({ msg }: { msg: Message }) {
             ? msg.content
             : <div className="cs-markdown"><Markdown>{msg.content}</Markdown></div>
           )
-          : (msg.role === 'agent' ? <span style={{ color: 'var(--mg-text-2)', fontStyle: 'italic' }}>思考中…</span> : '')
+          : (msg.role === 'agent' ? <span style={{ color: 'var(--mg-text-3)', fontStyle: 'italic' }}>思考中…</span> : '')
         }
       </div>
-      <span style={{ fontSize: 10, color: 'var(--mg-text-2)', marginTop: 4, padding: '0 4px' }}>
+      <span style={{ fontSize: 10, color: 'var(--mg-text-3)', marginTop: 4, padding: '0 4px' }}>
         {formatCsTimestamp(msg.timestamp)}
       </span>
     </div>
@@ -200,7 +200,7 @@ export function CustomerService() {
         }}
       >
         {isOpen
-          ? <LuX style={{ color: 'var(--mg-text-1)', fontSize: 20 }} />
+          ? <LuX style={{ color: 'var(--mg-text-2)', fontSize: 20 }} />
           : (
             <div style={{ position: 'relative' }}>
               <img src={logoSrc} alt="CS" style={{ width: 28, height: 28, objectFit: 'contain' }} />
@@ -244,8 +244,8 @@ export function CustomerService() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <img src={logoSrc} alt="Logo" style={{ width: 28, height: 28, objectFit: 'contain' }} />
               <div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--mg-text-0)', margin: 0 }}>智能客服</p>
-                <p style={{ fontSize: 11, color: 'var(--mg-text-1)', margin: 0 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--mg-text-1)', margin: 0 }}>智能客服</p>
+                <p style={{ fontSize: 11, color: 'var(--mg-text-2)', margin: 0 }}>
                   <StatusDot status={status} />
                   {status === 'online' ? '在线' : status === 'connecting' ? '连接中' : '离线'}
                 </p>
@@ -256,7 +256,7 @@ export function CustomerService() {
                 <Button size="small"  variant="ghost" icon={<LuRefreshCw />} onClick={reconnect} />
               )}
               <span style={{
-                fontSize: 10, color: 'var(--mg-text-2)',
+                fontSize: 10, color: 'var(--mg-text-3)',
                 padding: '2px 8px', borderRadius: 100,
                 background: conversationId ? 'var(--mg-fill-0)' : '#eff6ff',
                 border: `1px solid ${conversationId ? 'var(--mg-border)' : '#bfdbfe'}`,
@@ -271,7 +271,7 @@ export function CustomerService() {
             {messages.length === 0 && (
               <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
                 <img src={logoSrc} alt="" style={{ width: 48, height: 48, opacity: 0.2 }} />
-                <p style={{ fontSize: 12, color: 'var(--mg-text-2)', textAlign: 'center' }}>
+                <p style={{ fontSize: 12, color: 'var(--mg-text-3)', textAlign: 'center' }}>
                   有什么我可以帮助你的？
                 </p>
               </div>
@@ -301,7 +301,7 @@ export function CustomerService() {
                 placeholder={isLoading ? '正在思考中…' : '输入消息，Enter 发送'}
                 style={{
                   flex: 1, border: 'none', outline: 'none', background: 'transparent',
-                  resize: 'none', fontSize: 13, lineHeight: '1.5', color: 'var(--mg-text-0)',
+                  resize: 'none', fontSize: 13, lineHeight: '1.5', color: 'var(--mg-text-1)',
                   maxHeight: 100, overflowY: 'auto', fontFamily: 'inherit',
                   padding: 0, margin: 0,
                 }}
@@ -313,7 +313,7 @@ export function CustomerService() {
                 style={{
                   width: 32, height: 32, borderRadius: 8, border: 'none',
                   background: isLoading || inputValue.trim() ? 'var(--brand-base)' : 'var(--mg-fill-1)',
-                  color: isLoading || inputValue.trim() ? '#ffffff' : 'var(--mg-text-2)',
+                  color: isLoading || inputValue.trim() ? '#ffffff' : 'var(--mg-text-3)',
                   cursor: isLoading || inputValue.trim() ? 'pointer' : 'not-allowed',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0, transition: 'all 0.2s',

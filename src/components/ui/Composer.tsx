@@ -71,7 +71,7 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
             {activeChip ? (
               activeChip
             ) : (
-              <div className="inline-flex items-center gap-1.5 min-w-0 text-mg-text-1 mg-compact-badge">
+              <div className="inline-flex items-center gap-1.5 min-w-0 text-mg-text-2 mg-compact-badge">
                 <LuMessageSquare size={13} className="shrink-0" />
                 <span className="truncate">对话测试</span>
               </div>
@@ -115,7 +115,7 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
 
         {/* 底部备注提示 */}
         {note && (
-          <p className="margin-0 mt-1 text-center mg-compact-badge text-mg-text-2/80 tracking-wide select-none">
+          <p className="margin-0 mt-1 text-center mg-compact-badge text-mg-text-3/80 tracking-wide select-none">
             {note}
           </p>
         )}

@@ -259,7 +259,7 @@ body[theme-mode='dark'] .billing-glow-card .shimmer-light::after {
 
 /* ── 🪙 大额可消费合计与各卡片数字高级光效 ── */
 .spendable-amount-glow {
-  background: linear-gradient(135deg, var(--mg-text-0) 30%, var(--brand-base) 100%);
+  background: linear-gradient(135deg, var(--mg-text-1) 30%, var(--brand-base) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 2px 10px rgba(var(--brand-base-rgb), 0.1));
@@ -267,7 +267,7 @@ body[theme-mode='dark'] .billing-glow-card .shimmer-light::after {
 }
 
 body[theme-mode='dark'] .spendable-amount-glow {
-  background: linear-gradient(135deg, var(--mg-text-0) 40%, var(--brand-base) 100%);
+  background: linear-gradient(135deg, var(--mg-text-1) 40%, var(--brand-base) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 2px 14px var(--brand-glow));

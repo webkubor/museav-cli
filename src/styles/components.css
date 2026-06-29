@@ -164,7 +164,7 @@ body[theme-mode='dark'] .modern-btn-default:hover {
   @apply border bg-transparent;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   border-color: var(--mg-border) !important;
-  color: var(--mg-text-0) !important;
+  color: var(--mg-text-1) !important;
 }
 
 .modern-btn-outline:hover {
@@ -177,25 +177,25 @@ body[theme-mode='dark'] .modern-btn-default:hover {
   @apply transition-all;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   background-color: var(--mg-fill-0) !important;
-  color: var(--mg-text-1) !important;
+  color: var(--mg-text-2) !important;
 }
 
 .modern-btn-secondary:hover {
   transform: translateY(-1px);
   background-color: var(--mg-fill-1) !important;
-  color: var(--mg-text-0) !important;
+  color: var(--mg-text-1) !important;
 }
 
 .modern-btn-ghost {
   @apply transition-all;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  color: var(--mg-text-1) !important;
+  color: var(--mg-text-2) !important;
 }
 
 .modern-btn-ghost:hover {
   transform: translateY(-0.5px);
   background-color: var(--mg-fill-0) !important;
-  color: var(--mg-text-0) !important;
+  color: var(--mg-text-1) !important;
 }
 
 .modern-btn-link {
@@ -252,13 +252,13 @@ body[theme-mode='dark'] .modern-btn-default:hover {
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   border-color: var(--mg-border) !important;
   background-color: var(--mg-bg-1) !important;
-  color: var(--mg-text-0) !important;
+  color: var(--mg-text-1) !important;
   box-shadow: var(--shadow-sm) !important;
   box-sizing: border-box !important;
 }
 
 .modern-input-field::placeholder {
-  color: var(--mg-text-2) !important;
+  color: var(--mg-text-3) !important;
   opacity: 0.7;
 }
 
@@ -282,7 +282,7 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
 /* 获焦时前置/后置图标联动亮化 */
 .modern-input-wrapper:focus-within .modern-input-prefix,
 .modern-input-wrapper:focus-within .modern-input-suffix {
-  color: var(--mg-text-0) !important;
+  color: var(--mg-text-1) !important;
 }
 
 /* 🔍 液态玻璃搜索输入框 — 半透明 + 毛玻璃 + 立体浮起，深浅主题都清晰可见 */
@@ -391,7 +391,7 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
 .semi-select-option-hover {
   background-color: var(--mg-fill-0) !important;
   padding-left: 18px !important;
-  color: var(--mg-text-0) !important;
+  color: var(--mg-text-1) !important;
 }
 
 /* 交互型 Badge 徽章动效 */

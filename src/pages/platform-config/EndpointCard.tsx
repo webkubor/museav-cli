@@ -21,12 +21,12 @@ export function EndpointCard({ def, state, onCall }: EndpointCardProps) {
         }`}>
           {def.method}
         </span>
-        <code className="text-xs font-mono text-mg-text-0 flex-1 truncate select-all">
+        <code className="text-xs font-mono text-mg-text-1 flex-1 truncate select-all">
           {def.path}
         </code>
-        <span className="text-xs text-mg-text-2 shrink-0 font-medium">{def.label}</span>
+        <span className="text-xs text-mg-text-3 shrink-0 font-medium">{def.label}</span>
         {state?.duration != null && (
-          <span className="text-[10px] font-mono text-mg-text-2 shrink-0">
+          <span className="text-[10px] font-mono text-mg-text-3 shrink-0">
             {state.duration}ms
           </span>
         )}
@@ -55,7 +55,7 @@ export function EndpointCard({ def, state, onCall }: EndpointCardProps) {
           <div className="absolute top-3 right-3 text-[10px] font-bold text-mg-success bg-mg-success/10 border border-mg-success/20 px-2 py-0.5 rounded-sm">
             200 OK
           </div>
-          <pre className="m-0 p-5 text-xs font-mono text-mg-text-1 overflow-auto max-h-[360px] leading-relaxed shadow-inner select-all w-full min-w-0">
+          <pre className="m-0 p-5 text-xs font-mono text-mg-text-2 overflow-auto max-h-[360px] leading-relaxed shadow-inner select-all w-full min-w-0">
             {JSON.stringify(state.data, null, 2)}
           </pre>
         </div>

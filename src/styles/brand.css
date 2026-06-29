@@ -20,7 +20,7 @@
 }
 /* 词元：实色（对齐 Model） */
 .brand-wordmark-domestic-base {
-  color: var(--mg-text-0);
+  color: var(--mg-text-1);
 }
 /* 共生：紫色阶渐变 shimmer（对齐 Go） */
 .brand-wordmark-domestic-accent {
@@ -39,7 +39,7 @@
   font-weight: 800;
 }
 .brand-wordmark-global-base {
-  color: var(--mg-text-0);
+  color: var(--mg-text-1);
 }
 .brand-wordmark-global-go {
   margin-left: 0.08em;

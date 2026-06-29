@@ -23,7 +23,7 @@ const inputStyle: React.CSSProperties = {
   fontSize: '14px',
   outline: 'none',
   boxSizing: 'border-box',
-  color: 'var(--mg-text-0)',
+  color: 'var(--mg-text-1)',
   background: 'var(--mg-bg-0)',
 }
 
@@ -31,7 +31,7 @@ const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: '13px',
   fontWeight: 600,
-  color: 'var(--mg-text-1)',
+  color: 'var(--mg-text-2)',
   marginBottom: '6px',
 }
 
@@ -104,12 +104,12 @@ export default function ForgotPasswordPage() {
           >
             ✉️
           </div>
-          <p style={{ fontSize: '14px', color: 'var(--mg-text-1)', margin: 0 }}>
+          <p style={{ fontSize: '14px', color: 'var(--mg-text-2)', margin: 0 }}>
             重置链接已发送至
             <br />
             <strong>{getValues('email')}</strong>
           </p>
-          <p style={{ fontSize: '12px', color: 'var(--mg-text-2)', margin: 0 }}>
+          <p style={{ fontSize: '12px', color: 'var(--mg-text-3)', margin: 0 }}>
             链接在 {minutes} 分钟内有效，请尽快操作
           </p>
         </div>

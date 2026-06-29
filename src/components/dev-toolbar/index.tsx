@@ -32,7 +32,7 @@ function Seg<T extends string>({
           onClick={() => onChange(o.v)}
           className={cn(
             'px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors',
-            value === o.v ? 'bg-brand-base text-white' : 'text-mg-text-2 hover:text-mg-text-0'
+            value === o.v ? 'bg-brand-base text-white' : 'text-mg-text-3 hover:text-mg-text-1'
           )}
         >
           {o.l}
@@ -131,7 +131,7 @@ export function DevToolbar() {
       <button
         type="button"
         onClick={previewServerError}
-        className="rounded-full bg-mg-fill-0 px-3 py-1 text-[11px] font-bold text-mg-text-1 transition-colors hover:text-mg-text-0"
+        className="rounded-full bg-mg-fill-0 px-3 py-1 text-[11px] font-bold text-mg-text-2 transition-colors hover:text-mg-text-1"
       >
         预览报错
       </button>

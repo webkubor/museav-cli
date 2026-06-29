@@ -47,7 +47,7 @@ export default function ModelDetailPage() {
         type="button"
         onClick={() => navigate('/models')}
         className="inline-flex w-fit items-center gap-1 text-[13px] transition-colors hover:text-[color:var(--brand-base)]"
-        style={{ color: 'var(--mg-text-2)' }}
+        style={{ color: 'var(--mg-text-3)' }}
       >
         <LuChevronLeft size={15} />
         {isZh ? '返回模型广场' : 'Back to models'}
@@ -60,7 +60,7 @@ export default function ModelDetailPage() {
           ))}
         </div>
       ) : detailQuery.isError || !detail ? (
-        <div className="rounded-xl border p-8 text-center text-[13px]" style={{ borderColor: 'var(--mg-border)', color: 'var(--mg-text-2)' }}>
+        <div className="rounded-xl border p-8 text-center text-[13px]" style={{ borderColor: 'var(--mg-border)', color: 'var(--mg-text-3)' }}>
           {isZh ? '模型不存在或加载失败' : 'Model not found or failed to load'}
         </div>
       ) : (

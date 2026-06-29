@@ -64,7 +64,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="right" align="start" className="w-[220px] modal-glow-flow !overflow-visible">
-            <div className="px-2 py-1.5 text-[11px] font-bold text-mg-text-2 uppercase tracking-wider">
+            <div className="px-2 py-1.5 text-[11px] font-bold text-mg-text-3 uppercase tracking-wider">
               {t('header.switchWorkspace')}
             </div>
             {workspaces.map((ws) => (
@@ -72,7 +72,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
                 key={ws.workspace_id}
                 onClick={() => handleSwitchWorkspace(ws.workspace_id)}
               >
-                <LuFolderOpen size={13} className="mr-2 text-mg-text-2 shrink-0" />
+                <LuFolderOpen size={13} className="mr-2 text-mg-text-3 shrink-0" />
                 <span className="truncate flex-1">{ws.name}</span>
                 {ws.workspace_id === activeWorkspaceId && (
                   <LuCheck size={13} className="ml-2 text-brand-base shrink-0" />
@@ -81,7 +81,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
             ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate('/settings/workspace')}>
-              <LuSettings size={13} className="mr-2 text-mg-text-2 shrink-0" />
+              <LuSettings size={13} className="mr-2 text-mg-text-3 shrink-0" />
               <span>{t('header.workspaceMgmt')}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -100,7 +100,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
             className={cn(
               'group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer select-none outline-none w-full',
               'border border-mg-border/50 bg-mg-fill-0/20 hover:bg-mg-fill-0/50 hover:border-brand-base/30',
-              'text-mg-text-1 hover:text-mg-text-0 transition-all duration-200',
+              'text-mg-text-2 hover:text-mg-text-1 transition-all duration-200',
             )}
           >
             <LuFolderOpen
@@ -108,14 +108,14 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
               className="text-brand-base shrink-0 transition-transform duration-200 group-hover:scale-110"
             />
             <span
-              className="text-[13px] font-semibold text-mg-text-0 truncate flex-1 min-w-0"
+              className="text-[13px] font-semibold text-mg-text-1 truncate flex-1 min-w-0"
               title={activeWorkspace?.name ?? t('header.defaultWorkspace')}
             >
               {activeWorkspace?.name ?? t('header.defaultWorkspace')}
             </span>
             <LuChevronsUpDown
               size={13}
-              className="text-mg-text-3 group-hover:text-mg-text-1 transition-colors shrink-0"
+              className="text-mg-text-4 group-hover:text-mg-text-2 transition-colors shrink-0"
             />
           </div>
         </DropdownMenuTrigger>
@@ -124,7 +124,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
           className="w-[var(--radix-dropdown-menu-trigger-width)] modal-glow-flow !overflow-visible"
           sideOffset={4}
         >
-          <div className="px-2 py-1.5 text-[11px] font-bold text-mg-text-2 uppercase tracking-wider">
+          <div className="px-2 py-1.5 text-[11px] font-bold text-mg-text-3 uppercase tracking-wider">
             {t('header.switchWorkspace')}
           </div>
           {workspaces.map((ws) => (
@@ -136,7 +136,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
                 size={13}
                 className={cn(
                   'mr-2 shrink-0',
-                  ws.workspace_id === activeWorkspaceId ? 'text-brand-base' : 'text-mg-text-2',
+                  ws.workspace_id === activeWorkspaceId ? 'text-brand-base' : 'text-mg-text-3',
                 )}
               />
               <span
@@ -150,7 +150,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
                 {ws.name}
               </span>
               {ws.is_default && (
-                <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-mg-fill-1 text-mg-text-2 font-bold tracking-wide uppercase shrink-0 mx-1">
+                <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-mg-fill-1 text-mg-text-3 font-bold tracking-wide uppercase shrink-0 mx-1">
                   {t('header.default')}
                 </span>
               )}
@@ -161,7 +161,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
           ))}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => navigate('/settings/workspace')}>
-            <LuSettings size={13} className="mr-2 text-mg-text-2 shrink-0" />
+            <LuSettings size={13} className="mr-2 text-mg-text-3 shrink-0" />
             <span>{t('header.workspaceMgmt')}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>

@@ -157,7 +157,7 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-mg-border border-t-mg-primary" />
         </div>
       ) : guardrails.length === 0 ? (
-        <div className="rounded-lg border border-mg-border bg-mg-fill-0/40 px-4 py-5 text-sm text-mg-text-2">
+        <div className="rounded-lg border border-mg-border bg-mg-fill-0/40 px-4 py-5 text-sm text-mg-text-3">
           当前租户暂无可选择的护栏
         </div>
       ) : (
@@ -186,7 +186,7 @@ export function EditGuardrailModal({ open, onClose, workspaceId, apiKey }: Props
                 </div>
                 <div className="min-w-0 flex items-center gap-2">
                   <LuShieldCheck className="w-3.5 h-3.5 text-green-500 shrink-0" />
-                  <span className="text-sm font-semibold text-mg-text-0">{g.name}</span>
+                  <span className="text-sm font-semibold text-mg-text-1">{g.name}</span>
                   {g.is_default && (
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-sm bg-mg-primary/10 text-mg-primary">默认</span>
                   )}

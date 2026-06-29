@@ -35,10 +35,10 @@
   --shadow-lg: var(--shadow-lg);
   --shadow-focus: var(--shadow-focus);
   /* ModelGo 设计 Token — 文字/背景/边框/填充 */
-  --color-mg-text-0: var(--mg-text-0);
   --color-mg-text-1: var(--mg-text-1);
   --color-mg-text-2: var(--mg-text-2);
   --color-mg-text-3: var(--mg-text-3);
+  --color-mg-text-4: var(--mg-text-4);
   --color-mg-bg-0: var(--mg-bg-0);
   --color-mg-bg-1: var(--mg-bg-1);
   --color-mg-bg-2: var(--mg-bg-2);

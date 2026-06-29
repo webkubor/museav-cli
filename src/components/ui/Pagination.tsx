@@ -53,7 +53,7 @@ export type PaginationProps =
 const WRAP =
   'flex items-center justify-between mg-panel border-t border-mg-border gap-4 flex-wrap select-none'
 const PAGE_BADGE =
-  'mg-text-code text-mg-text-1 bg-mg-fill-0 border border-mg-border px-[var(--mg-control-px-sm)] py-[var(--mg-space-1)] rounded-sm'
+  'mg-text-code text-mg-text-2 bg-mg-fill-0 border border-mg-border px-[var(--mg-control-px-sm)] py-[var(--mg-space-1)] rounded-sm'
 
 export function Pagination(props: PaginationProps) {
   const { t } = useTranslation()
@@ -75,7 +75,7 @@ export function Pagination(props: PaginationProps) {
     const totalPages = Math.max(1, Math.ceil(total / pageSize))
     return (
       <div className={WRAP}>
-        <span className="mg-text-caption text-mg-text-2">{t('common.pagination.total', { count: total })}</span>
+        <span className="mg-text-caption text-mg-text-3">{t('common.pagination.total', { count: total })}</span>
         <div className="flex items-center gap-2">
           <Button
             size="sm"
@@ -105,7 +105,7 @@ export function Pagination(props: PaginationProps) {
   const { page, hasMore, onPrev, onNext, loading, total } = props
   return (
     <div className={WRAP}>
-      <span className="mg-text-caption text-mg-text-2">
+      <span className="mg-text-caption text-mg-text-3">
         {typeof total === 'number' ? t('common.pagination.total', { count: total }) : ''}
       </span>
       <div className="flex items-center gap-2">

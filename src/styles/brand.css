@@ -17,12 +17,19 @@
   font-family: var(--font-sans);
   font-weight: 900;
   letter-spacing: 0.08em;
+}
+/* 词元：实色（对齐 Model） */
+.brand-wordmark-domestic-base {
+  color: var(--mg-text-0);
+}
+/* 共生：紫色阶渐变 shimmer（对齐 Go） */
+.brand-wordmark-domestic-accent {
+  margin-left: 0.04em;
   background: linear-gradient(90deg, #4f46e5 0%, #6366f1 20%, #8b5cf6 40%, #d946ef 50%, #8b5cf6 60%, #6366f1 80%, #4f46e5 100%);
   background-size: 300% auto;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  text-shadow: 0 0 0.6px #6366f1, 0 0 0.6px #6366f1;
   animation: brand-shimmer 4s linear infinite;
 }
 

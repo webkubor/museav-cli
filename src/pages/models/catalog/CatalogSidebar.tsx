@@ -1,9 +1,11 @@
 /**
- * 左侧筛选栏（chip 风格，参考国外官网 SharedModelFilterSidebar）
- * 维度：模态 / 模型系列(family) / 功能标签(tags) / 上下文长度。
- * 选中 key 形如 "dim:code"，由父级 index.tsx 统一过滤。
+ * 左侧筛选栏（对齐设计稿）：
+ * 模型系列(family，竖向列表，单选) / 功能标签(tags，chip，多选) /
+ * 上下文长度(单选) / 价格类型(单选)。分组标题可折叠，超长分组「展开更多」。
+ * 选中态全部写在父级的 selected: string[]，key 形如 "dim:code"。
  */
-import { LuBoxes, LuLayers, LuTag, LuRuler } from 'react-icons/lu'
+import { useState } from 'react'
+import { LuBoxes, LuTag, LuRuler, LuCircleDollarSign, LuChevronDown } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { resolveVendorBrand } from '@/features/models/components/vendor-icons'
@@ -11,99 +13,141 @@ import type { CatalogModelTag } from '@/types'
 import type { CatalogModelFamily } from '@/interfaces/catalog'
 
 const CTX_CHIPS = [
-  { code: '8k', label: '≥8k' }, { code: '32k', label: '≥32k' }, { code: '128k', label: '≥128k' },
-  { code: '256k', label: '≥256k' }, { code: '1m', label: '≥1M' },
+  { code: '8k', label: '>8K' }, { code: '32k', label: '>32K' }, { code: '128k', label: '>128K' },
+  { code: '256k', label: '>256K' }, { code: '1m', label: '>1M' },
 ]
-const MODALITY_CHIPS = [
-  { code: 'text', zh: '文本', en: 'Text' }, { code: 'image', zh: '图像', en: 'Image' },
-  { code: 'audio', zh: '音频', en: 'Audio' }, { code: 'video', zh: '视频', en: 'Video' },
+const PRICE_CHIPS = [
+  { code: 'free', zh: '免费', en: 'Free' }, { code: 'paid', zh: '付费', en: 'Paid' },
 ]
+const FAMILY_PREVIEW = 7
+const TAG_PREVIEW = 8
 
 interface Props {
   families: CatalogModelFamily[]
   tags: CatalogModelTag[]
   selected: string[]
-  onToggle: (key: string) => void
+  setSelected: React.Dispatch<React.SetStateAction<string[]>>
   isZh: boolean
 }
 
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+export function CatalogSidebar({ families, tags, selected, setSelected, isZh }: Props) {
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [showAllFamilies, setShowAllFamilies] = useState(false)
+  const [showAllTags, setShowAllTags] = useState(false)
+
+  const has = (k: string) => selected.includes(k)
+  // 单选维度：替换同维度的 key（null = 清空该维度，回到「全部」）
+  const pickOne = (dim: string, code: string | null) =>
+    setSelected((prev) => [...prev.filter((k) => !k.startsWith(`${dim}:`)), ...(code ? [`${dim}:${code}`] : [])])
+  // 多选维度：toggle
+  const toggle = (key: string) =>
+    setSelected((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
+
+  const familyActive = selected.find((k) => k.startsWith('family:'))?.split(':')[1]
+  const ctxActive = selected.find((k) => k.startsWith('ctx:'))?.split(':')[1]
+  const priceActive = selected.find((k) => k.startsWith('price:'))?.split(':')[1]
+
+  const shownFamilies = showAllFamilies ? families : families.slice(0, FAMILY_PREVIEW)
+  const shownTags = showAllTags ? tags : tags.slice(0, TAG_PREVIEW)
+
+  const toggleCollapse = (key: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] transition-colors duration-200"
-      style={
-        active
-          ? { background: 'color-mix(in oklab, var(--brand-base) 14%, transparent)', borderColor: 'color-mix(in oklab, var(--brand-base) 50%, transparent)', color: 'var(--brand-base)' }
-          : { background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)', color: 'var(--mg-text-1)' }
-      }
-    >
-      {children}
-    </button>
+    <aside className="mg-side">
+      <Group id="family" icon={LuBoxes} title={isZh ? '模型系列' : 'Model Family'} collapsed={collapsed} onToggle={toggleCollapse}>
+        <div className="mg-side-list">
+          <button type="button" className={`mg-side-row ${!familyActive ? 'is-active' : ''}`} onClick={() => pickOne('family', null)}>
+            {isZh ? '全部系列' : 'All families'}
+          </button>
+          {shownFamilies.map((f) => {
+            const label = isZh ? f.name_zh || f.code : f.name_en || f.code
+            const iconVendor = [f.code, f.name_en, f.name_zh].find((v) => resolveVendorBrand(v))
+            const active = familyActive === f.code
+            return (
+              <button key={f.code} type="button" className={`mg-side-row ${active ? 'is-active' : ''}`} onClick={() => pickOne('family', active ? null : f.code)}>
+                {iconVendor && <ModelIcon model={{ display_name: label, vendor: iconVendor }} size={16} rounded="rounded-sm" />}
+                <span className="truncate">{label}</span>
+              </button>
+            )
+          })}
+          {families.length > FAMILY_PREVIEW && (
+            <button type="button" className="mg-side-more" onClick={() => setShowAllFamilies((v) => !v)}>
+              {showAllFamilies ? (isZh ? '收起' : 'Less') : (isZh ? '展开更多' : 'More')}
+              <LuChevronDown size={13} className={showAllFamilies ? 'rotate-180' : ''} />
+            </button>
+          )}
+        </div>
+      </Group>
+
+      {tags.length > 0 && (
+        <Group id="tags" icon={LuTag} title={isZh ? '功能标签' : 'Tags'} collapsed={collapsed} onToggle={toggleCollapse}>
+          <div className="mg-side-chips">
+            {shownTags.map((tg) => (
+              <Chip key={tg.code} active={has(`tag:${tg.code}`)} onClick={() => toggle(`tag:${tg.code}`)}>
+                {isZh ? tg.name_zh : tg.name_en}
+              </Chip>
+            ))}
+            {tags.length > TAG_PREVIEW && (
+              <button type="button" className="mg-side-more" onClick={() => setShowAllTags((v) => !v)}>
+                {showAllTags ? (isZh ? '收起' : 'Less') : (isZh ? '展开更多' : 'More')}
+                <LuChevronDown size={13} className={showAllTags ? 'rotate-180' : ''} />
+              </button>
+            )}
+          </div>
+        </Group>
+      )}
+
+      <Group id="ctx" icon={LuRuler} title={isZh ? '上下文长度' : 'Context'} collapsed={collapsed} onToggle={toggleCollapse}>
+        <div className="mg-side-chips">
+          <Chip active={!ctxActive} onClick={() => pickOne('ctx', null)}>{isZh ? '全部' : 'All'}</Chip>
+          {CTX_CHIPS.map((c) => (
+            <Chip key={c.code} active={ctxActive === c.code} onClick={() => pickOne('ctx', ctxActive === c.code ? null : c.code)}>
+              {c.label}
+            </Chip>
+          ))}
+        </div>
+      </Group>
+
+      <Group id="price" icon={LuCircleDollarSign} title={isZh ? '价格类型' : 'Pricing'} collapsed={collapsed} onToggle={toggleCollapse}>
+        <div className="mg-side-chips">
+          <Chip active={!priceActive} onClick={() => pickOne('price', null)}>{isZh ? '全部' : 'All'}</Chip>
+          {PRICE_CHIPS.map((c) => (
+            <Chip key={c.code} active={priceActive === c.code} onClick={() => pickOne('price', priceActive === c.code ? null : c.code)}>
+              {isZh ? c.zh : c.en}
+            </Chip>
+          ))}
+        </div>
+      </Group>
+    </aside>
   )
 }
 
-function Group({ icon: Icon, title, children }: { icon: IconType; title: string; children: React.ReactNode }) {
+function Group({
+  id, icon: Icon, title, collapsed, onToggle, children,
+}: { id: string; icon: IconType; title: string; collapsed: Set<string>; onToggle: (k: string) => void; children: React.ReactNode }) {
+  const isCollapsed = collapsed.has(id)
   return (
-    <div>
-      <div className="mb-3 flex items-center gap-2 text-[13px] font-medium" style={{ color: 'var(--mg-text-1)' }}>
+    <div className="mg-side-group">
+      <button type="button" className="mg-side-head" onClick={() => onToggle(id)} aria-expanded={!isCollapsed}>
         <Icon size={15} />
         <span>{title}</span>
-      </div>
-      <div className="flex flex-wrap gap-2">{children}</div>
+        <LuChevronDown size={15} className={`mg-side-head-chevron ${isCollapsed ? '-rotate-90' : ''}`} />
+      </button>
+      {!isCollapsed && children}
     </div>
   )
 }
 
-export function CatalogSidebar({ families, tags, selected, onToggle, isZh }: Props) {
-  const has = (k: string) => selected.includes(k)
+function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <aside className="flex flex-col gap-7">
-      <Group icon={LuLayers} title={isZh ? '模态' : 'Modality'}>
-        {MODALITY_CHIPS.map((c) => (
-          <Chip key={c.code} active={has(`mod:${c.code}`)} onClick={() => onToggle(`mod:${c.code}`)}>
-            {isZh ? c.zh : c.en}
-          </Chip>
-        ))}
-      </Group>
-
-      {families.length > 0 && (
-        <Group icon={LuBoxes} title={isZh ? '模型系列' : 'Model Family'}>
-          {families.map((f) => {
-            const label = isZh ? f.name_zh || f.code : f.name_en || f.code
-            // 从 code / 名称解析厂商品牌，能解析到就加小图标
-            const iconVendor = [f.code, f.name_en, f.name_zh].find((v) => resolveVendorBrand(v))
-            return (
-              <Chip key={f.code} active={has(`family:${f.code}`)} onClick={() => onToggle(`family:${f.code}`)}>
-                {iconVendor && (
-                  <ModelIcon model={{ display_name: label, vendor: iconVendor }} size={14} rounded="rounded-sm" className="shrink-0" />
-                )}
-                {label}
-              </Chip>
-            )
-          })}
-        </Group>
-      )}
-
-      {tags.length > 0 && (
-        <Group icon={LuTag} title={isZh ? '功能标签' : 'Tags'}>
-          {tags.map((tg) => (
-            <Chip key={tg.code} active={has(`tag:${tg.code}`)} onClick={() => onToggle(`tag:${tg.code}`)}>
-              {isZh ? tg.name_zh : tg.name_en}
-            </Chip>
-          ))}
-        </Group>
-      )}
-
-      <Group icon={LuRuler} title={isZh ? '上下文' : 'Context'}>
-        {CTX_CHIPS.map((c) => (
-          <Chip key={c.code} active={has(`ctx:${c.code}`)} onClick={() => onToggle(`ctx:${c.code}`)}>
-            {c.label}
-          </Chip>
-        ))}
-      </Group>
-    </aside>
+    <button type="button" onClick={onClick} aria-pressed={active} className={`mg-side-chip ${active ? 'is-active' : ''}`}>
+      {children}
+    </button>
   )
 }

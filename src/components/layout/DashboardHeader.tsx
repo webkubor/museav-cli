@@ -14,7 +14,7 @@ import {
 } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSiteLogo } from '@/config/brand-assets'
+import { Brand } from '@/components/brand/Brand'
 import { useLangStore } from '@/store/use-brand-store'
 import { getMarketConfig } from '@/config/market'
 import { useAuth } from '@/components/auth/use-auth'
@@ -61,7 +61,6 @@ export const DashboardHeader: React.FC = () => {
   const { t } = useTranslation()
   const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setActiveWorkspaceId, isAuthenticated } = useAuthStore()
   const { signOut } = useAuth()
-  const siteLogo = useSiteLogo()
   const activeTenantType = tenants.find((t) => t.tenant_id === activeTenantId)?.type ?? 'personal'
   const isNonPersonal = activeTenantType !== 'personal'
 
@@ -413,23 +412,8 @@ export const DashboardHeader: React.FC = () => {
           onClick={() => navigate(isAuthenticated ? '/dashboard' : '/models')}
           title={t('nav.dashboard')}
         >
-          {/* Logo：32px，漂浮 + 品牌色光晕呼吸（对齐官网 LogoPremiumM） */}
-          <span className="brand-logo-premium shrink-0" style={{ width: 32, height: 32 }}>
-            <img src={siteLogo} alt="ModelGo" className="h-8 w-auto object-contain block" />
-          </span>
-          {/* Wordmark：双色品牌字 + 脉冲（对齐官网 BrandWordmark） */}
-          {market === 'global' ? (
-            <span className="brand-wordmark brand-wordmark-global text-base">
-              <span className="brand-wordmark-global-base">Model</span>
-              <span className="brand-wordmark-global-go">Go</span>
-              <span className="brand-wordmark-pulse" aria-hidden />
-            </span>
-          ) : (
-            <span className="brand-wordmark brand-wordmark-domestic text-base">
-              <span>词元共生</span>
-              <span className="brand-wordmark-pulse" aria-hidden />
-            </span>
-          )}
+          {/* 品牌锁定区：全站复用同一组件，按 market 切换 */}
+          <Brand />
         </div>
 
         {isAuthenticated && (

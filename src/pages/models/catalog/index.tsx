@@ -13,6 +13,7 @@ import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import type { CatalogModelItem } from '@/types'
 import { CatalogCard } from './CatalogCard'
+import { CatalogHero } from './CatalogHero'
 import { CatalogSidebar } from './CatalogSidebar'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
 import './catalog.css'
@@ -42,13 +43,13 @@ export default function ModelsCatalogPage() {
   const sortRef = useRef<HTMLDivElement>(null)
 
   const sortLabels: Record<SortKey, string> = isZh
-    ? { default: '推荐', popular: '热门', newest: '最新', cheapest: '最便宜' }
-    : { default: 'Default', popular: 'Popular', newest: 'Newest', cheapest: 'Cheapest' }
+    ? { default: '推荐排序', popular: '热门', newest: '最新', cheapest: '最便宜' }
+    : { default: 'Recommended', popular: 'Popular', newest: 'Newest', cheapest: 'Cheapest' }
 
   const selectedFamily = selected.find((k) => k.startsWith('family:'))?.split(':')[1]
-  const selectedModalities = selected.filter((k) => k.startsWith('mod:')).map((k) => k.split(':')[1])
   const selectedTags = selected.filter((k) => k.startsWith('tag:')).map((k) => k.split(':')[1])
   const selectedCtx = selected.find((k) => k.startsWith('ctx:'))?.split(':')[1]
+  const selectedPrice = selected.find((k) => k.startsWith('price:'))?.split(':')[1]
 
   const modelsQuery = useQuery({
     queryKey: ['catalog-models', { family: selectedFamily }],
@@ -86,9 +87,13 @@ export default function ModelsCatalogPage() {
         m.model_id.toLowerCase().includes(q) ||
         (m.provider ?? '').toLowerCase().includes(q)
       )) return false
-      if (selectedModalities.length && !selectedModalities.every((mod) => m.modalities?.includes(mod))) return false
       if (selectedTags.length && !selectedTags.every((tag) => m.tags?.includes(tag))) return false
       if (selectedCtx && CTX_THRESHOLDS[selectedCtx] && (m.context_length ?? 0) < CTX_THRESHOLDS[selectedCtx]) return false
+      if (selectedPrice) {
+        const free = Number(m.pricing?.input_per_1m ?? 0) === 0 && Number(m.pricing?.output_per_1m ?? 0) === 0
+        if (selectedPrice === 'free' && !free) return false
+        if (selectedPrice === 'paid' && free) return false
+      }
       return true
     })
     switch (sort) {
@@ -103,11 +108,8 @@ export default function ModelsCatalogPage() {
         break
     }
     return list
-  }, [allModels, search, selectedModalities, selectedTags, selectedCtx, sort])
+  }, [allModels, search, selectedTags, selectedCtx, selectedPrice, sort])
 
-  const toggle = (key: string) => {
-    setSelected((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
-  }
   const reset = () => { setSelected([]); setSearch(''); setSort('default') }
 
   const handleGoPlayground = (modelId: string, e?: React.MouseEvent) => {
@@ -119,16 +121,6 @@ export default function ModelsCatalogPage() {
 
   return (
     <div className="models-catalog-page">
-      {/* 标题 */}
-      <div className="mb-7">
-        <h1 className="catalog-title text-[34px] font-bold tracking-tight" style={{ color: 'var(--mg-text-0)' }}>
-          {isZh ? '模型广场' : 'Models'}
-        </h1>
-        <p className="mt-1.5 text-[14px]" style={{ color: 'var(--mg-text-2)' }}>
-          {isZh ? '一个 API，接入主流大模型' : 'One API, access leading models'}
-        </p>
-      </div>
-
       {/* 移动端筛选按钮 */}
       <button
         type="button"
@@ -144,61 +136,65 @@ export default function ModelsCatalogPage() {
       {/* 主体：左 sidebar + 右内容 */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[260px_1fr] lg:items-start">
         <div className={`models-sticky ${filtersOpen ? 'block rounded-2xl border p-4 lg:border-0 lg:p-0' : 'hidden lg:block'}`} style={filtersOpen ? { background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' } : undefined}>
-          <CatalogSidebar families={families} tags={tags} selected={selected} onToggle={toggle} isZh={isZh} />
+          <CatalogSidebar families={families} tags={tags} selected={selected} setSelected={setSelected} isZh={isZh} />
         </div>
 
         <div>
-          {/* 搜索 + 排序 + 计数（吸顶卡片） */}
-          <div className="models-sticky-card mb-6 rounded-2xl border p-4" style={{ background: 'var(--mg-bg-0)', borderColor: 'color-mix(in oklab, var(--brand-base) 14%, var(--mg-border))', boxShadow: '0 10px 40px -16px color-mix(in oklab, var(--brand-base) 30%, transparent)' }}>
-            <div className="flex items-center gap-3">
-              <div className="catalog-search-wrap relative flex-1">
-                <LuSearch size={14} className="catalog-search-icon absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder={isZh ? '搜索模型名、API ID 或厂商' : 'Search model, API ID or provider'}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="catalog-search-input h-10 w-full rounded-full border pl-10 pr-4 text-[13px] outline-none"
-                  style={{ background: 'var(--mg-bg-1)', color: 'var(--mg-text-0)' }}
-                />
-              </div>
-              <div className="relative" ref={sortRef}>
-                <button
-                  type="button"
-                  onClick={() => setSortOpen((v) => !v)}
-                  className="flex h-10 items-center gap-1.5 rounded-full border px-4 text-[13px] transition-colors"
-                  style={{ background: 'var(--mg-bg-1)', borderColor: 'var(--mg-border)', color: 'var(--mg-text-1)' }}
-                >
-                  {sortLabels[sort]}
-                  <LuChevronDown size={11} className={sortOpen ? 'rotate-180' : ''} />
-                </button>
-                {sortOpen && (
-                  <div className="absolute right-0 top-full z-20 mt-1.5 min-w-[140px] overflow-hidden rounded-xl border py-1 shadow-lg" style={{ background: 'var(--mg-bg-2)', borderColor: 'var(--mg-border)' }}>
-                    {(['default', 'popular', 'newest', 'cheapest'] as SortKey[]).map((key) => (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => { setSort(key); setSortOpen(false) }}
-                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-[12.5px] transition-colors hover:bg-[color:var(--mg-fill-1)]"
-                        style={sort === key ? { color: 'var(--brand-base)' } : { color: 'var(--mg-text-1)' }}
-                      >
-                        {sort === key ? <LuCheck size={11} /> : <span className="w-[11px]" />}
-                        {sortLabels[key]}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-            {!modelsQuery.isLoading && !modelsQuery.isError && (
-              <>
-                <div className="mb-3 mt-4 h-px w-full" style={{ background: 'var(--mg-border)' }} />
-                <p className="text-[12.5px]" style={{ color: 'var(--mg-text-2)' }}>
-                  {isZh ? `共 ${visibleModels.length} 个模型` : `${visibleModels.length} models`}
-                </p>
-              </>
-            )}
+          {/* 标题 */}
+          <div className="mb-6">
+            <h1 className="catalog-title text-[34px] font-bold tracking-tight" style={{ color: 'var(--mg-text-0)' }}>
+              {isZh ? '模型广场' : 'Models'}
+            </h1>
+            <p className="mt-1.5 text-[14px]" style={{ color: 'var(--mg-text-2)' }}>
+              {isZh ? '一个 API，接入主流大模型' : 'One API, access leading models'}
+            </p>
           </div>
+
+          {/* 顶部数据卡 + 热门模型 */}
+          {!modelsQuery.isLoading && !modelsQuery.isError && allModels.length > 0 && (
+            <div className="mb-6">
+              <CatalogHero models={allModels} isZh={isZh} onPickHot={setSearch} />
+            </div>
+          )}
+
+          {/* 搜索 + 排序（吸顶） */}
+          <div className="models-toolbar">
+            <div className="catalog-search-wrap relative flex-1">
+              <LuSearch size={16} className="catalog-search-icon absolute left-4 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder={isZh ? '搜索模型名、API ID、供应商或描述关键词…' : 'Search model, API ID, provider or keyword…'}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="mg-search-input"
+              />
+            </div>
+            <div className="relative" ref={sortRef}>
+              <button type="button" onClick={() => setSortOpen((v) => !v)} className="mg-sort-btn">
+                {sortLabels[sort]}
+                <LuChevronDown size={13} className={sortOpen ? 'rotate-180' : ''} />
+              </button>
+              {sortOpen && (
+                <div className="absolute right-0 top-full z-20 mt-1.5 min-w-[140px] overflow-hidden rounded-xl border py-1 shadow-lg" style={{ background: 'var(--mg-bg-2)', borderColor: 'var(--mg-border)' }}>
+                  {(['default', 'popular', 'newest', 'cheapest'] as SortKey[]).map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => { setSort(key); setSortOpen(false) }}
+                      className="flex w-full items-center gap-2 px-4 py-2 text-left text-[12.5px] transition-colors hover:bg-[color:var(--mg-fill-1)]"
+                      style={sort === key ? { color: 'var(--brand-base)' } : { color: 'var(--mg-text-1)' }}
+                    >
+                      {sort === key ? <LuCheck size={11} /> : <span className="w-[11px]" />}
+                      {sortLabels[key]}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          {!modelsQuery.isLoading && !modelsQuery.isError && (
+            <p className="mg-count">{isZh ? `共 ${visibleModels.length} 个模型` : `${visibleModels.length} models`}</p>
+          )}
 
           {/* 列表状态 */}
           {modelsQuery.isLoading ? (

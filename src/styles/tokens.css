@@ -123,38 +123,33 @@
    浅色 / 深色相同分组、相同顺序，对照清晰
    ══════════════════════════════════════════════════════════════ */
 
-/* 浅色（默认）— 跟随品牌色的冷白底 */
+/* 浅色（默认）— bg/文字/填充/语义引用共享 design-tokens（深浅由共享 [data-theme] 自动切） */
 :root {
-  /* 背景层级 */
-  --site-bg:  #f4f5fb;   /* 页面底层 — 品牌色微偏向 */
-  --card-bg:  #fbfbfe;   /* 卡片面 — 冷白 */
-  --mg-bg-0:  #fbfbfe;   /* 主卡片 — 冷白 */
-  --mg-bg-0-rgb: 251, 251, 254;
-  --mg-bg-1:  #f4f5fb;   /* 页面背景 — 品牌色微偏向 */
-  --mg-bg-2:  #eceef7;   /* 悬浮卡片 / Dropdown — 轻紫灰 */
-  --mg-bg-3:  #e1e4f0;   /* Modal / Tooltip 顶层 — 紫灰 */
+  /* 背景层级 — 引用共享 surface/bg（名字保留，80+ 文件在用） */
+  --site-bg:  var(--mg-bg);          /* 页面底层 */
+  --card-bg:  var(--mg-surface);     /* 卡片面 */
+  --mg-bg-0:  var(--mg-surface);     /* 主卡片 */
+  --mg-bg-0-rgb: 255, 255, 255;      /* surface 的 RGB（共享无 rgb，浅色=#ffffff，供玻璃态 rgba()） */
+  --mg-bg-1:  var(--mg-bg);          /* 页面背景 */
+  --mg-bg-2:  var(--mg-surface-2);   /* 悬浮卡片 / Dropdown */
+  --mg-bg-3:  var(--mg-surface-3);   /* Modal / Tooltip 顶层 */
 
-  /* 文字层级 */
-  --mg-text-0: #0f172a;  /* 主文字 */
-  --mg-text-1: #475569;  /* 次要 */
-  --mg-text-2: #64748b;  /* 辅助标签 — 4.6:1 on #fbfbfe, WCAG AA */
-  --mg-text-3: #94a3b8;  /* 禁用 / 装饰 — 原 #cbd5e1 太淡 */
+  /* 文字层级 — 控制台 text-0=主，整体对共享 text-1/2/3/4 错位 +1 */
+  --mg-text-0: var(--mg-text-1);  /* 主文字 */
+  --mg-text-1: var(--mg-text-2);  /* 次要 */
+  --mg-text-2: var(--mg-text-3);  /* 辅助标签 */
+  --mg-text-3: var(--mg-text-4);  /* 禁用 / 装饰 */
 
-  /* 边框与填充 */
+  /* 边框 — 保留控制台市场色调（不在本轮 token 收敛范围）。
+     填充 --mg-fill-0/1/2 同名共享，不在此覆盖（自引用会失效），直接用共享值 */
   --mg-border: rgba(71, 57, 146, 0.09);
-  --mg-fill-0: rgba(103, 67, 253, 0.035);
-  --mg-fill-1: rgba(103, 67, 253, 0.06);
-  --mg-fill-2: rgba(103, 67, 253, 0.095);
 
   /* 代码块面（payload 查看器） */
   --mg-code-bg:   #e9ecf1;
   --mg-code-text: #1f2937;
 
-  /* 语义色 */
-  --mg-success: #00d68f;
-  --mg-danger:  #ef4444;
-  --mg-warning: #f59e0b;
-  --mg-info:    #3b82f6; /* 信息/图表第三色（蓝） */
+  /* 语义色 — success/warning/info 用共享（不在此覆盖，避免自引用死循环）；danger 名保留，值引用共享 error */
+  --mg-danger:  var(--mg-error);
 
   /* 阴影 */
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
@@ -167,37 +162,17 @@
   --ambient-particle-opacity: 0.72;
 }
 
-/* 国内市场：浅紫冷白，保证浅色主题与 CN 靛紫协调 */
+/* 国内市场：边框/代码块/网格的品牌色调（bg/fill/语义交共享，本块只留控制台特有项） */
 :root,
 [data-market='domestic'] {
-  --site-bg:  #f4f5fb;
-  --card-bg:  #fbfbfe;
-  --mg-bg-0:  #fbfbfe;
-  --mg-bg-0-rgb: 251, 251, 254;
-  --mg-bg-1:  #f4f5fb;
-  --mg-bg-2:  #eceef7;
-  --mg-bg-3:  #e1e4f0;
   --mg-border: rgba(71, 57, 146, 0.09);
-  --mg-fill-0: rgba(103, 67, 253, 0.035);
-  --mg-fill-1: rgba(103, 67, 253, 0.06);
-  --mg-fill-2: rgba(103, 67, 253, 0.095);
   --mg-code-bg: #eef0f8;
   --grid-color: rgba(103, 67, 253, 0.025);
 }
 
-/* 国际市场：浅绿冷白，保证浅色主题与 GO 翠绿协调 */
+/* 国际市场：边框/代码块/网格的品牌色调 */
 [data-market='global'] {
-  --site-bg:  #f1f7f5;
-  --card-bg:  #fbfefd;
-  --mg-bg-0:  #fbfefd;
-  --mg-bg-0-rgb: 251, 254, 253;
-  --mg-bg-1:  #f1f7f5;
-  --mg-bg-2:  #e8f1ef;
-  --mg-bg-3:  #dce8e5;
   --mg-border: rgba(20, 91, 78, 0.09);
-  --mg-fill-0: rgba(29, 195, 155, 0.035);
-  --mg-fill-1: rgba(29, 195, 155, 0.06);
-  --mg-fill-2: rgba(29, 195, 155, 0.095);
   --mg-code-bg: #eaf3f1;
   --grid-color: rgba(29, 195, 155, 0.025);
 }
@@ -206,36 +181,13 @@
 
 [theme-mode='dark'],
 body[theme-mode='dark'] {
-  /* 背景层级 (温和炭灰，防止画面过黑过闷) */
-  --site-bg:  #18181c;   /* 页面底层 — 温和暗炭灰 */
-  --card-bg:  #232329;   /* 卡片背景 — 稍亮的炭灰 */
-  --mg-bg-0:  #232329;   /* 主背景 */
-  --mg-bg-0-rgb: 35, 35, 41;
-  --mg-bg-1:  #18181c;   /* 页面底层 */
-  --mg-bg-2:  #2e2e36;   /* 悬浮层 (Dropdown / 菜单等) */
-  --mg-bg-3:  #3b3b44;   /* 顶层面板 (Modal / Tooltip 等) */
-
-  /* 文字层级 (冷银白，高可读且消除发黄的脏感) */
-  --mg-text-0: #f4f4f5;  /* 主文字 (Zinc-100) */
-  --mg-text-1: #d4d4d8;  /* 次要文字 (Zinc-300) */
-  --mg-text-2: #a1a1aa;  /* 辅助文字 (Zinc-400, 对比度 5.2:1 符合 WCAG AA 规范) */
-  --mg-text-3: #52525b;  /* 禁用 / 装饰文字 (Zinc-600) */
-
-  /* 边框与填充 (纯净中性透亮) */
-  --mg-border: rgba(255, 255, 255, 0.08);
-  --mg-fill-0: rgba(255, 255, 255, 0.025);
-  --mg-fill-1: rgba(255, 255, 255, 0.05);
-  --mg-fill-2: rgba(255, 255, 255, 0.08);
+  /* bg-0/1/2/3、text-0/1/2/3、fill-*、success/warning/info、border、danger
+     全部交共享 [data-theme='dark']（theme.ts 已同步设 data-theme=dark），本块只保留控制台特有项 */
+  --mg-bg-0-rgb: 35, 35, 41;  /* surface 暗值的 RGB，供玻璃态 rgba() */
 
   /* 代码块面（payload 查看器）：清透极黑 */
   --mg-code-bg:   #131316;
   --mg-code-text: #e4e4e7;
-
-  /* 语义色（莫兰迪降饱和：鼠尾草绿 / 陶土红 / 赭黄 / 雾霾蓝） */
-  --mg-success: #8fae9b;
-  --mg-danger:  #c98b85;
-  --mg-warning: #cda971;
-  --mg-info:    #8aa0c4; /* 信息/图表第三色（莫兰迪雾蓝） */
 
   /* 阴影 — 减弱硬黑阴影，改用与背景相融合的柔和烟灰阴影，加极细 1px 中性高光 */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);

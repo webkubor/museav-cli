@@ -12,8 +12,25 @@ interface ModelDetailPanelProps {
   vendorHint?: string
 }
 
+const MOD_LABEL: Record<string, string> = { text: '文本', image: '图像', audio: '音频', video: '视频' }
+const MOD_LABEL_EN: Record<string, string> = { text: 'text', image: 'image', audio: 'audio', video: 'video' }
+
+/** description 为空时，用真实字段拼一句事实性简介（不杜撰能力） */
+function autoSummary(detail: CatalogModelDetail, isZh: boolean): string {
+  const v = detail.vendor || ''
+  const mods = (detail.modalities ?? []).filter((m) => m in MOD_LABEL)
+  const modText = mods.length ? mods.map((m) => (isZh ? MOD_LABEL[m] : MOD_LABEL_EN[m])).join(isZh ? '/' : ', ') : (isZh ? '通用' : 'general')
+  const ctx = detail.context_length ? formatContextLength(detail.context_length) : ''
+  const free = Number(detail.pricing?.input_per_1m ?? 0) === 0 && Number(detail.pricing?.output_per_1m ?? 0) === 0
+  if (isZh) {
+    return `${v ? v + ' 出品的' : ''}${modText}模型${ctx ? `，${ctx} 上下文窗口` : ''}${free ? '，当前免费可用' : ''}。详细简介待补充。`
+  }
+  return `${v ? v + ' ' : ''}${modText} model${ctx ? `, ${ctx} context window` : ''}${free ? ', currently free' : ''}. Full description coming soon.`
+}
+
 export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailPanelProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const isZh = i18n.language.startsWith('zh')
   const vendor = detail.vendor || vendorHint || ''
   return (
     <div className="flex flex-col gap-5">
@@ -61,14 +78,12 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
 
         <TabsContent value="overview">
           <div className="pt-5 flex flex-col gap-5">
-            {/* 描述 */}
-            {detail.description && (
-              <div className="bg-[var(--mg-fill-0)] rounded-md border border-[var(--mg-border)] mg-panel">
-                <p className="m-0 mg-text-body text-[var(--mg-text-1)]">
-                  {detail.description}
-                </p>
-              </div>
-            )}
+            {/* 描述（无则用真实字段拼事实性简介兜底，避免空白） */}
+            <div className="bg-[var(--mg-fill-0)] rounded-md border border-[var(--mg-border)] mg-panel">
+              <p className="m-0 mg-text-body text-[var(--mg-text-1)]">
+                {detail.description?.trim() || autoSummary(detail, isZh)}
+              </p>
+            </div>
 
             {/* 计费详情 */}
             <div>

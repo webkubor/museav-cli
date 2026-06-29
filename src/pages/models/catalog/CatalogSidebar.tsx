@@ -5,6 +5,8 @@
  */
 import { LuBoxes, LuLayers, LuTag, LuRuler } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
+import { ModelIcon } from '@/features/models/components/ModelIcon'
+import { resolveVendorBrand } from '@/features/models/components/vendor-icons'
 import type { CatalogModelTag } from '@/types'
 import type { CatalogModelFamily } from '@/interfaces/catalog'
 
@@ -69,11 +71,19 @@ export function CatalogSidebar({ families, tags, selected, onToggle, isZh }: Pro
 
       {families.length > 0 && (
         <Group icon={LuBoxes} title={isZh ? '模型系列' : 'Model Family'}>
-          {families.map((f) => (
-            <Chip key={f.code} active={has(`family:${f.code}`)} onClick={() => onToggle(`family:${f.code}`)}>
-              {isZh ? f.name_zh || f.code : f.name_en || f.code}
-            </Chip>
-          ))}
+          {families.map((f) => {
+            const label = isZh ? f.name_zh || f.code : f.name_en || f.code
+            // 从 code / 名称解析厂商品牌，能解析到就加小图标
+            const iconVendor = [f.code, f.name_en, f.name_zh].find((v) => resolveVendorBrand(v))
+            return (
+              <Chip key={f.code} active={has(`family:${f.code}`)} onClick={() => onToggle(`family:${f.code}`)}>
+                {iconVendor && (
+                  <ModelIcon model={{ display_name: label, vendor: iconVendor }} size={14} rounded="rounded-sm" className="shrink-0" />
+                )}
+                {label}
+              </Chip>
+            )
+          })}
         </Group>
       )}
 

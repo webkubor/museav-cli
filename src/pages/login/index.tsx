@@ -76,10 +76,15 @@ function clearRememberedLogin() {
  */
 export default function LoginPage() {
   const market = useMarket()
-  return market === 'domestic' ? <PhoneAuth /> : <EmailLoginPage />
+  // 国内默认手机号入口，底部「邮箱登录」快捷入口切到邮箱表单；切换为本地态，不改路由。
+  const [emailMode, setEmailMode] = useState(false)
+  if (market === 'domestic' && !emailMode) {
+    return <PhoneAuth onUseEmail={() => setEmailMode(true)} />
+  }
+  return <EmailLoginPage onUsePhone={market === 'domestic' ? () => setEmailMode(false) : undefined} />
 }
 
-function EmailLoginPage() {
+function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -209,15 +214,23 @@ function EmailLoginPage() {
       title="欢迎回来"
       subtitle="登录到你的 ModelGo 账号"
       footer={
-        <span>
-          没有账号？{' '}
-          <Link
-            to="/signup"
-            className="auth-redirect-link"
-          >
-            免费注册
-          </Link>
-        </span>
+        onUsePhone ? (
+          <span>
+            <button type="button" onClick={onUsePhone} className="auth-redirect-link">
+              使用手机号登录 / 注册
+            </button>
+          </span>
+        ) : (
+          <span>
+            没有账号？{' '}
+            <Link
+              to="/signup"
+              className="auth-redirect-link"
+            >
+              免费注册
+            </Link>
+          </span>
+        )
       }
     >
       {step === 'email' ? (

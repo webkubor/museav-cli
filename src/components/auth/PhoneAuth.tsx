@@ -31,7 +31,7 @@ const schema = z.object({
 
 type Fields = z.infer<typeof schema>
 
-export function PhoneAuth() {
+export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -114,7 +114,19 @@ export function PhoneAuth() {
       : '/'
 
   return (
-    <AuthLayout title="登录 / 注册" subtitle="使用手机号验证码登录，未注册将自动创建账号">
+    <AuthLayout
+      title="登录 / 注册"
+      subtitle="使用手机号验证码登录，未注册将自动创建账号"
+      footer={
+        onUseEmail ? (
+          <span>
+            <button type="button" onClick={onUseEmail} className="auth-redirect-link">
+              邮箱登录
+            </button>
+          </span>
+        ) : undefined
+      }
+    >
       <form className="auth-form-container auth-fade-in" onSubmit={handleSubmit(onSubmit)}>
         <div>
           <label className="modern-auth-label">手机号</label>

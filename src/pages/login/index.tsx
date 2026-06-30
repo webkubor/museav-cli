@@ -216,8 +216,9 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
       footer={
         onUsePhone ? (
           <span>
+            其他方式？{' '}
             <button type="button" onClick={onUsePhone} className="auth-redirect-link">
-              使用手机号登录 / 注册
+              使用手机号登录
             </button>
           </span>
         ) : (

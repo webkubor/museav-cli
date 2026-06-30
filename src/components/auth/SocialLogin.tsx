@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/Button'
 import { useMarket } from '@/hooks/useMarket'
+import { useLangStore } from '@/store/use-brand-store'
 import { oauthAuthorizeUrl, type OAuthProvider } from '@/services/auth'
 import { useOAuthMethods } from '@/hooks/use-platform-config'
 import { OAUTH_ICONS, OAUTH_LABELS } from '@/constants/oauth'
@@ -10,6 +11,7 @@ interface Props {
 
 export function SocialLogin({ redirectTo }: Props) {
   const market = useMarket()
+  const lang = useLangStore((s) => s.lang)
   const oauthMethods = useOAuthMethods()
 
   const MARKET_FALLBACK: Record<string, string[]> = {
@@ -26,7 +28,7 @@ export function SocialLogin({ redirectTo }: Props) {
     <>
       <div className="social-divider">
         <div className="social-divider-line" />
-        <span className="social-divider-text">OR</span>
+        <span className="social-divider-text">{lang === 'zh' ? '或' : 'OR'}</span>
         <div className="social-divider-line" />
       </div>
 

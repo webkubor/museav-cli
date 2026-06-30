@@ -116,12 +116,13 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
   return (
     <AuthLayout
       title="登录 / 注册"
-      subtitle="使用手机号验证码登录，未注册将自动创建账号"
+      subtitle="未注册的手机号将自动注册并登录"
       footer={
         onUseEmail ? (
           <span>
+            其他方式？{' '}
             <button type="button" onClick={onUseEmail} className="auth-redirect-link">
-              邮箱登录
+              使用邮箱登录
             </button>
           </span>
         ) : undefined

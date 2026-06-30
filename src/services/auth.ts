@@ -30,6 +30,26 @@ export function checkLoginEmail(email: string) {
   return post<CheckLoginEmailResult>('auth/email/check', { email })
 }
 
+// ─── 手机号一键登录/注册（国内 domestic） ──────────────────────
+// 国内市场登录与注册统一入口：手机号 + 短信验证码，验证通过即建号或登录。
+
+/** 发送登录/注册短信验证码（5 分钟有效） */
+export function sendSmsCode(phone: string) {
+  return post<AuthMailTTLResponse>('auth/sms-code/send', { phone })
+}
+
+/**
+ * 手机号一键登录/注册：验证短信验证码，通过则自动建号或登录并下发 session cookie。
+ *
+ * TODO(后端待定)：当前 Swagger 只有 auth/sms-code/verify（仅校验、不下发 session）。
+ * 待后端就绪后把下面的 path/body 换成真正「verify 即登录」的端点即可，
+ * 成功后前端复用 getSession() + setAuth 落地，与邮箱登录同源。
+ * ponytail: 单一接桩点，后端就绪只改这一处。
+ */
+export function phoneLoginRegister(phone: string, code: string) {
+  return post<LoginResult>('auth/sms-code/login', { phone, code })
+}
+
 /** 邮箱密码登录 */
 export function login(body: LoginRequest) {
   return post<LoginResult>('auth/login', body)

@@ -15,7 +15,9 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { SocialLogin } from '@/components/auth/SocialLogin'
+import { PhoneAuth } from '@/components/auth/PhoneAuth'
 import { SliderCaptcha } from '@/components/auth/SliderCaptcha'
+import { useMarket } from '@/hooks/useMarket'
 import { checkLoginEmail, login, getSession } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import {
@@ -68,7 +70,16 @@ function clearRememberedLogin() {
 /**
  * 极雅自适应登录页面组件 (Tailwind 样式抽离与全新 shadcn/ui 架构)
  */
+/**
+ * 登录页入口：国内（domestic）走手机号一键登录/注册，海外走邮箱登录。
+ * 在此切换而非组件内部 early-return，避免市场运行时切换导致 hooks 数量不一致。
+ */
 export default function LoginPage() {
+  const market = useMarket()
+  return market === 'domestic' ? <PhoneAuth /> : <EmailLoginPage />
+}
+
+function EmailLoginPage() {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)

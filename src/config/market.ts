@@ -54,7 +54,7 @@ const configs: Record<Market, MarketConfig> = {
     apiDomain: isTestOrDev()
       ? 'test.modelgo.com'
       : (import.meta.env.VITE_DOMESTIC_API_DOMAIN || 'api.modelgo.com'),
-    companyName: '词元共生',
+    companyName: 'ModelGo',
     icp: import.meta.env.VITE_ICP || null,
     locales: ['zh'],
     defaultLocale: 'zh',

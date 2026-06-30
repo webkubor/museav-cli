@@ -1,6 +1,6 @@
 # modelgo-console-web · 客户中心
 
-覆盖国内（`console.modelgo.com` · 词元共生）和海外（`console.modelgo.ai` · ModelGo）两个市场的控制台与鉴权入口。运行时通过 `VITE_MARKET` 或域名自动判断市场，切换对应的品牌、主题色、API 域名和文档地址。
+覆盖国内（`console.modelgo.com` · ModelGo）和海外（`console.modelgo.ai` · ModelGo）两个市场的控制台与鉴权入口。运行时通过 `VITE_MARKET` 或域名自动判断市场，切换对应的品牌、主题色、API 域名和文档地址。
 
 **负责人：** webkubor
 
@@ -69,7 +69,7 @@ getMarket() → 'domestic' | 'global'
 
 | 市场 | 品牌名 | 主色 |
 | ---- | ------ | ---- |
-| domestic（国内） | 词元共生 | 靛紫 `#6743fd` |
+| domestic（国内） | ModelGo | 靛紫 `#6743fd` |
 | global（海外） | ModelGo | 翠绿 `#00d68f` |
 
 所有组件只使用语义 token（`--brand-base`、`--brand-light` 等），禁止硬编码颜色值。

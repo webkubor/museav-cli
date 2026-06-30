@@ -1,6 +1,6 @@
 /**
  * 品牌锁定区（logo + wordmark）—— 全站唯一来源。
- * 按 data-market 渲染：海外 Model(实色)+Go(渐变)，国内 词元(实色)+共生(渐变)，
+ * 按 data-market 渲染：海外 Model(实色)+Go(渐变)，国内 Model(实色)+Go(渐变)，
  * 均带漂浮光晕 logo + 脉冲点。任何头部/页脚/落地页需要"ModelGo 品牌字"时直接复用本组件，
  * 不要再各处内联，避免风格漂移。样式见 src/styles/brand.css（已全局 import）。
  */
@@ -34,8 +34,8 @@ export function Brand({ logoSize = 32, textClassName = 'text-base', className }:
         </span>
       ) : (
         <span className={cn('brand-wordmark brand-wordmark-domestic', textClassName)}>
-          <span className="brand-wordmark-domestic-base">词元</span>
-          <span className="brand-wordmark-domestic-accent">共生</span>
+          <span className="brand-wordmark-domestic-base">Model</span>
+          <span className="brand-wordmark-domestic-accent">Go</span>
           <span className="brand-wordmark-pulse" aria-hidden />
         </span>
       )}

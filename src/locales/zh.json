@@ -1264,7 +1264,7 @@
     "greetingGlobal": "Hello, {{name}}",
     "greetingDefaultDomestic": "你好，开发者",
     "greetingDefaultGlobal": "Hello, Developer",
-    "brandNameDomestic": "词元共生",
+    "brandNameDomestic": "ModelGo",
     "brandNameGlobal": "ModelGo",
     "subTitleDomestic": "高性能、高合规的多模型路由聚合平台",
     "subTitleGlobal": "Unified High-Performance Intelligent AI Routing Platform",

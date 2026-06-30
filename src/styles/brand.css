@@ -12,17 +12,17 @@
   letter-spacing: -0.02em;
 }
 
-/* 国内「词元共生」：紫色阶渐变 shimmer */
+/* 国内「ModelGo」：紫色阶渐变 shimmer */
 .brand-wordmark-domestic {
   font-family: var(--font-sans);
   font-weight: 900;
   letter-spacing: 0.08em;
 }
-/* 词元：实色（对齐 Model） */
+/* Model：实色（对齐 Model） */
 .brand-wordmark-domestic-base {
   color: var(--mg-text-1);
 }
-/* 共生：紫色阶渐变 shimmer（对齐 Go） */
+/* Go：紫色阶渐变 shimmer（对齐 Go） */
 .brand-wordmark-domestic-accent {
   margin-left: 0.04em;
   background: linear-gradient(90deg, #4f46e5 0%, #6366f1 20%, #8b5cf6 40%, #d946ef 50%, #8b5cf6 60%, #6366f1 80%, #4f46e5 100%);

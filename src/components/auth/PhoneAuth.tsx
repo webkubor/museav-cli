@@ -139,6 +139,7 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
             placeholder="请输入手机号"
             autoComplete="tel"
             autoFocus
+            prefix={<span className="text-sm text-mg-text-2">+86</span>}
           />
           {errors.phone && <p className="auth-error-message">{errors.phone.message}</p>}
         </div>

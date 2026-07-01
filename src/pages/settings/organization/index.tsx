@@ -7,11 +7,13 @@ import { OrgListSection } from './components/OrgListSection'
 import { OrgManagePanel } from './components/OrgManagePanel'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { appToast } from '@/lib/app-toast'
+import { useTranslation } from 'react-i18next'
 
 export default function OrganizationSettingsPage() {
   const { activeTenantId, tenants, setActiveWorkspaceId, setAuth } = useAuthStore()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const firstEnterpriseId = tenants.find((t) => t.type !== 'personal')?.tenant_id ?? null
   const initialId = tenants.find((t) => t.tenant_id === activeTenantId)?.type !== 'personal'
     ? (activeTenantId ?? null)
@@ -67,7 +69,7 @@ export default function OrganizationSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="企业管理" />
+      <PageHeader title={t('enterprise.title')} description={t('enterprise.subtitle')} />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* 左侧窄栏 */}

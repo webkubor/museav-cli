@@ -32,6 +32,10 @@ vi.mock('@/services/organizations', () => ({
   createOrganization: (body: unknown) => createOrganization(body),
 }))
 
+vi.mock('@/services/workspaces', () => ({
+  listWorkspaces: () => Promise.resolve({ items: [] }),
+}))
+
 vi.mock('@/hooks/use-permissions', () => ({
   usePermissions: () => ({
     hasPermission: () => true,
@@ -45,8 +49,12 @@ vi.mock('@/lib/app-toast', () => ({
   appToast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }))
 
+import i18n from '@/i18n'
 import { useAuthStore } from '@/store/auth'
 import OrganizationSettingsPage from '@/pages/settings/organization'
+
+// 页面文案走 i18n，测试统一用中文断言（jsdom 默认 navigator.language 会解析成 en）
+i18n.changeLanguage('zh')
 
 const account: AccountBrief = {
   account_id: 'acc_1',
@@ -188,7 +196,7 @@ describe('OrganizationSettingsPage', () => {
   it('switches to the personal tenant and returns home after dissolving an organization', async () => {
     renderPage()
 
-    fireEvent.click(await screen.findByRole('button', { name: '基本信息' }))
+    fireEvent.click(await screen.findByRole('button', { name: '企业信息' }))
     fireEvent.click(await screen.findByRole('button', { name: '解散组织' }))
     fireEvent.change(screen.getByPlaceholderText(orgTenant.name), { target: { value: orgTenant.name } })
     fireEvent.click(screen.getByRole('button', { name: '确认解散' }))

@@ -1,0 +1,83 @@
+import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
+import { LuLayers, LuArrowUpRight } from 'react-icons/lu'
+import { getUsageSummary } from '@/services/usage'
+import { useAuthStore } from '@/store/auth'
+import { Card } from '@/components/ui/Card'
+import { Money } from '@/components/ui/Money'
+import { abbreviateNumber, rangeForGranularity, type Granularity } from './shared'
+
+/**
+ * 模块 6：工作空间明细。getUsageSummary(group_by:'workspace') 取 groups。
+ * 说明：groups 只含 label/spend/requests/tokens，后端未返回工作空间描述，
+ * 次级行用「请求 · Tokens」代替描述展示。
+ */
+export function WorkspaceBreakdownSection({ granularity }: { granularity: Granularity }) {
+  const { t } = useTranslation()
+  const activeTenantId = useAuthStore((s) => s.activeTenantId)
+  const navigate = useNavigate()
+
+  const range = useMemo(() => rangeForGranularity(granularity), [granularity])
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['workbench', 'summary', 'workspace', activeTenantId, granularity],
+    queryFn: () => getUsageSummary({ from: range.from, to: range.to, group_by: 'workspace' }),
+    enabled: !!activeTenantId,
+    staleTime: 60_000,
+  })
+
+  const groups = (data?.groups ?? []).slice(0, 6)
+
+  return (
+    <Card className="p-6 flex flex-col">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-md bg-brand-base/10 text-brand-base">
+            <LuLayers size={18} />
+          </span>
+          <div>
+            <h3 className="font-bold text-base text-mg-text-1 m-0">{t('dashboard.workbench.workspaces.title')}</h3>
+            <p className="text-xs text-mg-text-3 mt-0.5 m-0">{t('dashboard.workbench.workspaces.subtitle')}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate('/usage')}
+          className="inline-flex items-center gap-1 text-xs font-bold text-brand-base hover:text-brand-deep cursor-pointer"
+        >
+          {t('dashboard.workbench.workspaces.viewMore')}
+          <LuArrowUpRight size={13} />
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex flex-col gap-2">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="animate-pulse bg-mg-fill-2 rounded-sm h-12 w-full" />
+          ))}
+        </div>
+      ) : groups.length > 0 ? (
+        <div className="flex flex-col divide-y divide-mg-border">
+          {groups.map((g) => (
+            <div key={g.key} className="flex items-center justify-between gap-3 py-3">
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold text-mg-text-1">{g.label || g.key}</div>
+                <div className="mt-0.5 text-xs text-mg-text-3 font-mono">
+                  {`${abbreviateNumber(g.requests)} · ${abbreviateNumber(g.tokens)} tokens`}
+                </div>
+              </div>
+              <Money amount={g.spend?.amount} currency={g.spend?.currency} size="md" tone="brand" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <LuLayers size={22} className="mb-2 text-mg-text-3" />
+          <p className="text-xs text-mg-text-3 font-medium">{t('dashboard.workbench.workspaces.empty')}</p>
+        </div>
+      )}
+    </Card>
+  )
+}

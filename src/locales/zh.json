@@ -1222,6 +1222,86 @@
       "requests": "请求数",
       "empty": "暂无分布数据",
       "requestsLabel": "调用频次 (Requests)"
+    },
+    "workbench": {
+      "view": {
+        "enterprise": "企业视图",
+        "mine": "我的视图",
+        "mineTodo": "我的视图数据按成员过滤能力待后端支持，暂展示组织口径数据"
+      },
+      "granularity": {
+        "day": "按天",
+        "month": "按月"
+      },
+      "quickStart": {
+        "title": "快速开始",
+        "subtitle": "三步完成接入，开始调用模型",
+        "dismiss": "关闭",
+        "step1Title": "创建 API Key",
+        "step1Desc": "生成用于鉴权的密钥凭证",
+        "step1Action": "去创建",
+        "step2Title": "配置客户端",
+        "step2Desc": "选择接入方式并填入 Base URL 与 Key",
+        "step2Action": "立即接入",
+        "step3Title": "发送测试请求",
+        "step3Desc": "发起一次调用并在日志中确认结果",
+        "step3Action": "查看日志",
+        "cliHint": "或用 CLI 一键安装接入",
+        "cliCopied": "命令已复制到剪贴板",
+        "cliCopyFailed": "复制失败，请手动复制"
+      },
+      "metrics": {
+        "requests": "总请求",
+        "spend": "总费用",
+        "tokens": "总 Tokens",
+        "balance": "账户余额"
+      },
+      "trend": {
+        "title": "用量趋势",
+        "metric": {
+          "requests": "请求量",
+          "spend": "费用",
+          "tokens": "Tokens"
+        },
+        "unit": {
+          "requests": "次",
+          "spend": "",
+          "tokens": "tokens"
+        },
+        "empty": "暂无趋势数据"
+      },
+      "workspaces": {
+        "title": "工作空间明细",
+        "subtitle": "按工作空间聚合的本期消费",
+        "viewMore": "查看更多",
+        "empty": "暂无工作空间用量",
+        "noDesc": "暂无描述"
+      },
+      "rankings": {
+        "models": "模型用量",
+        "members": "成员用量",
+        "apiKeys": "API Keys 用量",
+        "viewMore": "查看更多",
+        "empty": "暂无数据",
+        "membersTodo": "成员用量排行待后端提供 usage/rankings/accounts 端点"
+      },
+      "recent": {
+        "title": "最近调用",
+        "viewAll": "查看全部",
+        "time": "时间",
+        "status": "状态",
+        "model": "模型",
+        "owner": "归属",
+        "tokens": "Token",
+        "cost": "费用",
+        "latency": "延迟",
+        "empty": "暂无调用记录",
+        "emptyHint": "创建 API Key 并发送第一次请求后，调用记录将在此展示"
+      },
+      "empty": {
+        "lowBalance": "账户余额不足，请及时充值以免影响调用",
+        "noApiKey": "还没有 API Key，先创建一个开始接入"
+      }
     }
   },
   "dashboardTop": {

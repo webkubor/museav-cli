@@ -46,8 +46,12 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
     handleSubmit,
     getValues,
     trigger,
+    watch,
     formState: { errors },
   } = useForm<Fields>({ resolver: zodResolver(schema), mode: 'onTouched' })
+
+  const phoneValue = watch('phone')
+  const isPhoneValid = /^1[3-9]\d{9}$/.test(phoneValue ?? '')
 
   useEffect(() => {
     if (!isSessionLoading && isAuthenticated) {
@@ -56,13 +60,13 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
   }, [isAuthenticated, isSessionLoading, navigate, redirectAfterLogin])
 
   const handleSendCode = async () => {
-    // 仅校验手机号字段后再发码
-    if (!(await trigger('phone'))) return
+    // 校验/限流失败必须 throw：VerificationCodeButton 仅在 onSend 不抛错时才启动倒计时，
+    // 静默 return 会导致「没真正发码却显示已发送并锁 60s」的假倒计时。
+    if (!(await trigger('phone'))) throw new Error('请填写有效的手机号')
     const phone = getValues('phone')
     const decision = checkAuthGuard({ action: 'phone-code', subject: phone })
     if (!decision.allowed) {
-      setServerError(decision.message ?? '操作过于频繁，请稍后再试')
-      return
+      throw new Error(decision.message ?? '操作过于频繁，请稍后再试')
     }
     setServerError('')
     try {
@@ -153,7 +157,7 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
             maxLength={6}
             placeholder="6 位短信验证码"
             autoComplete="one-time-code"
-            suffix={<VerificationCodeButton onSend={handleSendCode} />}
+            suffix={<VerificationCodeButton onSend={handleSendCode} disabled={!isPhoneValid} />}
           />
           {errors.code && <p className="auth-error-message">{errors.code.message}</p>}
         </div>

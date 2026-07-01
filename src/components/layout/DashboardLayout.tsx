@@ -21,7 +21,6 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { DashboardHeader } from './DashboardHeader'
 import { DashboardSidebar } from './DashboardSidebar'
-import { LowBalanceAlert } from './LowBalanceAlert'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { CustomerService } from '@/components/customer-service'
 import { TopUpModal } from '@/pages/billing/TopUpModal'
@@ -169,8 +168,6 @@ export function DashboardLayout() {
       <div className="dashboard-global-bottom-bg" aria-hidden="true" />
       <DashboardHeader />
       <div className={cn("shimmer-line", navigating && "navigating")} />
-      <LowBalanceAlert />
-
 
       <div className="flex flex-1 min-h-0 relative z-10 overflow-hidden">
         <DashboardSidebar

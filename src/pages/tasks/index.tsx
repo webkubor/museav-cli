@@ -476,7 +476,7 @@ export default function TasksPage() {
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
             placeholder="搜索任务 ID / 模型"
-            className="mg-control-md w-60 rounded-lg border border-mg-border bg-mg-bg-1 pl-8 pr-3 mg-text-body focus:border-brand-base focus:outline-none focus:ring-1 focus:ring-brand-glow/30 text-mg-text-1 placeholder:text-mg-text-3"
+            className="mg-control-md w-60 rounded-lg border border-mg-border bg-mg-fill-0 pl-8 pr-3 mg-text-body focus:border-brand-base focus:outline-none focus:ring-1 focus:ring-brand-glow/30 text-mg-text-1 placeholder:text-mg-text-3"
           />
         </div>
 

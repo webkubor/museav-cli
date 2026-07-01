@@ -92,7 +92,7 @@ export function QuickStartSection() {
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {steps.map((step, i) => (
-            <div key={step.title} className="flex flex-col rounded-lg border border-mg-border bg-mg-bg-1/50 p-4">
+            <div key={step.title} className="flex flex-col rounded-lg border border-mg-border bg-mg-fill-0 p-4">
               <div className="flex items-center gap-2">
                 <span
                   className="flex h-8 w-8 items-center justify-center rounded-md text-white shadow-sm"
@@ -118,7 +118,7 @@ export function QuickStartSection() {
           ))}
         </div>
 
-        <div className="mt-4 flex flex-col gap-2 rounded-lg border border-mg-border bg-mg-bg-1/50 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-4 flex flex-col gap-2 rounded-lg border border-mg-border bg-mg-fill-0 p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-xs text-mg-text-3">
             <LuTerminal size={14} className="shrink-0" />
             <span>{t('dashboard.workbench.quickStart.cliHint')}</span>

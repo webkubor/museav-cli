@@ -27,7 +27,7 @@ export function CustomRequestPanel() {
 
   return (
     <div className="card-shadow-adaptive bg-card-bg rounded-md border border-mg-border overflow-hidden mb-6">
-      <div className="flex items-center gap-2 p-3 border-b border-mg-border/40 bg-mg-bg-1/30">
+      <div className="flex items-center gap-2 p-3 border-b border-mg-border/40 bg-mg-fill-0">
         {(['GET', 'POST'] as const).map((m) => (
           <button
             key={m}

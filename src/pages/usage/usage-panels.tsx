@@ -230,7 +230,7 @@ export function CostSourcePanel({
       ) : (
         <div className="space-y-4">
           {sections.map((section) => (
-            <section key={section.title} className="rounded-md border border-mg-border bg-mg-bg-1 p-3">
+            <section key={section.title} className="rounded-md border border-mg-border bg-mg-fill-0 p-3">
               <div className="mb-3 text-[12px] font-semibold text-mg-text-1">{section.title}</div>
               {section.items.length === 0 ? (
                 <div className="text-[12px] text-mg-text-3">{section.emptyLabel}</div>
@@ -263,7 +263,7 @@ export function ModelDistributionPanel({
     <Card className="min-w-0 p-5 sm:p-6">
       <div className="mb-5 flex items-center justify-between gap-3">
         <div className="text-sm font-semibold text-mg-text-1">{t('usage.distribution.title')}</div>
-        <span className="rounded-lg border border-mg-border bg-mg-bg-1 px-2.5 py-1 text-[12px] text-mg-text-3">
+        <span className="rounded-lg border border-mg-border bg-mg-fill-0 px-2.5 py-1 text-[12px] text-mg-text-3">
           {t('usage.distribution.bySpend')}
         </span>
       </div>

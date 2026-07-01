@@ -73,7 +73,7 @@ export function SwaggerPanel() {
   if (isLoading) {
     return (
       <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-md overflow-hidden">
-        <div className="px-[var(--mg-panel-padding-lg)] py-[var(--mg-space-3)] border-b border-mg-border bg-mg-bg-1/40">
+        <div className="px-[var(--mg-panel-padding-lg)] py-[var(--mg-space-3)] border-b border-mg-border bg-mg-fill-0">
           <div className="mg-text-body font-bold text-mg-text-1">Swagger API Spec</div>
           <div className="mg-text-code text-mg-text-3 mt-0.5">{SWAGGER_URL}</div>
         </div>
@@ -87,7 +87,7 @@ export function SwaggerPanel() {
   if (error) {
     return (
       <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-md overflow-hidden">
-        <div className="px-[var(--mg-panel-padding-lg)] py-[var(--mg-space-3)] border-b border-mg-border bg-mg-bg-1/40">
+        <div className="px-[var(--mg-panel-padding-lg)] py-[var(--mg-space-3)] border-b border-mg-border bg-mg-fill-0">
           <div className="mg-text-body font-bold text-mg-text-1">Swagger API Spec</div>
           <div className="mg-text-code text-mg-text-3 mt-0.5">{SWAGGER_URL}</div>
         </div>
@@ -101,7 +101,7 @@ export function SwaggerPanel() {
 
   return (
     <div className="card-shadow-adaptive border border-mg-border bg-card-bg rounded-md overflow-hidden">
-      <div className="px-[var(--mg-panel-padding-lg)] py-[var(--mg-space-3)] border-b border-mg-border bg-mg-bg-1/40 flex items-center justify-between">
+      <div className="px-[var(--mg-panel-padding-lg)] py-[var(--mg-space-3)] border-b border-mg-border bg-mg-fill-0 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="mg-text-body font-bold text-mg-text-1">{title}</span>
           {version && (
@@ -152,7 +152,7 @@ export function SwaggerPanel() {
                     {ep.summary && <span className="mg-text-caption text-mg-text-3 truncate max-w-[300px]">{ep.summary}</span>}
                   </button>
                   {isExpanded && (
-                    <div className="px-[var(--mg-panel-padding-lg)] py-[var(--mg-space-3)] bg-mg-bg-1/30 space-y-2 animate-in fade-in-0 slide-in-from-top-1 duration-150">
+                    <div className="px-[var(--mg-panel-padding-lg)] py-[var(--mg-space-3)] bg-mg-fill-0 space-y-2 animate-in fade-in-0 slide-in-from-top-1 duration-150">
                       {ep.summary && (
                         <div className="mg-text-caption text-mg-text-1 font-semibold">{ep.summary}</div>
                       )}

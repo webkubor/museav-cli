@@ -84,7 +84,7 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
                     className={`group flex h-9 min-w-0 items-center gap-2 rounded-lg border px-2.5 text-left transition-colors cursor-pointer ${
                       quickCopied === label
                         ? 'bg-mg-success/5 border-mg-success/30'
-                        : 'bg-mg-bg-1/55 border-mg-border/70 hover:border-brand-base/40 hover:bg-brand-base/5'
+                        : 'bg-mg-fill-0 border-mg-border/70 hover:border-brand-base/40 hover:bg-brand-base/5'
                     }`}
                   >
                     <span className="w-6 h-6 rounded-md bg-mg-bg-0 border border-mg-border flex items-center justify-center shrink-0 text-mg-text-1">
@@ -115,7 +115,7 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
                   key={action.key}
                   type="button"
                   onClick={onOpenConnect}
-                  className="group flex h-9 items-center gap-1.5 rounded-lg border border-mg-border bg-mg-bg-1/55 px-2 text-left transition-colors hover:border-brand-base/40 hover:bg-brand-base/5 cursor-pointer"
+                  className="group flex h-9 items-center gap-1.5 rounded-lg border border-mg-border bg-mg-fill-0 px-2 text-left transition-colors hover:border-brand-base/40 hover:bg-brand-base/5 cursor-pointer"
                 >
                   <span className="flex h-5 w-5 items-center justify-center rounded-md bg-mg-bg-0 border border-mg-border/60 text-mg-text-1">
                     {action.icon}

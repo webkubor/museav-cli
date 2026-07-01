@@ -170,7 +170,7 @@ export function PreferencesTab() {
 
   return (
     <div className="flex max-w-[620px] flex-col gap-2 pt-2 animate-in fade-in duration-300">
-      <div className="bg-mg-bg-1 border border-mg-border/60 rounded-lg p-6 shadow-sm flex flex-col">
+      <div className="bg-mg-fill-0 border border-mg-border/60 rounded-lg p-6 shadow-sm flex flex-col">
         
         {/* 界面语言（Language） */}
         <div className="pb-5 border-b border-mg-border/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -200,7 +200,7 @@ export function PreferencesTab() {
                   className={cn(
                     "px-4 py-2 rounded-lg text-xs font-bold transition-all duration-300 cursor-pointer select-none active:scale-[0.96]",
                     isSelected
-                      ? "bg-mg-bg-1 text-brand-base shadow-sm font-black border border-mg-border/30"
+                      ? "bg-mg-fill-0 text-brand-base shadow-sm font-black border border-mg-border/30"
                       : "text-mg-text-3 hover:text-mg-text-1"
                   )}
                 >

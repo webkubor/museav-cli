@@ -126,7 +126,7 @@ export function ReferralInviteCard({
           </button>
         </div>
 
-        <div className="flex min-h-[54px] flex-col gap-2 rounded-md border border-mg-border bg-mg-bg-1 p-2 transition-colors hover:border-brand-base/35 focus-within:border-brand-base/45 sm:flex-row sm:items-center sm:gap-0 sm:p-0">
+        <div className="flex min-h-[54px] flex-col gap-2 rounded-md border border-mg-border bg-mg-fill-0 p-2 transition-colors hover:border-brand-base/35 focus-within:border-brand-base/45 sm:flex-row sm:items-center sm:gap-0 sm:p-0">
           <div className="flex min-w-0 flex-1 items-center gap-2.5 px-2 py-1 sm:px-4 sm:py-3">
             <LuShare2 size={15} className="shrink-0 text-brand-base" />
             <span className="truncate font-mono text-[13px] font-medium text-mg-text-1" title={inviteLink}>

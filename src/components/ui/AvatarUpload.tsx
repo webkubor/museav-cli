@@ -234,7 +234,7 @@ function CropModal({
         </div>
 
         {/* 裁剪区 */}
-        <div className="flex justify-center py-[var(--mg-panel-padding-lg)] bg-mg-bg-1/50">
+        <div className="flex justify-center py-[var(--mg-panel-padding-lg)] bg-mg-fill-0">
           <div style={{ position: 'relative', width: CANVAS_SIZE, height: CANVAS_SIZE, borderRadius: '50%', overflow: 'hidden', cursor: 'grab' }}>
             <canvas
               ref={canvasRef}

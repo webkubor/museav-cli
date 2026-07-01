@@ -348,7 +348,7 @@ export default function UsagePage() {
               </div>
               <div className="mt-1 text-[12px] text-mg-text-3">{rangeLabel}</div>
             </div>
-            <div className="flex gap-1 rounded-lg bg-mg-bg-1 p-1">
+            <div className="flex gap-1 rounded-lg bg-mg-fill-0 p-1">
               {(['spend', 'requests', 'tokens'] as Metric[]).map((item) => (
                 <MetricTab
                   key={item}

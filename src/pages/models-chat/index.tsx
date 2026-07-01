@@ -97,7 +97,7 @@ export default function ModelsChatPage() {
   return (
     <div className="flex h-[calc(100vh-220px)] min-h-[500px] gap-4">
       {/* 左侧：历史列表 */}
-      <div className="w-[260px] shrink-0 flex flex-col bg-mg-bg-1/30 border border-mg-border rounded-md overflow-hidden">
+      <div className="w-[260px] shrink-0 flex flex-col bg-mg-fill-0 border border-mg-border rounded-md overflow-hidden">
         <div className="p-3 border-b border-mg-border/50 flex items-center justify-between shrink-0">
           <span className="text-[12px] font-bold text-mg-text-1">{t('modelsChat.history')}</span>
           <button

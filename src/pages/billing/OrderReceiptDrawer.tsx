@@ -43,7 +43,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
       />
 
       {/* Drawer Body */}
-      <div className="relative w-full max-w-[380px] h-full bg-mg-bg-1/95 backdrop-blur-xl border-l border-mg-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 ease-out z-10">
+      <div className="relative w-full max-w-[380px] h-full bg-mg-bg-2/95 backdrop-blur-xl border-l border-mg-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 ease-out z-10">
 
         {/* Drawer Header */}
         <div className="p-4 border-b border-mg-border/60 flex items-center justify-between bg-mg-fill-0/20">

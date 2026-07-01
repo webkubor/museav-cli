@@ -51,7 +51,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
       className="sm:max-w-[840px]"
     >
       <div className="space-y-4 py-2">
-        <div className="rounded-md border border-mg-border bg-mg-bg-1/60 p-4">
+        <div className="rounded-md border border-mg-border bg-mg-fill-0 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-lg bg-brand-base/10 flex items-center justify-center shrink-0">
@@ -134,7 +134,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                 <div className="rounded-md border border-mg-border bg-mg-bg-0 p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex min-w-0 items-start gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-mg-border bg-mg-bg-1 text-mg-text-1">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-mg-border bg-mg-fill-0 text-mg-text-1">
                         {action?.icon}
                       </span>
                       <div className="min-w-0">
@@ -155,7 +155,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                       <button
                         type="button"
                         onClick={() => handleConnectCopy(item.id, item.copyText)}
-                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-mg-border bg-mg-bg-1 px-3 text-xs font-semibold text-mg-text-2 transition-colors hover:border-brand-base/35 hover:text-brand-base cursor-pointer"
+                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-mg-border bg-mg-fill-0 px-3 text-xs font-semibold text-mg-text-2 transition-colors hover:border-brand-base/35 hover:text-brand-base cursor-pointer"
                       >
                         {connectCopied === item.id ? <LuCheck className="h-3.5 w-3.5" /> : <LuCopy className="h-3.5 w-3.5" />}
                         {connectCopied === item.id ? '已复制' : item.copyLabel}
@@ -165,7 +165,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
 
                   <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {item.params.map((param) => (
-                      <div key={param.label} className="rounded-lg border border-mg-border/60 bg-mg-bg-1/60 px-3 py-2">
+                      <div key={param.label} className="rounded-lg border border-mg-border/60 bg-mg-fill-0 px-3 py-2">
                         <div className="mb-1 text-[11px] font-bold text-mg-text-3">{param.label}</div>
                         <code className="block truncate font-mono text-xs font-semibold text-mg-text-1" title={param.value}>
                           {param.value}

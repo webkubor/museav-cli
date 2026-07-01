@@ -1225,6 +1225,86 @@
       "requests": "Requests",
       "empty": "No distribution data",
       "requestsLabel": "Call Frequency (Requests)"
+    },
+    "workbench": {
+      "view": {
+        "enterprise": "Org view",
+        "mine": "My view",
+        "mineTodo": "Per-member filtering is pending backend support; showing org-level data for now"
+      },
+      "granularity": {
+        "day": "Daily",
+        "month": "Monthly"
+      },
+      "quickStart": {
+        "title": "Quick start",
+        "subtitle": "Three steps to connect and start calling models",
+        "dismiss": "Dismiss",
+        "step1Title": "Create API Key",
+        "step1Desc": "Generate a credential for authentication",
+        "step1Action": "Create",
+        "step2Title": "Configure client",
+        "step2Desc": "Pick an integration and fill in Base URL and Key",
+        "step2Action": "Connect now",
+        "step3Title": "Send a test request",
+        "step3Desc": "Make a call and confirm the result in logs",
+        "step3Action": "View logs",
+        "cliHint": "Or install via CLI in one command",
+        "cliCopied": "Command copied to clipboard",
+        "cliCopyFailed": "Copy failed. Please copy manually."
+      },
+      "metrics": {
+        "requests": "Total requests",
+        "spend": "Total spend",
+        "tokens": "Total tokens",
+        "balance": "Balance"
+      },
+      "trend": {
+        "title": "Usage trend",
+        "metric": {
+          "requests": "Requests",
+          "spend": "Spend",
+          "tokens": "Tokens"
+        },
+        "unit": {
+          "requests": "reqs",
+          "spend": "",
+          "tokens": "tokens"
+        },
+        "empty": "No trend data"
+      },
+      "workspaces": {
+        "title": "Workspace breakdown",
+        "subtitle": "Spend aggregated by workspace for this period",
+        "viewMore": "View more",
+        "empty": "No workspace usage",
+        "noDesc": "No description"
+      },
+      "rankings": {
+        "models": "Model usage",
+        "members": "Member usage",
+        "apiKeys": "API Keys usage",
+        "viewMore": "View more",
+        "empty": "No data",
+        "membersTodo": "Member ranking pending backend usage/rankings/accounts endpoint"
+      },
+      "recent": {
+        "title": "Recent calls",
+        "viewAll": "View all",
+        "time": "Time",
+        "status": "Status",
+        "model": "Model",
+        "owner": "Owner",
+        "tokens": "Token",
+        "cost": "Cost",
+        "latency": "Latency",
+        "empty": "No call records",
+        "emptyHint": "Once you create an API Key and send your first request, calls will show here"
+      },
+      "empty": {
+        "lowBalance": "Balance is low. Top up soon to avoid interrupted calls.",
+        "noApiKey": "No API Key yet. Create one to get started."
+      }
     }
   },
   "dashboardTop": {

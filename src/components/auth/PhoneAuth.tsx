@@ -23,6 +23,7 @@ import {
   recordAuthGuardFailure,
 } from '@/lib/auth/front-guard'
 import { getRedirectTarget } from '@/lib/redirect'
+import { getRequestErrorMessage } from '@/lib/request-error-message'
 
 const schema = z.object({
   phone: z.string().regex(/^1[3-9]\d{9}$/, '请填写有效的手机号'),
@@ -104,9 +105,11 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
         session.permissions?.granted ?? null
       )
       navigate(redirectAfterLogin, { replace: true })
-    } catch {
+    } catch (error) {
       recordAuthGuardFailure({ action: 'phone-login', subject: data.phone })
-      setServerError('验证码错误或已失效，请重试')
+      // 展示后端返回的细分中文文案（验证码错误/已失效、账户冻结、发送过频等），
+      // 5xxxx 内部错误由 getRequestErrorMessage 归一为通用「服务暂不可用」提示。
+      setServerError(getRequestErrorMessage(error, '登录失败，请稍后重试'))
     } finally {
       setLoading(false)
     }

@@ -26,7 +26,7 @@ export default function DashboardPage() {
   const showViewToggle = isEnterprise
 
   return (
-    <div className="space-y-6 pb-10 animate-in fade-in duration-300">
+    <div className="no-canvas-blur space-y-6 pb-10 animate-in fade-in duration-300">
       <GreetingHeader
         view={view}
         onViewChange={setUserView}

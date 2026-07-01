@@ -142,10 +142,10 @@
   /* 语义色 — success/warning/info 用共享（不在此覆盖，避免自引用死循环）；danger 名保留，值引用共享 error */
   --mg-danger:  var(--mg-error);
 
-  /* 阴影 */
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 4px 12px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.06), 0 4px 8px -2px rgba(15, 23, 42, 0.04);
+  /* 阴影 — 浅色分层柔和阴影（多层叠加做出"悬浮"高级感，卡片靠阴影而非硬边框浮起） */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.05);
+  --shadow-md: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 10px -2px rgba(16, 24, 40, 0.06), 0 10px 24px -8px rgba(16, 24, 40, 0.08);
+  --shadow-lg: 0 2px 4px rgba(16, 24, 40, 0.04), 0 8px 20px -4px rgba(16, 24, 40, 0.08), 0 20px 40px -12px rgba(16, 24, 40, 0.12);
 
   /* 导航 */
   --nav-item-hover-bg: rgba(15, 23, 42, 0.035);

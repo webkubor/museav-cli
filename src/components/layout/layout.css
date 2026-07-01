@@ -126,11 +126,10 @@ body[theme-mode='dark'] .dashboard-global-bottom-bg {
   /* 浅色模式下增加不透明度（0.82）以形成洁净乳白玻璃，提升文字阅读对比度 */
   background-color: rgba(255, 255, 255, 0.82) !important;
   border: 1px solid rgba(15, 23, 42, 0.08) !important;
-  /* 顶光高光线：利用极窄的内白阴影在最上边缘折射出物理边缘线 */
-  box-shadow: 
-    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.65),
-    0 4px 20px -2px rgba(15, 23, 42, 0.04), 
-    0 0 1px 0 rgba(15, 23, 42, 0.1) !important;
+  /* 顶光高光线 + 分层柔和阴影（悬浮感） */
+  box-shadow:
+    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.7),
+    var(--shadow-md) !important;
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
@@ -165,12 +164,11 @@ body[theme-mode='dark'] .glass-card-glow {
 }
 
 .glass-card-glow:hover {
-  border-color: color-mix(in srgb, var(--brand-base) 35%, transparent) !important; /* 浅色模式下变亮，勾勒精准外沿 */
-  box-shadow: 
-    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.75),
-    0 8px 25px -4px rgba(15, 23, 42, 0.06), 
-    0 0 1px 0 rgba(15, 23, 42, 0.12) !important;
-  transform: translateY(-1.5px);
+  border-color: color-mix(in srgb, var(--brand-base) 22%, transparent) !important; /* 浅色 hover 勾勒外沿（克制，不生硬） */
+  box-shadow:
+    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.8),
+    var(--shadow-lg) !important;
+  transform: translateY(-2px);
 }
 
 body[theme-mode='dark'] .glass-card-glow:hover {
@@ -189,8 +187,21 @@ body[theme-mode='dark'] .glass-card-glow:hover {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   background-color: var(--mg-bg-0) !important;
+  /* 实心卡仍保留分层柔和阴影，靠阴影浮起（不靠 backdrop-filter，避开粒子 canvas 性能坑） */
+  box-shadow:
+    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.7),
+    var(--shadow-md) !important;
+}
+
+.no-canvas-blur .glass-card-glow:hover {
+  box-shadow:
+    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.8),
+    var(--shadow-lg) !important;
 }
 
 body[theme-mode='dark'] .no-canvas-blur .glass-card-glow {
   background-color: var(--mg-bg-0) !important;
+  box-shadow:
+    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.06),
+    var(--shadow-md) !important;
 }

@@ -91,6 +91,13 @@ const SidebarNavItem: React.FC<{
           : "text-mg-text-2 hover:bg-mg-fill-0/50 hover:text-mg-text-1 active:scale-[0.96] hover:translate-x-[2px]"
       )}
     >
+      {/* 选中项：logo 渐变左强调条（品牌主题化） */}
+      {isSelected && !collapsed && (
+        <span
+          className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-full"
+          style={{ background: 'var(--mg-brand-gradient)' }}
+        />
+      )}
       <span className={cn(
         "inline-flex items-center justify-center text-base leading-none shrink-0 transition-all duration-300 ease-out",
         isSelected ? "text-brand-base scale-110" : "text-mg-text-3 group-hover:text-mg-text-1 group-hover:scale-105 group-hover:translate-x-[1.5px]"

@@ -94,7 +94,10 @@ export function QuickStartSection() {
           {steps.map((step, i) => (
             <div key={step.title} className="flex flex-col rounded-lg border border-mg-border bg-mg-bg-1/50 p-4">
               <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-base/10 text-brand-base">
+                <span
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-white shadow-sm"
+                  style={{ background: 'var(--mg-brand-gradient)' }}
+                >
                   {step.icon}
                 </span>
                 <span className="text-xs font-mono font-bold text-mg-text-3">{`0${i + 1}`}</span>

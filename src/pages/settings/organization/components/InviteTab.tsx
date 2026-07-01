@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useCopy } from '@/hooks/use-copy'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
+import { useEmailAuthEnabled } from '@/hooks/use-platform-config'
 import { PERMS } from '@/config/permissions'
 import { addTenantMembers, getTenantInviteLink, resetTenantInviteLink } from '@/services/tenants'
 import { TENANT_ROLE_OPTIONS } from '@/constants/roles'
@@ -13,6 +14,8 @@ import { appToast } from '@/lib/app-toast'
 export function InviteTab({ tenantId }: { tenantId: string }) {
   const { hasPermission } = usePermissions()
   const canInvite = hasPermission(PERMS.ORG_INVITE_MANAGE)
+  // 写活：仅当平台启用邮箱（密码）登录时才展示邮箱邀请；国内以手机号为主、未启用邮箱时自动隐藏
+  const emailInviteEnabled = useEmailAuthEnabled()
   const qc = useQueryClient()
   const [inviteEmails, setInviteEmails] = useState('')
   const [inviteRole, setInviteRole] = useState<'tenant_admin' | 'tenant_member'>('tenant_member')
@@ -130,7 +133,8 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
         </div>
       </div>
 
-      {/* ── 邮箱邀请 ── */}
+      {/* ── 邮箱邀请（写活：仅在启用邮箱登录时展示） ── */}
+      {emailInviteEnabled && (
       <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg overflow-hidden shadow-sm">
         <div className="p-4 border-b border-mg-border/50 bg-mg-fill-0/20">
           <div className="text-xs font-bold text-mg-text-1">邮箱邀请</div>
@@ -159,6 +163,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
           )}
         </div>
       </div>
+      )}
     </div>
 
     {/* 重置邀请链接确认弹窗 */}

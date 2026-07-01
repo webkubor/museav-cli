@@ -18,6 +18,7 @@ import { SocialLogin } from '@/components/auth/SocialLogin'
 import { PhoneAuth } from '@/components/auth/PhoneAuth'
 import { SliderCaptcha } from '@/components/auth/SliderCaptcha'
 import { useMarket } from '@/hooks/useMarket'
+import { useEmailAuthEnabled } from '@/hooks/use-platform-config'
 import { checkLoginEmail, login, getSession } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import {
@@ -76,10 +77,12 @@ function clearRememberedLogin() {
  */
 export default function LoginPage() {
   const market = useMarket()
+  // 写活：国内是否提供邮箱登录入口，跟随平台配置（enabled_login_methods 含 password）。
+  const emailAuthEnabled = useEmailAuthEnabled()
   // 国内默认手机号入口，底部「邮箱登录」快捷入口切到邮箱表单；切换为本地态，不改路由。
   const [emailMode, setEmailMode] = useState(false)
   if (market === 'domestic' && !emailMode) {
-    return <PhoneAuth onUseEmail={() => setEmailMode(true)} />
+    return <PhoneAuth onUseEmail={emailAuthEnabled ? () => setEmailMode(true) : undefined} />
   }
   return <EmailLoginPage onUsePhone={market === 'domestic' ? () => setEmailMode(false) : undefined} />
 }

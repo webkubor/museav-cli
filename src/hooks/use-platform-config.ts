@@ -24,6 +24,17 @@ export function useOAuthMethods() {
   return (data?.enabled_login_methods ?? []).filter((m) => m !== 'password')
 }
 
+/**
+ * 是否启用邮箱（密码）登录/注册。写活开关：驱动「邮箱登录入口」「邮箱邀请」等
+ * 邮箱相关 UI 的显隐——后端在 enabled_login_methods 关掉 password 即自动隐藏。
+ * 后端用 'password' 表示邮箱+密码方式；兼容未来可能的 'email' 标识。
+ */
+export function useEmailAuthEnabled() {
+  const { data } = usePlatformConfig()
+  const methods = data?.enabled_login_methods ?? []
+  return methods.includes('password') || methods.includes('email')
+}
+
 /** 已启用的支付渠道 */
 export function useEnabledChannels() {
   const { data } = usePlatformConfig()

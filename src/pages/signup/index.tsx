@@ -8,7 +8,7 @@
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link, Navigate } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -26,6 +26,7 @@ import { toast } from '@/lib/toast'
 import { checkAuthGuard, clearAuthGuard, recordAuthGuardFailure } from '@/lib/auth/front-guard'
 import { getRedirectTarget } from '@/lib/redirect'
 import { useFormValid } from '@/hooks/use-form-valid'
+import { useMarket } from '@/hooks/useMarket'
 import { referralCodeFromSearchParams } from './referral-code'
 
 const schema = z.object({
@@ -41,7 +42,20 @@ const schema = z.object({
 
 type Fields = z.infer<typeof schema>
 
+/**
+ * 注册页入口：国内（domestic）登录与注册统一为手机号一键入口，重定向到 /login；
+ * 海外保留邮箱注册。在此切换而非组件内部 early-return，避免 hooks 数量不一致。
+ */
 export default function SignupPage() {
+  const market = useMarket()
+  return market === 'domestic' ? <DomesticSignupRedirect /> : <EmailSignupPage />
+}
+
+function DomesticSignupRedirect() {
+  return <Navigate to="/login" replace />
+}
+
+function EmailSignupPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const setAuth = useAuthStore((s) => s.setAuth)

@@ -7,7 +7,13 @@
 import { storageKeys } from '@/lib/storage'
 
 /** 前端拦截覆盖的鉴权动作。 */
-export type AuthGuardAction = 'login-email' | 'login-password' | 'signup' | 'signup-code'
+export type AuthGuardAction =
+  | 'login-email'
+  | 'login-password'
+  | 'signup'
+  | 'signup-code'
+  | 'phone-code'
+  | 'phone-login'
 
 /** UI 层需要呈现的拦截状态。 */
 export type AuthGuardUiState = 'idle' | 'cooldown' | 'blocked'

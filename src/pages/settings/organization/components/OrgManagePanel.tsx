@@ -1,13 +1,27 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
-import { listTenants } from '@/services/tenants'
+import { getTenant, listTenantMembers, listTenants } from '@/services/tenants'
 import { RoleBadge } from './RoleBadge'
 import { OrgInfoTab } from './OrgInfoTab'
 import { MembersTab } from './MembersTab'
 import { InviteTab } from './InviteTab'
+import { AuditTab } from './AuditTab'
+
+type SubTab = 'members' | 'info' | 'audit' | 'invite'
+
+/** 企业摘要条的一格 */
+function SummaryStat({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-0.5 min-w-0">
+      <span className="text-[10px] font-bold text-mg-text-3 uppercase tracking-wider truncate">{label}</span>
+      <span className="text-sm font-bold text-mg-text-1 truncate">{value}</span>
+    </div>
+  )
+}
 
 export function OrgManagePanel({
   tenantId,
@@ -16,101 +30,123 @@ export function OrgManagePanel({
   tenantId: string | null
   onDissolved?: (dissolvedTenantId: string) => void | Promise<void>
 }) {
+  const { t } = useTranslation()
   const tenantsQuery = useQuery({ queryKey: ['tenants'], queryFn: listTenants, staleTime: 30_000 })
-  // Hooks 必须无条件调用（rules-of-hooks）：原先位于 early-return 之后，
-  // tenantId 在空/非空之间切换会改变 Hook 调用顺序——真实潜在崩溃点。
   const sessionTenants = useAuthStore((s) => s.tenants)
-  const [activeSubTab, setActiveSubTab] = useState<'info' | 'members' | 'invite'>('members')
+  const [activeSubTab, setActiveSubTab] = useState<SubTab>('members')
   const { hasPermission } = usePermissions()
+
+  // Hooks 必须无条件调用 —— 摘要条数据源（tenant 详情 + 成员）随 tenantId 拉取
+  const tenantQuery = useQuery({
+    queryKey: ['tenant', tenantId],
+    queryFn: () => getTenant(tenantId as string),
+    enabled: !!tenantId,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  })
+  const membersQuery = useQuery({
+    queryKey: ['tenant-members', tenantId],
+    queryFn: () => listTenantMembers(tenantId as string),
+    enabled: !!tenantId,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  })
 
   if (!tenantId) {
     return (
       <div className="bg-mg-bg-0 border border-mg-border/50 border-dashed rounded-lg p-12 text-center flex flex-col items-center justify-center min-h-[360px] space-y-4">
-        <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-brand-base/5 to-brand-base/10 border border-brand-base/10 flex items-center justify-center shadow-inner relative overflow-hidden">
-          <div className="w-6 h-6 rounded-lg border border-brand-base/20 flex items-center justify-center">
-            <span className="text-brand-base font-bold text-xs">M</span>
-          </div>
-          <div className="absolute inset-0 bg-radial-gradient from-brand-base/10 to-transparent animate-pulse" />
+        <div className="w-14 h-14 rounded-lg bg-brand-glow/8 border border-brand-base/10 flex items-center justify-center">
+          <span className="text-brand-base font-bold text-lg">M</span>
         </div>
         <div className="space-y-1">
           <h3 className="text-sm font-bold text-mg-text-1">暂无选中的管理组织</h3>
           <p className="text-xs text-mg-text-3 max-w-xs mx-auto leading-relaxed">
-            请在左侧“我的组织”列表中选择需要管理的组织，查看并更新其基本信息、成员列表或邀请其他成员加入。
+            请在左侧“我的组织”列表中选择需要管理的组织。
           </p>
         </div>
       </div>
     )
   }
 
-  const tenant = tenantsQuery.data?.items.find((t) => t.tenant_id === tenantId)
-  const isRoleAdmin = tenant?.role === 'tenant_owner' || tenant?.role === 'tenant_admin'
-  const canManageMembers = isRoleAdmin && hasPermission(PERMS.ORG_MEMBERS_MANAGE)
-  const canManageInvite  = isRoleAdmin && hasPermission(PERMS.ORG_INVITE_MANAGE)
-  const canManage = canManageMembers
-  const tenantName = tenant?.name
-    || sessionTenants.find((t) => t.tenant_id === tenantId)?.name
+  const tenantItem = tenantsQuery.data?.items.find((t) => t.tenant_id === tenantId)
+  const role = tenantItem?.role
+  const isOwner = role === 'tenant_owner'
+  const isAdmin = role === 'tenant_admin'
+  const isRoleAdmin = isOwner || isAdmin
+  const canManageInvite = isRoleAdmin && hasPermission(PERMS.ORG_INVITE_MANAGE)
+  const tenantName = tenantItem?.name
+    || sessionTenants.find((tt) => tt.tenant_id === tenantId)?.name
     || '…'
+
+  // 摘要数据
+  const detail = tenantQuery.data
+  const members = membersQuery.data?.items ?? []
+  const owner = members.find((m) => m.role === 'tenant_owner')
+  const adminCount = members.filter((m) => m.role === 'tenant_admin').length
+  const dash = '—'
+
+  const tabs: { key: SubTab; label: string; show: boolean }[] = [
+    { key: 'members', label: t('enterprise.tabs.members'), show: true },
+    { key: 'info', label: t('enterprise.tabs.info'), show: true },
+    { key: 'audit', label: t('enterprise.tabs.audit'), show: true },
+    { key: 'invite', label: t('enterprise.tabs.invite'), show: canManageInvite },
+  ]
 
   return (
     <div className="space-y-6">
-      {/* 正在管理展示 */}
-      <div className="flex items-center justify-between p-4 bg-mg-bg-0 border border-mg-border/50 rounded-lg shadow-xs">
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] font-bold text-mg-text-3 uppercase tracking-wider">正在管理</span>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-mg-text-1">
-              {tenantName}
-            </span>
-            {tenant && <RoleBadge role={tenant.role} />}
-          </div>
+      {/* 企业摘要条 */}
+      <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg shadow-xs p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-sm font-bold text-mg-text-1">{tenantName}</span>
+          {tenantItem && <RoleBadge role={tenantItem.role} />}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-3">
+          <SummaryStat label={t('enterprise.summary.name')} value={detail?.name ?? tenantName} />
+          <SummaryStat
+            label={t('enterprise.summary.accountType')}
+            value={detail
+              ? (detail.type === 'personal' ? t('enterprise.summary.typePersonal') : t('enterprise.summary.typeEnterprise'))
+              : dash}
+          />
+          <SummaryStat label={t('enterprise.summary.owner')} value={owner?.account.display_name || owner?.account.email || (membersQuery.isLoading ? '…' : dash)} />
+          <SummaryStat label={t('enterprise.summary.members')} value={membersQuery.isLoading ? '…' : members.length} />
+          <SummaryStat label={t('enterprise.summary.admins')} value={membersQuery.isLoading ? '…' : adminCount} />
+          {/* 待处理邀请：无租户级邀请队列接口 → 占位 */}
+          {/* TODO(后端待接): 待处理邀请数（租户级邀请队列） */}
+          <SummaryStat label={t('enterprise.summary.pendingInvites')} value={dash} />
+          <SummaryStat label={t('enterprise.summary.workspaces')} value={tenantItem?.current_workspace_count ?? dash} />
         </div>
       </div>
 
-      {/* Tab 导航 */}
+      {/* Tab 导航（保留原生 button，便于测试与无障碍聚焦） */}
       <div className="border-b border-mg-border/60 flex gap-6 text-sm bg-transparent">
-        <button
-          onClick={() => setActiveSubTab('info')}
-          className={`pb-3 font-bold transition-all border-b-2 cursor-pointer bg-transparent border-none text-xs ${
-            activeSubTab === 'info'
-              ? 'border-brand-base text-brand-base'
-              : 'border-transparent text-mg-text-3 hover:text-mg-text-1'
-          }`}
-        >
-          基本信息
-        </button>
-        <button
-          onClick={() => setActiveSubTab('members')}
-          className={`pb-3 font-bold transition-all border-b-2 cursor-pointer bg-transparent border-none text-xs ${
-            activeSubTab === 'members'
-              ? 'border-brand-base text-brand-base'
-              : 'border-transparent text-mg-text-3 hover:text-mg-text-1'
-          }`}
-        >
-          组织成员
-        </button>
-        {canManageInvite && (
+        {tabs.filter((tb) => tb.show).map((tb) => (
           <button
-            onClick={() => setActiveSubTab('invite')}
+            key={tb.key}
+            onClick={() => setActiveSubTab(tb.key)}
             className={`pb-3 font-bold transition-all border-b-2 cursor-pointer bg-transparent border-none text-xs ${
-              activeSubTab === 'invite'
+              activeSubTab === tb.key
                 ? 'border-brand-base text-brand-base'
                 : 'border-transparent text-mg-text-3 hover:text-mg-text-1'
             }`}
           >
-            邀请成员
+            {tb.label}
           </button>
-        )}
+        ))}
       </div>
 
       <div className="pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+        {activeSubTab === 'members' && (
+          <MembersTab tenantId={tenantId} isOwner={isOwner} isAdmin={isAdmin} />
+        )}
         {activeSubTab === 'info' && (
           <OrgInfoTab
             tenantId={tenantId}
-            tenantRole={tenant?.role}
+            tenantRole={role}
             onDissolved={() => onDissolved?.(tenantId)}
           />
         )}
-        {activeSubTab === 'members' && <MembersTab tenantId={tenantId} canManage={canManage} />}
+        {activeSubTab === 'audit' && <AuditTab />}
         {canManageInvite && activeSubTab === 'invite' && <InviteTab tenantId={tenantId} />}
       </div>
     </div>

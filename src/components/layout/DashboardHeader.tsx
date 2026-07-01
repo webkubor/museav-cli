@@ -75,7 +75,9 @@ export const DashboardHeader: React.FC = () => {
   }> = [
     // 站内 dashboard 由左上角 logo 承担；这里第一项给「官网」外链（与官网右上角风格统一的入口）
     { key: 'website', label: t('common.website'), href: marketConfig.siteUrl },
-    { key: 'models', label: t('nav.models'), to: '/models', match: (p) => p.startsWith('/models') },
+    { key: 'models', label: t('nav.models'), to: '/models', match: (p) => p.startsWith('/models') && !p.startsWith('/models/playground') && !p.startsWith('/models/compare') },
+    // 模型体验：原侧栏入口上移顶栏，紧随模型广场（PRD：模型体验放模型广场后）
+    { key: 'modelExplore', label: t('nav.modelExplore'), to: '/models/playground', match: (p) => p.startsWith('/models/playground') || p.startsWith('/models/compare') },
     { key: 'enterprise', label: t('nav.enterprise'), to: '/settings/organization', match: (p) => p.startsWith('/settings/organization') },
     { key: 'referral', label: t('nav.referral'), to: '/referral', match: (p) => p.startsWith('/referral') },
     { key: 'docs', label: t('nav.docsMenu'), href: appendThemeParam(marketConfig.docsUrl) },

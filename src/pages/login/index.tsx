@@ -15,7 +15,10 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { SocialLogin } from '@/components/auth/SocialLogin'
+import { PhoneAuth } from '@/components/auth/PhoneAuth'
 import { SliderCaptcha } from '@/components/auth/SliderCaptcha'
+import { useMarket } from '@/hooks/useMarket'
+import { useEmailAuthEnabled } from '@/hooks/use-platform-config'
 import { checkLoginEmail, login, getSession } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import {
@@ -68,7 +71,23 @@ function clearRememberedLogin() {
 /**
  * 极雅自适应登录页面组件 (Tailwind 样式抽离与全新 shadcn/ui 架构)
  */
+/**
+ * 登录页入口：国内（domestic）走手机号一键登录/注册，海外走邮箱登录。
+ * 在此切换而非组件内部 early-return，避免市场运行时切换导致 hooks 数量不一致。
+ */
 export default function LoginPage() {
+  const market = useMarket()
+  // 写活：国内是否提供邮箱登录入口，跟随平台配置（enabled_login_methods 含 password）。
+  const emailAuthEnabled = useEmailAuthEnabled()
+  // 国内默认手机号入口，底部「邮箱登录」快捷入口切到邮箱表单；切换为本地态，不改路由。
+  const [emailMode, setEmailMode] = useState(false)
+  if (market === 'domestic' && !emailMode) {
+    return <PhoneAuth onUseEmail={emailAuthEnabled ? () => setEmailMode(true) : undefined} />
+  }
+  return <EmailLoginPage onUsePhone={market === 'domestic' ? () => setEmailMode(false) : undefined} />
+}
+
+function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -198,15 +217,24 @@ export default function LoginPage() {
       title="欢迎回来"
       subtitle="登录到你的 ModelGo 账号"
       footer={
-        <span>
-          没有账号？{' '}
-          <Link
-            to="/signup"
-            className="auth-redirect-link"
-          >
-            免费注册
-          </Link>
-        </span>
+        onUsePhone ? (
+          <span>
+            其他方式？{' '}
+            <button type="button" onClick={onUsePhone} className="auth-redirect-link">
+              使用手机号登录
+            </button>
+          </span>
+        ) : (
+          <span>
+            没有账号？{' '}
+            <Link
+              to="/signup"
+              className="auth-redirect-link"
+            >
+              免费注册
+            </Link>
+          </span>
+        )
       }
     >
       {step === 'email' ? (

@@ -35,6 +35,8 @@ export function VerificationCodeButton({ onSend, disabled }: Props) {
       const expiresIn = await onSend()
       startCountdown(typeof expiresIn === 'number' ? expiresIn : 60)
     } catch (e) {
+      // ModelGoApiError.message 已是后端细分中文文案（发送过频/含倒计时秒数、手机号无效等）；
+      // 前端护栏抛出的普通 Error（限流/校验）也在此原样展示。
       const msg = e instanceof Error ? e.message : '发送失败，请稍后重试'
       toast.error(msg)
     } finally {

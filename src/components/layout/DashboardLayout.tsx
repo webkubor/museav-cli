@@ -15,6 +15,7 @@ import {
   LuLock,
   LuMessageSquare,
   LuClapperboard,
+  LuBuilding2,
 } from 'react-icons/lu'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -30,6 +31,7 @@ import type { NavItem } from '@/config/nav'
 import { breadcrumbConfig, FLAT_ROUTES } from '@/config/breadcrumbs'
 import { usePlatformConfig, useSite } from '@/hooks/use-platform-config'
 import { usePermissions } from '@/hooks/use-permissions'
+import { useTenantRole } from '@/hooks/use-tenant-role'
 import { cn } from '@/lib/utils'
 import { ParticleLinesBackground } from './ParticleLinesBackground'
 import './layout.css'
@@ -90,11 +92,17 @@ export function DashboardLayout() {
 
   const { hasPermission } = usePermissions()
   const site = useSite()
+  const { canManage, isEnterprise } = useTenantRole()
+  const isPersonal = activeTenant?.type === 'personal'
 
   const navCtx = {
     isNonPersonal: activeTenant?.type !== 'personal',
     isDomestic: site === 'china',
     isDevTools,
+    // 企业管理：仅企业租户 Owner/Admin。空间管理：Owner/Admin 或个人租户
+    //（成员任空间负责人的可见性放第二阶段）。
+    isOrgManager: isEnterprise && canManage,
+    isSpaceManager: canManage || isPersonal,
   }
 
   const filterNavItems = (items: NavItem[]): NavItem[] =>
@@ -124,6 +132,7 @@ export function DashboardLayout() {
     wrench:      ic(<LuWrench       size={16} className="text-amber-600" />),
     terminal:    ic(<LuTerminal     size={16} />),
     key:         ic(<LuKey          size={16} />),
+    building:    ic(<LuBuilding2    size={16} />),
     shield:      ic(<LuShield       size={16} />),
     eye:         ic(<LuEye          size={16} />),
     mail:        ic(<LuMail         size={16} />),
@@ -132,13 +141,11 @@ export function DashboardLayout() {
     clapper:     ic(<LuClapperboard  size={16} />),
   }
 
-  const tenantNavItems    = filterNavItems(navConfig.tenantItems(navCtx, t, icons))
-  const baseWorkspaceNavItems = filterNavItems(navConfig.workspaceItems(navCtx, t, icons))
-  const workspaceNavItems = [
-    ...baseWorkspaceNavItems,
-    // 开发环境下始终展示接口调试菜单
-    ...(import.meta.env.DEV ? navConfig.sandboxItems(navCtx, icons) : []),
-  ]
+  // 按权限过滤每个分组的入口，丢弃过滤后为空的分组（开发者菜单已移入 dev 工具栏，不入业务侧栏）
+  const navGroups = navConfig
+    .groups(navCtx, t, icons)
+    .map((group) => ({ ...group, items: filterNavItems(group.items) }))
+    .filter((group) => group.items.length > 0)
 
   const getSelectedKey = () => {
     const path = location.pathname
@@ -178,8 +185,7 @@ export function DashboardLayout() {
               navigate(`/${key}`)
             }
           }}
-          tenantNavItems={tenantNavItems}
-          workspaceNavItems={workspaceNavItems}
+          groups={navGroups}
           settingsLabel={t('nav.settings')}
         />
 

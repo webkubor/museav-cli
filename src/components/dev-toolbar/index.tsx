@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import type { PlatformConfig } from '@/services/platform'
 import { cn } from '@/lib/utils'
@@ -45,11 +46,13 @@ function Seg<T extends string>({
 /**
  * 开发者工具栏（仅 DEV 环境，悬浮底部居中）。
  * 切换国内/海外、语言——市场切换一把带动 logo / 品牌 / 主题色（主题色按 data-market 走 CSS）。
- * 另含黑/白主题快速切换，方便本地调样式（接口调试菜单 dev 下始终常驻侧边栏）。
+ * 另含黑/白主题快速切换，方便本地调样式。
+ * 「开发菜单」跳转平台配置调试页（原侧栏「开发者菜单」移入此处，不侵入业务侧栏）。
  * 「预览报错」按钮可随时弹出服务端错误诊断弹窗，便于调该弹窗的 UI。
  */
 export function DevToolbar() {
   const { i18n } = useTranslation()
+  const navigate = useNavigate()
   const market = useLangStore((s) => s.market)
   const lang = useLangStore((s) => s.lang)
   const setMarket = useLangStore((s) => s.setMarket)
@@ -128,6 +131,13 @@ export function DevToolbar() {
         onChange={switchLang}
       />
       <div className="h-4 w-px bg-mg-border" />
+      <button
+        type="button"
+        onClick={() => navigate('/dev-config')}
+        className="rounded-full bg-mg-fill-0 px-3 py-1 text-[11px] font-bold text-mg-text-2 transition-colors hover:text-mg-text-1"
+      >
+        开发菜单
+      </button>
       <button
         type="button"
         onClick={previewServerError}

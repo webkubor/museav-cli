@@ -11,37 +11,46 @@ export type NavItem = {
 }
 
 /**
- * 菜单可见性条件集中定义。
- * 所有「某菜单是否显示」的判断只在此处写，DashboardLayout 直接消费结果。
- *
- * 维度说明：
- *   isNonPersonal — tenant.type !== 'personal'（企业组织，含 enterprise 及未来新类型）
- *   isDomestic    — market === 'domestic'（国内域名）
- *   isDevTools    — VITE_SHOW_DEV_TOOLS === 'true'（内部调试）
+ * 侧边栏分组。对象边界优先的 IA（PRD：左侧导航与总览 v0.1）。
+ *   - label 为空 = 主入口组，不渲染分组小标题
+ *   - scope='workspace' 的组在组内渲染工作空间选择器，其页面受选择器影响
  */
-export interface NavVisibilityContext {
-  /** 当前 tenant 不是个人账户 */
-  isNonPersonal: boolean
-  /** 国内市场 */
-  isDomestic: boolean
-  /** 开发调试模式 */
-  isDevTools: boolean
+export type NavGroup = {
+  key: string
+  label?: string
+  scope: 'tenant' | 'workspace'
+  items: NavItem[]
 }
 
-export interface NavConfig {
-  /** Tenant 级导航（切换工作区不影响） */
-  tenantItems: (ctx: NavVisibilityContext, t: (key: string) => string, icons: NavIcons) => NavItem[]
-  /** 工作区级导航（切换工作区内容随之变） */
-  workspaceItems: (ctx: NavVisibilityContext, t: (key: string) => string, icons: NavIcons) => NavItem[]
-  /** 测试区导航（工作区下，单独分隔线） */
-  sandboxItems: (ctx: NavVisibilityContext, icons: NavIcons) => NavItem[]
-  /** 工作区级页面 key 集合（用于 WorkspaceGuard 和高亮判断） */
-  workspaceScopedKeys: ReadonlySet<string>
+/**
+ * 菜单可见性条件集中定义。DashboardLayout 直接消费结果。
+ *
+ * 维度说明：
+ *   isNonPersonal  — tenant.type !== 'personal'
+ *   isDomestic     — market === 'domestic'
+ *   isDevTools     — VITE_SHOW_DEV_TOOLS === 'true'
+ *   isOrgManager   — 企业租户 Owner/Admin（决定「企业管理」入口）
+ *   isSpaceManager — Owner/Admin 或个人租户（决定「空间管理」入口；成员任空间负责人的场景第二阶段再补）
+ */
+export interface NavVisibilityContext {
+  isNonPersonal: boolean
+  isDomestic: boolean
+  isDevTools: boolean
+  isOrgManager: boolean
+  isSpaceManager: boolean
 }
 
 export type NavIcons = Record<string, React.ReactNode>
 
+export interface NavConfig {
+  /** 侧边栏分组（五分组 IA） */
+  groups: (ctx: NavVisibilityContext, t: (key: string) => string, icons: NavIcons) => NavGroup[]
+  /** 工作区级页面 key 集合（用于 WorkspaceGuard 和路由前缀判断） */
+  workspaceScopedKeys: ReadonlySet<string>
+}
+
 export const navConfig: NavConfig = {
+  // observability 路由保留（第二阶段并入空间详情的「日志与转发」），但不再出现在侧边栏
   workspaceScopedKeys: new Set([
     'api-keys',
     'guardrails',
@@ -49,36 +58,47 @@ export const navConfig: NavConfig = {
     'chat-test',
   ]),
 
-  tenantItems: (_ctx, t, icons) => [
-    { itemKey: 'dashboard',    text: t('nav.dashboard'),  icon: icons.home,       permission: PERMS.DASHBOARD_VIEW },
+  groups: (ctx, t, icons) => [
     {
-      itemKey: 'models/playground',
-      text: t('nav.modelExplore'),
-      icon: icons.message,
-      permission: PERMS.MODELS_VIEW,
-    },
-    {
-      itemKey: 'analytics',
-      text: t('nav.analytics'),
-      icon: icons.histogram,
-      permission: PERMS.ANALYTICS_VIEW,
+      key: 'main',
+      scope: 'tenant',
       items: [
-        { itemKey: 'usage', text: t('nav.usage'), icon: icons.histogramSm, permission: PERMS.ANALYTICS_VIEW },
-        { itemKey: 'logs',  text: t('nav.logs'),  icon: icons.list,        permission: PERMS.LOGS_VIEW },
+        { itemKey: 'dashboard', text: t('nav.dashboard'), icon: icons.home, permission: PERMS.DASHBOARD_VIEW },
+        ...(ctx.isOrgManager
+          ? [{ itemKey: 'settings/organization', text: t('nav.organization'), icon: icons.building }]
+          : []),
+        ...(ctx.isSpaceManager
+          ? [{ itemKey: 'settings/workspace', text: t('nav.workspace'), icon: icons.apps }]
+          : []),
       ],
     },
-    { itemKey: 'tasks',   text: t('nav.tasks'),   icon: icons.clapper },
-    { itemKey: 'billing', text: t('nav.billing'), icon: icons.creditCard, permission: PERMS.BILLING_VIEW },
-    { itemKey: 'referral', text: t('nav.referral'), icon: icons.gift },
-  ],
-
-  workspaceItems: (_ctx, t, icons) => [
-    { itemKey: 'api-keys',         text: t('nav.apiKeys'),       icon: icons.key,    permission: PERMS.API_KEYS_VIEW },
-    { itemKey: 'guardrails',       text: t('nav.guardrails'),    icon: icons.shield, permission: PERMS.GUARDRAILS_VIEW },
-    { itemKey: 'observability',    text: t('nav.observability'), icon: icons.eye,    permission: PERMS.OBSERVABILITY_VIEW },
-  ],
-
-  sandboxItems: (_ctx, icons) => [
-    { itemKey: 'dev-config', text: '开发者菜单', icon: icons.wrench },
+    {
+      key: 'billing',
+      label: t('nav.groupBilling'),
+      scope: 'tenant',
+      items: [
+        { itemKey: 'billing', text: t('nav.billing'), icon: icons.creditCard, permission: PERMS.BILLING_VIEW },
+        { itemKey: 'usage', text: t('nav.usage'), icon: icons.histogram, permission: PERMS.ANALYTICS_VIEW },
+        { itemKey: 'logs', text: t('nav.logs'), icon: icons.list, permission: PERMS.LOGS_VIEW },
+      ],
+    },
+    {
+      key: 'workspace',
+      label: t('nav.sidebarWorkspace'),
+      scope: 'workspace',
+      items: [
+        { itemKey: 'api-keys', text: t('nav.apiKeys'), icon: icons.key, permission: PERMS.API_KEYS_VIEW },
+        { itemKey: 'guardrails', text: t('nav.guardrails'), icon: icons.shield, permission: PERMS.GUARDRAILS_VIEW },
+        { itemKey: 'tasks', text: t('nav.tasks'), icon: icons.clapper },
+      ],
+    },
+    {
+      key: 'activity',
+      label: t('nav.groupActivity'),
+      scope: 'tenant',
+      items: [
+        { itemKey: 'referral', text: t('nav.referral'), icon: icons.gift },
+      ],
+    },
   ],
 }

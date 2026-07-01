@@ -1,31 +1,19 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef } from 'react'
 import { LuSettings, LuChevronLeft, LuChevronRight } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
-import { SidebarSettingsPopup } from './SidebarSettingsPopup'
 import { SidebarPromoCarousel } from './SidebarPromoCarousel'
 import { WorkspaceSwitcher } from './WorkspaceSwitcher'
-import { useAuthStore } from '@/store/auth'
-
-type NavItem = {
-  itemKey: string
-  text: string
-  icon: React.ReactNode
-  items?: NavItem[]
-}
+import type { NavItem, NavGroup } from '@/config/nav'
 
 interface DashboardSidebarProps {
   collapsed: boolean
   setCollapsed: (c: boolean) => void
   selectedKey: string
   onSelect: (data: { itemKey: string | number }) => void
-  tenantNavItems: NavItem[]
-  workspaceNavItems: NavItem[]
+  groups: NavGroup[]
   settingsLabel: string
 }
-
-const WORKSPACE_KEYS = ['api-keys', 'guardrails', 'observability', 'dev-config']
-const SETTINGS_KEYS = ['settings', 'settings/account', 'settings/organization', 'settings/workspace']
 
 const SidebarSystemStatus: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
   const { t } = useTranslation()
@@ -62,6 +50,19 @@ const SidebarSystemStatus: React.FC<{ collapsed: boolean }> = ({ collapsed }) =>
   )
 }
 
+/** 分组小标题（左右分隔线 + 居中标题；折叠态只留一条分隔线） */
+const SidebarGroupLabel: React.FC<{ text: string; collapsed: boolean }> = ({ text, collapsed }) => (
+  <div className={cn('flex items-center gap-2 py-4 select-none px-4', collapsed && 'px-2')}>
+    <div className="flex-1 h-[1px] bg-mg-border/40" />
+    {!collapsed && (
+      <span className="text-[11px] font-bold text-mg-text-3/80 tracking-wider uppercase whitespace-nowrap shrink-0">
+        {text}
+      </span>
+    )}
+    {!collapsed && <div className="flex-1 h-[1px] bg-mg-border/40" />}
+  </div>
+)
+
 /**
  * 极简高颜值自定义 Sidebar 导航单项
  */
@@ -75,6 +76,7 @@ const SidebarNavItem: React.FC<{
     <div
       role="button"
       tabIndex={0}
+      title={collapsed ? item.text : undefined}
       onClick={onClick}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -130,7 +132,6 @@ const SidebarMenuGroup: React.FC<{
           )}
           title={item.text}
           onClick={() => {
-            // 点击后自动跳转到首个子项
             if (item.items?.[0]) {
               onSelect({ itemKey: item.items[0].itemKey })
             }
@@ -149,19 +150,13 @@ const SidebarMenuGroup: React.FC<{
 
   return (
     <div className="flex flex-col gap-0.5 relative">
-      {/* 展开相邻主菜单时，垂直连通这两个主菜单图标的渐变流动垂线 */}
       {item.items && isOpen && (
-        <div 
+        <div
           className="absolute left-[29px] w-[2px] sidebar-flow-line pointer-events-none rounded-full"
-          style={{
-            top: '36px',
-            bottom: '-20px',
-            zIndex: 10,
-          }}
+          style={{ top: '36px', bottom: '-20px', zIndex: 10 }}
         />
       )}
 
-      {/* 文件夹父级 Trigger */}
       <div
         role="button"
         tabIndex={0}
@@ -191,14 +186,8 @@ const SidebarMenuGroup: React.FC<{
         </span>
       </div>
 
-      {/* 子项列表 ( Indented ) - 物理高度弹性折叠 */}
       {item.items && (
-        <div 
-          className={cn(
-            "sidebar-submenu-container",
-            isOpen && "open"
-          )}
-        >
+        <div className={cn("sidebar-submenu-container", isOpen && "open")}>
           <div className="min-h-0 flex flex-col pl-4 ml-7 gap-1 relative">
             {item.items.map((sub) => {
               const isSubSelected = selectedKey === sub.itemKey
@@ -230,124 +219,67 @@ const SidebarMenuGroup: React.FC<{
 }
 
 /**
- * 侧边栏底部设置按钮（向上弹出/向右弹出菜单）
+ * 底部「设置」入口——直达账号设置。组织/工作区已上升为主入口（企业管理/空间管理），
+ * 不再挂在设置弹层里。
  */
 const SidebarSettingsButton: React.FC<{
   collapsed: boolean
   selectedKey: string
   onSelect: (data: { itemKey: string | number }) => void
   label: string
-  accountLabel: string
-  spaceLabel: string
-  spaceHint: string
-  spaceTargetKey: string
-  workspaceLabel: string
-}> = ({ collapsed, selectedKey, onSelect, label, accountLabel, spaceLabel, spaceHint, spaceTargetKey, workspaceLabel }) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  const handleItemClick = (key: string) => {
-    onSelect({ itemKey: key })
-    setIsOpen(false)
-  }
-
-  const isSelected = selectedKey.startsWith('settings')
+}> = ({ collapsed, selectedKey, onSelect, label }) => {
+  const isSelected = selectedKey === 'settings' || selectedKey.startsWith('settings/account')
 
   return (
-    <div ref={containerRef} className="relative z-[60]">
-      {/* 触发按钮 */}
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            setIsOpen(!isOpen)
-          }
-        }}
-        className={cn(
-          "group flex items-center gap-3 mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-300 select-none outline-none focus-visible:ring-1 focus-visible:ring-brand-glow justify-between",
-          isSelected
-            ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
-            : "text-mg-text-2 hover:bg-mg-fill-0/50 hover:text-mg-text-1 active:scale-[0.96] hover:translate-x-[2px]"
-        )}
-      >
-        <div className={cn("flex items-center gap-3 min-w-0", collapsed && "w-full justify-center")}>
-          <span className={cn(
-            "inline-flex items-center justify-center text-base leading-none shrink-0 transition-transform duration-500 ease-out",
-            isSelected ? "text-brand-base scale-110" : "text-mg-text-3 group-hover:text-mg-text-1 group-hover:rotate-[60deg]"
-          )}>
-            <LuSettings />
-          </span>
-          {!collapsed && (
-            <span className="text-[15px] truncate tracking-tight font-medium leading-none">
-              {label}
-            </span>
-          )}
-        </div>
-        {!collapsed && (
-          <span className={cn(
-            "text-mg-text-3 shrink-0 transition-all duration-300 ml-2",
-            isOpen ? "rotate-90 text-brand-base" : "group-hover:text-mg-text-1"
-          )}>
-            <LuChevronRight size={14} />
-          </span>
-        )}
-      </div>
-
-      <SidebarSettingsPopup
-        isOpen={isOpen}
-        collapsed={collapsed}
-        selectedKey={selectedKey}
-        accountLabel={accountLabel}
-        spaceLabel={spaceLabel}
-        spaceHint={spaceHint}
-        spaceTargetKey={spaceTargetKey}
-        workspaceLabel={workspaceLabel}
-        handleItemClick={handleItemClick}
-      />
+    <div
+      role="button"
+      tabIndex={0}
+      title={collapsed ? label : undefined}
+      onClick={() => onSelect({ itemKey: 'settings/account' })}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect({ itemKey: 'settings/account' }) }}
+      className={cn(
+        "group flex items-center gap-3 mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-300 select-none outline-none focus-visible:ring-1 focus-visible:ring-brand-glow",
+        collapsed ? "justify-center" : "justify-start",
+        isSelected
+          ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
+          : "text-mg-text-2 hover:bg-mg-fill-0/50 hover:text-mg-text-1 active:scale-[0.96] hover:translate-x-[2px]"
+      )}
+    >
+      <span className={cn(
+        "inline-flex items-center justify-center text-base leading-none shrink-0 transition-transform duration-500 ease-out",
+        isSelected ? "text-brand-base scale-110" : "text-mg-text-3 group-hover:text-mg-text-1 group-hover:rotate-[60deg]"
+      )}>
+        <LuSettings />
+      </span>
+      {!collapsed && (
+        <span className="text-[15px] truncate tracking-tight font-medium leading-none">
+          {label}
+        </span>
+      )}
     </div>
   )
 }
 
 /**
- * 重构后的高颜值自定义 DashboardSidebar 组件
+ * 重构后的高颜值自定义 DashboardSidebar 组件——按对象边界分组渲染（PRD：五分组 IA）
  */
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   collapsed,
   setCollapsed,
   selectedKey,
   onSelect,
-  tenantNavItems,
-  workspaceNavItems,
+  groups,
   settingsLabel,
 }) => {
   const { t } = useTranslation()
-  const { activeTenantId, tenants } = useAuthStore()
   const [hovered, setHovered] = useState(false)
-  const [workspaceOpen, setWorkspaceOpen] = useState(true)
   const leaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
-
-  const isWorkspaceSelected = WORKSPACE_KEYS.includes(selectedKey)
-  const isSettingsSelected = SETTINGS_KEYS.includes(selectedKey)
-  const activeTenant = tenants.find((tenant) => tenant.tenant_id === activeTenantId)
-  const isPersonalTenant = activeTenant?.type === 'personal'
 
   const onEnter = () => {
     clearTimeout(leaveTimer.current)
     setHovered(true)
   }
-  
+
   const onLeave = () => {
     leaveTimer.current = setTimeout(() => setHovered(false), 150)
   }
@@ -375,13 +307,14 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         </div>
       </button>
 
-      {/* 主导航区 */}
+      {/* 主导航区——按分组渲染 */}
       <div className="flex flex-col flex-1 py-3 overflow-y-auto overflow-x-hidden no-scrollbar">
-        {/* Tenant 级导航 */}
-        <div className="relative flex flex-col gap-0.5">
-          {tenantNavItems.map((item) => {
-            if (item.items && item.items.length > 0) {
-              return (
+        {groups.map((group) => (
+          <div key={group.key} className="relative flex flex-col gap-0.5">
+            {group.label && <SidebarGroupLabel text={group.label} collapsed={collapsed} />}
+            {group.scope === 'workspace' && <WorkspaceSwitcher collapsed={collapsed} />}
+            {group.items.map((item) =>
+              item.items && item.items.length > 0 ? (
                 <SidebarMenuGroup
                   key={item.itemKey}
                   item={item}
@@ -389,79 +322,18 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                   selectedKey={selectedKey}
                   onSelect={onSelect}
                 />
-              )
-            }
-            return (
-              <SidebarNavItem
-                key={item.itemKey}
-                item={item}
-                collapsed={collapsed}
-                isSelected={!isWorkspaceSelected && !isSettingsSelected && selectedKey === item.itemKey}
-                onClick={() => onSelect({ itemKey: item.itemKey })}
-              />
-            )
-          })}
-        </div>
-
-        {/* 工作区折叠标题 */}
-        <div
-          role="button"
-          onClick={() => !collapsed && setWorkspaceOpen(!workspaceOpen)}
-          className={cn(
-            "flex items-center gap-2 py-4 select-none px-4 group/section justify-between transition-colors",
-            !collapsed && "cursor-pointer hover:text-mg-text-1",
-            collapsed && "px-2 pointer-events-none"
-          )}
-        >
-          <div className="flex-1 h-[1px] bg-mg-border/40" />
-          {!collapsed && (
-            <span className="text-[11px] font-bold text-mg-text-3/80 tracking-wider uppercase whitespace-nowrap shrink-0 flex items-center gap-1 group-hover/section:text-mg-text-2 transition-colors">
-              {t('nav.sidebarWorkspace')}
-              <LuChevronRight 
-                size={11} 
-                className={cn(
-                  "transition-transform duration-300 text-mg-text-3", 
-                  workspaceOpen ? "rotate-90 text-brand-base" : "rotate-0"
-                )} 
-              />
-            </span>
-          )}
-          <div className="flex-1 h-[1px] bg-mg-border/40" />
-        </div>
-
-        {/* Workspace 级导航 */}
-        <div
-          className={cn(
-            "relative flex flex-col gap-0.5 transition-all duration-300 overflow-hidden flex-1",
-            (!collapsed && !workspaceOpen) ? "max-h-0 opacity-0 pointer-events-none" : "max-h-[500px] opacity-100"
-          )}
-        >
-          {/* 工作区切换器 */}
-          <WorkspaceSwitcher collapsed={collapsed} />
-
-          {workspaceNavItems.map((item) => {
-            if (item.items && item.items.length > 0) {
-              return (
-                <SidebarMenuGroup
+              ) : (
+                <SidebarNavItem
                   key={item.itemKey}
                   item={item}
                   collapsed={collapsed}
-                  selectedKey={selectedKey}
-                  onSelect={onSelect}
+                  isSelected={selectedKey === item.itemKey}
+                  onClick={() => onSelect({ itemKey: item.itemKey })}
                 />
               )
-            }
-            return (
-              <SidebarNavItem
-                key={item.itemKey}
-                item={item}
-                collapsed={collapsed}
-                isSelected={isWorkspaceSelected && selectedKey === item.itemKey}
-                onClick={() => onSelect({ itemKey: item.itemKey })}
-              />
-            )
-          })}
-        </div>
+            )}
+          </div>
+        ))}
       </div>
 
       {/* 底部促销轮播 */}
@@ -474,11 +346,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           selectedKey={selectedKey}
           onSelect={onSelect}
           label={settingsLabel}
-          accountLabel={t('nav.account')}
-          spaceLabel={isPersonalTenant ? t('header.personalSpace') : t('nav.organization')}
-          spaceHint={isPersonalTenant ? t('sidebarSettings.personalSpaceHint') : t('sidebarSettings.organizationHint')}
-          spaceTargetKey={isPersonalTenant ? 'settings/account' : 'settings/organization'}
-          workspaceLabel={t('nav.workspace')}
         />
         <SidebarSystemStatus collapsed={collapsed} />
       </div>

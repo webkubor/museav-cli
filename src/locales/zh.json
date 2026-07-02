@@ -1285,7 +1285,7 @@
       "view": {
         "enterprise": "企业视图",
         "mine": "我的视图",
-        "mineTodo": "我的视图数据按成员过滤能力待后端支持，暂展示组织口径数据"
+        "mineTodo": "当前展示组织口径的用量数据"
       },
       "granularity": {
         "day": "按天",
@@ -1345,7 +1345,7 @@
         "viewMore": "查看更多",
         "empty": "暂无数据",
         "emptyHint": "发送一次测试请求后，用量排行将在此展示",
-        "membersTodo": "成员用量排行待后端提供 usage/rankings/accounts 端点"
+        "membersTodo": "暂无成员用量数据"
       },
       "recent": {
         "title": "最近调用",
@@ -1373,6 +1373,8 @@
       "evening": "晚上好，{{name}}",
       "defaultName": "开发者",
       "desc": "欢迎回来，以下是当前系统的实时运行概览。",
+      "descEnterprise": "欢迎回来，看看团队的实时调用情况。",
+      "descMine": "看看你自己的实时调用情况。",
       "liveBadge": "实时概览"
     },
     "status": {

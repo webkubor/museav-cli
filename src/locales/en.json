@@ -1286,7 +1286,7 @@
       "view": {
         "enterprise": "Org view",
         "mine": "My view",
-        "mineTodo": "Per-member filtering is pending backend support; showing org-level data for now"
+        "mineTodo": "Showing organization-level usage data"
       },
       "granularity": {
         "day": "Daily",
@@ -1346,7 +1346,7 @@
         "viewMore": "View more",
         "empty": "No data",
         "emptyHint": "Send a test request and your usage ranking will show here",
-        "membersTodo": "Member ranking pending backend usage/rankings/accounts endpoint"
+        "membersTodo": "No member usage data yet"
       },
       "recent": {
         "title": "Recent calls",
@@ -1374,6 +1374,8 @@
       "evening": "Good evening, {{name}}",
       "defaultName": "Developer",
       "desc": "Welcome back. Here is the real-time operating overview for your workspace.",
+      "descEnterprise": "Welcome back — here's your team's real-time usage.",
+      "descMine": "Here's your own real-time usage.",
       "liveBadge": "Live overview"
     },
     "status": {

@@ -37,7 +37,9 @@ export function GreetingHeader({
           <span>{t(greetingKey, { name: displayName })}</span>
           <span role="img" aria-label="waving hand">👋</span>
         </h1>
-        <p className="text-sm text-mg-text-3 mt-1 m-0">{t('dashboardTop.greeting.desc')}</p>
+        <p className="text-sm text-mg-text-3 mt-1 m-0">
+          {t(view === 'enterprise' ? 'dashboardTop.greeting.descEnterprise' : 'dashboardTop.greeting.descMine')}
+        </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

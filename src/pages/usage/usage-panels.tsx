@@ -140,8 +140,12 @@ function ModelDistributionRow({
           style={{ width: share > 0 ? `${share}%` : '0%' }}
         />
       </div>
-      <span className="text-right text-sm text-mg-text-2">{formatRankingSpend(item, currencySymbol)}</span>
-      <span className="text-right text-sm text-mg-text-3">{share > 0 ? `${share.toFixed(0)}%` : '—'}</span>
+      <span className={cn('text-right text-sm tabular-nums', index === 0 ? 'font-bold text-brand-base' : 'text-mg-text-2')}>
+        {formatRankingSpend(item, currencySymbol)}
+      </span>
+      <span className={cn('text-right text-sm tabular-nums', index === 0 ? 'font-bold text-mg-text-1' : 'text-mg-text-3')}>
+        {share > 0 ? `${share.toFixed(0)}%` : '—'}
+      </span>
     </div>
   )
 }

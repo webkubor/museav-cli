@@ -40,6 +40,7 @@ import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
 import type { TaskItem, TaskDetail, TaskStatus, TaskKind } from '@/types'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
+import { Money } from '@/components/ui/Money'
 import { VideoThumbnail } from './VideoThumbnail'
 import { VideoPreviewModal } from './VideoPreviewModal'
 
@@ -84,12 +85,14 @@ function taskCost(item: TaskItem): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-function fmtCost(item: TaskItem) {
+/** 渲染任务费用：失败已计费用 danger 色（语义：异常扣费），其余默认。
+ *  排队/运行中或无费用返回「—」，不计费场景返回「无费用」。 */
+function fmtCost(item: TaskItem): React.ReactNode {
   if (item.status === 'queued' || item.status === 'running') return '—'
   const amount = taskCost(item)
   if (amount == null) return '—'
-  const symbol = item.currency === 'USD' ? '$' : '¥'
-  return `${symbol}${amount.toFixed(2)}`
+  const tone = item.status === 'failed' && amount > 0 ? 'danger' : 'default'
+  return <Money amount={amount} currency={item.currency} size="sm" tone={tone} />
 }
 
 function costHint(item: TaskItem): string | null {
@@ -237,7 +240,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
               value={
                 <span className="inline-flex items-center gap-1.5">
                   <ModelIcon
-                    model={{ display_name: task.requested_model, vendor: task.requested_model }}
+                    model={{ display_name: task.requested_model, vendor: task.vendor ?? undefined }}
                     size={18}
                     rounded="rounded-md"
                   />
@@ -605,7 +608,7 @@ export default function TasksPage() {
                   <TableCell align="center">
                     <span className="inline-flex items-center gap-1.5 max-w-[220px] mx-auto truncate">
                       <ModelIcon
-                        model={{ display_name: item.requested_model, vendor: item.requested_model }}
+                        model={{ display_name: item.requested_model, vendor: item.vendor ?? undefined }}
                         size={18}
                         rounded="rounded-md"
                         className="shrink-0"
@@ -622,10 +625,7 @@ export default function TasksPage() {
                     <StatusBadge status={item.status} statusMap={STATUS_CONFIG} />
                   </TableCell>
                   <TableCell align="center">
-                    <span className={cn(
-                      'mg-text-body font-semibold',
-                      item.status === 'failed' && taskCost(item) ? 'text-[var(--mg-danger)]' : 'text-mg-text-1'
-                    )}>
+                    <span className="mg-text-body font-semibold inline-flex items-center">
                       {fmtCost(item)}
                     </span>
                   </TableCell>

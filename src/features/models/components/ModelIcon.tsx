@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { cn, getFallbackAvatarText } from '@/lib/utils'
-import { resolveVendorIcon, resolveLobehubIcon } from './vendor-icons'
+import { resolveVendorIcon, resolveLobehubIcon, inferVendorByModelName } from './vendor-icons'
 
 /** 渲染模型图标所需的最小字段（CatalogModelItem / CatalogModelDetail 均兼容） */
 export interface ModelIconLike {
@@ -20,10 +20,11 @@ interface ModelIconProps {
 }
 
 /**
- * 统一的模型图标组件。三层兜底，全站复用：
+ * 统一的模型图标组件。四层兜底，全站复用：
  * 1. model.logo_url（后端 logo）
  * 2. 本地图标库 resolveVendorIcon(vendor)（含包含匹配）
- * 3. 厂商名首字母文字块
+ * 3. 模型名前缀推断 inferVendorByModelName（logs/usage/tasks 无 vendor 时兜底）
+ * 4. 厂商名首字母文字块
  */
 export function ModelIcon({ model, size = 32, rounded = 'rounded-md', className }: ModelIconProps) {
   const [imgError, setImgError] = useState(false)
@@ -52,10 +53,11 @@ export function ModelIcon({ model, size = 32, rounded = 'rounded-md', className 
     )
   }
 
-  // logo_url 命中 lobehub 组件名则直接用，否则回退到 vendor 自动匹配
+  // 依次尝试：lobehub 组件名 → vendor 本地映射 → 模型名前缀推断（logs/usage/tasks 无 vendor 时兜底）
   const icon: ReactNode =
     (logo && !isImageUrl ? resolveLobehubIcon(logo, iconSize) : null) ??
-    resolveVendorIcon(model.vendor, iconSize)
+    resolveVendorIcon(model.vendor, iconSize) ??
+    resolveVendorIcon(inferVendorByModelName(model.vendor ?? model.display_name), iconSize)
   if (icon) {
     return (
       <span style={{ width: size, height: size }} className={box}>

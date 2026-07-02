@@ -427,6 +427,8 @@
       "priority": "Priority",
       "isDefault": "Default",
       "status": "Status",
+      "active": "Active",
+      "inactive": "Inactive",
       "createdAt": "Created At",
       "defaultBadge": "Default",
       "optionalBadge": "Optional",

@@ -56,14 +56,30 @@ const ICON_FACTORY: Record<string, (size: number) => React.ReactNode> = {
   minimax:   (s) => <Minimax.Color size={s} />,
   chatglm:   (s) => <ChatGLM.Color size={s} />,
   zhipu:     (s) => <Zhipu.Color size={s} />,
+  glm:       (s) => <Zhipu.Color size={s} />,
   cohere:    (s) => <Cohere.Color size={s} />,
   groq:      (s) => <Groq size={s} />,
   baidu:     (s) => <Baidu.Color size={s} />,
   ernie:     (s) => <Baidu.Color size={s} />,
+  wenxin:    (s) => <Wenxin size={s} />,
   seedream:  (s) => <Doubao.Color size={s} />,
   skylark:   (s) => <Doubao.Color size={s} />,
   bytedance: (s) => <Doubao.Color size={s} />,
   ark:       (s) => <Doubao.Color size={s} />,
+  doubao:    (s) => <Doubao.Color size={s} />,
+  hunyuan:   (s) => <Hunyuan size={s} />,
+  spark:     (s) => <Spark size={s} />,
+  yi:        (s) => <Yi size={s} />,
+  stepfun:   (s) => <Stepfun size={s} />,
+  baichuan:  (s) => <Baichuan size={s} />,
+  internlm:  (s) => <InternLM size={s} />,
+  together:  (s) => <Together size={s} />,
+  fireworks: (s) => <Fireworks size={s} />,
+  perplexity:(s) => <Perplexity size={s} />,
+  hailuo:    (s) => <Hailuo size={s} />,
+  grok:      (s) => <Grok size={s} />,
+  xai:       (s) => <XAI size={s} />,
+  openrouter:(s) => <OpenRouter size={s} />,
 }
 
 /**
@@ -111,6 +127,91 @@ export function resolveVendorIcon(
 ): React.ReactNode | null {
   const key = resolveVendorKey(vendor)
   return key ? ICON_FACTORY[key](size) : null
+}
+
+/**
+ * 模型名/模型 ID 前缀 → vendor key 推断表。
+ * 用于 logs/usage/tasks 等没有 vendor 字段、只有 model_id 或 display_name 的场景。
+ * 按前缀从长到短匹配，避免 gpt-4o-mini 同时命中 gpt 和 o（不会，但长前缀优先更稳）。
+ * 新增模型族：按「前缀（小写）→ ICON_FACTORY 的 key」追加即可。
+ */
+const MODEL_PREFIX_TO_VENDOR: Array<[string, string]> = [
+  // OpenAI 族（gpt / o1 / o3 / chatgpt / dall-e / tts / whisper）
+  ['gpt', 'openai'], ['chatgpt', 'openai'], ['o1', 'openai'], ['o3', 'openai'], ['o4', 'openai'],
+  ['dall-e', 'openai'], ['dall', 'openai'], ['tts', 'openai'], ['whisper', 'openai'], ['sora', 'openai'],
+  // Anthropic / Claude
+  ['claude', 'anthropic'], ['anthropic', 'anthropic'],
+  // Google / Gemini
+  ['gemini', 'gemini'], ['gemma', 'gemini'], ['palm', 'google'], ['bard', 'google'], ['veo', 'google'],
+  ['imagen', 'google'],
+  // DeepSeek
+  ['deepseek', 'deepseek'], ['deep-seek', 'deepseek'],
+  // 通义千问
+  ['qwen', 'qwen'], ['tongyi', 'qwen'], ['wanx', 'qwen'],
+  // 智谱 GLM
+  ['glm', 'glm'], ['chatglm', 'chatglm'], ['zhipu', 'zhipu'], ['cogview', 'zhipu'], ['cogvideox', 'zhipu'],
+  // Moonshot / Kimi
+  ['kimi', 'kimi'], ['moonshot', 'moonshot'], ['moonshot-v1', 'moonshot'],
+  // MiniMax
+  ['minimax', 'minimax'], ['abab', 'minimax'],
+  // 豆包 / 字节
+  ['doubao', 'doubao'], ['seedream', 'seedream'], ['skylark', 'skylark'], ['bytedance', 'bytedance'],
+  ['ark', 'ark'], ['seaweed', 'bytedance'],
+  // 百度文心
+  ['ernie', 'ernie'], ['wenxin', 'wenxin'], ['baidu', 'baidu'],
+  // Mistral
+  ['mistral', 'mistral'], ['mixtral', 'mistral'], ['codestral', 'mistral'], ['pixtral', 'mistral'],
+  // Meta Llama
+  ['llama', 'llama'], ['meta', 'meta'], ['metallama', 'meta'],
+  // Cohere
+  ['cohere', 'cohere'], ['command', 'cohere'],
+  // Groq
+  ['groq', 'groq'],
+  // 腾讯混元
+  ['hunyuan', 'hunyuan'], ['hunyuan-turbos', 'hunyuan'], ['hunyuan-vision', 'hunyuan'],
+  // 讯飞星火
+  ['spark', 'spark'], ['iflytek', 'spark'], ['xfyun', 'spark'],
+  // 零一万物
+  ['yi-', 'yi'], ['yi34b', 'yi'], ['yi-lightning', 'yi'],
+  // 阶跃
+  ['step', 'stepfun'], ['stepfun', 'stepfun'],
+  // 百川
+  ['baichuan', 'baichuan'],
+  // InternLM
+  ['internlm', 'internlm'],
+  // Grok / xAI
+  ['grok', 'grok'], ['xai', 'xai'],
+  // OpenRouter（聚合，模型名常带 openrouter/ 前缀）
+  ['openrouter', 'openrouter'],
+  // 海螺
+  ['hailuo', 'hailuo'], ['minimax-hailuo', 'hailuo'],
+  // Fireworks
+  ['fireworks', 'fireworks'],
+  // Together
+  ['together', 'together'],
+  // Perplexity
+  ['perplexity', 'perplexity'], ['sonar', 'perplexity'],
+  // Ollama
+  ['ollama', 'ollama'],
+]
+
+/**
+ * 按模型名/模型 ID 前缀推断 vendor key（返回 ICON_FACTORY 的键）。
+ * logs/usage/tasks 链路后端未返回 vendor，只能用 model_id 或 display_name 反查。
+ * 先转小写 + 去版本后缀（-v1.2 / :latest），再按前缀表从长到短匹配。
+ * 命中返回 key，否则 null（交由调用方走文字兜底）。
+ */
+export function inferVendorByModelName(
+  modelIdOrName: string | null | undefined
+): string | null {
+  if (!modelIdOrName) return null
+  // 取最后一段（去掉 provider/ 前缀如 "deepseek/deepseek-chat" → "deepseek-chat"）
+  const tail = modelIdOrName.includes('/') ? modelIdOrName.split('/').pop() ?? modelIdOrName : modelIdOrName
+  const v = tail.toLowerCase().trim()
+  for (const [prefix, vendorKey] of MODEL_PREFIX_TO_VENDOR) {
+    if (v.startsWith(prefix)) return vendorKey
+  }
+  return null
 }
 
 type LobehubIconComp = React.ComponentType<{ size?: number }> & Record<string, React.ComponentType<{ size?: number }>>

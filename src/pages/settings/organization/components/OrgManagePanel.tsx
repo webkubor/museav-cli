@@ -59,9 +59,9 @@ export function OrgManagePanel({
           <span className="text-brand-base font-bold text-lg">M</span>
         </div>
         <div className="space-y-1">
-          <h3 className="text-sm font-bold text-mg-text-1">暂无选中的管理组织</h3>
+          <h3 className="text-sm font-bold text-mg-text-1">暂无可管理的企业</h3>
           <p className="text-xs text-mg-text-3 max-w-xs mx-auto leading-relaxed">
-            请在左侧“我的组织”列表中选择需要管理的组织。
+            当前账号下没有企业组织。可在顶栏租户切换器创建企业后再来管理。
           </p>
         </div>
       </div>

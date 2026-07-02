@@ -1,27 +1,29 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
 import { getSession, switchTenant } from '@/services/auth'
-import { OrgListSection } from './components/OrgListSection'
 import { OrgManagePanel } from './components/OrgManagePanel'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { appToast } from '@/lib/app-toast'
 import { useTranslation } from 'react-i18next'
 
+/**
+ * 企业管理（PRD《导航与总览》真源为单企业页）：直接管理「当前企业」——
+ * 摘要条 + 成员/企业信息/操作审计/成员邀请 四个页签，不做组织列表 master-detail。
+ * 创建 / 切换组织在顶栏租户切换器完成（DashboardHeader）。
+ */
 export default function OrganizationSettingsPage() {
   const { activeTenantId, tenants, setActiveWorkspaceId, setAuth } = useAuthStore()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { t } = useTranslation()
-  const firstEnterpriseId = tenants.find((t) => t.type !== 'personal')?.tenant_id ?? null
-  const initialId = tenants.find((t) => t.tenant_id === activeTenantId)?.type !== 'personal'
-    ? (activeTenantId ?? null)
-    : firstEnterpriseId
-  const [managingId, setManagingId] = useState<string | null>(initialId)
+
+  // 当前企业：活跃租户是企业则用它；否则退回账号下第一个企业租户
+  const firstEnterpriseId = tenants.find((tt) => tt.type !== 'personal')?.tenant_id ?? null
+  const activeIsEnterprise = tenants.find((tt) => tt.tenant_id === activeTenantId)?.type !== 'personal'
+  const manageTenantId = activeIsEnterprise ? (activeTenantId ?? firstEnterpriseId) : firstEnterpriseId
 
   async function handleDissolved(dissolvedTenantId: string) {
-    setManagingId(null)
     queryClient.removeQueries({ queryKey: ['tenant', dissolvedTenantId] })
     queryClient.removeQueries({ queryKey: ['tenant-members', dissolvedTenantId] })
     queryClient.removeQueries({ queryKey: ['workspaces', dissolvedTenantId] })
@@ -70,18 +72,7 @@ export default function OrganizationSettingsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title={t('enterprise.title')} description={t('enterprise.subtitle')} />
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* 左侧窄栏 */}
-        <div className="lg:col-span-4 space-y-4">
-          <OrgListSection selectedId={managingId} onSelect={setManagingId} />
-        </div>
-
-        {/* 右侧宽栏 */}
-        <div className="lg:col-span-8">
-          <OrgManagePanel key={managingId ?? 'empty'} tenantId={managingId} onDissolved={handleDissolved} />
-        </div>
-      </div>
+      <OrgManagePanel key={manageTenantId ?? 'empty'} tenantId={manageTenantId} onDissolved={handleDissolved} />
     </div>
   )
 }

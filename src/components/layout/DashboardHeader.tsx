@@ -654,7 +654,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
             <Button variant="ghost" onClick={() => setOrgModalVisible(false)}>
               {t('apiKeys.createModal.cancel')}
             </Button>
-            <Button variant="brand" loading={createOrgMutation.isPending} onClick={handleCreateOrgSubmit}>
+            <Button variant="brand" data-umami-event="create_organization" loading={createOrgMutation.isPending} onClick={handleCreateOrgSubmit}>
               {t('apiKeys.createModal.confirm')}
             </Button>
           </DialogFooter>

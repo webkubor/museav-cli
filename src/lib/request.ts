@@ -63,7 +63,8 @@ type ApiLogEntry = {
   response?: unknown
 }
 
-const SENSITIVE_KEY_RE = /authorization|cookie|csrf|token|secret|password|api[_-]?key|access[_-]?key/i
+// ^key$：api-key reveal 响应的 { key: "mgk_..." } 明文字段（#298），不得进 dev 日志。
+const SENSITIVE_KEY_RE = /authorization|cookie|csrf|token|secret|password|api[_-]?key|access[_-]?key|^key$/i
 
 function nowMs() {
   return typeof performance !== 'undefined' ? performance.now() : Date.now()

@@ -12,7 +12,7 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/Table'
-import { LuKeyRound, LuShieldCheck } from 'react-icons/lu'
+import { LuCopy, LuKeyRound, LuLoaderCircle, LuShieldCheck } from 'react-icons/lu'
 import { formatDateTime } from '@/lib/format-date'
 import { formatMoney } from '@/lib/utils'
 import type { ApiKeyItem } from '@/types'
@@ -29,9 +29,13 @@ type Props = {
   canRevoke: boolean
   onRevoke: (target: { id: string; name: string }) => void
   onEditGuardrail: (item: ApiKeyItem) => void
+  /** 复制完整明文（#298）：父组件调 reveal → 剪贴板 */
+  onCopyKey: (item: ApiKeyItem) => void
+  /** 正在 reveal 的 key id（行内 loading） */
+  copyingKeyId: string | null
 }
 
-export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuardrail }: Props) {
+export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuardrail, onCopyKey, copyingKeyId }: Props) {
   const { t } = useTranslation()
 
   return (
@@ -67,9 +71,35 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
         ) : (
           items.map((record) => {
             const guardrailNames = (record.guardrails ?? []).map((guardrail) => guardrail.name).filter(Boolean)
+            const copyDisabledReason =
+              record.status !== 'active'
+                ? t('apiKeys.table.copyUnavailableInactive')
+                : record.revealable
+                  ? null
+                  : t('apiKeys.table.copyUnavailableLegacy')
             return (
               <TableRow key={record.api_key_id}>
-                <TableCell className="font-semibold text-mg-text-1 text-[13.5px]">{record.name}</TableCell>
+                <TableCell>
+                  <div className="font-semibold text-mg-text-1 text-[13.5px]">{record.name}</div>
+                  {/* #298：名称下方掩码 + 复制完整明文按钮 */}
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <span className="font-mono text-[11px] text-mg-text-3 tracking-tight">{record.masked}</span>
+                    <button
+                      type="button"
+                      aria-label={copyDisabledReason ?? t('apiKeys.table.copy')}
+                      title={copyDisabledReason ?? t('apiKeys.table.copy')}
+                      disabled={copyDisabledReason !== null || copyingKeyId !== null}
+                      onClick={() => onCopyKey(record)}
+                      className="p-0.5 text-mg-text-3 hover:text-brand-base transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-mg-text-3"
+                    >
+                      {copyingKeyId === record.api_key_id ? (
+                        <LuLoaderCircle className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <LuCopy className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
+                </TableCell>
                 <TableCell>
                   {guardrailNames.length > 0 ? (
                     <div className="flex flex-wrap gap-1">

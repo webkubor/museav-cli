@@ -218,6 +218,8 @@ export interface ApiKeyItem {
   scope: 'personal' | 'workspace' | 'member'
   guardrail_id?: string
   guardrails?: ApiKeyGuardrailSummary[]
+  /** 可通过 reveal 端点取回完整明文（#298）；早期 key 无密文为 false，复制按钮置灰 */
+  revealable?: boolean
 }
 
 export interface ApiKeyGuardrailSummary {

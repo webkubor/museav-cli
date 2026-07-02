@@ -153,7 +153,9 @@
       "neverExpires": "永不过期",
       "expired": "已过期",
       "totalSpend": "累计消费",
-      "noData": "无数据"
+      "noData": "无数据",
+      "copyUnavailableLegacy": "该密钥创建于「支持复制」功能上线之前，明文不可找回；请轮换新建密钥",
+      "copyUnavailableInactive": "密钥已撤销或过期，无法复制"
     },
     "revokeConfirm": {
       "title": "确定删除该密钥吗？",
@@ -187,7 +189,10 @@
       "createSuccess": "密钥 \"{{name}}\" 创建成功",
       "createError": "创建密钥失败",
       "revokeSuccess": "密钥已删除",
-      "revokeError": "删除密钥失败"
+      "revokeError": "删除密钥失败",
+      "copyKeySuccess": "完整密钥已复制到剪贴板",
+      "copyKeyError": "获取密钥失败，请稍后重试",
+      "copyKeyClipboardError": "写入剪贴板失败，请检查浏览器权限"
     }
   },
   "billing": {

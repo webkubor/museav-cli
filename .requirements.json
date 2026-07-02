@@ -2465,5 +2465,687 @@
       "已完成"
     ],
     "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-329",
+    "title": "[后端] workspaces 列表项补 guardrail_count + 日志采集/转发状态",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-02T12:08:38.291Z",
+    "gitlabIid": 329,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "TASK",
+      "已认领"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-328",
+    "title": "[后端] 总览数据口径按租户/角色/工作空间权限裁剪（拆自 #314）",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-02T11:59:17.146Z",
+    "gitlabIid": 328,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：高",
+      "已认领"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-327",
+    "title": "空间成员：设为负责人接口 + 成员拥有Key计数",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-02T11:35:37.072Z",
+    "gitlabIid": 327,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "TASK",
+      "已认领"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-326",
+    "title": "邀请链接支持角色绑定 + 一次性使用（后端接口）",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-02T10:47:50.800Z",
+    "gitlabIid": 326,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "TASK",
+      "已认领"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-325",
+    "title": "[BUG] 网关落库 FK 违规(gateway_call_attempts)被当致命错误，丢弃已成功响应并返回 500",
+    "priority": "high",
+    "status": "pending",
+    "createdAt": "2026-07-02T10:41:03.695Z",
+    "gitlabIid": 325,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "BUG"
+    ]
+  },
+  {
+    "id": "gl-324",
+    "title": "【后端】说明文档已迁移到前端本地 content/，agent 接入入口需同步调整",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-02T10:20:15.933Z",
+    "gitlabIid": 324,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "TASK",
+      "待处理"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-322",
+    "title": "[auth] 快捷登录账号强制绑定手机号后端契约",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-02T09:15:07.322Z",
+    "gitlabIid": 322,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：高",
+      "待验证"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-320",
+    "title": "[异步任务] /async-tasks 未做租户/成员裁剪，跨租户可读他人原始模型输出 (IDOR)",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-07-02T08:29:48.619Z",
+    "gitlabIid": 320,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-319",
+    "title": "[后端][总览] usage/series 按月粒度报错（granularity=month 返回 40001）",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-07-02T05:10:17.279Z",
+    "gitlabIid": 319,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "BUG",
+      "优先级：高",
+      "已完成"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-318",
+    "title": "[controller] GET /api-keys 列表遇 phone-only(email=NULL) 账号拥有的 key 时 500 database error（数据依赖，伪装成 flake）",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-07-02T03:54:38.606Z",
+    "gitlabIid": 318,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-317",
+    "title": "[后端][权限] 总览/用量/日志接口按 角色×租户×工作空间 做数据裁剪",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-07-02T03:29:52.989Z",
+    "gitlabIid": 317,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：高",
+      "已完成"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-316",
+    "title": "[后端][总览] 新增成员用量排行端点 GET /usage/rankings/accounts",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-07-02T03:29:51.180Z",
+    "gitlabIid": 316,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：高",
+      "已完成"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-315",
+    "title": "[后端][总览] usage/summary & usage/series 增加 account_id 成员过滤（支撑「我的视图」口径）",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-07-02T03:29:50.290Z",
+    "gitlabIid": 315,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：高",
+      "已完成"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-314",
+    "title": "[权限] 数据口径与权限裁剪对齐（后端+前端）",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-02T03:19:19.659Z",
+    "gitlabIid": 314,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：高",
+      "待验证"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-313",
+    "title": "[总览] 工作空间明细 + 排行卡 + 最近调用日志 + 空/异常状态",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-02T03:19:19.369Z",
+    "gitlabIid": 313,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：高",
+      "待验证"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-312",
+    "title": "[总览] 核心指标卡 + 用量趋势图",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-02T03:19:19.092Z",
+    "gitlabIid": 312,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：高",
+      "待验证"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-311",
+    "title": "[总览] 「立即接入」弹窗",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-02T03:19:18.784Z",
+    "gitlabIid": 311,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：高",
+      "待验证"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-310",
+    "title": "[总览] 快速开始接入引导气泡",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-02T03:19:18.486Z",
+    "gitlabIid": 310,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：高",
+      "待验证"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-309",
+    "title": "[总览] 页面骨架 + 视图切换 + 统计周期",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-02T03:19:18.145Z",
+    "gitlabIid": 309,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：高",
+      "待验证"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-308",
+    "title": "[导航] 侧栏收起态 & 响应式抽屉",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-02T03:19:17.863Z",
+    "gitlabIid": 308,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：高",
+      "待验证"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-307",
+    "title": "[导航] 顶部新增「模型体验」入口 + 底部活动运营位",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-02T03:19:17.579Z",
+    "gitlabIid": 307,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：高",
+      "待验证"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-306",
+    "title": "[导航] 工作空间选择器语义收敛（只驱动 workspace 级页面）",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-02T03:19:16.355Z",
+    "gitlabIid": 306,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：高",
+      "待验证"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-305",
+    "title": "[导航] 命名统一（项目→工作空间 / 日志→调用日志 / 任务→任务历史 / 用量统一 / 可观测性下线）",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-02T03:19:16.060Z",
+    "gitlabIid": 305,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：高",
+      "待验证"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-304",
+    "title": "[导航] 侧栏按对象分组重构 + Console shell 导航配置化",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-02T03:19:15.697Z",
+    "gitlabIid": 304,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：高",
+      "待验证"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-303",
+    "title": "导入ccswitch报错",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-07-02T02:36:00.156Z",
+    "gitlabIid": 303,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-302",
+    "title": "[controller] GET /accounts 列表 500 database error（accounts 列表端点整体不可用，#107 起回归）",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-07-01T11:27:21.497Z",
+    "gitlabIid": 302,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "BUG",
+      "优先级：高",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-301",
+    "title": "[auth] 手机号登录/注册全链路(国内 domestic phone auth)",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-07-01T09:05:49.288Z",
+    "gitlabIid": 301,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-300",
+    "title": "modelgo-config 支持一键接入 12 个 AI 编程客户端",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-07-01T06:41:25.787Z",
+    "gitlabIid": 300,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "TASK",
+      "优先级：中",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-299",
+    "title": "【需求】控制台对接阿里云验证码2.0（滑块/智能验证）",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-01T03:09:03.651Z",
+    "gitlabIid": 299,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "TASK",
+      "优先级：中",
+      "待验证"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-298",
+    "title": "apikey支持复制",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-07-01T02:45:10.968Z",
+    "gitlabIid": 298,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：高",
+      "已完成"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-297",
+    "title": "[billing] 国际版对接 Stripe 支付(充值)",
+    "priority": "medium",
+    "status": "pending",
+    "createdAt": "2026-07-01T02:20:06.049Z",
+    "gitlabIid": 297,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：低",
+      "进行中"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-296",
+    "title": "[文档] docs.modelgo.com 首页快速接入示例 base URL 与线上网关不一致",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-07-01T01:05:47.896Z",
+    "gitlabIid": 296,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-295",
+    "title": "[guardrail] 成员支持绑定多个护栏 + 创建冲突应返回409而非503",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-30T09:35:06.738Z",
+    "gitlabIid": 295,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-293",
+    "title": "[auth] 新增短信验证码(Aliyun Dysmsapi)发送+校验接口",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-30T05:48:24.327Z",
+    "gitlabIid": 293,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "优先级：低",
+      "已完成"
+    ],
+    "assignee": "webkubor"
+  },
+  {
+    "id": "gl-292",
+    "title": "[限流-网关] post-timing 维度限流 429 缺失 Retry-After 头（pre-timing 维度有）",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-30T05:19:04.290Z",
+    "gitlabIid": 292,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-291",
+    "title": "[限流-controller] 非 UUID 形态的 rule id 触发 500 database error（应 400/404）",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-30T05:18:44.762Z",
+    "gitlabIid": 291,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-289",
+    "title": "[网关/亲和] cache-affinity-general 高并发冷启动 ~12% 请求漏粘到非粘性上游实例",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-30T03:24:25.804Z",
+    "gitlabIid": 289,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "BUG",
+      "reopen",
+      "优先级：低",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-288",
+    "title": "【线上】模型映射保存报错",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-29T07:26:11.815Z",
+    "gitlabIid": 288,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "BUG",
+      "reopen",
+      "优先级：高",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-286",
+    "title": "[计费/网关] 并发压测(c=50)下约 10-13% 请求返回 502 billing system error",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-29T06:43:33.235Z",
+    "gitlabIid": 286,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "BUG",
+      "reopen",
+      "优先级：高",
+      "已完成"
+    ],
+    "assignee": "duanlingxiao"
+  },
+  {
+    "id": "gl-284",
+    "title": "[gateway] 流式中断/缺 usage 计费兜底:按已交付内容 tokenizer 计费(参考 new-api)",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-29T04:01:44.645Z",
+    "gitlabIid": 284,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "Feature",
+      "已完成"
+    ]
+  },
+  {
+    "id": "gl-283",
+    "title": "[网关/护栏] 异步 /v1/content_generation/tasks 端点间歇性绕过模型黑名单护栏",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-29T03:13:34.005Z",
+    "gitlabIid": 283,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-282",
+    "title": "[网关/视频] 非 Ark 模型在视频端点被接受入队（应 400/403 拒绝）",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-29T03:13:33.665Z",
+    "gitlabIid": 282,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-281",
+    "title": "[网关/x402] 携带 x402 头的请求返回 500 gateway_internal（应 fall-through 到 mgk 鉴权 401）",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-29T03:13:33.251Z",
+    "gitlabIid": 281,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-280",
+    "title": "性能测试",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-29T01:57:52.945Z",
+    "gitlabIid": 280,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ],
+    "assignee": "yujianfeng"
+  },
+  {
+    "id": "gl-278",
+    "title": "[网关/视频] fakellm/seedance 创建视频任务间歇性 400 provider_unsupported（路由到不支持 video 端点的 provider 实例）",
+    "priority": "high",
+    "status": "done",
+    "createdAt": "2026-06-26T01:59:13.446Z",
+    "gitlabIid": 278,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "BUG",
+      "已完成"
+    ],
+    "assignee": "xionrenjie"
+  },
+  {
+    "id": "gl-275",
+    "title": "线上验收脚本目录框架账号数据搭建",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-25T08:32:53.735Z",
+    "gitlabIid": 275,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ],
+    "assignee": "yujianfeng"
+  },
+  {
+    "id": "gl-268",
+    "title": "线上功能验证",
+    "priority": "medium",
+    "status": "done",
+    "createdAt": "2026-06-25T01:35:20.283Z",
+    "gitlabIid": 268,
+    "gitlabState": "opened",
+    "gitlabLabels": [
+      "TASK",
+      "已完成"
+    ],
+    "assignee": "yujianfeng"
   }
 ]

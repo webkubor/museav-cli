@@ -724,6 +724,7 @@
       "tabs": {
         "overview": "Overview",
         "members": "Members",
+        "logs": "Logs & Forwarding",
         "settings": "Settings"
       },
       "overview": {

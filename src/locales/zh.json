@@ -724,6 +724,7 @@
       "tabs": {
         "overview": "概览",
         "members": "成员",
+        "logs": "日志与转发",
         "settings": "设置"
       },
       "overview": {

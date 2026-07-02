@@ -401,7 +401,8 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
 
 // ─── Main content (requires loaded config) ────────────────────────────────────
 
-function ObservabilityContent({
+// 空间管理详情「日志与转发」页签复用此组件（PRD：可观测性并入空间详情）
+export function ObservabilityContent({
   workspaceId,
   config,
   canEditLogging,

@@ -16,6 +16,8 @@ import {
   updateWorkspaceMemberRole,
 } from '@/services/workspaces'
 import { listTenantMembers } from '@/services/tenants'
+import { getLoggingConfig } from '@/services/observability'
+import { ObservabilityContent } from '@/pages/observability'
 import { pageItems, formatMoney as fmtMoney } from '@/lib/utils'
 import { formatDateTime } from '@/lib/format-date'
 import { WS_ROLE_LABEL, WS_ROLE_OPTIONS, TENANT_ROLE_LABEL } from '@/constants/roles'
@@ -29,7 +31,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { appToast } from '@/lib/app-toast'
 
-type DetailTab = 'overview' | 'members' | 'settings'
+type DetailTab = 'overview' | 'members' | 'logs' | 'settings'
 
 function formatMoney(m?: Money) {
   if (!m) return '—'
@@ -52,6 +54,7 @@ export default function WorkspaceDetailPage() {
   const tabs: { key: DetailTab; label: string }[] = [
     { key: 'overview', label: t('workspaces.detail.tabs.overview') },
     { key: 'members', label: t('workspaces.detail.tabs.members') },
+    { key: 'logs', label: t('workspaces.detail.tabs.logs') },
     { key: 'settings', label: t('workspaces.detail.tabs.settings') },
   ]
 
@@ -93,6 +96,7 @@ export default function WorkspaceDetailPage() {
           </TabsList>
           <TabsContent value="overview"><OverviewTab ws={ws} /></TabsContent>
           <TabsContent value="members"><MembersTab workspaceId={workspaceId} /></TabsContent>
+          <TabsContent value="logs"><LogsForwardingTab workspaceId={workspaceId} /></TabsContent>
           <TabsContent value="settings">
             <SettingsTab ws={ws} onDeleted={() => navigate('/settings/workspace')} />
           </TabsContent>
@@ -388,6 +392,42 @@ function MemberAvatar({ member, accent }: { member: WorkspaceMember | TenantMemb
     <div className={`w-7 h-7 rounded-full ${bg} text-white text-[10px] font-bold flex items-center justify-center shrink-0 uppercase`}>
       {member.account.display_name?.[0] ?? '?'}
     </div>
+  )
+}
+
+// ─── 日志与转发 ───────────────────────────────────────
+// PRD：可观测性并入空间详情。复用可观测性页的采集/转发能力，按当前空间 workspaceId 参数化。
+function LogsForwardingTab({ workspaceId }: { workspaceId: string }) {
+  const { hasPermission } = usePermissions()
+  const canEditLogging = hasPermission(PERMS.OBSERVABILITY_LOGGING_EDIT)
+  const canManageForward = hasPermission(PERMS.OBSERVABILITY_FORWARD_MANAGE)
+
+  const loggingQuery = useQuery({
+    queryKey: ['observability', 'logging', workspaceId],
+    queryFn: () => getLoggingConfig(workspaceId),
+    enabled: Boolean(workspaceId),
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  })
+
+  if (loggingQuery.isLoading) {
+    return (
+      <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-6 max-w-3xl space-y-4 animate-pulse">
+        <div className="h-5 bg-mg-fill-0 rounded-sm w-1/3" />
+        <div className="h-4 bg-mg-fill-0 rounded-sm w-full" />
+        <div className="h-4 bg-mg-fill-0 rounded-sm w-2/3" />
+      </div>
+    )
+  }
+  if (!loggingQuery.data) return null
+
+  return (
+    <ObservabilityContent
+      workspaceId={workspaceId}
+      config={loggingQuery.data}
+      canEditLogging={canEditLogging}
+      canManageForward={canManageForward}
+    />
   )
 }
 

@@ -6,13 +6,36 @@
 
 import type { DateRangeValue } from '@/components/ui/DateRangePicker'
 import { densifyDailyBuckets as densifyDaily } from '@/lib/chart-buckets'
-import { addFromNowISO, endOfLocalDayISO, nowISO, startOfLocalDayISO } from '@/lib/datetime'
+import { addFromNowISO, endOfLocalDayISO, nowISO, startOfLocalDayISO, userTimeZone } from '@/lib/datetime'
 
 /** 用量趋势支持的指标类型。 */
 export type Metric = 'spend' | 'requests' | 'tokens'
 
 /** 用量页快捷时间范围对应天数。 */
 export const USAGE_PRESET_DAYS: Record<string, number> = { '7d': 7, '30d': 30, '90d': 90 }
+
+function startOfMonthISO(offset: number) {
+  const date = new Date()
+  date.setMonth(date.getMonth() + offset, 1)
+  date.setHours(0, 0, 0, 0)
+  return date.toISOString()
+}
+
+function endOfMonthISO(offset: number) {
+  const date = new Date()
+  date.setMonth(date.getMonth() + offset + 1, 0)
+  date.setHours(23, 59, 59, 999)
+  return date.toISOString()
+}
+
+function todayKey() {
+  return new Intl.DateTimeFormat('en-CA', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: userTimeZone(),
+    year: 'numeric',
+  }).format(new Date())
+}
 
 /** 将日期选择器状态转换成后端接口需要的 ISO 时间范围。 */
 export function rangeToDates(range: DateRangeValue): { from: string; to: string } {
@@ -22,6 +45,15 @@ export function rangeToDates(range: DateRangeValue): { from: string; to: string 
       from: startOfLocalDayISO(range.startDate),
       to: endOfLocalDayISO(range.endDate),
     }
+  }
+  if (range.preset === 'today') {
+    return { from: startOfLocalDayISO(todayKey()), to: nowISO() }
+  }
+  if (range.preset === 'thisMonth') {
+    return { from: startOfMonthISO(0), to: nowISO() }
+  }
+  if (range.preset === 'lastMonth') {
+    return { from: startOfMonthISO(-1), to: endOfMonthISO(-1) }
   }
   const days = USAGE_PRESET_DAYS[range.preset ?? '7d'] ?? 7
   return {

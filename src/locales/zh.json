@@ -925,9 +925,12 @@
     "emptyValue": "暂无",
     "refresh": "刷新",
     "range": {
+      "today": "今天",
       "7d": "近 7 天",
       "30d": "近 30 天",
       "90d": "近 90 天",
+      "thisMonth": "本月",
+      "lastMonth": "上月",
       "custom": "自定义"
     },
     "customRange": {
@@ -945,10 +948,16 @@
     "kpi": {
       "spend": "总消费",
       "requests": "总请求数",
+      "requestsTotal": "总请求数",
       "tokens": "总 Token 数",
       "averageCost": "平均单次费用",
+      "averageCostWithValue": "单次均价 {{value}}",
       "averageCostDesc": "总消费 / 请求数",
       "tokenBreakdown": "输入 {{input}} / 输出 {{output}}"
+    },
+    "overview": {
+      "title": "成本概览",
+      "desc": "按当前项目和时间范围汇总核心用量。"
     },
     "health": {
       "title": "额度健康",
@@ -975,6 +984,7 @@
     "sources": {
       "title": "成本来源",
       "topProject": "Top Project",
+      "topWorkspace": "最高消费项目",
       "topApiKey": "Top API Key",
       "topModel": "Top Model",
       "empty": "暂无来源数据"
@@ -995,6 +1005,8 @@
     },
     "chart": {
       "trendTitle": "{{metric}}趋势",
+      "costTrend": "消费趋势",
+      "filteredAggregation": "按当前筛选口径聚合",
       "histogramTitle": "请求分布"
     },
     "error": {
@@ -1008,12 +1020,26 @@
       "allWorkspaces": "全部项目",
       "allKeys": "全部 Key",
       "allModels": "全部模型",
+      "time": "时间范围",
       "workspace": "项目",
       "apiKey": "API Key"
     },
     "filterPanel": {
       "title": "数据筛选",
       "desc": "按项目、API Key、模型和时间范围查看真实用量。"
+    },
+    "breakdown": {
+      "title": "用量明细",
+      "desc": "在当前时间和项目范围内查看明细。"
+    },
+    "dimension": {
+      "model": "模型",
+      "member": "成员",
+      "apiKey": "API Keys"
+    },
+    "member": {
+      "empty": "暂无成员维度数据",
+      "emptyDesc": "当前筛选范围内还没有可展示的成员用量。"
     },
     "rankings": {
       "title": "用量排行",

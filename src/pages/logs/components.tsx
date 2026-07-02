@@ -1,4 +1,5 @@
 import { LuChevronRight } from 'react-icons/lu'
+import type { ReactNode } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Money } from '@/components/ui/Money'
@@ -20,8 +21,8 @@ import type { CallLogItem } from '@/types'
 const STATUS_MAP: Record<string, StatusConfig> = {
   accepted: { label: '处理中', variant: 'secondary', dot: true },
   succeeded: { label: '成功', variant: 'success' },
-  failed: { label: '失败', variant: 'destructive' },
-  rejected: { label: '已拒绝', variant: 'warning' },
+  failed: { label: '异常', variant: 'destructive' },
+  rejected: { label: '护栏命中', variant: 'warning' },
 }
 
 function formatMaybeDuration(ms: number | null | undefined) {
@@ -199,5 +200,14 @@ export function ActiveFilterChips({
         </button>
       )}
     </div>
+  )
+}
+
+export function FilterField({ children, label }: { children: ReactNode; label: string }) {
+  return (
+    <label className="flex min-w-0 flex-col gap-1.5">
+      <span className="mg-text-label text-mg-text-3">{label}</span>
+      {children}
+    </label>
   )
 }

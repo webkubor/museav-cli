@@ -18,6 +18,23 @@ export interface SSEReassembled {
   usage?: unknown
 }
 
+export function decodePayloadBody(bodyB64: string | undefined) {
+  if (!bodyB64) return ''
+  let decoded: string
+  try {
+    const binary = atob(bodyB64)
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
+    decoded = new TextDecoder().decode(bytes)
+  } catch {
+    return bodyB64
+  }
+  try {
+    return JSON.stringify(JSON.parse(decoded), null, 2)
+  } catch {
+    return decoded
+  }
+}
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null
 }

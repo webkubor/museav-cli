@@ -926,9 +926,12 @@
     "emptyValue": "None",
     "refresh": "Refresh",
     "range": {
+      "today": "Today",
       "7d": "Last 7 days",
       "30d": "Last 30 days",
       "90d": "Last 90 days",
+      "thisMonth": "This month",
+      "lastMonth": "Last month",
       "custom": "Custom"
     },
     "customRange": {
@@ -946,10 +949,16 @@
     "kpi": {
       "spend": "Total Spend",
       "requests": "Total Requests",
+      "requestsTotal": "Total Requests",
       "tokens": "Total Tokens",
       "averageCost": "Avg Cost / Request",
+      "averageCostWithValue": "Avg cost {{value}}",
       "averageCostDesc": "Total spend / requests",
       "tokenBreakdown": "Input {{input}} / Output {{output}}"
+    },
+    "overview": {
+      "title": "Cost Overview",
+      "desc": "Summarizes key usage for the selected workspace and time range."
     },
     "health": {
       "title": "Quota Health",
@@ -976,6 +985,7 @@
     "sources": {
       "title": "Cost Sources",
       "topProject": "Top Project",
+      "topWorkspace": "Top Workspace",
       "topApiKey": "Top API Key",
       "topModel": "Top Model",
       "empty": "No source data"
@@ -996,6 +1006,8 @@
     },
     "chart": {
       "trendTitle": "{{metric}} Trend",
+      "costTrend": "Spend Trend",
+      "filteredAggregation": "Aggregated by the current filters",
       "histogramTitle": "Request Distribution"
     },
     "error": {
@@ -1009,12 +1021,26 @@
       "allWorkspaces": "All Workspaces",
       "allKeys": "All Keys",
       "allModels": "All Models",
+      "time": "Time Range",
       "workspace": "Workspace",
       "apiKey": "API Key"
     },
     "filterPanel": {
       "title": "Filters",
       "desc": "Review real usage by workspace, API Key, model, and time range."
+    },
+    "breakdown": {
+      "title": "Usage Breakdown",
+      "desc": "Review breakdowns within the selected time and workspace scope."
+    },
+    "dimension": {
+      "model": "Models",
+      "member": "Members",
+      "apiKey": "API Keys"
+    },
+    "member": {
+      "empty": "No member usage data",
+      "emptyDesc": "No member usage is available for the current filters."
     },
     "rankings": {
       "title": "Usage Rankings",

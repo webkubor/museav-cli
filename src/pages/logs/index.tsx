@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 import { useCopy } from '@/hooks/use-copy'
 import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
@@ -9,13 +9,17 @@ import Select from '@/components/ui/Select'
 import { getLogPayload, listCallLogs } from '@/services/logs'
 import { listApiKeys } from '@/services/api-keys'
 import { listModels } from '@/services/catalog'
+import { listTenantMembers } from '@/services/tenants'
+import { listWorkspaces } from '@/services/workspaces'
 import { useAuthStore } from '@/store/auth'
-import { endOfLocalDayISO } from '@/lib/datetime'
 import { appToast } from '@/lib/app-toast'
-import type { CallLogItem, LogPayload } from '@/types'
-import { formatSSESummary, reassembleSSE } from './reassemble-sse'
+import type { CallLogListParams } from '@/interfaces/logs'
+import type { CallLogItem } from '@/types'
+import { rangeToDates } from '@/pages/usage/usage-utils'
+import { decodePayloadBody, formatSSESummary, reassembleSSE } from './reassemble-sse'
 import {
   ActiveFilterChips,
+  FilterField,
   LogsTable,
 } from './components'
 import {
@@ -25,56 +29,69 @@ import {
 } from './detail'
 import { LuChevronDown, LuRefreshCw, LuSearch } from 'react-icons/lu'
 
-type LogStatusFilter = 'all' | 'accepted' | 'succeeded' | 'failed' | 'rejected'
+type LogStatusFilter = 'all' | 'success' | 'guarded' | 'error'
+type LogGuardrailFilter = 'all' | 'hit' | 'not_hit'
 
 const PAGE_SIZE = 15
 const DEFAULT_TIME_RANGE: DateRangeValue = { preset: '7d' }
 
 const STATUS_OPTIONS: Array<{ label: string; value: LogStatusFilter }> = [
   { label: '全部状态', value: 'all' },
-  { label: '成功', value: 'succeeded' },
-  { label: '处理中', value: 'accepted' },
-  { label: '失败', value: 'failed' },
-  { label: '已拒绝', value: 'rejected' },
+  { label: '成功', value: 'success' },
+  { label: '护栏命中', value: 'guarded' },
+  { label: '异常', value: 'error' },
 ]
 
-function decodePayload(payload: LogPayload | undefined) {
-  if (!payload?.body_b64) return ''
-  let decoded: string
-  try {
-    const binary = atob(payload.body_b64)
-    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
-    decoded = new TextDecoder().decode(bytes)
-  } catch {
-    return payload.body_b64
-  }
-  try {
-    return JSON.stringify(JSON.parse(decoded), null, 2)
-  } catch {
-    return decoded
-  }
-}
+const GUARDRAIL_OPTIONS: Array<{ label: string; value: LogGuardrailFilter }> = [
+  { label: '全部护栏状态', value: 'all' },
+  { label: '护栏命中', value: 'hit' },
+  { label: '未命中护栏', value: 'not_hit' },
+]
+
+const LOG_TIME_PRESETS = [
+  { key: 'today', label: '今天' },
+  { key: '7d', label: '近 7 天' },
+  { key: '30d', label: '近 30 天' },
+  { key: 'thisMonth', label: '本月' },
+  { key: 'lastMonth', label: '上月' },
+  { key: 'custom', label: '自定义' },
+]
 
 function isDefaultTimeRange(value: DateRangeValue) {
   return value.preset === DEFAULT_TIME_RANGE.preset && !value.startDate && !value.endDate
 }
 
 function timeRangeLabel(value: DateRangeValue) {
-  if (value.preset === '1h') return '近 1 小时'
-  if (value.preset === '24h') return '近 24 小时'
+  if (value.preset === 'today') return '今天'
   if (value.preset === '7d') return '近 7 天'
   if (value.preset === '30d') return '近 30 天'
+  if (value.preset === 'thisMonth') return '本月'
+  if (value.preset === 'lastMonth') return '上月'
   if (value.preset === 'custom' && value.startDate && value.endDate) {
     return `${value.startDate} 至 ${value.endDate}`
   }
   return '全部时间'
 }
 
+function resolveBackendStatus(
+  status: LogStatusFilter,
+  guardrail: LogGuardrailFilter
+): CallLogListParams['status'] | undefined {
+  if (status === 'guarded' || guardrail === 'hit') return 'rejected'
+  if (status === 'error') return 'failed'
+  if (status === 'success' || guardrail === 'not_hit') return 'succeeded'
+  return undefined
+}
+
 export default function LogsPage() {
+  const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const [statusFilter, setStatusFilter] = useState<LogStatusFilter>('all')
+  const [workspaceFilter, setWorkspaceFilter] = useState('all')
   const [modelFilter, setModelFilter] = useState('all')
   const [apiKeyFilter, setApiKeyFilter] = useState('all')
+  const [memberFilter, setMemberFilter] = useState('all')
+  const [guardrailFilter, setGuardrailFilter] = useState<LogGuardrailFilter>('all')
   const [searchValue, setSearchValue] = useState('')
   const [timeRange, setTimeRange] = useState<DateRangeValue>(DEFAULT_TIME_RANGE)
   const [showMoreFilters, setShowMoreFilters] = useState(false)
@@ -94,12 +111,22 @@ export default function LogsPage() {
 
   function clearFilters() {
     setStatusFilter('all')
+    setWorkspaceFilter('all')
     setModelFilter('all')
     setApiKeyFilter('all')
+    setMemberFilter('all')
+    setGuardrailFilter('all')
     setSearchValue('')
     setTimeRange(DEFAULT_TIME_RANGE)
     resetPagination()
   }
+
+  const { data: workspacesData } = useQuery({
+    queryKey: ['workspaces-for-log-filter', activeTenantId],
+    queryFn: () => listWorkspaces(),
+    enabled: Boolean(activeTenantId),
+    staleTime: 5 * 60_000,
+  })
 
   const { data: apiKeysData } = useQuery({
     queryKey: ['api-keys', activeWorkspaceId],
@@ -114,13 +141,27 @@ export default function LogsPage() {
     staleTime: 5 * 60_000,
   })
 
+  const { data: membersData } = useQuery({
+    queryKey: ['tenant-members-for-log-filter', activeTenantId],
+    queryFn: () => listTenantMembers(activeTenantId!, { limit: 100 }),
+    enabled: Boolean(activeTenantId),
+    staleTime: 5 * 60_000,
+  })
+
+  const { from, to } = useMemo(() => rangeToDates(timeRange), [timeRange])
+  const backendStatus = resolveBackendStatus(statusFilter, guardrailFilter)
+  const selectedWorkspaceId = workspaceFilter === 'all' ? undefined : workspaceFilter
+
   const { data, isFetching, isLoading, refetch } = useQuery({
     queryKey: [
       'logs',
-      activeWorkspaceId,
+      activeTenantId,
+      selectedWorkspaceId,
       statusFilter,
+      guardrailFilter,
       modelFilter,
       apiKeyFilter,
+      memberFilter,
       searchValue,
       timeRange,
       page,
@@ -128,22 +169,18 @@ export default function LogsPage() {
     ],
     queryFn: () =>
       listCallLogs({
-        workspace_id: activeWorkspaceId!,
-        status: statusFilter === 'all' ? undefined : statusFilter,
+        workspace_id: selectedWorkspaceId,
+        status: backendStatus,
         model_id: modelFilter === 'all' ? undefined : modelFilter,
         api_key_id: apiKeyFilter === 'all' ? undefined : apiKeyFilter,
-        request_id: searchValue.trim() || undefined,
-        preset: timeRange.preset !== 'all'
-          ? (timeRange.preset as '1h' | '24h' | '7d' | '30d' | 'custom')
-          : undefined,
-        before_started_at: currentCursor ?? (
-          timeRange.preset === 'custom' && timeRange.endDate
-            ? endOfLocalDayISO(timeRange.endDate)
-            : undefined
-        ),
+        account_id: memberFilter === 'all' ? undefined : memberFilter,
+        q: searchValue.trim() || undefined,
+        from,
+        to,
+        before_started_at: currentCursor ?? undefined,
         limit: PAGE_SIZE,
       }),
-    enabled: Boolean(activeWorkspaceId),
+    enabled: Boolean(activeTenantId),
     staleTime: 10_000,
     refetchOnWindowFocus: false,
   })
@@ -154,7 +191,7 @@ export default function LogsPage() {
     enabled: Boolean(selectedLog?.request_id),
   })
 
-  const decodedPayload = decodePayload(payloadQuery.data)
+  const decodedPayload = decodePayloadBody(payloadQuery.data?.body_b64)
   const sseReassembled = reassembleSSE(decodedPayload)
   const displayedPayload = sseReassembled && payloadView === 'parsed'
     ? formatSSESummary(sseReassembled)
@@ -167,14 +204,35 @@ export default function LogsPage() {
     const chips: string[] = []
     if (!isDefaultTimeRange(timeRange)) chips.push(timeRangeLabel(timeRange))
     if (statusFilter !== 'all') chips.push(STATUS_OPTIONS.find((item) => item.value === statusFilter)?.label ?? statusFilter)
+    if (workspaceFilter !== 'all') {
+      const workspace = workspacesData?.items.find((item) => item.workspace_id === workspaceFilter)
+      chips.push(`项目: ${workspace?.name ?? workspaceFilter}`)
+    }
     if (modelFilter !== 'all') chips.push(`模型: ${modelFilter}`)
     if (apiKeyFilter !== 'all') {
       const key = apiKeysData?.items.find((item) => item.api_key_id === apiKeyFilter)
       chips.push(`API Key: ${key?.name ?? apiKeyFilter}`)
     }
-    if (searchValue.trim()) chips.push(`Request ID: ${searchValue.trim()}`)
+    if (memberFilter !== 'all') {
+      const member = membersData?.items.find((item) => item.account.account_id === memberFilter)
+      chips.push(`成员: ${member?.account.display_name ?? memberFilter}`)
+    }
+    if (guardrailFilter !== 'all') chips.push(GUARDRAIL_OPTIONS.find((item) => item.value === guardrailFilter)?.label ?? guardrailFilter)
+    if (searchValue.trim()) chips.push(`关键词: ${searchValue.trim()}`)
     return chips
-  }, [apiKeyFilter, apiKeysData?.items, modelFilter, searchValue, statusFilter, timeRange])
+  }, [
+    apiKeyFilter,
+    apiKeysData?.items,
+    guardrailFilter,
+    memberFilter,
+    membersData?.items,
+    modelFilter,
+    searchValue,
+    statusFilter,
+    timeRange,
+    workspaceFilter,
+    workspacesData?.items,
+  ])
 
   function goNextPage() {
     const nextCursor = data?.next_cursor
@@ -203,7 +261,7 @@ export default function LogsPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="调用日志"
-        description="按时间、状态、模型和 API Key 追踪真实调用，定位请求、费用、Token 与响应耗时。"
+        description="按项目、成员、模型和 API Key 追踪真实调用，定位请求、费用、Token 与响应耗时。"
         actions={
           <Button variant="outline" disabled={isLoading || isFetching} onClick={() => refetch()}>
             <LuRefreshCw className={`mr-1.5 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
@@ -213,14 +271,24 @@ export default function LogsPage() {
       />
 
       <section className="space-y-4 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[180px_180px_minmax(180px,1fr)_minmax(180px,1fr)_auto] lg:items-end">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[180px_180px_minmax(180px,1fr)_minmax(180px,1fr)_minmax(180px,1fr)_auto] lg:items-end">
           <FilterField label="时间范围">
-            <DateRangePicker value={timeRange} onChange={(value) => { setTimeRange(value); resetPagination() }} />
+            <DateRangePicker value={timeRange} onChange={(value) => { setTimeRange(value); resetPagination() }} presets={LOG_TIME_PRESETS} />
           </FilterField>
           <FilterField label="调用状态">
             <Select value={statusFilter} onChange={(value) => { setStatusFilter(value as LogStatusFilter); resetPagination() }}>
               {STATUS_OPTIONS.map((option) => (
                 <Select.Option key={option.value} value={option.value}>{option.label}</Select.Option>
+              ))}
+            </Select>
+          </FilterField>
+          <FilterField label="项目">
+            <Select value={workspaceFilter} onChange={(value) => { setWorkspaceFilter(value); resetPagination() }}>
+              <Select.Option value="all">全部项目</Select.Option>
+              {(workspacesData?.items ?? []).map((workspace) => (
+                <Select.Option key={workspace.workspace_id} value={workspace.workspace_id}>
+                  {workspace.name}
+                </Select.Option>
               ))}
             </Select>
           </FilterField>
@@ -255,17 +323,34 @@ export default function LogsPage() {
         </div>
 
         {showMoreFilters && (
-          <div className="grid grid-cols-1 gap-3 border-t border-mg-border pt-4 md:grid-cols-[minmax(0,1fr)_minmax(260px,1.4fr)] md:items-end">
-            <FilterField label="Request ID 精确检索">
+          <div className="grid grid-cols-1 gap-3 border-t border-mg-border pt-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(180px,1fr)_minmax(180px,1fr)_minmax(260px,1.2fr)] lg:items-end">
+            <FilterField label="Request ID / 关键词检索">
               <Input
                 value={searchValue}
                 onChange={(event) => { setSearchValue(event.target.value); resetPagination() }}
-                placeholder="输入完整 Request ID"
+                placeholder="输入 Request ID、模型、错误摘要或成员"
                 prefix={<LuSearch className="h-4 w-4 text-mg-text-3" />}
               />
             </FilterField>
+            <FilterField label="成员">
+              <Select value={memberFilter} onChange={(value) => { setMemberFilter(value); resetPagination() }}>
+                <Select.Option value="all">全部成员</Select.Option>
+                {(membersData?.items ?? []).map((member) => (
+                  <Select.Option key={member.account.account_id} value={member.account.account_id}>
+                    {member.account.display_name || member.account.email}
+                  </Select.Option>
+                ))}
+              </Select>
+            </FilterField>
+            <FilterField label="护栏">
+              <Select value={guardrailFilter} onChange={(value) => { setGuardrailFilter(value as LogGuardrailFilter); resetPagination() }}>
+                {GUARDRAIL_OPTIONS.map((option) => (
+                  <Select.Option key={option.value} value={option.value}>{option.label}</Select.Option>
+                ))}
+              </Select>
+            </FilterField>
             <div className="rounded-md border border-mg-border bg-mg-fill-0/30 p-[var(--mg-panel-padding-sm)] mg-text-caption text-mg-text-3">
-              Request/Response 内容检索取决于工作区是否开启输入 / 输出日志采集；未开启时仅展示调用元数据。
+              Request/Response 全文搜索仅覆盖已开启输入 / 输出日志采集的记录；未开启时仅展示调用元数据。
             </div>
           </div>
         )}
@@ -301,14 +386,5 @@ export default function LogsPage() {
         sseAvailable={Boolean(sseReassembled)}
       />
     </div>
-  )
-}
-
-function FilterField({ children, label }: { children: ReactNode; label: string }) {
-  return (
-    <label className="flex min-w-0 flex-col gap-1.5">
-      <span className="mg-text-label text-mg-text-3">{label}</span>
-      {children}
-    </label>
   )
 }

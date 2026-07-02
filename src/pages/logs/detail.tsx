@@ -25,8 +25,8 @@ export type PayloadView = 'parsed' | 'raw'
 const STATUS_MAP: Record<string, StatusConfig> = {
   accepted: { label: '处理中', variant: 'secondary', dot: true },
   succeeded: { label: '成功', variant: 'success' },
-  failed: { label: '失败', variant: 'destructive' },
-  rejected: { label: '已拒绝', variant: 'warning' },
+  failed: { label: '异常', variant: 'destructive' },
+  rejected: { label: '护栏命中', variant: 'warning' },
 }
 
 function formatMaybeDuration(ms: number | null | undefined) {
@@ -102,7 +102,7 @@ export function LogDetailSheet({
           <DetailSection title="概览">
             <DetailGrid compact>
               <DetailRow label="模型" value={row.model.display_name} />
-              <DetailRow label="Workspace" value={row.workspace_id} mono />
+              <DetailRow label="项目" value={row.workspace_id} mono />
               <DetailRow label="API Key 名称" value={row.api_key.name} />
               <DetailRow label="成员" value={row.account.display_name} />
             </DetailGrid>
@@ -191,7 +191,7 @@ function DetailRow({ label, mono = false, value }: { label: string; mono?: boole
 
 function ResponseTiming({ row }: { row: CallLogItem }) {
   if (row.status === 'rejected') {
-    return <TimingRow label="请求状态" value="已拒绝" hint="模型请求未继续执行" />
+    return <TimingRow label="请求状态" value="护栏命中" hint="模型请求未继续执行" />
   }
   if (row.status === 'failed') {
     return <TimingRow label="总响应耗时" value={httpStatus(row)} duration={formatMaybeDuration(row.duration_ms)} hint="最终响应失败" />

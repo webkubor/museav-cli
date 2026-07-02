@@ -14,7 +14,8 @@ import { cn } from '@/lib/utils'
 
 type RequirementStatus = 'pending' | 'done'
 type RequirementPriority = 'high' | 'medium' | 'low'
-type RequirementFilter = 'pending' | 'all' | 'done'
+// 顶部「我的问题」三态筛选：待处理 / 待验证 / 已完成，互斥且覆盖全部开放 issue
+type RequirementFilter = 'pending' | 'verifying' | 'done'
 type AssigneeFilter = 'mine' | 'unassigned' | 'all'
 
 interface Requirement {
@@ -46,6 +47,11 @@ function statusText(item: Requirement): string {
 
 function isRequirementDone(item: Requirement): boolean {
   return item.status === 'done' || statusText(item) === '已完成'
+}
+
+// 带「待验证」label 的 issue 单独成类：既不算待处理，也不算已完成
+function isRequirementVerifying(item: Requirement): boolean {
+  return statusText(item) === '待验证'
 }
 
 function isOpenGitlabIssue(item: Requirement): boolean {
@@ -174,12 +180,14 @@ export function RequirementsPanel() {
     return openIssues
   }, [assigneeFilter, openIssues])
 
-  const pendingCount = scopedIssues.filter((item) => !isRequirementDone(item)).length
-  const doneCount = scopedIssues.length - pendingCount
+  const pendingCount = scopedIssues.filter((item) => !isRequirementDone(item) && !isRequirementVerifying(item)).length
+  const verifyingCount = scopedIssues.filter(isRequirementVerifying).length
+  const doneCount = scopedIssues.length - pendingCount - verifyingCount
   const visibleIssues = useMemo(() => {
-    if (issueFilter === 'all') return scopedIssues
+    if (issueFilter === 'verifying') return scopedIssues.filter(isRequirementVerifying)
     if (issueFilter === 'done') return scopedIssues.filter(isRequirementDone)
-    return scopedIssues.filter((item) => !isRequirementDone(item))
+    // pending：既不是已完成也不是待验证，即真正没处理的
+    return scopedIssues.filter((item) => !isRequirementDone(item) && !isRequirementVerifying(item))
   }, [issueFilter, scopedIssues])
 
   const updateLocalItem = (updated: Requirement) => {
@@ -247,7 +255,7 @@ export function RequirementsPanel() {
 
   const filterOptions: Array<{ value: RequirementFilter; label: string; count: number }> = [
     { value: 'pending', label: '待处理', count: pendingCount },
-    { value: 'all', label: '全部', count: scopedIssues.length },
+    { value: 'verifying', label: '待验证', count: verifyingCount },
     { value: 'done', label: '已完成', count: doneCount },
   ]
   const assigneeFilterOptions: Array<{ value: AssigneeFilter; label: string; count: number }> = [

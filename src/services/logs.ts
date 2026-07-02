@@ -190,10 +190,14 @@ function toCallLogItem(row: ModelLogRow): CallLogItem {
 function toListQuery(params?: CallLogListParams) {
   return {
     before_started_at: params?.before_started_at || params?.cursor,
+    from: params?.from,
+    to: params?.to,
     preset: params?.preset,
     workspace_id: params?.workspace_id,
     api_key_id: params?.api_key_id,
-    request_id: params?.request_id || params?.q,
+    account_id: params?.account_id,
+    request_id: params?.request_id,
+    q: params?.q,
     model: params?.model_id,
     status: params?.status,
     limit: params?.limit || params?.page_size,

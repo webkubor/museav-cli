@@ -82,6 +82,10 @@ export interface WorkspaceItem {
   spend_7d: Money
   created_at: string
   my_role: 'ws_owner' | 'ws_admin' | 'ws_member'
+  /** 以下 3 项后端待接（issue #329），未返回时前端展示占位 —/未知 */
+  guardrail_count?: number
+  logging_enabled?: boolean
+  forward_enabled?: boolean
 }
 
 export interface WorkspaceDetail {

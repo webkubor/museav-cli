@@ -684,9 +684,28 @@
   },
   "workspaces": {
     "title": "Workspaces",
+    "subtitle": "Create workspaces and manage owners, members, and log forwarding.",
     "desc": "Manage workspace info, available models, and usage limits.",
     "currentLabel": "Current Workspace",
     "defaultOption": "Default Workspace",
+    "summary": {
+      "myWorkspaces": "My Workspaces",
+      "myOwned": "I Own",
+      "logging": "Log Collection",
+      "forwarding": "Forwarding",
+      "enabledCount": "{{count}} on"
+    },
+    "card": {
+      "owner": "Owner",
+      "members": "Members",
+      "guardrails": "Guardrails",
+      "collectOn": "Collecting",
+      "collectOff": "Collection off",
+      "collectUnknown": "Collection —",
+      "forwardOn": "Forwarding",
+      "forwardOff": "Forward off",
+      "forwardUnknown": "Forward —"
+    },
     "searchPlaceholder": "Search by name or workspace ID",
     "createBtn": "Create Workspace ({{count}}/20)",
     "loading": "Loading...",

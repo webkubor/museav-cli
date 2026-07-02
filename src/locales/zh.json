@@ -684,9 +684,28 @@
   },
   "workspaces": {
     "title": "空间管理",
+    "subtitle": "创建工作空间，管理负责人、成员和日志转发策略。",
     "desc": "管理工作空间信息、可用模型和使用限额。",
     "currentLabel": "当前工作空间",
     "defaultOption": "默认工作空间",
+    "summary": {
+      "myWorkspaces": "我的工作空间",
+      "myOwned": "我负责的空间",
+      "logging": "日志采集",
+      "forwarding": "转发状态",
+      "enabledCount": "{{count}} 已开启"
+    },
+    "card": {
+      "owner": "空间负责人",
+      "members": "成员",
+      "guardrails": "护栏",
+      "collectOn": "采集开启",
+      "collectOff": "采集关闭",
+      "collectUnknown": "采集未知",
+      "forwardOn": "转发开启",
+      "forwardOff": "转发关闭",
+      "forwardUnknown": "转发未知"
+    },
     "searchPlaceholder": "按名称或工作空间 ID 搜索",
     "createBtn": "创建工作空间 ({{count}}/20)",
     "loading": "正在获取数据...",

@@ -2,10 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
 import { useTranslation } from 'react-i18next'
-import { LuSearch, LuPlus, LuKey, LuShield, LuActivity, LuArrowRight } from 'react-icons/lu'
+import { LuSearch, LuPlus, LuKey, LuArrowRight } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listWorkspaces, createWorkspace } from '@/services/workspaces'
-import { formatDateTime } from '@/lib/format-date'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
@@ -86,10 +85,36 @@ export default function WorkspacesPage() {
     createMutation.mutate({ name, slug, description })
   }
 
+  // 摘要条派生数据（PRD 原型：我的工作空间 / 我负责的空间 / 日志采集 / 转发状态）
+  const list = data || []
+  const myOwnedCount = list.filter((w) => w.my_role === 'ws_owner').length
+  const loggingKnown = list.some((w) => w.logging_enabled !== undefined)
+  const forwardKnown = list.some((w) => w.forward_enabled !== undefined)
+  const loggingOnCount = list.filter((w) => w.logging_enabled).length
+  const forwardOnCount = list.filter((w) => w.forward_enabled).length
+  const dash = '—'
+
+  const summary: { label: string; value: React.ReactNode }[] = [
+    { label: t('workspaces.summary.myWorkspaces'), value: list.length },
+    { label: t('workspaces.summary.myOwned'), value: myOwnedCount },
+    { label: t('workspaces.summary.logging'), value: loggingKnown ? t('workspaces.summary.enabledCount', { count: loggingOnCount }) : dash },
+    { label: t('workspaces.summary.forwarding'), value: forwardKnown ? t('workspaces.summary.enabledCount', { count: forwardOnCount }) : dash },
+  ]
+
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       {/* 头部标题与描述 */}
-      <PageHeader title={t('workspaces.title')} />
+      <PageHeader title={t('workspaces.title')} description={t('workspaces.subtitle')} />
+
+      {/* 摘要条 */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {summary.map((s) => (
+          <div key={s.label} className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-4 shadow-xs">
+            <div className="text-[11px] font-bold text-mg-text-3 uppercase tracking-wider mb-1">{s.label}</div>
+            <div className="text-xl font-bold text-mg-text-1">{s.value}</div>
+          </div>
+        ))}
+      </div>
 
       {/* 控制台操作区域 */}
       <div className="flex justify-between items-center gap-4">
@@ -142,7 +167,7 @@ export default function WorkspacesPage() {
                       <Badge variant="warning" dot className="shrink-0">{t('workspaces.defaultBadge')}</Badge>
                     )}
                   </div>
-                  <span className="text-[11px] font-mono text-mg-text-3 mt-1 block truncate">{ws.workspace_id}</span>
+                  <span className="text-[11px] font-mono text-mg-text-3 mt-1 block truncate">@{ws.slug}</span>
                 </div>
                 <div className="shrink-0 w-9 h-9 rounded-md bg-brand-base/8 border border-brand-base/15 flex items-center justify-center text-brand-base">
                   <LuKey size={16} />
@@ -153,15 +178,27 @@ export default function WorkspacesPage() {
                 <p className="text-xs text-mg-text-3 leading-relaxed line-clamp-2">{ws.description}</p>
               )}
 
-              <div className="flex items-center gap-4 text-[11px] text-mg-text-3 font-medium mt-auto">
-                <span className="flex items-center gap-1"><LuShield size={12} />{formatDateTime(ws.created_at)}</span>
+              {/* 负责人 */}
+              <div className="text-[11px] text-mg-text-3 mt-auto">
+                {t('workspaces.card.owner')} <span className="font-semibold text-mg-text-2">{ws.owner?.display_name || dash}</span>
               </div>
 
+              {/* 成员 / API Keys / 护栏 */}
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div><div className="text-sm font-bold text-mg-text-1">{ws.member_count}</div><div className="text-[10px] text-mg-text-3">{t('workspaces.card.members')}</div></div>
+                <div><div className="text-sm font-bold text-mg-text-1">{ws.api_key_count}</div><div className="text-[10px] text-mg-text-3">API Keys</div></div>
+                <div><div className="text-sm font-bold text-mg-text-1">{ws.guardrail_count ?? dash}</div><div className="text-[10px] text-mg-text-3">{t('workspaces.card.guardrails')}</div></div>
+              </div>
+
+              {/* 采集 / 转发状态 */}
               <div className="flex items-center justify-between pt-3 border-t border-mg-border/30">
-                <div className="flex items-center gap-3 text-[11px] text-mg-text-3">
-                  <span className="flex items-center gap-1"><LuKey size={11} />API Keys</span>
-                  <span className="flex items-center gap-1"><LuShield size={11} />Guardrails</span>
-                  <span className="flex items-center gap-1"><LuActivity size={11} />Logs</span>
+                <div className="flex items-center gap-2">
+                  <Badge variant={ws.logging_enabled ? 'success' : 'secondary'} size="xs">
+                    {ws.logging_enabled === undefined ? t('workspaces.card.collectUnknown') : ws.logging_enabled ? t('workspaces.card.collectOn') : t('workspaces.card.collectOff')}
+                  </Badge>
+                  <Badge variant={ws.forward_enabled ? 'success' : 'secondary'} size="xs">
+                    {ws.forward_enabled === undefined ? t('workspaces.card.forwardUnknown') : ws.forward_enabled ? t('workspaces.card.forwardOn') : t('workspaces.card.forwardOff')}
+                  </Badge>
                 </div>
                 <span className="flex items-center gap-0.5 text-xs font-bold text-brand-base opacity-0 group-hover:opacity-100 transition-opacity">
                   {t('workspaces.table.edit')} <LuArrowRight size={12} />

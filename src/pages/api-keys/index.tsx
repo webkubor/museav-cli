@@ -155,7 +155,7 @@ export default function ApiKeysPage() {
           onChange={(e) => setSearchValue(e.target.value)}
         />
         {canCreate && (
-          <Button variant="brand" onClick={() => { setCreateNonce((n) => n + 1); setCreateVisible(true) }} className="rounded-full px-6 h-10 shadow-lg shadow-brand-glow/20">
+          <Button variant="brand" data-umami-event="create_api_key" onClick={() => { setCreateNonce((n) => n + 1); setCreateVisible(true) }} className="rounded-full px-6 h-10 shadow-lg shadow-brand-glow/20">
             <LuPlus className="w-4 h-4 mr-1.5" />
             {t('apiKeys.create')}
           </Button>

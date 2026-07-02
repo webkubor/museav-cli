@@ -55,6 +55,7 @@ export function QuickStartSection() {
       title: t('dashboard.workbench.quickStart.step1Title'),
       desc: t('dashboard.workbench.quickStart.step1Desc'),
       action: t('dashboard.workbench.quickStart.step1Action'),
+      event: 'quickstart_create_api_key',
       onClick: () => navigate(scopedWorkspacePath(activeWorkspaceId, 'api-keys')),
     },
     {
@@ -62,6 +63,7 @@ export function QuickStartSection() {
       title: t('dashboard.workbench.quickStart.step2Title'),
       desc: t('dashboard.workbench.quickStart.step2Desc'),
       action: t('dashboard.workbench.quickStart.step2Action'),
+      event: 'quickstart_open_connect',
       onClick: () => setConnectOpen(true),
     },
     {
@@ -69,6 +71,7 @@ export function QuickStartSection() {
       title: t('dashboard.workbench.quickStart.step3Title'),
       desc: t('dashboard.workbench.quickStart.step3Desc'),
       action: t('dashboard.workbench.quickStart.step3Action'),
+      event: 'quickstart_view_logs',
       onClick: () => navigate('/logs'),
     },
   ]
@@ -109,6 +112,7 @@ export function QuickStartSection() {
               <button
                 type="button"
                 onClick={step.onClick}
+                data-umami-event={step.event}
                 className="mt-3 inline-flex items-center gap-1 self-start text-xs font-bold text-brand-base hover:text-brand-deep cursor-pointer"
               >
                 {step.action}

@@ -111,6 +111,7 @@ export function OrgListSection({ selectedId, onSelect }: OrgListSectionProps) {
         {canCreateOrg && canCreateByOrgLimit && !atLimit && (
           <Button
             variant="brand"
+            data-umami-event="create_organization"
             onClick={() => setCreateVisible(true)}
             className="rounded-full text-[11px] font-semibold h-7 px-3 flex items-center gap-1 bg-brand-base text-white hover:bg-brand-base/90 active:scale-[0.97] transition-all"
           >

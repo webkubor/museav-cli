@@ -105,6 +105,7 @@ export default function WorkspacesPage() {
         {/* 黑色药丸主动作按钮 */}
         <Button
           variant="brand"
+          data-umami-event="create_workspace"
           onClick={() => setModalVisible(true)}
           className="!rounded-full px-6 h-[38px] font-bold"
         >

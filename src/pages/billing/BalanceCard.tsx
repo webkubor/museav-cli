@@ -100,6 +100,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             {canRecharge && (
               <Button
                 variant="brand"
+                data-umami-event="recharge"
                 onClick={() => setTopUpVisible(true)}
                 className="rounded-md h-9 px-5 gap-1.5"
               >

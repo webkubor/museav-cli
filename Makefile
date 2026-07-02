@@ -15,6 +15,8 @@ help:
 	@echo "  make lint        - run eslint"
 	@echo "  make clean       - remove dist and vite cache"
 	@echo "  make tag         - create a minute-precision git tag on main and push"
+	@echo "  make deploy-test - 部署测试环境（Jenkins，默认 main，可 BRANCH=xxx）"
+	@echo "  make deploy-status - 查最近一次 Jenkins 构建状态"
 
 node_modules: package.json pnpm-lock.yaml
 	$(PKG) install
@@ -70,3 +72,20 @@ tag:
 	else \
 	  echo "ERROR: 远程未找到 tag $$new_tag"; exit 1; fi; \
 	git --no-pager log -1 --format='指向 commit %h  %ci  %s' "$$new_tag"
+
+# ─── 部署测试环境（走 Jenkins，非 GitLab CI）───────────────────────────────
+# make deploy-test            触发 Jenkins test/modelgo-console-web 构建 main
+# make deploy-test BRANCH=xxx 部署指定分支（须先 push origin）
+# make deploy-status          查最近一次 Jenkins 构建状态（不触发）
+# 一步到位：逻辑在 scripts/jenkins.sh（trigger/status）。token 走 cs secrets，
+# 不回显、不硬编码；cs 是 zsh function 故脚本里直接调 CortexOS 二进制真源。
+# 红线：触发前确保目标分支已 push origin；Jenkins 从远端拉，不读本地工作区。
+JOB_PATH ?= test/modelgo-console-web
+
+.PHONY: deploy-test deploy-status
+deploy-test: BRANCH ?= main
+deploy-test:
+	@JOB_PATH=$(JOB_PATH) bash scripts/jenkins.sh trigger $(BRANCH)
+
+deploy-status:
+	@JOB_PATH=$(JOB_PATH) bash scripts/jenkins.sh status

@@ -23,6 +23,7 @@ import { sendEmailCode, register } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import { ModelGoApiError } from '@/lib/request'
 import { toast } from '@/lib/toast'
+import { trackEvent } from '@/lib/track'
 import { checkAuthGuard, clearAuthGuard, recordAuthGuardFailure } from '@/lib/auth/front-guard'
 import { getRedirectTarget } from '@/lib/redirect'
 import { useFormValid } from '@/hooks/use-form-valid'
@@ -170,10 +171,12 @@ function EmailSignupPage() {
         result.default_workspace_id
       )
       clearAuthGuard({ action: 'signup', subject: data.email })
+      trackEvent('signup_success', { method: 'email' })
       navigate('/dashboard')
     } catch (e) {
       recordAuthGuardFailure({ action: 'signup', subject: data.email })
       const msg = e instanceof ModelGoApiError ? e.message : '注册失败，请稍后重试'
+      trackEvent('signup_fail', { method: 'email' })
       setServerError(msg)
       toast.error(msg)
     } finally {

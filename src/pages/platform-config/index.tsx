@@ -20,6 +20,7 @@ import { UrlParamsPanel } from './UrlParamsPanel'
 import { HeadersPanel } from './HeadersPanel'
 import { SwaggerPanel } from './SwaggerPanel'
 import { RequirementsPanel } from './RequirementsPanel'
+import { DialogPreviewPanel } from './DialogPreviewPanel'
 import type { EndpointDef } from './types'
 
 const PUBLIC_ROUTES = [
@@ -34,7 +35,7 @@ const PUBLIC_ROUTES = [
 ] as const
 
 // 开发者菜单 tab，挂到 URL ?tab= 上以便直接定位某个 tab
-const DEV_CONFIG_TABS = ['endpoints', 'routes-menus', 'url-params', 'headers', 'requirements']
+const DEV_CONFIG_TABS = ['endpoints', 'routes-menus', 'url-params', 'headers', 'dialog-preview', 'requirements']
 const DEFAULT_TAB = 'endpoints'
 
 export default function PlatformConfigPage() {
@@ -154,6 +155,7 @@ export default function PlatformConfigPage() {
           <TabsTrigger value="routes-menus">路由 / 菜单</TabsTrigger>
           <TabsTrigger value="url-params">回跳参数</TabsTrigger>
           <TabsTrigger value="headers">请求头</TabsTrigger>
+          <TabsTrigger value="dialog-preview">弹窗预览</TabsTrigger>
           <TabsTrigger value="requirements">我的问题</TabsTrigger>
         </TabsList>
 
@@ -238,6 +240,10 @@ export default function PlatformConfigPage() {
           <div className="space-y-4 pt-2">
             <HeadersPanel />
           </div>
+        </TabsContent>
+
+        <TabsContent value="dialog-preview">
+          <DialogPreviewPanel />
         </TabsContent>
 
         <TabsContent value="requirements">

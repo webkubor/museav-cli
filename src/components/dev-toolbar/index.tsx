@@ -5,8 +5,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import type { PlatformConfig } from '@/services/platform'
 import { cn } from '@/lib/utils'
 import { useLangStore } from '@/store/use-brand-store'
-import { ModelGoApiError } from '@/lib/request'
-import { appToast } from '@/lib/app-toast'
 import { applyBrandTheme, applyTheme, getSavedTheme, resolveTheme, saveBrandTheme, saveTheme } from '@/lib/theme'
 import type { Market, Lang } from '@/lib/market'
 
@@ -48,7 +46,6 @@ function Seg<T extends string>({
  * 切换国内/海外、语言——市场切换一把带动 logo / 品牌 / 主题色（主题色按 data-market 走 CSS）。
  * 另含黑/白主题快速切换，方便本地调样式。
  * 「开发菜单」跳转平台配置调试页（原侧栏「开发者菜单」移入此处，不侵入业务侧栏）。
- * 「预览报错」按钮可随时弹出服务端错误诊断弹窗，便于调该弹窗的 UI。
  */
 export function DevToolbar() {
   const { i18n } = useTranslation()
@@ -90,19 +87,6 @@ export function DevToolbar() {
     saveTheme(next)
   }
 
-  // 弹出一条仿真的服务端错误，用于在控制台里直接预览/调试该诊断弹窗的 UI。
-  const previewServerError = () => {
-    appToast.requestError(
-      new ModelGoApiError({
-        code: 50001,
-        msg: 'panic: preview server error (dev only)',
-        request_id: '7F97E139-B2BF-5512-8B5E-A64CDEDFDF83',
-        trace_id: '7cdc2d717eb9c5d8a26c322b9349edeb',
-        data: null,
-      })
-    )
-  }
-
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[2000] flex items-center gap-3 px-4 py-2 rounded-full bg-mg-bg-0/95 backdrop-blur border border-mg-border shadow-lg shadow-black/5 select-none">
       <Seg
@@ -137,13 +121,6 @@ export function DevToolbar() {
         className="rounded-full bg-mg-fill-0 px-3 py-1 text-[11px] font-bold text-mg-text-2 transition-colors hover:text-mg-text-1"
       >
         开发菜单
-      </button>
-      <button
-        type="button"
-        onClick={previewServerError}
-        className="rounded-full bg-mg-fill-0 px-3 py-1 text-[11px] font-bold text-mg-text-2 transition-colors hover:text-mg-text-1"
-      >
-        预览报错
       </button>
     </div>
   )

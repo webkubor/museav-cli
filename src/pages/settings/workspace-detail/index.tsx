@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { LuArrowLeft, LuSearch, LuX, LuArrowRight, LuUsers, LuBuilding2 } from 'react-icons/lu'
+import { LuArrowLeft, LuSearch, LuArrowRight, LuUsers, LuPlus } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
@@ -13,21 +13,20 @@ import {
   deleteWorkspace,
   listWorkspaceMembers,
   removeWorkspaceMember,
-  updateWorkspaceMemberRole,
 } from '@/services/workspaces'
 import { listTenantMembers } from '@/services/tenants'
 import { getLoggingConfig } from '@/services/observability'
 import { ObservabilityContent } from '@/pages/observability'
 import { pageItems, formatMoney as fmtMoney } from '@/lib/utils'
-import { WS_ROLE_LABEL, WS_ROLE_OPTIONS, TENANT_ROLE_LABEL } from '@/constants/roles'
+import { TENANT_ROLE_LABEL } from '@/constants/roles'
 import type { Money, TenantMember, WorkspaceDetail, WorkspaceMember } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
-import Select from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 import { appToast } from '@/lib/app-toast'
 
 type DetailTab = 'overview' | 'members' | 'logs' | 'settings'
@@ -172,15 +171,16 @@ function OverviewTab({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: () => vo
 }
 
 // ─── 成员 ─────────────────────────────────────────────
+// 对齐 PRD 原型：单表 成员 / 企业角色 / 空间责任 / 拥有Key / 操作(设为负责人·移除)
 function MembersTab({ workspaceId }: { workspaceId: string }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const { hasPermission } = usePermissions()
   const canManageMembers = hasPermission(PERMS.WORKSPACE_MEMBERS_MANAGE)
+  const [addOpen, setAddOpen] = useState(false)
   const [addSearch, setAddSearch] = useState('')
   const [removeTarget, setRemoveTarget] = useState<string | null>(null)
-  const [roleChangeTarget, setRoleChangeTarget] = useState<{ accountId: string; role: string } | null>(null)
 
   const membersQuery = useQuery({
     queryKey: ['workspace-members', workspaceId],
@@ -204,6 +204,13 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
     return ids
   }, [members])
 
+  // 企业角色：join 租户成员（成员在组织里的角色）
+  const tenantRoleByAccount = useMemo(() => {
+    const map = new Map<string, TenantMember['role']>()
+    for (const tm of orgQuery.data?.items ?? []) map.set(tm.account.account_id, tm.role)
+    return map
+  }, [orgQuery.data])
+
   const candidates = useMemo(() => {
     const pool = orgQuery.data?.items ?? []
     const q = addSearch.trim().toLowerCase()
@@ -218,10 +225,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
 
   const addMutation = useMutation({
     mutationFn: (accountId: string) =>
-      addWorkspaceMember(workspaceId, {
-        account_id: accountId,
-        role: 'ws_member',
-      }),
+      addWorkspaceMember(workspaceId, { account_id: accountId, role: 'ws_member' }),
     onSuccess: () => {
       appToast.success(t('workspaces.detail.members.addSuccess'))
       qc.invalidateQueries({ queryKey: ['workspace-members', workspaceId] })
@@ -239,119 +243,151 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
     onError: (err: unknown) => appToast.error((err as Error)?.message || t('workspaces.detail.members.removeError')),
   })
 
-  const roleMutation = useMutation({
-    mutationFn: ({ accountId, role }: { accountId: string; role: 'ws_admin' | 'ws_member' }) =>
-      updateWorkspaceMemberRole(workspaceId, accountId, { role }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['workspace-members', workspaceId] }),
-    onError: (err: unknown) => appToast.error((err as Error)?.message || t('workspaces.detail.members.roleError')),
-  })
+  const dash = '—'
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5" style={{ minHeight: 420 }}>
-      {/* 项目成员 */}
-      <div className="bg-card-bg border border-mg-border rounded-md overflow-hidden flex flex-col">
-        <div className="px-4 py-3 border-b border-mg-border flex items-center gap-2 bg-mg-fill-0/20 shrink-0">
+    <div className="space-y-4">
+      <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg overflow-hidden shadow-xs">
+        <div className="px-4 py-3 border-b border-mg-border/50 flex items-center gap-2 bg-mg-fill-0/20">
           <LuUsers size={14} className="text-mg-text-3" />
           <span className="text-[13px] font-bold text-mg-text-1">{t('workspaces.detail.members.title')}</span>
-          <span className="text-[11px] text-mg-text-3 ml-auto">
-            {t('workspaces.detail.members.count', { count: members.length })}
-          </span>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {membersQuery.isLoading ? (
-            <div className="py-16 flex justify-center">
-              <div className="w-6 h-6 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
-            </div>
-          ) : members.length === 0 ? (
-            <div className="py-12 text-center text-xs text-mg-text-3">{t('workspaces.detail.members.empty')}</div>
-          ) : (
-            <div className="divide-y divide-mg-border/40">
-              {members.map((m) => (
-                <div key={m.account.account_id} className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-mg-fill-0/30 transition-colors">
-                  <MemberAvatar member={m} accent="emerald" />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-semibold text-mg-text-1 truncate">{m.account.display_name}</div>
-                    <div className="text-[10px] text-mg-text-3 truncate">{m.account.email}</div>
-                  </div>
-                  {m.role !== 'ws_owner' && canManageMembers ? (
-                    <Select
-                      value={m.role}
-                      onChange={(role) => setRoleChangeTarget({ accountId: m.account.account_id, role })}
-                      className="h-6 text-[10px] w-20 rounded-sm"
-                    >
-                      {WS_ROLE_OPTIONS.map((o) => (
-                        <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>
-                      ))}
-                    </Select>
-                  ) : (
-                    <Badge variant="purple" size="xs" className="shrink-0">{WS_ROLE_LABEL[m.role]}</Badge>
-                  )}
-                  {m.role !== 'ws_owner' && canManageMembers && (
-                    <button
-                      type="button"
-                      onClick={() => setRemoveTarget(m.account.account_id)}
-                      className="shrink-0 p-1 rounded-sm text-mg-text-3 hover:text-mg-danger hover:bg-mg-danger/5 transition-colors cursor-pointer border-none bg-transparent"
-                      title={t('workspaces.detail.members.remove')}
-                    >
-                      <LuX size={13} />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
+          <span className="text-[11px] text-mg-text-3">{t('workspaces.detail.members.count', { count: members.length })}</span>
+          {canManageMembers && (
+            <Button
+              variant="brand"
+              size="sm"
+              className="ml-auto h-8 px-3 rounded-lg text-xs font-semibold"
+              onClick={() => setAddOpen(true)}
+            >
+              <LuPlus size={13} className="mr-1" />
+              {t('workspaces.detail.members.addMember')}
+            </Button>
           )}
+        </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('workspaces.detail.members.colMember')}</TableHead>
+                <TableHead>{t('workspaces.detail.members.colEnterpriseRole')}</TableHead>
+                <TableHead>{t('workspaces.detail.members.colResponsibility')}</TableHead>
+                <TableHead>{t('workspaces.detail.members.colKeys')}</TableHead>
+                <TableHead align="right" className="w-40">{t('workspaces.detail.members.colActions')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {membersQuery.isLoading ? (
+                <TableRow><TableCell colSpan={5} className="py-12 text-center text-xs text-mg-text-3">{t('common.loading')}</TableCell></TableRow>
+              ) : members.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="py-12 text-center text-xs text-mg-text-3">{t('workspaces.detail.members.empty')}</TableCell></TableRow>
+              ) : (
+                members.map((m) => {
+                  const isOwner = m.role === 'ws_owner'
+                  const tenantRole = tenantRoleByAccount.get(m.account.account_id)
+                  return (
+                    <TableRow key={m.account.account_id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2.5">
+                          <MemberAvatar member={m} accent="emerald" />
+                          <div className="min-w-0">
+                            <div className="text-[12px] font-semibold text-mg-text-1 truncate">{m.account.display_name}</div>
+                            <div className="text-[10px] text-mg-text-3 truncate">{m.account.email}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" size="xs">{tenantRole ? TENANT_ROLE_LABEL[tenantRole] : dash}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={isOwner ? 'purple' : 'secondary'} size="xs">
+                          {isOwner ? t('workspaces.detail.members.respOwner') : t('workspaces.detail.members.respMember')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs text-mg-text-1 font-medium">{m.api_key_count ?? dash}</span>
+                      </TableCell>
+                      <TableCell align="right">
+                        {!isOwner && canManageMembers ? (
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/* 设为负责人：后端 set-owner 接口待接 (#327)，先禁用占位 */}
+                            <Button
+                              variant="outline"
+                              size="xs"
+                              disabled
+                              title={t('workspaces.detail.members.setOwnerTodo')}
+                              className="h-7 px-2 rounded-md text-[11px]"
+                            >
+                              {t('workspaces.detail.members.setOwner')}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="xs"
+                              className="h-7 px-2 rounded-md text-[11px] text-mg-danger hover:bg-mg-danger/5"
+                              onClick={() => setRemoveTarget(m.account.account_id)}
+                            >
+                              {t('workspaces.detail.members.remove')}
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-mg-text-3">{dash}</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
+            </TableBody>
+          </Table>
         </div>
       </div>
 
-      {/* 从企业成员中添加 */}
-      <div className="bg-card-bg border border-mg-border rounded-md overflow-hidden flex flex-col">
-        <div className="px-4 py-3 border-b border-mg-border flex items-center gap-2 bg-mg-fill-0/20 shrink-0">
-          <LuBuilding2 size={14} className="text-mg-text-3" />
-          <span className="text-[13px] font-bold text-mg-text-1">{t('workspaces.detail.members.addTitle')}</span>
-          <div className="ml-auto">
-            <Input
-              prefix={<LuSearch className="w-3 h-3" />}
-              className="w-44 h-7 rounded-md text-[11px]"
-              placeholder={t('workspaces.detail.members.addSearchPlaceholder')}
-              value={addSearch}
-              onChange={(e) => setAddSearch(e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {orgQuery.isLoading ? (
-            <div className="py-16 flex justify-center">
-              <div className="w-6 h-6 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
-            </div>
-          ) : candidates.length === 0 ? (
-            <div className="py-12 text-center text-xs text-mg-text-3">{t('workspaces.detail.members.addEmpty')}</div>
-          ) : (
-            <div className="divide-y divide-mg-border/40">
-              {candidates.map((m: TenantMember) => (
-                <div key={m.account.account_id} className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-mg-fill-0/30 transition-colors">
+      {/* 添加成员弹窗：从企业成员中挑 */}
+      <Modal
+        open={addOpen}
+        onClose={() => { setAddOpen(false); setAddSearch('') }}
+        size="md"
+        title={t('workspaces.detail.members.addTitle')}
+      >
+        <div className="space-y-3">
+          <Input
+            prefix={<LuSearch className="w-3.5 h-3.5" />}
+            className="h-9 rounded-lg text-xs"
+            placeholder={t('workspaces.detail.members.addSearchPlaceholder')}
+            value={addSearch}
+            onChange={(e) => setAddSearch(e.target.value)}
+          />
+          <div className="max-h-[320px] overflow-y-auto border border-mg-border/50 rounded-lg divide-y divide-mg-border/40">
+            {orgQuery.isLoading ? (
+              <div className="py-12 flex justify-center">
+                <div className="w-6 h-6 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
+              </div>
+            ) : candidates.length === 0 ? (
+              <div className="py-10 text-center text-xs text-mg-text-3">{t('workspaces.detail.members.addEmpty')}</div>
+            ) : (
+              candidates.map((m: TenantMember) => (
+                <div key={m.account.account_id} className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-mg-fill-0/30 transition-colors">
                   <MemberAvatar member={m} accent="brand" />
                   <div className="flex-1 min-w-0">
                     <div className="text-[12px] font-semibold text-mg-text-1 truncate">{m.account.display_name}</div>
                     <div className="text-[10px] text-mg-text-3 truncate">{m.account.email}</div>
                   </div>
                   <Badge variant="outline" size="xs" className="shrink-0">{TENANT_ROLE_LABEL[m.role]}</Badge>
-                  {canManageMembers && (
-                    <Button
-                      variant="ghost"
-                      className="h-6 px-2 text-[10px] font-semibold shrink-0 text-brand-base hover:bg-brand-base/5"
-                      loading={addMutation.isPending}
-                      onClick={() => addMutation.mutate(m.account.account_id)}
-                    >
-                      <LuArrowRight size={11} className="mr-0.5" />
-                      {t('workspaces.detail.members.add')}
-                    </Button>
-                  )}
+                  <Button
+                    variant="ghost"
+                    className="h-7 px-2 text-[11px] font-semibold shrink-0 text-brand-base hover:bg-brand-base/5"
+                    loading={addMutation.isPending}
+                    onClick={() => addMutation.mutate(m.account.account_id)}
+                  >
+                    <LuArrowRight size={12} className="mr-0.5" />
+                    {t('workspaces.detail.members.add')}
+                  </Button>
                 </div>
-              ))}
-            </div>
-          )}
+              ))
+            )}
+          </div>
         </div>
-      </div>
+      </Modal>
+
       {/* 移除成员确认弹窗 */}
       <Modal
         open={removeTarget !== null}
@@ -378,35 +414,6 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
         }
       >
         <p className="text-sm text-mg-text-2">{t('workspaces.detail.members.removeConfirmDesc')}</p>
-      </Modal>
-
-      {/* 修改角色确认弹窗 */}
-      <Modal
-        open={roleChangeTarget !== null}
-        onClose={() => setRoleChangeTarget(null)}
-        size="sm"
-        title={t('workspaces.detail.members.roleConfirmTitle')}
-        footer={
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setRoleChangeTarget(null)}>
-              {t('workspaces.detail.settings.cancel')}
-            </Button>
-            <Button
-              variant="brand"
-              loading={roleMutation.isPending}
-              onClick={() => {
-                roleMutation.mutate({ accountId: roleChangeTarget!.accountId, role: roleChangeTarget!.role as 'ws_admin' | 'ws_member' })
-                setRoleChangeTarget(null)
-              }}
-            >
-              {t('workspaces.detail.members.roleConfirmOk')}
-            </Button>
-          </div>
-        }
-      >
-        <p className="text-sm text-mg-text-2">
-          {t('workspaces.detail.members.roleConfirmDesc', { role: WS_ROLE_LABEL[roleChangeTarget?.role as keyof typeof WS_ROLE_LABEL] ?? roleChangeTarget?.role })}
-        </p>
       </Modal>
     </div>
   )

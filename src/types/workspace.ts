@@ -126,6 +126,8 @@ export interface WorkspaceMember {
   role: 'ws_owner' | 'ws_admin' | 'ws_member'
   joined_at: string
   last_active_at: string
+  /** 该成员在本空间拥有的 API Key 数（后端待接 · issue #327），未返回时前端展示 — */
+  api_key_count?: number
 }
 
 export interface AddWorkspaceMemberRequest {

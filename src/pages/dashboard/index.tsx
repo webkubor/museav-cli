@@ -23,7 +23,8 @@ export default function DashboardPage() {
   const [userView, setUserView] = useState<WorkbenchView | null>(null)
   const roleDefaultView: WorkbenchView = isEnterprise && canManage ? 'enterprise' : 'mine'
   const view = userView ?? roleDefaultView
-  const showViewToggle = isEnterprise
+  // 仅企业 Owner/Admin 可切换视图；企业 Member 锁定我的视图、个人租户无切换（PRD §8.2/§9）
+  const showViewToggle = isEnterprise && canManage
 
   return (
     <div className="no-canvas-blur space-y-6 pb-10 animate-in fade-in duration-300">

@@ -1257,7 +1257,9 @@
         "requests": "Total requests",
         "spend": "Total spend",
         "tokens": "Total tokens",
-        "balance": "Balance"
+        "balance": "Balance",
+        "balanceLow": "Low balance",
+        "recharge": "Top up"
       },
       "trend": {
         "title": "Usage trend",
@@ -1271,7 +1273,8 @@
           "spend": "",
           "tokens": "tokens"
         },
-        "empty": "No trend data"
+        "empty": "No trend data",
+        "emptyHint": "Send a test request and your usage trend will show here"
       },
       "workspaces": {
         "title": "Workspace breakdown",
@@ -1286,6 +1289,7 @@
         "apiKeys": "API Keys usage",
         "viewMore": "View more",
         "empty": "No data",
+        "emptyHint": "Send a test request and your usage ranking will show here",
         "membersTodo": "Member ranking pending backend usage/rankings/accounts endpoint"
       },
       "recent": {

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { LuActivity, LuTrendingUp, LuDatabase, LuWallet } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { useBalance } from '@/hooks/use-balance'
+import { useRechargeStore } from '@/store/use-recharge-store'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { getUsageSummary } from '@/services/usage'
 import { KpiCard } from '@/components/ui/KpiCard'
@@ -36,6 +37,15 @@ export function MetricsSection({
   })
 
   const { data: balance, isLoading: balanceLoading } = useBalance(activeTenantId)
+  const openRecharge = useRechargeStore((s) => s.open)
+
+  // 低余额判定：后端已返回 low_balance_threshold，可用余额 <= 阈值即偏低（阈值 > 0 才有意义）。
+  const lowBalance = (() => {
+    if (!balance) return false
+    const avail = Number.parseFloat(balance.available?.amount ?? '')
+    const thr = Number.parseFloat(balance.low_balance_threshold?.amount ?? '')
+    return Number.isFinite(avail) && Number.isFinite(thr) && thr > 0 && avail <= thr
+  })()
 
   const requests = summary?.total.requests
   const tokens = summary?.total.tokens
@@ -76,10 +86,13 @@ export function MetricsSection({
       title: t('dashboard.workbench.metrics.balance'),
       value: balance ? formatMoney(balance.available.amount, symbol) : undefined,
       loading: balanceLoading,
-      color: 'var(--mg-primary)',
-      glowColor: 'var(--brand-glow)',
-      hoverBorderClass: 'hover:border-brand-base/30',
+      color: lowBalance ? 'var(--mg-warning)' : 'var(--mg-primary)',
+      glowColor: lowBalance ? 'rgba(245, 158, 11, 0.12)' : 'var(--brand-glow)',
+      hoverBorderClass: lowBalance ? 'hover:border-amber-500/30' : 'hover:border-brand-base/30',
       icon: <LuWallet size={16} />,
+      // 低余额时：文字标签（颜色非唯一信息，§12.3）+ 充值入口（走全局充值弹窗）
+      sub: lowBalance ? t('dashboard.workbench.metrics.balanceLow') : undefined,
+      action: lowBalance ? { label: t('dashboard.workbench.metrics.recharge'), onClick: openRecharge } : undefined,
     },
   ]
 

@@ -54,6 +54,8 @@ export function UsageTrendSection({ granularity }: { granularity: Granularity })
 
   const chartData = useMemo<TrendPoint[]>(() => {
     const raw = data?.groups?.[0]?.points ?? []
+    // 完全无数据点 → 返回空，交由空态渲染；不 densify 出一整条 0 值假曲线（PRD §8.6.3）
+    if (raw.length === 0) return []
     const points: TrendPoint[] = raw.map((p) => ({
       bucket_start: p.bucket_start,
       value: metric === 'spend' ? Number(p.spend?.amount ?? 0) : Number(p[metric] ?? 0),
@@ -136,6 +138,7 @@ export function UsageTrendSection({ granularity }: { granularity: Granularity })
           <div className="flex flex-col items-center justify-center h-[220px] text-center">
             <LuTrendingUp size={24} className="mb-2 text-mg-text-3" />
             <p className="text-xs text-mg-text-3 font-medium">{t('dashboard.workbench.trend.empty')}</p>
+            <p className="mt-1 text-[11px] text-mg-text-4 max-w-[260px]">{t('dashboard.workbench.trend.emptyHint')}</p>
           </div>
         )}
       </div>

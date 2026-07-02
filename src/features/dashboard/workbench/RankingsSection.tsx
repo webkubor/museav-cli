@@ -118,6 +118,7 @@ export function RankingsSection({ view, granularity }: { view: WorkbenchView; gr
         title={t('dashboard.workbench.rankings.models')}
         items={models?.items ?? null}
         isLoading={modelsLoading}
+        emptyHint={t('dashboard.workbench.rankings.emptyHint')}
         onViewMore={() => navigate('/usage')}
       />
 
@@ -136,6 +137,7 @@ export function RankingsSection({ view, granularity }: { view: WorkbenchView; gr
         title={t('dashboard.workbench.rankings.apiKeys')}
         items={apiKeys?.items ?? null}
         isLoading={apiKeysLoading}
+        emptyHint={t('dashboard.workbench.rankings.emptyHint')}
         onViewMore={() => navigate('/usage')}
       />
     </div>

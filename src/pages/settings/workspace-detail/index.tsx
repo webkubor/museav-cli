@@ -19,7 +19,6 @@ import { listTenantMembers } from '@/services/tenants'
 import { getLoggingConfig } from '@/services/observability'
 import { ObservabilityContent } from '@/pages/observability'
 import { pageItems, formatMoney as fmtMoney } from '@/lib/utils'
-import { formatDateTime } from '@/lib/format-date'
 import { WS_ROLE_LABEL, WS_ROLE_OPTIONS, TENANT_ROLE_LABEL } from '@/constants/roles'
 import type { Money, TenantMember, WorkspaceDetail, WorkspaceMember } from '@/types'
 import { Button } from '@/components/ui/Button'
@@ -94,7 +93,7 @@ export default function WorkspaceDetailPage() {
               </TabsTrigger>
             ))}
           </TabsList>
-          <TabsContent value="overview"><OverviewTab ws={ws} /></TabsContent>
+          <TabsContent value="overview"><OverviewTab ws={ws} onGoLogs={() => setTab('logs')} /></TabsContent>
           <TabsContent value="members"><MembersTab workspaceId={workspaceId} /></TabsContent>
           <TabsContent value="logs"><LogsForwardingTab workspaceId={workspaceId} /></TabsContent>
           <TabsContent value="settings">
@@ -107,22 +106,44 @@ export default function WorkspaceDetailPage() {
 }
 
 // ─── 概览 ─────────────────────────────────────────────
-function OverviewTab({ ws }: { ws: WorkspaceDetail }) {
+// 对齐 PRD 原型：4 指标卡 + 资源快捷入口（API Keys / 安全护栏 / 调用日志 / 日志与转发）
+function OverviewTab({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: () => void }) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const cards = [
     { label: t('workspaces.detail.overview.spend'), value: formatMoney(ws.usage_7d?.spend) },
     { label: t('workspaces.detail.overview.requests'), value: (ws.usage_7d?.requests ?? 0).toLocaleString() },
     { label: t('workspaces.detail.overview.tokens'), value: (ws.usage_7d?.tokens ?? 0).toLocaleString() },
-  ]
-  const infos = [
-    { label: t('workspaces.detail.overview.slug'), value: `@${ws.slug}` },
-    { label: t('workspaces.detail.overview.owner'), value: ws.owner?.display_name || '—' },
     { label: t('workspaces.detail.overview.apiKeys'), value: String(ws.api_key_count ?? 0) },
-    { label: t('workspaces.detail.overview.createdAt'), value: formatDateTime(ws.created_at) },
+  ]
+  const shortcuts: { title: string; desc: string; onClick: () => void }[] = [
+    {
+      title: t('nav.apiKeys'),
+      desc: t('workspaces.detail.overview.keysOwner', {
+        count: ws.api_key_count ?? 0,
+        owner: ws.owner?.display_name || '—',
+      }),
+      onClick: () => navigate(`/workspace/${ws.workspace_id}/api-keys`),
+    },
+    {
+      title: t('nav.guardrails'),
+      desc: t('workspaces.detail.overview.goGuardrailsDesc'),
+      onClick: () => navigate(`/workspace/${ws.workspace_id}/guardrails`),
+    },
+    {
+      title: t('nav.logs'),
+      desc: t('workspaces.detail.overview.goLogsDesc'),
+      onClick: () => navigate('/logs'),
+    },
+    {
+      title: t('workspaces.detail.tabs.logs'),
+      desc: t('workspaces.detail.overview.goForwardingDesc'),
+      onClick: onGoLogs,
+    },
   ]
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((c) => (
           <div key={c.label} className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-5 shadow-xs">
             <div className="text-[11px] font-bold text-mg-text-3 uppercase tracking-wider mb-2">{c.label}</div>
@@ -130,12 +151,20 @@ function OverviewTab({ ws }: { ws: WorkspaceDetail }) {
           </div>
         ))}
       </div>
-      <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-6 shadow-xs grid grid-cols-1 md:grid-cols-2 gap-6">
-        {infos.map((i) => (
-          <div key={i.label} className="space-y-1">
-            <div className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider">{i.label}</div>
-            <div className="text-xs text-mg-text-1 font-medium">{i.value}</div>
-          </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {shortcuts.map((s) => (
+          <button
+            key={s.title}
+            type="button"
+            onClick={s.onClick}
+            className="text-left bg-mg-bg-0 border border-mg-border/50 rounded-lg p-4 shadow-xs cursor-pointer transition-colors hover:border-brand-base/40 hover:bg-mg-fill-0/30 group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] font-bold text-mg-text-1">{s.title}</span>
+              <LuArrowRight size={14} className="text-mg-text-3 group-hover:text-brand-base transition-colors" />
+            </div>
+            <p className="mt-1 text-[11px] text-mg-text-3 leading-5">{s.desc}</p>
+          </button>
         ))}
       </div>
     </div>
@@ -439,10 +468,12 @@ function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => 
   const canRename = hasPermission(PERMS.WORKSPACE_RENAME)
   const canDelete = hasPermission(PERMS.WORKSPACE_DELETE)
   const [name, setName] = useState(ws.name)
+  const [description, setDescription] = useState(ws.description ?? '')
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const dirty = name.trim() !== ws.name || description.trim() !== (ws.description ?? '')
 
   const renameMutation = useMutation({
-    mutationFn: () => updateWorkspace(ws.workspace_id, { name: name.trim() }),
+    mutationFn: () => updateWorkspace(ws.workspace_id, { name: name.trim(), description: description.trim() }),
     onSuccess: () => {
       appToast.success(t('workspaces.detail.settings.renameSuccess'))
       qc.invalidateQueries({ queryKey: ['workspace-detail', ws.workspace_id] })
@@ -463,24 +494,43 @@ function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => 
 
   return (
     <div className="space-y-6 max-w-2xl">
-      {/* 改名 */}
-      <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-6 shadow-xs space-y-3">
-        <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">
-          {t('workspaces.detail.settings.renameLabel')}
-        </label>
-        <div className="flex items-center gap-2">
-          <Input value={name} onChange={(e) => setName(e.target.value)} className="max-w-[320px] h-9 text-xs rounded-lg" />
-          {canRename && (
-            <Button
-              variant="brand"
-              disabled={renameMutation.isPending || !name.trim() || name.trim() === ws.name}
-              onClick={() => renameMutation.mutate()}
-              className="h-9 px-4 rounded-lg font-semibold text-xs"
-            >
-              {t('workspaces.detail.settings.save')}
-            </Button>
-          )}
+      {/* 基本信息：名称 + Slug（只读）+ 描述 */}
+      <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-6 shadow-xs space-y-4">
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">
+            {t('workspaces.detail.settings.renameLabel')}
+          </label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} disabled={!canRename} className="max-w-[320px] h-9 text-xs rounded-lg" />
         </div>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">
+            {t('workspaces.detail.settings.slugLabel')}
+          </label>
+          <span className="font-mono text-xs text-mg-text-3">@{ws.slug}</span>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">
+            {t('workspaces.detail.settings.descLabel')}
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            disabled={!canRename}
+            rows={3}
+            placeholder={t('workspaces.detail.settings.descPlaceholder')}
+            className="w-full max-w-xl rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 text-xs text-mg-text-1 outline-none transition-colors focus:border-brand-base focus:ring-2 focus:ring-brand-glow placeholder:text-mg-text-3/70 disabled:opacity-50 resize-y"
+          />
+        </div>
+        {canRename && (
+          <Button
+            variant="brand"
+            disabled={renameMutation.isPending || !name.trim() || !dirty}
+            onClick={() => renameMutation.mutate()}
+            className="h-9 px-4 rounded-lg font-semibold text-xs"
+          >
+            {t('workspaces.detail.settings.save')}
+          </Button>
+        )}
       </div>
 
       {/* 危险操作 */}

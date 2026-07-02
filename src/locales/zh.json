@@ -734,7 +734,11 @@
         "slug": "唯一标识",
         "owner": "拥有者",
         "createdAt": "创建时间",
-        "apiKeys": "API Key 数量"
+        "apiKeys": "API Key 数量",
+        "keysOwner": "{{count}} 个 Key · 负责人 {{owner}}",
+        "goGuardrailsDesc": "查看并配置该空间的安全护栏",
+        "goLogsDesc": "排查该空间的模型调用记录",
+        "goForwardingDesc": "配置日志采集与转发目标"
       },
       "members": {
         "title": "项目成员",
@@ -759,6 +763,9 @@
       },
       "settings": {
         "renameLabel": "项目名称",
+        "slugLabel": "唯一标识 (Slug)",
+        "descLabel": "项目描述",
+        "descPlaceholder": "简述该项目的用途...",
         "rename": "更名",
         "save": "保存",
         "cancel": "取消",

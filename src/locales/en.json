@@ -734,7 +734,11 @@
         "slug": "Slug",
         "owner": "Owner",
         "createdAt": "Created At",
-        "apiKeys": "API Keys"
+        "apiKeys": "API Keys",
+        "keysOwner": "{{count}} keys · owner {{owner}}",
+        "goGuardrailsDesc": "View and configure guardrails for this workspace",
+        "goLogsDesc": "Inspect model call records for this workspace",
+        "goForwardingDesc": "Configure log collection and forwarding targets"
       },
       "members": {
         "title": "Workspace Members",
@@ -759,6 +763,9 @@
       },
       "settings": {
         "renameLabel": "Workspace Name",
+        "slugLabel": "Unique Identifier (Slug)",
+        "descLabel": "Description",
+        "descPlaceholder": "Describe the purpose of this workspace...",
         "rename": "Rename",
         "save": "Save",
         "cancel": "Cancel",

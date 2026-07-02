@@ -15,14 +15,20 @@ import type {
   SwitchTenantRequest,
 } from '@/types'
 
+// qa#299 人机验证：登录/注册/发码携带 captcha_verify_param（可选——未启用或 SDK
+// 降级时不带，后端 fail-open）。仅当非空时并入请求体。
+function withCaptcha<T extends object>(body: T, captchaVerifyParam?: string | null): T {
+  return captchaVerifyParam ? { ...body, captcha_verify_param: captchaVerifyParam } : body
+}
+
 /** 发送注册邮箱验证码（5 分钟有效；邮箱已注册返回 40901） */
-export function sendEmailCode(email: string) {
-  return post<AuthMailTTLResponse>('auth/email-code/send', { email })
+export function sendEmailCode(email: string, captchaVerifyParam?: string | null) {
+  return post<AuthMailTTLResponse>('auth/email-code/send', withCaptcha({ email }, captchaVerifyParam))
 }
 
 /** 邮箱密码注册（注册即登录，自动下发 session cookie） */
-export function register(body: RegisterRequest) {
-  return post<RegisterResult>('auth/register', body)
+export function register(body: RegisterRequest, captchaVerifyParam?: string | null) {
+  return post<RegisterResult>('auth/register', withCaptcha(body, captchaVerifyParam))
 }
 
 /** 登录前邮箱校验（两步登录第一步） */
@@ -38,8 +44,8 @@ export function checkLoginEmail(email: string) {
  * 已对接真实接口（QA #293，test+prod 已上线）：返回 { expires_in: 300 }；
  * 触发防刷冷却/日上限返回 429，未配置短信返回 503 SMS_NOT_CONFIGURED。
  */
-export function sendSmsCode(phone: string) {
-  return post<AuthMailTTLResponse>('auth/sms-code/send', { phone })
+export function sendSmsCode(phone: string, captchaVerifyParam?: string | null) {
+  return post<AuthMailTTLResponse>('auth/sms-code/send', withCaptcha({ phone }, captchaVerifyParam))
 }
 
 /**
@@ -57,8 +63,8 @@ export function phoneLoginRegister(phone: string, code: string) {
 }
 
 /** 邮箱密码登录 */
-export function login(body: LoginRequest) {
-  return post<LoginResult>('auth/login', body)
+export function login(body: LoginRequest, captchaVerifyParam?: string | null) {
+  return post<LoginResult>('auth/login', withCaptcha(body, captchaVerifyParam))
 }
 
 /** 登出（清除 session cookie） */

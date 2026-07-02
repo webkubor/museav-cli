@@ -17,6 +17,7 @@ import { AuthLayout } from '@/components/auth/AuthLayout'
 import { SocialLogin } from '@/components/auth/SocialLogin'
 import { PhoneAuth } from '@/components/auth/PhoneAuth'
 import { SliderCaptcha } from '@/components/auth/SliderCaptcha'
+import { getCaptchaParam, isCaptchaEnabled } from '@/lib/aliyun-captcha'
 import { useMarket } from '@/hooks/useMarket'
 import { useEmailAuthEnabled } from '@/hooks/use-platform-config'
 import { checkLoginEmail, login, getSession } from '@/services/auth'
@@ -111,7 +112,8 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
   const [, setFailureTick] = useState(0)
   // 当前邮箱的连续密码失败次数（每次渲染直接读，按邮箱各自计数）
   const pwdFailures = getAuthGuardFailures({ action: 'login-password', subject: email })
-  const captchaRequired = pwdFailures >= 3
+  // 阿里云验证码启用时不再叠加旧滑块（避免双重人机验证，qa#299）。
+  const captchaRequired = !isCaptchaEnabled() && pwdFailures >= 3
 
   const emailForm = useForm<EmailFields>({
     resolver: zodResolver(emailSchema),
@@ -160,11 +162,13 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
       return
     }
     if (!canSubmitAuth('login-password', email)) return
+    // qa#299 人机验证：通过取 param；未启用/降级/超时 → null → 照常登录（后端 fail-open）。
+    const captchaParam = await getCaptchaParam()
     setLoading(true)
     setServerError('')
     let loginOk = false
     try {
-      await login({ email, password: data.password })
+      await login({ email, password: data.password }, captchaParam)
       loginOk = true
       const session = await getSession()
       clearAuthGuard({ action: 'login-password', subject: email })

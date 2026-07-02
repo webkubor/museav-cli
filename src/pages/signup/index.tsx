@@ -20,6 +20,7 @@ import { PasswordStrength } from '@/components/auth/PasswordStrength'
 import { VerificationCodeButton } from '@/components/auth/VerificationCodeButton'
 import { SliderCaptcha } from '@/components/auth/SliderCaptcha'
 import { sendEmailCode, register } from '@/services/auth'
+import { getCaptchaParam, isCaptchaEnabled } from '@/lib/aliyun-captcha'
 import { useAuthStore } from '@/store/auth'
 import { ModelGoApiError } from '@/lib/request'
 import { toast } from '@/lib/toast'
@@ -121,8 +122,10 @@ function EmailSignupPage() {
       return
     }
 
+    // qa#299 人机验证：通过取 param；未启用/降级/超时 → null → 照常发码（后端 fail-open）。
+    const captchaParam = await getCaptchaParam()
     try {
-      const result = await sendEmailCode(email)
+      const result = await sendEmailCode(email, captchaParam)
       clearAuthGuard({ action: 'signup-code', subject: email })
       return result.expires_in
     } catch (error) {
@@ -132,7 +135,8 @@ function EmailSignupPage() {
   }
 
   const onSubmit = async (data: Fields) => {
-    if (!captchaVerified) {
+    // 旧滑块（非安全减速带）仅在阿里云验证码未启用时要求，避免双重人机验证（qa#299）。
+    if (!isCaptchaEnabled() && !captchaVerified) {
       setServerError('请先完成滑块验证')
       return
     }
@@ -144,6 +148,9 @@ function EmailSignupPage() {
       setServerError(decision.message ?? '操作过于频繁，请稍后再试')
       return
     }
+
+    // qa#299 人机验证：通过取 param；未启用/降级/超时 → null → 照常注册（后端 fail-open）。
+    const captchaParam = await getCaptchaParam()
 
     setLoading(true)
     setServerError('')
@@ -158,7 +165,7 @@ function EmailSignupPage() {
         invitation_token: invitationToken,
         // 推荐计划邀请码：?aff= 预填或用户手填，注册时做返佣归属
         referral_code: data.referral_code?.trim() || undefined,
-      })
+      }, captchaParam)
       setAuth(
         {
           account_id: result.account.account_id,
@@ -301,7 +308,7 @@ function EmailSignupPage() {
           )}
         </div>
 
-        {isFormValid && (
+        {isFormValid && !isCaptchaEnabled() && (
           <div className="mt-1 auth-fade-in">
             <label className="modern-auth-label">安全验证</label>
             <SliderCaptcha onChange={(verified) => setCaptchaVerified(verified)} />
@@ -315,7 +322,7 @@ function EmailSignupPage() {
           variant="brand"
           size="lg"
           loading={loading}
-          disabled={!captchaVerified}
+          disabled={!isCaptchaEnabled() && !captchaVerified}
           className="mt-2"
         >
           免费注册

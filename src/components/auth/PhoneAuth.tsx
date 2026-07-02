@@ -24,6 +24,7 @@ import {
 } from '@/lib/auth/front-guard'
 import { getRedirectTarget } from '@/lib/redirect'
 import { getRequestErrorMessage } from '@/lib/request-error-message'
+import { getCaptchaParam } from '@/lib/aliyun-captcha'
 import { trackEvent } from '@/lib/track'
 
 const schema = z.object({
@@ -71,8 +72,10 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
       throw new Error(decision.message ?? '操作过于频繁，请稍后再试')
     }
     setServerError('')
+    // qa#299 人机验证：通过取 param；未启用/降级/超时 → null → 照常发码（后端 fail-open）。
+    const captchaParam = await getCaptchaParam()
     try {
-      const result = await sendSmsCode(phone)
+      const result = await sendSmsCode(phone, captchaParam)
       clearAuthGuard({ action: 'phone-code', subject: phone })
       return result.expires_in
     } catch (error) {

@@ -140,7 +140,9 @@
       "neverExpires": "Never expires",
       "expired": "Expired",
       "totalSpend": "Total Spend",
-      "noData": "No data"
+      "noData": "No data",
+      "copyUnavailableLegacy": "This key was created before copy support; the plaintext cannot be recovered — rotate to a new key",
+      "copyUnavailableInactive": "This key is revoked or expired and cannot be copied"
     },
     "revokeConfirm": {
       "title": "Delete this API key?",
@@ -174,7 +176,10 @@
       "createSuccess": "Key \"{{name}}\" created successfully",
       "createError": "Failed to create API key",
       "revokeSuccess": "API Key deleted",
-      "revokeError": "Failed to delete API key"
+      "revokeError": "Failed to delete API key",
+      "copyKeySuccess": "Full API key copied to clipboard",
+      "copyKeyError": "Failed to retrieve the key, please try again later",
+      "copyKeyClipboardError": "Could not write to clipboard; check browser permissions"
     }
   },
   "billing": {

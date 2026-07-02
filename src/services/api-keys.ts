@@ -36,3 +36,11 @@ export function updateApiKey(workspaceId: string, keyId: string, body: UpdateApi
 export function revokeApiKey(workspaceId: string, keyId: string) {
   return del<null>(`workspaces/${workspaceId}/api-keys/${keyId}`)
 }
+
+/**
+ * 取回 API Key 完整明文（#298 复制 key）。仅 revealable=true 的 active 键；
+ * 后端鉴权（key 属主或 ws_owner/ws_admin）+ 审计 + 限流。明文只进剪贴板，不落组件状态。
+ */
+export function revealApiKey(workspaceId: string, keyId: string) {
+  return post<{ key: string }>(`workspaces/${workspaceId}/api-keys/${keyId}/reveal`, {})
+}

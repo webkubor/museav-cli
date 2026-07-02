@@ -14,7 +14,9 @@ import { LuSearch, LuPlus } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { getMarketConfig } from '@/config/market'
-import { listApiKeys, revokeApiKey } from '@/services/api-keys'
+import { listApiKeys, revealApiKey, revokeApiKey } from '@/services/api-keys'
+import { useCopy } from '@/hooks/use-copy'
+import { getRequestErrorMessage } from '@/lib/request-error-message'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
@@ -67,6 +69,54 @@ export default function ApiKeysPage() {
     },
   })
 
+  const { copy } = useCopy()
+  const [copyingKeyId, setCopyingKeyId] = useState<string | null>(null)
+  // #298 复制完整明文：reveal → 直接进剪贴板，明文不落组件状态、不渲染进 DOM。
+  // Safari/WebKit 要求剪贴板写入发生在用户手势调用栈内，async 回调里再写必被
+  // NotAllowedError 拒绝 —— 所以在点击栈内同步发起 ClipboardItem(promise) 写入
+  //（WebKit 官方模式），把 reveal 请求的 promise 交给剪贴板；不支持的浏览器回退
+  // 到「等明文 → 同步 copy」（Chrome/Firefox 场景，无手势门禁或窗口足够）。
+  const handleCopyKey = useCallback(
+    async (item: ApiKeyItem) => {
+      if (copyingKeyId) return // 全表互斥：并发 reveal 会让剪贴板归属不可预期
+      setCopyingKeyId(item.api_key_id)
+      const plaintextPromise = revealApiKey(activeWorkspaceId, item.api_key_id).then((r) => r.key)
+      // ClipboardItem 路径先同步失败时，plaintextPromise 的 rejection 需要有兜底
+      // 消费者，避免 unhandled rejection。
+      plaintextPromise.catch(() => {})
+      try {
+        if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              'text/plain': plaintextPromise.then((k) => new Blob([k], { type: 'text/plain' })),
+            }),
+          ])
+        } else {
+          const ok = await copy(await plaintextPromise)
+          if (!ok) throw new DOMException('clipboard write failed', 'NotAllowedError')
+        }
+        appToast.success(t('apiKeys.toast.copyKeySuccess'))
+      } catch {
+        // 区分「reveal 请求失败」和「请求成功但剪贴板被拒」两种失败。
+        const requestError = await plaintextPromise.then(
+          () => null,
+          (e: unknown) => e ?? new Error('reveal failed')
+        )
+        if (requestError) {
+          appToast.error(getRequestErrorMessage(requestError, t('apiKeys.toast.copyKeyError')))
+        } else {
+          // 明文已拿到、ClipboardItem 被拒（罕见）：再试一次同步降级复制。
+          const ok = await copy(await plaintextPromise)
+          if (ok) appToast.success(t('apiKeys.toast.copyKeySuccess'))
+          else appToast.error(t('apiKeys.toast.copyKeyClipboardError'))
+        }
+      } finally {
+        setCopyingKeyId(null)
+      }
+    },
+    [activeWorkspaceId, copy, copyingKeyId, t]
+  )
+
   const filteredData = apiKeyItems.filter(
     (item) =>
       item.name.toLowerCase().includes(searchValue.toLowerCase()) ||
@@ -118,6 +168,8 @@ export default function ApiKeysPage() {
         canRevoke={canRevoke}
         onRevoke={setRevokeTarget}
         onEditGuardrail={setEditGuardrailKey}
+        onCopyKey={handleCopyKey}
+        copyingKeyId={copyingKeyId}
       />
 
       <ConnectModal

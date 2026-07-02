@@ -7,6 +7,14 @@ const DATA_FILE = path.resolve(process.cwd(), '.requirements.json')
 const GITLAB_HOST = 'gitlab.ops.modelgo.com'
 const GITLAB_PROJECT_ID = 1
 const GITLAB_USER_ID = 8
+const GLAB_BIN_CANDIDATES = [
+  process.env.GLAB_BIN,
+  'glab',
+  '/opt/homebrew/bin/glab',
+  '/usr/local/bin/glab',
+].filter((candidate): candidate is string => Boolean(candidate))
+
+let resolvedGlabBin: string | null = null
 
 export interface Requirement {
   id: string
@@ -16,6 +24,7 @@ export interface Requirement {
   createdAt: string
   note?: string
   gitlabIid?: number
+  gitlabState?: string
   gitlabLabels?: string[]
   assignee?: string
 }
@@ -71,8 +80,28 @@ function readBody(req: import('http').IncomingMessage): Promise<string> {
   })
 }
 
+function shellArg(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`
+}
+
+function resolveGlabBin(): string {
+  if (resolvedGlabBin) return resolvedGlabBin
+
+  for (const candidate of GLAB_BIN_CANDIDATES) {
+    try {
+      execSync(`${shellArg(candidate)} --version`, { stdio: 'ignore', timeout: 5_000 })
+      resolvedGlabBin = candidate
+      return candidate
+    } catch {
+      // Try the next known install location.
+    }
+  }
+
+  throw new Error('glab_not_found: install glab or set GLAB_BIN=/path/to/glab')
+}
+
 function glab(cmd: string): string {
-  return execSync(`glab api ${cmd} --hostname ${GITLAB_HOST}`, {
+  return execSync(`${shellArg(resolveGlabBin())} api ${cmd} --hostname ${GITLAB_HOST}`, {
     encoding: 'utf-8',
     timeout: 15_000,
   })
@@ -80,10 +109,6 @@ function glab(cmd: string): string {
 
 function glabJson<T>(cmd: string): T {
   return JSON.parse(glab(cmd)) as T
-}
-
-function shellArg(value: string): string {
-  return `'${value.replace(/'/g, `'\\''`)}'`
 }
 
 function listGitlabUsers(): GitLabUser[] {
@@ -100,8 +125,23 @@ function gitlabStatusToLocal(issue: GitLabIssue): Requirement['status'] {
   return 'pending'
 }
 
+// 开发者菜单只服务“当前需要我监控的问题”，不做 GitLab 历史台账。
+// 这里仍然分页拉取，避免未关闭事项超过 100 条时被截断。
+function fetchOpenGitlabIssues(): GitLabIssue[] {
+  const perPage = 100
+  const all: GitLabIssue[] = []
+  for (let page = 1; ; page += 1) {
+    const batch = glabJson<GitLabIssue[]>(
+      `"groups/qa/issues?state=opened&per_page=${perPage}&page=${page}"`
+    )
+    all.push(...batch)
+    if (batch.length < perPage) break
+  }
+  return all
+}
+
 function syncFromGitlab(items: Requirement[]): Requirement[] {
-  const issues = glabJson<GitLabIssue[]>('"groups/qa/issues?per_page=100"')
+  const issues = fetchOpenGitlabIssues()
   const iidMap = new Map(items.filter((i) => i.gitlabIid).map((i) => [i.gitlabIid!, i]))
 
   const merged = [...items]
@@ -113,8 +153,8 @@ function syncFromGitlab(items: Requirement[]): Requirement[] {
       merged[idx] = {
         ...existing,
         title: issue.title.replace(/^\[Console需求\]\s*/, '').replace(/^\[cs:claude\]\s*/, ''),
-        // 本地已标记完成的保留完成态，避免被 GitLab 未关闭状态冲掉（本地 done 或 GitLab done 任一即视为完成）
-        status: existing.status === 'done' ? 'done' : gitlabStatusToLocal(issue),
+        status: gitlabStatusToLocal(issue),
+        gitlabState: issue.state,
         gitlabLabels: issue.labels,
         assignee: issue.assignee?.username ?? undefined,
       }
@@ -126,6 +166,7 @@ function syncFromGitlab(items: Requirement[]): Requirement[] {
         status: gitlabStatusToLocal(issue),
         createdAt: issue.created_at,
         gitlabIid: issue.iid,
+        gitlabState: issue.state,
         gitlabLabels: issue.labels,
         assignee: issue.assignee?.username ?? undefined,
       })

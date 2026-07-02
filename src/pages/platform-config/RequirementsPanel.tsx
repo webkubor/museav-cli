@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
 type RequirementStatus = 'pending' | 'done'
 type RequirementPriority = 'high' | 'medium' | 'low'
 type RequirementFilter = 'pending' | 'all' | 'done'
+type AssigneeFilter = 'mine' | 'unassigned' | 'all'
 
 interface Requirement {
   id: string
@@ -24,6 +25,7 @@ interface Requirement {
   createdAt: string
   note?: string
   gitlabIid?: number
+  gitlabState?: string
   gitlabLabels?: string[]
   assignee?: string
 }
@@ -44,6 +46,10 @@ function statusText(item: Requirement): string {
 
 function isRequirementDone(item: Requirement): boolean {
   return item.status === 'done' || statusText(item) === '已完成'
+}
+
+function isOpenGitlabIssue(item: Requirement): boolean {
+  return item.gitlabIid ? item.gitlabState === 'opened' : item.status !== 'done'
 }
 
 function statusVariant(item: Requirement): 'success' | 'warning' | 'secondary' | 'info' {
@@ -68,6 +74,10 @@ async function requestRequirements(): Promise<Requirement[]> {
   const response = await fetch('/dev/requirements')
   if (!response.ok) throw new Error(`GET /dev/requirements ${response.status}`)
   return response.json() as Promise<Requirement[]>
+}
+
+async function requestRequirementsData(): Promise<[Requirement[], GitLabUser[]]> {
+  return Promise.all([requestRequirements(), requestUsers()])
 }
 
 async function requestUsers(): Promise<GitLabUser[]> {
@@ -107,29 +117,17 @@ export function RequirementsPanel() {
   const [comments, setComments] = useState<Record<string, string>>({})
   const [assigneeIds, setAssigneeIds] = useState<Record<string, string>>({})
   const [issueFilter, setIssueFilter] = useState<RequirementFilter>('pending')
+  const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>('mine')
   const [error, setError] = useState<string | null>(null)
-
-  const load = async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const [nextItems, nextUsers] = await Promise.all([requestRequirements(), requestUsers()])
-      setItems(nextItems)
-      setUsers(nextUsers)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '读取失败'
-      setError(message)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const sync = async () => {
     setIsSyncing(true)
     setError(null)
     try {
       await syncRequirements()
-      await load()
+      const [nextItems, nextUsers] = await requestRequirementsData()
+      setItems(nextItems)
+      setUsers(nextUsers)
       appToast.success('已同步 GitLab 问题')
     } catch (err) {
       const message = err instanceof Error ? err.message : '同步失败'
@@ -142,7 +140,7 @@ export function RequirementsPanel() {
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([requestRequirements(), requestUsers()])
+    requestRequirementsData()
       .then(([nextItems, nextUsers]) => {
         if (!cancelled) {
           setItems(nextItems)
@@ -164,20 +162,25 @@ export function RequirementsPanel() {
     }
   }, [])
 
-  const myBugs = useMemo(() => {
+  const openIssues = useMemo(() => {
     return items
-      .filter((item) => item.assignee === 'webkubor')
-      .filter((item) => item.gitlabLabels?.includes('BUG'))
+      .filter(isOpenGitlabIssue)
       .sort((a, b) => Number(b.gitlabIid ?? 0) - Number(a.gitlabIid ?? 0))
   }, [items])
 
-  const pendingCount = myBugs.filter((item) => !isRequirementDone(item)).length
-  const doneCount = myBugs.length - pendingCount
-  const visibleBugs = useMemo(() => {
-    if (issueFilter === 'all') return myBugs
-    if (issueFilter === 'done') return myBugs.filter(isRequirementDone)
-    return myBugs.filter((item) => !isRequirementDone(item))
-  }, [issueFilter, myBugs])
+  const scopedIssues = useMemo(() => {
+    if (assigneeFilter === 'mine') return openIssues.filter((item) => item.assignee === 'webkubor')
+    if (assigneeFilter === 'unassigned') return openIssues.filter((item) => !item.assignee)
+    return openIssues
+  }, [assigneeFilter, openIssues])
+
+  const pendingCount = scopedIssues.filter((item) => !isRequirementDone(item)).length
+  const doneCount = scopedIssues.length - pendingCount
+  const visibleIssues = useMemo(() => {
+    if (issueFilter === 'all') return scopedIssues
+    if (issueFilter === 'done') return scopedIssues.filter(isRequirementDone)
+    return scopedIssues.filter((item) => !isRequirementDone(item))
+  }, [issueFilter, scopedIssues])
 
   const updateLocalItem = (updated: Requirement) => {
     setItems((current) => current.map((item) => item.id === updated.id ? { ...item, ...updated } : item))
@@ -244,8 +247,13 @@ export function RequirementsPanel() {
 
   const filterOptions: Array<{ value: RequirementFilter; label: string; count: number }> = [
     { value: 'pending', label: '待处理', count: pendingCount },
-    { value: 'all', label: '全部', count: myBugs.length },
+    { value: 'all', label: '全部', count: scopedIssues.length },
     { value: 'done', label: '已完成', count: doneCount },
+  ]
+  const assigneeFilterOptions: Array<{ value: AssigneeFilter; label: string; count: number }> = [
+    { value: 'mine', label: '我的', count: openIssues.filter((item) => item.assignee === 'webkubor').length },
+    { value: 'unassigned', label: '未分配', count: openIssues.filter((item) => !item.assignee).length },
+    { value: 'all', label: '全部开放', count: openIssues.length },
   ]
 
   return (
@@ -254,13 +262,28 @@ export function RequirementsPanel() {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-base font-bold text-mg-text-1">我的问题</h2>
-            <Badge variant="danger" size="sm">BUG {myBugs.length}</Badge>
+            <Badge variant="danger" size="sm">OPEN {openIssues.length}</Badge>
           </div>
           <p className="mt-1 text-xs text-mg-text-3">
-            来源于 .requirements.json，支持完成、评论和重新指派 GitLab QA 缺陷。
+            显示 GitLab 中未关闭的问题，包括需求、BUG 和未分配事项，支持完成、评论和重新指派。
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex rounded-lg border border-mg-border bg-mg-fill-0 p-0.5">
+            {assigneeFilterOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setAssigneeFilter(option.value)}
+                className={cn(
+                  'h-7 rounded-md px-2.5 text-xs font-bold text-mg-text-3 transition-colors hover:text-mg-text-1',
+                  assigneeFilter === option.value && 'bg-card-bg text-brand-base shadow-sm'
+                )}
+              >
+                {option.label} {option.count}
+              </button>
+            ))}
+          </div>
           <div className="flex rounded-lg border border-mg-border bg-mg-fill-0 p-0.5">
             {filterOptions.map((option) => (
               <button
@@ -292,11 +315,11 @@ export function RequirementsPanel() {
         <div className="rounded-md border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-3">
           正在读取本地问题列表...
         </div>
-      ) : myBugs.length === 0 ? (
+      ) : openIssues.length === 0 ? (
         <div className="rounded-md border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-3">
-          暂无指派给你的 BUG。点击同步 GitLab 后再查看。
+          暂无未关闭问题。点击同步 GitLab 后再查看。
         </div>
-      ) : visibleBugs.length === 0 ? (
+      ) : visibleIssues.length === 0 ? (
         <div className="rounded-md border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-3">
           当前筛选下没有问题。
         </div>
@@ -309,7 +332,7 @@ export function RequirementsPanel() {
             <span>优先级</span>
           </div>
           <div className="divide-y divide-mg-border">
-            {visibleBugs.map((item) => {
+            {visibleIssues.map((item) => {
               const currentAssignee = users.find((user) => user.username === item.assignee)
               const selectedAssignee = assigneeIds[item.id] ?? (currentAssignee ? String(currentAssignee.id) : '')
 

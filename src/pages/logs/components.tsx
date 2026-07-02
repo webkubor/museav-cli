@@ -21,8 +21,16 @@ import type { CallLogItem } from '@/types'
 const STATUS_MAP: Record<string, StatusConfig> = {
   accepted: { label: '处理中', variant: 'secondary', dot: true },
   succeeded: { label: '成功', variant: 'success' },
-  failed: { label: '异常', variant: 'destructive' },
+  failed: { label: '异常', variant: 'danger' },
   rejected: { label: '护栏命中', variant: 'warning' },
+}
+
+/** 延迟阈值着色：>3s 警告色，>6s 危险色，其余默认。让慢请求一眼可见。 */
+function durationTone(ms: number | null | undefined): string {
+  if (!ms || ms <= 0) return 'text-mg-text-2'
+  if (ms >= 6000) return 'text-mg-danger'
+  if (ms >= 3000) return 'text-mg-warning'
+  return 'text-mg-text-2'
 }
 
 function formatMaybeDuration(ms: number | null | undefined) {
@@ -137,7 +145,7 @@ export function LogsTable({
               <TableCell>
                 <Money amount={Number(row.cost.amount) > 0 ? row.cost.amount : null} currency={row.cost.currency} />
               </TableCell>
-              <TableCell className="whitespace-nowrap font-mono text-mg-text-2 tabular-nums">
+              <TableCell className={cn('whitespace-nowrap font-mono tabular-nums', durationTone(row.duration_ms))}>
                 {formatMaybeDuration(row.duration_ms)}
               </TableCell>
               <TableCell align="right">

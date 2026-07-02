@@ -8,6 +8,7 @@ import {
 import { LuSettings } from 'react-icons/lu'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
 import { formatDateTime } from '@/lib/format-date'
+import { cn } from '@/lib/utils'
 
 function guardrailMetadataList(row: GuardrailDetail, key: 'model_blacklist' | 'ip_whitelist') {
   const value = row.metadata?.[key]
@@ -126,13 +127,18 @@ export function GuardrailTable({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Switch
-                      checked={row.status === 'active'}
-                      disabled={!canEdit}
-                      onChange={(checked) =>
-                        onToggle({ id: row.id, status: checked ? 'active' : 'inactive' })
-                      }
-                    />
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={row.status === 'active'}
+                        disabled={!canEdit}
+                        onChange={(checked) =>
+                          onToggle({ id: row.id, status: checked ? 'active' : 'inactive' })
+                        }
+                      />
+                      <span className={cn('mg-text-caption font-semibold', row.status === 'active' ? 'text-mg-success' : 'text-mg-text-3')}>
+                        {row.status === 'active' ? t('guardrails.table.active') : t('guardrails.table.inactive')}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell className="text-xs text-mg-text-3">{formatDateTime(row.created_at)}</TableCell>
                   <TableCell className="text-right">

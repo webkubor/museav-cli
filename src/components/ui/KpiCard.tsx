@@ -148,8 +148,8 @@ export const KpiCard: React.FC<KpiCardProps> = ({
                 <span
                   className="mg-compact-badge mb-1.5 px-1.5 py-0.5 rounded-md"
                   style={{
-                    color: computedTrend.up ? '#10b981' : '#f59e0b',
-                    backgroundColor: computedTrend.up ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
+                    color: computedTrend.up ? 'var(--mg-trend-up)' : 'var(--mg-trend-down)',
+                    backgroundColor: `color-mix(in srgb, ${computedTrend.up ? 'var(--mg-trend-up)' : 'var(--mg-trend-down)'} 12%, transparent)`,
                   }}
                 >
                   {computedTrend.up ? '↑' : '↓'} {computedTrend.value}

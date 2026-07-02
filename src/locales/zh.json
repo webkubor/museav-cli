@@ -427,6 +427,8 @@
       "priority": "优先级",
       "isDefault": "默认应用",
       "status": "状态",
+      "active": "启用",
+      "inactive": "停用",
       "createdAt": "创建时间",
       "defaultBadge": "默认应用",
       "optionalBadge": "可选",

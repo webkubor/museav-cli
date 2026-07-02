@@ -102,7 +102,7 @@ export function LogDetailSheet({
           <DetailSection title="概览">
             <DetailGrid compact>
               <DetailRow label="模型" value={row.model.display_name} />
-              <DetailRow label="项目" value={row.workspace_id} mono />
+              <DetailRow label="工作空间" value={row.workspace_id} mono />
               <DetailRow label="API Key 名称" value={row.api_key.name} />
               <DetailRow label="成员" value={row.account.display_name} />
             </DetailGrid>

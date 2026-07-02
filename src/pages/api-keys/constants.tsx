@@ -40,8 +40,8 @@ export const SCOPE_OPTIONS: { value: ScopeType; icon: React.ReactNode; label: st
   {
     value: 'workspace',
     icon: <LuBuilding2 className="w-4 h-4" />,
-    label: '项目',
-    desc: '项目服务集成使用',
+    label: '工作空间',
+    desc: '工作空间服务集成使用',
   },
   {
     value: 'member',

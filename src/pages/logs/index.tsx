@@ -206,7 +206,7 @@ export default function LogsPage() {
     if (statusFilter !== 'all') chips.push(STATUS_OPTIONS.find((item) => item.value === statusFilter)?.label ?? statusFilter)
     if (workspaceFilter !== 'all') {
       const workspace = workspacesData?.items.find((item) => item.workspace_id === workspaceFilter)
-      chips.push(`项目: ${workspace?.name ?? workspaceFilter}`)
+      chips.push(`工作空间: ${workspace?.name ?? workspaceFilter}`)
     }
     if (modelFilter !== 'all') chips.push(`模型: ${modelFilter}`)
     if (apiKeyFilter !== 'all') {
@@ -261,7 +261,7 @@ export default function LogsPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="调用日志"
-        description="按项目、成员、模型和 API Key 追踪真实调用，定位请求、费用、Token 与响应耗时。"
+        description="按工作空间、成员、模型和 API Key 追踪真实调用，定位请求、费用、Token 与响应耗时。"
         actions={
           <Button variant="outline" disabled={isLoading || isFetching} onClick={() => refetch()}>
             <LuRefreshCw className={`mr-1.5 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
@@ -282,9 +282,9 @@ export default function LogsPage() {
               ))}
             </Select>
           </FilterField>
-          <FilterField label="项目">
+          <FilterField label="工作空间">
             <Select value={workspaceFilter} onChange={(value) => { setWorkspaceFilter(value); resetPagination() }}>
-              <Select.Option value="all">全部项目</Select.Option>
+              <Select.Option value="all">全部工作空间</Select.Option>
               {(workspacesData?.items ?? []).map((workspace) => (
                 <Select.Option key={workspace.workspace_id} value={workspace.workspace_id}>
                   {workspace.name}

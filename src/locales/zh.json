@@ -66,7 +66,16 @@
     "sidebarWorkspace": "工作空间",
     "tasks": "任务历史",
     "groupBilling": "账单与用量",
-    "groupActivity": "活动中心"
+    "groupActivity": "活动中心",
+    "openMenu": "打开菜单",
+    "closeMenu": "关闭菜单"
+  },
+  "promo": {
+    "freeModels": {
+      "badge": "限时免费",
+      "title": "免费模型体验",
+      "description": "零成本试用精选模型"
+    }
   },
   "sidebarSettings": {
     "accountHint": "资料、安全与绑定",

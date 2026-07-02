@@ -11,6 +11,7 @@ import {
   LuCheck,
   LuShield,
   LuChevronRight,
+  LuMenu,
 } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -51,7 +52,7 @@ import {
 /**
  * 重构后的 DashboardHeader
  */
-export const DashboardHeader: React.FC = () => {
+export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenuClick }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const market = useLangStore((s) => s.market)
@@ -408,6 +409,18 @@ export const DashboardHeader: React.FC = () => {
     )}>
       {/* 左侧：Logo & 工作区选择器 */}
       <div className="flex items-center gap-6">
+        {/* 窄屏（<md）汉堡：打开侧栏抽屉 */}
+        {isAuthenticated && onMenuClick && (
+          <button
+            type="button"
+            onClick={onMenuClick}
+            aria-label={t('nav.openMenu')}
+            title={t('nav.openMenu')}
+            className="md:hidden -ml-1 inline-flex h-9 w-9 items-center justify-center rounded-lg text-mg-text-2 transition-colors duration-200 hover:bg-mg-fill-0/50 hover:text-mg-text-1 active:scale-[0.94] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base/40"
+          >
+            <LuMenu size={20} />
+          </button>
+        )}
         {/* Logo 展现 */}
         <div
           className="group flex items-center gap-2.5 cursor-pointer active:scale-[0.97] transition-transform duration-150 select-none"

@@ -51,7 +51,8 @@ export default function UsagePage() {
   const [filterWorkspaceId, setFilterWorkspaceId] = useState<string>('')
 
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
-  const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
+  // 用量统计是租户级页面：默认租户全量，仅受本页筛选器控制；不读工作空间选择器的
+  // activeWorkspaceId（PRD §7.3：租户级页面不得被选择器过滤）。
   const { symbol: currencySymbol } = useCurrency()
 
   const usagePresets = [
@@ -74,8 +75,8 @@ export default function UsagePage() {
   const commonParams = useMemo(() => ({
     from,
     to,
-    workspace_id: filterWorkspaceId || activeWorkspaceId || undefined,
-  }), [activeWorkspaceId, filterWorkspaceId, from, to])
+    workspace_id: filterWorkspaceId || undefined,
+  }), [filterWorkspaceId, from, to])
 
   const workspacesQuery = useQuery({
     queryKey: ['workspaces-for-filter', activeTenantId],

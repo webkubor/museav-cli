@@ -24,12 +24,13 @@ function formatSimple(iso: string) {
 export function RecentCallsSection() {
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
-  const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const navigate = useNavigate()
 
+  // 总览是租户级页面：最近调用按租户口径取，不读工作空间选择器的 activeWorkspaceId
+  // （PRD §7.3：选择器只驱动 workspace 级页面）。视图×角色的数据裁剪归 #314。
   const { data, isLoading } = useQuery({
-    queryKey: ['workbench', 'recent-logs', activeTenantId, activeWorkspaceId],
-    queryFn: () => listCallLogs({ limit: 3, workspace_id: activeWorkspaceId ?? undefined }),
+    queryKey: ['workbench', 'recent-logs', activeTenantId],
+    queryFn: () => listCallLogs({ limit: 3 }),
     enabled: !!activeTenantId,
     staleTime: 30_000,
   })

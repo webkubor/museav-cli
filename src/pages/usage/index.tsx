@@ -7,7 +7,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
+import { type DateRangeValue } from '@/components/ui/DateRangePicker'
 import {
   getUsageSummary,
   getUsageSeries,
@@ -25,7 +25,6 @@ import { KpiCard } from '@/components/ui/KpiCard'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
-import Select from '@/components/ui/Select'
 import { LuActivity, LuDatabase, LuGauge, LuRefreshCw, LuWallet } from 'react-icons/lu'
 import {
   ApiKeyRankingPanel,
@@ -42,6 +41,7 @@ import {
   formatAverageMoney,
 } from './usage-utils'
 import { Sparkline, MetricTab } from './usage-charts'
+import { UsageFilterPanel } from './usage-filters'
 
 /** 用量分析页面入口。 */
 export default function UsagePage() {
@@ -214,70 +214,47 @@ export default function UsagePage() {
     void workspaceSourceQuery.refetch()
   }
 
-  const filterBar = (
-    <div className="flex flex-wrap items-center gap-2 shrink-0">
-      <Select
-        value={filterWorkspaceId === '' ? '__all__' : filterWorkspaceId}
-        onChange={handleWorkspaceChange}
-        placeholder={t('usage.filter.allWorkspaces')}
-        className="h-9 w-40 text-sm"
-      >
-        <Select.Option value="__all__">{t('usage.filter.allWorkspaces')}</Select.Option>
-        {workspaceList.map((workspace) => (
-          <Select.Option key={workspace.workspace_id} value={workspace.workspace_id}>
-            {workspace.name}
-          </Select.Option>
-        ))}
-      </Select>
-
-      <Select
-        value={filterApiKeyId === '' ? '__all__' : filterApiKeyId}
-        onChange={handleApiKeyChange}
-        placeholder={t('usage.filter.allKeys')}
-        className="h-9 w-44 text-sm"
-        disabled={!effectiveWorkspaceId}
-      >
-        <Select.Option value="__all__">{t('usage.filter.allKeys')}</Select.Option>
-        {apiKeyList.map((apiKey) => (
-          <Select.Option key={apiKey.api_key_id} value={apiKey.api_key_id}>
-            {apiKey.name || apiKey.masked}
-          </Select.Option>
-        ))}
-      </Select>
-
-      <Select
-        value={filterModelId === '' ? '__all__' : filterModelId}
-        onChange={handleModelChange}
-        placeholder={t('usage.filter.allModels')}
-        className="h-9 w-44 text-sm"
-      >
-        <Select.Option value="__all__">{t('usage.filter.allModels')}</Select.Option>
-        {modelList.map((model) => (
-          <Select.Option key={model.model_id} value={model.model_id}>
-            {model.display_name || model.model_id}
-          </Select.Option>
-        ))}
-      </Select>
-
-      <div className="w-48 shrink-0">
-        <DateRangePicker
-          value={timeRange}
-          onChange={setTimeRange}
-          presets={usagePresets}
-          placeholder={t('usage.customRange.placeholder')}
-          className="h-9"
-        />
-      </div>
-      <Button variant="outline" size="sm" onClick={refetchUsageData} icon={<LuRefreshCw size={14} />}>
-        {t('usage.refresh')}
-      </Button>
-    </div>
-  )
-
   return (
-    <div className="space-y-5">
-      <PageHeader title={t('usage.title')} />
-      {filterBar}
+    <div className="space-y-6">
+      <PageHeader
+        title={t('usage.title')}
+        description={t('usage.desc')}
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refetchUsageData}
+            icon={<LuRefreshCw size={14} className={summaryQuery.isFetching || seriesQuery.isFetching ? 'animate-spin' : ''} />}
+          >
+            {t('usage.refresh')}
+          </Button>
+        }
+      />
+
+      <UsageFilterPanel
+        apiKeyList={apiKeyList}
+        effectiveWorkspaceId={effectiveWorkspaceId}
+        filterApiKeyId={filterApiKeyId}
+        filterModelId={filterModelId}
+        filterWorkspaceId={filterWorkspaceId}
+        labels={{
+          apiKeys: t('usage.filter.allKeys'),
+          customRangePlaceholder: t('usage.customRange.placeholder'),
+          description: t('usage.filterPanel.desc'),
+          models: t('usage.filter.allModels'),
+          title: t('usage.filterPanel.title'),
+          workspaces: t('usage.filter.allWorkspaces'),
+        }}
+        modelList={modelList}
+        onApiKeyChange={handleApiKeyChange}
+        onModelChange={handleModelChange}
+        onTimeRangeChange={setTimeRange}
+        onWorkspaceChange={handleWorkspaceChange}
+        presets={usagePresets}
+        rangeLabel={rangeLabel}
+        timeRange={timeRange}
+        workspaceList={workspaceList}
+      />
 
       {summaryQuery.isError && (
         <div className="flex flex-wrap items-center gap-3 rounded-md border border-mg-danger/30 bg-mg-bg-0 px-4 py-3 text-sm text-mg-danger">

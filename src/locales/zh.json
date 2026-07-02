@@ -1003,6 +1003,10 @@
       "workspace": "项目",
       "apiKey": "API Key"
     },
+    "filterPanel": {
+      "title": "数据筛选",
+      "desc": "按项目、API Key、模型和时间范围查看真实用量。"
+    },
     "rankings": {
       "title": "用量排行",
       "topKeys": "Top API Key",

@@ -1004,6 +1004,10 @@
       "workspace": "Workspace",
       "apiKey": "API Key"
     },
+    "filterPanel": {
+      "title": "Filters",
+      "desc": "Review real usage by workspace, API Key, model, and time range."
+    },
     "rankings": {
       "title": "Usage Rankings",
       "topKeys": "Top API Keys",

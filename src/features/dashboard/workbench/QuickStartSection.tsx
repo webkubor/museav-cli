@@ -103,7 +103,7 @@ export function QuickStartSection() {
                 >
                   {step.icon}
                 </span>
-                <span className="text-xs font-mono font-bold text-mg-text-3">{`0${i + 1}`}</span>
+                <span className="text-xs font-mono font-bold text-mg-text-3">{i + 1}</span>
               </div>
               <div className="mt-3 flex-1">
                 <div className="text-sm font-bold text-mg-text-1">{step.title}</div>
@@ -123,9 +123,15 @@ export function QuickStartSection() {
         </div>
 
         <div className="mt-4 flex flex-col gap-2 rounded-lg border border-mg-border bg-mg-fill-0 p-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 text-xs text-mg-text-3">
-            <LuTerminal size={14} className="shrink-0" />
-            <span>{t('dashboard.workbench.quickStart.cliHint')}</span>
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-2">
+              <LuTerminal size={14} className="shrink-0 text-mg-text-3" />
+              <span className="text-xs font-bold text-mg-text-1">{t('dashboard.workbench.quickStart.cliTitle')}</span>
+              <span className="inline-flex items-center rounded-full bg-brand-base/12 px-1.5 py-px text-[10px] font-bold text-brand-base">
+                {t('dashboard.workbench.quickStart.cliBadge')}
+              </span>
+            </div>
+            <span className="pl-6 text-[11px] text-mg-text-3">{t('dashboard.workbench.quickStart.cliHint')}</span>
           </div>
           <button
             type="button"

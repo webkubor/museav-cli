@@ -1304,6 +1304,8 @@
         "step3Title": "发送测试请求",
         "step3Desc": "发起一次调用并在日志中确认结果",
         "step3Action": "查看日志",
+        "cliTitle": "一键配置本地开发环境",
+        "cliBadge": "推荐",
         "cliHint": "或用 CLI 一键安装接入",
         "cliCopied": "命令已复制到剪贴板",
         "cliCopyFailed": "复制失败，请手动复制"

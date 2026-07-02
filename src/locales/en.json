@@ -1305,6 +1305,8 @@
         "step3Title": "Send a test request",
         "step3Desc": "Make a call and confirm the result in logs",
         "step3Action": "View logs",
+        "cliTitle": "Set up local dev in one command",
+        "cliBadge": "Recommended",
         "cliHint": "Or install via CLI in one command",
         "cliCopied": "Command copied to clipboard",
         "cliCopyFailed": "Copy failed. Please copy manually."

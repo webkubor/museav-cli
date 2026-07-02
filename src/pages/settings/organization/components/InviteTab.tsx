@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { LuTriangleAlert } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 import { useCopy } from '@/hooks/use-copy'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -6,6 +7,7 @@ import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { addTenantMembers, getTenantInviteLink, resetTenantInviteLink } from '@/services/tenants'
 import { Button } from '@/components/ui/Button'
+import { Select } from '@/components/ui/Select'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -29,10 +31,13 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
     refetchOnWindowFocus: false,
   })
 
+  // 重置/刷新邀请链接：显式传入目标角色（避免 setState 异步取到旧值）。
+  // silent=true 用于「切换角色自动刷新」场景，提示文案不同。
   const resetLink = useMutation({
-    mutationFn: () => resetTenantInviteLink(tenantId),
-    onSuccess: () => {
-      appToast.success('邀请链接已重置')
+    mutationFn: (vars: { role: 'tenant_admin' | 'tenant_member'; silent?: boolean }) =>
+      resetTenantInviteLink(tenantId, { role: vars.role, expires_in_hours: expiresInHours }),
+    onSuccess: (_data, vars) => {
+      appToast.success(vars.silent ? t('enterprise.invite.linkRefreshedByRole') : t('enterprise.invite.linkReset'))
       qc.invalidateQueries({ queryKey: ['tenant-invite-link', tenantId] })
       setShowResetConfirm(false)
     },
@@ -64,8 +69,14 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
     appToast.success('邀请链接已复制')
   }
 
-  const pill =
-    'flex items-center gap-1.5 px-3 h-8 rounded-lg border border-mg-border/40 bg-mg-fill-0/30 text-[11px] text-mg-text-3 font-semibold'
+  // 切换初始角色：角色绑定在链接里 → 必须重出链接，旧链接随之失效
+  const handleRoleChange = (next: string) => {
+    const role = next as 'tenant_admin' | 'tenant_member'
+    setInviteRole(role)
+    if (canInvite && inviteLinkQuery.data) resetLink.mutate({ role, silent: true })
+  }
+
+  const fieldLabel = 'text-[11px] text-mg-text-3 font-semibold whitespace-nowrap'
 
   return (
     <>
@@ -73,30 +84,22 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
         {/* 邀请配置 */}
         <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-4 flex items-center justify-between flex-wrap gap-4 shadow-sm">
           <span className="text-xs font-bold text-mg-text-2 uppercase tracking-wider">{t('enterprise.invite.configTitle')}</span>
-          <div className="flex gap-2 flex-wrap">
-            <div className={pill}>
-              {t('enterprise.invite.defaultRole')}
-              <select
-                value={inviteRole}
-                onChange={(e) => setInviteRole(e.target.value as 'tenant_admin' | 'tenant_member')}
-                className="bg-transparent border-none outline-none font-bold text-[11px] ml-1 cursor-pointer text-mg-text-1"
-              >
-                <option value="tenant_member">Member</option>
-                <option value="tenant_admin">Admin</option>
-              </select>
+          <div className="flex gap-3 flex-wrap items-center">
+            <div className="flex items-center gap-2">
+              <span className={fieldLabel}>{t('enterprise.invite.defaultRole')}</span>
+              <Select value={inviteRole} onChange={handleRoleChange} className="h-8 w-28 text-[11px] rounded-lg">
+                <Select.Option value="tenant_member">Member</Select.Option>
+                <Select.Option value="tenant_admin">Admin</Select.Option>
+              </Select>
             </div>
-            <div className={pill}>
-              {t('enterprise.invite.expiry')}
-              <select
-                value={expiresInHours}
-                onChange={(e) => setExpiresInHours(Number(e.target.value))}
-                className="bg-transparent border-none outline-none font-bold text-[11px] ml-1 cursor-pointer text-mg-text-1"
-              >
-                <option value={24}>{t('enterprise.invite.expiry24')}</option>
-                <option value={72}>{t('enterprise.invite.expiry72')}</option>
-                <option value={168}>{t('enterprise.invite.expiry168')}</option>
-                <option value={720}>{t('enterprise.invite.expiry720')}</option>
-              </select>
+            <div className="flex items-center gap-2">
+              <span className={fieldLabel}>{t('enterprise.invite.expiry')}</span>
+              <Select value={String(expiresInHours)} onChange={(v) => setExpiresInHours(Number(v))} className="h-8 w-28 text-[11px] rounded-lg">
+                <Select.Option value="24">{t('enterprise.invite.expiry24')}</Select.Option>
+                <Select.Option value="72">{t('enterprise.invite.expiry72')}</Select.Option>
+                <Select.Option value="168">{t('enterprise.invite.expiry168')}</Select.Option>
+                <Select.Option value="720">{t('enterprise.invite.expiry720')}</Select.Option>
+              </Select>
             </div>
           </div>
         </div>
@@ -107,6 +110,10 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
             <div className="space-y-0.5">
               <div className="text-xs font-bold text-mg-text-1">{t('enterprise.invite.linkTitle')}</div>
               <span className="text-[10px] text-mg-text-3">{t('enterprise.invite.linkHint')}</span>
+              <span className="text-[10px] text-mg-warning flex items-center gap-1 mt-0.5">
+                <LuTriangleAlert size={11} className="shrink-0" />
+                {t('enterprise.invite.oneTimeNote', { role: inviteRole === 'tenant_admin' ? 'Admin' : 'Member' })}
+              </span>
             </div>
             {canInvite && (
               <Button
@@ -198,7 +205,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
             <Button
               variant="brand"
               disabled={resetLink.isPending}
-              onClick={() => resetLink.mutate()}
+              onClick={() => resetLink.mutate({ role: inviteRole })}
               className="h-8 px-4 rounded-lg text-xs font-semibold bg-brand-base text-white hover:bg-brand-base/90"
             >
               {resetLink.isPending ? '…' : t('enterprise.invite.confirmReset')}

@@ -71,6 +71,8 @@ export function DashboardLayout() {
   usePlatformConfig()
   const [collapsed, setCollapsed] = useState(false)
   const [navigating, setNavigating] = useState(false)
+  // 窄屏（<md）侧栏抽屉开合；桌面（≥md）不使用（侧栏常驻）
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   useEffect(() => {
     // 路由切换（外部事件）触发 800ms 导航过渡指示，无法从渲染派生
@@ -81,6 +83,16 @@ export function DashboardLayout() {
     }, 800)
     return () => clearTimeout(timer)
   }, [location.pathname])
+
+  // 抽屉打开态：Esc 关闭
+  useEffect(() => {
+    if (!mobileOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mobileOpen])
 
   const tenants = useAuthStore((s) => s.tenants)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
@@ -159,6 +171,15 @@ export function DashboardLayout() {
     return raw.map((item) => ({ ...item, label: t(item.label) }))
   }
 
+  const handleNavSelect = (data: { itemKey: string | number }) => {
+    const key = String(data.itemKey)
+    if (navConfig.workspaceScopedKeys.has(key)) {
+      navigate(`/workspace/${activeWorkspaceId}/${key}`)
+    } else {
+      navigate(`/${key}`)
+    }
+  }
+
   const isDashboardRoute = getSelectedKey() === 'dashboard'
   const isFlatRoute = FLAT_ROUTES.includes(getSelectedKey())
 
@@ -166,25 +187,54 @@ export function DashboardLayout() {
     <div className="dashboard-shell h-screen bg-site-bg flex flex-col font-sans relative overflow-hidden">
       <ParticleLinesBackground />
       <div className="dashboard-global-bottom-bg" aria-hidden="true" />
-      <DashboardHeader />
+      <DashboardHeader onMenuClick={() => setMobileOpen(true)} />
       <div className={cn("shimmer-line", navigating && "navigating")} />
 
       <div className="flex flex-1 min-h-0 relative z-10 overflow-hidden">
-        <DashboardSidebar
-          collapsed={collapsed}
-          setCollapsed={setCollapsed}
-          selectedKey={getSelectedKey()}
-          onSelect={(data) => {
-            const key = String(data.itemKey)
-            if (navConfig.workspaceScopedKeys.has(key)) {
-              navigate(`/workspace/${activeWorkspaceId}/${key}`)
-            } else {
-              navigate(`/${key}`)
-            }
-          }}
-          groups={navGroups}
-          settingsLabel={t('nav.settings')}
-        />
+        {/* 桌面（≥md）：侧栏常驻。display:contents 让 wrapper 在 md+ 消失，aside 直接作为 flex 项参与布局 */}
+        <div className="hidden md:contents">
+          <DashboardSidebar
+            collapsed={collapsed}
+            setCollapsed={setCollapsed}
+            selectedKey={getSelectedKey()}
+            onSelect={handleNavSelect}
+            groups={navGroups}
+            settingsLabel={t('nav.settings')}
+          />
+        </div>
+
+        {/* 窄屏（<md）：抽屉 + 遮罩。默认隐藏，从左滑入；点遮罩 / 选中入口 / Esc 关闭 */}
+        <div className="md:hidden">
+          <div
+            aria-hidden="true"
+            onClick={() => setMobileOpen(false)}
+            className={cn(
+              "fixed inset-0 z-50 bg-black/40 backdrop-blur-sm transition-opacity duration-300",
+              mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+            )}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('nav.dashboard')}
+            className={cn(
+              "fixed left-0 top-0 bottom-0 z-50 w-60 max-w-[80vw] shadow-xl transition-transform duration-300 ease-out",
+              mobileOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
+            )}
+          >
+            <DashboardSidebar
+              collapsed={false}
+              setCollapsed={() => {}}
+              selectedKey={getSelectedKey()}
+              onSelect={(data) => {
+                handleNavSelect(data)
+                setMobileOpen(false)
+              }}
+              groups={navGroups}
+              settingsLabel={t('nav.settings')}
+            />
+          </div>
+        </div>
 
         <main className="flex-1 flex flex-col pt-3 px-6 pb-6 md:pt-4 md:px-9 md:pb-9 overflow-y-auto h-full min-h-0 transition-all duration-300">
           {/* 高阶极简自定义 Breadcrumbs */}

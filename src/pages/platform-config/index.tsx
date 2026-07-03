@@ -36,7 +36,7 @@ const PUBLIC_ROUTES = [
 ] as const
 
 // 开发者菜单 tab，挂到 URL ?tab= 上以便直接定位某个 tab
-const DEV_CONFIG_TABS = ['endpoints', 'routes-menus', 'permissions', 'url-params', 'headers', 'dialog-preview', 'requirements']
+const DEV_CONFIG_TABS = ['endpoints', 'permissions', 'url-params', 'headers', 'dialog-preview', 'requirements']
 const DEFAULT_TAB = 'endpoints'
 
 export default function PlatformConfigPage() {
@@ -153,8 +153,7 @@ export default function PlatformConfigPage() {
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="endpoints">接口 / Swagger</TabsTrigger>
-          <TabsTrigger value="routes-menus">路由 / 菜单</TabsTrigger>
-          <TabsTrigger value="permissions">权限</TabsTrigger>
+          <TabsTrigger value="permissions">权限 / 路由</TabsTrigger>
           <TabsTrigger value="url-params">回跳参数</TabsTrigger>
           <TabsTrigger value="headers">请求头</TabsTrigger>
           <TabsTrigger value="dialog-preview">弹窗预览</TabsTrigger>
@@ -198,8 +197,18 @@ export default function PlatformConfigPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="routes-menus">
+        <TabsContent value="permissions">
           <div className="space-y-8 pt-2">
+            <PermissionsPanel />
+
+            <section className="space-y-3">
+              <div>
+                <h2 className="text-base font-bold text-mg-text-1">菜单同步</h2>
+                <p className="mt-1 text-xs text-mg-text-3">查看当前菜单声明并同步到后端权限菜单。</p>
+              </div>
+              <MenusSyncPanel />
+            </section>
+
             <section className="space-y-3">
               <div>
                 <h2 className="text-base font-bold text-mg-text-1">公共路由</h2>
@@ -221,19 +230,7 @@ export default function PlatformConfigPage() {
                 )
               })}
             </section>
-
-            <section className="space-y-3">
-              <div>
-                <h2 className="text-base font-bold text-mg-text-1">菜单同步</h2>
-                <p className="mt-1 text-xs text-mg-text-3">查看当前菜单声明并同步到后端权限菜单。</p>
-              </div>
-              <MenusSyncPanel />
-            </section>
           </div>
-        </TabsContent>
-
-        <TabsContent value="permissions">
-          <PermissionsPanel />
         </TabsContent>
 
         <TabsContent value="url-params">

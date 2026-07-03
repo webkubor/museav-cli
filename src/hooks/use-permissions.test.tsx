@@ -94,24 +94,6 @@ function seedAuth(opts: {
   })
 }
 
-// renderHook returns synchronously, but the react-query fetch that drives the
-// fallback role resolution resolves on a microtask. waitFor polls the hook
-// result until the fallback roles have landed.
-async function waitForResult<T>(
-  read: () => T,
-  predicate: (value: T) => boolean,
-  rerender: () => void
-): Promise<T> {
-  const deadline = Date.now() + 2000
-  while (Date.now() <= deadline) {
-    rerender()
-    const value = read()
-    if (predicate(value)) return value
-    await new Promise((r) => setTimeout(r, 10))
-  }
-  throw new Error('timed out waiting for permissions to settle')
-}
-
 beforeEach(() => {
   localStorage.clear()
   listTenants.mockReset()
@@ -197,88 +179,42 @@ describe('usePermissions — AUTHORITATIVE source (session.permissions.granted)'
   })
 })
 
-describe('usePermissions — FALLBACK via real roles (granted === null)', () => {
-  it('member role (enterprise, tenant_member + ws_member) grants the member-level set', async () => {
-    listTenants.mockResolvedValue({ items: [tenantItem('tenant_member')] })
-    listWorkspaces.mockResolvedValue({ items: [workspaceItem('ws_member')] })
-    // permissions: null = backend issued no granted object → matrix fallback.
-    seedAuth({ permissions: null, tenantType: 'enterprise' })
-
-    const { Wrapper } = makeWrapper()
-    const { result, rerender } = renderHook(() => usePermissions(), { wrapper: Wrapper })
-
-    const value = await waitForResult(
-      () => result.current,
-      (v) => v.hasPermission('api_keys:view'),
-      rerender
-    )
-
-    // member-level grants
-    expect(value.hasPermission('dashboard:view')).toBe(true) // BASE
-    expect(value.hasPermission('org.settings:edit')).toBe(false) // tenant_member has no org manage
-    expect(value.hasPermission('api_keys:view')).toBe(true) // ws_member
-    expect(value.hasPermission('api_keys:create')).toBe(true) // ws_member
-    // owner-only — proves the hardcoded-owner default is dead
-    expect(value.hasPermission('org.settings:edit')).toBe(false)
-    expect(value.hasPermission('api_keys:revoke')).toBe(false) // ws_owner/admin only
-    expect(value.hasPermission('billing:view')).toBe(false) // tenant owner/admin only
-  })
-
-  it('owner role (enterprise, tenant_owner + ws_owner) grants the owner-level set', async () => {
+describe('usePermissions — FAIL-CLOSED (granted === null, #344)', () => {
+  // #344 / 设计 §3.4 G7：本地回退矩阵下线。granted 缺失(null) 时返回零权限，
+  // 隐藏/禁用而非放行——即使真实角色是 owner 也不放行（fail-open 禁止）。
+  it('granted === null yields zero permissions even with OWNER roles upstream', () => {
+    // 最强的旧兜底信号：enterprise + tenant_owner + ws_owner。若还有回退矩阵，
+    // 这些会被授予；fail-closed 下必须一律拒绝。
     listTenants.mockResolvedValue({ items: [tenantItem('tenant_owner')] })
     listWorkspaces.mockResolvedValue({ items: [workspaceItem('ws_owner')] })
     seedAuth({ permissions: null, tenantType: 'enterprise' })
 
     const { Wrapper } = makeWrapper()
-    const { result, rerender } = renderHook(() => usePermissions(), { wrapper: Wrapper })
+    const { result } = renderHook(() => usePermissions(), { wrapper: Wrapper })
 
-    const value = await waitForResult(
-      () => result.current,
-      (v) => v.hasPermission('org.settings:edit'),
-      rerender
-    )
-
-    expect(value.hasPermission('org.settings:edit')).toBe(true) // ORG_MANAGE
-    expect(value.hasPermission('org.members:manage')).toBe(true)
-    expect(value.hasPermission('billing:view')).toBe(true) // BILLING_GLOBAL
-    expect(value.hasPermission('api_keys:revoke')).toBe(true) // ws_owner
+    // 零权限：连 BASE 的 dashboard:view 也不放行（这是 fail-open 守卫）
+    expect(result.current.permissions).toEqual([])
+    expect(result.current.hasPermission('dashboard:view')).toBe(false)
+    expect(result.current.hasPermission('org.settings:edit')).toBe(false)
+    expect(result.current.hasPermission('api_keys:view')).toBe(false)
+    expect(result.current.hasPermission('api_keys:revoke')).toBe(false)
   })
 })
 
-describe('usePermissions — role-change reactivity (WEB-03 acceptance)', () => {
-  it('switching the resolved tenant/workspace role from member to owner flips menu visibility', async () => {
-    // First mount: member roles → no org.settings:edit.
-    listTenants.mockResolvedValue({ items: [tenantItem('tenant_member')] })
-    listWorkspaces.mockResolvedValue({ items: [workspaceItem('ws_member')] })
+describe('usePermissions — granted reactivity', () => {
+  it('reflects granted changes verbatim (null → set), no role fallback involved', () => {
     seedAuth({ permissions: null, tenantType: 'enterprise' })
+    const { Wrapper } = makeWrapper()
+    const { result, rerender } = renderHook(() => usePermissions(), { wrapper: Wrapper })
 
-    const first = makeWrapper()
-    const memberRender = renderHook(() => usePermissions(), { wrapper: first.Wrapper })
+    // fail-closed at null
+    expect(result.current.permissions).toEqual([])
 
-    const memberValue = await waitForResult(
-      () => memberRender.result.current,
-      (v) => v.hasPermission('api_keys:view'),
-      memberRender.rerender
-    )
-    expect(memberValue.hasPermission('org.settings:edit')).toBe(false)
-    expect(memberValue.hasPermission('api_keys:revoke')).toBe(false)
-    memberRender.unmount()
-
-    // Role changes upstream: re-point the mocks and remount with a fresh
-    // QueryClient (clean cache) — simulates the post role-change session.
-    listTenants.mockResolvedValue({ items: [tenantItem('tenant_owner')] })
-    listWorkspaces.mockResolvedValue({ items: [workspaceItem('ws_owner')] })
-
-    const second = makeWrapper()
-    const ownerRender = renderHook(() => usePermissions(), { wrapper: second.Wrapper })
-
-    const ownerValue = await waitForResult(
-      () => ownerRender.result.current,
-      (v) => v.hasPermission('org.settings:edit'),
-      ownerRender.rerender
-    )
-    expect(ownerValue.hasPermission('org.settings:edit')).toBe(true)
-    expect(ownerValue.hasPermission('api_keys:revoke')).toBe(true)
-    ownerRender.unmount()
+    // 后端下发 granted 后如实反映
+    useAuthStore.setState({ permissions: ['logs:view', 'api_keys:view'] })
+    rerender()
+    expect(result.current.hasPermission('logs:view')).toBe(true)
+    expect(result.current.hasPermission('api_keys:view')).toBe(true)
+    expect(result.current.hasPermission('org.settings:edit')).toBe(false)
   })
 })

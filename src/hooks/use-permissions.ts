@@ -1,48 +1,26 @@
 import { useMemo } from 'react'
 import { useAuthStore } from '@/store/auth'
-import { isDomestic } from '@/lib/market'
-import { computePermissions } from '@/utils/computePermissions'
-import { useTenantRole } from '@/hooks/use-tenant-role'
-import { useWorkspaceRole } from '@/hooks/use-workspace-role'
 import type { Permission } from '@/config/permissions'
 
 /**
  * 菜单/操作权限 Hook。
  *
- * 权威来源：GET /auth/session 下发的 permissions.granted —— 由
+ * 唯一权威来源：GET /auth/session 下发的 permissions.granted —— 由
  * modelgo-permissions 基于 DB 权威矩阵（运营在 controller-web
  * 「运营/菜单权限管理」编辑，写入 ≤30s 生效）为当前激活 租户×工作区 解析。
  *
- * 回退：仅当 granted 为 null（旧版 web-api 未下发权限对象、切换组织后
- * 会话重拉的过渡窗口）时用本地矩阵兜底——使用真实角色
- * （useTenantRole / useWorkspaceRole），不再写死 tenant_owner/ws_owner。
- *
- * 注意：granted === []（空数组）是权威的「零权限」——运营在
- * controller-web 清空某角色绑定后必须如实呈现，绝不回退（fail-open 禁止）。
+ * fail-closed（#344 / 设计 §3.4 G7）：granted 缺失（null——如切换组织后会话
+ * 重拉的过渡窗口）时返回**空权限**，隐藏/禁用而非放行；不再有本地回退矩阵。
+ * granted === []（空数组）同样是权威的「零权限」，如实呈现。Deny 优先。
  */
 export function usePermissions() {
-  const granted        = useAuthStore((s) => s.permissions)
-  const menus          = useAuthStore((s) => s.menus)
-  const tenants        = useAuthStore((s) => s.tenants)
-  const activeTenantId = useAuthStore((s) => s.activeTenantId)
-  const { role: tenantRole } = useTenantRole()
-  const { role: wsRole }     = useWorkspaceRole()
+  const granted = useAuthStore((s) => s.permissions)
+  const menus   = useAuthStore((s) => s.menus)
 
-  const activeTenant = Array.isArray(tenants)
-    ? tenants.find((t) => t.tenant_id === activeTenantId)
-    : undefined
-
-  const permissions = useMemo<Permission[]>(() => {
-    if (granted !== null) {
-      return granted as Permission[]
-    }
-    return computePermissions({
-      market:     isDomestic() ? 'domestic' : 'global',
-      tenantType: activeTenant?.type ?? 'personal',
-      tenantRole,
-      wsRole,
-    })
-  }, [granted, activeTenant?.type, tenantRole, wsRole])
+  const permissions = useMemo<Permission[]>(
+    () => (granted !== null ? (granted as Permission[]) : []),
+    [granted],
+  )
 
   const hasPermission = (perm: Permission): boolean => permissions.includes(perm)
 

@@ -7,17 +7,18 @@ import { getUsageSummary } from '@/services/usage'
 import { useAuthStore } from '@/store/auth'
 import { Card } from '@/components/ui/Card'
 import { Money } from '@/components/ui/Money'
-import { abbreviateNumber, rangeForGranularity, type Granularity } from './shared'
+import { abbreviateNumber, rangeForGranularity, type Granularity, type WorkbenchView } from './shared'
 
 /**
  * 模块 6：工作空间明细。getUsageSummary(group_by:'workspace') 取 groups。
  * 说明：groups 只含 label/spend/requests/tokens，后端未返回工作空间描述，
  * 次级行用「请求 · Tokens」代替描述展示。
  */
-export function WorkspaceBreakdownSection({ granularity, accountId }: { granularity: Granularity; accountId?: string }) {
+export function WorkspaceBreakdownSection({ granularity, accountId, view = 'enterprise' }: { granularity: Granularity; accountId?: string; view?: WorkbenchView }) {
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const navigate = useNavigate()
+  const isMine = view === 'mine'
 
   const range = useMemo(() => rangeForGranularity(granularity), [granularity])
 
@@ -38,13 +39,13 @@ export function WorkspaceBreakdownSection({ granularity, accountId }: { granular
             <LuLayers size={18} />
           </span>
           <div>
-            <h3 className="font-bold text-base text-mg-text-1 m-0">{t('dashboard.workbench.workspaces.title')}</h3>
+            <h3 className="font-bold text-base text-mg-text-1 m-0">{t(isMine ? 'dashboard.workbench.workspaces.titleMine' : 'dashboard.workbench.workspaces.title')}</h3>
             <p className="text-xs text-mg-text-3 mt-0.5 m-0">{t('dashboard.workbench.workspaces.subtitle')}</p>
           </div>
         </div>
         <button
           type="button"
-          onClick={() => navigate('/usage')}
+          onClick={() => navigate(`/usage?view=${view}&granularity=${granularity}`)}
           className="inline-flex items-center gap-1 text-xs font-bold text-brand-base hover:text-brand-deep cursor-pointer"
         >
           {t('dashboard.workbench.workspaces.viewMore')}

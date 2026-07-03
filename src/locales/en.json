@@ -1384,6 +1384,7 @@
       },
       "workspaces": {
         "title": "Workspace breakdown",
+        "titleMine": "My workspaces",
         "subtitle": "Spend aggregated by workspace for this period",
         "viewMore": "View more",
         "empty": "No workspace usage",
@@ -1391,8 +1392,10 @@
       },
       "rankings": {
         "models": "Model usage",
+        "myModels": "My model usage",
         "members": "Member usage",
         "apiKeys": "API Keys usage",
+        "myApiKeys": "My API Keys usage",
         "viewMore": "View more",
         "empty": "No data",
         "emptyHint": "Send a test request and your usage ranking will show here",

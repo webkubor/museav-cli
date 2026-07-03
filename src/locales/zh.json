@@ -1383,6 +1383,7 @@
       },
       "workspaces": {
         "title": "工作空间明细",
+        "titleMine": "我的工作空间",
         "subtitle": "按工作空间聚合的本期消费",
         "viewMore": "查看更多",
         "empty": "暂无工作空间用量",
@@ -1390,8 +1391,10 @@
       },
       "rankings": {
         "models": "模型用量",
+        "myModels": "我的模型用量",
         "members": "成员用量",
         "apiKeys": "API Keys 用量",
+        "myApiKeys": "我的 API Keys 用量",
         "viewMore": "查看更多",
         "empty": "暂无数据",
         "emptyHint": "发送一次测试请求后，用量排行将在此展示",

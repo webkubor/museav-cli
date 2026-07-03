@@ -5,6 +5,7 @@
  */
 
 import { useMemo, useState, type ReactNode } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { type DateRangeValue } from '@/components/ui/DateRangePicker'
@@ -59,7 +60,12 @@ export default function UsagePage() {
   // 视图切换（对齐原型 + PRD §9）：默认按角色，Owner/Admin=企业视图，其余=我的视图；
   // 我的视图对 owner/admin 传 account_id=self（后端 #328 已支持透传）。
   const { canManage, isEnterprise } = useTenantRole()
-  const [userView, setUserView] = useState<'enterprise' | 'mine' | null>(null)
+  // 从总览「查看更多」带来的上下文：?view= 初始化视图
+  const [searchParams] = useSearchParams()
+  const viewParam = searchParams.get('view')
+  const [userView, setUserView] = useState<'enterprise' | 'mine' | null>(
+    viewParam === 'mine' || viewParam === 'enterprise' ? viewParam : null,
+  )
   const view = userView ?? (isEnterprise && canManage ? 'enterprise' : 'mine')
   const showViewToggle = isEnterprise && canManage
   const { symbol: currencySymbol } = useCurrency()

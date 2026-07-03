@@ -47,12 +47,12 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 items-stretch">
         <UsageTrendSection granularity={granularity} accountId={scopedAccountId} />
-        <WorkspaceBreakdownSection granularity={granularity} accountId={scopedAccountId} />
+        <WorkspaceBreakdownSection granularity={granularity} accountId={scopedAccountId} view={view} />
       </div>
 
       <RankingsSection view={view} granularity={granularity} accountId={scopedAccountId} />
 
-      <RecentCallsSection />
+      <RecentCallsSection view={view} accountId={scopedAccountId} />
     </div>
   )
 }

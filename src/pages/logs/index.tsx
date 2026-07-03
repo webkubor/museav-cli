@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useCopy } from '@/hooks/use-copy'
 import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
@@ -92,7 +93,12 @@ export default function LogsPage() {
   const currentAccountId = useAuthStore((s) => s.account?.account_id)
   const { canManage, isEnterprise } = useTenantRole()
   // 视图默认：企业 Owner/Admin=企业视图，Member/个人租户=我的视图；手动切换后不再被角色覆盖（同总览页）
-  const [userView, setUserView] = useState<LogView | null>(null)
+  // 从总览「查看全部」带来的上下文：?view= 初始化视图
+  const [searchParams] = useSearchParams()
+  const viewParam = searchParams.get('view')
+  const [userView, setUserView] = useState<LogView | null>(
+    viewParam === 'mine' || viewParam === 'enterprise' ? viewParam : null,
+  )
   const view = userView ?? (isEnterprise && canManage ? 'enterprise' : 'mine')
   const showViewToggle = isEnterprise && canManage
   const [statusFilter, setStatusFilter] = useState<LogStatusFilter>('all')

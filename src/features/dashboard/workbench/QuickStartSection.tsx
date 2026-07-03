@@ -95,7 +95,7 @@ export function QuickStartSection() {
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {steps.map((step, i) => (
-            <div key={step.title} className="flex flex-col rounded-lg border border-mg-border bg-mg-fill-0 p-4">
+            <div key={step.title} className="mg-tile mg-tile-hover flex flex-col p-4">
               <div className="flex items-center gap-2">
                 <span
                   className="flex h-8 w-8 items-center justify-center rounded-md text-white shadow-sm"
@@ -107,7 +107,7 @@ export function QuickStartSection() {
               </div>
               <div className="mt-3 flex-1">
                 <div className="text-sm font-bold text-mg-text-1">{step.title}</div>
-                <div className="mt-1 text-xs leading-5 text-mg-text-3">{step.desc}</div>
+                <div className="mt-1 text-xs leading-5 text-mg-text-2">{step.desc}</div>
               </div>
               <button
                 type="button"
@@ -122,7 +122,7 @@ export function QuickStartSection() {
           ))}
         </div>
 
-        <div className="mt-4 flex flex-col gap-2 rounded-lg border border-mg-border bg-mg-fill-0 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mg-tile mt-4 flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-2">
               <LuTerminal size={14} className="shrink-0 text-mg-text-3" />

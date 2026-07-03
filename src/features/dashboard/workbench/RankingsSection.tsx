@@ -115,11 +115,11 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
     <div className={`grid grid-cols-1 gap-4 ${showMembers ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
       <RankingCard
         icon={<LuBot size={15} />}
-        title={t('dashboard.workbench.rankings.models')}
+        title={t(showMembers ? 'dashboard.workbench.rankings.models' : 'dashboard.workbench.rankings.myModels')}
         items={models?.items ?? null}
         isLoading={modelsLoading}
         emptyHint={t('dashboard.workbench.rankings.emptyHint')}
-        onViewMore={() => navigate('/usage')}
+        onViewMore={() => navigate(`/usage?view=${view}&granularity=${granularity}`)}
       />
 
       {showMembers && (
@@ -134,11 +134,11 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
 
       <RankingCard
         icon={<LuKeyRound size={15} />}
-        title={t('dashboard.workbench.rankings.apiKeys')}
+        title={t(showMembers ? 'dashboard.workbench.rankings.apiKeys' : 'dashboard.workbench.rankings.myApiKeys')}
         items={apiKeys?.items ?? null}
         isLoading={apiKeysLoading}
         emptyHint={t('dashboard.workbench.rankings.emptyHint')}
-        onViewMore={() => navigate('/usage')}
+        onViewMore={() => navigate(`/usage?view=${view}&granularity=${granularity}`)}
       />
     </div>
   )

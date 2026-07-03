@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 import { Money } from '@/components/ui/Money'
 import { formatDuration } from '@/lib/format-date'
+import type { WorkbenchView } from './shared'
 
 /** 时间：MM-dd HH:mm:ss */
 function formatSimple(iso: string) {
@@ -21,16 +22,17 @@ function formatSimple(iso: string) {
  * 模块 8：最近调用日志（最近 3 条）。
  * 列：时间 / 状态 / 模型 / 归属 / Token / 费用 / 延迟；「查看全部」跳 /logs。
  */
-export function RecentCallsSection() {
+export function RecentCallsSection({ view = 'enterprise', accountId }: { view?: WorkbenchView; accountId?: string }) {
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const navigate = useNavigate()
+  const isMine = view === 'mine'
 
   // 总览是租户级页面：最近调用按租户口径取，不读工作空间选择器的 activeWorkspaceId
-  // （PRD §7.3：选择器只驱动 workspace 级页面）。视图×角色的数据裁剪归 #314。
+  // （PRD §7.3：选择器只驱动 workspace 级页面）。我的视图按 account_id 裁剪到当前账号。
   const { data, isLoading } = useQuery({
-    queryKey: ['workbench', 'recent-logs', activeTenantId],
-    queryFn: () => listCallLogs({ limit: 3 }),
+    queryKey: ['workbench', 'recent-logs', activeTenantId, accountId],
+    queryFn: () => listCallLogs({ limit: 3, account_id: accountId }),
     enabled: !!activeTenantId,
     staleTime: 30_000,
   })
@@ -43,7 +45,7 @@ export function RecentCallsSection() {
         <h3 className="font-bold text-base text-mg-text-1 m-0">{t('dashboard.workbench.recent.title')}</h3>
         <button
           type="button"
-          onClick={() => navigate('/logs')}
+          onClick={() => navigate(`/logs?view=${view}`)}
           className="inline-flex items-center gap-1 text-xs font-bold text-brand-base hover:text-brand-deep cursor-pointer"
         >
           {t('dashboard.workbench.recent.viewAll')}
@@ -73,7 +75,10 @@ export function RecentCallsSection() {
               {items.map((item) => {
                 const rawModel = item.model?.display_name || '—'
                 const model = rawModel.includes('/') ? rawModel.split('/').pop() : rawModel
-                const owner = item.account?.display_name || item.api_key?.name || '—'
+                // 我的视图：归属列不重复展示成员名（都是我），改显 API Key
+                const owner = isMine
+                  ? (item.api_key?.name || '—')
+                  : (item.account?.display_name || item.api_key?.name || '—')
                 return (
                   <TableRow key={item.call_log_id}>
                     <TableCell className="text-xs text-mg-text-3 whitespace-nowrap">{formatSimple(item.started_at)}</TableCell>

@@ -135,9 +135,9 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
           </TabsList>
 
           <TabsContent value="mgc">
-            <div className="rounded-md border border-mg-border bg-mg-bg-0 p-4">
+            <div className="mg-tile p-4">
               <div className="text-sm font-bold text-mg-text-1">一条命令接入 AI 编程客户端</div>
-              <div className="mt-1 text-xs leading-5 text-mg-text-3">
+              <div className="mt-1 text-xs leading-5 text-mg-text-2">
                 勾选要接入的客户端，命令已自动填好 Key 与站点（{region === 'global' ? '国际站' : '国内站'}），复制到终端回车即可。
               </div>
 
@@ -145,7 +145,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                 <button
                   type="button"
                   onClick={() => setMgcAll((v) => !v)}
-                  className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                  className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
                     mgcAll
                       ? 'border-brand-base bg-brand-base/10 text-brand-base'
                       : 'border-mg-border bg-mg-fill-0 text-mg-text-2 hover:border-brand-base/35'
@@ -161,7 +161,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                       type="button"
                       disabled={mgcAll}
                       onClick={() => toggleMgcClient(opt.id)}
-                      className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 ${
+                      className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 ${
                         active
                           ? 'border-brand-base bg-brand-base/10 text-brand-base'
                           : 'border-mg-border bg-mg-fill-0 text-mg-text-2 hover:border-brand-base/35'
@@ -173,7 +173,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                 })}
               </div>
 
-              <pre className="mt-4 max-h-32 overflow-auto rounded-lg border border-mg-border bg-mg-code-bg p-3 text-xs leading-5 text-mg-text-1">
+              <pre className="mt-4 max-h-32 overflow-auto rounded-md border border-mg-border bg-mg-code-bg p-3 text-xs leading-5 text-mg-text-1">
                 <code className="break-all">{mgcCommand}</code>
               </pre>
 
@@ -181,15 +181,14 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                 <span className="text-[11px] text-mg-text-3">
                   {hasCreatedKey ? '已填入你刚创建的 Key' : '创建密钥后将自动填入真实 Key'}
                 </span>
-                <button
-                  type="button"
+                <Button
+                  variant="brand"
+                  size="sm"
                   onClick={() => handleConnectCopy('mgc', mgcCommand)}
-                  className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-brand-base px-3 text-xs font-bold text-white shadow-sm shadow-brand-glow/15 transition-colors hover:bg-brand-deep cursor-pointer"
+                  icon={connectCopied === 'mgc' ? <LuCheck className="h-3.5 w-3.5" /> : <LuCopy className="h-3.5 w-3.5" />}
                 >
-                  {connectCopied === 'mgc'
-                    ? <><LuCheck className="h-3.5 w-3.5" /> 已复制</>
-                    : <><LuCopy className="h-3.5 w-3.5" /> 复制命令</>}
-                </button>
+                  {connectCopied === 'mgc' ? '已复制' : '复制命令'}
+                </Button>
               </div>
             </div>
           </TabsContent>

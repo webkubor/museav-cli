@@ -214,8 +214,8 @@ body[theme-mode='dark'] .modern-btn-default:hover {
   font-weight: 700;
   letter-spacing: -0.02em;
   border: none !important;
-  background: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand-base) 55%, var(--brand-mid) 100%) !important;
-  box-shadow: 0 2px 8px var(--brand-glow), 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+  background: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand-base) 55%, var(--brand-purple) 100%) !important;
+  box-shadow: 0 2px 10px var(--brand-glow), 0 1px 2px rgba(0, 0, 0, 0.08) !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
@@ -230,6 +230,26 @@ body[theme-mode='dark'] .modern-btn-default:hover {
   pointer-events: none;
 }
 
+/* hover 流光扫光 —— 一道斜向高光划过，呼应官网流动质感（克制：低透明度 + 慢速缓出） */
+.modern-btn-brand::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 55%;
+  background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.28) 50%, transparent 100%);
+  transform: translateX(-200%) skewX(-14deg);
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+.modern-btn-brand:hover::before {
+  transform: translateX(340%) skewX(-14deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .modern-btn-brand::before { display: none; }
+}
+
 .modern-btn-brand:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px var(--brand-glow), 0 3px 8px rgba(0, 0, 0, 0.12) !important;
@@ -239,6 +259,24 @@ body[theme-mode='dark'] .modern-btn-default:hover {
 .modern-btn-brand:not(:disabled):active {
   transform: translateY(0) scale(0.97) !important;
   filter: brightness(0.97);
+}
+
+/* 内容瓦片 —— 白底 + 清晰轻边框 + 一档柔和阴影，替代"3.5% 填充当卡片"的扁平糊块。
+   .mg-tile 给静态容器；.mg-tile-hover 追加可交互抬升（悬浮上浮 + 阴影加深 + 品牌色边框） */
+.mg-tile {
+  background: var(--mg-bg-0);
+  border: 1px solid var(--mg-border);
+  border-radius: var(--radius-md); /* 统一卡片圆角 14px；外层容器用 lg(18)，控件用 sm(8)，形成层级 */
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.mg-tile-hover {
+  cursor: pointer;
+}
+.mg-tile-hover:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  border-color: color-mix(in oklab, var(--brand-base) 24%, var(--mg-border));
 }
 
 /* 通用输入框与复合输入框极雅样式抽离 */

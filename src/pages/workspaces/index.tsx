@@ -118,14 +118,20 @@ export default function WorkspacesPage() {
 
       {/* 控制台操作区域 */}
       <div className="flex justify-between items-center gap-4">
-        {/* 圆角微阴影输入框 */}
-        <Input
-          placeholder={t('workspaces.searchPlaceholder')}
-          prefix={<LuSearch className="opacity-50" />}
-          className="w-[290px] !rounded-full bg-mg-fill-0/30"
-          value={searchValue}
-          onChange={(e) => setSearchValue(e.target.value)}
-        />
+        <div className="flex items-center gap-3">
+          {/* 圆角微阴影输入框 */}
+          <Input
+            placeholder={t('workspaces.searchPlaceholder')}
+            prefix={<LuSearch className="opacity-50" />}
+            className="w-[290px] !rounded-full bg-mg-fill-0/30"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+          />
+          {/* 空间计数（对齐原型：X 个空间） */}
+          <span className="text-xs text-mg-text-3 whitespace-nowrap">
+            {t('workspaces.countSuffix', { count: filteredData.length })}
+          </span>
+        </div>
 
         {/* 黑色药丸主动作按钮 */}
         <Button
@@ -134,7 +140,7 @@ export default function WorkspacesPage() {
           onClick={() => setModalVisible(true)}
           className="!rounded-full px-6 h-[38px] font-bold"
         >
-          <LuPlus className="mr-1 shrink-0" /> {t('workspaces.createBtn', { count: (data || []).length })}
+          <LuPlus className="mr-1 shrink-0" /> {t('workspaces.createBtn')}
         </Button>
       </div>
 

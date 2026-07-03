@@ -200,6 +200,14 @@ export default function LogsPage() {
   const items = data?.items ?? []
   const hasMore = Boolean(data?.has_more && data.next_cursor)
 
+  const workspaceNameById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const workspace of workspacesData?.items ?? []) {
+      map.set(workspace.workspace_id, workspace.name)
+    }
+    return map
+  }, [workspacesData?.items])
+
   const activeChips = useMemo(() => {
     const chips: string[] = []
     if (!isDefaultTimeRange(timeRange)) chips.push(timeRangeLabel(timeRange))
@@ -368,6 +376,7 @@ export default function LogsPage() {
         onSelectLog={openLog}
         page={page}
         selectedLogId={selectedLog?.call_log_id}
+        workspaceNameById={workspaceNameById}
       />
 
       <LogDetailSheet

@@ -42,8 +42,17 @@ function compactModelName(name: string) {
   return name.includes('/') ? name.split('/').pop() || name : name
 }
 
-function ownerLine(row: CallLogItem) {
-  return row.account.display_name !== '—' ? row.account.display_name : row.api_key.name
+/** 归属列：工作空间为主，成员 · API Key 为辅（对齐原型）。 */
+function ownerLines(row: CallLogItem, workspaceNameById?: Map<string, string>) {
+  const workspace = workspaceNameById?.get(row.workspace_id) || row.workspace_id
+  const member = row.account.display_name !== '—' ? row.account.display_name : ''
+  const key = row.api_key.name !== '—' ? row.api_key.name : ''
+  if (workspace) {
+    // 主行=工作空间，副行=成员 · Key
+    return { primary: workspace, secondary: [member, key].filter(Boolean).join(' · ') }
+  }
+  // 无工作空间名时降级：主行=成员，副行=Key
+  return { primary: member || key || '—', secondary: member ? key : '' }
 }
 
 export function LogsTable({
@@ -56,6 +65,7 @@ export function LogsTable({
   onSelectLog,
   page,
   selectedLogId,
+  workspaceNameById,
 }: {
   hasMore: boolean
   isFetching: boolean
@@ -66,6 +76,7 @@ export function LogsTable({
   onSelectLog: (row: CallLogItem) => void
   page: number
   selectedLogId?: string
+  workspaceNameById?: Map<string, string>
 }) {
   if (isLoading) return <LogsTableSkeleton />
 
@@ -132,21 +143,54 @@ export function LogsTable({
                 </div>
               </TableCell>
               <TableCell>
-                <div className="min-w-0">
-                  <strong className="block truncate mg-text-caption font-bold text-mg-text-1">
-                    {ownerLine(row)}
-                  </strong>
-                  <span className="block truncate mg-text-caption text-mg-text-3">{row.api_key.name}</span>
-                </div>
+                {(() => {
+                  const { primary, secondary } = ownerLines(row, workspaceNameById)
+                  return (
+                    <div className="min-w-0">
+                      <strong className="block truncate mg-text-caption font-bold text-mg-text-1">{primary}</strong>
+                      {secondary && (
+                        <span className="block truncate mg-text-caption text-mg-text-3">{secondary}</span>
+                      )}
+                    </div>
+                  )
+                })()}
               </TableCell>
-              <TableCell className="whitespace-nowrap font-mono text-mg-text-2 tabular-nums">
-                {formatNumber(row.usage.total_tokens)}
+              <TableCell className="whitespace-nowrap">
+                {row.usage.total_tokens > 0 ? (
+                  <div className="min-w-0">
+                    <strong className="block font-mono font-bold tabular-nums text-mg-text-1">
+                      {formatNumber(row.usage.total_tokens)}
+                    </strong>
+                    <span className="block font-mono tabular-nums mg-text-caption text-mg-text-3">
+                      输入 {formatNumber(row.usage.input_tokens)} · 输出 {formatNumber(row.usage.output_tokens)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="min-w-0">
+                    <strong className="block text-mg-text-3">—</strong>
+                    <span className="block mg-text-caption text-mg-text-3">未产生 Token</span>
+                  </div>
+                )}
               </TableCell>
               <TableCell>
                 <Money amount={Number(row.cost.amount) > 0 ? row.cost.amount : null} currency={row.cost.currency} />
               </TableCell>
-              <TableCell className={cn('whitespace-nowrap font-mono tabular-nums', durationTone(row.duration_ms))}>
-                {formatMaybeDuration(row.duration_ms)}
+              <TableCell className="whitespace-nowrap">
+                {row.status === 'rejected' ? (
+                  <div className="min-w-0">
+                    <strong className="block text-mg-text-3">—</strong>
+                    <span className="block mg-text-caption text-mg-text-3">未发起响应</span>
+                  </div>
+                ) : (
+                  <div className="min-w-0">
+                    <strong className={cn('block font-mono font-bold tabular-nums', durationTone(row.duration_ms))}>
+                      {formatMaybeDuration(row.duration_ms)}
+                    </strong>
+                    <span className="block font-mono tabular-nums mg-text-caption text-mg-text-3">
+                      首包 {row.speed.first_token_ms > 0 ? formatDuration(row.speed.first_token_ms) : '-'}
+                    </span>
+                  </div>
+                )}
               </TableCell>
               <TableCell align="right">
                 <LuChevronRight className="ml-auto h-4 w-4 text-mg-text-3" />

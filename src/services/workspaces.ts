@@ -3,7 +3,7 @@
  * 路由：/workspaces、/workspaces/:id
  * API：GET|POST /workspaces、GET|PATCH|DELETE /workspaces/:id、GET|POST|PATCH|DELETE /workspaces/:id/members
  */
-import { del, get, patch, post } from '@/lib/request'
+import { del, get, patch, post, put } from '@/lib/request'
 import type { WorkspaceListResponse, WorkspaceMemberListParams } from '@/interfaces/workspaces'
 import type {
   AddWorkspaceMemberRequest,
@@ -68,4 +68,26 @@ export function updateWorkspaceMemberRole(
 /** 从 workspace 移除成员 */
 export function removeWorkspaceMember(workspaceId: string, accountId: string) {
   return del<null>(`workspaces/${workspaceId}/members/${accountId}`)
+}
+
+/**
+ * 移除成员时批量处理其名下 API Key（转移给空间负责人 / 停用）。
+ * 对齐原型 SpaceMemberRemovalImpactModal 的 onConfirm(strategy)。
+ * 后端约定：DELETE /workspaces/:id/members/:accountId 带 body 指定 key 处理策略。
+ */
+export function removeWorkspaceMemberWithStrategy(
+  workspaceId: string,
+  accountId: string,
+  body: { key_strategy: 'transfer' | 'disable' }
+) {
+  return del<null>(`workspaces/${workspaceId}/members/${accountId}`, body)
+}
+
+/**
+ * 设置空间负责人（对齐原型「设为负责人」按钮）。
+ * 后端约定接口 PUT /workspaces/:id/owner（#327 待实现，前端先按约定接）。
+ * 与 updateWorkspaceMemberRole 不同——后者只改 ws_admin/ws_member，不含 owner。
+ */
+export function setWorkspaceOwner(workspaceId: string, accountId: string) {
+  return put<null>(`workspaces/${workspaceId}/owner`, { account_id: accountId })
 }

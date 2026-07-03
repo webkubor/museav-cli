@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { LuArrowLeft, LuSearch, LuArrowRight, LuUsers } from 'react-icons/lu'
+import { LuSearch, LuArrowRight, LuUsers } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
@@ -38,9 +38,24 @@ function formatMoney(m?: Money) {
 }
 
 export default function WorkspaceDetailPage() {
-  const { t } = useTranslation()
-  const navigate = useNavigate()
   const { workspaceId = '' } = useParams()
+  const navigate = useNavigate()
+  return <WorkspaceDetailContent workspaceId={workspaceId} onDeleted={() => navigate('/settings/workspace')} />
+}
+
+/**
+ * 空间详情内容（详情壳 + 4 tabs）。
+ * 列表页（单页结构）和独立详情路由共用此组件。
+ * onDeleted：空间被删除后回调（列表页用于清空选中态，路由页用于跳回列表）。
+ */
+export function WorkspaceDetailContent({
+  workspaceId,
+  onDeleted,
+}: {
+  workspaceId: string
+  onDeleted?: () => void
+}) {
+  const { t } = useTranslation()
   const [tab, setTab] = useState<DetailTab>('overview')
 
   const detailQuery = useQuery({
@@ -59,26 +74,16 @@ export default function WorkspaceDetailPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      {/* 返回 + 标题 */}
+      {/* 详情头：slug + 空间名（对齐原型 .space-detail-head） */}
       <div className="space-y-3">
-        <button
-          type="button"
-          onClick={() => navigate('/settings/workspace')}
-          className="flex items-center gap-1.5 text-xs font-bold text-mg-text-3 hover:text-mg-text-1 bg-transparent border-none p-0 cursor-pointer transition-colors"
-        >
-          <LuArrowLeft size={14} /> {t('workspaces.detail.back')}
-        </button>
-
         {detailQuery.isLoading ? (
           <div className="h-9 w-60 bg-mg-fill-1 rounded-lg animate-pulse" />
         ) : !ws ? (
           <div className="text-sm text-mg-text-3">{t('workspaces.detail.notFound')}</div>
         ) : (
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-mg-text-1 tracking-tight">{ws.name}</h1>
-            <span className="font-mono text-xs bg-mg-fill-0 px-2 py-0.5 rounded-sm border border-mg-border/60 text-mg-text-3">
-              {ws.workspace_id}
-            </span>
+            <span className="font-mono text-xs text-mg-text-3">@{ws.slug}</span>
+            <h3 className="text-xl font-bold text-mg-text-1 tracking-tight">{ws.name}</h3>
             {ws.is_default && <Badge variant="secondary">{t('workspaces.defaultBadge')}</Badge>}
           </div>
         )}
@@ -97,7 +102,7 @@ export default function WorkspaceDetailPage() {
           <TabsContent value="members"><MembersTab workspaceId={workspaceId} /></TabsContent>
           <TabsContent value="logs"><LogsForwardingTab workspaceId={workspaceId} /></TabsContent>
           <TabsContent value="settings">
-            <SettingsTab ws={ws} onDeleted={() => navigate('/settings/workspace')} />
+            <SettingsTab ws={ws} onDeleted={onDeleted ?? (() => {})} />
           </TabsContent>
         </Tabs>
       )}

@@ -18,7 +18,8 @@ import type { Granularity, WorkbenchView } from '@/features/dashboard/workbench/
 export default function DashboardPage() {
   const { canManage, isEnterprise } = useTenantRole()
 
-  const [granularity, setGranularity] = useState<Granularity>('day')
+  // PRD §8.2：统计周期默认按月
+  const [granularity, setGranularity] = useState<Granularity>('month')
   // 视图默认：企业 Owner/Admin=企业视图，Member/个人租户=我的视图。用户手动切换后不再被角色覆盖。
   const [userView, setUserView] = useState<WorkbenchView | null>(null)
   const roleDefaultView: WorkbenchView = isEnterprise && canManage ? 'enterprise' : 'mine'

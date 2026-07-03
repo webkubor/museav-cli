@@ -78,7 +78,15 @@ export function getTenantInviteLink(tenantId: string) {
   return get<TenantInviteLink>(`tenants/${tenantId}/invite-link`)
 }
 
-/** 重置组织邀请链接（旧 token 立即失效） */
-export function resetTenantInviteLink(tenantId: string) {
-  return post<TenantInviteLink>(`tenants/${tenantId}/invite-link/reset`, {})
+/**
+ * 重置组织邀请链接（旧 token 立即失效，新链接为一次性使用）。
+ * role/expires_in_hours 让新链接绑定初始角色与有效期。
+ * TODO(后端待接 · 凌霄): reset 需接收 role + expires_in_hours 并按其生成链接；
+ * 链接语义改为 single_use（一次性），TenantInviteLink 返回 role/expires_at/single_use。
+ */
+export function resetTenantInviteLink(
+  tenantId: string,
+  params?: { role?: 'tenant_admin' | 'tenant_member'; expires_in_hours?: number },
+) {
+  return post<TenantInviteLink>(`tenants/${tenantId}/invite-link/reset`, params ?? {})
 }

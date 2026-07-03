@@ -12,6 +12,8 @@ import { listModels } from '@/services/catalog'
 import { listTenantMembers } from '@/services/tenants'
 import { listWorkspaces } from '@/services/workspaces'
 import { useAuthStore } from '@/store/auth'
+import { useTenantRole } from '@/hooks/use-tenant-role'
+import { SegmentedToggle } from '@/features/dashboard/workbench/SegmentedToggle'
 import { appToast } from '@/lib/app-toast'
 import type { CallLogListParams } from '@/interfaces/logs'
 import type { CallLogItem } from '@/types'
@@ -31,6 +33,7 @@ import { LuChevronDown, LuRefreshCw, LuSearch } from 'react-icons/lu'
 
 type LogStatusFilter = 'all' | 'success' | 'guarded' | 'error'
 type LogGuardrailFilter = 'all' | 'hit' | 'not_hit'
+type LogView = 'enterprise' | 'mine'
 
 const PAGE_SIZE = 15
 const DEFAULT_TIME_RANGE: DateRangeValue = { preset: '7d' }
@@ -86,6 +89,12 @@ function resolveBackendStatus(
 export default function LogsPage() {
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
+  const currentAccountId = useAuthStore((s) => s.account?.account_id)
+  const { canManage, isEnterprise } = useTenantRole()
+  // 视图默认：企业 Owner/Admin=企业视图，Member/个人租户=我的视图；手动切换后不再被角色覆盖（同总览页）
+  const [userView, setUserView] = useState<LogView | null>(null)
+  const view = userView ?? (isEnterprise && canManage ? 'enterprise' : 'mine')
+  const showViewToggle = isEnterprise && canManage
   const [statusFilter, setStatusFilter] = useState<LogStatusFilter>('all')
   const [workspaceFilter, setWorkspaceFilter] = useState('all')
   const [modelFilter, setModelFilter] = useState('all')
@@ -151,11 +160,16 @@ export default function LogsPage() {
   const { from, to } = useMemo(() => rangeToDates(timeRange), [timeRange])
   const backendStatus = resolveBackendStatus(statusFilter, guardrailFilter)
   const selectedWorkspaceId = workspaceFilter === 'all' ? undefined : workspaceFilter
+  // 我的视图：锁定当前账号；企业视图：用「成员」筛选（默认全部）
+  const effectiveAccountId =
+    view === 'mine' ? currentAccountId || undefined : memberFilter === 'all' ? undefined : memberFilter
 
   const { data, isFetching, isLoading, refetch } = useQuery({
     queryKey: [
       'logs',
       activeTenantId,
+      view,
+      effectiveAccountId,
       selectedWorkspaceId,
       statusFilter,
       guardrailFilter,
@@ -173,7 +187,7 @@ export default function LogsPage() {
         status: backendStatus,
         model_id: modelFilter === 'all' ? undefined : modelFilter,
         api_key_id: apiKeyFilter === 'all' ? undefined : apiKeyFilter,
-        account_id: memberFilter === 'all' ? undefined : memberFilter,
+        account_id: effectiveAccountId,
         q: searchValue.trim() || undefined,
         from,
         to,
@@ -269,12 +283,25 @@ export default function LogsPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="调用日志"
-        description="按工作空间、成员、模型和 API Key 追踪真实调用，定位请求、费用、Token 与响应耗时。"
+        description="按工作空间、成员和 API Key 追踪企业调用。"
         actions={
-          <Button variant="outline" disabled={isLoading || isFetching} onClick={() => refetch()}>
-            <LuRefreshCw className={`mr-1.5 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-            刷新
-          </Button>
+          <div className="flex items-center gap-3">
+            {showViewToggle && (
+              <SegmentedToggle<LogView>
+                ariaLabel="切换视图范围"
+                value={view}
+                options={[
+                  { value: 'enterprise', label: '企业视图' },
+                  { value: 'mine', label: '我的视图' },
+                ]}
+                onChange={(next) => { setUserView(next); if (next === 'mine') setMemberFilter('all'); resetPagination() }}
+              />
+            )}
+            <Button variant="outline" disabled={isLoading || isFetching} onClick={() => refetch()}>
+              <LuRefreshCw className={`mr-1.5 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+              刷新
+            </Button>
+          </div>
         }
       />
 
@@ -340,16 +367,18 @@ export default function LogsPage() {
                 prefix={<LuSearch className="h-4 w-4 text-mg-text-3" />}
               />
             </FilterField>
-            <FilterField label="成员">
-              <Select value={memberFilter} onChange={(value) => { setMemberFilter(value); resetPagination() }}>
-                <Select.Option value="all">全部成员</Select.Option>
-                {(membersData?.items ?? []).map((member) => (
-                  <Select.Option key={member.account.account_id} value={member.account.account_id}>
-                    {member.account.display_name || member.account.email}
-                  </Select.Option>
-                ))}
-              </Select>
-            </FilterField>
+            {view === 'enterprise' && (
+              <FilterField label="成员">
+                <Select value={memberFilter} onChange={(value) => { setMemberFilter(value); resetPagination() }}>
+                  <Select.Option value="all">全部成员</Select.Option>
+                  {(membersData?.items ?? []).map((member) => (
+                    <Select.Option key={member.account.account_id} value={member.account.account_id}>
+                      {member.account.display_name || member.account.email}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </FilterField>
+            )}
             <FilterField label="护栏">
               <Select value={guardrailFilter} onChange={(value) => { setGuardrailFilter(value as LogGuardrailFilter); resetPagination() }}>
                 {GUARDRAIL_OPTIONS.map((option) => (

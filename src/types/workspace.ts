@@ -99,6 +99,13 @@ export interface WorkspaceDetail {
   owner: AccountBrief
   api_key_count: number
   no_api_keys_yet: boolean
+  /** 运行资源（后端 workspace.Detail 已返回，对齐原型概览「运行资源」区） */
+  member_count: number
+  guardrail_count: number
+  logging_enabled: boolean
+  forward_enabled: boolean
+  /** 最近一次调用时间（空=从未调用） */
+  last_request_at: string
   usage_7d: { spend: Money; requests: number; tokens: number }
   status: 'active' | 'deleted'
   created_at: string

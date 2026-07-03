@@ -12,6 +12,23 @@ function dateOptions<T extends Intl.DateTimeFormatOptions>(options: T): T & { ti
   }
 }
 
+/** 相对时间："刚刚 / X 分钟前 / X 小时前 / X 天前"，超 30 天回退到绝对日期。空值返回 '—'。 */
+export function formatRelativeTime(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const then = new Date(iso).getTime()
+  if (!Number.isFinite(then)) return '—'
+  const zh = currentLocale().startsWith('zh')
+  const diffSec = Math.floor((Date.now() - then) / 1000)
+  if (diffSec < 60) return zh ? '刚刚' : 'just now'
+  const min = Math.floor(diffSec / 60)
+  if (min < 60) return zh ? `${min} 分钟前` : `${min}m ago`
+  const hr = Math.floor(min / 60)
+  if (hr < 24) return zh ? `${hr} 小时前` : `${hr}h ago`
+  const day = Math.floor(hr / 24)
+  if (day <= 30) return zh ? `${day} 天前` : `${day}d ago`
+  return formatDate(iso)
+}
+
 /** "Jan 1, 12:00 AM" — 账单、列表场景 */
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return '—'

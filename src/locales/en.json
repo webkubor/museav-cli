@@ -760,7 +760,11 @@
         "keysOwner": "{{count}} keys · owner {{owner}}",
         "goGuardrailsDesc": "View and configure guardrails for this workspace",
         "goLogsDesc": "Inspect model call records for this workspace",
-        "goForwardingDesc": "Configure log collection and forwarding targets"
+        "goForwardingDesc": "Configure log collection and forwarding targets",
+        "resources": "Resources",
+        "usage7d": "Last 7 days",
+        "lastRequest": "Last request",
+        "never": "Never"
       },
       "members": {
         "title": "Workspace Members",

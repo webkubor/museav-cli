@@ -760,7 +760,11 @@
         "keysOwner": "{{count}} 个 Key · 负责人 {{owner}}",
         "goGuardrailsDesc": "查看并配置该空间的安全护栏",
         "goLogsDesc": "排查该空间的模型调用记录",
-        "goForwardingDesc": "配置日志采集与转发目标"
+        "goForwardingDesc": "配置日志采集与转发目标",
+        "resources": "运行资源",
+        "usage7d": "近 7 天用量",
+        "lastRequest": "最近调用",
+        "never": "从未"
       },
       "members": {
         "title": "空间成员",

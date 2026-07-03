@@ -19,6 +19,7 @@ import { listTenantMembers } from '@/services/tenants'
 import { getLoggingConfig } from '@/services/observability'
 import { ObservabilityContent } from '@/pages/observability'
 import { cn, pageItems, formatMoney as fmtMoney } from '@/lib/utils'
+import { formatRelativeTime } from '@/lib/format-date'
 import { TENANT_ROLE_LABEL } from '@/constants/roles'
 import type { Money, TenantMember, WorkspaceDetail, WorkspaceMember } from '@/types'
 import { Button } from '@/components/ui/Button'
@@ -115,11 +116,23 @@ export function WorkspaceDetailContent({
 function OverviewTab({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: () => void }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const cards = [
+  // 近 7 天用量（对齐原型：消费/请求/Tokens，请求卡带「最近调用 X前」）
+  const usageCards = [
     { label: t('workspaces.detail.overview.spend'), value: formatMoney(ws.usage_7d?.spend) },
-    { label: t('workspaces.detail.overview.requests'), value: (ws.usage_7d?.requests ?? 0).toLocaleString() },
+    {
+      label: t('workspaces.detail.overview.requests'),
+      value: (ws.usage_7d?.requests ?? 0).toLocaleString(),
+      hint: `${t('workspaces.detail.overview.lastRequest')} ${ws.last_request_at ? formatRelativeTime(ws.last_request_at) : t('workspaces.detail.overview.never')}`,
+    },
     { label: t('workspaces.detail.overview.tokens'), value: (ws.usage_7d?.tokens ?? 0).toLocaleString() },
+  ]
+  // 运行资源（对齐原型：成员/API Keys/护栏/采集/转发；后端 workspace.Detail 已返回）
+  const resources = [
+    { label: t('workspaces.card.members'), value: String(ws.member_count ?? 0) },
     { label: t('workspaces.detail.overview.apiKeys'), value: String(ws.api_key_count ?? 0) },
+    { label: t('workspaces.card.guardrails'), value: String(ws.guardrail_count ?? 0) },
+    { label: t('workspaces.summary.logging'), value: ws.logging_enabled ? t('workspaces.card.collectOn') : t('workspaces.card.collectOff') },
+    { label: t('workspaces.summary.forwarding'), value: ws.forward_enabled ? t('workspaces.card.forwardOn') : t('workspaces.card.forwardOff') },
   ]
   const shortcuts: { title: string; desc: string; onClick: () => void }[] = [
     {
@@ -148,13 +161,27 @@ function OverviewTab({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: () => vo
   ]
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {cards.map((c) => (
+      {/* 近 7 天用量 */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {usageCards.map((c) => (
           <div key={c.label} className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-5 shadow-xs">
             <div className="text-[11px] font-bold text-mg-text-3 uppercase tracking-wider mb-2">{c.label}</div>
             <div className="text-xl font-bold text-mg-text-1">{c.value}</div>
+            {'hint' in c && c.hint && <div className="mt-1 text-[11px] text-mg-text-3">{c.hint}</div>}
           </div>
         ))}
+      </div>
+      {/* 运行资源（对齐原型） */}
+      <div>
+        <div className="text-[11px] font-bold text-mg-text-3 uppercase tracking-wider mb-2">{t('workspaces.detail.overview.resources')}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          {resources.map((r) => (
+            <div key={r.label} className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-4 shadow-xs">
+              <div className="text-[11px] text-mg-text-3 mb-1">{r.label}</div>
+              <div className="text-base font-bold text-mg-text-1">{r.value}</div>
+            </div>
+          ))}
+        </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {shortcuts.map((s) => (

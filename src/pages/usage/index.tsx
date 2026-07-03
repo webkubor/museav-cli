@@ -16,6 +16,8 @@ import {
 } from '@/services/usage'
 import { listWorkspaces } from '@/services/workspaces'
 import { useAuthStore } from '@/store/auth'
+import { useTenantRole } from '@/hooks/use-tenant-role'
+import { SegmentedToggle } from '@/features/dashboard/workbench/SegmentedToggle'
 import { useCurrency } from '@/hooks/use-platform-config'
 import type { SeriesDataPoint, UsageRankingItem } from '@/types'
 import { KpiCard } from '@/components/ui/KpiCard'
@@ -51,8 +53,15 @@ export default function UsagePage() {
   const [filterWorkspaceId, setFilterWorkspaceId] = useState<string>('')
 
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
+  const currentAccountId = useAuthStore((s) => s.account?.account_id)
   // 用量统计是租户级页面：默认租户全量，仅受本页筛选器控制；不读工作空间选择器的
   // activeWorkspaceId（PRD §7.3：租户级页面不得被选择器过滤）。
+  // 视图切换（对齐原型 + PRD §9）：默认按角色，Owner/Admin=企业视图，其余=我的视图；
+  // 我的视图对 owner/admin 传 account_id=self（后端 #328 已支持透传）。
+  const { canManage, isEnterprise } = useTenantRole()
+  const [userView, setUserView] = useState<'enterprise' | 'mine' | null>(null)
+  const view = userView ?? (isEnterprise && canManage ? 'enterprise' : 'mine')
+  const showViewToggle = isEnterprise && canManage
   const { symbol: currencySymbol } = useCurrency()
 
   const usagePresets = [
@@ -72,11 +81,13 @@ export default function UsagePage() {
   // rangeToDates 内部依赖当前时间，必须只在筛选变化时重算，避免 query key 抖动。
   const { from, to } = useMemo(() => rangeToDates(timeRange), [timeRange])
   const rangeReady = timeRange.preset !== 'custom' || (!!timeRange.startDate && !!timeRange.endDate)
+  const scopedAccountId = view === 'mine' ? currentAccountId || undefined : undefined
   const commonParams = useMemo(() => ({
     from,
     to,
     workspace_id: filterWorkspaceId || undefined,
-  }), [filterWorkspaceId, from, to])
+    account_id: scopedAccountId,
+  }), [filterWorkspaceId, from, to, scopedAccountId])
 
   const workspacesQuery = useQuery({
     queryKey: ['workspaces-for-filter', activeTenantId],
@@ -196,6 +207,17 @@ export default function UsagePage() {
       <PageHeader
         title={t('usage.title')}
         description={t('usage.desc')}
+        actions={showViewToggle ? (
+          <SegmentedToggle<'enterprise' | 'mine'>
+            ariaLabel={t('dashboard.workbench.view.enterprise')}
+            value={view}
+            options={[
+              { value: 'enterprise', label: t('dashboard.workbench.view.enterprise') },
+              { value: 'mine', label: t('dashboard.workbench.view.mine') },
+            ]}
+            onChange={setUserView}
+          />
+        ) : undefined}
       />
 
       {summaryQuery.isError && (

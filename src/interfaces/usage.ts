@@ -8,6 +8,8 @@ export interface UsageSummaryParams extends QueryParams {
   /** 分组维度：none | model | provider | workspace */
   group_by?: 'none' | 'model' | 'provider' | 'workspace'
   workspace_id?: string
+  /** 成员过滤（「我的视图」传当前账号；后端 #328 支持透传裁剪） */
+  account_id?: string
   model_id?: string
   provider_id?: string
   api_key_id?: string
@@ -22,6 +24,8 @@ export interface UsageSeriesParams extends QueryParams {
   /** 指标：spend | requests | tokens */
   metric?: 'spend' | 'requests' | 'tokens'
   workspace_id?: string
+  /** 成员过滤（「我的视图」传当前账号；后端 #328 支持透传裁剪） */
+  account_id?: string
   model_id?: string
   provider_id?: string
   api_key_id?: string

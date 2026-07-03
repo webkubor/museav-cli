@@ -180,6 +180,12 @@ export interface TenantInviteLink {
   token: string
   created_at: string
   created_by: string
+  /** 链接绑定的初始角色（后端 #326；旧链接为空串） */
+  role?: 'tenant_admin' | 'tenant_member' | ''
+  /** 到期时间（空=永不过期） */
+  expires_at?: string
+  /** 是否一次性使用（接受一次即失效） */
+  single_use?: boolean
 }
 
 export interface TenantInviteLinkPreview {

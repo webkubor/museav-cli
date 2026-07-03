@@ -31,6 +31,16 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
     refetchOnWindowFocus: false,
   })
 
+  // 展示当前链接实际绑定的角色（后端 #326 返回 role）：链接角色变化时同步下拉与提示，
+  // 而非恒显本地默认；用户手动切换仍可覆盖。旧链接 role 为空则保持默认。
+  // 用「渲染期对比上次值」模式同步，避免 effect 内 setState（React 官方推荐）。
+  const linkRole = inviteLinkQuery.data?.role
+  const [syncedLinkRole, setSyncedLinkRole] = useState(linkRole)
+  if (linkRole !== syncedLinkRole) {
+    setSyncedLinkRole(linkRole)
+    if (linkRole === 'tenant_admin' || linkRole === 'tenant_member') setInviteRole(linkRole)
+  }
+
   // 重置/刷新邀请链接：显式传入目标角色（避免 setState 异步取到旧值）。
   // silent=true 用于「切换角色自动刷新」场景，提示文案不同。
   const resetLink = useMutation({

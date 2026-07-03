@@ -16,6 +16,7 @@ import { useEndpointState } from './use-endpoint-state'
 import { EndpointCard } from './EndpointCard'
 import { CustomRequestPanel } from './CustomRequestPanel'
 import { MenusSyncPanel } from './MenusSyncPanel'
+import { PermissionsPanel } from './PermissionsPanel'
 import { UrlParamsPanel } from './UrlParamsPanel'
 import { HeadersPanel } from './HeadersPanel'
 import { SwaggerPanel } from './SwaggerPanel'
@@ -35,7 +36,7 @@ const PUBLIC_ROUTES = [
 ] as const
 
 // 开发者菜单 tab，挂到 URL ?tab= 上以便直接定位某个 tab
-const DEV_CONFIG_TABS = ['endpoints', 'routes-menus', 'url-params', 'headers', 'dialog-preview', 'requirements']
+const DEV_CONFIG_TABS = ['endpoints', 'routes-menus', 'permissions', 'url-params', 'headers', 'dialog-preview', 'requirements']
 const DEFAULT_TAB = 'endpoints'
 
 export default function PlatformConfigPage() {
@@ -153,6 +154,7 @@ export default function PlatformConfigPage() {
         <TabsList>
           <TabsTrigger value="endpoints">接口 / Swagger</TabsTrigger>
           <TabsTrigger value="routes-menus">路由 / 菜单</TabsTrigger>
+          <TabsTrigger value="permissions">权限</TabsTrigger>
           <TabsTrigger value="url-params">回跳参数</TabsTrigger>
           <TabsTrigger value="headers">请求头</TabsTrigger>
           <TabsTrigger value="dialog-preview">弹窗预览</TabsTrigger>
@@ -228,6 +230,10 @@ export default function PlatformConfigPage() {
               <MenusSyncPanel />
             </section>
           </div>
+        </TabsContent>
+
+        <TabsContent value="permissions">
+          <PermissionsPanel />
         </TabsContent>
 
         <TabsContent value="url-params">

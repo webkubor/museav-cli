@@ -6,6 +6,13 @@ last_used: ~
 use_count: 0
 ---
 
+> ## 🚦 UI 改动开工前置（硬性 · 先做再动手）
+> 治「不读规范就动手」——本仓 UI/组件/样式任何改动，先按序做：
+> 1. `cs flow frontend` → 拿到必读规则与禁止项
+> 2. 读 `cs rule frontend_design_standard` + 本仓 `DESIGN.md`（圆角/颜色/组件/图标铁律）
+> 3. **组件铁律**：主操作用 `Button variant="brand"`，禁止手写 `<button className="bg-brand-*">`；卡片用 `.mg-tile`，勿拿 `bg-mg-fill-0` 凑层次；圆角只用 `rounded-sm/md/lg/full`（**禁 `rounded-xl/2xl/3xl`**，它们是禁用刻度＝直角）；图标只用 `react-icons` 或 `@lobehub/icons`。
+> 4. 提交前 UI 门禁 `scripts/ui-guard.sh` 会硬拦上述违规；**完成前必须浏览器验证**（engineering_baseline §4.2 结构化验收），禁止"没验就说完成"。
+
 # UI Review Polish
 
 Use this when the user says the UI is ugly, too AI-like, unclear, not polished, not responsive, too bland, visually noisy, or needs review before shipping.

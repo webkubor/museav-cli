@@ -10,7 +10,7 @@ import { appToast } from '@/lib/app-toast'
 import { useTranslation } from 'react-i18next'
 import { LuCopy, LuCheck, LuZap, LuChevronRight, LuExternalLink, LuKey } from 'react-icons/lu'
 import { appendThemeParam } from '@/lib/theme'
-import { CONNECT_ACTIONS, buildConnectSnippets, getConnectAction } from './constants'
+import { CONNECT_ACTIONS, buildConnectSnippets, getConnectAction, MGC_CLIENT_OPTIONS, deriveRegionFromBaseUrl, buildMgcCommand } from './constants'
 
 type Props = {
   open: boolean
@@ -27,6 +27,15 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
   const { copy } = useCopy()
   const [connectCopied, setConnectCopied] = useState<string | null>(null)
   const hasCreatedKey = createdKeyText.trim().length > 0
+
+  // @model-go/config 一键接入：区域自动推导、Key 自动预填，客户端由用户勾选
+  const region = deriveRegionFromBaseUrl(openAIBaseUrl)
+  const keyForCmd = hasCreatedKey ? createdKeyText : '<YOUR_MODELGO_API_KEY>'
+  const [mgcAll, setMgcAll] = useState(false)
+  const [mgcSelected, setMgcSelected] = useState<string[]>(['claude', 'codex'])
+  const toggleMgcClient = (id: string) =>
+    setMgcSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+  const mgcCommand = buildMgcCommand({ apiKey: keyForCmd, region, selected: mgcSelected, all: mgcAll })
 
   async function handleConnectCopy(key: string, text: string) {
     const ok = await copy(text)
@@ -101,7 +110,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
           </div>
         </div>
 
-        <Tabs defaultValue="cc-switch">
+        <Tabs defaultValue="mgc">
           <div className="flex items-center justify-between gap-3">
             <div className="text-xs font-bold text-mg-text-2">接入方式</div>
             <a
@@ -124,6 +133,66 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
               </TabsTrigger>
             ))}
           </TabsList>
+
+          <TabsContent value="mgc">
+            <div className="rounded-md border border-mg-border bg-mg-bg-0 p-4">
+              <div className="text-sm font-bold text-mg-text-1">一条命令接入 AI 编程客户端</div>
+              <div className="mt-1 text-xs leading-5 text-mg-text-3">
+                勾选要接入的客户端，命令已自动填好 Key 与站点（{region === 'global' ? '国际站' : '国内站'}），复制到终端回车即可。
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMgcAll((v) => !v)}
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                    mgcAll
+                      ? 'border-brand-base bg-brand-base/10 text-brand-base'
+                      : 'border-mg-border bg-mg-fill-0 text-mg-text-2 hover:border-brand-base/35'
+                  }`}
+                >
+                  全部 12 个
+                </button>
+                {MGC_CLIENT_OPTIONS.map((opt) => {
+                  const active = !mgcAll && mgcSelected.includes(opt.id)
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      disabled={mgcAll}
+                      onClick={() => toggleMgcClient(opt.id)}
+                      className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 ${
+                        active
+                          ? 'border-brand-base bg-brand-base/10 text-brand-base'
+                          : 'border-mg-border bg-mg-fill-0 text-mg-text-2 hover:border-brand-base/35'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <pre className="mt-4 max-h-32 overflow-auto rounded-lg border border-mg-border bg-mg-code-bg p-3 text-xs leading-5 text-mg-text-1">
+                <code className="break-all">{mgcCommand}</code>
+              </pre>
+
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <span className="text-[11px] text-mg-text-3">
+                  {hasCreatedKey ? '已填入你刚创建的 Key' : '创建密钥后将自动填入真实 Key'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleConnectCopy('mgc', mgcCommand)}
+                  className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-brand-base px-3 text-xs font-bold text-white shadow-sm shadow-brand-glow/15 transition-colors hover:bg-brand-deep cursor-pointer"
+                >
+                  {connectCopied === 'mgc'
+                    ? <><LuCheck className="h-3.5 w-3.5" /> 已复制</>
+                    : <><LuCopy className="h-3.5 w-3.5" /> 复制命令</>}
+                </button>
+              </div>
+            </div>
+          </TabsContent>
 
           {connectSnippets.map((item) => {
             const action = getConnectAction(item.id)

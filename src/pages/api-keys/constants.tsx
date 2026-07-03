@@ -1,7 +1,7 @@
 /**
  * API Key 页共享的类型、常量与纯函数 helper
  */
-import { LuUser, LuBuilding2, LuUsers } from 'react-icons/lu'
+import { LuUser, LuBuilding2, LuUsers, LuZap } from 'react-icons/lu'
 import { SiCurl } from 'react-icons/si'
 import type { DateRangeValue } from '@/components/ui/DateRangePicker'
 import { addFromNowISO, endOfLocalDayISO, type TimeUnit } from '@/lib/datetime'
@@ -11,7 +11,7 @@ import Codex from '@lobehub/icons/es/Codex'
 import OpenAI from '@lobehub/icons/es/OpenAI'
 
 export type ScopeType = 'personal' | 'workspace' | 'member'
-export type ConnectActionKey = 'cc-switch' | 'claude-code' | 'codex' | 'openai-sdk' | 'curl'
+export type ConnectActionKey = 'mgc' | 'cc-switch' | 'claude-code' | 'codex' | 'openai-sdk' | 'curl'
 
 export type ConnectParam = {
   label: string
@@ -89,6 +89,12 @@ export const CONNECT_ACTIONS: {
   icon: React.ReactNode
 }[] = [
   {
+    key: 'mgc',
+    label: '一键接入',
+    desc: '勾选即用',
+    icon: <LuZap size={16} className="text-brand-base" />,
+  },
+  {
     key: 'cc-switch',
     label: 'CC Switch',
     desc: '一键切换',
@@ -121,6 +127,39 @@ export const CONNECT_ACTIONS: {
 ]
 
 export const getConnectAction = (id: string) => CONNECT_ACTIONS.find((action) => action.key === id)
+
+/** @model-go/config 一键接入：可勾选的常用客户端（id 对应 CLI 的 --only 值） */
+export const MGC_CLIENT_OPTIONS: { id: string; label: string }[] = [
+  { id: 'claude', label: 'Claude Code' },
+  { id: 'codex', label: 'Codex' },
+  { id: 'crush', label: 'Crush' },
+  { id: 'opencode', label: 'OpenCode' },
+  { id: 'copilot', label: 'Copilot CLI' },
+  { id: 'factory', label: 'Factory' },
+]
+
+/** 从网关地址推导站点：*.ai → 国际站，其余 → 国内站 */
+export function deriveRegionFromBaseUrl(baseUrl: string): 'global' | 'domestic' {
+  try {
+    return new URL(baseUrl).hostname.includes('modelgo.ai') ? 'global' : 'domestic'
+  } catch {
+    return baseUrl.includes('modelgo.ai') ? 'global' : 'domestic'
+  }
+}
+
+/**
+ * 生成 @model-go/config 一键接入命令：Key 与站点已预填，客户端由 UI 勾选。
+ * all=true → --only all；否则用所选 id；一个都没选时回退到 claude,codex。
+ */
+export function buildMgcCommand(args: {
+  apiKey: string
+  region: 'global' | 'domestic'
+  selected: string[]
+  all: boolean
+}): string {
+  const only = args.all ? 'all' : args.selected.length ? args.selected.join(',') : 'claude,codex'
+  return `npx @model-go/config -k ${args.apiKey} -r ${args.region} --only ${only}`
+}
 
 export function formatEndpointDisplay(baseUrl: string) {
   try {

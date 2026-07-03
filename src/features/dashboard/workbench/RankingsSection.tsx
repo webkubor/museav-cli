@@ -90,7 +90,7 @@ function RankingCard({
  * 模块 7：排行卡（模型 / 成员 / API Keys，各 Top3 + 查看更多）。
  * 成员用量排行：后端无 usage/rankings/accounts 端点，做占位空态；仅企业视图显示（我的视图隐藏）。
  */
-export function RankingsSection({ view, granularity }: { view: WorkbenchView; granularity: Granularity }) {
+export function RankingsSection({ view, granularity, accountId }: { view: WorkbenchView; granularity: Granularity; accountId?: string }) {
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const navigate = useNavigate()
@@ -98,15 +98,15 @@ export function RankingsSection({ view, granularity }: { view: WorkbenchView; gr
   const showMembers = view === 'enterprise'
 
   const { data: models, isLoading: modelsLoading } = useQuery({
-    queryKey: ['workbench', 'rankings', 'models', activeTenantId, granularity],
-    queryFn: () => getUsageRankingsModels({ from: range.from, to: range.to, limit: 3 }),
+    queryKey: ['workbench', 'rankings', 'models', activeTenantId, granularity, accountId],
+    queryFn: () => getUsageRankingsModels({ from: range.from, to: range.to, limit: 3, account_id: accountId }),
     enabled: !!activeTenantId,
     staleTime: 5 * 60_000,
   })
 
   const { data: apiKeys, isLoading: apiKeysLoading } = useQuery({
-    queryKey: ['workbench', 'rankings', 'api-keys', activeTenantId, granularity],
-    queryFn: () => getUsageRankingsApiKeys({ from: range.from, to: range.to, limit: 3 }),
+    queryKey: ['workbench', 'rankings', 'api-keys', activeTenantId, granularity, accountId],
+    queryFn: () => getUsageRankingsApiKeys({ from: range.from, to: range.to, limit: 3, account_id: accountId }),
     enabled: !!activeTenantId,
     staleTime: 5 * 60_000,
   })

@@ -35,7 +35,7 @@ function fmtLabel(month: boolean, iso: string) {
  * 模块 5：用量趋势。指标切换（请求量/费用/Tokens）+ 粒度（天/月，来自页面）。
  * 数据源 getUsageSeries；标题与单位随指标同步。
  */
-export function UsageTrendSection({ granularity }: { granularity: Granularity }) {
+export function UsageTrendSection({ granularity, accountId }: { granularity: Granularity; accountId?: string }) {
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const { symbol } = useCurrency()
@@ -45,9 +45,9 @@ export function UsageTrendSection({ granularity }: { granularity: Granularity })
   const isMonth = granularity === 'month'
 
   const { data, isLoading } = useQuery({
-    queryKey: ['workbench', 'series', metric, granularity, activeTenantId],
+    queryKey: ['workbench', 'series', metric, granularity, activeTenantId, accountId],
     queryFn: () =>
-      getUsageSeries({ metric, granularity, from: range.from, to: range.to }),
+      getUsageSeries({ metric, granularity, from: range.from, to: range.to, account_id: accountId }),
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })

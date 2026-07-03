@@ -14,14 +14,16 @@ import { abbreviateNumber, rangeForGranularity, type Granularity, type Workbench
 /**
  * 模块 4：核心指标 4 卡（总请求 / 总费用 / 总 Tokens / 账户余额）。
  * 请求/费用/Tokens 走 getUsageSummary(group_by:'none')；余额走 useBalance。
- * TODO(account_id 待后端): 「我的视图」暂无 summary 的成员过滤参数，仍取租户口径。
+ * 我的视图传 account_id 裁剪到当前账号（后端 #328/#314 支持）；账户余额始终按租户不随视图变。
  */
 export function MetricsSection({
   view,
   granularity,
+  accountId,
 }: {
   view: WorkbenchView
   granularity: Granularity
+  accountId?: string
 }) {
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
@@ -30,8 +32,8 @@ export function MetricsSection({
   const range = useMemo(() => rangeForGranularity(granularity), [granularity])
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
-    queryKey: ['workbench', 'summary', 'none', activeTenantId, granularity, view],
-    queryFn: () => getUsageSummary({ from: range.from, to: range.to, group_by: 'none' }),
+    queryKey: ['workbench', 'summary', 'none', activeTenantId, granularity, view, accountId],
+    queryFn: () => getUsageSummary({ from: range.from, to: range.to, group_by: 'none', account_id: accountId }),
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })

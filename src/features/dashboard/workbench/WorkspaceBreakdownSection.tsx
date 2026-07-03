@@ -14,7 +14,7 @@ import { abbreviateNumber, rangeForGranularity, type Granularity } from './share
  * 说明：groups 只含 label/spend/requests/tokens，后端未返回工作空间描述，
  * 次级行用「请求 · Tokens」代替描述展示。
  */
-export function WorkspaceBreakdownSection({ granularity }: { granularity: Granularity }) {
+export function WorkspaceBreakdownSection({ granularity, accountId }: { granularity: Granularity; accountId?: string }) {
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const navigate = useNavigate()
@@ -22,8 +22,8 @@ export function WorkspaceBreakdownSection({ granularity }: { granularity: Granul
   const range = useMemo(() => rangeForGranularity(granularity), [granularity])
 
   const { data, isLoading } = useQuery({
-    queryKey: ['workbench', 'summary', 'workspace', activeTenantId, granularity],
-    queryFn: () => getUsageSummary({ from: range.from, to: range.to, group_by: 'workspace' }),
+    queryKey: ['workbench', 'summary', 'workspace', activeTenantId, granularity, accountId],
+    queryFn: () => getUsageSummary({ from: range.from, to: range.to, group_by: 'workspace', account_id: accountId }),
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })

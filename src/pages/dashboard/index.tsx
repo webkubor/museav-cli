@@ -6,6 +6,7 @@
  */
 import { useState } from 'react'
 import { useTenantRole } from '@/hooks/use-tenant-role'
+import { useAuthStore } from '@/store/auth'
 import { GreetingHeader } from '@/features/dashboard/workbench/GreetingHeader'
 import { QuickStartSection } from '@/features/dashboard/workbench/QuickStartSection'
 import { MetricsSection } from '@/features/dashboard/workbench/MetricsSection'
@@ -26,6 +27,9 @@ export default function DashboardPage() {
   const view = userView ?? roleDefaultView
   // 仅企业 Owner/Admin 可切换视图；企业 Member 锁定我的视图、个人租户无切换（PRD §8.2/§9）
   const showViewToggle = isEnterprise && canManage
+  // 我的视图：总览各用量区块按当前账号裁剪（后端 #328/#314 支持 account_id 透传）
+  const currentAccountId = useAuthStore((s) => s.account?.account_id)
+  const scopedAccountId = view === 'mine' ? currentAccountId || undefined : undefined
 
   return (
     <div className="no-canvas-blur space-y-6 pb-10 animate-in fade-in duration-300">
@@ -39,14 +43,14 @@ export default function DashboardPage() {
 
       <QuickStartSection />
 
-      <MetricsSection view={view} granularity={granularity} />
+      <MetricsSection view={view} granularity={granularity} accountId={scopedAccountId} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 items-stretch">
-        <UsageTrendSection granularity={granularity} />
-        <WorkspaceBreakdownSection granularity={granularity} />
+        <UsageTrendSection granularity={granularity} accountId={scopedAccountId} />
+        <WorkspaceBreakdownSection granularity={granularity} accountId={scopedAccountId} />
       </div>
 
-      <RankingsSection view={view} granularity={granularity} />
+      <RankingsSection view={view} granularity={granularity} accountId={scopedAccountId} />
 
       <RecentCallsSection />
     </div>

@@ -60,11 +60,11 @@ export default function ModelDetailPage() {
           ))}
         </div>
       ) : detailQuery.isError || !detail ? (
-        <div className="rounded-xl border p-8 text-center text-[13px]" style={{ borderColor: 'var(--mg-border)', color: 'var(--mg-text-3)' }}>
+        <div className="rounded-md border p-8 text-center text-[13px]" style={{ borderColor: 'var(--mg-border)', color: 'var(--mg-text-3)' }}>
           {isZh ? '模型不存在或加载失败' : 'Model not found or failed to load'}
         </div>
       ) : (
-        <div className="rounded-2xl border p-6" style={{ background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' }}>
+        <div className="rounded-lg border p-6" style={{ background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' }}>
           <ModelDetailPanel detail={detail} providers={providers} />
           <div className="mt-6 flex items-center gap-3 border-t pt-5" style={{ borderColor: 'var(--mg-border)' }}>
             <Button variant="brand" onClick={goTry}>

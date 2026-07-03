@@ -35,6 +35,10 @@ export default defineConfig(({ mode }) => {
     // 提交成功后推送飞书通知（dev 启动时幂等安装 post-commit 钩子；不动已有 pre-commit）
     agentGit({
       projectLabel: '控制台',
+      // 提交前门禁：cs check test（类型/规范/构建）+ UI 门禁（DESIGN.md 约定，见 scripts/ui-guard.sh）
+      // 任一非零退出即阻断。force 接管既有手写 pre-commit —— cs check test 已并入下面 precommit，不丢。
+      precommit: ['cs check test', 'bash scripts/ui-guard.sh'],
+      force: true,
       webhook: [
         {
           url: 'https://open.feishu.cn/open-apis/bot/v2/hook/4bd3a5cb-3bc3-4e07-b61c-541e94d826b6',

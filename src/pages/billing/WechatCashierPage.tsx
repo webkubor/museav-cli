@@ -123,7 +123,7 @@ export default function WechatCashierPage() {
       </header>
 
       <section className="mx-auto flex w-full max-w-[980px] flex-col items-center px-4 py-10 sm:px-6 sm:py-14">
-        <div className="w-full max-w-[440px] overflow-hidden rounded-xl border border-[#e8e9eb] bg-white shadow-[0_8px_28px_rgba(31,35,41,0.06)]">
+        <div className="w-full max-w-[440px] overflow-hidden rounded-lg border border-[#e8e9eb] bg-white shadow-[0_8px_28px_rgba(31,35,41,0.06)]">
           {/* Amount header — the focal point */}
           <div className="flex flex-col items-center gap-1 px-6 pb-6 pt-8">
             <div className="text-xs text-[#86909c]">{payee}</div>

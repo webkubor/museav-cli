@@ -135,7 +135,7 @@ export default function ModelsCatalogPage() {
 
       {/* 主体：左 sidebar + 右内容 */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[260px_1fr] lg:items-start">
-        <div className={`models-sticky ${filtersOpen ? 'block rounded-2xl border p-4 lg:border-0 lg:p-0' : 'hidden lg:block'}`} style={filtersOpen ? { background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' } : undefined}>
+        <div className={`models-sticky ${filtersOpen ? 'block rounded-lg border p-4 lg:border-0 lg:p-0' : 'hidden lg:block'}`} style={filtersOpen ? { background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' } : undefined}>
           <CatalogSidebar families={families} tags={tags} selected={selected} setSelected={setSelected} isZh={isZh} />
         </div>
 
@@ -175,7 +175,7 @@ export default function ModelsCatalogPage() {
                 <LuChevronDown size={13} className={sortOpen ? 'rotate-180' : ''} />
               </button>
               {sortOpen && (
-                <div className="absolute right-0 top-full z-20 mt-1.5 min-w-[140px] overflow-hidden rounded-xl border py-1 shadow-lg" style={{ background: 'var(--mg-bg-2)', borderColor: 'var(--mg-border)' }}>
+                <div className="absolute right-0 top-full z-20 mt-1.5 min-w-[140px] overflow-hidden rounded-md border py-1 shadow-lg" style={{ background: 'var(--mg-bg-2)', borderColor: 'var(--mg-border)' }}>
                   {(['default', 'popular', 'newest', 'cheapest'] as SortKey[]).map((key) => (
                     <button
                       key={key}
@@ -204,7 +204,7 @@ export default function ModelsCatalogPage() {
               ))}
             </div>
           ) : modelsQuery.isError ? (
-            <div className="rounded-xl border p-6 text-center text-[13px]" style={{ borderColor: 'var(--mg-border)', color: 'var(--mg-text-3)' }}>
+            <div className="rounded-md border p-6 text-center text-[13px]" style={{ borderColor: 'var(--mg-border)', color: 'var(--mg-text-3)' }}>
               {t('modelsCatalog.error.load')}
             </div>
           ) : visibleModels.length === 0 ? (

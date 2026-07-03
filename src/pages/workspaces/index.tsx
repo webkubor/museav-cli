@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
 import { useTranslation } from 'react-i18next'
 import { LuSearch, LuPlus, LuKey, LuArrowRight } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listWorkspaces, createWorkspace } from '@/services/workspaces'
+import { WorkspaceDetailContent } from '@/pages/settings/workspace-detail'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
@@ -16,11 +16,12 @@ import { EmptyState } from '@/components/ui/EmptyState'
 
 export default function WorkspacesPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const [searchValue, setSearchValue] = useState('')
   const [modalVisible, setModalVisible] = useState(false)
+  // 单页结构：选中卡片在下方展开详情（不跳路由，对齐原型 .space-detail-shell）
+  const [selectedId, setSelectedId] = useState<string>('')
 
   // 受控表单状态
   const [name, setName] = useState('')
@@ -34,6 +35,13 @@ export default function WorkspacesPage() {
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })
+
+  // 默认选中第一个空间（对齐原型 selectedWorkspaceId 默认 records[0]）；
+  // 列表变化时若选中项已不存在，回落到第一个。派生有效选中 id，避免 effect 级联渲染。
+  const items = data || []
+  const validSelectedId = items.some((w) => w.workspace_id === selectedId)
+    ? selectedId
+    : (items[0]?.workspace_id ?? '')
 
   // ─── 2. Mutation 真实绑定新建工作空间接口 ─────────────────────
   const createMutation = useMutation({
@@ -162,8 +170,12 @@ export default function WorkspacesPage() {
               key={ws.workspace_id}
               level={2}
               hoverable
-              onClick={() => navigate(`/settings/workspace/${ws.workspace_id}`)}
-              className="group relative p-5 flex flex-col gap-4 cursor-pointer"
+              onClick={() => setSelectedId(ws.workspace_id)}
+              className={`group relative p-5 flex flex-col gap-4 cursor-pointer transition-all ${
+                validSelectedId === ws.workspace_id
+                  ? 'ring-2 ring-brand-base border-brand-base'
+                  : ''
+              }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -212,6 +224,20 @@ export default function WorkspacesPage() {
               </div>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* 详情区：选中卡片后在此展开（单页结构，对齐原型 .space-detail-shell）。
+          不跳路由；onDeleted 清空选中态回落到第一个。 */}
+      {validSelectedId && !isLoading && filteredData.length > 0 && (
+        <div className="mt-2 rounded-lg border border-mg-border/50 bg-mg-bg-0 p-6 shadow-xs">
+          <WorkspaceDetailContent
+            workspaceId={validSelectedId}
+            onDeleted={() => {
+              setSelectedId('')
+              queryClient.invalidateQueries({ queryKey: ['workspaces', activeTenantId] })
+            }}
+          />
         </div>
       )}
 

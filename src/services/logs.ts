@@ -95,6 +95,15 @@ function money(amount: string | undefined, currency: string | undefined): Money 
   }
 }
 
+/** 从 runtime_detail 派生回退次数（原型 Fallback 卡）。key 未在 Swagger 定义，按常见命名兜底取，取不到记 0。 */
+function fallbackCount(runtime: Record<string, unknown> | undefined): number {
+  if (!runtime) return 0
+  const value = runtime.fallback_count ?? runtime.fallbacks ?? runtime.fallback
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (Array.isArray(value)) return value.length
+  return 0
+}
+
 function stringFromMap(map: Record<string, unknown> | undefined, key: string) {
   const value = map?.[key]
   return typeof value === 'string' ? value : ''
@@ -155,6 +164,7 @@ function toCallLogItem(row: ModelLogRow): CallLogItem {
     path: row.path || '',
     call_type: row.call_type || '',
     http_status: numberOrZero(row.http_status),
+    fallback_count: fallbackCount(row.runtime_detail),
     tpot_ms: numberOrZero(row.tpot_ms),
     api_key: {
       api_key_id: apiKeyID,

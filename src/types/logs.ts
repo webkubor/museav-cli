@@ -26,6 +26,8 @@ export interface CallLogItem {
   call_type: string
   http_status: number
   tpot_ms: number
+  /** 回退次数（原型 Fallback 卡）：后端 runtime_detail 内派生，无则 0 */
+  fallback_count: number
   api_key: { api_key_id: string; name: string; masked: string }
   account: { account_id: string; display_name: string }
   app_name: string | null

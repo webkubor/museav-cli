@@ -5,9 +5,9 @@ import {
   LuDatabase,
   LuFileText,
   LuGauge,
+  LuGitFork,
   LuKeyRound,
   LuReceiptText,
-  LuRoute,
 } from 'react-icons/lu'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -45,6 +45,13 @@ function isLogSucceeded(row: CallLogItem) {
 
 function tokenFlow(row: CallLogItem) {
   return `${formatNumber(row.usage.input_tokens)} -> ${formatNumber(row.usage.output_tokens)}`
+}
+
+/** TPM：后端无独立字段，按总 Token / 时长换算（Token/min），与 TPS 同理。 */
+function tpmLabel(row: CallLogItem) {
+  if (row.duration_ms <= 0 || row.usage.total_tokens <= 0) return ''
+  const tpm = Math.round(row.usage.total_tokens / (row.duration_ms / 60000))
+  return `${formatNumber(tpm)} Token/min`
 }
 
 export function LogDetailSheet({
@@ -95,8 +102,8 @@ export function LogDetailSheet({
             <DiagnosticCard icon={<LuClock3 />} label="总耗时" value={formatMaybeDuration(row.duration_ms)} hint={`首 Token ${formatMaybeDuration(row.speed.first_token_ms)}`} />
             <DiagnosticCard icon={<LuReceiptText />} label="费用" value={<Money amount={Number(row.cost.amount) > 0 ? row.cost.amount : null} currency={row.cost.currency} />} hint={row.billing_status || '计费状态未返回'} />
             <DiagnosticCard icon={<LuDatabase />} label="Token" value={tokenFlow(row)} hint="输入 token -> 输出 token" />
-            <DiagnosticCard icon={<LuRoute />} label="路由" value={row.provider.name} hint={row.upstream_model || row.provider.type || '未返回上游模型'} />
-            <DiagnosticCard icon={<LuGauge />} label="缓存" value={row.usage.cache_read_tokens > 0 ? '命中' : '未命中'} hint={`读 ${formatNumber(row.usage.cache_read_tokens)} / 写 ${formatNumber(row.usage.cache_write_tokens)} Token`} />
+            <DiagnosticCard icon={<LuGitFork />} label="Fallback" value={`${row.fallback_count} 次`} hint={row.fallback_count > 0 ? '已触发回退' : '未触发'} />
+            <DiagnosticCard icon={<LuGauge />} label="缓存" value={row.usage.cache_read_tokens > 0 ? '命中' : '未命中'} hint={`读 ${formatNumber(row.usage.cache_read_tokens)} Token`} />
           </section>
 
           <DetailSection title="概览">
@@ -114,11 +121,10 @@ export function LogDetailSheet({
               <DetailRow label="Trace ID" value={row.trace_id} mono />
               <DetailRow label="调用时间" value={formatDateTimeWithSeconds(row.started_at)} />
               <DetailRow label="HTTP 状态" value={httpStatus(row)} mono />
+              <DetailRow label="计费状态" value={row.billing_status} />
               <DetailRow label="调用类型" value={row.call_type} />
-              <DetailRow label="请求路径" value={row.path} mono />
-              <DetailRow label="结束原因" value={row.finish_reason} />
               <DetailRow label="TPOT" value={row.tpot_ms > 0 ? `${row.tpot_ms}ms` : ''} mono />
-              <DetailRow label="吞吐" value={row.speed.tps > 0 ? `${row.speed.tps.toFixed(2)} token/s` : ''} mono />
+              <DetailRow label="TPM" value={tpmLabel(row)} mono />
             </DetailGrid>
           </DetailSection>
 

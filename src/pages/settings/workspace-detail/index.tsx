@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { LuArrowLeft, LuSearch, LuArrowRight, LuUsers, LuPlus } from 'react-icons/lu'
+import { LuArrowLeft, LuSearch, LuArrowRight, LuUsers } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
@@ -12,12 +12,13 @@ import {
   updateWorkspace,
   deleteWorkspace,
   listWorkspaceMembers,
-  removeWorkspaceMember,
+  removeWorkspaceMemberWithStrategy,
+  setWorkspaceOwner,
 } from '@/services/workspaces'
 import { listTenantMembers } from '@/services/tenants'
 import { getLoggingConfig } from '@/services/observability'
 import { ObservabilityContent } from '@/pages/observability'
-import { pageItems, formatMoney as fmtMoney } from '@/lib/utils'
+import { cn, pageItems, formatMoney as fmtMoney } from '@/lib/utils'
 import { TENANT_ROLE_LABEL } from '@/constants/roles'
 import type { Money, TenantMember, WorkspaceDetail, WorkspaceMember } from '@/types'
 import { Button } from '@/components/ui/Button'
@@ -171,16 +172,20 @@ function OverviewTab({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: () => vo
 }
 
 // ─── 成员 ─────────────────────────────────────────────
-// 对齐 PRD 原型：单表 成员 / 企业角色 / 空间责任 / 拥有Key / 操作(设为负责人·移除)
+// 对齐 PRD 原型：左主表（成员/企业角色/空间责任/拥有Key/操作）+ 右侧栏「从企业成员添加」
+// 设为负责人：接 PUT /workspaces/:id/owner（#327 待实现，前端先按约定接）
+// 移除成员：影响弹窗（受影响 Key + 转移/停用策略），对齐 SpaceMemberRemovalImpactModal
 function MembersTab({ workspaceId }: { workspaceId: string }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const { hasPermission } = usePermissions()
   const canManageMembers = hasPermission(PERMS.WORKSPACE_MEMBERS_MANAGE)
-  const [addOpen, setAddOpen] = useState(false)
   const [addSearch, setAddSearch] = useState('')
-  const [removeTarget, setRemoveTarget] = useState<string | null>(null)
+  // 移除目标：携带成员对象，用于影响弹窗展示受影响 Key 数
+  const [removeTarget, setRemoveTarget] = useState<WorkspaceMember | null>(null)
+  // 移除策略：transfer（转给负责人）/ disable（停用 Key）
+  const [removeStrategy, setRemoveStrategy] = useState<'transfer' | 'disable' | ''>('')
 
   const membersQuery = useQuery({
     queryKey: ['workspace-members', workspaceId],
@@ -197,6 +202,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
   })
 
   const members: WorkspaceMember[] = membersQuery.data ?? []
+  const owner = members.find((m) => m.role === 'ws_owner')
 
   const wsAccountIds = useMemo(() => {
     const ids = new Set<string>()
@@ -234,10 +240,26 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
     onError: (err: unknown) => appToast.error((err as Error)?.message || t('workspaces.detail.members.addError')),
   })
 
+  // 设为负责人：对齐原型 onSetResponsible，调 PUT /workspaces/:id/owner
+  const setOwnerMutation = useMutation({
+    mutationFn: (accountId: string) => setWorkspaceOwner(workspaceId, accountId),
+    onSuccess: () => {
+      appToast.success(t('workspaces.detail.members.setOwnerSuccess'))
+      qc.invalidateQueries({ queryKey: ['workspace-members', workspaceId] })
+      qc.invalidateQueries({ queryKey: ['workspace-detail', workspaceId] })
+      qc.invalidateQueries({ queryKey: ['workspaces'] })
+    },
+    onError: (err: unknown) => appToast.error((err as Error)?.message || t('workspaces.detail.members.setOwnerError')),
+  })
+
+  // 移除成员：带 Key 处理策略（对齐原型 onConfirm(strategy)）
   const removeMutation = useMutation({
-    mutationFn: (accountId: string) => removeWorkspaceMember(workspaceId, accountId),
+    mutationFn: ({ accountId, strategy }: { accountId: string; strategy: 'transfer' | 'disable' }) =>
+      removeWorkspaceMemberWithStrategy(workspaceId, accountId, { key_strategy: strategy }),
     onSuccess: () => {
       appToast.success(t('workspaces.detail.members.removeSuccess'))
+      setRemoveTarget(null)
+      setRemoveStrategy('')
       qc.invalidateQueries({ queryKey: ['workspace-members', workspaceId] })
     },
     onError: (err: unknown) => appToast.error((err as Error)?.message || t('workspaces.detail.members.removeError')),
@@ -246,23 +268,13 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
   const dash = '—'
 
   return (
-    <div className="space-y-4">
+    <div className={canManageMembers ? 'grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 items-start' : 'space-y-4'}>
+      {/* 左：成员主表 */}
       <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg overflow-hidden shadow-xs">
         <div className="px-4 py-3 border-b border-mg-border/50 flex items-center gap-2 bg-mg-fill-0/20">
           <LuUsers size={14} className="text-mg-text-3" />
           <span className="text-[13px] font-bold text-mg-text-1">{t('workspaces.detail.members.title')}</span>
           <span className="text-[11px] text-mg-text-3">{t('workspaces.detail.members.count', { count: members.length })}</span>
-          {canManageMembers && (
-            <Button
-              variant="brand"
-              size="sm"
-              className="ml-auto h-8 px-3 rounded-lg text-xs font-semibold"
-              onClick={() => setAddOpen(true)}
-            >
-              <LuPlus size={13} className="mr-1" />
-              {t('workspaces.detail.members.addMember')}
-            </Button>
-          )}
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -309,12 +321,12 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
                       <TableCell align="right">
                         {!isOwner && canManageMembers ? (
                           <div className="flex items-center justify-end gap-1.5">
-                            {/* 设为负责人：后端 set-owner 接口待接 (#327)，先禁用占位 */}
+                            {/* 设为负责人：对齐原型 onSetResponsible，接 PUT /workspaces/:id/owner */}
                             <Button
                               variant="outline"
                               size="xs"
-                              disabled
-                              title={t('workspaces.detail.members.setOwnerTodo')}
+                              loading={setOwnerMutation.isPending}
+                              onClick={() => setOwnerMutation.mutate(m.account.account_id)}
                               className="h-7 px-2 rounded-md text-[11px]"
                             >
                               {t('workspaces.detail.members.setOwner')}
@@ -323,7 +335,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
                               variant="ghost"
                               size="xs"
                               className="h-7 px-2 rounded-md text-[11px] text-mg-danger hover:bg-mg-danger/5"
-                              onClick={() => setRemoveTarget(m.account.account_id)}
+                              onClick={() => { setRemoveTarget(m); setRemoveStrategy('') }}
                             >
                               {t('workspaces.detail.members.remove')}
                             </Button>
@@ -341,79 +353,124 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
         </div>
       </div>
 
-      {/* 添加成员弹窗：从企业成员中挑 */}
-      <Modal
-        open={addOpen}
-        onClose={() => { setAddOpen(false); setAddSearch('') }}
-        size="md"
-        title={t('workspaces.detail.members.addTitle')}
-      >
-        <div className="space-y-3">
-          <Input
-            prefix={<LuSearch className="w-3.5 h-3.5" />}
-            className="h-9 rounded-lg text-xs"
-            placeholder={t('workspaces.detail.members.addSearchPlaceholder')}
-            value={addSearch}
-            onChange={(e) => setAddSearch(e.target.value)}
-          />
-          <div className="max-h-[320px] overflow-y-auto border border-mg-border/50 rounded-lg divide-y divide-mg-border/40">
-            {orgQuery.isLoading ? (
-              <div className="py-12 flex justify-center">
-                <div className="w-6 h-6 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
-              </div>
-            ) : candidates.length === 0 ? (
-              <div className="py-10 text-center text-xs text-mg-text-3">{t('workspaces.detail.members.addEmpty')}</div>
-            ) : (
-              candidates.map((m: TenantMember) => (
-                <div key={m.account.account_id} className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-mg-fill-0/30 transition-colors">
-                  <MemberAvatar member={m} accent="brand" />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-semibold text-mg-text-1 truncate">{m.account.display_name}</div>
-                    <div className="text-[10px] text-mg-text-3 truncate">{m.account.email}</div>
-                  </div>
-                  <Badge variant="outline" size="xs" className="shrink-0">{TENANT_ROLE_LABEL[m.role]}</Badge>
-                  <Button
-                    variant="ghost"
-                    className="h-7 px-2 text-[11px] font-semibold shrink-0 text-brand-base hover:bg-brand-base/5"
-                    loading={addMutation.isPending}
-                    onClick={() => addMutation.mutate(m.account.account_id)}
-                  >
-                    <LuArrowRight size={12} className="mr-0.5" />
-                    {t('workspaces.detail.members.add')}
-                  </Button>
-                </div>
-              ))
-            )}
+      {/* 右：从企业成员添加（侧栏面板，对齐原型双栏布局） */}
+      {canManageMembers && (
+        <aside className="bg-mg-bg-0 border border-mg-border/50 rounded-lg shadow-xs overflow-hidden">
+          <div className="px-4 py-3 border-b border-mg-border/50 bg-mg-fill-0/20">
+            <div className="text-[13px] font-bold text-mg-text-1">{t('workspaces.detail.members.addAsideTitle')}</div>
+            <div className="text-[11px] text-mg-text-3 mt-0.5">
+              {candidates.length > 0 ? t('workspaces.detail.members.addAsideHint') : t('workspaces.detail.members.addAsideAllIn')}
+            </div>
           </div>
-        </div>
-      </Modal>
+          <div className="p-3 space-y-2">
+            <Input
+              prefix={<LuSearch className="w-3.5 h-3.5 text-mg-text-3" />}
+              className="h-9 rounded-lg text-xs"
+              placeholder={t('workspaces.detail.members.addSearchPlaceholder')}
+              value={addSearch}
+              onChange={(e) => setAddSearch(e.target.value)}
+            />
+            <div className="max-h-[420px] overflow-y-auto border border-mg-border/50 rounded-lg divide-y divide-mg-border/40">
+              {orgQuery.isLoading ? (
+                <div className="py-12 flex justify-center">
+                  <div className="w-6 h-6 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
+                </div>
+              ) : candidates.length === 0 ? (
+                <div className="py-10 text-center text-xs text-mg-text-3">{t('workspaces.detail.members.addEmpty')}</div>
+              ) : (
+                candidates.map((m: TenantMember) => (
+                  <div key={m.account.account_id} className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-mg-fill-0/30 transition-colors">
+                    <MemberAvatar member={m} accent="brand" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-semibold text-mg-text-1 truncate">{m.account.display_name}</div>
+                      <div className="text-[10px] text-mg-text-3 truncate">{m.account.email}</div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      className="h-7 px-2 text-[11px] font-semibold shrink-0 text-brand-base hover:bg-brand-base/5"
+                      loading={addMutation.isPending}
+                      onClick={() => addMutation.mutate(m.account.account_id)}
+                    >
+                      <LuArrowRight size={12} className="mr-0.5" />
+                      {t('workspaces.detail.members.add')}
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </aside>
+      )}
 
-      {/* 移除成员确认弹窗 */}
+      {/* 移除成员影响弹窗（对齐原型 SpaceMemberRemovalImpactModal）：
+          列出该成员负责的 Key 数，选择「转移给负责人 / 停用 Key」策略。
+          api_key_count 未返回（后端 #327）时按 0 处理，走简单确认。 */}
       <Modal
         open={removeTarget !== null}
-        onClose={() => setRemoveTarget(null)}
+        onClose={() => { setRemoveTarget(null); setRemoveStrategy('') }}
         size="sm"
-        title={t('workspaces.detail.members.removeConfirmTitle')}
+        title={removeTarget ? t('workspaces.detail.members.removeImpactTitle', { name: removeTarget.account.display_name }) : ''}
         footer={
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setRemoveTarget(null)}>
-              {t('workspaces.detail.settings.cancel')}
+            <Button variant="ghost" onClick={() => { setRemoveTarget(null); setRemoveStrategy('') }}>
+              {t('workspaces.detail.members.cancel')}
             </Button>
             <Button
               variant="outline"
               className="border-mg-danger/40 text-mg-danger hover:bg-mg-danger/5"
               loading={removeMutation.isPending}
+              disabled={!!removeTarget && (removeTarget.api_key_count ?? 0) > 0 && removeStrategy === ''}
               onClick={() => {
-                removeMutation.mutate(removeTarget!)
-                setRemoveTarget(null)
+                if (!removeTarget) return
+                removeMutation.mutate({
+                  accountId: removeTarget.account.account_id,
+                  strategy: removeStrategy || 'transfer',
+                })
               }}
             >
-              {t('workspaces.detail.members.remove')}
+              {t('workspaces.detail.members.confirmRemove')}
             </Button>
           </div>
         }
       >
-        <p className="text-sm text-mg-text-2">{t('workspaces.detail.members.removeConfirmDesc')}</p>
+        {removeTarget && (removeTarget.api_key_count ?? 0) > 0 ? (
+          <div className="space-y-3">
+            <p className="text-sm text-mg-text-2">
+              {t('workspaces.detail.members.removeImpactDesc', {
+                name: removeTarget.account.display_name,
+                count: removeTarget.api_key_count ?? 0,
+              })}
+            </p>
+            <div className="grid gap-2">
+              <button
+                type="button"
+                onClick={() => setRemoveStrategy('transfer')}
+                className={cn(
+                  'text-left rounded-lg border p-3 transition-colors',
+                  removeStrategy === 'transfer' ? 'border-brand-base bg-brand-base/5' : 'border-mg-border hover:bg-mg-fill-0/40'
+                )}
+              >
+                <div className="text-[12px] font-bold text-mg-text-1">{t('workspaces.detail.members.strategyTransfer')}</div>
+                <div className="text-[11px] text-mg-text-3 mt-0.5">
+                  {t('workspaces.detail.members.strategyTransferDesc', { owner: owner?.account.display_name ?? '—' })}
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRemoveStrategy('disable')}
+                className={cn(
+                  'text-left rounded-lg border p-3 transition-colors',
+                  removeStrategy === 'disable' ? 'border-brand-base bg-brand-base/5' : 'border-mg-border hover:bg-mg-fill-0/40'
+                )}
+              >
+                <div className="text-[12px] font-bold text-mg-text-1">{t('workspaces.detail.members.strategyDisable')}</div>
+                <div className="text-[11px] text-mg-text-3 mt-0.5">{t('workspaces.detail.members.strategyDisableDesc')}</div>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-mg-text-2">{t('workspaces.detail.members.removeNoKeyDesc')}</p>
+        )}
       </Modal>
     </div>
   )

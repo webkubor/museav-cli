@@ -67,6 +67,28 @@ export function PermissionsPanel() {
           <li><strong className="text-mg-text-1">粒度分层</strong>：<code className="font-mono">*_VIEW</code> 管「能否进页」（路由守卫）；<code className="font-mono">*_CREATE/EDIT/…</code> 管「进页后能否操作」（页面内 hasPermission，不在路由层）。</li>
           <li><strong className="text-mg-text-1">scope</strong>：tenant 挂 <code className="font-mono">/xxx</code>；workspace 挂 <code className="font-mono">/workspace/:workspaceId/xxx</code>（随工作区选择器变化）。</li>
         </ul>
+
+        <div className="overflow-x-auto rounded-md border border-mg-border">
+          <table className="w-full text-xs">
+            <caption className="px-3 py-2 text-left text-[11px] font-bold text-mg-text-1 bg-mg-fill-0/40">
+              API 契约（权限系统 · 前端 ↔ 后端）
+            </caption>
+            <tbody>
+              {[
+                { k: '现在有什么', tone: 'text-mg-text-2', v: '/auth/session 已下发 permissions.granted（string[]）+ permissions.menus；角色×权限权威矩阵在 modelgo-permissions（controller-web 运营可编辑）。' },
+                { k: '应该是什么', tone: 'text-mg-success', v: 'granted 按「当前激活 租户 × 工作区」解析，含该上下文全部 *_VIEW 与操作级权限；写入 ≤30s 生效；deny 优先、fail-closed。' },
+                { k: 'API 需要提供什么', tone: 'text-brand-base', v: '① 切换 租户/工作区 后 session 重拉能返回对应上下文的 granted；② 新增页面的 *_VIEW 权限须先在矩阵登记并下发；③ 数据接口自身按角色裁剪（如 #357 usage/logs 按空间负责人、#359 api-keys 按角色）。' },
+                { k: '不需要什么', tone: 'text-mg-text-3', v: '不需要前端本地权限回退矩阵（#344 已下线）；不需要「每个页面一个权限查询接口」（session 一次性给全）；不需要前端做数据级过滤兜底（后端权威闸）。' },
+                { k: '前端做了什么', tone: 'text-mg-text-2', v: 'RequireAuth + RequirePermission 路由守卫、菜单按 granted 过滤、路由/菜单/权限收敛到 console-routes 单一真源；操作级按钮用 hasPermission 就地控制。' },
+              ].map((row) => (
+                <tr key={row.k} className="border-t border-mg-border/60 align-top">
+                  <td className="px-3 py-2 font-semibold text-mg-text-1 whitespace-nowrap w-28">{row.k}</td>
+                  <td className={`px-3 py-2 ${row.tone}`}>{row.v}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <div className="overflow-x-auto rounded-md border border-mg-border">
           <table className="w-full text-xs">
             <thead className="bg-mg-fill-0/40 text-mg-text-3">

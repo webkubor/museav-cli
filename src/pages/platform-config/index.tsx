@@ -2,27 +2,13 @@ import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
-import { useAuthStore } from '@/store/auth'
-import { getPlatformConfig } from '@/services/platform'
-import { getSession } from '@/services/auth'
-import { listTenants } from '@/services/tenants'
-import { listWorkspaces } from '@/services/workspaces'
-import { listModels, listModelTags } from '@/services/catalog'
-import { listApiKeys } from '@/services/api-keys'
-import { getReferralOverview, listReferralInvitees, listRewardRecords, listWithdrawals } from '@/services/referral'
 import { appToast } from '@/lib/app-toast'
 import { useCopy } from '@/hooks/use-copy'
-import { useEndpointState } from './use-endpoint-state'
-import { EndpointCard } from './EndpointCard'
-import { CustomRequestPanel } from './CustomRequestPanel'
 import { MenusSyncPanel } from './MenusSyncPanel'
 import { PermissionsPanel } from './PermissionsPanel'
 import { UrlParamsPanel } from './UrlParamsPanel'
-import { HeadersPanel } from './HeadersPanel'
-import { SwaggerPanel } from './SwaggerPanel'
 import { RequirementsPanel } from './RequirementsPanel'
 import { DialogPreviewPanel } from './DialogPreviewPanel'
-import type { EndpointDef } from './types'
 
 const PUBLIC_ROUTES = [
   { path: '/login', desc: '邮箱密码登录' },
@@ -36,8 +22,8 @@ const PUBLIC_ROUTES = [
 ] as const
 
 // 开发者菜单 tab，挂到 URL ?tab= 上以便直接定位某个 tab
-const DEV_CONFIG_TABS = ['endpoints', 'permissions', 'url-params', 'headers', 'dialog-preview', 'requirements']
-const DEFAULT_TAB = 'endpoints'
+const DEV_CONFIG_TABS = ['permissions', 'url-params', 'dialog-preview', 'requirements']
+const DEFAULT_TAB = 'permissions'
 
 export default function PlatformConfigPage() {
   const { t } = useTranslation()
@@ -46,93 +32,7 @@ export default function PlatformConfigPage() {
   const tabParam = searchParams.get('tab') ?? ''
   const activeTab = DEV_CONFIG_TABS.includes(tabParam) ? tabParam : DEFAULT_TAB
   const handleTabChange = (v: string) => setSearchParams({ tab: v }, { replace: true })
-  const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
-  const activeTenantId = useAuthStore((s) => s.activeTenantId)
 
-  const endpoints: EndpointDef[] = [
-    {
-      group: 'Auth',
-      label: t('platformConfig.endpoints.session'),
-      method: 'GET',
-      path: '/api/v1/auth/session',
-      call: getSession,
-    },
-    {
-      group: 'Platform',
-      label: t('platformConfig.endpoints.platformConfig'),
-      method: 'GET',
-      path: '/api/v1/platform-config',
-      call: getPlatformConfig,
-    },
-    {
-      group: 'Tenant',
-      label: t('platformConfig.endpoints.tenants'),
-      method: 'GET',
-      path: '/api/v1/tenants',
-      call: listTenants,
-    },
-    {
-      group: 'Workspace',
-      label: t('platformConfig.endpoints.workspaces'),
-      method: 'GET',
-      path: '/api/v1/workspaces',
-      call: listWorkspaces,
-    },
-    ...(activeWorkspaceId ? [{
-      group: 'API Keys',
-      label: t('platformConfig.endpoints.apiKeys'),
-      method: 'GET' as const,
-      path: `/api/v1/workspaces/${activeWorkspaceId}/api-keys`,
-      call: () => listApiKeys(activeWorkspaceId),
-    }] : []),
-    {
-      group: 'Catalog',
-      label: t('platformConfig.endpoints.models'),
-      method: 'GET',
-      path: '/api/v1/catalog/models',
-      call: () => listModels({ page_size: 10 }),
-    },
-    {
-      group: 'Catalog',
-      label: t('platformConfig.endpoints.modelTags'),
-      method: 'GET',
-      path: '/api/v1/catalog/model-tags',
-      call: listModelTags,
-    },
-    ...(activeTenantId ? [
-      {
-        group: 'Referral',
-        label: '推荐计划总览',
-        method: 'GET' as const,
-        path: `/api/v1/tenants/${activeTenantId}/referral/overview`,
-        call: () => getReferralOverview(activeTenantId),
-      },
-      {
-        group: 'Referral',
-        label: '被邀请人列表',
-        method: 'GET' as const,
-        path: `/api/v1/tenants/${activeTenantId}/referral/invitees`,
-        call: () => listReferralInvitees(activeTenantId),
-      },
-      {
-        group: 'Referral',
-        label: '奖励记录',
-        method: 'GET' as const,
-        path: `/api/v1/tenants/${activeTenantId}/referral/reward-records`,
-        call: () => listRewardRecords(activeTenantId),
-      },
-      {
-        group: 'Referral',
-        label: '提现记录',
-        method: 'GET' as const,
-        path: `/api/v1/tenants/${activeTenantId}/referral/withdrawals`,
-        call: () => listWithdrawals(activeTenantId),
-      },
-    ] : []),
-  ]
-
-  const { states, call } = useEndpointState()
-  const groups = [...new Set(endpoints.map((e) => e.group))]
 
   return (
     <div className="space-y-5">
@@ -152,50 +52,11 @@ export default function PlatformConfigPage() {
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value="endpoints">接口 / Swagger</TabsTrigger>
           <TabsTrigger value="permissions">权限 / 路由</TabsTrigger>
           <TabsTrigger value="url-params">回跳参数</TabsTrigger>
-          <TabsTrigger value="headers">请求头</TabsTrigger>
           <TabsTrigger value="dialog-preview">弹窗预览</TabsTrigger>
           <TabsTrigger value="requirements">我的问题</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="endpoints">
-          <div className="space-y-8 pt-2">
-            <section className="space-y-6">
-              <div>
-                <h2 className="text-base font-bold text-mg-text-1">接口调试</h2>
-                <p className="mt-1 text-xs text-mg-text-3">本地调用常用接口，查看真实返回和错误日志。</p>
-              </div>
-              <CustomRequestPanel />
-              {groups.map((group) => (
-                <div key={group} className="space-y-3">
-                  <div className="text-[11px] font-bold text-mg-text-3 tracking-widest uppercase">
-                    {group}
-                  </div>
-                  <div className="space-y-3">
-                    {endpoints.filter((e) => e.group === group).map((def) => (
-                      <EndpointCard
-                        key={def.path}
-                        def={def}
-                        state={states[def.path]}
-                        onCall={() => call(def.path, def.call)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </section>
-
-            <section className="space-y-3">
-              <div>
-                <h2 className="text-base font-bold text-mg-text-1">Swagger</h2>
-                <p className="mt-1 text-xs text-mg-text-3">同一个接口入口里检索 Swagger 契约，避免在多个 tab 间来回切换。</p>
-              </div>
-              <SwaggerPanel />
-            </section>
-          </div>
-        </TabsContent>
 
         <TabsContent value="permissions">
           <div className="space-y-8 pt-2">
@@ -236,12 +97,6 @@ export default function PlatformConfigPage() {
         <TabsContent value="url-params">
           <div className="space-y-4 pt-2">
             <UrlParamsPanel />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="headers">
-          <div className="space-y-4 pt-2">
-            <HeadersPanel />
           </div>
         </TabsContent>
 

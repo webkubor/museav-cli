@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { navConfig, type NavVisibilityContext } from '@/config/nav'
+import { CONSOLE_ROUTES } from '@/config/console-routes'
 import { useAuthStore } from '@/store/auth'
 import { useTenantRole } from '@/hooks/use-tenant-role'
 import { Badge } from '@/components/ui/Badge'
@@ -52,6 +53,58 @@ export function PermissionsPanel() {
 
   return (
     <div className="space-y-8 pt-2">
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-base font-bold text-mg-text-1">路由权限设计方案</h2>
+          <p className="mt-1 text-xs text-mg-text-3">
+            单一真源 <code className="font-mono text-brand-base">config/console-routes.ts</code>：菜单、路由、权限守卫三者同源，永不漂移。
+          </p>
+        </div>
+        <ul className="space-y-1.5 rounded-md border border-mg-border bg-mg-fill-0/30 p-4 text-xs text-mg-text-2">
+          <li><strong className="text-mg-text-1">权威来源</strong>：后端 <code className="font-mono">/auth/session</code> 的 <code className="font-mono">permissions.granted</code>（按 租户×工作区 解析，≤30s 生效）；前端无本地权限矩阵。</li>
+          <li><strong className="text-mg-text-1">三层门禁</strong>：① RequireAuth（登录）→ ② RequirePermission（路由级 view 权限，堵「敲 URL 绕过菜单」）→ ③ 后端 API（数据权威闸，前端隐藏≠安全）。</li>
+          <li><strong className="text-mg-text-1">fail-closed（避误伤）</strong>：granted 缺权限→403；<code className="font-mono">granted===null</code>（加载/切组织过渡窗）→放行不重定向，否则会把合法用户踢走。</li>
+          <li><strong className="text-mg-text-1">粒度分层</strong>：<code className="font-mono">*_VIEW</code> 管「能否进页」（路由守卫）；<code className="font-mono">*_CREATE/EDIT/…</code> 管「进页后能否操作」（页面内 hasPermission，不在路由层）。</li>
+          <li><strong className="text-mg-text-1">scope</strong>：tenant 挂 <code className="font-mono">/xxx</code>；workspace 挂 <code className="font-mono">/workspace/:workspaceId/xxx</code>（随工作区选择器变化）。</li>
+        </ul>
+        <div className="overflow-x-auto rounded-md border border-mg-border">
+          <table className="w-full text-xs">
+            <thead className="bg-mg-fill-0/40 text-mg-text-3">
+              <tr>
+                <th className="px-3 py-2 text-left font-semibold">页面 key</th>
+                <th className="px-3 py-2 text-left font-semibold">完整路由</th>
+                <th className="px-3 py-2 text-left font-semibold">层级</th>
+                <th className="px-3 py-2 text-left font-semibold">所需权限（view）</th>
+                <th className="px-3 py-2 text-center font-semibold whitespace-nowrap">当前可进</th>
+              </tr>
+            </thead>
+            <tbody>
+              {CONSOLE_ROUTES.map((r) => {
+                const fullPath = r.scope === 'workspace' ? `/workspace/:workspaceId/${r.path}` : `/${r.path}`
+                const accessible = r.permission ? grantedSet.has(r.permission) : true
+                return (
+                  <tr key={r.key} className="border-t border-mg-border/60">
+                    <td className="px-3 py-2 font-mono text-[11px] text-mg-text-1 whitespace-nowrap">{r.key}</td>
+                    <td className="px-3 py-2 font-mono text-[11px] text-mg-text-2 whitespace-nowrap">{fullPath}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <Badge variant={r.scope === 'workspace' ? 'info' : 'secondary'} className="text-[10px]">{r.scope}</Badge>
+                    </td>
+                    <td className="px-3 py-2">
+                      {r.permission
+                        ? <code className="font-mono text-[11px] text-brand-base">{r.permission}</code>
+                        : <span className="text-mg-text-4">仅需登录</span>}
+                    </td>
+                    <td className={`px-3 py-2 text-center font-bold ${accessible ? 'text-mg-success' : 'text-mg-text-4'}`}>
+                      {accessible ? '✓' : '✕ 403'}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section className="space-y-3">
         <div>
           <h2 className="text-base font-bold text-mg-text-1">菜单 × 角色可见性设计</h2>

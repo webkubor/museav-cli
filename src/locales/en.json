@@ -840,7 +840,7 @@
   },
   "platformConfig": {
     "title": "Dev Menu",
-    "desc": "Click 'Call' to send a request and view the actual response.",
+    "desc": "Login-free and LAN-shareable: permission/route design, redirect params, dialog preview and requirement notes.",
     "callBtn": "Call",
     "recallBtn": "Recall",
     "permPanel": {

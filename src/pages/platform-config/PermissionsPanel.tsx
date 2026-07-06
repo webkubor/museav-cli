@@ -147,6 +147,39 @@ export function PermissionsPanel() {
 
       <section className="space-y-3">
         <div>
+          <h2 className="text-base font-bold text-mg-text-1">开发脉络：新增一个页面 / 一个按钮怎么做</h2>
+          <p className="mt-1 text-xs text-mg-text-3">
+            全靠一个「英文 key（权限码）」把三端串起来 —— 它是 <strong className="text-mg-text-2">前端代码 ↔ 运营后台 ↔ 后端矩阵</strong> 共用的同一个暗号。
+            key 一致，权限就通；key 对不上，就是漂移。
+          </p>
+        </div>
+
+        <div className="rounded-md border border-mg-border bg-mg-fill-0/30 p-4 text-xs text-mg-text-2">
+          <p className="mb-2 font-semibold text-mg-text-1">A. 新增一个「页面」（控制能不能进 / 看见菜单）</p>
+          <ol className="list-decimal space-y-1 pl-6">
+            <li>写页面组件（如 <code className="font-mono">pages/xxx/index.tsx</code>）。</li>
+            <li><code className="font-mono">config/permissions.ts</code> 加权限码：<code className="font-mono text-brand-base">XXX_VIEW: 'xxx:view'</code>。</li>
+            <li><code className="font-mono">config/console-routes.ts</code> 加一条 <code className="font-mono">{'{ key, path, scope, permission: PERMS.XXX_VIEW }'}</code>（← 单一真源，路由/守卫/菜单都读它）。</li>
+            <li><code className="font-mono">App.tsx</code> 的 <code className="font-mono">CONSOLE_ELEMENTS</code> 加 <code className="font-mono">key → 页面元素</code>。</li>
+            <li><code className="font-mono">config/nav.ts</code> 对应分组加菜单项 <code className="font-mono">{'{ itemKey: key, text, icon }'}</code>（权限走 <code className="font-mono">routePermission(key)</code>，不重复写）。</li>
+            <li><strong className="text-mg-text-1">运营</strong>在 controller-web「菜单权限管理」给要开放的角色勾这个 <code className="font-mono">xxx:view</code>。</li>
+            <li>用户下次 <code className="font-mono">/auth/session</code> 的 granted 里就有 <code className="font-mono">xxx:view</code> → 菜单出现、能进页；没勾的角色菜单隐藏、敲 URL 也 403。<strong className="text-mg-text-1">前端不用再改。</strong></li>
+          </ol>
+          <p className="mb-2 mt-4 font-semibold text-mg-text-1">B. 新增一个「操作按钮」（控制进页后能不能点）</p>
+          <ol className="list-decimal space-y-1 pl-6">
+            <li><code className="font-mono">config/permissions.ts</code> 加操作码：<code className="font-mono text-brand-base">XXX_CREATE: 'xxx:create'</code>。</li>
+            <li>页面里用 <code className="font-mono">{'const { hasPermission } = usePermissions()'}</code>，按钮包一层：<code className="font-mono">{'hasPermission(PERMS.XXX_CREATE) && <Button/>'}</code>。</li>
+            <li><strong className="text-mg-text-1">运营</strong>给角色勾 <code className="font-mono">xxx:create</code> → session granted 含它 → 按钮显示；否则隐藏。<strong className="text-mg-text-1">不走路由层。</strong></li>
+          </ol>
+          <p className="mt-3 text-[11px] text-mg-text-3">
+            一句话脉络：<strong className="text-mg-text-2">前端登记 key（permissions.ts）→ 挂到页面/按钮 → 运营勾这个 key → 后端 session 吐 granted → 前端照 key 显隐</strong>。
+            维护成本就集中在「这套英文 key 要前端登记 + 运营认识 + 后端矩阵有」——三处对齐同一个 key 即可。
+          </p>
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <div>
           <h2 className="text-base font-bold text-mg-text-1">菜单 × 角色可见性设计</h2>
           <p className="mt-1 text-xs text-mg-text-3">
             角色列 = nav.ts 角色门控（✓=该角色结构上可见 · —=门控隐藏）；「需要权限」列声明的权限最终还需后端 granted 命中才真正显示。

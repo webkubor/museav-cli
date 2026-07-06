@@ -35,7 +35,8 @@ export default function PlatformConfigPage() {
 
 
   return (
-    <div className="space-y-5">
+    // 独立公共页（免登录·可局域网分享）：自带内边距 + 限宽居中，不再依赖控制台壳
+    <div className="mx-auto max-w-6xl space-y-5 p-6 md:p-8">
       <div className="flex items-center gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-mg-text-1">

@@ -240,9 +240,10 @@ export default function WorkspacesPage() {
         <div className="flex items-center gap-3">
           {/* 圆角微阴影输入框 */}
           <Input
+            variant="search"
             placeholder={t('workspaces.searchPlaceholder')}
             prefix={<LuSearch className="opacity-50" />}
-            className="w-full max-w-[290px] !rounded-full bg-mg-fill-0/30"
+            className="w-full max-w-[360px]"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />

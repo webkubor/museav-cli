@@ -15,6 +15,7 @@ export interface AccountBrief {
   account_id: string
   display_name: string
   email: string
+  phone?: string
   avatar_url: string | null
 }
 
@@ -29,6 +30,7 @@ export interface AccountProfile {
   email: string
   email_verified_at: string
   display_name: string
+  phone?: string
   avatar_url: string | null
   created_at: string
   connected_oauth: OAuthConnection[]

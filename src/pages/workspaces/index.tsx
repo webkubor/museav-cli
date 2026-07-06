@@ -262,8 +262,8 @@ export default function WorkspacesPage() {
               className={cn(
                 "h-7 w-7 !rounded-md flex items-center justify-center border transition-all p-0",
                 viewMode === 'compact'
-                  ? "bg-mg-bg-0 text-brand-base shadow-sm border-mg-border/30"
-                  : "bg-transparent text-mg-text-3 border-transparent hover:text-mg-text-1"
+                  ? "bg-brand-base/10 text-brand-base shadow-sm border-brand-base/20"
+                  : "bg-transparent text-mg-text-3 border-transparent hover:text-mg-text-1 hover:bg-mg-fill-0/20"
               )}
               title="紧凑横滚"
             >
@@ -276,8 +276,8 @@ export default function WorkspacesPage() {
               className={cn(
                 "h-7 w-7 !rounded-md flex items-center justify-center border transition-all p-0",
                 viewMode === 'grid'
-                  ? "bg-mg-bg-0 text-brand-base shadow-sm border-mg-border/30"
-                  : "bg-transparent text-mg-text-3 border-transparent hover:text-mg-text-1"
+                  ? "bg-brand-base/10 text-brand-base shadow-sm border-brand-base/20"
+                  : "bg-transparent text-mg-text-3 border-transparent hover:text-mg-text-1 hover:bg-mg-fill-0/20"
               )}
               title="网格展开"
             >

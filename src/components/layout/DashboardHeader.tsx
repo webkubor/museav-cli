@@ -404,7 +404,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
   return (
     <header className={cn(
       "h-[60px] border-b px-6 flex items-center justify-between z-40 relative select-none transition-all duration-300 ease-out",
-      "bg-[rgba(var(--mg-bg-0-rgb),0.45)] border-mg-border/30 backdrop-blur-xl saturate-150 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]",
+      "bg-[rgba(var(--mg-bg-0-rgb),0.45)] border-mg-border/30 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]",
       scrolled && "bg-[rgba(var(--mg-bg-0-rgb),0.85)] border-mg-border/80 shadow-md shadow-black/5"
     )}>
       {/* 左侧：Logo & 工作区选择器 */}

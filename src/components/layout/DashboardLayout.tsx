@@ -257,9 +257,9 @@ export function DashboardLayout() {
           <div className={cn(
             "shrink-0",
             isDashboardRoute || isFlatRoute ? (
-              "bg-transparent border-none shadow-none p-0"
+              "bg-transparent border-none shadow-none p-6 md:p-9"
             ) : (
-              "bg-mg-bg-0 rounded-lg border border-mg-border/60 shadow-sm shadow-black/2 p-6 md:p-9 min-h-[520px] mb-8"
+              "bg-mg-bg-0 rounded-lg border border-mg-border/60 shadow-sm shadow-black/2 p-6 md:p-9 min-h-[320px] mb-8"
             )
           )}>
             <WorkspaceGuard currentKey={getSelectedKey()}>

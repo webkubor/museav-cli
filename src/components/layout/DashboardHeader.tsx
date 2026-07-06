@@ -67,8 +67,10 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
   const activeTenantType = tenants.find((t) => t.tenant_id === activeTenantId)?.type ?? 'personal'
   const isNonPersonal = activeTenantType !== 'personal'
 
-  // 三端同步导航（#251）：与官网右上角同一组栏目，「有本端页跳本端、无则跨端跳官网/文档」。
-  // 最右槽位仍是头像下拉（app 专属），不进这套同步菜单。
+  // 顶栏导航收敛（#360）：对齐 PRD 原型 console 顶栏的 5 项，顺序固定
+  //   首页 / 模型广场 / 模型体验 / 说明文档 / 控制台
+  // 「首页 / 说明文档」跨端外链，「模型广场 / 模型体验 / 控制台」为站内页。
+  // 企业治理 / 推荐计划 / 更新日志 已从顶栏移除（前两者在侧栏可达，更新日志归站点导航）。
   const syncedNav: Array<{
     key: string
     label: string
@@ -76,15 +78,12 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
     href?: string
     match?: (path: string) => boolean
   }> = [
-    // 站内 dashboard 由左上角 logo 承担；这里第一项给「官网」外链（与官网右上角风格统一的入口）
-    { key: 'website', label: t('common.website'), href: marketConfig.siteUrl },
+    { key: 'home', label: t('nav.home'), href: marketConfig.siteUrl },
     { key: 'models', label: t('nav.models'), to: '/models', match: (p) => p.startsWith('/models') && !p.startsWith('/models/playground') && !p.startsWith('/models/compare') },
-    // 模型体验：原侧栏入口上移顶栏，紧随模型广场（PRD：模型体验放模型广场后）
     { key: 'modelExplore', label: t('nav.modelExplore'), to: '/models/playground', match: (p) => p.startsWith('/models/playground') || p.startsWith('/models/compare') },
-    { key: 'enterprise', label: t('nav.enterprise'), to: '/settings/organization', match: (p) => p.startsWith('/settings/organization') },
-    { key: 'referral', label: t('nav.referral'), to: '/referral', match: (p) => p.startsWith('/referral') },
     { key: 'docs', label: t('nav.docsMenu'), href: appendThemeParam(marketConfig.docsUrl) },
-    { key: 'changelog', label: t('common.changelog'), href: appendThemeParam(`${marketConfig.docsUrl}/changelog`) },
+    // 控制台：回到站内；在非 models/playground 的控制台页高亮
+    { key: 'console', label: t('nav.console'), to: '/dashboard', match: (p) => !p.startsWith('/models') },
   ]
   const navRef = useRef<HTMLDivElement>(null)
   const [sliderStyle, setSliderStyle] = useState<React.CSSProperties>({

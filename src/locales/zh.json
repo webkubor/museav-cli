@@ -37,6 +37,7 @@
   },
   "nav": {
     "home": "首页",
+    "console": "控制台",
     "dashboard": "总览",
     "models": "模型广场",
     "playground": "对话",

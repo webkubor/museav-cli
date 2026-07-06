@@ -37,6 +37,7 @@
   },
   "nav": {
     "home": "Home",
+    "console": "Console",
     "dashboard": "Dashboard",
     "models": "Model Hub",
     "playground": "Chat",

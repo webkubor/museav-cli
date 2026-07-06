@@ -60,29 +60,47 @@ export function PermissionsPanel() {
             单一真源 <code className="font-mono text-brand-base">config/console-routes.ts</code>：菜单、路由、权限守卫三者同源，永不漂移。
           </p>
         </div>
-        <ul className="space-y-1.5 rounded-md border border-mg-border bg-mg-fill-0/30 p-4 text-xs text-mg-text-2">
-          <li><strong className="text-mg-text-1">权威来源</strong>：后端 <code className="font-mono">/auth/session</code> 的 <code className="font-mono">permissions.granted</code>（按 租户×工作区 解析，≤30s 生效）；前端无本地权限矩阵。</li>
-          <li><strong className="text-mg-text-1">三层门禁</strong>：① RequireAuth（登录）→ ② RequirePermission（路由级 view 权限，堵「敲 URL 绕过菜单」）→ ③ 后端 API（数据权威闸，前端隐藏≠安全）。</li>
-          <li><strong className="text-mg-text-1">fail-closed（避误伤）</strong>：granted 缺权限→403；<code className="font-mono">granted===null</code>（加载/切组织过渡窗）→放行不重定向，否则会把合法用户踢走。</li>
-          <li><strong className="text-mg-text-1">粒度分层</strong>：<code className="font-mono">*_VIEW</code> 管「能否进页」（路由守卫）；<code className="font-mono">*_CREATE/EDIT/…</code> 管「进页后能否操作」（页面内 hasPermission，不在路由层）。</li>
-          <li><strong className="text-mg-text-1">scope</strong>：tenant 挂 <code className="font-mono">/xxx</code>；workspace 挂 <code className="font-mono">/workspace/:workspaceId/xxx</code>（随工作区选择器变化）。</li>
-        </ul>
+        <ol className="list-decimal space-y-2 rounded-md border border-mg-border bg-mg-fill-0/30 p-4 pl-8 text-xs text-mg-text-2">
+          <li><strong className="text-mg-text-1">运营在后台勾权限</strong>：在控制台后台 <code className="font-mono">controller-web「菜单权限管理」</code>，给每个角色（企业 Owner / Admin / Member、工作空间负责人 / 成员）勾「能看哪些菜单、能点哪些操作按钮」。保存后 ≤30 秒对该角色所有人生效。</li>
+          <li><strong className="text-mg-text-1">后端把勾的结果算成一个权限码数组</strong>：用户登录、或切换 租户 / 工作空间 时，前端调 <code className="font-mono">/auth/session</code>，后端返回 <code className="font-mono">permissions.granted</code> —— 即「这个人，在他当前所在的 租户 + 工作空间 下，被勾中的所有权限码」。</li>
+          <li><strong className="text-mg-text-1">前端照数组显示 / 隐藏</strong>：数组里有 <code className="font-mono">xxx:view</code> → 显示那个菜单、能进那页；有 <code className="font-mono">xxx:create</code> → 显示「新建」按钮；没有就藏起来 / 进页给 403。换租户或工作空间 → 重新调 session 拿新数组。</li>
+        </ol>
+
+        <div>
+          <p className="mb-1.5 text-xs font-semibold text-mg-text-1">后端 <code className="font-mono">/auth/session</code> 该返回长这样（重点是 permissions）：</p>
+          <pre className="overflow-x-auto rounded-md border border-mg-border bg-mg-bg-1 p-3 font-mono text-[11px] leading-relaxed text-mg-text-2">{`{
+  "account": { "account_id": "...", "display_name": "..." },
+  "active_tenant_id": "01ks...",       // 当前所在企业/租户
+  "active_workspace_id": "01ks...",    // 当前所在工作空间
+  "permissions": {
+    // ↓ 运营给「这个人 @ 当前租户+工作空间」勾中的权限码全集
+    "granted": [
+      "dashboard:view", "logs:view", "analytics:view",
+      "api_keys:view", "api_keys:create",   // 有 create → 显示"新建"按钮
+      "guardrails:view"
+      // 没勾的（如 billing:view）就不在数组里 → 账单菜单隐藏 / 进页 403
+    ],
+    // ↓ 可选：按菜单给操作开关（前端按钮级也可读这个）
+    "menus": [
+      { "key": "api-keys", "actions": { "create": true, "revoke": false } }
+    ]
+  }
+}`}</pre>
+        </div>
 
         <div className="overflow-x-auto rounded-md border border-mg-border">
           <table className="w-full text-xs">
-            <caption className="px-3 py-2 text-left text-[11px] font-bold text-mg-text-1 bg-mg-fill-0/40">
-              API 契约（权限系统 · 前端 ↔ 后端）
-            </caption>
+            <caption className="bg-mg-fill-0/40 px-3 py-2 text-left text-[11px] font-bold text-mg-text-1">一句话对齐（前端 ↔ 后端）</caption>
             <tbody>
               {[
-                { k: '现在有什么', tone: 'text-mg-text-2', v: '/auth/session 已下发 permissions.granted（string[]）+ permissions.menus；角色×权限权威矩阵在 modelgo-permissions（controller-web 运营可编辑）。' },
-                { k: '应该是什么', tone: 'text-mg-success', v: 'granted 按「当前激活 租户 × 工作区」解析，含该上下文全部 *_VIEW 与操作级权限；写入 ≤30s 生效；deny 优先、fail-closed。' },
-                { k: 'API 需要提供什么', tone: 'text-brand-base', v: '① 切换 租户/工作区 后 session 重拉能返回对应上下文的 granted；② 新增页面的 *_VIEW 权限须先在矩阵登记并下发；③ 数据接口自身按角色裁剪（如 #357 usage/logs 按空间负责人、#359 api-keys 按角色）。' },
-                { k: '不需要什么', tone: 'text-mg-text-3', v: '不需要前端本地权限回退矩阵（#344 已下线）；不需要「每个页面一个权限查询接口」（session 一次性给全）；不需要前端做数据级过滤兜底（后端权威闸）。' },
-                { k: '前端做了什么', tone: 'text-mg-text-2', v: 'RequireAuth + RequirePermission 路由守卫、菜单按 granted 过滤、路由/菜单/权限收敛到 console-routes 单一真源；操作级按钮用 hasPermission 就地控制。' },
+                { k: '运营编辑什么', tone: 'text-mg-text-2', v: '在 controller-web「菜单权限管理」给角色勾「能看的菜单 + 能点的操作」，保存 ≤30s 生效。' },
+                { k: '后端返什么', tone: 'text-brand-base', v: '/auth/session 里 permissions.granted = 该用户在当前租户+工作空间下被勾中的权限码数组（如 dashboard:view、api_keys:create）；切租户/工作空间后重拉要返回新数组。' },
+                { k: '现在有没有', tone: 'text-mg-text-2', v: '有：session 已在返 granted + menus，运营矩阵在 controller-web 可编辑。要补的是「新增页面的新权限码先登记进矩阵」+「数据接口自身按角色裁剪」(#357/#359)。' },
+                { k: '不用做什么', tone: 'text-mg-text-3', v: '不用给每个页面单独做权限接口（session 一次给全）；不用前端存权限表（已删）；不用前端兜底数据过滤（后端说了算）。' },
+                { k: '前端已做', tone: 'text-mg-success', v: '按 granted：没权限的菜单隐藏、直接敲 URL 也拦成 403；新建/删除等按钮按对应权限码显隐。' },
               ].map((row) => (
                 <tr key={row.k} className="border-t border-mg-border/60 align-top">
-                  <td className="px-3 py-2 font-semibold text-mg-text-1 whitespace-nowrap w-28">{row.k}</td>
+                  <td className="px-3 py-2 font-semibold text-mg-text-1 whitespace-nowrap w-24">{row.k}</td>
                   <td className={`px-3 py-2 ${row.tone}`}>{row.v}</td>
                 </tr>
               ))}

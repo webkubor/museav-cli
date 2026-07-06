@@ -170,7 +170,7 @@ export function PreferencesTab() {
 
   return (
     <div className="flex max-w-[620px] flex-col gap-2 pt-2 animate-in fade-in duration-300">
-      <div className="bg-mg-fill-0 border border-mg-border/60 rounded-lg p-6 shadow-sm flex flex-col">
+      <div className="bg-mg-bg-0 border border-mg-border/60 rounded-lg p-6 shadow-sm flex flex-col">
         
         {/* 界面语言（Language） */}
         <div className="pb-5 border-b border-mg-border/40 flex flex-col md:flex-row md:items-center justify-between gap-4">

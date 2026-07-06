@@ -396,7 +396,7 @@ export default function LogsPage() {
                 ))}
               </Select>
             </FilterField>
-            <div className="rounded-md border border-mg-border bg-mg-fill-0/30 p-[var(--mg-panel-padding-sm)] mg-text-caption text-mg-text-3">
+            <div className="rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-sm)] mg-text-caption text-mg-text-3">
               Request/Response 全文搜索仅覆盖已开启输入 / 输出日志采集的记录；未开启时仅展示调用元数据。
             </div>
           </div>

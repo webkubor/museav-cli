@@ -234,7 +234,7 @@ export function CostSourcePanel({
       ) : (
         <div className="space-y-4">
           {sections.map((section) => (
-            <section key={section.title} className="rounded-md border border-mg-border bg-mg-fill-0 p-3">
+            <section key={section.title} className="rounded-md border border-mg-border bg-mg-bg-0 p-3">
               <div className="mb-3 text-[12px] font-semibold text-mg-text-1">{section.title}</div>
               {section.items.length === 0 ? (
                 <div className="text-[12px] text-mg-text-3">{section.emptyLabel}</div>

@@ -162,7 +162,7 @@ export function LogDetailSheet({
 
 function DiagnosticCard({ hint, icon, label, value }: { hint: string; icon: ReactNode; label: string; value: ReactNode }) {
   return (
-    <article className="min-w-0 rounded-md border border-mg-border bg-mg-fill-0/40 p-[var(--mg-panel-padding-md)]">
+    <article className="min-w-0 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
       <span className="flex items-center gap-2 mg-text-label text-mg-text-3">{icon}{label}</span>
       <strong className="mt-2 block truncate mg-text-value font-bold text-mg-text-1">{value}</strong>
       <small className="mt-1 block truncate mg-text-caption text-mg-text-3">{hint}</small>

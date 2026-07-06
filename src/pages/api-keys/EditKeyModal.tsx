@@ -112,7 +112,7 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
       onClose()
     },
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : '更新失败')
+      appToast.requestError(err, '更新失败')
     },
   })
 

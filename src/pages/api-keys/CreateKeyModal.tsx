@@ -101,7 +101,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
       onCreated(newKey.key)
     },
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : t('apiKeys.toast.createError'))
+      appToast.requestError(err, t('apiKeys.toast.createError'))
     },
   })
 

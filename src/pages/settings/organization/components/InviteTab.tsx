@@ -51,7 +51,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
       qc.invalidateQueries({ queryKey: ['tenant-invite-link', tenantId] })
       setShowResetConfirm(false)
     },
-    onError: (err: Error) => appToast.error(err?.message || '重置失败'),
+    onError: (err: Error) => appToast.requestError(err, '重置失败'),
   })
 
   const addMembers = useMutation({
@@ -66,7 +66,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
       setExpiresInHours(72)
       qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
     },
-    onError: (err: Error) => appToast.error(err?.message || '邀请失败'),
+    onError: (err: Error) => appToast.requestError(err, '邀请失败'),
   })
 
   const inviteLinkUrl = inviteLinkQuery.data

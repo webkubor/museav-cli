@@ -69,7 +69,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
         channel: effectiveChannel,
         return_url: window.location.href,
       }),
-    onError: (err: Error) => appToast.error(err.message || t('billing.rechargeModal.error')),
+    onError: (err: Error) => appToast.requestError(err, t('billing.rechargeModal.error')),
   })
 
   const handleSubmit = () => {

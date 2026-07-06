@@ -34,7 +34,7 @@ export const ChangePasswordTab: React.FC = () => {
       setConfirmPassword('')
     },
     onError: (err: Error) => {
-      appToast.error(err?.message || t('account.security.toastError'))
+      appToast.requestError(err, t('account.security.toastError'))
     },
   })
 

@@ -129,7 +129,7 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
       appToast.success(t('billing.orders.cancelSuccess'))
       qc.invalidateQueries({ queryKey: ['billing', 'recharges', tenantId] })
     },
-    onError: (err: Error) => appToast.error(err.message || t('billing.orders.cancelError')),
+    onError: (err: Error) => appToast.requestError(err, t('billing.orders.cancelError')),
   })
 
   useEffect(() => {

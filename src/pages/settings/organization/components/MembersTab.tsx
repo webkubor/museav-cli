@@ -77,7 +77,7 @@ export function MembersTab({
       qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
       setEditTarget(null)
     },
-    onError: (err: Error) => appToast.error(err?.message || '更新角色失败'),
+    onError: (err: Error) => appToast.requestError(err, '更新角色失败'),
   })
 
   const removeMember = useMutation({
@@ -87,7 +87,7 @@ export function MembersTab({
       qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
       setRemoveTarget(null)
     },
-    onError: (err: Error) => appToast.error(err?.message || '移除成员失败'),
+    onError: (err: Error) => appToast.requestError(err, '移除成员失败'),
   })
 
   const members = useMemo(() => membersQuery.data?.items ?? [], [membersQuery.data])

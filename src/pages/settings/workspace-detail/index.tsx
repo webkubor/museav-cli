@@ -271,7 +271,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
       qc.invalidateQueries({ queryKey: ['workspace-members', workspaceId] })
       qc.invalidateQueries({ queryKey: ['tenant-members', activeTenantId] })
     },
-    onError: (err: unknown) => appToast.error((err as Error)?.message || t('workspaces.detail.members.addError')),
+    onError: (err: unknown) => appToast.requestError(err, t('workspaces.detail.members.addError')),
   })
 
   // 设为负责人：对齐原型 onSetResponsible，调 PUT /workspaces/:id/owner
@@ -283,7 +283,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
       qc.invalidateQueries({ queryKey: ['workspace-detail', workspaceId] })
       qc.invalidateQueries({ queryKey: ['workspaces'] })
     },
-    onError: (err: unknown) => appToast.error((err as Error)?.message || t('workspaces.detail.members.setOwnerError')),
+    onError: (err: unknown) => appToast.requestError(err, t('workspaces.detail.members.setOwnerError')),
   })
 
   // 移除成员：带 Key 处理策略（对齐原型 onConfirm(strategy)）
@@ -296,7 +296,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
       setRemoveStrategy('')
       qc.invalidateQueries({ queryKey: ['workspace-members', workspaceId] })
     },
-    onError: (err: unknown) => appToast.error((err as Error)?.message || t('workspaces.detail.members.removeError')),
+    onError: (err: unknown) => appToast.requestError(err, t('workspaces.detail.members.removeError')),
   })
 
   const dash = '—'
@@ -577,7 +577,7 @@ export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted:
       qc.invalidateQueries({ queryKey: ['workspace-detail', ws.workspace_id] })
       qc.invalidateQueries({ queryKey: ['workspaces'] })
     },
-    onError: (err: unknown) => appToast.error((err as Error)?.message || t('workspaces.detail.settings.renameError')),
+    onError: (err: unknown) => appToast.requestError(err, t('workspaces.detail.settings.renameError')),
   })
 
   const deleteMutation = useMutation({
@@ -587,7 +587,7 @@ export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted:
       qc.invalidateQueries({ queryKey: ['workspaces'] })
       onDeleted()
     },
-    onError: (err: unknown) => appToast.error((err as Error)?.message || t('workspaces.detail.settings.deleteError')),
+    onError: (err: unknown) => appToast.requestError(err, t('workspaces.detail.settings.deleteError')),
   })
 
   return (

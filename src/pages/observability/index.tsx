@@ -132,7 +132,7 @@ function PlatformConfigModal({
       onClose()
     },
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : t('observability.toast.saveError'))
+      appToast.requestError(err, t('observability.toast.saveError'))
     },
   })
 
@@ -281,7 +281,7 @@ function AvailablePlatformsSection({ workspaceId, canManageForward }: { workspac
       appToast.success(t('observability.toast.deleteSuccess'))
     },
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : t('observability.toast.saveError'))
+      appToast.requestError(err, t('observability.toast.saveError'))
     },
   })
 
@@ -425,7 +425,7 @@ export function ObservabilityContent({
       qc.invalidateQueries({ queryKey: ['observability', 'logging', workspaceId] })
     },
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : t('observability.toast.saveError'))
+      appToast.requestError(err, t('observability.toast.saveError'))
     },
   })
 

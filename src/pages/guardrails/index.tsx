@@ -169,7 +169,7 @@ export default function GuardrailsPage() {
       qc.invalidateQueries({ queryKey: ['guardrail-detail', vars.id] })
     },
     onError: (err: unknown) =>
-      appToast.error(err instanceof Error ? err.message : '保存失败'),
+      appToast.requestError(err, '保存失败'),
   })
 
   const removeBudgetMutation = useMutation({
@@ -179,7 +179,7 @@ export default function GuardrailsPage() {
       qc.invalidateQueries({ queryKey: ['guardrail-detail', detailId] })
     },
     onError: (err: unknown) =>
-      appToast.error(err instanceof Error ? err.message : '删除失败'),
+      appToast.requestError(err, '删除失败'),
   })
 
   const createMutation = useMutation({
@@ -193,7 +193,7 @@ export default function GuardrailsPage() {
       setSheetTab('scope')
     },
     onError: (err: unknown) =>
-      appToast.error(err instanceof Error ? err.message : t('guardrails.toast.createError')),
+      appToast.requestError(err, t('guardrails.toast.createError')),
   })
 
   const updateMutation = useMutation({
@@ -206,7 +206,7 @@ export default function GuardrailsPage() {
       qc.invalidateQueries({ queryKey: ['guardrail-detail', detailId] })
     },
     onError: (err: unknown) =>
-      appToast.error(err instanceof Error ? err.message : t('guardrails.toast.updateError')),
+      appToast.requestError(err, t('guardrails.toast.updateError')),
   })
 
   const deleteMutation = useMutation({
@@ -218,7 +218,7 @@ export default function GuardrailsPage() {
       if (deleteTarget?.id === detailId) setDetailOpen(false)
     },
     onError: (err: unknown) =>
-      appToast.error(err instanceof Error ? err.message : t('guardrails.toast.deleteError')),
+      appToast.requestError(err, t('guardrails.toast.deleteError')),
   })
 
   const toggleMutation = useMutation({
@@ -226,7 +226,7 @@ export default function GuardrailsPage() {
       updateGuardrail(id, { status }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] }),
     onError: (err: unknown) =>
-      appToast.error(err instanceof Error ? err.message : t('guardrails.toast.toggleError')),
+      appToast.requestError(err, t('guardrails.toast.toggleError')),
   })
 
   // ── 辅助函数 ────────────────────────────────────────────────────────────

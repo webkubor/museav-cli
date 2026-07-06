@@ -65,7 +65,7 @@ export default function ApiKeysPage() {
       queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
     },
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : t('apiKeys.toast.revokeError'))
+      appToast.requestError(err, t('apiKeys.toast.revokeError'))
     },
   })
 

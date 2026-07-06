@@ -71,7 +71,7 @@ export function CreateGuardrailDialog({ open, onClose, workspaceId, onCreated }:
       handleClose()
     },
     onError: (err: unknown) => {
-      appToast.error(err instanceof Error ? err.message : '护栏创建失败')
+      appToast.requestError(err, '护栏创建失败')
     },
   })
 

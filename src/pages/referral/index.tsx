@@ -214,7 +214,7 @@ export default function ReferralPage() {
       setTransferOpen(false)
       appToast.success(text.transferSuccess.replace('{amount}', fmt(transferNum)))
     },
-    onError: (err: Error) => appToast.error(err.message || text.transferFailed),
+    onError: (err: Error) => appToast.requestError(err, text.transferFailed),
   })
 
   const confirmTransfer = () => {
@@ -240,7 +240,7 @@ export default function ReferralPage() {
       setActiveTab('withdrawals')
       appToast.success(text.withdrawSuccess)
     },
-    onError: (err: Error) => appToast.error(err.message || text.withdrawFailed),
+    onError: (err: Error) => appToast.requestError(err, text.withdrawFailed),
   })
 
   const submitWithdraw = () => {

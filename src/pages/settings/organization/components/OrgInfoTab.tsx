@@ -62,7 +62,7 @@ export function OrgInfoTab({
       qc.invalidateQueries({ queryKey: ['tenants'] })
       setEditing(false)
     },
-    onError: (err: Error) => appToast.error(err?.message || '更新失败'),
+    onError: (err: Error) => appToast.requestError(err, '更新失败'),
   })
 
   const logoMutation = useMutation({
@@ -99,7 +99,7 @@ export function OrgInfoTab({
       }
       await onDissolved?.()
     },
-    onError: (err: Error) => appToast.error(err?.message || '解散组织失败'),
+    onError: (err: Error) => appToast.requestError(err, '解散组织失败'),
   })
 
   if (tenantQuery.isLoading) {

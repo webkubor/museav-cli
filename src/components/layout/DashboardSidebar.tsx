@@ -84,20 +84,13 @@ const SidebarNavItem: React.FC<{
         }
       }}
       className={cn(
-        "group flex items-center gap-3 mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-300 select-none outline-none focus-visible:ring-1 focus-visible:ring-brand-glow relative",
+        "group flex items-center gap-3 mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-300 select-none outline-none focus-visible:ring-1 focus-visible:ring-brand-glow relative border",
         collapsed ? "justify-center" : "justify-start",
         isSelected
-          ? "bg-brand-selected-bg text-brand-base font-bold"
-          : "text-mg-text-2 hover:bg-mg-fill-0/50 hover:text-mg-text-1 active:scale-[0.96] hover:translate-x-[2px]"
+          ? "bg-brand-selected-bg text-brand-base font-bold border-brand-base/15 shadow-sm shadow-brand-base/5"
+          : "text-mg-text-2 border-transparent hover:bg-mg-fill-0/50 hover:text-mg-text-1 hover:border-mg-border/20 active:scale-[0.96] hover:translate-x-[2px]"
       )}
     >
-      {/* 选中项：logo 渐变左强调条（品牌主题化） */}
-      {isSelected && !collapsed && (
-        <span
-          className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-full"
-          style={{ background: 'var(--mg-brand-gradient)' }}
-        />
-      )}
       <span className={cn(
         "inline-flex items-center justify-center text-base leading-none shrink-0 transition-all duration-300 ease-out",
         isSelected ? "text-brand-base scale-110" : "text-mg-text-3 group-hover:text-mg-text-1 group-hover:scale-105 group-hover:translate-x-[1.5px]"
@@ -206,10 +199,10 @@ const SidebarMenuGroup: React.FC<{
                   onClick={() => onSelect({ itemKey: sub.itemKey })}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect({ itemKey: sub.itemKey }) }}
                   className={cn(
-                    "flex items-center gap-3 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-150 select-none outline-none",
+                    "flex items-center gap-3 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-150 select-none outline-none border",
                     isSubSelected
-                      ? "text-brand-base font-bold bg-brand-selected-bg/60"
-                      : "text-mg-text-2 hover:text-mg-text-1 hover:bg-mg-fill-0/30 active:scale-[0.98] hover:translate-x-[2px]"
+                      ? "text-brand-base font-bold bg-brand-selected-bg/60 border-brand-base/15 shadow-sm shadow-brand-base/5"
+                      : "text-mg-text-2 border-transparent hover:text-mg-text-1 hover:bg-mg-fill-0/30 hover:border-mg-border/20 active:scale-[0.98] hover:translate-x-[2px]"
                   )}
                 >
                   <span className="text-[14px] truncate tracking-tight font-medium leading-none">
@@ -245,11 +238,11 @@ const SidebarSettingsButton: React.FC<{
       onClick={() => onSelect({ itemKey: 'settings/account' })}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect({ itemKey: 'settings/account' }) }}
       className={cn(
-        "group flex items-center gap-3 mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-300 select-none outline-none focus-visible:ring-1 focus-visible:ring-brand-glow",
+        "group flex items-center gap-3 mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-300 select-none outline-none focus-visible:ring-1 focus-visible:ring-brand-glow border",
         collapsed ? "justify-center" : "justify-start",
         isSelected
-          ? "bg-brand-selected-bg text-brand-base font-bold"
-          : "text-mg-text-2 hover:bg-mg-fill-0/50 hover:text-mg-text-1 active:scale-[0.96] hover:translate-x-[2px]"
+          ? "bg-brand-selected-bg text-brand-base font-bold border-brand-base/15 shadow-sm shadow-brand-base/5"
+          : "text-mg-text-2 border-transparent hover:bg-mg-fill-0/50 hover:text-mg-text-1 hover:border-mg-border/20 active:scale-[0.96] hover:translate-x-[2px]"
       )}
     >
       <span className={cn(
@@ -300,6 +293,11 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         collapsed ? "w-16" : "w-56"
       )}
     >
+      {/* 固顶工作区选择器 */}
+      <div className="shrink-0 p-2 border-b border-mg-border/20">
+        <WorkspaceSwitcher collapsed={collapsed} />
+      </div>
+
       {/* 右边缘微悬浮折叠触发器 */}
       <button
         onClick={() => setCollapsed(!collapsed)}
@@ -319,7 +317,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         {groups.map((group) => (
           <div key={group.key} className="relative flex flex-col gap-0.5">
             {group.label && <SidebarGroupLabel text={group.label} collapsed={collapsed} />}
-            {group.scope === 'workspace' && <WorkspaceSwitcher collapsed={collapsed} />}
             {group.items.map((item) =>
               item.items && item.items.length > 0 ? (
                 <SidebarMenuGroup

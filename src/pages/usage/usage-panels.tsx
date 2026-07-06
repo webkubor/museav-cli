@@ -12,6 +12,7 @@ import { ModelIcon } from '@/features/models/components/ModelIcon'
 import type { UsageRankingItem } from '@/types'
 import { cn } from '@/lib/utils'
 import { formatMoney, formatNumber } from './usage-utils'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 import {
   LuKey,
   LuShieldCheck,
@@ -100,16 +101,17 @@ function SourceMiniRow({
   const share = rankingSharePercent(item)
   const name = displayRankingName(item)
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_74px_48px] items-center gap-3">
+    <div className="grid grid-cols-[minmax(0,1fr)_120px_48px] items-center gap-3">
       <span className="truncate text-[12px] font-medium text-mg-text-1" title={name}>
         {name}
       </span>
-      <div className="h-1.5 overflow-hidden rounded-full bg-mg-fill-1">
-        <div
-          className="h-full rounded-full bg-brand-base"
-          style={{ width: share > 0 ? `${share}%` : '0%' }}
-        />
-      </div>
+      <ProgressBar 
+        value={share} 
+        variant="brand" 
+        size="xs" 
+        showGlow={false} 
+        className="w-full shrink-0" 
+      />
       <span className="text-right text-[12px] text-mg-text-3">{formatRankingSpend(item, currencySymbol)}</span>
     </div>
   )
@@ -134,12 +136,13 @@ function ModelDistributionRow({
           {name}
         </span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-mg-fill-1">
-        <div
-          className={cn('h-full rounded-full', index === 0 ? 'bg-brand-base' : 'bg-brand-light')}
-          style={{ width: share > 0 ? `${share}%` : '0%' }}
-        />
-      </div>
+      <ProgressBar 
+        value={share} 
+        variant={index === 0 ? 'brand' : 'blue'} 
+        size="xs" 
+        showGlow={index === 0} 
+        className="w-full" 
+      />
       <span className={cn('text-right text-sm tabular-nums', index === 0 ? 'font-bold text-brand-base' : 'text-mg-text-2')}>
         {formatRankingSpend(item, currencySymbol)}
       </span>

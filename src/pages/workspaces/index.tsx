@@ -311,13 +311,16 @@ export default function WorkspacesPage() {
                 className={cn(
                   "group relative p-3 flex flex-row items-center justify-between gap-4 cursor-pointer transition-all border overflow-hidden rounded-lg min-w-[220px] max-w-[260px] shrink-0 h-[64px]",
                   isSelected 
-                    ? "bg-brand-base/[0.03] border-brand-base/20" 
+                    ? "bg-brand-base/[0.05] border-brand-base/35 shadow-sm" 
                     : "bg-mg-bg-0 border-mg-border/40 hover:bg-mg-fill-0/20 hover:border-mg-border/60"
                 )}
               >
-                {/* 左侧紫色 Rail */}
+                {/* 右上角品牌色脉动呼吸点 */}
                 {isSelected && (
-                  <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-brand-base animate-in slide-in-from-left duration-200" />
+                  <span className="absolute top-2 right-2 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-base opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-base"></span>
+                  </span>
                 )}
 
                 <div className="min-w-0 flex-1 pl-1">
@@ -352,13 +355,16 @@ export default function WorkspacesPage() {
                 className={cn(
                   "group relative p-5 flex flex-col gap-4 cursor-pointer transition-all border overflow-hidden rounded-lg",
                   isSelected
-                    ? "bg-brand-base/[0.03] border-brand-base/20"
+                    ? "bg-brand-base/[0.05] border-brand-base/35 shadow-sm"
                     : "bg-mg-bg-0 border-mg-border/40 hover:bg-mg-fill-0/20 hover:border-mg-border/60"
                 )}
               >
-                {/* 左侧紫色 Rail */}
+                {/* 右上角品牌色脉动呼吸点 */}
                 {isSelected && (
-                  <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-brand-base animate-in slide-in-from-left duration-200" />
+                  <span className="absolute top-2 right-2 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-base opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-base"></span>
+                  </span>
                 )}
 
                 {/* 头部：名称/默认/钥匙图标和菜单 */}

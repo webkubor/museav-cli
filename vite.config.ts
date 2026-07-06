@@ -131,7 +131,9 @@ export default defineConfig(({ mode }) => {
     dedupe: ['react', 'react-dom'],
   },
   server: {
-    port: process.env.PORT ? parseInt(process.env.PORT) : undefined,
+    // 固定控制台自己的 dev 端口 5175（与 CLAUDE.md 及下方 Origin 改写注释一致），
+    // 避免默认 5173 与其它 Vite 项目抢端口；strictPort 不开，5175 被占仍自动顺延；PORT 可覆盖。
+    port: process.env.PORT ? parseInt(process.env.PORT) : 5175,
     proxy: {
       // 真 API 网关是 modelgo-web-api.test.modelgo.com（test.modelgo.com 网关白名单已收紧会返回 invalid domain）。
       // agentProxy 自带：proxy.log（header 真相）+ 本地 cookie 修复（去 Domain/剥 Secure/SameSite=None→Lax）。

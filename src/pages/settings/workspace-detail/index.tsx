@@ -209,7 +209,7 @@ function OverviewTab({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: () => vo
 // 对齐 PRD 原型：左主表（成员/企业角色/空间责任/拥有Key/操作）+ 右侧栏「从企业成员添加」
 // 设为负责人：接 PUT /workspaces/:id/owner（#327 待实现，前端先按约定接）
 // 移除成员：影响弹窗（受影响 Key + 转移/停用策略），对齐 SpaceMemberRemovalImpactModal
-function MembersTab({ workspaceId }: { workspaceId: string }) {
+export function MembersTab({ workspaceId }: { workspaceId: string }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
@@ -524,7 +524,7 @@ function MemberAvatar({ member, accent }: { member: WorkspaceMember | TenantMemb
 
 // ─── 日志与转发 ───────────────────────────────────────
 // PRD：可观测性并入空间详情。复用可观测性页的采集/转发能力，按当前空间 workspaceId 参数化。
-function LogsForwardingTab({ workspaceId }: { workspaceId: string }) {
+export function LogsForwardingTab({ workspaceId }: { workspaceId: string }) {
   const { hasPermission } = usePermissions()
   const canEditLogging = hasPermission(PERMS.OBSERVABILITY_LOGGING_EDIT)
   const canManageForward = hasPermission(PERMS.OBSERVABILITY_FORWARD_MANAGE)
@@ -559,7 +559,7 @@ function LogsForwardingTab({ workspaceId }: { workspaceId: string }) {
 }
 
 // ─── 设置 ─────────────────────────────────────────────
-function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => void }) {
+export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => void }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const { hasPermission } = usePermissions()

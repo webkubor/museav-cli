@@ -6,10 +6,28 @@
 import { useState } from 'react'
 import { useAuthStore } from '@/store/auth'
 import { useTranslation } from 'react-i18next'
-import { LuSearch, LuPlus, LuKey } from 'react-icons/lu'
+import {
+  LuSearch,
+  LuPlus,
+  LuKey,
+  LuUser,
+  LuUsers,
+  LuShield,
+  LuClipboardList,
+  LuSend,
+  LuChevronRight,
+  LuCircleDollarSign,
+  LuActivity,
+  LuDatabase,
+  LuFileText
+} from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listWorkspaces, createWorkspace } from '@/services/workspaces'
-import { WorkspaceDetailContent } from '@/pages/settings/workspace-detail'
+import { listWorkspaces, createWorkspace, getWorkspace } from '@/services/workspaces'
+import {
+  MembersTab,
+  LogsForwardingTab,
+  SettingsTab
+} from '@/pages/settings/workspace-detail'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
@@ -20,6 +38,10 @@ import { Modal } from '@/components/ui/Modal'
 import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
+import { cn, formatMoney as fmtMoney } from '@/lib/utils'
+import { useNavigate } from 'react-router-dom'
+import type { WorkspaceDetail, Money } from '@/types'
 
 type InviteRole = 'ws_admin' | 'ws_member'
 
@@ -86,10 +108,10 @@ export default function WorkspacesPage() {
       queryClient.invalidateQueries({ queryKey: ['workspaces', activeTenantId] })
     },
     onError: (err: unknown) => {
-      const message = err instanceof Error 
-        ? err.message 
-        : (typeof err === 'object' && err !== null && 'message' in err 
-            ? String((err as Record<string, unknown>).message) 
+      const message = err instanceof Error
+        ? err.message
+        : (typeof err === 'object' && err !== null && 'message' in err
+            ? String((err as Record<string, unknown>).message)
             : '')
       toast.error(message || t('workspaces.toast.createError'))
     }
@@ -138,25 +160,74 @@ export default function WorkspacesPage() {
   const forwardOnCount = list.filter((w) => w.forward_enabled).length
   const dash = '—'
 
-  const summary: { label: string; value: React.ReactNode }[] = [
-    { label: t('workspaces.summary.myWorkspaces'), value: list.length },
-    { label: t('workspaces.summary.myOwned'), value: myOwnedCount },
-    { label: t('workspaces.summary.logging'), value: loggingKnown ? t('workspaces.summary.enabledCount', { count: loggingOnCount }) : dash },
-    { label: t('workspaces.summary.forwarding'), value: forwardKnown ? t('workspaces.summary.enabledCount', { count: forwardOnCount }) : dash },
+  const summaryItems = [
+    {
+      label: t('workspaces.summary.myWorkspaces'),
+      value: list.length,
+      icon: <LuFileText size={16} className="text-brand-base" />,
+      bg: 'bg-brand-base/8'
+    },
+    {
+      label: t('workspaces.summary.myOwned'),
+      value: myOwnedCount,
+      icon: <LuUser size={16} className="text-brand-base" />,
+      bg: 'bg-brand-base/8'
+    },
+    {
+      label: t('workspaces.summary.logging'),
+      value: loggingKnown ? loggingOnCount : 0,
+      hasStatus: true,
+      enabled: loggingKnown && loggingOnCount > 0,
+      icon: <LuClipboardList size={16} className="text-brand-base" />,
+      bg: 'bg-brand-base/8'
+    },
+    {
+      label: t('workspaces.summary.forwarding'),
+      value: forwardKnown ? forwardOnCount : 0,
+      hasStatus: true,
+      enabled: forwardKnown && forwardOnCount > 0,
+      icon: <LuSend size={16} className="text-brand-base" />,
+      bg: 'bg-brand-base/8'
+    },
   ]
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       {/* 头部标题与描述 */}
-      <PageHeader title={t('workspaces.title')} description={t('workspaces.subtitle')} />
+      <PageHeader
+        title={t('workspaces.title')}
+        description={t('workspaces.subtitle')}
+        actions={
+          <Button
+            variant="brand"
+            data-umami-event="create_workspace"
+            onClick={() => setModalVisible(true)}
+            className="!rounded-full px-6 h-[38px] font-bold"
+          >
+            <LuPlus className="mr-1 shrink-0" /> {t('workspaces.createBtn')}
+          </Button>
+        }
+      />
 
       {/* 摘要条 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {summary.map((s) => (
-          <Card key={s.label} className="p-4">
-            <div className="text-[11px] font-bold text-mg-text-3 uppercase tracking-wider mb-1">{s.label}</div>
-            <div className="text-xl font-bold text-mg-text-1">{s.value}</div>
-          </Card>
+      <div className="bg-mg-bg-0 border border-mg-border/40 rounded-lg p-4 grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-0 divide-y lg:divide-y-0 lg:divide-x divide-mg-border/30">
+        {summaryItems.map((item, idx) => (
+          <div key={item.label} className={cn("flex items-center gap-3", idx > 0 ? "lg:pl-6" : "", idx < 3 ? "lg:pr-6" : "")}>
+            <div className="w-9 h-9 rounded-lg bg-brand-base/8 text-brand-base flex items-center justify-center shrink-0">
+              {item.icon}
+            </div>
+            <div>
+              <div className="text-[11px] font-medium text-mg-text-3">{item.label}</div>
+              <div className="text-base font-bold text-mg-text-1 mt-0.5 flex items-baseline gap-1">
+                <span>{item.value}</span>
+                {item.hasStatus && (
+                  <span className={cn("text-[10px] font-semibold ml-1.5 px-1.5 py-0.5 rounded-sm bg-mg-success/8 text-mg-success")}>
+                    {item.label === t('workspaces.summary.logging') ? t('workspaces.card.collectOn') : t('workspaces.card.forwardOn')}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
         ))}
       </div>
 
@@ -176,16 +247,6 @@ export default function WorkspacesPage() {
             {t('workspaces.countSuffix', { count: filteredData.length })}
           </span>
         </div>
-
-        {/* 黑色药丸主动作按钮 */}
-        <Button
-          variant="brand"
-          data-umami-event="create_workspace"
-          onClick={() => setModalVisible(true)}
-          className="!rounded-full px-6 h-[38px] font-bold"
-        >
-          <LuPlus className="mr-1 shrink-0" /> {t('workspaces.createBtn')}
-        </Button>
       </div>
 
       {/* 卡片网格 */}
@@ -200,81 +261,108 @@ export default function WorkspacesPage() {
       ) : filteredData.length === 0 ? (
         <EmptyState title={t('workspaces.empty')} />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredData.map((ws) => (
-            <Card
-              key={ws.workspace_id}
-              level={2}
-              hoverable
-              onClick={() => setSelectedId(ws.workspace_id)}
-              className={`group relative p-5 flex flex-col gap-4 cursor-pointer transition-all ${
-                validSelectedId === ws.workspace_id
-                  ? 'ring-2 ring-brand-base border-brand-base'
-                  : ''
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-mg-text-1 text-[15px] truncate">{ws.name}</h3>
-                    {ws.is_default && (
-                      <Badge variant="warning" dot className="shrink-0">{t('workspaces.defaultBadge')}</Badge>
-                    )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredData.map((ws) => {
+            const isSelected = validSelectedId === ws.workspace_id
+            return (
+              <Card
+                key={ws.workspace_id}
+                level={2}
+                onClick={() => setSelectedId(ws.workspace_id)}
+                className={cn(
+                  "group relative p-5 flex flex-col gap-4 cursor-pointer transition-all border overflow-hidden rounded-lg",
+                  isSelected
+                    ? "bg-brand-base/[0.03] border-brand-base/20"
+                    : "bg-mg-bg-0 border-mg-border/40 hover:bg-mg-fill-0/20 hover:border-mg-border/60"
+                )}
+              >
+                {/* 左侧紫色 Rail */}
+                {isSelected && (
+                  <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-brand-base animate-in slide-in-from-left duration-200" />
+                )}
+
+                {/* 头部：名称/默认/钥匙图标和菜单 */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-mg-text-1 text-[15px] truncate">{ws.name}</h3>
+                      {ws.is_default && (
+                        <Badge variant="warning" dot className="shrink-0">
+                          {t('workspaces.defaultBadge')}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1 text-[11px] font-mono text-mg-text-3">
+                      <span className="truncate">@{ws.slug}</span>
+                    </div>
                   </div>
-                  <span className="text-[11px] font-mono text-mg-text-3 mt-1 block truncate">@{ws.slug}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-brand-base/8 border border-brand-base/15 flex items-center justify-center text-brand-base">
+                      <LuKey size={14} />
+                    </div>
+                  </div>
                 </div>
-                <div className="shrink-0 w-9 h-9 rounded-md bg-brand-base/8 border border-brand-base/15 flex items-center justify-center text-brand-base">
-                  <LuKey size={16} />
+
+                {/* 负责人 */}
+                <div className="text-[11px] text-mg-text-3 mt-1">
+                  {t('workspaces.card.owner')}{' '}
+                  <span className="font-semibold text-mg-text-2">
+                    {ws.owner?.display_name || dash}
+                  </span>
                 </div>
-              </div>
 
-              {ws.description && (
-                <p className="text-xs text-mg-text-3 leading-relaxed line-clamp-2">{ws.description}</p>
-              )}
-
-              {/* 负责人 */}
-              <div className="text-[11px] text-mg-text-3 mt-auto">
-                {t('workspaces.card.owner')} <span className="font-semibold text-mg-text-2">{ws.owner?.display_name || dash}</span>
-              </div>
-
-              {/* 成员 / API Keys / 护栏 */}
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div><div className="text-sm font-bold text-mg-text-1">{ws.member_count}</div><div className="text-[10px] text-mg-text-3">{t('workspaces.card.members')}</div></div>
-                <div><div className="text-sm font-bold text-mg-text-1">{ws.api_key_count}</div><div className="text-[10px] text-mg-text-3">API Keys</div></div>
-                <div><div className="text-sm font-bold text-mg-text-1">{ws.guardrail_count ?? dash}</div><div className="text-[10px] text-mg-text-3">{t('workspaces.card.guardrails')}</div></div>
-              </div>
-
-              {/* 采集 / 转发状态 */}
-              <div className="flex items-center justify-between pt-3 border-t border-mg-border/30">
-                <div className="flex items-center gap-2">
-                  <Badge variant={ws.logging_enabled ? 'success' : 'secondary'} size="xs">
-                    {ws.logging_enabled === undefined ? t('workspaces.card.collectUnknown') : ws.logging_enabled ? t('workspaces.card.collectOn') : t('workspaces.card.collectOff')}
-                  </Badge>
-                  <Badge variant={ws.forward_enabled ? 'success' : 'secondary'} size="xs">
-                    {ws.forward_enabled === undefined ? t('workspaces.card.forwardUnknown') : ws.forward_enabled ? t('workspaces.card.forwardOn') : t('workspaces.card.forwardOff')}
-                  </Badge>
+                {/* 成员 / API Keys / 护栏 (居中三等分，用细线分割) */}
+                <div className="grid grid-cols-3 divide-x divide-mg-border/20 text-center py-2 bg-mg-fill-0/10 rounded-lg border border-mg-border/10">
+                  <div>
+                    <div className="text-sm font-bold text-mg-text-1">{ws.member_count}</div>
+                    <div className="text-[10px] text-mg-text-3 mt-0.5">{t('workspaces.card.members')}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-mg-text-1">{ws.api_key_count}</div>
+                    <div className="text-[10px] text-mg-text-3 mt-0.5">API Keys</div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-mg-text-1">{ws.guardrail_count ?? dash}</div>
+                    <div className="text-[10px] text-mg-text-3 mt-0.5">{t('workspaces.card.guardrails')}</div>
+                  </div>
                 </div>
-                <span className="flex items-center gap-0.5 text-xs font-bold text-brand-base opacity-0 group-hover:opacity-100 transition-opacity">
-                  {t('workspaces.table.edit')}
-                </span>
-              </div>
-            </Card>
-          ))}
+
+                {/* 日志采集 / 转发状态 */}
+                <div className="flex items-center gap-3 pt-3 border-t border-mg-border/30">
+                  <div className="flex items-center gap-1.5 text-[11px] text-mg-text-3 bg-mg-fill-0/15 border border-mg-border/20 px-2 py-1 rounded-md">
+                    <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", ws.logging_enabled ? "bg-mg-success animate-pulse" : "bg-mg-text-3/40")} />
+                    <span>
+                      {t('workspaces.summary.logging')}{' '}
+                      <span className={ws.logging_enabled ? "text-mg-success font-semibold" : "text-mg-text-2"}>
+                        {ws.logging_enabled ? t('workspaces.card.collectOn') : t('workspaces.card.collectOff')}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[11px] text-mg-text-3 bg-mg-fill-0/15 border border-mg-border/20 px-2 py-1 rounded-md">
+                    <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", ws.forward_enabled ? "bg-mg-success animate-pulse" : "bg-mg-text-3/40")} />
+                    <span>
+                      {t('workspaces.summary.forwarding')}{' '}
+                      <span className={ws.forward_enabled ? "text-mg-success font-semibold" : "text-mg-text-2"}>
+                        {ws.forward_enabled ? t('workspaces.card.forwardOn') : t('workspaces.card.forwardOff')}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              </Card>
+            )
+          })}
         </div>
       )}
 
-      {/* 详情区：选中卡片后在此展开（单页结构，对齐原型 .space-detail-shell）。
-          不跳路由；onDeleted 清空选中态回落到第一个。 */}
+      {/* 下方详情区改为主工作台 */}
       {validSelectedId && !isLoading && filteredData.length > 0 && (
-        <div className="mt-2 rounded-lg border border-mg-border/50 bg-mg-bg-0 p-6 shadow-xs">
-          <WorkspaceDetailContent
-            workspaceId={validSelectedId}
-            onDeleted={() => {
-              setSelectedId('')
-              queryClient.invalidateQueries({ queryKey: ['workspaces', activeTenantId] })
-            }}
-          />
-        </div>
+        <WorkspaceDashboard
+          workspaceId={validSelectedId}
+          onDeleted={() => {
+            setSelectedId('')
+            queryClient.invalidateQueries({ queryKey: ['workspaces', activeTenantId] })
+          }}
+        />
       )}
 
       {/* 真实创建工作空间的表单对话框 */}
@@ -292,25 +380,25 @@ export default function WorkspacesPage() {
         <div className="py-4 flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.nameLabel')}</div>
-              <Input 
-                value={name} 
-                onChange={e => setName(e.target.value)} 
+              <Input
+                value={name}
+                onChange={e => setName(e.target.value)}
                 placeholder={t('workspaces.modal.namePlaceholder')}
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.slugLabel')}</div>
-              <Input 
-                value={slug} 
-                onChange={e => setSlug(e.target.value)} 
+              <Input
+                value={slug}
+                onChange={e => setSlug(e.target.value)}
                 placeholder={t('workspaces.modal.slugPlaceholder')}
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.descLabel')}</div>
-              <Textarea 
-                value={description} 
-                onChange={e => setDescription(e.target.value)} 
+              <Textarea
+                value={description}
+                onChange={e => setDescription(e.target.value)}
                 placeholder={t('workspaces.modal.descPlaceholder')}
                 rows={3}
                 className="min-h-[84px]"
@@ -340,4 +428,269 @@ export default function WorkspacesPage() {
       </Modal>
     </div>
   )
+}
+
+/**
+ * 空间详情面板（主工作台概览）
+ * 包含近 7 天消费/请求/TOKENS指标、运行资源和快捷入口
+ */
+function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: () => void }) {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+
+  const usageCards = [
+    {
+      label: t('workspaces.detail.overview.spend'),
+      value: renderMoney(ws.usage_7d?.spend),
+      icon: <LuCircleDollarSign size={20} className="text-brand-base" />,
+      bg: 'bg-brand-base/8'
+    },
+    {
+      label: t('workspaces.detail.overview.requests'),
+      value: (ws.usage_7d?.requests ?? 0).toLocaleString(),
+      icon: <LuActivity size={20} className="text-mg-success" />,
+      bg: 'bg-mg-success/8'
+    },
+    {
+      label: t('workspaces.detail.overview.tokens'),
+      value: (ws.usage_7d?.tokens ?? 0).toLocaleString(),
+      icon: <LuDatabase size={20} className="text-brand-base" />,
+      bg: 'bg-brand-base/8'
+    },
+  ]
+
+  const resources = [
+    { label: t('workspaces.card.members'), value: String(ws.member_count ?? 0), icon: <LuUsers size={16} className="text-mg-text-3" /> },
+    { label: t('workspaces.detail.overview.apiKeys'), value: String(ws.api_key_count ?? 0), icon: <LuKey size={16} className="text-mg-text-3" /> },
+    { label: t('workspaces.card.guardrails'), value: String(ws.guardrail_count ?? 0), icon: <LuShield size={16} className="text-mg-text-3" /> },
+    {
+      label: t('workspaces.summary.logging'),
+      value: ws.logging_enabled ? t('workspaces.card.collectOn') : t('workspaces.card.collectOff'),
+      icon: <LuClipboardList size={16} className="text-mg-text-3" />,
+      isStatus: true,
+      enabled: ws.logging_enabled
+    },
+    {
+      label: t('workspaces.summary.forwarding'),
+      value: ws.forward_enabled ? t('workspaces.card.forwardOn') : t('workspaces.card.forwardOff'),
+      icon: <LuSend size={16} className="text-mg-text-3" />,
+      isStatus: true,
+      enabled: ws.forward_enabled
+    },
+  ]
+
+  const shortcuts = [
+    {
+      title: 'API Keys',
+      desc: t('workspaces.detail.overview.keysOwner', { count: ws.api_key_count ?? 0, owner: ws.owner?.display_name || '-' }),
+      icon: <LuKey size={18} className="text-brand-base" />,
+      bg: 'bg-brand-base/8',
+      onClick: () => navigate(`/workspace/${ws.workspace_id}/api-keys`),
+    },
+    {
+      title: t('workspaces.card.guardrails'),
+      desc: t('workspaces.detail.overview.goGuardrailsDesc'),
+      icon: <LuShield size={18} className="text-brand-base" />,
+      bg: 'bg-brand-base/8',
+      onClick: () => navigate(`/workspace/${ws.workspace_id}/guardrails`),
+    },
+    {
+      title: t('workspaces.detail.tabs.logs'),
+      desc: t('workspaces.detail.overview.goLogsDesc'),
+      icon: <LuClipboardList size={18} className="text-brand-base" />,
+      bg: 'bg-brand-base/8',
+      onClick: () => navigate('/logs'),
+    },
+    {
+      title: t('workspaces.summary.forwarding'),
+      desc: t('workspaces.detail.overview.goForwardingDesc'),
+      icon: <LuSend size={18} className="text-brand-base" />,
+      bg: 'bg-brand-base/8',
+      onClick: onGoLogs,
+    },
+  ]
+
+  return (
+    <div className="space-y-6">
+      {/* 3项 7天指标 */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {usageCards.map((c) => (
+          <div key={c.label} className="flex items-center gap-4 bg-mg-fill-0/10 border border-mg-border/20 rounded-lg p-5">
+            <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", c.bg)}>
+              {c.icon}
+            </div>
+            <div>
+              <div className="text-[11px] font-medium text-mg-text-3">{c.label}</div>
+              <div className="text-base font-bold text-mg-text-1 mt-0.5">{c.value}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 运行资源 */}
+      <div className="bg-mg-fill-0/10 border border-mg-border/20 rounded-lg p-5">
+        <div className="text-xs font-bold text-mg-text-1 mb-4">{t('workspaces.detail.overview.resources')}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+          {resources.map((r) => (
+            <div key={r.label} className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded bg-mg-fill-0/20 flex items-center justify-center text-mg-text-3">
+                {r.icon}
+              </div>
+              <div>
+                <div className="text-[11px] text-mg-text-3">{r.label}</div>
+                {r.isStatus ? (
+                  <div className={cn("text-[12px] font-bold mt-0.5", r.enabled ? "text-mg-success" : "text-mg-text-2")}>
+                    {r.value}
+                  </div>
+                ) : (
+                  <div className="text-sm font-bold text-mg-text-1 mt-0.5">{r.value}</div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 快捷入口 */}
+      <div className="bg-mg-fill-0/10 border border-mg-border/20 rounded-lg p-5">
+        <div className="text-xs font-bold text-mg-text-1 mb-4">{t('quickAccess')}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {shortcuts.map((s) => (
+            <button
+              key={s.title}
+              type="button"
+              onClick={s.onClick}
+              className="text-left bg-mg-bg-0 border border-mg-border/30 rounded-lg p-4 flex items-center justify-between cursor-pointer transition-all hover:border-brand-base/40 hover:bg-mg-fill-0/10 group"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0", s.bg)}>
+                  {s.icon}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-mg-text-1">{s.title}</div>
+                  <div className="text-[10px] text-mg-text-3 mt-0.5 truncate">{s.desc}</div>
+                </div>
+              </div>
+              <LuChevronRight size={14} className="text-mg-text-3 group-hover:text-brand-base transition-transform shrink-0" />
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+interface WorkspaceDashboardProps {
+  workspaceId: string
+  onDeleted: () => void
+}
+
+/**
+ * 空间管理主工作台组件（包含详情头部、状态以及 4 tabs）
+ */
+function WorkspaceDashboard({ workspaceId, onDeleted }: WorkspaceDashboardProps) {
+  const { t } = useTranslation()
+  const [tab, setTab] = useState<'overview' | 'members' | 'logs' | 'settings'>('overview')
+
+  const detailQuery = useQuery({
+    queryKey: ['workspace-detail', workspaceId],
+    queryFn: () => getWorkspace(workspaceId),
+    enabled: Boolean(workspaceId),
+  })
+
+  const ws = detailQuery.data
+
+  if (detailQuery.isLoading) {
+    return (
+      <div className="bg-mg-bg-0 border border-mg-border/40 rounded-lg p-6 flex flex-col gap-4 animate-pulse">
+        <div className="h-6 bg-mg-fill-0 rounded w-1/3" />
+        <div className="h-4 bg-mg-fill-0 rounded w-1/4" />
+        <div className="h-40 bg-mg-fill-0 rounded w-full mt-4" />
+      </div>
+    )
+  }
+
+  if (!ws) {
+    return (
+      <div className="bg-mg-bg-0 border border-mg-border/40 rounded-lg p-6 text-center text-mg-text-3">
+        {t('workspaces.detail.notFound')}
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-mg-bg-0 border border-mg-border/40 rounded-lg p-6 flex flex-col gap-6 animate-in fade-in duration-300">
+      {/* 头部 */}
+      <div className="flex items-start justify-between gap-6 pb-6 border-b border-mg-border/30">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="font-mono text-xs text-mg-text-3 bg-mg-fill-0/20 px-2 py-0.5 rounded">@{ws.slug}</span>
+            <h3 className="text-lg font-bold text-mg-text-1 tracking-tight">{ws.name}</h3>
+            {ws.is_default && (
+              <Badge variant="secondary" className="bg-brand-base/8 text-brand-base border-brand-base/25">
+                {t('workspaces.defaultBadge')}
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-mg-text-3">
+            <LuUser size={13} className="text-mg-text-3/60" />
+            <span>{t('workspaces.card.owner')}：</span>
+            <span className="font-medium text-mg-text-2">{ws.owner?.display_name || '—'}</span>
+          </div>
+        </div>
+
+        {/* 右侧状态 pill */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className={cn(
+            "flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full font-medium border",
+            ws.logging_enabled
+              ? "bg-mg-success/5 border-mg-success/20 text-mg-success"
+              : "bg-mg-fill-0/20 border-mg-border/40 text-mg-text-3"
+          )}>
+            <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", ws.logging_enabled ? "bg-mg-success" : "bg-mg-text-3/40")} />
+            <span>{t('workspaces.summary.logging')} {ws.logging_enabled ? t('workspaces.card.collectOn') : t('workspaces.card.collectOff')}</span>
+          </div>
+          <div className={cn(
+            "flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full font-medium border",
+            ws.forward_enabled
+              ? "bg-mg-success/5 border-mg-success/20 text-mg-success"
+              : "bg-mg-fill-0/20 border-mg-border/40 text-mg-text-3"
+          )}>
+            <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", ws.forward_enabled ? "bg-mg-success" : "bg-mg-text-3/40")} />
+            <span>{t('workspaces.summary.forwarding')} {ws.forward_enabled ? t('workspaces.card.forwardOn') : t('workspaces.card.forwardOff')}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <Tabs value={tab} onValueChange={(v) => setTab(v as 'overview' | 'members' | 'logs' | 'settings')}>
+        <TabsList variant="pills" className="mb-4">
+          <TabsTrigger variant="pills" value="overview">{t('workspaces.detail.tabs.overview')}</TabsTrigger>
+          <TabsTrigger variant="pills" value="members">{t('workspaces.detail.tabs.members')}</TabsTrigger>
+          <TabsTrigger variant="pills" value="logs">{t('workspaces.detail.tabs.logs')}</TabsTrigger>
+          <TabsTrigger variant="pills" value="settings">{t('workspaces.detail.tabs.settings')}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview">
+          <WorkspaceOverview ws={ws} onGoLogs={() => setTab('logs')} />
+        </TabsContent>
+        <TabsContent value="members">
+          <MembersTab workspaceId={workspaceId} />
+        </TabsContent>
+        <TabsContent value="logs">
+          <LogsForwardingTab workspaceId={workspaceId} />
+        </TabsContent>
+        <TabsContent value="settings">
+          <SettingsTab ws={ws} onDeleted={onDeleted} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
+
+/**
+ * 格式化货币显示
+ */
+function renderMoney(m?: Money) {
+  if (!m) return '—'
+  return `${m.currency} ${fmtMoney(m.amount, '')}`
 }

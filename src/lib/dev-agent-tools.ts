@@ -1,34 +1,45 @@
 /**
- * Dev/test-only：把控制台导航能力暴露成 **agent 可调工具**，做 UI 自动化。
+ * Dev/test-only：把控制台能力**尽量多地**暴露到 BOM，供 agent 做 UI 自动化。
  *
- * 一套核心（listMenus / navigateTo），两个出口——数据源不变，只换暴露层：
- *   1. `window.__mg_nav`      —— 今天就能用：ego-lite / CDP `eval` 直接调，不依赖浏览器 WebMCP 支持。
- *   2. `navigator.modelContext` —— WebMCP：浏览器支持时（Edge 147+ / Chrome OT）自动注册标准 tools，
- *                                 供 WebMCP 客户端 agent 调用。不支持则静默跳过。
+ * 原则：只要账户有权限，就把入口给它——agent 直接调方法，不用爬 DOM / 猜 selector / 算坐标。
+ *   - pages()   —— 当前账户**有权限进入的所有页面路径**（源：console-routes.ts + 权限过滤）
+ *   - menus()   —— 侧边栏可见菜单（源：nav.ts 权限过滤后的分组）
+ *   - buttons() —— **当前页面里所有可点元素**（实时扫 DOM，自动编号 + 打标签）
+ *   - click(id) —— 点 buttons() 返回的某个元素（派发真 click）
+ *   - go(target)—— 按页面/菜单 key 或直接 path 导航
  *
- * 只在 `VITE_SHOW_DEV_TOOLS === 'true'` 时装载（DashboardLayout 里门控），生产构建不挂。
- * WebMCP 契约：registerTool({name, description, inputSchema, execute})；provideContext 已废（2026-03），
- * 页面状态直接写进各 tool 的 description。register on mount / unregister on unmount。
+ * 一套核心，两个出口（window.__mg_nav + WebMCP navigator.modelContext），数据源不变，只换暴露层。
+ * 仅 VITE_SHOW_DEV_TOOLS 装载，生产构建不挂。WebMCP：register on mount / unregister on unmount。
  */
 import type { NavGroup } from '@/config/nav'
 import { navConfig } from '@/config/nav'
+import { CONSOLE_ROUTES } from '@/config/console-routes'
 import { useAuthStore } from '@/store/auth'
 
 export interface ConsoleMenuItem {
   key: string
   text: string
-  /** 路由 path（工作区级菜单已拼 /workspace/<id>/<key>） */
   path: string
   scope: 'tenant' | 'workspace'
-  /** 该菜单的操作开关（后端 session menus 下发） */
   actions: Record<string, boolean>
+}
+export interface ConsolePage {
+  key: string
+  path: string
+  scope: 'tenant' | 'workspace'
+}
+export interface ConsoleButton {
+  id: string
+  label: string
+  /** button / a / tab / switch / checkbox / menuitem … */
+  kind: string
+  href?: string
+  disabled?: boolean
 }
 
 export interface ConsoleToolsDeps {
-  /** 权限过滤后的可见分组（DashboardLayout 已算好） */
   navGroups: NavGroup[]
   activeWorkspaceId: string | null
-  /** react-router 的 navigate（跳 path） */
   navigate: (path: string) => void
 }
 
@@ -36,9 +47,22 @@ function resolvePath(key: string, wsId: string | null): string {
   return navConfig.workspaceScopedKeys.has(key) ? `/workspace/${wsId ?? ''}/${key}` : `/${key}`
 }
 
-/** 核心工具函数（纯逻辑，唯一实现，两个出口共用）。 */
+/** buttons() 扫描出的元素暂存于此，click(id) 按 id 取真实元素点击（不重新 query，DOM 变了也能命中）。 */
+const scanMap = new Map<string, Element>()
+const CLICKABLE = [
+  'button',
+  'a[href]',
+  '[role="button"]',
+  '[role="menuitem"]',
+  '[role="tab"]',
+  '[role="switch"]',
+  '[role="checkbox"]',
+  'input[type="submit"]',
+  'input[type="button"]',
+].join(',')
+
 export function buildConsoleTools({ navGroups, activeWorkspaceId, navigate }: ConsoleToolsDeps) {
-  const getMenuActions = useAuthStore.getState().getMenuActions
+  const store = useAuthStore.getState()
 
   function listMenus(): ConsoleMenuItem[] {
     const out: ConsoleMenuItem[] = []
@@ -49,21 +73,78 @@ export function buildConsoleTools({ navGroups, activeWorkspaceId, navigate }: Co
           text: typeof it.text === 'string' ? it.text : it.itemKey,
           path: resolvePath(it.itemKey, activeWorkspaceId),
           scope: g.scope,
-          actions: getMenuActions(it.itemKey),
+          actions: store.getMenuActions(it.itemKey),
         })
       }
     }
     return out
   }
 
-  function navigateTo(key: string): { ok: boolean; path?: string; error?: string } {
-    const item = listMenus().find((m) => m.key === key)
-    if (!item) return { ok: false, error: `未知菜单 key: ${key}` }
-    navigate(item.path)
-    return { ok: true, path: item.path }
+  /** 当前账户有权限进入的所有页面（比侧栏菜单更全，含 observability 等不在侧栏的）。 */
+  function listPages(): ConsolePage[] {
+    return CONSOLE_ROUTES.filter((r) => !r.permission || store.hasPermission(r.permission)).map((r) => ({
+      key: r.key,
+      path: resolvePath(r.key, activeWorkspaceId),
+      scope: r.scope,
+    }))
   }
 
-  return { listMenus, navigateTo }
+  /** 导航：target 可是页面/菜单 key，或直接以 '/' 开头的 path。 */
+  function navigateTo(target: string): { ok: boolean; path?: string; error?: string } {
+    if (target.startsWith('/')) {
+      navigate(target)
+      return { ok: true, path: target }
+    }
+    const hit = listPages().find((p) => p.key === target) ?? listMenus().find((m) => m.key === target)
+    if (!hit) return { ok: false, error: `未知 key/path: ${target}（用 pages()/menus() 查）` }
+    navigate(hit.path)
+    return { ok: true, path: hit.path }
+  }
+
+  /** 扫描当前页面所有可见、可点的元素，返回带 id 的清单（供 click(id) 用）。 */
+  function listButtons(): ConsoleButton[] {
+    scanMap.clear()
+    const out: ConsoleButton[] = []
+    const els = Array.from(document.querySelectorAll(CLICKABLE))
+    els.forEach((el, i) => {
+      const rect = el.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) return // 不可见跳过
+      const he = el as HTMLElement
+      const label = (
+        el.getAttribute('aria-label') ||
+        he.innerText ||
+        el.getAttribute('title') ||
+        el.getAttribute('placeholder') ||
+        ''
+      )
+        .trim()
+        .replace(/\s+/g, ' ')
+        .slice(0, 60)
+      if (!label) return
+      const id = `b${i}`
+      scanMap.set(id, el)
+      out.push({
+        id,
+        label,
+        kind: el.getAttribute('role') || el.tagName.toLowerCase(),
+        href: el.getAttribute('href') || undefined,
+        disabled: (el as HTMLButtonElement).disabled || el.getAttribute('aria-disabled') === 'true' || undefined,
+      })
+    })
+    return out
+  }
+
+  /** 点 buttons() 返回的某个元素（派发真 click；<a>/<Link> 会触发 SPA 导航）。 */
+  function clickButton(id: string): { ok: boolean; label?: string; error?: string } {
+    const el = scanMap.get(id)
+    if (!el) return { ok: false, error: `未知按钮 id: ${id}（先调 buttons()）` }
+    if (!el.isConnected) return { ok: false, error: `元素已不在 DOM（页面变了，重新 buttons()）` }
+    const label = (el as HTMLElement).innerText?.trim().slice(0, 40)
+    ;(el as HTMLElement).click()
+    return { ok: true, label }
+  }
+
+  return { listMenus, listPages, navigateTo, listButtons, clickButton }
 }
 
 interface ModelContextLike {
@@ -71,38 +152,43 @@ interface ModelContextLike {
   unregisterTool?: (name: string) => void
 }
 
-/**
- * 装载两个出口，返回 cleanup（组件卸载时调，遵守 WebMCP register/unregister on mount/unmount）。
- */
+/** 装载两个出口，返回 cleanup（组件卸载调）。 */
 export function installAgentTools(deps: ConsoleToolsDeps): () => void {
-  const tools = buildConsoleTools(deps)
+  const t = buildConsoleTools(deps)
 
-  // 出口 1：window.__mg_nav —— ego/CDP 今天可调
+  // 出口 1：window.__mg_nav —— ego / Chrome CDP `eval` 今天可调
   window.__mg_nav = {
-    list: () => tools.listMenus(),
-    go: (key: string) => tools.navigateTo(key),
+    pages: () => t.listPages(),
+    menus: () => t.listMenus(),
+    buttons: () => t.listButtons(),
+    click: (id: string) => t.clickButton(id),
+    go: (target: string) => t.navigateTo(target),
   }
 
-  // 出口 2：WebMCP —— 浏览器支持时注册标准 tools
+  // 出口 2：WebMCP —— 浏览器支持时注册标准 tools（provideContext 已废，context 写进 description）
   const mc = (navigator as unknown as { modelContext?: ModelContextLike }).modelContext
   const registered: string[] = []
   if (mc?.registerTool) {
-    mc.registerTool({
-      name: 'console_list_menus',
-      description:
-        '列出当前登录账户在 ModelGo 控制台可见的所有菜单（导航项），含路由 path、scope（tenant/workspace）和可用操作 actions。' +
-        '先调它拿到菜单及其 key，再用 console_navigate 跳转。可见范围已按当前账户角色/权限过滤。',
-      inputSchema: { type: 'object', properties: {} },
-      execute: async () => ({ menus: tools.listMenus() }),
-    })
-    mc.registerTool({
-      name: 'console_navigate',
-      description:
-        '把 ModelGo 控制台导航到指定菜单。参数 key 来自 console_list_menus 返回的 menus[].key（如 dashboard / api-keys / usage）。',
-      inputSchema: { type: 'object', properties: { key: { type: 'string', description: '菜单 key' } }, required: ['key'] },
-      execute: async ({ key }: { key: string }) => tools.navigateTo(key),
-    })
-    registered.push('console_list_menus', 'console_navigate')
+    const reg = (name: string, description: string, inputSchema: unknown, execute: (a: never) => unknown) => {
+      mc.registerTool!({ name, description, inputSchema, execute })
+      registered.push(name)
+    }
+    reg('console_list_pages',
+      '列出当前登录账户在 ModelGo 控制台**有权限进入的所有页面**（key + 路由 path + scope）。已按账户角色/权限过滤。',
+      { type: 'object', properties: {} },
+      async () => ({ pages: t.listPages() }))
+    reg('console_navigate',
+      '导航控制台到指定页面。target 传 console_list_pages/console_list_menus 的 key（如 usage/api-keys），或直接传 / 开头的 path。',
+      { type: 'object', properties: { target: { type: 'string', description: '页面 key 或 path' } }, required: ['target'] },
+      async ({ target }: { target: string }) => t.navigateTo(target))
+    reg('console_list_buttons',
+      '列出**当前页面**所有可见可点的元素（按钮/链接/页签/开关…），每个带 id + label。点某个用 console_click 传 id。',
+      { type: 'object', properties: {} },
+      async () => ({ buttons: t.listButtons() }))
+    reg('console_click',
+      '点击 console_list_buttons 返回的某个元素。id 来自 buttons()。点链接/页签会触发页面跳转或切换。',
+      { type: 'object', properties: { id: { type: 'string', description: '来自 console_list_buttons 的按钮 id' } }, required: ['id'] },
+      async ({ id }: { id: string }) => t.clickButton(id))
   }
 
   return () => {

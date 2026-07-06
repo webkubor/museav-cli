@@ -9,12 +9,18 @@ interface Window {
     | { ok: true; email: string; tenantId: string }
     | { ok: false; error: string }
   >
-  /** Dev/test-only：控制台导航的 agent 工具（WebMCP 前身/降级出口）。仅 VITE_SHOW_DEV_TOOLS 时存在。 */
+  /** Dev/test-only：控制台 agent 自动化工具（WebMCP 前身/降级出口）。仅 VITE_SHOW_DEV_TOOLS 时存在。 */
   __mg_nav?: {
-    /** 列出当前账户可见菜单（key/text/path/scope/actions） */
-    list: () => Array<{ key: string; text: string; path: string; scope: 'tenant' | 'workspace'; actions: Record<string, boolean> }>
-    /** 按菜单 key 导航 */
-    go: (key: string) => { ok: boolean; path?: string; error?: string }
+    /** 当前账户有权限进入的所有页面（key/path/scope） */
+    pages: () => Array<{ key: string; path: string; scope: 'tenant' | 'workspace' }>
+    /** 侧边栏可见菜单（key/text/path/scope/actions） */
+    menus: () => Array<{ key: string; text: string; path: string; scope: 'tenant' | 'workspace'; actions: Record<string, boolean> }>
+    /** 当前页面所有可见可点元素（id/label/kind/href/disabled） */
+    buttons: () => Array<{ id: string; label: string; kind: string; href?: string; disabled?: boolean }>
+    /** 点击 buttons() 返回的某个元素 */
+    click: (id: string) => { ok: boolean; label?: string; error?: string }
+    /** 按页面/菜单 key 或 path 导航 */
+    go: (target: string) => { ok: boolean; path?: string; error?: string }
   }
   /** Umami 分析脚本（index.html 注入）。自定义事件走 umami.track；脚本未加载时为 undefined。 */
   umami?: {

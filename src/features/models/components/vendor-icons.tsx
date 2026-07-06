@@ -33,6 +33,10 @@ import Together from '@lobehub/icons/es/Together'
 import Fireworks from '@lobehub/icons/es/Fireworks'
 import Perplexity from '@lobehub/icons/es/Perplexity'
 import Hailuo from '@lobehub/icons/es/Hailuo'
+import Volcengine from '@lobehub/icons/es/Volcengine'
+import AzureAI from '@lobehub/icons/es/AzureAI'
+import OpenCode from '@lobehub/icons/es/OpenCode'
+import FastGPT from '@lobehub/icons/es/FastGPT'
 
 /**
  * 厂商图标工厂：vendor 名（小写）→ 按尺寸渲染图标。
@@ -80,6 +84,9 @@ const ICON_FACTORY: Record<string, (size: number) => React.ReactNode> = {
   grok:      (s) => <Grok size={s} />,
   xai:       (s) => <XAI size={s} />,
   openrouter:(s) => <OpenRouter size={s} />,
+  volcengine:(s) => <Volcengine.Color size={s} />,
+  volcano:   (s) => <Volcengine.Color size={s} />,
+  azure:     (s) => <AzureAI.Color size={s} />,
 }
 
 /**
@@ -139,6 +146,7 @@ const MODEL_PREFIX_TO_VENDOR: Array<[string, string]> = [
   // OpenAI 族（gpt / o1 / o3 / chatgpt / dall-e / tts / whisper）
   ['gpt', 'openai'], ['chatgpt', 'openai'], ['o1', 'openai'], ['o3', 'openai'], ['o4', 'openai'],
   ['dall-e', 'openai'], ['dall', 'openai'], ['tts', 'openai'], ['whisper', 'openai'], ['sora', 'openai'],
+  ['text-embedding', 'openai'], ['text-davinci', 'openai'],
   // Anthropic / Claude
   ['claude', 'anthropic'], ['anthropic', 'anthropic'],
   // Google / Gemini
@@ -157,6 +165,8 @@ const MODEL_PREFIX_TO_VENDOR: Array<[string, string]> = [
   // 豆包 / 字节
   ['doubao', 'doubao'], ['seedream', 'seedream'], ['skylark', 'skylark'], ['bytedance', 'bytedance'],
   ['ark', 'ark'], ['seaweed', 'bytedance'],
+  // 火山引擎（provider 聚合，logo_url=Volcengine.Color）
+  ['volcengine', 'volcengine'], ['volcano', 'volcengine'],
   // 百度文心
   ['ernie', 'ernie'], ['wenxin', 'wenxin'], ['baidu', 'baidu'],
   // Mistral
@@ -224,6 +234,7 @@ const LOBEHUB_BY_NAME: Record<string, LobehubIconComp> = {
   OpenAI, OpenRouter, Anthropic, Claude, Gemini, Google, DeepSeek, Qwen, Mistral, Ollama,
   Meta, Moonshot, Kimi, Minimax, ChatGLM, Zhipu, Cohere, Groq, Baidu, Wenxin, Grok, XAI,
   Doubao, Hunyuan, Spark, Yi, Stepfun, Baichuan, InternLM, Together, Fireworks, Perplexity, Hailuo,
+  Volcengine, AzureAI, OpenCode, FastGPT,
   // ByteDanceSeed 是后端写错的 lobehub 名，实际不存在，映射到 Doubao 兜底
   ByteDanceSeed: Doubao,
 } as unknown as Record<string, LobehubIconComp>

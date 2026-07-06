@@ -7,13 +7,15 @@ import { getUsageRankingsModels, getUsageRankingsApiKeys, getUsageRankingsAccoun
 import { useAuthStore } from '@/store/auth'
 import { Card } from '@/components/ui/Card'
 import { Money } from '@/components/ui/Money'
+import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
 import { abbreviateNumber, rangeForGranularity, type Granularity, type WorkbenchView } from './shared'
 import type { UsageRankingItem } from '@/types'
 
-function RankingRow({ index, name, meta, spend }: { index: number; name: string; meta: string; spend?: { amount?: string; currency?: string } }) {
+function RankingRow({ index, name, meta, spend, model }: { index: number; name: string; meta: string; spend?: { amount?: string; currency?: string }; model?: ModelIconLike }) {
   return (
     <div className="flex items-center gap-3 py-2.5">
-      <span className="w-5 text-center font-mono text-xs font-bold text-mg-text-3">{String(index + 1)}</span>
+      <span className="w-4 shrink-0 text-center font-mono text-xs font-bold text-mg-text-3">{String(index + 1)}</span>
+      {model && <ModelIcon model={model} size={24} className="border border-mg-border/40" />}
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-semibold text-mg-text-1">{name}</div>
         <div className="mt-0.5 truncate text-xs text-mg-text-3 font-mono">{meta}</div>
@@ -30,6 +32,7 @@ function RankingCard({
   isLoading,
   emptyHint,
   onViewMore,
+  withModelIcon = false,
 }: {
   icon: React.ReactNode
   title: string
@@ -37,6 +40,7 @@ function RankingCard({
   isLoading?: boolean
   emptyHint?: string
   onViewMore?: () => void
+  withModelIcon?: boolean
 }) {
   const { t } = useTranslation()
   return (
@@ -72,6 +76,7 @@ function RankingCard({
                 name={item.name || item.key || '—'}
                 meta={`${abbreviateNumber(item.requests ?? 0)} · ${abbreviateNumber(item.tokens ?? 0)} tokens`}
                 spend={item.spend}
+                model={withModelIcon ? { display_name: item.name || item.key || '—', vendor: item.key || item.name || '' } : undefined}
               />
             ))}
           </div>
@@ -127,6 +132,7 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
         isLoading={modelsLoading}
         emptyHint={t('dashboard.workbench.rankings.emptyHint')}
         onViewMore={() => navigate(`/usage?view=${view}&granularity=${granularity}`)}
+        withModelIcon
       />
 
       {showMembers && (

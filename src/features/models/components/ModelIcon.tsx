@@ -57,7 +57,9 @@ export function ModelIcon({ model, size = 32, rounded = 'rounded-md', className 
   const icon: ReactNode =
     (logo && !isImageUrl ? resolveLobehubIcon(logo, iconSize) : null) ??
     resolveVendorIcon(model.vendor, iconSize) ??
-    resolveVendorIcon(inferVendorByModelName(model.vendor ?? model.display_name), iconSize)
+    resolveVendorIcon(inferVendorByModelName(model.vendor), iconSize) ??
+    // vendor（如 logs 的 provider.name）无法解析时，再用模型名反查（deepseek-v4 → deepseek）
+    resolveVendorIcon(inferVendorByModelName(model.display_name), iconSize)
   if (icon) {
     return (
       <span style={{ width: size, height: size }} className={box}>

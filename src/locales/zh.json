@@ -731,14 +731,22 @@
       "slugLabel": "唯一标识 (Slug)",
       "slugPlaceholder": "如：prod-app",
       "descLabel": "空间描述 (选填)",
-      "descPlaceholder": "简述该工作空间的用途..."
+      "descPlaceholder": "简述该工作空间的用途...",
+      "inviteLabel": "邀请成员 (选填)",
+      "invitePlaceholder": "输入邮箱，多个邮箱可用逗号、空格或换行分隔",
+      "inviteHint": "创建成功后将同时发送项目邀请，最多 20 个邮箱。",
+      "inviteRoleLabel": "成员角色",
+      "inviteRoleMember": "成员",
+      "inviteRoleAdmin": "管理员"
     },
     "toast": {
       "createSuccess": "工作空间 \"{{name}}\" 创建成功",
       "createError": "创建工作空间失败",
       "nameRequired": "工作空间名称不能为空",
       "slugRequired": "唯一标识不能为空",
-      "slugFormat": "唯一标识仅支持小写字母、数字和连字符"
+      "slugFormat": "唯一标识仅支持小写字母、数字和连字符",
+      "inviteLimit": "一次最多邀请 {{count}} 个邮箱",
+      "inviteEmailInvalid": "邀请成员中存在无效邮箱"
     },
     "detail": {
       "back": "返回工作空间列表",

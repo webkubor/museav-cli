@@ -731,14 +731,22 @@
       "slugLabel": "Slug",
       "slugPlaceholder": "e.g. prod-app",
       "descLabel": "Description (Optional)",
-      "descPlaceholder": "Describe the purpose..."
+      "descPlaceholder": "Describe the purpose...",
+      "inviteLabel": "Invite members (Optional)",
+      "invitePlaceholder": "Enter emails separated by commas, spaces, or new lines",
+      "inviteHint": "Invitations are sent after creation. Up to 20 emails.",
+      "inviteRoleLabel": "Role",
+      "inviteRoleMember": "Member",
+      "inviteRoleAdmin": "Admin"
     },
     "toast": {
       "createSuccess": "Workspace \"{{name}}\" created",
       "createError": "Failed to create",
       "nameRequired": "Workspace name cannot be empty",
       "slugRequired": "Slug cannot be empty",
-      "slugFormat": "Slug only supports lowercase letters, numbers, and hyphens"
+      "slugFormat": "Slug only supports lowercase letters, numbers, and hyphens",
+      "inviteLimit": "You can invite up to {{count}} emails at once",
+      "inviteEmailInvalid": "One or more invite emails are invalid"
     },
     "detail": {
       "back": "Back to workspaces",

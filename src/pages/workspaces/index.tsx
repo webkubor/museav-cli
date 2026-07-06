@@ -12,12 +12,23 @@ import { listWorkspaces, createWorkspace } from '@/services/workspaces'
 import { WorkspaceDetailContent } from '@/pages/settings/workspace-detail'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Textarea } from '@/components/ui/Textarea'
+import { Select } from '@/components/ui/Select'
 import { Badge } from '@/components/ui/Badge'
 import { toast } from 'sonner'
 import { Modal } from '@/components/ui/Modal'
 import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
+
+type InviteRole = 'ws_admin' | 'ws_member'
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const MAX_INVITE_MEMBERS = 20
+
+function parseInviteEmails(value: string) {
+  return Array.from(new Set(value.split(/[\s,;，；]+/).map((email) => email.trim()).filter(Boolean)))
+}
 
 export default function WorkspacesPage() {
   const { t } = useTranslation()
@@ -32,6 +43,8 @@ export default function WorkspacesPage() {
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [description, setDescription] = useState('')
+  const [inviteEmails, setInviteEmails] = useState('')
+  const [inviteRole, setInviteRole] = useState<InviteRole>('ws_member')
 
   // ─── 1. TanStack Query 真实获取工作空间接口数据 ─────────────────
   const { data, isLoading } = useQuery({
@@ -50,12 +63,16 @@ export default function WorkspacesPage() {
 
   // ─── 2. Mutation 真实绑定新建工作空间接口 ─────────────────────
   const createMutation = useMutation({
-    mutationFn: (vals: { name: string; slug: string; description?: string }) => {
+    mutationFn: (vals: { name: string; slug: string; description?: string; inviteMembers: string[]; inviteRole: InviteRole }) => {
+      const invite_members = vals.inviteMembers.length > 0
+        ? vals.inviteMembers.map((email) => ({ email, role: vals.inviteRole }))
+        : undefined
       return createWorkspace({
         name: vals.name,
         slug: vals.slug,
         description: vals.description,
-        kind: 'team'
+        kind: 'team',
+        invite_members,
       })
     },
     onSuccess: (newWorkspace) => {
@@ -64,6 +81,8 @@ export default function WorkspacesPage() {
       setName('')
       setSlug('')
       setDescription('')
+      setInviteEmails('')
+      setInviteRole('ws_member')
       queryClient.invalidateQueries({ queryKey: ['workspaces', activeTenantId] })
     },
     onError: (err: unknown) => {
@@ -98,7 +117,16 @@ export default function WorkspacesPage() {
       toast.error(t('workspaces.toast.slugFormat'))
       return
     }
-    createMutation.mutate({ name, slug, description })
+    const inviteMembers = parseInviteEmails(inviteEmails)
+    if (inviteMembers.length > MAX_INVITE_MEMBERS) {
+      toast.error(t('workspaces.toast.inviteLimit', { count: MAX_INVITE_MEMBERS }))
+      return
+    }
+    if (inviteMembers.some((email) => !EMAIL_PATTERN.test(email))) {
+      toast.error(t('workspaces.toast.inviteEmailInvalid'))
+      return
+    }
+    createMutation.mutate({ name, slug, description, inviteMembers, inviteRole })
   }
 
   // 摘要条派生数据（PRD 原型：我的工作空间 / 我负责的空间 / 日志采集 / 转发状态）
@@ -285,6 +313,26 @@ export default function WorkspacesPage() {
                 onChange={e => setDescription(e.target.value)} 
                 placeholder={t('workspaces.modal.descPlaceholder')}
               />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_128px]">
+              <div className="flex flex-col gap-1.5">
+                <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.inviteLabel')}</div>
+                <Textarea
+                  value={inviteEmails}
+                  onChange={(e) => setInviteEmails(e.target.value)}
+                  placeholder={t('workspaces.modal.invitePlaceholder')}
+                  rows={3}
+                  className="min-h-[84px]"
+                />
+                <div className="text-[11px] text-mg-text-3">{t('workspaces.modal.inviteHint')}</div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.inviteRoleLabel')}</div>
+                <Select value={inviteRole} onChange={(value) => setInviteRole(value as InviteRole)}>
+                  <Select.Option value="ws_member">{t('workspaces.modal.inviteRoleMember')}</Select.Option>
+                  <Select.Option value="ws_admin">{t('workspaces.modal.inviteRoleAdmin')}</Select.Option>
+                </Select>
+              </div>
             </div>
           </div>
       </Modal>

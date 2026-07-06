@@ -52,7 +52,7 @@ const SidebarSystemStatus: React.FC<{ collapsed: boolean }> = ({ collapsed }) =>
 
 /** 分组小标题（左右分隔线 + 居中标题；折叠态只留一条分隔线） */
 const SidebarGroupLabel: React.FC<{ text: string; collapsed: boolean }> = ({ text, collapsed }) => (
-  <div className={cn('flex items-center gap-2 py-4 select-none px-4', collapsed && 'px-2')}>
+  <div className={cn('flex items-center gap-2 py-3 select-none px-4', collapsed && 'px-2')}>
     <div className="flex-1 h-[1px] bg-mg-border/40" />
     {!collapsed && (
       <span className="text-[11px] font-bold text-mg-text-3/80 tracking-wider uppercase whitespace-nowrap shrink-0">
@@ -297,7 +297,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       onMouseLeave={onLeave}
       className={cn(
         "relative flex flex-col h-full min-h-0 bg-mg-bg-0 border-r border-mg-border/60 transition-all duration-300 ease-out select-none",
-        collapsed ? "w-16" : "w-60"
+        collapsed ? "w-16" : "w-56"
       )}
     >
       {/* 右边缘微悬浮折叠触发器 */}
@@ -305,7 +305,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         onClick={() => setCollapsed(!collapsed)}
         title={collapsed ? t('common.expand') : t('common.collapse')}
         className={cn(
-          "absolute right-[-11px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-mg-bg-0 border border-mg-border hover:border-brand-mid text-mg-text-3 hover:text-brand-base flex items-center justify-center cursor-pointer transition-all duration-300 z-50 shadow-sm active:scale-90",
+          "absolute right-[-9px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-mg-bg-0 border border-mg-border hover:border-brand-mid text-mg-text-3 hover:text-brand-base flex items-center justify-center cursor-pointer transition-all duration-300 z-50 shadow-sm active:scale-90",
           hovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-[-4px] pointer-events-none"
         )}
       >

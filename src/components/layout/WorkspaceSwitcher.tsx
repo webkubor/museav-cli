@@ -63,7 +63,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
               <LuFolderOpen size={15} className="text-brand-base" />
             </div>
           </DropdownMenuTrigger>
-          <DropdownMenuContent side="right" align="start" className="w-[220px] modal-glow-flow !overflow-visible">
+          <DropdownMenuContent side="bottom" align="start" className="w-[220px] modal-glow-flow !overflow-visible">
             <div className="px-2 py-1.5 text-[11px] font-bold text-mg-text-3 uppercase tracking-wider">
               {t('header.switchWorkspace')}
             </div>

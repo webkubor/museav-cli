@@ -24,7 +24,9 @@ import { TENANT_ROLE_LABEL } from '@/constants/roles'
 import type { Money, TenantMember, WorkspaceDetail, WorkspaceMember } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Textarea } from '@/components/ui/Textarea'
 import { Badge } from '@/components/ui/Badge'
+import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
@@ -164,11 +166,11 @@ function OverviewTab({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: () => vo
       {/* 近 7 天用量 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {usageCards.map((c) => (
-          <div key={c.label} className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-5 shadow-xs">
+          <Card key={c.label} className="p-5">
             <div className="text-[11px] font-bold text-mg-text-3 uppercase tracking-wider mb-2">{c.label}</div>
             <div className="text-xl font-bold text-mg-text-1">{c.value}</div>
             {'hint' in c && c.hint && <div className="mt-1 text-[11px] text-mg-text-3">{c.hint}</div>}
-          </div>
+          </Card>
         ))}
       </div>
       {/* 运行资源（对齐原型） */}
@@ -176,10 +178,10 @@ function OverviewTab({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: () => vo
         <div className="text-[11px] font-bold text-mg-text-3 uppercase tracking-wider mb-2">{t('workspaces.detail.overview.resources')}</div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {resources.map((r) => (
-            <div key={r.label} className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-4 shadow-xs">
+            <Card key={r.label} className="p-4">
               <div className="text-[11px] text-mg-text-3 mb-1">{r.label}</div>
               <div className="text-base font-bold text-mg-text-1">{r.value}</div>
-            </div>
+            </Card>
           ))}
         </div>
       </div>
@@ -608,13 +610,13 @@ function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted: () => 
           <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">
             {t('workspaces.detail.settings.descLabel')}
           </label>
-          <textarea
+          <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             disabled={!canRename}
             rows={3}
             placeholder={t('workspaces.detail.settings.descPlaceholder')}
-            className="w-full max-w-xl rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 text-xs text-mg-text-1 outline-none transition-colors focus:border-brand-base focus:ring-2 focus:ring-brand-glow placeholder:text-mg-text-3/70 disabled:opacity-50 resize-y"
+            className="max-w-xl"
           />
         </div>
         {canRename && (

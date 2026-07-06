@@ -24,6 +24,7 @@ import { DashboardHeader } from './DashboardHeader'
 import { DashboardSidebar } from './DashboardSidebar'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { CustomerService } from '@/components/customer-service'
+import { PhoneBindingGuard } from '@/components/auth/PhoneBindingGuard'
 import { TopUpModal } from '@/pages/billing/TopUpModal'
 import { useRechargeStore } from '@/store/use-recharge-store'
 import { navConfig } from '@/config/nav'
@@ -249,6 +250,9 @@ export function DashboardLayout() {
           <Breadcrumb items={getBreadcrumbs()} />
 
           <CustomerService />
+
+          {/* 国内环境强制绑定手机号守卫（#366）：无手机号时弹不可跳过的绑定弹窗，挂一次即可 */}
+          <PhoneBindingGuard />
 
           {/* 全局充值弹框：任意入口经 useRechargeStore.open() 就地弹出，挂一次即可 */}
           <TopUpModal visible={rechargeOpen} onClose={closeRecharge} tenantId={activeTenantId ?? ''} />

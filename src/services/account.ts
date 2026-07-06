@@ -24,6 +24,14 @@ export function updateProfile(body: UpdateProfileRequest) {
 }
 
 /**
+ * 绑定手机号（国内环境唯一性校验）。先经 /auth/sms-code/send 发码，再用手机号 + 验证码绑定。
+ * 契约：POST /account/phone/bind { phone, code }（Swagger account.BindPhoneRequest）。
+ */
+export function bindPhone(phone: string, code: string) {
+  return post<AccountProfile | null>('account/phone/bind', { phone, code })
+}
+
+/**
  * 上传头像。
  * 文件限制：≤ 2 MiB，仅支持 PNG / JPG / WebP。
  */

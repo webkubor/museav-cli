@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { LuBot, LuKeyRound, LuUsers, LuArrowUpRight } from 'react-icons/lu'
-import { getUsageRankingsModels, getUsageRankingsApiKeys } from '@/services/usage'
+import { getUsageRankingsModels, getUsageRankingsApiKeys, getUsageRankingsAccounts } from '@/services/usage'
 import { useAuthStore } from '@/store/auth'
 import { Card } from '@/components/ui/Card'
 import { Money } from '@/components/ui/Money'
@@ -88,7 +88,7 @@ function RankingCard({
 
 /**
  * 模块 7：排行卡（模型 / 成员 / API Keys，各 Top3 + 查看更多）。
- * 成员用量排行：后端无 usage/rankings/accounts 端点，做占位空态；仅企业视图显示（我的视图隐藏）。
+ * 成员排行走 usage/rankings/accounts；我的视图隐藏成员排行，避免重复展示“我”。
  */
 export function RankingsSection({ view, granularity, accountId }: { view: WorkbenchView; granularity: Granularity; accountId?: string }) {
   const { t } = useTranslation()
@@ -111,6 +111,13 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
     staleTime: 5 * 60_000,
   })
 
+  const { data: members, isLoading: membersLoading } = useQuery({
+    queryKey: ['workbench', 'rankings', 'accounts', activeTenantId, granularity],
+    queryFn: () => getUsageRankingsAccounts({ from: range.from, to: range.to, limit: 3 }),
+    enabled: !!activeTenantId && showMembers,
+    staleTime: 5 * 60_000,
+  })
+
   return (
     <div className={`grid grid-cols-1 gap-4 ${showMembers ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
       <RankingCard
@@ -123,12 +130,13 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
       />
 
       {showMembers && (
-        // TODO(后端待接): 需 usage/rankings/accounts 端点，当前恒为空态占位
         <RankingCard
           icon={<LuUsers size={15} />}
           title={t('dashboard.workbench.rankings.members')}
-          items={[]}
-          emptyHint={t('dashboard.workbench.rankings.membersTodo')}
+          items={members?.items ?? null}
+          isLoading={membersLoading}
+          emptyHint={t('dashboard.workbench.rankings.emptyHint')}
+          onViewMore={() => navigate(`/usage?view=${view}&granularity=${granularity}&dimension=member`)}
         />
       )}
 

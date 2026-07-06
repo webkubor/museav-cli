@@ -1087,6 +1087,10 @@
       "apiKey": "API Keys"
     },
     "member": {
+      "title": "Member Ranking",
+      "col": {
+        "member": "Member"
+      },
       "empty": "No member usage data",
       "emptyDesc": "No member usage is available for the current filters."
     },

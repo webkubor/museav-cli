@@ -14,6 +14,7 @@ import {
   getUsageSeries,
   getUsageRankingsModels,
   getUsageRankingsApiKeys,
+  getUsageRankingsAccounts,
 } from '@/services/usage'
 import { listWorkspaces } from '@/services/workspaces'
 import { useAuthStore } from '@/store/auth'
@@ -25,7 +26,6 @@ import { KpiCard } from '@/components/ui/KpiCard'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { EmptyState } from '@/components/ui/EmptyState'
 import { LuActivity, LuBot, LuDatabase, LuGauge, LuKeyRound, LuRefreshCw, LuWallet, LuUsers } from 'react-icons/lu'
 import {
   CostSourcePanel,
@@ -33,6 +33,7 @@ import {
   ApiKeyRankingPanel,
   ModelDistributionPanel,
 } from './usage-panels'
+import { MemberRankingPanel } from './member-ranking-panel'
 import {
   type Metric,
   rangeToDates,
@@ -50,7 +51,6 @@ export default function UsagePage() {
   const { t } = useTranslation()
   const [timeRange, setTimeRange] = useState<DateRangeValue>({ preset: 'thisMonth' })
   const [metric, setMetric] = useState<Metric>('spend')
-  const [dimension, setDimension] = useState<UsageDimension>('model')
   const [filterWorkspaceId, setFilterWorkspaceId] = useState<string>('')
 
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
@@ -63,6 +63,12 @@ export default function UsagePage() {
   // 从总览「查看更多」带来的上下文：?view= 初始化视图
   const [searchParams] = useSearchParams()
   const viewParam = searchParams.get('view')
+  const dimensionParam = searchParams.get('dimension')
+  const initialDimension: UsageDimension =
+    dimensionParam === 'member' || dimensionParam === 'apiKey' || dimensionParam === 'model'
+      ? dimensionParam
+      : 'model'
+  const [dimension, setDimension] = useState<UsageDimension>(initialDimension)
   const [userView, setUserView] = useState<'enterprise' | 'mine' | null>(
     viewParam === 'mine' || viewParam === 'enterprise' ? viewParam : null,
   )
@@ -128,6 +134,12 @@ export default function UsagePage() {
   const rankingsModelsQuery = useQuery({
     queryKey: ['usage-rankings-models', activeTenantId, commonParams],
     queryFn: () => getUsageRankingsModels({ ...commonParams, limit: 10 }),
+    enabled: !!activeTenantId && rangeReady,
+  })
+
+  const rankingsAccountsQuery = useQuery({
+    queryKey: ['usage-rankings-accounts', activeTenantId, commonParams],
+    queryFn: () => getUsageRankingsAccounts({ ...commonParams, limit: 10 }),
     enabled: !!activeTenantId && rangeReady,
   })
 
@@ -199,6 +211,7 @@ export default function UsagePage() {
     void seriesQuery.refetch()
     void rankingsApiKeysQuery.refetch()
     void rankingsModelsQuery.refetch()
+    void rankingsAccountsQuery.refetch()
     void workspaceSourceQuery.refetch()
   }
 
@@ -416,10 +429,12 @@ export default function UsagePage() {
           />
         )}
         {dimension === 'member' && (
-          <EmptyState
-            title={t('usage.member.empty')}
-            description={t('usage.member.emptyDesc')}
-            icon={<LuUsers size={26} />}
+          <MemberRankingPanel
+            items={rankingsAccountsQuery.data?.items ?? []}
+            isLoading={rankingsAccountsQuery.isLoading}
+            isError={rankingsAccountsQuery.isError}
+            onRetry={() => rankingsAccountsQuery.refetch()}
+            currencySymbol={currencySymbol}
           />
         )}
       </Card>

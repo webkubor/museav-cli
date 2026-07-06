@@ -1086,6 +1086,10 @@
       "apiKey": "API Keys"
     },
     "member": {
+      "title": "成员排行",
+      "col": {
+        "member": "成员"
+      },
       "empty": "暂无成员维度数据",
       "emptyDesc": "当前筛选范围内还没有可展示的成员用量。"
     },

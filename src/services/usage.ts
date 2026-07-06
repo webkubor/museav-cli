@@ -22,3 +22,7 @@ export function getUsageRankingsModels(params?: UsageRankingsParams) {
 export function getUsageRankingsApiKeys(params?: UsageRankingsParams) {
   return get<UsageRankings>('usage/rankings/api-keys', params)
 }
+
+export function getUsageRankingsAccounts(params?: UsageRankingsParams) {
+  return get<UsageRankings>('usage/rankings/accounts', params)
+}

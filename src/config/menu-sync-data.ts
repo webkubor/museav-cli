@@ -104,16 +104,16 @@ export const MENUS: MenuSyncItem[] = [
       'guardrails.budget:edit',
     ],
   },
+
+  // ── Tenant 级 · 活动中心组 ──────────────────────────────────────────────
   {
     key: 'tasks',
     name: '任务历史',
     name_en: 'Task History',
-    scope: 'workspace',
+    scope: 'tenant',
     view_permission: null,
     actions: [],
   },
-
-  // ── Tenant 级 · 活动中心组 ──────────────────────────────────────────────
   {
     key: 'referral',
     name: '推荐计划',

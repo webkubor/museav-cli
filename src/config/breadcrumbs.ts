@@ -19,7 +19,6 @@ export const breadcrumbConfig: BreadcrumbConfig = {
   tasks:            [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.tasks' }],
   guardrails:       [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.workspace', path: '/settings/workspace' }, { label: 'nav.guardrails' }],
   observability:    [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.workspace', path: '/settings/workspace' }, { label: 'nav.observability' }],
-  'chat-test':      [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.workspace', path: '/settings/workspace' }, { label: '测试区' }, { label: '对话测试' }],
   'dev-config':     [{ label: 'nav.home', path: '/dashboard' }, { label: '开发者菜单' }],
   'settings/account':      [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.settings' }, { label: 'nav.account' }],
   'settings/workspace':    [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.settings' }, { label: 'nav.workspace' }],

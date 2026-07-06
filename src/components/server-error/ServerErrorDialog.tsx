@@ -45,7 +45,6 @@ function Row({ label, value, copyable }: { label: string; value: string; copyabl
 export function ServerErrorDialog() {
   const current = useServerErrorStore((s) => s.current)
   const dismiss = useServerErrorStore((s) => s.dismiss)
-  const { copy, copied } = useCopy()
 
   if (!current) return null
 
@@ -71,10 +70,6 @@ export function ServerErrorDialog() {
         <>
           <Button variant="outline" onClick={dismiss}>
             关闭
-          </Button>
-          <Button variant="secondary" onClick={() => copy(diagnosticsText)}>
-            {copied ? <LuCheck size={14} /> : <LuCopy size={14} />}
-            {copied ? '已复制' : '复制排障信息'}
           </Button>
           <Button asChild variant="default">
             <a href={mailHref} onClick={dismiss}>

@@ -10,7 +10,7 @@ import { AvatarUpload } from '@/components/ui/AvatarUpload'
 import { ReferralInviteCard } from '@/components/referral/ReferralInviteCard'
 import { getReferralOverview } from '@/services/referral'
 import { appToast } from '@/lib/app-toast'
-import { LuGift } from 'react-icons/lu'
+import { LuGift, LuLock } from 'react-icons/lu'
 
 interface BasicInfoTabProps {
   profile: AccountProfile
@@ -80,48 +80,48 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
       </div>
 
       {/* 表单 */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '480px' }}>
+      <div className="flex flex-col gap-5 max-w-[480px]">
         {profile.phone && (
-          <div>
-            <span style={{ fontSize: '12.5px', color: 'var(--mg-text-2)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div className="space-y-2">
+            <span className="block text-[11px] font-semibold uppercase tracking-wider text-mg-text-2">
               手机号码
             </span>
             <Input
               value={`${profile.phone.includes('+') ? '' : '+86 '}${profile.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')}`}
-              disabled
-              style={{ backgroundColor: 'var(--mg-bg-1)', borderRadius: '8px', border: '1px solid var(--mg-border)' }}
+              readOnly
+              suffix={<LuLock size={14} />}
             />
-            <span style={{ fontSize: '11.5px', color: 'var(--mg-text-3)', marginTop: '6px', display: 'block' }}>
+            <span className="block text-[11px] leading-relaxed text-mg-text-3">
               绑定的安全手机号，暂不支持自主修改。
             </span>
           </div>
         )}
 
-        <div>
-          <span style={{ fontSize: '12.5px', color: 'var(--mg-text-2)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <div className="space-y-2">
+          <span className="block text-[11px] font-semibold uppercase tracking-wider text-mg-text-2">
             {t('account.info.emailLabel')}
           </span>
           <Input
             value={profile.email || ''}
             placeholder={profile.email ? undefined : '未绑定'}
-            disabled
-            style={{ backgroundColor: 'var(--mg-bg-1)', borderRadius: '8px', border: '1px solid var(--mg-border)' }}
+            readOnly
+            suffix={profile.email ? <LuLock size={14} /> : undefined}
           />
-          <span style={{ fontSize: '11.5px', color: 'var(--mg-text-3)', marginTop: '6px', display: 'block' }}>
+          <span className="block text-[11px] leading-relaxed text-mg-text-3">
             {profile.email ? t('account.info.emailHint') : '暂未绑定电子邮箱。'}
           </span>
         </div>
 
-        <div>
-          <span style={{ fontSize: '12.5px', color: 'var(--mg-text-2)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <div className="space-y-2">
+          <span className="block text-[11px] font-semibold uppercase tracking-wider text-mg-text-2">
             {t('account.info.nameLabel')}
           </span>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div className="flex gap-2.5">
             <Input
+              className="flex-1"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder={t('account.info.namePlaceholder')}
-              style={{ flex: 1, borderRadius: '8px' }}
             />
             <Button
               variant="brand"

@@ -243,7 +243,7 @@ export default function WorkspacesPage() {
             variant="search"
             placeholder={t('workspaces.searchPlaceholder')}
             prefix={<LuSearch className="opacity-50" />}
-            className="w-full max-w-[360px]"
+            className="w-full sm:w-[480px]"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />

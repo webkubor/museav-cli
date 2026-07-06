@@ -8,6 +8,8 @@ import {
   LuGitFork,
   LuKeyRound,
   LuReceiptText,
+  LuShieldCheck,
+  LuNetwork,
 } from 'react-icons/lu'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -67,6 +69,7 @@ export function LogDetailSheet({
   payloadLoading,
   payloadView,
   row,
+  workspaceName,
   sseAvailable,
 }: {
   copied: boolean
@@ -81,6 +84,7 @@ export function LogDetailSheet({
   payloadLoading: boolean
   payloadView: PayloadView
   row: CallLogItem | null
+  workspaceName?: string
   sseAvailable: boolean
 }) {
   return (
@@ -99,17 +103,27 @@ export function LogDetailSheet({
           </header>
 
           <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <DiagnosticCard icon={<LuClock3 />} label="总耗时" value={formatMaybeDuration(row.duration_ms)} hint={`首 Token ${formatMaybeDuration(row.speed.first_token_ms)}`} />
-            <DiagnosticCard icon={<LuReceiptText />} label="费用" value={<Money amount={Number(row.cost.amount) > 0 ? row.cost.amount : null} currency={row.cost.currency} />} hint={row.billing_status || '计费状态未返回'} />
-            <DiagnosticCard icon={<LuDatabase />} label="Token" value={tokenFlow(row)} hint="输入 token -> 输出 token" />
-            <DiagnosticCard icon={<LuGitFork />} label="Fallback" value={`${row.fallback_count} 次`} hint={row.fallback_count > 0 ? '已触发回退' : '未触发'} />
-            <DiagnosticCard icon={<LuGauge />} label="缓存" value={row.usage.cache_read_tokens > 0 ? '命中' : '未命中'} hint={`读 ${formatNumber(row.usage.cache_read_tokens)} Token`} />
+            {row.status === 'rejected' ? (
+              <>
+                {/* 护栏命中：模型请求未发起，无耗时/Token/费用可展示 → 换成两张定制诊断卡（对齐 PRD） */}
+                <DiagnosticCard icon={<LuShieldCheck />} label="请求状态" value="已拦截" hint="安全护栏命中" tone="warning" />
+                <DiagnosticCard icon={<LuNetwork />} label="模型请求" value="未发起" hint="未产生响应、Token、耗时或费用" tone="brand" />
+              </>
+            ) : (
+              <>
+                <DiagnosticCard icon={<LuClock3 />} label="总耗时" value={formatMaybeDuration(row.duration_ms)} hint={`首 Token ${formatMaybeDuration(row.speed.first_token_ms)}`} tone={row.status === 'failed' ? 'danger' : 'brand'} />
+                <DiagnosticCard icon={<LuReceiptText />} label="费用" value={<Money amount={Number(row.cost.amount) > 0 ? row.cost.amount : null} currency={row.cost.currency} />} hint={row.billing_status || '计费状态未返回'} tone="warning" />
+                <DiagnosticCard icon={<LuDatabase />} label="Token" value={tokenFlow(row)} hint="输入 token -> 输出 token" tone="success" />
+                <DiagnosticCard icon={<LuGitFork />} label="Fallback" value={`${row.fallback_count} 次`} hint={row.fallback_count > 0 ? '已触发回退' : '未触发'} tone={row.fallback_count > 0 ? 'warning' : 'brand'} />
+                <DiagnosticCard icon={<LuGauge />} label="缓存" value={row.usage.cache_read_tokens > 0 ? '命中' : '未命中'} hint={`读 ${formatNumber(row.usage.cache_read_tokens)} Token`} tone={row.usage.cache_read_tokens > 0 ? 'success' : 'brand'} />
+              </>
+            )}
           </section>
 
           <DetailSection title="概览">
             <DetailGrid compact>
               <DetailRow label="模型" value={row.model.display_name} />
-              <DetailRow label="工作空间" value={row.workspace_id} mono />
+              <DetailRow label="工作空间" value={workspaceName || row.workspace_id} />
               <DetailRow label="API Key 名称" value={row.api_key.name} />
               <DetailRow label="成员" value={row.account.display_name} />
             </DetailGrid>
@@ -160,10 +174,21 @@ export function LogDetailSheet({
   )
 }
 
-function DiagnosticCard({ hint, icon, label, value }: { hint: string; icon: ReactNode; label: string; value: ReactNode }) {
+type DiagnosticTone = 'brand' | 'success' | 'warning' | 'danger'
+const DIAGNOSTIC_TONE: Record<DiagnosticTone, string> = {
+  brand: 'bg-brand-base/10 text-brand-base',
+  success: 'bg-mg-success/10 text-mg-success',
+  warning: 'bg-mg-warning/10 text-mg-warning',
+  danger: 'bg-mg-danger/10 text-mg-danger',
+}
+
+function DiagnosticCard({ hint, icon, label, value, tone = 'brand' }: { hint: string; icon: ReactNode; label: string; value: ReactNode; tone?: DiagnosticTone }) {
   return (
     <article className="min-w-0 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
-      <span className="flex items-center gap-2 mg-text-label text-mg-text-3">{icon}{label}</span>
+      <span className="flex items-center gap-2 mg-text-label text-mg-text-3">
+        <span className={cn('flex h-6 w-6 shrink-0 items-center justify-center rounded-md [&_svg]:size-3.5', DIAGNOSTIC_TONE[tone])}>{icon}</span>
+        {label}
+      </span>
       <strong className="mt-2 block truncate mg-text-value font-bold text-mg-text-1">{value}</strong>
       <small className="mt-1 block truncate mg-text-caption text-mg-text-3">{hint}</small>
     </article>

@@ -431,6 +431,7 @@ export default function LogsPage() {
         payloadLoading={payloadQuery.isLoading}
         payloadView={payloadView}
         row={selectedLog}
+        workspaceName={selectedLog ? (workspaceNameById.get(selectedLog.workspace_id) || selectedLog.workspace_id) : undefined}
         sseAvailable={Boolean(sseReassembled)}
       />
     </div>

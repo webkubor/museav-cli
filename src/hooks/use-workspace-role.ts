@@ -32,8 +32,8 @@ export function useWorkspaceRole() {
     /** 当前工作区角色，查询未完成时为 undefined */
     role,
     isLoading,
-    /** 可管理工作区（owner 或 admin）；角色未知时默认 true，服务端二次校验 */
-    canManage: role !== 'ws_member',
+    /** 可管理工作区（owner 或 admin）；角色未知时 fail-closed */
+    canManage: role === 'ws_owner' || role === 'ws_admin',
     isOwner:   role === 'ws_owner',
     isAdmin:   role === 'ws_admin',
     isMember:  role === 'ws_member',

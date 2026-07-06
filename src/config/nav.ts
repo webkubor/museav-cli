@@ -30,7 +30,7 @@ export type NavGroup = {
  *   isDomestic     — market === 'domestic'
  *   isDevTools     — VITE_SHOW_DEV_TOOLS === 'true'
  *   isOrgManager   — 企业租户 Owner/Admin（决定「企业管理」入口）
- *   isSpaceManager — Owner/Admin 或个人租户（决定「空间管理」入口；成员任空间负责人的场景第二阶段再补）
+ *   isSpaceManager — Owner/Admin、个人租户或任一空间负责人（决定「空间管理」入口）
  */
 export interface NavVisibilityContext {
   isNonPersonal: boolean

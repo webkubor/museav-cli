@@ -1,4 +1,5 @@
 import { useState, useEffect, Suspense } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
 import {
   LuHouse,
@@ -31,6 +32,7 @@ import { breadcrumbConfig, FLAT_ROUTES } from '@/config/breadcrumbs'
 import { usePlatformConfig, useSite } from '@/hooks/use-platform-config'
 import { usePermissions } from '@/hooks/use-permissions'
 import { useTenantRole } from '@/hooks/use-tenant-role'
+import { listWorkspaces } from '@/services/workspaces'
 import { cn } from '@/lib/utils'
 import { ParticleLinesBackground } from './ParticleLinesBackground'
 import './layout.css'
@@ -105,15 +107,21 @@ export function DashboardLayout() {
   const site = useSite()
   const { canManage, isEnterprise } = useTenantRole()
   const isPersonal = activeTenant?.type === 'personal'
+  const { data: workspaceItems = [] } = useQuery({
+    queryKey: ['workspaces', activeTenantId],
+    queryFn: () => listWorkspaces().then((res) => res.items ?? []),
+    enabled: Boolean(activeTenantId),
+    staleTime: 60_000,
+  })
+  const ownsWorkspace = workspaceItems.some((workspace) => workspace.my_role === 'ws_owner')
 
   const navCtx = {
     isNonPersonal: activeTenant?.type !== 'personal',
     isDomestic: site === 'china',
     isDevTools,
-    // 企业管理：仅企业租户 Owner/Admin。空间管理：Owner/Admin 或个人租户
-    //（成员任空间负责人的可见性放第二阶段）。
+    // 企业管理：仅企业租户 Owner/Admin。空间管理：Owner/Admin、个人租户或任一空间负责人。
     isOrgManager: isEnterprise && canManage,
-    isSpaceManager: canManage || isPersonal,
+    isSpaceManager: canManage || isPersonal || ownsWorkspace,
   }
 
   const filterNavItems = (items: NavItem[]): NavItem[] =>

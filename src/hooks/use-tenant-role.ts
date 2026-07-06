@@ -39,8 +39,8 @@ export function useTenantRole() {
     role,
     isLoading,
     isEnterprise,
-    /** 可管理组织（owner 或 admin）；角色未知时默认 true，服务端二次校验 */
-    canManage: role !== 'tenant_member',
+    /** 可管理组织（owner 或 admin）；角色未知时 fail-closed */
+    canManage: role === 'tenant_owner' || role === 'tenant_admin',
     isOwner:   role === 'tenant_owner',
     isAdmin:   role === 'tenant_admin',
     isMember:  role === 'tenant_member',

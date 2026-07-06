@@ -1354,11 +1354,12 @@
       "quickStart": {
         "title": "快速开始",
         "subtitle": "三步完成接入，开始调用模型",
+        "stepsBadge": "3 步完成接入",
         "dismiss": "关闭",
         "step1Title": "创建 API Key",
         "step1Desc": "生成用于鉴权的密钥凭证",
         "step1Action": "去创建",
-        "step2Title": "配置客户端",
+        "step2Title": "接入客户端",
         "step2Desc": "选择接入方式并填入 Base URL 与 Key",
         "step2Action": "立即接入",
         "step3Title": "发送测试请求",
@@ -1376,7 +1377,8 @@
         "tokens": "总 Tokens",
         "balance": "账户余额",
         "balanceLow": "余额偏低",
-        "recharge": "充值"
+        "recharge": "充值",
+        "vsPrev": "较上期"
       },
       "trend": {
         "title": "用量趋势",

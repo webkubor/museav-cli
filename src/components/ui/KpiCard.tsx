@@ -14,7 +14,8 @@ export interface KpiCardProps {
   icon?: React.ReactNode
   sub?: string // 辅助次级描述，例如 Token 用量项下的 Prompt & Completion 比例
   sparkData?: number[] // 迷你 sparkline 数据
-  trend?: { value: string; up: boolean } // 涨跌 badge
+  trend?: { value: string; up: boolean; label?: string } // 涨跌 badge；label 为前缀（如「较上期」）
+  iconLead?: boolean // true=图标置于标题左侧、涨跌徽章落在卡片底部（总览设计稿版式）
   rawNumber?: number // 传入原始数值时启用 countUp 动画
   formatter?: (n: number) => string // 配合 rawNumber 使用的格式化函数
   action?: { label: string; onClick: () => void } // 卡片内快捷操作按钮（如充值）
@@ -60,6 +61,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   sub,
   sparkData,
   trend,
+  iconLead = false,
   rawNumber,
   formatter,
   action,
@@ -72,7 +74,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
 
   const glowRef = useMouseGlow<HTMLDivElement>()
 
-  const computedTrend = !trend && sparkData && sparkData.length >= 2
+  const computedTrend: { value: string; up: boolean; label?: string } | undefined = !trend && sparkData && sparkData.length >= 2
     ? (() => {
         const first = sparkData[0]
         const last = sparkData[sparkData.length - 1]
@@ -112,12 +114,20 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         />
       </div>
 
-      <div className="flex items-center justify-between gap-4 mb-2 z-10">
+      <div className={`flex items-center gap-2.5 mb-2 z-10 ${iconLead ? '' : 'justify-between'}`}>
+        {iconLead && icon && (
+          <div
+            className="p-2 rounded-md transition-all duration-500 z-10 shrink-0 flex items-center justify-center group-hover:scale-110"
+            style={{ backgroundColor: glowColor, color: color }}
+          >
+            {icon}
+          </div>
+        )}
         <span className="mg-text-caption font-semibold text-mg-text-3 tracking-wide select-none">
           {displayTitle}
         </span>
-        {icon && (
-          <div 
+        {!iconLead && icon && (
+          <div
             className="p-2 rounded-md transition-all duration-500 z-10 shrink-0 flex items-center justify-center group-hover:scale-110"
             style={{
               backgroundColor: glowColor,
@@ -144,7 +154,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
               >
                 {displayValue ?? '—'}
               </span>
-              {computedTrend && !loading && (
+              {computedTrend && !iconLead && !loading && (
                 <span
                   className="mg-compact-badge mb-1.5 px-1.5 py-0.5 rounded-md"
                   style={{
@@ -164,6 +174,21 @@ export const KpiCard: React.FC<KpiCardProps> = ({
           </div>
         )}
       </div>
+
+      {/* 涨跌徽章（iconLead 版式：落在卡片底部，带「较上期」前缀） */}
+      {iconLead && computedTrend && !loading && (
+        <div className="z-10 mt-3">
+          <span
+            className="mg-compact-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-md"
+            style={{
+              color: computedTrend.up ? 'var(--mg-trend-up)' : 'var(--mg-trend-down)',
+              backgroundColor: `color-mix(in srgb, ${computedTrend.up ? 'var(--mg-trend-up)' : 'var(--mg-trend-down)'} 12%, transparent)`,
+            }}
+          >
+            {computedTrend.label ? `${computedTrend.label} ` : ''}{computedTrend.up ? '↑' : '↓'} {computedTrend.value}
+          </span>
+        </div>
+      )}
 
       {/* Sparkline */}
       {sparkData && sparkData.length >= 2 && !loading && (

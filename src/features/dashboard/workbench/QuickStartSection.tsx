@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { LuKeyRound, LuPlug, LuScrollText, LuArrowRight, LuCopy, LuCheck, LuX, LuTerminal } from 'react-icons/lu'
+import { LuKeyRound, LuPlug, LuScrollText, LuArrowRight, LuCopy, LuCheck, LuX, LuTerminal, LuZap, LuChevronRight } from 'react-icons/lu'
 import { Card } from '@/components/ui/Card'
 import { useCopy } from '@/hooks/use-copy'
 import { useMarket } from '@/hooks/useMarket'
@@ -88,36 +88,53 @@ export function QuickStartSection() {
           <LuX size={16} />
         </button>
 
-        <div className="mb-4 pr-8">
+        <div className="mb-5 flex items-center gap-2.5 pr-8">
+          <span
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-white shadow-sm"
+            style={{ background: 'var(--mg-brand-gradient)' }}
+          >
+            <LuZap size={16} />
+          </span>
           <h3 className="text-base font-bold text-mg-text-1 m-0">{t('dashboard.workbench.quickStart.title')}</h3>
-          <p className="text-xs text-mg-text-3 mt-1 m-0">{t('dashboard.workbench.quickStart.subtitle')}</p>
+          <span className="inline-flex items-center rounded-full bg-brand-base/12 px-2 py-0.5 text-[11px] font-bold text-brand-base">
+            {t('dashboard.workbench.quickStart.stepsBadge')}
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-0">
           {steps.map((step, i) => (
-            <div key={step.title} className="mg-tile mg-tile-hover flex flex-col p-4">
-              <div className="flex items-center gap-2">
+            <div key={step.title} className="relative flex items-start gap-3 sm:pr-8">
+              {/* 步骤连接线：圆心高度的虚线 + 箭头，指向下一步（最后一步不画） */}
+              {i < steps.length - 1 && (
+                <div className="pointer-events-none absolute right-1 top-6 hidden items-center sm:flex">
+                  <span className="block w-6 border-t border-dashed border-mg-border" />
+                  <LuChevronRight size={14} className="-ml-1 text-mg-text-4" />
+                </div>
+              )}
+              <div className="relative shrink-0">
                 <span
-                  className="flex h-8 w-8 items-center justify-center rounded-md text-white shadow-sm"
+                  className="flex h-12 w-12 items-center justify-center rounded-full text-white shadow-md"
                   style={{ background: 'var(--mg-brand-gradient)' }}
                 >
                   {step.icon}
                 </span>
-                <span className="text-xs font-mono font-bold text-mg-text-3">{i + 1}</span>
+                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-mg-border bg-mg-bg-0 text-[10px] font-bold text-mg-text-2 shadow-sm">
+                  {i + 1}
+                </span>
               </div>
-              <div className="mt-3 flex-1">
+              <div className="min-w-0 flex-1 pt-0.5">
                 <div className="text-sm font-bold text-mg-text-1">{step.title}</div>
-                <div className="mt-1 text-xs leading-5 text-mg-text-2">{step.desc}</div>
+                <div className="mt-1 text-xs leading-5 text-mg-text-3">{step.desc}</div>
+                <button
+                  type="button"
+                  onClick={step.onClick}
+                  data-umami-event={step.event}
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-brand-base hover:text-brand-deep cursor-pointer"
+                >
+                  {step.action}
+                  <LuArrowRight size={13} />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={step.onClick}
-                data-umami-event={step.event}
-                className="mt-3 inline-flex items-center gap-1 self-start text-xs font-bold text-brand-base hover:text-brand-deep cursor-pointer"
-              >
-                {step.action}
-                <LuArrowRight size={13} />
-              </button>
             </div>
           ))}
         </div>

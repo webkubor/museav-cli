@@ -1355,11 +1355,12 @@
       "quickStart": {
         "title": "Quick start",
         "subtitle": "Three steps to connect and start calling models",
+        "stepsBadge": "3 steps to integrate",
         "dismiss": "Dismiss",
         "step1Title": "Create API Key",
         "step1Desc": "Generate a credential for authentication",
         "step1Action": "Create",
-        "step2Title": "Configure client",
+        "step2Title": "Connect client",
         "step2Desc": "Pick an integration and fill in Base URL and Key",
         "step2Action": "Connect now",
         "step3Title": "Send a test request",
@@ -1377,7 +1378,8 @@
         "tokens": "Total tokens",
         "balance": "Balance",
         "balanceLow": "Low balance",
-        "recharge": "Top up"
+        "recharge": "Top up",
+        "vsPrev": "vs prev"
       },
       "trend": {
         "title": "Usage trend",

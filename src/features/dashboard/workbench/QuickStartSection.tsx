@@ -12,7 +12,7 @@ import { useAuthStore } from '@/store/auth'
 import { ConnectModal } from '@/pages/api-keys/ConnectModal'
 
 const DISMISS_KEY = 'modelgo_workbench_quickstart_dismissed'
-const CLI_COMMAND = 'npx @model-go/cli@latest install'
+const CLI_COMMAND = 'npx @model-go/config'
 
 function scopedWorkspacePath(workspaceId: string | null, path: string) {
   return workspaceId ? `/workspace/${workspaceId}/${path}` : '/settings/workspace'

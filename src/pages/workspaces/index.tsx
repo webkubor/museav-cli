@@ -6,7 +6,7 @@
 import { useState } from 'react'
 import { useAuthStore } from '@/store/auth'
 import { useTranslation } from 'react-i18next'
-import { LuSearch, LuPlus, LuKey, LuArrowRight } from 'react-icons/lu'
+import { LuSearch, LuPlus, LuKey } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listWorkspaces, createWorkspace } from '@/services/workspaces'
 import { WorkspaceDetailContent } from '@/pages/settings/workspace-detail'
@@ -153,10 +153,10 @@ export default function WorkspacesPage() {
       {/* 摘要条 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {summary.map((s) => (
-          <div key={s.label} className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-4 shadow-xs">
+          <Card key={s.label} className="p-4">
             <div className="text-[11px] font-bold text-mg-text-3 uppercase tracking-wider mb-1">{s.label}</div>
             <div className="text-xl font-bold text-mg-text-1">{s.value}</div>
-          </div>
+          </Card>
         ))}
       </div>
 
@@ -167,7 +167,7 @@ export default function WorkspacesPage() {
           <Input
             placeholder={t('workspaces.searchPlaceholder')}
             prefix={<LuSearch className="opacity-50" />}
-            className="w-[290px] !rounded-full bg-mg-fill-0/30"
+            className="w-full max-w-[290px] !rounded-full bg-mg-fill-0/30"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />
@@ -255,7 +255,7 @@ export default function WorkspacesPage() {
                   </Badge>
                 </div>
                 <span className="flex items-center gap-0.5 text-xs font-bold text-brand-base opacity-0 group-hover:opacity-100 transition-opacity">
-                  {t('workspaces.table.edit')} <LuArrowRight size={12} />
+                  {t('workspaces.table.edit')}
                 </span>
               </div>
             </Card>
@@ -308,10 +308,12 @@ export default function WorkspacesPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.descLabel')}</div>
-              <Input 
+              <Textarea 
                 value={description} 
                 onChange={e => setDescription(e.target.value)} 
                 placeholder={t('workspaces.modal.descPlaceholder')}
+                rows={3}
+                className="min-h-[84px]"
               />
             </div>
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_128px]">

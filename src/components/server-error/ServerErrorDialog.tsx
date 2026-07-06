@@ -65,7 +65,7 @@ export function ServerErrorDialog() {
           服务暂时不可用，请稍后再试
         </span>
       }
-      description="如多次出现，请把下方信息提供给客服以便排查"
+      description="如多次出现，请把下方信息提供给智能助手以便排查"
       footer={
         <>
           <Button variant="outline" onClick={dismiss}>
@@ -78,7 +78,7 @@ export function ServerErrorDialog() {
           {activeTenantId && (
             <Button variant="default" onClick={sendToCustomerService}>
               <LuHeadset size={14} />
-              转给客服
+              转给智能助手
             </Button>
           )}
         </>

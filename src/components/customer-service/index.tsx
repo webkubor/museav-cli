@@ -244,7 +244,7 @@ export function CustomerService() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <img src={logoSrc} alt="Logo" style={{ width: 28, height: 28, objectFit: 'contain' }} />
               <div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--mg-text-1)', margin: 0 }}>智能客服</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--mg-text-1)', margin: 0 }}>智能助手</p>
                 <p style={{ fontSize: 11, color: 'var(--mg-text-2)', margin: 0 }}>
                   <StatusDot status={status} />
                   {status === 'online' ? '在线' : status === 'connecting' ? '连接中' : '离线'}

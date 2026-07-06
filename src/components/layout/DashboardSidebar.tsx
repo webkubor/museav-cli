@@ -293,11 +293,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         collapsed ? "w-16" : "w-56"
       )}
     >
-      {/* 固顶工作区选择器 */}
-      <div className="shrink-0 p-2 border-b border-mg-border/20">
-        <WorkspaceSwitcher collapsed={collapsed} />
-      </div>
-
       {/* 右边缘微悬浮折叠触发器 */}
       <button
         onClick={() => setCollapsed(!collapsed)}
@@ -317,6 +312,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         {groups.map((group) => (
           <div key={group.key} className="relative flex flex-col gap-0.5">
             {group.label && <SidebarGroupLabel text={group.label} collapsed={collapsed} />}
+            {group.scope === 'workspace' && <WorkspaceSwitcher collapsed={collapsed} />}
             {group.items.map((item) =>
               item.items && item.items.length > 0 ? (
                 <SidebarMenuGroup

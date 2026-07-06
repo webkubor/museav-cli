@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import {
   LuClock3,
   LuCopy,
@@ -10,7 +10,13 @@ import {
   LuReceiptText,
   LuShieldCheck,
   LuNetwork,
+  LuMonitor,
+  LuServer,
+  LuCheck,
+  LuArrowRight,
+  LuArrowUpRight,
 } from 'react-icons/lu'
+import { useCopy } from '@/hooks/use-copy'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { CodeBlock } from '@/components/ui/CodeBlock'
@@ -70,6 +76,7 @@ export function LogDetailSheet({
   payloadView,
   row,
   workspaceName,
+  onViewTraceLogs,
   sseAvailable,
 }: {
   copied: boolean
@@ -85,21 +92,36 @@ export function LogDetailSheet({
   payloadView: PayloadView
   row: CallLogItem | null
   workspaceName?: string
+  onViewTraceLogs?: (traceId: string) => void
   sseAvailable: boolean
 }) {
+  const { copy: copyTrace, copied: traceCopied } = useCopy()
   return (
     <SideSheet open={open} onClose={onClose} title={null} width={680} className="overflow-y-auto">
       {row && (
         <div className="space-y-6">
-          <header className="flex items-start justify-between gap-4 border-b border-mg-border pb-4">
-            <div className="min-w-0">
-              <h2 className="mg-text-title-sm font-bold text-mg-text-1">调用日志详情</h2>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Badge variant="outline" className="max-w-full truncate">{row.model.display_name}</Badge>
-                <StatusBadge status={row.status} statusMap={STATUS_MAP} />
-              </div>
+          <header className="border-b border-mg-border pb-4">
+            <h2 className="mg-text-title-sm font-bold text-mg-text-1">调用日志详情</h2>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className="max-w-full truncate">{row.model.display_name}</Badge>
+              <StatusBadge status={row.status} statusMap={STATUS_MAP} />
+              {row.call_type && <Badge variant="secondary">{row.call_type}</Badge>}
+              <Badge variant={isLogSucceeded(row) ? 'success' : 'danger'}>{httpStatus(row)}</Badge>
             </div>
-            <Badge variant={isLogSucceeded(row) ? 'success' : 'danger'}>{httpStatus(row)}</Badge>
+            {row.trace_id && (
+              <div className="mt-3 flex items-center gap-2">
+                <span className="shrink-0 mg-text-caption font-bold text-mg-text-3">Trace ID</span>
+                <span className="min-w-0 flex-1 truncate font-mono mg-text-caption text-mg-text-2">{row.trace_id}</span>
+                <button
+                  type="button"
+                  onClick={() => copyTrace(row.trace_id)}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-mg-text-3 hover:bg-mg-fill-0 hover:text-mg-text-1 transition-colors cursor-pointer"
+                  aria-label="复制 Trace ID"
+                >
+                  {traceCopied ? <LuCheck className="h-3.5 w-3.5 text-mg-success" /> : <LuCopy className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+            )}
           </header>
 
           <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -126,20 +148,22 @@ export function LogDetailSheet({
               <DetailRow label="工作空间" value={workspaceName || row.workspace_id} />
               <DetailRow label="API Key 名称" value={row.api_key.name} />
               <DetailRow label="成员" value={row.account.display_name} />
+              <DetailRow label="调用时间" value={formatDateTimeWithSeconds(row.started_at)} />
+              <DetailRow label="计费状态" value={row.billing_status} />
             </DetailGrid>
           </DetailSection>
 
-          <DetailSection title="请求">
-            <DetailGrid>
-              <DetailRow label="Request ID" value={row.request_id} mono />
-              <DetailRow label="Trace ID" value={row.trace_id} mono />
-              <DetailRow label="调用时间" value={formatDateTimeWithSeconds(row.started_at)} />
-              <DetailRow label="HTTP 状态" value={httpStatus(row)} mono />
-              <DetailRow label="计费状态" value={row.billing_status} />
-              <DetailRow label="调用类型" value={row.call_type} />
-              <DetailRow label="TPOT" value={row.tpot_ms > 0 ? `${row.tpot_ms}ms` : ''} mono />
-              <DetailRow label="TPM" value={tpmLabel(row)} mono />
-            </DetailGrid>
+          <DetailSection title="请求链路">
+            <div className="grid gap-3 lg:grid-cols-2">
+              <DetailGrid>
+                <DetailRow label="Request ID" value={row.request_id} mono />
+                <DetailRow label="HTTP 状态" value={httpStatus(row)} mono />
+                <DetailRow label="调用类型" value={row.call_type} />
+                <DetailRow label="TPOT" value={row.tpot_ms > 0 ? `${row.tpot_ms}ms` : ''} mono />
+                <DetailRow label="TPM" value={tpmLabel(row)} mono />
+              </DetailGrid>
+              <RequestChain row={row} />
+            </div>
           </DetailSection>
 
           <DetailSection title="响应耗时">
@@ -168,6 +192,23 @@ export function LogDetailSheet({
             payloadView={payloadView}
             sseAvailable={sseAvailable}
           />
+
+          <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-mg-border pt-4">
+            <Button variant="outline" size="sm" disabled={!row.trace_id} onClick={() => copyTrace(row.trace_id)}>
+              {traceCopied ? <LuCheck className="mr-1.5 h-4 w-4 text-mg-success" /> : <LuCopy className="mr-1.5 h-4 w-4" />}
+              复制 Trace
+            </Button>
+            {row.trace_id && onViewTraceLogs && (
+              <Button
+                variant="brand"
+                size="sm"
+                onClick={() => onViewTraceLogs(row.trace_id)}
+              >
+                查看同链路日志
+                <LuArrowUpRight className="ml-1.5 h-4 w-4" />
+              </Button>
+            )}
+          </footer>
         </div>
       )}
     </SideSheet>
@@ -191,6 +232,67 @@ function DiagnosticCard({ hint, icon, label, value, tone = 'brand' }: { hint: st
       </span>
       <strong className="mt-2 block truncate mg-text-value font-bold text-mg-text-1">{value}</strong>
       <small className="mt-1 block truncate mg-text-caption text-mg-text-3">{hint}</small>
+    </article>
+  )
+}
+
+type NodeState = 'ok' | 'warn' | 'error' | 'skipped'
+const NODE_TONE: Record<NodeState, string> = {
+  ok: 'bg-mg-success/10 text-mg-success',
+  warn: 'bg-mg-warning/10 text-mg-warning',
+  error: 'bg-mg-danger/10 text-mg-danger',
+  skipped: 'bg-mg-fill-1 text-mg-text-4',
+}
+
+function ChainNode({ icon, state, sub, title }: { icon: ReactNode; state: NodeState; sub: string; title: string }) {
+  return (
+    <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 text-center">
+      <span className={cn('relative flex h-10 w-10 items-center justify-center rounded-lg [&_svg]:size-5', NODE_TONE[state])}>
+        {icon}
+        <span className={cn(
+          'absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-mg-bg-0',
+          state === 'ok' ? 'bg-mg-success text-white' : state === 'warn' ? 'bg-mg-warning text-white' : state === 'error' ? 'bg-mg-danger text-white' : 'bg-mg-fill-2 text-mg-text-4'
+        )}>
+          {state === 'error' ? <LuNetwork className="h-2.5 w-2.5" /> : state === 'skipped' ? <span className="h-1.5 w-1.5 rounded-full bg-current" /> : <LuCheck className="h-2.5 w-2.5" />}
+        </span>
+      </span>
+      <div className="min-w-0">
+        <div className="mg-text-caption font-bold text-mg-text-1">{title}</div>
+        <div className="truncate mg-text-caption text-mg-text-3">{sub}</div>
+      </div>
+    </div>
+  )
+}
+
+/** 请求链路可视化：Client → Gateway → Provider 三节点 + 链路状态摘要（数据由 status/http_status 推导）。 */
+function RequestChain({ row }: { row: CallLogItem }) {
+  const rejected = row.status === 'rejected'
+  const failed = row.status === 'failed'
+  const providerState: NodeState = rejected ? 'skipped' : failed ? 'error' : 'ok'
+  const nodes: { icon: ReactNode; title: string; sub: string; state: NodeState }[] = [
+    { icon: <LuMonitor />, title: 'Client', sub: '用户客户端', state: 'ok' },
+    { icon: <LuServer />, title: 'Gateway', sub: 'API 网关', state: rejected ? 'warn' : 'ok' },
+    { icon: <LuDatabase />, title: 'Provider', sub: row.provider.name || row.model.display_name, state: providerState },
+  ]
+  const summary = rejected
+    ? { tone: 'text-mg-warning', text: '护栏拦截 · 请求未下发到 Provider' }
+    : failed
+      ? { tone: 'text-mg-danger', text: 'Provider 响应失败' }
+      : { tone: 'text-mg-success', text: '链路正常 · 全部节点请求成功' }
+  return (
+    <article className="rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
+      <div className="flex items-center justify-between">
+        {nodes.map((node, i) => (
+          <Fragment key={node.title}>
+            <ChainNode icon={node.icon} title={node.title} sub={node.sub} state={node.state} />
+            {i < nodes.length - 1 && <LuArrowRight className="mx-1 h-4 w-4 shrink-0 self-start mt-2.5 text-mg-text-4" />}
+          </Fragment>
+        ))}
+      </div>
+      <div className={cn('mt-3 flex items-center justify-center gap-1.5 border-t border-mg-border/60 pt-2.5 mg-text-caption font-semibold', summary.tone)}>
+        <LuCheck className="h-3.5 w-3.5" />
+        {summary.text}
+      </div>
     </article>
   )
 }
@@ -222,36 +324,50 @@ function DetailRow({ label, mono = false, value }: { label: string; mono?: boole
 
 function ResponseTiming({ row }: { row: CallLogItem }) {
   if (row.status === 'rejected') {
-    return <TimingRow label="请求状态" value="护栏命中" hint="模型请求未继续执行" />
-  }
-  if (row.status === 'failed') {
-    return <TimingRow label="总响应耗时" value={httpStatus(row)} duration={formatMaybeDuration(row.duration_ms)} hint="最终响应失败" />
-  }
-  if (row.speed.first_token_ms > 0 && row.duration_ms > row.speed.first_token_ms) {
     return (
-      <div className="space-y-2 rounded-md border border-mg-border p-[var(--mg-panel-padding-md)]">
-        <TimingRow label="首 Token 耗时" value={httpStatus(row)} duration={formatMaybeDuration(row.speed.first_token_ms)} />
-        <TimingRow label="响应生成耗时" value={`输出 ${formatNumber(row.usage.output_tokens)} tokens`} duration={formatMaybeDuration(row.duration_ms - row.speed.first_token_ms)} />
+      <div className="rounded-md border border-mg-border bg-mg-fill-0/30 p-[var(--mg-panel-padding-md)]">
+        <strong className="block mg-text-caption text-mg-text-1">请求状态：护栏命中</strong>
+        <span className="block mg-text-caption text-mg-text-3">模型请求未继续执行，无响应耗时</span>
       </div>
     )
   }
-  return <TimingRow label="总响应耗时" value={httpStatus(row)} duration={formatMaybeDuration(row.duration_ms)} hint={row.call_type || '未返回流式分段耗时'} />
+  const total = row.duration_ms
+  const ftt = row.speed.first_token_ms
+  const streaming = ftt > 0 && total > ftt
+  return (
+    <div className="space-y-3 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
+      {streaming ? (
+        <>
+          <TimingBar label="首 Token 耗时" durationMs={ftt} totalMs={total} tone="success" />
+          <TimingBar label="响应生成耗时" durationMs={total - ftt} totalMs={total} tone="brand" />
+        </>
+      ) : (
+        <TimingBar label="总响应耗时" durationMs={total} totalMs={total} tone={row.status === 'failed' ? 'danger' : 'brand'} />
+      )}
+      {row.usage.total_tokens > 0 && (
+        <div className="flex flex-wrap gap-2 border-t border-mg-border/60 pt-3">
+          <span className="inline-flex items-center rounded-full bg-mg-success/10 px-2.5 py-0.5 mg-text-caption font-semibold text-mg-success">
+            输入 {formatNumber(row.usage.input_tokens)}
+          </span>
+          <span className="inline-flex items-center rounded-full bg-brand-base/10 px-2.5 py-0.5 mg-text-caption font-semibold text-brand-base">
+            输出 {formatNumber(row.usage.output_tokens)} tokens
+          </span>
+        </div>
+      )}
+    </div>
+  )
 }
 
-function TimingRow({ duration, hint, label, value }: { duration?: string; hint?: string; label: string; value: string }) {
+function TimingBar({ durationMs, label, tone, totalMs }: { durationMs: number; label: string; tone: 'success' | 'brand' | 'danger'; totalMs: number }) {
+  const pct = totalMs > 0 ? Math.max(6, Math.min(100, (durationMs / totalMs) * 100)) : 100
+  const barColor = tone === 'success' ? 'bg-mg-success' : tone === 'danger' ? 'bg-mg-danger' : 'bg-brand-base'
   return (
-    <div className="grid gap-2 rounded-md border border-mg-border bg-mg-fill-0/30 p-[var(--mg-panel-padding-md)] sm:grid-cols-[150px_1fr_auto] sm:items-center">
-      <div>
-        <strong className="block mg-text-caption text-mg-text-1">{label}</strong>
-        {hint && <span className="block mg-text-caption text-mg-text-3">{hint}</span>}
+    <div className="flex items-center gap-3">
+      <span className="w-24 shrink-0 mg-text-caption text-mg-text-2">{label}</span>
+      <div className="h-2 flex-1 overflow-hidden rounded-full bg-mg-fill-1">
+        <span className={cn('block h-2 rounded-full', barColor)} style={{ width: `${pct}%` }} />
       </div>
-      <div className="min-h-2 rounded-full bg-mg-fill-1">
-        <span className="block h-2 w-2/3 rounded-full bg-brand-base" />
-      </div>
-      <div className="flex items-center gap-2">
-        <Badge variant="outline">{value}</Badge>
-        {duration && <strong className="font-mono mg-text-caption text-mg-text-1">{duration}</strong>}
-      </div>
+      <span className="w-14 shrink-0 text-right font-mono mg-text-caption font-bold text-mg-text-1">{formatMaybeDuration(durationMs)}</span>
     </div>
   )
 }

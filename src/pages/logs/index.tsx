@@ -123,6 +123,15 @@ export default function LogsPage() {
     setCursorStack([null])
   }
 
+  // 详情「查看同链路日志」：用关键词检索按 trace 过滤同链路，展开更多筛选、关掉详情（事件处理里 setState，非 effect）
+  function viewTraceLogs(traceId: string) {
+    if (!traceId) return
+    setSearchValue(traceId)
+    setShowMoreFilters(true)
+    setSelectedLog(null)
+    resetPagination()
+  }
+
   function clearFilters() {
     setStatusFilter('all')
     setWorkspaceFilter('all')
@@ -432,6 +441,7 @@ export default function LogsPage() {
         payloadView={payloadView}
         row={selectedLog}
         workspaceName={selectedLog ? (workspaceNameById.get(selectedLog.workspace_id) || selectedLog.workspace_id) : undefined}
+        onViewTraceLogs={viewTraceLogs}
         sseAvailable={Boolean(sseReassembled)}
       />
     </div>

@@ -10,7 +10,7 @@ import { useCopy } from '@/hooks/use-copy'
 import { useServerErrorStore } from '@/store/use-server-error-store'
 import { formatDiagnosticsForCopy } from '@/lib/error-diagnostics'
 
-const SUPPORT_EMAIL = 'wangenbo@modelgo.com'
+const SUPPORT_EMAIL = 'feedback@modelgo.com'
 
 function CopyIconButton({ value, label }: { value: string; label: string }) {
   const { copy, copied } = useCopy()

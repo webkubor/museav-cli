@@ -1064,7 +1064,14 @@
       "trendTitle": "{{metric}} Trend",
       "costTrend": "Spend Trend",
       "filteredAggregation": "Aggregated by the current filters",
-      "histogramTitle": "Request Distribution"
+      "histogramTitle": "Request Distribution",
+      "groupBy": {
+        "none": "Total",
+        "model": "By model",
+        "provider": "By provider",
+        "workspace": "By workspace",
+        "other": "Other"
+      }
     },
     "error": {
       "summary": "Failed to load summary.",

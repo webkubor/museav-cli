@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
   AreaChart, Area,
   BarChart, Bar,
-  XAxis, CartesianGrid, Tooltip,
+  XAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts'
 import type { SeriesDataPoint } from '@/types'
 import { formatChartTooltipDate } from '@/lib/format-date'
@@ -134,6 +134,165 @@ export function Sparkline({
           dot={false}
           activeDot={{ r: 5, fill: color, stroke: 'var(--mg-bg-0)', strokeWidth: 2 }}
         />
+      </AreaChart>
+    </ResponsiveContainer>
+  )
+}
+
+// ─── Grouped Area (多序列堆叠，group_by=model/provider/workspace) ───────
+
+export interface GroupedSeries {
+  key: string
+  label: string
+  color: string
+}
+
+export type GroupedRow = Record<string, number | string> & { bucket_start: string }
+
+interface GroupedAreaChartProps {
+  rows: GroupedRow[]
+  series: GroupedSeries[]
+  metric: Metric
+  noDataLabel: string
+  currencySymbol: string
+  requestUnitLabel: string
+  tokenUnitLabel: string
+}
+
+interface GroupedTooltipProps {
+  active?: boolean
+  payload?: Array<{ name: string; value: number; color: string; dataKey: string }>
+  label?: string
+  series: GroupedSeries[]
+  metric: Metric
+  currencySymbol: string
+  requestUnitLabel: string
+  tokenUnitLabel: string
+}
+
+function formatMetricValue(
+  value: number,
+  metric: Metric,
+  currencySymbol: string,
+  requestUnitLabel: string,
+  tokenUnitLabel: string,
+): string {
+  if (metric === 'spend') return `${currencySymbol}${value.toFixed(4)}`
+  return `${formatNumber(Math.round(value))} ${metric === 'tokens' ? tokenUnitLabel : requestUnitLabel}`
+}
+
+function GroupedTooltip({
+  active,
+  payload,
+  label,
+  series,
+  metric,
+  currencySymbol,
+  requestUnitLabel,
+  tokenUnitLabel,
+}: GroupedTooltipProps) {
+  if (!active || !payload?.length) return null
+  const labelByKey = new Map(series.map((s) => [s.key, s.label]))
+  // 大额在上；总量单独一行
+  const rows = [...payload].filter((p) => (p.value ?? 0) > 0).sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
+  const total = payload.reduce((sum, p) => sum + (p.value ?? 0), 0)
+  return (
+    <div style={{ ...TOOLTIP_STYLE, minWidth: 160 }}>
+      <div style={{ color: 'var(--mg-text-3)', fontSize: '11px', marginBottom: 6 }}>
+        {label ? formatChartTooltipDate(label) : ''}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {rows.map((p) => (
+          <div key={p.dataKey} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '12px' }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: p.color, flexShrink: 0 }} />
+            <span style={{ color: 'var(--mg-text-2)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 130 }}>
+              {labelByKey.get(p.dataKey) ?? p.name}
+            </span>
+            <span style={{ color: 'var(--mg-text-1)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+              {formatMetricValue(p.value ?? 0, metric, currencySymbol, requestUnitLabel, tokenUnitLabel)}
+            </span>
+          </div>
+        ))}
+      </div>
+      {rows.length > 1 && (
+        <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--mg-border)', display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+          <span style={{ color: 'var(--mg-text-3)' }}>Σ</span>
+          <span style={{ color: 'var(--mg-text-1)', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+            {formatMetricValue(total, metric, currencySymbol, requestUnitLabel, tokenUnitLabel)}
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function GroupedAreaChart({
+  rows,
+  series,
+  metric,
+  noDataLabel,
+  currencySymbol,
+  requestUnitLabel,
+  tokenUnitLabel,
+}: GroupedAreaChartProps) {
+  if (rows.length === 0 || series.length === 0) {
+    return (
+      <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mg-text-3)', fontSize: '13px' }}>
+        {noDataLabel}
+      </div>
+    )
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <AreaChart data={rows} margin={{ top: 8, right: 4, bottom: 0, left: 4 }}>
+        <CartesianGrid strokeDasharray="0" stroke="var(--mg-fill-0)" vertical={false} />
+        <XAxis
+          dataKey="bucket_start"
+          tickFormatter={formatChartTooltipDate}
+          tick={{ fontSize: 11, fill: 'var(--mg-text-3)', fontFamily: 'var(--font-sans)' }}
+          tickLine={false}
+          axisLine={false}
+          interval="preserveStartEnd"
+        />
+        <Tooltip
+          content={(
+            <GroupedTooltip
+              series={series}
+              metric={metric}
+              currencySymbol={currencySymbol}
+              requestUnitLabel={requestUnitLabel}
+              tokenUnitLabel={tokenUnitLabel}
+            />
+          )}
+          cursor={{ stroke: 'var(--mg-text-3)', strokeWidth: 1, strokeDasharray: '4 3', strokeOpacity: 0.5 }}
+        />
+        {/* ≥2 序列必带图例（颜色非唯一标识依据），名称走各序列 label */}
+        <Legend
+          verticalAlign="bottom"
+          height={28}
+          iconType="circle"
+          iconSize={8}
+          formatter={(value: string) => {
+            const s = series.find((it) => it.key === value)
+            return <span style={{ color: 'var(--mg-text-2)', fontSize: 12 }}>{s?.label ?? value}</span>
+          }}
+        />
+        {series.map((s) => (
+          <Area
+            key={s.key}
+            type="monotone"
+            stackId="usage"
+            dataKey={s.key}
+            name={s.key}
+            stroke={s.color}
+            strokeWidth={1.5}
+            fill={s.color}
+            fillOpacity={0.7}
+            dot={false}
+            activeDot={{ r: 3, fill: s.color, stroke: 'var(--mg-bg-0)', strokeWidth: 1.5 }}
+          />
+        ))}
       </AreaChart>
     </ResponsiveContainer>
   )

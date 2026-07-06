@@ -151,6 +151,14 @@
   --nav-item-hover-bg: rgba(15, 23, 42, 0.035);
   --grid-color: rgba(15, 23, 42, 0.02);
   --ambient-particle-opacity: 0.5;
+
+  /* 图表分类色（多序列趋势 group_by）— 经 dataviz 校验器验证（浅色 PASS），按 CVD 安全顺序排列 */
+  --chart-cat-1: #2a78d6;
+  --chart-cat-2: #1baf7a;
+  --chart-cat-3: #eda100;
+  --chart-cat-4: #008300;
+  --chart-cat-5: #4a3aa7;
+  --chart-cat-6: #e34948;
 }
 
 /* 国内市场：代码块/网格的品牌色调（border/fill/语义交共享，本块只留控制台特有项） */
@@ -199,6 +207,14 @@ body[theme-mode='dark'] {
   --account-menu-text-2: #9da0ad;
   --account-menu-text-3: #6f7280;
   --account-menu-danger: #ff6b6b;
+
+  /* 图表分类色暗色档 — 同一批 hue 为暗色面重新取步（dataviz 校验器暗色 PASS） */
+  --chart-cat-1: #3987e5;
+  --chart-cat-2: #199e70;
+  --chart-cat-3: #c98500;
+  --chart-cat-4: #008300;
+  --chart-cat-5: #9085e9;
+  --chart-cat-6: #e66767;
 }
 
 /* 国内市场特有趋势 (红涨绿跌) */

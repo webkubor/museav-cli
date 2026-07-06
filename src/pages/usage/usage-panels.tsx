@@ -1,9 +1,10 @@
 /**
  * 用量分析辅助面板
  * 路由：/usage
- * API 来源：GET /usage/summary、GET /usage/rankings/*、GET /usage/summary?group_by=workspace
+ * API 来源：GET /usage/summary、GET /usage/rankings/*（含 /usage/rankings/workspaces）
  */
 
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -216,7 +217,11 @@ export function UsageHealthPanel({
   )
 }
 
-/** 成本来源侧栏，按设计稿分组展示 Top Project / API Key / Model。 */
+/**
+ * 成本来源侧栏：Top 工作空间 / API Key / Model。
+ * 分组用可切换 tab（而非纵向堆叠），使面板高度恒定——否则右栏随分组增高会把
+ * 同一 grid 行的左侧趋势图一起撑高。
+ */
 export function CostSourcePanel({
   sections,
   currencySymbol,
@@ -225,32 +230,56 @@ export function CostSourcePanel({
   onRetry,
 }: CostSourcePanelProps) {
   const { t } = useTranslation()
+  const [activeIdx, setActiveIdx] = useState(0)
+  // sections 长度稳定（工作空间/APIKey/模型），但视图切换等场景下仍 clamp 兜底
+  const active = sections[Math.min(activeIdx, sections.length - 1)]
 
   return (
     <Card className="min-w-0 p-5 sm:p-6">
-      <div className="mb-5 text-sm font-semibold text-mg-text-1">{t('usage.sources.title')}</div>
+      <div className="mb-4 text-sm font-semibold text-mg-text-1">{t('usage.sources.title')}</div>
 
       {isError ? (
         <ErrorBlock message={t('usage.error.rankings')} onRetry={onRetry} />
       ) : isLoading ? (
-        <PanelSkeleton rows={6} />
+        <PanelSkeleton rows={5} />
       ) : (
-        <div className="space-y-4">
-          {sections.map((section) => (
-            <section key={section.title} className="rounded-md border border-mg-border bg-mg-bg-0 p-3">
-              <div className="mb-3 text-[12px] font-semibold text-mg-text-1">{section.title}</div>
-              {section.items.length === 0 ? (
-                <div className="text-[12px] text-mg-text-3">{section.emptyLabel}</div>
-              ) : (
-                <div className="space-y-2.5">
-                  {section.items.slice(0, 3).map((item, idx) => (
-                    <SourceMiniRow key={item.key ?? `${section.title}-${idx}`} item={item} currencySymbol={currencySymbol} />
-                  ))}
-                </div>
-              )}
-            </section>
-          ))}
-        </div>
+        <>
+          <div className="mb-4 flex gap-1 rounded-lg bg-mg-fill-0 p-1">
+            {sections.map((section, idx) => {
+              const selected = section === active
+              return (
+                <button
+                  key={section.title}
+                  type="button"
+                  onClick={() => setActiveIdx(idx)}
+                  aria-pressed={selected}
+                  className={cn(
+                    'min-w-0 flex-1 truncate rounded-md px-2 py-1.5 text-[12px] font-semibold transition-colors',
+                    selected ? 'bg-mg-bg-0 text-brand-base shadow-sm' : 'text-mg-text-3 hover:text-mg-text-1',
+                  )}
+                  title={section.title}
+                >
+                  {section.title}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* 定高：最多 5 行占位，切 tab 不跳动、也不影响左侧图表高度 */}
+          <div className="min-h-[188px]">
+            {!active || active.items.length === 0 ? (
+              <div className="flex min-h-[188px] items-center justify-center text-[12px] text-mg-text-3">
+                {active?.emptyLabel ?? t('usage.sources.empty')}
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {active.items.slice(0, 5).map((item, idx) => (
+                  <SourceMiniRow key={item.key ?? `${active.title}-${idx}`} item={item} currencySymbol={currencySymbol} />
+                ))}
+              </div>
+            )}
+          </div>
+        </>
       )}
     </Card>
   )

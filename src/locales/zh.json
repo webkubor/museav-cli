@@ -1063,7 +1063,14 @@
       "trendTitle": "{{metric}}趋势",
       "costTrend": "消费趋势",
       "filteredAggregation": "按当前筛选口径聚合",
-      "histogramTitle": "请求分布"
+      "histogramTitle": "请求分布",
+      "groupBy": {
+        "none": "总量",
+        "model": "按模型",
+        "provider": "按供应商",
+        "workspace": "按工作空间",
+        "other": "其他"
+      }
     },
     "error": {
       "summary": "加载用量汇总失败，请稍后重试。",

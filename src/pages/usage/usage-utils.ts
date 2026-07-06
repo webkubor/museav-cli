@@ -91,6 +91,18 @@ export function formatLatency(ms: number): string {
   return `${Math.round(ms)}ms`
 }
 
+/** 多序列趋势的分类色槽（对应 tokens.css --chart-cat-*，已过 dataviz 校验器），超出折叠成「其他」用灰。 */
+export const CHART_CAT_COLORS = [
+  'var(--chart-cat-1)',
+  'var(--chart-cat-2)',
+  'var(--chart-cat-3)',
+  'var(--chart-cat-4)',
+  'var(--chart-cat-5)',
+  'var(--chart-cat-6)',
+] as const
+export const CHART_CAT_MAX = CHART_CAT_COLORS.length
+export const CHART_OTHER_COLOR = 'var(--mg-text-4)'
+
 /** 直方图按天补齐缺失天（count=0）。见 @/lib/chart-buckets。 */
 export function densifyDailyBuckets(
   buckets: { bucket_start: string; count: number }[],

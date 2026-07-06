@@ -26,3 +26,7 @@ export function getUsageRankingsApiKeys(params?: UsageRankingsParams) {
 export function getUsageRankingsAccounts(params?: UsageRankingsParams) {
   return get<UsageRankings>('usage/rankings/accounts', params)
 }
+
+export function getUsageRankingsWorkspaces(params?: UsageRankingsParams) {
+  return get<UsageRankings>('usage/rankings/workspaces', params)
+}

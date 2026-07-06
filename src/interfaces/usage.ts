@@ -19,16 +19,17 @@ export interface UsageSummaryParams extends QueryParams {
 export interface UsageSeriesParams extends QueryParams {
   from?: string
   to?: string
-  /** 时间粒度：hour | day | week | month */
-  granularity?: 'hour' | 'day' | 'week' | 'month'
+  /** 时间粒度（对齐 swagger）：day=逐日(默认,当月) | month=逐自然月(近12个月) */
+  granularity?: 'day' | 'month'
   /** 指标：spend | requests | tokens */
   metric?: 'spend' | 'requests' | 'tokens'
+  /** 分组维度（后端 series 已支持）：none | model | provider | workspace */
+  group_by?: 'none' | 'model' | 'provider' | 'workspace'
   workspace_id?: string
   /** 成员过滤（「我的视图」传当前账号；后端 #328 支持透传裁剪） */
   account_id?: string
   model_id?: string
   provider_id?: string
-  api_key_id?: string
 }
 
 /** 用量排行查询参数 */

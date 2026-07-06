@@ -15,6 +15,7 @@ import {
   getUsageRankingsModels,
   getUsageRankingsApiKeys,
   getUsageRankingsAccounts,
+  getUsageRankingsWorkspaces,
 } from '@/services/usage'
 import { listWorkspaces } from '@/services/workspaces'
 import { useAuthStore } from '@/store/auth'
@@ -40,11 +41,21 @@ import {
   formatMoney,
   formatNumber,
   formatAverageMoney,
+  CHART_CAT_COLORS,
+  CHART_CAT_MAX,
+  CHART_OTHER_COLOR,
 } from './usage-utils'
-import { Sparkline, MetricTab } from './usage-charts'
+import {
+  Sparkline,
+  MetricTab,
+  GroupedAreaChart,
+  type GroupedSeries,
+  type GroupedRow,
+} from './usage-charts'
 import { UsageFilterPanel } from './usage-filters'
 
 type UsageDimension = 'model' | 'member' | 'apiKey'
+type TrendGroupBy = 'none' | 'model' | 'provider' | 'workspace'
 
 /** 用量分析页面入口。 */
 export default function UsagePage() {
@@ -69,6 +80,8 @@ export default function UsagePage() {
       ? dimensionParam
       : 'model'
   const [dimension, setDimension] = useState<UsageDimension>(initialDimension)
+  // 趋势图分组维度（后端 /usage/series 的 group_by）：none=单条总量曲线，其余=多序列堆叠
+  const [trendGroupBy, setTrendGroupBy] = useState<TrendGroupBy>('none')
   const [userView, setUserView] = useState<'enterprise' | 'mine' | null>(
     viewParam === 'mine' || viewParam === 'enterprise' ? viewParam : null,
   )
@@ -107,7 +120,7 @@ export default function UsagePage() {
     enabled: !!activeTenantId,
     staleTime: 5 * 60 * 1000,
   })
-  const workspaceList = workspacesQuery.data?.items ?? []
+  const workspaceList = useMemo(() => workspacesQuery.data?.items ?? [], [workspacesQuery.data])
 
   function handleWorkspaceChange(val: string) {
     setFilterWorkspaceId(val === '__all__' ? '' : val)
@@ -120,8 +133,8 @@ export default function UsagePage() {
   })
 
   const seriesQuery = useQuery({
-    queryKey: ['usage-series', activeTenantId, commonParams, metric],
-    queryFn: () => getUsageSeries({ ...commonParams, metric, granularity: 'day' }),
+    queryKey: ['usage-series', activeTenantId, commonParams, metric, trendGroupBy],
+    queryFn: () => getUsageSeries({ ...commonParams, metric, granularity: 'day', group_by: trendGroupBy }),
     enabled: !!activeTenantId && rangeReady,
   })
 
@@ -145,7 +158,7 @@ export default function UsagePage() {
 
   const workspaceSourceQuery = useQuery({
     queryKey: ['usage-source-workspaces', activeTenantId, commonParams],
-    queryFn: () => getUsageSummary({ ...commonParams, group_by: 'workspace' }),
+    queryFn: () => getUsageRankingsWorkspaces({ ...commonParams, limit: 10 }),
     enabled: !!activeTenantId && rangeReady,
   })
 
@@ -162,6 +175,55 @@ export default function UsagePage() {
     }))
   }, [metric, seriesQuery.data])
 
+  // 多序列趋势：把 series.groups 透视成 recharts 行 + 序列元数据。Top6 上色，其余折叠成「其他」。
+  const groupedTrend = useMemo<{ rows: GroupedRow[]; series: GroupedSeries[] } | null>(() => {
+    if (trendGroupBy === 'none') return null
+    const groups = seriesQuery.data?.groups ?? []
+    if (groups.length === 0) return { rows: [], series: [] }
+
+    const pointValue = (p: { spend?: { amount?: string }; requests?: number; tokens?: number }) =>
+      metric === 'spend' ? Number(p.spend?.amount ?? 0) : Number((metric === 'requests' ? p.requests : p.tokens) ?? 0)
+    const groupTotal = (g: (typeof groups)[number]) =>
+      metric === 'spend'
+        ? Number(g.total?.spend?.amount ?? 0)
+        : Number((metric === 'requests' ? g.total?.requests : g.total?.tokens) ?? 0)
+
+    const nameById = new Map(workspaceList.map((w) => [w.workspace_id, w.name]))
+    const labelOf = (g: (typeof groups)[number]) =>
+      (trendGroupBy === 'workspace' ? nameById.get(g.key) : undefined) || g.label || g.key
+
+    const sorted = [...groups].sort((a, b) => groupTotal(b) - groupTotal(a))
+    const top = sorted.slice(0, CHART_CAT_MAX)
+    const rest = sorted.slice(CHART_CAT_MAX)
+
+    // dataKey 用合成键 s0/s1…，避免分组 key 含「.」被 recharts 当成嵌套路径
+    const series: GroupedSeries[] = top.map((g, i) => ({ key: `s${i}`, label: labelOf(g), color: CHART_CAT_COLORS[i] }))
+    const hasOther = rest.length > 0
+    if (hasOther) series.push({ key: 'sOther', label: t('usage.chart.groupBy.other'), color: CHART_OTHER_COLOR })
+
+    const valueByKeyBucket = new Map<string, Map<string, number>>()
+    const bucketSet = new Set<string>()
+    groups.forEach((g) => {
+      const m = new Map<string, number>()
+      g.points?.forEach((p) => {
+        m.set(p.bucket_start, pointValue(p))
+        bucketSet.add(p.bucket_start)
+      })
+      valueByKeyBucket.set(g.key, m)
+    })
+    const buckets = [...bucketSet].sort()
+
+    const rows: GroupedRow[] = buckets.map((b) => {
+      const row: GroupedRow = { bucket_start: b }
+      top.forEach((g, i) => {
+        row[`s${i}`] = valueByKeyBucket.get(g.key)?.get(b) ?? 0
+      })
+      if (hasOther) row.sOther = rest.reduce((sum, g) => sum + (valueByKeyBucket.get(g.key)?.get(b) ?? 0), 0)
+      return row
+    })
+    return { rows, series }
+  }, [trendGroupBy, seriesQuery.data, metric, workspaceList, t])
+
   const spendAmount = parseFloat(summary?.total.spend.amount ?? '0')
   const requestCount = summary?.total.requests ?? 0
   const totalSpend = summary ? formatMoney(summary.total.spend.amount, currencySymbol) : '—'
@@ -172,20 +234,19 @@ export default function UsagePage() {
   const averageLatency = summary?.total.average_latency_ms ? `${Math.round(summary.total.average_latency_ms)}ms` : '—'
 
   const workspaceSourceItems = useMemo<UsageRankingItem[]>(() => {
-    const groups = workspaceSourceQuery.data?.groups ?? []
-    // 后端 group_by=workspace 的 label/key 都是 workspace_id，用工作空间列表映射成名称
+    const items = workspaceSourceQuery.data?.items ?? []
+    // 排行端点的 name/key 可能是 workspace_id，用工作空间列表映射成可读名称
     const nameById = new Map(workspaceList.map((w) => [w.workspace_id, w.name]))
-    const total = groups.reduce((sum, group) => sum + parseFloat(group.spend.amount || '0'), 0)
-    return groups.map((group, index) => {
-      const amount = parseFloat(group.spend.amount || '0')
+    const total = items.reduce((sum, it) => sum + parseFloat(it.spend?.amount || '0'), 0)
+    return items.map((it, index) => {
+      const amount = parseFloat(it.spend?.amount || '0')
       return {
-        rank: index + 1,
-        key: group.key,
-        name: nameById.get(group.key) || group.label,
-        spend: group.spend,
-        requests: group.requests,
-        tokens: group.tokens,
-        share_percent: total > 0 ? (amount / total) * 100 : undefined,
+        ...it,
+        rank: it.rank ?? index + 1,
+        name: nameById.get(it.key ?? '') || it.name || it.key,
+        // 后端已给 share_percent 时直接用；缺省则按当前区间 spend 占比兜底
+        share_percent:
+          typeof it.share_percent === 'number' ? it.share_percent : total > 0 ? (amount / total) * 100 : undefined,
       }
     })
   }, [workspaceSourceQuery.data, workspaceList])
@@ -343,15 +404,35 @@ export default function UsagePage() {
                 </div>
                 <div className="mt-1 text-[12px] text-mg-text-3">{t('usage.chart.filteredAggregation')}</div>
               </div>
-              <div className="flex gap-1 rounded-lg bg-mg-fill-0 p-1">
-                {(['spend', 'requests', 'tokens'] as Metric[]).map((item) => (
-                  <MetricTab
-                    key={item}
-                    label={metricLabels[item]}
-                    active={metric === item}
-                    onClick={() => setMetric(item)}
-                  />
-                ))}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex gap-1 rounded-lg bg-mg-fill-0 p-1">
+                  {(['none', 'model', 'provider', 'workspace'] as TrendGroupBy[]).map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setTrendGroupBy(g)}
+                      aria-pressed={trendGroupBy === g}
+                      className={[
+                        'rounded-md px-3 py-1.5 text-[13px] transition-colors',
+                        trendGroupBy === g
+                          ? 'bg-mg-bg-1 text-mg-text-1 font-semibold shadow-sm'
+                          : 'text-mg-text-2 hover:text-mg-text-1',
+                      ].join(' ')}
+                    >
+                      {t(`usage.chart.groupBy.${g}`)}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-1 rounded-lg bg-mg-fill-0 p-1">
+                  {(['spend', 'requests', 'tokens'] as Metric[]).map((item) => (
+                    <MetricTab
+                      key={item}
+                      label={metricLabels[item]}
+                      active={metric === item}
+                      onClick={() => setMetric(item)}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -366,6 +447,16 @@ export default function UsagePage() {
               <div className="flex h-[220px] items-center justify-center">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-mg-border border-t-brand-base" />
               </div>
+            ) : groupedTrend ? (
+              <GroupedAreaChart
+                rows={groupedTrend.rows}
+                series={groupedTrend.series}
+                metric={metric}
+                noDataLabel={t('usage.noData')}
+                currencySymbol={currencySymbol}
+                requestUnitLabel={t('usage.unit.requests')}
+                tokenUnitLabel={t('usage.unit.tokens')}
+              />
             ) : (
               <Sparkline
                 data={seriesData}

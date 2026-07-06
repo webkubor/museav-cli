@@ -72,7 +72,7 @@ export function OrgInfoTab({
       qc.invalidateQueries({ queryKey: ['tenant', tenantId] })
       qc.invalidateQueries({ queryKey: ['tenants'] })
     },
-    onError: (err: Error) => appToast.error(err?.message || '上传失败，请重试'),
+    onError: (err: Error) => appToast.requestError(err, '上传失败，请重试'),
   })
 
   const dissolve = useMutation({

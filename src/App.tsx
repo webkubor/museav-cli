@@ -1,10 +1,12 @@
-import { useEffect, useState, lazy, Suspense } from 'react'
+import { useEffect, useState, lazy, Suspense, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Providers } from '@/components/providers'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { PublicShell } from '@/components/layout/PublicShell'
 import { AuthProvider, RequireAuth } from '@/components/auth/AuthProvider'
+import { RequirePermission } from '@/components/auth/RequirePermission'
+import { CONSOLE_ROUTES, type ConsoleRouteMeta } from '@/config/console-routes'
 
 // 页面路由懒加载：各页面拆为独立 chunk，按需加载，缩小首屏体积
 const DashboardPage = lazy(() => import('@/pages/dashboard'))
@@ -34,6 +36,28 @@ const ModelDetailPage = lazy(() => import('@/pages/models/detail'))
 const ModelsComparePage = lazy(() => import('@/pages/models-compare'))
 const PlatformConfigPage = lazy(() => import('@/pages/platform-config'))
 const NotFoundPage = lazy(() => import('@/pages/not-found'))
+
+// 菜单驱动页面：key → 页面元素（路由/scope/权限见 config/console-routes 单一真源）
+const CONSOLE_ELEMENTS: Record<string, ReactNode> = {
+  dashboard: <DashboardPage />,
+  billing: <BillingPage />,
+  usage: <UsagePage />,
+  logs: <LogsPage />,
+  referral: <ReferralPage />,
+  'api-keys': <ApiKeysPage />,
+  guardrails: <GuardrailsPage />,
+  observability: <ObservabilityPage />,
+}
+
+/** 按清单渲染一条菜单页路由：有 view 权限则套 RequirePermission 守卫，否则仅需登录 */
+function consoleRoute(meta: ConsoleRouteMeta) {
+  const element = meta.permission ? (
+    <RequirePermission perm={meta.permission}>{CONSOLE_ELEMENTS[meta.key]}</RequirePermission>
+  ) : (
+    CONSOLE_ELEMENTS[meta.key]
+  )
+  return <Route key={meta.key} path={meta.path} element={element} />
+}
 import { storageKeys } from '@/lib/storage'
 import { getMarket, type Market } from '@/lib/market'
 import { applyBrandTheme, applyTheme, getSavedBrandTheme, getSavedTheme, readThemeFromUrl, saveTheme } from '@/lib/theme'
@@ -181,19 +205,17 @@ export default function App() {
           <Route path="/" element={<RequireAuth><DashboardLayout /></RequireAuth>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
 
-            {/* Tenant 级 */}
-            <Route path="dashboard" element={<DashboardPage />} />
+            {/* 租户级菜单页：由 config/console-routes 单一真源驱动 + 逐路由权限守卫 */}
+            {CONSOLE_ROUTES.filter((r) => r.scope === 'tenant').map(consoleRoute)}
+
             {/* /models 公开广场已在登录组外；此处仅登录态子页 */}
             <Route path="models">
               <Route path="playground" element={<ModelsPage />} />
               <Route path="compare" element={<ModelsComparePage />} />
             </Route>
-            <Route path="usage" element={<UsagePage />} />
-            <Route path="logs" element={<LogsPage />} />
             {/* 任务历史已并入调用日志（#361）：旧路由重定向到「异步任务」记录类型 */}
             <Route path="tasks" element={<Navigate to="/logs?record_type=async" replace />} />
-            <Route path="billing" element={<BillingPage />} />
-            <Route path="referral" element={<ReferralPage />} />
+            {/* 开发者工具页：非菜单驱动，dev 开关控制入口 */}
             <Route path="dev-config" element={<PlatformConfigPage />} />
 
             <Route path="settings">
@@ -204,11 +226,9 @@ export default function App() {
               <Route path="organization" element={<OrganizationPage />} />
             </Route>
 
-            {/* 工作区级（URL 携带 workspaceId） */}
+            {/* 工作区级菜单页（URL 携带 workspaceId）：同一清单驱动 + 权限守卫 */}
             <Route path="workspace/:workspaceId">
-              <Route path="api-keys" element={<ApiKeysPage />} />
-              <Route path="guardrails" element={<GuardrailsPage />} />
-              <Route path="observability" element={<ObservabilityPage />} />
+              {CONSOLE_ROUTES.filter((r) => r.scope === 'workspace').map(consoleRoute)}
             </Route>
           </Route>
 

@@ -1,6 +1,6 @@
 import type React from 'react'
-import { PERMS } from './permissions'
 import type { Permission } from './permissions'
+import { workspaceScopedKeys, routePermission } from './console-routes'
 
 export type NavItem = {
   itemKey: string
@@ -50,19 +50,16 @@ export interface NavConfig {
 }
 
 export const navConfig: NavConfig = {
-  // observability 路由保留（第二阶段并入空间详情的「日志与转发」），但不再出现在侧边栏
-  workspaceScopedKeys: new Set([
-    'api-keys',
-    'guardrails',
-    'observability',
-  ]),
+  // 工作区级 key 从路由单一真源派生（config/console-routes），与路由/守卫同源，杜绝漂移。
+  // observability 路由保留（第二阶段并入空间详情），但不出现在侧边栏 items。
+  workspaceScopedKeys,
 
   groups: (ctx, t, icons) => [
     {
       key: 'main',
       scope: 'tenant',
       items: [
-        { itemKey: 'dashboard', text: t('nav.dashboard'), icon: icons.home, permission: PERMS.DASHBOARD_VIEW },
+        { itemKey: 'dashboard', text: t('nav.dashboard'), icon: icons.home, permission: routePermission('dashboard') },
         ...(ctx.isOrgManager
           ? [{ itemKey: 'settings/organization', text: t('nav.organization'), icon: icons.building }]
           : []),
@@ -76,9 +73,9 @@ export const navConfig: NavConfig = {
       label: t('nav.groupBilling'),
       scope: 'tenant',
       items: [
-        { itemKey: 'billing', text: t('nav.billing'), icon: icons.creditCard, permission: PERMS.BILLING_VIEW },
-        { itemKey: 'usage', text: t('nav.usage'), icon: icons.histogram, permission: PERMS.ANALYTICS_VIEW },
-        { itemKey: 'logs', text: t('nav.logs'), icon: icons.list, permission: PERMS.LOGS_VIEW },
+        { itemKey: 'billing', text: t('nav.billing'), icon: icons.creditCard, permission: routePermission('billing') },
+        { itemKey: 'usage', text: t('nav.usage'), icon: icons.histogram, permission: routePermission('usage') },
+        { itemKey: 'logs', text: t('nav.logs'), icon: icons.list, permission: routePermission('logs') },
       ],
     },
     {
@@ -86,8 +83,8 @@ export const navConfig: NavConfig = {
       label: t('nav.sidebarWorkspace'),
       scope: 'workspace',
       items: [
-        { itemKey: 'api-keys', text: t('nav.apiKeys'), icon: icons.key, permission: PERMS.API_KEYS_VIEW },
-        { itemKey: 'guardrails', text: t('nav.guardrails'), icon: icons.shield, permission: PERMS.GUARDRAILS_VIEW },
+        { itemKey: 'api-keys', text: t('nav.apiKeys'), icon: icons.key, permission: routePermission('api-keys') },
+        { itemKey: 'guardrails', text: t('nav.guardrails'), icon: icons.shield, permission: routePermission('guardrails') },
       ],
     },
     {

@@ -40,15 +40,15 @@ export function DialogPreviewPanel() {
   const [binding, setBinding] = useState(false)
 
   const previewServerError = () => {
-    appToast.requestError(
-      new ModelGoApiError({
-        code: 50001,
-        msg: 'panic: preview server error (dev only)',
-        request_id: '7F97E139-B2BF-5512-8B5E-A64CDEDFDF83',
-        trace_id: '7cdc2d717eb9c5d8a26c322b9349edeb',
-        data: null,
-      })
-    )
+    const error = new ModelGoApiError({
+      code: 50001,
+      msg: 'panic: preview server error (dev only)',
+      request_id: '7F97E139-B2BF-5512-8B5E-A64CDEDFDF83',
+      trace_id: '7cdc2d717eb9c5d8a26c322b9349edeb',
+      data: null,
+    })
+    error.path = 'POST /api/v1/workspaces'
+    appToast.requestError(error)
   }
 
   const completePreviewBinding = () => {
@@ -80,7 +80,7 @@ export function DialogPreviewPanel() {
         <PreviewCard
           icon={<LuBug size={18} />}
           title="服务端错误诊断"
-          desc="模拟 5xx 错误弹窗，查看 request_id、trace_id、复制信息和转客服入口。"
+          desc="模拟 5xx 错误弹窗，查看 request_id、trace_id、接口路径、复制信息和邮件反馈入口。"
           action="预览报错弹窗"
           onClick={previewServerError}
         />

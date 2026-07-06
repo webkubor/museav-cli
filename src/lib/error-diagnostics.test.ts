@@ -11,14 +11,14 @@ describe('server error diagnostics', () => {
       trace_id: 'trace-abc',
       data: null,
     })
-    error.path = 'v1/api-keys'
+    error.path = 'POST /api/v1/api-keys'
 
     const diag = getServerErrorDiagnostics(error)
     expect(diag).not.toBeNull()
     expect(diag!.requestId).toBe('req-123')
     expect(diag!.traceId).toBe('trace-abc')
     expect(diag!.code).toBe(50001)
-    expect(diag!.path).toBe('v1/api-keys')
+    expect(diag!.path).toBe('POST /api/v1/api-keys')
     expect(diag!.version).toBeTruthy()
     expect(diag!.time).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
   })
@@ -59,7 +59,7 @@ describe('server error diagnostics', () => {
       requestId: 'req-123',
       traceId: 'trace-abc',
       code: 50001,
-      path: 'v1/api-keys',
+      path: 'POST /api/v1/api-keys',
       page: '/workspace/x/api-keys',
       version: '1.2.3',
       build: 'abc1234',
@@ -69,7 +69,7 @@ describe('server error diagnostics', () => {
     expect(block).toContain('请求 ID：req-123')
     expect(block).toContain('Trace ID：trace-abc')
     expect(block).toContain('错误码：50001')
-    expect(block).toContain('接口：v1/api-keys')
+    expect(block).toContain('接口：POST /api/v1/api-keys')
     expect(block).toContain('版本：v1.2.3 (abc1234)')
     expect(block).toContain('时间：2026-06-24 10:00:00')
   })

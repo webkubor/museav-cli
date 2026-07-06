@@ -13,7 +13,7 @@ const API_V1_PREFIX = 'api/v1'
 // {iv,data} response. Normalized (no leading slash) to match normalizePath.
 const SECURE_PATHS = new Set(['auth/login', 'auth/register', 'auth/password/reset'])
 const DEV_TOOLS_ENABLED = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
-export const SERVER_ERROR_MESSAGE = '服务暂时不可用，请稍后再试'
+export const SERVER_ERROR_MESSAGE = '服务暂时异常，请稍后再试'
 
 function normalizeApiHost(value: string | undefined): string | null {
   if (!value) return null
@@ -44,6 +44,10 @@ function apiPrefixUrl() {
 
 function normalizePath(path: string) {
   return path.replace(/^\/+/, '')
+}
+
+function diagnosticApiPath(method: string, path: string) {
+  return `${method.toUpperCase()} /${API_V1_PREFIX}/${normalizePath(path)}`
 }
 
 
@@ -250,7 +254,7 @@ export async function get<T>(path: string, params?: QueryParams): Promise<T> {
     })
     return result
   } catch (error) {
-    if (error instanceof ModelGoApiError) error.path = normalizedPath
+    if (error instanceof ModelGoApiError) error.path = diagnosticApiPath('GET', normalizedPath)
     devLogApiError('GET', normalizedPath, url, startedAt, error, params)
     throw error
   }
@@ -325,7 +329,7 @@ async function postSecure<T>(path: string, body: unknown): Promise<T> {
     })
     return result
   } catch (error) {
-    if (error instanceof ModelGoApiError) error.path = normalizedPath
+    if (error instanceof ModelGoApiError) error.path = diagnosticApiPath('POST', normalizedPath)
     devLogApiError('POST', normalizedPath, url, startedAt, error, '[encrypted]')
     throw error
   }
@@ -387,7 +391,7 @@ export async function upload<T>(
       await refreshCsrf()
       return unwrapEnvelope(await (await sendRaw()).json<ApiResponse<T>>())
     }
-    if (error instanceof ModelGoApiError) error.path = normalizedPath
+    if (error instanceof ModelGoApiError) error.path = diagnosticApiPath(method.toUpperCase(), normalizedPath)
     devLogApiError(method.toUpperCase(), normalizedPath, url, startedAt, error, formData)
     throw error
   }
@@ -426,7 +430,7 @@ async function requestWithJsonBody<T>(
       await refreshCsrf()
       return unwrapEnvelope(await (await send(url)).json<ApiResponse<T>>())
     }
-    if (error instanceof ModelGoApiError) error.path = normalizedPath
+    if (error instanceof ModelGoApiError) error.path = diagnosticApiPath(method, normalizedPath)
     devLogApiError(method, normalizedPath, url, startedAt, error, body)
     throw error
   }

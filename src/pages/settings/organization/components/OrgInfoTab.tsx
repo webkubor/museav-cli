@@ -154,7 +154,7 @@ export function OrgInfoTab({
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && update.mutate()}
                 autoFocus
-                className="max-w-[280px] h-9 text-xs rounded-lg"
+                className="max-w-xl"
               />
               <Button
                 variant="brand"

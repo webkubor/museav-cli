@@ -236,14 +236,14 @@ export default function WorkspacesPage() {
       </div>
 
       {/* 控制台操作区域 */}
-      <div className="flex justify-between items-center gap-4">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 w-full">
+        <div className="flex flex-1 items-center gap-3 w-full max-w-[560px]">
           {/* 圆角微阴影输入框 */}
           <Input
             variant="search"
             placeholder={t('workspaces.searchPlaceholder')}
             prefix={<LuSearch className="opacity-50" />}
-            className="w-full sm:w-[480px]"
+            className="w-full"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />

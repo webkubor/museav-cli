@@ -288,7 +288,7 @@ body[theme-mode='dark'] .modern-btn-default:hover {
   line-height: var(--mg-line-height-body);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   border-color: var(--mg-border) !important;
-  background-color: var(--mg-bg-1) !important;
+  background-color: var(--mg-bg-0) !important;
   color: var(--mg-text-1) !important;
   box-shadow: var(--shadow-sm) !important;
   box-sizing: border-box !important;

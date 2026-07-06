@@ -598,7 +598,7 @@ export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted:
           <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">
             {t('workspaces.detail.settings.renameLabel')}
           </label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} disabled={!canRename} className="max-w-[320px] h-9 text-xs rounded-lg" />
+          <Input value={name} onChange={(e) => setName(e.target.value)} disabled={!canRename} className="max-w-xl" />
         </div>
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">

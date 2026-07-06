@@ -54,6 +54,20 @@ function currentPage(): string | undefined {
   return `${window.location.pathname}${window.location.search}`
 }
 
+/**
+ * 从完整 URL 抽出接口路径（如 /api/v1/account/avatar）。
+ * 网关级 5xx（503 等）走不到后端信封、无 request_id，但 Response.url 一定有——
+ * 用它兜底出「接口路径」，否则弹窗里连出错的是哪个接口都看不到。
+ */
+function pathFromUrl(url?: string): string | undefined {
+  if (!url) return undefined
+  try {
+    return new URL(url, window.location.origin).pathname
+  } catch {
+    return url
+  }
+}
+
 function envBase(): Pick<ServerErrorDiagnostics, 'page' | 'tenantId' | 'version' | 'build' | 'time'> {
   return {
     page: currentPage(),
@@ -88,6 +102,7 @@ export function getServerErrorDiagnostics(error: unknown): ServerErrorDiagnostic
         status,
         requestId: resp?.headers?.get('x-request-id') ?? undefined,
         traceId: resp?.headers?.get('x-trace-id') ?? resp?.headers?.get('traceparent') ?? undefined,
+        path: pathFromUrl(resp?.url),
         ...envBase(),
       }
     }
@@ -116,6 +131,7 @@ export function reportHttpServerError(response: Response): void {
     status: response.status,
     requestId: response.headers.get('x-request-id') ?? undefined,
     traceId: response.headers.get('x-trace-id') ?? response.headers.get('traceparent') ?? undefined,
+    path: pathFromUrl(response.url),
     ...envBase(),
   })
 }

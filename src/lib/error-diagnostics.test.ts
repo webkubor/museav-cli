@@ -47,6 +47,23 @@ describe('server error diagnostics', () => {
     expect(diag!.requestId).toBe('http-req-9')
   })
 
+  it('falls back to接口路径 from response.url when gateway 5xx has no request_id', () => {
+    // 网关 503（如 PUT /api/v1/account/avatar）：无 x-request-id，但 response.url 有完整地址
+    const error = Object.assign(new Error('Service Unavailable'), {
+      response: {
+        status: 503,
+        url: 'http://localhost:5176/api/v1/account/avatar',
+        headers: new Headers(),
+      },
+    })
+
+    const diag = getServerErrorDiagnostics(error)
+    expect(diag).not.toBeNull()
+    expect(diag!.status).toBe(503)
+    expect(diag!.requestId).toBeUndefined()
+    expect(diag!.path).toBe('/api/v1/account/avatar')
+  })
+
   it('returns null for non-5xx transport errors', () => {
     const error = Object.assign(new Error('Bad Request'), {
       response: { status: 400, headers: new Headers() },

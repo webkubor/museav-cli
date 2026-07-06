@@ -6,7 +6,6 @@ import {
   LuFileText,
   LuGauge,
   LuGitFork,
-  LuKeyRound,
   LuReceiptText,
   LuShieldCheck,
   LuNetwork,
@@ -15,6 +14,7 @@ import {
   LuCheck,
   LuArrowRight,
   LuArrowUpRight,
+  LuDownload,
 } from 'react-icons/lu'
 import { useCopy } from '@/hooks/use-copy'
 import { Badge } from '@/components/ui/Badge'
@@ -25,7 +25,7 @@ import { SideSheet } from '@/components/ui/SideSheet'
 import { StatusBadge, type StatusConfig } from '@/components/ui/StatusBadge'
 import { formatDateTimeWithSeconds, formatDuration } from '@/lib/format-date'
 import { cn, formatNumber } from '@/lib/utils'
-import type { CallLogItem, LogPayload } from '@/types'
+import type { CallLogItem } from '@/types'
 
 export type PayloadKind = 'request' | 'response'
 export type PayloadView = 'parsed' | 'raw'
@@ -64,36 +64,32 @@ function tpmLabel(row: CallLogItem) {
 
 export function LogDetailSheet({
   copied,
-  displayedPayload,
-  onClose,
-  onCopyPayload,
-  onPayloadKindChange,
-  onPayloadViewChange,
-  open,
-  payload,
-  payloadKind,
-  payloadLoading,
+  requestPayloadText,
+  responsePayloadText,
   payloadView,
+  onPayloadViewChange,
+  payloadLoading,
+  onCopyAll,
+  onDownload,
+  onClose,
+  open,
   row,
   workspaceName,
   onViewTraceLogs,
-  sseAvailable,
 }: {
   copied: boolean
-  displayedPayload: string
-  onClose: () => void
-  onCopyPayload: () => void
-  onPayloadKindChange: (kind: PayloadKind) => void
-  onPayloadViewChange: (view: PayloadView) => void
-  open: boolean
-  payload?: LogPayload
-  payloadKind: PayloadKind
-  payloadLoading: boolean
+  requestPayloadText: string
+  responsePayloadText: string
   payloadView: PayloadView
+  onPayloadViewChange: (view: PayloadView) => void
+  payloadLoading: boolean
+  onCopyAll: () => void
+  onDownload: () => void
+  onClose: () => void
+  open: boolean
   row: CallLogItem | null
   workspaceName?: string
   onViewTraceLogs?: (traceId: string) => void
-  sseAvailable: boolean
 }) {
   const { copy: copyTrace, copied: traceCopied } = useCopy()
   return (
@@ -180,17 +176,16 @@ export function LogDetailSheet({
             </section>
           )}
 
-          <PayloadSection
-            copied={copied}
-            displayedPayload={displayedPayload}
-            onCopyPayload={onCopyPayload}
-            onPayloadKindChange={onPayloadKindChange}
-            onPayloadViewChange={onPayloadViewChange}
-            payload={payload}
-            payloadKind={payloadKind}
-            payloadLoading={payloadLoading}
+          <TranscriptSection
+            row={row}
+            requestPayloadText={requestPayloadText}
+            responsePayloadText={responsePayloadText}
             payloadView={payloadView}
-            sseAvailable={sseAvailable}
+            onPayloadViewChange={onPayloadViewChange}
+            payloadLoading={payloadLoading}
+            copied={copied}
+            onCopyAll={onCopyAll}
+            onDownload={onDownload}
           />
 
           <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-mg-border pt-4">
@@ -372,67 +367,144 @@ function TimingBar({ durationMs, label, tone, totalMs }: { durationMs: number; l
   )
 }
 
-function PayloadSection(props: {
+const ROLE_TONE: Record<string, { label: string; cls: string }> = {
+  system: { label: 'System', cls: 'text-brand-base' },
+  user: { label: 'User', cls: 'text-mg-warning' },
+  assistant: { label: 'Assistant', cls: 'text-mg-success' },
+  tool: { label: 'Tool', cls: 'text-mg-text-3' },
+}
+
+function contentToText(content: unknown): string {
+  if (typeof content === 'string') return content
+  if (Array.isArray(content)) return content.map((p) => (typeof p === 'string' ? p : (p as { text?: string })?.text ?? JSON.stringify(p))).join('\n')
+  if (content == null) return ''
+  return JSON.stringify(content, null, 2)
+}
+
+/** 把 OpenAI 风格 payload 解析成消息列表：请求取 messages[]，响应取 choices[].message；解析不了返回 null（回退原文）。 */
+function parseMessages(text: string): { role: string; content: string }[] | null {
+  if (!text) return null
+  try {
+    const obj = JSON.parse(text) as { messages?: unknown[]; choices?: unknown[] }
+    if (Array.isArray(obj?.messages)) {
+      return obj.messages.map((m) => {
+        const msg = m as { role?: string; content?: unknown }
+        return { role: String(msg.role || 'user'), content: contentToText(msg.content) }
+      })
+    }
+    if (Array.isArray(obj?.choices)) {
+      return obj.choices.map((c) => {
+        const msg = (c as { message?: { role?: string; content?: unknown } }).message
+        return { role: String(msg?.role || 'assistant'), content: contentToText(msg?.content) }
+      })
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+function MessageBubble({ content, role }: { content: string; role: string }) {
+  const tone = ROLE_TONE[role.toLowerCase()] ?? { label: role, cls: 'text-mg-text-3' }
+  return (
+    <div className="rounded-md border border-mg-border/60 bg-mg-fill-0/30 p-3">
+      <div className={cn('mb-1 mg-text-caption font-bold', tone.cls)}>{tone.label}</div>
+      <p className="whitespace-pre-wrap break-words mg-text-caption text-mg-text-1">{content || '（空）'}</p>
+    </div>
+  )
+}
+
+function TranscriptCard({ pretty, text, title }: { pretty: boolean; text: string; title: string }) {
+  const messages = pretty ? parseMessages(text) : null
+  return (
+    <div className="rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
+      <div className="mb-2 mg-text-caption font-bold text-mg-text-2">{title}</div>
+      {messages && messages.length > 0 ? (
+        <div className="space-y-2">
+          {messages.map((m, i) => <MessageBubble key={`${m.role}-${i}`} role={m.role} content={m.content} />)}
+        </div>
+      ) : (
+        <CodeBlock className="max-h-80">{text || '暂无内容'}</CodeBlock>
+      )}
+    </div>
+  )
+}
+
+function ViewToggle({ onChange, value }: { onChange: (view: PayloadView) => void; value: PayloadView }) {
+  return (
+    <div className="inline-flex rounded-md border border-mg-border p-0.5">
+      {(['parsed', 'raw'] as PayloadView[]).map((v) => (
+        <button
+          key={v}
+          type="button"
+          onClick={() => onChange(v)}
+          className={cn('rounded-sm px-2 py-0.5 mg-text-caption font-bold', value === v ? 'bg-brand-selected-bg text-brand-base' : 'text-mg-text-3 hover:text-mg-text-1')}
+        >
+          {v === 'parsed' ? 'Pretty' : 'JSON'}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function TranscriptSection({ copied, onCopyAll, onDownload, onPayloadViewChange, payloadLoading, payloadView, requestPayloadText, responsePayloadText, row }: {
   copied: boolean
-  displayedPayload: string
-  onCopyPayload: () => void
-  onPayloadKindChange: (kind: PayloadKind) => void
+  onCopyAll: () => void
+  onDownload: () => void
   onPayloadViewChange: (view: PayloadView) => void
-  payload?: LogPayload
-  payloadKind: PayloadKind
   payloadLoading: boolean
   payloadView: PayloadView
-  sseAvailable: boolean
+  requestPayloadText: string
+  responsePayloadText: string
+  row: CallLogItem
 }) {
-  const payloadText = props.payloadLoading ? '正在加载原始 Payload...' : props.displayedPayload || '暂无原始 Payload'
+  if (payloadLoading) {
+    return (
+      <section className="space-y-3">
+        <h3 className="mg-text-label text-mg-text-3">请求内容</h3>
+        <CodeBlock className="max-h-40">正在加载请求 / 响应内容…</CodeBlock>
+      </section>
+    )
+  }
+  if (!requestPayloadText && !responsePayloadText) {
+    return (
+      <section className="space-y-3">
+        <h3 className="mg-text-label text-mg-text-3">请求内容</h3>
+        <div className="flex gap-2 rounded-md border border-mg-border bg-mg-fill-0/30 p-[var(--mg-panel-padding-md)] text-mg-text-3">
+          <LuFileText className="mt-0.5 h-4 w-4 shrink-0" />
+          <p className="mg-text-caption">该工作空间未开启输入 / 输出日志。调用日志仅保留元数据、Token、费用、延迟、路由和错误摘要；需查看完整 Prompt 与 Response，请到空间管理的「日志与转发」中开启。</p>
+        </div>
+      </section>
+    )
+  }
+  const pretty = payloadView === 'parsed'
   return (
     <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="mg-text-label text-mg-text-3">原始 Payload</h3>
-          <p className="mt-1 mg-text-caption text-mg-text-3">
-            {props.payload?.content_type || '-'} · {props.payload ? `${props.payload.size} bytes` : '-'}
-            {props.payload?.truncated && <Badge className="ml-2" variant="warning">已截断</Badge>}
-          </p>
+          <h3 className="mg-text-label text-mg-text-3">请求内容</h3>
+          <p className="mt-1 mg-text-caption text-mg-text-3">已开启输入 / 输出日志采集</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {(['request', 'response'] as PayloadKind[]).map((kind) => (
-            <button
-              key={kind}
-              type="button"
-              onClick={() => props.onPayloadKindChange(kind)}
-              className={cn(
-                'rounded-md border px-3 py-1 mg-text-caption font-bold',
-                props.payloadKind === kind
-                  ? 'border-brand-base bg-brand-selected-bg text-brand-base'
-                  : 'border-mg-border bg-mg-fill-0 text-mg-text-2 hover:text-mg-text-1'
-              )}
-            >
-              {kind === 'request' ? '请求' : '响应'}
-            </button>
-          ))}
-          {props.sseAvailable && (
-            <button
-              type="button"
-              onClick={() => props.onPayloadViewChange(props.payloadView === 'parsed' ? 'raw' : 'parsed')}
-              className="rounded-md border border-mg-border bg-mg-fill-0 px-3 py-1 mg-text-caption font-bold text-mg-text-2 hover:text-mg-text-1"
-            >
-              {props.payloadView === 'parsed' ? '原始 SSE' : '合并回答'}
-            </button>
-          )}
-          <Button size="xs" variant="outline" disabled={!props.displayedPayload || props.payloadLoading} onClick={props.onCopyPayload}>
+          <ViewToggle value={payloadView} onChange={onPayloadViewChange} />
+          <Button size="xs" variant="outline" onClick={onCopyAll}>
             <LuCopy className="mr-1 h-3 w-3" />
-            {props.copied ? '已复制' : '复制'}
+            {copied ? '已复制' : '复制全部'}
+          </Button>
+          <Button size="xs" variant="outline" onClick={onDownload}>
+            <LuDownload className="mr-1 h-3 w-3" />
+            下载 JSON
           </Button>
         </div>
       </div>
-      <CodeBlock className="max-h-96">{payloadText}</CodeBlock>
-      {!props.payloadLoading && !props.displayedPayload && (
-        <div className="flex gap-2 rounded-md border border-mg-border bg-mg-fill-0/30 p-[var(--mg-panel-padding-md)] text-mg-text-3">
-          <LuKeyRound className="mt-0.5 h-4 w-4 shrink-0" />
-          <p className="mg-text-caption">如果工作空间未开启输入 / 输出日志，后端只会返回元数据、Token、费用、延迟、路由和错误摘要。</p>
-        </div>
+      <TranscriptCard title={`Request (${formatNumber(row.usage.input_tokens)} tokens)`} text={requestPayloadText} pretty={pretty} />
+      {responsePayloadText && (
+        <TranscriptCard title={`Response (${formatNumber(row.usage.output_tokens)} tokens)`} text={responsePayloadText} pretty={pretty} />
       )}
+      <p className="flex items-center gap-1.5 mg-text-caption text-mg-text-4">
+        <LuShieldCheck className="h-3.5 w-3.5" />
+        密钥与敏感字段已脱敏
+      </p>
     </section>
   )
 }

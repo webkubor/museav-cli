@@ -27,7 +27,6 @@ import {
 } from './components'
 import {
   LogDetailSheet,
-  type PayloadKind,
   type PayloadView,
 } from './detail'
 import { LuChevronDown, LuRefreshCw, LuSearch } from 'react-icons/lu'
@@ -110,7 +109,6 @@ export default function LogsPage() {
   const [timeRange, setTimeRange] = useState<DateRangeValue>(DEFAULT_TIME_RANGE)
   const [showMoreFilters, setShowMoreFilters] = useState(false)
   const [selectedLog, setSelectedLog] = useState<CallLogItem | null>(null)
-  const [payloadKind, setPayloadKind] = useState<PayloadKind>('request')
   const [payloadView, setPayloadView] = useState<PayloadView>('parsed')
   const [page, setPage] = useState(1)
   const [cursorStack, setCursorStack] = useState<Array<string | null>>([null])
@@ -218,17 +216,26 @@ export default function LogsPage() {
     refetchOnWindowFocus: false,
   })
 
-  const payloadQuery = useQuery({
-    queryKey: ['logs', selectedLog?.request_id, 'payload', payloadKind],
-    queryFn: () => getLogPayload(selectedLog!.request_id, payloadKind),
+  // 详情内容区（transcript）需同时展示请求 + 响应两栏，故两份 payload 都加载
+  const requestPayloadQuery = useQuery({
+    queryKey: ['logs', selectedLog?.request_id, 'payload', 'request'],
+    queryFn: () => getLogPayload(selectedLog!.request_id, 'request'),
+    enabled: Boolean(selectedLog?.request_id),
+  })
+  const responsePayloadQuery = useQuery({
+    queryKey: ['logs', selectedLog?.request_id, 'payload', 'response'],
+    queryFn: () => getLogPayload(selectedLog!.request_id, 'response'),
     enabled: Boolean(selectedLog?.request_id),
   })
 
-  const decodedPayload = decodePayloadBody(payloadQuery.data?.body_b64)
-  const sseReassembled = reassembleSSE(decodedPayload)
-  const displayedPayload = sseReassembled && payloadView === 'parsed'
-    ? formatSSESummary(sseReassembled)
-    : decodedPayload
+  const requestPayloadText = decodePayloadBody(requestPayloadQuery.data?.body_b64)
+  const responseRaw = decodePayloadBody(responsePayloadQuery.data?.body_b64)
+  const responseSSE = reassembleSSE(responseRaw)
+  // 响应文本：SSE 流式先合并成完整答案；否则用原始解码文本
+  const responsePayloadText = responseSSE && payloadView === 'parsed'
+    ? formatSSESummary(responseSSE)
+    : responseRaw
+  const payloadLoading = requestPayloadQuery.isLoading || responsePayloadQuery.isLoading
 
   const items = data?.items ?? []
   const hasMore = Boolean(data?.has_more && data.next_cursor)
@@ -286,15 +293,29 @@ export default function LogsPage() {
     setPage((current) => Math.max(1, current - 1))
   }
 
-  async function copyPayload() {
-    if (!displayedPayload) return
-    await copy(displayedPayload)
-    appToast.success('Payload 已复制')
+  async function copyAllPayload() {
+    const text = [
+      requestPayloadText && `// Request\n${requestPayloadText}`,
+      responsePayloadText && `// Response\n${responsePayloadText}`,
+    ].filter(Boolean).join('\n\n')
+    if (!text) return
+    await copy(text)
+    appToast.success('请求 / 响应内容已复制')
+  }
+
+  function downloadPayloadJson() {
+    if (!selectedLog) return
+    const blob = new Blob([JSON.stringify({ request: requestPayloadText, response: responsePayloadText }, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `log-${selectedLog.request_id}.json`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   function openLog(row: CallLogItem) {
     setSelectedLog(row)
-    setPayloadKind('request')
     setPayloadView('parsed')
   }
 
@@ -429,20 +450,18 @@ export default function LogsPage() {
 
       <LogDetailSheet
         copied={copied}
-        displayedPayload={displayedPayload}
-        onClose={() => setSelectedLog(null)}
-        onCopyPayload={copyPayload}
-        onPayloadKindChange={(kind) => { setPayloadKind(kind); setPayloadView('parsed') }}
-        onPayloadViewChange={setPayloadView}
-        open={Boolean(selectedLog)}
-        payload={payloadQuery.data}
-        payloadKind={payloadKind}
-        payloadLoading={payloadQuery.isLoading}
+        requestPayloadText={requestPayloadText}
+        responsePayloadText={responsePayloadText}
         payloadView={payloadView}
+        onPayloadViewChange={setPayloadView}
+        payloadLoading={payloadLoading}
+        onCopyAll={copyAllPayload}
+        onDownload={downloadPayloadJson}
+        onClose={() => setSelectedLog(null)}
+        open={Boolean(selectedLog)}
         row={selectedLog}
         workspaceName={selectedLog ? (workspaceNameById.get(selectedLog.workspace_id) || selectedLog.workspace_id) : undefined}
         onViewTraceLogs={viewTraceLogs}
-        sseAvailable={Boolean(sseReassembled)}
       />
     </div>
   )

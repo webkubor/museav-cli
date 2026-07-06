@@ -703,13 +703,13 @@
       "guardrails": "护栏",
       "collectOn": "采集开启",
       "collectOff": "内容关闭",
-      "collectUnknown": "内容关闭",
+      "collectUnknown": "采集未知",
       "forwardOn": "转发开启",
       "forwardOff": "转发关闭",
-      "forwardUnknown": "转发关闭"
+      "forwardUnknown": "转发未知"
     },
     "countSuffix": "{{count}} 个空间",
-    "searchPlaceholder": "按名称或工作空间 ID 搜索",
+    "searchPlaceholder": "按名称、Slug 或工作空间 ID 搜索",
     "createBtn": "创建空间",
     "loading": "正在获取数据...",
     "empty": "暂无匹配的工作空间数据",

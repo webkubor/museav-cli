@@ -89,7 +89,6 @@ function resolveBackendStatus(
 
 export default function LogsPage() {
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
-  const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const currentAccountId = useAuthStore((s) => s.account?.account_id)
   const { canManage, isEnterprise } = useTenantRole()
   // 视图默认：企业 Owner/Admin=企业视图，Member/个人租户=我的视图；手动切换后不再被角色覆盖（同总览页）
@@ -143,10 +142,15 @@ export default function LogsPage() {
     staleTime: 5 * 60_000,
   })
 
+  // API Key 归属具体工作空间（GET /workspaces/:id/api-keys），故选项必须跟随「工作空间」筛选，
+  // 而不是全局 activeWorkspaceId——否则切换日志页的工作空间筛选时，API Key 选项不对齐。
+  // 选“全部工作空间”时无法确定归属，禁用该筛选。
+  const apiKeyWorkspaceId = workspaceFilter === 'all' ? undefined : workspaceFilter
+
   const { data: apiKeysData } = useQuery({
-    queryKey: ['api-keys', activeWorkspaceId],
-    queryFn: () => listApiKeys(activeWorkspaceId!),
-    enabled: Boolean(activeWorkspaceId),
+    queryKey: ['api-keys', apiKeyWorkspaceId],
+    queryFn: () => listApiKeys(apiKeyWorkspaceId!),
+    enabled: Boolean(apiKeyWorkspaceId),
     staleTime: 60_000,
   })
 
@@ -324,7 +328,7 @@ export default function LogsPage() {
             </Select>
           </FilterField>
           <FilterField label="工作空间">
-            <Select value={workspaceFilter} onChange={(value) => { setWorkspaceFilter(value); resetPagination() }}>
+            <Select value={workspaceFilter} onChange={(value) => { setWorkspaceFilter(value); setApiKeyFilter('all'); resetPagination() }}>
               <Select.Option value="all">全部工作空间</Select.Option>
               {(workspacesData?.items ?? []).map((workspace) => (
                 <Select.Option key={workspace.workspace_id} value={workspace.workspace_id}>
@@ -344,8 +348,8 @@ export default function LogsPage() {
             </Select>
           </FilterField>
           <FilterField label="API Key">
-            <Select value={apiKeyFilter} onChange={(value) => { setApiKeyFilter(value); resetPagination() }}>
-              <Select.Option value="all">全部 API Key</Select.Option>
+            <Select value={apiKeyFilter} disabled={!apiKeyWorkspaceId} onChange={(value) => { setApiKeyFilter(value); resetPagination() }}>
+              <Select.Option value="all">{apiKeyWorkspaceId ? '全部 API Key' : '先选择工作空间'}</Select.Option>
               {(apiKeysData?.items ?? []).map((key) => (
                 <Select.Option key={key.api_key_id} value={key.api_key_id}>
                   {key.name} ({key.masked})

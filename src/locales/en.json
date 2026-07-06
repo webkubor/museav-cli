@@ -703,13 +703,13 @@
       "guardrails": "Guardrails",
       "collectOn": "Collecting",
       "collectOff": "Content off",
-      "collectUnknown": "Content off",
+      "collectUnknown": "Content unknown",
       "forwardOn": "Forwarding",
       "forwardOff": "Forward off",
-      "forwardUnknown": "Forward off"
+      "forwardUnknown": "Forward unknown"
     },
     "countSuffix": "{{count}} spaces",
-    "searchPlaceholder": "Search by name or workspace ID",
+    "searchPlaceholder": "Search by name, slug, or workspace ID",
     "createBtn": "Create Space",
     "loading": "Loading...",
     "empty": "No matching workspaces",

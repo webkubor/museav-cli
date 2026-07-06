@@ -29,6 +29,7 @@ import { TopUpModal } from '@/pages/billing/TopUpModal'
 import { useRechargeStore } from '@/store/use-recharge-store'
 import { navConfig } from '@/config/nav'
 import type { NavItem } from '@/config/nav'
+import { installAgentTools } from '@/lib/dev-agent-tools'
 import { breadcrumbConfig, FLAT_ROUTES } from '@/config/breadcrumbs'
 import { usePlatformConfig, useSite } from '@/hooks/use-platform-config'
 import { usePermissions } from '@/hooks/use-permissions'
@@ -166,6 +167,16 @@ export function DashboardLayout() {
     .groups(navCtx, t, icons)
     .map((group) => ({ ...group, items: filterNavItems(group.items) }))
     .filter((group) => group.items.length > 0)
+
+  // Dev/test：把可见导航暴露成 agent 工具（window.__mg_nav + WebMCP），供 UI 自动化按菜单枚举/跳转。
+  // 仅 VITE_SHOW_DEV_TOOLS 装载；菜单键集或工作区变化时重挂（WebMCP register/unregister on change）。
+  const menuSignature = navGroups.map((g) => `${g.scope}:${g.items.map((i) => i.itemKey).join(',')}`).join('|')
+  useEffect(() => {
+    if (!isDevTools) return
+    return installAgentTools({ navGroups, activeWorkspaceId, navigate })
+    // navGroups 用 menuSignature 稳定判等，避免每次渲染重挂
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [menuSignature, activeWorkspaceId, navigate])
 
   const getSelectedKey = () => {
     const path = location.pathname

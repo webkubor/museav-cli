@@ -29,7 +29,10 @@ import {
   LogDetailSheet,
   type PayloadView,
 } from './detail'
+import { AsyncTasksPanel } from '@/pages/tasks'
 import { LuChevronDown, LuRefreshCw, LuSearch } from 'react-icons/lu'
+
+type RecordType = 'sync' | 'async'
 
 type LogStatusFilter = 'all' | 'success' | 'guarded' | 'error'
 type LogGuardrailFilter = 'all' | 'hit' | 'not_hit'
@@ -92,13 +95,28 @@ export default function LogsPage() {
   const { canManage, isEnterprise } = useTenantRole()
   // 视图默认：企业 Owner/Admin=企业视图，Member/个人租户=我的视图；手动切换后不再被角色覆盖（同总览页）
   // 从总览「查看全部」带来的上下文：?view= 初始化视图
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const viewParam = searchParams.get('view')
   const [userView, setUserView] = useState<LogView | null>(
     viewParam === 'mine' || viewParam === 'enterprise' ? viewParam : null,
   )
   const view = userView ?? (isEnterprise && canManage ? 'enterprise' : 'mine')
   const showViewToggle = isEnterprise && canManage
+  // 记录类型（#361）：同步调用（默认，现有调用日志）/ 异步任务（原任务历史）；URL record_type 同步
+  const [recordType, setRecordType] = useState<RecordType>(
+    searchParams.get('record_type') === 'async' ? 'async' : 'sync',
+  )
+  function changeRecordType(next: RecordType) {
+    setRecordType(next)
+    setSelectedLog(null)
+    resetPagination()
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev)
+      if (next === 'async') p.set('record_type', 'async')
+      else p.delete('record_type')
+      return p
+    }, { replace: true })
+  }
   const [statusFilter, setStatusFilter] = useState<LogStatusFilter>('all')
   const [workspaceFilter, setWorkspaceFilter] = useState('all')
   const [modelFilter, setModelFilter] = useState('all')
@@ -211,7 +229,7 @@ export default function LogsPage() {
         before_started_at: currentCursor ?? undefined,
         limit: PAGE_SIZE,
       }),
-    enabled: Boolean(activeTenantId),
+    enabled: Boolean(activeTenantId) && recordType === 'sync',
     staleTime: 10_000,
     refetchOnWindowFocus: false,
   })
@@ -323,9 +341,14 @@ export default function LogsPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="调用日志"
-        description="按工作空间、成员和 API Key 追踪企业调用。"
+        description={
+          recordType === 'sync'
+            ? '按工作空间、成员和 API Key 追踪同步调用。'
+            : '查看视频、图片、音乐等异步生成任务的状态、费用和产物。'
+        }
         actions={
           <div className="flex items-center gap-3">
+            {/* 顺序固定：视图范围切换 → 记录类型切换（PRD §4/§6） */}
             {showViewToggle && (
               <SegmentedToggle<LogView>
                 ariaLabel="切换视图范围"
@@ -334,17 +357,32 @@ export default function LogsPage() {
                   { value: 'enterprise', label: '企业视图' },
                   { value: 'mine', label: '我的视图' },
                 ]}
-                onChange={(next) => { setUserView(next); if (next === 'mine') setMemberFilter('all'); resetPagination() }}
+                onChange={(next) => { setUserView(next); if (next === 'mine') setMemberFilter('all'); setSelectedLog(null); resetPagination() }}
               />
             )}
-            <Button variant="outline" disabled={isLoading || isFetching} onClick={() => refetch()}>
-              <LuRefreshCw className={`mr-1.5 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-              刷新
-            </Button>
+            <SegmentedToggle<RecordType>
+              ariaLabel="切换记录类型"
+              value={recordType}
+              options={[
+                { value: 'sync', label: '同步调用' },
+                { value: 'async', label: '异步任务' },
+              ]}
+              onChange={changeRecordType}
+            />
+            {recordType === 'sync' && (
+              <Button variant="outline" disabled={isLoading || isFetching} onClick={() => refetch()}>
+                <LuRefreshCw className={`mr-1.5 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+                刷新
+              </Button>
+            )}
           </div>
         }
       />
 
+      {recordType === 'async' ? (
+        <AsyncTasksPanel view={view} currentAccountId={currentAccountId} />
+      ) : (
+        <>
       <section className="space-y-4 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[180px_180px_minmax(180px,1fr)_minmax(180px,1fr)_minmax(180px,1fr)_auto] lg:items-end">
           <FilterField label="时间范围">
@@ -463,6 +501,8 @@ export default function LogsPage() {
         workspaceName={selectedLog ? (workspaceNameById.get(selectedLog.workspace_id) || selectedLog.workspace_id) : undefined}
         onViewTraceLogs={viewTraceLogs}
       />
+        </>
+      )}
     </div>
   )
 }

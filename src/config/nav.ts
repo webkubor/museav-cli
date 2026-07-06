@@ -95,9 +95,8 @@ export const navConfig: NavConfig = {
       label: t('nav.groupActivity'),
       scope: 'tenant',
       items: [
-        // 任务历史：租户级（route /tasks、数据按 tenant 取、workspace_id 恒 undefined），
-        // 归入活动中心组，避免误挂「工作空间」组让人以为随空间切换而变。
-        { itemKey: 'tasks', text: t('nav.tasks'), icon: icons.clapper },
+        // 任务历史（异步任务）已并入「调用日志」，通过页头「记录类型」切换查看（#361）；
+        // /tasks 路由重定向到 /logs?record_type=async，此处不再单列入口。
         { itemKey: 'referral', text: t('nav.referral'), icon: icons.gift },
       ],
     },

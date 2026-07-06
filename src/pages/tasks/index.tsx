@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   LuSearch,
@@ -19,7 +18,6 @@ import { appToast } from '@/lib/app-toast'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { PageHeader } from '@/components/ui/PageHeader'
 import Select from '@/components/ui/Select'
 import { SideSheet } from '@/components/ui/SideSheet'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -390,8 +388,11 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
 
 // ─── 主页面 ───────────────────────────────────────────────────────────────────
 
-export default function TasksPage() {
-  const { t } = useTranslation()
+/**
+ * 异步任务面板（#361）：从原「任务历史」页抽出，内嵌到「调用日志」页的「异步任务」记录类型下。
+ * 视图范围沿用调用日志：mine=按当前账号裁剪；enterprise/space=租户/空间范围（服务端权威裁剪）。
+ */
+export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise' | 'mine'; currentAccountId?: string }) {
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
 
   const [search, setSearch]         = useState('')
@@ -405,11 +406,13 @@ export default function TasksPage() {
 
   const params = useMemo(() => ({
     workspace_id: undefined,
+    // 「我的视图」按当前账号裁剪；企业/空间视图交服务端按角色/负责空间裁剪（见 #357 后端口径）
+    account_id: view === 'mine' ? currentAccountId || undefined : undefined,
     status: statusFilter !== 'all' ? statusFilter : undefined,
     search: search || undefined,
     limit: PAGE_SIZE,
     offset,
-  }), [statusFilter, search, offset])
+  }), [statusFilter, search, offset, view, currentAccountId])
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['tasks', tenantId, params],
@@ -453,25 +456,7 @@ export default function TasksPage() {
 
   return (
     <div>
-      {/* 页头 */}
-      <PageHeader
-        title={t('nav.tasks')}
-        className="mb-6"
-        actions={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isFetching}
-            title={`每 ${REFRESH_INTERVAL}s 自动刷新；点击立即刷新并重新计时`}
-          >
-            <LuRefreshCw size={13} className={cn(isFetching && 'animate-spin')} />
-            {isFetching ? '刷新中' : `刷新 · ${countdown}s`}
-          </Button>
-        }
-      />
-
-      {/* 筛选栏 */}
+      {/* 筛选栏（记录类型=异步任务：首屏筛选 搜索/类型/状态 + 右侧倒计时刷新） */}
       <div className="flex items-center gap-3 mb-5 flex-wrap">
         <div className="relative">
           <LuSearch size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-mg-text-3 pointer-events-none" />
@@ -499,11 +484,21 @@ export default function TasksPage() {
           <Select.Option value="cancelled">已取消</Select.Option>
         </Select>
 
-        {total > 0 && (
-          <span className="ml-auto mg-text-caption text-mg-text-3">
-            共 {total} 条
-          </span>
-        )}
+        <div className="ml-auto flex items-center gap-3">
+          {total > 0 && (
+            <span className="mg-text-caption text-mg-text-3">共 {total} 条</span>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isFetching}
+            title={`每 ${REFRESH_INTERVAL}s 自动刷新；点击立即刷新并重新计时`}
+          >
+            <LuRefreshCw size={13} className={cn(isFetching && 'animate-spin')} />
+            {isFetching ? '刷新中' : `刷新 · ${countdown}s`}
+          </Button>
+        </div>
       </div>
 
       {/* 提示条：只放唯一注意事项（有效期/保存），不与页头描述重复 */}

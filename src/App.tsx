@@ -33,7 +33,6 @@ const ModelsCatalogPage = lazy(() => import('@/pages/models/catalog'))
 const ModelDetailPage = lazy(() => import('@/pages/models/detail'))
 const ModelsComparePage = lazy(() => import('@/pages/models-compare'))
 const PlatformConfigPage = lazy(() => import('@/pages/platform-config'))
-const TasksPage = lazy(() => import('@/pages/tasks'))
 const NotFoundPage = lazy(() => import('@/pages/not-found'))
 import { storageKeys } from '@/lib/storage'
 import { getMarket, type Market } from '@/lib/market'
@@ -191,7 +190,8 @@ export default function App() {
             </Route>
             <Route path="usage" element={<UsagePage />} />
             <Route path="logs" element={<LogsPage />} />
-            <Route path="tasks" element={<TasksPage />} />
+            {/* 任务历史已并入调用日志（#361）：旧路由重定向到「异步任务」记录类型 */}
+            <Route path="tasks" element={<Navigate to="/logs?record_type=async" replace />} />
             <Route path="billing" element={<BillingPage />} />
             <Route path="referral" element={<ReferralPage />} />
             <Route path="dev-config" element={<PlatformConfigPage />} />

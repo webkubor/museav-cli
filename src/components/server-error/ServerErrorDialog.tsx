@@ -53,6 +53,10 @@ export function ServerErrorDialog() {
   const subject = `ModelGo 控制台服务异常${current.requestId ? ` - ${current.requestId}` : ''}`
   const emailBody = `我在使用 ModelGo 控制台时遇到了服务异常，请帮忙排查。\n\n${diagnosticsText}`
   const mailHref = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`
+  const sendEmail = () => {
+    window.location.href = mailHref
+    dismiss()
+  }
 
   return (
     <Modal
@@ -71,11 +75,8 @@ export function ServerErrorDialog() {
           <Button variant="outline" onClick={dismiss}>
             关闭
           </Button>
-          <Button asChild variant="default">
-            <a href={mailHref} onClick={dismiss}>
-              <LuMail size={14} />
-              发 Email
-            </a>
+          <Button variant="default" icon={<LuMail size={14} />} onClick={sendEmail}>
+            发 Email
           </Button>
         </>
       }

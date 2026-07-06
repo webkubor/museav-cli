@@ -33,7 +33,7 @@ export function GreetingHeader({
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 className="flex items-center gap-2 text-xl font-bold text-mg-text-1 m-0">
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-mg-text-1 m-0">
           <span>{t(greetingKey, { name: displayName })}</span>
           <span role="img" aria-label="waving hand">👋</span>
         </h1>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { LuKeyRound, LuPlug, LuScrollText, LuArrowRight, LuCopy, LuCheck, LuX, LuTerminal, LuZap, LuChevronRight } from 'react-icons/lu'
+import { LuKeyRound, LuPlug, LuScrollText, LuArrowRight, LuCopy, LuCheck, LuX, LuSquareTerminal, LuZap, LuChevronRight } from 'react-icons/lu'
 import { Card } from '@/components/ui/Card'
 import { useCopy } from '@/hooks/use-copy'
 import { useMarket } from '@/hooks/useMarket'
@@ -51,7 +51,7 @@ export function QuickStartSection() {
 
   const steps = [
     {
-      icon: <LuKeyRound size={18} />,
+      icon: <LuKeyRound size={22} />,
       title: t('dashboard.workbench.quickStart.step1Title'),
       desc: t('dashboard.workbench.quickStart.step1Desc'),
       action: t('dashboard.workbench.quickStart.step1Action'),
@@ -59,7 +59,7 @@ export function QuickStartSection() {
       onClick: () => navigate(scopedWorkspacePath(activeWorkspaceId, 'api-keys')),
     },
     {
-      icon: <LuPlug size={18} />,
+      icon: <LuPlug size={22} />,
       title: t('dashboard.workbench.quickStart.step2Title'),
       desc: t('dashboard.workbench.quickStart.step2Desc'),
       action: t('dashboard.workbench.quickStart.step2Action'),
@@ -67,7 +67,7 @@ export function QuickStartSection() {
       onClick: () => setConnectOpen(true),
     },
     {
-      icon: <LuScrollText size={18} />,
+      icon: <LuScrollText size={22} />,
       title: t('dashboard.workbench.quickStart.step3Title'),
       desc: t('dashboard.workbench.quickStart.step3Desc'),
       action: t('dashboard.workbench.quickStart.step3Action'),
@@ -89,11 +89,8 @@ export function QuickStartSection() {
         </button>
 
         <div className="mb-5 flex items-center gap-2.5 pr-8">
-          <span
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-white shadow-sm"
-            style={{ background: 'var(--mg-brand-gradient)' }}
-          >
-            <LuZap size={16} />
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-base/12 text-brand-base">
+            <LuZap size={17} />
           </span>
           <h3 className="text-base font-bold text-mg-text-1 m-0">{t('dashboard.workbench.quickStart.title')}</h3>
           <span className="inline-flex items-center rounded-full bg-brand-base/12 px-2 py-0.5 text-[11px] font-bold text-brand-base">
@@ -106,14 +103,14 @@ export function QuickStartSection() {
             <div key={step.title} className="relative flex items-start gap-3 sm:pr-8">
               {/* 步骤连接线：圆心高度的虚线 + 箭头，指向下一步（最后一步不画） */}
               {i < steps.length - 1 && (
-                <div className="pointer-events-none absolute right-1 top-6 hidden items-center sm:flex">
+                <div className="pointer-events-none absolute right-1 top-7 hidden items-center sm:flex">
                   <span className="block w-6 border-t border-dashed border-mg-border" />
                   <LuChevronRight size={14} className="-ml-1 text-mg-text-4" />
                 </div>
               )}
               <div className="relative shrink-0">
                 <span
-                  className="flex h-12 w-12 items-center justify-center rounded-full text-white shadow-md"
+                  className="flex h-14 w-14 items-center justify-center rounded-full text-white shadow-md"
                   style={{ background: 'var(--mg-brand-gradient)' }}
                 >
                   {step.icon}
@@ -140,15 +137,19 @@ export function QuickStartSection() {
         </div>
 
         <div className="mg-tile mt-4 flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-2">
-              <LuTerminal size={14} className="shrink-0 text-mg-text-3" />
-              <span className="text-xs font-bold text-mg-text-1">{t('dashboard.workbench.quickStart.cliTitle')}</span>
-              <span className="inline-flex items-center rounded-full bg-brand-base/12 px-1.5 py-px text-[10px] font-bold text-brand-base">
-                {t('dashboard.workbench.quickStart.cliBadge')}
-              </span>
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-base/12 text-brand-base">
+              <LuSquareTerminal size={17} />
+            </span>
+            <div className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-mg-text-1">{t('dashboard.workbench.quickStart.cliTitle')}</span>
+                <span className="inline-flex items-center rounded-full bg-brand-base/12 px-1.5 py-px text-[10px] font-bold text-brand-base">
+                  {t('dashboard.workbench.quickStart.cliBadge')}
+                </span>
+              </div>
+              <span className="text-[11px] text-mg-text-3">{t('dashboard.workbench.quickStart.cliHint')}</span>
             </div>
-            <span className="pl-6 text-[11px] text-mg-text-3">{t('dashboard.workbench.quickStart.cliHint')}</span>
           </div>
           <button
             type="button"

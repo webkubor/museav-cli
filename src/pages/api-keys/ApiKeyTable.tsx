@@ -33,10 +33,13 @@ type Props = {
   onCopyKey: (item: ApiKeyItem) => void
   /** 正在 reveal 的 key id（行内 loading） */
   copyingKeyId: string | null
+  /** #358：列表含他人 Key 时（管理员/负责人视角）展示「创建人」列；成员只见自己的则自动隐藏 */
+  showOwner?: boolean
 }
 
-export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuardrail, onCopyKey, copyingKeyId }: Props) {
+export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuardrail, onCopyKey, copyingKeyId, showOwner = false }: Props) {
   const { t } = useTranslation()
+  const colSpan = showOwner ? 9 : 8
 
   return (
     <Table>
@@ -50,6 +53,7 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
             </span>
           </TableHead>
           <TableHead>作用域</TableHead>
+          {showOwner && <TableHead>创建人</TableHead>}
           <TableHead>{t('apiKeys.table.status')}</TableHead>
           <TableHead>{t('apiKeys.table.totalSpend')}</TableHead>
           <TableHead>{t('apiKeys.table.createdAt')}</TableHead>
@@ -60,13 +64,13 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
       <TableBody>
         {isLoading ? (
           <TableRow>
-            <TableCell colSpan={8} className="text-center py-10 text-mg-text-3">{t('common.loading')}</TableCell>
+            <TableCell colSpan={colSpan} className="text-center py-10 text-mg-text-3">{t('common.loading')}</TableCell>
           </TableRow>
         ) : items.length === 0 ? (
           <EmptyState
             icon={<LuKeyRound />}
             title={t('apiKeys.table.noData')}
-            colSpan={8}
+            colSpan={colSpan}
           />
         ) : (
           items.map((record) => {
@@ -136,6 +140,11 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
                     : <span className="text-mg-text-3 text-xs">—</span>
                   }
                 </TableCell>
+                {showOwner && (
+                  <TableCell className="text-xs text-mg-text-2">
+                    {record.owner?.display_name || record.owner?.email || '—'}
+                  </TableCell>
+                )}
                 <TableCell>
                   <StatusBadge
                     status={record.status}

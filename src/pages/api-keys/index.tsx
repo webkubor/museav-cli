@@ -45,6 +45,7 @@ export default function ApiKeysPage() {
   const [editGuardrailKey, setEditGuardrailKey] = useState<ApiKeyItem | null>(null)
 
   const activeWorkspaceId = useAuthStore((state) => state.activeWorkspaceId) || '01HV3KWS000000000000001'
+  const currentAccountId = useAuthStore((state) => state.account?.account_id)
   const { hasPermission } = usePermissions()
   const canCreate = hasPermission(PERMS.API_KEYS_CREATE)
   const canRevoke = hasPermission(PERMS.API_KEYS_REVOKE)
@@ -56,6 +57,12 @@ export default function ApiKeysPage() {
   })
 
   const apiKeyItems = pageItems(data)
+  // #358 角色可见性：可见范围完全由后端返回的行决定（后端 #359 落地后成员只回自己的，此处自动收窄）。
+  // 前端据「返回里是否含他人的 Key」派生提示 + 是否展示「创建人」列——无需客户端过滤，前后端切换零改动。
+  const distinctOwnerCount = new Set(apiKeyItems.map((k) => k.owner?.account_id).filter(Boolean)).size
+  const showsOthers = apiKeyItems.some(
+    (k) => k.owner?.account_id && k.owner.account_id !== currentAccountId,
+  )
 
   const revokeMutation = useMutation({
     mutationFn: (keyId: string) => revokeApiKey(activeWorkspaceId, keyId),
@@ -162,6 +169,14 @@ export default function ApiKeysPage() {
         )}
       </div>
 
+      {!isLoading && apiKeyItems.length > 0 && (
+        <p className="-mt-2 mg-text-caption text-mg-text-3">
+          {showsOthers
+            ? `作用域：当前工作空间 · 显示本空间全部成员的 API Key（${distinctOwnerCount} 位成员）`
+            : '作用域：当前工作空间 · 仅显示你创建的 API Key'}
+        </p>
+      )}
+
       <ApiKeyTable
         isLoading={isLoading}
         items={filteredData}
@@ -170,6 +185,7 @@ export default function ApiKeysPage() {
         onEditGuardrail={setEditGuardrailKey}
         onCopyKey={handleCopyKey}
         copyingKeyId={copyingKeyId}
+        showOwner={showsOthers}
       />
 
       <ConnectModal

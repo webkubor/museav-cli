@@ -19,7 +19,9 @@ import {
   LuCircleDollarSign,
   LuActivity,
   LuDatabase,
-  LuFileText
+  LuFileText,
+  LuLayoutGrid,
+  LuLayoutList
 } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listWorkspaces, createWorkspace, getWorkspace } from '@/services/workspaces'
@@ -60,6 +62,8 @@ export default function WorkspacesPage() {
   const [modalVisible, setModalVisible] = useState(false)
   // 单页结构：选中卡片在下方展开详情（不跳路由，对齐原型 .space-detail-shell）
   const [selectedId, setSelectedId] = useState<string>('')
+  // 布局切换：compact（紧凑横滚） | grid（网格展开）
+  const [viewMode, setViewMode] = useState<'compact' | 'grid'>('compact')
 
   // 受控表单状态
   const [name, setName] = useState('')
@@ -247,9 +251,43 @@ export default function WorkspacesPage() {
             {t('workspaces.countSuffix', { count: filteredData.length })}
           </span>
         </div>
+
+        {/* 布局切换按钮 */}
+        {filteredData.length > 0 && (
+          <div className="flex items-center gap-1 bg-mg-fill-0/10 p-0.5 rounded-lg border border-mg-border/20 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode('compact')}
+              className={cn(
+                "h-7 w-7 !rounded-md flex items-center justify-center border transition-all p-0",
+                viewMode === 'compact'
+                  ? "bg-mg-bg-0 text-brand-base shadow-sm border-mg-border/30"
+                  : "bg-transparent text-mg-text-3 border-transparent hover:text-mg-text-1"
+              )}
+              title="紧凑横滚"
+            >
+              <LuLayoutList size={14} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              className={cn(
+                "h-7 w-7 !rounded-md flex items-center justify-center border transition-all p-0",
+                viewMode === 'grid'
+                  ? "bg-mg-bg-0 text-brand-base shadow-sm border-mg-border/30"
+                  : "bg-transparent text-mg-text-3 border-transparent hover:text-mg-text-1"
+              )}
+              title="网格展开"
+            >
+              <LuLayoutGrid size={14} />
+            </Button>
+          </div>
+        )}
       </div>
 
-      {/* 卡片网格 */}
+      {/* 空间列表区域 */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20 text-mg-text-3 gap-2">
           <svg className="animate-spin h-5 w-5 text-brand-base" fill="none" viewBox="0 0 24 24">
@@ -260,7 +298,49 @@ export default function WorkspacesPage() {
         </div>
       ) : filteredData.length === 0 ? (
         <EmptyState title={t('workspaces.empty')} />
+      ) : viewMode === 'compact' ? (
+        /* 紧凑横滚布局 */
+        <div className="flex items-center gap-3 overflow-x-auto pb-3 pt-1 scrollbar-thin">
+          {filteredData.map((ws) => {
+            const isSelected = validSelectedId === ws.workspace_id
+            return (
+              <Card
+                key={ws.workspace_id}
+                level={2}
+                onClick={() => setSelectedId(ws.workspace_id)}
+                className={cn(
+                  "group relative p-3 flex flex-row items-center justify-between gap-4 cursor-pointer transition-all border overflow-hidden rounded-lg min-w-[220px] max-w-[260px] shrink-0 h-[64px]",
+                  isSelected 
+                    ? "bg-brand-base/[0.03] border-brand-base/20" 
+                    : "bg-mg-bg-0 border-mg-border/40 hover:bg-mg-fill-0/20 hover:border-mg-border/60"
+                )}
+              >
+                {/* 左侧紫色 Rail */}
+                {isSelected && (
+                  <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-brand-base animate-in slide-in-from-left duration-200" />
+                )}
+
+                <div className="min-w-0 flex-1 pl-1">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-bold text-mg-text-1 text-[13px] truncate">{ws.name}</h3>
+                    {ws.is_default && (
+                      <span className="shrink-0 scale-75 origin-left text-[9px] font-semibold px-1.5 py-0.5 rounded-sm bg-mg-warning/8 text-mg-warning border border-mg-warning/15">
+                        {t('workspaces.defaultBadge')}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[10px] font-mono text-mg-text-3 truncate mt-0.5">@{ws.slug}</div>
+                </div>
+
+                <div className="flex items-center justify-center w-6 h-6 rounded bg-brand-base/5 border border-brand-base/10 text-brand-base shrink-0">
+                  <LuKey size={11} />
+                </div>
+              </Card>
+            )
+          })}
+        </div>
       ) : (
+        /* 网格展开布局 */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredData.map((ws) => {
             const isSelected = validSelectedId === ws.workspace_id

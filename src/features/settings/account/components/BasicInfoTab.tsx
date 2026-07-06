@@ -55,7 +55,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
     },
   })
 
-  const avatarLetter = (profile.display_name || profile.email).charAt(0).toUpperCase()
+  const avatarLetter = (profile.display_name || profile.email || profile.phone || 'U').charAt(0).toUpperCase()
   const isDirty = displayName.trim() !== profile.display_name && displayName.trim() !== ''
 
   return (
@@ -74,24 +74,41 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             {profile.display_name || '—'}
           </div>
           <div style={{ color: 'var(--mg-text-2)', fontSize: '13px', marginTop: '3.5px' }}>
-            {profile.email}
+            {profile.email || (profile.phone ? `${profile.phone.includes('+') ? '' : '+86 '}${profile.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')}` : '—')}
           </div>
         </div>
       </div>
 
       {/* 表单 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '480px' }}>
+        {profile.phone && (
+          <div>
+            <span style={{ fontSize: '12.5px', color: 'var(--mg-text-2)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              手机号码
+            </span>
+            <Input
+              value={`${profile.phone.includes('+') ? '' : '+86 '}${profile.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')}`}
+              disabled
+              style={{ backgroundColor: 'var(--mg-bg-1)', borderRadius: '8px', border: '1px solid var(--mg-border)' }}
+            />
+            <span style={{ fontSize: '11.5px', color: 'var(--mg-text-3)', marginTop: '6px', display: 'block' }}>
+              绑定的安全手机号，暂不支持自主修改。
+            </span>
+          </div>
+        )}
+
         <div>
           <span style={{ fontSize: '12.5px', color: 'var(--mg-text-2)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             {t('account.info.emailLabel')}
           </span>
           <Input
-            value={profile.email}
+            value={profile.email || ''}
+            placeholder={profile.email ? undefined : '未绑定'}
             disabled
             style={{ backgroundColor: 'var(--mg-bg-1)', borderRadius: '8px', border: '1px solid var(--mg-border)' }}
           />
           <span style={{ fontSize: '11.5px', color: 'var(--mg-text-3)', marginTop: '6px', display: 'block' }}>
-            {t('account.info.emailHint')}
+            {profile.email ? t('account.info.emailHint') : '暂未绑定电子邮箱。'}
           </span>
         </div>
 

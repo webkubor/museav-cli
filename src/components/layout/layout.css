@@ -33,7 +33,7 @@
       rgba(var(--brand-base-rgb), 0.06) 50%,
       transparent 72%
     );
-  opacity: 0.22;
+  opacity: 0.15;
   mix-blend-mode: screen;
   filter: saturate(1.08) contrast(1.04);
 }

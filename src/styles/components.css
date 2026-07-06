@@ -127,7 +127,7 @@
 }
 
 .modern-btn-default:hover {
-  transform: translateY(-1.5px);
+  transform: translateY(-0.5px);
   background-color: #1e293b !important;
   border-color: #1e293b !important;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12), 0 1px 2px rgba(0, 0, 0, 0.05) !important;
@@ -141,7 +141,7 @@ body[theme-mode='dark'] .modern-btn-default {
 }
 
 body[theme-mode='dark'] .modern-btn-default:hover {
-  transform: translateY(-1.5px);
+  transform: translateY(-0.5px);
   background-color: rgba(255, 255, 255, 0.16) !important;
   border-color: rgba(255, 255, 255, 0.20) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2) !important;
@@ -155,7 +155,7 @@ body[theme-mode='dark'] .modern-btn-default:hover {
 }
 
 .modern-btn-destructive:hover {
-  transform: translateY(-1.5px);
+  transform: translateY(-0.5px);
   background-color: #e11d48 !important;
   box-shadow: 0 4px 12px rgba(244, 63, 94, 0.25), 0 1px 2px rgba(0, 0, 0, 0.05) !important;
 }
@@ -168,7 +168,7 @@ body[theme-mode='dark'] .modern-btn-default:hover {
 }
 
 .modern-btn-outline:hover {
-  transform: translateY(-1px);
+  transform: translateY(-0.5px);
   background-color: var(--mg-fill-0) !important;
   border-color: rgba(15, 23, 42, 0.12) !important;
 }
@@ -181,7 +181,7 @@ body[theme-mode='dark'] .modern-btn-default:hover {
 }
 
 .modern-btn-secondary:hover {
-  transform: translateY(-1px);
+  transform: translateY(-0.5px);
   background-color: var(--mg-fill-1) !important;
   color: var(--mg-text-1) !important;
 }
@@ -208,18 +208,14 @@ body[theme-mode='dark'] .modern-btn-default:hover {
   color: var(--brand-deep) !important;
 }
 
-/* Brand 主色调按钮 — 渐变 + 光晕 + 上浮 */
+/* Brand 主色调按钮 — 实色 + 扫光（保留扫光作为高级细节） */
 .modern-btn-brand {
   color: #ffffff;
   font-weight: 700;
   letter-spacing: -0.02em;
   border: none !important;
-  /* 只用已定义的品牌原子：deep→base 斜向渐变。曾用 var(--brand-purple)（从未定义）→ 整条 background
-     在 computed-value 阶段失效并回退 initial(transparent)，叠加 !important 反而压掉 bg-brand-base 兜底，
-     使所有 .modern-btn-brand 变「白字透明底」＝隐形按钮（组织邀请页最先暴露）。 */
-  background: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand-base) 100%) !important;
-  box-shadow: 0 2px 10px var(--brand-glow), 0 1px 2px rgba(0, 0, 0, 0.08) !important;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  background: var(--brand-base) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
@@ -229,7 +225,7 @@ body[theme-mode='dark'] .modern-btn-default:hover {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+  background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
   pointer-events: none;
 }
 
@@ -254,9 +250,9 @@ body[theme-mode='dark'] .modern-btn-default:hover {
 }
 
 .modern-btn-brand:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px var(--brand-glow), 0 3px 8px rgba(0, 0, 0, 0.12) !important;
-  filter: brightness(1.06) saturate(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px var(--brand-glow), 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  filter: brightness(1.04) saturate(1.08);
 }
 
 .modern-btn-brand:not(:disabled):active {
@@ -278,7 +274,7 @@ body[theme-mode='dark'] .modern-btn-default:hover {
 }
 .mg-tile-hover:hover {
   box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   border-color: color-mix(in oklab, var(--brand-base) 24%, var(--mg-border));
 }
 

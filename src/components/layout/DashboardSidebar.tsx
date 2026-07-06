@@ -87,7 +87,7 @@ const SidebarNavItem: React.FC<{
         "group flex items-center gap-3 mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-300 select-none outline-none focus-visible:ring-1 focus-visible:ring-brand-glow relative",
         collapsed ? "justify-center" : "justify-start",
         isSelected
-          ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
+          ? "bg-brand-selected-bg text-brand-base font-bold"
           : "text-mg-text-2 hover:bg-mg-fill-0/50 hover:text-mg-text-1 active:scale-[0.96] hover:translate-x-[2px]"
       )}
     >
@@ -135,7 +135,7 @@ const SidebarMenuGroup: React.FC<{
           role="button"
           className={cn(
             "group flex items-center justify-center mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer text-mg-text-3 hover:bg-mg-fill-0/50 hover:text-mg-text-1 active:scale-[0.96] transition-all duration-300",
-            isChildSelected && "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
+            isChildSelected && "bg-brand-selected-bg text-brand-base font-bold"
           )}
           title={item.text}
           onClick={() => {
@@ -248,7 +248,7 @@ const SidebarSettingsButton: React.FC<{
         "group flex items-center gap-3 mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-300 select-none outline-none focus-visible:ring-1 focus-visible:ring-brand-glow",
         collapsed ? "justify-center" : "justify-start",
         isSelected
-          ? "bg-brand-selected-bg text-brand-base font-bold shadow-sm shadow-brand-glow/5"
+          ? "bg-brand-selected-bg text-brand-base font-bold"
           : "text-mg-text-2 hover:bg-mg-fill-0/50 hover:text-mg-text-1 active:scale-[0.96] hover:translate-x-[2px]"
       )}
     >

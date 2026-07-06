@@ -150,7 +150,7 @@
   /* 导航 */
   --nav-item-hover-bg: rgba(15, 23, 42, 0.035);
   --grid-color: rgba(15, 23, 42, 0.02);
-  --ambient-particle-opacity: 0.72;
+  --ambient-particle-opacity: 0.5;
 }
 
 /* 国内市场：代码块/网格的品牌色调（border/fill/语义交共享，本块只留控制台特有项） */

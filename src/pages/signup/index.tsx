@@ -167,12 +167,7 @@ function EmailSignupPage() {
         referral_code: data.referral_code?.trim() || undefined,
       }, captchaParam)
       setAuth(
-        {
-          account_id: result.account.account_id,
-          display_name: result.account.display_name,
-          email: result.account.email,
-          avatar_url: result.account.avatar_url,
-        },
+        result.account,
         result.default_tenant_id,
         [],
         result.default_workspace_id

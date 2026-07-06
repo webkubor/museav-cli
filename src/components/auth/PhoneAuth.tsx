@@ -97,12 +97,7 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
       const session = await getSession()
       clearAuthGuard({ action: 'phone-login', subject: data.phone })
       setAuth(
-        {
-          account_id: session.account.account_id,
-          display_name: session.account.display_name,
-          email: session.account.email,
-          avatar_url: session.account.avatar_url,
-        },
+        session.account,
         session.active_tenant_id,
         session.tenants,
         session.active_workspace_id,

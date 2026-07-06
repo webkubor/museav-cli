@@ -28,13 +28,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((result) => {
         // 刷新时优先恢复用户上次选择的工作区（localStorage），无记录才回退会话默认
         const persistedWs = localStorage.getItem(storageKeys.activeWorkspaceId())
+        // account 直传：保留后端下发的全部字段（尤其 phone，强制绑手机守卫依赖它）。
+        // 曾在此处只挑 4 个字段重建 account，把 phone 丢了，导致刷新/切组织后守卫误判无手机号。
         setAuth(
-          {
-            account_id: result.account.account_id,
-            display_name: result.account.display_name,
-            email: result.account.email,
-            avatar_url: result.account.avatar_url,
-          },
+          result.account,
           result.active_tenant_id,
           result.tenants,
           persistedWs || result.active_workspace_id,

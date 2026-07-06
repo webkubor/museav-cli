@@ -40,12 +40,7 @@ export default function AuthCallbackPage() {
         try {
           const result = await getSession()
           setAuth(
-            {
-              account_id: result.account.account_id,
-              display_name: result.account.display_name,
-              email: result.account.email,
-              avatar_url: result.account.avatar_url,
-            },
+            result.account,
             result.active_tenant_id,
             result.tenants,
             result.active_workspace_id,

@@ -9,6 +9,7 @@
  */
 import { ModelGoApiError, isServerErrorCode } from '@/lib/request'
 import { useAuthStore } from '@/store/auth'
+import { useServerErrorStore } from '@/store/use-server-error-store'
 
 export interface ServerErrorDiagnostics {
   requestId?: string
@@ -93,6 +94,30 @@ export function getServerErrorDiagnostics(error: unknown): ServerErrorDiagnostic
   }
 
   return null
+}
+
+/**
+ * 全局上报：任何服务端级错误（5xxxx 业务码 / HTTP 5xx）自动弹出诊断弹窗。
+ * 由 request.ts 的拦截器统一调用，使诊断不依赖各处 onError 是否调用 requestError。
+ * 非服务端错误返回 null → 不弹窗。多次调用幂等（重复 show 同一份诊断无副作用）。
+ */
+export function reportServerError(error: unknown): void {
+  const diagnostics = getServerErrorDiagnostics(error)
+  if (diagnostics) useServerErrorStore.getState().show(diagnostics)
+}
+
+/**
+ * 直接从 HTTP 响应上报：网关级 HTTP 5xx（可能不是 JSON 信封，无法走 ModelGoApiError 路径）。
+ * 由 request.ts 的 afterResponse 拦截器统一调用。非 5xx 直接忽略。
+ */
+export function reportHttpServerError(response: Response): void {
+  if (response.status < 500 || response.status >= 600) return
+  useServerErrorStore.getState().show({
+    status: response.status,
+    requestId: response.headers.get('x-request-id') ?? undefined,
+    traceId: response.headers.get('x-trace-id') ?? response.headers.get('traceparent') ?? undefined,
+    ...envBase(),
+  })
 }
 
 /** 复制到剪贴板的完整信息块。 */

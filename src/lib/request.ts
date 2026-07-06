@@ -5,6 +5,7 @@ import { getMarket } from '@/lib/market'
 import { useLangStore } from '@/store/use-brand-store'
 import { handleSessionExpired } from '@/lib/auth/auth-controller'
 import { encryptRequest, decryptResponse } from '@/lib/crypto/secure-transport'
+import { reportServerError, reportHttpServerError } from '@/lib/error-diagnostics'
 
 const API_V1_PREFIX = 'api/v1'
 
@@ -182,6 +183,10 @@ const client = ky.create({
     ],
     afterResponse: [
       async function handleBusinessError({ request, response }) {
+        // 全局：HTTP 5xx（网关 503 等，可能非 JSON 信封）在拦截器统一弹服务端错误诊断，
+        // 不依赖各处 onError 是否调用 requestError。非 5xx 内部忽略。
+        reportHttpServerError(response)
+
         const contentType = response.headers.get('content-type') ?? ''
         if (!contentType.includes('application/json')) return
 
@@ -216,7 +221,7 @@ const client = ky.create({
 
 function unwrapEnvelope<T>(envelope: ApiResponse<T>): T {
   if (envelope.code !== 0) {
-    throw new ModelGoApiError({
+    const error = new ModelGoApiError({
       code: envelope.code,
       msg: envelope.msg,
       request_id: envelope.request_id,
@@ -226,6 +231,9 @@ function unwrapEnvelope<T>(envelope: ApiResponse<T>): T {
           ? (envelope.data as ApiError['data'])
           : null,
     })
+    // 全局：5xxxx 业务码（HTTP 200 但服务端级错误）在此统一弹诊断，不依赖调用方 onError。
+    reportServerError(error)
+    throw error
   }
   return envelope.data
 }

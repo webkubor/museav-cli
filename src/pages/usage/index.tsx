@@ -173,20 +173,22 @@ export default function UsagePage() {
 
   const workspaceSourceItems = useMemo<UsageRankingItem[]>(() => {
     const groups = workspaceSourceQuery.data?.groups ?? []
+    // 后端 group_by=workspace 的 label/key 都是 workspace_id，用工作空间列表映射成名称
+    const nameById = new Map(workspaceList.map((w) => [w.workspace_id, w.name]))
     const total = groups.reduce((sum, group) => sum + parseFloat(group.spend.amount || '0'), 0)
     return groups.map((group, index) => {
       const amount = parseFloat(group.spend.amount || '0')
       return {
         rank: index + 1,
         key: group.key,
-        name: group.label,
+        name: nameById.get(group.key) || group.label,
         spend: group.spend,
         requests: group.requests,
         tokens: group.tokens,
         share_percent: total > 0 ? (amount / total) * 100 : undefined,
       }
     })
-  }, [workspaceSourceQuery.data])
+  }, [workspaceSourceQuery.data, workspaceList])
 
   const sourceSections: CostSourceSection[] = [
     {

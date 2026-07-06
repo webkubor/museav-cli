@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { LuLayers, LuArrowUpRight } from 'react-icons/lu'
 import { getUsageSummary } from '@/services/usage'
+import { listWorkspaces } from '@/services/workspaces'
 import { useAuthStore } from '@/store/auth'
 import { Card } from '@/components/ui/Card'
 import { Money } from '@/components/ui/Money'
@@ -28,6 +29,20 @@ export function WorkspaceBreakdownSection({ granularity, accountId, view = 'ente
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })
+
+  // 后端 group_by=workspace 的分组 label/key 都是 workspace_id，这里用工作空间列表把 id 映射成名称
+  // （复用 DashboardLayout 的同 queryKey 共享缓存）。
+  const { data: workspaceItems = [] } = useQuery({
+    queryKey: ['workspaces', activeTenantId],
+    queryFn: () => listWorkspaces().then((res) => res.items ?? []),
+    enabled: !!activeTenantId,
+    staleTime: 60_000,
+  })
+  const nameById = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const w of workspaceItems) m.set(w.workspace_id, w.name)
+    return m
+  }, [workspaceItems])
 
   const groups = (data?.groups ?? []).slice(0, 6)
 
@@ -64,7 +79,7 @@ export function WorkspaceBreakdownSection({ granularity, accountId, view = 'ente
           {groups.map((g) => (
             <div key={g.key} className="flex items-center justify-between gap-3 py-3">
               <div className="min-w-0">
-                <div className="truncate text-sm font-semibold text-mg-text-1">{g.label || g.key}</div>
+                <div className="truncate text-sm font-semibold text-mg-text-1">{nameById.get(g.key) || g.label || g.key}</div>
                 <div className="mt-0.5 text-xs text-mg-text-3 font-mono">
                   {`${abbreviateNumber(g.requests)} · ${abbreviateNumber(g.tokens)} tokens`}
                 </div>

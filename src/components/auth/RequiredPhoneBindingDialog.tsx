@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { LuShieldCheck, LuSmartphone } from 'react-icons/lu'
 import {
   Dialog,
@@ -96,6 +97,12 @@ export function RequiredPhoneBindingDialog({
           >
             完成绑定并进入控制台
           </Button>
+          <p className="mt-1 text-center text-[11px] leading-relaxed text-mg-text-3">
+            绑定即代表同意{' '}
+            <Link to="/legal/terms" target="_blank" rel="noopener noreferrer" className="text-brand-base hover:text-brand-deep">服务条款</Link>
+            {' '}与{' '}
+            <Link to="/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-brand-base hover:text-brand-deep">隐私政策</Link>
+          </p>
         </DialogFooter>
       </DialogContent>
     </Dialog>

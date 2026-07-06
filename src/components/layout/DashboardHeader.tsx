@@ -11,6 +11,8 @@ import {
   LuCheck,
   LuShield,
   LuChevronRight,
+  LuChevronDown,
+  LuUser,
   LuMenu,
 } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -494,21 +496,38 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
         ) : (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
+            {/* #304：右上角胶囊显式带「企业/个人」标识——头像 + 类型图标(企业=楼宇/个人=人) + 当前租户名 + 下拉箭头 */}
             <button
-              className="rounded-full outline-none ring-2 ring-mg-border/70 transition-all duration-200 select-none hover:ring-brand-base/60 hover:shadow-[0_0_0_4px_var(--brand-selected-bg)] focus-visible:ring-brand-base active:scale-[0.93]"
+              className={cn(
+                'flex items-center gap-2 rounded-full py-1 pl-1 pr-1.5 outline-none select-none md:pr-2.5',
+                'border border-mg-border/70 bg-[rgba(var(--mg-bg-0-rgb),0.4)] transition-all duration-200',
+                'hover:border-brand-base/55 hover:bg-brand-base/[0.05] hover:shadow-sm',
+                'focus-visible:ring-2 focus-visible:ring-brand-base active:scale-[0.97]',
+              )}
               title={isNonPersonal ? (activeTenant?.name || t('header.organizations')) : (account?.display_name || t('header.personalTag'))}
             >
-              <Avatar className="h-9 w-9 block">
+              <Avatar className="h-7 w-7 block shrink-0">
                 {activeTenantAvatarUrl && (
                   <AvatarImage
                     src={activeTenantAvatarUrl}
                     alt={isNonPersonal ? (activeTenant?.name || '') : (account?.display_name || '')}
                   />
                 )}
-                <AvatarFallback className="bg-brand-pale text-brand-base font-bold text-sm">
+                <AvatarFallback className="bg-brand-pale text-brand-base font-bold text-xs">
                   {activeTenantFallback}
                 </AvatarFallback>
               </Avatar>
+              <span className="hidden min-w-0 items-center gap-1.5 md:flex">
+                {isNonPersonal ? (
+                  <LuBuilding2 size={15} className="shrink-0 text-brand-base" aria-label={t('header.organizations')} />
+                ) : (
+                  <LuUser size={15} className="shrink-0 text-brand-base" aria-label={t('header.personalTag')} />
+                )}
+                <span className="max-w-[140px] truncate text-[13px] font-semibold text-mg-text-1">
+                  {activeTenant ? getTenantDisplayName(activeTenant) : (account?.display_name || t('header.personalTag'))}
+                </span>
+                <LuChevronDown size={15} className="shrink-0 text-mg-text-3" />
+              </span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent

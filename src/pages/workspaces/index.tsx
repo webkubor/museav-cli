@@ -1,3 +1,8 @@
+/**
+ * 项目管理页
+ * 路由：/workspaces
+ * API：GET /workspaces、POST /workspaces
+ */
 import { useState } from 'react'
 import { useAuthStore } from '@/store/auth'
 import { useTranslation } from 'react-i18next'
@@ -71,11 +76,14 @@ export default function WorkspacesPage() {
     }
   })
 
-  // 支持模糊搜索
-  const filteredData = (data || []).filter(item => 
-    item.name.toLowerCase().includes(searchValue.toLowerCase()) || 
-    item.workspace_id.toLowerCase().includes(searchValue.toLowerCase())
-  )
+  // 支持按项目名称、slug、workspace_id 模糊搜索。
+  const searchKeyword = searchValue.trim().toLowerCase()
+  const filteredData = (data || []).filter((item) => {
+    if (!searchKeyword) return true
+    return [item.name, item.slug, item.workspace_id].some((value) =>
+      value.toLowerCase().includes(searchKeyword),
+    )
+  })
 
   const handleCreateSubmit = () => {
     if (!name.trim()) {

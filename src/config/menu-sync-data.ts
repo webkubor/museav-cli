@@ -32,18 +32,20 @@ export const MENUS: MenuSyncItem[] = [
     view_permission: 'dashboard:view',
     actions: [],
   },
-  // 企业管理入口：PRD nav.ts key=settings/organization（受 isOrgManager 控制）
+  // 企业管理入口：PRD nav.ts key=organization（受 isOrgManager 控制）
+  // 注：key 由 settings/organization 改名而来（fix/nav-route-naming）；旧 key 已在后端 upsert 登记但不再上报，是无害孤儿记录。
   {
-    key: 'settings/organization',
+    key: 'organization',
     name: '企业管理',
     name_en: 'Enterprise',
     scope: 'tenant',
     view_permission: null,
     actions: ['org.settings:edit', 'org.members:manage', 'org.invite:manage'],
   },
-  // 空间管理入口：PRD nav.ts key=settings/workspace（受 isSpaceManager 控制）
+  // 空间管理入口：PRD nav.ts key=workspaces（受 isSpaceManager 控制）
+  // 注：key 由 settings/workspace 改名而来（fix/nav-route-naming）；旧 key 已在后端 upsert 登记但不再上报，是无害孤儿记录。
   {
-    key: 'settings/workspace',
+    key: 'workspaces',
     name: '空间管理',
     name_en: 'Space Management',
     scope: 'workspace',

@@ -61,10 +61,10 @@ export const navConfig: NavConfig = {
       items: [
         { itemKey: 'dashboard', text: t('nav.dashboard'), icon: icons.home, permission: routePermission('dashboard') },
         ...(ctx.isOrgManager
-          ? [{ itemKey: 'settings/organization', text: t('nav.organization'), icon: icons.building }]
+          ? [{ itemKey: 'organization', text: t('nav.organization'), icon: icons.building }]
           : []),
         ...(ctx.isSpaceManager
-          ? [{ itemKey: 'settings/workspace', text: t('nav.workspace'), icon: icons.apps }]
+          ? [{ itemKey: 'workspaces', text: t('nav.workspace'), icon: icons.apps }]
           : []),
       ],
     },

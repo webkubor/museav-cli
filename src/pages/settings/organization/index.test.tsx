@@ -142,9 +142,9 @@ function renderPage() {
   })
   const Wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/settings/organization']}>
+      <MemoryRouter initialEntries={['/organization']}>
         <Routes>
-          <Route path="/settings/organization" element={children} />
+          <Route path="/organization" element={children} />
           <Route path="/dashboard" element={<div>Dashboard Home</div>} />
         </Routes>
       </MemoryRouter>

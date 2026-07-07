@@ -17,7 +17,7 @@ const DISMISS_KEY = 'modelgo_workbench_quickstart_dismissed'
 const CLI_COMMAND = 'npx @model-go/config'
 
 function scopedWorkspacePath(workspaceId: string | null, path: string) {
-  return workspaceId ? `/workspace/${workspaceId}/${path}` : '/settings/workspace'
+  return workspaceId ? `/workspace/${workspaceId}/${path}` : '/workspaces'
 }
 
 /**

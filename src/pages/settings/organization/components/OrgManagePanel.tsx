@@ -146,7 +146,7 @@ export function OrgManagePanel({
             onDissolved={() => onDissolved?.(tenantId)}
           />
         )}
-        {activeSubTab === 'audit' && <AuditTab />}
+        {activeSubTab === 'audit' && <AuditTab tenantId={tenantId} />}
         {canManageInvite && activeSubTab === 'invite' && <InviteTab tenantId={tenantId} />}
       </div>
     </div>

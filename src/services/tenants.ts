@@ -4,8 +4,10 @@
  * API：GET /tenants、GET|PATCH /tenants/:id、GET|POST|PATCH|DELETE /tenants/:id/members、
  * GET|POST /tenants/:id/invite-link、PUT /tenants/:id/logo
  */
-import { del, get, patch, post, upload } from '@/lib/request'
+import client, { apiBaseUrl, del, get, ModelGoApiError, patch, post, upload } from '@/lib/request'
 import type {
+  TenantAuditLogExportParams,
+  TenantAuditLogListParams,
   TenantListResponse,
   TenantMemberListParams,
   UpdateTenantRequest,
@@ -13,7 +15,10 @@ import type {
 import type {
   AddTenantMemberRequest,
   AddTenantMemberResponse,
+  ApiResponse,
   CursorPage,
+  TenantAuditLog,
+  TenantAuditLogsResponse,
   TenantDetail,
   TenantInviteLink,
   TenantMember,
@@ -89,4 +94,53 @@ export function resetTenantInviteLink(
   params?: { role?: 'tenant_admin' | 'tenant_member'; expires_in_hours?: number },
 ) {
   return post<TenantInviteLink>(`tenants/${tenantId}/invite-link/reset`, params ?? {})
+}
+
+// ─── Tenant 操作审计（#342）───────────────────────────
+
+function auditSearchParams(params?: TenantAuditLogListParams | TenantAuditLogExportParams) {
+  if (!params) return undefined
+  return Object.fromEntries(
+    Object.entries(params)
+      .filter(([, value]) => value !== undefined && value !== null && value !== '')
+      .map(([key, value]) => [key, String(value)])
+  )
+}
+
+/** 组织操作审计日志列表（游标分页）。仅 tenant_owner / tenant_admin（需 org.audit:view）可读。 */
+export function listTenantAuditLogs(tenantId: string, params?: TenantAuditLogListParams) {
+  return get<TenantAuditLogsResponse>(`tenants/${tenantId}/audit-logs`, params)
+}
+
+/** 单条审计日志详情（含结构化 changes[]），供右侧详情面板拉取完整字段。 */
+export function getTenantAuditLog(tenantId: string, auditId: string) {
+  return get<TenantAuditLog>(`tenants/${tenantId}/audit-logs/${auditId}`)
+}
+
+/**
+ * 导出组织操作审计为 CSV（需 org.audit:export）。
+ * 成功时同步返回 text/csv 附件（非 JSON 信封），上限 1 万条，超限响应头
+ * X-Audit-Truncated=true；因此不能走 lib/request 的 post()（它无条件 .json()，
+ * 遇到 CSV 响应会抛错）——直接用默认导出的 ky client（自带 CSRF/鉴权 hooks），
+ * 按 content-type 分流：JSON（40001 参数非法 / 40301 无权限等业务错误）按信封
+ * 解析后抛 ModelGoApiError，其余视为 CSV 返回 Blob。
+ */
+export async function exportTenantAuditLogs(
+  tenantId: string,
+  params?: TenantAuditLogExportParams,
+): Promise<Blob> {
+  const url = `${apiBaseUrl()}/api/v1/tenants/${tenantId}/audit-logs/export`
+  const httpResp = await client.post(url, { searchParams: auditSearchParams(params) })
+  const contentType = httpResp.headers.get('content-type') ?? ''
+  if (contentType.includes('application/json')) {
+    const envelope = await httpResp.json<ApiResponse<null>>()
+    throw new ModelGoApiError({
+      code: envelope.code,
+      msg: envelope.msg,
+      request_id: envelope.request_id,
+      trace_id: envelope.trace_id,
+      data: envelope.data ?? null,
+    })
+  }
+  return httpResp.blob()
 }

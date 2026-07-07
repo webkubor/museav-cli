@@ -37,6 +37,7 @@ export const PERMS = {
   ORG_SETTINGS_EDIT:  'org.settings:edit',
   ORG_MEMBERS_MANAGE: 'org.members:manage',
   ORG_INVITE_MANAGE:  'org.invite:manage',
+  ORG_AUDIT_EXPORT:   'org.audit:export',
 } as const
 
 export type Permission = typeof PERMS[keyof typeof PERMS]

@@ -71,11 +71,8 @@ body,
 main, 
 header, 
 aside, 
-.card, 
-.glass-card, 
-.semi-navigation, 
-.semi-button, 
-.semi-input-wrapper {
+.card,
+.glass-card {
   transition: background-color 0.22s cubic-bezier(0.25, 1, 0.5, 1),
               border-color 0.22s cubic-bezier(0.25, 1, 0.5, 1),
               color 0.18s ease-out,

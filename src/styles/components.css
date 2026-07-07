@@ -384,53 +384,6 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
 
 /* 4. 硅谷级微交互动效 */
 
-/* 选项卡 Tab Pane 的渐现与微缩放弹性 */
-.semi-tabs-pane {
-  animation: tabPaneEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes tabPaneEntrance {
-  from {
-    opacity: 0;
-    transform: scale(0.99) translateY(2px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-/* 表格行 (Table Row) 微平移悬停反馈 */
-.semi-table-row {
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-
-.semi-table-row:hover {
-  transform: scale(1.001) translateX(1.5px);
-  box-shadow: inset 2px 0 0 var(--brand-base);
-}
-
-/* Semi 浮层容器背景跟随主题 */
-.semi-select-option-list,
-.semi-popover-content,
-.semi-tooltip-content,
-.semi-dropdown-menu,
-.semi-modal-content,
-.semi-sidesheet-inner {
-  background-color: var(--mg-bg-0) !important;
-}
-
-/* 下拉菜单项 (Select Option) 微移高亮反馈 */
-.semi-select-option {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-
-.semi-select-option-hover {
-  background-color: var(--mg-fill-0) !important;
-  padding-left: 18px !important;
-  color: var(--mg-text-1) !important;
-}
-
 /* 交互型 Badge 徽章动效 */
 .badge-interactive {
   cursor: pointer;
@@ -440,12 +393,6 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
 .badge-interactive:hover {
   transform: scale(1.04);
   filter: brightness(0.96);
-}
-
-/* 自动为全站所有 SideSheet 抽屉的滚动体注入高级边缘渐变淡出遮罩 */
-.semi-sidesheet-body {
-  mask-image: linear-gradient(to bottom, transparent, white 20px, white calc(100% - 20px), transparent);
-  -webkit-mask-image: linear-gradient(to bottom, transparent, white 20px, white calc(100% - 20px), transparent);
 }
 
 /* Logo 流光 Shimmer 动效 */

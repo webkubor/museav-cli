@@ -22,6 +22,8 @@
     "save": "Save Changes",
     "cancel": "Cancel",
     "confirm": "Confirm",
+    "edit": "Edit",
+    "delete": "Delete",
     "collapse": "Collapse",
     "expand": "Expand",
     "online": "Online",
@@ -546,16 +548,44 @@
   "observability": {
     "title": "Observability",
     "desc": "Manage logging, forwarding destinations, and retry policies.",
+    "settingsTitle": "Log Collection Settings",
+    "settingsDesc": "Control full request retention and whether logs are pushed to external observability tools.",
     "loggingOffWarning": "Disabling logging will also disable broadcast forwarding",
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "active": "Available",
+      "warning": "Warning",
+      "error": "Error"
+    },
     "logging": {
       "title": "Input / Output Logging",
-      "desc": "Record full input and output of each request."
+      "desc": "Record full input and output of each request.",
+      "meta": "Full content collected · retained for 30 days"
     },
     "broadcast": {
       "title": "Broadcast Forwarding",
-      "desc": "Push logs to configured destinations (e.g. Datadog, OpenTelemetry)."
+      "desc": "Push logs to configured destinations (e.g. Datadog, OpenTelemetry).",
+      "meta": "When disabled, logs are not pushed to external platforms"
     },
     "destinations": {
+      "panelTitle": "Forwarding Destinations",
+      "addButton": "Add Destination",
+      "recentOff": "Recent delivery off",
+      "recentNone": "No successful delivery yet",
+      "recentAt": "Recent delivery {{time}}",
+      "availablePlatforms": "Available Platforms",
+      "configuredCount": "Configured {{count}}",
+      "endpointUnknown": "Endpoint not configured",
+      "emptyTitle": "No forwarding destinations",
+      "emptyDesc": "Add a destination to push logs to an external observability platform.",
+      "viewLogs": "View call logs",
+      "sampleRate": "{{rate}}% sampled",
+      "privacyOn": "Privacy mode on",
+      "privacyOff": "Full content forwarding",
+      "lastSuccess": "Last success {{time}}",
+      "noLastSuccess": "No successful delivery",
+      "noPlatforms": "No available platforms",
       "addTitle": "Add Destination",
       "listTitle": "Configured Destinations",
       "empty": "No destinations. Add one above.",
@@ -587,7 +617,14 @@
       "privacyHint": "Redact input/output content before forwarding",
       "apiKeyFilter": "API Key Filter",
       "apiKeyFilterHint": "Leave empty to forward all keys; select to forward only chosen keys",
+      "apiKeyFilterPlaceholder": "Select API Key...",
       "noApiKeys": "No API keys available in this workspace",
+      "connectionTitle": "Connection settings",
+      "connectionDesc": "Configure credentials and endpoint used for log forwarding.",
+      "urlHint": "Use the full OTLP traces URL, usually ending with /v1/traces.",
+      "methodLabel": "Method (optional)",
+      "headersLabel": "Headers (optional)",
+      "headersInvalid": "Headers must be valid JSON",
       "submit": "Create",
       "validationError": "Required fields missing: {{fields}}"
     },

@@ -38,4 +38,6 @@ dist-ssr
 
 # 个人 agent 工作区,不随项目仓上传(团队 skill 走 ai-skills,个人走 ~/.claude)
 .claude/
+.agents/
+.codex/
 .worktrees/

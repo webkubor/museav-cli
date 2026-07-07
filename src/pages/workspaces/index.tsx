@@ -25,6 +25,7 @@ import {
 } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listWorkspaces, createWorkspace, getWorkspace } from '@/services/workspaces'
+import { useTenantRole } from '@/hooks/use-tenant-role'
 import {
   MembersTab,
   LogsForwardingTab,
@@ -678,6 +679,8 @@ interface WorkspaceDashboardProps {
 function WorkspaceDashboard({ workspaceId, onDeleted }: WorkspaceDashboardProps) {
   const { t } = useTranslation()
   const [tab, setTab] = useState<'overview' | 'members' | 'logs' | 'settings'>('overview')
+  // 个人租户没有企业成员，空间管理不该有「成员」tab（无人可邀请/管理）；仅企业租户显示。
+  const { isEnterprise } = useTenantRole()
 
   const detailQuery = useQuery({
     queryKey: ['workspace-detail', workspaceId],
@@ -753,16 +756,18 @@ function WorkspaceDashboard({ workspaceId, onDeleted }: WorkspaceDashboardProps)
       <Tabs value={tab} onValueChange={(v) => setTab(v as 'overview' | 'members' | 'logs' | 'settings')}>
         <TabsList variant="pills" className="mb-4">
           <TabsTrigger variant="pills" value="overview">{t('workspaces.detail.tabs.overview')}</TabsTrigger>
-          <TabsTrigger variant="pills" value="members">{t('workspaces.detail.tabs.members')}</TabsTrigger>
+          {isEnterprise && <TabsTrigger variant="pills" value="members">{t('workspaces.detail.tabs.members')}</TabsTrigger>}
           <TabsTrigger variant="pills" value="logs">{t('workspaces.detail.tabs.logs')}</TabsTrigger>
           <TabsTrigger variant="pills" value="settings">{t('workspaces.detail.tabs.settings')}</TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
           <WorkspaceOverview ws={ws} onGoLogs={() => setTab('logs')} />
         </TabsContent>
-        <TabsContent value="members">
-          <MembersTab workspaceId={workspaceId} />
-        </TabsContent>
+        {isEnterprise && (
+          <TabsContent value="members">
+            <MembersTab workspaceId={workspaceId} />
+          </TabsContent>
+        )}
         <TabsContent value="logs">
           <LogsForwardingTab workspaceId={workspaceId} />
         </TabsContent>

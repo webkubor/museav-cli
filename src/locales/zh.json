@@ -747,7 +747,7 @@
       "forwardUnknown": "转发未知"
     },
     "countSuffix": "{{count}} 个空间",
-    "searchPlaceholder": "按名称、Slug 或工作空间 ID 搜索",
+    "searchPlaceholder": "按名称、Slug、工作空间 ID、描述或负责人搜索",
     "createBtn": "创建空间",
     "loading": "正在获取数据...",
     "empty": "暂无匹配的工作空间数据",
@@ -770,9 +770,9 @@
       "slugPlaceholder": "如：prod-app",
       "descLabel": "空间描述 (选填)",
       "descPlaceholder": "简述该工作空间的用途...",
-      "inviteLabel": "邀请成员 (选填)",
-      "invitePlaceholder": "输入邮箱，多个邮箱可用逗号、空格或换行分隔",
-      "inviteHint": "创建成功后将同时发送项目邀请，最多 20 个邮箱。",
+      "inviteLabel": "初始成员 (选填)",
+      "invitePlaceholder": "搜索组织成员姓名或邮箱...",
+      "inviteHint": "创建成功后将同时发送工作空间邀请，最多 20 人。",
       "inviteRoleLabel": "成员角色",
       "inviteRoleMember": "成员",
       "inviteRoleAdmin": "管理员"
@@ -781,10 +781,8 @@
       "createSuccess": "工作空间 \"{{name}}\" 创建成功",
       "createError": "创建工作空间失败",
       "nameRequired": "工作空间名称不能为空",
-      "slugRequired": "唯一标识不能为空",
-      "slugFormat": "唯一标识仅支持小写字母、数字和连字符",
       "inviteLimit": "一次最多邀请 {{count}} 个邮箱",
-      "inviteEmailInvalid": "邀请成员中存在无效邮箱"
+      "limitReached": "已达工作空间上限（{{max}} 个）"
     },
     "detail": {
       "back": "返回工作空间列表",

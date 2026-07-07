@@ -123,7 +123,12 @@ export default function LogsPage() {
     }, { replace: true })
   }
   const [statusFilter, setStatusFilter] = useState<LogStatusFilter>('all')
-  const [workspaceFilter, setWorkspaceFilter] = useState('all')
+  // 从空间概览「调用日志」快捷入口带来的上下文：?workspace=；工作空间列表异步加载，
+  // 派生（非 effect+setState）落值：只要用户还没手动切换过筛选，且该 id 已在加载到的列表里存在才采信，
+  // 避免列表为空/还没到时直接选中一个不确定存在的选项
+  const workspaceParam = searchParams.get('workspace')
+  const [workspaceFilterRaw, setWorkspaceFilterRaw] = useState('all')
+  const [workspaceFilterTouched, setWorkspaceFilterTouched] = useState(false)
   const [modelFilter, setModelFilter] = useState('all')
   const [apiKeyFilter, setApiKeyFilter] = useState('all')
   const [memberFilter, setMemberFilter] = useState('all')
@@ -171,6 +176,16 @@ export default function LogsPage() {
     enabled: Boolean(activeTenantId),
     staleTime: 5 * 60_000,
   })
+
+  // 派生生效的工作空间筛选值：用户手动切换过（包括点「清除筛选」）就以其为准；
+  // 否则若 URL 带 ?workspace= 且已在加载到的列表里存在，采用它；列表未加载完/id 不存在则回落 'all'。
+  const workspaceFilter = !workspaceFilterTouched && workspaceParam && workspacesData?.items.some((w) => w.workspace_id === workspaceParam)
+    ? workspaceParam
+    : workspaceFilterRaw
+  function setWorkspaceFilter(value: string) {
+    setWorkspaceFilterTouched(true)
+    setWorkspaceFilterRaw(value)
+  }
 
   // API Key 归属具体工作空间（GET /workspaces/:id/api-keys），故选项必须跟随「工作空间」筛选，
   // 而不是全局 activeWorkspaceId——否则切换日志页的工作空间筛选时，API Key 选项不对齐。

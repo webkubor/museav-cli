@@ -567,3 +567,12 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   -webkit-text-fill-color: transparent !important;
   color: transparent !important;
 }
+
+/* 自适应卡片阴影（platform-config 三处在用）——原在已删的 semi.css，迁来保留 */
+.card-shadow-adaptive {
+  border: 1px solid var(--mg-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  background-color: var(--mg-bg-0);
+  transition: box-shadow 0.3s ease;
+}

@@ -61,7 +61,6 @@
 @import "modelgo-design-tokens/tokens.css";  /* 跨端单一真源：品牌色(市场×主题) + 字体 + 语义；必须在本地 tokens.css 之前 */
 @import "./styles/tokens.css";      /* CSS 变量：品牌色 + 明暗主题 token（引用上面共享原子 + 控制台特有组件 token） */
 @import "./styles/brand.css";       /* 左上角品牌区：品牌字体 + 双色 wordmark + 漂浮光晕 logo */
-@import "./styles/semi.css";        /* Semi Design 组件覆盖 */
 @import "./styles/auth.css";        /* 登录/注册/鉴权页样式 */
 @import "./styles/components.css";  /* modern-* 自定义组件 + 液态玻璃搜索 */
 @import "./styles/effects.css";     /* 动画、侧边栏流光、客服 markdown */

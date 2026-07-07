@@ -25,20 +25,21 @@ export function useTenantRole() {
 
   const tenants = data?.items ?? []
 
-  const role = tenants.find(
-    (t) => t.tenant_id === activeTenantId
-  )?.role as TenantRole | undefined
+  const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
+
+  const role = activeTenant?.role as TenantRole | undefined
 
   /** 当前激活租户是否为企业类型 */
-  const isEnterprise = tenants.find(
-    (t) => t.tenant_id === activeTenantId
-  )?.type === 'enterprise'
+  const isEnterprise = activeTenant?.type === 'enterprise'
 
   return {
     /** 当前租户角色，查询未完成时为 undefined */
     role,
     isLoading,
     isEnterprise,
+    /** 当前激活租户完整条目（含 max_workspaces / current_workspace_count 等），查询未完成时为 undefined。
+     *  与本 hook 共用同一个 ['tenants'] query，不会重复发请求。 */
+    tenant: activeTenant,
     /** 可管理组织（owner 或 admin）；角色未知时 fail-closed */
     canManage: role === 'tenant_owner' || role === 'tenant_admin',
     isOwner:   role === 'tenant_owner',

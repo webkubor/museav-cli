@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom'
 import { LuBot, LuKeyRound, LuUsers, LuArrowUpRight } from 'react-icons/lu'
 import { getUsageRankingsModels, getUsageRankingsApiKeys, getUsageRankingsAccounts } from '@/services/usage'
 import { useAuthStore } from '@/store/auth'
+import { useTrackContext } from '@/hooks/use-track-context'
+import { trackEvent } from '@/lib/track'
 import { Card } from '@/components/ui/Card'
 import { Money } from '@/components/ui/Money'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
@@ -99,8 +101,15 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const navigate = useNavigate()
+  const trackCtx = useTrackContext()
   const range = useMemo(() => rangeForGranularity(granularity), [granularity])
   const showMembers = view === 'enterprise'
+
+  const handleRankingMore = (dimension: 'models' | 'members' | 'apiKeys', target: string) => {
+    trackEvent('overview_ranking_more_click', { ...trackCtx, view_mode: view, dimension })
+    trackEvent('destination_page_view', { ...trackCtx, destination: '/usage' })
+    navigate(target)
+  }
 
   const { data: models, isLoading: modelsLoading } = useQuery({
     queryKey: ['workbench', 'rankings', 'models', activeTenantId, granularity, accountId],
@@ -131,7 +140,7 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
         items={models?.items ?? null}
         isLoading={modelsLoading}
         emptyHint={t('dashboard.workbench.rankings.emptyHint')}
-        onViewMore={() => navigate(`/usage?view=${view}&granularity=${granularity}`)}
+        onViewMore={() => handleRankingMore('models', `/usage?view=${view}&granularity=${granularity}`)}
         withModelIcon
       />
 
@@ -142,7 +151,7 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
           items={members?.items ?? null}
           isLoading={membersLoading}
           emptyHint={t('dashboard.workbench.rankings.emptyHint')}
-          onViewMore={() => navigate(`/usage?view=${view}&granularity=${granularity}&dimension=member`)}
+          onViewMore={() => handleRankingMore('members', `/usage?view=${view}&granularity=${granularity}&dimension=member`)}
         />
       )}
 
@@ -152,7 +161,7 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
         items={apiKeys?.items ?? null}
         isLoading={apiKeysLoading}
         emptyHint={t('dashboard.workbench.rankings.emptyHint')}
-        onViewMore={() => navigate(`/usage?view=${view}&granularity=${granularity}`)}
+        onViewMore={() => handleRankingMore('apiKeys', `/usage?view=${view}&granularity=${granularity}`)}
       />
     </div>
   )

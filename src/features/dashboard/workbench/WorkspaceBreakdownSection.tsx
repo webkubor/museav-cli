@@ -6,6 +6,8 @@ import { LuLayers, LuArrowUpRight } from 'react-icons/lu'
 import { getUsageSummary } from '@/services/usage'
 import { listWorkspaces } from '@/services/workspaces'
 import { useAuthStore } from '@/store/auth'
+import { useTrackContext } from '@/hooks/use-track-context'
+import { trackEvent } from '@/lib/track'
 import { Card } from '@/components/ui/Card'
 import { Money } from '@/components/ui/Money'
 import { abbreviateNumber, rangeForGranularity, type Granularity, type WorkbenchView } from './shared'
@@ -19,7 +21,14 @@ export function WorkspaceBreakdownSection({ granularity, accountId, view = 'ente
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const navigate = useNavigate()
+  const trackCtx = useTrackContext()
   const isMine = view === 'mine'
+
+  const handleViewMore = () => {
+    trackEvent('overview_breakdown_more_click', { ...trackCtx, view_mode: view })
+    trackEvent('destination_page_view', { ...trackCtx, destination: '/usage' })
+    navigate(`/usage?view=${view}&granularity=${granularity}`)
+  }
 
   const range = useMemo(() => rangeForGranularity(granularity), [granularity])
 
@@ -60,7 +69,7 @@ export function WorkspaceBreakdownSection({ granularity, accountId, view = 'ente
         </div>
         <button
           type="button"
-          onClick={() => navigate(`/usage?view=${view}&granularity=${granularity}`)}
+          onClick={handleViewMore}
           className="inline-flex items-center gap-1 text-xs font-bold text-brand-base hover:text-brand-deep cursor-pointer"
         >
           {t('dashboard.workbench.workspaces.viewMore')}

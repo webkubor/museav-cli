@@ -19,6 +19,7 @@ export interface KpiCardProps {
   rawNumber?: number // 传入原始数值时启用 countUp 动画
   formatter?: (n: number) => string // 配合 rawNumber 使用的格式化函数
   action?: { label: string; onClick: () => void } // 卡片内快捷操作按钮（如充值）
+  onClick?: () => void // 卡片整体点击（当前仅用于埋点占位，暂无下钻交互）
 }
 
 function Sparkline({ data, color }: { data: number[]; color: string }) {
@@ -65,6 +66,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   rawNumber,
   formatter,
   action,
+  onClick,
 }) => {
   const displayTitle = title || label || ''
   const animated = useCountUp(loading ? 0 : (rawNumber ?? 0))
@@ -89,7 +91,8 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       ref={glowRef}
       hoverable
       glass
-      className={`mg-panel flex flex-col justify-center rounded-lg relative overflow-hidden group transition-all duration-500 flex-1 min-w-[200px] mouse-glow-card magnetic-hover ${hoverBorderClass}`}
+      onClick={onClick}
+      className={`mg-panel flex flex-col justify-center rounded-lg relative overflow-hidden group transition-all duration-500 flex-1 min-w-[200px] mouse-glow-card magnetic-hover ${hoverBorderClass} ${onClick ? 'cursor-pointer' : ''}`}
     >
       {/* 专属高精密几何光环与微弱环境底色 (线与光的结合) */}
       <div className="absolute right-[-20px] bottom-[-20px] w-32 h-32 pointer-events-none z-0 opacity-25 group-hover:opacity-75 transition-all duration-700">

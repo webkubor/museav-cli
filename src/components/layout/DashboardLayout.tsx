@@ -34,6 +34,8 @@ import { breadcrumbConfig, FLAT_ROUTES } from '@/config/breadcrumbs'
 import { usePlatformConfig, useSite } from '@/hooks/use-platform-config'
 import { usePermissions } from '@/hooks/use-permissions'
 import { useTenantRole } from '@/hooks/use-tenant-role'
+import { useTrackContext } from '@/hooks/use-track-context'
+import { trackEvent } from '@/lib/track'
 import { listWorkspaces } from '@/services/workspaces'
 import { cn } from '@/lib/utils'
 import { ParticleLinesBackground } from './ParticleLinesBackground'
@@ -106,6 +108,7 @@ export function DashboardLayout() {
   const closeRecharge = useRechargeStore((s) => s.close)
 
   const { hasPermission } = usePermissions()
+  const trackCtx = useTrackContext()
   const site = useSite()
   const { canManage, isEnterprise } = useTenantRole()
   const isPersonal = activeTenant?.type === 'personal'
@@ -193,6 +196,7 @@ export function DashboardLayout() {
 
   const handleNavSelect = (data: { itemKey: string | number }) => {
     const key = String(data.itemKey)
+    trackEvent('console_nav_click', { ...trackCtx, nav_key: key })
     if (navConfig.workspaceScopedKeys.has(key)) {
       navigate(`/workspace/${activeWorkspaceId}/${key}`)
     } else {

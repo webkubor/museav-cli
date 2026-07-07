@@ -12,6 +12,8 @@ import {
 } from 'recharts'
 import { getUsageSeries } from '@/services/usage'
 import { useAuthStore } from '@/store/auth'
+import { useTrackContext } from '@/hooks/use-track-context'
+import { trackEvent } from '@/lib/track'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { Card } from '@/components/ui/Card'
 import { formatChartTooltipDate } from '@/lib/format-date'
@@ -39,7 +41,13 @@ export function UsageTrendSection({ granularity, accountId }: { granularity: Gra
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const { symbol } = useCurrency()
+  const trackCtx = useTrackContext()
   const [metric, setMetric] = useState<TrendMetric>('requests')
+
+  const handleMetricChange = (m: TrendMetric) => {
+    trackEvent('overview_trend_metric_change', { ...trackCtx, from_metric: metric, to_metric: m })
+    setMetric(m)
+  }
 
   const range = useMemo(() => rangeForGranularity(granularity), [granularity])
   const isMonth = granularity === 'month'
@@ -79,7 +87,7 @@ export function UsageTrendSection({ granularity, accountId }: { granularity: Gra
           size="sm"
           ariaLabel={t('dashboard.workbench.trend.title')}
           value={metric}
-          onChange={setMetric}
+          onChange={handleMetricChange}
           options={[
             { value: 'requests', label: t('dashboard.workbench.trend.metric.requests') },
             { value: 'spend', label: t('dashboard.workbench.trend.metric.spend') },

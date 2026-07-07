@@ -8,6 +8,8 @@ import { useMarket } from '@/hooks/useMarket'
 import { getMarketConfig } from '@/config/market'
 import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 import { appToast } from '@/lib/app-toast'
+import { trackEvent } from '@/lib/track'
+import { useTrackContext } from '@/hooks/use-track-context'
 import { useAuthStore } from '@/store/auth'
 import { ConnectModal } from '@/pages/api-keys/ConnectModal'
 
@@ -28,6 +30,7 @@ export function QuickStartSection() {
   const { copy, copied } = useCopy(1400)
   const market = useMarket()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
+  const trackCtx = useTrackContext()
 
   const [dismissed, setDismissed] = useState(() => localStorage.getItem(DISMISS_KEY) === '1')
   const [connectOpen, setConnectOpen] = useState(false)
@@ -38,12 +41,17 @@ export function QuickStartSection() {
   const openAIBaseUrl = GATEWAY_ENDPOINTS[0]?.baseUrl ?? ''
   const anthropicBaseUrl = GATEWAY_ENDPOINTS[1]?.baseUrl ?? openAIBaseUrl
 
+  const trackOnboardingAction = (action: string) =>
+    trackEvent('overview_onboarding_action_click', { ...trackCtx, action })
+
   const handleDismiss = () => {
+    trackOnboardingAction('dismiss')
     localStorage.setItem(DISMISS_KEY, '1')
     setDismissed(true)
   }
 
   const handleCliCopy = async () => {
+    trackOnboardingAction('copy_cli')
     const ok = await copy(CLI_COMMAND)
     if (ok) appToast.success(t('dashboard.workbench.quickStart.cliCopied'))
     else appToast.error(t('dashboard.workbench.quickStart.cliCopyFailed'))
@@ -55,24 +63,32 @@ export function QuickStartSection() {
       title: t('dashboard.workbench.quickStart.step1Title'),
       desc: t('dashboard.workbench.quickStart.step1Desc'),
       action: t('dashboard.workbench.quickStart.step1Action'),
-      event: 'quickstart_create_api_key',
-      onClick: () => navigate(scopedWorkspacePath(activeWorkspaceId, 'api-keys')),
+      onClick: () => {
+        trackOnboardingAction('create_api_key')
+        trackEvent('destination_page_view', { ...trackCtx, destination: '/api-keys' })
+        navigate(scopedWorkspacePath(activeWorkspaceId, 'api-keys'))
+      },
     },
     {
       icon: <LuPlug size={22} />,
       title: t('dashboard.workbench.quickStart.step2Title'),
       desc: t('dashboard.workbench.quickStart.step2Desc'),
       action: t('dashboard.workbench.quickStart.step2Action'),
-      event: 'quickstart_open_connect',
-      onClick: () => setConnectOpen(true),
+      onClick: () => {
+        trackOnboardingAction('open_connect')
+        setConnectOpen(true)
+      },
     },
     {
       icon: <LuScrollText size={22} />,
       title: t('dashboard.workbench.quickStart.step3Title'),
       desc: t('dashboard.workbench.quickStart.step3Desc'),
       action: t('dashboard.workbench.quickStart.step3Action'),
-      event: 'quickstart_view_logs',
-      onClick: () => navigate('/logs'),
+      onClick: () => {
+        trackOnboardingAction('view_logs')
+        trackEvent('destination_page_view', { ...trackCtx, destination: '/logs' })
+        navigate('/logs')
+      },
     },
   ]
 
@@ -125,7 +141,6 @@ export function QuickStartSection() {
                 <button
                   type="button"
                   onClick={step.onClick}
-                  data-umami-event={step.event}
                   className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-brand-base hover:text-brand-deep cursor-pointer"
                 >
                   {step.action}

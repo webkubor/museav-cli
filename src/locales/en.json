@@ -1705,7 +1705,10 @@
       "removeDesc": "The member will lose access to this organization and its workspaces. This cannot be undone.",
       "confirmRemove": "Remove",
       "cannotManageOwner": "Cannot manage the Owner or other admins",
-      "workspaceHintNonMember": "Owners / admins can access all workspaces by default"
+      "workspaceHintNonMember": "Owners / admins can access all workspaces by default",
+      "saveSuccess": "Changes saved",
+      "roleUpdateError": "Failed to update role",
+      "statusUpdateError": "Failed to update status"
     },
     "info": {
       "avatarHint": "Click to change · PNG/JPEG/WebP, max 2MB",

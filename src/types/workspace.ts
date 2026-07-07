@@ -42,7 +42,7 @@ export interface TenantMember {
   workspace_count: number
   api_key_count: number
   spend_30d: Money
-  status: 'active'
+  status: 'active' | 'suspended'
 }
 
 export interface AddTenantMemberRequest {

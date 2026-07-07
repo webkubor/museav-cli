@@ -66,6 +66,16 @@ export function removeTenantMember(tenantId: string, accountId: string) {
   return del<null>(`tenants/${tenantId}/members/${accountId}`)
 }
 
+/** 停用 tenant 成员（#340）：暂停登录与访问，不删除成员关系 */
+export function suspendTenantMember(tenantId: string, accountId: string) {
+  return post<null>(`tenants/${tenantId}/members/${accountId}/suspend`, {})
+}
+
+/** 启用（恢复）已停用的 tenant 成员（#340） */
+export function reactivateTenantMember(tenantId: string, accountId: string) {
+  return post<null>(`tenants/${tenantId}/members/${accountId}/reactivate`, {})
+}
+
 /** 解散组织（仅 tenant_owner） */
 export function dissolveTenant(tenantId: string) {
   return del<null>(`tenants/${tenantId}`)

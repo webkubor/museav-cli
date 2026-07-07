@@ -66,6 +66,36 @@ export interface UpdateTenantMemberRoleRequest {
   role: 'tenant_admin' | 'tenant_member'
 }
 
+// ─── Tenant 操作审计（#342）───────────────────────────
+
+export interface TenantAuditChange {
+  field: string
+  before: string
+  after: string
+}
+
+export interface TenantAuditLog {
+  id: string
+  created_at: string
+  tenant_id: string
+  actor_account_id: string
+  actor_display: string
+  action: string
+  target_type: string
+  target_id: string
+  target_label: string
+  workspace_id: string
+  result: 'success' | 'failure' | 'denied'
+  request_id: string
+  changes: TenantAuditChange[]
+  metadata: Record<string, unknown>
+}
+
+export interface TenantAuditLogsResponse {
+  items: TenantAuditLog[]
+  next_cursor?: string
+}
+
 // ─── Workspace ──────────────────────────────────────
 
 export interface WorkspaceItem {

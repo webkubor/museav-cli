@@ -88,7 +88,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/settings/workspace')}>
+            <DropdownMenuItem onClick={() => navigate('/workspaces')}>
               <LuSettings size={13} className="mr-2 text-mg-text-3 shrink-0" />
               <span>{t('header.workspaceMgmt')}</span>
             </DropdownMenuItem>
@@ -168,7 +168,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => navigate('/settings/workspace')}>
+          <DropdownMenuItem onClick={() => navigate('/workspaces')}>
             <LuSettings size={13} className="mr-2 text-mg-text-3 shrink-0" />
             <span>{t('header.workspaceMgmt')}</span>
           </DropdownMenuItem>

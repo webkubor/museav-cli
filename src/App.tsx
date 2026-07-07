@@ -218,11 +218,21 @@ export default function App() {
             {/* 任务历史已并入调用日志（#361）：旧路由重定向到「异步任务」记录类型 */}
             <Route path="tasks" element={<Navigate to="/logs?record_type=async" replace />} />
 
+            {/* 企业管理/空间管理是主入口顶层页（nav.ts main 组），不是「设置」子页——
+                路径保持扁平（/organization、/workspaces），与 usage/logs/billing 同级。
+                历史上二者曾是 Settings 下的 tab，迁移后路径一直挂在 /settings/* 下，
+                导致面包屑误显示「设置」、URL 与信息架构不一致（用户实测发现，见 fix/nav-route-naming）。 */}
+            <Route path="organization" element={<OrganizationPage />} />
+            <Route path="workspaces" element={<WorkspacesPage />} />
+
+            {/* 仅「账号设置」真正属于 Settings（底部固定入口） */}
             <Route path="settings">
-              <Route index element={<Navigate to="workspace" replace />} />
-              <Route path="workspace" element={<WorkspacesPage />} />
+              <Route index element={<Navigate to="account" replace />} />
               <Route path="account" element={<AccountSettingsPage />} />
-              <Route path="organization" element={<OrganizationPage />} />
+              {/* 旧路径向后兼容：v1.0.1 已发布过 /settings/organization、/settings/workspace，
+                  可能被收藏/分享，重定向到新扁平路径，不能直接删。 */}
+              <Route path="organization" element={<Navigate to="/organization" replace />} />
+              <Route path="workspace" element={<Navigate to="/workspaces" replace />} />
             </Route>
 
             {/* 工作区级菜单页（URL 携带 workspaceId）：同一清单驱动 + 权限守卫 */}

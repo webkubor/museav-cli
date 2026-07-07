@@ -1408,6 +1408,7 @@
     "workbench": {
       "view": {
         "enterprise": "Org view",
+        "space": "Space view",
         "mine": "My view",
         "mineTodo": "Showing organization-level usage data"
       },

@@ -400,7 +400,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
  * 异步任务面板（#361）：从原「任务历史」页抽出，内嵌到「调用日志」页的「异步任务」记录类型下。
  * 视图范围沿用调用日志：mine=按当前账号裁剪；enterprise/space=租户/空间范围（服务端权威裁剪）。
  */
-export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise' | 'mine'; currentAccountId?: string }) {
+export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise' | 'mine' | 'space'; currentAccountId?: string }) {
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
 
   const [search, setSearch]         = useState('')

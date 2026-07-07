@@ -61,13 +61,15 @@ export function MembersTab({
   })
 
   // 工作空间列表：仅用于筛选下拉；成员的「授权工作空间」明细后端未提供 → 列占位。
+  // ⚠️ queryKey ['workspaces', tenantId] 是全局共享 key，其余 6 处 queryFn 都返「数组」(res.items)；
+  // 此处必须同形状返数组，否则缓存被写成整个对象 → DashboardLayout 的 workspaceItems.some 炸白屏(#367)。
   const workspacesQuery = useQuery({
     queryKey: ['workspaces', tenantId],
-    queryFn: listWorkspaces,
+    queryFn: () => listWorkspaces().then((res) => res.items ?? []),
     staleTime: 60_000,
     refetchOnWindowFocus: false,
   })
-  const workspaces = workspacesQuery.data?.items ?? []
+  const workspaces = workspacesQuery.data ?? []
 
   const changeRole = useMutation({
     mutationFn: (values: { accountId: string; role: EditableRole }) =>

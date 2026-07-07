@@ -35,7 +35,7 @@ export default function ObservabilityPage() {
       <PageHeader title={t('observability.title')} />
 
       {loggingQuery.isLoading && (
-        <div className="grid max-w-6xl grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="grid max-w-6xl grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]">
           <div className="card-shadow-adaptive space-y-4 rounded-lg border border-mg-border bg-card-bg p-6 animate-pulse">
             <div className="h-5 w-1/3 rounded-sm bg-mg-fill-0" />
             <div className="h-4 w-full rounded-sm bg-mg-fill-0" />

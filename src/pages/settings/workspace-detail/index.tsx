@@ -373,6 +373,7 @@ export function LogsForwardingTab({ workspaceId }: { workspaceId: string }) {
       config={loggingQuery.data}
       canEditLogging={canEditLogging}
       canManageForward={canManageForward}
+      embedded
     />
   )
 }

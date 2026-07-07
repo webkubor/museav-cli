@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import type { StatusConfig } from '@/components/ui/StatusBadge'
 import { appToast } from '@/lib/app-toast'
+import { cn } from '@/lib/utils'
 import { formatRelativeTime } from '@/lib/format-date'
 import { deleteForward, listForwards, listPlatforms } from '@/services/observability'
 import type { ForwardItem, PlatformItem } from '@/types'
@@ -150,10 +151,13 @@ export function DestinationsPanel({
   workspaceId,
   broadcastEnabled,
   canManageForward,
+  panelClass = 'card-shadow-adaptive overflow-hidden rounded-lg border border-mg-border bg-card-bg',
 }: {
   workspaceId: string
   broadcastEnabled: boolean
   canManageForward: boolean
+  /** 面板外观类，随宿主（独立页/页签）切换；页签内为扁平子面板避免卡中卡。 */
+  panelClass?: string
 }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -214,7 +218,8 @@ export function DestinationsPanel({
   }
 
   return (
-    <aside className="card-shadow-adaptive overflow-hidden rounded-lg border border-mg-border bg-card-bg">
+    // self-start：右栏按内容自然高度，不被栅格拉伸（PRD align-self:start）。
+    <aside className={cn('self-start', panelClass)}>
       <SectionHeader
         title={t('observability.destinations.panelTitle')}
         description={deliveryLabel}
@@ -278,8 +283,9 @@ export function DestinationsPanel({
           </Link>
         </Button>
 
-        <div className="rounded-md border border-mg-border/70 bg-mg-fill-0/20">
-          <div className="flex items-center justify-between border-b border-mg-border/60 px-4 py-3">
+        {/* 可用平台：扁平分区（去掉内层边框盒，避免面板内再套卡）。 */}
+        <div className="border-t border-mg-border/60 pt-4">
+          <div className="mb-2 flex items-center justify-between px-1">
             <p className="text-[11px] font-bold uppercase tracking-wider text-mg-text-3">
               {t('observability.destinations.availablePlatforms')}
             </p>

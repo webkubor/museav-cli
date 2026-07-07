@@ -68,17 +68,20 @@ function ToggleRow({
   )
 }
 
-/** 工作空间日志采集和转发主体内容。 */
+/** 工作空间日志采集和转发主体内容。
+ * embedded：在空间详情页签内复用时置 true——脱掉自身卡壳/宽度上限，避免卡中卡（DESIGN.md 组件铁律）。 */
 export function ObservabilityContent({
   workspaceId,
   config,
   canEditLogging,
   canManageForward,
+  embedded = false,
 }: {
   workspaceId: string
   config: LoggingConfig
   canEditLogging: boolean
   canManageForward: boolean
+  embedded?: boolean
 }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -108,9 +111,20 @@ export function ObservabilityContent({
     saveMutation.mutate({ input_output_logging_enabled: loggingEnabled, broadcast_enabled: value })
   }
 
+  // 面板外观：独立页用带阴影的卡；页签内（embedded）用扁平子面板，避免与外层空间详情卡叠成卡中卡。
+  const panelClass = embedded
+    ? 'overflow-hidden rounded-lg border border-mg-border bg-mg-bg-0'
+    : 'card-shadow-adaptive overflow-hidden rounded-lg border border-mg-border bg-card-bg'
+
   return (
-    <div className="grid max-w-6xl grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-      <section className="card-shadow-adaptive overflow-hidden rounded-lg border border-mg-border bg-card-bg">
+    <div
+      className={cn(
+        // PRD 栅格：左宽右窄（1.35 / .65），lg 起分栏；items-start 让左卡按内容自然高度，消除空洞。
+        'grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]',
+        !embedded && 'max-w-6xl'
+      )}
+    >
+      <section className={panelClass}>
         <SectionHeader title={t('observability.settingsTitle')} description={t('observability.settingsDesc')} />
         <div className="divide-y divide-mg-border/70">
           <ToggleRow
@@ -145,6 +159,7 @@ export function ObservabilityContent({
         workspaceId={workspaceId}
         broadcastEnabled={broadcastEnabled}
         canManageForward={canManageForward}
+        panelClass={panelClass}
       />
     </div>
   )

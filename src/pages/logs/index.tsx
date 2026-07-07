@@ -79,13 +79,13 @@ function timeRangeLabel(value: DateRangeValue) {
   return '全部时间'
 }
 
-function resolveBackendStatus(
-  status: LogStatusFilter,
-  guardrail: LogGuardrailFilter
-): CallLogListParams['status'] | undefined {
-  if (status === 'guarded' || guardrail === 'hit') return 'rejected'
+// 调用状态(status)与护栏命中(guardrail)是两个正交维度——一次调用可能失败但未命中护栏，
+// 也可能成功但命中护栏——故这里只负责 status 这一维度，guardrail 由 GET /model-logs 的
+// 独立 guardrail 参数（all|hit|not_hit）传递，不再耦合进 status。
+function resolveBackendStatus(status: LogStatusFilter): CallLogListParams['status'] | undefined {
+  if (status === 'guarded') return 'rejected'
   if (status === 'error') return 'failed'
-  if (status === 'success' || guardrail === 'not_hit') return 'succeeded'
+  if (status === 'success') return 'succeeded'
   return undefined
 }
 
@@ -193,7 +193,7 @@ export default function LogsPage() {
   })
 
   const { from, to } = useMemo(() => rangeToDates(timeRange), [timeRange])
-  const backendStatus = resolveBackendStatus(statusFilter, guardrailFilter)
+  const backendStatus = resolveBackendStatus(statusFilter)
   const selectedWorkspaceId = workspaceFilter === 'all' ? undefined : workspaceFilter
   // 我的视图：锁定当前账号；企业视图：用「成员」筛选（默认全部）
   const effectiveAccountId =
@@ -220,6 +220,7 @@ export default function LogsPage() {
       listCallLogs({
         workspace_id: selectedWorkspaceId,
         status: backendStatus,
+        guardrail: guardrailFilter === 'all' ? undefined : guardrailFilter,
         model_id: modelFilter === 'all' ? undefined : modelFilter,
         api_key_id: apiKeyFilter === 'all' ? undefined : apiKeyFilter,
         account_id: effectiveAccountId,

@@ -30,6 +30,7 @@ import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
+import { useTenantRole } from '@/hooks/use-tenant-role'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 import { appToast } from '@/lib/app-toast'
 
@@ -60,6 +61,8 @@ export function WorkspaceDetailContent({
 }) {
   const { t } = useTranslation()
   const [tab, setTab] = useState<DetailTab>('overview')
+  // 个人租户没有企业成员，空间管理里不该有「成员」tab（无人可邀请/管理）；仅企业租户显示。
+  const { isEnterprise } = useTenantRole()
 
   const detailQuery = useQuery({
     queryKey: ['workspace-detail', workspaceId],
@@ -70,7 +73,7 @@ export function WorkspaceDetailContent({
 
   const tabs: { key: DetailTab; label: string }[] = [
     { key: 'overview', label: t('workspaces.detail.tabs.overview') },
-    { key: 'members', label: t('workspaces.detail.tabs.members') },
+    ...(isEnterprise ? [{ key: 'members' as DetailTab, label: t('workspaces.detail.tabs.members') }] : []),
     { key: 'logs', label: t('workspaces.detail.tabs.logs') },
     { key: 'settings', label: t('workspaces.detail.tabs.settings') },
   ]
@@ -102,7 +105,7 @@ export function WorkspaceDetailContent({
             ))}
           </TabsList>
           <TabsContent value="overview"><OverviewTab ws={ws} onGoLogs={() => setTab('logs')} /></TabsContent>
-          <TabsContent value="members"><MembersTab workspaceId={workspaceId} /></TabsContent>
+          {isEnterprise && <TabsContent value="members"><MembersTab workspaceId={workspaceId} /></TabsContent>}
           <TabsContent value="logs"><LogsForwardingTab workspaceId={workspaceId} /></TabsContent>
           <TabsContent value="settings">
             <SettingsTab ws={ws} onDeleted={onDeleted ?? (() => {})} />

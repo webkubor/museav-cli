@@ -58,6 +58,8 @@ export interface TaskListParams {
   workspace_id?: string
   status?: string
   search?: string
+  /** 时间窗口预设，后端仅支持这三档（无 from/to 自定义区间） */
+  preset?: '1h' | '24h' | '7d'
   limit?: number
   offset?: number
   [key: string]: string | number | boolean | null | undefined

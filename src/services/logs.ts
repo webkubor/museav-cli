@@ -210,6 +210,7 @@ function toListQuery(params?: CallLogListParams) {
     q: params?.q,
     model: params?.model_id,
     status: params?.status,
+    guardrail: params?.guardrail,
     limit: params?.limit || params?.page_size,
   }
 }

@@ -36,7 +36,7 @@ type RecordType = 'sync' | 'async'
 
 type LogStatusFilter = 'all' | 'success' | 'guarded' | 'error'
 type LogGuardrailFilter = 'all' | 'hit' | 'not_hit'
-type LogView = 'enterprise' | 'mine'
+type LogView = 'enterprise' | 'mine' | 'space'
 
 const PAGE_SIZE = 15
 const DEFAULT_TIME_RANGE: DateRangeValue = { preset: '7d' }
@@ -92,16 +92,21 @@ function resolveBackendStatus(
 export default function LogsPage() {
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const currentAccountId = useAuthStore((s) => s.account?.account_id)
-  const { canManage, isEnterprise } = useTenantRole()
-  // 视图默认：企业 Owner/Admin=企业视图，Member/个人租户=我的视图；手动切换后不再被角色覆盖（同总览页）
+  const { canManage, isEnterprise, isSpaceOwner, ownedWorkspaceIds } = useTenantRole()
+  // 视图默认：企业 Owner/Admin=企业视图，空间负责人（单空间）=空间视图，其余=我的视图；
+  // 手动切换后不再被角色覆盖（同总览页）
   // 从总览「查看全部」带来的上下文：?view= 初始化视图
   const [searchParams, setSearchParams] = useSearchParams()
   const viewParam = searchParams.get('view')
   const [userView, setUserView] = useState<LogView | null>(
-    viewParam === 'mine' || viewParam === 'enterprise' ? viewParam : null,
+    viewParam === 'mine' || viewParam === 'enterprise' || viewParam === 'space' ? viewParam : null,
   )
-  const view = userView ?? (isEnterprise && canManage ? 'enterprise' : 'mine')
+  // 「空间视图」目前只支持单空间场景（#357 多空间合并裁剪参数待确认，暂不实现），
+  // 负责多个空间时不渲染该切换档，避免猜参数硬发请求。
+  const canUseSpaceView = isSpaceOwner && ownedWorkspaceIds.length === 1
   const showViewToggle = isEnterprise && canManage
+  const showSpaceViewToggle = !showViewToggle && canUseSpaceView
+  const view = userView ?? (showViewToggle ? 'enterprise' : canUseSpaceView ? 'space' : 'mine')
   // 记录类型（#361）：同步调用（默认，现有调用日志）/ 异步任务（原任务历史）；URL record_type 同步
   const [recordType, setRecordType] = useState<RecordType>(
     searchParams.get('record_type') === 'async' ? 'async' : 'sync',
@@ -195,7 +200,9 @@ export default function LogsPage() {
   const { from, to } = useMemo(() => rangeToDates(timeRange), [timeRange])
   const backendStatus = resolveBackendStatus(statusFilter, guardrailFilter)
   const selectedWorkspaceId = workspaceFilter === 'all' ? undefined : workspaceFilter
-  // 我的视图：锁定当前账号；企业视图：用「成员」筛选（默认全部）
+  // 空间视图（单空间场景）：锁定该负责空间的全员数据，覆盖手动的工作空间筛选。
+  const effectiveWorkspaceId = view === 'space' ? ownedWorkspaceIds[0] : selectedWorkspaceId
+  // 我的视图：锁定当前账号；企业视图/空间视图：用「成员」筛选（默认全部）
   const effectiveAccountId =
     view === 'mine' ? currentAccountId || undefined : memberFilter === 'all' ? undefined : memberFilter
 
@@ -205,7 +212,7 @@ export default function LogsPage() {
       activeTenantId,
       view,
       effectiveAccountId,
-      selectedWorkspaceId,
+      effectiveWorkspaceId,
       statusFilter,
       guardrailFilter,
       modelFilter,
@@ -218,7 +225,7 @@ export default function LogsPage() {
     ],
     queryFn: () =>
       listCallLogs({
-        workspace_id: selectedWorkspaceId,
+        workspace_id: effectiveWorkspaceId,
         status: backendStatus,
         model_id: modelFilter === 'all' ? undefined : modelFilter,
         api_key_id: apiKeyFilter === 'all' ? undefined : apiKeyFilter,
@@ -360,6 +367,17 @@ export default function LogsPage() {
                 onChange={(next) => { setUserView(next); if (next === 'mine') setMemberFilter('all'); setSelectedLog(null); resetPagination() }}
               />
             )}
+            {showSpaceViewToggle && (
+              <SegmentedToggle<LogView>
+                ariaLabel="切换视图范围"
+                value={view}
+                options={[
+                  { value: 'space', label: '空间视图' },
+                  { value: 'mine', label: '我的视图' },
+                ]}
+                onChange={(next) => { setUserView(next); if (next === 'mine') setMemberFilter('all'); setSelectedLog(null); resetPagination() }}
+              />
+            )}
             <SegmentedToggle<RecordType>
               ariaLabel="切换记录类型"
               value={recordType}
@@ -445,7 +463,7 @@ export default function LogsPage() {
                 prefix={<LuSearch className="h-4 w-4 text-mg-text-3" />}
               />
             </FilterField>
-            {view === 'enterprise' && (
+            {(view === 'enterprise' || view === 'space') && (
               <FilterField label="成员">
                 <Select value={memberFilter} onChange={(value) => { setMemberFilter(value); resetPagination() }}>
                   <Select.Option value="all">全部成员</Select.Option>

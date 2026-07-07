@@ -1407,6 +1407,7 @@
     "workbench": {
       "view": {
         "enterprise": "企业视图",
+        "space": "空间视图",
         "mine": "我的视图",
         "mineTodo": "当前展示组织口径的用量数据"
       },

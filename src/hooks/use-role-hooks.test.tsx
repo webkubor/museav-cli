@@ -82,6 +82,7 @@ function storeTenant(): TenantBrief {
 beforeEach(() => {
   listTenants.mockReset()
   listWorkspaces.mockReset()
+  listWorkspaces.mockResolvedValue({ items: [] })
   useAuthStore.setState({
     account: { account_id: 'acc_1', display_name: 'Alice', email: 'alice@modelgo.com', avatar_url: null },
     activeTenantId: ACTIVE_TENANT_ID,
@@ -112,6 +113,29 @@ describe('useTenantRole', () => {
 
     await waitFor(() => expect(result.current.role).toBe('tenant_admin'))
     expect(result.current.canManage).toBe(true)
+    expect(result.current.isSpaceOwner).toBe(false)
+  })
+
+  it('marks a tenant_member as space owner when they own a workspace (#391)', async () => {
+    listTenants.mockResolvedValue({ items: [tenant('tenant_member')] })
+    listWorkspaces.mockResolvedValue({ items: [workspace('ws_owner')] })
+
+    const { result } = renderHook(() => useTenantRole(), { wrapper: makeWrapper() })
+
+    await waitFor(() => expect(result.current.isSpaceOwner).toBe(true))
+    expect(result.current.ownedWorkspaceIds).toEqual([ACTIVE_WORKSPACE_ID])
+    expect(result.current.canManage).toBe(false)
+  })
+
+  it('does not mark a plain tenant_member without owned workspaces as space owner', async () => {
+    listTenants.mockResolvedValue({ items: [tenant('tenant_member')] })
+    listWorkspaces.mockResolvedValue({ items: [workspace('ws_member')] })
+
+    const { result } = renderHook(() => useTenantRole(), { wrapper: makeWrapper() })
+
+    await waitFor(() => expect(result.current.role).toBe('tenant_member'))
+    expect(result.current.isSpaceOwner).toBe(false)
+    expect(result.current.ownedWorkspaceIds).toEqual([])
   })
 })
 

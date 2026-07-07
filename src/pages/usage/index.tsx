@@ -69,7 +69,7 @@ export default function UsagePage() {
   // activeWorkspaceId（PRD §7.3：租户级页面不得被选择器过滤）。
   // 视图切换（对齐原型 + PRD §9）：默认按角色，Owner/Admin=企业视图，其余=我的视图；
   // 我的视图对 owner/admin 传 account_id=self（后端 #328 已支持透传）。
-  const { canManage, isEnterprise } = useTenantRole()
+  const { canManage, isEnterprise, isSpaceOwner, ownedWorkspaceIds } = useTenantRole()
   // 从总览「查看更多」带来的上下文：?view= 初始化视图
   const [searchParams] = useSearchParams()
   const viewParam = searchParams.get('view')
@@ -81,11 +81,15 @@ export default function UsagePage() {
   const [dimension, setDimension] = useState<UsageDimension>(initialDimension)
   // 趋势图分组维度（后端 /usage/series 的 group_by）：none=单条总量曲线，其余=多序列堆叠
   const [trendGroupBy, setTrendGroupBy] = useState<TrendGroupBy>('none')
-  const [userView, setUserView] = useState<'enterprise' | 'mine' | null>(
-    viewParam === 'mine' || viewParam === 'enterprise' ? viewParam : null,
+  const [userView, setUserView] = useState<'enterprise' | 'mine' | 'space' | null>(
+    viewParam === 'mine' || viewParam === 'enterprise' || viewParam === 'space' ? viewParam : null,
   )
-  const view = userView ?? (isEnterprise && canManage ? 'enterprise' : 'mine')
+  // 「空间视图」目前只支持单空间场景（#357 多空间合并裁剪参数待确认，暂不实现），
+  // 负责多个空间时不渲染该切换档，避免猜参数硬发请求。
+  const canUseSpaceView = isSpaceOwner && ownedWorkspaceIds.length === 1
   const showViewToggle = isEnterprise && canManage
+  const showSpaceViewToggle = !showViewToggle && canUseSpaceView
+  const view = userView ?? (showViewToggle ? 'enterprise' : canUseSpaceView ? 'space' : 'mine')
   const { symbol: currencySymbol } = useCurrency()
 
   const usagePresets = [
@@ -106,12 +110,14 @@ export default function UsagePage() {
   const { from, to } = useMemo(() => rangeToDates(timeRange), [timeRange])
   const rangeReady = timeRange.preset !== 'custom' || (!!timeRange.startDate && !!timeRange.endDate)
   const scopedAccountId = view === 'mine' ? currentAccountId || undefined : undefined
+  // 空间视图（单空间场景）：锁定该负责空间的全员数据，不传 account_id；覆盖手动的工作空间筛选。
+  const scopedWorkspaceId = view === 'space' ? ownedWorkspaceIds[0] : filterWorkspaceId || undefined
   const commonParams = useMemo(() => ({
     from,
     to,
-    workspace_id: filterWorkspaceId || undefined,
+    workspace_id: scopedWorkspaceId,
     account_id: scopedAccountId,
-  }), [filterWorkspaceId, from, to, scopedAccountId])
+  }), [scopedWorkspaceId, from, to, scopedAccountId])
 
   const workspacesQuery = useQuery({
     queryKey: ['workspaces-for-filter', activeTenantId],
@@ -297,9 +303,19 @@ export default function UsagePage() {
         actions={showViewToggle ? (
           <SegmentedToggle<'enterprise' | 'mine'>
             ariaLabel={t('dashboard.workbench.view.enterprise')}
-            value={view}
+            value={view === 'space' ? 'mine' : view}
             options={[
               { value: 'enterprise', label: t('dashboard.workbench.view.enterprise') },
+              { value: 'mine', label: t('dashboard.workbench.view.mine') },
+            ]}
+            onChange={setUserView}
+          />
+        ) : showSpaceViewToggle ? (
+          <SegmentedToggle<'space' | 'mine'>
+            ariaLabel={t('dashboard.workbench.view.space')}
+            value={view === 'enterprise' ? 'space' : view}
+            options={[
+              { value: 'space', label: t('dashboard.workbench.view.space') },
               { value: 'mine', label: t('dashboard.workbench.view.mine') },
             ]}
             onChange={setUserView}

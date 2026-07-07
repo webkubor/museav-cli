@@ -106,6 +106,9 @@ components:
     backgroundColor: "{colors.bg-0}"
 ---
 
+> ⚠️ **Token 值的唯一真源 = npm 依赖 `modelgo-design-tokens`**（读 `node_modules/modelgo-design-tokens/USAGE.md` + `tokens.css`，四端共享）。
+> 本文件 YAML front matter 里的 hex / 尺寸只是**快照参考、会滞后于包**——**写代码一律用 `var(--mg-*)` token 或对应 Tailwind 类，勿照抄这里的值**。改 token 值 = 改那个包（影响四端），不是改本仓。
+
 ## Overview
 
 > **设计身份（一句话）**：一套代码 × 两条视觉轴 —— **市场轴**（国内靛紫 / 海外翠绿 → 两个域名）× **主题轴**（深 / 浅），同一套 UX 设计语言，4 套外观全部由**单一 token 源**驱动。

@@ -1162,6 +1162,24 @@
       },
       "empty": "暂无排行数据",
       "emptyDesc": "当前筛选条件下没有用量记录"
+    },
+    "summary": {
+      "totalSpend": "总费用",
+      "totalRequests": "请求总量",
+      "totalTokens": "总 Tokens",
+      "costStructure": "费用结构",
+      "inputCost": "输入费用",
+      "outputCost": "输出费用",
+      "cacheCost": "缓存费用",
+      "costPending": "分项费用待后端支持",
+      "requestStatus": "请求状态",
+      "success": "成功请求",
+      "failed": "失败请求",
+      "avgLatency": "平均延迟",
+      "tokenUsage": "Token 用量",
+      "inputTokens": "输入总量",
+      "outputTokens": "输出总量",
+      "cacheTokens": "缓存 Token"
     }
   },
   "chatTest": {

@@ -1163,6 +1163,24 @@
       },
       "empty": "No ranking data",
       "emptyDesc": "No usage records for current filters"
+    },
+    "summary": {
+      "totalSpend": "Total Cost",
+      "totalRequests": "Total Requests",
+      "totalTokens": "Total Tokens",
+      "costStructure": "Cost Breakdown",
+      "inputCost": "Input",
+      "outputCost": "Output",
+      "cacheCost": "Cache",
+      "costPending": "Per-type cost pending backend support",
+      "requestStatus": "Request Status",
+      "success": "Successful",
+      "failed": "Failed",
+      "avgLatency": "Avg Latency",
+      "tokenUsage": "Token Usage",
+      "inputTokens": "Input",
+      "outputTokens": "Output",
+      "cacheTokens": "Cache"
     }
   },
   "chatTest": {

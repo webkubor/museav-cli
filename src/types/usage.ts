@@ -7,6 +7,9 @@ export interface UsageSummary {
     tokens: number
     input_tokens: number
     output_tokens: number
+    /** 缓存读/写 token（Swagger usage.Totals 有；「缓存 Token」= 读+写） */
+    cache_read_tokens?: number
+    cache_write_tokens?: number
     average_latency_ms: number
     error_rate: number
   }

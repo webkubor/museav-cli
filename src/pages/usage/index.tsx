@@ -23,16 +23,16 @@ import { useTenantRole } from '@/hooks/use-tenant-role'
 import { SegmentedToggle } from '@/features/dashboard/workbench/SegmentedToggle'
 import { useCurrency } from '@/hooks/use-platform-config'
 import type { SeriesDataPoint, UsageRankingItem } from '@/types'
-import { KpiCard } from '@/components/ui/KpiCard'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { LuActivity, LuBot, LuDatabase, LuGauge, LuKeyRound, LuRefreshCw, LuWallet, LuUsers } from 'react-icons/lu'
+import { LuActivity, LuBot, LuDatabase, LuKeyRound, LuRefreshCw, LuWallet, LuUsers } from 'react-icons/lu'
 import {
   CostSourcePanel,
   type CostSourceSection,
   ApiKeyRankingPanel,
   ModelDistributionPanel,
+  UsageStatCard,
 } from './usage-panels'
 import { MemberRankingPanel } from './member-ranking-panel'
 import {
@@ -40,7 +40,6 @@ import {
   rangeToDates,
   formatMoney,
   formatNumber,
-  formatAverageMoney,
   CHART_CAT_COLORS,
   CHART_CAT_MAX,
   CHART_OTHER_COLOR,
@@ -224,14 +223,20 @@ export default function UsagePage() {
     return { rows, series }
   }, [trendGroupBy, seriesQuery.data, metric, workspaceList, t])
 
-  const spendAmount = parseFloat(summary?.total.spend.amount ?? '0')
   const requestCount = summary?.total.requests ?? 0
   const totalSpend = summary ? formatMoney(summary.total.spend.amount, currencySymbol) : '—'
   const totalRequests = summary ? formatNumber(summary.total.requests) : '—'
   const totalTokens = summary ? formatNumber(summary.total.tokens) : '—'
-  const averageCost = formatAverageMoney(requestCount > 0 ? spendAmount / requestCount : 0, currencySymbol)
-  const errorRate = summary ? `${(summary.total.error_rate * 100).toFixed(2)}%` : '—'
   const averageLatency = summary?.total.average_latency_ms ? `${Math.round(summary.total.average_latency_ms)}ms` : '—'
+  // 三大卡分解数据：成功/失败请求、Token 输入/输出/缓存 + 占比
+  const failedRequests = summary ? Math.round(summary.total.requests * summary.total.error_rate) : 0
+  const successRequests = requestCount - failedRequests
+  const inputTokens = summary?.total.input_tokens ?? 0
+  const outputTokens = summary?.total.output_tokens ?? 0
+  const cacheTokens = (summary?.total.cache_read_tokens ?? 0) + (summary?.total.cache_write_tokens ?? 0)
+  const tokensTotal = summary?.total.tokens ?? 0
+  const reqPct = (n: number) => (requestCount > 0 ? (n / requestCount) * 100 : 0)
+  const tokPct = (n: number) => (tokensTotal > 0 ? (n / tokensTotal) * 100 : 0)
 
   const workspaceSourceItems = useMemo<UsageRankingItem[]>(() => {
     const items = workspaceSourceQuery.data?.items ?? []
@@ -342,56 +347,45 @@ export default function UsagePage() {
           workspaceList={workspaceList}
         />
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <KpiCard
-            label={t('usage.kpi.spend')}
-            value={totalSpend}
-            loading={summaryQuery.isLoading}
-            color="var(--mg-warning)"
-            glowColor="rgba(245, 158, 11, 0.12)"
-            hoverBorderClass="hover:border-amber-500/30"
+        {/* 用量统计三大卡（对齐 PRD）：总费用/请求总量/总Tokens + 分解进度条 */}
+        <div className="grid gap-4 md:grid-cols-3">
+          <UsageStatCard
             icon={<LuWallet size={16} />}
+            label={t('usage.summary.totalSpend')}
+            value={totalSpend}
+            suffix={currencySymbol === '¥' ? 'CNY' : undefined}
+            loading={summaryQuery.isLoading}
+            breakdownTitle={t('usage.summary.costStructure')}
+            rows={[
+              { label: t('usage.summary.inputCost'), value: '—', bar: false },
+              { label: t('usage.summary.outputCost'), value: '—', bar: false },
+              { label: t('usage.summary.cacheCost'), value: '—', bar: false },
+            ]}
+            pendingHint={t('usage.summary.costPending')}
           />
-          <KpiCard
-            label={t('usage.kpi.requestsTotal')}
+          <UsageStatCard
+            icon={<LuActivity size={16} />}
+            label={t('usage.summary.totalRequests')}
             value={totalRequests}
             loading={summaryQuery.isLoading}
-            color="var(--mg-success)"
-            glowColor="rgba(16, 185, 129, 0.12)"
-            hoverBorderClass="hover:border-emerald-500/30"
-            icon={<LuActivity size={16} />}
+            breakdownTitle={t('usage.summary.requestStatus')}
+            rows={[
+              { label: t('usage.summary.success'), value: formatNumber(successRequests), pct: reqPct(successRequests), variant: 'emerald' },
+              { label: t('usage.summary.failed'), value: formatNumber(failedRequests), pct: reqPct(failedRequests), variant: 'amber' },
+              { label: t('usage.summary.avgLatency'), value: averageLatency, bar: false },
+            ]}
           />
-          <KpiCard
-            label={t('usage.kpi.tokens')}
+          <UsageStatCard
+            icon={<LuDatabase size={16} />}
+            label={t('usage.summary.totalTokens')}
             value={totalTokens}
             loading={summaryQuery.isLoading}
-            sub={summary ? t('usage.kpi.tokenBreakdown', {
-              input: formatNumber(summary.total.input_tokens),
-              output: formatNumber(summary.total.output_tokens),
-            }) : undefined}
-            color="var(--mg-info)"
-            glowColor="rgba(59, 130, 246, 0.12)"
-            hoverBorderClass="hover:border-blue-500/30"
-            icon={<LuDatabase size={16} />}
-          />
-          <KpiCard
-            label={t('usage.insights.errorRate')}
-            value={errorRate}
-            loading={summaryQuery.isLoading}
-            color="var(--mg-danger)"
-            glowColor="rgba(239, 68, 68, 0.12)"
-            hoverBorderClass="hover:border-red-500/30"
-            icon={<LuGauge size={16} />}
-          />
-          <KpiCard
-            label={t('usage.insights.averageLatency')}
-            value={averageLatency}
-            loading={summaryQuery.isLoading}
-            sub={t('usage.kpi.averageCostWithValue', { value: averageCost })}
-            color="var(--brand-base)"
-            glowColor="var(--brand-glow)"
-            hoverBorderClass="hover:border-brand-base/30"
-            icon={<LuGauge size={16} />}
+            breakdownTitle={t('usage.summary.tokenUsage')}
+            rows={[
+              { label: t('usage.summary.inputTokens'), value: formatNumber(inputTokens), pct: tokPct(inputTokens), variant: 'emerald' },
+              { label: t('usage.summary.outputTokens'), value: formatNumber(outputTokens), pct: tokPct(outputTokens), variant: 'amber' },
+              { label: t('usage.summary.cacheTokens'), value: formatNumber(cacheTokens), pct: tokPct(cacheTokens), variant: 'blue' },
+            ]}
           />
         </div>
 

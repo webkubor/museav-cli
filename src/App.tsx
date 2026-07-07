@@ -12,7 +12,6 @@ import { CONSOLE_ROUTES, type ConsoleRouteMeta } from '@/config/console-routes'
 const DashboardPage = lazy(() => import('@/pages/dashboard'))
 const ApiKeysPage = lazy(() => import('@/pages/api-keys'))
 const WorkspacesPage = lazy(() => import('@/pages/workspaces'))
-const WorkspaceDetailPage = lazy(() => import('@/pages/settings/workspace-detail'))
 const LoginPage = lazy(() => import('@/pages/login'))
 const SignupPage = lazy(() => import('@/pages/signup'))
 const LegalPage = lazy(() => import('@/pages/legal'))
@@ -222,7 +221,6 @@ export default function App() {
             <Route path="settings">
               <Route index element={<Navigate to="workspace" replace />} />
               <Route path="workspace" element={<WorkspacesPage />} />
-              <Route path="workspace/:workspaceId" element={<WorkspaceDetailPage />} />
               <Route path="account" element={<AccountSettingsPage />} />
               <Route path="organization" element={<OrganizationPage />} />
             </Route>

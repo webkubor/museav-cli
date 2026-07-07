@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { LuSearch, LuArrowRight, LuUsers } from 'react-icons/lu'
@@ -8,7 +7,6 @@ import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import {
   addWorkspaceMember,
-  getWorkspace,
   updateWorkspace,
   deleteWorkspace,
   listWorkspaceMembers,
@@ -18,200 +16,18 @@ import {
 import { listTenantMembers } from '@/services/tenants'
 import { getLoggingConfig } from '@/services/observability'
 import { ObservabilityContent } from '@/pages/observability'
-import { cn, pageItems, formatMoney as fmtMoney } from '@/lib/utils'
-import { formatRelativeTime } from '@/lib/format-date'
+import { cn, pageItems } from '@/lib/utils'
 import { TENANT_ROLE_LABEL } from '@/constants/roles'
-import type { Money, TenantMember, WorkspaceDetail, WorkspaceMember } from '@/types'
+import type { TenantMember, WorkspaceDetail, WorkspaceMember } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Badge } from '@/components/ui/Badge'
-import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
-import { useTenantRole } from '@/hooks/use-tenant-role'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 import { appToast } from '@/lib/app-toast'
 
-type DetailTab = 'overview' | 'members' | 'logs' | 'settings'
-
-function formatMoney(m?: Money) {
-  if (!m) return '—'
-  return `${m.currency} ${fmtMoney(m.amount, '')}`
-}
-
-export default function WorkspaceDetailPage() {
-  const { workspaceId = '' } = useParams()
-  const navigate = useNavigate()
-  return <WorkspaceDetailContent workspaceId={workspaceId} onDeleted={() => navigate('/settings/workspace')} />
-}
-
-/**
- * 空间详情内容（详情壳 + 4 tabs）。
- * 列表页（单页结构）和独立详情路由共用此组件。
- * onDeleted：空间被删除后回调（列表页用于清空选中态，路由页用于跳回列表）。
- */
-export function WorkspaceDetailContent({
-  workspaceId,
-  onDeleted,
-}: {
-  workspaceId: string
-  onDeleted?: () => void
-}) {
-  const { t } = useTranslation()
-  const [tab, setTab] = useState<DetailTab>('overview')
-  // 个人租户没有企业成员，空间管理里不该有「成员」tab（无人可邀请/管理）；仅企业租户显示。
-  const { isEnterprise } = useTenantRole()
-
-  const detailQuery = useQuery({
-    queryKey: ['workspace-detail', workspaceId],
-    queryFn: () => getWorkspace(workspaceId),
-    enabled: Boolean(workspaceId),
-  })
-  const ws = detailQuery.data
-
-  const tabs: { key: DetailTab; label: string }[] = [
-    { key: 'overview', label: t('workspaces.detail.tabs.overview') },
-    ...(isEnterprise ? [{ key: 'members' as DetailTab, label: t('workspaces.detail.tabs.members') }] : []),
-    { key: 'logs', label: t('workspaces.detail.tabs.logs') },
-    { key: 'settings', label: t('workspaces.detail.tabs.settings') },
-  ]
-
-  return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      {/* 详情头：slug + 空间名（对齐原型 .space-detail-head） */}
-      <div className="space-y-3">
-        {detailQuery.isLoading ? (
-          <div className="h-9 w-60 bg-mg-fill-1 rounded-lg animate-pulse" />
-        ) : !ws ? (
-          <div className="text-sm text-mg-text-3">{t('workspaces.detail.notFound')}</div>
-        ) : (
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="font-mono text-xs text-mg-text-3">@{ws.slug}</span>
-            <h3 className="text-xl font-bold text-mg-text-1 tracking-tight">{ws.name}</h3>
-            {ws.is_default && <Badge variant="secondary">{t('workspaces.defaultBadge')}</Badge>}
-          </div>
-        )}
-      </div>
-
-      {ws && (
-        <Tabs value={tab} onValueChange={(v) => setTab(v as DetailTab)}>
-          <TabsList variant="pills" className="mb-2">
-            {tabs.map((tabItem) => (
-              <TabsTrigger key={tabItem.key} variant="pills" value={tabItem.key}>
-                {tabItem.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <TabsContent value="overview"><OverviewTab ws={ws} onGoLogs={() => setTab('logs')} /></TabsContent>
-          {isEnterprise && <TabsContent value="members"><MembersTab workspaceId={workspaceId} /></TabsContent>}
-          <TabsContent value="logs"><LogsForwardingTab workspaceId={workspaceId} /></TabsContent>
-          <TabsContent value="settings">
-            <SettingsTab ws={ws} onDeleted={onDeleted ?? (() => {})} />
-          </TabsContent>
-        </Tabs>
-      )}
-    </div>
-  )
-}
-
-// ─── 概览 ─────────────────────────────────────────────
-// 对齐 PRD 原型：4 指标卡 + 资源快捷入口（API Keys / 安全护栏 / 调用日志 / 日志与转发）
-function OverviewTab({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: () => void }) {
-  const { t } = useTranslation()
-  const navigate = useNavigate()
-  // 近 7 天用量（对齐原型：消费/请求/Tokens，请求卡带「最近调用 X前」）
-  const usageCards = [
-    { label: t('workspaces.detail.overview.spend'), value: formatMoney(ws.usage_7d?.spend) },
-    {
-      label: t('workspaces.detail.overview.requests'),
-      value: (ws.usage_7d?.requests ?? 0).toLocaleString(),
-      hint: `${t('workspaces.detail.overview.lastRequest')} ${ws.last_request_at ? formatRelativeTime(ws.last_request_at) : t('workspaces.detail.overview.never')}`,
-    },
-    { label: t('workspaces.detail.overview.tokens'), value: (ws.usage_7d?.tokens ?? 0).toLocaleString() },
-  ]
-  // 运行资源（对齐原型：成员/API Keys/护栏/采集/转发；后端 workspace.Detail 已返回）
-  const resources = [
-    { label: t('workspaces.card.members'), value: String(ws.member_count ?? 0) },
-    { label: t('workspaces.detail.overview.apiKeys'), value: String(ws.api_key_count ?? 0) },
-    { label: t('workspaces.card.guardrails'), value: String(ws.guardrail_count ?? 0) },
-    { label: t('workspaces.summary.logging'), value: ws.logging_enabled ? t('workspaces.card.collectOn') : t('workspaces.card.collectOff') },
-    { label: t('workspaces.summary.forwarding'), value: ws.forward_enabled ? t('workspaces.card.forwardOn') : t('workspaces.card.forwardOff') },
-  ]
-  const shortcuts: { title: string; desc: string; onClick: () => void }[] = [
-    {
-      title: t('nav.apiKeys'),
-      desc: t('workspaces.detail.overview.keysOwner', {
-        count: ws.api_key_count ?? 0,
-        owner: ws.owner?.display_name || '—',
-      }),
-      onClick: () => navigate(`/workspace/${ws.workspace_id}/api-keys`),
-    },
-    {
-      title: t('nav.guardrails'),
-      desc: t('workspaces.detail.overview.goGuardrailsDesc'),
-      onClick: () => navigate(`/workspace/${ws.workspace_id}/guardrails`),
-    },
-    {
-      title: t('nav.logs'),
-      desc: t('workspaces.detail.overview.goLogsDesc'),
-      onClick: () => navigate('/logs'),
-    },
-    {
-      title: t('workspaces.detail.tabs.logs'),
-      desc: t('workspaces.detail.overview.goForwardingDesc'),
-      onClick: onGoLogs,
-    },
-  ]
-  return (
-    <div className="space-y-6">
-      {/* 近 7 天用量 */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {usageCards.map((c) => (
-          <Card key={c.label} className="p-5">
-            <div className="text-[11px] font-bold text-mg-text-3 uppercase tracking-wider mb-2">{c.label}</div>
-            <div className="text-xl font-bold text-mg-text-1">{c.value}</div>
-            {'hint' in c && c.hint && <div className="mt-1 text-[11px] text-mg-text-3">{c.hint}</div>}
-          </Card>
-        ))}
-      </div>
-      {/* 运行资源（对齐原型） */}
-      <div>
-        <div className="text-[11px] font-bold text-mg-text-3 uppercase tracking-wider mb-2">{t('workspaces.detail.overview.resources')}</div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {resources.map((r) => (
-            <Card key={r.label} className="p-4">
-              <div className="text-[11px] text-mg-text-3 mb-1">{r.label}</div>
-              <div className="text-base font-bold text-mg-text-1">{r.value}</div>
-            </Card>
-          ))}
-        </div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {shortcuts.map((s) => (
-          <button
-            key={s.title}
-            type="button"
-            onClick={s.onClick}
-            className="text-left bg-mg-bg-0 border border-mg-border/50 rounded-lg p-4 shadow-xs cursor-pointer transition-colors hover:border-brand-base/40 hover:bg-mg-fill-0/30 group"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[13px] font-bold text-mg-text-1">{s.title}</span>
-              <LuArrowRight size={14} className="text-mg-text-3 group-hover:text-brand-base transition-colors" />
-            </div>
-            <p className="mt-1 text-[11px] text-mg-text-3 leading-5">{s.desc}</p>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ─── 成员 ─────────────────────────────────────────────
-// 对齐 PRD 原型：左主表（成员/企业角色/空间责任/拥有Key/操作）+ 右侧栏「从企业成员添加」
-// 设为负责人：接 PUT /workspaces/:id/owner（#327 待实现，前端先按约定接）
-// 移除成员：影响弹窗（受影响 Key + 转移/停用策略），对齐 SpaceMemberRemovalImpactModal
 export function MembersTab({ workspaceId }: { workspaceId: string }) {
   const { t } = useTranslation()
   const qc = useQueryClient()

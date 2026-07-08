@@ -46,11 +46,24 @@ import { PERMS, type Permission } from './permissions'
  *   - workspace—— 工作区级，路径挂在 '/workspace/:workspaceId/xxx'（如 api-keys/guardrails）；
  *                 侧边栏在该组内渲染工作空间选择器，页面数据随所选工作区变化。
  *
+ * 【命名规范 —— 路由 / 菜单 / 权限 / 埋点 四者同源，新增务必遵守】
+ *   - menu_key（= 本清单 key = nav.ts itemKey = 路由 path）：kebab-case，可含层级 '/'。
+ *     例：'api-keys'、'models/catalog'、'settings/organization'。
+ *   - permission_id：'<resource>:<action>'，resource 用 snake_case；菜单级 view = '<resource>:view'，
+ *     块/动作级 '<resource>[.<sub>]:<action>'（如 'billing.recharge:create'、'guardrails.budget:edit'）。
+ *     注意：menu_key 用连字符（api-keys），permission 用下划线（api_keys:view），两者不必字面相同。
+ *   - 埋点直接复用上面两者，禁止另起 event 名：页面浏览 `trackPageView(menu_key)`；
+ *     动作按钮 `trackAction(PERMS.*)`（event key = permission_id，与按钮的权限 gate 同一常量）。
+ *     无 permission_id 对应的动作（如自助建组织）才用冒号约定自定义 key（'org:create'）+ trackEvent。
+ *   - 权威注册在后端权限矩阵（运营在 controller-web「菜单权限管理」编辑，≤30s 生效，见 #345）；
+ *     前端 key 必须与后端登记一致，否则 fail-closed 隐藏/禁用。
+ *
  * 【新增一个菜单页的 checklist】
- *   1) 本清单加一条 { key, path, scope, permission? }（key 与 nav.ts itemKey 一致）；
+ *   1) 本清单加一条 { key, path, scope, permission? }（key = kebab-case 路由 path = nav.ts itemKey）；
  *   2) App.tsx 的 CONSOLE_ELEMENTS 里补 key → 页面元素；
  *   3) nav.ts 对应分组加 { itemKey:key, text, icon }（permission 走 routePermission(key)，不重复写）；
- *   4) 若引入新的 view 权限，先在 permissions.ts 的 PERMS 登记，并让后端矩阵下发。
+ *   4) 若引入新 view/动作权限，先在 permissions.ts 的 PERMS 登记（按上面命名规范），并让后端矩阵下发；
+ *   5) 埋点无需额外命名：页面用 trackPageView(key)、动作按钮用 trackAction(对应 PERMS.*)，key 自动复用。
  *
  * 不含：登录/注册等公共页、纯工具页（dev-config）、二级详情页（工作空间详情、个人设置子页），
  * 这些不由菜单直接驱动，仍在 App.tsx 内联声明。

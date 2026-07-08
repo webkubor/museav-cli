@@ -1,15 +1,11 @@
 /**
  * 接入中心卡：协议地址快捷复制 + 接入方式入口 + 新建密钥成功展示横幅
  */
-import { useState } from 'react'
 import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 import { Button } from '@/components/ui/Button'
-import { useCopy } from '@/hooks/use-copy'
-import { appToast } from '@/lib/app-toast'
+import { CopyButton } from '@/components/ui/CopyButton'
 import { useTranslation } from 'react-i18next'
 import {
-  LuCopy,
-  LuCheck,
   LuX,
   LuKey,
   LuTriangleAlert,
@@ -28,27 +24,6 @@ type Props = {
 
 export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, createdKeyText, onDismissReveal }: Props) {
   const { t } = useTranslation()
-  const { copy, copied } = useCopy()
-  const [quickCopied, setQuickCopied] = useState<string | null>(null)
-
-  async function handleQuickCopy(key: string, text: string) {
-    const ok = await copy(text)
-    if (!ok) {
-      appToast.error('复制失败，请手动复制')
-      return
-    }
-    setQuickCopied(key)
-    setTimeout(() => setQuickCopied(null), 2000)
-  }
-
-  async function handleCopyKey(text: string) {
-    const ok = await copy(text)
-    if (!ok) {
-      appToast.error('复制失败，请手动复制')
-      return
-    }
-    appToast.success(t('apiKeys.table.copyMaskedSuccess'))
-  }
 
   return (
     <div className="overflow-hidden rounded-md border border-mg-border bg-mg-bg-0 shadow-sm">
@@ -76,16 +51,9 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
               {GATEWAY_ENDPOINTS.map(({ label, baseUrl: value }, index) => {
                 const visual = getGatewayVisual(index)
                 return (
-                  <button
+                  <div
                     key={label}
-                    type="button"
-                    title={`复制 ${value}`}
-                    onClick={() => handleQuickCopy(label, value)}
-                    className={`group flex h-9 min-w-0 items-center gap-2 rounded-lg border px-2.5 text-left transition-colors cursor-pointer ${
-                      quickCopied === label
-                        ? 'bg-mg-success/5 border-mg-success/30'
-                        : 'bg-mg-fill-0 border-mg-border/70 hover:border-brand-base/40 hover:bg-brand-base/5'
-                    }`}
+                    className="group flex h-9 min-w-0 items-center gap-2 rounded-lg border border-mg-border/70 bg-mg-fill-0 px-2.5 pr-1.5 text-left transition-colors hover:border-brand-base/40"
                   >
                     <span className="w-6 h-6 rounded-md bg-mg-bg-0 border border-mg-border flex items-center justify-center shrink-0 text-mg-text-1">
                       {visual.icon}
@@ -94,14 +62,8 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
                     <code className="min-w-0 flex-1 truncate font-mono text-[12px] font-semibold text-mg-text-2">
                       {formatEndpointDisplay(value)}
                     </code>
-                    <span className={`shrink-0 text-[11px] font-bold flex items-center gap-1 transition-colors ${
-                      quickCopied === label ? 'text-mg-success' : 'text-mg-text-3 group-hover:text-brand-base'
-                    }`}>
-                      {quickCopied === label
-                        ? <><LuCheck size={12} /> 已复制</>
-                        : <><LuCopy size={12} /> 复制</>}
-                    </span>
-                  </button>
+                    <CopyButton value={value} aria-label={`复制 ${value}`} toast={false} className="shrink-0" />
+                  </div>
                 )
               })}
             </div>
@@ -159,19 +121,13 @@ export function AccessCenterCard({ docsUrl, onOpenConnect, revealVisible, create
           <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
             <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-mg-border bg-mg-code-bg px-3 py-2 font-mono text-sm font-bold tracking-wider">
               <span className="min-w-0 flex-1 truncate text-mg-success select-all">{createdKeyText}</span>
-              <button
-                type="button"
-                onClick={() => handleCopyKey(createdKeyText)}
-                className={[
-                  'shrink-0 flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer',
-                  copied
-                    ? 'bg-mg-success/15 text-mg-success'
-                    : 'bg-mg-fill-1 text-mg-text-2 hover:bg-mg-fill-2 hover:text-mg-text-1',
-                ].join(' ')}
-              >
-                {copied ? <LuCheck className="w-3.5 h-3.5" /> : <LuCopy className="w-3.5 h-3.5" />}
-                {copied ? '已复制' : '复制'}
-              </button>
+              <CopyButton
+                value={createdKeyText}
+                variant="labeled"
+                label="复制"
+                toast={t('apiKeys.table.copyMaskedSuccess')}
+                className="shrink-0"
+              />
             </div>
             <Button variant="brand" onClick={onOpenConnect} className="shrink-0 h-auto rounded-lg px-5 text-sm font-semibold cursor-pointer">
               快速接入

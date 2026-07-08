@@ -8,14 +8,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  LuCopy, LuCheck, LuFileText, LuImage, LuMic, LuVideo,
+  LuFileText, LuImage, LuMic, LuVideo,
   LuBrain, LuMapPin, LuGlobe, LuZap, LuWrench, LuTag, LuChevronRight,
   LuGitCompareArrows, LuBadgeCheck, LuHeart,
 } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
-import { useCopy } from '@/hooks/use-copy'
-import { appToast } from '@/lib/app-toast'
+import { CopyButton } from '@/components/ui/CopyButton'
 import { formatContextLength, prettyModelName } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 
@@ -70,8 +69,6 @@ interface Props {
 export function CatalogCard({ model, isZh, onTry, onCompare, canCompare }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { copy } = useCopy()
-  const [copied, setCopied] = useState(false)
   const [fav, setFav] = useState(() => readFavs().has(model.id))
 
   const symbol = CCY_SYMBOL[(model.pricing?.currency || '').toUpperCase()] || model.pricing?.currency || (isZh ? '¥' : '$')
@@ -95,15 +92,6 @@ export function CatalogCard({ model, isZh, onTry, onCompare, canCompare }: Props
   const input = priceText(model.pricing?.input_per_1m, symbol, isZh)
   const output = priceText(model.pricing?.output_per_1m, symbol, isZh)
 
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (await copy(model.model_id)) {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    } else {
-      appToast.error(t('modelsCatalog.toast.copyFailed'))
-    }
-  }
   const toggleFav = (e: React.MouseEvent) => {
     e.stopPropagation()
     const next = !fav
@@ -142,9 +130,14 @@ export function CatalogCard({ model, isZh, onTry, onCompare, canCompare }: Props
               <LuBadgeCheck size={13} className="mg-card-verified" />
               <span className="mg-card-api">
                 <code className="font-mono">{model.model_id}</code>
-                <button type="button" onClick={handleCopy} className="mg-card-copy" aria-label={isZh ? '复制 API ID' : 'Copy API ID'}>
-                  {copied ? <LuCheck size={11} /> : <LuCopy size={11} />}
-                </button>
+                <span className="inline-flex shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <CopyButton
+                    value={model.model_id}
+                    aria-label={isZh ? '复制 API ID' : 'Copy API ID'}
+                    toast={false}
+                    className="h-5 w-5"
+                  />
+                </span>
               </span>
             </div>
           )}

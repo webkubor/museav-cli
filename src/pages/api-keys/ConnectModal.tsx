@@ -5,10 +5,9 @@ import { useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
-import { useCopy } from '@/hooks/use-copy'
-import { appToast } from '@/lib/app-toast'
+import { CopyButton } from '@/components/ui/CopyButton'
 import { useTranslation } from 'react-i18next'
-import { LuCopy, LuCheck, LuZap, LuChevronRight, LuExternalLink, LuKey } from 'react-icons/lu'
+import { LuZap, LuChevronRight, LuExternalLink, LuKey } from 'react-icons/lu'
 import { appendThemeParam } from '@/lib/theme'
 import { CONNECT_ACTIONS, buildConnectSnippets, getConnectAction, MGC_CLIENT_OPTIONS, deriveRegionFromBaseUrl, buildMgcCommand } from './constants'
 
@@ -24,8 +23,6 @@ type Props = {
 
 export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl, onCreateKey }: Props) {
   const { t } = useTranslation()
-  const { copy } = useCopy()
-  const [connectCopied, setConnectCopied] = useState<string | null>(null)
   const hasCreatedKey = createdKeyText.trim().length > 0
 
   // @model-go/config 一键接入：区域自动推导、Key 自动预填，客户端由用户勾选
@@ -36,17 +33,6 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
   const toggleMgcClient = (id: string) =>
     setMgcSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   const mgcCommand = buildMgcCommand({ apiKey: keyForCmd, region, selected: mgcSelected, all: mgcAll })
-
-  async function handleConnectCopy(key: string, text: string) {
-    const ok = await copy(text)
-    if (!ok) {
-      appToast.error('复制失败，请手动复制')
-      return
-    }
-    setConnectCopied(key)
-    appToast.success('已复制到剪贴板')
-    setTimeout(() => setConnectCopied(null), 2000)
-  }
 
   const connectSnippets = buildConnectSnippets({ openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl: appendThemeParam(docsUrl) })
 
@@ -76,16 +62,13 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
               </div>
             </div>
             {hasCreatedKey ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleConnectCopy('api-key', createdKeyText)}
+              <CopyButton
+                value={createdKeyText}
+                variant="labeled"
+                label="复制 API Key"
+                copiedLabel="已复制 Key"
                 className="shrink-0"
-              >
-                {connectCopied === 'api-key'
-                  ? <><LuCheck className="w-3.5 h-3.5 mr-1.5" />已复制 Key</>
-                  : <><LuCopy className="w-3.5 h-3.5 mr-1.5" />复制 API Key</>}
-              </Button>
+              />
             ) : onCreateKey ? (
               <Button
                 variant="brand"
@@ -181,14 +164,12 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                 <span className="text-[11px] text-mg-text-3">
                   {hasCreatedKey ? '已填入你刚创建的 Key' : '创建密钥后将自动填入真实 Key'}
                 </span>
-                <Button
-                  variant="brand"
-                  size="sm"
-                  onClick={() => handleConnectCopy('mgc', mgcCommand)}
-                  icon={connectCopied === 'mgc' ? <LuCheck className="h-3.5 w-3.5" /> : <LuCopy className="h-3.5 w-3.5" />}
-                >
-                  {connectCopied === 'mgc' ? '已复制' : '复制命令'}
-                </Button>
+                <CopyButton
+                  value={mgcCommand}
+                  variant="labeled"
+                  buttonVariant="brand"
+                  label="复制命令"
+                />
               </div>
             </div>
           </TabsContent>
@@ -220,14 +201,11 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                         {item.launchLabel}
                         {isWebLink ? <LuExternalLink className="h-3.5 w-3.5" /> : <LuChevronRight className="h-3.5 w-3.5" />}
                       </a>
-                      <button
-                        type="button"
-                        onClick={() => handleConnectCopy(item.id, item.copyText)}
-                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-mg-border bg-mg-fill-0 px-3 text-xs font-semibold text-mg-text-2 transition-colors hover:border-brand-base/35 hover:text-brand-base cursor-pointer"
-                      >
-                        {connectCopied === item.id ? <LuCheck className="h-3.5 w-3.5" /> : <LuCopy className="h-3.5 w-3.5" />}
-                        {connectCopied === item.id ? '已复制' : item.copyLabel}
-                      </button>
+                      <CopyButton
+                        value={item.copyText}
+                        variant="labeled"
+                        label={item.copyLabel}
+                      />
                     </div>
                   </div>
 

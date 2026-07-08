@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { LuTriangleAlert } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
-import { useCopy } from '@/hooks/use-copy'
+import { CopyButton } from '@/components/ui/CopyButton'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
@@ -21,7 +21,6 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
   const [inviteEmails, setInviteEmails] = useState('')
   const [inviteRole, setInviteRole] = useState<'tenant_admin' | 'tenant_member'>('tenant_member')
   const [expiresInHours, setExpiresInHours] = useState<number>(72)
-  const { copy: copyLink, copied: linkCopied } = useCopy()
   const [showResetConfirm, setShowResetConfirm] = useState(false)
 
   const inviteLinkQuery = useQuery({
@@ -73,11 +72,6 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
     ? `${window.location.origin}/invitations/${inviteLinkQuery.data.token}`
     : null
 
-  async function handleCopyLink() {
-    if (!inviteLinkUrl) return
-    await copyLink(inviteLinkUrl)
-    appToast.success('邀请链接已复制')
-  }
 
   // 切换初始角色：角色绑定在链接里 → 必须重出链接，旧链接随之失效
   const handleRoleChange = (next: string) => {
@@ -140,18 +134,16 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
               <div className="flex-1 p-2.5 rounded-lg border border-mg-border/40 bg-mg-fill-0/30 font-mono text-[11px] text-mg-text-2 overflow-hidden text-ellipsis whitespace-nowrap select-all">
                 {inviteLinkUrl ?? <span className="text-mg-text-4 italic">…</span>}
               </div>
-              <Button
-                variant="brand"
+              <CopyButton
+                value={inviteLinkUrl ?? ''}
+                variant="labeled"
+                buttonVariant="brand"
+                label={t('enterprise.invite.copyLink')}
+                copiedLabel={t('enterprise.invite.copied')}
+                toast="邀请链接已复制"
                 disabled={!inviteLinkUrl}
-                onClick={handleCopyLink}
-                className={`font-semibold h-9 px-4 rounded-lg text-xs transition-colors shrink-0 ${
-                  linkCopied
-                    ? 'border-mg-success bg-transparent text-mg-success hover:bg-mg-success/5'
-                    : 'bg-brand-base text-white hover:bg-brand-base/90'
-                }`}
-              >
-                {linkCopied ? t('enterprise.invite.copied') : t('enterprise.invite.copyLink')}
-              </Button>
+                className="shrink-0"
+              />
             </div>
           </div>
         </div>

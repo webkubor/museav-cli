@@ -2,12 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { LuArrowLeft, LuCheck, LuCopy, LuShieldCheck } from 'react-icons/lu'
+import { LuArrowLeft, LuCheck, LuShieldCheck } from 'react-icons/lu'
 import { WechatIcon } from '@/constants/brand-icons'
 import { Button } from '@/components/ui/Button'
-import { useCopy } from '@/hooks/use-copy'
+import { CopyButton } from '@/components/ui/CopyButton'
 import { getRecharge } from '@/services/billing'
-import { cn } from '@/lib/utils'
 
 const WECHAT_GREEN = '#07c160'
 const POLL_INTERVAL_MS = 3000
@@ -38,7 +37,6 @@ export default function WechatCashierPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { copy, copied } = useCopy()
 
   const qrCodeUrl = searchParams.get('qr')?.trim() ?? ''
   const orderNo = searchParams.get('order')?.trim() ?? ''
@@ -53,9 +51,6 @@ export default function WechatCashierPage() {
   const [countdown, setCountdown] = useState(REDIRECT_DELAY_S)
 
   const goBack = () => navigate(returnTo, { replace: true })
-  const handleCopy = async () => {
-    if (qrCodeUrl) await copy(qrCodeUrl)
-  }
 
   // Poll the recharge order status until it settles. Same-origin request carries
   // the session cookie; tenant comes from the launch URL. Transient errors keep
@@ -180,14 +175,14 @@ export default function WechatCashierPage() {
               )}
 
               <div className="mt-6 grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  onClick={handleCopy}
-                  className={cn('h-10 rounded-md text-xs', copied && 'border-[#07c160] text-[#07c160]')}
-                  icon={copied ? <LuCheck size={15} /> : <LuCopy size={15} />}
-                >
-                  {copied ? t('billing.wechatCashier.copied') : t('billing.wechatCashier.copy')}
-                </Button>
+                <CopyButton
+                  value={qrCodeUrl}
+                  variant="labeled"
+                  label={t('billing.wechatCashier.copy')}
+                  copiedLabel={t('billing.wechatCashier.copied')}
+                  toast={false}
+                  className="h-10 w-full rounded-md text-xs"
+                />
                 <Button variant="outline" onClick={goBack} className="h-10 rounded-md text-xs">
                   {t('billing.wechatCashier.back')}
                 </Button>

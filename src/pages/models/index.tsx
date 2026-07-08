@@ -3,7 +3,6 @@ import Markdown from 'react-markdown'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  LuCopy,
   LuGitCompareArrows,
   LuMessageSquare,
   LuSearch,
@@ -17,9 +16,9 @@ import { streamExperienceChat } from '@/services/experience'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Composer } from '@/components/ui/Composer'
+import { CopyButton } from '@/components/ui/CopyButton'
 import { useModels } from '@/features/models/hooks/useModels'
 import { appToast } from '@/lib/app-toast'
-import { useCopy } from '@/hooks/use-copy'
 import { cn, formatContextLength, formatModelPrice } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import {
@@ -60,7 +59,6 @@ export default function ModelsPage() {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<ExperienceMessage[]>(initialMessages)
   const [isStreaming, setIsStreaming] = useState(false)
-  const { copy } = useCopy()
   const abortRef = useRef<AbortController | null>(null)
 
   // 离开页面时中断在途流式请求，避免后台继续消耗额度。
@@ -149,12 +147,6 @@ export default function ModelsPage() {
     } finally {
       setIsStreaming(false)
     }
-  }
-
-  async function copyModelId() {
-    if (!selectedModel) return
-    const ok = await copy(selectedModel.model_id)
-    if (ok) appToast.success(text.copied)
   }
 
   return (
@@ -292,10 +284,15 @@ export default function ModelsPage() {
                 </div>
               </div>
               <div className="models-experience-chips">
-                <button type="button" onClick={copyModelId}>
-                  <LuCopy size={12} />
+                <span>
                   {text.apiId}: {selectedModel.model_id}
-                </button>
+                  <CopyButton
+                    value={selectedModel.model_id}
+                    aria-label={text.apiId}
+                    toast={text.copied}
+                    className="h-5 w-5 -mr-1"
+                  />
+                </span>
                 <span><LuZap size={12} />{formatContextLength(selectedModel.context_length)}</span>
                 <span>{formatModelPrice(selectedModel.pricing?.output_per_1m, selectedModel.pricing?.currency)}</span>
               </div>

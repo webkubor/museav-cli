@@ -281,8 +281,6 @@
 .mg-card-verified { color: var(--brand-base); flex-shrink: 0; }
 .mg-card-api { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; min-width: 0; color: var(--mg-text-4); }
 .mg-card-api code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 170px; font-size: 11.5px; }
-.mg-card-copy { flex-shrink: 0; cursor: pointer; padding: 2px; border-radius: 4px; color: var(--mg-text-4); }
-.mg-card-copy:hover { color: var(--brand-base); }
 .mg-card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 .mg-card-tag {
   display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px;

@@ -2,8 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
-import { appToast } from '@/lib/app-toast'
-import { useCopy } from '@/hooks/use-copy'
+import { CopyButton } from '@/components/ui/CopyButton'
 import { MenusSyncPanel } from './MenusSyncPanel'
 import { PermissionsPanel } from './PermissionsPanel'
 import { UrlParamsPanel } from './UrlParamsPanel'
@@ -27,7 +26,6 @@ const DEFAULT_TAB = 'permissions'
 
 export default function PlatformConfigPage() {
   const { t } = useTranslation()
-  const { copy } = useCopy()
   const [searchParams, setSearchParams] = useSearchParams()
   const tabParam = searchParams.get('tab') ?? ''
   const activeTab = DEV_CONFIG_TABS.includes(tabParam) ? tabParam : DEFAULT_TAB
@@ -81,13 +79,12 @@ export default function PlatformConfigPage() {
                 return (
                   <div
                     key={r.path}
-                    className="card-shadow-adaptive bg-card-bg rounded-md border border-mg-border px-5 py-3 flex items-center gap-4 cursor-pointer hover:border-brand-base/30 transition-colors"
-                    onClick={async () => { if (await copy(full)) appToast.success(`已复制 ${r.path}`) }}
+                    className="card-shadow-adaptive bg-card-bg rounded-md border border-mg-border px-5 py-3 flex items-center gap-4 transition-colors hover:border-brand-base/30"
                   >
                     <code className="text-xs font-mono text-brand-base shrink-0 select-all">{r.path}</code>
                     <span className="text-xs text-mg-text-3">—</span>
                     <span className="text-xs text-mg-text-2">{r.desc}</span>
-                    <span className="ml-auto text-[10px] text-mg-text-3 shrink-0">点击复制</span>
+                    <CopyButton value={full} aria-label={`复制 ${r.path}`} toast={`已复制 ${r.path}`} className="ml-auto" />
                   </div>
                 )
               })}

@@ -10,11 +10,9 @@ import {
   LuVideoOff,
   LuDownload,
   LuLink,
-  LuCopy,
   LuTriangleAlert,
 } from 'react-icons/lu'
-import { useCopy } from '@/hooks/use-copy'
-import { appToast } from '@/lib/app-toast'
+import { CopyButton } from '@/components/ui/CopyButton'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -181,7 +179,6 @@ function DetailRow({ label, value, hint, mono }: {
 
 function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose: () => void }) {
   const qc = useQueryClient()
-  const { copy } = useCopy()
   const taskId = listTask.gateway_request_id
   const { data } = useQuery({
     queryKey: ['task-detail', taskId],
@@ -306,21 +303,13 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
           {showVideo && (
             <div className="rounded-md border border-mg-border bg-card-bg mg-panel space-y-2.5">
               <p className="mg-text-label text-mg-text-3">产物链接</p>
-              <button
-                type="button"
-                onClick={async () => {
-                  const ok = await copy(videoUrl)
-                  appToast[ok ? 'success' : 'error'](ok ? '链接已复制' : '复制失败')
-                }}
-                title="点击复制链接"
-                className="group flex w-full items-center gap-2 rounded-lg border border-mg-border bg-mg-fill-0/40 px-[var(--mg-control-px-sm)] py-[var(--mg-control-py-sm)] text-left transition-colors hover:bg-mg-fill-0 hover:border-brand-base/40 cursor-pointer"
-              >
+              <div className="group flex w-full items-center gap-2 rounded-lg border border-mg-border bg-mg-fill-0/40 px-[var(--mg-control-px-sm)] py-[var(--mg-control-py-sm)] text-left transition-colors hover:border-brand-base/40">
                 <LuLink size={13} className="shrink-0 text-mg-text-4" />
                 <span className="flex-1 truncate mg-text-code text-mg-text-2" title={videoUrl}>
                   {videoUrl}
                 </span>
-                <LuCopy size={13} className="shrink-0 text-mg-text-4 group-hover:text-brand-base transition-colors" />
-              </button>
+                <CopyButton value={videoUrl} aria-label="复制链接" toast="链接已复制" className="h-5 w-5 shrink-0" />
+              </div>
               <a
                 href={videoUrl}
                 download

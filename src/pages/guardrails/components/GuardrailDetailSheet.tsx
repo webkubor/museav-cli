@@ -360,15 +360,21 @@ export function GuardrailDetailSheet({
       {/* 统一底部保存：基本信息 + 作用范围（成员/API Keys）一次保存。
           预算是独立的增删策略，保留其自有按钮。 */}
       {!detailLoadFailed && (isCreating || sheetTab !== 'budget') && (
-        <div className="flex justify-end gap-2 px-6 py-4 border-t border-mg-border/50 shrink-0">
-          <Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button
-            variant="brand"
-            loading={submitting}
-            onClick={onSubmit}
-          >
-            {isCreating ? t('guardrails.modal.confirmCreate') : t('guardrails.modal.saveEdit')}
-          </Button>
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-mg-border/50 shrink-0">
+          {/* 影响范围预览（保存前）：让用户在生效前看清作用面 */}
+          <span className="text-xs text-mg-text-3 truncate">
+            将作用于 <span className="font-semibold text-mg-text-2">{memberIds.length}</span> 位成员 · <span className="font-semibold text-mg-text-2">{apiKeyIds.length}</span> 把 API Key
+          </span>
+          <div className="flex gap-2 shrink-0">
+            <Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
+            <Button
+              variant="brand"
+              loading={submitting}
+              onClick={onSubmit}
+            >
+              {isCreating ? t('guardrails.modal.confirmCreate') : t('guardrails.modal.saveEdit')}
+            </Button>
+          </div>
         </div>
       )}
     </SideSheet>

@@ -1,6 +1,6 @@
 /**
  * 认证与会话（§二）
- * 路由：/login、/register、/logout
+ * 路由：/login、/signup、/logout（/register 无此前端路由，仅 API 端点名；旧外链重定向到 /signup）
  * API：POST /auth/register、POST /auth/login、POST /auth/logout、GET /auth/session、GET /auth/oauth/:provider/authorize、POST /account/active-tenant
  */
 import { apiBaseUrl, get, post } from '@/lib/request'

@@ -184,6 +184,9 @@ export default function App() {
           {/* 认证路由（公开） */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          {/* /register 无此路由——历史外链/书签（如国内官网旧 CTA）重定向到 /signup 防呆。
+              指 /signup 而非 /login：/signup 已市场自适应（国内自动转 /login，国际是注册页），两端都对。 */}
+          <Route path="/register" element={<Navigate to="/signup" replace />} />
           <Route path="/legal/privacy" element={<LegalPage docType="privacy" />} />
           <Route path="/legal/terms" element={<LegalPage docType="terms" />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />

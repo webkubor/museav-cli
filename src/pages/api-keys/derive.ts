@@ -33,9 +33,10 @@ export const KEY_TYPE_DESC: Record<ApiKeyType, string> = {
 
 export const STATUS_LABEL: Record<ApiKeyStatus, string> = {
   active: '启用中',
-  disabled: '已停用',
+  rotation_required: '待轮转',
+  limited: '已达限额',
   expired: '已过期',
-  limit_reached: '已达限额',
+  disabled: '已停用',
   revoked: '已撤销',
 }
 
@@ -73,9 +74,9 @@ export function isExpiringSoon(item: ApiKeyItem, withinDays = 7): boolean {
   return exp > now && exp - now <= withinDays * 24 * 60 * 60 * 1000
 }
 
-/** 是否处于「可调用」态（启用中，含撤销前的正常态） */
+/** 是否处于「可调用」态（对齐 PRD isApiKeyCallable：启用中或待轮转——新 Token 已生效） */
 export function isCallable(item: ApiKeyItem): boolean {
-  return item.status === 'active'
+  return item.status === 'active' || item.status === 'rotation_required'
 }
 
 /** 累加金额（amount 为十进制字符串），币种取首个非空项 */
@@ -101,7 +102,7 @@ export function deriveSummary(items: ApiKeyItem[]): ApiKeySummary {
     total: items.length,
     active: items.filter(isCallable).length,
     expiring_soon: items.filter((i) => isExpiringSoon(i)).length,
-    limit_reached: items.filter((i) => i.status === 'limit_reached').length,
+    limit_reached: items.filter((i) => i.status === 'limited').length,
     month_spend: sumMoney(items, periodSpendOf),
   }
 }

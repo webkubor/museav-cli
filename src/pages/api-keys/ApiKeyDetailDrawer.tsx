@@ -27,9 +27,10 @@ import {
 
 const STATUS_MAP = {
   active: { label: STATUS_LABEL.active, variant: 'success' as const, dot: true },
-  disabled: { label: STATUS_LABEL.disabled, variant: 'outline' as const },
+  rotation_required: { label: STATUS_LABEL.rotation_required, variant: 'info' as const },
+  limited: { label: STATUS_LABEL.limited, variant: 'warning' as const },
   expired: { label: STATUS_LABEL.expired, variant: 'warning' as const },
-  limit_reached: { label: STATUS_LABEL.limit_reached, variant: 'warning' as const },
+  disabled: { label: STATUS_LABEL.disabled, variant: 'outline' as const },
   revoked: { label: STATUS_LABEL.revoked, variant: 'danger' as const },
 }
 
@@ -67,10 +68,11 @@ interface Props {
   onToggleStatus: (item: ApiKeyItem) => void
   onRotate: (item: ApiKeyItem) => void
   onChangeOwner: (item: ApiKeyItem) => void
+  onEdit: (item: ApiKeyItem) => void
   onRevoke: (target: { id: string; name: string }) => void
 }
 
-export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage, onToggleStatus, onRotate, onChangeOwner, onRevoke }: Props) {
+export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage, onToggleStatus, onRotate, onChangeOwner, onEdit, onRevoke }: Props) {
   const navigate = useNavigate()
   const keyId = item?.api_key_id
 
@@ -118,6 +120,9 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
             )}
             {view.status !== 'revoked' && canManage && (
               <Button variant="outline" size="sm" onClick={() => onChangeOwner(view)}>变更负责人</Button>
+            )}
+            {view.status !== 'revoked' && canManage && (
+              <Button variant="outline" size="sm" onClick={() => onEdit(view)}>编辑</Button>
             )}
             {canDelete && (
               <Button

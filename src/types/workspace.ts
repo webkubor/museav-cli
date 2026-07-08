@@ -255,10 +255,11 @@ export interface SpendingLimit {
 export type ApiKeyType = 'personal' | 'member' | 'service'
 
 /**
- * 状态（PRD v1.0.3 #382 扩枚举）。后端当前仅回 active|revoked，
- * disabled/expired/limit_reached 待 #398/#382 落地——UI 已就绪。
+ * 状态（对齐 PRD 原型 apiKeyStatusOptions）。后端当前仅回 active|revoked，
+ * disabled/expired/limited/rotation_required 待 #398/#382 落地——UI 已就绪。
+ * revoked=软删（PRD 无此态，后端软删保留，列表一般不返回）。
  */
-export type ApiKeyStatus = 'active' | 'revoked' | 'disabled' | 'expired' | 'limit_reached'
+export type ApiKeyStatus = 'active' | 'disabled' | 'expired' | 'limited' | 'rotation_required' | 'revoked'
 
 export type ApiKeyMember = Pick<AccountBrief, 'account_id' | 'display_name' | 'email'>
 

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Select, SelectItem } from '@/components/ui/Select'
+import { CopyButton } from '@/components/ui/CopyButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { LuSearch, LuPlus } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -34,14 +35,13 @@ import { PERMS } from '@/config/permissions'
 import { appToast } from '@/lib/app-toast'
 import { useMarket } from '@/hooks/useMarket'
 import { pageItems } from '@/lib/utils'
-import { AccessCenterCard } from './AccessCenterCard'
 import { ConnectModal } from './ConnectModal'
 import { CreateKeyModal } from './CreateKeyModal'
 import { ApiKeyTable } from './ApiKeyTable'
 import { EditKeyModal } from './EditKeyModal'
 import { ApiKeySummaryCards } from './ApiKeySummaryCards'
 import { ApiKeyDetailDrawer } from './ApiKeyDetailDrawer'
-import { deriveKeyType, responsibleOf } from './derive'
+import { deriveKeyType, responsibleOf, isExpiringSoon } from './derive'
 import type { ApiKeyItem, ApiKeyType } from '@/types'
 
 const ALL = 'all'
@@ -57,7 +57,7 @@ export default function ApiKeysPage() {
   const [ownerFilter, setOwnerFilter] = useState<string>(ALL)
   const [createVisible, setCreateVisible] = useState(false)
   const [createNonce, setCreateNonce] = useState(0)
-  const [revealVisible, setRevealVisible] = useState(false)
+  const [createdVisible, setCreatedVisible] = useState(false)
   const [connectVisible, setConnectVisible] = useState(false)
   const [createdKeyText, setCreatedKeyText] = useState('')
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null)
@@ -206,7 +206,10 @@ export default function ApiKeysPage() {
         if (!hay.includes(q)) return false
       }
       if (typeFilter !== ALL && deriveKeyType(item) !== typeFilter) return false
-      if (statusFilter !== ALL && item.status !== statusFilter) return false
+      if (statusFilter !== ALL) {
+        if (statusFilter === 'expiring') { if (!isExpiringSoon(item)) return false }
+        else if (item.status !== statusFilter) return false
+      }
       if (ownerFilter !== ALL && responsibleOf(item).account_id !== ownerFilter) return false
       return true
     })
@@ -215,7 +218,7 @@ export default function ApiKeysPage() {
   const handleKeyCreated = useCallback((keyText: string) => {
     setCreateVisible(false)
     setCreatedKeyText(keyText)
-    setRevealVisible(true)
+    setCreatedVisible(true)
   }, [])
 
   const openAIBaseUrl = GATEWAY_ENDPOINTS[0]?.baseUrl ?? ''
@@ -224,14 +227,6 @@ export default function ApiKeysPage() {
   return (
     <div className="space-y-6">
       <PageHeader title={t('apiKeys.title')} />
-
-      <AccessCenterCard
-        docsUrl={docsUrl}
-        onOpenConnect={() => setConnectVisible(true)}
-        revealVisible={revealVisible}
-        createdKeyText={createdKeyText}
-        onDismissReveal={() => setRevealVisible(false)}
-      />
 
       <ApiKeySummaryCards items={apiKeyItems} summary={summary} loading={isLoading} />
 
@@ -254,9 +249,11 @@ export default function ApiKeysPage() {
         <Select value={statusFilter} onChange={setStatusFilter} className="w-32">
           <SelectItem value={ALL}>全部状态</SelectItem>
           <SelectItem value="active">启用中</SelectItem>
-          <SelectItem value="disabled">已停用</SelectItem>
+          <SelectItem value="rotation_required">待轮转</SelectItem>
+          <SelectItem value="limited">已达限额</SelectItem>
           <SelectItem value="expired">已过期</SelectItem>
-          <SelectItem value="limit_reached">已达限额</SelectItem>
+          <SelectItem value="disabled">已停用</SelectItem>
+          <SelectItem value="expiring">即将过期</SelectItem>
         </Select>
         <Select value={ownerFilter} onChange={setOwnerFilter} className="w-36">
           <SelectItem value={ALL}>全部负责人</SelectItem>
@@ -285,10 +282,7 @@ export default function ApiKeysPage() {
       <ApiKeyTable
         isLoading={isLoading}
         items={filteredData}
-        canRevoke={canRevoke}
         canManage={canManage}
-        onRevoke={setRevokeTarget}
-        onEditGuardrail={setEditGuardrailKey}
         onOpenDetail={setDetailKey}
         onToggleStatus={handleToggleStatus}
         onCopyKey={handleCopyKey}
@@ -304,8 +298,31 @@ export default function ApiKeysPage() {
         onToggleStatus={handleToggleStatus}
         onRotate={() => { /* 轮转接口 #384 未交付，按钮已 gate 隐藏；落地后接入 */ }}
         onChangeOwner={(item) => { setNewOwnerId(''); setChangeOwnerTarget(item) }}
+        onEdit={setEditGuardrailKey}
         onRevoke={setRevokeTarget}
       />
+
+      {/* 创建成功：完整密钥只展示一次（PRD 原型无「接入中心」，接入入口收进此处） */}
+      <Modal
+        open={createdVisible}
+        onClose={() => setCreatedVisible(false)}
+        title="API Key 创建成功"
+        description="请立即复制并保存，关闭后将无法再查看完整密钥。"
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setCreatedVisible(false)}>完成</Button>
+            <Button variant="brand" onClick={() => { setCreatedVisible(false); setConnectVisible(true) }}>快速接入</Button>
+          </>
+        }
+      >
+        <div className="py-2">
+          <div className="flex items-center gap-2 rounded-md border border-mg-border bg-mg-code-bg px-3 py-2.5">
+            <span className="min-w-0 flex-1 truncate font-mono text-sm font-bold text-mg-success select-all">{createdKeyText}</span>
+            <CopyButton value={createdKeyText} aria-label="复制密钥" toast="密钥已复制" size="md" />
+          </div>
+        </div>
+      </Modal>
 
       <ConnectModal
         open={connectVisible}

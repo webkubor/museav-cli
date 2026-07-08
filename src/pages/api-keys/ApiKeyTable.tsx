@@ -46,9 +46,10 @@ function limitLabel(item: ApiKeyItem): string {
 
 const STATUS_MAP = {
   active: { label: STATUS_LABEL.active, variant: 'success' as const, dot: true },
-  disabled: { label: STATUS_LABEL.disabled, variant: 'outline' as const },
+  rotation_required: { label: STATUS_LABEL.rotation_required, variant: 'info' as const },
+  limited: { label: STATUS_LABEL.limited, variant: 'warning' as const },
   expired: { label: STATUS_LABEL.expired, variant: 'warning' as const },
-  limit_reached: { label: STATUS_LABEL.limit_reached, variant: 'warning' as const },
+  disabled: { label: STATUS_LABEL.disabled, variant: 'outline' as const },
   revoked: { label: STATUS_LABEL.revoked, variant: 'danger' as const },
 }
 
@@ -61,10 +62,7 @@ const KEY_TYPE_CLASS: Record<string, string> = {
 type Props = {
   isLoading: boolean
   items: ApiKeyItem[]
-  canRevoke: boolean
   canManage: boolean
-  onRevoke: (target: { id: string; name: string }) => void
-  onEditGuardrail: (item: ApiKeyItem) => void
   onOpenDetail: (item: ApiKeyItem) => void
   onToggleStatus: (item: ApiKeyItem) => void
   /** 复制完整明文（#298）：父组件调 reveal → 剪贴板 */
@@ -76,10 +74,7 @@ type Props = {
 export function ApiKeyTable({
   isLoading,
   items,
-  canRevoke,
   canManage,
-  onRevoke,
-  onEditGuardrail,
   onOpenDetail,
   onToggleStatus,
   onCopyKey,
@@ -248,20 +243,6 @@ export function ApiKeyTable({
                         className="text-mg-text-2 hover:text-mg-text-1 transition-colors cursor-pointer"
                       >
                         {isDisabled ? '启用' : '停用'}
-                      </button>
-                    )}
-                    <button
-                      onClick={() => onEditGuardrail(record)}
-                      className="text-mg-text-2 hover:text-mg-text-1 transition-colors cursor-pointer"
-                    >
-                      编辑
-                    </button>
-                    {canRevoke && (
-                      <button
-                        onClick={() => onRevoke({ id: record.api_key_id, name: record.name })}
-                        className="text-mg-danger hover:text-mg-danger/80 transition-colors cursor-pointer"
-                      >
-                        {t('apiKeys.table.revoke')}
                       </button>
                     )}
                   </div>

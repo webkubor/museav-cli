@@ -114,13 +114,19 @@ export function PreferencesTab() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLanguage(preferencesQuery.data.ui.language)
     setLowBalanceAlertsEnabled(preferencesQuery.data.notifications.low_balance_alerts_enabled)
-  }, [preferencesQuery.data])
+    // 显示时区：后端 ui.timezone（#409）为真源；缺省时回退 localStorage/浏览器。
+    // seed 到本地（saveTimeZone）供 format-date 的 resolveTimeZone 全站读取，实现跨设备一致。
+    const backendTz = preferencesQuery.data.ui.timezone
+    const localTz = account ? getUserTimeZone(account.account_id) : getSavedTimeZone()
+    const tz = backendTz && backendTz.length > 0 ? backendTz : localTz
+    setTimeZone(tz)
+    saveTimeZone(tz, account?.account_id)
+  }, [preferencesQuery.data, account])
 
   useEffect(() => {
     if (!account) return
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTheme(getUserTheme(account.account_id))
-    setTimeZone(getUserTimeZone(account.account_id))
   }, [account])
 
   function handleThemeChange(value: string) {
@@ -133,7 +139,8 @@ export function PreferencesTab() {
   const saveMutation = useMutation({
     mutationFn: () =>
       updatePreferences({
-        ui: { language },
+        // timezone 一并入库（#409）；后端未上线该字段时按未知字段忽略，本地仍 saveTimeZone 兜底
+        ui: { language, timezone: timeZone },
         notifications: { low_balance_alerts_enabled: lowBalanceAlertsEnabled },
       }),
     onSuccess: (result) => {

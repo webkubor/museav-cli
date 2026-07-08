@@ -130,7 +130,8 @@ export interface DeleteAccountResult {
 }
 
 export interface Preferences {
-  ui: { language: 'zh-CN' | 'en-US' }
+  /** timezone：IANA 名（如 Asia/Shanghai）| 'browser'（跟随浏览器哨兵）| 空（未设置）。后端 #409 落地前为 optional，缺失时前端回退 localStorage/浏览器。 */
+  ui: { language: 'zh-CN' | 'en-US'; timezone?: string }
   notifications: { low_balance_alerts_enabled: boolean }
 }
 

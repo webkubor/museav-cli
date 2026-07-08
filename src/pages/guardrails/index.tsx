@@ -32,10 +32,12 @@ import type {
   UpdateBudgetPolicyRequest,
 } from '@/interfaces/guardrails'
 import { useCurrency } from '@/hooks/use-platform-config'
-import { GuardrailTable } from './components/GuardrailTable'
+import { GuardrailSections } from './components/GuardrailTable'
+import { GuardrailSummaryCards } from './components/GuardrailSummaryCards'
 import { GuardrailDetailSheet } from './components/GuardrailDetailSheet'
 import { GuardrailConfirmModals } from './components/GuardrailConfirmModals'
 import { isValidBudgetAmount, trimAmountScale } from './budget'
+import { summarize, type GuardrailScope } from './derive'
 
 type BudgetPolicy = NonNullable<GuardrailDetail['budget_policies']>[number]
 
@@ -64,7 +66,13 @@ export default function GuardrailsPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
+  const tenants = useAuthStore((s) => s.tenants)
+  const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const { symbol: currencySymbol } = useCurrency()
+  // 个人组织隐藏「个人护栏」分区/摘要卡，与 PRD 一致；企业组织显示。
+  const showMember = tenants.find((tt) => tt.tenant_id === activeTenantId)?.type !== 'personal'
+  // 三分区各自的名称搜索（全局 / 个人 / Key）
+  const [scopeSearch, setScopeSearch] = useState<Record<GuardrailScope, string>>({ global: '', member: '', key: '' })
   const { hasPermission } = usePermissions()
   const canCreate         = hasPermission(PERMS.GUARDRAILS_CREATE)
   const canEdit           = hasPermission(PERMS.GUARDRAILS_EDIT)
@@ -407,15 +415,24 @@ export default function GuardrailsPage() {
         )}
       />
 
-      {/* 列表 */}
-      <GuardrailTable
+      {/* 摘要卡：全局 / 个人 / Key / 提额（由列表派生） */}
+      <GuardrailSummaryCards summary={summarize(guardrails)} showMember={showMember} loading={isLoading} />
+
+      {/* 三分区列表：全局 / 个人 / Key */}
+      <GuardrailSections
         guardrails={guardrails}
         isLoading={isLoading}
         canEdit={canEdit}
         canDelete={canDelete}
+        canCreate={canCreate}
+        showMember={showMember}
+        currencySymbol={currencySymbol}
+        search={scopeSearch}
+        onSearchChange={(scope, value) => setScopeSearch((prev) => ({ ...prev, [scope]: value }))}
         onOpenDetail={openDetail}
         onToggle={(args) => toggleMutation.mutate(args)}
         onDelete={(target) => setDeleteTarget(target)}
+        onCreate={openCreate}
       />
 
       {/* 统一配置抽屉（新建 + 编辑 + 详情） */}

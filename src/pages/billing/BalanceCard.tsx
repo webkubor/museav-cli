@@ -1,17 +1,23 @@
 import { useState, useCallback } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { LuRefreshCw, LuReceipt, LuPlus } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 import { trackAction } from '@/lib/track'
+import { appToast } from '@/lib/app-toast'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { useMouseGlow } from '@/hooks/use-mouse-glow'
+import { transferRewardToBalance } from '@/services/referral'
 import { TopUpModal } from './TopUpModal'
 import { InvoiceModal } from './invoice/InvoiceModal'
 import { formatBalance } from './formatBalance'
+
+const MIN_TRANSFER = 100
 
 export type BalanceTab = 'main' | 'gift' | 'reward'
 
@@ -36,6 +42,42 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
   const { data: balance, isLoading: balanceLoading } = useBalance(tenantId)
   const { main: availableMain } = formatBalance(balance?.available.amount)
   const { data: breakdown } = useBalanceBreakdown(tenantId)
+
+  // 转入主余额（奖励余额 → 主余额，单次 ≥100）；逻辑对齐推荐页转入流程
+  const rewardBalance = Number(breakdown?.reward.amount ?? 0)
+  const [transferOpen, setTransferOpen] = useState(false)
+  const [transferAmount, setTransferAmount] = useState('')
+  const [idempotencyKey, setIdempotencyKey] = useState('')
+  const transferNum = Number(transferAmount)
+  const transferValid = transferNum >= MIN_TRANSFER && transferNum <= rewardBalance
+
+  const openTransfer = () => {
+    if (rewardBalance < MIN_TRANSFER) {
+      appToast.info(`奖励余额满 ${currencySymbol}${MIN_TRANSFER} 才可转入`)
+      return
+    }
+    setIdempotencyKey(crypto.randomUUID())
+    setTransferAmount(String(rewardBalance))
+    setTransferOpen(true)
+  }
+  // 金额一改就重铸幂等键：同键不同额会被后端按原额重放，必须避免
+  const onTransferAmountChange = (v: string) => {
+    setIdempotencyKey(crypto.randomUUID())
+    setTransferAmount(v)
+  }
+
+  const transferMutation = useMutation({
+    mutationFn: () => transferRewardToBalance(tenantId, { amount: String(transferNum), idempotency_key: idempotencyKey }),
+    onSuccess: () => {
+      appToast.success('已转入主余额')
+      setTransferOpen(false)
+      setTransferAmount('')
+      void qc.invalidateQueries({ queryKey: ['balance', tenantId] })
+      void qc.invalidateQueries({ queryKey: ['balance', 'breakdown', tenantId] })
+      void qc.invalidateQueries({ queryKey: ['referral', 'reward-records', tenantId] })
+    },
+    onError: (err: Error) => appToast.requestError(err, '转入失败'),
+  })
 
   const mainRef = useMouseGlow<HTMLButtonElement>()
   const giftRef = useMouseGlow<HTMLButtonElement>()
@@ -186,7 +228,68 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             <div className="text-xs text-mg-text-3 leading-snug">{t('billing.balance.rewardHint')}</div>
           </button>
         </div>
+
+        {/* 转入主余额：奖励余额 → 主余额（PRD 账单余额面板） */}
+        {rewardBalance > 0 && (
+          <div className="flex items-center justify-between gap-3 border-t border-mg-border/40 pt-3 text-xs">
+            <span className="text-mg-text-3">
+              奖励余额满 {currencySymbol}{MIN_TRANSFER} 可转入主余额继续消费
+            </span>
+            <button
+              type="button"
+              onClick={openTransfer}
+              className="shrink-0 font-semibold text-brand-base hover:text-brand-base/80 bg-transparent border-none p-0 cursor-pointer transition-colors"
+            >
+              转入主余额
+            </button>
+          </div>
+        )}
       </div>
+
+      <Modal
+        open={transferOpen}
+        onClose={() => {
+          if (transferMutation.isPending) return
+          setTransferOpen(false)
+          setTransferAmount('')
+        }}
+        size="md"
+        title="转入主余额"
+        description={`将奖励余额转入主余额继续消费（单次 ≥ ${currencySymbol}${MIN_TRANSFER}）`}
+        footer={(
+          <>
+            <Button
+              variant="outline"
+              disabled={transferMutation.isPending}
+              className="h-8 rounded-lg px-3 text-xs"
+              onClick={() => { setTransferOpen(false); setTransferAmount('') }}
+            >
+              取消
+            </Button>
+            <Button
+              variant="brand"
+              loading={transferMutation.isPending}
+              disabled={!transferValid}
+              className="h-8 rounded-lg px-4 text-xs font-semibold"
+              onClick={() => transferMutation.mutate()}
+            >
+              确认转入
+            </Button>
+          </>
+        )}
+      >
+        <div className="space-y-2">
+          <label className="block text-xs font-bold uppercase tracking-wider text-mg-text-2">转入金额</label>
+          <Input
+            value={transferAmount}
+            disabled={transferMutation.isPending}
+            onChange={(e) => onTransferAmountChange(e.target.value)}
+            placeholder={String(MIN_TRANSFER)}
+            className="h-9 text-xs rounded-lg"
+          />
+          <span className="block text-xs text-mg-text-3">可转入奖励余额 {currencySymbol}{rewardBalance}</span>
+        </div>
+      </Modal>
     </>
   )
 }

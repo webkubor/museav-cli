@@ -42,7 +42,7 @@ function AuditFieldRow({ label, value, mono = false }: { label: string; value: R
   if (value == null || value === '') return null
   return (
     <div className="flex items-center justify-between gap-4 border-b border-mg-border/60 px-3 py-2 last:border-b-0">
-      <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-mg-text-3">{label}</span>
+      <span className="shrink-0 text-xs font-bold uppercase tracking-wider text-mg-text-3">{label}</span>
       <strong className={cn('min-w-0 break-all text-right text-xs font-semibold text-mg-text-1', mono && 'font-mono')}>
         {value}
       </strong>
@@ -92,14 +92,14 @@ function AuditDetailContent({
       </div>
 
       <div>
-        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-mg-text-3">{changesTitle}</p>
+        <p className="mb-2 text-xs font-bold uppercase tracking-wider text-mg-text-3">{changesTitle}</p>
         {detail.changes.length === 0 ? (
           <p className="text-xs text-mg-text-3">{t('enterprise.audit.detailNoChanges')}</p>
         ) : (
           <ul className="space-y-2">
             {detail.changes.map((change) => (
               <li key={change.field} className="rounded-md border border-mg-border/50 bg-mg-fill-0/30 p-2.5">
-                <div className="mb-1 text-[10px] font-bold text-mg-text-3">{change.field}</div>
+                <div className="mb-1 text-xs font-bold text-mg-text-3">{change.field}</div>
                 <div className="flex items-center gap-1.5 text-xs">
                   <s className="min-w-0 truncate text-mg-text-4">{change.before || '—'}</s>
                   <LuArrowRight className="h-3 w-3 shrink-0 text-mg-text-4" />

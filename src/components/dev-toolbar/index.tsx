@@ -30,7 +30,7 @@ function Seg<T extends string>({
           type="button"
           onClick={() => onChange(o.v)}
           className={cn(
-            'px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors',
+            'px-2.5 py-1 rounded-full text-xs font-bold transition-colors',
             value === o.v ? 'bg-brand-base text-white' : 'text-mg-text-3 hover:text-mg-text-1'
           )}
         >
@@ -118,7 +118,7 @@ export function DevToolbar() {
       <button
         type="button"
         onClick={() => navigate('/dev-config')}
-        className="rounded-full bg-mg-fill-0 px-3 py-1 text-[11px] font-bold text-mg-text-2 transition-colors hover:text-mg-text-1"
+        className="rounded-full bg-mg-fill-0 px-3 py-1 text-xs font-bold text-mg-text-2 transition-colors hover:text-mg-text-1"
       >
         开发菜单
       </button>

@@ -57,7 +57,7 @@ export function MenusSyncPanel() {
         const items = MENUS.filter((m) => m.scope === scope)
         return (
           <div key={scope} className="space-y-2">
-            <div className="text-[11px] font-bold text-mg-text-3 tracking-widest uppercase">
+            <div className="text-xs font-bold text-mg-text-3 tracking-widest uppercase">
               {SCOPE_LABEL[scope]}
             </div>
             <div className="space-y-1.5">
@@ -71,7 +71,7 @@ export function MenusSyncPanel() {
                     <span className="text-xs text-mg-text-2 w-[100px] shrink-0">{m.name}</span>
                     <span className="text-xs text-mg-text-3 shrink-0">{m.name_en}</span>
                     {m.view_permission && (
-                      <code className="ml-auto text-[10px] font-mono bg-blue-500/10 text-blue-500 border border-blue-500/20 px-1.5 py-0.5 rounded-sm shrink-0">
+                      <code className="ml-auto text-xs font-mono bg-blue-500/10 text-blue-500 border border-blue-500/20 px-1.5 py-0.5 rounded-sm shrink-0">
                         {m.view_permission}
                       </code>
                     )}
@@ -79,7 +79,7 @@ export function MenusSyncPanel() {
                   {m.actions.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pl-[196px]">
                       {m.actions.map((a) => (
-                        <code key={a} className="text-[10px] font-mono bg-amber-500/10 text-amber-600 border border-amber-500/20 px-1.5 py-0.5 rounded-sm">
+                        <code key={a} className="text-xs font-mono bg-amber-500/10 text-amber-600 border border-amber-500/20 px-1.5 py-0.5 rounded-sm">
                           {a}
                         </code>
                       ))}

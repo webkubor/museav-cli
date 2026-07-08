@@ -99,11 +99,11 @@ export function ReferralInviteCard({
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-mg-border bg-mg-fill-0/45 px-2.5 py-1 text-[11px] font-semibold text-mg-text-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-mg-border bg-mg-fill-0/45 px-2.5 py-1 text-xs font-semibold text-mg-text-2">
               <LuBadgePercent size={12} className="text-brand-base" />
               {realtimeLabel}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-mg-border bg-mg-fill-0/45 px-2.5 py-1 text-[11px] font-semibold text-mg-text-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-mg-border bg-mg-fill-0/45 px-2.5 py-1 text-xs font-semibold text-mg-text-2">
               <LuCheck size={12} className="text-brand-base" />
               {balanceLabel}
             </span>

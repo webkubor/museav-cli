@@ -158,7 +158,7 @@ export function MembersTab({
     : [{ value: 'tenant_member', label: 'Member' }]
 
   const pillSelect =
-    'h-8 text-[11px] py-0 pr-7 pl-2.5 bg-mg-bg-0 border border-mg-border/50 rounded-full font-semibold cursor-pointer text-mg-text-1 outline-none hover:border-brand-base/40 transition-colors'
+    'h-8 text-xs py-0 pr-7 pl-2.5 bg-mg-bg-0 border border-mg-border/50 rounded-full font-semibold cursor-pointer text-mg-text-1 outline-none hover:border-brand-base/40 transition-colors'
 
   return (
     <>
@@ -200,7 +200,7 @@ export function MembersTab({
               <option value="suspended">{t('enterprise.members.statusSuspended')}</option>
             </select>
           </div>
-          <span className="text-[10px] text-mg-text-3 bg-mg-fill-1 border border-mg-border/40 px-2 py-0.5 rounded-full font-medium">
+          <span className="text-xs text-mg-text-3 bg-mg-fill-1 border border-mg-border/40 px-2 py-0.5 rounded-full font-medium">
             {membersQuery.isLoading ? '…' : t('enterprise.members.count', { count: filtered.length })}
           </span>
         </div>
@@ -239,12 +239,12 @@ export function MembersTab({
                     <TableRow key={m.account.account_id}>
                       <TableCell>
                         <div className="font-semibold text-mg-text-1">{m.account.display_name || '—'}</div>
-                        <div className="text-[10px] text-mg-text-3 mt-0.5">{m.account.email}</div>
+                        <div className="text-xs text-mg-text-3 mt-0.5">{m.account.email}</div>
                       </TableCell>
                       <TableCell>
                         <Badge variant={ROLE_BADGE[m.role]} size="sm">{ROLE_LABEL[m.role]}</Badge>
                       </TableCell>
-                      <TableCell className="text-[11px] text-mg-text-2 font-medium">
+                      <TableCell className="text-xs text-mg-text-2 font-medium">
                         {isPrivileged ? (
                           <span className="text-mg-text-3">{t('enterprise.members.allWorkspaces')}</span>
                         ) : (
@@ -255,7 +255,7 @@ export function MembersTab({
                       </TableCell>
                       <TableCell>
                         <span
-                          className={`inline-flex items-center gap-1 text-[10px] font-semibold ${
+                          className={`inline-flex items-center gap-1 text-xs font-semibold ${
                             status === 'suspended' ? 'text-mg-danger' : 'text-mg-success'
                           }`}
                         >
@@ -269,7 +269,7 @@ export function MembersTab({
                             : t('enterprise.members.statusActive')}
                         </span>
                       </TableCell>
-                      <TableCell className="text-[11px] text-mg-text-2 font-medium">
+                      <TableCell className="text-xs text-mg-text-2 font-medium">
                         {/* 后端 TenantMember 无 last_active_at → 用加入时间占位 */}
                         {/* TODO(后端待接): 成员最近活跃时间字段 */}
                         {formatDate(m.joined_at)}
@@ -280,14 +280,14 @@ export function MembersTab({
                             <button
                               type="button"
                               onClick={() => openEdit(m)}
-                              className="text-mg-text-3 hover:text-brand-base hover:bg-brand-glow/10 px-2 py-1 rounded-md transition-all border-none bg-transparent cursor-pointer font-semibold text-[11px]"
+                              className="text-mg-text-3 hover:text-brand-base hover:bg-brand-glow/10 px-2 py-1 rounded-md transition-all border-none bg-transparent cursor-pointer font-semibold text-xs"
                             >
                               {t('enterprise.members.edit')}
                             </button>
                             <button
                               type="button"
                               onClick={() => setRemoveTarget(m.account.account_id)}
-                              className="text-mg-text-3 hover:text-mg-danger hover:bg-mg-danger/5 px-2 py-1 rounded-md transition-all border-none bg-transparent cursor-pointer font-semibold text-[11px]"
+                              className="text-mg-text-3 hover:text-mg-danger hover:bg-mg-danger/5 px-2 py-1 rounded-md transition-all border-none bg-transparent cursor-pointer font-semibold text-xs"
                             >
                               {t('enterprise.members.remove')}
                             </button>
@@ -332,7 +332,7 @@ export function MembersTab({
         {editTarget && (
           <div className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-mg-text-2">
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-mg-text-2">
                 {t('enterprise.members.roleLabel')}
               </label>
               <select
@@ -347,7 +347,7 @@ export function MembersTab({
             </div>
             {/* 状态：Owner 不可停用（复用 canManageMember 的边界判断，与操作列一致） */}
             <div>
-              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-mg-text-2">
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-mg-text-2">
                 {t('enterprise.members.statusLabel')}
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -379,7 +379,7 @@ export function MembersTab({
             </div>
             {/* 授权工作空间：Owner/Admin 只读「全部工作空间」；仅 Member 可改 */}
             <div>
-              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-mg-text-2">
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-mg-text-2">
                 {t('enterprise.members.workspaceLabel')}
               </label>
               {draftRole === 'tenant_member' ? (
@@ -393,7 +393,7 @@ export function MembersTab({
               ) : (
                 <div className="rounded-lg border border-mg-border/40 bg-mg-fill-0/30 p-3 text-xs text-mg-text-3">
                   {t('enterprise.members.allWorkspaces')}
-                  <span className="ml-1 text-[10px] text-mg-text-4">· {t('enterprise.members.workspaceHintNonMember')}</span>
+                  <span className="ml-1 text-xs text-mg-text-4">· {t('enterprise.members.workspaceHintNonMember')}</span>
                 </div>
               )}
             </div>

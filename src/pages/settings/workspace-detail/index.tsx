@@ -128,7 +128,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
         <div className="px-4 py-3 border-b border-mg-border/50 flex items-center gap-2 bg-mg-fill-0/20">
           <LuUsers size={14} className="text-mg-text-3" />
           <span className="text-[13px] font-bold text-mg-text-1">{t('workspaces.detail.members.title')}</span>
-          <span className="text-[11px] text-mg-text-3">{t('workspaces.detail.members.count', { count: members.length })}</span>
+          <span className="text-xs text-mg-text-3">{t('workspaces.detail.members.count', { count: members.length })}</span>
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -157,7 +157,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
                           <MemberAvatar member={m} accent="emerald" />
                           <div className="min-w-0">
                             <div className="text-[12px] font-semibold text-mg-text-1 truncate">{m.account.display_name}</div>
-                            <div className="text-[10px] text-mg-text-3 truncate">{m.account.email}</div>
+                            <div className="text-xs text-mg-text-3 truncate">{m.account.email}</div>
                           </div>
                         </div>
                       </TableCell>
@@ -181,21 +181,21 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
                               size="xs"
                               loading={setOwnerMutation.isPending}
                               onClick={() => { trackAction(PERMS.WORKSPACE_MEMBERS_MANAGE); setOwnerMutation.mutate(m.account.account_id) }}
-                              className="h-7 px-2 rounded-md text-[11px]"
+                              className="h-7 px-2 rounded-md text-xs"
                             >
                               {t('workspaces.detail.members.setOwner')}
                             </Button>
                             <Button
                               variant="ghost"
                               size="xs"
-                              className="h-7 px-2 rounded-md text-[11px] text-mg-danger hover:bg-mg-danger/5"
+                              className="h-7 px-2 rounded-md text-xs text-mg-danger hover:bg-mg-danger/5"
                               onClick={() => { setRemoveTarget(m); setRemoveStrategy('') }}
                             >
                               {t('workspaces.detail.members.remove')}
                             </Button>
                           </div>
                         ) : (
-                          <span className="text-[11px] text-mg-text-3">{dash}</span>
+                          <span className="text-xs text-mg-text-3">{dash}</span>
                         )}
                       </TableCell>
                     </TableRow>
@@ -212,7 +212,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
         <aside className="bg-mg-bg-0 border border-mg-border/50 rounded-lg shadow-xs overflow-hidden">
           <div className="px-4 py-3 border-b border-mg-border/50 bg-mg-fill-0/20">
             <div className="text-[13px] font-bold text-mg-text-1">{t('workspaces.detail.members.addAsideTitle')}</div>
-            <div className="text-[11px] text-mg-text-3 mt-0.5">
+            <div className="text-xs text-mg-text-3 mt-0.5">
               {candidates.length > 0 ? t('workspaces.detail.members.addAsideHint') : t('workspaces.detail.members.addAsideAllIn')}
             </div>
           </div>
@@ -237,11 +237,11 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
                     <MemberAvatar member={m} accent="brand" />
                     <div className="flex-1 min-w-0">
                       <div className="text-[12px] font-semibold text-mg-text-1 truncate">{m.account.display_name}</div>
-                      <div className="text-[10px] text-mg-text-3 truncate">{m.account.email}</div>
+                      <div className="text-xs text-mg-text-3 truncate">{m.account.email}</div>
                     </div>
                     <Button
                       variant="ghost"
-                      className="h-7 px-2 text-[11px] font-semibold shrink-0 text-brand-base hover:bg-brand-base/5"
+                      className="h-7 px-2 text-xs font-semibold shrink-0 text-brand-base hover:bg-brand-base/5"
                       loading={addMutation.isPending}
                       onClick={() => { trackAction(PERMS.WORKSPACE_MEMBERS_MANAGE); addMutation.mutate(m.account.account_id) }}
                     >
@@ -306,7 +306,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
                 )}
               >
                 <div className="text-[12px] font-bold text-mg-text-1">{t('workspaces.detail.members.strategyTransfer')}</div>
-                <div className="text-[11px] text-mg-text-3 mt-0.5">
+                <div className="text-xs text-mg-text-3 mt-0.5">
                   {t('workspaces.detail.members.strategyTransferDesc', { owner: owner?.account.display_name ?? '—' })}
                 </div>
               </button>
@@ -319,7 +319,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
                 )}
               >
                 <div className="text-[12px] font-bold text-mg-text-1">{t('workspaces.detail.members.strategyDisable')}</div>
-                <div className="text-[11px] text-mg-text-3 mt-0.5">{t('workspaces.detail.members.strategyDisableDesc')}</div>
+                <div className="text-xs text-mg-text-3 mt-0.5">{t('workspaces.detail.members.strategyDisableDesc')}</div>
               </button>
             </div>
           </div>
@@ -337,7 +337,7 @@ function MemberAvatar({ member, accent }: { member: WorkspaceMember | TenantMemb
     return <img src={member.account.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
   }
   return (
-    <div className={`w-7 h-7 rounded-full ${bg} text-white text-[10px] font-bold flex items-center justify-center shrink-0 uppercase`}>
+    <div className={`w-7 h-7 rounded-full ${bg} text-white text-xs font-bold flex items-center justify-center shrink-0 uppercase`}>
       {member.account.display_name?.[0] ?? '?'}
     </div>
   )
@@ -417,19 +417,19 @@ export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted:
       {/* 基本信息：名称 + Slug（只读）+ 描述 */}
       <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-6 shadow-xs space-y-4">
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">
+          <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">
             {t('workspaces.detail.settings.renameLabel')}
           </label>
           <Input value={name} onChange={(e) => setName(e.target.value)} disabled={!canRename} className="max-w-xl" />
         </div>
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">
+          <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">
             {t('workspaces.detail.settings.slugLabel')}
           </label>
           <span className="font-mono text-xs text-mg-text-3">@{ws.slug}</span>
         </div>
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">
+          <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">
             {t('workspaces.detail.settings.descLabel')}
           </label>
           <Textarea

@@ -69,7 +69,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
 
             {/* Receipt Brand Head */}
             <div className="text-center pt-2 pb-4 border-b border-dashed border-mg-border/80 space-y-1">
-              <div className="text-[10px] font-bold text-brand-base uppercase tracking-widest">
+              <div className="text-xs font-bold text-brand-base uppercase tracking-widest">
                 ModelGo Ledger
               </div>
               <div className="text-sm font-mono font-bold tracking-tight text-mg-text-1">
@@ -79,7 +79,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
 
             {/* Status Big Badge */}
             <div className="flex flex-col items-center py-2 space-y-1">
-              <div className="text-[10px] uppercase tracking-wider text-mg-text-4 font-bold">
+              <div className="text-xs uppercase tracking-wider text-mg-text-4 font-bold">
                 {t('billing.orders.detail.status')}
               </div>
               <StatusBadge status={order.status} statusMap={orderStatusMap} />
@@ -118,7 +118,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
               {order.paid_at && (
                 <div className="flex justify-between gap-4">
                   <span className="text-mg-text-4">{t('billing.orders.detail.paidAt')}:</span>
-                  <span className="text-mg-text-3 text-[11px]">
+                  <span className="text-mg-text-3 text-xs">
                     {formatDateTime(order.paid_at)}
                   </span>
                 </div>
@@ -126,7 +126,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
               {order.promo_code && (
                 <div className="flex justify-between gap-4">
                   <span className="text-mg-text-4">{t('billing.orders.detail.promo')}:</span>
-                  <span className="text-brand-base font-bold bg-brand-glow/10 px-1.5 rounded-sm text-[11px]">
+                  <span className="text-brand-base font-bold bg-brand-glow/10 px-1.5 rounded-sm text-xs">
                     {order.promo_code}
                   </span>
                 </div>
@@ -135,7 +135,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
 
             <OrderBarcode value={order.order_no} />
 
-            <div className="text-center text-[9px] text-mg-text-4 font-semibold pt-2">
+            <div className="text-center text-xs text-mg-text-4 font-semibold pt-2">
               {t('billing.orders.detail.receiptFooter')}
             </div>
 

@@ -127,7 +127,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
                     </span>
                     {isBound ? (
                       <span style={{ 
-                        fontSize: '11px', 
+                        fontSize: '12px', 
                         color: 'var(--go-deep)', 
                         marginLeft: '10px',
                         backgroundColor: 'var(--go-pale)',
@@ -140,7 +140,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
                       </span>
                     ) : (
                       <span style={{
-                        fontSize: '11px',
+                        fontSize: '12px',
                         color: 'var(--mg-text-3)',
                         marginLeft: '10px',
                         backgroundColor: 'var(--mg-fill-0)',

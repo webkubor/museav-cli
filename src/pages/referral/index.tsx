@@ -391,25 +391,25 @@ export default function ReferralPage() {
         {isZh ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-mg-text-3 leading-relaxed">
             <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-[10px] font-bold shrink-0">01</span>
+              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">01</span>
               <div>
                 被邀请人每次实际付费消费<span className="text-[var(--brand-base)] font-bold">实时计返佣</span>（退款冲回、赠送/兑换码额度消费不计），按当前档位比例结算至奖励余额。
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-[10px] font-bold shrink-0">02</span>
+              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">02</span>
               <div>
                 奖励余额<span className="text-[var(--brand-base)] font-bold">满 ¥100</span> 可<span className="text-[var(--brand-base)] font-bold">转入主余额</span>继续消费。
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-[10px] font-bold shrink-0">03</span>
+              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">03</span>
               <div>
                 返佣<span className="text-[var(--brand-base)] font-bold">上不封顶</span>；返佣档位、比例、门槛由平台统一配置。
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-mg-danger/10 text-mg-danger text-[10px] font-bold shrink-0">04</span>
+              <span className="mt-0.5 p-1 rounded-md bg-mg-danger/10 text-mg-danger text-xs font-bold shrink-0">04</span>
               <div>
                 平台对同主体 / 同 IP·设备 / 异常刷量保留核查与冻结权，保障返佣生态公平合规。
               </div>
@@ -418,25 +418,25 @@ export default function ReferralPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-mg-text-3 leading-relaxed">
             <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-[10px] font-bold shrink-0">01</span>
+              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">01</span>
               <div>
                 Commission accrues in <span className="text-[var(--brand-base)] font-bold">real time</span> on actual paid spend (refunds clawed back; gifted/promo codes excluded), settled at your tier rate.
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-[10px] font-bold shrink-0">02</span>
+              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">02</span>
               <div>
                 Reward balance <span className="text-[var(--brand-base)] font-bold">reaches ¥100</span> can be <span className="text-[var(--brand-base)] font-bold">transferred to main balance</span>.
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-[10px] font-bold shrink-0">03</span>
+              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">03</span>
               <div>
                 Commission has <span className="text-[var(--brand-base)] font-bold">no upper limit</span>. Tiers, rates, and thresholds are configured by the platform.
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-mg-danger/10 text-mg-danger text-[10px] font-bold shrink-0">04</span>
+              <span className="mt-0.5 p-1 rounded-md bg-mg-danger/10 text-mg-danger text-xs font-bold shrink-0">04</span>
               <div>
                 The platform reserves the right to audit and freeze same-entity / same-IP / abnormal farming activities.
               </div>
@@ -605,7 +605,7 @@ function TierBadge({ name, rate, fallback }: { name?: string; rate?: number; fal
   const cls = colorMap[name] ?? 'bg-mg-fill-0 text-mg-text-2 border-mg-border'
   const label = typeof rate === 'number' && rate > 0 ? `${name} · ${rate}%` : name
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${cls}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold border ${cls}`}>
       {label}
     </span>
   )
@@ -666,7 +666,7 @@ function InviteesTable({
               <TableRow key={`${inv.email}-${inv.registeredAt}`}>
                 <TableCell>
                   <div className="font-medium text-mg-text-1">{inv.name}</div>
-                  <div className="text-[11px] text-mg-text-3 mt-0.5">{inv.email}</div>
+                  <div className="text-xs text-mg-text-3 mt-0.5">{inv.email}</div>
                 </TableCell>
                 <TableCell className="text-right font-mono">{fmt(inv.totalSpend)}</TableCell>
                 <TableCell className="text-right font-mono">{fmt(inv.commission)}</TableCell>

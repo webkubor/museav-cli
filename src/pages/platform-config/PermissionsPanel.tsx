@@ -68,7 +68,7 @@ export function PermissionsPanel() {
 
         <div>
           <p className="mb-1.5 text-xs font-semibold text-mg-text-1">后端 <code className="font-mono">/auth/session</code> 该返回长这样（重点是 permissions）：</p>
-          <pre className="overflow-x-auto rounded-md border border-mg-border bg-mg-bg-1 p-3 font-mono text-[11px] leading-relaxed text-mg-text-2">{`{
+          <pre className="overflow-x-auto rounded-md border border-mg-border bg-mg-bg-1 p-3 font-mono text-xs leading-relaxed text-mg-text-2">{`{
   "account": { "account_id": "...", "display_name": "..." },
   "active_tenant_id": "01ks...",       // 当前所在企业/租户
   "active_workspace_id": "01ks...",    // 当前所在工作空间
@@ -90,7 +90,7 @@ export function PermissionsPanel() {
 
         <div className="overflow-x-auto rounded-md border border-mg-border">
           <table className="w-full text-xs">
-            <caption className="bg-mg-fill-0/40 px-3 py-2 text-left text-[11px] font-bold text-mg-text-1">一句话对齐（前端 ↔ 后端）</caption>
+            <caption className="bg-mg-fill-0/40 px-3 py-2 text-left text-xs font-bold text-mg-text-1">一句话对齐（前端 ↔ 后端）</caption>
             <tbody>
               {[
                 { k: '运营编辑什么', tone: 'text-mg-text-2', v: '在 controller-web「菜单权限管理」给角色勾「能看的菜单 + 能点的操作」，保存 ≤30s 生效。' },
@@ -124,14 +124,14 @@ export function PermissionsPanel() {
                 const accessible = r.permission ? grantedSet.has(r.permission) : true
                 return (
                   <tr key={r.key} className="border-t border-mg-border/60">
-                    <td className="px-3 py-2 font-mono text-[11px] text-mg-text-1 whitespace-nowrap">{r.key}</td>
-                    <td className="px-3 py-2 font-mono text-[11px] text-mg-text-2 whitespace-nowrap">{fullPath}</td>
+                    <td className="px-3 py-2 font-mono text-xs text-mg-text-1 whitespace-nowrap">{r.key}</td>
+                    <td className="px-3 py-2 font-mono text-xs text-mg-text-2 whitespace-nowrap">{fullPath}</td>
                     <td className="px-3 py-2 whitespace-nowrap">
-                      <Badge variant={r.scope === 'workspace' ? 'info' : 'secondary'} className="text-[10px]">{r.scope}</Badge>
+                      <Badge variant={r.scope === 'workspace' ? 'info' : 'secondary'} className="text-xs">{r.scope}</Badge>
                     </td>
                     <td className="px-3 py-2">
                       {r.permission
-                        ? <code className="font-mono text-[11px] text-brand-base">{r.permission}</code>
+                        ? <code className="font-mono text-xs text-brand-base">{r.permission}</code>
                         : <span className="text-mg-text-4">仅需登录</span>}
                     </td>
                     <td className={`px-3 py-2 text-center font-bold ${accessible ? 'text-mg-success' : 'text-mg-text-4'}`}>
@@ -171,7 +171,7 @@ export function PermissionsPanel() {
             <li>页面里用 <code className="font-mono">{'const { hasPermission } = usePermissions()'}</code>，按钮包一层：<code className="font-mono">{'hasPermission(PERMS.XXX_CREATE) && <Button/>'}</code>。</li>
             <li><strong className="text-mg-text-1">运营</strong>给角色勾 <code className="font-mono">xxx:create</code> → session granted 含它 → 按钮显示；否则隐藏。<strong className="text-mg-text-1">不走路由层。</strong></li>
           </ol>
-          <p className="mt-3 text-[11px] text-mg-text-3">
+          <p className="mt-3 text-xs text-mg-text-3">
             一句话脉络：<strong className="text-mg-text-2">前端登记 key（permissions.ts）→ 挂到页面/按钮 → 运营勾这个 key → 后端 session 吐 granted → 前端照 key 显隐</strong>。
             维护成本就集中在「这套英文 key 要前端登记 + 运营认识 + 后端矩阵有」——三处对齐同一个 key 即可。
           </p>
@@ -204,11 +204,11 @@ export function PermissionsPanel() {
                   <td className="px-3 py-2 text-mg-text-3 whitespace-nowrap">{row.group}</td>
                   <td className="px-3 py-2 font-semibold text-mg-text-1 whitespace-nowrap">
                     {row.text}
-                    <span className="ml-2 font-mono text-[10px] text-mg-text-3">{row.itemKey}</span>
+                    <span className="ml-2 font-mono text-xs text-mg-text-3">{row.itemKey}</span>
                   </td>
                   <td className="px-3 py-2">
                     {row.permission
-                      ? <code className="font-mono text-[11px] text-brand-base">{row.permission}</code>
+                      ? <code className="font-mono text-xs text-brand-base">{row.permission}</code>
                       : <span className="text-mg-text-4">无门控</span>}
                   </td>
                   {ROLES.map((r) => {
@@ -239,13 +239,13 @@ export function PermissionsPanel() {
         {grantedList.length > 0 ? (
           <div className="flex flex-wrap gap-1.5">
             {grantedList.map((p) => (
-              <Badge key={p} variant="secondary" className="font-mono text-[11px]">{p}</Badge>
+              <Badge key={p} variant="secondary" className="font-mono text-xs">{p}</Badge>
             ))}
           </div>
         ) : (
           <p className="text-xs text-mg-text-3">当前无任何 granted 权限（{granted === null ? 'null' : '空数组'}）。</p>
         )}
-        <p className="text-[11px] text-mg-text-4">
+        <p className="text-xs text-mg-text-4">
           对照上表：某菜单需要的权限若不在上面 granted 里，则当前角色实际看不到该菜单（即使角色门控 ✓）。
           带门控的菜单当前命中：
           {rows.filter((r) => r.permission && grantedSet.has(r.permission)).map((r) => r.text).join(' / ') || '（无）'}

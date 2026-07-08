@@ -48,9 +48,9 @@ function GlobalBudgetControl({
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-xs font-bold text-mg-text-1">{label}</div>
-          <div className="text-[11px] text-mg-text-3 mt-0.5">{hint}</div>
+          <div className="text-xs text-mg-text-3 mt-0.5">{hint}</div>
         </div>
-        <label className="flex items-center gap-2 shrink-0 text-[11px] text-mg-text-2">
+        <label className="flex items-center gap-2 shrink-0 text-xs text-mg-text-2">
           <span>{draft.limited ? '限额' : '不限额'}</span>
           <Switch
             checked={draft.limited}
@@ -85,7 +85,7 @@ function GlobalBudgetControl({
         </div>
       )}
       {invalid && (
-        <p className="text-[11px] text-mg-danger">预算金额无效：大于 0，整数最多 12 位，小数最多 2 位</p>
+        <p className="text-xs text-mg-danger">预算金额无效：大于 0，整数最多 12 位，小数最多 2 位</p>
       )}
     </div>
   )
@@ -302,7 +302,7 @@ export function GuardrailDetailSheet({
                   >
                     保存预算
                   </Button>
-                  <span className="text-[11px] text-mg-text-3">三档独立生效，可分别限额或不限额</span>
+                  <span className="text-xs text-mg-text-3">三档独立生效，可分别限额或不限额</span>
                 </div>
               )}
             </section>
@@ -340,7 +340,7 @@ export function GuardrailDetailSheet({
                   {budget && (
                     <button
                       onClick={onShowClearBudget}
-                      className="text-[11px] text-mg-text-3 hover:text-mg-danger transition-colors cursor-pointer"
+                      className="text-xs text-mg-text-3 hover:text-mg-danger transition-colors cursor-pointer"
                     >
                       清除预算
                     </button>

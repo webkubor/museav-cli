@@ -124,9 +124,9 @@ export function UsageTrendSection({ granularity, accountId }: { granularity: Gra
                   const p = payload[0].payload as TrendPoint
                   return (
                     <div className="rounded-md border border-mg-border bg-mg-bg-2/98 backdrop-blur-md p-3 shadow-[0_8px_30px_rgb(0,0,0,0.06)] text-left select-none min-w-[120px] space-y-1">
-                      <div className="text-[10px] text-mg-text-3 font-medium">{t(`dashboard.workbench.trend.metric.${metric}`)}</div>
+                      <div className="text-xs text-mg-text-3 font-medium">{t(`dashboard.workbench.trend.metric.${metric}`)}</div>
                       <div className="text-sm font-mono font-black text-brand-base tabular-nums">{formatValue(p.value)}</div>
-                      <div className="text-[10px] text-mg-text-3 font-semibold font-mono pt-1 border-t border-mg-border">{fmtLabel(isMonth, p.bucket_start)}</div>
+                      <div className="text-xs text-mg-text-3 font-semibold font-mono pt-1 border-t border-mg-border">{fmtLabel(isMonth, p.bucket_start)}</div>
                     </div>
                   )
                 }}
@@ -146,7 +146,7 @@ export function UsageTrendSection({ granularity, accountId }: { granularity: Gra
           <div className="flex flex-col items-center justify-center h-[220px] text-center">
             <LuTrendingUp size={24} className="mb-2 text-mg-text-3" />
             <p className="text-xs text-mg-text-3 font-medium">{t('dashboard.workbench.trend.empty')}</p>
-            <p className="mt-1 text-[11px] text-mg-text-4 max-w-[260px]">{t('dashboard.workbench.trend.emptyHint')}</p>
+            <p className="mt-1 text-xs text-mg-text-4 max-w-[260px]">{t('dashboard.workbench.trend.emptyHint')}</p>
           </div>
         )}
       </div>

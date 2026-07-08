@@ -146,7 +146,7 @@ export function OrgInfoTab({
 
         {/* 组织名称 */}
         <div className="space-y-2">
-          <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.info.orgName')}</label>
+          <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.info.orgName')}</label>
           {editing ? (
             <div className="flex items-center gap-2">
               <Input
@@ -185,24 +185,24 @@ export function OrgInfoTab({
         {/* 信息网格 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-mg-border/40">
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.info.slug')}</label>
+            <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.info.slug')}</label>
             <span className="font-mono text-xs text-mg-text-1">@{tenant.slug}</span>
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.info.accountType')}</label>
+            <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.info.accountType')}</label>
             <div>
-              <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-brand-glow/8 text-brand-base border border-brand-base/15">
+              <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-glow/8 text-brand-base border border-brand-base/15">
                 {tenant.type === 'personal' ? t('enterprise.summary.typePersonal') : t('enterprise.summary.typeEnterprise')}
               </span>
             </div>
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.info.owner')}</label>
+            <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.info.owner')}</label>
             {owner ? (
               <div className="flex items-center justify-between gap-2">
                 <div className="space-y-0.5 min-w-0">
                   <div className="text-xs font-semibold text-mg-text-1 truncate">{owner.account.display_name || '—'}</div>
-                  <div className="text-[10px] text-mg-text-3 truncate">{owner.account.email}</div>
+                  <div className="text-xs text-mg-text-3 truncate">{owner.account.email}</div>
                 </div>
                 {isOwner && tenant.type === 'enterprise' && (
                   <button
@@ -210,7 +210,7 @@ export function OrgInfoTab({
                     disabled
                     title={t('enterprise.info.transferTodo')}
                     // TODO(后端待接): Owner 转移端点 —— 入口就绪，接口到位后启用
-                    className="shrink-0 text-[11px] font-bold text-mg-text-4 bg-transparent border-none p-0 cursor-not-allowed"
+                    className="shrink-0 text-xs font-bold text-mg-text-4 bg-transparent border-none p-0 cursor-not-allowed"
                   >
                     {t('enterprise.info.transferOwner')}
                   </button>
@@ -222,7 +222,7 @@ export function OrgInfoTab({
           </div>
           <div className="space-y-1" />
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.info.maxWorkspaces')}</label>
+            <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.info.maxWorkspaces')}</label>
             <span className="text-xs text-mg-text-1 font-medium">
               {(tenant.max_workspaces ?? '—')}
               {/* 已用工作空间：TenantDetail 无 used 字段 → 占位 */}
@@ -231,7 +231,7 @@ export function OrgInfoTab({
             </span>
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.info.maxMembers')}</label>
+            <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.info.maxMembers')}</label>
             <span className="text-xs text-mg-text-1 font-medium">
               {(tenant.max_members ?? '—')} · {t('enterprise.info.usedMembers')} {membersQuery.isLoading ? '…' : usedMembers}
             </span>
@@ -300,7 +300,7 @@ export function OrgInfoTab({
             {t('enterprise.info.dissolveWarn')}
           </div>
           <div>
-            <label className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-mg-text-2">
+            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-mg-text-2">
               {t('enterprise.info.orgName')}
             </label>
             <Input

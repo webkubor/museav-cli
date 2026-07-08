@@ -246,11 +246,11 @@ export default function WorkspacesPage() {
               {item.icon}
             </div>
             <div>
-              <div className="text-[11px] font-medium text-mg-text-3">{item.label}</div>
+              <div className="text-xs font-medium text-mg-text-3">{item.label}</div>
               <div className="text-base font-bold text-mg-text-1 mt-0.5 flex items-baseline gap-1">
                 <span>{item.value}</span>
                 {item.hasStatus && (
-                  <span className={cn("text-[10px] font-semibold ml-1.5 px-1.5 py-0.5 rounded-sm bg-mg-success/8 text-mg-success")}>
+                  <span className={cn("text-xs font-semibold ml-1.5 px-1.5 py-0.5 rounded-sm bg-mg-success/8 text-mg-success")}>
                     {item.label === t('workspaces.summary.logging') ? t('workspaces.card.collectOn') : t('workspaces.card.forwardOn')}
                   </span>
                 )}
@@ -353,12 +353,12 @@ export default function WorkspacesPage() {
                   <div className="flex items-center gap-1.5">
                     <h3 className="font-bold text-mg-text-1 text-[13px] truncate">{ws.name}</h3>
                     {ws.is_default && (
-                      <span className="shrink-0 scale-75 origin-left text-[9px] font-semibold px-1.5 py-0.5 rounded-sm bg-mg-warning/8 text-mg-warning border border-mg-warning/15">
+                      <span className="shrink-0 scale-75 origin-left text-xs font-semibold px-1.5 py-0.5 rounded-sm bg-mg-warning/8 text-mg-warning border border-mg-warning/15">
                         {t('workspaces.defaultBadge')}
                       </span>
                     )}
                   </div>
-                  <div className="text-[10px] font-mono text-mg-text-3 truncate mt-0.5">@{ws.slug}</div>
+                  <div className="text-xs font-mono text-mg-text-3 truncate mt-0.5">@{ws.slug}</div>
                 </div>
 
                 <div className="flex items-center justify-center w-6 h-6 rounded bg-brand-base/5 border border-brand-base/10 text-brand-base shrink-0">
@@ -404,7 +404,7 @@ export default function WorkspacesPage() {
                         </Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5 mt-1 text-[11px] font-mono text-mg-text-3">
+                    <div className="flex items-center gap-1.5 mt-1 text-xs font-mono text-mg-text-3">
                       <span className="truncate">@{ws.slug}</span>
                     </div>
                   </div>
@@ -416,7 +416,7 @@ export default function WorkspacesPage() {
                 </div>
 
                 {/* 负责人 */}
-                <div className="text-[11px] text-mg-text-3 mt-1">
+                <div className="text-xs text-mg-text-3 mt-1">
                   {t('workspaces.card.owner')}{' '}
                   <span className="font-semibold text-mg-text-2">
                     {ws.owner?.display_name || dash}
@@ -427,21 +427,21 @@ export default function WorkspacesPage() {
                 <div className="grid grid-cols-3 divide-x divide-mg-border/20 text-center py-2 bg-mg-fill-0/10 rounded-lg border border-mg-border/10">
                   <div>
                     <div className="text-sm font-bold text-mg-text-1">{ws.member_count}</div>
-                    <div className="text-[10px] text-mg-text-3 mt-0.5">{t('workspaces.card.members')}</div>
+                    <div className="text-xs text-mg-text-3 mt-0.5">{t('workspaces.card.members')}</div>
                   </div>
                   <div>
                     <div className="text-sm font-bold text-mg-text-1">{ws.api_key_count}</div>
-                    <div className="text-[10px] text-mg-text-3 mt-0.5">API Keys</div>
+                    <div className="text-xs text-mg-text-3 mt-0.5">API Keys</div>
                   </div>
                   <div>
                     <div className="text-sm font-bold text-mg-text-1">{ws.guardrail_count ?? dash}</div>
-                    <div className="text-[10px] text-mg-text-3 mt-0.5">{t('workspaces.card.guardrails')}</div>
+                    <div className="text-xs text-mg-text-3 mt-0.5">{t('workspaces.card.guardrails')}</div>
                   </div>
                 </div>
 
                 {/* 日志采集 / 转发状态 */}
                 <div className="flex items-center gap-3 pt-3 border-t border-mg-border/30">
-                  <div className="flex items-center gap-1.5 text-[11px] text-mg-text-3 bg-mg-fill-0/15 border border-mg-border/20 px-2 py-1 rounded-md">
+                  <div className="flex items-center gap-1.5 text-xs text-mg-text-3 bg-mg-fill-0/15 border border-mg-border/20 px-2 py-1 rounded-md">
                     <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", ws.logging_enabled ? "bg-mg-success animate-pulse" : "bg-mg-text-3/40")} />
                     <span>
                       {t('workspaces.summary.logging')}{' '}
@@ -450,7 +450,7 @@ export default function WorkspacesPage() {
                       </span>
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[11px] text-mg-text-3 bg-mg-fill-0/15 border border-mg-border/20 px-2 py-1 rounded-md">
+                  <div className="flex items-center gap-1.5 text-xs text-mg-text-3 bg-mg-fill-0/15 border border-mg-border/20 px-2 py-1 rounded-md">
                     <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", ws.forward_enabled ? "bg-mg-success animate-pulse" : "bg-mg-text-3/40")} />
                     <span>
                       {t('workspaces.summary.forwarding')}{' '}
@@ -532,7 +532,7 @@ export default function WorkspacesPage() {
                     options={memberOptions}
                     placeholder={t('workspaces.modal.invitePlaceholder')}
                   />
-                  <div className="text-[11px] text-mg-text-3">{t('workspaces.modal.inviteHint')}</div>
+                  <div className="text-xs text-mg-text-3">{t('workspaces.modal.inviteHint')}</div>
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.inviteRoleLabel')}</div>
@@ -639,7 +639,7 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
               {c.icon}
             </div>
             <div>
-              <div className="text-[11px] font-medium text-mg-text-3">{c.label}</div>
+              <div className="text-xs font-medium text-mg-text-3">{c.label}</div>
               <div className="text-base font-bold text-mg-text-1 mt-0.5">{c.value}</div>
             </div>
           </div>
@@ -656,7 +656,7 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
                 {r.icon}
               </div>
               <div>
-                <div className="text-[11px] text-mg-text-3">{r.label}</div>
+                <div className="text-xs text-mg-text-3">{r.label}</div>
                 {r.isStatus ? (
                   <div className={cn("text-[12px] font-bold mt-0.5", r.enabled ? "text-mg-success" : "text-mg-text-2")}>
                     {r.value}
@@ -687,7 +687,7 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-mg-text-1">{s.title}</div>
-                  <div className="text-[10px] text-mg-text-3 mt-0.5 truncate">{s.desc}</div>
+                  <div className="text-xs text-mg-text-3 mt-0.5 truncate">{s.desc}</div>
                 </div>
               </div>
               <LuChevronRight size={14} className="text-mg-text-3 group-hover:text-brand-base transition-transform shrink-0" />
@@ -763,7 +763,7 @@ function WorkspaceDashboard({ workspaceId, onDeleted }: WorkspaceDashboardProps)
         {/* 右侧状态 pill */}
         <div className="flex items-center gap-2 shrink-0">
           <div className={cn(
-            "flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full font-medium border",
+            "flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium border",
             ws.logging_enabled
               ? "bg-mg-success/5 border-mg-success/20 text-mg-success"
               : "bg-mg-fill-0/20 border-mg-border/40 text-mg-text-3"
@@ -772,7 +772,7 @@ function WorkspaceDashboard({ workspaceId, onDeleted }: WorkspaceDashboardProps)
             <span>{t('workspaces.summary.logging')} {ws.logging_enabled ? t('workspaces.card.collectOn') : t('workspaces.card.collectOff')}</span>
           </div>
           <div className={cn(
-            "flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full font-medium border",
+            "flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium border",
             ws.forward_enabled
               ? "bg-mg-success/5 border-mg-success/20 text-mg-success"
               : "bg-mg-fill-0/20 border-mg-border/40 text-mg-text-3"

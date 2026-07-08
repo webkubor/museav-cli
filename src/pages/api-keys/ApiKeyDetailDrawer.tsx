@@ -41,7 +41,7 @@ function Section({ title, action, children }: { title: string; action?: ReactNod
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
-        <h3 className="text-[11px] font-bold uppercase tracking-wider text-mg-text-3">{title}</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-mg-text-3">{title}</h3>
         {action}
       </div>
       {children}
@@ -164,7 +164,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
           {(view.guardrails ?? []).length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {(view.guardrails ?? []).map((g) => (
-                <span key={g.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-green-500/10 border border-green-500/25 text-green-600">
+                <span key={g.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-500/10 border border-green-500/25 text-green-600">
                   <LuShieldCheck className="w-3 h-3" />
                   {g.name}
                 </span>
@@ -180,7 +180,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
           title="最近调用"
           action={
             <button
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-base hover:text-brand-deep"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-brand-base hover:text-brand-deep"
               onClick={() => navigate(`/workspace/${workspaceId}/logs`)}
             >
               跳转日志 <LuArrowRight size={12} />
@@ -195,9 +195,9 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
                   onClick={() => navigate(`/workspace/${workspaceId}/logs?log_id=${c.log_id}`)}
                   className="flex w-full items-center justify-between gap-3 rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2 text-left transition-colors hover:border-brand-base/35"
                 >
-                  <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-mg-text-2">{c.model}</span>
-                  <span className="text-[11px] text-mg-text-3">{formatDateTime(c.created_at)}</span>
-                  <span className="font-mono text-[11px] text-mg-text-1">{money(c.cost)}</span>
+                  <span className="min-w-0 flex-1 truncate font-mono text-xs text-mg-text-2">{c.model}</span>
+                  <span className="text-xs text-mg-text-3">{formatDateTime(c.created_at)}</span>
+                  <span className="font-mono text-xs text-mg-text-1">{money(c.cost)}</span>
                 </button>
               ))}
             </div>
@@ -214,9 +214,9 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
                 <div key={a.id} className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-mg-text-1">{a.action}</span>
-                    <span className="text-[11px] text-mg-text-3">{formatDateTime(a.created_at)}</span>
+                    <span className="text-xs text-mg-text-3">{formatDateTime(a.created_at)}</span>
                   </div>
-                  <div className="mt-0.5 text-[11px] text-mg-text-3">
+                  <div className="mt-0.5 text-xs text-mg-text-3">
                     {a.actor_display || a.actor_account_id}
                   </div>
                 </div>

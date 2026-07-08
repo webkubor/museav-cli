@@ -165,7 +165,7 @@ export default function ModelsPage() {
             className="flex items-center gap-2 rounded-full h-9 pl-3 pr-3.5 border border-brand-base/30 bg-[var(--brand-base)]/5 hover:bg-[var(--brand-base)]/10 transition-colors"
           >
             <LuGift size={14} className="text-brand-base shrink-0" />
-            <span className="text-[11px] font-semibold text-mg-text-3 leading-none">{text.freeQuota}</span>
+            <span className="text-xs font-semibold text-mg-text-3 leading-none">{text.freeQuota}</span>
             <span className="text-sm font-bold text-brand-base tabular-nums leading-none">
               ¥{giftBalance.toLocaleString('zh-CN')}
             </span>
@@ -351,7 +351,7 @@ export default function ModelsPage() {
           />
 
           <div className="flex items-center justify-between px-1 pt-1 pb-0.5">
-            <span className="text-[11px] text-mg-text-3 font-mono select-none">
+            <span className="text-xs text-mg-text-3 font-mono select-none">
               temperature&nbsp;<b className="text-mg-text-2">0.7</b>
               <span className="mx-1.5 opacity-30">·</span>
               max_tokens&nbsp;<b className="text-mg-text-2">{selectedModel?.max_output_tokens || 4096}</b>
@@ -362,7 +362,7 @@ export default function ModelsPage() {
             </span>
             <button
               type="button"
-              className="flex items-center gap-1 text-[11px] text-mg-text-3 hover:text-mg-text-1 transition-colors"
+              className="flex items-center gap-1 text-xs text-mg-text-3 hover:text-mg-text-1 transition-colors"
               onClick={() => {
                 setMessages(initialMessages)
                 appToast.success(i18n.language.startsWith('zh') ? '对话历史已重置' : 'Conversation reset')

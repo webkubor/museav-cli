@@ -383,7 +383,7 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 }
 
 .social-divider-text {
-  @apply text-[11px] font-bold tracking-widest uppercase;
+  @apply text-xs font-bold tracking-widest uppercase;
   color: var(--mg-text-3);
 }
 

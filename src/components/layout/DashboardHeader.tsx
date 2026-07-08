@@ -395,7 +395,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
         <Badge
           variant={tenant.type === 'personal' ? 'secondary' : getTenantRoleVariant(tenantRole)}
           size="xs"
-          className="shrink-0 border-[var(--account-menu-border)] bg-[var(--account-menu-panel-strong)] px-2 py-0.5 text-[10px] text-[var(--account-menu-text-1)]"
+          className="shrink-0 border-[var(--account-menu-border)] bg-[var(--account-menu-panel-strong)] px-2 py-0.5 text-xs text-[var(--account-menu-text-1)]"
         >
           {tenant.type === 'personal' ? t('header.personalTag') : getTenantRoleLabel(tenantRole)}
         </Badge>
@@ -558,7 +558,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
               <Badge
                 variant={activeTenant?.type === 'personal' ? 'secondary' : getTenantRoleVariant((activeTenant as TenantItem | undefined)?.role)}
                 size="sm"
-                className="shrink-0 border-brand-base/25 bg-brand-base/[0.11] px-2.5 py-1 text-[11px] text-brand-base"
+                className="shrink-0 border-brand-base/25 bg-brand-base/[0.11] px-2.5 py-1 text-xs text-brand-base"
               >
                 {accountRole}
               </Badge>
@@ -641,7 +641,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
 
             <DropdownMenuSeparator />
             <div
-              className="px-2.5 pb-2 pt-1.5 text-[11px] leading-relaxed text-mg-text-4/80 select-text"
+              className="px-2.5 pb-2 pt-1.5 text-xs leading-relaxed text-mg-text-4/80 select-text"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="font-mono">v{__APP_VERSION__} · {__BUILD_TAG__ || __BUILD_COMMIT__} · DEV</div>

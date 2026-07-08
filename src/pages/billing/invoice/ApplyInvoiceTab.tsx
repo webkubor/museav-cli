@@ -187,9 +187,9 @@ export function ApplyInvoiceTab({
         {/* 选中抬头详情 */}
         {activeTitle && (
           <div className="rounded-md border border-mg-border p-4 bg-mg-fill-0/30">
-            <div className="mb-3 text-[11px] font-bold uppercase tracking-wider text-mg-text-2 border-b border-mg-border pb-1.5 flex items-center justify-between">
+            <div className="mb-3 text-xs font-bold uppercase tracking-wider text-mg-text-2 border-b border-mg-border pb-1.5 flex items-center justify-between">
               <span>抬头详细信息</span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-mg-fill-0 text-mg-text-3">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-mg-fill-0 text-mg-text-3">
                 {TITLE_TYPE_LABEL[activeTitle.type]}
               </span>
             </div>
@@ -228,7 +228,7 @@ export function ApplyInvoiceTab({
           </div>
         )}
 
-        <p className="text-[11px] leading-relaxed text-mg-text-4">
+        <p className="text-xs leading-relaxed text-mg-text-4">
           提交后系统会自动发起 FAPI 开票任务，出票后推送至接收邮箱。
         </p>
 
@@ -269,7 +269,7 @@ export function ApplyInvoiceTab({
           </div>
         </div>
 
-        <div className="grid grid-cols-[24px_1fr_auto_120px] items-center gap-x-3 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-mg-text-3 bg-mg-fill-0/30">
+        <div className="grid grid-cols-[24px_1fr_auto_120px] items-center gap-x-3 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-mg-text-3 bg-mg-fill-0/30">
           <input
             type="checkbox"
             checked={isAllSelected}
@@ -315,7 +315,7 @@ export function ApplyInvoiceTab({
                   <span className="min-w-0 text-right">
                     <span
                       className={cn(
-                        'inline-block max-w-full truncate rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                        'inline-block max-w-full truncate rounded-full px-2 py-0.5 text-xs font-semibold',
                         status.cls
                       )}
                       title={statusText}

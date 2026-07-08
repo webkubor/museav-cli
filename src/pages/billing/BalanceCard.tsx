@@ -145,7 +145,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
                 {formatBalance(breakdown?.main.amount).main}
               </span>
             </div>
-            <div className="text-[10px] text-mg-text-3 leading-snug">{t('billing.balance.mainHint')}</div>
+            <div className="text-xs text-mg-text-3 leading-snug">{t('billing.balance.mainHint')}</div>
           </button>
 
           <button
@@ -164,7 +164,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
                 {formatBalance(breakdown?.gift.amount).main}
               </span>
             </div>
-            <div className="text-[10px] text-mg-text-3 leading-snug">{t('billing.balance.giftHint')}</div>
+            <div className="text-xs text-mg-text-3 leading-snug">{t('billing.balance.giftHint')}</div>
           </button>
 
           <button
@@ -183,7 +183,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
                 {formatBalance(breakdown?.reward.amount).main}
               </span>
             </div>
-            <div className="text-[10px] text-mg-text-3 leading-snug">{t('billing.balance.rewardHint')}</div>
+            <div className="text-xs text-mg-text-3 leading-snug">{t('billing.balance.rewardHint')}</div>
           </button>
         </div>
       </div>

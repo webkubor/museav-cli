@@ -53,7 +53,7 @@ function ModelTypeBadge({ modalities, className }: { modalities: string[]; class
   const type = getModelType(modalities)
   return (
     <span className={cn(
-      'text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-sm border',
+      'text-xs font-bold font-mono px-1.5 py-0.5 rounded-sm border',
       MODEL_TYPE_STYLE[type] ?? MODEL_TYPE_STYLE.LLM,
       className
     )}>
@@ -95,7 +95,7 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
         <div className="font-semibold text-sm text-[var(--mg-text-1)] mb-1">
           {selected.display_name}
         </div>
-        <div className="text-[11px] text-[var(--mg-text-3)] font-mono mb-1.5 truncate">
+        <div className="text-xs text-[var(--mg-text-3)] font-mono mb-1.5 truncate">
           {selected.model_id}
         </div>
         <div className="flex gap-1 flex-wrap">
@@ -141,7 +141,7 @@ function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: 
                   <div className="text-[13px] font-medium text-[var(--mg-text-1)] truncate">
                     {m.display_name}
                   </div>
-                  <div className="text-[11px] text-[var(--mg-text-3)] truncate font-mono">
+                  <div className="text-xs text-[var(--mg-text-3)] truncate font-mono">
                     {m.model_id}
                   </div>
                 </div>
@@ -429,7 +429,7 @@ export default function ModelsComparePage() {
                       <ModelIcon model={m} size={22} rounded="rounded-sm" />
                       <div className="min-w-0">
                         <div className="font-bold text-[13px] text-[var(--mg-text-1)] truncate">{m.display_name}</div>
-                        <div className="text-[10px] text-[var(--mg-text-3)] font-mono truncate">{m.vendor}</div>
+                        <div className="text-xs text-[var(--mg-text-3)] font-mono truncate">{m.vendor}</div>
                       </div>
                     </div>
                   </div>
@@ -471,7 +471,7 @@ export default function ModelsComparePage() {
                     <LuMessageSquare size={15} className="text-[var(--brand-base)]" />
                     实时对话对比 (Chat Arena)
                   </h2>
-                  <p className="text-[11.5px] text-[var(--mg-text-3)] m-0 mt-1">
+                  <p className="text-xs text-[var(--mg-text-3)] m-0 mt-1">
                     每个模型卡片底部独立输入框；开启「同步输入」则一处输入分发给所有已选模型，分栏并行对比。
                   </p>
                 </div>
@@ -487,7 +487,7 @@ export default function ModelsComparePage() {
                     </button>
                   )}
                   <label className="flex items-center gap-2 select-none cursor-pointer">
-                    <span className="text-[11.5px] font-semibold text-[var(--mg-text-3)]">同步输入</span>
+                    <span className="text-xs font-semibold text-[var(--mg-text-3)]">同步输入</span>
                     <Switch checked={syncInput} onChange={setSyncInput} />
                   </label>
                 </div>
@@ -514,7 +514,7 @@ export default function ModelsComparePage() {
                         <ModelIcon model={m} size={20} rounded="rounded-sm" />
                         <div className="min-w-0 flex-1">
                           <div className="text-xs font-bold text-[var(--mg-text-1)] truncate">{m.display_name}</div>
-                          <div className="text-[9.5px] text-[var(--mg-text-3)] font-mono truncate">{m.model_id}</div>
+                          <div className="text-xs text-[var(--mg-text-3)] font-mono truncate">{m.model_id}</div>
                         </div>
                       </div>
 
@@ -548,7 +548,7 @@ export default function ModelsComparePage() {
                                 ))
                               )}
                               {msg.meta && (
-                                <span className="block text-[9.5px] text-[var(--mg-text-3)] mt-1.5 font-bold tracking-wide">
+                                <span className="block text-xs text-[var(--mg-text-3)] mt-1.5 font-bold tracking-wide">
                                   {msg.meta}
                                 </span>
                               )}
@@ -559,7 +559,7 @@ export default function ModelsComparePage() {
                         {history.length === 0 && (
                           <div className="h-full flex flex-col items-center justify-center text-center p-4 select-none opacity-40">
                             <LuMessageSquare size={20} className="text-mg-text-3 mb-2" />
-                            <span className="text-[10.5px] text-[var(--mg-text-3)]">等待发送提问</span>
+                            <span className="text-xs text-[var(--mg-text-3)]">等待发送提问</span>
                           </div>
                         )}
                       </div>

@@ -115,7 +115,7 @@ export function CreateGuardrailDialog({ open, onClose, workspaceId, onCreated }:
 
         <div>
           <label className="block text-xs font-bold text-mg-text-2 mb-1.5">模型黑名单</label>
-          <p className="text-[11px] text-mg-text-3 mb-2">选中的模型将被禁止通过此护栏调用</p>
+          <p className="text-xs text-mg-text-3 mb-2">选中的模型将被禁止通过此护栏调用</p>
           <TagInput
             value={modelBlacklist}
             onChange={setModelBlacklist}
@@ -127,7 +127,7 @@ export function CreateGuardrailDialog({ open, onClose, workspaceId, onCreated }:
 
         <div>
           <label className="block text-xs font-bold text-mg-text-2 mb-1.5">IP 白名单</label>
-          <p className="text-[11px] text-mg-text-3 mb-2">为空则允许所有 IP；支持 IPv4/IPv6 及 CIDR</p>
+          <p className="text-xs text-mg-text-3 mb-2">为空则允许所有 IP；支持 IPv4/IPv6 及 CIDR</p>
           <TagInput
             value={ipWhitelist}
             onChange={(v) => { setIpError(''); setIpWhitelist(v) }}

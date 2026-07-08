@@ -185,7 +185,7 @@ export function PreferencesTab() {
             <div className="text-[14px] font-bold text-mg-text-1">
               {t('account.preferences.languageTitle')}
             </div>
-            <div className="mt-1 text-[11.5px] leading-relaxed text-mg-text-3">
+            <div className="mt-1 text-xs leading-relaxed text-mg-text-3">
               {t('account.preferences.languageDesc')}
             </div>
           </div>
@@ -224,7 +224,7 @@ export function PreferencesTab() {
             <div className="text-[14px] font-bold text-mg-text-1">
               {t('account.preferences.themeTitle')}
             </div>
-            <div className="mt-1 text-[11.5px] leading-relaxed text-mg-text-3">
+            <div className="mt-1 text-xs leading-relaxed text-mg-text-3">
               {t('account.preferences.themeDesc')}
             </div>
           </div>
@@ -264,7 +264,7 @@ export function PreferencesTab() {
             <div className="text-[14px] font-bold text-mg-text-1">
               {t('account.preferences.timeZoneTitle')}
             </div>
-            <div className="mt-1 text-[11.5px] leading-relaxed text-mg-text-3">
+            <div className="mt-1 text-xs leading-relaxed text-mg-text-3">
               {t('account.preferences.timeZoneDesc', { timezone: browserTimeZone })}
             </div>
           </div>
@@ -281,7 +281,7 @@ export function PreferencesTab() {
                   <span className="text-[13px] font-bold text-mg-text-1">
                     {t('account.preferences.timeZoneBrowser')}
                   </span>
-                  <span className="text-[10px] text-mg-text-3 leading-none">
+                  <span className="text-xs text-mg-text-3 leading-none">
                     {t('account.preferences.timeZoneBrowserDesc', { timezone: formatTimeZoneTitle(browserTimeZone, locale) })}
                   </span>
                 </div>
@@ -292,7 +292,7 @@ export function PreferencesTab() {
                     <span className="text-[13px] font-bold text-mg-text-1">
                       {formatTimeZoneTitle(item, locale)}
                     </span>
-                    <span className="text-[10px] text-mg-text-3 leading-none">
+                    <span className="text-xs text-mg-text-3 leading-none">
                       {t('account.preferences.timeZoneFixedDesc')}
                     </span>
                   </div>
@@ -304,7 +304,7 @@ export function PreferencesTab() {
             <div className="rounded-md border border-mg-border/40 bg-mg-fill-0/40 px-3.5 py-2.5 flex items-center justify-between text-xs select-none">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0 animate-pulse" />
-                <span className="text-mg-text-3 uppercase text-[9.5px] font-bold tracking-wider truncate" title={resolvedTimeZone}>
+                <span className="text-mg-text-3 uppercase text-xs font-bold tracking-wider truncate" title={resolvedTimeZone}>
                   {resolvedTimeZone.split('/').pop()?.replace(/_/g, ' ') || 'Local'}
                 </span>
               </div>
@@ -321,7 +321,7 @@ export function PreferencesTab() {
             <div className="text-[14px] font-bold text-mg-text-1">
               {t('account.preferences.lowBalanceTitle')}
             </div>
-            <div className="mt-1 text-[11.5px] leading-relaxed text-mg-text-3">
+            <div className="mt-1 text-xs leading-relaxed text-mg-text-3">
               {t('account.preferences.lowBalanceDesc')}
             </div>
           </div>

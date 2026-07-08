@@ -290,7 +290,7 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint = '请先
       >
         {/* 提示：未填完→引导填表；填完空闲→引导拖动 */}
         <span
-          className="pointer-events-none absolute inset-0 flex items-center justify-center text-[11px] text-mg-text-3 transition-opacity duration-200"
+          className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-mg-text-3 transition-opacity duration-200"
           style={{ opacity: status === 'success' ? 0 : disabled || status === 'idle' ? 1 : 0 }}
         >
           {disabled ? lockedHint : '向右拖动滑块，使拼图对齐缺口'}
@@ -305,7 +305,7 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint = '请先
                 animation: reducedMotion() ? undefined : 'sc-sheen 1.1s ease-out forwards',
               }}
             />
-            <span className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1 text-[11px] font-bold text-white">
+            <span className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1 text-xs font-bold text-white">
               <LuCheck size={13} /> 验证通过
             </span>
           </>

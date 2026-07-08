@@ -19,7 +19,7 @@ export function ModalityBadge({ modality }: ModalityBadgeProps) {
   const label = t(`models.modality.${modality}`, { defaultValue: modality })
   return (
     <span
-      className={`badge-interactive inline-flex items-center text-[11px] font-semibold px-[7px] py-[1px] rounded-sm border ${cls}`}
+      className={`badge-interactive inline-flex items-center text-xs font-semibold px-[7px] py-[1px] rounded-sm border ${cls}`}
     >
       {label}
     </span>

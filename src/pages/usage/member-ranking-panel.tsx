@@ -49,7 +49,7 @@ function RankBadge({ rank }: { rank: number }) {
   return (
     <span
       className={cn(
-        'inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold',
+        'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold',
         rank <= 3 ? 'bg-brand-selected-bg text-brand-base' : 'bg-mg-fill-1 text-mg-text-3',
       )}
     >

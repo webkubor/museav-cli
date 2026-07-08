@@ -100,7 +100,7 @@ export function QuickStartSection() {
             <LuZap size={17} />
           </span>
           <h3 className="text-base font-bold text-mg-text-1 m-0">{t('dashboard.workbench.quickStart.title')}</h3>
-          <span className="inline-flex items-center rounded-full bg-brand-base/12 px-2 py-0.5 text-[11px] font-bold text-brand-base">
+          <span className="inline-flex items-center rounded-full bg-brand-base/12 px-2 py-0.5 text-xs font-bold text-brand-base">
             {t('dashboard.workbench.quickStart.stepsBadge')}
           </span>
         </div>
@@ -122,7 +122,7 @@ export function QuickStartSection() {
                 >
                   {step.icon}
                 </span>
-                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-mg-border bg-mg-bg-0 text-[10px] font-bold text-mg-text-2 shadow-sm">
+                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-mg-border bg-mg-bg-0 text-xs font-bold text-mg-text-2 shadow-sm">
                   {i + 1}
                 </span>
               </div>
@@ -150,11 +150,11 @@ export function QuickStartSection() {
             <div className="flex flex-col gap-0.5">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-mg-text-1">{t('dashboard.workbench.quickStart.cliTitle')}</span>
-                <span className="inline-flex items-center rounded-full bg-brand-base/12 px-1.5 py-px text-[10px] font-bold text-brand-base">
+                <span className="inline-flex items-center rounded-full bg-brand-base/12 px-1.5 py-px text-xs font-bold text-brand-base">
                   {t('dashboard.workbench.quickStart.cliBadge')}
                 </span>
               </div>
-              <span className="text-[11px] text-mg-text-3">{t('dashboard.workbench.quickStart.cliHint')}</span>
+              <span className="text-xs text-mg-text-3">{t('dashboard.workbench.quickStart.cliHint')}</span>
             </div>
           </div>
           <div className="inline-flex items-center gap-2 rounded-md border border-mg-border bg-mg-bg-0 pl-3 pr-1.5 py-1 font-mono text-xs text-mg-text-1">

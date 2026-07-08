@@ -70,7 +70,7 @@ function SparklineTooltip({
       <div style={{ fontWeight: 700, color: METRIC_COLOR[metric as Metric], marginBottom: '2px' }}>
         {formatted}
       </div>
-      <div style={{ color: 'var(--mg-text-3)', fontSize: '11px' }}>
+      <div style={{ color: 'var(--mg-text-3)', fontSize: '12px' }}>
         {formatChartTooltipDate(d.bucket_start)}
       </div>
     </div>
@@ -198,7 +198,7 @@ function GroupedTooltip({
   const total = payload.reduce((sum, p) => sum + (p.value ?? 0), 0)
   return (
     <div style={{ ...TOOLTIP_STYLE, minWidth: 160 }}>
-      <div style={{ color: 'var(--mg-text-3)', fontSize: '11px', marginBottom: 6 }}>
+      <div style={{ color: 'var(--mg-text-3)', fontSize: '12px', marginBottom: 6 }}>
         {label ? formatChartTooltipDate(label) : ''}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -320,7 +320,7 @@ function HistogramTooltip({ active, payload, requestUnitLabel }: HistogramToolti
       <div style={{ fontWeight: 700, color: 'var(--mg-primary)', marginBottom: '2px' }}>
         {d.count.toLocaleString()} {requestUnitLabel}
       </div>
-      <div style={{ color: 'var(--mg-text-3)', fontSize: '11px' }}>
+      <div style={{ color: 'var(--mg-text-3)', fontSize: '12px' }}>
         {formatChartTooltipDate(d.bucket_start)}
       </div>
     </div>

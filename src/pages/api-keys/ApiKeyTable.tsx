@@ -145,7 +145,7 @@ export function ApiKeyTable({
                   <div className="font-semibold text-mg-text-1 text-[13.5px]">{record.name}</div>
                   {/* #298：名称下方掩码 + 复制完整明文按钮 */}
                   <div className="mt-1 flex items-center gap-1.5">
-                    <span className="font-mono text-[11px] text-mg-text-3 tracking-tight">{record.masked}</span>
+                    <span className="font-mono text-xs text-mg-text-3 tracking-tight">{record.masked}</span>
                     <button
                       type="button"
                       aria-label={copyDisabledReason ?? t('apiKeys.table.copy')}
@@ -163,7 +163,7 @@ export function ApiKeyTable({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold ${KEY_TYPE_CLASS[keyType]}`}>
+                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-bold ${KEY_TYPE_CLASS[keyType]}`}>
                     {KEY_TYPE_LABEL[keyType]}
                   </span>
                 </TableCell>
@@ -172,7 +172,7 @@ export function ApiKeyTable({
                     {responsible.display_name || responsible.email || '—'}
                   </div>
                   {creatorDiffers && (
-                    <div className="text-[11px] text-mg-text-3">
+                    <div className="text-xs text-mg-text-3">
                       创建人 {record.owner.display_name || record.owner.email}
                     </div>
                   )}
@@ -183,14 +183,14 @@ export function ApiKeyTable({
                       {guardrailNames.slice(0, 3).map((name) => (
                         <span
                           key={name}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-green-500/10 border border-green-500/25 text-green-600"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-500/10 border border-green-500/25 text-green-600"
                         >
                           <LuShieldCheck className="w-3 h-3 shrink-0" />
                           {name}
                         </span>
                       ))}
                       {guardrailNames.length > 3 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-mg-fill-0 border border-mg-border text-mg-text-3">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-mg-fill-0 border border-mg-border text-mg-text-3">
                           +{guardrailNames.length - 3}
                         </span>
                       )}
@@ -208,7 +208,7 @@ export function ApiKeyTable({
                       ? `${periodSpend.currency} ${formatMoney(periodSpend.amount, '')}`
                       : <span className="text-mg-text-3">—</span>}
                   </div>
-                  <div className="text-[11px] text-mg-text-3">{limitLabel(record)}</div>
+                  <div className="text-xs text-mg-text-3">{limitLabel(record)}</div>
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-2">
                   {lastCalled ? formatDateTime(lastCalled) : <span className="text-mg-text-3">尚未调用</span>}
@@ -219,7 +219,7 @@ export function ApiKeyTable({
                   ) : isExpired(record.expires_at) ? (
                     <span className="inline-flex items-center gap-1.5 text-mg-danger font-semibold">
                       {formatDateTime(record.expires_at)}
-                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-mg-danger/10 border border-mg-danger/20">
+                      <span className="px-1.5 py-0.5 rounded-full text-xs font-bold bg-mg-danger/10 border border-mg-danger/20">
                         {t('apiKeys.table.expired')}
                       </span>
                     </span>

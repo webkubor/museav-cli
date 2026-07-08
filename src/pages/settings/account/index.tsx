@@ -92,7 +92,7 @@ export default function AccountSettingsPage() {
       </Tabs>
 
       {/* 版本信息（自侧边栏迁移至此） */}
-      <div className="mt-10 flex items-center gap-1.5 border-t border-mg-border/40 pt-4 text-[11px] font-mono text-mg-text-3 select-none">
+      <div className="mt-10 flex items-center gap-1.5 border-t border-mg-border/40 pt-4 text-xs font-mono text-mg-text-3 select-none">
         <span className="inline-flex h-1.5 w-1.5 rounded-full bg-mg-success" />
         <span className="tracking-wide font-semibold">ModelGo Console v{__APP_VERSION__}</span>
       </div>

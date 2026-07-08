@@ -38,7 +38,7 @@ export function SidebarPromoCarousel({ collapsed }: { collapsed: boolean }) {
       >
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           {badgeKey && (
-            <span className="inline-flex w-fit items-center rounded-full bg-white/22 px-1.5 text-[9px] font-extrabold leading-[15px] text-white">
+            <span className="inline-flex w-fit items-center rounded-full bg-white/22 px-1.5 text-xs font-extrabold leading-[15px] text-white">
               {t(badgeKey)}
             </span>
           )}
@@ -46,7 +46,7 @@ export function SidebarPromoCarousel({ collapsed }: { collapsed: boolean }) {
             {title}
           </span>
           {descriptionKey && (
-            <span className="truncate text-[11px] leading-tight text-white/80">
+            <span className="truncate text-xs leading-tight text-white/80">
               {t(descriptionKey)}
             </span>
           )}

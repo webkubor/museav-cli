@@ -112,7 +112,7 @@ export function RequiredPhoneBindingDialog({
           </Button>
         </DialogFooter>
 
-        <p className="mt-3 text-center text-[11px] leading-relaxed text-mg-text-3">
+        <p className="mt-3 text-center text-xs leading-relaxed text-mg-text-3">
           绑定即代表同意{' '}
           <Link to="/legal/terms" target="_blank" rel="noopener noreferrer" className="text-brand-base hover:text-brand-deep">服务条款</Link>
           {' '}与{' '}

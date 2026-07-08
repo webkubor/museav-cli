@@ -34,15 +34,15 @@ const SidebarSystemStatus: React.FC<{ collapsed: boolean }> = ({ collapsed }) =>
   return (
     <div className="mx-3 mb-3 mt-1 px-1.5 py-1.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="truncate font-mono text-[11px] leading-none text-mg-text-3">
+        <span className="truncate font-mono text-xs leading-none text-mg-text-3">
           v{__APP_VERSION__} · {__BUILD_TAG__ || __BUILD_COMMIT__}
         </span>
-        <span className="inline-flex items-center gap-1.5 text-[9px] font-bold leading-none text-mg-success">
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold leading-none text-mg-success">
           <span className="h-1.5 w-1.5 rounded-full bg-mg-success" />
           {t('common.online')}
         </span>
       </div>
-      <div className="mt-2 flex items-center justify-between gap-2 font-mono text-[10px] leading-none text-mg-text-4">
+      <div className="mt-2 flex items-center justify-between gap-2 font-mono text-xs leading-none text-mg-text-4">
         <span>{buildMode}</span>
         <span>{buildTime} UTC</span>
       </div>
@@ -55,7 +55,7 @@ const SidebarGroupLabel: React.FC<{ text: string; collapsed: boolean }> = ({ tex
   <div className={cn('flex items-center gap-2 py-3 select-none px-4', collapsed && 'px-2')}>
     <div className="flex-1 h-[1px] bg-mg-border/40" />
     {!collapsed && (
-      <span className="text-[11px] font-bold text-mg-text-3/80 tracking-wider uppercase whitespace-nowrap shrink-0">
+      <span className="text-xs font-bold text-mg-text-3/80 tracking-wider uppercase whitespace-nowrap shrink-0">
         {text}
       </span>
     )}

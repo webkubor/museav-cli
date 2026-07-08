@@ -160,11 +160,11 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-bold text-mg-text-1">{t.company_name}</span>
                   {t.is_default && (
-                    <span className="rounded-full bg-brand-base px-2 py-0.5 text-[11px] font-semibold text-white">
+                    <span className="rounded-full bg-brand-base px-2 py-0.5 text-xs font-semibold text-white">
                       默认
                     </span>
                   )}
-                  <span className="rounded-md bg-mg-fill-0 px-2 py-0.5 text-[11px] text-mg-text-2">
+                  <span className="rounded-md bg-mg-fill-0 px-2 py-0.5 text-xs text-mg-text-2">
                     {TITLE_TYPE_LABEL[t.type]}
                   </span>
                 </div>

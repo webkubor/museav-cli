@@ -45,7 +45,7 @@ function NameCell({ row, onOpenDetail }: { row: GuardrailDetail; onOpenDetail: (
           {row.name}
         </span>
         {row.description && (
-          <span className="mt-0.5 block truncate text-[11px] font-medium text-mg-text-3">
+          <span className="mt-0.5 block truncate text-xs font-medium text-mg-text-3">
             {row.description}
           </span>
         )}
@@ -66,13 +66,13 @@ function TagCell({ values }: { values: string[] }) {
       {values.slice(0, 3).map((value) => (
         <span
           key={value}
-          className="rounded-full border border-mg-border bg-mg-fill-0 px-2 py-0.5 font-mono text-[11px] font-semibold text-mg-text-2"
+          className="rounded-full border border-mg-border bg-mg-fill-0 px-2 py-0.5 font-mono text-xs font-semibold text-mg-text-2"
         >
           {value}
         </span>
       ))}
       {values.length > 3 && (
-        <span className="rounded-full bg-mg-fill-1 px-2 py-0.5 text-[11px] font-bold text-mg-text-3">
+        <span className="rounded-full bg-mg-fill-1 px-2 py-0.5 text-xs font-bold text-mg-text-3">
           +{values.length - 3}
         </span>
       )}

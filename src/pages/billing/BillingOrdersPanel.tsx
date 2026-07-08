@@ -329,13 +329,13 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
                   <div className="receipt-container-mini relative p-5 space-y-4">
                     <div className="absolute top-0 left-0 right-0 h-1 bg-[linear-gradient(to_right,var(--mg-border)_50%,transparent_50%)] bg-[size:10px_100%]" />
                     <div className="text-center pt-1 pb-3 border-b border-dashed border-mg-border/80 space-y-1">
-                      <div className="text-[9px] font-bold text-brand-base uppercase tracking-widest">ModelGo Ledger</div>
+                      <div className="text-xs font-bold text-brand-base uppercase tracking-widest">ModelGo Ledger</div>
                       <div className="text-xs font-mono font-bold tracking-tight text-mg-text-1">{t('billing.orders.detail.receiptTitle')}</div>
                     </div>
                     <div className="flex flex-col items-center py-1 space-y-1">
                       <StatusBadge status={selectedOrder.status} statusMap={rechargeStatusMap} fallback={selectedOrder.status} />
                     </div>
-                    <div className="font-mono text-[11px] space-y-3 border-t border-b border-dashed border-mg-border/80 py-3.5 text-mg-text-2">
+                    <div className="font-mono text-xs space-y-3 border-t border-b border-dashed border-mg-border/80 py-3.5 text-mg-text-2">
                       <div className="flex justify-between gap-3">
                         <span className="text-mg-text-4">{t('billing.orders.detail.orderNo')}:</span>
                         <span className="text-mg-text-1 font-bold select-all truncate max-w-[130px]" title={selectedOrder.order_no}>{selectedOrder.order_no}</span>
@@ -359,13 +359,13 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
                       {selectedOrder.paid_at && (
                         <div className="flex justify-between gap-3">
                           <span className="text-mg-text-4">{t('billing.orders.detail.paidAt')}:</span>
-                          <span className="text-mg-text-3 text-[10px] text-right">{formatDateTime(selectedOrder.paid_at)}</span>
+                          <span className="text-mg-text-3 text-xs text-right">{formatDateTime(selectedOrder.paid_at)}</span>
                         </div>
                       )}
                       {selectedOrder.promo_code && (
                         <div className="flex justify-between gap-3">
                           <span className="text-mg-text-4">{t('billing.orders.detail.promo')}:</span>
-                          <span className="text-brand-base font-bold bg-brand-glow/10 px-1.5 rounded-sm text-[10px]">{selectedOrder.promo_code}</span>
+                          <span className="text-brand-base font-bold bg-brand-glow/10 px-1.5 rounded-sm text-xs">{selectedOrder.promo_code}</span>
                         </div>
                       )}
                     </div>
@@ -468,7 +468,7 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
                       <TableCell className="text-xs text-mg-text-3 font-mono">{formatDateTime(rec.date)}</TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2.5 select-none">
-                          <div className="w-6 h-6 rounded-full bg-mg-fill-1 border border-mg-border flex items-center justify-center font-bold text-[10px] text-mg-text-2 uppercase shrink-0">
+                          <div className="w-6 h-6 rounded-full bg-mg-fill-1 border border-mg-border flex items-center justify-center font-bold text-xs text-mg-text-2 uppercase shrink-0">
                             {rec.source.slice(0, 2)}
                           </div>
                           <span className="text-xs text-mg-text-1 font-bold">{rec.source}</span>
@@ -477,7 +477,7 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
                       <TableCell>{renderTierBadge(rec.tierName)}</TableCell>
                       <TableCell align="right" className="text-xs text-mg-text-2 font-mono">¥{Number(rec.spend).toLocaleString('zh-CN')}</TableCell>
                       <TableCell align="right">
-                        <span className="bg-brand-glow/10 text-brand-base text-[10px] font-bold px-1.5 py-0.5 rounded-md border border-brand-base/10 font-mono">{rec.rate}%</span>
+                        <span className="bg-brand-glow/10 text-brand-base text-xs font-bold px-1.5 py-0.5 rounded-md border border-brand-base/10 font-mono">{rec.rate}%</span>
                       </TableCell>
                       <TableCell align="right" className="text-xs font-bold text-mg-success font-mono">+¥{Number(rec.amount).toLocaleString('zh-CN')}</TableCell>
                     </TableRow>

@@ -57,7 +57,7 @@ function ToggleRow({
             </Badge>
           </div>
           <p className="text-xs leading-5 text-mg-text-3">{description}</p>
-          <p className="mt-1 text-[11px] leading-4 text-mg-text-4">{meta}</p>
+          <p className="mt-1 text-xs leading-4 text-mg-text-4">{meta}</p>
         </div>
       </div>
       <div className="flex shrink-0 items-center justify-end gap-2">

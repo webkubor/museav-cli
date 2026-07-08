@@ -85,7 +85,7 @@ function RankingCard({
         ) : (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <p className="text-xs font-medium text-mg-text-3">{t('dashboard.workbench.rankings.empty')}</p>
-            {emptyHint && <p className="mt-1 text-[11px] text-mg-text-4 max-w-[240px]">{emptyHint}</p>}
+            {emptyHint && <p className="mt-1 text-xs text-mg-text-4 max-w-[240px]">{emptyHint}</p>}
           </div>
         )}
       </div>

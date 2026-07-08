@@ -56,14 +56,14 @@ export function OrderBarcode({ value, compact = false, className }: OrderBarcode
           role="img"
           aria-label={`Order number ${orderNo}`}
           className={cn(
-            'flex w-full items-center justify-center rounded-md border border-mg-border bg-white px-2 font-mono text-[10px] font-bold text-[#111827]',
+            'flex w-full items-center justify-center rounded-md border border-mg-border bg-white px-2 font-mono text-xs font-bold text-[#111827]',
             compact ? 'h-10 max-w-[190px]' : 'h-12 max-w-[240px]'
           )}
         >
           {orderNo}
         </div>
       )}
-      <span className="max-w-full select-all truncate text-center font-mono text-[8px] font-semibold tracking-widest text-mg-text-4">
+      <span className="max-w-full select-all truncate text-center font-mono text-xs font-semibold tracking-widest text-mg-text-4">
         {barcode?.value ?? orderNo}
       </span>
     </div>

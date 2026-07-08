@@ -178,7 +178,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                     ].join(' ')}
                   >
                     <div className="text-xs font-bold text-mg-text-1">{KEY_TYPE_LABEL[c.type]}</div>
-                    <div className="mt-1 text-[11px] leading-relaxed text-mg-text-3">{KEY_TYPE_DESC[c.type]}</div>
+                    <div className="mt-1 text-xs leading-relaxed text-mg-text-3">{KEY_TYPE_DESC[c.type]}</div>
                   </button>
                 )
               })}

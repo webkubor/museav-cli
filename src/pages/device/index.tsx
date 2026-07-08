@@ -264,7 +264,7 @@ export default function DevicePage() {
               width: '28px', height: '28px', borderRadius: '50%',
               backgroundColor: 'var(--mg-primary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontSize: '11px', fontWeight: 600, flexShrink: 0,
+              color: '#fff', fontSize: '12px', fontWeight: 600, flexShrink: 0,
             }}>
               {initials}
             </div>
@@ -272,12 +272,12 @@ export default function DevicePage() {
               <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mg-text-1)' }}>
                 {account?.display_name ?? '—'}
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--mg-text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: '12px', color: 'var(--mg-text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {account?.email ?? '—'}
               </div>
             </div>
             <span style={{
-              fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px',
+              fontSize: '12px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px',
               background: 'rgba(34,197,94,0.1)', color: 'rgb(22,163,74)', border: '1px solid rgba(34,197,94,0.2)',
               letterSpacing: '0.03em', flexShrink: 0,
             }}>
@@ -293,7 +293,7 @@ export default function DevicePage() {
             <div style={{
               width: '1px', height: '14px', background: 'var(--mg-border)', flexShrink: 0,
             }} />
-            <span style={{ fontSize: '11px', color: 'var(--mg-text-3)' }}>
+            <span style={{ fontSize: '12px', color: 'var(--mg-text-3)' }}>
               {t('device.flow.arrow')}
             </span>
           </div>
@@ -312,7 +312,7 @@ export default function DevicePage() {
                   {selectedTenant.name}
                 </span>
                 <span style={{
-                  fontSize: '10px', fontWeight: 600, padding: '1px 6px', borderRadius: '4px',
+                  fontSize: '12px', fontWeight: 600, padding: '1px 6px', borderRadius: '4px',
                   background: selectedTenant.type === 'enterprise' ? 'rgba(99,102,241,0.1)' : 'rgba(107,114,128,0.1)',
                   color: selectedTenant.type === 'enterprise' ? 'rgb(79,70,229)' : 'rgb(107,114,128)',
                   border: `1px solid ${selectedTenant.type === 'enterprise' ? 'rgba(99,102,241,0.2)' : 'rgba(107,114,128,0.2)'}`,
@@ -333,7 +333,7 @@ export default function DevicePage() {
         {/* ② 企业选择器 */}
         {tenants.length > 1 && (
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--mg-text-3)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mg-text-3)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               {t('device.tenant.label')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -373,14 +373,14 @@ export default function DevicePage() {
                         </span>
                         {tenant.is_default && (
                           <span style={{
-                            fontSize: '9px', fontWeight: 700, padding: '1px 5px', borderRadius: '3px',
+                            fontSize: '12px', fontWeight: 700, padding: '1px 5px', borderRadius: '3px',
                             background: 'var(--mg-primary)', color: '#fff', lineHeight: '14px',
                           }}>
                             {t('header.default')}
                           </span>
                         )}
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--mg-text-3)', marginTop: '1px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--mg-text-3)', marginTop: '1px' }}>
                         {tenant.slug} · {roleLabel ? (isZh ? roleLabel.zh : roleLabel.en) : tenant.role}
                       </div>
                     </div>
@@ -412,7 +412,7 @@ export default function DevicePage() {
           </Button>
         </div>
 
-        <span style={{ fontSize: '11px', color: 'var(--mg-text-3)', textAlign: 'center', display: 'block' }}>
+        <span style={{ fontSize: '12px', color: 'var(--mg-text-3)', textAlign: 'center', display: 'block' }}>
           {t('device.footer')}
         </span>
       </div>

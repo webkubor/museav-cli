@@ -76,7 +76,7 @@ export function PasswordStrength({ password }: Props) {
       </div>
       
       {/* 强度文字与盾牌图标 */}
-      <div className={cn("flex items-center gap-1 text-[11px] font-bold mt-0.5 transition-all duration-300", config.colorClass)}>
+      <div className={cn("flex items-center gap-1 text-xs font-bold mt-0.5 transition-all duration-300", config.colorClass)}>
         {config.icon}
         <span>{config.label}</span>
       </div>

@@ -55,7 +55,7 @@ function DestinationCard({
         </div>
         <StatusBadge status={forward.status ?? ''} statusMap={statusMap} fallback={forward.status || 'Unknown'} />
       </div>
-      <div className="mt-4 grid gap-2 text-[11px] text-mg-text-3 sm:grid-cols-3">
+      <div className="mt-4 grid gap-2 text-xs text-mg-text-3 sm:grid-cols-3">
         <span>{t('observability.destinations.sampleRate', { rate: samplingRate })}</span>
         <span>
           {forward.privacy_mode_enabled
@@ -73,7 +73,7 @@ function DestinationCard({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-[11px]"
+            className="h-7 px-2 text-xs"
             icon={<LuPencil size={12} />}
             onClick={() => onEdit(forward)}
           >
@@ -82,7 +82,7 @@ function DestinationCard({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-[11px] text-mg-danger hover:bg-mg-danger/5"
+            className="h-7 px-2 text-xs text-mg-danger hover:bg-mg-danger/5"
             icon={<LuTrash2 size={12} />}
             disabled={deleting}
             onClick={() => onDelete(forward.forward_id)}
@@ -286,7 +286,7 @@ export function DestinationsPanel({
         {/* 可用平台：扁平分区（去掉内层边框盒，避免面板内再套卡）。 */}
         <div className="border-t border-mg-border/60 pt-4">
           <div className="mb-2 flex items-center justify-between px-1">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-mg-text-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-mg-text-3">
               {t('observability.destinations.availablePlatforms')}
             </p>
             <Badge variant="outline" size="xs">{platforms.length}</Badge>

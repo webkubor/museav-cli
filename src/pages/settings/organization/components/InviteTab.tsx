@@ -80,7 +80,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
     if (canInvite && inviteLinkQuery.data) resetLink.mutate({ role, silent: true })
   }
 
-  const fieldLabel = 'text-[11px] text-mg-text-3 font-semibold whitespace-nowrap'
+  const fieldLabel = 'text-xs text-mg-text-3 font-semibold whitespace-nowrap'
 
   return (
     <>
@@ -91,14 +91,14 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
           <div className="flex gap-3 flex-wrap items-center">
             <div className="flex items-center gap-2">
               <span className={fieldLabel}>{t('enterprise.invite.defaultRole')}</span>
-              <Select value={inviteRole} onChange={handleRoleChange} className="h-8 w-28 text-[11px] rounded-lg">
+              <Select value={inviteRole} onChange={handleRoleChange} className="h-8 w-28 text-xs rounded-lg">
                 <Select.Option value="tenant_member">Member</Select.Option>
                 <Select.Option value="tenant_admin">Admin</Select.Option>
               </Select>
             </div>
             <div className="flex items-center gap-2">
               <span className={fieldLabel}>{t('enterprise.invite.expiry')}</span>
-              <Select value={String(expiresInHours)} onChange={(v) => setExpiresInHours(Number(v))} className="h-8 w-28 text-[11px] rounded-lg">
+              <Select value={String(expiresInHours)} onChange={(v) => setExpiresInHours(Number(v))} className="h-8 w-28 text-xs rounded-lg">
                 <Select.Option value="24">{t('enterprise.invite.expiry24')}</Select.Option>
                 <Select.Option value="72">{t('enterprise.invite.expiry72')}</Select.Option>
                 <Select.Option value="168">{t('enterprise.invite.expiry168')}</Select.Option>
@@ -113,8 +113,8 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
           <div className="p-4 border-b border-mg-border/50 bg-mg-fill-0/20 flex items-center justify-between">
             <div className="space-y-0.5">
               <div className="text-xs font-bold text-mg-text-1">{t('enterprise.invite.linkTitle')}</div>
-              <span className="text-[10px] text-mg-text-3">{t('enterprise.invite.linkHint')}</span>
-              <span className="text-[10px] text-mg-warning flex items-center gap-1 mt-0.5">
+              <span className="text-xs text-mg-text-3">{t('enterprise.invite.linkHint')}</span>
+              <span className="text-xs text-mg-warning flex items-center gap-1 mt-0.5">
                 <LuTriangleAlert size={11} className="shrink-0" />
                 {t('enterprise.invite.oneTimeNote', { role: inviteRole === 'tenant_admin' ? 'Admin' : 'Member' })}
               </span>
@@ -122,7 +122,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
             {canInvite && (
               <Button
                 variant="outline"
-                className="h-7 text-[10px] font-bold px-3 rounded-full border-mg-border/60 hover:bg-mg-fill-0"
+                className="h-7 text-xs font-bold px-3 rounded-full border-mg-border/60 hover:bg-mg-fill-0"
                 onClick={() => setShowResetConfirm(true)}
               >
                 {t('enterprise.invite.resetLink')}
@@ -131,7 +131,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
           </div>
           <div className="p-4">
             <div className="flex items-center gap-2">
-              <div className="flex-1 p-2.5 rounded-lg border border-mg-border/40 bg-mg-fill-0/30 font-mono text-[11px] text-mg-text-2 overflow-hidden text-ellipsis whitespace-nowrap select-all">
+              <div className="flex-1 p-2.5 rounded-lg border border-mg-border/40 bg-mg-fill-0/30 font-mono text-xs text-mg-text-2 overflow-hidden text-ellipsis whitespace-nowrap select-all">
                 {inviteLinkUrl ?? <span className="text-mg-text-4 italic">…</span>}
               </div>
               <CopyButton
@@ -152,11 +152,11 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
         <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg overflow-hidden shadow-sm">
           <div className="p-4 border-b border-mg-border/50 bg-mg-fill-0/20">
             <div className="text-xs font-bold text-mg-text-1">{t('enterprise.invite.emailTitle')}</div>
-            <span className="text-[10px] text-mg-text-3">{t('enterprise.invite.emailHint')}</span>
+            <span className="text-xs text-mg-text-3">{t('enterprise.invite.emailHint')}</span>
           </div>
           <div className="p-4 flex gap-2 items-end flex-wrap md:flex-nowrap">
             <div className="flex-1 min-w-[200px] space-y-1">
-              <label className="text-[10px] font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.invite.emailTitle')}</label>
+              <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.invite.emailTitle')}</label>
               <Input
                 type="email"
                 placeholder={t('enterprise.invite.emailPlaceholder')}

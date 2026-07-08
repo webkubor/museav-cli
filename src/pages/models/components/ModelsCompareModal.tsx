@@ -142,7 +142,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
               <h2 className="text-[14.5px] font-bold text-mg-text-1 m-0 leading-tight">
                 {t('modelsCompare.title') || '模型性能对比'}
               </h2>
-              <p className="text-[11px] text-mg-text-3 m-0 mt-0.5">
+              <p className="text-xs text-mg-text-3 m-0 mt-0.5">
                 最多可选 3 个模型进行对比，当前已选择 <strong className="text-brand-base">{selectedIds.length}</strong> / 3 个
               </p>
             </div>
@@ -194,7 +194,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                       <div className="text-[12px] font-bold text-mg-text-1 truncate leading-tight">
                         {m.display_name}
                       </div>
-                      <div className="text-[10px] text-mg-text-3 truncate font-mono mt-0.5">
+                      <div className="text-xs text-mg-text-3 truncate font-mono mt-0.5">
                         {m.vendor || 'ModelGo'} · {m.model_id}
                       </div>
                     </div>
@@ -224,11 +224,11 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-[13px] text-mg-text-1 leading-none">{m.display_name}</span>
-                            <span className="text-[9.5px] text-brand-base font-semibold px-2 py-0.5 rounded-full bg-brand-selected-bg border border-brand-mid/10">
+                            <span className="text-xs text-brand-base font-semibold px-2 py-0.5 rounded-full bg-brand-selected-bg border border-brand-mid/10">
                               {m.vendor || 'ModelGo'}
                             </span>
                           </div>
-                          <div className="text-[10px] text-mg-text-3 font-mono mt-1.5">
+                          <div className="text-xs text-mg-text-3 font-mono mt-1.5">
                             ID: <span className="select-all text-mg-text-2 font-medium">{m.model_id}</span>
                           </div>
                         </div>
@@ -248,7 +248,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5 mt-3.5 pt-3.5 border-t border-mg-border">
                       {ROWS.map((row, idx) => (
                         <div key={idx} className="flex flex-col gap-1 min-w-0">
-                          <span className="text-[10px] font-bold text-mg-text-3 tracking-wide">
+                          <span className="text-xs font-bold text-mg-text-3 tracking-wide">
                             {row.label}
                           </span>
                           <span className="text-[12px] font-semibold text-mg-text-1 truncate">

@@ -83,7 +83,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
       <div className="flex flex-col gap-5 max-w-[480px]">
         {profile.phone && (
           <div className="space-y-2">
-            <span className="block text-[11px] font-semibold uppercase tracking-wider text-mg-text-2">
+            <span className="block text-xs font-semibold uppercase tracking-wider text-mg-text-2">
               手机号码
             </span>
             <Input
@@ -91,14 +91,14 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
               readOnly
               suffix={<LuLock size={14} />}
             />
-            <span className="block text-[11px] leading-relaxed text-mg-text-3">
+            <span className="block text-xs leading-relaxed text-mg-text-3">
               绑定的安全手机号，暂不支持自主修改。
             </span>
           </div>
         )}
 
         <div className="space-y-2">
-          <span className="block text-[11px] font-semibold uppercase tracking-wider text-mg-text-2">
+          <span className="block text-xs font-semibold uppercase tracking-wider text-mg-text-2">
             {t('account.info.emailLabel')}
           </span>
           <Input
@@ -107,13 +107,13 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             readOnly
             suffix={profile.email ? <LuLock size={14} /> : undefined}
           />
-          <span className="block text-[11px] leading-relaxed text-mg-text-3">
+          <span className="block text-xs leading-relaxed text-mg-text-3">
             {profile.email ? t('account.info.emailHint') : '暂未绑定电子邮箱。'}
           </span>
         </div>
 
         <div className="space-y-2">
-          <span className="block text-[11px] font-semibold uppercase tracking-wider text-mg-text-2">
+          <span className="block text-xs font-semibold uppercase tracking-wider text-mg-text-2">
             {t('account.info.nameLabel')}
           </span>
           <div className="flex gap-2.5">

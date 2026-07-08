@@ -158,7 +158,7 @@ function ApiKeyRankBadge({ rank }: { rank: number }) {
   return (
     <span
       className={cn(
-        'inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold',
+        'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold',
         rank <= 3 ? 'bg-brand-selected-bg text-brand-base' : 'bg-mg-fill-1 text-mg-text-3',
       )}
     >
@@ -419,20 +419,20 @@ export function UsageStatCard({ icon, label, value, suffix, loading, breakdownTi
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-mg-fill-1 text-mg-text-2">{icon}</span>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-mg-text-2">{label}</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-mg-text-2">{label}</span>
         </div>
         {loading ? (
           <div className="h-8 w-28 animate-pulse rounded bg-mg-fill-1" />
         ) : (
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl font-bold tracking-tight text-mg-text-1">{value}</span>
-            {suffix && <span className="text-[11px] font-medium text-mg-text-3">{suffix}</span>}
+            {suffix && <span className="text-xs font-medium text-mg-text-3">{suffix}</span>}
           </div>
         )}
       </div>
 
       <div className="space-y-2.5 border-t border-mg-border/50 pt-4">
-        <div className="text-[11px] font-bold uppercase tracking-wider text-mg-text-2">{breakdownTitle}</div>
+        <div className="text-xs font-bold uppercase tracking-wider text-mg-text-2">{breakdownTitle}</div>
         {rows.map((r) => (
           <div key={r.label} className="space-y-1">
             <div className="flex items-center justify-between text-[12px]">
@@ -444,7 +444,7 @@ export function UsageStatCard({ icon, label, value, suffix, loading, breakdownTi
             )}
           </div>
         ))}
-        {pendingHint && <div className="pt-0.5 text-[11px] text-mg-text-3">{pendingHint}</div>}
+        {pendingHint && <div className="pt-0.5 text-xs text-mg-text-3">{pendingHint}</div>}
       </div>
     </Card>
   )

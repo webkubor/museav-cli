@@ -73,7 +73,7 @@ export default function BillingPage() {
             </div>
             <div>
               <div className="text-sm font-bold text-mg-text-1">{t('billing.promo.title')}</div>
-              <div className="text-[11px] text-mg-text-3 mt-0.5">{t('billing.promo.subtitle', { defaultValue: '线下收款 / 促销码自助到账' })}</div>
+              <div className="text-xs text-mg-text-3 mt-0.5">{t('billing.promo.subtitle', { defaultValue: '线下收款 / 促销码自助到账' })}</div>
             </div>
           </div>
           <input

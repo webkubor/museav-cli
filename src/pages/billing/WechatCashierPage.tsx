@@ -168,7 +168,7 @@ export default function WechatCashierPage() {
               </div>
 
               {orderNo && (
-                <div className="mt-4 text-center text-[11px] text-[#a9aeb8]">
+                <div className="mt-4 text-center text-xs text-[#a9aeb8]">
                   {t('billing.wechatCashier.orderNo')}
                   <span className="ml-1 font-mono">{orderNo}</span>
                 </div>
@@ -200,7 +200,7 @@ export default function WechatCashierPage() {
         </div>
 
         {/* Trust footer */}
-        <div className="mt-6 flex items-center justify-center gap-1.5 text-[11px] text-[#a9aeb8]">
+        <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-[#a9aeb8]">
           <LuShieldCheck size={13} />
           {t('billing.wechatCashier.secure')}
         </div>

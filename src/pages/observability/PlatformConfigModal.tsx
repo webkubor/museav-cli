@@ -135,7 +135,7 @@ export function PlatformConfigModal({
 
         <div className="space-y-4">
           <div>
-            <label className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-mg-text-2">
+            <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-mg-text-2">
               {t('observability.form.nameLabel')}
             </label>
             <Input
@@ -145,16 +145,16 @@ export function PlatformConfigModal({
             />
           </div>
           <div>
-            <label className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-mg-text-2">URL</label>
+            <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-mg-text-2">URL</label>
             <Input
               value={url}
               onChange={(event) => setUrl(event.target.value)}
               placeholder="https://api.example.com/v1/traces"
             />
-            <p className="mt-1 text-[11px] leading-relaxed text-mg-text-3">{t('observability.form.urlHint')}</p>
+            <p className="mt-1 text-xs leading-relaxed text-mg-text-3">{t('observability.form.urlHint')}</p>
           </div>
           <div>
-            <label className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-mg-text-2">
+            <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-mg-text-2">
               {t('observability.form.methodLabel')}
             </label>
             <Select value={method} onChange={setMethod} className="w-full">
@@ -165,7 +165,7 @@ export function PlatformConfigModal({
             </Select>
           </div>
           <div>
-            <label className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-mg-text-2">
+            <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-mg-text-2">
               {t('observability.form.headersLabel')}
             </label>
             <Textarea value={headers} onChange={(event) => setHeaders(event.target.value)} rows={3} />
@@ -180,7 +180,7 @@ export function PlatformConfigModal({
             <Switch checked={privacyMode} onChange={setPrivacyMode} />
           </div>
           <div>
-            <label className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-mg-text-2">
+            <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-mg-text-2">
               {t('observability.form.samplingRate')}
             </label>
             <Input
@@ -194,7 +194,7 @@ export function PlatformConfigModal({
             <p className="mt-1.5 text-xs text-mg-text-3">{t('observability.form.samplingHint')}</p>
           </div>
           <div>
-            <label className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-mg-text-2">
+            <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-mg-text-2">
               {t('observability.form.apiKeyFilter')}
             </label>
             <TagInput

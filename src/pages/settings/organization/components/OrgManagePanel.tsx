@@ -17,7 +17,7 @@ type SubTab = 'members' | 'info' | 'audit' | 'invite'
 function SummaryStat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5 min-w-0">
-      <span className="text-[10px] font-bold text-mg-text-3 uppercase tracking-wider truncate">{label}</span>
+      <span className="text-xs font-bold text-mg-text-3 uppercase tracking-wider truncate">{label}</span>
       <span className="text-sm font-bold text-mg-text-1 truncate">{value}</span>
     </div>
   )

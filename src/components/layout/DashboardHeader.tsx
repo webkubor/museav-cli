@@ -32,6 +32,7 @@ import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 import type { TenantBrief, TenantItem, SessionResult } from '@/types'
 import type { TenantListResponse } from '@/interfaces'
 import { cn } from '@/lib/utils'
+import { trackEvent } from '@/lib/track'
 import { toast } from 'sonner'
 import { ConnectModal } from '@/pages/api-keys/ConnectModal'
 import {
@@ -362,6 +363,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
       toast.error(t('header.orgNameRequired'))
       return
     }
+    trackEvent('org:create') // 组织创建无对应 permission_id（自助创建），沿用冒号约定 key
     createOrgMutation.mutate()
   }
 
@@ -672,7 +674,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
             <Button variant="ghost" onClick={() => setOrgModalVisible(false)}>
               {t('apiKeys.createModal.cancel')}
             </Button>
-            <Button variant="brand" data-umami-event="create_organization" loading={createOrgMutation.isPending} onClick={handleCreateOrgSubmit}>
+            <Button variant="brand" loading={createOrgMutation.isPending} onClick={handleCreateOrgSubmit}>
               {t('apiKeys.createModal.confirm')}
             </Button>
           </DialogFooter>

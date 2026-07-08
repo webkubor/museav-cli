@@ -30,6 +30,7 @@ export const PERMS = {
   REFERRAL_REWARD_TRANSFER: 'referral.reward:transfer',
   REFERRAL_REWARD_WITHDRAW: 'referral.reward:withdraw',
 
+  WORKSPACE_CREATE:         'workspace:create',
   WORKSPACE_RENAME:         'workspace:rename',
   WORKSPACE_DELETE:         'workspace:delete',
   WORKSPACE_MEMBERS_MANAGE: 'workspace.members:manage',

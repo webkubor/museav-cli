@@ -45,6 +45,8 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { TagInput, type TagOption } from '@/components/ui/TagInput'
 import { cn, formatMoney as fmtMoney } from '@/lib/utils'
+import { trackAction } from '@/lib/track'
+import { PERMS } from '@/config/permissions'
 import { useNavigate } from 'react-router-dom'
 import type { WorkspaceDetail, Money } from '@/types'
 
@@ -226,10 +228,9 @@ export default function WorkspacesPage() {
         actions={
           <Button
             variant="brand"
-            data-umami-event="create_workspace"
             disabled={atWorkspaceLimit}
             title={atWorkspaceLimit && tenant ? t('workspaces.toast.limitReached', { max: tenant.max_workspaces }) : undefined}
-            onClick={() => setModalVisible(true)}
+            onClick={() => { trackAction(PERMS.WORKSPACE_CREATE); setModalVisible(true) }}
             className="!rounded-full px-6 h-[38px] font-bold"
           >
             <LuPlus className="mr-1 shrink-0" /> {t('workspaces.createBtn')}

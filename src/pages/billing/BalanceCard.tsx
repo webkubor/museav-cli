@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { LuRefreshCw, LuReceipt, LuPlus } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
+import { trackAction } from '@/lib/track'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
@@ -100,8 +101,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             {canRecharge && (
               <Button
                 variant="brand"
-                data-umami-event="recharge"
-                onClick={() => setTopUpVisible(true)}
+                onClick={() => { trackAction(PERMS.BILLING_RECHARGE_CREATE); setTopUpVisible(true) }}
                 className="rounded-md h-9 px-5 gap-1.5"
               >
                 <LuPlus size={14} />

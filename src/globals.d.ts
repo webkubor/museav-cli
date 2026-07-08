@@ -22,8 +22,4 @@ interface Window {
     /** 按页面/菜单 key 或 path 导航 */
     go: (target: string) => { ok: boolean; path?: string; error?: string }
   }
-  /** Umami 分析脚本（index.html 注入）。自定义事件走 umami.track；脚本未加载时为 undefined。 */
-  umami?: {
-    track: (event: string, data?: Record<string, unknown>) => void
-  }
 }

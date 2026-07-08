@@ -14,12 +14,26 @@ import App from './App.tsx'
 import { installAgentErrorReporter } from 'vite-plugin-agent-eyes/client'
 import { initDeviceFingerprint } from './lib/device-fingerprint'
 import { installDevAuth } from './lib/dev-auth'
+import { init as initTrack, TrackApp, TrackRegion } from '@model-go/track'
+import { getMarket } from './lib/market'
+import { useAuthStore } from './store/auth'
 
 // 前端运行时错误上报（仅 DEV）：未捕获异常 / rejection / 全控制台 + DOM 快照，
 // 内置 5s 去重 + 去 HMR 戳防刷爆。统一由 vite-plugin-agent-eyes 提供，替代原 dev-error-reporter。
 installAgentErrorReporter()
 initDeviceFingerprint()
 if (import.meta.env.DEV) installDevAuth()
+
+// 埋点 SDK 初始化（@model-go/track，替代 Umami）：app=console_web，区域按域名判定；
+// baseURL 不传 = 相对路径走当前域名 /api 代理；上报时动态带当前租户上下文。
+initTrack({
+  app: TrackApp.ConsoleWeb,
+  region: getMarket() === 'global' ? TrackRegion.Global : TrackRegion.CN,
+  getAuthHeaders: () => {
+    const tenantId = useAuthStore.getState().activeTenantId
+    return tenantId ? { 'X-Tenant-Id': tenantId } : undefined
+  },
+})
 
 const DEV_SW_RESET_KEY = 'modelgo:dev-sw-reset'
 

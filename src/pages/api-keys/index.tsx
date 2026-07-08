@@ -15,6 +15,7 @@ import { CopyButton } from '@/components/ui/CopyButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { ForbiddenState } from '@/components/ui/ForbiddenState'
 import { isApiErrorCode } from '@/lib/request-error-message'
+import { trackAction } from '@/lib/track'
 import { LuSearch, LuPlus } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -280,7 +281,7 @@ export default function ApiKeysPage() {
         </Select>
         <div className="ml-auto">
           {canCreate && (
-            <Button variant="brand" data-umami-event="create_api_key" onClick={() => { setCreateNonce((n) => n + 1); setCreateVisible(true) }} className="rounded-full px-6 h-10 shadow-lg shadow-brand-glow/20">
+            <Button variant="brand" onClick={() => { trackAction(PERMS.API_KEYS_CREATE); setCreateNonce((n) => n + 1); setCreateVisible(true) }} className="rounded-full px-6 h-10 shadow-lg shadow-brand-glow/20">
               <LuPlus className="w-4 h-4 mr-1.5" />
               {t('apiKeys.create')}
             </Button>

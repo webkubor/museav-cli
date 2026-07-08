@@ -18,11 +18,19 @@ import { listGuardrails } from '@/services/guardrails'
 import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { useAuthStore } from '@/store/auth'
-import { SCOPE_OPTIONS, EXPIRATION_PRESETS, resolveExpiryISO, type ScopeType } from './constants'
+import { EXPIRATION_PRESETS, resolveExpiryISO, type ScopeType } from './constants'
 import { CreateGuardrailDialog } from './CreateGuardrailDialog'
+import { KEY_TYPE_LABEL, KEY_TYPE_DESC } from './derive'
 import { PERIOD_LABEL } from '@/constants/status'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
-import type { SpendingPeriodUnit } from '@/types'
+import type { ApiKeyType, SpendingPeriodUnit } from '@/types'
+
+/** PRD「Key 类型」→ 后端 scope 映射（私有→personal / 成员→member / 服务→workspace） */
+const TYPE_CARDS: { type: ApiKeyType; scope: ScopeType }[] = [
+  { type: 'personal', scope: 'personal' },
+  { type: 'member', scope: 'member' },
+  { type: 'service', scope: 'workspace' },
+]
 
 type Props = {
   open: boolean
@@ -151,27 +159,30 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
         }
       >
         <div className="flex flex-col gap-7 py-3">
-          {/* 作用域 Tab — 个人租户保留 个人/项目，仅去掉「成员」（企业专属） */}
-          <div className="flex gap-1 p-1 rounded-md bg-mg-fill-0 border border-mg-border">
-            {(isPersonalTenant ? SCOPE_OPTIONS.filter((o) => o.value !== 'member') : SCOPE_OPTIONS).map((opt) => {
-              const active = scope === opt.value
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => { setScope(opt.value); setMemberAccountId('') }}
-                  className={[
-                    'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all duration-150',
-                    active
-                      ? 'bg-mg-bg-0 text-brand-base shadow-sm border border-mg-border'
-                      : 'text-mg-text-3 hover:text-mg-text-2',
-                  ].join(' ')}
-                >
-                  <span className="shrink-0">{opt.icon}</span>
-                  {opt.label}
-                </button>
-              )
-            })}
+          {/* Key 类型（PRD §10.1）——卡片栅格，映射到后端 scope；个人租户无「成员 Key」 */}
+          <div>
+            <label className="block text-xs font-bold text-mg-text-2 mb-2">Key 类型</label>
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+              {TYPE_CARDS.filter((c) => !(isPersonalTenant && c.type === 'member')).map((c) => {
+                const active = scope === c.scope
+                return (
+                  <button
+                    key={c.type}
+                    type="button"
+                    onClick={() => { setScope(c.scope); setMemberAccountId('') }}
+                    className={[
+                      'rounded-lg border p-3 text-left transition-all',
+                      active
+                        ? 'border-brand-base bg-brand-base/5 ring-1 ring-brand-base/30'
+                        : 'border-mg-border bg-mg-fill-0/40 hover:border-brand-base/35',
+                    ].join(' ')}
+                  >
+                    <div className="text-xs font-bold text-mg-text-1">{KEY_TYPE_LABEL[c.type]}</div>
+                    <div className="mt-1 text-[11px] leading-relaxed text-mg-text-3">{KEY_TYPE_DESC[c.type]}</div>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* 名称 */}
@@ -186,10 +197,10 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
             />
           </div>
 
-          {/* 成员（仅 scope=member） */}
+          {/* 负责人（仅 成员 Key）：管理员代建时指定负责人；其余类型维护人为自己 */}
           {effectiveScope === 'member' && (
             <div>
-              <label className="block text-xs font-bold text-mg-text-2 mb-2">目标成员</label>
+              <label className="block text-xs font-bold text-mg-text-2 mb-2">负责人</label>
               <Select value={memberAccountId} onChange={setMemberAccountId} placeholder="请选择工作区成员" className="w-full">
                 {(membersQuery.data?.items ?? []).map((m) => (
                   <SelectItem key={m.account.account_id} value={m.account.account_id}>

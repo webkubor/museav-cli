@@ -22,8 +22,10 @@ import {
   revokeApiKey,
   disableApiKey,
   enableApiKey,
+  changeApiKeyOwner,
   getApiKeySummary,
 } from '@/services/api-keys'
+import { listWorkspaceMembers } from '@/services/workspaces'
 import { useCopy } from '@/hooks/use-copy'
 import { getRequestErrorMessage } from '@/lib/request-error-message'
 import { useAuthStore } from '@/store/auth'
@@ -62,6 +64,8 @@ export default function ApiKeysPage() {
   const [disableTarget, setDisableTarget] = useState<ApiKeyItem | null>(null)
   const [editGuardrailKey, setEditGuardrailKey] = useState<ApiKeyItem | null>(null)
   const [detailKey, setDetailKey] = useState<ApiKeyItem | null>(null)
+  const [changeOwnerTarget, setChangeOwnerTarget] = useState<ApiKeyItem | null>(null)
+  const [newOwnerId, setNewOwnerId] = useState('')
 
   const activeWorkspaceId = useAuthStore((state) => state.activeWorkspaceId) || '01HV3KWS000000000000001'
   const currentAccountId = useAuthStore((state) => state.account?.account_id)
@@ -137,6 +141,24 @@ export default function ApiKeysPage() {
     if (item.status === 'disabled') enableMutation.mutate(item.api_key_id)
     else setDisableTarget(item)
   }, [enableMutation])
+
+  // 变更负责人（change-owner 端点已就绪）
+  const membersQuery = useQuery({
+    queryKey: ['workspace-members', activeWorkspaceId],
+    queryFn: () => listWorkspaceMembers(activeWorkspaceId, { page_size: 100 }),
+    enabled: !!activeWorkspaceId && !!changeOwnerTarget,
+    staleTime: 60_000,
+  })
+  const changeOwnerMutation = useMutation({
+    mutationFn: () => changeApiKeyOwner(activeWorkspaceId, changeOwnerTarget!.api_key_id, { new_owner_account_id: newOwnerId }),
+    onSuccess: () => {
+      appToast.success('负责人已变更')
+      setChangeOwnerTarget(null)
+      setNewOwnerId('')
+      queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
+    },
+    onError: (err: unknown) => appToast.requestError(err, '变更负责人失败'),
+  })
 
   const { copy } = useCopy()
   const [copyingKeyId, setCopyingKeyId] = useState<string | null>(null)
@@ -281,6 +303,7 @@ export default function ApiKeysPage() {
         canManage={canManage}
         onToggleStatus={handleToggleStatus}
         onRotate={() => { /* 轮转接口 #384 未交付，按钮已 gate 隐藏；落地后接入 */ }}
+        onChangeOwner={(item) => { setNewOwnerId(''); setChangeOwnerTarget(item) }}
         onRevoke={setRevokeTarget}
       />
 
@@ -334,6 +357,39 @@ export default function ApiKeysPage() {
           </>
         }
       />
+
+      {/* 变更负责人 */}
+      <Modal
+        open={!!changeOwnerTarget}
+        onClose={() => setChangeOwnerTarget(null)}
+        title="变更负责人"
+        description={changeOwnerTarget ? `为「${changeOwnerTarget.name}」指定新的负责人` : undefined}
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setChangeOwnerTarget(null)}>{t('apiKeys.createModal.cancel')}</Button>
+            <Button
+              variant="brand"
+              loading={changeOwnerMutation.isPending}
+              disabled={!newOwnerId}
+              onClick={() => changeOwnerMutation.mutate()}
+            >
+              确认变更
+            </Button>
+          </>
+        }
+      >
+        <div className="py-2">
+          <label className="block text-xs font-bold text-mg-text-2 mb-2">新负责人</label>
+          <Select value={newOwnerId} onChange={setNewOwnerId} placeholder="请选择工作区成员" className="w-full">
+            {(membersQuery.data?.items ?? []).map((m) => (
+              <SelectItem key={m.account.account_id} value={m.account.account_id}>
+                {m.account.display_name || m.account.email}
+              </SelectItem>
+            ))}
+          </Select>
+        </div>
+      </Modal>
 
       <EditKeyModal
         open={!!editGuardrailKey}

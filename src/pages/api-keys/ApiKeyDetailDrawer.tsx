@@ -66,10 +66,11 @@ interface Props {
   canManage: boolean
   onToggleStatus: (item: ApiKeyItem) => void
   onRotate: (item: ApiKeyItem) => void
+  onChangeOwner: (item: ApiKeyItem) => void
   onRevoke: (target: { id: string; name: string }) => void
 }
 
-export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage, onToggleStatus, onRotate, onRevoke }: Props) {
+export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage, onToggleStatus, onRotate, onChangeOwner, onRevoke }: Props) {
   const navigate = useNavigate()
   const keyId = item?.api_key_id
 
@@ -114,6 +115,9 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
               <Button variant="outline" size="sm" onClick={() => onToggleStatus(view)}>
                 {isDisabled ? '启用' : '停用'}
               </Button>
+            )}
+            {view.status !== 'revoked' && canManage && (
+              <Button variant="outline" size="sm" onClick={() => onChangeOwner(view)}>变更负责人</Button>
             )}
             {canDelete && (
               <Button

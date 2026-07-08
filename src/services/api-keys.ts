@@ -85,6 +85,45 @@ export function getApiKeyAudit(workspaceId: string, keyId: string) {
   return get<ApiKeyAuditLogsResponse>(`workspaces/${workspaceId}/api-keys/${keyId}/audit`)
 }
 
+/** 生效护栏预算（单条闸门） */
+export interface EffectiveBudget {
+  aggregation_scope: string
+  currency: string
+  period_length: number
+  period_unit: string
+  spend_limit_amount: string
+}
+
+/** 单层护栏（组织/空间默认/Key 绑定等来源之一） */
+export interface EffectiveGuardrailLayer {
+  layer: string
+  source: string
+  guardrail_id: string
+  guardrail_name: string
+  is_default: boolean
+  budgets: EffectiveBudget[]
+  ip_whitelist: string[]
+  model_blacklist: string[]
+}
+
+/** API Key 三层生效护栏预览（qa#379，GET .../{keyId}/effective-guardrails） */
+export interface EffectiveGuardrails {
+  key_id: string
+  enforcement_note: string
+  effective: {
+    filter_source: string
+    budgets: EffectiveBudget[]
+    ip_whitelist: string[]
+    model_blacklist: string[]
+  }
+  layers: EffectiveGuardrailLayer[]
+}
+
+/** 取 Key 的三层生效护栏（qa#379）：由 resolver 合并组织/空间默认/Key 绑定后的最终生效规则 */
+export function getEffectiveGuardrails(workspaceId: string, keyId: string) {
+  return get<EffectiveGuardrails>(`workspaces/${workspaceId}/api-keys/${keyId}/effective-guardrails`)
+}
+
 /** 轮转（#384）：新 Token 只回一次，旧 Token 进入过渡期 */
 export function rotateApiKey(workspaceId: string, keyId: string) {
   return post<ApiKeyRotateResponse>(`workspaces/${workspaceId}/api-keys/${keyId}/rotate`, {})

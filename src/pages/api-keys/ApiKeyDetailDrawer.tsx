@@ -13,7 +13,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { LuShieldCheck, LuArrowRight } from 'react-icons/lu'
 import { formatDateTime } from '@/lib/format-date'
 import { formatMoney } from '@/lib/utils'
-import { getApiKeyAudit, getApiKeyDetail } from '@/services/api-keys'
+import { getApiKeyAudit, getApiKeyDetail, getEffectiveGuardrails } from '@/services/api-keys'
 import type { ApiKeyItem } from '@/types'
 import {
   KEY_TYPE_LABEL,
@@ -58,6 +58,20 @@ function Field({ label, value }: { label: string; value: ReactNode }) {
   )
 }
 
+const SCOPE_LABEL: Record<string, string> = {
+  workspace: '工作空间',
+  member: '个人',
+  api_key: 'API Key',
+}
+const PERIOD_UNIT_LABEL: Record<string, string> = {
+  hour: '小时',
+  day: '天',
+  week: '周',
+  month: '月',
+}
+const scopeLabel = (s: string) => SCOPE_LABEL[s] ?? s
+const periodLabel = (len: number, unit: string) => `${len}${PERIOD_UNIT_LABEL[unit] ?? unit}`
+
 interface Props {
   open: boolean
   onClose: () => void
@@ -85,6 +99,13 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
   const { data: audit } = useQuery({
     queryKey: ['api-key-audit', workspaceId, keyId],
     queryFn: () => getApiKeyAudit(workspaceId, keyId!).catch(() => undefined),
+    enabled: open && !!keyId,
+    retry: false,
+  })
+  // 三层生效护栏预览（qa#379）：resolver 合并组织/空间默认/Key 绑定后的最终规则；未交付时静默降级
+  const { data: effective } = useQuery({
+    queryKey: ['api-key-effective-guardrails', workspaceId, keyId],
+    queryFn: () => getEffectiveGuardrails(workspaceId, keyId!).catch(() => undefined),
     enabled: open && !!keyId,
     retry: false,
   })
@@ -172,6 +193,45 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
             </div>
           ) : (
             <p className="text-xs text-mg-text-3">未绑定 Key 护栏</p>
+          )}
+
+          {/* 三层生效护栏预览（qa#379）：resolver 合并后的最终生效规则 */}
+          {effective && (
+            <div className="mt-2 rounded-md border border-mg-border bg-mg-fill-0/40 p-3 space-y-2">
+              <div className="text-xs font-bold text-mg-text-2">生效预览</div>
+              {effective.effective.budgets.length > 0 && (
+                <div className="space-y-1">
+                  {effective.effective.budgets.map((b, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs">
+                      <span className="text-mg-text-3">{scopeLabel(b.aggregation_scope)}预算</span>
+                      <span className="font-semibold text-mg-text-1">
+                        {money({ amount: b.spend_limit_amount, currency: b.currency })} / {periodLabel(b.period_length, b.period_unit)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {effective.effective.model_blacklist.length > 0 && (
+                <div className="text-xs">
+                  <span className="text-mg-text-3">模型黑名单：</span>
+                  <span className="text-mg-text-1">{effective.effective.model_blacklist.join('、')}</span>
+                </div>
+              )}
+              {effective.effective.ip_whitelist.length > 0 && (
+                <div className="text-xs">
+                  <span className="text-mg-text-3">IP 白名单：</span>
+                  <span className="font-mono text-mg-text-1">{effective.effective.ip_whitelist.join(', ')}</span>
+                </div>
+              )}
+              {effective.effective.budgets.length === 0 &&
+                effective.effective.model_blacklist.length === 0 &&
+                effective.effective.ip_whitelist.length === 0 && (
+                  <p className="text-xs text-mg-text-3">无生效限制</p>
+                )}
+              {effective.enforcement_note && (
+                <p className="text-xs leading-relaxed text-mg-text-3">{effective.enforcement_note}</p>
+              )}
+            </div>
           )}
         </Section>
 

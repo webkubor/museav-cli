@@ -20,7 +20,6 @@ import {
   STATUS_LABEL,
   deriveKeyType,
   responsibleOf,
-  maintainerOf,
   periodSpendOf,
   cap,
 } from './derive'
@@ -85,7 +84,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
   })
   const { data: audit } = useQuery({
     queryKey: ['api-key-audit', workspaceId, keyId],
-    queryFn: () => getApiKeyAudit(workspaceId, keyId!).catch(() => []),
+    queryFn: () => getApiKeyAudit(workspaceId, keyId!).catch(() => undefined),
     enabled: open && !!keyId,
     retry: false,
   })
@@ -95,13 +94,14 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
   const view = detail ?? item
   const keyType = deriveKeyType(view)
   const responsible = responsibleOf(view)
-  const maintainer = maintainerOf(view)
+  const creatorDiffers = view.owner?.account_id && responsible.account_id && view.owner.account_id !== responsible.account_id
+  const usage = detail?.usage
   const recentCalls = detail?.recent_calls ?? []
-  const auditRows = audit ?? []
+  const auditRows = audit?.items ?? detail?.recent_audit ?? []
   const isDisabled = view.status === 'disabled'
-  const canToggle = isDisabled ? cap(view.can_enable, canManage) : cap(view.can_disable, canManage)
-  const canRotate = view.can_rotate === true // 端点未交付前严格隐藏
-  const canDelete = cap(view.can_delete, canManage) && view.status !== 'revoked'
+  const canToggle = isDisabled ? cap(view.capabilities?.can_enable, canManage) : cap(view.capabilities?.can_disable, canManage)
+  const canRotate = view.capabilities?.can_rotate === true // 端点未交付前严格隐藏
+  const canDelete = cap(view.capabilities?.can_delete, canManage) && view.status !== 'revoked'
 
   return (
     <SideSheet open={open} onClose={onClose} title={item.name} width={520}>
@@ -142,7 +142,9 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
           <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 divide-y divide-mg-border/50">
             <Field label="类型" value={KEY_TYPE_LABEL[keyType]} />
             <Field label="负责人" value={responsible.display_name || responsible.email || '—'} />
-            <Field label="维护人" value={maintainer.display_name || maintainer.email || '—'} />
+            {creatorDiffers && (
+              <Field label="创建人" value={view.owner.display_name || view.owner.email || '—'} />
+            )}
             <Field label="状态" value={<StatusBadge status={view.status} statusMap={STATUS_MAP} fallback={view.status} />} />
             <Field label="到期时间" value={view.expires_at ? formatDateTime(view.expires_at) : '永不过期'} />
           </div>
@@ -151,9 +153,9 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
         {/* 用量与限额 */}
         <Section title="用量与限额">
           <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 divide-y divide-mg-border/50">
-            <Field label="本期消费" value={money(periodSpendOf(view))} />
-            <Field label="请求数" value={view.request_count != null ? view.request_count.toLocaleString() : '—'} />
-            <Field label="Tokens" value={detail?.token_count != null ? detail.token_count.toLocaleString() : '—'} />
+            <Field label="本期消费" value={money(usage?.period_spend ?? periodSpendOf(view))} />
+            <Field label="请求数" value={usage?.request_count != null ? usage.request_count.toLocaleString() : '—'} />
+            <Field label="Tokens" value={usage?.token_count != null ? usage.token_count.toLocaleString() : '—'} />
           </div>
         </Section>
 
@@ -215,7 +217,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
                     <span className="text-[11px] text-mg-text-3">{formatDateTime(a.created_at)}</span>
                   </div>
                   <div className="mt-0.5 text-[11px] text-mg-text-3">
-                    {a.actor?.display_name || a.actor?.email}
+                    {a.actor_display || a.actor_account_id}
                   </div>
                 </div>
               ))}

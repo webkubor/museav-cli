@@ -5,7 +5,7 @@
  */
 import { del, get, patch, post } from '@/lib/request'
 import type {
-  ApiKeyAuditEntry,
+  ApiKeyAuditLogsResponse,
   ApiKeyCreated,
   ApiKeyDetail,
   ApiKeyItem,
@@ -80,9 +80,9 @@ export function getApiKeyDetail(workspaceId: string, keyId: string) {
   return get<ApiKeyDetail>(`workspaces/${workspaceId}/api-keys/${keyId}`)
 }
 
-/** 操作审计（#384）；未交付时空态 */
+/** 操作审计（GET .../{keyId}/audit）；返回 { items, next_cursor } */
 export function getApiKeyAudit(workspaceId: string, keyId: string) {
-  return get<ApiKeyAuditEntry[]>(`workspaces/${workspaceId}/api-keys/${keyId}/audit`)
+  return get<ApiKeyAuditLogsResponse>(`workspaces/${workspaceId}/api-keys/${keyId}/audit`)
 }
 
 /** 轮转（#384）：新 Token 只回一次，旧 Token 进入过渡期 */

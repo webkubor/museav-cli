@@ -50,9 +50,9 @@ export function responsibleOf(item: ApiKeyItem): ApiKeyMember {
   return item.responsible_member ?? item.owner
 }
 
-/** 维护人：maintainer_member 优先，否则回退 owner */
-export function maintainerOf(item: ApiKeyItem): ApiKeyMember {
-  return item.maintainer_member ?? item.owner
+/** 创建人：PRD owner=创建人（后端 owner 字段）；用于「创建人」副标 */
+export function creatorOf(item: ApiKeyItem): ApiKeyMember {
+  return item.owner
 }
 
 /** 本期消费：period_spend 优先，否则回退 total_spend */
@@ -60,9 +60,9 @@ export function periodSpendOf(item: ApiKeyItem): Money {
   return item.period_spend ?? item.total_spend
 }
 
-/** 最近调用时间：last_called_at 优先，否则回退 last_used_at */
+/** 最近调用时间（后端 last_used_at） */
 export function lastCalledOf(item: ApiKeyItem): string | null {
-  return item.last_called_at ?? item.last_used_at
+  return item.last_used_at
 }
 
 /** 是否 N 天内到期（默认 7 天，PRD「即将过期」口径） */

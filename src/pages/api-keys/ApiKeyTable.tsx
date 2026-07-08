@@ -127,8 +127,8 @@ export function ApiKeyTable({
             const lastCalled = lastCalledOf(record)
             const isDisabled = record.status === 'disabled'
             const canToggle = isDisabled
-              ? cap(record.can_enable, canManage)
-              : cap(record.can_disable, canManage)
+              ? cap(record.capabilities?.can_enable, canManage)
+              : cap(record.capabilities?.can_disable, canManage)
             const copyDisabledReason =
               record.status !== 'active'
                 ? t('apiKeys.table.copyUnavailableInactive')

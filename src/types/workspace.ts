@@ -255,13 +255,23 @@ export interface SpendingLimit {
 export type ApiKeyType = 'personal' | 'member' | 'service'
 
 /**
- * 状态（对齐 PRD 原型 apiKeyStatusOptions）。后端当前仅回 active|revoked，
- * disabled/expired/limited/rotation_required 待 #398/#382 落地——UI 已就绪。
+ * 状态（对齐 PRD 原型 apiKeyStatusOptions）。后端现回 active|disabled|revoked，
+ * expired/limited 待 #407、rotation_required 待 #385 落地——UI 已就绪。
  * revoked=软删（PRD 无此态，后端软删保留，列表一般不返回）。
  */
 export type ApiKeyStatus = 'active' | 'disabled' | 'expired' | 'limited' | 'rotation_required' | 'revoked'
 
 export type ApiKeyMember = Pick<AccountBrief, 'account_id' | 'display_name' | 'email'>
+
+/** 行级能力位（后端 apikey.Capabilities，对象形式）。缺失时由 usePermissions 权限回退。 */
+export interface ApiKeyCapabilities {
+  can_view?: boolean
+  can_update_limit?: boolean
+  can_disable?: boolean
+  can_enable?: boolean
+  can_rotate?: boolean
+  can_delete?: boolean
+}
 
 export interface ApiKeyItem {
   api_key_id: string
@@ -282,26 +292,15 @@ export interface ApiKeyItem {
   /** 可通过 reveal 端点取回完整明文（#298）；早期 key 无密文为 false，复制按钮置灰 */
   revealable?: boolean
 
-  // ── PRD v1.0.3 扩字段（#382，全部 optional，后端未回时由 derive.ts 回退）──
+  // ── PRD v1.0.3 扩字段（#382/#383 已交付，全部 optional，缺失时由 derive.ts 回退）──
   /** Key 类型；缺失时由 scope 派生 */
   key_type?: ApiKeyType
-  /** 负责人；缺失时回退 owner */
+  /** 负责人；缺失时回退 owner（PRD：owner=创建人 creator，responsible_member=负责人） */
   responsible_member?: ApiKeyMember
-  /** 维护人；缺失时回退 owner */
-  maintainer_member?: ApiKeyMember
   /** 本期消费；缺失时回退 total_spend */
   period_spend?: Money
-  /** 本期请求数 */
-  request_count?: number
-  /** 最近调用时间；缺失时回退 last_used_at */
-  last_called_at?: string | null
-  // 行级能力位；缺失时由 usePermissions 权限回退
-  can_view?: boolean
-  can_update_limit?: boolean
-  can_disable?: boolean
-  can_enable?: boolean
-  can_rotate?: boolean
-  can_delete?: boolean
+  /** 行级能力位（对象）；缺失时由权限回退 */
+  capabilities?: ApiKeyCapabilities
 }
 
 /** 顶部摘要卡（#383 GET /api-keys/summary）；后端未交付时由列表客户端派生 */
@@ -322,20 +321,39 @@ export interface ApiKeyRecentCall {
   cost: Money
 }
 
-/** 操作审计条目（#384 GET /api-keys/{keyId}/audit） */
+/** 操作审计条目（后端 apikey.AuditLog） */
 export interface ApiKeyAuditEntry {
   id: string
   created_at: string
-  actor: ApiKeyMember
   action: string
-  changes?: { field: string; before?: string; after?: string }[]
+  /** 操作人展示名 */
+  actor_display?: string
+  actor_account_id?: string
+  /** 结果 */
+  result?: string
   request_id?: string
+  target_label?: string
+  changes?: { field: string; before?: string; after?: string }[]
 }
 
-/** Key 详情（#383 GET /api-keys/{keyId}）；= 列表项 + 用量明细 + 最近调用 */
-export interface ApiKeyDetail extends ApiKeyItem {
+/** 审计列表响应（后端 apikey.AuditLogsResponse） */
+export interface ApiKeyAuditLogsResponse {
+  items: ApiKeyAuditEntry[]
+  next_cursor?: string
+}
+
+/** 详情用量（后端 apikey.DetailUsage） */
+export interface ApiKeyDetailUsage {
+  period_spend?: Money
+  request_count?: number
   token_count?: number
+}
+
+/** Key 详情（#383 GET /api-keys/{keyId}）；= 列表项 + 用量 + 最近调用 + 内嵌审计 */
+export interface ApiKeyDetail extends ApiKeyItem {
+  usage?: ApiKeyDetailUsage
   recent_calls?: ApiKeyRecentCall[]
+  recent_audit?: ApiKeyAuditEntry[]
 }
 
 /** 轮转返回（#384 POST /api-keys/{keyId}/rotate）；新 Token 只回一次 */

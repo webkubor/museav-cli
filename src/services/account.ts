@@ -32,6 +32,14 @@ export function bindPhone(phone: string, code: string) {
 }
 
 /**
+ * 绑定邮箱到当前账号（qa#397）。先经 /auth/email-code/send 发码，再用邮箱 + 验证码绑定。
+ * 契约：POST /account/email/bind { email, code }（Swagger account.BindEmailRequest）。
+ */
+export function bindEmail(email: string, code: string) {
+  return post<AccountProfile | null>('account/email/bind', { email, code })
+}
+
+/**
  * 上传头像。
  * 文件限制：≤ 2 MiB，仅支持 PNG / JPG / WebP。
  */

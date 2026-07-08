@@ -1,11 +1,14 @@
 import React, { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { updateProfile, uploadAvatar } from '@/services/account'
+import { updateProfile, uploadAvatar, bindEmail } from '@/services/account'
+import { sendEmailCode } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import type { AccountProfile } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Modal } from '@/components/ui/Modal'
+import { VerificationCodeButton } from '@/components/auth/VerificationCodeButton'
 import { AvatarUpload } from '@/components/ui/AvatarUpload'
 import { ReferralInviteCard } from '@/components/referral/ReferralInviteCard'
 import { getReferralOverview } from '@/services/referral'
@@ -53,6 +56,28 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
     onError: (err: unknown) => {
       appToast.error((err as Error)?.message || t('account.info.toastError'))
     },
+  })
+
+  // 绑定邮箱（qa#397）：闭环已有账户绑定能力（手机/OAuth 已有，补邮箱）
+  const [emailBindOpen, setEmailBindOpen] = useState(false)
+  const [emailInput, setEmailInput] = useState('')
+  const [emailCode, setEmailCode] = useState('')
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())
+
+  const handleSendEmailCode = async () => {
+    const r = await sendEmailCode(emailInput.trim())
+    return r.expires_in
+  }
+
+  const bindEmailMutation = useMutation({
+    mutationFn: () => bindEmail(emailInput.trim(), emailCode.trim()),
+    onSuccess: (updated) => {
+      appToast.success('邮箱绑定成功')
+      setEmailBindOpen(false)
+      if (updated) queryClient.setQueryData<AccountProfile>(['account-profile'], updated)
+      void queryClient.invalidateQueries({ queryKey: ['account-profile'] })
+    },
+    onError: (err: unknown) => appToast.requestError(err, '邮箱绑定失败'),
   })
 
   const avatarLetter = (profile.display_name || profile.email || profile.phone || 'U').charAt(0).toUpperCase()
@@ -107,9 +132,52 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             readOnly
             suffix={profile.email ? <LuLock size={14} /> : undefined}
           />
-          <span className="block text-xs leading-relaxed text-mg-text-3">
-            {profile.email ? t('account.info.emailHint') : '暂未绑定电子邮箱。'}
-          </span>
+          {profile.email ? (
+            <span className="block text-xs leading-relaxed text-mg-text-3">{t('account.info.emailHint')}</span>
+          ) : (
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs leading-relaxed text-mg-text-3">暂未绑定电子邮箱。</span>
+              <button
+                type="button"
+                onClick={() => { setEmailInput(''); setEmailCode(''); setEmailBindOpen(true) }}
+                className="shrink-0 text-xs font-bold text-brand-base hover:text-brand-base/80 bg-transparent border-none p-0 cursor-pointer transition-colors"
+              >
+                绑定邮箱
+              </button>
+            </div>
+          )}
+
+          <Modal
+            open={emailBindOpen}
+            onClose={() => { if (!bindEmailMutation.isPending) setEmailBindOpen(false) }}
+            size="md"
+            title="绑定邮箱"
+            description="绑定后可用于登录、找回密码与重要通知。"
+            footer={(
+              <>
+                <Button variant="outline" disabled={bindEmailMutation.isPending} className="h-8 rounded-lg px-3 text-xs" onClick={() => setEmailBindOpen(false)}>取消</Button>
+                <Button variant="brand" loading={bindEmailMutation.isPending} disabled={!emailValid || emailCode.trim().length === 0} className="h-8 rounded-lg px-4 text-xs font-semibold" onClick={() => bindEmailMutation.mutate()}>确认绑定</Button>
+              </>
+            )}
+          >
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-mg-text-2">邮箱</label>
+                <Input value={emailInput} disabled={bindEmailMutation.isPending} onChange={(e) => setEmailInput(e.target.value)} placeholder="you@example.com" className="h-9 text-xs rounded-lg" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-mg-text-2">验证码</label>
+                <Input
+                  value={emailCode}
+                  disabled={bindEmailMutation.isPending}
+                  onChange={(e) => setEmailCode(e.target.value)}
+                  placeholder="6 位邮箱验证码"
+                  className="h-9 text-xs rounded-lg"
+                  suffix={<VerificationCodeButton onSend={handleSendEmailCode} disabled={!emailValid} />}
+                />
+              </div>
+            </div>
+          </Modal>
         </div>
 
         <div className="space-y-2">

@@ -69,21 +69,21 @@ export function ReferralInviteCard({
     const copied = copiedTarget === 'link'
 
     return (
-      <div className="flex items-center gap-3">
-        <div className="flex-1 min-w-0 flex items-center gap-2 rounded-md border border-mg-border bg-mg-fill-0/40 px-4 py-2.5">
-          <LuLink size={14} className="shrink-0 text-brand-base" />
-          <span className="truncate text-xs font-mono text-mg-text-2">{inviteLink || '—'}</span>
-        </div>
-        <Button
-          variant={copied ? 'outline' : 'brand'}
-          size="sm"
+      <div className="flex items-center gap-2 rounded-md border border-mg-border bg-mg-fill-0/40 py-1.5 pl-4 pr-1.5">
+        <LuLink size={14} className="shrink-0 text-brand-base" />
+        <span className="min-w-0 flex-1 truncate text-xs font-mono text-mg-text-2" title={inviteLink}>
+          {inviteLink || '—'}
+        </span>
+        <button
+          type="button"
           onClick={() => handleCopy(inviteLink, 'link', copySuccess)}
           disabled={!inviteLink}
-          className="shrink-0 rounded-md px-4"
+          aria-label="复制邀请链接"
+          title={copied ? '已复制' : '复制邀请链接'}
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-sm text-mg-text-3 transition-colors hover:bg-brand-base/10 hover:text-brand-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-glow disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {copied ? <LuCheck size={13} className="mr-1" /> : <LuCopy size={13} className="mr-1" />}
-          {copied ? '已复制' : '复制'}
-        </Button>
+          {copied ? <LuCheck size={14} className="text-brand-base" /> : <LuCopy size={14} />}
+        </button>
       </div>
     )
   }

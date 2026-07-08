@@ -221,14 +221,25 @@ export interface SpendingLimit {
   period_length: number
 }
 
+/** API Key 类型（PRD v1.0.3 #382）：私有 / 成员 / 服务；后端未回时由 scope 派生 */
+export type ApiKeyType = 'personal' | 'member' | 'service'
+
+/**
+ * 状态（PRD v1.0.3 #382 扩枚举）。后端当前仅回 active|revoked，
+ * disabled/expired/limit_reached 待 #398/#382 落地——UI 已就绪。
+ */
+export type ApiKeyStatus = 'active' | 'revoked' | 'disabled' | 'expired' | 'limit_reached'
+
+export type ApiKeyMember = Pick<AccountBrief, 'account_id' | 'display_name' | 'email'>
+
 export interface ApiKeyItem {
   api_key_id: string
   name: string
   prefix: string
   masked: string
   env: 'live' | 'test'
-  status: 'active' | 'revoked'
-  owner: Pick<AccountBrief, 'account_id' | 'display_name' | 'email'>
+  status: ApiKeyStatus
+  owner: ApiKeyMember
   expires_at: string | null
   last_used_at: string | null
   total_spend: Money
@@ -239,6 +250,74 @@ export interface ApiKeyItem {
   guardrails?: ApiKeyGuardrailSummary[]
   /** 可通过 reveal 端点取回完整明文（#298）；早期 key 无密文为 false，复制按钮置灰 */
   revealable?: boolean
+
+  // ── PRD v1.0.3 扩字段（#382，全部 optional，后端未回时由 derive.ts 回退）──
+  /** Key 类型；缺失时由 scope 派生 */
+  key_type?: ApiKeyType
+  /** 负责人；缺失时回退 owner */
+  responsible_member?: ApiKeyMember
+  /** 维护人；缺失时回退 owner */
+  maintainer_member?: ApiKeyMember
+  /** 本期消费；缺失时回退 total_spend */
+  period_spend?: Money
+  /** 本期请求数 */
+  request_count?: number
+  /** 最近调用时间；缺失时回退 last_used_at */
+  last_called_at?: string | null
+  // 行级能力位；缺失时由 usePermissions 权限回退
+  can_view?: boolean
+  can_update_limit?: boolean
+  can_disable?: boolean
+  can_enable?: boolean
+  can_rotate?: boolean
+  can_delete?: boolean
+}
+
+/** 顶部摘要卡（#383 GET /api-keys/summary）；后端未交付时由列表客户端派生 */
+export interface ApiKeySummary {
+  total: number
+  active: number
+  expiring_soon: number
+  limit_reached: number
+  month_spend: Money
+}
+
+/** 详情最近调用条目（#383） */
+export interface ApiKeyRecentCall {
+  log_id: string
+  created_at: string
+  model: string
+  status: string
+  cost: Money
+}
+
+/** 操作审计条目（#384 GET /api-keys/{keyId}/audit） */
+export interface ApiKeyAuditEntry {
+  id: string
+  created_at: string
+  actor: ApiKeyMember
+  action: string
+  changes?: { field: string; before?: string; after?: string }[]
+  request_id?: string
+}
+
+/** Key 详情（#383 GET /api-keys/{keyId}）；= 列表项 + 用量明细 + 最近调用 */
+export interface ApiKeyDetail extends ApiKeyItem {
+  token_count?: number
+  recent_calls?: ApiKeyRecentCall[]
+}
+
+/** 轮转返回（#384 POST /api-keys/{keyId}/rotate）；新 Token 只回一次 */
+export interface ApiKeyRotateResponse {
+  new_key: string
+  rotated_at: string
+  /** 旧 Token 过渡期截止 */
+  old_key_grace_until?: string
+}
+
+/** 变更负责人（POST /api-keys/{keyId}/change-owner，已就绪） */
+export interface ChangeApiKeyOwnerRequest {
+  new_owner_account_id: string
 }
 
 export interface ApiKeyGuardrailSummary {

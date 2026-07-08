@@ -5,8 +5,13 @@
  */
 import { del, get, patch, post } from '@/lib/request'
 import type {
+  ApiKeyAuditEntry,
   ApiKeyCreated,
+  ApiKeyDetail,
   ApiKeyItem,
+  ApiKeyRotateResponse,
+  ApiKeySummary,
+  ChangeApiKeyOwnerRequest,
   CreateApiKeyRequest,
   CursorPage,
   UpdateApiKeyRequest,
@@ -43,4 +48,49 @@ export function revokeApiKey(workspaceId: string, keyId: string) {
  */
 export function revealApiKey(workspaceId: string, keyId: string) {
   return post<{ key: string }>(`workspaces/${workspaceId}/api-keys/${keyId}/reveal`, {})
+}
+
+// ─── 治理动作（后端已就绪，S3）────────────────────────
+
+/** 停用 API Key（可逆）：立即对网关失效，可再启用 */
+export function disableApiKey(workspaceId: string, keyId: string) {
+  return post<ApiKeyItem>(`workspaces/${workspaceId}/api-keys/${keyId}/disable`, {})
+}
+
+/** 启用（恢复）已停用的 API Key */
+export function enableApiKey(workspaceId: string, keyId: string) {
+  return post<ApiKeyItem>(`workspaces/${workspaceId}/api-keys/${keyId}/enable`, {})
+}
+
+/** 变更负责人 */
+export function changeApiKeyOwner(workspaceId: string, keyId: string, body: ChangeApiKeyOwnerRequest) {
+  return post<ApiKeyItem>(`workspaces/${workspaceId}/api-keys/${keyId}/change-owner`, body)
+}
+
+// ─── 以下依赖后端 #382-384，尚未交付；前端已接好，落地即生效。────────
+// 调用失败（404/未实现）时由调用方 react-query 降级为隐藏/空态，不阻塞页面。
+
+/** 顶部摘要卡（#383）；未交付时前端用 deriveSummary 从列表派生兜底 */
+export function getApiKeySummary(workspaceId: string) {
+  return get<ApiKeySummary>(`workspaces/${workspaceId}/api-keys/summary`)
+}
+
+/** Key 详情（#383）；未交付时前端用列表项兜底 */
+export function getApiKeyDetail(workspaceId: string, keyId: string) {
+  return get<ApiKeyDetail>(`workspaces/${workspaceId}/api-keys/${keyId}`)
+}
+
+/** 操作审计（#384）；未交付时空态 */
+export function getApiKeyAudit(workspaceId: string, keyId: string) {
+  return get<ApiKeyAuditEntry[]>(`workspaces/${workspaceId}/api-keys/${keyId}/audit`)
+}
+
+/** 轮转（#384）：新 Token 只回一次，旧 Token 进入过渡期 */
+export function rotateApiKey(workspaceId: string, keyId: string) {
+  return post<ApiKeyRotateResponse>(`workspaces/${workspaceId}/api-keys/${keyId}/rotate`, {})
+}
+
+/** 确认轮转（#384）：用户点「已轮转」后旧 Token 立即失效 */
+export function confirmRotateApiKey(workspaceId: string, keyId: string) {
+  return post<null>(`workspaces/${workspaceId}/api-keys/${keyId}/rotate/confirm`, {})
 }

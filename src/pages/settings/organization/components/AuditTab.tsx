@@ -82,7 +82,7 @@ function AuditDetailContent({
     <div className="space-y-4">
       <div className="rounded-md border border-mg-border/60">
         <AuditFieldRow label={t('enterprise.audit.detailAction')} value={auditActionLabel(detail.action)} />
-        <AuditFieldRow label={t('enterprise.audit.detailActor')} value={detail.actor_display || detail.actor_account_id} />
+        <AuditFieldRow label={t('enterprise.audit.detailActor')} value={detail.actor_display || '—'} />
         <AuditFieldRow label={t('enterprise.audit.colTarget')} value={detail.target_label || detail.target_id} />
         <AuditFieldRow label={t('enterprise.audit.detailScope')} value={scopeText} />
         <AuditFieldRow label={t('enterprise.audit.detailRequestId')} value={detail.request_id} mono />
@@ -282,7 +282,7 @@ export function AuditTab({ tenantId }: { tenantId: string }) {
                     <TableCell className="whitespace-nowrap font-mono text-xs text-mg-text-2">
                       {formatDateTimeWithSeconds(row.created_at)}
                     </TableCell>
-                    <TableCell className="text-xs font-semibold text-mg-text-1">{row.actor_display || row.actor_account_id || '—'}</TableCell>
+                    <TableCell className="text-xs font-semibold text-mg-text-1">{row.actor_display || '—'}</TableCell>
                     <TableCell className="text-xs text-mg-text-2">{auditActionLabel(row.action)}</TableCell>
                     <TableCell className="max-w-[160px] truncate text-xs text-mg-text-2" title={row.target_label}>
                       {row.target_label || row.target_id || '—'}

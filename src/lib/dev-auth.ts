@@ -23,7 +23,7 @@ async function mgLogin(email: string, password: string): Promise<MgLoginResult> 
     await getSession().catch(() => {})
     await login({ email, password })
     const session = await getSession()
-    const persistedWs = localStorage.getItem(storageKeys.activeWorkspaceId())
+    const persistedWs = localStorage.getItem(storageKeys.activeWorkspaceId(session.active_tenant_id))
     useAuthStore.getState().setAuth(
       session.account,
       session.active_tenant_id,

@@ -26,8 +26,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isFetchingSession = true
     getSession()
       .then((result) => {
-        // 刷新时优先恢复用户上次选择的工作区（localStorage），无记录才回退会话默认
-        const persistedWs = localStorage.getItem(storageKeys.activeWorkspaceId())
+        // 刷新时优先恢复用户上次选择的工作区（localStorage），无记录才回退会话默认。
+        // key 按「当前活跃租户」隔离——persistedWs 只可能是本租户的空间，绝不会串到别的租户
+        // （修 40301：曾用全局 key，切租户后残留旧租户 workspace 覆盖了后端算好的默认值）。
+        const persistedWs = localStorage.getItem(storageKeys.activeWorkspaceId(result.active_tenant_id))
         // account 直传：保留后端下发的全部字段（尤其 phone，强制绑手机守卫依赖它）。
         // 曾在此处只挑 4 个字段重建 account，把 phone 丢了，导致刷新/切组织后守卫误判无手机号。
         setAuth(

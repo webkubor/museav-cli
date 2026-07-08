@@ -31,7 +31,9 @@ function buildKey(name: string, scope: Scope): string {
 export const storageKeys = {
   // ── 认证 / 多租户（market 隔离：国内和海外 tenant 体系不同） ──────────────
   activeTenantId: () => buildKey('active_tenant_id', 'market'),
-  activeWorkspaceId: () => buildKey('active_workspace_id', 'market'),
+  // 按租户隔离：一个账号多租户时，各租户各记各的上次选中工作空间，
+  // 避免跨租户串台（活跃租户 A + 残留 B 的 workspace → 接口 40301）。
+  activeWorkspaceId: (tenantId: string) => buildKey(`active_workspace_id:${tenantId}`, 'market'),
   rememberedLogin: () => buildKey('remembered_login', 'market'),
   authGuard:      (scope: string) => buildKey(`auth_guard:${scope}`, 'market'),
 

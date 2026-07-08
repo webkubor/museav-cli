@@ -53,8 +53,8 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
     } else {
       localStorage.removeItem(storageKeys.activeTenantId())
     }
-    if (activeWorkspaceId) {
-      localStorage.setItem(storageKeys.activeWorkspaceId(), activeWorkspaceId)
+    if (activeTenantId && activeWorkspaceId) {
+      localStorage.setItem(storageKeys.activeWorkspaceId(activeTenantId), activeWorkspaceId)
     }
     set({
       account,
@@ -72,17 +72,26 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   setPermissions: (permissions) => set({ permissions }),
   setMenus: (menus) => set({ menus }),
   setActiveWorkspaceId: (workspaceId) => {
-    if (workspaceId) {
-      localStorage.setItem(storageKeys.activeWorkspaceId(), workspaceId)
-    } else {
-      localStorage.removeItem(storageKeys.activeWorkspaceId())
+    // 持久化到「当前活跃租户」的专属 key；无活跃租户则只改内存态不落库。
+    const tenantId = get().activeTenantId
+    if (tenantId) {
+      if (workspaceId) {
+        localStorage.setItem(storageKeys.activeWorkspaceId(tenantId), workspaceId)
+      } else {
+        localStorage.removeItem(storageKeys.activeWorkspaceId(tenantId))
+      }
     }
     set({ activeWorkspaceId: workspaceId })
   },
 
   clearAuth: () => {
     localStorage.removeItem(storageKeys.activeTenantId())
-    localStorage.removeItem(storageKeys.activeWorkspaceId())
+    // 清掉已知租户的 per-tenant 工作空间选择（key 现按租户隔离，逐个删）。
+    const { tenants, activeTenantId } = get()
+    const tenantIds = new Set(
+      [...tenants.map((tt) => tt.tenant_id), activeTenantId].filter(Boolean) as string[],
+    )
+    tenantIds.forEach((tid) => localStorage.removeItem(storageKeys.activeWorkspaceId(tid)))
     localStorage.removeItem(storageKeys.csHistory())
     localStorage.removeItem(storageKeys.csConversationId())
     // CSRF cookie lifecycle belongs to the server (Set-Cookie). A host-only

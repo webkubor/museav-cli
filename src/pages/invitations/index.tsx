@@ -49,7 +49,7 @@ export default function InvitationsPage() {
       const result = await acceptInvitation(token)
       try {
         const session = await getSession()
-        const persistedWs = localStorage.getItem(storageKeys.activeWorkspaceId())
+        const persistedWs = localStorage.getItem(storageKeys.activeWorkspaceId(session.active_tenant_id))
         setAuth(
           session.account,
           session.active_tenant_id,

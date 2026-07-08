@@ -26,6 +26,7 @@ import { usePermissions } from '@/hooks/use-permissions'
 import { useClientPage } from '@/hooks/use-client-page'
 import { useCursorPager } from '@/hooks/use-cursor-pager'
 import { PERMS } from '@/config/permissions'
+import { trackPageView } from '@/lib/track'
 
 import {
   getReferralOverview,
@@ -77,6 +78,10 @@ export default function ReferralPage() {
   const queryClient = useQueryClient()
   const { hasPermission } = usePermissions()
   const canTransfer = hasPermission(PERMS.REFERRAL_REWARD_TRANSFER)
+
+  useEffect(() => {
+    trackPageView('referral')
+  }, [])
 
   const { data: overview } = useQuery({
     queryKey: ['referral', 'overview', tenantId],

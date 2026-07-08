@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react'
 import { useTenantRole } from '@/hooks/use-tenant-role'
 import { useTrackContext } from '@/hooks/use-track-context'
-import { trackEvent } from '@/lib/track'
+import { trackEvent, trackPageView } from '@/lib/track'
 import { useAuthStore } from '@/store/auth'
 import { GreetingHeader } from '@/features/dashboard/workbench/GreetingHeader'
 import { QuickStartSection } from '@/features/dashboard/workbench/QuickStartSection'
@@ -37,6 +37,7 @@ export default function DashboardPage() {
 
   // 首屏曝光：只在挂载时触发一次，不随视图/周期切换重复上报
   useEffect(() => {
+    trackPageView('dashboard')
     trackEvent('overview_view', { ...trackCtx, view_mode: view })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

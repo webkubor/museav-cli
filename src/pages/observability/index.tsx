@@ -3,6 +3,7 @@
  * 路由：/observability
  * API：GET /workspaces/:id/observability/settings
  */
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -11,6 +12,7 @@ import { isApiErrorCode } from '@/lib/request-error-message'
 import { PERMS } from '@/config/permissions'
 import { usePermissions } from '@/hooks/use-permissions'
 import { getLoggingConfig } from '@/services/observability'
+import { trackPageView } from '@/lib/track'
 import { useAuthStore } from '@/store/auth'
 import { ObservabilityContent } from './ObservabilityContent'
 
@@ -23,6 +25,10 @@ export default function ObservabilityPage() {
   const { hasPermission } = usePermissions()
   const canEditLogging = hasPermission(PERMS.OBSERVABILITY_LOGGING_EDIT)
   const canManageForward = hasPermission(PERMS.OBSERVABILITY_FORWARD_MANAGE)
+
+  useEffect(() => {
+    trackPageView('observability')
+  }, [])
 
   const loggingQuery = useQuery({
     queryKey: ['observability', 'logging', activeWorkspaceId],

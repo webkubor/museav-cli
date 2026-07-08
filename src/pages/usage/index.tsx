@@ -4,7 +4,7 @@
  * API 来源：GET /usage/summary、GET /usage/series、GET /usage/rankings/*、GET /logs/histogram
  */
 
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
@@ -22,6 +22,7 @@ import { useAuthStore } from '@/store/auth'
 import { useTenantRole } from '@/hooks/use-tenant-role'
 import { SegmentedToggle } from '@/features/dashboard/workbench/SegmentedToggle'
 import { useCurrency } from '@/hooks/use-platform-config'
+import { trackPageView } from '@/lib/track'
 import type { SeriesDataPoint, UsageRankingItem } from '@/types'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -91,6 +92,10 @@ export default function UsagePage() {
   const showSpaceViewToggle = !showViewToggle && canUseSpaceView
   const view = userView ?? (showViewToggle ? 'enterprise' : canUseSpaceView ? 'space' : 'mine')
   const { symbol: currencySymbol } = useCurrency()
+
+  useEffect(() => {
+    trackPageView('usage')
+  }, [])
 
   const usagePresets = [
     { key: 'today', label: t('usage.range.today') },

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
@@ -13,6 +13,7 @@ import { listTenantMembers } from '@/services/tenants'
 import { listWorkspaces } from '@/services/workspaces'
 import { useAuthStore } from '@/store/auth'
 import { useTenantRole } from '@/hooks/use-tenant-role'
+import { trackPageView } from '@/lib/track'
 import { SegmentedToggle } from '@/features/dashboard/workbench/SegmentedToggle'
 import type { CallLogListParams } from '@/interfaces/logs'
 import type { CallLogItem } from '@/types'
@@ -88,6 +89,9 @@ function resolveBackendStatus(status: LogStatusFilter): CallLogListParams['statu
 }
 
 export default function LogsPage() {
+  useEffect(() => {
+    trackPageView('logs')
+  }, [])
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const currentAccountId = useAuthStore((s) => s.account?.account_id)
   const { canManage, isEnterprise, isSpaceOwner, ownedWorkspaceIds } = useTenantRole()

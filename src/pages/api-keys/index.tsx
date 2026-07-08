@@ -5,7 +5,7 @@
  * 作用域=当前工作空间，行可见性按角色由后端裁剪（#358/#359）。
  */
 
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useState, useCallback, useEffect } from 'react'
 import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -15,7 +15,7 @@ import { CopyButton } from '@/components/ui/CopyButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { ForbiddenState } from '@/components/ui/ForbiddenState'
 import { isApiErrorCode } from '@/lib/request-error-message'
-import { trackAction } from '@/lib/track'
+import { trackAction, trackEvent, trackPageView } from '@/lib/track'
 import { LuSearch, LuPlus } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -77,6 +77,10 @@ export default function ApiKeysPage() {
   const canRevoke = hasPermission(PERMS.API_KEYS_REVOKE)
   // 管理权（停用/启用/变更负责人）——权限系统未细分时以 revoke 为代管理位；后端 can_* 会覆盖
   const canManage = canRevoke
+
+  useEffect(() => {
+    trackPageView('api-keys')
+  }, [])
 
   const { data, isLoading, error: listError } = useQuery({
     queryKey: ['api-keys', activeWorkspaceId],
@@ -147,8 +151,12 @@ export default function ApiKeysPage() {
   })
 
   const handleToggleStatus = useCallback((item: ApiKeyItem) => {
-    if (item.status === 'disabled') enableMutation.mutate(item.api_key_id)
-    else setDisableTarget(item)
+    if (item.status === 'disabled') {
+      trackEvent('api_keys:enable')
+      enableMutation.mutate(item.api_key_id)
+    } else {
+      setDisableTarget(item)
+    }
   }, [enableMutation])
 
   // 变更负责人（change-owner 端点已就绪）
@@ -301,7 +309,7 @@ export default function ApiKeysPage() {
         isLoading={isLoading}
         items={filteredData}
         canManage={canManage}
-        onOpenDetail={setDetailKey}
+        onOpenDetail={(item) => { trackEvent('api_keys:detail'); setDetailKey(item) }}
         onToggleStatus={handleToggleStatus}
         onCopyKey={handleCopyKey}
         copyingKeyId={copyingKeyId}
@@ -386,7 +394,7 @@ export default function ApiKeysPage() {
         footer={
           <>
             <Button variant="outline" onClick={() => setDisableTarget(null)}>{t('apiKeys.createModal.cancel')}</Button>
-            <Button variant="brand" loading={disableMutation.isPending} onClick={() => { if (disableTarget) disableMutation.mutate(disableTarget.api_key_id) }}>
+            <Button variant="brand" loading={disableMutation.isPending} onClick={() => { if (disableTarget) { trackEvent('api_keys:disable'); disableMutation.mutate(disableTarget.api_key_id) } }}>
               确认停用
             </Button>
           </>
@@ -407,7 +415,7 @@ export default function ApiKeysPage() {
               variant="brand"
               loading={changeOwnerMutation.isPending}
               disabled={!newOwnerId}
-              onClick={() => changeOwnerMutation.mutate()}
+              onClick={() => { trackEvent('api_keys:change_owner'); changeOwnerMutation.mutate() }}
             >
               确认变更
             </Button>

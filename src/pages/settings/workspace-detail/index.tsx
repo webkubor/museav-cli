@@ -5,6 +5,7 @@ import { LuSearch, LuArrowRight, LuUsers } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
+import { trackAction } from '@/lib/track'
 import {
   addWorkspaceMember,
   updateWorkspace,
@@ -179,7 +180,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
                               variant="outline"
                               size="xs"
                               loading={setOwnerMutation.isPending}
-                              onClick={() => setOwnerMutation.mutate(m.account.account_id)}
+                              onClick={() => { trackAction(PERMS.WORKSPACE_MEMBERS_MANAGE); setOwnerMutation.mutate(m.account.account_id) }}
                               className="h-7 px-2 rounded-md text-[11px]"
                             >
                               {t('workspaces.detail.members.setOwner')}
@@ -242,7 +243,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
                       variant="ghost"
                       className="h-7 px-2 text-[11px] font-semibold shrink-0 text-brand-base hover:bg-brand-base/5"
                       loading={addMutation.isPending}
-                      onClick={() => addMutation.mutate(m.account.account_id)}
+                      onClick={() => { trackAction(PERMS.WORKSPACE_MEMBERS_MANAGE); addMutation.mutate(m.account.account_id) }}
                     >
                       <LuArrowRight size={12} className="mr-0.5" />
                       {t('workspaces.detail.members.add')}
@@ -275,6 +276,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
               disabled={!!removeTarget && (removeTarget.api_key_count ?? 0) > 0 && removeStrategy === ''}
               onClick={() => {
                 if (!removeTarget) return
+                trackAction(PERMS.WORKSPACE_MEMBERS_MANAGE)
                 removeMutation.mutate({
                   accountId: removeTarget.account.account_id,
                   strategy: removeStrategy || 'transfer',

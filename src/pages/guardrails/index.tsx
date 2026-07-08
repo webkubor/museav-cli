@@ -9,6 +9,7 @@ import { LuPlus } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
+import { trackAction, trackPageView } from '@/lib/track'
 import { listModels } from '@/services/catalog'
 import { appToast } from '@/lib/app-toast'
 import {
@@ -69,6 +70,10 @@ export default function GuardrailsPage() {
   const canEdit           = hasPermission(PERMS.GUARDRAILS_EDIT)
   const canDelete         = hasPermission(PERMS.GUARDRAILS_DELETE)
   const canEditBudget     = hasPermission(PERMS.GUARDRAILS_BUDGET_EDIT)
+
+  useEffect(() => {
+    trackPageView('guardrails')
+  }, [])
 
   // ── 列表 ───────────────────────────────────────────────────────────────
   const { data: guardrails = [], isLoading, error: guardrailsError } = useQuery({
@@ -304,8 +309,10 @@ export default function GuardrailsPage() {
       metadata,
     }
     if (!isCreating && detailId) {
+      trackAction(PERMS.GUARDRAILS_EDIT)
       updateMutation.mutate({ id: detailId, payload })
     } else {
+      trackAction(PERMS.GUARDRAILS_CREATE)
       createMutation.mutate(payload)
     }
   }
@@ -451,7 +458,7 @@ export default function GuardrailsPage() {
         deleteTarget={deleteTarget}
         onCloseDelete={() => setDeleteTarget(null)}
         deleting={deleteMutation.isPending}
-        onConfirmDelete={() => { if (deleteTarget) deleteMutation.mutate(deleteTarget.id) }}
+        onConfirmDelete={() => { if (deleteTarget) { trackAction(PERMS.GUARDRAILS_DELETE); deleteMutation.mutate(deleteTarget.id) } }}
         showClearBudget={showClearBudget}
         onCloseClear={() => setShowClearBudget(false)}
         clearing={removeBudgetMutation.isPending}

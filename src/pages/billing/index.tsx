@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import './billing.css'
 import { useTranslation } from 'react-i18next'
@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/auth'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { appToast } from '@/lib/app-toast'
+import { trackPageView } from '@/lib/track'
 import { getPromoRedeemErrorMessage } from './promo-errors'
 import { BalanceCard } from './BalanceCard'
 import type { BalanceTab } from './BalanceCard'
@@ -25,6 +26,10 @@ export default function BillingPage() {
 
   const [activeTab, setActiveTab] = useState<BalanceTab>('main')
   const [promoCode, setPromoCode] = useState('')
+
+  useEffect(() => {
+    trackPageView('billing')
+  }, [])
 
   const redeemMutation = useMutation({
     mutationFn: (code: string) => redeemPromoCode(tenantId, { code }),

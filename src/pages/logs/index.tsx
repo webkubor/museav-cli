@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useCopy } from '@/hooks/use-copy'
 import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
@@ -15,7 +14,6 @@ import { listWorkspaces } from '@/services/workspaces'
 import { useAuthStore } from '@/store/auth'
 import { useTenantRole } from '@/hooks/use-tenant-role'
 import { SegmentedToggle } from '@/features/dashboard/workbench/SegmentedToggle'
-import { appToast } from '@/lib/app-toast'
 import type { CallLogListParams } from '@/interfaces/logs'
 import type { CallLogItem } from '@/types'
 import { rangeToDates } from '@/pages/usage/usage-utils'
@@ -130,7 +128,6 @@ export default function LogsPage() {
   const [payloadView, setPayloadView] = useState<PayloadView>('parsed')
   const [page, setPage] = useState(1)
   const [cursorStack, setCursorStack] = useState<Array<string | null>>([null])
-  const { copied, copy } = useCopy()
 
   const currentCursor = cursorStack[page - 1] ?? null
 
@@ -311,16 +308,6 @@ export default function LogsPage() {
     setPage((current) => Math.max(1, current - 1))
   }
 
-  async function copyAllPayload() {
-    const text = [
-      requestPayloadText && `// Request\n${requestPayloadText}`,
-      responsePayloadText && `// Response\n${responsePayloadText}`,
-    ].filter(Boolean).join('\n\n')
-    if (!text) return
-    await copy(text)
-    appToast.success('请求 / 响应内容已复制')
-  }
-
   function downloadPayloadJson() {
     if (!selectedLog) return
     const blob = new Blob([JSON.stringify({ request: requestPayloadText, response: responsePayloadText }, null, 2)], { type: 'application/json' })
@@ -487,13 +474,11 @@ export default function LogsPage() {
       />
 
       <LogDetailSheet
-        copied={copied}
         requestPayloadText={requestPayloadText}
         responsePayloadText={responsePayloadText}
         payloadView={payloadView}
         onPayloadViewChange={setPayloadView}
         payloadLoading={payloadLoading}
-        onCopyAll={copyAllPayload}
         onDownload={downloadPayloadJson}
         onClose={() => setSelectedLog(null)}
         open={Boolean(selectedLog)}

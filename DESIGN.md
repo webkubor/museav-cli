@@ -181,6 +181,10 @@ YAML front matter 里的值是 **「国内 + 浅色」** 默认态；其余三�
 - **Button**：主操作用 `variant="brand"`（品牌底 + 白字 + `rounded-full`，hover→mid、active→deep）；次级用 `variant="outline"`。禁止自写 `<button>` 替代。
 - **Card**：`bg-0` + `border` + `rounded-lg`(18) + `shadow-sm`。操作型界面**不要嵌套卡片**、不要装饰性 card garden。
 - **Input / Select / Table / Modal / Drawer / Tabs / Badge / Pagination / DateRangePicker**：一律用 `src/components/ui/*` 既有组件，保持 hover/focus/disabled/loading/empty/error 状态一致。
+- **CopyButton（复制交互唯一真源）**：任何「复制到剪贴板」用 `src/components/ui/CopyButton`，禁止各页手写复制图标/按钮。场景 → 变体：
+  - 行内 / 字段行 / ID / 链接旁的紧凑复制 → `variant="icon"`（默认，一个图标搞定，别上大按钮）
+  - 独立强调的复制 CTA（如新建 Key 横幅、收银台付款信息）→ `variant="labeled"`
+  - 唯一例外：API Key 明文的「惰性 reveal + 手势栈内 ClipboardItem 写入」（`api-keys/index.tsx`），因剪贴板需在用户手势栈同步发起，不走 CopyButton。
 - **状态优先**：交互注册第一——路由/Tab 切换立即给反馈（骨架 + loading），不让用户干等请求。
 
 ## Do's and Don'ts

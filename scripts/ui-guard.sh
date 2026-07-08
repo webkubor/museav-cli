@@ -64,6 +64,18 @@ while IFS= read -r f; do
     echo "⚠ [疑似 fill 当卡片] $f — 卡片用 .mg-tile，别拿 bg-mg-fill-0 凑层次（DESIGN.md · Elevation）"
     warn=$((warn + 1))
   fi
+
+  # ── WARN 3：疑似手写复制按钮。复制交互统一用 <CopyButton>（收口 useCopy + 反馈 + toast），
+  #    别再各页手搓复制图标/按钮。特殊场景（如 API Key 惰性 reveal 复制）可无视本条。
+  case "$f" in
+    */components/ui/CopyButton.tsx|*/hooks/use-copy.ts) ;;  # 组件自身与 hook 放行
+    *)
+      if printf '%s' "$content" | grep -qE '\bLuCopy\b' && ! printf '%s' "$content" | grep -q 'CopyButton'; then
+        echo "⚠ [疑似手写复制按钮] $f — 复制交互统一用 <CopyButton>（DESIGN.md · Components）"
+        warn=$((warn + 1))
+      fi
+      ;;
+  esac
 done <<EOF
 $file_list
 EOF

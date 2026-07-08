@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { LuKeyRound, LuPlug, LuScrollText, LuArrowRight, LuCopy, LuCheck, LuX, LuSquareTerminal, LuZap, LuChevronRight } from 'react-icons/lu'
+import { LuKeyRound, LuPlug, LuScrollText, LuArrowRight, LuX, LuSquareTerminal, LuZap, LuChevronRight } from 'react-icons/lu'
 import { Card } from '@/components/ui/Card'
-import { useCopy } from '@/hooks/use-copy'
+import { CopyButton } from '@/components/ui/CopyButton'
 import { useMarket } from '@/hooks/useMarket'
 import { getMarketConfig } from '@/config/market'
 import { GATEWAY_ENDPOINTS } from '@/config/gateway'
-import { appToast } from '@/lib/app-toast'
 import { useAuthStore } from '@/store/auth'
 import { ConnectModal } from '@/pages/api-keys/ConnectModal'
 
@@ -25,7 +24,6 @@ function scopedWorkspacePath(workspaceId: string | null, path: string) {
 export function QuickStartSection() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { copy, copied } = useCopy(1400)
   const market = useMarket()
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
 
@@ -41,12 +39,6 @@ export function QuickStartSection() {
   const handleDismiss = () => {
     localStorage.setItem(DISMISS_KEY, '1')
     setDismissed(true)
-  }
-
-  const handleCliCopy = async () => {
-    const ok = await copy(CLI_COMMAND)
-    if (ok) appToast.success(t('dashboard.workbench.quickStart.cliCopied'))
-    else appToast.error(t('dashboard.workbench.quickStart.cliCopyFailed'))
   }
 
   const steps = [
@@ -151,14 +143,14 @@ export function QuickStartSection() {
               <span className="text-[11px] text-mg-text-3">{t('dashboard.workbench.quickStart.cliHint')}</span>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={handleCliCopy}
-            className="inline-flex items-center gap-2 rounded-md border border-mg-border bg-mg-bg-0 px-3 py-1.5 font-mono text-xs text-mg-text-1 hover:border-brand-base/35 transition-colors cursor-pointer"
-          >
+          <div className="inline-flex items-center gap-2 rounded-md border border-mg-border bg-mg-bg-0 pl-3 pr-1.5 py-1 font-mono text-xs text-mg-text-1">
             <code>{CLI_COMMAND}</code>
-            {copied ? <LuCheck size={14} className="text-mg-success" /> : <LuCopy size={14} />}
-          </button>
+            <CopyButton
+              value={CLI_COMMAND}
+              aria-label="复制命令"
+              toast={t('dashboard.workbench.quickStart.cliCopied')}
+            />
+          </div>
         </div>
       </Card>
 

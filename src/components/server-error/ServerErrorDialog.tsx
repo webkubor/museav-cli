@@ -3,28 +3,14 @@
  * 路由：全局挂载，无独立路由
  * API 来源：src/lib/error-diagnostics 聚合 5xx 请求诊断信息
  */
-import { LuCheck, LuCopy, LuMail, LuTriangleAlert } from 'react-icons/lu'
+import { LuMail, LuTriangleAlert } from 'react-icons/lu'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import { useCopy } from '@/hooks/use-copy'
+import { CopyButton } from '@/components/ui/CopyButton'
 import { useServerErrorStore } from '@/store/use-server-error-store'
 import { formatDiagnosticsForCopy } from '@/lib/error-diagnostics'
 
 const SUPPORT_EMAIL = 'feedback@modelgo.com'
-
-function CopyIconButton({ value, label }: { value: string; label: string }) {
-  const { copy, copied } = useCopy()
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={() => copy(value)}
-      className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border border-mg-border text-mg-text-3 transition-colors hover:text-mg-text-1"
-    >
-      {copied ? <LuCheck size={13} className="text-mg-success" /> : <LuCopy size={13} />}
-    </button>
-  )
-}
 
 function Row({ label, value, copyable }: { label: string; value: string; copyable?: boolean }) {
   return (
@@ -33,7 +19,7 @@ function Row({ label, value, copyable }: { label: string; value: string; copyabl
       <span className="min-w-0 flex-1 truncate font-mono text-xs text-mg-text-1" title={value}>
         {value}
       </span>
-      {copyable && <CopyIconButton value={value} label={`复制${label}`} />}
+      {copyable && <CopyButton value={value} aria-label={`复制${label}`} toast={false} />}
     </div>
   )
 }

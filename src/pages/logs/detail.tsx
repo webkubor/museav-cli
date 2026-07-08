@@ -1,7 +1,6 @@
 import { Fragment, type ReactNode } from 'react'
 import {
   LuClock3,
-  LuCopy,
   LuDatabase,
   LuFileText,
   LuGauge,
@@ -16,10 +15,10 @@ import {
   LuArrowUpRight,
   LuDownload,
 } from 'react-icons/lu'
-import { useCopy } from '@/hooks/use-copy'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { CodeBlock } from '@/components/ui/CodeBlock'
+import { CopyButton } from '@/components/ui/CopyButton'
 import { Money } from '@/components/ui/Money'
 import { SideSheet } from '@/components/ui/SideSheet'
 import { StatusBadge, type StatusConfig } from '@/components/ui/StatusBadge'
@@ -63,13 +62,11 @@ function tpmLabel(row: CallLogItem) {
 }
 
 export function LogDetailSheet({
-  copied,
   requestPayloadText,
   responsePayloadText,
   payloadView,
   onPayloadViewChange,
   payloadLoading,
-  onCopyAll,
   onDownload,
   onClose,
   open,
@@ -77,13 +74,11 @@ export function LogDetailSheet({
   workspaceName,
   onViewTraceLogs,
 }: {
-  copied: boolean
   requestPayloadText: string
   responsePayloadText: string
   payloadView: PayloadView
   onPayloadViewChange: (view: PayloadView) => void
   payloadLoading: boolean
-  onCopyAll: () => void
   onDownload: () => void
   onClose: () => void
   open: boolean
@@ -91,7 +86,6 @@ export function LogDetailSheet({
   workspaceName?: string
   onViewTraceLogs?: (traceId: string) => void
 }) {
-  const { copy: copyTrace, copied: traceCopied } = useCopy()
   return (
     <SideSheet open={open} onClose={onClose} title={null} width={680} className="overflow-y-auto">
       {row && (
@@ -108,14 +102,7 @@ export function LogDetailSheet({
               <div className="mt-3 flex items-center gap-2">
                 <span className="shrink-0 mg-text-caption font-bold text-mg-text-3">Trace ID</span>
                 <span className="min-w-0 flex-1 truncate font-mono mg-text-caption text-mg-text-2">{row.trace_id}</span>
-                <button
-                  type="button"
-                  onClick={() => copyTrace(row.trace_id)}
-                  className="inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-mg-text-3 hover:bg-mg-fill-0 hover:text-mg-text-1 transition-colors cursor-pointer"
-                  aria-label="复制 Trace ID"
-                >
-                  {traceCopied ? <LuCheck className="h-3.5 w-3.5 text-mg-success" /> : <LuCopy className="h-3.5 w-3.5" />}
-                </button>
+                <CopyButton value={row.trace_id} variant="icon" aria-label="复制 Trace ID" toast={false} />
               </div>
             )}
           </header>
@@ -183,16 +170,11 @@ export function LogDetailSheet({
             payloadView={payloadView}
             onPayloadViewChange={onPayloadViewChange}
             payloadLoading={payloadLoading}
-            copied={copied}
-            onCopyAll={onCopyAll}
             onDownload={onDownload}
           />
 
           <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-mg-border pt-4">
-            <Button variant="outline" size="sm" disabled={!row.trace_id} onClick={() => copyTrace(row.trace_id)}>
-              {traceCopied ? <LuCheck className="mr-1.5 h-4 w-4 text-mg-success" /> : <LuCopy className="mr-1.5 h-4 w-4" />}
-              复制 Trace
-            </Button>
+            <CopyButton value={row.trace_id} variant="labeled" label="复制 Trace" toast={false} />
             {row.trace_id && onViewTraceLogs && (
               <Button
                 variant="brand"
@@ -447,9 +429,7 @@ function ViewToggle({ onChange, value }: { onChange: (view: PayloadView) => void
   )
 }
 
-function TranscriptSection({ copied, onCopyAll, onDownload, onPayloadViewChange, payloadLoading, payloadView, requestPayloadText, responsePayloadText, row }: {
-  copied: boolean
-  onCopyAll: () => void
+function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, payloadView, requestPayloadText, responsePayloadText, row }: {
   onDownload: () => void
   onPayloadViewChange: (view: PayloadView) => void
   payloadLoading: boolean
@@ -487,10 +467,15 @@ function TranscriptSection({ copied, onCopyAll, onDownload, onPayloadViewChange,
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ViewToggle value={payloadView} onChange={onPayloadViewChange} />
-          <Button size="xs" variant="outline" onClick={onCopyAll}>
-            <LuCopy className="mr-1 h-3 w-3" />
-            {copied ? '已复制' : '复制全部'}
-          </Button>
+          <CopyButton
+            value={[
+              requestPayloadText && `// Request\n${requestPayloadText}`,
+              responsePayloadText && `// Response\n${responsePayloadText}`,
+            ].filter(Boolean).join('\n\n')}
+            variant="labeled"
+            label="复制全部"
+            toast="请求 / 响应内容已复制"
+          />
           <Button size="xs" variant="outline" onClick={onDownload}>
             <LuDownload className="mr-1 h-3 w-3" />
             下载 JSON

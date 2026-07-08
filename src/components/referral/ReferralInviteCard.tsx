@@ -4,15 +4,10 @@
  * API 来源：GET /tenants/:tenantId/referral/overview
  */
 
-import { useState } from 'react'
-import { LuArrowRight, LuBadgePercent, LuCheck, LuCopy, LuLink, LuShare2, LuTicketPercent } from 'react-icons/lu'
-import { appToast } from '@/lib/app-toast'
-import { useCopy } from '@/hooks/use-copy'
+import { LuArrowRight, LuBadgePercent, LuCheck, LuLink, LuShare2, LuTicketPercent } from 'react-icons/lu'
+import { CopyButton } from '@/components/ui/CopyButton'
 
-const COPY_RESET_MS = 2000
 const DEFAULT_RULES_HREF = '#referral-rules'
-
-type CopyTarget = 'link' | 'code'
 
 interface ReferralInviteCardProps {
   inviteLink: string
@@ -44,51 +39,17 @@ export function ReferralInviteCard({
   rulesHref = DEFAULT_RULES_HREF,
   compact = false,
 }: ReferralInviteCardProps) {
-  const [copiedTarget, setCopiedTarget] = useState<CopyTarget | null>(null)
-  const { copy } = useCopy()
-
-  const handleCopy = async (value: string, target: CopyTarget, successMessage: string) => {
-    if (!value) {
-      appToast.error('暂无可复制内容')
-      return
-    }
-
-    const ok = await copy(value)
-    if (!ok) {
-      appToast.error('复制失败，请手动复制')
-      return
-    }
-
-    appToast.success(successMessage)
-    setCopiedTarget(target)
-    setTimeout(() => setCopiedTarget(null), COPY_RESET_MS)
-  }
-
   if (compact) {
-    const copied = copiedTarget === 'link'
-
     return (
       <div className="flex items-center gap-2 rounded-md border border-mg-border bg-mg-fill-0/40 py-1.5 pl-4 pr-1.5">
         <LuLink size={14} className="shrink-0 text-brand-base" />
         <span className="min-w-0 flex-1 truncate text-xs font-mono text-mg-text-2" title={inviteLink}>
           {inviteLink || '—'}
         </span>
-        <button
-          type="button"
-          onClick={() => handleCopy(inviteLink, 'link', copySuccess)}
-          disabled={!inviteLink}
-          aria-label="复制邀请链接"
-          title={copied ? '已复制' : '复制邀请链接'}
-          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-sm text-mg-text-3 transition-colors hover:bg-brand-base/10 hover:text-brand-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-glow disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {copied ? <LuCheck size={14} className="text-brand-base" /> : <LuCopy size={14} />}
-        </button>
+        <CopyButton value={inviteLink} aria-label="复制邀请链接" toast={copySuccess} />
       </div>
     )
   }
-
-  const copiedLink = copiedTarget === 'link'
-  const copiedCode = copiedTarget === 'code'
 
   return (
     <div className="relative h-full overflow-hidden rounded-lg border border-mg-border bg-card-bg p-5">
@@ -105,24 +66,19 @@ export function ReferralInviteCard({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => handleCopy(inviteCode, 'code', copyCodeSuccess)}
-            disabled={!inviteCode}
-            className="group inline-flex max-w-full shrink-0 items-center gap-2 self-start rounded-full border border-mg-border bg-mg-fill-0/55 px-3 py-1.5 text-xs transition-colors hover:border-brand-base/40 hover:bg-brand-base/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-glow disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label={`复制${inviteCodeLabel}`}
-          >
+          <div className="inline-flex max-w-full shrink-0 items-center gap-2 self-start rounded-full border border-mg-border bg-mg-fill-0/55 px-3 py-1 text-xs">
             <LuTicketPercent size={13} className="shrink-0 text-brand-base" />
             <span className="shrink-0 text-mg-text-3">{inviteCodeLabel}</span>
             <span className="min-w-0 max-w-[9rem] truncate font-mono font-bold tracking-wider text-mg-text-1">
               {inviteCode || '—'}
             </span>
-            {copiedCode ? (
-              <LuCheck size={13} className="shrink-0 text-brand-base" />
-            ) : (
-              <LuCopy size={13} className="shrink-0 text-mg-text-3 transition-colors group-hover:text-brand-base" />
-            )}
-          </button>
+            <CopyButton
+              value={inviteCode}
+              aria-label={`复制${inviteCodeLabel}`}
+              toast={copyCodeSuccess}
+              className="-mr-1"
+            />
+          </div>
         </div>
 
         <div className="flex min-h-[54px] flex-col gap-2 rounded-md border border-mg-border bg-mg-fill-0 p-2 transition-colors hover:border-brand-base/35 focus-within:border-brand-base/45 sm:flex-row sm:items-center sm:gap-0 sm:p-0">
@@ -132,16 +88,13 @@ export function ReferralInviteCard({
               {inviteLink || '—'}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => handleCopy(inviteLink, 'link', copySuccess)}
-            disabled={!inviteLink}
+          <CopyButton
+            value={inviteLink}
             aria-label="复制邀请链接"
-            title={copiedLink ? '已复制' : '复制邀请链接'}
-            className="mb-1 mr-1 inline-flex h-8 w-8 shrink-0 items-center justify-center self-end rounded-sm text-mg-text-3 transition-colors hover:bg-brand-base/10 hover:text-brand-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-glow disabled:cursor-not-allowed disabled:opacity-50 sm:m-1.5 sm:self-auto"
-          >
-            {copiedLink ? <LuCheck size={15} className="text-brand-base" /> : <LuCopy size={15} />}
-          </button>
+            toast={copySuccess}
+            size="md"
+            className="mb-1 mr-1 self-end sm:m-1.5 sm:self-auto"
+          />
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3">

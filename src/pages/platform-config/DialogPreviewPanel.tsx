@@ -95,6 +95,7 @@ export function DialogPreviewPanel() {
         onCodeChange={setCode}
         onSendCode={async () => 60}
         onSubmit={completePreviewBinding}
+        onLogout={() => setPhoneDialogOpen(false)}
       />
     </div>
   )

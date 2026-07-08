@@ -86,6 +86,11 @@ export function dissolveTenant(tenantId: string) {
   return del<null>(`tenants/${tenantId}`)
 }
 
+/** 转让组织所有权（仅 tenant_owner）。转让后原 owner 降级为管理员，目标成员成为 tenant_owner，立即生效。 */
+export function transferOwnership(tenantId: string, toAccountId: string) {
+  return post<null>(`tenants/${tenantId}/transfer-ownership`, { to_account_id: toAccountId })
+}
+
 // ─── Tenant 邀请链接 ───────────────────────────────
 
 /** 获取组织邀请链接 */

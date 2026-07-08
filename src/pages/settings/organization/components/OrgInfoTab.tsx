@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
-import { getTenant, listTenantMembers, updateTenant, uploadTenantLogo, dissolveTenant } from '@/services/tenants'
+import { getTenant, listTenantMembers, updateTenant, uploadTenantLogo, dissolveTenant, transferOwnership } from '@/services/tenants'
 import { getSession } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
+import { Select } from '@/components/ui/Select'
 import { AvatarUpload } from '@/components/ui/AvatarUpload'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar'
 import { appToast } from '@/lib/app-toast'
@@ -34,6 +35,8 @@ export function OrgInfoTab({
   const [editing, setEditing] = useState(false)
   const [dissolveOpen, setDissolveOpen] = useState(false)
   const [confirmName, setConfirmName] = useState('')
+  const [transferOpen, setTransferOpen] = useState(false)
+  const [transferTarget, setTransferTarget] = useState('')
 
   const tenantQuery = useQuery({
     queryKey: ['tenant', tenantId],
@@ -51,6 +54,7 @@ export function OrgInfoTab({
 
   const members = membersQuery.data?.items ?? []
   const owner = members.find((m) => m.role === 'tenant_owner')
+  const transferableMembers = members.filter((m) => m.role !== 'tenant_owner')
   const usedMembers = members.length
   const tenant = tenantQuery.data
 
@@ -100,6 +104,32 @@ export function OrgInfoTab({
       await onDissolved?.()
     },
     onError: (err: Error) => appToast.requestError(err, '解散组织失败'),
+  })
+
+  const transfer = useMutation({
+    mutationFn: () => transferOwnership(tenantId, transferTarget),
+    onSuccess: async () => {
+      appToast.success(t('enterprise.info.transferSuccess'))
+      setTransferOpen(false)
+      setTransferTarget('')
+      await qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
+      await qc.invalidateQueries({ queryKey: ['tenant', tenantId] })
+      // 所有权变更影响当前用户角色/权限，刷新会话让 UI 立即降级为管理员视图
+      try {
+        const session = await getSession()
+        setAuth(
+          session.account,
+          session.active_tenant_id,
+          session.tenants,
+          session.active_workspace_id,
+          session.permissions?.granted ?? null,
+          session.permissions?.menus ?? []
+        )
+      } catch {
+        await qc.invalidateQueries({ queryKey: ['auth-session'] })
+      }
+    },
+    onError: (err: Error) => appToast.requestError(err, '转移所有权失败'),
   })
 
   if (tenantQuery.isLoading) {
@@ -207,10 +237,10 @@ export function OrgInfoTab({
                 {isOwner && tenant.type === 'enterprise' && (
                   <button
                     type="button"
-                    disabled
-                    title={t('enterprise.info.transferTodo')}
-                    // TODO(后端待接): Owner 转移端点 —— 入口就绪，接口到位后启用
-                    className="shrink-0 text-xs font-bold text-mg-text-4 bg-transparent border-none p-0 cursor-not-allowed"
+                    disabled={transferableMembers.length === 0}
+                    title={transferableMembers.length === 0 ? t('enterprise.info.transferNoMembers') : undefined}
+                    onClick={() => { setTransferTarget(''); setTransferOpen(true) }}
+                    className="shrink-0 text-xs font-bold text-brand-base hover:text-brand-base/80 bg-transparent border-none p-0 cursor-pointer transition-colors disabled:text-mg-text-4 disabled:cursor-not-allowed"
                   >
                     {t('enterprise.info.transferOwner')}
                   </button>
@@ -310,6 +340,66 @@ export function OrgInfoTab({
               placeholder={tenant.name}
               className="h-9 text-xs rounded-lg"
             />
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={transferOpen}
+        onClose={() => {
+          if (transfer.isPending) return
+          setTransferOpen(false)
+          setTransferTarget('')
+        }}
+        size="md"
+        title={t('enterprise.info.transferConfirmTitle')}
+        description={t('enterprise.info.transferConfirmDesc', { name: tenant.name })}
+        footer={(
+          <>
+            <Button
+              variant="outline"
+              disabled={transfer.isPending}
+              className="h-8 rounded-lg px-3 text-xs"
+              onClick={() => {
+                setTransferOpen(false)
+                setTransferTarget('')
+              }}
+            >
+              {t('enterprise.members.cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              loading={transfer.isPending}
+              disabled={!transferTarget}
+              className="h-8 rounded-lg px-4 text-xs font-semibold"
+              onClick={() => transfer.mutate()}
+            >
+              {t('enterprise.info.confirmTransfer')}
+            </Button>
+          </>
+        )}
+      >
+        <div className="space-y-3">
+          <div className="rounded-lg border border-mg-danger/20 bg-mg-danger/5 p-3 text-xs leading-relaxed text-mg-text-2">
+            {t('enterprise.info.transferWarn')}
+          </div>
+          <div>
+            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-mg-text-2">
+              {t('enterprise.info.transferSelectLabel')}
+            </label>
+            <Select
+              value={transferTarget}
+              onChange={setTransferTarget}
+              disabled={transfer.isPending}
+              placeholder={t('enterprise.info.transferSelectPlaceholder')}
+              className="h-9 text-xs rounded-lg"
+            >
+              {transferableMembers.map((m) => (
+                <Select.Option key={m.account.account_id} value={m.account.account_id}>
+                  {m.account.display_name || m.account.email}
+                </Select.Option>
+              ))}
+            </Select>
           </div>
         </div>
       </Modal>

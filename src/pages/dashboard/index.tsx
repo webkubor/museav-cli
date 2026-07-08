@@ -4,8 +4,10 @@
  * 组合模块：问候区 → 快速开始 → 核心指标 → 用量趋势 + 工作空间明细 → 排行 → 最近调用。
  * 视图/粒度状态在此持有并下发；视图默认按角色决定（Owner/Admin=企业视图，其余=我的视图）。
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTenantRole } from '@/hooks/use-tenant-role'
+import { useTrackContext } from '@/hooks/use-track-context'
+import { trackEvent } from '@/lib/track'
 import { useAuthStore } from '@/store/auth'
 import { GreetingHeader } from '@/features/dashboard/workbench/GreetingHeader'
 import { QuickStartSection } from '@/features/dashboard/workbench/QuickStartSection'
@@ -31,14 +33,32 @@ export default function DashboardPage() {
   const currentAccountId = useAuthStore((s) => s.account?.account_id)
   const scopedAccountId = view === 'mine' ? currentAccountId || undefined : undefined
 
+  const trackCtx = useTrackContext()
+
+  // 首屏曝光：只在挂载时触发一次，不随视图/周期切换重复上报
+  useEffect(() => {
+    trackEvent('overview_view', { ...trackCtx, view_mode: view })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleViewChange = (v: WorkbenchView) => {
+    trackEvent('overview_view_mode_change', { ...trackCtx, from_view_mode: view, to_view_mode: v })
+    setUserView(v)
+  }
+
+  const handleGranularityChange = (g: Granularity) => {
+    trackEvent('overview_period_change', { ...trackCtx, view_mode: view, from_period: granularity, to_period: g })
+    setGranularity(g)
+  }
+
   return (
     <div className="no-canvas-blur space-y-6 pb-10 animate-in fade-in duration-300">
       <GreetingHeader
         view={view}
-        onViewChange={setUserView}
+        onViewChange={handleViewChange}
         showViewToggle={showViewToggle}
         granularity={granularity}
-        onGranularityChange={setGranularity}
+        onGranularityChange={handleGranularityChange}
       />
 
       <QuickStartSection />

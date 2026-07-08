@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query'
 import { LuActivity, LuTrendingUp, LuDatabase, LuWallet } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { useBalance } from '@/hooks/use-balance'
+import { useTrackContext } from '@/hooks/use-track-context'
+import { trackEvent } from '@/lib/track'
 import { useRechargeStore } from '@/store/use-recharge-store'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { getUsageSummary } from '@/services/usage'
@@ -28,6 +30,9 @@ export function MetricsSection({
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const { symbol } = useCurrency()
+  const trackCtx = useTrackContext()
+  const onMetricCardClick = (metric: string) =>
+    trackEvent('overview_metric_card_click', { ...trackCtx, view_mode: view, metric })
 
   const range = useMemo(() => rangeForGranularity(granularity), [granularity])
   const prevRange = useMemo(() => prevRangeForGranularity(granularity), [granularity])
@@ -84,6 +89,7 @@ export function MetricsSection({
       icon: <LuActivity size={16} />,
       iconLead: true,
       trend: requestsTrend,
+      onClick: () => onMetricCardClick('requests'),
     },
     {
       title: t('dashboard.workbench.metrics.spend'),
@@ -95,6 +101,7 @@ export function MetricsSection({
       icon: <LuTrendingUp size={16} />,
       iconLead: true,
       trend: spendTrend,
+      onClick: () => onMetricCardClick('spend'),
     },
     {
       title: t('dashboard.workbench.metrics.tokens'),
@@ -108,6 +115,7 @@ export function MetricsSection({
       icon: <LuDatabase size={16} />,
       iconLead: true,
       trend: tokensTrend,
+      onClick: () => onMetricCardClick('tokens'),
     },
     {
       title: t('dashboard.workbench.metrics.balance'),
@@ -122,6 +130,7 @@ export function MetricsSection({
       // 低余额时：文字标签（颜色非唯一信息，§12.3）+ 充值入口（走全局充值弹窗）
       sub: lowBalance ? t('dashboard.workbench.metrics.balanceLow') : undefined,
       action: lowBalance ? { label: t('dashboard.workbench.metrics.recharge'), onClick: openRecharge } : undefined,
+      onClick: () => onMetricCardClick('balance'),
     },
   ]
 

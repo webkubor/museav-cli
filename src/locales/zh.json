@@ -747,7 +747,7 @@
       "forwardUnknown": "转发未知"
     },
     "countSuffix": "{{count}} 个空间",
-    "searchPlaceholder": "按名称、Slug 或工作空间 ID 搜索",
+    "searchPlaceholder": "按名称、Slug、工作空间 ID、描述或负责人搜索",
     "createBtn": "创建空间",
     "loading": "正在获取数据...",
     "empty": "暂无匹配的工作空间数据",
@@ -770,9 +770,9 @@
       "slugPlaceholder": "如：prod-app",
       "descLabel": "空间描述 (选填)",
       "descPlaceholder": "简述该工作空间的用途...",
-      "inviteLabel": "邀请成员 (选填)",
-      "invitePlaceholder": "输入邮箱，多个邮箱可用逗号、空格或换行分隔",
-      "inviteHint": "创建成功后将同时发送项目邀请，最多 20 个邮箱。",
+      "inviteLabel": "初始成员 (选填)",
+      "invitePlaceholder": "搜索组织成员姓名或邮箱...",
+      "inviteHint": "创建成功后将同时发送工作空间邀请，最多 20 人。",
       "inviteRoleLabel": "成员角色",
       "inviteRoleMember": "成员",
       "inviteRoleAdmin": "管理员"
@@ -781,10 +781,8 @@
       "createSuccess": "工作空间 \"{{name}}\" 创建成功",
       "createError": "创建工作空间失败",
       "nameRequired": "工作空间名称不能为空",
-      "slugRequired": "唯一标识不能为空",
-      "slugFormat": "唯一标识仅支持小写字母、数字和连字符",
       "inviteLimit": "一次最多邀请 {{count}} 个邮箱",
-      "inviteEmailInvalid": "邀请成员中存在无效邮箱"
+      "limitReached": "已达工作空间上限（{{max}} 个）"
     },
     "detail": {
       "back": "返回工作空间列表",
@@ -1407,6 +1405,7 @@
     "workbench": {
       "view": {
         "enterprise": "企业视图",
+        "space": "空间视图",
         "mine": "我的视图",
         "mineTodo": "当前展示组织口径的用量数据"
       },
@@ -1717,7 +1716,10 @@
       "removeDesc": "移除后该成员将无法访问此组织及其下的工作空间，此操作不可撤销。",
       "confirmRemove": "确认移除",
       "cannotManageOwner": "无法管理 Owner 或其他管理员",
-      "workspaceHintNonMember": "Owner / 管理员默认可访问全部工作空间"
+      "workspaceHintNonMember": "Owner / 管理员默认可访问全部工作空间",
+      "saveSuccess": "修改已保存",
+      "roleUpdateError": "更新角色失败",
+      "statusUpdateError": "更新状态失败"
     },
     "info": {
       "avatarHint": "点击头像更换 · 支持 PNG/JPEG/WebP，最大 2MB",
@@ -1751,7 +1753,27 @@
       "colResult": "结果",
       "export": "导出",
       "emptyTitle": "暂无审计记录",
-      "emptyDesc": "管理动作产生后会显示在这里"
+      "emptyDesc": "管理动作产生后会显示在这里",
+      "loadError": "审计记录加载失败，请重试",
+      "resultSuccess": "成功",
+      "resultFailure": "失败",
+      "resultDenied": "已拒绝",
+      "scopeTenant": "企业",
+      "scopeWorkspace": "工作空间 / {{name}}",
+      "detailTitle": "审计详情",
+      "detailPlaceholder": "点击左侧记录查看详情",
+      "detailAction": "动作",
+      "detailActor": "操作人",
+      "detailTarget": "对象",
+      "detailScope": "作用范围",
+      "detailRequestId": "请求 ID",
+      "detailErrorCode": "错误码",
+      "detailChanges": "变更内容",
+      "detailAttemptedChanges": "尝试的变更",
+      "detailNoChanges": "本操作无字段变更",
+      "exportSuccess": "审计日志已导出",
+      "exportError": "导出失败，请稍后重试",
+      "exportNoPermission": "无权限导出审计日志，请联系企业管理员开通"
     },
     "invite": {
       "configTitle": "邀请配置",

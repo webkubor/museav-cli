@@ -61,6 +61,14 @@ const KIND_CONFIG: Record<TaskKind, { label: string; icon: React.ReactNode }> = 
   audio: { label: '音乐生成', icon: <LuMusic        size={13} /> },
 }
 
+// GET /async-tasks 只支持 preset 三档（1h/24h/7d），无 from/to 自定义区间——不做自定义日期选择器
+const TIME_PRESET_OPTIONS: Array<{ label: string; value: string }> = [
+  { label: '不限时间', value: 'all' },
+  { label: '近 1 小时', value: '1h' },
+  { label: '近 24 小时', value: '24h' },
+  { label: '近 7 天', value: '7d' },
+]
+
 // ─── 工具函数 ─────────────────────────────────────────────────────────────────
 
 function fmtDate(iso: string | undefined) {
@@ -381,12 +389,13 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
  * 异步任务面板（#361）：从原「任务历史」页抽出，内嵌到「调用日志」页的「异步任务」记录类型下。
  * 视图范围沿用调用日志：mine=按当前账号裁剪；enterprise/space=租户/空间范围（服务端权威裁剪）。
  */
-export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise' | 'mine'; currentAccountId?: string }) {
+export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise' | 'mine' | 'space'; currentAccountId?: string }) {
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
 
   const [search, setSearch]         = useState('')
   const [statusFilter, setStatus]   = useState('all')
   const [kindFilter, setKind]       = useState('all')
+  const [presetFilter, setPreset]   = useState('all')
   const [offset, setOffset]         = useState(0)
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -398,10 +407,11 @@ export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise'
     // 「我的视图」按当前账号裁剪；企业/空间视图交服务端按角色/负责空间裁剪（见 #357 后端口径）
     account_id: view === 'mine' ? currentAccountId || undefined : undefined,
     status: statusFilter !== 'all' ? statusFilter : undefined,
+    preset: presetFilter !== 'all' ? (presetFilter as '1h' | '24h' | '7d') : undefined,
     search: search || undefined,
     limit: PAGE_SIZE,
     offset,
-  }), [statusFilter, search, offset, view, currentAccountId])
+  }), [statusFilter, presetFilter, search, offset, view, currentAccountId])
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['tasks', tenantId, params],
@@ -437,6 +447,7 @@ export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise'
   const handleSearch = (v: string) => { setSearch(v); setOffset(0) }
   const handleStatus = (v: string) => { setStatus(v); setOffset(0) }
   const handleKind   = (v: string) => { setKind(v);   setOffset(0) }
+  const handlePreset = (v: string) => { setPreset(v); setOffset(0) }
 
   const filteredItems = useMemo(() => {
     if (kindFilter === 'all') return items
@@ -456,6 +467,12 @@ export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise'
             className="mg-control-md w-60 rounded-lg border border-mg-border bg-mg-fill-0 pl-8 pr-3 mg-text-body focus:border-brand-base focus:outline-none focus:ring-1 focus:ring-brand-glow/30 text-mg-text-1 placeholder:text-mg-text-3"
           />
         </div>
+
+        <Select value={presetFilter} onChange={handlePreset} className="mg-control-md w-32 mg-text-body">
+          {TIME_PRESET_OPTIONS.map((option) => (
+            <Select.Option key={option.value} value={option.value}>{option.label}</Select.Option>
+          ))}
+        </Select>
 
         <Select value={kindFilter} onChange={handleKind} className="mg-control-md w-32 mg-text-body">
           <Select.Option value="all">全部类型</Select.Option>
@@ -521,7 +538,7 @@ export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise'
               <EmptyState
                 colSpan={7}
                 title={
-                  search || statusFilter !== 'all' || kindFilter !== 'all'
+                  search || statusFilter !== 'all' || kindFilter !== 'all' || presetFilter !== 'all'
                     ? '没有符合条件的任务'
                     : '暂无任务'
                 }

@@ -1,7 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listTenantMembers, removeTenantMember, updateTenantMemberRole } from '@/services/tenants'
+import {
+  listTenantMembers,
+  reactivateTenantMember,
+  removeTenantMember,
+  suspendTenantMember,
+  updateTenantMemberRole,
+} from '@/services/tenants'
 import { listWorkspaces } from '@/services/workspaces'
 import { formatDate } from '@/lib/format-date'
 import type { TenantMember } from '@/types'
@@ -52,6 +58,7 @@ export function MembersTab({
 
   // 编辑弹窗内的可变状态
   const [draftRole, setDraftRole] = useState<EditableRole>('tenant_member')
+  const [draftStatus, setDraftStatus] = useState<'active' | 'suspended'>('active')
 
   const membersQuery = useQuery({
     queryKey: ['tenant-members', tenantId],
@@ -74,13 +81,37 @@ export function MembersTab({
   const changeRole = useMutation({
     mutationFn: (values: { accountId: string; role: EditableRole }) =>
       updateTenantMemberRole(tenantId, values.accountId, values.role),
-    onSuccess: () => {
-      appToast.success('角色已更新')
+    onError: (err: Error) => appToast.requestError(err, t('enterprise.members.roleUpdateError')),
+  })
+
+  // 停用 / 启用成员（#340）：与 changeRole 各自独立的 mutation，编辑弹窗保存时按需顺序调用
+  const changeStatus = useMutation({
+    mutationFn: (values: { accountId: string; status: 'active' | 'suspended' }) =>
+      values.status === 'suspended'
+        ? suspendTenantMember(tenantId, values.accountId)
+        : reactivateTenantMember(tenantId, values.accountId),
+    onError: (err: Error) => appToast.requestError(err, t('enterprise.members.statusUpdateError')),
+  })
+
+  const savingEdit = changeRole.isPending || changeStatus.isPending
+
+  async function handleSaveEdit() {
+    if (!editTarget) return
+    const accountId = editTarget.account.account_id
+    try {
+      if (draftRole !== editTarget.role) {
+        await changeRole.mutateAsync({ accountId, role: draftRole })
+      }
+      if (draftStatus !== editTarget.status) {
+        await changeStatus.mutateAsync({ accountId, status: draftStatus })
+      }
+      appToast.success(t('enterprise.members.saveSuccess'))
       qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
       setEditTarget(null)
-    },
-    onError: (err: Error) => appToast.requestError(err, '更新角色失败'),
-  })
+    } catch {
+      // 具体错误已由各 mutation 的 onError 提示，这里仅阻止弹窗关闭，方便用户重试
+    }
+  }
 
   const removeMember = useMutation({
     mutationFn: (accountId: string) => removeTenantMember(tenantId, accountId),
@@ -105,7 +136,7 @@ export function MembersTab({
   const filtered = useMemo(() => {
     return members.filter((m) => {
       if (roleFilter !== 'all' && m.role !== roleFilter) return false
-      if (statusFilter !== 'all' && (m.status ?? 'active') !== (statusFilter as string)) return false
+      if (statusFilter !== 'all' && m.status !== statusFilter) return false
       // wsFilter：后端无成员-工作空间授权明细，无法真正过滤 → 仅当选了具体空间时不做误过滤，保留全部。
       // ponytail: workspace filter is a no-op until backend exposes per-member workspace grants.
       return true
@@ -115,6 +146,7 @@ export function MembersTab({
   function openEdit(m: TenantMember) {
     setEditTarget(m)
     setDraftRole(m.role === 'tenant_admin' ? 'tenant_admin' : 'tenant_member')
+    setDraftStatus(m.status)
   }
 
   // 编辑弹窗内可选角色：Admin 操作者不能把成员提为 Admin
@@ -202,9 +234,7 @@ export function MembersTab({
                 {filtered.map((m) => {
                   const manageable = canManageMember(m)
                   const isPrivileged = m.role === 'tenant_owner' || m.role === 'tenant_admin'
-                  // 后端 TenantMember.status 目前仅 'active'；'suspended' 为前端预留展示。
-                  // TODO(后端待接): 成员停用状态字段
-                  const status: string = m.status ?? 'active'
+                  const status = m.status
                   return (
                     <TableRow key={m.account.account_id}>
                       <TableCell>
@@ -278,21 +308,21 @@ export function MembersTab({
       {/* 编辑成员弹窗 */}
       <Modal
         open={editTarget !== null}
-        onClose={() => { if (!changeRole.isPending) setEditTarget(null) }}
+        onClose={() => { if (!savingEdit) setEditTarget(null) }}
         size="md"
         title={t('enterprise.members.editTitle')}
         description={editTarget?.account.email}
         footer={
           <div className="flex gap-2 justify-end">
-            <Button variant="outline" className="h-8 px-3 rounded-lg text-xs" disabled={changeRole.isPending} onClick={() => setEditTarget(null)}>
+            <Button variant="outline" className="h-8 px-3 rounded-lg text-xs" disabled={savingEdit} onClick={() => setEditTarget(null)}>
               {t('enterprise.members.cancel')}
             </Button>
             <Button
               variant="brand"
-              loading={changeRole.isPending}
-              disabled={!editTarget || draftRole === editTarget.role}
+              loading={savingEdit}
+              disabled={!editTarget || (draftRole === editTarget.role && draftStatus === editTarget.status)}
               className="h-8 px-4 rounded-lg text-xs font-semibold bg-brand-base text-white hover:bg-brand-base/90"
-              onClick={() => editTarget && changeRole.mutate({ accountId: editTarget.account.account_id, role: draftRole })}
+              onClick={handleSaveEdit}
             >
               {t('enterprise.members.save')}
             </Button>
@@ -314,6 +344,38 @@ export function MembersTab({
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
+            </div>
+            {/* 状态：Owner 不可停用（复用 canManageMember 的边界判断，与操作列一致） */}
+            <div>
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-mg-text-2">
+                {t('enterprise.members.statusLabel')}
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDraftStatus('active')}
+                  className={`h-9 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+                    draftStatus === 'active'
+                      ? 'border-mg-success/50 bg-mg-success/10 text-mg-success'
+                      : 'border-mg-border/50 bg-mg-bg-0 text-mg-text-2 hover:border-mg-success/40'
+                  }`}
+                >
+                  {t('enterprise.members.statusActive')}
+                </button>
+                <button
+                  type="button"
+                  disabled={!canManageMember(editTarget)}
+                  onClick={() => setDraftStatus('suspended')}
+                  title={!canManageMember(editTarget) ? t('enterprise.members.cannotManageOwner') : undefined}
+                  className={`h-9 rounded-lg border text-xs font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 ${
+                    draftStatus === 'suspended'
+                      ? 'border-mg-danger/50 bg-mg-danger/10 text-mg-danger'
+                      : 'border-mg-border/50 bg-mg-bg-0 text-mg-text-2 hover:border-mg-danger/40'
+                  }`}
+                >
+                  {t('enterprise.members.statusSuspended')}
+                </button>
+              </div>
             </div>
             {/* 授权工作空间：Owner/Admin 只读「全部工作空间」；仅 Member 可改 */}
             <div>

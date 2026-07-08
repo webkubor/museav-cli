@@ -39,6 +39,13 @@ export type {
   ApiPlatformListResponse,
 } from './observability'
 export type { BillingMoneyStatsParams } from './overview'
-export type { TenantListResponse, TenantMemberListParams, UpdateTenantRequest } from './tenants'
+export type {
+  TenantListResponse,
+  TenantMemberListParams,
+  UpdateTenantRequest,
+  TenantAuditLogFilterParams,
+  TenantAuditLogListParams,
+  TenantAuditLogExportParams,
+} from './tenants'
 export type { UsageSeriesParams, UsageSummaryParams } from './usage'
 export type { WorkspaceListResponse, WorkspaceMemberListParams } from './workspaces'

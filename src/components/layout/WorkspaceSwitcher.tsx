@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { LuFolderOpen, LuChevronsUpDown, LuCheck, LuSettings } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
+import { useTrackContext } from '@/hooks/use-track-context'
+import { trackEvent } from '@/lib/track'
 import { listWorkspaces } from '@/services/workspaces'
 import type { WorkspaceItem } from '@/types'
 import {
@@ -24,6 +26,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
   const location = useLocation()
   const queryClient = useQueryClient()
   const { activeTenantId, activeWorkspaceId, setActiveWorkspaceId } = useAuthStore()
+  const trackCtx = useTrackContext()
 
   const { data: workspaces = [] } = useQuery<WorkspaceItem[]>({
     queryKey: ['workspaces', activeTenantId],
@@ -39,6 +42,11 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
 
   function handleSwitchWorkspace(workspaceId: string) {
     if (workspaceId === activeWorkspaceId) return
+    trackEvent('workspace_selector_change', {
+      ...trackCtx,
+      from_workspace_id: activeWorkspaceId ?? '',
+      to_workspace_id: workspaceId,
+    })
     setActiveWorkspaceId(workspaceId)
     queryClient.removeQueries({ queryKey: ['api-keys'] })
     queryClient.removeQueries({ queryKey: ['guardrails'] })
@@ -80,7 +88,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/settings/workspace')}>
+            <DropdownMenuItem onClick={() => navigate('/workspaces')}>
               <LuSettings size={13} className="mr-2 text-mg-text-3 shrink-0" />
               <span>{t('header.workspaceMgmt')}</span>
             </DropdownMenuItem>
@@ -160,7 +168,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => navigate('/settings/workspace')}>
+          <DropdownMenuItem onClick={() => navigate('/workspaces')}>
             <LuSettings size={13} className="mr-2 text-mg-text-3 shrink-0" />
             <span>{t('header.workspaceMgmt')}</span>
           </DropdownMenuItem>

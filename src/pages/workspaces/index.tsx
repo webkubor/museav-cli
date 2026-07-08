@@ -1,9 +1,9 @@
 /**
- * 项目管理页
+ * 空间管理页
  * 路由：/workspaces
  * API：GET /workspaces、POST /workspaces
  */
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuthStore } from '@/store/auth'
 import { useTranslation } from 'react-i18next'
 import {
@@ -25,6 +25,7 @@ import {
 } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listWorkspaces, createWorkspace, getWorkspace } from '@/services/workspaces'
+import { listTenantMembers } from '@/services/tenants'
 import { useTenantRole } from '@/hooks/use-tenant-role'
 import {
   MembersTab,
@@ -42,23 +43,26 @@ import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
+import { TagInput, type TagOption } from '@/components/ui/TagInput'
 import { cn, formatMoney as fmtMoney } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
 import type { WorkspaceDetail, Money } from '@/types'
 
 type InviteRole = 'ws_admin' | 'ws_member'
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MAX_INVITE_MEMBERS = 20
 
-function parseInviteEmails(value: string) {
-  return Array.from(new Set(value.split(/[\s,;，；]+/).map((email) => email.trim()).filter(Boolean)))
+/** 名称派生 slug：小写化、空白转短横线，过滤非字母数字短横线的非法字符 */
+function slugify(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]+/g, '')
 }
 
 export default function WorkspacesPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
+  const currentAccountEmail = useAuthStore((s) => s.account?.email)
+  const { isEnterprise, tenant } = useTenantRole()
   const [searchValue, setSearchValue] = useState('')
   const [modalVisible, setModalVisible] = useState(false)
   // 单页结构：选中卡片在下方展开详情（不跳路由，对齐原型 .space-detail-shell）
@@ -69,8 +73,11 @@ export default function WorkspacesPage() {
   // 受控表单状态
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
+  // 用户是否手动改过 Slug：改过之后名称变化不再联动覆盖
+  const [slugTouched, setSlugTouched] = useState(false)
   const [description, setDescription] = useState('')
-  const [inviteEmails, setInviteEmails] = useState('')
+  // 初始成员：企业租户下从组织成员里搜索选取，值为对方邮箱（直接对齐 invite_members 参数）
+  const [selectedMemberEmails, setSelectedMemberEmails] = useState<string[]>([])
   const [inviteRole, setInviteRole] = useState<InviteRole>('ws_member')
 
   // ─── 1. TanStack Query 真实获取工作空间接口数据 ─────────────────
@@ -80,6 +87,30 @@ export default function WorkspacesPage() {
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })
+
+  // 企业组织成员（初始成员 combobox 数据源）；个人租户没有其他企业成员，不发这个请求
+  const tenantMembersQuery = useQuery({
+    queryKey: ['tenant-members', activeTenantId],
+    queryFn: () => listTenantMembers(activeTenantId!, { page_size: 100 }),
+    enabled: Boolean(activeTenantId) && isEnterprise,
+    staleTime: 60_000,
+  })
+
+  // 候选成员：排除自己（创建者自动成为负责人，无需再邀请自己）
+  const memberOptions: TagOption[] = useMemo(() => {
+    const items = tenantMembersQuery.data?.items ?? []
+    return items
+      .filter((m) => m.account.email !== currentAccountEmail)
+      .map((m) => ({
+        value: m.account.email,
+        label: `${m.account.display_name} (${m.account.email})`,
+      }))
+  }, [tenantMembersQuery.data, currentAccountEmail])
+
+  // 工作空间数已达当前租户上限（现有 ['tenants'] query，不重复发请求）
+  const atWorkspaceLimit = Boolean(
+    tenant && tenant.current_workspace_count >= tenant.max_workspaces
+  )
 
   // 默认选中第一个空间（对齐原型 selectedWorkspaceId 默认 records[0]）；
   // 列表变化时若选中项已不存在，回落到第一个。派生有效选中 id，避免 effect 级联渲染。
@@ -107,8 +138,9 @@ export default function WorkspacesPage() {
       setModalVisible(false)
       setName('')
       setSlug('')
+      setSlugTouched(false)
       setDescription('')
-      setInviteEmails('')
+      setSelectedMemberEmails([])
       setInviteRole('ws_member')
       queryClient.invalidateQueries({ queryKey: ['workspaces', activeTenantId] })
     },
@@ -122,12 +154,12 @@ export default function WorkspacesPage() {
     }
   })
 
-  // 支持按项目名称、slug、workspace_id 模糊搜索。
+  // 支持按名称、slug、workspace_id、描述、负责人模糊搜索。
   const searchKeyword = searchValue.trim().toLowerCase()
   const filteredData = (data || []).filter((item) => {
     if (!searchKeyword) return true
-    return [item.name, item.slug, item.workspace_id].some((value) =>
-      value.toLowerCase().includes(searchKeyword),
+    return [item.name, item.slug, item.workspace_id, item.description, item.owner?.display_name].some((value) =>
+      (value ?? '').toLowerCase().includes(searchKeyword),
     )
   })
 
@@ -136,24 +168,13 @@ export default function WorkspacesPage() {
       toast.error(t('workspaces.toast.nameRequired'))
       return
     }
-    if (!slug.trim()) {
-      toast.error(t('workspaces.toast.slugRequired'))
-      return
-    }
-    if (!/^[a-z0-9-]+$/.test(slug)) {
-      toast.error(t('workspaces.toast.slugFormat'))
-      return
-    }
-    const inviteMembers = parseInviteEmails(inviteEmails)
-    if (inviteMembers.length > MAX_INVITE_MEMBERS) {
+    if (selectedMemberEmails.length > MAX_INVITE_MEMBERS) {
       toast.error(t('workspaces.toast.inviteLimit', { count: MAX_INVITE_MEMBERS }))
       return
     }
-    if (inviteMembers.some((email) => !EMAIL_PATTERN.test(email))) {
-      toast.error(t('workspaces.toast.inviteEmailInvalid'))
-      return
-    }
-    createMutation.mutate({ name, slug, description, inviteMembers, inviteRole })
+    // Slug 允许留空：未手动改过就没有兜底，提交时统一派生/清洗，不再硬拦截报错
+    const finalSlug = slugify(slug) || slugify(name)
+    createMutation.mutate({ name, slug: finalSlug, description, inviteMembers: selectedMemberEmails, inviteRole })
   }
 
   // 摘要条派生数据（PRD 原型：我的工作空间 / 我负责的空间 / 日志采集 / 转发状态）
@@ -206,6 +227,8 @@ export default function WorkspacesPage() {
           <Button
             variant="brand"
             data-umami-event="create_workspace"
+            disabled={atWorkspaceLimit}
+            title={atWorkspaceLimit && tenant ? t('workspaces.toast.limitReached', { max: tenant.max_workspaces }) : undefined}
             onClick={() => setModalVisible(true)}
             className="!rounded-full px-6 h-[38px] font-bold"
           >
@@ -470,7 +493,12 @@ export default function WorkspacesPage() {
               <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.nameLabel')}</div>
               <Input
                 value={name}
-                onChange={e => setName(e.target.value)}
+                onChange={e => {
+                  const v = e.target.value
+                  setName(v)
+                  // 用户还没手动改过 Slug 时，名称实时派生同步进 Slug
+                  if (!slugTouched) setSlug(slugify(v))
+                }}
                 placeholder={t('workspaces.modal.namePlaceholder')}
               />
             </div>
@@ -478,7 +506,7 @@ export default function WorkspacesPage() {
               <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.slugLabel')}</div>
               <Input
                 value={slug}
-                onChange={e => setSlug(e.target.value)}
+                onChange={e => { setSlugTouched(true); setSlug(e.target.value) }}
                 placeholder={t('workspaces.modal.slugPlaceholder')}
               />
             </div>
@@ -492,26 +520,28 @@ export default function WorkspacesPage() {
                 className="min-h-[84px]"
               />
             </div>
-            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_128px]">
-              <div className="flex flex-col gap-1.5">
-                <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.inviteLabel')}</div>
-                <Textarea
-                  value={inviteEmails}
-                  onChange={(e) => setInviteEmails(e.target.value)}
-                  placeholder={t('workspaces.modal.invitePlaceholder')}
-                  rows={3}
-                  className="min-h-[84px]"
-                />
-                <div className="text-[11px] text-mg-text-3">{t('workspaces.modal.inviteHint')}</div>
+            {/* 初始成员：仅企业租户可选（个人租户没有其他企业成员可邀请） */}
+            {isEnterprise && (
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_128px]">
+                <div className="flex flex-col gap-1.5">
+                  <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.inviteLabel')}</div>
+                  <TagInput
+                    value={selectedMemberEmails}
+                    onChange={setSelectedMemberEmails}
+                    options={memberOptions}
+                    placeholder={t('workspaces.modal.invitePlaceholder')}
+                  />
+                  <div className="text-[11px] text-mg-text-3">{t('workspaces.modal.inviteHint')}</div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.inviteRoleLabel')}</div>
+                  <Select value={inviteRole} onChange={(value) => setInviteRole(value as InviteRole)}>
+                    <Select.Option value="ws_member">{t('workspaces.modal.inviteRoleMember')}</Select.Option>
+                    <Select.Option value="ws_admin">{t('workspaces.modal.inviteRoleAdmin')}</Select.Option>
+                  </Select>
+                </div>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.inviteRoleLabel')}</div>
-                <Select value={inviteRole} onChange={(value) => setInviteRole(value as InviteRole)}>
-                  <Select.Option value="ws_member">{t('workspaces.modal.inviteRoleMember')}</Select.Option>
-                  <Select.Option value="ws_admin">{t('workspaces.modal.inviteRoleAdmin')}</Select.Option>
-                </Select>
-              </div>
-            </div>
+            )}
           </div>
       </Modal>
     </div>
@@ -587,7 +617,7 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
       desc: t('workspaces.detail.overview.goLogsDesc'),
       icon: <LuClipboardList size={18} className="text-brand-base" />,
       bg: 'bg-brand-base/8',
-      onClick: () => navigate('/logs'),
+      onClick: () => navigate(`/logs?workspace=${ws.workspace_id}`),
     },
     {
       title: t('workspaces.summary.forwarding'),

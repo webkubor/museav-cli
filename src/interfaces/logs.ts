@@ -32,6 +32,8 @@ export interface CallLogListParams extends QueryParams {
   provider_id?: string
   provider_type?: string
   status?: 'accepted' | 'succeeded' | 'failed' | 'rejected'
+  /** 护栏命中筛选，与 status 正交（一次调用可失败但未命中护栏，或成功但命中护栏） */
+  guardrail?: 'all' | 'hit' | 'not_hit'
   /** 关键词搜索 request_id 或消息片段 */
   q?: string
   cursor?: string

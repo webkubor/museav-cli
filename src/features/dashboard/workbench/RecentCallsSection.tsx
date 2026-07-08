@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { LuArrowUpRight } from 'react-icons/lu'
 import { listCallLogs } from '@/services/logs'
 import { useAuthStore } from '@/store/auth'
+import { useTrackContext } from '@/hooks/use-track-context'
+import { trackEvent } from '@/lib/track'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
@@ -26,7 +28,14 @@ export function RecentCallsSection({ view = 'enterprise', accountId }: { view?: 
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const navigate = useNavigate()
+  const trackCtx = useTrackContext()
   const isMine = view === 'mine'
+
+  const handleViewAll = () => {
+    trackEvent('overview_recent_logs_view_all_click', { ...trackCtx, view_mode: view })
+    trackEvent('destination_page_view', { ...trackCtx, destination: '/logs' })
+    navigate(`/logs?view=${view}`)
+  }
 
   // 总览是租户级页面：最近调用按租户口径取，不读工作空间选择器的 activeWorkspaceId
   // （PRD §7.3：选择器只驱动 workspace 级页面）。我的视图按 account_id 裁剪到当前账号。
@@ -45,7 +54,7 @@ export function RecentCallsSection({ view = 'enterprise', accountId }: { view?: 
         <h3 className="font-bold text-base text-mg-text-1 m-0">{t('dashboard.workbench.recent.title')}</h3>
         <button
           type="button"
-          onClick={() => navigate(`/logs?view=${view}`)}
+          onClick={handleViewAll}
           className="inline-flex items-center gap-1 text-xs font-bold text-brand-base hover:text-brand-deep cursor-pointer"
         >
           {t('dashboard.workbench.recent.viewAll')}

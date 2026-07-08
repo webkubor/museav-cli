@@ -747,7 +747,7 @@
       "forwardUnknown": "Forward unknown"
     },
     "countSuffix": "{{count}} spaces",
-    "searchPlaceholder": "Search by name, slug, or workspace ID",
+    "searchPlaceholder": "Search by name, slug, workspace ID, description, or owner",
     "createBtn": "Create Space",
     "loading": "Loading...",
     "empty": "No matching workspaces",
@@ -770,9 +770,9 @@
       "slugPlaceholder": "e.g. prod-app",
       "descLabel": "Description (Optional)",
       "descPlaceholder": "Describe the purpose...",
-      "inviteLabel": "Invite members (Optional)",
-      "invitePlaceholder": "Enter emails separated by commas, spaces, or new lines",
-      "inviteHint": "Invitations are sent after creation. Up to 20 emails.",
+      "inviteLabel": "Initial members (Optional)",
+      "invitePlaceholder": "Search org members by name or email...",
+      "inviteHint": "Invitations are sent after creation. Up to 20 people.",
       "inviteRoleLabel": "Role",
       "inviteRoleMember": "Member",
       "inviteRoleAdmin": "Admin"
@@ -781,10 +781,8 @@
       "createSuccess": "Workspace \"{{name}}\" created",
       "createError": "Failed to create",
       "nameRequired": "Workspace name cannot be empty",
-      "slugRequired": "Slug cannot be empty",
-      "slugFormat": "Slug only supports lowercase letters, numbers, and hyphens",
       "inviteLimit": "You can invite up to {{count}} emails at once",
-      "inviteEmailInvalid": "One or more invite emails are invalid"
+      "limitReached": "Workspace limit reached ({{max}})"
     },
     "detail": {
       "back": "Back to workspaces",
@@ -1408,6 +1406,7 @@
     "workbench": {
       "view": {
         "enterprise": "Org view",
+        "space": "Space view",
         "mine": "My view",
         "mineTodo": "Showing organization-level usage data"
       },
@@ -1530,7 +1529,7 @@
       "models": "Model catalog",
       "guardrails": "Guardrails",
       "compare": "Compare",
-      "workspaces": "Projects",
+      "workspaces": "Workspaces",
       "orgSettings": "Org Settings"
     }
   },
@@ -1705,7 +1704,10 @@
       "removeDesc": "The member will lose access to this organization and its workspaces. This cannot be undone.",
       "confirmRemove": "Remove",
       "cannotManageOwner": "Cannot manage the Owner or other admins",
-      "workspaceHintNonMember": "Owners / admins can access all workspaces by default"
+      "workspaceHintNonMember": "Owners / admins can access all workspaces by default",
+      "saveSuccess": "Changes saved",
+      "roleUpdateError": "Failed to update role",
+      "statusUpdateError": "Failed to update status"
     },
     "info": {
       "avatarHint": "Click to change · PNG/JPEG/WebP, max 2MB",
@@ -1739,7 +1741,27 @@
       "colResult": "Result",
       "export": "Export",
       "emptyTitle": "No audit records",
-      "emptyDesc": "Management actions will appear here"
+      "emptyDesc": "Management actions will appear here",
+      "loadError": "Failed to load audit records, please retry",
+      "resultSuccess": "Success",
+      "resultFailure": "Failed",
+      "resultDenied": "Denied",
+      "scopeTenant": "Organization",
+      "scopeWorkspace": "Workspace / {{name}}",
+      "detailTitle": "Audit details",
+      "detailPlaceholder": "Select a record on the left to view details",
+      "detailAction": "Action",
+      "detailActor": "Actor",
+      "detailTarget": "Target",
+      "detailScope": "Scope",
+      "detailRequestId": "Request ID",
+      "detailErrorCode": "Error code",
+      "detailChanges": "Changes",
+      "detailAttemptedChanges": "Attempted changes",
+      "detailNoChanges": "No field changes in this action",
+      "exportSuccess": "Audit log exported",
+      "exportError": "Export failed, please try again later",
+      "exportNoPermission": "You don't have permission to export audit logs, contact an organization admin"
     },
     "invite": {
       "configTitle": "Invite settings",

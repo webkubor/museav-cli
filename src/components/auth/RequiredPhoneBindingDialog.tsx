@@ -17,10 +17,12 @@ interface RequiredPhoneBindingDialogProps {
   phone: string
   code: string
   loading?: boolean
+  logoutLoading?: boolean
   onPhoneChange: (value: string) => void
   onCodeChange: (value: string) => void
   onSendCode: () => Promise<number | void>
   onSubmit: () => void
+  onLogout: () => void
 }
 
 const PHONE_RE = /^1[3-9]\d{9}$/
@@ -31,10 +33,12 @@ export function RequiredPhoneBindingDialog({
   phone,
   code,
   loading = false,
+  logoutLoading = false,
   onPhoneChange,
   onCodeChange,
   onSendCode,
   onSubmit,
+  onLogout,
 }: RequiredPhoneBindingDialogProps) {
   const phoneValid = PHONE_RE.test(phone)
   const codeValid = CODE_RE.test(code)
@@ -88,14 +92,23 @@ export function RequiredPhoneBindingDialog({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2 sm:gap-2">
           <Button
             className="w-full"
             loading={loading}
-            disabled={!phoneValid || !codeValid}
+            disabled={!phoneValid || !codeValid || logoutLoading}
             onClick={onSubmit}
           >
             完成绑定并进入控制台
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full"
+            loading={logoutLoading}
+            disabled={loading}
+            onClick={onLogout}
+          >
+            暂不绑定，退出登录
           </Button>
         </DialogFooter>
 

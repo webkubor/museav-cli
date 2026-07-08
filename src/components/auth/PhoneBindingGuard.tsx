@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuthStore } from '@/store/auth'
 import { useMarket } from '@/hooks/useMarket'
+import { useAuth } from '@/components/auth/use-auth'
 import { getCaptchaParam } from '@/lib/aliyun-captcha'
 import { sendSmsCode } from '@/services/auth'
 import { bindPhone } from '@/services/account'
@@ -16,9 +17,11 @@ import { RequiredPhoneBindingDialog } from '@/components/auth/RequiredPhoneBindi
 export function PhoneBindingGuard() {
   const account = useAuthStore((s) => s.account)
   const market = useMarket()
+  const { signOut } = useAuth()
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
 
   // 仅国内环境 + 已登录 + 无手机号 → 强制补绑
   const open = market === 'domestic' && !!account && !account.phone
@@ -48,6 +51,17 @@ export function PhoneBindingGuard() {
     }
   }
 
+  // 退出登录逃生舱：不想现在绑定手机号的用户，走真实登出（清服务端 session）跳登录页，
+  // 而不是卡死在弹窗里——之前没有这个口子，用户清本地缓存也退不出去（session 在服务端 cookie，本地清了没用）。
+  async function handleLogout() {
+    setLoggingOut(true)
+    try {
+      await signOut()
+    } finally {
+      setLoggingOut(false)
+    }
+  }
+
   if (!open) return null
 
   return (
@@ -56,10 +70,12 @@ export function PhoneBindingGuard() {
       phone={phone}
       code={code}
       loading={loading}
+      logoutLoading={loggingOut}
       onPhoneChange={setPhone}
       onCodeChange={setCode}
       onSendCode={handleSendCode}
       onSubmit={handleSubmit}
+      onLogout={handleLogout}
     />
   )
 }

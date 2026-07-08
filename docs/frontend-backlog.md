@@ -46,10 +46,11 @@
 
 ## 3. 其他已知前端缺口（本轮盘点，纯前端可推进的）
 
-### 3.1 安全护栏 v1.0.3 重构 ⬜ P0（roadmap V1.0.3）
-- **现状**：`guardrails` 页只有护栏增删改 + 预算策略；PRD v1.0.3 新增「三层生效预览 / scope·kind / 提额到期 / 全局三预算 / 同空间互斥 / 审计」**前端全没做**。
-- **依赖**：护栏 docx PRD（`H4TGd...`）+ 后端 #378-381（未交付）。**动手前必须先读 PRD docx**，勿凭印象。
-- **任务单**：后端 #378/#379/#380/#381；前端单**待读护栏 PRD docx 后再建**（含 MECE），不凭印象先占坑。
+### 3.1 安全护栏 v1.0.3 重构 🟡 P0（roadmap V1.0.3）— 主体已上线
+- **已做**（`df6f139` 已合并 + 发 test，按 PRD 原型 `GuardrailsPage@9009` 重建）：4 摘要卡（全局/个人/Key/提额）+ 全局/个人/Key 三段表 + 按 `aggregation_scope` 派生三档预算展示 + 各段搜索/状态开关/空态 + derive.ts；浏览器实测真数据渲染 OK；vitest 28/28。
+- **剩余（纯前端）**：详情抽屉预算编辑仍是「单条」（`currentBudgetPolicy` 单数），需改为**按 aggregation_scope 三档分别编辑/替换**（`replace_budget_policy_id`），对齐原型全局护栏三档编辑。**三档后端已支持，无冲突**（见 #379 更正）。
+- **后端 gap（已提）**：#378 护栏模型缺 `updated_by` actor（原型「最近更新」列要 操作人+时间，现只有时间）；scope/kind 现由 `is_default`+assignment+metadata 派生，等 #378 显式字段。**注**：原型护栏页**无独立审计 section**（#381 audit 端点虽已交付，但护栏页不需要该 UI，别加）；三层生效预览在 **API Keys 页**（非护栏页）。
+- **任务单**：后端 #378/#379/#380/#381；前端抽屉三档编辑待建单。
 
 ### 3.2 埋点补全（PRD 主流程未记录的场景）🟡
 - **现状**：已接 `@model-go/track`，迁了 4 个转化点（api_keys:create / workspace:create / billing.recharge:create / org:create）。

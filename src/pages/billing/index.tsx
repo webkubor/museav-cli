@@ -13,6 +13,7 @@ import { getPromoRedeemErrorMessage } from './promo-errors'
 import { BalanceCard } from './BalanceCard'
 import type { BalanceTab } from './BalanceCard'
 import { BillingOrdersPanel } from './BillingOrdersPanel'
+import { BillingTransactionsPanel } from './BillingTransactionsPanel'
 
 export { PromoRedeemForm } from './PromoRedeemForm'
 export { OrderReceiptDrawer } from './OrderReceiptDrawer'
@@ -101,6 +102,8 @@ export default function BillingPage() {
         onTabChange={setActiveTab}
         site={site ?? ''}
       />
+
+      <BillingTransactionsPanel tenantId={tenantId} />
     </div>
   )
 }

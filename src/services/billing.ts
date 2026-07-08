@@ -14,11 +14,16 @@ import type {
   CreateRechargeRequest,
   CursorPage,
   Money,
+  QueryParams,
   RechargeCreated,
   RechargeOrder,
   RedeemPromoRequest,
   RedeemPromoResult,
 } from '@/types'
+import type {
+  TransactionListResponse,
+  TransactionInvoiceURLResponse,
+} from '@/types/generated-api-types'
 
 // ─── 余额 ─────────────────────────────────────────
 
@@ -89,4 +94,25 @@ export function cancelRecharge(tenantId: string, orderNo: string) {
 /** 兑换 Promo Code（余额增加，返回兑换金额和余额变更后值） */
 export function redeemPromoCode(tenantId: string, body: RedeemPromoRequest) {
   return post<RedeemPromoResult>(`tenants/${tenantId}/promo-codes/redeem`, body)
+}
+
+// ─── 交易记录（统一账本） ───────────────────────────
+
+export interface TransactionListParams extends QueryParams {
+  /** 交易类型筛选：recharge/consume/refund/adjust_credit/adjust_debit/promo */
+  type?: string
+  from?: string
+  to?: string
+  cursor?: string
+  page_size?: number
+}
+
+/** 交易记录列表（GET /tenants/:id/transactions）—— 充值/消费/退款/调账/兑换 统一账本 */
+export function listTransactions(tenantId: string, params?: TransactionListParams) {
+  return get<TransactionListResponse>(`tenants/${tenantId}/transactions`, params)
+}
+
+/** 取交易对应发票下载链接（GET /tenants/:id/transactions/:txnId/invoice） */
+export function getTransactionInvoice(tenantId: string, transactionId: string) {
+  return get<TransactionInvoiceURLResponse>(`tenants/${tenantId}/transactions/${transactionId}/invoice`)
 }

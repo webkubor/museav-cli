@@ -13,6 +13,8 @@ import { Modal } from '@/components/ui/Modal'
 import { Select, SelectItem } from '@/components/ui/Select'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { ForbiddenState } from '@/components/ui/ForbiddenState'
+import { isApiErrorCode } from '@/lib/request-error-message'
 import { LuSearch, LuPlus } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -75,11 +77,17 @@ export default function ApiKeysPage() {
   // 管理权（停用/启用/变更负责人）——权限系统未细分时以 revoke 为代管理位；后端 can_* 会覆盖
   const canManage = canRevoke
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error: listError } = useQuery({
     queryKey: ['api-keys', activeWorkspaceId],
     queryFn: () => listApiKeys(activeWorkspaceId).then(pageItems),
     enabled: !!activeWorkspaceId,
+    retry: false, // 40301/无权限不重试，直接走兼容态
+    meta: { forbiddenHandled: true }, // 40301 由本页 ForbiddenState 承接，不弹全局 toast
   })
+
+  // 接口正常但业务码 40301（无权限，典型是进了自己无权的工作空间 API Keys 页）→ 403 兼容态，
+  // 而不是让空数据伪装成「暂无 Key」空态。
+  const forbidden = isApiErrorCode(listError, 40301)
 
   // 摘要卡：后端 /summary（#383）未交付时静默降级（catch→undefined，避免全局错误 toast），
   // 由 SummaryCards 从列表派生兜底。
@@ -223,6 +231,15 @@ export default function ApiKeysPage() {
 
   const openAIBaseUrl = GATEWAY_ENDPOINTS[0]?.baseUrl ?? ''
   const anthropicBaseUrl = GATEWAY_ENDPOINTS[1]?.baseUrl ?? openAIBaseUrl
+
+  if (forbidden) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title={t('apiKeys.title')} />
+        <ForbiddenState resource={t('apiKeys.title')} />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

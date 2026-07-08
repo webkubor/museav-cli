@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { ForbiddenState } from '@/components/ui/ForbiddenState'
+import { isApiErrorCode } from '@/lib/request-error-message'
 import { LuPlus } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
@@ -69,7 +71,7 @@ export default function GuardrailsPage() {
   const canEditBudget     = hasPermission(PERMS.GUARDRAILS_BUDGET_EDIT)
 
   // ── 列表 ───────────────────────────────────────────────────────────────
-  const { data: guardrails = [], isLoading } = useQuery({
+  const { data: guardrails = [], isLoading, error: guardrailsError } = useQuery({
     queryKey: ['guardrails', activeWorkspaceId],
     queryFn: async () => {
       const res = await listGuardrails(activeWorkspaceId!)
@@ -78,7 +80,13 @@ export default function GuardrailsPage() {
     enabled: Boolean(activeWorkspaceId),
     staleTime: 30_000,
     refetchOnWindowFocus: false,
+    retry: false, // 40301/无权限不重试，直接走兼容态
+    meta: { forbiddenHandled: true }, // 40301 由本页 ForbiddenState 承接，不弹全局 toast
   })
+
+  // 接口正常返回但业务码 40301（无权限，典型是进了自己无权的工作空间护栏页）→ 渲染 403 兼容态，
+  // 而不是让空数据伪装成「暂无护栏」空态。
+  const forbidden = isApiErrorCode(guardrailsError, 40301)
 
   // ── 抽屉（创建+编辑+详情统一） ─────────────────────────────────────────
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
@@ -367,6 +375,15 @@ export default function GuardrailsPage() {
   const detailRow = guardrails.find(g => g.id === detailId)
 
   // ── JSX ─────────────────────────────────────────────────────────────────
+  if (forbidden) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title={t('guardrails.title')} />
+        <ForbiddenState resource={t('guardrails.title')} />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader

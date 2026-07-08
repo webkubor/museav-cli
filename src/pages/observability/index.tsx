@@ -6,6 +6,8 @@
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { ForbiddenState } from '@/components/ui/ForbiddenState'
+import { isApiErrorCode } from '@/lib/request-error-message'
 import { PERMS } from '@/config/permissions'
 import { usePermissions } from '@/hooks/use-permissions'
 import { getLoggingConfig } from '@/services/observability'
@@ -28,7 +30,19 @@ export default function ObservabilityPage() {
     enabled: Boolean(activeWorkspaceId),
     staleTime: 30_000,
     refetchOnWindowFocus: false,
+    retry: false, // 40301/无权限不重试，直接走兼容态
+    meta: { forbiddenHandled: true }, // 40301 由本页 ForbiddenState 承接，不弹全局 toast
   })
+
+  // 接口正常但业务码 40301（无权限，典型是进了自己无权的工作空间可观测性页）→ 403 兼容态。
+  if (isApiErrorCode(loggingQuery.error, 40301)) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title={t('observability.title')} />
+        <ForbiddenState resource={t('observability.title')} />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

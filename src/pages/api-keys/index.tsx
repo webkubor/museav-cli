@@ -1,20 +1,29 @@
 /**
- * API Key 管理页
- * 路由：/api-keys
- * API：GET/POST/DELETE /api/v1/workspaces/:workspace_id/api-keys
+ * API Key 管理页（PRD v1.0.3）
+ * 路由：/workspace/:workspaceId/api-keys
+ * API：GET/POST/DELETE/PATCH /api/v1/workspaces/:workspace_id/api-keys（+ enable/disable/change-owner/reveal）
+ * 作用域=当前工作空间，行可见性按角色由后端裁剪（#358/#359）。
  */
 
-import { useState, useCallback } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
+import { Select, SelectItem } from '@/components/ui/Select'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { LuSearch, LuPlus } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { getMarketConfig } from '@/config/market'
-import { listApiKeys, revealApiKey, revokeApiKey } from '@/services/api-keys'
+import {
+  listApiKeys,
+  revealApiKey,
+  revokeApiKey,
+  disableApiKey,
+  enableApiKey,
+  getApiKeySummary,
+} from '@/services/api-keys'
 import { useCopy } from '@/hooks/use-copy'
 import { getRequestErrorMessage } from '@/lib/request-error-message'
 import { useAuthStore } from '@/store/auth'
@@ -28,7 +37,12 @@ import { ConnectModal } from './ConnectModal'
 import { CreateKeyModal } from './CreateKeyModal'
 import { ApiKeyTable } from './ApiKeyTable'
 import { EditKeyModal } from './EditKeyModal'
-import type { ApiKeyItem } from '@/types'
+import { ApiKeySummaryCards } from './ApiKeySummaryCards'
+import { ApiKeyDetailDrawer } from './ApiKeyDetailDrawer'
+import { deriveKeyType, responsibleOf } from './derive'
+import type { ApiKeyItem, ApiKeyType } from '@/types'
+
+const ALL = 'all'
 
 export default function ApiKeysPage() {
   const { t } = useTranslation()
@@ -36,19 +50,26 @@ export default function ApiKeysPage() {
   const market = useMarket()
   const docsUrl = getMarketConfig(market).docsUrl
   const [searchValue, setSearchValue] = useState('')
+  const [typeFilter, setTypeFilter] = useState<string>(ALL)
+  const [statusFilter, setStatusFilter] = useState<string>(ALL)
+  const [ownerFilter, setOwnerFilter] = useState<string>(ALL)
   const [createVisible, setCreateVisible] = useState(false)
   const [createNonce, setCreateNonce] = useState(0)
   const [revealVisible, setRevealVisible] = useState(false)
   const [connectVisible, setConnectVisible] = useState(false)
   const [createdKeyText, setCreatedKeyText] = useState('')
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null)
+  const [disableTarget, setDisableTarget] = useState<ApiKeyItem | null>(null)
   const [editGuardrailKey, setEditGuardrailKey] = useState<ApiKeyItem | null>(null)
+  const [detailKey, setDetailKey] = useState<ApiKeyItem | null>(null)
 
   const activeWorkspaceId = useAuthStore((state) => state.activeWorkspaceId) || '01HV3KWS000000000000001'
   const currentAccountId = useAuthStore((state) => state.account?.account_id)
   const { hasPermission } = usePermissions()
   const canCreate = hasPermission(PERMS.API_KEYS_CREATE)
   const canRevoke = hasPermission(PERMS.API_KEYS_REVOKE)
+  // 管理权（停用/启用/变更负责人）——权限系统未细分时以 revoke 为代管理位；后端 can_* 会覆盖
+  const canManage = canRevoke
 
   const { data, isLoading } = useQuery({
     queryKey: ['api-keys', activeWorkspaceId],
@@ -56,40 +77,75 @@ export default function ApiKeysPage() {
     enabled: !!activeWorkspaceId,
   })
 
+  // 摘要卡：后端 /summary（#383）未交付时静默降级（catch→undefined，避免全局错误 toast），
+  // 由 SummaryCards 从列表派生兜底。
+  const { data: summary } = useQuery({
+    queryKey: ['api-keys-summary', activeWorkspaceId],
+    queryFn: () => getApiKeySummary(activeWorkspaceId).catch(() => undefined),
+    enabled: !!activeWorkspaceId,
+    retry: false,
+  })
+
   const apiKeyItems = pageItems(data)
-  // #358 角色可见性：可见范围完全由后端返回的行决定（后端 #359 落地后成员只回自己的，此处自动收窄）。
-  // 前端据「返回里是否含他人的 Key」派生提示 + 是否展示「创建人」列——无需客户端过滤，前后端切换零改动。
-  const distinctOwnerCount = new Set(apiKeyItems.map((k) => k.owner?.account_id).filter(Boolean)).size
+  // #358 角色可见性：可见范围完全由后端返回的行决定（成员只回自己的，此处据「返回是否含他人」派生页头提示）
   const showsOthers = apiKeyItems.some(
     (k) => k.owner?.account_id && k.owner.account_id !== currentAccountId,
   )
+  const distinctOwnerCount = new Set(apiKeyItems.map((k) => k.owner?.account_id).filter(Boolean)).size
+
+  // 负责人筛选项（当前列表内去重）
+  const ownerOptions = useMemo(() => {
+    const map = new Map<string, string>()
+    apiKeyItems.forEach((k) => {
+      const r = responsibleOf(k)
+      if (r.account_id) map.set(r.account_id, r.display_name || r.email || r.account_id)
+    })
+    return [...map.entries()].map(([id, label]) => ({ id, label }))
+  }, [apiKeyItems])
 
   const revokeMutation = useMutation({
     mutationFn: (keyId: string) => revokeApiKey(activeWorkspaceId, keyId),
     onSuccess: () => {
       appToast.success(t('apiKeys.toast.revokeSuccess'))
       setRevokeTarget(null)
+      setDetailKey(null)
       queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
     },
-    onError: (err: unknown) => {
-      appToast.requestError(err, t('apiKeys.toast.revokeError'))
-    },
+    onError: (err: unknown) => appToast.requestError(err, t('apiKeys.toast.revokeError')),
   })
+
+  const enableMutation = useMutation({
+    mutationFn: (keyId: string) => enableApiKey(activeWorkspaceId, keyId),
+    onSuccess: () => {
+      appToast.success('已启用')
+      queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
+    },
+    onError: (err: unknown) => appToast.requestError(err, '启用失败'),
+  })
+
+  const disableMutation = useMutation({
+    mutationFn: (keyId: string) => disableApiKey(activeWorkspaceId, keyId),
+    onSuccess: () => {
+      appToast.success('已停用')
+      setDisableTarget(null)
+      queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
+    },
+    onError: (err: unknown) => appToast.requestError(err, '停用失败'),
+  })
+
+  const handleToggleStatus = useCallback((item: ApiKeyItem) => {
+    if (item.status === 'disabled') enableMutation.mutate(item.api_key_id)
+    else setDisableTarget(item)
+  }, [enableMutation])
 
   const { copy } = useCopy()
   const [copyingKeyId, setCopyingKeyId] = useState<string | null>(null)
-  // #298 复制完整明文：reveal → 直接进剪贴板，明文不落组件状态、不渲染进 DOM。
-  // Safari/WebKit 要求剪贴板写入发生在用户手势调用栈内，async 回调里再写必被
-  // NotAllowedError 拒绝 —— 所以在点击栈内同步发起 ClipboardItem(promise) 写入
-  //（WebKit 官方模式），把 reveal 请求的 promise 交给剪贴板；不支持的浏览器回退
-  // 到「等明文 → 同步 copy」（Chrome/Firefox 场景，无手势门禁或窗口足够）。
+  // #298 复制完整明文：reveal → 剪贴板（WebKit 手势栈内 ClipboardItem 模式，明文不落 state）
   const handleCopyKey = useCallback(
     async (item: ApiKeyItem) => {
-      if (copyingKeyId) return // 全表互斥：并发 reveal 会让剪贴板归属不可预期
+      if (copyingKeyId) return
       setCopyingKeyId(item.api_key_id)
       const plaintextPromise = revealApiKey(activeWorkspaceId, item.api_key_id).then((r) => r.key)
-      // ClipboardItem 路径先同步失败时，plaintextPromise 的 rejection 需要有兜底
-      // 消费者，避免 unhandled rejection。
       plaintextPromise.catch(() => {})
       try {
         if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
@@ -104,15 +160,10 @@ export default function ApiKeysPage() {
         }
         appToast.success(t('apiKeys.toast.copyKeySuccess'))
       } catch {
-        // 区分「reveal 请求失败」和「请求成功但剪贴板被拒」两种失败。
-        const requestError = await plaintextPromise.then(
-          () => null,
-          (e: unknown) => e ?? new Error('reveal failed')
-        )
+        const requestError = await plaintextPromise.then(() => null, (e: unknown) => e ?? new Error('reveal failed'))
         if (requestError) {
           appToast.error(getRequestErrorMessage(requestError, t('apiKeys.toast.copyKeyError')))
         } else {
-          // 明文已拿到、ClipboardItem 被拒（罕见）：再试一次同步降级复制。
           const ok = await copy(await plaintextPromise)
           if (ok) appToast.success(t('apiKeys.toast.copyKeySuccess'))
           else appToast.error(t('apiKeys.toast.copyKeyClipboardError'))
@@ -124,11 +175,20 @@ export default function ApiKeysPage() {
     [activeWorkspaceId, copy, copyingKeyId, t]
   )
 
-  const filteredData = apiKeyItems.filter(
-    (item) =>
-      item.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-      (item.masked ?? '').toLowerCase().includes(searchValue.toLowerCase())
-  )
+  const filteredData = useMemo(() => {
+    const q = searchValue.toLowerCase()
+    return apiKeyItems.filter((item) => {
+      if (q) {
+        const r = responsibleOf(item)
+        const hay = `${item.name} ${item.masked ?? ''} ${r.display_name ?? ''} ${r.email ?? ''}`.toLowerCase()
+        if (!hay.includes(q)) return false
+      }
+      if (typeFilter !== ALL && deriveKeyType(item) !== typeFilter) return false
+      if (statusFilter !== ALL && item.status !== statusFilter) return false
+      if (ownerFilter !== ALL && responsibleOf(item).account_id !== ownerFilter) return false
+      return true
+    })
+  }, [apiKeyItems, searchValue, typeFilter, statusFilter, ownerFilter])
 
   const handleKeyCreated = useCallback((keyText: string) => {
     setCreateVisible(false)
@@ -151,29 +211,52 @@ export default function ApiKeysPage() {
         onDismissReveal={() => setRevealVisible(false)}
       />
 
-      {/* 搜索 + 创建 */}
-      <div className="flex justify-between items-center gap-4">
+      <ApiKeySummaryCards items={apiKeyItems} summary={summary} loading={isLoading} />
+
+      {/* 工具条：搜索 + 类型/状态/负责人 筛选 + 创建 */}
+      <div className="flex flex-wrap items-center gap-3">
         <Input
           variant="search"
           prefix={<LuSearch className="w-4 h-4" />}
-          placeholder={t('apiKeys.search')}
-          className="w-72"
+          placeholder="搜索 Key 名称、负责人"
+          className="w-64"
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
         />
-        {canCreate && (
-          <Button variant="brand" data-umami-event="create_api_key" onClick={() => { setCreateNonce((n) => n + 1); setCreateVisible(true) }} className="rounded-full px-6 h-10 shadow-lg shadow-brand-glow/20">
-            <LuPlus className="w-4 h-4 mr-1.5" />
-            {t('apiKeys.create')}
-          </Button>
-        )}
+        <Select value={typeFilter} onChange={setTypeFilter} className="w-32">
+          <SelectItem value={ALL}>全部类型</SelectItem>
+          <SelectItem value={'personal' satisfies ApiKeyType}>私有 Key</SelectItem>
+          <SelectItem value={'member' satisfies ApiKeyType}>成员 Key</SelectItem>
+          <SelectItem value={'service' satisfies ApiKeyType}>服务 Key</SelectItem>
+        </Select>
+        <Select value={statusFilter} onChange={setStatusFilter} className="w-32">
+          <SelectItem value={ALL}>全部状态</SelectItem>
+          <SelectItem value="active">启用中</SelectItem>
+          <SelectItem value="disabled">已停用</SelectItem>
+          <SelectItem value="expired">已过期</SelectItem>
+          <SelectItem value="limit_reached">已达限额</SelectItem>
+        </Select>
+        <Select value={ownerFilter} onChange={setOwnerFilter} className="w-36">
+          <SelectItem value={ALL}>全部负责人</SelectItem>
+          {ownerOptions.map((o) => (
+            <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+          ))}
+        </Select>
+        <div className="ml-auto">
+          {canCreate && (
+            <Button variant="brand" data-umami-event="create_api_key" onClick={() => { setCreateNonce((n) => n + 1); setCreateVisible(true) }} className="rounded-full px-6 h-10 shadow-lg shadow-brand-glow/20">
+              <LuPlus className="w-4 h-4 mr-1.5" />
+              {t('apiKeys.create')}
+            </Button>
+          )}
+        </div>
       </div>
 
       {!isLoading && apiKeyItems.length > 0 && (
         <p className="-mt-2 mg-text-caption text-mg-text-3">
           {showsOthers
             ? `作用域：当前工作空间 · 显示本空间全部成员的 API Key（${distinctOwnerCount} 位成员）`
-            : '作用域：当前工作空间 · 仅显示你创建的 API Key'}
+            : '作用域：当前工作空间 · 仅展示由你负责的 Key'}
         </p>
       )}
 
@@ -181,11 +264,24 @@ export default function ApiKeysPage() {
         isLoading={isLoading}
         items={filteredData}
         canRevoke={canRevoke}
+        canManage={canManage}
         onRevoke={setRevokeTarget}
         onEditGuardrail={setEditGuardrailKey}
+        onOpenDetail={setDetailKey}
+        onToggleStatus={handleToggleStatus}
         onCopyKey={handleCopyKey}
         copyingKeyId={copyingKeyId}
-        showOwner={showsOthers}
+      />
+
+      <ApiKeyDetailDrawer
+        open={!!detailKey}
+        onClose={() => setDetailKey(null)}
+        workspaceId={activeWorkspaceId}
+        item={detailKey}
+        canManage={canManage}
+        onToggleStatus={handleToggleStatus}
+        onRotate={() => { /* 轮转接口 #384 未交付，按钮已 gate 隐藏；落地后接入 */ }}
+        onRevoke={setRevokeTarget}
       />
 
       <ConnectModal
@@ -205,7 +301,7 @@ export default function ApiKeysPage() {
         onCreated={handleKeyCreated}
       />
 
-      {/* 撤销确认 Modal */}
+      {/* 撤销确认 */}
       <Modal
         open={!!revokeTarget}
         onClose={() => setRevokeTarget(null)}
@@ -214,19 +310,31 @@ export default function ApiKeysPage() {
         size="sm"
         footer={
           <>
-            <Button variant="outline" onClick={() => setRevokeTarget(null)}>
-              {t('apiKeys.createModal.cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              loading={revokeMutation.isPending}
-              onClick={() => { if (revokeTarget) revokeMutation.mutate(revokeTarget.id) }}
-            >
+            <Button variant="outline" onClick={() => setRevokeTarget(null)}>{t('apiKeys.createModal.cancel')}</Button>
+            <Button variant="destructive" loading={revokeMutation.isPending} onClick={() => { if (revokeTarget) revokeMutation.mutate(revokeTarget.id) }}>
               {t('apiKeys.table.revoke')}
             </Button>
           </>
         }
       />
+
+      {/* 停用确认（PRD：停用需确认，可稍后启用） */}
+      <Modal
+        open={!!disableTarget}
+        onClose={() => setDisableTarget(null)}
+        title="确认停用 API Key"
+        description="停用后该 Key 将立即停止调用，可稍后重新启用。"
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setDisableTarget(null)}>{t('apiKeys.createModal.cancel')}</Button>
+            <Button variant="brand" loading={disableMutation.isPending} onClick={() => { if (disableTarget) disableMutation.mutate(disableTarget.api_key_id) }}>
+              确认停用
+            </Button>
+          </>
+        }
+      />
+
       <EditKeyModal
         open={!!editGuardrailKey}
         onClose={() => setEditGuardrailKey(null)}

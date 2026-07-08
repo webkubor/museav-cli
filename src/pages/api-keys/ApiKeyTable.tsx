@@ -1,5 +1,6 @@
 /**
- * API Key 列表表格：名称、安全护栏、作用域、状态、累计消费、创建时间与操作
+ * API Key 列表表格（PRD v1.0.3）：名称 / 类型 / 负责人 / 安全护栏 / 状态 / 本期消费·限额 / 最近调用 / 到期时间 / 操作
+ * 行点击开详情抽屉；治理动作（停用/启用）行内直达，轮转/删除在抽屉。
  */
 import { useTranslation } from 'react-i18next'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -16,47 +17,93 @@ import { LuCopy, LuKeyRound, LuLoaderCircle, LuShieldCheck } from 'react-icons/l
 import { formatDateTime } from '@/lib/format-date'
 import { formatMoney } from '@/lib/utils'
 import type { ApiKeyItem } from '@/types'
-import { SCOPE_OPTIONS } from './constants'
+import {
+  KEY_TYPE_LABEL,
+  STATUS_LABEL,
+  deriveKeyType,
+  responsibleOf,
+  periodSpendOf,
+  lastCalledOf,
+  isExpiringSoon,
+  cap,
+} from './derive'
 
 /** key 是否已过期：瞬时点比较（expires_at 为带 Z 的 UTC ISO）。放组件外避免 render 期调 Date.now。 */
 function isExpired(iso: string): boolean {
   return new Date(iso).getTime() < Date.now()
 }
 
+const PERIOD_LABEL: Record<string, string> = { hour: '小时', day: '日', week: '周', month: '月' }
+
+/** 限额副标：「¥800 / 每月」或「不限额」 */
+function limitLabel(item: ApiKeyItem): string {
+  const l = item.limit
+  if (!l || !l.amount || Number(l.amount) <= 0) return '不限额'
+  const unit = PERIOD_LABEL[l.period_unit] ?? l.period_unit
+  const per = l.period_length && l.period_length > 1 ? `每 ${l.period_length} ${unit}` : `每${unit}`
+  return `${l.currency} ${formatMoney(l.amount, '')} / ${per}`
+}
+
+const STATUS_MAP = {
+  active: { label: STATUS_LABEL.active, variant: 'success' as const, dot: true },
+  disabled: { label: STATUS_LABEL.disabled, variant: 'outline' as const },
+  expired: { label: STATUS_LABEL.expired, variant: 'warning' as const },
+  limit_reached: { label: STATUS_LABEL.limit_reached, variant: 'warning' as const },
+  revoked: { label: STATUS_LABEL.revoked, variant: 'danger' as const },
+}
+
+const KEY_TYPE_CLASS: Record<string, string> = {
+  personal: 'bg-mg-fill-0 border-mg-border text-mg-text-2',
+  member: 'bg-brand-base/10 border-brand-base/25 text-brand-base',
+  service: 'bg-blue-500/10 border-blue-500/25 text-blue-600 dark:text-blue-400',
+}
+
 type Props = {
   isLoading: boolean
   items: ApiKeyItem[]
   canRevoke: boolean
+  canManage: boolean
   onRevoke: (target: { id: string; name: string }) => void
   onEditGuardrail: (item: ApiKeyItem) => void
+  onOpenDetail: (item: ApiKeyItem) => void
+  onToggleStatus: (item: ApiKeyItem) => void
   /** 复制完整明文（#298）：父组件调 reveal → 剪贴板 */
   onCopyKey: (item: ApiKeyItem) => void
   /** 正在 reveal 的 key id（行内 loading） */
   copyingKeyId: string | null
-  /** #358：列表含他人 Key 时（管理员/负责人视角）展示「创建人」列；成员只见自己的则自动隐藏 */
-  showOwner?: boolean
 }
 
-export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuardrail, onCopyKey, copyingKeyId, showOwner = false }: Props) {
+export function ApiKeyTable({
+  isLoading,
+  items,
+  canRevoke,
+  canManage,
+  onRevoke,
+  onEditGuardrail,
+  onOpenDetail,
+  onToggleStatus,
+  onCopyKey,
+  copyingKeyId,
+}: Props) {
   const { t } = useTranslation()
-  const colSpan = showOwner ? 9 : 8
+  const colSpan = 9
 
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>{t('apiKeys.table.name')}</TableHead>
+          <TableHead>类型</TableHead>
+          <TableHead>负责人</TableHead>
           <TableHead>
             <span className="inline-flex items-center gap-1">
               <LuShieldCheck className="w-3.5 h-3.5 text-green-500" />
               安全护栏
             </span>
           </TableHead>
-          <TableHead>作用域</TableHead>
-          {showOwner && <TableHead>创建人</TableHead>}
           <TableHead>{t('apiKeys.table.status')}</TableHead>
-          <TableHead>{t('apiKeys.table.totalSpend')}</TableHead>
-          <TableHead>{t('apiKeys.table.createdAt')}</TableHead>
+          <TableHead>本期消费 / 限额</TableHead>
+          <TableHead>最近调用</TableHead>
           <TableHead>{t('apiKeys.table.expiresAt')}</TableHead>
           <TableHead className="text-right">{t('apiKeys.table.actions')}</TableHead>
         </TableRow>
@@ -74,7 +121,19 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
           />
         ) : (
           items.map((record) => {
-            const guardrailNames = (record.guardrails ?? []).map((guardrail) => guardrail.name).filter(Boolean)
+            const guardrailNames = (record.guardrails ?? []).map((g) => g.name).filter(Boolean)
+            const keyType = deriveKeyType(record)
+            const responsible = responsibleOf(record)
+            const creatorDiffers =
+              record.owner?.account_id &&
+              responsible.account_id &&
+              record.owner.account_id !== responsible.account_id
+            const periodSpend = periodSpendOf(record)
+            const lastCalled = lastCalledOf(record)
+            const isDisabled = record.status === 'disabled'
+            const canToggle = isDisabled
+              ? cap(record.can_enable, canManage)
+              : cap(record.can_disable, canManage)
             const copyDisabledReason =
               record.status !== 'active'
                 ? t('apiKeys.table.copyUnavailableInactive')
@@ -82,7 +141,11 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
                   ? null
                   : t('apiKeys.table.copyUnavailableLegacy')
             return (
-              <TableRow key={record.api_key_id}>
+              <TableRow
+                key={record.api_key_id}
+                className="cursor-pointer"
+                onClick={() => onOpenDetail(record)}
+              >
                 <TableCell>
                   <div className="font-semibold text-mg-text-1 text-[13.5px]">{record.name}</div>
                   {/* #298：名称下方掩码 + 复制完整明文按钮 */}
@@ -93,7 +156,7 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
                       aria-label={copyDisabledReason ?? t('apiKeys.table.copy')}
                       title={copyDisabledReason ?? t('apiKeys.table.copy')}
                       disabled={copyDisabledReason !== null || copyingKeyId !== null}
-                      onClick={() => onCopyKey(record)}
+                      onClick={(e) => { e.stopPropagation(); onCopyKey(record) }}
                       className="p-0.5 text-mg-text-3 hover:text-brand-base transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-mg-text-3"
                     >
                       {copyingKeyId === record.api_key_id ? (
@@ -103,6 +166,21 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
                       )}
                     </button>
                   </div>
+                </TableCell>
+                <TableCell>
+                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold ${KEY_TYPE_CLASS[keyType]}`}>
+                    {KEY_TYPE_LABEL[keyType]}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <div className="text-xs font-semibold text-mg-text-1">
+                    {responsible.display_name || responsible.email || '—'}
+                  </div>
+                  {creatorDiffers && (
+                    <div className="text-[11px] text-mg-text-3">
+                      创建人 {record.owner.display_name || record.owner.email}
+                    </div>
+                  )}
                 </TableCell>
                 <TableCell>
                   {guardrailNames.length > 0 ? (
@@ -127,41 +205,19 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
                   )}
                 </TableCell>
                 <TableCell>
-                  {record.scope
-                    ? (() => {
-                        const opt = SCOPE_OPTIONS.find((o) => o.value === record.scope)
-                        return opt ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-mg-text-2">
-                            <span className="text-mg-text-3">{opt.icon}</span>
-                            {opt.label}
-                          </span>
-                        ) : <span className="text-mg-text-3 text-xs">—</span>
-                      })()
-                    : <span className="text-mg-text-3 text-xs">—</span>
-                  }
+                  <StatusBadge status={record.status} statusMap={STATUS_MAP} fallback={record.status} />
                 </TableCell>
-                {showOwner && (
-                  <TableCell className="text-xs text-mg-text-2">
-                    {record.owner?.display_name || record.owner?.email || '—'}
-                  </TableCell>
-                )}
                 <TableCell>
-                  <StatusBadge
-                    status={record.status}
-                    statusMap={{
-                      active: { label: t('apiKeys.table.active'), variant: 'success', dot: true },
-                      inactive: { label: t('apiKeys.table.disabled'), variant: 'outline' },
-                      revoked: { label: t('apiKeys.table.revoked'), variant: 'danger' },
-                    }}
-                    fallback={record.status}
-                  />
+                  <div className="font-mono text-xs text-mg-text-1 tabular-nums">
+                    {periodSpend?.amount
+                      ? `${periodSpend.currency} ${formatMoney(periodSpend.amount, '')}`
+                      : <span className="text-mg-text-3">—</span>}
+                  </div>
+                  <div className="text-[11px] text-mg-text-3">{limitLabel(record)}</div>
                 </TableCell>
-                <TableCell className="font-mono text-xs text-mg-text-1 tabular-nums">
-                  {record.total_spend?.amount
-                    ? `${record.total_spend.currency} ${formatMoney(record.total_spend.amount, '')}`
-                    : <span className="text-mg-text-3">—</span>}
+                <TableCell className="text-xs text-mg-text-2">
+                  {lastCalled ? formatDateTime(lastCalled) : <span className="text-mg-text-3">尚未调用</span>}
                 </TableCell>
-                <TableCell className="text-xs text-mg-text-2">{formatDateTime(record.created_at)}</TableCell>
                 <TableCell className="text-xs">
                   {!record.expires_at ? (
                     <span className="text-mg-text-3">{t('apiKeys.table.neverExpires')}</span>
@@ -173,14 +229,30 @@ export function ApiKeyTable({ isLoading, items, canRevoke, onRevoke, onEditGuard
                       </span>
                     </span>
                   ) : (
-                    <span className="text-mg-text-2">{formatDateTime(record.expires_at)}</span>
+                    <span className={isExpiringSoon(record) ? 'text-mg-warning font-semibold' : 'text-mg-text-2'}>
+                      {formatDateTime(record.expires_at)}
+                    </span>
                   )}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex justify-end gap-4 text-xs font-bold">
                     <button
-                      onClick={() => onEditGuardrail(record)}
+                      onClick={() => onOpenDetail(record)}
                       className="text-brand-base hover:text-brand-deep transition-colors cursor-pointer"
+                    >
+                      详情
+                    </button>
+                    {record.status !== 'revoked' && canToggle && (
+                      <button
+                        onClick={() => onToggleStatus(record)}
+                        className="text-mg-text-2 hover:text-mg-text-1 transition-colors cursor-pointer"
+                      >
+                        {isDisabled ? '启用' : '停用'}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => onEditGuardrail(record)}
+                      className="text-mg-text-2 hover:text-mg-text-1 transition-colors cursor-pointer"
                     >
                       编辑
                     </button>

@@ -30,6 +30,9 @@ import {
 import type { BadgeVariant } from '@/components/ui/Badge'
 import { useAuthStore } from '@/store/auth'
 import { listTasks, getTask } from '@/services/tasks'
+import { listWorkspaces } from '@/services/workspaces'
+import { listTenantMembers } from '@/services/tenants'
+import { listApiKeys } from '@/services/api-keys'
 import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 import { post } from '@/lib/request'
 import { formatDateTime } from '@/lib/format-date'
@@ -206,8 +209,32 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
     },
   })
 
+  // 归属名称解析：任务接口只返回 id，这里查工作空间/成员/Key 列表映射为名称；取不到回落到 id（静默降级）
+  const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
+  const wsId = listTask.workspace_id
+  const { data: workspaces } = useQuery({
+    queryKey: ['workspaces'],
+    queryFn: () => listWorkspaces().then((r) => r.items ?? []),
+    staleTime: 60_000,
+  })
+  const { data: memberPage } = useQuery({
+    queryKey: ['tenant-members', tenantId],
+    queryFn: () => listTenantMembers(tenantId),
+    enabled: !!tenantId,
+    staleTime: 60_000,
+  })
+  const { data: keyPage } = useQuery({
+    queryKey: ['api-keys', wsId],
+    queryFn: () => listApiKeys(wsId),
+    enabled: !!wsId,
+    staleTime: 60_000,
+  })
+
   // 详情接口能成功就用详情数据，否则用列表项兜底——视频预览本就不依赖详情接口
   const task = data?.task ?? listTask
+  const workspaceName = workspaces?.find((w) => w.workspace_id === task.workspace_id)?.name || task.workspace_id || '—'
+  const apiKeyName = keyPage?.items.find((k) => k.api_key_id === task.api_key_id)?.name || task.api_key_id || '—'
+  const memberName = memberPage?.items.find((m) => m.account.account_id === task.account_id)?.account.display_name || task.account_id || '—'
   const kind = resolveKind(task)
   const kindCfg = KIND_CONFIG[kind]
   const expired = isVideoExpired(task) || isVideoExpired(data)
@@ -252,6 +279,9 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
               }
             />
             {task.vendor && <DetailRow label="供应商" value={task.vendor} />}
+            <DetailRow label="工作空间" value={workspaceName} />
+            <DetailRow label="API Key 名称" value={apiKeyName} />
+            <DetailRow label="成员" value={memberName} />
             <DetailRow label="提交时间" value={fmtDate(task.created_at)} />
             <DetailRow label="结束时间" value={fmtDate(task.completed_at)} />
             <DetailRow label="耗时"     value={fmtDuration(task.created_at, task.completed_at)} />

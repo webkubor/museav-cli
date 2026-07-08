@@ -1,0 +1,141 @@
+/**
+ * 安全护栏派生工具（PRD v1.0.3 · #378-381）
+ *
+ * PRD 原型把护栏建模为「三层作用域 × 常规/提额 类型 × 三档预算闸门」的一等字段
+ * （scope / kind / workspace|member|key budget）。后端当前只交付了基础契约
+ * （guardrail.Detail：is_default + assignments + budget_policies[aggregation_scope] + metadata），
+ * 尚无显式的 scope / kind 字段（#378 未交付）。这里统一「有则用、无则由现有字段派生兜底」，
+ * 让 UI 先按 PRD 结构跑起来，后端补齐字段后把这些函数换成读真值即可。
+ * 禁止在组件里散落这套回退逻辑。
+ */
+import type { GuardrailBudgetPolicy, GuardrailDetail } from '@/interfaces/guardrails'
+import { trimAmountScale } from './budget'
+
+export type GuardrailScope = 'global' | 'member' | 'key'
+export type GuardrailKind = 'regular' | 'boost'
+
+/** 预算周期单位 → 中文档位（对齐 PRD「/ 月」等文案） */
+export const PERIOD_LABEL: Record<string, string> = {
+  hour: '小时',
+  day: '天',
+  week: '周',
+  month: '月',
+}
+
+export const KIND_LABEL: Record<GuardrailKind, string> = {
+  regular: '常规',
+  boost: '提额',
+}
+
+/** 预算闸门聚合口径（对齐 backend aggregation_scope） */
+export type BudgetAggScope = 'guardrail_total' | 'per_member' | 'per_api_key'
+
+function assignmentsOf(g: GuardrailDetail) {
+  return g.assignments ?? []
+}
+
+/**
+ * 作用域派生（#378 后端无显式 scope 字段时兜底）：
+ * is_default → 全局；含 api_key 分配 → Key；含成员分配 → 个人；否则回退全局。
+ */
+export function deriveScope(g: GuardrailDetail): GuardrailScope {
+  if (g.is_default) return 'global'
+  const assignments = assignmentsOf(g)
+  if (assignments.some((a) => a.subject_type === 'api_key' && a.api_key_id)) return 'key'
+  if (assignments.some((a) => a.subject_type === 'member' && a.account_id)) return 'member'
+  return 'global'
+}
+
+/**
+ * 类型派生（#378 后端无 kind 字段时兜底）：metadata.kind === 'boost' → 提额，否则常规。
+ * 后端未交付提额语义前，全部落为「常规」，提额相关列/卡片将自然显示 0 / 「-」。
+ */
+export function deriveKind(g: GuardrailDetail): GuardrailKind {
+  return (g.metadata as Record<string, unknown> | undefined)?.kind === 'boost' ? 'boost' : 'regular'
+}
+
+/** 从 metadata 取字符串数组（model_blacklist / ip_whitelist） */
+export function metadataList(g: GuardrailDetail, key: 'model_blacklist' | 'ip_whitelist'): string[] {
+  const value = (g.metadata as Record<string, unknown> | undefined)?.[key]
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    : []
+}
+
+export function memberCount(g: GuardrailDetail): number {
+  return assignmentsOf(g).filter((a) => a.subject_type === 'member' && a.account_id).length
+}
+
+export function apiKeyCount(g: GuardrailDetail): number {
+  return assignmentsOf(g).filter((a) => a.subject_type === 'api_key' && a.api_key_id).length
+}
+
+function isActivePolicy(p: GuardrailBudgetPolicy): boolean {
+  if (!p.enabled) return false
+  if (!p.effective_to) return true
+  const endsAt = Date.parse(p.effective_to)
+  return Number.isNaN(endsAt) || endsAt > Date.now()
+}
+
+export function activePolicies(g: GuardrailDetail): GuardrailBudgetPolicy[] {
+  return (g.budget_policies ?? []).filter(isActivePolicy)
+}
+
+/** 取某一聚合口径下的生效预算（多条时取 effective_from 最新一条） */
+export function budgetByScope(g: GuardrailDetail, scope: BudgetAggScope): GuardrailBudgetPolicy | null {
+  const matched = activePolicies(g).filter((p) => p.aggregation_scope === scope)
+  if (matched.length === 0) return null
+  return [...matched].sort((a, b) => Date.parse(b.effective_from) - Date.parse(a.effective_from))[0]
+}
+
+/** 个人 / Key 护栏行的主预算：取任一生效策略（最新一条） */
+export function primaryBudget(g: GuardrailDetail): GuardrailBudgetPolicy | null {
+  const actives = activePolicies(g)
+  if (actives.length === 0) return null
+  return [...actives].sort((a, b) => Date.parse(b.effective_from) - Date.parse(a.effective_from))[0]
+}
+
+/** 预算展示：无金额→「不限额」，否则「¥123 / 月」（去 NUMERIC 尾零） */
+export function formatBudget(symbol: string, policy?: GuardrailBudgetPolicy | null): string {
+  const amount = policy?.spend_limit_amount
+  if (!policy || !amount || Number(amount) <= 0) return '不限额'
+  const period = PERIOD_LABEL[policy.period_unit] ?? policy.period_unit
+  return `${symbol}${trimAmountScale(amount)} / ${period}`
+}
+
+/**
+ * 提额到期时间（#378/#379 提额语义未交付时兜底）：
+ * metadata.expires_at 优先，否则取主预算 effective_to；都没有则 null（列显示「-」/「永不过期」）。
+ */
+export function boostExpiry(g: GuardrailDetail): string | null {
+  const meta = (g.metadata as Record<string, unknown> | undefined)?.expires_at
+  if (typeof meta === 'string' && meta) return meta
+  return primaryBudget(g)?.effective_to || null
+}
+
+export interface GuardrailSummary {
+  global: number
+  member: number
+  key: number
+  boost: number
+}
+
+/** 顶部摘要卡计数（全局 / 个人 / Key / 提额），由列表派生 */
+export function summarize(list: GuardrailDetail[]): GuardrailSummary {
+  const summary: GuardrailSummary = { global: 0, member: 0, key: 0, boost: 0 }
+  for (const g of list) {
+    const scope = deriveScope(g)
+    if (scope === 'global') summary.global += 1
+    else if (scope === 'member') summary.member += 1
+    else summary.key += 1
+    if (deriveKind(g) === 'boost') summary.boost += 1
+  }
+  return summary
+}
+
+/** 名称模糊匹配（分区搜索用） */
+export function nameMatches(g: GuardrailDetail, query: string): boolean {
+  const normalized = query.trim().toLowerCase()
+  if (!normalized) return true
+  return g.name.toLowerCase().includes(normalized)
+}

@@ -63,6 +63,10 @@ vi.mock('@/hooks/use-platform-config', () => ({
 // labels we interact with (预算 / 保存预算) are hardcoded Chinese strings.
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'zh' } }),
+  // The page transitively loads src/i18n.ts (via request-error-message → request →
+  // auth-controller → i18n), which calls .use(initReactI18next). Provide a no-op
+  // 3rdParty plugin so that module evaluates instead of throwing on a missing export.
+  initReactI18next: { type: '3rdParty', init: () => {} },
 }))
 
 // appToast wraps sonner (DOM portals/timers) — mock it and assert calls.

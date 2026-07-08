@@ -11,7 +11,8 @@ import { LuKey, LuDollarSign } from 'react-icons/lu'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
 import { PERIOD_LABEL } from '@/constants/status'
 import { GuardrailFormFields } from './GuardrailFormFields'
-import { trimAmountScale } from '../budget'
+import { isValidBudgetAmount, trimAmountScale } from '../budget'
+import type { BudgetAggScope } from '../derive'
 
 const GUARDRAIL_STATUS_MAP: Record<string, StatusConfig> = {
   active: { label: '已启用', variant: 'success' },
@@ -20,6 +21,75 @@ const GUARDRAIL_STATUS_MAP: Record<string, StatusConfig> = {
 
 type PeriodUnit = 'hour' | 'day' | 'week' | 'month'
 type BudgetPolicy = NonNullable<GuardrailDetail['budget_policies']>[number]
+
+// 全局护栏三档编辑草稿（与 index.tsx 的 ScopeBudgetDraft 同形）
+interface ScopeBudgetDraft { amount: string; period: PeriodUnit; limited: boolean }
+
+// 三档预算的展示元信息（对齐 PRD 原型的标签/说明）
+const GLOBAL_BUDGET_META: { scope: BudgetAggScope; label: string; hint: string; enterpriseOnly?: boolean }[] = [
+  { scope: 'guardrail_total', label: '工作空间总预算', hint: '该工作空间所有调用的合计上限' },
+  { scope: 'per_member', label: '默认个人预算', hint: '每位成员的默认上限（可被个人护栏覆盖）', enterpriseOnly: true },
+  { scope: 'per_api_key', label: '默认 Key 预算', hint: '每个 API Key 的默认上限（可被 Key 护栏覆盖）' },
+]
+
+/** 单档全局预算控件：不限额 / 限额 切换 + 金额 + 周期（复用控制台 ui/* + token） */
+function GlobalBudgetControl({
+  label, hint, draft, onChange, disabled,
+}: {
+  label: string
+  hint: string
+  draft: ScopeBudgetDraft
+  onChange: (patch: Partial<ScopeBudgetDraft>) => void
+  disabled: boolean
+}) {
+  const invalid = draft.limited && draft.amount.trim() !== '' && !isValidBudgetAmount(draft.amount)
+  return (
+    <div className="rounded-lg border border-mg-border p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-bold text-mg-text-1">{label}</div>
+          <div className="text-[11px] text-mg-text-3 mt-0.5">{hint}</div>
+        </div>
+        <label className="flex items-center gap-2 shrink-0 text-[11px] text-mg-text-2">
+          <span>{draft.limited ? '限额' : '不限额'}</span>
+          <Switch
+            checked={draft.limited}
+            onChange={(checked) => onChange({ limited: checked })}
+            disabled={disabled}
+            aria-label={`${label}是否限额`}
+          />
+        </label>
+      </div>
+      {draft.limited && (
+        <div className="flex items-center gap-2">
+          <Input
+            type="text"
+            inputMode="decimal"
+            aria-label={`${label}金额`}
+            value={draft.amount}
+            onChange={(e) => onChange({ amount: e.target.value })}
+            placeholder="输入限额金额（最多两位小数）"
+            disabled={disabled}
+            className="h-9 text-xs flex-1"
+          />
+          <Select
+            value={draft.period}
+            onChange={(v) => onChange({ period: v as PeriodUnit })}
+            aria-label={`${label}周期`}
+            className="h-9 text-xs w-28"
+          >
+            {(Object.entries(PERIOD_LABEL) as [PeriodUnit, string][]).map(([k, l]) => (
+              <SelectItem key={k} value={k}>每{l}</SelectItem>
+            ))}
+          </Select>
+        </div>
+      )}
+      {invalid && (
+        <p className="text-[11px] text-mg-danger">预算金额无效：大于 0，整数最多 12 位，小数最多 2 位</p>
+      )}
+    </div>
+  )
+}
 
 export function GuardrailDetailSheet({
   open, onClose,
@@ -43,6 +113,9 @@ export function GuardrailDetailSheet({
   budget, budgetConflict, budgetAmount, onBudgetAmountChange,
   budgetPeriodUnit, onBudgetPeriodUnitChange,
   canEditBudget, savingBudget, onSaveBudget, onShowClearBudget,
+  // 全局护栏三档预算
+  isGlobal, showMember, globalBudgets, onGlobalBudgetChange,
+  onEnterBudgetTab, savingGlobalBudget, onSaveGlobalBudgets,
   currencySymbol,
   // 底部保存
   submitting, onSubmit,
@@ -67,6 +140,11 @@ export function GuardrailDetailSheet({
   budgetAmount: string; onBudgetAmountChange: (v: string) => void
   budgetPeriodUnit: PeriodUnit; onBudgetPeriodUnitChange: (v: PeriodUnit) => void
   canEditBudget: boolean; savingBudget: boolean; onSaveBudget: () => void; onShowClearBudget: () => void
+  isGlobal: boolean; showMember: boolean
+  globalBudgets: Record<BudgetAggScope, ScopeBudgetDraft>
+  onGlobalBudgetChange: (scope: BudgetAggScope, patch: Partial<ScopeBudgetDraft>) => void
+  onEnterBudgetTab: () => void
+  savingGlobalBudget: boolean; onSaveGlobalBudgets: () => void
   currencySymbol: string
   submitting: boolean; onSubmit: () => void
 }) {
@@ -113,6 +191,8 @@ export function GuardrailDetailSheet({
                   const bp = budget
                   onBudgetAmountChange(bp ? trimAmountScale(bp.spend_limit_amount) : '')
                   onBudgetPeriodUnitChange((bp?.period_unit as PeriodUnit) ?? 'month')
+                  // 全局护栏三档同步回填
+                  onEnterBudgetTab()
                 }
               }}
               className={`px-4 py-2.5 text-xs font-bold transition-colors border-b-2 -mb-px cursor-pointer ${
@@ -193,6 +273,38 @@ export function GuardrailDetailSheet({
               <div role="alert" className="p-3 rounded-lg border border-mg-danger/40 bg-mg-danger/5 text-xs text-mg-danger">
                 预算配置数据错误：存在多条生效中的预算策略，请联系管理员处理
               </div>
+            </section>
+          ) : detail && isGlobal ? (
+            // 全局护栏：按 aggregation_scope 三档独立编辑（个人租户隐藏「默认个人预算」档）
+            <section className="space-y-4">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-2 uppercase tracking-wider">
+                <LuDollarSign className="w-3.5 h-3.5" /> 预算策略
+              </div>
+              <div className="space-y-3">
+                {GLOBAL_BUDGET_META.filter((m) => !m.enterpriseOnly || showMember).map((m) => (
+                  <GlobalBudgetControl
+                    key={m.scope}
+                    label={m.label}
+                    hint={m.hint}
+                    draft={globalBudgets[m.scope]}
+                    onChange={(patch) => onGlobalBudgetChange(m.scope, patch)}
+                    disabled={!canEditBudget}
+                  />
+                ))}
+              </div>
+              {canEditBudget && (
+                <div className="flex items-center justify-between">
+                  <Button
+                    variant="brand"
+                    className="h-9 px-5 text-xs font-semibold"
+                    loading={savingGlobalBudget}
+                    onClick={onSaveGlobalBudgets}
+                  >
+                    保存预算
+                  </Button>
+                  <span className="text-[11px] text-mg-text-3">三档独立生效，可分别限额或不限额</span>
+                </div>
+              )}
             </section>
           ) : detail ? (
             <section className="space-y-4">

@@ -6,7 +6,6 @@
 
 import { useState } from 'react'
 import { LuArrowRight, LuBadgePercent, LuCheck, LuCopy, LuLink, LuShare2, LuTicketPercent } from 'react-icons/lu'
-import { Button } from '@/components/ui/Button'
 import { appToast } from '@/lib/app-toast'
 import { useCopy } from '@/hooks/use-copy'
 
@@ -133,16 +132,16 @@ export function ReferralInviteCard({
               {inviteLink || '—'}
             </span>
           </div>
-          <Button
-            variant={copiedLink ? 'outline' : 'brand'}
-            size="sm"
+          <button
+            type="button"
             onClick={() => handleCopy(inviteLink, 'link', copySuccess)}
             disabled={!inviteLink}
-            className="h-9 shrink-0 rounded-lg px-4 sm:m-1.5"
+            aria-label="复制邀请链接"
+            title={copiedLink ? '已复制' : '复制邀请链接'}
+            className="mb-1 mr-1 inline-flex h-8 w-8 shrink-0 items-center justify-center self-end rounded-sm text-mg-text-3 transition-colors hover:bg-brand-base/10 hover:text-brand-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-glow disabled:cursor-not-allowed disabled:opacity-50 sm:m-1.5 sm:self-auto"
           >
-            {copiedLink ? <LuCheck size={13} className="mr-1.5" /> : <LuCopy size={13} className="mr-1.5" />}
-            {copiedLink ? '已复制' : '复制链接'}
-          </Button>
+            {copiedLink ? <LuCheck size={15} className="text-brand-base" /> : <LuCopy size={15} />}
+          </button>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3">

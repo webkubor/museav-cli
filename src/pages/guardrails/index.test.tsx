@@ -337,3 +337,151 @@ describe('GuardrailsPage — 详情加载失败（后端 409 预算配置数据�
     expect(screen.queryByRole('button', { name: '预算' })).toBeNull()
   })
 })
+
+// ── 全局护栏（is_default）预算：按 aggregation_scope 三档独立编辑 ──────────────
+// 每档对应一个 scope：guardrail_total（工作空间总预算）/ per_member（默认个人预算，
+// 仅企业租户）/ per_api_key（默认 Key 预算）。三档互相独立、可并存。
+
+// 企业租户下的全局护栏详情（is_default:true），可带任意 scope 的策略
+function globalGuardrailDetail(policies: GuardrailBudgetPolicy[]): GuardrailDetail {
+  return { ...guardrailDetail(policies), is_default: true }
+}
+
+// 打开全局护栏抽屉 → 预算 Tab，等三档编辑器就绪（总预算档标签金额可作为锚点）
+async function openGlobalBudgetTab() {
+  renderPage()
+  // is_default 护栏的名称按钮带「默认」徽标，可及名含徽标文案 → 用正则匹配
+  fireEvent.click(await screen.findByRole('button', { name: new RegExp(GUARDRAIL_NAME) }))
+  fireEvent.click(await screen.findByRole('button', { name: '预算' }))
+  await screen.findByRole('switch', { name: '工作空间总预算是否限额' })
+}
+
+describe('GuardrailsPage — 全局护栏三档预算', () => {
+  it('三档从各自 aggregation_scope 的生效策略回填', async () => {
+    detailNow = globalGuardrailDetail([
+      budgetPolicy({ id: 'bp-total', aggregation_scope: 'guardrail_total', spend_limit_amount: '1000.000000000000' }),
+      budgetPolicy({ id: 'bp-member', aggregation_scope: 'per_member', spend_limit_amount: '200.000000000000' }),
+      budgetPolicy({ id: 'bp-key', aggregation_scope: 'per_api_key', spend_limit_amount: '50.000000000000' }),
+    ])
+    getGuardrail.mockReset().mockImplementation(async () => detailNow)
+
+    await openGlobalBudgetTab()
+
+    const total = (await screen.findByRole('textbox', { name: '工作空间总预算金额' })) as HTMLInputElement
+    const member = (await screen.findByRole('textbox', { name: '默认个人预算金额' })) as HTMLInputElement
+    const key = (await screen.findByRole('textbox', { name: '默认 Key 预算金额' })) as HTMLInputElement
+    await waitFor(() => expect(total.value).toBe('1000'))
+    expect(member.value).toBe('200')
+    expect(key.value).toBe('50')
+  })
+
+  it('改一档金额：只 PATCH 该 scope 的策略，其他档不动', async () => {
+    detailNow = globalGuardrailDetail([
+      budgetPolicy({ id: 'bp-total', aggregation_scope: 'guardrail_total', spend_limit_amount: '1000.000000000000' }),
+      budgetPolicy({ id: 'bp-key', aggregation_scope: 'per_api_key', spend_limit_amount: '50.000000000000' }),
+    ])
+    getGuardrail.mockReset().mockImplementation(async () => detailNow)
+    updateBudgetPolicy.mockImplementation(async () => detailNow)
+
+    await openGlobalBudgetTab()
+    const total = (await screen.findByRole('textbox', { name: '工作空间总预算金额' })) as HTMLInputElement
+    await waitFor(() => expect(total.value).toBe('1000'))
+
+    fireEvent.change(total, { target: { value: '2000' } })
+    fireEvent.click(screen.getByRole('button', { name: '保存预算' }))
+
+    await waitFor(() => expect(updateBudgetPolicy).toHaveBeenCalledTimes(1))
+    const [gid, policyId, body] = updateBudgetPolicy.mock.calls[0]
+    expect(gid).toBe(GUARDRAIL_ID)
+    expect(policyId).toBe('bp-total')
+    expect(body.spend_limit_amount).toBe('2000')
+    expect(Object.keys(body)).toEqual(['spend_limit_amount']) // 周期没动就不发
+    // 未改动的 per_api_key 档不产生任何调用
+    expect(addBudgetPolicy).not.toHaveBeenCalled()
+    expect(deleteBudgetPolicy).not.toHaveBeenCalled()
+    await waitFor(() => expect(appToast.success).toHaveBeenCalled())
+  })
+
+  it('把不限额的一档改成限额：POST 新增带对应 aggregation_scope', async () => {
+    detailNow = globalGuardrailDetail([
+      budgetPolicy({ id: 'bp-total', aggregation_scope: 'guardrail_total', spend_limit_amount: '1000.000000000000' }),
+    ])
+    getGuardrail.mockReset().mockImplementation(async () => detailNow)
+    addBudgetPolicy.mockImplementation(async () => detailNow)
+
+    await openGlobalBudgetTab()
+    await waitFor(() =>
+      expect((screen.getByRole('textbox', { name: '工作空间总预算金额' }) as HTMLInputElement).value).toBe('1000'),
+    )
+    // per_api_key 档初始不限额（无策略）→ 无金额输入
+    expect(screen.queryByRole('textbox', { name: '默认 Key 预算金额' })).toBeNull()
+
+    fireEvent.click(screen.getByRole('switch', { name: '默认 Key 预算是否限额' }))
+    const key = (await screen.findByRole('textbox', { name: '默认 Key 预算金额' })) as HTMLInputElement
+    fireEvent.change(key, { target: { value: '50' } })
+    fireEvent.click(screen.getByRole('button', { name: '保存预算' }))
+
+    await waitFor(() => expect(addBudgetPolicy).toHaveBeenCalledTimes(1))
+    const [gid, body] = addBudgetPolicy.mock.calls[0]
+    expect(gid).toBe(GUARDRAIL_ID)
+    expect(body.aggregation_scope).toBe('per_api_key')
+    expect(body.spend_limit_amount).toBe('50')
+    expect(body.enabled).toBe(true)
+    // guardrail_total 未改 → 不 PATCH；无删除
+    expect(updateBudgetPolicy).not.toHaveBeenCalled()
+    expect(deleteBudgetPolicy).not.toHaveBeenCalled()
+  })
+
+  it('把限额的一档关成不限额：DELETE 该 scope 的策略', async () => {
+    detailNow = globalGuardrailDetail([
+      budgetPolicy({ id: 'bp-total', aggregation_scope: 'guardrail_total', spend_limit_amount: '1000.000000000000' }),
+      budgetPolicy({ id: 'bp-member', aggregation_scope: 'per_member', spend_limit_amount: '200.000000000000' }),
+    ])
+    getGuardrail.mockReset().mockImplementation(async () => detailNow)
+    deleteBudgetPolicy.mockImplementation(async () => detailNow)
+
+    await openGlobalBudgetTab()
+    await waitFor(() =>
+      expect((screen.getByRole('textbox', { name: '默认个人预算金额' }) as HTMLInputElement).value).toBe('200'),
+    )
+
+    fireEvent.click(screen.getByRole('switch', { name: '默认个人预算是否限额' }))
+    fireEvent.click(screen.getByRole('button', { name: '保存预算' }))
+
+    await waitFor(() => expect(deleteBudgetPolicy).toHaveBeenCalledTimes(1))
+    const [gid, policyId] = deleteBudgetPolicy.mock.calls[0]
+    expect(gid).toBe(GUARDRAIL_ID)
+    expect(policyId).toBe('bp-member')
+    expect(addBudgetPolicy).not.toHaveBeenCalled()
+    expect(updateBudgetPolicy).not.toHaveBeenCalled()
+  })
+
+  it('个人租户隐藏「默认个人预算」档，且保存不触碰 per_member 策略', async () => {
+    useAuthStore.setState({
+      activeWorkspaceId: WORKSPACE_ID,
+      activeTenantId: 't-1',
+      tenants: [{ tenant_id: 't-1', type: 'personal' }] as never,
+    })
+    detailNow = globalGuardrailDetail([
+      budgetPolicy({ id: 'bp-total', aggregation_scope: 'guardrail_total', spend_limit_amount: '1000.000000000000' }),
+      budgetPolicy({ id: 'bp-member', aggregation_scope: 'per_member', spend_limit_amount: '200.000000000000' }),
+    ])
+    getGuardrail.mockReset().mockImplementation(async () => detailNow)
+    updateBudgetPolicy.mockImplementation(async () => detailNow)
+
+    await openGlobalBudgetTab()
+    // 个人租户：默认个人预算档不渲染
+    expect(screen.queryByRole('switch', { name: '默认个人预算是否限额' })).toBeNull()
+    expect(screen.queryByRole('textbox', { name: '默认个人预算金额' })).toBeNull()
+
+    const total = (await screen.findByRole('textbox', { name: '工作空间总预算金额' })) as HTMLInputElement
+    await waitFor(() => expect(total.value).toBe('1000'))
+    fireEvent.change(total, { target: { value: '3000' } })
+    fireEvent.click(screen.getByRole('button', { name: '保存预算' }))
+
+    await waitFor(() => expect(updateBudgetPolicy).toHaveBeenCalledTimes(1))
+    expect(updateBudgetPolicy.mock.calls[0][1]).toBe('bp-total')
+    // per_member 档被过滤，绝不误删既有的成员默认预算
+    expect(deleteBudgetPolicy).not.toHaveBeenCalled()
+  })
+})

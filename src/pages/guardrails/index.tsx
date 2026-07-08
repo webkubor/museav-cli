@@ -37,9 +37,37 @@ import { GuardrailSummaryCards } from './components/GuardrailSummaryCards'
 import { GuardrailDetailSheet } from './components/GuardrailDetailSheet'
 import { GuardrailConfirmModals } from './components/GuardrailConfirmModals'
 import { isValidBudgetAmount, trimAmountScale } from './budget'
-import { summarize, type GuardrailScope } from './derive'
+import { summarize, budgetByScope, type BudgetAggScope, type GuardrailScope } from './derive'
 
 type BudgetPolicy = NonNullable<GuardrailDetail['budget_policies']>[number]
+type PeriodUnit = 'hour' | 'day' | 'week' | 'month'
+
+// 全局护栏（is_default）的三档预算闸门，各自对应一个 aggregation_scope（对齐 PRD）。
+export interface ScopeBudgetDraft { amount: string; period: PeriodUnit; limited: boolean }
+const GLOBAL_BUDGET_SCOPES: BudgetAggScope[] = ['guardrail_total', 'per_member', 'per_api_key']
+const EMPTY_BUDGET_DRAFT: ScopeBudgetDraft = { amount: '', period: 'month', limited: false }
+
+// 有生效策略 → 限额（回填规范金额）；无 → 不限额。
+function draftFromPolicy(p: BudgetPolicy | null): ScopeBudgetDraft {
+  return p
+    ? { amount: trimAmountScale(p.spend_limit_amount), period: p.period_unit, limited: true }
+    : { ...EMPTY_BUDGET_DRAFT }
+}
+
+// 全局护栏脏数据判定：单个 aggregation_scope 下出现多条生效策略才算冲突
+// （三档并存本身合法，区别于 member/key 的「全局单条」不变量）。
+function globalBudgetConflict(detail?: GuardrailDetail | null): boolean {
+  const counts: Record<string, number> = {}
+  for (const p of activeBudgetPolicies(detail)) {
+    counts[p.aggregation_scope] = (counts[p.aggregation_scope] ?? 0) + 1
+  }
+  return Object.values(counts).some((c) => c > 1)
+}
+
+type GlobalBudgetOp =
+  | { type: 'add'; body: AddBudgetPolicyRequest }
+  | { type: 'update'; policyId: string; body: UpdateBudgetPolicyRequest }
+  | { type: 'delete'; policyId: string }
 
 function isActiveBudgetPolicy(policy: BudgetPolicy) {
   if (!policy.enabled) return false
@@ -127,6 +155,13 @@ export default function GuardrailsPage() {
   const [budgetPeriodUnit, setBudgetPeriodUnit] = useState<'hour' | 'day' | 'week' | 'month'>('month')
   const [showClearBudget, setShowClearBudget] = useState(false)
 
+  // ── 全局护栏三档预算编辑状态（各档对应一个 aggregation_scope） ───────────
+  const [globalBudgets, setGlobalBudgets] = useState<Record<BudgetAggScope, ScopeBudgetDraft>>({
+    guardrail_total: { ...EMPTY_BUDGET_DRAFT },
+    per_member: { ...EMPTY_BUDGET_DRAFT },
+    per_api_key: { ...EMPTY_BUDGET_DRAFT },
+  })
+
   // ── API Key 作用范围本地状态（account_id 风格，与成员一致） ─────────────
   const [apiKeyIds, setApiKeyIds] = useState<string[]>([])
 
@@ -203,6 +238,27 @@ export default function GuardrailsPage() {
       appToast.requestError(err, '删除失败'),
   })
 
+  // 全局护栏三档保存：一次点击可涉及多档的 增/改/删，按顺序串行执行，
+  // 以最后一条响应回写缓存（三档互相独立、可并存，后端无单条限制）。
+  const saveGlobalBudgetMutation = useMutation({
+    mutationFn: async ({ id, ops }: { id: string; ops: GlobalBudgetOp[] }) => {
+      let latest: GuardrailDetail | undefined
+      for (const op of ops) {
+        if (op.type === 'add') latest = await addBudgetPolicy(id, op.body)
+        else if (op.type === 'update') latest = await updateBudgetPolicy(id, op.policyId, op.body)
+        else latest = await deleteBudgetPolicy(id, op.policyId)
+      }
+      return latest
+    },
+    onSuccess: (updated, vars) => {
+      appToast.success('预算已保存')
+      if (updated) qc.setQueryData(['guardrail-detail', vars.id], updated)
+      qc.invalidateQueries({ queryKey: ['guardrail-detail', vars.id] })
+    },
+    onError: (err: unknown) =>
+      appToast.requestError(err, '保存失败'),
+  })
+
   const createMutation = useMutation({
     mutationFn: (payload: CreateGuardrailRequest) =>
       createGuardrail(activeWorkspaceId!, payload),
@@ -268,8 +324,26 @@ export default function GuardrailsPage() {
     setName(''); setDescription(''); setIsDefault(false); setPriority(0)
     setModelBlacklist([]); setIpWhitelist([]); setMemberIds([]); setApiKeyIds([])
     setBudgetAmount(''); setBudgetPeriodUnit('month')
+    setGlobalBudgets({
+      guardrail_total: { ...EMPTY_BUDGET_DRAFT },
+      per_member: { ...EMPTY_BUDGET_DRAFT },
+      per_api_key: { ...EMPTY_BUDGET_DRAFT },
+    })
     setSheetTab('info')
     setDetailOpen(true)
+  }
+
+  // 全局护栏三档从 detail 回填（按 aggregation_scope 各取生效策略）
+  function fillGlobalBudgetsFromDetail(d: GuardrailDetail) {
+    setGlobalBudgets({
+      guardrail_total: draftFromPolicy(budgetByScope(d, 'guardrail_total')),
+      per_member: draftFromPolicy(budgetByScope(d, 'per_member')),
+      per_api_key: draftFromPolicy(budgetByScope(d, 'per_api_key')),
+    })
+  }
+
+  function handleGlobalBudgetChange(scope: BudgetAggScope, patch: Partial<ScopeBudgetDraft>) {
+    setGlobalBudgets((prev) => ({ ...prev, [scope]: { ...prev[scope], ...patch } }))
   }
 
   function syncFormFromDetail(d: GuardrailDetail) {
@@ -280,6 +354,7 @@ export default function GuardrailsPage() {
     const bp = currentBudgetPolicy(d)
     setBudgetAmount(bp ? trimAmountScale(bp.spend_limit_amount) : '')
     setBudgetPeriodUnit(bp?.period_unit ?? 'month')
+    fillGlobalBudgetsFromDetail(d)
     const meta = d.metadata ?? {}
     setModelBlacklist(Array.isArray(meta.model_blacklist) ? meta.model_blacklist : [])
     setIpWhitelist(Array.isArray(meta.ip_whitelist) ? meta.ip_whitelist : [])
@@ -365,9 +440,65 @@ export default function GuardrailsPage() {
     }
   }
 
+  // 全局护栏三档保存：逐档比对当前生效策略 → 增（无）/ 改（有且变了）/ 删（清空）。
+  function handleSaveGlobalBudgets() {
+    if (!detail) return
+    if (budgetConflict) {
+      appToast.error('预算配置数据错误：存在多条生效中的预算策略，请联系管理员处理')
+      return
+    }
+    // 个人租户不显示、也不触碰「默认个人预算」(per_member) 档
+    const scopes = GLOBAL_BUDGET_SCOPES.filter((s) => s !== 'per_member' || showMember)
+    const ops: GlobalBudgetOp[] = []
+    for (const scope of scopes) {
+      const draft = globalBudgets[scope]
+      const existing = budgetByScope(detail, scope)
+      if (draft.limited) {
+        const amount = draft.amount.trim()
+        if (!isValidBudgetAmount(amount)) {
+          appToast.error('预算金额无效：请输入大于 0 的数字，整数最多 12 位，小数最多 2 位')
+          return
+        }
+        if (existing) {
+          // 原地改：只发真正变更的字段（金额/周期），避免计费窗口无谓重锚
+          const body: UpdateBudgetPolicyRequest = {}
+          if (amount !== trimAmountScale(existing.spend_limit_amount)) body.spend_limit_amount = amount
+          if (draft.period !== existing.period_unit) body.period_unit = draft.period
+          if (Object.keys(body).length > 0) ops.push({ type: 'update', policyId: existing.id, body })
+        } else {
+          ops.push({
+            type: 'add',
+            body: {
+              aggregation_scope: scope,
+              period_unit: draft.period,
+              period_length: 1,
+              enforcement_mode: 'hard_limit',
+              spend_limit_amount: amount,
+              enabled: true,
+            },
+          })
+        }
+      } else if (existing) {
+        // 清空该档 → 删除其生效策略
+        ops.push({ type: 'delete', policyId: existing.id })
+      }
+    }
+    if (ops.length === 0) {
+      appToast.info('预算未发生变化')
+      return
+    }
+    trackAction(PERMS.GUARDRAILS_BUDGET_EDIT)
+    saveGlobalBudgetMutation.mutate({ id: detail.id, ops })
+  }
+
   // ── 派生数据 ────────────────────────────────────────────────────────────
   const budget = currentBudgetPolicy(detail)
-  const budgetConflict = activeBudgetPolicies(detail).length > 1
+  // 全局护栏（is_default）按 aggregation_scope 三档编辑，冲突判定按「每档单条」；
+  // member/key 护栏保持「全局单条」不变量。
+  const isGlobal = !!detail?.is_default
+  const budgetConflict = isGlobal
+    ? globalBudgetConflict(detail)
+    : activeBudgetPolicies(detail).length > 1
 
   // Label as "name (email)" so the picker is human-readable instead of an
   // opaque account_id. Fall back gracefully when a field is missing.
@@ -465,6 +596,13 @@ export default function GuardrailsPage() {
         savingBudget={setBudgetMutation.isPending}
         onSaveBudget={handleSaveBudget}
         onShowClearBudget={() => setShowClearBudget(true)}
+        isGlobal={isGlobal}
+        showMember={showMember}
+        globalBudgets={globalBudgets}
+        onGlobalBudgetChange={handleGlobalBudgetChange}
+        onEnterBudgetTab={() => { if (detail) fillGlobalBudgetsFromDetail(detail) }}
+        savingGlobalBudget={saveGlobalBudgetMutation.isPending}
+        onSaveGlobalBudgets={handleSaveGlobalBudgets}
         currencySymbol={currencySymbol}
         submitting={createMutation.isPending || updateMutation.isPending}
         onSubmit={handleSubmit}

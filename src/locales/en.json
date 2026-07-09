@@ -256,7 +256,9 @@
       "secure": "Secured by WeChat Pay · encrypted end-to-end",
       "qrAria": "WeChat Pay QR code",
       "missingTitle": "Payment QR code expired",
-      "missingDesc": "Return to Billing and create a new recharge order."
+      "missingDesc": "Return to Billing and create a new recharge order.",
+      "closedTitle": "Payment closed",
+      "closedDesc": "This order was not completed. Return to Billing and create a new recharge order."
     },
     "promo": {
       "title": "Redeem Promo Code",

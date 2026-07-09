@@ -99,8 +99,8 @@ export default function WechatCashierPage() {
   }, [state, navigate, returnTo])
 
   return (
-    <main className="min-h-screen bg-[#f5f6f7] text-[#1f2329]">
-      <header className="border-b border-[#e5e6eb] bg-white">
+    <main className="min-h-screen bg-mg-bg-1 text-mg-text-1">
+      <header className="border-b border-mg-border bg-mg-bg-0">
         <div className="mx-auto flex h-16 w-full max-w-[980px] items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2.5 text-[15px] font-semibold">
             <WechatIcon size={21} />
@@ -109,7 +109,7 @@ export default function WechatCashierPage() {
           <button
             type="button"
             onClick={goBack}
-            className="inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-[#4e5969] transition-colors hover:bg-[#f2f3f5] hover:text-[#1f2329]"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-mg-text-2 transition-colors hover:bg-mg-fill-0 hover:text-mg-text-1"
           >
             <LuArrowLeft size={15} />
             {t('billing.wechatCashier.back')}
@@ -118,10 +118,10 @@ export default function WechatCashierPage() {
       </header>
 
       <section className="mx-auto flex w-full max-w-[980px] flex-col items-center px-4 py-10 sm:px-6 sm:py-14">
-        <div className="w-full max-w-[440px] overflow-hidden rounded-lg border border-[#e8e9eb] bg-white shadow-[0_8px_28px_rgba(31,35,41,0.06)]">
+        <div className="w-full max-w-[440px] overflow-hidden rounded-lg border border-mg-border bg-mg-bg-0 shadow-sm">
           {/* Amount header — the focal point */}
           <div className="flex flex-col items-center gap-1 px-6 pb-6 pt-8">
-            <div className="text-xs text-[#86909c]">{payee}</div>
+            <div className="text-xs text-mg-text-3">{payee}</div>
             <div
               className="font-mono text-[40px] font-semibold leading-none tracking-tight"
               style={{ color: WECHAT_GREEN }}
@@ -131,35 +131,43 @@ export default function WechatCashierPage() {
           </div>
 
           {state === 'paid' ? (
-            <div className="border-t border-[#f0f1f2] px-6 py-12 text-center">
+            <div className="border-t border-mg-border/60 px-6 py-12 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full" style={{ backgroundColor: WECHAT_GREEN }}>
                 <LuCheck size={30} strokeWidth={3} className="text-white" />
               </div>
-              <div className="mt-5 text-[17px] font-semibold text-[#1f2329]">{t('billing.wechatCashier.paidTitle')}</div>
-              <div className="mt-2 text-xs text-[#86909c]">
+              <div className="mt-5 text-[17px] font-semibold text-mg-text-1">{t('billing.wechatCashier.paidTitle')}</div>
+              <div className="mt-2 text-xs text-mg-text-3">
                 {t('billing.wechatCashier.redirecting', { seconds: countdown })}
               </div>
               <Button variant="brand" onClick={goBack} className="mt-7 h-10 rounded-md px-8 text-xs">
                 {t('billing.wechatCashier.backNow')}
               </Button>
             </div>
+          ) : state === 'closed' ? (
+            <div className="border-t border-mg-border/60 px-6 py-12 text-center">
+              <div className="text-sm font-semibold text-mg-text-1">{t('billing.wechatCashier.closedTitle')}</div>
+              <div className="mt-2 text-xs leading-6 text-mg-text-3">{t('billing.wechatCashier.closedDesc')}</div>
+              <Button variant="brand" onClick={goBack} className="mt-6 h-10 rounded-md px-6 text-xs">
+                {t('billing.wechatCashier.back')}
+              </Button>
+            </div>
           ) : qrCodeUrl ? (
-            <div className="border-t border-[#f0f1f2] px-6 pb-7 pt-6">
+            <div className="border-t border-mg-border/60 px-6 pb-7 pt-6">
               <div
                 role="img"
                 aria-label={t('billing.wechatCashier.qrAria')}
-                className="mx-auto flex h-[228px] w-[228px] items-center justify-center rounded-lg border border-[#e8e9eb] bg-white p-3.5"
+                className="mx-auto flex h-[228px] w-[228px] items-center justify-center rounded-lg border border-mg-border bg-mg-bg-0 p-3.5"
               >
                 <QRCodeSVG value={qrCodeUrl} size={200} level="M" includeMargin={false} />
               </div>
 
-              <div className="mt-5 flex items-center justify-center gap-2 text-sm font-medium text-[#1f2329]">
+              <div className="mt-5 flex items-center justify-center gap-2 text-sm font-medium text-mg-text-1">
                 <WechatIcon size={17} />
                 <span>{t('billing.wechatCashier.scanHint')}</span>
               </div>
 
               {/* Live status — signals the page is actively confirming the payment */}
-              <div className="mt-4 flex items-center justify-center gap-2 text-xs text-[#86909c]">
+              <div className="mt-4 flex items-center justify-center gap-2 text-xs text-mg-text-3">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ backgroundColor: WECHAT_GREEN }} />
                   <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: WECHAT_GREEN }} />
@@ -168,7 +176,7 @@ export default function WechatCashierPage() {
               </div>
 
               {orderNo && (
-                <div className="mt-4 text-center text-xs text-[#a9aeb8]">
+                <div className="mt-4 text-center text-xs text-mg-text-4">
                   {t('billing.wechatCashier.orderNo')}
                   <span className="ml-1 font-mono">{orderNo}</span>
                 </div>
@@ -189,9 +197,9 @@ export default function WechatCashierPage() {
               </div>
             </div>
           ) : (
-            <div className="border-t border-[#f0f1f2] px-6 py-12 text-center">
-              <div className="text-sm font-semibold text-[#1f2329]">{t('billing.wechatCashier.missingTitle')}</div>
-              <div className="mt-2 text-xs leading-6 text-[#86909c]">{t('billing.wechatCashier.missingDesc')}</div>
+            <div className="border-t border-mg-border/60 px-6 py-12 text-center">
+              <div className="text-sm font-semibold text-mg-text-1">{t('billing.wechatCashier.missingTitle')}</div>
+              <div className="mt-2 text-xs leading-6 text-mg-text-3">{t('billing.wechatCashier.missingDesc')}</div>
               <Button variant="brand" onClick={goBack} className="mt-6 h-10 rounded-md px-6 text-xs">
                 {t('billing.wechatCashier.back')}
               </Button>
@@ -200,7 +208,7 @@ export default function WechatCashierPage() {
         </div>
 
         {/* Trust footer */}
-        <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-[#a9aeb8]">
+        <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-mg-text-4">
           <LuShieldCheck size={13} />
           {t('billing.wechatCashier.secure')}
         </div>

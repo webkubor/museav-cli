@@ -256,7 +256,9 @@
       "secure": "微信安全支付 · 信息全程加密",
       "qrAria": "微信支付二维码",
       "missingTitle": "支付二维码已失效",
-      "missingDesc": "请返回账单页重新创建充值订单。"
+      "missingDesc": "请返回账单页重新创建充值订单。",
+      "closedTitle": "支付已关闭",
+      "closedDesc": "该订单未完成支付，请返回账单页重新创建充值订单。"
     },
     "promo": {
       "title": "兑换优惠码",

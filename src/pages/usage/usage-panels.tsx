@@ -4,7 +4,6 @@
  * API 来源：GET /usage/summary、GET /usage/rankings/*（含 /usage/rankings/workspaces）
  */
 
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -88,32 +87,6 @@ function ErrorBlock({ message, onRetry }: { message: string; onRetry: () => void
       <Button variant="outline" size="sm" onClick={onRetry}>
         {t('usage.retry')}
       </Button>
-    </div>
-  )
-}
-
-function SourceMiniRow({
-  item,
-  currencySymbol,
-}: {
-  item: UsageRankingItem
-  currencySymbol: string
-}) {
-  const share = rankingSharePercent(item)
-  const name = displayRankingName(item)
-  return (
-    <div className="grid grid-cols-[minmax(0,1fr)_120px_48px] items-center gap-3">
-      <span className="truncate text-[12px] font-medium text-mg-text-1" title={name}>
-        {name}
-      </span>
-      <ProgressBar 
-        value={share} 
-        variant="brand" 
-        size="xs" 
-        showGlow={false} 
-        className="w-full shrink-0" 
-      />
-      <span className="text-right text-[12px] text-mg-text-3">{formatRankingSpend(item, currencySymbol)}</span>
     </div>
   )
 }
@@ -218,9 +191,9 @@ export function UsageHealthPanel({
 }
 
 /**
- * 成本来源侧栏：Top 工作空间 / API Key / Model。
- * 分组用可切换 tab（而非纵向堆叠），使面板高度恒定——否则右栏随分组增高会把
- * 同一 grid 行的左侧趋势图一起撑高。
+ * 成本来源侧栏（对齐 PRD §9）：三类各展示「最高消费」的 Top 1
+ * ——最高消费工作空间 / 最高消费模型 / 最高消费 API Key，同屏三张卡并列，
+ * 每张给 名称 + 金额 · 占比%。不做 tab 排行列表（那是「排行榜」区的职责，避免重复）。
  */
 export function CostSourcePanel({
   sections,
@@ -230,9 +203,6 @@ export function CostSourcePanel({
   onRetry,
 }: CostSourcePanelProps) {
   const { t } = useTranslation()
-  const [activeIdx, setActiveIdx] = useState(0)
-  // sections 长度稳定（工作空间/APIKey/模型），但视图切换等场景下仍 clamp 兜底
-  const active = sections[Math.min(activeIdx, sections.length - 1)]
 
   return (
     <Card className="min-w-0 p-5 sm:p-6">
@@ -241,45 +211,30 @@ export function CostSourcePanel({
       {isError ? (
         <ErrorBlock message={t('usage.error.rankings')} onRetry={onRetry} />
       ) : isLoading ? (
-        <PanelSkeleton rows={5} />
+        <PanelSkeleton rows={3} />
       ) : (
-        <>
-          <div className="mb-4 flex gap-1 rounded-lg bg-mg-fill-0 p-1">
-            {sections.map((section, idx) => {
-              const selected = section === active
-              return (
-                <button
-                  key={section.title}
-                  type="button"
-                  onClick={() => setActiveIdx(idx)}
-                  aria-pressed={selected}
-                  className={cn(
-                    'min-w-0 flex-1 truncate rounded-md px-2 py-1.5 text-[12px] font-semibold transition-colors',
-                    selected ? 'bg-mg-bg-0 text-brand-base shadow-sm' : 'text-mg-text-3 hover:text-mg-text-1',
-                  )}
-                  title={section.title}
-                >
-                  {section.title}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* 定高：最多 5 行占位，切 tab 不跳动、也不影响左侧图表高度 */}
-          <div className="min-h-[188px]">
-            {!active || active.items.length === 0 ? (
-              <div className="flex min-h-[188px] items-center justify-center text-[12px] text-mg-text-3">
-                {active?.emptyLabel ?? t('usage.sources.empty')}
+        <div className="space-y-3">
+          {sections.map((section) => {
+            const top = section.items[0]
+            return (
+              <div key={section.title} className="rounded-lg border border-mg-border bg-mg-fill-0/40 p-3">
+                <div className="truncate text-[12px] text-mg-text-3">{section.title}</div>
+                {top ? (
+                  <>
+                    <div className="mt-1 truncate text-sm font-bold text-mg-text-1">{displayRankingName(top)}</div>
+                    <div className="mt-0.5 flex items-baseline gap-1.5 text-[12px]">
+                      <span className="font-semibold tabular-nums text-brand-base">{formatRankingSpend(top, currencySymbol)}</span>
+                      <span className="text-mg-text-3">·</span>
+                      <span className="tabular-nums text-mg-text-2">{rankingSharePercent(top).toFixed(1)}%</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="mt-1 text-[12px] text-mg-text-3">{section.emptyLabel}</div>
+                )}
               </div>
-            ) : (
-              <div className="space-y-2.5">
-                {active.items.slice(0, 5).map((item, idx) => (
-                  <SourceMiniRow key={item.key ?? `${active.title}-${idx}`} item={item} currencySymbol={currencySymbol} />
-                ))}
-              </div>
-            )}
-          </div>
-        </>
+            )
+          })}
+        </div>
       )}
     </Card>
   )

@@ -12,7 +12,7 @@ import {
 } from '@/constants/recharge-channels'
 import { AlipayIcon, WechatIcon, StripeIcon } from '@/constants/brand-icons'
 
-const WECHAT_PAYEE_NAME = 'ModelGo'
+const WECHAT_PAYEE_NAME = '杭州词元共生科技有限公司'
 
 function buildWechatCashierURL(params: {
   qrCodeUrl: string

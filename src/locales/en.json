@@ -243,7 +243,7 @@
     },
     "wechatCashier": {
       "title": "WeChat Pay Cashier",
-      "defaultPayee": "ModelGo",
+      "defaultPayee": "杭州词元共生科技有限公司",
       "back": "Back to Billing",
       "scanHint": "Scan with WeChat to pay",
       "waiting": "Waiting for payment…",

@@ -243,7 +243,7 @@
     },
     "wechatCashier": {
       "title": "微信支付收银台",
-      "defaultPayee": "ModelGo",
+      "defaultPayee": "杭州词元共生科技有限公司",
       "back": "返回账单",
       "scanHint": "请使用微信扫一扫完成支付",
       "waiting": "等待支付中…",

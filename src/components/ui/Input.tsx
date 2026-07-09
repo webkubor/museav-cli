@@ -29,7 +29,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const resolvedType = type || (mode === "password" ? "password" : "text")
     const shouldTrim = resolvedType === "text" || resolvedType === "search" || resolvedType === "url" || resolvedType === "email"
     const variantClasses = variant === "search"
-      ? "modern-input-search rounded-full"
+      ? "modern-input-search rounded-full mg-flow-input"
       : ""
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

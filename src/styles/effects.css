@@ -9,6 +9,56 @@
   to { --border-angle: 360deg; }
 }
 
+/* ── 💎 通用流光边框（从 auth 提取，可复用到任意 .modern-input-wrapper 或卡片）──
+   用法：给需要的 wrapper 加 class `mg-flow-input`；聚焦时亮起品牌流光描边，浅/深主题各一套，
+   尊重 prefers-reduced-motion。半径继承宿主（rounded-lg 等），不写死。 */
+.mg-flow-input {
+  position: relative;
+  z-index: 1;
+}
+.mg-flow-input::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 0%, transparent 30%,
+    var(--brand-light) 42%, var(--brand-base) 50%, rgba(255, 255, 255, 0.9) 52%,
+    var(--brand-base) 54%, var(--brand-light) 62%,
+    transparent 74%, transparent 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+.mg-flow-input:focus-within::before {
+  opacity: 1;
+  animation: liquid-border 4s linear infinite;
+}
+/* 聚焦时让流光作为主焦点指示，压掉默认品牌 ring，避免双重描边 */
+.mg-flow-input:focus-within {
+  box-shadow: var(--shadow-sm) !important;
+}
+/* 深色：换更亮的品牌中间色 + 纯白高光，暗底上才够醒目 */
+body[theme-mode='dark'] .mg-flow-input::before {
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 0%, transparent 30%,
+    var(--brand-mid) 42%, var(--brand-base) 50%, #fff 52%,
+    var(--brand-base) 54%, var(--brand-mid) 62%,
+    transparent 74%, transparent 100%
+  );
+}
+@media (prefers-reduced-motion: reduce) {
+  .mg-flow-input:focus-within::before { animation: none; }
+}
+
 
 /* ── 🚀 侧边栏一级串联竖线流光过渡 (垂直流光脉冲) ── */
 @keyframes verticalFlow {

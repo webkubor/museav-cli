@@ -219,13 +219,15 @@ const client = ky.create({
   },
 })
 
-function unwrapEnvelope<T>(envelope: ApiResponse<T>): T {
+function unwrapEnvelope<T>(envelope: ApiResponse<T>, fallbackTraceId?: string): T {
   if (envelope.code !== 0) {
     const error = new ModelGoApiError({
       code: envelope.code,
       msg: envelope.msg,
       request_id: envelope.request_id,
-      trace_id: envelope.trace_id,
+      // 信封暂无 trace_id 时用响应头 x-trace-id/traceparent 兜底，让诊断弹窗能显示 Trace ID；
+      // 后端信封补上 trace_id 后此兜底自然让位（envelope.trace_id 优先）。
+      trace_id: envelope.trace_id ?? fallbackTraceId,
       data:
         envelope.data && typeof envelope.data === 'object'
           ? (envelope.data as ApiError['data'])
@@ -246,7 +248,10 @@ export async function get<T>(path: string, params?: QueryParams): Promise<T> {
     const httpResp = await client.get(url, { searchParams: searchParams(params) })
     const traceId = httpResp.headers.get('x-request-id') ?? httpResp.headers.get('x-trace-id') ?? httpResp.headers.get('traceparent') ?? undefined
     const envelope = await httpResp.json<ApiResponse<T>>()
-    const result = unwrapEnvelope(envelope)
+    const result = unwrapEnvelope(
+      envelope,
+      httpResp.headers.get('x-trace-id') ?? httpResp.headers.get('traceparent') ?? undefined,
+    )
     const rawForLog: Record<string, unknown> = { code: 0, data: result }
     devLogApiCall({
       method: 'GET',
@@ -322,7 +327,10 @@ async function postSecure<T>(path: string, body: unknown): Promise<T> {
       typeof raw.iv === 'string' && typeof raw.data === 'string'
         ? decryptResponse<ApiResponse<T>>(raw.data as string, aesKeyB64, raw.iv as string)
         : (raw as unknown as ApiResponse<T>)
-    const result = unwrapEnvelope(envelopeResp)
+    const result = unwrapEnvelope(
+      envelopeResp,
+      httpResp.headers.get('x-trace-id') ?? httpResp.headers.get('traceparent') ?? undefined,
+    )
     devLogApiCall({
       method: 'POST',
       path: normalizedPath,
@@ -379,7 +387,10 @@ export async function upload<T>(
     const httpResp = await sendRaw()
     const traceId = httpResp.headers.get('x-request-id') ?? httpResp.headers.get('x-trace-id') ?? httpResp.headers.get('traceparent') ?? undefined
     const envelope = await httpResp.json<ApiResponse<T>>()
-    const result = unwrapEnvelope(envelope)
+    const result = unwrapEnvelope(
+      envelope,
+      httpResp.headers.get('x-trace-id') ?? httpResp.headers.get('traceparent') ?? undefined,
+    )
     const rawForLog: Record<string, unknown> = { code: 0, data: result }
     devLogApiCall({
       method: method.toUpperCase(),
@@ -418,7 +429,10 @@ async function requestWithJsonBody<T>(
     const httpResp = await send(url)
     const traceId = httpResp.headers.get('x-request-id') ?? httpResp.headers.get('x-trace-id') ?? httpResp.headers.get('traceparent') ?? undefined
     const envelope = await httpResp.json<ApiResponse<T>>()
-    const result = unwrapEnvelope(envelope)
+    const result = unwrapEnvelope(
+      envelope,
+      httpResp.headers.get('x-trace-id') ?? httpResp.headers.get('traceparent') ?? undefined,
+    )
     const rawForLog: Record<string, unknown> = { code: 0, data: result }
     devLogApiCall({
       method,

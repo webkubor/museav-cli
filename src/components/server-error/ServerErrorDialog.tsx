@@ -61,6 +61,12 @@ export function ServerErrorDialog() {
           <Button variant="outline" onClick={dismiss}>
             关闭
           </Button>
+          <CopyButton
+            variant="labeled"
+            value={diagnosticsText}
+            label="一键复制"
+            copiedLabel="已复制全部"
+          />
           <Button variant="default" icon={<LuMail size={14} />} onClick={sendEmail}>
             发 Email
           </Button>

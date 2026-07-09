@@ -15,7 +15,6 @@ import { formatMoney, formatNumber } from './usage-utils'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import {
   LuKey,
-  LuShieldCheck,
   LuTable2,
 } from 'react-icons/lu'
 
@@ -23,13 +22,6 @@ export interface CostSourceSection {
   title: string
   items: UsageRankingItem[]
   emptyLabel: string
-}
-
-interface UsageHealthPanelProps {
-  rangeLabel: string
-  totalSpend: string
-  totalRequests: string
-  totalTokens: string
 }
 
 interface CostSourcePanelProps {
@@ -137,56 +129,6 @@ function ApiKeyRankBadge({ rank }: { rank: number }) {
     >
       {rank.toString().padStart(2, '0')}
     </span>
-  )
-}
-
-/** 用量概览横条，只展示接口已返回的真实汇总数据。 */
-export function UsageHealthPanel({
-  rangeLabel,
-  totalSpend,
-  totalRequests,
-  totalTokens,
-}: UsageHealthPanelProps) {
-  const { t } = useTranslation()
-
-  return (
-    <Card className="overflow-hidden border-brand-base/20 bg-mg-bg-0 p-0">
-      <div className="grid gap-0 xl:grid-cols-[188px_repeat(3,minmax(0,1fr))]">
-        <div className="flex items-center gap-3 border-b border-mg-border px-4 py-4 xl:border-b-0 xl:border-r">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-selected-bg text-brand-base">
-            <LuShieldCheck size={17} />
-          </span>
-          <div>
-            <div className="text-sm font-semibold text-mg-text-1">{t('usage.health.title')}</div>
-            <div className="mt-1 text-[12px] text-mg-success">{t('usage.health.safe')}</div>
-          </div>
-        </div>
-
-        <div className="border-b border-mg-border px-4 py-4 xl:border-b-0 xl:border-r">
-          <div className="flex items-center justify-between gap-3 text-sm">
-            <span className="text-mg-text-3">{t('usage.health.metric.spend')}</span>
-            <strong className="font-mono text-mg-text-1">{totalSpend}</strong>
-          </div>
-          <div className="mt-1 text-[12px] text-mg-text-3">{rangeLabel}</div>
-        </div>
-
-        <div className="border-b border-mg-border px-4 py-4 xl:border-b-0 xl:border-r">
-          <div className="flex items-center justify-between gap-3 text-sm">
-            <span className="text-mg-text-3">{t('usage.health.metric.requests')}</span>
-            <strong className="font-mono text-mg-text-1">{totalRequests}</strong>
-          </div>
-          <div className="mt-1 text-[12px] text-mg-text-3">{rangeLabel}</div>
-        </div>
-
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between gap-3 text-sm">
-            <span className="text-mg-text-3">{t('usage.health.metric.tokens')}</span>
-            <strong className="font-mono text-mg-text-1">{totalTokens}</strong>
-          </div>
-          <div className="mt-1 text-[12px] text-mg-text-3">{rangeLabel}</div>
-        </div>
-      </div>
-    </Card>
   )
 }
 

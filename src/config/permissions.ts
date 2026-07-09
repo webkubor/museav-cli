@@ -27,7 +27,6 @@ export const PERMS = {
   OBSERVABILITY_LOGGING_EDIT:   'observability.logging:edit',
   OBSERVABILITY_FORWARD_MANAGE: 'observability.forward:manage',
 
-  REFERRAL_REWARD_TRANSFER: 'referral.reward:transfer',
   REFERRAL_REWARD_WITHDRAW: 'referral.reward:withdraw',
 
   WORKSPACE_CREATE:         'workspace:create',

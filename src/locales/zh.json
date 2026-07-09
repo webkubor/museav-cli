@@ -1042,33 +1042,9 @@
       "requests": "次",
       "tokens": "tokens"
     },
-    "kpi": {
-      "spend": "总消费",
-      "requests": "总请求数",
-      "requestsTotal": "总请求数",
-      "tokens": "总 Token 数",
-      "averageCost": "平均单次费用",
-      "averageCostWithValue": "单次均价 {{value}}",
-      "averageCostDesc": "总消费 / 请求数",
-      "tokenBreakdown": "输入 {{input}} / 输出 {{output}}"
-    },
     "overview": {
       "title": "成本概览",
       "desc": "按当前工作空间和时间范围汇总核心用量。"
-    },
-    "health": {
-      "title": "额度健康",
-      "safe": "安全",
-      "desc": "{{range}} 内按真实用量汇总消费、请求和 Token。",
-      "realData": "真实接口数据",
-      "topModel": "主要模型",
-      "topApiKey": "主要 API Key",
-      "metric": {
-        "spend": "区间消费",
-        "requests": "区间请求",
-        "tokens": "区间 Token",
-        "averageCost": "单次均价"
-      }
     },
     "insights": {
       "title": "关键洞察",

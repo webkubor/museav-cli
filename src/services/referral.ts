@@ -26,20 +26,6 @@ export interface ReferralOverview {
   inviteCode: string
 }
 
-/** 奖励余额转入主余额（金额为字符串，与后端一致） */
-export interface TransferRewardRequest {
-  /** 转入金额，单次 ≥100，且不超过当前奖励余额 */
-  amount: string
-  /** 稳定幂等键：同一次确认动作的重试必须复用同一个值 */
-  idempotency_key: string
-}
-export interface TransferRewardResult {
-  /** 转入后的奖励余额 */
-  reward_balance: string
-  /** 转入后的主余额 */
-  main_balance: string
-}
-
 export type WithdrawMethod = 'alipay' | 'bank'
 
 /** 申请提现（运营审核后人工线下打款，金额为字符串） */
@@ -83,14 +69,6 @@ export function listRewardRecords(
 /** GET /tenants/:tenantId/referral/withdrawals — 提现记录 */
 export function listWithdrawals(tenantId: string): Promise<ReferralWithdrawal[]> {
   return get<ReferralWithdrawal[]>(`tenants/${tenantId}/referral/withdrawals`)
-}
-
-/** POST /tenants/:tenantId/referral/transfer — 奖励余额转入主余额 */
-export function transferRewardToBalance(
-  tenantId: string,
-  body: TransferRewardRequest
-): Promise<TransferRewardResult> {
-  return post<TransferRewardResult>(`tenants/${tenantId}/referral/transfer`, body)
 }
 
 /** POST /tenants/:tenantId/referral/withdrawals — 申请提现，返回新建的提现记录 */

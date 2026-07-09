@@ -41,8 +41,6 @@ const listRewardRecords =
     ) => Promise<CursorPage<ReferralCommissionRecord>>
   >().mockResolvedValue(emptyRewardPage)
 const listWithdrawals = vi.fn().mockResolvedValue([])
-const transferRewardToBalance =
-  vi.fn<(tenantId: string, body: { amount: string; idempotency_key: string }) => Promise<unknown>>()
 const requestWithdrawal = vi.fn().mockResolvedValue({})
 
 vi.mock('@/services/referral', () => ({
@@ -52,8 +50,6 @@ vi.mock('@/services/referral', () => ({
   listRewardRecords: (tenantId: string, params?: { cursor?: string; page_size?: number }) =>
     listRewardRecords(tenantId, params),
   listWithdrawals: (tenantId: string) => listWithdrawals(tenantId),
-  transferRewardToBalance: (tenantId: string, body: { amount: string; idempotency_key: string }) =>
-    transferRewardToBalance(tenantId, body),
   requestWithdrawal: (tenantId: string, body: unknown) => requestWithdrawal(tenantId, body),
 }))
 
@@ -135,7 +131,6 @@ beforeEach(() => {
   listReferralInvitees.mockReset().mockResolvedValue(emptyInviteesPage)
   listRewardRecords.mockReset().mockResolvedValue(emptyRewardPage)
   listWithdrawals.mockClear()
-  transferRewardToBalance.mockReset()
   requestWithdrawal.mockClear()
 
   useAuthStore.setState({
@@ -178,109 +173,6 @@ describe('ReferralPage — active-tenant scoping (#157)', () => {
     renderPage()
     await waitFor(() => expect(getReferralOverview).toHaveBeenCalled())
     expect(getReferralOverview).toHaveBeenCalledWith(DEFAULT_TENANT_ID)
-  })
-})
-
-// ── (b) stable idempotency key across retries, fresh on reopen ───────────────
-
-// Render the page, then open the transfer modal. The reward-balance KPI button
-// is disabled (rewardBalance <= 0) until the overview query settles, so wait for
-// the enabled state before clicking. Returns the confirm button + the page's
-// invalidateQueries spy.
-// 较长超时：异步 query 落定 + 弹窗渲染，在全量并发/高 CPU 负载下默认 1000ms 易超时（flaky）
-const ASYNC_TIMEOUT = { timeout: 5000 }
-
-async function openTransferModal() {
-  const utils = renderPage()
-  await screen.findByText('推荐计划', undefined, ASYNC_TIMEOUT)
-  const open = await screen.findByRole('button', { name: '转入主余额' }, ASYNC_TIMEOUT)
-  await waitFor(() => expect(open).not.toBeDisabled(), ASYNC_TIMEOUT)
-  fireEvent.click(open)
-  // modal footer confirm button proves the modal is open
-  const confirm = await screen.findByRole('button', { name: '确认转入' }, ASYNC_TIMEOUT)
-  return { confirm, ...utils }
-}
-
-describe('ReferralPage — transfer idempotency key lifecycle', () => {
-
-  it('reuses the SAME idempotency_key when a failed transfer is retried', async () => {
-    transferRewardToBalance.mockRejectedValueOnce(new Error('boom'))
-    transferRewardToBalance.mockResolvedValueOnce({ reward_balance: '0', main_balance: '1420' })
-
-    const { confirm } = await openTransferModal()
-
-    fireEvent.click(confirm)
-    await waitFor(() => expect(transferRewardToBalance).toHaveBeenCalledTimes(1))
-    const firstKey = transferRewardToBalance.mock.calls[0][1].idempotency_key
-    expect(firstKey).toBeTruthy()
-
-    // retry the same confirm action after the failure — must NOT mint a new key
-    fireEvent.click(confirm)
-    await waitFor(() => expect(transferRewardToBalance).toHaveBeenCalledTimes(2))
-    const secondKey = transferRewardToBalance.mock.calls[1][1].idempotency_key
-    expect(secondKey).toBe(firstKey)
-  })
-
-  it('mints a NEW idempotency_key after closing and reopening the modal', async () => {
-    transferRewardToBalance.mockRejectedValue(new Error('boom'))
-
-    const { confirm: confirm1 } = await openTransferModal()
-    fireEvent.click(confirm1)
-    await waitFor(() => expect(transferRewardToBalance).toHaveBeenCalledTimes(1))
-    const firstKey = transferRewardToBalance.mock.calls[0][1].idempotency_key
-
-    // close the modal (onClose) — Radix exposes a Close button labelled "Close"
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
-    await waitFor(() =>
-      expect(screen.queryByRole('button', { name: '确认转入' })).not.toBeInTheDocument()
-    )
-
-    // reopen → new randomUUID() → different key
-    fireEvent.click(screen.getByRole('button', { name: '转入主余额' }))
-    const confirm2 = await screen.findByRole('button', { name: '确认转入' })
-    fireEvent.click(confirm2)
-    await waitFor(() => expect(transferRewardToBalance).toHaveBeenCalledTimes(2))
-    const secondKey = transferRewardToBalance.mock.calls[1][1].idempotency_key
-    expect(secondKey).not.toBe(firstKey)
-  })
-
-  it('sends a non-empty amount and key matching the consumable reward balance', async () => {
-    transferRewardToBalance.mockResolvedValue({ reward_balance: '0', main_balance: '2840' })
-    const { confirm } = await openTransferModal()
-    fireEvent.click(confirm)
-    await waitFor(() => expect(transferRewardToBalance).toHaveBeenCalledTimes(1))
-    const [tenantId, body] = transferRewardToBalance.mock.calls[0]
-    expect(tenantId).toBe(ORG_TENANT_ID)
-    expect(body.amount).toBe('1420') // prefilled to full reward balance
-    expect(body.idempotency_key).not.toBe('')
-  })
-})
-
-// ── (c) success → invalidate queries + close modal ───────────────────────────
-
-describe('ReferralPage — transfer success side effects', () => {
-  it('invalidates the money views and closes the modal on success', async () => {
-    transferRewardToBalance.mockResolvedValue({ reward_balance: '0', main_balance: '2840' })
-
-    const { confirm, invalidateSpy } = await openTransferModal()
-
-    invalidateSpy.mockClear() // ignore mount-time cache churn
-    fireEvent.click(confirm)
-
-    await waitFor(() => expect(transferRewardToBalance).toHaveBeenCalledTimes(1))
-
-    // overview + balance views invalidated, scoped to the active tenant
-    await waitFor(() =>
-      expect(invalidateSpy).toHaveBeenCalledWith({
-        queryKey: ['referral', 'overview', ORG_TENANT_ID],
-      })
-    )
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['balance', ORG_TENANT_ID] })
-
-    // modal closes
-    await waitFor(() =>
-      expect(screen.queryByRole('button', { name: '确认转入' })).not.toBeInTheDocument()
-    )
   })
 })
 

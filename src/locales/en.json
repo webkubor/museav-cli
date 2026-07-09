@@ -1043,33 +1043,9 @@
       "requests": "requests",
       "tokens": "tokens"
     },
-    "kpi": {
-      "spend": "Total Spend",
-      "requests": "Total Requests",
-      "requestsTotal": "Total Requests",
-      "tokens": "Total Tokens",
-      "averageCost": "Avg Cost / Request",
-      "averageCostWithValue": "Avg cost {{value}}",
-      "averageCostDesc": "Total spend / requests",
-      "tokenBreakdown": "Input {{input}} / Output {{output}}"
-    },
     "overview": {
       "title": "Cost Overview",
       "desc": "Summarizes key usage for the selected workspace and time range."
-    },
-    "health": {
-      "title": "Quota Health",
-      "safe": "Safe",
-      "desc": "Summarizes real spend, requests, and tokens for {{range}}.",
-      "realData": "Real API data",
-      "topModel": "Primary model",
-      "topApiKey": "Primary API Key",
-      "metric": {
-        "spend": "Period spend",
-        "requests": "Period requests",
-        "tokens": "Period tokens",
-        "averageCost": "Avg cost"
-      }
     },
     "insights": {
       "title": "Key Insights",

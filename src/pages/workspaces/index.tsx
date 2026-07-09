@@ -59,6 +59,16 @@ function slugify(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]+/g, '')
 }
 
+/**
+ * 兜底 slug：中文/纯非 ASCII 名称 slugify 后会变成空字符串，后端 slug 必填（minLength 2），
+ * 空值直接 400。用「租户 slug + 当前空间序号」拼一个必定合法、大概率不重复的默认值
+ * （对齐用户预期：默认填入，少让手动输入；真撞车了已有的手动改 Slug 兜底路径处理）。
+ */
+function fallbackSlug(tenantSlug: string | undefined, workspaceCount: number) {
+  const base = tenantSlug ? slugify(tenantSlug) : ''
+  return `${base || 'space'}-${workspaceCount + 1}`
+}
+
 export default function WorkspacesPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -174,8 +184,9 @@ export default function WorkspacesPage() {
       toast.error(t('workspaces.toast.inviteLimit', { count: MAX_INVITE_MEMBERS }))
       return
     }
-    // Slug 允许留空：未手动改过就没有兜底，提交时统一派生/清洗，不再硬拦截报错
-    const finalSlug = slugify(slug) || slugify(name)
+    // Slug 允许留空：提交时统一派生/清洗；纯中文等非 ASCII 名称派生结果也可能为空，
+    // 最终落到「租户 slug-序号」兜底，保证提交前一定有合法 slug（后端 minLength 2 必填）
+    const finalSlug = slugify(slug) || slugify(name) || fallbackSlug(tenant?.slug, items.length)
     createMutation.mutate({ name, slug: finalSlug, description, inviteMembers: selectedMemberEmails, inviteRole })
   }
 
@@ -497,8 +508,9 @@ export default function WorkspacesPage() {
                 onChange={e => {
                   const v = e.target.value
                   setName(v)
-                  // 用户还没手动改过 Slug 时，名称实时派生同步进 Slug
-                  if (!slugTouched) setSlug(slugify(v))
+                  // 用户还没手动改过 Slug 时，名称实时派生同步进 Slug；
+                  // 纯中文等非 ASCII 名称 slugify 后为空，落到「租户 slug-序号」兜底
+                  if (!slugTouched) setSlug(slugify(v) || fallbackSlug(tenant?.slug, items.length))
                 }}
                 placeholder={t('workspaces.modal.namePlaceholder')}
               />

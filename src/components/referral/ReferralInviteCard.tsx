@@ -34,7 +34,7 @@ export function ReferralInviteCard({
   copySuccess = '邀请链接已复制',
   copyCodeSuccess = '邀请码已复制',
   realtimeLabel = '实时计返佣',
-  balanceLabel = '满 ¥100 可转入余额',
+  balanceLabel = '奖励余额可直接抵扣消费',
   rulesLinkLabel = '查看分润规则',
   rulesHref = DEFAULT_RULES_HREF,
   compact = false,

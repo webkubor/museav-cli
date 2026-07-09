@@ -256,7 +256,7 @@ export function OrgInfoTab({
             <span className="text-xs text-mg-text-1 font-medium">
               {(tenant.max_workspaces ?? '—')}
               {/* 已用工作空间：TenantDetail 无 used 字段 → 占位 */}
-              {/* TODO(后端待接): 组织已用工作空间数（TenantDetail.current_workspace_count） */}
+              {/* TODO(后端待接): 组织已用工作空间数（TenantDetail.current_workspace_count） 见 #420 */}
               <span className="text-mg-text-3"> · {t('enterprise.info.usedWorkspaces')} —</span>
             </span>
           </div>

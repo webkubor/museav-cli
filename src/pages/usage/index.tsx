@@ -379,6 +379,7 @@ export default function UsagePage() {
             suffix={currencySymbol === '¥' ? 'CNY' : undefined}
             loading={summaryQuery.isLoading}
             breakdownTitle={t('usage.summary.costStructure')}
+            // TODO(后端待接): usage/summary 无费用分项(输入/输出/缓存) → 占位 — 见 #420
             rows={[
               { label: t('usage.summary.inputCost'), value: '—', bar: false },
               { label: t('usage.summary.outputCost'), value: '—', bar: false },

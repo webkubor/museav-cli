@@ -112,7 +112,7 @@ export function OrgManagePanel({
           <SummaryStat label={t('enterprise.summary.members')} value={membersQuery.isLoading ? '…' : members.length} />
           <SummaryStat label={t('enterprise.summary.admins')} value={membersQuery.isLoading ? '…' : adminCount} />
           {/* 待处理邀请：无租户级邀请队列接口 → 占位 */}
-          {/* TODO(后端待接): 待处理邀请数（租户级邀请队列） */}
+          {/* TODO(后端待接): 待处理邀请数（租户级邀请队列） 见 #420 */}
           <SummaryStat label={t('enterprise.summary.pendingInvites')} value={dash} />
           <SummaryStat label={t('enterprise.summary.workspaces')} value={tenantItem?.current_workspace_count ?? dash} />
         </div>

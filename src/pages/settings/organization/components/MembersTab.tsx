@@ -249,7 +249,7 @@ export function MembersTab({
                           <span className="text-mg-text-3">{t('enterprise.members.allWorkspaces')}</span>
                         ) : (
                           // 后端未返回成员授权工作空间明细，仅有 workspace_count → 占位
-                          // TODO(后端待接): 成员-工作空间授权明细接口
+                          // TODO(后端待接): 成员-工作空间授权明细接口 见 #420
                           <span>{m.workspace_count > 0 ? `${m.workspace_count}` : '—'}</span>
                         )}
                       </TableCell>
@@ -271,7 +271,7 @@ export function MembersTab({
                       </TableCell>
                       <TableCell className="text-xs text-mg-text-2 font-medium">
                         {/* 后端 TenantMember 无 last_active_at → 用加入时间占位 */}
-                        {/* TODO(后端待接): 成员最近活跃时间字段 */}
+                        {/* TODO(后端待接): 成员最近活跃时间字段 见 #420 */}
                         {formatDate(m.joined_at)}
                       </TableCell>
                       <TableCell align="center">
@@ -385,7 +385,7 @@ export function MembersTab({
               {draftRole === 'tenant_member' ? (
                 <div className="rounded-lg border border-mg-border/40 bg-mg-fill-0/30 p-3 text-xs text-mg-text-3">
                   {/* 后端无「设置成员授权工作空间」接口 → 只做展示占位 */}
-                  {/* TODO(后端待接): 设置成员授权工作空间接口 */}
+                  {/* TODO(后端待接): 设置成员授权工作空间接口 见 #420 */}
                   {workspaces.length === 0
                     ? '—'
                     : `${t('enterprise.members.workspaceLabel')}：${editTarget.workspace_count} / ${workspaces.length}`}

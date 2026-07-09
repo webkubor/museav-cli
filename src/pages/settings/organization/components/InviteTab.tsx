@@ -180,7 +180,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
         </div>
 
         {/* 邀请队列 —— 后端无租户级邀请队列接口 → 占位空态 */}
-        {/* TODO(后端待接): 租户级邀请队列接口（邮箱/角色/授权空间/邀请人/过期/状态 + 重发/撤销） */}
+        {/* TODO(后端待接): 租户级邀请队列接口（邮箱/角色/授权空间/邀请人/过期/状态 + 重发/撤销） 见 #420 */}
         <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg overflow-hidden shadow-sm">
           <div className="p-4 border-b border-mg-border/50 bg-mg-fill-0/20">
             <div className="text-xs font-bold text-mg-text-1">{t('enterprise.invite.queueTitle')}</div>

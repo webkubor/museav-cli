@@ -10,6 +10,7 @@ import { useRechargeStore } from '@/store/use-recharge-store'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { getUsageSummary } from '@/services/usage'
 import { KpiCard } from '@/components/ui/KpiCard'
+import { TiltCard } from '@/components/ui/TiltCard'
 import { formatMoney } from '@/lib/utils'
 import { abbreviateNumber, rangeForGranularity, prevRangeForGranularity, computeDelta, type Granularity, type WorkbenchView } from './shared'
 
@@ -137,7 +138,9 @@ export function MetricsSection({
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => (
-        <KpiCard key={card.title} {...card} />
+        <TiltCard key={card.title}>
+          <KpiCard {...card} />
+        </TiltCard>
       ))}
     </div>
   )

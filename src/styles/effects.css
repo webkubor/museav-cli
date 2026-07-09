@@ -59,6 +59,17 @@ body[theme-mode='dark'] .mg-flow-input::before {
   .mg-flow-input:focus-within::before { animation: none; }
 }
 
+/* ── 💎 3D 倾斜卡壳（配合 useTilt / TiltCard）——只动 transform，GPU 合成不掉帧 ── */
+.mg-tilt {
+  transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mg-tilt { transform: none; transition: none; }
+}
+
 
 /* ── 🚀 侧边栏一级串联竖线流光过渡 (垂直流光脉冲) ── */
 @keyframes verticalFlow {

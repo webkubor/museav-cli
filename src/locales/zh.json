@@ -1075,10 +1075,10 @@
     },
     "sources": {
       "title": "成本来源",
-      "topProject": "Top Project",
+      "topProject": "最高消费项目",
       "topWorkspace": "最高消费工作空间",
-      "topApiKey": "Top API Key",
-      "topModel": "Top Model",
+      "topApiKey": "最高消费 API Key",
+      "topModel": "最高消费模型",
       "empty": "暂无来源数据"
     },
     "distribution": {

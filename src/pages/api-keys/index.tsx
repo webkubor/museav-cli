@@ -89,7 +89,10 @@ export default function ApiKeysPage() {
 
   const { data, isLoading, error: listError } = useQuery({
     queryKey: ['api-keys', activeWorkspaceId],
-    queryFn: () => listApiKeys(activeWorkspaceId).then(pageItems),
+    // 类型/负责人/状态/搜索四个筛选都在客户端做（其中 status 后端无筛选参数），因此必须把全量 Key
+    // 一次拉齐，否则筛选/负责人下拉只覆盖首页会漏（#383）。单空间 Key 量级很小，page_size 拉满足够；
+    // 若未来单空间 Key 超 200，再改真·游标分页 + 后端补 status 过滤参数。
+    queryFn: () => listApiKeys(activeWorkspaceId, { page_size: 200 }).then(pageItems),
     enabled: !!activeWorkspaceId,
     retry: false, // 40301/无权限不重试，直接走兼容态
     meta: { forbiddenHandled: true }, // 40301 由本页 ForbiddenState 承接，不弹全局 toast

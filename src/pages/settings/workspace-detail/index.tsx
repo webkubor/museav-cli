@@ -410,6 +410,7 @@ export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted:
     mutationFn: () => deleteWorkspace(ws.workspace_id, { confirm_name: ws.name }),
     onSuccess: () => {
       appToast.success(t('workspaces.detail.settings.deleteSuccess'))
+      setDeleteOpen(false)
       qc.invalidateQueries({ queryKey: ['workspaces'] })
       onDeleted()
     },

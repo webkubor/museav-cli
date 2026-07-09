@@ -693,7 +693,7 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
 
       {/* 快捷入口 */}
       <div className="bg-mg-fill-0/10 border border-mg-border/20 rounded-lg p-5">
-        <div className="text-xs font-bold text-mg-text-1 mb-4">{t('quickAccess')}</div>
+        <div className="text-xs font-bold text-mg-text-1 mb-4">{t('workspaces.detail.overview.quickAccessTitle')}</div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {shortcuts.map((s) => (
             <button

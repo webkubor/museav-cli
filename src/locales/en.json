@@ -811,6 +811,7 @@
         "goGuardrailsDesc": "View and configure guardrails for this workspace",
         "goLogsDesc": "Inspect model call records for this workspace",
         "goForwardingDesc": "Configure log collection and forwarding targets",
+        "quickAccessTitle": "Quick Access",
         "resources": "Resources",
         "usage7d": "Last 7 days",
         "lastRequest": "Last request",

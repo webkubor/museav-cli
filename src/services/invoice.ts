@@ -1,10 +1,8 @@
 /**
  * 发票 / 开票服务（V1.2 功能块 B）
- *
- * ⚠️ 后端开票接口尚未上 Swagger。以下为**建议路径**，待后端确认后校准（路径/返回结构）。
- * 现阶段只做交互骨架：接口未就绪时调用失败 → 列表走空态，交互逻辑（勾选/筛选/表单）完整可用。
+ * 后端接口已上线（test Swagger `/tenants/{tenantId}/invoices*`），路径/返回结构已按 Swagger 校准。
  */
-import { get, post, patch } from '@/lib/request'
+import { get, post, patch, del } from '@/lib/request'
 import type {
   InvoiceableRecharge,
   InvoiceRecord,
@@ -60,4 +58,9 @@ export function createInvoiceTitle(tenantId: string, body: CreateInvoiceTitleReq
 /** 设为默认抬头 */
 export function setDefaultInvoiceTitle(tenantId: string, titleId: string) {
   return patch<{ ok?: boolean }>(`tenants/${tenantId}/invoice-titles/${titleId}/default`, {})
+}
+
+/** 删除抬头（任意抬头含默认均可删，#426 后端待补 DELETE 接口，先接线） */
+export function deleteInvoiceTitle(tenantId: string, titleId: string) {
+  return del<{ ok?: boolean }>(`tenants/${tenantId}/invoice-titles/${titleId}`)
 }

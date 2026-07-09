@@ -5,15 +5,17 @@
  */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { LuPlus, LuArrowLeft } from 'react-icons/lu'
+import { LuPlus, LuArrowLeft, LuTrash2 } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { appToast } from '@/lib/app-toast'
 import {
   listInvoiceTitles,
   createInvoiceTitle,
   setDefaultInvoiceTitle,
+  deleteInvoiceTitle,
 } from '@/services/invoice'
 import type { InvoiceTitleType, CreateInvoiceTitleRequest } from '@/types'
 
@@ -52,6 +54,21 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
       appToast.success('已设为默认抬头')
       qc.invalidateQueries({ queryKey: ['invoice', 'titles', tenantId] })
     },
+  })
+
+  // 任意抬头（含默认）均可删；删的是默认抬头时，把第一条剩余抬头递补为默认
+  const removeTitle = useMutation({
+    mutationFn: (id: string) => deleteInvoiceTitle(tenantId, id),
+    onSuccess: async (_data, id) => {
+      appToast.success('已删除')
+      const removed = titles.find((t) => t.id === id)
+      const rest = titles.filter((t) => t.id !== id)
+      if (removed?.is_default && rest.length > 0) {
+        await setDefaultInvoiceTitle(tenantId, rest[0].id).catch(() => {})
+      }
+      qc.invalidateQueries({ queryKey: ['invoice', 'titles', tenantId] })
+    },
+    onError: (err: Error) => appToast.requestError(err, '删除失败，请重试'),
   })
 
   const create = useMutation({
@@ -140,7 +157,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-3">
         <p className="text-xs leading-relaxed text-mg-text-3">
-          增值税发票抬头（普票/专票），与「组织设置 → 开票信息」同源；默认抬头在开票时自动带出。
+          增值税发票抬头（普票/专票），需手工新增；默认抬头在开票时自动带出。
         </p>
         <Button variant="outline" size="sm" className="shrink-0" onClick={() => setView('form')}>
           <LuPlus size={14} className="mr-1" /> 新增抬头
@@ -149,6 +166,8 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
 
       {isLoading ? (
         <div className="py-10 text-center text-sm text-mg-text-3">加载中…</div>
+      ) : titles.length === 0 ? (
+        <EmptyState title="还没有发票抬头，新增后开票时自动带出默认抬头。" />
       ) : (
         titles.map((t) => (
           <div
@@ -179,10 +198,8 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
                   <div>{t.email}</div>
                 </div>
               </div>
-              <div className="shrink-0 text-xs">
-                {t.is_default ? (
-                  <span className="text-mg-text-4">默认抬头</span>
-                ) : (
+              <div className="shrink-0 flex items-center gap-2 text-xs">
+                {!t.is_default && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -192,6 +209,15 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
                     设为默认
                   </Button>
                 )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-mg-danger hover:bg-mg-danger/5"
+                  loading={removeTitle.isPending && removeTitle.variables === t.id}
+                  onClick={() => removeTitle.mutate(t.id)}
+                >
+                  <LuTrash2 size={13} />
+                </Button>
               </div>
             </div>
           </div>

@@ -1016,6 +1016,9 @@
   "usage": {
     "title": "Usage Analytics",
     "desc": "View API calls, token usage, and cost trends.",
+    "descTeam": "View your team's spend, requests, and model usage breakdown.",
+    "descSpace": "View spend, requests, and model usage for everyone in your managed workspace.",
+    "descMine": "View your own spend, requests, and model usage breakdown.",
     "noData": "No data",
     "emptyValue": "None",
     "refresh": "Refresh",

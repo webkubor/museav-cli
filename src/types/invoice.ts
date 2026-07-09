@@ -1,6 +1,6 @@
 /**
  * 发票 / 开票领域类型（V1.2 功能块 B）
- * 字段对照原型与 PRD §4；后端接口就绪后以 Swagger 为准微调。
+ * 字段对照 test Swagger `invoice.*` schema 校准（后端已上线，非占位骨架）。
  */
 
 /** 票种：增值税普票 / 增值税专票 / 国外 Invoice */
@@ -33,8 +33,8 @@ export interface InvoiceableRecharge {
   invoice_no?: string
 }
 
-/** 发票记录状态 */
-export type InvoiceStatus = 'invoicing' | 'invoiced' | 'failed'
+/** 发票记录状态（对齐 Swagger invoice.Status 全 5 值） */
+export type InvoiceStatus = 'pending' | 'invoicing' | 'invoiced' | 'failed' | 'voided'
 
 /** 发票记录 */
 export interface InvoiceRecord {

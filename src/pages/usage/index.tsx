@@ -91,6 +91,8 @@ export default function UsagePage() {
   const showViewToggle = isEnterprise && canManage
   const showSpaceViewToggle = !showViewToggle && canUseSpaceView
   const view = userView ?? (showViewToggle ? 'enterprise' : canUseSpaceView ? 'space' : 'mine')
+  // 对齐 PRD：说明文案按当前视图分三档（团队/负责空间/我的），不是一句固定文案
+  const viewDesc = view === 'enterprise' ? t('usage.descTeam') : view === 'space' ? t('usage.descSpace') : t('usage.descMine')
   const { symbol: currencySymbol } = useCurrency()
 
   useEffect(() => {
@@ -304,7 +306,7 @@ export default function UsagePage() {
     <div className="space-y-6">
       <PageHeader
         title={t('usage.title')}
-        description={t('usage.desc')}
+        description={viewDesc}
         actions={showViewToggle ? (
           <SegmentedToggle<'enterprise' | 'mine'>
             ariaLabel={t('dashboard.workbench.view.enterprise')}

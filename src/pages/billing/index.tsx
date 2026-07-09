@@ -13,7 +13,7 @@ import { getPromoRedeemErrorMessage } from './promo-errors'
 import { BalanceCard } from './BalanceCard'
 import type { BalanceTab } from './BalanceCard'
 import { BillingOrdersPanel } from './BillingOrdersPanel'
-import { BillingTransactionsPanel } from './BillingTransactionsPanel'
+import { BillingLedgerPanel } from './BillingLedgerPanel'
 
 export { PromoRedeemForm } from './PromoRedeemForm'
 export { OrderReceiptDrawer } from './OrderReceiptDrawer'
@@ -103,7 +103,7 @@ export default function BillingPage() {
         site={site ?? ''}
       />
 
-      <BillingTransactionsPanel tenantId={tenantId} />
+      <BillingLedgerPanel tenantId={tenantId} currencySymbol={currencySymbol} />
     </div>
   )
 }

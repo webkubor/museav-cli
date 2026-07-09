@@ -11,7 +11,9 @@ import { LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers } from 
 import { listModels, listModelTags, listModelFamilies } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
+import { getMarket } from '@/lib/market'
 import type { CatalogModelItem } from '@/types'
+import { GLOBAL_FALLBACK_MODELS } from './global-fallback-models'
 import { CatalogCard } from './CatalogCard'
 import { CatalogHero } from './CatalogHero'
 import { CatalogSidebar } from './CatalogSidebar'
@@ -31,6 +33,9 @@ export default function ModelsCatalogPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const isZh = i18n.language.startsWith('zh')
+  // 海外(global)catalog 接口暂未到位 → 不请求后端，用静态兜底清单展示主流国际模型。
+  // 接口就绪后删掉本 isGlobal 分支即可回到后端数据。
+  const isGlobal = getMarket() === 'global'
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   const [search, setSearch] = useState('')
@@ -55,14 +60,17 @@ export default function ModelsCatalogPage() {
     queryKey: ['catalog-models', { family: selectedFamily }],
     queryFn: () => listModels({ page_size: 100, family: selectedFamily || undefined }),
     staleTime: 5 * 60_000,
+    enabled: !isGlobal, // 海外不请求后端，走静态兜底
   })
   const tagsQuery = useQuery({ queryKey: ['catalog-model-tags'], queryFn: () => listModelTags(true), staleTime: 5 * 60_000 })
   const familiesQuery = useQuery({ queryKey: ['catalog-model-families'], queryFn: () => listModelFamilies(true), staleTime: 5 * 60_000 })
 
   // 过滤后端测试数据（pytest-* 不该出现在公开广场）
   const allModels = useMemo(
-    () => (modelsQuery.data?.items ?? []).filter((m) => !/^pytest/i.test(m.model_id)),
-    [modelsQuery.data?.items],
+    () => isGlobal
+      ? GLOBAL_FALLBACK_MODELS
+      : (modelsQuery.data?.items ?? []).filter((m) => !/^pytest/i.test(m.model_id)),
+    [isGlobal, modelsQuery.data?.items],
   )
   const families = useMemo(
     () => (familiesQuery.data?.items ?? []).filter((f) => f.enabled).sort((a, b) => a.sort_order - b.sort_order),

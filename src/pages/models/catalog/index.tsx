@@ -62,8 +62,8 @@ export default function ModelsCatalogPage() {
     staleTime: 5 * 60_000,
     enabled: !isGlobal, // 海外不请求后端，走静态兜底
   })
-  const tagsQuery = useQuery({ queryKey: ['catalog-model-tags'], queryFn: () => listModelTags(true), staleTime: 5 * 60_000 })
-  const familiesQuery = useQuery({ queryKey: ['catalog-model-families'], queryFn: () => listModelFamilies(true), staleTime: 5 * 60_000 })
+  const tagsQuery = useQuery({ queryKey: ['catalog-model-tags'], queryFn: () => listModelTags(true), staleTime: 5 * 60_000, enabled: !isGlobal })
+  const familiesQuery = useQuery({ queryKey: ['catalog-model-families'], queryFn: () => listModelFamilies(true), staleTime: 5 * 60_000, enabled: !isGlobal })
 
   // 过滤后端测试数据（pytest-* 不该出现在公开广场）
   const allModels = useMemo(

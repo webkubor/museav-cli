@@ -24,11 +24,15 @@ installAgentErrorReporter()
 initDeviceFingerprint()
 if (import.meta.env.DEV) installDevAuth()
 
+// 当前 PRD 累积基线（见「PRD by Release」发布基线树），随 PRD 发版节奏手动 bump，供埋点 A/B 对比（#423）
+const PRD_VERSION = 'v1.0.3'
+
 // 埋点 SDK 初始化（@model-go/track，替代 Umami）：app=console_web，区域按域名判定；
 // baseURL 不传 = 相对路径走当前域名 /api 代理；上报时动态带当前租户上下文。
 initTrack({
   app: TrackApp.ConsoleWeb,
   region: getMarket() === 'global' ? TrackRegion.Global : TrackRegion.CN,
+  prdVersion: PRD_VERSION,
   getAuthHeaders: () => {
     const tenantId = useAuthStore.getState().activeTenantId
     return tenantId ? { 'X-Tenant-Id': tenantId } : undefined

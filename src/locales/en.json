@@ -755,6 +755,10 @@
     "empty": "No matching workspaces",
     "currentBadge": "Current",
     "defaultBadge": "Default",
+    "density": {
+      "detailed": "Detailed cards",
+      "compact": "Compact cards"
+    },
     "table": {
       "name": "Name",
       "workspaceId": "Workspace ID",

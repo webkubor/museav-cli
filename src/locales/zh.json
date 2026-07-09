@@ -755,6 +755,10 @@
     "empty": "暂无匹配的工作空间数据",
     "currentBadge": "当前",
     "defaultBadge": "默认",
+    "density": {
+      "detailed": "详细卡片",
+      "compact": "紧凑卡片"
+    },
     "table": {
       "name": "名称",
       "workspaceId": "工作空间 ID",

@@ -19,12 +19,15 @@ import {
   LuCircleDollarSign,
   LuActivity,
   LuDatabase,
-  LuFileText
+  LuFileText,
+  LuLayoutGrid,
+  LuLayoutList
 } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listWorkspaces, createWorkspace, getWorkspace } from '@/services/workspaces'
 import { listTenantMembers } from '@/services/tenants'
 import { useTenantRole } from '@/hooks/use-tenant-role'
+import { useClientPage } from '@/hooks/use-client-page'
 import {
   MembersTab,
   LogsForwardingTab,
@@ -40,6 +43,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Pagination } from '@/components/ui/Pagination'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { TagInput, type TagOption } from '@/components/ui/TagInput'
 import { cn, formatMoney as fmtMoney } from '@/lib/utils'
@@ -77,6 +81,10 @@ export default function WorkspacesPage() {
   const [modalVisible, setModalVisible] = useState(false)
   // 单页结构：选中卡片在下方展开详情（不跳路由，对齐原型 .space-detail-shell）
   const [selectedId, setSelectedId] = useState<string>('')
+  // 卡片密度：detailed=两列大卡（全字段）｜ compact=四列小卡（仅名称/slug/负责人）。
+  // 两档都是换行网格、跟随页面纵向滚动，不做横向滚动——密度和"是否横滚"是两件事，
+  // 之前把两者混在一起删掉是错的（见反馈）。
+  const [density, setDensity] = useState<'detailed' | 'compact'>('detailed')
 
   // 受控表单状态
   const [name, setName] = useState('')
@@ -163,6 +171,8 @@ export default function WorkspacesPage() {
   })
 
   // 支持按名称、slug、workspace_id、描述、负责人模糊搜索。
+  // 全量拉取（GET /workspaces 省略 page_size = 返回全部，企业租户上限 20 个）+
+  // 前端搜索，保证搜索永远是对全量数据搜——分页只做「展示层」切片，不影响搜索范围。
   const searchKeyword = searchValue.trim().toLowerCase()
   const filteredData = (data || []).filter((item) => {
     if (!searchKeyword) return true
@@ -170,6 +180,9 @@ export default function WorkspacesPage() {
       (value ?? '').toLowerCase().includes(searchKeyword),
     )
   })
+  // 密度不同、每页展示条数也不同：紧凑卡片小，一页装得下更多
+  const pageSize = density === 'compact' ? 12 : 6
+  const { paged: pagedData, page: currentPage, setPage: setCurrentPage, total: pagedTotal } = useClientPage(filteredData, pageSize)
 
   const handleCreateSubmit = () => {
     if (!name.trim()) {
@@ -284,6 +297,40 @@ export default function WorkspacesPage() {
             {t('workspaces.countSuffix', { count: filteredData.length })}
           </span>
         </div>
+
+        {/* 密度切换：详细大卡 ↔ 紧凑小卡，两档都是换行网格，不做横向滚动 */}
+        {filteredData.length > 0 && (
+          <div className="flex items-center gap-1 bg-mg-fill-0/10 p-0.5 rounded-lg border border-mg-border/20 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDensity('detailed')}
+              className={cn(
+                "h-7 w-7 !rounded-md flex items-center justify-center border transition-all p-0",
+                density === 'detailed'
+                  ? "bg-brand-base/10 text-brand-base shadow-sm border-brand-base/20"
+                  : "bg-transparent text-mg-text-3 border-transparent hover:text-mg-text-1 hover:bg-mg-fill-0/20"
+              )}
+              title={t('workspaces.density.detailed')}
+            >
+              <LuLayoutGrid size={14} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDensity('compact')}
+              className={cn(
+                "h-7 w-7 !rounded-md flex items-center justify-center border transition-all p-0",
+                density === 'compact'
+                  ? "bg-brand-base/10 text-brand-base shadow-sm border-brand-base/20"
+                  : "bg-transparent text-mg-text-3 border-transparent hover:text-mg-text-1 hover:bg-mg-fill-0/20"
+              )}
+              title={t('workspaces.density.compact')}
+            >
+              <LuLayoutList size={14} />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* 空间列表区域 */}
@@ -297,11 +344,49 @@ export default function WorkspacesPage() {
         </div>
       ) : filteredData.length === 0 ? (
         <EmptyState title={t('workspaces.empty')} />
+      ) : density === 'compact' ? (
+        /* 紧凑网格：四列小卡，只留名称/slug/负责人——换行网格，不横滚 */
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {pagedData.map((ws) => {
+            const isSelected = validSelectedId === ws.workspace_id
+            return (
+              <Card
+                key={ws.workspace_id}
+                level={2}
+                onClick={() => setSelectedId(ws.workspace_id)}
+                className={cn(
+                  "group relative p-3 flex flex-col gap-1.5 cursor-pointer transition-all border overflow-hidden rounded-lg",
+                  isSelected
+                    ? "bg-brand-base/[0.05] border-brand-base/35 shadow-sm"
+                    : "bg-mg-bg-0 border-mg-border/40 hover:bg-mg-fill-0/20 hover:border-mg-border/60"
+                )}
+              >
+                {isSelected && (
+                  <span className="absolute top-2 right-2 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-base opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-base"></span>
+                  </span>
+                )}
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-bold text-mg-text-1 text-[13px] truncate">{ws.name}</h3>
+                  {ws.is_default && (
+                    <span className="shrink-0 scale-75 origin-left text-xs font-semibold px-1.5 py-0.5 rounded-sm bg-mg-warning/8 text-mg-warning border border-mg-warning/15">
+                      {t('workspaces.defaultBadge')}
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs font-mono text-mg-text-3 truncate">@{ws.slug}</div>
+                <div className="text-xs text-mg-text-3 truncate">
+                  {t('workspaces.card.owner')} <span className="font-semibold text-mg-text-2">{ws.owner?.display_name || dash}</span>
+                </div>
+              </Card>
+            )
+          })}
+        </div>
       ) : (
-        /* 空间卡片网格：对齐 PRD .space-card-grid，两列自动换行随页面纵向滚动，
-           不做横向滚动/多视图切换——那样反而让人看不出这是个列表（见反馈） */
+        /* 详细网格：两列大卡，全字段——对齐 PRD .space-card-grid，换行网格随页面纵向滚动 */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredData.map((ws) => {
+          {pagedData.map((ws) => {
             const isSelected = validSelectedId === ws.workspace_id
             return (
               <Card
@@ -394,6 +479,11 @@ export default function WorkspacesPage() {
             )
           })}
         </div>
+      )}
+
+      {/* 客户端分页：搜索后的全量结果做展示层切片，不影响搜索范围 */}
+      {!isLoading && pagedTotal > pageSize && (
+        <Pagination mode="page" page={currentPage} total={pagedTotal} pageSize={pageSize} onPageChange={setCurrentPage} />
       )}
 
       {/* 下方详情区改为主工作台 */}

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { LuArrowLeft, LuCheck, LuCopy, LuShieldCheck } from 'react-icons/lu'
+import { LuArrowLeft, LuCheck, LuCopy, LuScanQrCode, LuShieldCheck } from 'react-icons/lu'
 import { WechatIcon } from '@/constants/brand-icons'
 import { useCopy } from '@/hooks/use-copy'
 import { appToast } from '@/lib/app-toast'
@@ -161,10 +161,8 @@ export default function WechatCashierPage() {
     <main className="min-h-screen" style={{ backgroundColor: PAY.background, color: PAY.neutral }}>
       <header>
         <div className="mx-auto flex h-16 w-full max-w-[980px] items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-2.5 text-[15px] font-semibold">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[12px]" style={{ backgroundColor: PAY.primary }}>
-              <WechatIcon size={16} />
-            </span>
+          <div className="flex items-center gap-2 text-[15px] font-semibold">
+            <WechatIcon size={20} />
             <span>{t('billing.wechatCashier.title')}</span>
           </div>
           <button
@@ -180,17 +178,25 @@ export default function WechatCashierPage() {
 
       <section className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-[980px] flex-col items-center justify-center px-4 py-8 sm:px-6">
         <div
-          className="w-full max-w-[480px] overflow-hidden rounded-[16px]"
+          className="relative w-full max-w-[480px] overflow-hidden rounded-[16px]"
           style={{ backgroundColor: PAY.surface, boxShadow: PAY.shadowCard }}
         >
-          {/* Amount header — the focal point. display-lg：40px/700/lh48/tracking -0.02em */}
+          {/* 顶部进度条——轮询等待中(pending)时滑动，表示"正在处理"；支付结束后定格。
+              shimmer-slide 关键帧复用 effects.css 里已全局注册的动效，不新增 CSS。 */}
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-1"
+            style={{
+              background: `linear-gradient(90deg, ${PAY.primary} 0%, ${PAY.primary}55 30%, ${PAY.secondary} 70%, ${PAY.primary}55 100%)`,
+              backgroundSize: state === 'pending' ? '200% 100%' : '100% 100%',
+              animation: state === 'pending' ? 'shimmer-slide 2s ease-in-out infinite' : 'none',
+            }}
+          />
+
+          {/* Amount —— 与 payee 标签同级的次级信息，非巨大 hero 数字 */}
           <div className="flex flex-col items-center gap-1 px-6 pb-6 pt-8">
             <div className="text-xs font-medium" style={{ color: PAY.neutral, opacity: 0.6 }}>{payee}</div>
-            <div className="flex items-baseline gap-1" style={{ color: PAY.primary }}>
-              <span className="text-xl font-medium">{amountSymbol}</span>
-              <span className="text-[40px] font-bold leading-[48px] tracking-[-0.02em] tabular-nums">
-                {amountValue}
-              </span>
+            <div className="text-lg font-semibold" style={{ color: PAY.primary, opacity: 0.85 }}>
+              {amountSymbol}{amountValue}
             </div>
           </div>
 
@@ -217,33 +223,31 @@ export default function WechatCashierPage() {
             </div>
           ) : qrCodeUrl ? (
             <div className="px-6 pb-7 pt-6" style={{ borderTop: `1px solid ${PAY.border}` }}>
-              {/* 扫码取景框——虚线借鉴扫描视觉语言，用 Primary 呼应整页配色 */}
+              {/* 扫码取景框——四角括号（相机取景器语言），非整圈边框 */}
               <div
                 role="img"
                 aria-label={t('billing.wechatCashier.qrAria')}
-                className="mx-auto flex h-[228px] w-[228px] items-center justify-center rounded-[16px] p-3.5"
-                style={{ border: `2px dashed ${PAY.primary}66` }}
+                className="relative mx-auto flex h-[228px] w-[228px] items-center justify-center p-3.5"
               >
+                <span className="absolute left-0 top-0 h-6 w-6 rounded-tl-[10px] border-l-2 border-t-2" style={{ borderColor: PAY.primary }} />
+                <span className="absolute right-0 top-0 h-6 w-6 rounded-tr-[10px] border-r-2 border-t-2" style={{ borderColor: PAY.primary }} />
+                <span className="absolute bottom-0 left-0 h-6 w-6 rounded-bl-[10px] border-b-2 border-l-2" style={{ borderColor: PAY.primary }} />
+                <span className="absolute bottom-0 right-0 h-6 w-6 rounded-br-[10px] border-b-2 border-r-2" style={{ borderColor: PAY.primary }} />
                 <QRCodeSVG value={qrCodeUrl} size={200} level="M" includeMargin={false} />
               </div>
 
               <div className="mt-5 flex items-center justify-center gap-2 text-sm font-medium">
-                <WechatIcon size={17} />
+                <LuScanQrCode size={17} style={{ color: PAY.primary }} />
                 <span>{t('billing.wechatCashier.scanHint')}</span>
               </div>
 
-              {/* 状态徽章——Chips 规范：胶囊 + 10% 语义色底 + 100% 语义色字，pending 用 Primary */}
-              <div className="mt-4 flex items-center justify-center">
-                <span
-                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
-                  style={{ backgroundColor: `${PAY.primary}1a`, color: PAY.primary }}
-                >
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ backgroundColor: PAY.primary }} />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full" style={{ backgroundColor: PAY.primary }} />
-                  </span>
-                  {t('billing.wechatCashier.waiting')}
+              {/* 等待状态——纯圆点 + 文字，不加胶囊底色 */}
+              <div className="mt-4 flex items-center justify-center gap-2 text-xs font-medium" style={{ color: PAY.primary }}>
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ backgroundColor: PAY.primary }} />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full" style={{ backgroundColor: PAY.primary }} />
                 </span>
+                {t('billing.wechatCashier.waiting')}
               </div>
 
               {orderNo && (

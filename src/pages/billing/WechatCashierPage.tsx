@@ -12,12 +12,14 @@ const WECHAT_GREEN = '#07c160'
 const POLL_INTERVAL_MS = 3000
 const REDIRECT_DELAY_S = 3
 
-function amountText(amount: string, currency: string) {
+/** 拆分货币符号与数值，分别渲染不同字重——数字是视觉焦点，符号退居次要。 */
+function amountParts(amount: string, currency: string) {
   const normalized = Number(amount)
   const value = Number.isFinite(normalized) ? normalized.toFixed(2) : amount
-  if (currency.toUpperCase() === 'CNY') return `¥${value}`
-  if (currency.toUpperCase() === 'USD') return `$${value}`
-  return `${currency} ${value}`
+  const upper = currency.toUpperCase()
+  if (upper === 'CNY') return { symbol: '¥', value }
+  if (upper === 'USD') return { symbol: '$', value }
+  return { symbol: `${currency} `, value }
 }
 
 function safeReturnTo(raw: string | null) {
@@ -45,7 +47,7 @@ export default function WechatCashierPage() {
   const currency = searchParams.get('currency')?.trim() || 'CNY'
   const payee = searchParams.get('payee')?.trim() || t('billing.wechatCashier.defaultPayee')
   const returnTo = useMemo(() => safeReturnTo(searchParams.get('return_to')), [searchParams])
-  const displayAmount = useMemo(() => amountText(amount, currency), [amount, currency])
+  const { symbol: amountSymbol, value: amountValue } = useMemo(() => amountParts(amount, currency), [amount, currency])
 
   const [state, setState] = useState<PayState>('pending')
   const [countdown, setCountdown] = useState(REDIRECT_DELAY_S)
@@ -117,16 +119,18 @@ export default function WechatCashierPage() {
         </div>
       </header>
 
-      <section className="mx-auto flex w-full max-w-[980px] flex-col items-center px-4 py-10 sm:px-6 sm:py-14">
-        <div className="w-full max-w-[440px] overflow-hidden rounded-lg border border-mg-border bg-mg-bg-0 shadow-sm">
+      <section className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-[980px] flex-col items-center justify-center px-4 py-8 sm:px-6">
+        <div className="relative w-full max-w-[440px] overflow-hidden rounded-lg border border-mg-border bg-mg-bg-0 shadow-sm">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-brand-base/35 via-brand-base/10 to-transparent" />
+
           {/* Amount header — the focal point */}
           <div className="flex flex-col items-center gap-1 px-6 pb-6 pt-8">
             <div className="text-xs text-mg-text-3">{payee}</div>
-            <div
-              className="font-mono text-[40px] font-semibold leading-none tracking-tight"
-              style={{ color: WECHAT_GREEN }}
-            >
-              {displayAmount}
+            <div className="flex items-baseline gap-1" style={{ color: WECHAT_GREEN }}>
+              <span className="font-mono text-xl font-medium">{amountSymbol}</span>
+              <span className="font-mono text-[40px] font-semibold leading-none tracking-tight tabular-nums">
+                {amountValue}
+              </span>
             </div>
           </div>
 
@@ -205,12 +209,12 @@ export default function WechatCashierPage() {
               </Button>
             </div>
           )}
-        </div>
 
-        {/* Trust footer */}
-        <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-mg-text-4">
-          <LuShieldCheck size={13} />
-          {t('billing.wechatCashier.secure')}
+          {/* Trust footer — part of the card, not a stray line beneath it */}
+          <div className="flex items-center justify-center gap-1.5 border-t border-mg-border/60 py-3 text-xs text-mg-text-4">
+            <LuShieldCheck size={13} />
+            {t('billing.wechatCashier.secure')}
+          </div>
         </div>
       </section>
     </main>

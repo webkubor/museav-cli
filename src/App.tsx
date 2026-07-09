@@ -197,9 +197,6 @@ export default function App() {
           <Route path="/device" element={<DevicePage />} />
           <Route path="/billing/wechat-cashier" element={<WechatCashierPage />} />
 
-          {/* 开发者工具页（公开，免登录）— 便于局域网分享设计/契约/路由权限视图，独立于控制台壳 */}
-          <Route path="/dev-config" element={<PlatformConfigPage />} />
-
           {/* 模型广场（公开，免登录，双主题）— 与官网同路径 /models，官网「模型」直接跳此 */}
           <Route path="/models" element={<PublicShell />}>
             <Route index element={<ModelsCatalogPage />} />
@@ -220,6 +217,9 @@ export default function App() {
             </Route>
             {/* 任务历史已并入调用日志（#361）：旧路由重定向到「异步任务」记录类型 */}
             <Route path="tasks" element={<Navigate to="/logs?record_type=async" replace />} />
+
+            {/* 开发者菜单（DEV 调试页）——挂在后台壳内（带侧栏/头部），不再独立整页 */}
+            <Route path="dev-config" element={<PlatformConfigPage />} />
 
             {/* 企业管理/空间管理是主入口顶层页（nav.ts main 组），不是「设置」子页——
                 路径保持扁平（/organization、/workspaces），与 usage/logs/billing 同级。

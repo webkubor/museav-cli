@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { LuSettings2, LuQrCode } from 'react-icons/lu'
 import { useQueryClient } from '@tanstack/react-query'
 import type { PlatformConfig } from '@/services/platform'
 import { cn } from '@/lib/utils'
@@ -42,17 +41,6 @@ function Seg<T extends string>({
   )
 }
 
-/** 微信收银台调试链接：带 demo 参数好直接看 UI；不传 tenant → 收银台不轮询真实订单，纯 UI 调试。 */
-function buildCashierDemoURL(): string {
-  const url = new URL('/billing/wechat-cashier', window.location.origin)
-  url.searchParams.set('amount', '100')
-  url.searchParams.set('currency', 'CNY')
-  url.searchParams.set('payee', '杭州词元共生科技有限公司')
-  url.searchParams.set('qr', 'DEV_DEMO')
-  url.searchParams.set('order', 'DEV_DEMO_ORDER')
-  return url.toString()
-}
-
 /**
  * 开发者工具栏（仅 DEV 环境，悬浮底部居中）。
  * 切换国内/海外、语言——市场切换一把带动 logo / 品牌 / 主题色（主题色按 data-market 走 CSS）。
@@ -68,7 +56,6 @@ export function DevToolbar() {
   const setLang = useLangStore((s) => s.setLang)
   const qc = useQueryClient()
   const [theme, setThemeState] = useState<'light' | 'dark'>(() => resolveTheme(getSavedTheme()))
-  const [devOpen, setDevOpen] = useState(false)
 
   const switchMarket = (m: Market) => {
     setMarket(m)
@@ -128,43 +115,13 @@ export function DevToolbar() {
         onChange={switchLang}
       />
       <div className="h-4 w-px bg-mg-border" />
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setDevOpen((o) => !o)}
-          aria-expanded={devOpen}
-          className={cn(
-            'rounded-full px-3 py-1 text-xs font-bold transition-colors',
-            devOpen ? 'bg-brand-base text-white' : 'bg-mg-fill-0 text-mg-text-2 hover:text-mg-text-1'
-          )}
-        >
-          开发菜单
-        </button>
-        {devOpen && (
-          <>
-            {/* 点外部关闭 */}
-            <div className="fixed inset-0 z-40" onClick={() => setDevOpen(false)} />
-            <div className="absolute bottom-full right-0 z-50 mb-2 w-56 rounded-lg border border-mg-border bg-mg-bg-0 p-1.5 shadow-lg">
-              <div className="px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-mg-text-3">调试入口</div>
-              <button
-                type="button"
-                onClick={() => { setDevOpen(false); navigate('/dev-config') }}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs font-semibold text-mg-text-1 transition-colors hover:bg-mg-fill-0"
-              >
-                <LuSettings2 size={14} className="text-mg-text-3" /> 平台配置调试页
-              </button>
-              <button
-                type="button"
-                onClick={() => { setDevOpen(false); window.open(buildCashierDemoURL(), '_blank', 'noopener') }}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs font-semibold text-mg-text-1 transition-colors hover:bg-mg-fill-0"
-              >
-                <LuQrCode size={14} className="text-mg-text-3" /> 微信支付收银台
-                <span className="ml-auto text-[10px] text-mg-text-4">新标签</span>
-              </button>
-            </div>
-          </>
-        )}
-      </div>
+      <button
+        type="button"
+        onClick={() => navigate('/dev-config')}
+        className="rounded-full bg-mg-fill-0 px-3 py-1 text-xs font-bold text-mg-text-2 transition-colors hover:text-mg-text-1"
+      >
+        开发菜单
+      </button>
     </div>
   )
 }

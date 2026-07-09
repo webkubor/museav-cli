@@ -2,13 +2,33 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { LuArrowLeft, LuCheck, LuShieldCheck } from 'react-icons/lu'
+import { LuArrowLeft, LuCheck, LuCopy, LuShieldCheck } from 'react-icons/lu'
 import { WechatIcon } from '@/constants/brand-icons'
-import { Button } from '@/components/ui/Button'
-import { CopyButton } from '@/components/ui/CopyButton'
+import { useCopy } from '@/hooks/use-copy'
+import { appToast } from '@/lib/app-toast'
 import { getRecharge } from '@/services/billing'
 
-const WECHAT_GREEN = '#07c160'
+/**
+ * 独立收银台配色/形态系统（"Digital Payment Core"，用户提供的设计规范）。
+ * 有意不复用控制台的 --mg-* / --brand-* token 与共享 Button：
+ * 1) 共享 Button 的 variant="brand" 在 CSS 里锁了 `background ... !important`，
+ *    任何调用方 style 覆盖都会被样式表规则打败，无法在此实现独立配色；
+ * 2) 这是脱离 DashboardLayout 的独立全页（第三方支付收银台），本就不受控制台
+ *    共享设计系统约束，视觉效果优先于组件复用率。
+ * 仅浅色（规范未给深色变体，不臆造）；仍复用 useCopy 等纯逻辑 hook（非 UI 组件）。
+ */
+const PAY = {
+  primary: '#5D3FD3', // Deep Royal Purple —— CTA、进度、强调
+  onPrimary: '#FFFFFF',
+  secondary: '#E6E6FA', // Soft Lavender —— 次级按钮底、辅助高光
+  background: '#F8F7FF', // 页面画布（纯色，非渐变）
+  surface: '#FFFFFF', // 卡片
+  neutral: '#1A1A1A', // 主文字
+  border: '#E5E5E5',
+  shadowCard: '0px 4px 20px rgba(93, 63, 211, 0.06)',
+} as const
+
+const WECHAT_GREEN = '#07c160' // 成功/等待中的语义色场景仍保留品牌绿（规范：Success 用 Green）
 const POLL_INTERVAL_MS = 3000
 const REDIRECT_DELAY_S = 3
 
@@ -33,12 +53,43 @@ function safeReturnTo(raw: string | null) {
   }
 }
 
+/** 本页专属按钮——48px 高 / 12px 圆角 / primary 深紫实底 或 secondary 淡紫底+紫字。 */
+function PayButton({
+  variant = 'primary',
+  onClick,
+  disabled,
+  className = '',
+  children,
+}: {
+  variant?: 'primary' | 'secondary'
+  onClick: () => void
+  disabled?: boolean
+  className?: string
+  children: React.ReactNode
+}) {
+  const style = variant === 'primary'
+    ? { backgroundColor: PAY.primary, color: PAY.onPrimary }
+    : { backgroundColor: PAY.secondary, color: PAY.primary }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      style={style}
+      className={`inline-flex h-12 items-center justify-center gap-1.5 rounded-[12px] text-sm font-semibold tracking-[0.01em] transition-[filter] hover:brightness-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+    >
+      {children}
+    </button>
+  )
+}
+
 type PayState = 'pending' | 'paid' | 'closed'
 
 export default function WechatCashierPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { copy, copied } = useCopy()
 
   const qrCodeUrl = searchParams.get('qr')?.trim() ?? ''
   const orderNo = searchParams.get('order')?.trim() ?? ''
@@ -53,6 +104,12 @@ export default function WechatCashierPage() {
   const [countdown, setCountdown] = useState(REDIRECT_DELAY_S)
 
   const goBack = () => navigate(returnTo, { replace: true })
+
+  const handleCopyLink = async () => {
+    const ok = await copy(qrCodeUrl)
+    if (ok) appToast.success(t('billing.wechatCashier.copied'))
+    else appToast.error(t('billing.wechatCashier.copyFailed', { defaultValue: '复制失败，请手动复制' }))
+  }
 
   // Poll the recharge order status until it settles. Same-origin request carries
   // the session cookie; tenant comes from the launch URL. Transient errors keep
@@ -101,17 +158,19 @@ export default function WechatCashierPage() {
   }, [state, navigate, returnTo])
 
   return (
-    <main className="min-h-screen bg-mg-bg-1 text-mg-text-1">
-      <header className="border-b border-mg-border bg-mg-bg-0">
+    <main className="min-h-screen" style={{ backgroundColor: PAY.background, color: PAY.neutral }}>
+      <header>
         <div className="mx-auto flex h-16 w-full max-w-[980px] items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2.5 text-[15px] font-semibold">
-            <WechatIcon size={21} />
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[12px]" style={{ backgroundColor: PAY.primary }}>
+              <WechatIcon size={16} />
+            </span>
             <span>{t('billing.wechatCashier.title')}</span>
           </div>
           <button
             type="button"
             onClick={goBack}
-            className="inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-mg-text-2 transition-colors hover:bg-mg-fill-0 hover:text-mg-text-1"
+            className="inline-flex h-9 items-center gap-1.5 rounded-[12px] px-2.5 text-xs font-medium opacity-70 transition-opacity hover:opacity-100"
           >
             <LuArrowLeft size={15} />
             {t('billing.wechatCashier.back')}
@@ -120,101 +179,105 @@ export default function WechatCashierPage() {
       </header>
 
       <section className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-[980px] flex-col items-center justify-center px-4 py-8 sm:px-6">
-        <div className="relative w-full max-w-[440px] overflow-hidden rounded-lg border border-mg-border bg-mg-bg-0 shadow-sm">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-brand-base/35 via-brand-base/10 to-transparent" />
-
-          {/* Amount header — the focal point */}
+        <div
+          className="w-full max-w-[480px] overflow-hidden rounded-[16px]"
+          style={{ backgroundColor: PAY.surface, boxShadow: PAY.shadowCard }}
+        >
+          {/* Amount header — the focal point. display-lg：40px/700/lh48/tracking -0.02em */}
           <div className="flex flex-col items-center gap-1 px-6 pb-6 pt-8">
-            <div className="text-xs text-mg-text-3">{payee}</div>
-            <div className="flex items-baseline gap-1" style={{ color: WECHAT_GREEN }}>
-              <span className="font-mono text-xl font-medium">{amountSymbol}</span>
-              <span className="font-mono text-[40px] font-semibold leading-none tracking-tight tabular-nums">
+            <div className="text-xs font-medium" style={{ color: PAY.neutral, opacity: 0.6 }}>{payee}</div>
+            <div className="flex items-baseline gap-1" style={{ color: PAY.primary }}>
+              <span className="text-xl font-medium">{amountSymbol}</span>
+              <span className="text-[40px] font-bold leading-[48px] tracking-[-0.02em] tabular-nums">
                 {amountValue}
               </span>
             </div>
           </div>
 
           {state === 'paid' ? (
-            <div className="border-t border-mg-border/60 px-6 py-12 text-center">
+            <div className="px-6 py-12 text-center" style={{ borderTop: `1px solid ${PAY.border}` }}>
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full" style={{ backgroundColor: WECHAT_GREEN }}>
                 <LuCheck size={30} strokeWidth={3} className="text-white" />
               </div>
-              <div className="mt-5 text-[17px] font-semibold text-mg-text-1">{t('billing.wechatCashier.paidTitle')}</div>
-              <div className="mt-2 text-xs text-mg-text-3">
+              <div className="mt-5 text-[24px] font-semibold leading-[32px]">{t('billing.wechatCashier.paidTitle')}</div>
+              <div className="mt-2 text-xs font-medium" style={{ opacity: 0.6 }}>
                 {t('billing.wechatCashier.redirecting', { seconds: countdown })}
               </div>
-              <Button variant="brand" onClick={goBack} className="mt-7 h-10 rounded-md px-8 text-xs">
+              <PayButton onClick={goBack} className="mt-7 px-8">
                 {t('billing.wechatCashier.backNow')}
-              </Button>
+              </PayButton>
             </div>
           ) : state === 'closed' ? (
-            <div className="border-t border-mg-border/60 px-6 py-12 text-center">
-              <div className="text-sm font-semibold text-mg-text-1">{t('billing.wechatCashier.closedTitle')}</div>
-              <div className="mt-2 text-xs leading-6 text-mg-text-3">{t('billing.wechatCashier.closedDesc')}</div>
-              <Button variant="brand" onClick={goBack} className="mt-6 h-10 rounded-md px-6 text-xs">
+            <div className="px-6 py-12 text-center" style={{ borderTop: `1px solid ${PAY.border}` }}>
+              <div className="text-[24px] font-semibold leading-[32px]">{t('billing.wechatCashier.closedTitle')}</div>
+              <div className="mt-2 text-sm leading-6" style={{ opacity: 0.6 }}>{t('billing.wechatCashier.closedDesc')}</div>
+              <PayButton onClick={goBack} className="mt-6 px-6">
                 {t('billing.wechatCashier.back')}
-              </Button>
+              </PayButton>
             </div>
           ) : qrCodeUrl ? (
-            <div className="border-t border-mg-border/60 px-6 pb-7 pt-6">
+            <div className="px-6 pb-7 pt-6" style={{ borderTop: `1px solid ${PAY.border}` }}>
+              {/* 扫码取景框——虚线借鉴扫描视觉语言，用 Primary 呼应整页配色 */}
               <div
                 role="img"
                 aria-label={t('billing.wechatCashier.qrAria')}
-                className="mx-auto flex h-[228px] w-[228px] items-center justify-center rounded-lg border border-mg-border bg-mg-bg-0 p-3.5"
+                className="mx-auto flex h-[228px] w-[228px] items-center justify-center rounded-[16px] p-3.5"
+                style={{ border: `2px dashed ${PAY.primary}66` }}
               >
                 <QRCodeSVG value={qrCodeUrl} size={200} level="M" includeMargin={false} />
               </div>
 
-              <div className="mt-5 flex items-center justify-center gap-2 text-sm font-medium text-mg-text-1">
+              <div className="mt-5 flex items-center justify-center gap-2 text-sm font-medium">
                 <WechatIcon size={17} />
                 <span>{t('billing.wechatCashier.scanHint')}</span>
               </div>
 
-              {/* Live status — signals the page is actively confirming the payment */}
-              <div className="mt-4 flex items-center justify-center gap-2 text-xs text-mg-text-3">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ backgroundColor: WECHAT_GREEN }} />
-                  <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: WECHAT_GREEN }} />
+              {/* 状态徽章——Chips 规范：胶囊 + 10% 语义色底 + 100% 语义色字，pending 用 Primary */}
+              <div className="mt-4 flex items-center justify-center">
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
+                  style={{ backgroundColor: `${PAY.primary}1a`, color: PAY.primary }}
+                >
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ backgroundColor: PAY.primary }} />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full" style={{ backgroundColor: PAY.primary }} />
+                  </span>
+                  {t('billing.wechatCashier.waiting')}
                 </span>
-                {t('billing.wechatCashier.waiting')}
               </div>
 
               {orderNo && (
-                <div className="mt-4 text-center text-xs text-mg-text-4">
+                <div className="mt-4 text-center text-xs font-medium" style={{ opacity: 0.6 }}>
                   {t('billing.wechatCashier.orderNo')}
                   <span className="ml-1 font-mono">{orderNo}</span>
                 </div>
               )}
 
               <div className="mt-6 grid grid-cols-2 gap-3">
-                <CopyButton
-                  value={qrCodeUrl}
-                  variant="labeled"
-                  label={t('billing.wechatCashier.copy')}
-                  copiedLabel={t('billing.wechatCashier.copied')}
-                  toast={false}
-                  className="h-10 w-full rounded-md text-xs"
-                />
-                <Button variant="outline" onClick={goBack} className="h-10 rounded-md text-xs">
+                <PayButton variant="secondary" onClick={handleCopyLink} disabled={!qrCodeUrl}>
+                  {copied ? <LuCheck size={14} /> : <LuCopy size={14} />}
+                  {copied ? t('billing.wechatCashier.copied') : t('billing.wechatCashier.copy')}
+                </PayButton>
+                <PayButton variant="secondary" onClick={goBack}>
                   {t('billing.wechatCashier.back')}
-                </Button>
+                </PayButton>
               </div>
             </div>
           ) : (
-            <div className="border-t border-mg-border/60 px-6 py-12 text-center">
-              <div className="text-sm font-semibold text-mg-text-1">{t('billing.wechatCashier.missingTitle')}</div>
-              <div className="mt-2 text-xs leading-6 text-mg-text-3">{t('billing.wechatCashier.missingDesc')}</div>
-              <Button variant="brand" onClick={goBack} className="mt-6 h-10 rounded-md px-6 text-xs">
+            <div className="px-6 py-12 text-center" style={{ borderTop: `1px solid ${PAY.border}` }}>
+              <div className="text-[24px] font-semibold leading-[32px]">{t('billing.wechatCashier.missingTitle')}</div>
+              <div className="mt-2 text-sm leading-6" style={{ opacity: 0.6 }}>{t('billing.wechatCashier.missingDesc')}</div>
+              <PayButton onClick={goBack} className="mt-6 px-6">
                 {t('billing.wechatCashier.back')}
-              </Button>
+              </PayButton>
             </div>
           )}
+        </div>
 
-          {/* Trust footer — part of the card, not a stray line beneath it */}
-          <div className="flex items-center justify-center gap-1.5 border-t border-mg-border/60 py-3 text-xs text-mg-text-4">
-            <LuShieldCheck size={13} />
-            {t('billing.wechatCashier.secure')}
-          </div>
+        {/* Trust footer — sits on the page canvas, below the card */}
+        <div className="mt-6 flex items-center justify-center gap-1.5 text-xs font-medium" style={{ opacity: 0.5 }}>
+          <LuShieldCheck size={13} />
+          {t('billing.wechatCashier.secure')}
         </div>
       </section>
     </main>

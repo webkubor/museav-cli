@@ -23,6 +23,7 @@ import { sendEmailCode, register } from '@/services/auth'
 import { getCaptchaParam, isCaptchaEnabled } from '@/lib/aliyun-captcha'
 import { useAuthStore } from '@/store/auth'
 import { ModelGoApiError } from '@/lib/request'
+import { errorCodeOf } from '@/lib/request-error-message'
 import { toast } from '@/lib/toast'
 import { trackEvent } from '@/lib/track'
 import { checkAuthGuard, clearAuthGuard, recordAuthGuardFailure } from '@/lib/auth/front-guard'
@@ -173,12 +174,12 @@ function EmailSignupPage() {
         result.default_workspace_id
       )
       clearAuthGuard({ action: 'signup', subject: data.email })
-      trackEvent('signup_success', { method: 'email' })
+      trackEvent('signup_success', { method: 'email' }, { result: 'success' })
       navigate('/dashboard')
     } catch (e) {
       recordAuthGuardFailure({ action: 'signup', subject: data.email })
       const msg = e instanceof ModelGoApiError ? e.message : '注册失败，请稍后重试'
-      trackEvent('signup_fail', { method: 'email' })
+      trackEvent('signup_fail', { method: 'email' }, { result: 'fail', error_code: errorCodeOf(e) })
       setServerError(msg)
       toast.error(msg)
     } finally {

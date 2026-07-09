@@ -56,7 +56,7 @@ export function QuickStartSection() {
       action: t('dashboard.workbench.quickStart.step1Action'),
       onClick: () => {
         trackOnboardingAction('create_api_key')
-        trackEvent('destination_page_view', { ...trackCtx, destination: '/api-keys' })
+        trackEvent('destination_page_view', { ...trackCtx, destination: '/api-keys' }, { source: 'quickstart' })
         navigate(scopedWorkspacePath(activeWorkspaceId, 'api-keys'))
       },
     },
@@ -77,7 +77,7 @@ export function QuickStartSection() {
       action: t('dashboard.workbench.quickStart.step3Action'),
       onClick: () => {
         trackOnboardingAction('view_logs')
-        trackEvent('destination_page_view', { ...trackCtx, destination: '/logs' })
+        trackEvent('destination_page_view', { ...trackCtx, destination: '/logs' }, { source: 'quickstart' })
         navigate('/logs')
       },
     },

@@ -10,6 +10,7 @@ import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { trackAction, trackPageView } from '@/lib/track'
+import { useTenantRole } from '@/hooks/use-tenant-role'
 import { listModels } from '@/services/catalog'
 import { appToast } from '@/lib/app-toast'
 import {
@@ -106,9 +107,13 @@ export default function GuardrailsPage() {
   const canEdit           = hasPermission(PERMS.GUARDRAILS_EDIT)
   const canDelete         = hasPermission(PERMS.GUARDRAILS_DELETE)
   const canEditBudget     = hasPermission(PERMS.GUARDRAILS_BUDGET_EDIT)
+  // 埋点顶层字段 is_space_owner：当前用户对本页作用域工作空间的 my_role 是否为 ws_owner
+  const { ownedWorkspaceIds } = useTenantRole()
+  const isActiveWorkspaceOwner = !!activeWorkspaceId && ownedWorkspaceIds.includes(activeWorkspaceId)
 
   useEffect(() => {
-    trackPageView('guardrails')
+    trackPageView('guardrails', undefined, { is_space_owner: isActiveWorkspaceOwner })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ── 列表 ───────────────────────────────────────────────────────────────
@@ -392,10 +397,10 @@ export default function GuardrailsPage() {
       metadata,
     }
     if (!isCreating && detailId) {
-      trackAction(PERMS.GUARDRAILS_EDIT)
+      trackAction(PERMS.GUARDRAILS_EDIT, undefined, { is_space_owner: isActiveWorkspaceOwner })
       updateMutation.mutate({ id: detailId, payload })
     } else {
-      trackAction(PERMS.GUARDRAILS_CREATE)
+      trackAction(PERMS.GUARDRAILS_CREATE, undefined, { is_space_owner: isActiveWorkspaceOwner })
       createMutation.mutate(payload)
     }
   }
@@ -487,7 +492,7 @@ export default function GuardrailsPage() {
       appToast.info('预算未发生变化')
       return
     }
-    trackAction(PERMS.GUARDRAILS_BUDGET_EDIT)
+    trackAction(PERMS.GUARDRAILS_BUDGET_EDIT, undefined, { is_space_owner: isActiveWorkspaceOwner })
     saveGlobalBudgetMutation.mutate({ id: detail.id, ops })
   }
 
@@ -613,7 +618,7 @@ export default function GuardrailsPage() {
         deleteTarget={deleteTarget}
         onCloseDelete={() => setDeleteTarget(null)}
         deleting={deleteMutation.isPending}
-        onConfirmDelete={() => { if (deleteTarget) { trackAction(PERMS.GUARDRAILS_DELETE); deleteMutation.mutate(deleteTarget.id) } }}
+        onConfirmDelete={() => { if (deleteTarget) { trackAction(PERMS.GUARDRAILS_DELETE, undefined, { is_space_owner: isActiveWorkspaceOwner }); deleteMutation.mutate(deleteTarget.id) } }}
         showClearBudget={showClearBudget}
         onCloseClear={() => setShowClearBudget(false)}
         clearing={removeBudgetMutation.isPending}

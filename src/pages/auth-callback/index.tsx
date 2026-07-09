@@ -33,7 +33,7 @@ export default function AuthCallbackPage() {
           result.active_workspace_id,
           result.permissions?.granted ?? null
         )
-        trackEvent('login_success', { method: 'oauth' })
+        trackEvent('login_success', { method: 'oauth' }, { result: 'success' })
         navigate(redirect, { replace: true })
       })
       .catch(async () => {
@@ -46,11 +46,11 @@ export default function AuthCallbackPage() {
             result.active_workspace_id,
             result.permissions?.granted ?? null
           )
-          trackEvent('login_success', { method: 'oauth' })
+          trackEvent('login_success', { method: 'oauth' }, { result: 'success' })
           navigate(redirect, { replace: true })
         } catch {
           // 回调换取与会话兜底都失败 = 登录确实没成：先提示再跳登录，不静默
-          trackEvent('login_fail', { method: 'oauth', reason: 'callback_failed' })
+          trackEvent('login_fail', { method: 'oauth' }, { result: 'fail', error_code: 'callback_failed' })
           appToast.error('登录失败，请重新登录')
           navigate('/login', { replace: true })
         }

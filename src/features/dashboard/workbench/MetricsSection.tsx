@@ -33,7 +33,7 @@ export function MetricsSection({
   const { symbol } = useCurrency()
   const trackCtx = useTrackContext()
   const onMetricCardClick = (metric: string) =>
-    trackEvent('overview_metric_card_click', { ...trackCtx, view_mode: view, metric })
+    trackEvent('overview_metric_card_click', { ...trackCtx, metric }, { view_mode: view })
 
   const range = useMemo(() => rangeForGranularity(granularity), [granularity])
   const prevRange = useMemo(() => prevRangeForGranularity(granularity), [granularity])

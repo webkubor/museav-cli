@@ -18,8 +18,8 @@ importers:
         specifier: ^5.8.0
         version: 5.8.0(@lobehub/ui@5.15.1)(@types/react@19.2.15)(antd@6.4.3(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@model-go/track':
-        specifier: ^0.2.0
-        version: 0.2.0(react@19.2.6)
+        specifier: ^0.3.0
+        version: 0.3.0(react@19.2.6)
       '@radix-ui/react-avatar':
         specifier: ^1.1.11
         version: 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -1153,8 +1153,8 @@ packages:
   '@mermaid-js/parser@1.1.1':
     resolution: {integrity: sha512-VuHdsYMK1bT6X2JbcAaWAhugTRvRBRyuZgd+c22swUeI9g/ntaxF7CY7dYarhZovofCbUNO0G7JesfmNtjYOCw==}
 
-  '@model-go/track@0.2.0':
-    resolution: {integrity: sha512-q447HLp3596uEVbLMNaRuYjBbxrchvwPVIISy9dA44/X8Z6y2ILFtFYy8jfKnEm5pN+DIWespBYyRvJKcGgTyg==}
+  '@model-go/track@0.3.0':
+    resolution: {integrity: sha512-pe7paFXepnFBbIk6kXLsLmNmyy5S5LH0mYaSxCyS2+l4cIlqKjhjpoLD2Bp84eJS82boO5IwimifIhyvHDOGwg==}
     engines: {node: '>=18'}
     peerDependencies:
       react: '>=18'
@@ -7260,7 +7260,7 @@ snapshots:
     dependencies:
       '@chevrotain/types': 11.1.2
 
-  '@model-go/track@0.2.0(react@19.2.6)':
+  '@model-go/track@0.3.0(react@19.2.6)':
     optionalDependencies:
       react: 19.2.6
 

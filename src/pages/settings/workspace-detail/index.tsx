@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { trackAction } from '@/lib/track'
+import { useTenantRole } from '@/hooks/use-tenant-role'
 import {
   addWorkspaceMember,
   updateWorkspace,
@@ -35,6 +36,9 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const { hasPermission } = usePermissions()
   const canManageMembers = hasPermission(PERMS.WORKSPACE_MEMBERS_MANAGE)
+  // 埋点顶层字段 is_space_owner：当前用户对本页所管理工作空间的 my_role 是否为 ws_owner
+  const { ownedWorkspaceIds } = useTenantRole()
+  const isActiveWorkspaceOwner = ownedWorkspaceIds.includes(workspaceId)
   const [addSearch, setAddSearch] = useState('')
   // 移除目标：携带成员对象，用于影响弹窗展示受影响 Key 数
   const [removeTarget, setRemoveTarget] = useState<WorkspaceMember | null>(null)
@@ -180,7 +184,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
                               variant="outline"
                               size="xs"
                               loading={setOwnerMutation.isPending}
-                              onClick={() => { trackAction(PERMS.WORKSPACE_MEMBERS_MANAGE); setOwnerMutation.mutate(m.account.account_id) }}
+                              onClick={() => { trackAction(PERMS.WORKSPACE_MEMBERS_MANAGE, undefined, { is_space_owner: isActiveWorkspaceOwner }); setOwnerMutation.mutate(m.account.account_id) }}
                               className="h-7 px-2 rounded-md text-xs"
                             >
                               {t('workspaces.detail.members.setOwner')}
@@ -243,7 +247,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
                       variant="ghost"
                       className="h-7 px-2 text-xs font-semibold shrink-0 text-brand-base hover:bg-brand-base/5"
                       loading={addMutation.isPending}
-                      onClick={() => { trackAction(PERMS.WORKSPACE_MEMBERS_MANAGE); addMutation.mutate(m.account.account_id) }}
+                      onClick={() => { trackAction(PERMS.WORKSPACE_MEMBERS_MANAGE, undefined, { is_space_owner: isActiveWorkspaceOwner }); addMutation.mutate(m.account.account_id) }}
                     >
                       <LuArrowRight size={12} className="mr-0.5" />
                       {t('workspaces.detail.members.add')}
@@ -276,7 +280,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
               disabled={!!removeTarget && (removeTarget.api_key_count ?? 0) > 0 && removeStrategy === ''}
               onClick={() => {
                 if (!removeTarget) return
-                trackAction(PERMS.WORKSPACE_MEMBERS_MANAGE)
+                trackAction(PERMS.WORKSPACE_MEMBERS_MANAGE, undefined, { is_space_owner: isActiveWorkspaceOwner })
                 removeMutation.mutate({
                   accountId: removeTarget.account.account_id,
                   strategy: removeStrategy || 'transfer',

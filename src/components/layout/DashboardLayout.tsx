@@ -196,7 +196,7 @@ export function DashboardLayout() {
 
   const handleNavSelect = (data: { itemKey: string | number }) => {
     const key = String(data.itemKey)
-    trackEvent('console_nav_click', { ...trackCtx, nav_key: key })
+    trackEvent('console_nav_click', { ...trackCtx, nav_key: key }, { source: 'sidebar_nav' })
     if (navConfig.workspaceScopedKeys.has(key)) {
       navigate(`/workspace/${activeWorkspaceId}/${key}`)
     } else {

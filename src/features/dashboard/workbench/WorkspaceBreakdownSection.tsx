@@ -25,8 +25,8 @@ export function WorkspaceBreakdownSection({ granularity, accountId, view = 'ente
   const isMine = view === 'mine'
 
   const handleViewMore = () => {
-    trackEvent('overview_breakdown_more_click', { ...trackCtx, view_mode: view })
-    trackEvent('destination_page_view', { ...trackCtx, destination: '/usage' })
+    trackEvent('overview_breakdown_more_click', trackCtx, { view_mode: view })
+    trackEvent('destination_page_view', { ...trackCtx, destination: '/usage' }, { source: 'workspace_breakdown' })
     navigate(`/usage?view=${view}&granularity=${granularity}`)
   }
 

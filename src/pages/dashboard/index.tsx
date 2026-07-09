@@ -37,18 +37,18 @@ export default function DashboardPage() {
 
   // 首屏曝光：只在挂载时触发一次，不随视图/周期切换重复上报
   useEffect(() => {
-    trackPageView('dashboard')
-    trackEvent('overview_view', { ...trackCtx, view_mode: view })
+    trackPageView('dashboard', undefined, { view_mode: view })
+    trackEvent('overview_view', trackCtx, { view_mode: view })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleViewChange = (v: WorkbenchView) => {
-    trackEvent('overview_view_mode_change', { ...trackCtx, from_view_mode: view, to_view_mode: v })
+    trackEvent('overview_view_mode_change', { ...trackCtx, from_view_mode: view, to_view_mode: v }, { view_mode: v })
     setUserView(v)
   }
 
   const handleGranularityChange = (g: Granularity) => {
-    trackEvent('overview_period_change', { ...trackCtx, view_mode: view, from_period: granularity, to_period: g })
+    trackEvent('overview_period_change', { ...trackCtx, from_period: granularity, to_period: g }, { view_mode: view })
     setGranularity(g)
   }
 

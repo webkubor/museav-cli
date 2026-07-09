@@ -14,8 +14,8 @@ import { Select, SelectItem } from '@/components/ui/Select'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { ForbiddenState } from '@/components/ui/ForbiddenState'
-import { isApiErrorCode } from '@/lib/request-error-message'
 import { trackAction, trackEvent, trackPageView } from '@/lib/track'
+import { useTenantRole } from '@/hooks/use-tenant-role'
 import { LuSearch, LuPlus } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -31,7 +31,7 @@ import {
 } from '@/services/api-keys'
 import { listWorkspaceMembers } from '@/services/workspaces'
 import { useCopy } from '@/hooks/use-copy'
-import { getRequestErrorMessage } from '@/lib/request-error-message'
+import { getRequestErrorMessage, isApiErrorCode, errorCodeOf } from '@/lib/request-error-message'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
@@ -77,9 +77,14 @@ export default function ApiKeysPage() {
   const canRevoke = hasPermission(PERMS.API_KEYS_REVOKE)
   // 管理权（停用/启用/变更负责人）——权限系统未细分时以 revoke 为代管理位；后端 can_* 会覆盖
   const canManage = canRevoke
+  // 埋点顶层字段 is_space_owner：当前用户对本页作用域工作空间的 my_role 是否为 ws_owner
+  // （不是 useTenantRole().isSpaceOwner —— 那个是「企业成员+自领至少一个空间」的 PRD 空间视图判定，口径更窄）
+  const { ownedWorkspaceIds } = useTenantRole()
+  const isActiveWorkspaceOwner = ownedWorkspaceIds.includes(activeWorkspaceId)
 
   useEffect(() => {
-    trackPageView('api-keys')
+    trackPageView('api-keys', undefined, { is_space_owner: isActiveWorkspaceOwner })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const { data, isLoading, error: listError } = useQuery({
@@ -136,8 +141,12 @@ export default function ApiKeysPage() {
     onSuccess: () => {
       appToast.success('已启用')
       queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
+      trackEvent('api_keys:enable', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
-    onError: (err: unknown) => appToast.requestError(err, '启用失败'),
+    onError: (err: unknown) => {
+      appToast.requestError(err, '启用失败')
+      trackEvent('api_keys:enable', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
+    },
   })
 
   const disableMutation = useMutation({
@@ -146,13 +155,16 @@ export default function ApiKeysPage() {
       appToast.success('已停用')
       setDisableTarget(null)
       queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
+      trackEvent('api_keys:disable', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
-    onError: (err: unknown) => appToast.requestError(err, '停用失败'),
+    onError: (err: unknown) => {
+      appToast.requestError(err, '停用失败')
+      trackEvent('api_keys:disable', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
+    },
   })
 
   const handleToggleStatus = useCallback((item: ApiKeyItem) => {
     if (item.status === 'disabled') {
-      trackEvent('api_keys:enable')
       enableMutation.mutate(item.api_key_id)
     } else {
       setDisableTarget(item)
@@ -173,8 +185,12 @@ export default function ApiKeysPage() {
       setChangeOwnerTarget(null)
       setNewOwnerId('')
       queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
+      trackEvent('api_keys:change_owner', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
-    onError: (err: unknown) => appToast.requestError(err, '变更负责人失败'),
+    onError: (err: unknown) => {
+      appToast.requestError(err, '变更负责人失败')
+      trackEvent('api_keys:change_owner', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
+    },
   })
 
   const { copy } = useCopy()
@@ -289,7 +305,7 @@ export default function ApiKeysPage() {
         </Select>
         <div className="ml-auto">
           {canCreate && (
-            <Button variant="brand" onClick={() => { trackAction(PERMS.API_KEYS_CREATE); setCreateNonce((n) => n + 1); setCreateVisible(true) }} className="rounded-full px-6 h-10 shadow-lg shadow-brand-glow/20">
+            <Button variant="brand" onClick={() => { trackAction(PERMS.API_KEYS_CREATE, undefined, { source: 'toolbar', is_space_owner: isActiveWorkspaceOwner }); setCreateNonce((n) => n + 1); setCreateVisible(true) }} className="rounded-full px-6 h-10 shadow-lg shadow-brand-glow/20">
               <LuPlus className="w-4 h-4 mr-1.5" />
               {t('apiKeys.create')}
             </Button>
@@ -309,7 +325,7 @@ export default function ApiKeysPage() {
         isLoading={isLoading}
         items={filteredData}
         canManage={canManage}
-        onOpenDetail={(item) => { trackEvent('api_keys:detail'); setDetailKey(item) }}
+        onOpenDetail={(item) => { trackEvent('api_keys:detail', undefined, { source: 'table_row', is_space_owner: isActiveWorkspaceOwner }); setDetailKey(item) }}
         onToggleStatus={handleToggleStatus}
         onCopyKey={handleCopyKey}
         copyingKeyId={copyingKeyId}
@@ -394,7 +410,7 @@ export default function ApiKeysPage() {
         footer={
           <>
             <Button variant="outline" onClick={() => setDisableTarget(null)}>{t('apiKeys.createModal.cancel')}</Button>
-            <Button variant="brand" loading={disableMutation.isPending} onClick={() => { if (disableTarget) { trackEvent('api_keys:disable'); disableMutation.mutate(disableTarget.api_key_id) } }}>
+            <Button variant="brand" loading={disableMutation.isPending} onClick={() => { if (disableTarget) disableMutation.mutate(disableTarget.api_key_id) }}>
               确认停用
             </Button>
           </>
@@ -415,7 +431,7 @@ export default function ApiKeysPage() {
               variant="brand"
               loading={changeOwnerMutation.isPending}
               disabled={!newOwnerId}
-              onClick={() => { trackEvent('api_keys:change_owner'); changeOwnerMutation.mutate() }}
+              onClick={() => changeOwnerMutation.mutate()}
             >
               确认变更
             </Button>

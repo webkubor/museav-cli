@@ -11,34 +11,41 @@
  * - 无权限对应的自定义事件：用 `trackEvent(key)`（key 建议沿用 `xxx:yyy` 冒号约定）。
  *
  * 约束：禁止上报 API Key / 密码 / Prompt / 邮箱 / 手机号等明文（SDK 脱敏白名单也会拦），props 只传枚举或标量。
+ *
+ * 顶层契约字段（#423）：view_mode/source/result/error_code/is_space_owner 是服务端 IngestEvent
+ * 直接落库的顶层列，不是业务 props——一律走每个函数的第三个参数 `top`，禁止塞进 data。
  */
 import { track, pageView } from '@model-go/track'
+import type { TrackEventOptions } from '@model-go/track'
 import type { Permission } from '@/config/permissions'
 
 type TrackData = Record<string, string | number | boolean>
 
+/** 顶层契约字段，调用侧按需传；page/route 由 SDK 自动带，这里不重复暴露 */
+export type TrackTopFields = Pick<TrackEventOptions, 'view_mode' | 'source' | 'result' | 'error_code' | 'is_space_owner'>
+
 /** 通用事件（自定义 key，用于无 permission_id 对应的动作/曝光） */
-export function trackEvent(event: string, data?: TrackData): void {
+export function trackEvent(event: string, data?: TrackData, top?: TrackTopFields): void {
   try {
-    track(event, data)
+    track(event, data, top)
   } catch {
     /* 埋点不阻断业务 */
   }
 }
 
 /** 动作埋点：event key = 权限体系的 permission_id（PERMS.*），与按钮/菜单权限同源 */
-export function trackAction(permission: Permission, data?: TrackData): void {
+export function trackAction(permission: Permission, data?: TrackData, top?: TrackTopFields): void {
   try {
-    track(permission, data)
+    track(permission, data, top)
   } catch {
     /* 埋点不阻断业务 */
   }
 }
 
 /** 页面浏览埋点：page = 菜单 menu_key */
-export function trackPageView(menuKey: string, data?: TrackData): void {
+export function trackPageView(menuKey: string, data?: TrackData, top?: TrackTopFields): void {
   try {
-    pageView(menuKey, typeof location !== 'undefined' ? location.pathname : '', data)
+    pageView(menuKey, typeof location !== 'undefined' ? location.pathname : '', data, top)
   } catch {
     /* 埋点不阻断业务 */
   }

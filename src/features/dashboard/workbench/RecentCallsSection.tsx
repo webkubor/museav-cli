@@ -32,8 +32,8 @@ export function RecentCallsSection({ view = 'enterprise', accountId }: { view?: 
   const isMine = view === 'mine'
 
   const handleViewAll = () => {
-    trackEvent('overview_recent_logs_view_all_click', { ...trackCtx, view_mode: view })
-    trackEvent('destination_page_view', { ...trackCtx, destination: '/logs' })
+    trackEvent('overview_recent_logs_view_all_click', trackCtx, { view_mode: view })
+    trackEvent('destination_page_view', { ...trackCtx, destination: '/logs' }, { source: 'recent_calls' })
     navigate(`/logs?view=${view}`)
   }
 

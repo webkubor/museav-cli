@@ -184,7 +184,7 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
         session.active_workspace_id,
         session.permissions?.granted ?? null
       )
-      trackEvent('login_success', { method: 'password' })
+      trackEvent('login_success', { method: 'password' }, { result: 'success' })
       navigate(redirectAfterLogin, { replace: true })
     } catch {
       if (!loginOk) {
@@ -194,7 +194,8 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
         setFailureTick((t) => t + 1)
       }
       // loginOk=true 但走进 catch = 登录成功但拉 session 失败；否则是凭据错误
-      trackEvent('login_fail', { method: 'password', reason: loginOk ? 'session_failed' : 'invalid_credentials' })
+      const errorCode = loginOk ? 'session_failed' : 'invalid_credentials'
+      trackEvent('login_fail', { method: 'password' }, { result: 'fail', error_code: errorCode })
       setServerError(loginOk ? '登录成功但获取会话失败，请刷新重试' : '邮箱或密码错误')
     } finally {
       setLoading(false)

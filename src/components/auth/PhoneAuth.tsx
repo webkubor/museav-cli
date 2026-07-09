@@ -23,7 +23,7 @@ import {
   recordAuthGuardFailure,
 } from '@/lib/auth/front-guard'
 import { getRedirectTarget } from '@/lib/redirect'
-import { getRequestErrorMessage } from '@/lib/request-error-message'
+import { getRequestErrorMessage, errorCodeOf } from '@/lib/request-error-message'
 import { getCaptchaParam } from '@/lib/aliyun-captcha'
 import { trackEvent } from '@/lib/track'
 
@@ -103,13 +103,13 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
         session.active_workspace_id,
         session.permissions?.granted ?? null
       )
-      trackEvent('login_success', { method: 'phone' })
+      trackEvent('login_success', { method: 'phone' }, { result: 'success' })
       navigate(redirectAfterLogin, { replace: true })
     } catch (error) {
       recordAuthGuardFailure({ action: 'phone-login', subject: data.phone })
       // 展示后端返回的细分中文文案（验证码错误/已失效、账户冻结、发送过频等），
       // 5xxxx 内部错误由 getRequestErrorMessage 归一为通用「服务暂不可用」提示。
-      trackEvent('login_fail', { method: 'phone', reason: 'phone_login_error' })
+      trackEvent('login_fail', { method: 'phone' }, { result: 'fail', error_code: errorCodeOf(error) })
       setServerError(getRequestErrorMessage(error, '登录失败，请稍后重试'))
     } finally {
       setLoading(false)

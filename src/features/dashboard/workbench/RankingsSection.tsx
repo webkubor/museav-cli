@@ -106,8 +106,8 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
   const showMembers = view === 'enterprise'
 
   const handleRankingMore = (dimension: 'models' | 'members' | 'apiKeys', target: string) => {
-    trackEvent('overview_ranking_more_click', { ...trackCtx, view_mode: view, dimension })
-    trackEvent('destination_page_view', { ...trackCtx, destination: '/usage' })
+    trackEvent('overview_ranking_more_click', { ...trackCtx, dimension }, { view_mode: view })
+    trackEvent('destination_page_view', { ...trackCtx, destination: '/usage' }, { source: 'ranking' })
     navigate(target)
   }
 

@@ -9,6 +9,11 @@ export function isApiErrorCode(error: unknown, code: number) {
   return error instanceof ModelGoApiError && error.code === code
 }
 
+/** 埋点 error_code 顶层字段取值：业务码用字符串化的 error.code，非 API 错误归一为 unknown */
+export function errorCodeOf(error: unknown): string {
+  return error instanceof ModelGoApiError ? String(error.code) : 'unknown'
+}
+
 export function getRequestErrorMessage(error: unknown, fallback = '请求失败，请稍后重试') {
   if (error instanceof ModelGoApiError) {
     if (isServerErrorCode(error.code)) return SERVER_ERROR_MESSAGE

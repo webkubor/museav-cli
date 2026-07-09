@@ -1,3 +1,9 @@
 allowBuilds:
   '@parcel/watcher': true
   msw: true
+
+# 供应链策略 minimumReleaseAge 豁免:@model-go/* 是自家可信包(如 @model-go/track),
+# 常同日发布同日上,不受"依赖须满龄"限制;第三方包仍受策略保护。
+# 解决 prod-global 因 @model-go/track@0.3.0 太新(ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION)构建失败。
+minimumReleaseAgeExclude:
+  - '@model-go/*'

@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { CopyButton } from '@/components/ui/CopyButton'
-import { MenusSyncPanel } from './MenusSyncPanel'
 import { PermissionsPanel } from './PermissionsPanel'
 import { UrlParamsPanel } from './UrlParamsPanel'
 import { RequirementsPanel } from './RequirementsPanel'
@@ -60,14 +59,6 @@ export default function PlatformConfigPage() {
         <TabsContent value="permissions">
           <div className="space-y-8 pt-2">
             <PermissionsPanel />
-
-            <section className="space-y-3">
-              <div>
-                <h2 className="text-base font-bold text-mg-text-1">菜单同步</h2>
-                <p className="mt-1 text-xs text-mg-text-3">查看当前菜单声明并同步到后端权限菜单。</p>
-              </div>
-              <MenusSyncPanel />
-            </section>
 
             <section className="space-y-3">
               <div>

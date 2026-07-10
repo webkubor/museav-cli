@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -171,6 +171,13 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
         <Button type="submit" variant="brand" size="lg" loading={loading}>
           登录 / 注册
         </Button>
+
+        <p className="auth-policy-text">
+          登录 / 注册即代表同意{' '}
+          <Link to="/legal/terms" className="auth-muted-link">服务条款</Link>
+          {' '}与{' '}
+          <Link to="/legal/privacy" className="auth-muted-link">隐私政策</Link>
+        </p>
 
         <SocialLogin redirectTo={redirectTo} />
       </form>

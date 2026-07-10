@@ -28,18 +28,16 @@ import { PERMS, type Permission } from './permissions'
  *   - App.tsx：按本清单渲染 <Route>，有 permission 的套 <RequirePermission> 守卫。
  *   → 隐藏（菜单）与拦截（路由）用同一份 permission，永不漂移。
  *
- * 【fail-closed，但避开过渡窗误伤】（见 RequirePermission）
+ * 【fail-closed】（见 RequirePermission）
  *   - granted 为权威数组且缺该权限 → 403（fail-closed，Deny 优先）。
- *   - granted === null（会话加载中 / 切组织重拉的过渡窗，此时 hasPermission 对一切返回 false）
- *     → 放行子内容、不重定向，否则会把合法用户从当前页踢走。
+ *   - granted === null（会话加载中 / 切组织重拉的过渡窗）→ 只显示加载态，不渲染受保护页面。
  *
  * 【权限粒度分层】
  *   - 菜单/页面级 `*_VIEW`（dashboard/analytics/logs/billing/api_keys/guardrails/observability）：
  *     用于「能不能进这个页」——本清单 + 路由守卫。
  *   - 按钮/操作级（`*_CREATE/EDIT/DELETE/…`）：用于「进了页后能不能做某动作」——
  *     由页面内 `usePermissions().hasPermission()` 就地控制，**不在路由层**。
- *   - 无 view 权限项（如 referral、settings/*）：仅需登录；其可见性由业务上下文
- *     （isOrgManager/isSpaceManager 等，见 nav.ts）或页面自身决定。
+ *   - 所有用户业务菜单都声明 view 权限；角色门控只负责业务上下文收窄，不能替代 Permission ID。
  *
  * 【scope 两级】
  *   - tenant   —— 租户级，路径挂在 '/xxx'（如 /usage、/logs）。
@@ -82,10 +80,12 @@ export interface ConsoleRouteMeta {
 
 export const CONSOLE_ROUTES: ConsoleRouteMeta[] = [
   { key: 'dashboard', path: 'dashboard', scope: 'tenant', permission: PERMS.DASHBOARD_VIEW },
+  { key: 'organization', path: 'organization', scope: 'tenant', permission: PERMS.ORG_VIEW },
+  { key: 'workspaces', path: 'workspaces', scope: 'tenant', permission: PERMS.WORKSPACE_VIEW },
   { key: 'billing', path: 'billing', scope: 'tenant', permission: PERMS.BILLING_VIEW },
   { key: 'usage', path: 'usage', scope: 'tenant', permission: PERMS.ANALYTICS_VIEW },
   { key: 'logs', path: 'logs', scope: 'tenant', permission: PERMS.LOGS_VIEW },
-  { key: 'referral', path: 'referral', scope: 'tenant' },
+  { key: 'referral', path: 'referral', scope: 'tenant', permission: PERMS.REFERRAL_VIEW },
   { key: 'api-keys', path: 'api-keys', scope: 'workspace', permission: PERMS.API_KEYS_VIEW },
   { key: 'guardrails', path: 'guardrails', scope: 'workspace', permission: PERMS.GUARDRAILS_VIEW },
   { key: 'observability', path: 'observability', scope: 'workspace', permission: PERMS.OBSERVABILITY_VIEW },

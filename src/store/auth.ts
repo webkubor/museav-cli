@@ -1,13 +1,14 @@
 import { create } from 'zustand'
 import type { AccountBrief, TenantBrief, SessionMenu } from '@/types'
 import { storageKeys } from '@/lib/storage'
+import type { Permission } from '@/config/permissions'
 
 interface AuthState {
   account: AccountBrief | null
   activeTenantId: string | null
   activeWorkspaceId: string | null
   tenants: TenantBrief[]
-  /** 会话下发的 granted 权限集；null = 后端未下发（触发本地矩阵回退），[] = 明确零权限 */
+  /** 会话下发的 granted 权限集；null = 尚未加载，[] = 后端明确返回零权限 */
   permissions: string[] | null
   /** 会话下发的菜单列表，含每个菜单的 actions 开关 */
   menus: SessionMenu[]
@@ -32,7 +33,7 @@ interface AuthActions {
   setPermissions: (permissions: string[] | null) => void
   /** 会话刷新时单独更新菜单列表 */
   setMenus: (menus: SessionMenu[]) => void
-  hasPermission: (permission: string) => boolean
+  hasPermission: (permission: Permission) => boolean
   /** 获取指定菜单的 actions 开关表；key 不存在时返回 {} */
   getMenuActions: (menuKey: string) => Record<string, boolean>
 }

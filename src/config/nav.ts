@@ -29,8 +29,7 @@ export type NavGroup = {
  *   isNonPersonal  — tenant.type !== 'personal'
  *   isDomestic     — market === 'domestic'
  *   isDevTools     — VITE_SHOW_DEV_TOOLS === 'true'
- *   isOrgManager   — 企业租户 Owner/Admin（决定「企业管理」入口）
- *   isSpaceManager — Owner/Admin、个人租户或任一空间负责人（决定「空间管理」入口）
+ *   isOrgManager / isSpaceManager — 保留给非权限型业务文案；菜单访问权统一由 Permission ID 决定。
  */
 export interface NavVisibilityContext {
   isNonPersonal: boolean
@@ -54,18 +53,14 @@ export const navConfig: NavConfig = {
   // observability 路由保留（第二阶段并入空间详情），但不出现在侧边栏 items。
   workspaceScopedKeys,
 
-  groups: (ctx, t, icons) => [
+  groups: (_ctx, t, icons) => [
     {
       key: 'main',
       scope: 'tenant',
       items: [
         { itemKey: 'dashboard', text: t('nav.dashboard'), icon: icons.home, permission: routePermission('dashboard') },
-        ...(ctx.isOrgManager
-          ? [{ itemKey: 'organization', text: t('nav.organization'), icon: icons.building }]
-          : []),
-        ...(ctx.isSpaceManager
-          ? [{ itemKey: 'workspaces', text: t('nav.workspace'), icon: icons.apps }]
-          : []),
+        { itemKey: 'organization', text: t('nav.organization'), icon: icons.building, permission: routePermission('organization') },
+        { itemKey: 'workspaces', text: t('nav.workspace'), icon: icons.apps, permission: routePermission('workspaces') },
       ],
     },
     {
@@ -94,7 +89,7 @@ export const navConfig: NavConfig = {
       items: [
         // 任务历史（异步任务）已并入「调用日志」，通过页头「记录类型」切换查看（#361）；
         // /tasks 路由重定向到 /logs?record_type=async，此处不再单列入口。
-        { itemKey: 'referral', text: t('nav.referral'), icon: icons.gift },
+        { itemKey: 'referral', text: t('nav.referral'), icon: icons.gift, permission: routePermission('referral') },
       ],
     },
   ],

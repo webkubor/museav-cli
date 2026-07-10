@@ -5,12 +5,16 @@ import { redeemPromoCode } from '@/services/billing'
 import { Button } from '@/components/ui/Button'
 import { appToast } from '@/lib/app-toast'
 import { getPromoRedeemErrorMessage } from './promo-errors'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 
 // ─── Sub-components: PromoRedeemForm ──────────────────────────────────────
 
 export function PromoRedeemForm({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const { hasPermission } = usePermissions()
+  const canRedeem = hasPermission(PERMS.BILLING_PROMO_REDEEM)
   const [code, setCode] = useState('')
 
   const redeem = useMutation({
@@ -34,6 +38,8 @@ export function PromoRedeemForm({ tenantId }: { tenantId: string }) {
     }
     redeem.mutate(code.trim())
   }
+
+  if (!canRedeem) return null
 
   return (
     <form onSubmit={handleSubmit} className="flex-1 flex gap-2 min-w-0 sm:max-w-xs ml-auto">

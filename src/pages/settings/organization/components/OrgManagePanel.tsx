@@ -72,8 +72,8 @@ export function OrgManagePanel({
   const role = tenantItem?.role
   const isOwner = role === 'tenant_owner'
   const isAdmin = role === 'tenant_admin'
-  const isRoleAdmin = isOwner || isAdmin
-  const canManageInvite = isRoleAdmin && hasPermission(PERMS.ORG_INVITE_MANAGE)
+  const canManageInvite = hasPermission(PERMS.ORG_INVITE_MANAGE)
+  const canViewAudit = hasPermission(PERMS.ORG_AUDIT_VIEW)
   const tenantName = tenantItem?.name
     || sessionTenants.find((tt) => tt.tenant_id === tenantId)?.name
     || '…'
@@ -90,9 +90,13 @@ export function OrgManagePanel({
   const tabs: { key: SubTab; label: string; show: boolean }[] = [
     { key: 'members', label: t('enterprise.tabs.members'), show: true },
     { key: 'info', label: t('enterprise.tabs.info'), show: true },
-    { key: 'audit', label: t('enterprise.tabs.audit'), show: true },
+    { key: 'audit', label: t('enterprise.tabs.audit'), show: canViewAudit },
     { key: 'invite', label: t('enterprise.tabs.invite'), show: canManageInvite },
   ]
+  const visibleTabs = tabs.filter((tab) => tab.show)
+  const resolvedSubTab = visibleTabs.some((tab) => tab.key === activeSubTab)
+    ? activeSubTab
+    : (visibleTabs[0]?.key ?? 'members')
 
   return (
     <div className="space-y-6">
@@ -120,12 +124,12 @@ export function OrgManagePanel({
 
       {/* Tab 导航（保留原生 button，便于测试与无障碍聚焦） */}
       <div className="border-b border-mg-border/60 flex gap-6 text-sm bg-transparent">
-        {tabs.filter((tb) => tb.show).map((tb) => (
+        {visibleTabs.map((tb) => (
           <button
             key={tb.key}
             onClick={() => setActiveSubTab(tb.key)}
             className={`pb-3 font-bold transition-all border-b-2 cursor-pointer bg-transparent border-none text-xs ${
-              activeSubTab === tb.key
+              resolvedSubTab === tb.key
                 ? 'border-brand-base text-brand-base'
                 : 'border-transparent text-mg-text-3 hover:text-mg-text-1'
             }`}
@@ -136,18 +140,17 @@ export function OrgManagePanel({
       </div>
 
       <div className="pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
-        {activeSubTab === 'members' && (
+        {resolvedSubTab === 'members' && (
           <MembersTab tenantId={tenantId} isOwner={isOwner} isAdmin={isAdmin} />
         )}
-        {activeSubTab === 'info' && (
+        {resolvedSubTab === 'info' && (
           <OrgInfoTab
             tenantId={tenantId}
-            tenantRole={role}
             onDissolved={() => onDissolved?.(tenantId)}
           />
         )}
-        {activeSubTab === 'audit' && <AuditTab tenantId={tenantId} />}
-        {canManageInvite && activeSubTab === 'invite' && <InviteTab tenantId={tenantId} />}
+        {canViewAudit && resolvedSubTab === 'audit' && <AuditTab tenantId={tenantId} />}
+        {canManageInvite && resolvedSubTab === 'invite' && <InviteTab tenantId={tenantId} />}
       </div>
     </div>
   )

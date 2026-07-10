@@ -84,9 +84,9 @@ export default function ApiKeysPage() {
   const { currency } = useCurrency()
   const { hasPermission } = usePermissions()
   const canCreate = hasPermission(PERMS.API_KEYS_CREATE)
+  const canEdit = hasPermission(PERMS.API_KEYS_EDIT)
+  const canReveal = hasPermission(PERMS.API_KEYS_REVEAL)
   const canRevoke = hasPermission(PERMS.API_KEYS_REVOKE)
-  // 管理权（停用/启用/变更负责人）——权限系统未细分时以 revoke 为代管理位；后端 can_* 会覆盖
-  const canManage = canRevoke
   // 埋点顶层字段 is_space_owner：当前用户对本页作用域工作空间的 my_role 是否为 ws_owner
   // （不是 useTenantRole().isSpaceOwner —— 那个是「企业成员+自领至少一个空间」的 PRD 空间视图判定，口径更窄）
   const { ownedWorkspaceIds, isEnterprise, canManage: canManageTenant } = useTenantRole()
@@ -231,7 +231,7 @@ export default function ApiKeysPage() {
   // #298 复制完整明文：reveal → 剪贴板（WebKit 手势栈内 ClipboardItem 模式，明文不落 state）
   const handleCopyKey = useCallback(
     async (item: ApiKeyItem) => {
-      if (copyingKeyId) return
+      if (!canReveal || copyingKeyId) return
       setCopyingKeyId(item.api_key_id)
       const plaintextPromise = revealApiKey(activeWorkspaceId, item.api_key_id).then((r) => r.key)
       plaintextPromise.catch(() => {})
@@ -260,7 +260,7 @@ export default function ApiKeysPage() {
         setCopyingKeyId(null)
       }
     },
-    [activeWorkspaceId, copy, copyingKeyId, t]
+    [activeWorkspaceId, canReveal, copy, copyingKeyId, t]
   )
 
   const filteredData = useMemo(() => {
@@ -440,7 +440,8 @@ export default function ApiKeysPage() {
       <ApiKeyTable
         isLoading={isLoading}
         items={filteredData}
-        canManage={canManage}
+        canEdit={canEdit}
+        canReveal={canReveal}
         hasKeys={apiKeyItems.length > 0}
         isFiltered={isFiltered}
         canCreate={canCreate}
@@ -457,7 +458,8 @@ export default function ApiKeysPage() {
         onClose={() => setDetailKey(null)}
         workspaceId={activeWorkspaceId}
         item={detailKey}
-        canManage={canManage}
+        canEdit={canEdit}
+        canRevoke={canRevoke}
         rowScope={rowScope}
         onToggleStatus={handleToggleStatus}
         onRotate={() => { /* 轮转接口 #384 未交付，按钮已 gate 隐藏；落地后接入 */ }}

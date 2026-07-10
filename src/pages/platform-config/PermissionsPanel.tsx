@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/Badge'
 
 /**
  * 开发者「权限」视图：把当前侧栏菜单的**角色可见性设计**摊开看。
- * - 角色列 = nav.ts 的角色门控结果（isOrgManager / isSpaceManager 等），确定性。
+ * - 角色列 = 前端结构可见性；当前菜单不再按本地角色硬编码裁剪，实际访问统一看 granted。
  * - 需要权限 = 该菜单声明的 permission（最终可见还需后端 granted 含此权限）。
  * - 底部 = 当前会话真实 granted（权威来源 /auth/session），对照设计看实况。
  * 注：角色×权限的**权威矩阵在后端**（modelgo-permissions，controller-web 运营编辑）；
@@ -182,7 +182,7 @@ export function PermissionsPanel() {
         <div>
           <h2 className="text-base font-bold text-mg-text-1">菜单 × 角色可见性设计</h2>
           <p className="mt-1 text-xs text-mg-text-3">
-            角色列 = nav.ts 角色门控（✓=该角色结构上可见 · —=门控隐藏）；「需要权限」列声明的权限最终还需后端 granted 命中才真正显示。
+            角色列只表示前端结构上存在该菜单；「需要权限」列声明的 Permission ID 必须命中后端 granted 才真正显示。
             角色×权限权威矩阵在后端（controller-web 运营编辑）。
           </p>
         </div>

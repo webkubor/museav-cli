@@ -18,6 +18,8 @@ import {
   deleteInvoiceTitle,
 } from '@/services/invoice'
 import type { InvoiceTitleType, CreateInvoiceTitleRequest } from '@/types'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 
 const TITLE_TYPE_LABEL: Record<InvoiceTitleType, string> = {
   vat_normal: '增值税普票',
@@ -38,6 +40,8 @@ const EMPTY_FORM: CreateInvoiceTitleRequest = {
 
 export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
   const qc = useQueryClient()
+  const { hasPermission } = usePermissions()
+  const canManageTitles = hasPermission(PERMS.BILLING_INVOICE_TITLE_MANAGE)
   const [view, setView] = useState<'list' | 'form'>('list')
   const [form, setForm] = useState<CreateInvoiceTitleRequest>(EMPTY_FORM)
 
@@ -159,9 +163,11 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
         <p className="text-xs leading-relaxed text-mg-text-3">
           增值税发票抬头（普票/专票），需手工新增；默认抬头在开票时自动带出。
         </p>
-        <Button variant="outline" size="sm" className="shrink-0" onClick={() => setView('form')}>
-          <LuPlus size={14} className="mr-1" /> 新增抬头
-        </Button>
+        {canManageTitles && (
+          <Button variant="outline" size="sm" className="shrink-0" onClick={() => setView('form')}>
+            <LuPlus size={14} className="mr-1" /> 新增抬头
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -199,7 +205,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
                 </div>
               </div>
               <div className="shrink-0 flex items-center gap-2 text-xs">
-                {!t.is_default && (
+                {canManageTitles && !t.is_default && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -209,7 +215,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
                     设为默认
                   </Button>
                 )}
-                <Button
+                {canManageTitles && <Button
                   variant="ghost"
                   size="sm"
                   className="text-mg-danger hover:bg-mg-danger/5"
@@ -217,7 +223,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
                   onClick={() => removeTitle.mutate(t.id)}
                 >
                   <LuTrash2 size={13} />
-                </Button>
+                </Button>}
               </div>
             </div>
           </div>

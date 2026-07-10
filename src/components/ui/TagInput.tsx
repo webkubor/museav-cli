@@ -25,6 +25,7 @@ interface TagInputProps {
   onValidationError?: (value: string) => void
   className?: string
   tagVariant?: 'brand' | 'mono'
+  disabled?: boolean
 }
 
 export function TagInput({
@@ -39,6 +40,7 @@ export function TagInput({
   onValidationError,
   className,
   tagVariant = 'brand',
+  disabled = false,
 }: TagInputProps) {
   const optionMode = Array.isArray(options)
   // 选项模式禁用自由文本：只能从候选里选既有 id，避免把随手输入当成 id 提交
@@ -73,6 +75,7 @@ export function TagInput({
 
   // 统一按「值」提交：选项模式传 option.value(id)，自由文本模式传输入文本本身
   const addTag = useCallback((tag: string) => {
+    if (disabled) return
     const trimmed = tag.trim()
     if (!trimmed || value.includes(trimmed)) return
     if (validator && !validator(trimmed)) {
@@ -83,13 +86,15 @@ export function TagInput({
     setInput('')
     setFocusIdx(-1)
     if (!hasSuggestions) setOpen(false)
-  }, [value, onChange, validator, onValidationError, hasSuggestions])
+  }, [disabled, value, onChange, validator, onValidationError, hasSuggestions])
 
   const removeTag = useCallback((tag: string) => {
+    if (disabled) return
     onChange(value.filter((v) => v !== tag))
-  }, [value, onChange])
+  }, [disabled, value, onChange])
 
   function handleKeyDown(e: React.KeyboardEvent) {
+    if (disabled) return
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault()
       if (hasSuggestions && focusIdx >= 0 && filtered[focusIdx]) {
@@ -125,7 +130,7 @@ export function TagInput({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const showDropdown = hasSuggestions && open && filtered.length > 0
+  const showDropdown = !disabled && hasSuggestions && open && filtered.length > 0
 
   // Track the input's viewport rect so the fixed-position portal menu lines up,
   // and follows scroll/resize while open.
@@ -157,14 +162,15 @@ export function TagInput({
     <div ref={containerRef} className={`relative ${className ?? ''}`}>
       <div
         ref={inputBoxRef}
-        className="flex flex-wrap items-center gap-1.5 min-h-[var(--mg-control-h-md)] px-[var(--mg-control-px-xs)] py-1.5 rounded-lg border border-mg-border bg-mg-bg-0 cursor-text transition-colors focus-within:border-brand-base"
-        onClick={() => inputRef.current?.focus()}
+        className={`flex flex-wrap items-center gap-1.5 min-h-[var(--mg-control-h-md)] px-[var(--mg-control-px-xs)] py-1.5 rounded-lg border border-mg-border bg-mg-bg-0 transition-colors focus-within:border-brand-base ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-text'}`}
+        onClick={() => { if (!disabled) inputRef.current?.focus() }}
       >
         {value.map((tag) => (
           <span key={tag} className={`inline-flex items-center gap-1 px-[var(--mg-control-px-xs)] py-0.5 rounded-md mg-compact-badge border ${tagClass}`}>
             <code className="font-mono">{labelOf(tag)}</code>
             <button
               type="button"
+              disabled={disabled}
               onClick={(e) => { e.stopPropagation(); removeTag(tag) }}
               className="hover:text-rose-500 transition-colors cursor-pointer"
             >
@@ -175,6 +181,7 @@ export function TagInput({
         <div className="flex-1 min-w-[80px] flex items-center">
           <input
             ref={inputRef}
+            disabled={disabled}
             value={input}
             onChange={(e) => {
               setInput(e.target.value)
@@ -196,6 +203,7 @@ export function TagInput({
           {hasSuggestions && (
             <button
               type="button"
+              disabled={disabled}
               onClick={() => { setOpen((o) => !o); inputRef.current?.focus() }}
               className="shrink-0 p-0.5 text-mg-text-3 hover:text-mg-text-1 transition-colors cursor-pointer"
             >

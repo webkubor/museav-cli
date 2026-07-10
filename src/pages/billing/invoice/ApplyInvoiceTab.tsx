@@ -15,6 +15,8 @@ import {
   createInvoice,
 } from '@/services/invoice'
 import type { InvoiceTitleType, RechargeInvoiceStatus } from '@/types'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 
 const TITLE_TYPE_LABEL: Record<InvoiceTitleType, string> = {
   vat_normal: '增值税普票',
@@ -43,6 +45,9 @@ export function ApplyInvoiceTab({
   onGoTitles: () => void
 }) {
   const qc = useQueryClient()
+  const { hasPermission } = usePermissions()
+  const canApplyInvoice = hasPermission(PERMS.BILLING_INVOICE_APPLY)
+  const canManageTitles = hasPermission(PERMS.BILLING_INVOICE_TITLE_MANAGE)
   const [view, setView] = useState<'list' | 'confirm'>('list')
   const [selected, setSelected] = useState<string[]>([])
   const [titleId, setTitleId] = useState('')
@@ -167,13 +172,13 @@ export function ApplyInvoiceTab({
         <div>
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-semibold text-mg-text-2">发票抬头 / 票种</span>
-            <button
+            {canManageTitles && <button
               type="button"
               onClick={onGoTitles}
               className="flex items-center gap-1 text-xs font-semibold text-brand-base hover:text-brand-mid"
             >
               <LuPlus size={13} /> 新增抬头
-            </button>
+            </button>}
           </div>
           <Select value={titleId} onChange={setTitleId} className="w-full" placeholder="选择发票抬头">
             {titles.map((t) => (
@@ -232,7 +237,7 @@ export function ApplyInvoiceTab({
           提交后系统会自动发起 FAPI 开票任务，出票后推送至接收邮箱。
         </p>
 
-        <Button
+        {canApplyInvoice && <Button
           variant="brand"
           className="w-full"
           loading={submit.isPending}
@@ -242,7 +247,7 @@ export function ApplyInvoiceTab({
           }}
         >
           提交开票
-        </Button>
+        </Button>}
       </div>
     )
   }
@@ -330,7 +335,7 @@ export function ApplyInvoiceTab({
         </div>
 
         {/* Sticky Action Footer */}
-        {selected.length > 0 && (
+        {canApplyInvoice && selected.length > 0 && (
           <div className="sticky bottom-0 left-0 right-0 border-t border-mg-border bg-mg-card/95 backdrop-blur-sm p-4 flex items-center justify-between z-10 shadow-lg shadow-black/5 animate-in slide-in-from-bottom-2 duration-200">
             <div className="text-xs text-mg-text-3">
               已选 <span className="font-bold text-brand-base">{selected.length}</span> 笔充值单，合计金额：

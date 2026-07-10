@@ -87,7 +87,8 @@ interface Props {
   onClose: () => void
   workspaceId: string
   item: ApiKeyItem | null
-  canManage: boolean
+  canEdit: boolean
+  canRevoke: boolean
   onToggleStatus: (item: ApiKeyItem) => void
   onRotate: (item: ApiKeyItem) => void
   onChangeOwner: (item: ApiKeyItem) => void
@@ -97,7 +98,7 @@ interface Props {
   rowScope?: string
 }
 
-export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage, onToggleStatus, onRotate, onChangeOwner, onEdit, onRevoke, rowScope }: Props) {
+export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canEdit, canRevoke, onToggleStatus, onRotate, onChangeOwner, onEdit, onRevoke, rowScope }: Props) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { currency, symbol } = useCurrency()
@@ -173,9 +174,9 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
   const recentCalls = detail?.recent_calls ?? []
   const auditRows = audit?.items ?? detail?.recent_audit ?? []
   const isDisabled = view.status === 'disabled'
-  const canToggle = isDisabled ? cap(view.capabilities?.can_enable, canManage) : cap(view.capabilities?.can_disable, canManage)
-  const canRotate = view.capabilities?.can_rotate === true // 端点未交付前严格隐藏
-  const canDelete = cap(view.capabilities?.can_delete, canManage) && view.status !== 'revoked'
+  const canToggle = isDisabled ? cap(view.capabilities?.can_enable, canEdit) : cap(view.capabilities?.can_disable, canEdit)
+  const canRotate = canEdit && view.capabilities?.can_rotate === true // 端点未交付前严格隐藏
+  const canDelete = cap(view.capabilities?.can_delete, canRevoke) && view.status !== 'revoked'
 
   return (
     <SideSheet open={open} onClose={onClose} title={item.name} width={520}>
@@ -193,10 +194,10 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
                 {isDisabled ? '启用' : '停用'}
               </Button>
             )}
-            {view.status !== 'revoked' && canManage && (
+            {view.status !== 'revoked' && canEdit && (
               <Button variant="outline" size="sm" onClick={() => onChangeOwner(view)}>变更负责人</Button>
             )}
-            {view.status !== 'revoked' && canManage && (
+            {view.status !== 'revoked' && canEdit && (
               <Button variant="outline" size="sm" onClick={() => onEdit(view)}>编辑</Button>
             )}
             {canDelete && (
@@ -231,7 +232,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
         <Section
           title="用量与限额"
           action={
-            !editingLimit && cap(view.capabilities?.can_update_limit, canManage) && view.status !== 'revoked' ? (
+            !editingLimit && cap(view.capabilities?.can_update_limit, canEdit) && view.status !== 'revoked' ? (
               <button
                 className="text-xs font-semibold text-brand-base hover:text-brand-deep transition-colors"
                 onClick={() => openLimitEditor(view)}

@@ -21,7 +21,8 @@ import {
   LuDatabase,
   LuFileText,
   LuLayoutGrid,
-  LuLayoutList
+  LuLayoutList,
+  LuClock
 } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listWorkspaces, createWorkspace, getWorkspace } from '@/services/workspaces'
@@ -47,6 +48,7 @@ import { Pagination } from '@/components/ui/Pagination'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { TagInput, type TagOption } from '@/components/ui/TagInput'
 import { cn, formatMoney as fmtMoney } from '@/lib/utils'
+import { formatDate } from '@/lib/format-date'
 import { trackAction } from '@/lib/track'
 import { PERMS } from '@/config/permissions'
 import { useNavigate } from 'react-router-dom'
@@ -76,6 +78,7 @@ export default function WorkspacesPage() {
   const queryClient = useQueryClient()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const currentAccountEmail = useAuthStore((s) => s.account?.email)
+  const currentAccountId = useAuthStore((s) => s.account?.account_id)
   const { isEnterprise, tenant, canManage } = useTenantRole()
   // 创建工作空间仅 Owner/Admin 与个人租户可见；企业普通成员/空间负责人不可创建（PRD 角色权限模型）
   const canCreateWorkspace = !isEnterprise || canManage
@@ -203,7 +206,11 @@ export default function WorkspacesPage() {
 
   // 摘要条派生数据（PRD 原型：我的工作空间 / 我负责的空间 / 日志采集 / 转发状态）
   const list = data || []
-  const myOwnedCount = list.filter((w) => w.my_role === 'ws_owner').length
+  // 我负责的空间：对齐 PRD 原型口径（records.filter(owner === 当前身份)）——按空间负责人 account_id 判定，
+  // 而非依赖 my_role 字段（owner 恒返回，更可靠）
+  const myOwnedCount = currentAccountId
+    ? list.filter((w) => w.owner?.account_id === currentAccountId).length
+    : list.filter((w) => w.my_role === 'ws_owner').length
   const loggingKnown = list.some((w) => w.logging_enabled !== undefined)
   const forwardKnown = list.some((w) => w.forward_enabled !== undefined)
   const loggingOnCount = list.filter((w) => w.logging_enabled).length
@@ -213,7 +220,8 @@ export default function WorkspacesPage() {
   const summaryItems = [
     {
       label: t('workspaces.summary.myWorkspaces'),
-      value: list.length,
+      // 工作空间数 / 上限（tenant.max_workspaces），拿不到租户上限时仅显数量
+      value: tenant ? `${list.length} / ${tenant.max_workspaces}` : String(list.length),
       icon: <LuFileText size={16} className="text-brand-base" />,
       bg: 'bg-brand-base/8'
     },
@@ -601,6 +609,12 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
       icon: <LuDatabase size={20} className="text-brand-base" />,
       bg: 'bg-brand-base/8'
     },
+    {
+      label: t('workspaces.detail.overview.apiKeys'),
+      value: (ws.api_key_count ?? 0).toLocaleString(),
+      icon: <LuKey size={20} className="text-brand-base" />,
+      bg: 'bg-brand-base/8'
+    },
   ]
 
   const resources = [
@@ -639,25 +653,27 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
       onClick: () => navigate(`/workspace/${ws.workspace_id}/guardrails`),
     },
     {
-      title: t('workspaces.detail.tabs.logs'),
+      title: t('workspaces.detail.overview.logsTitle'),
       desc: t('workspaces.detail.overview.goLogsDesc'),
       icon: <LuClipboardList size={18} className="text-brand-base" />,
       bg: 'bg-brand-base/8',
       onClick: () => navigate(`/logs?workspace=${ws.workspace_id}`),
     },
     {
-      title: t('workspaces.summary.forwarding'),
+      title: t('workspaces.detail.tabs.logs'),
       desc: t('workspaces.detail.overview.goForwardingDesc'),
       icon: <LuSend size={18} className="text-brand-base" />,
       bg: 'bg-brand-base/8',
       onClick: onGoLogs,
+      // 日志与转发卡：本页内切换到「日志与转发」页签（非外跳），动作用「设置」蓝色内联文本、无外跳箭头（对齐 PRD actionKind="inline"）
+      inline: true,
     },
   ]
 
   return (
     <div className="space-y-6">
-      {/* 3项 7天指标 */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* 4项 7天指标（近 7 天消费/请求/Tokens/API Keys 数，对齐 PRD space-overview-grid） */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {usageCards.map((c) => (
           <div key={c.label} className="flex items-center gap-4 bg-mg-fill-0/10 border border-mg-border/20 rounded-lg p-5">
             <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", c.bg)}>
@@ -715,7 +731,13 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
                   <div className="text-xs text-mg-text-3 mt-0.5 truncate">{s.desc}</div>
                 </div>
               </div>
-              <LuChevronRight size={14} className="text-mg-text-3 group-hover:text-brand-base transition-transform shrink-0" />
+              {'inline' in s && s.inline ? (
+                <span className="text-xs font-bold text-brand-base shrink-0 ml-2 group-hover:text-brand-base/80 transition-colors">
+                  {t('workspaces.detail.overview.configure')}
+                </span>
+              ) : (
+                <LuChevronRight size={14} className="text-mg-text-3 group-hover:text-brand-base transition-transform shrink-0" />
+              )}
             </button>
           ))}
         </div>
@@ -778,10 +800,29 @@ function WorkspaceDashboard({ workspaceId, onDeleted }: WorkspaceDashboardProps)
               </Badge>
             )}
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-mg-text-3">
-            <LuUser size={13} className="text-mg-text-3/60" />
-            <span>{t('workspaces.card.owner')}：</span>
-            <span className="font-medium text-mg-text-2">{ws.owner?.display_name || '—'}</span>
+          <div className="flex items-center gap-x-4 gap-y-1.5 flex-wrap text-xs text-mg-text-3">
+            <div className="flex items-center gap-1.5">
+              <LuUser size={13} className="text-mg-text-3/60" />
+              <span>{t('workspaces.card.owner')}：</span>
+              <span className="font-medium text-mg-text-2">{ws.owner?.display_name || '—'}</span>
+            </div>
+            {/* 创建时间 + 状态（WorkspaceDetail.created_at / status） */}
+            <div className="flex items-center gap-1.5">
+              <LuClock size={13} className="text-mg-text-3/60" />
+              <span>{t('workspaces.detail.overview.createdAt')}：</span>
+              <span className="font-medium text-mg-text-2">{formatDate(ws.created_at)}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className={cn(
+                "inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium border",
+                ws.status === 'active'
+                  ? "bg-mg-success/8 border-mg-success/20 text-mg-success"
+                  : "bg-mg-fill-0/20 border-mg-border/40 text-mg-text-3"
+              )}>
+                <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", ws.status === 'active' ? "bg-mg-success" : "bg-mg-text-3/40")} />
+                {ws.status === 'active' ? t('workspaces.detail.overview.statusActive') : t('workspaces.detail.overview.statusDeleted')}
+              </span>
+            </div>
           </div>
         </div>
 

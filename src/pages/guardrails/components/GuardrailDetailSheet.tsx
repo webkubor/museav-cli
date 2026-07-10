@@ -12,7 +12,7 @@ import type { GuardrailDetail } from '@/interfaces/guardrails'
 import { PERIOD_LABEL } from '@/constants/status'
 import { GuardrailFormFields } from './GuardrailFormFields'
 import { isValidBudgetAmount, trimAmountScale } from '../budget'
-import type { BudgetAggScope, PromptInjectionFormValue } from '../derive'
+import { budgetTimezone, type BudgetAggScope, type GuardrailKind, type GuardrailScope, type PromptInjectionFormValue } from '../derive'
 
 const GUARDRAIL_STATUS_MAP: Record<string, StatusConfig> = {
   active: { label: '已启用', variant: 'success' },
@@ -102,7 +102,11 @@ export function GuardrailDetailSheet({
   name, onNameChange,
   description, onDescriptionChange,
   priority, onPriorityChange,
-  isDefault, onIsDefaultChange,
+  scope, onScopeChange,
+  kind, onKindChange,
+  lockScopeKind, showMemberScope,
+  boostExpiresAt, onBoostExpiresAtChange,
+  showModelIp,
   modelBlacklist, onModelBlacklistChange,
   ipWhitelist, onIpWhitelistChange,
   promptInjectionMode, onPromptInjectionModeChange,
@@ -131,7 +135,11 @@ export function GuardrailDetailSheet({
   name: string; onNameChange: (v: string) => void
   description: string; onDescriptionChange: (v: string) => void
   priority: number; onPriorityChange: (v: number) => void
-  isDefault: boolean; onIsDefaultChange: (v: boolean) => void
+  scope: GuardrailScope; onScopeChange: (v: GuardrailScope) => void
+  kind: GuardrailKind; onKindChange: (v: GuardrailKind) => void
+  lockScopeKind: boolean; showMemberScope: boolean
+  boostExpiresAt: string; onBoostExpiresAtChange: (v: string) => void
+  showModelIp: boolean
   modelBlacklist: string[]; onModelBlacklistChange: (v: string[]) => void
   ipWhitelist: string[]; onIpWhitelistChange: (v: string[]) => void
   promptInjectionMode: PromptInjectionFormValue; onPromptInjectionModeChange: (v: PromptInjectionFormValue) => void
@@ -153,6 +161,9 @@ export function GuardrailDetailSheet({
   submitting: boolean; onSubmit: () => void
 }) {
   const { t } = useTranslation()
+
+  // 预算计量时区（文档§周期计量：均按租户时区、滚动窗口）；无策略时回退浏览器时区
+  const tz = budgetTimezone(budget ?? detail?.budget_policies?.[0])
 
   // 详情加载失败（含后端对多条生效预算策略返回的 409「预算配置数据错误」）：
   // 抽屉只渲染错误说明。表单/保存一概不出——openDetail 虽已清空表单，
@@ -226,7 +237,11 @@ export function GuardrailDetailSheet({
               name={name} onNameChange={onNameChange}
               description={description} onDescriptionChange={onDescriptionChange}
               priority={priority} onPriorityChange={onPriorityChange}
-              isDefault={isDefault} onIsDefaultChange={onIsDefaultChange}
+              scope={scope} onScopeChange={onScopeChange}
+              kind={kind} onKindChange={onKindChange}
+              lockScopeKind={lockScopeKind} showMemberScope={showMemberScope}
+              boostExpiresAt={boostExpiresAt} onBoostExpiresAtChange={onBoostExpiresAtChange}
+              showModelIp={showModelIp}
               modelBlacklist={modelBlacklist} onModelBlacklistChange={onModelBlacklistChange}
               ipWhitelist={ipWhitelist} onIpWhitelistChange={onIpWhitelistChange}
               promptInjectionMode={promptInjectionMode} onPromptInjectionModeChange={onPromptInjectionModeChange}
@@ -311,6 +326,9 @@ export function GuardrailDetailSheet({
                   <span className="text-xs text-mg-text-3">三档独立生效，可分别限额或不限额</span>
                 </div>
               )}
+              <p className="text-xs text-mg-text-3">
+                各档均按<span className="font-semibold text-mg-text-2">滚动窗口</span>计量（统计当前时刻往前一个周期长度内的累计消费，非自然日/周/月重置）· 时区 <span className="font-mono">{tz}</span>
+              </p>
             </section>
           ) : detail ? (
             <section className="space-y-4">
@@ -354,8 +372,13 @@ export function GuardrailDetailSheet({
                 </div>
               )}
               {budget && (
-                <div className="p-3 rounded-lg border border-mg-border bg-mg-fill-0/50 text-xs text-mg-text-2">
-                  当前生效：<span className="font-semibold text-brand-base">{currencySymbol}{parseFloat(budget.spend_limit_amount).toLocaleString()} / {PERIOD_LABEL[budget.period_unit]}</span>
+                <div className="p-3 rounded-lg border border-mg-border bg-mg-fill-0/50 text-xs text-mg-text-2 space-y-1">
+                  <div>
+                    当前生效：<span className="font-semibold text-brand-base">{currencySymbol}{parseFloat(budget.spend_limit_amount).toLocaleString()} / 每{PERIOD_LABEL[budget.period_unit]}</span>
+                  </div>
+                  <div className="text-mg-text-3">
+                    按<span className="font-semibold text-mg-text-2">滚动窗口</span>计量 · 时区 <span className="font-mono">{tz}</span>
+                  </div>
                 </div>
               )}
             </section>
@@ -367,9 +390,16 @@ export function GuardrailDetailSheet({
           预算是独立的增删策略，保留其自有按钮。 */}
       {!detailLoadFailed && (isCreating || sheetTab !== 'budget') && (
         <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-mg-border/50 shrink-0">
-          {/* 影响范围预览（保存前）：让用户在生效前看清作用面 */}
+          {/* 影响范围预览（保存前）：按分类上下文化——个人护栏只提成员数，
+              Key 护栏只提 Key 数，全局护栏说明作用于工作空间默认策略（文档§编辑行为） */}
           <span className="text-xs text-mg-text-3 truncate">
-            将作用于 <span className="font-semibold text-mg-text-2">{memberIds.length}</span> 位成员 · <span className="font-semibold text-mg-text-2">{apiKeyIds.length}</span> 把 API Key
+            {scope === 'global' ? (
+              '保存后作用于当前工作空间的默认策略'
+            ) : scope === 'member' ? (
+              <>将作用于 <span className="font-semibold text-mg-text-2">{memberIds.length}</span> 位成员</>
+            ) : (
+              <>将作用于 <span className="font-semibold text-mg-text-2">{apiKeyIds.length}</span> 把 API Key</>
+            )}
           </span>
           <div className="flex gap-2 shrink-0">
             <Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button>

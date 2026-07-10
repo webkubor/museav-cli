@@ -6,7 +6,7 @@ export function GuardrailConfirmModals({
   deleteTarget, onCloseDelete, deleting, onConfirmDelete,
   showClearBudget, onCloseClear, clearing, onConfirmClear,
 }: {
-  deleteTarget: { id: string; name: string } | null
+  deleteTarget: { id: string; name: string; isActiveGlobal?: boolean } | null
   onCloseDelete: () => void
   deleting: boolean
   onConfirmDelete: () => void
@@ -34,7 +34,14 @@ export function GuardrailConfirmModals({
             </Button>
           </>
         }
-      />
+      >
+        {/* 删除启用中的全局护栏 = 该空间在全局护栏层放开使用，需二次提醒（文档§全局护栏） */}
+        {deleteTarget?.isActiveGlobal && (
+          <div role="alert" className="p-3 rounded-lg border border-mg-warning/40 bg-mg-warning/5 text-xs text-mg-warning">
+            这是当前启用中的全局护栏。删除后该工作空间将无全局默认预算与模型/IP 边界，按「无全局护栏，放开使用」处理。
+          </div>
+        )}
+      </Modal>
 
       {/* 清除预算确认 Modal */}
       <Modal

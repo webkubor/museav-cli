@@ -27,6 +27,12 @@ export const KIND_LABEL: Record<GuardrailKind, string> = {
   boost: '提额',
 }
 
+export const SCOPE_LABEL: Record<GuardrailScope, string> = {
+  global: '全局',
+  member: '个人',
+  key: 'Key',
+}
+
 /** 预算闸门聚合口径（对齐 backend aggregation_scope） */
 export type BudgetAggScope = 'guardrail_total' | 'per_member' | 'per_api_key'
 
@@ -180,6 +186,53 @@ export function boostExpiry(g: GuardrailDetail): string | null {
   return primaryBudget(g)?.effective_to || null
 }
 
+/**
+ * 提额是否已过期（文档§过期提额）：到期时间早于当前时刻。非提额恒 false。
+ * 默认列表用它隐藏过期提额，「已过期/已停用」筛选用它反选。
+ */
+export function isBoostExpired(g: GuardrailDetail): boolean {
+  if (deriveKind(g) !== 'boost') return false
+  const exp = boostExpiry(g)
+  if (!exp) return false
+  const t = Date.parse(exp)
+  return !Number.isNaN(t) && t <= Date.now()
+}
+
+/**
+ * 生效中全局护栏在某档（默认个人 / 默认 Key）的预算金额（数值，无 / 不限额→null）。
+ * 常规护栏「≤ 全局默认」与提额护栏「> 当前生效」校验用它做本地比对（文档§校验规则）。
+ */
+export function globalDefaultAmount(
+  list: GuardrailDetail[],
+  scope: 'per_member' | 'per_api_key',
+): number | null {
+  const g = activeGlobalGuardrail(list)
+  if (!g) return null
+  const p = budgetByScope(g, scope)
+  const amt = p?.spend_limit_amount
+  if (!p || !amt || Number(amt) <= 0) return null
+  return Number(amt)
+}
+
+/**
+ * 某作用域下所有「常规护栏」的生效预算金额（数值）。下调全局默认时，
+ * 若存在高于新默认值的常规护栏须报错（文档§校验规则）用它枚举比对。
+ */
+export function regularBudgetAmounts(list: GuardrailDetail[], scope: 'member' | 'key'): number[] {
+  return list
+    .filter((g) => deriveScope(g) === scope && deriveKind(g) === 'regular')
+    .map((g) => {
+      const amt = primaryBudget(g)?.spend_limit_amount
+      return amt && Number(amt) > 0 ? Number(amt) : null
+    })
+    .filter((n): n is number => n !== null)
+}
+
+/** 预算策略的计量时区（文档§周期计量：涉及日期计算均用租户时区）；缺省回退浏览器时区 */
+export function budgetTimezone(policy?: GuardrailBudgetPolicy | null): string {
+  return policy?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
+}
+
 export interface GuardrailSummary {
   global: number
   member: number
@@ -198,6 +251,25 @@ export function summarize(list: GuardrailDetail[]): GuardrailSummary {
     if (deriveKind(g) === 'boost') summary.boost += 1
   }
   return summary
+}
+
+// ─── 提额到期时间：ISO ↔ <input type="datetime-local"> 值互转 ───────────────
+// datetime-local 取/给的是「本地无时区」字符串 YYYY-MM-DDTHH:mm；落库统一 ISO。
+
+/** ISO → datetime-local 输入值（本地时区展示）；空/非法 → 空串 */
+export function isoToLocalInput(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+/** datetime-local 输入值 → ISO；空/非法 → 空串 */
+export function localInputToIso(v: string): string {
+  if (!v) return ''
+  const d = new Date(v)
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString()
 }
 
 /** 名称模糊匹配（分区搜索用） */

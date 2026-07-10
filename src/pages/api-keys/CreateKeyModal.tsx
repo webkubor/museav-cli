@@ -24,7 +24,7 @@ import { CreateGuardrailDialog } from './CreateGuardrailDialog'
 import { KEY_TYPE_LABEL, KEY_TYPE_DESC } from './derive'
 import { PERIOD_LABEL } from '@/constants/status'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
-import { activeGlobalGuardrail, PROMPT_INJECTION_LABEL, resolveKeyPromptInjection } from '@/pages/guardrails/derive'
+import { activeGlobalGuardrail, deriveKind, deriveScope, PROMPT_INJECTION_LABEL, resolveKeyPromptInjection } from '@/pages/guardrails/derive'
 import type { ApiKeyType, SpendingPeriodUnit } from '@/types'
 
 /** PRD「Key 类型」→ 后端 scope 映射（私有→personal / 成员→member / 服务→workspace） */
@@ -265,7 +265,8 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                 value={extraIds}
                 onChange={(addIds) => setGuardrailIds([...(defaultId ? [defaultId] : []), ...addIds])}
                 options={allGuardrails
-                  .filter((g) => !g.is_default)
+                  // 文档：创建 API Key 只展示常规 Key 护栏，不展示 Key 提额、个人或全局护栏
+                  .filter((g) => !g.is_default && deriveScope(g) === 'key' && deriveKind(g) === 'regular')
                   .map((g) => ({ value: g.id, label: g.name }))}
                 placeholder="可选：叠加其他护栏"
                 hint="默认护栏始终绑定，可继续叠加多个护栏共同生效"

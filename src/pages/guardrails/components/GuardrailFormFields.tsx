@@ -1,16 +1,19 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Input } from '@/components/ui/Input'
-import { Switch } from '@/components/ui/Switch'
 import { TagInput } from '@/components/ui/TagInput'
 import Select, { SelectItem } from '@/components/ui/Select'
 import { LuInfo, LuUsers } from 'react-icons/lu'
 import {
+  KIND_LABEL,
   PROMPT_INJECTION_HINTS,
   PROMPT_INJECTION_INHERIT,
   PROMPT_INJECTION_INHERIT_LABEL,
   PROMPT_INJECTION_LABEL,
   PROMPT_INJECTION_MODES,
+  SCOPE_LABEL,
+  type GuardrailKind,
+  type GuardrailScope,
   type PromptInjectionFormValue,
 } from '../derive'
 
@@ -20,7 +23,13 @@ export function GuardrailFormFields({
   name, onNameChange,
   description, onDescriptionChange,
   priority, onPriorityChange,
-  isDefault, onIsDefaultChange,
+  // 分类（全局/个人/Key）+ 类型（常规/提额）显式选择，替代旧 isDefault 反推
+  scope, onScopeChange,
+  kind, onKindChange,
+  lockScopeKind,
+  showMemberScope,
+  boostExpiresAt, onBoostExpiresAtChange,
+  showModelIp,
   modelBlacklist, onModelBlacklistChange,
   ipWhitelist, onIpWhitelistChange,
   promptInjectionMode, onPromptInjectionModeChange,
@@ -31,7 +40,18 @@ export function GuardrailFormFields({
   name: string; onNameChange: (v: string) => void
   description: string; onDescriptionChange: (v: string) => void
   priority: number; onPriorityChange: (v: number) => void
-  isDefault: boolean; onIsDefaultChange: (v: boolean) => void
+  /** 护栏分类：显式选择，创建后不可改（编辑锁定） */
+  scope: GuardrailScope; onScopeChange: (v: GuardrailScope) => void
+  /** 护栏类型：常规 / 提额；全局护栏恒常规、无此选择器 */
+  kind: GuardrailKind; onKindChange: (v: GuardrailKind) => void
+  /** 编辑态：分类/类型不可切换（文档：提额创建后类型不可切换） */
+  lockScopeKind: boolean
+  /** 个人组织隐藏「个人」分类选项 */
+  showMemberScope: boolean
+  /** 提额到期时间（datetime-local 值）；仅提额显示 */
+  boostExpiresAt: string; onBoostExpiresAtChange: (v: string) => void
+  /** 文档：个人护栏与提额护栏不配置模型黑名单 / IP 白名单 */
+  showModelIp: boolean
   modelBlacklist: string[]; onModelBlacklistChange: (v: string[]) => void
   ipWhitelist: string[]; onIpWhitelistChange: (v: string[]) => void
   promptInjectionMode: PromptInjectionFormValue; onPromptInjectionModeChange: (v: PromptInjectionFormValue) => void
@@ -78,43 +98,104 @@ export function GuardrailFormFields({
         <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.descLabel')}</label>
         <Input value={description} onChange={(e) => onDescriptionChange(e.target.value)} placeholder={t('guardrails.form.descPlaceholder')} />
       </div>
-      {/* 设为默认 — Switch 开关 */}
-      <div className="flex items-center justify-between">
+      {/* 分类 + 类型 — 显式选择（文档：创建时显式选「分类+类型」，非靠 isDefault/assignments 反推）。
+          全局护栏恒为常规、无类型选择器；编辑态整体锁定（提额创建后类型不可切换）。 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <p className="text-xs font-bold text-mg-text-2">{t('guardrails.form.isDefaultLabel')}</p>
-          <p className="text-xs text-mg-text-3 mt-0.5">{t('guardrails.form.isDefaultHint')}</p>
+          <label className="block text-xs font-bold text-mg-text-2 mb-2">
+            护栏分类<span className="text-mg-danger ml-1">*</span>
+          </label>
+          <Select
+            value={scope}
+            onChange={(v) => onScopeChange(v as GuardrailScope)}
+            disabled={lockScopeKind}
+            aria-label="护栏分类"
+            className="w-full"
+          >
+            {(['global', 'member', 'key'] as GuardrailScope[])
+              .filter((s) => s !== 'member' || showMemberScope)
+              .map((s) => (
+                <SelectItem key={s} value={s}>{SCOPE_LABEL[s]}护栏</SelectItem>
+              ))}
+          </Select>
+          <p className="text-xs text-mg-text-3 mt-1.5">
+            {scope === 'global'
+              ? '工作空间级默认策略与预算/模型/IP 边界'
+              : scope === 'member'
+                ? '按成员计量的预算策略，可绑定多位成员'
+                : '按 API Key 计量的策略，可绑定多把 Key'}
+          </p>
         </div>
-        <Switch checked={isDefault} onChange={onIsDefaultChange} />
+        {scope !== 'global' && (
+          <div>
+            <label className="block text-xs font-bold text-mg-text-2 mb-2">
+              护栏类型<span className="text-mg-danger ml-1">*</span>
+            </label>
+            <Select
+              value={kind}
+              onChange={(v) => onKindChange(v as GuardrailKind)}
+              disabled={lockScopeKind}
+              aria-label="护栏类型"
+              className="w-full"
+            >
+              {(['regular', 'boost'] as GuardrailKind[]).map((k) => (
+                <SelectItem key={k} value={k}>{KIND_LABEL[k]}护栏</SelectItem>
+              ))}
+            </Select>
+            <p className="text-xs text-mg-text-3 mt-1.5">
+              {kind === 'boost' ? '临时预算策略，必须设置到期时间，可超过全局默认' : '长期预算策略，无到期时间'}
+            </p>
+          </div>
+        )}
       </div>
-      {/* 模型黑名单 — 下拉多选 */}
-      <div>
-        <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.modelBlacklistLabel')}</label>
-        <TagInput
-          value={modelBlacklist}
-          onChange={onModelBlacklistChange}
-          suggestions={modelSuggestions}
-          placeholder={t('guardrails.form.modelBlacklistPlaceholder')}
-          hint={t('guardrails.form.modelBlacklistHint')}
-        />
-      </div>
-      {/* IP 白名单 — 自由输入标签 */}
-      <div>
-        <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.ipWhitelistLabel')}</label>
-        <TagInput
-          value={ipWhitelist}
-          onChange={(v) => { setIpError(''); onIpWhitelistChange(v) }}
-          allowFreeText
-          tagVariant="mono"
-          validator={ipValidator}
-          onValidationError={() => {
-            setIpError('无效的 IP 地址格式')
-            setTimeout(() => setIpError(''), 3000)
-          }}
-          placeholder={t('guardrails.form.ipWhitelistPlaceholder')}
-          hint={t('guardrails.form.ipWhitelistHint')}
-        />
-        {ipError && <p className="text-xs text-mg-danger mt-1">{ipError}</p>}
-      </div>
+      {/* 提额到期时间 — 仅提额护栏显示（文档：提额必须有到期时间） */}
+      {kind === 'boost' && scope !== 'global' && (
+        <div>
+          <label className="block text-xs font-bold text-mg-text-2 mb-2">
+            提额到期时间<span className="text-mg-danger ml-1">*</span>
+          </label>
+          <Input
+            type="datetime-local"
+            aria-label="提额到期时间"
+            value={boostExpiresAt}
+            onChange={(e) => onBoostExpiresAtChange(e.target.value)}
+          />
+          <p className="text-xs text-mg-text-3 mt-1.5">到期后该提额自动失效，绑定对象回退到常规护栏或全局默认预算</p>
+        </div>
+      )}
+      {/* 模型黑名单 — 仅全局 / 常规 Key 护栏显示（个人、提额护栏不配置） */}
+      {showModelIp && (
+        <div>
+          <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.modelBlacklistLabel')}</label>
+          <TagInput
+            value={modelBlacklist}
+            onChange={onModelBlacklistChange}
+            suggestions={modelSuggestions}
+            placeholder={t('guardrails.form.modelBlacklistPlaceholder')}
+            hint={t('guardrails.form.modelBlacklistHint')}
+          />
+        </div>
+      )}
+      {/* IP 白名单 — 自由输入标签（同上，个人/提额护栏不配置） */}
+      {showModelIp && (
+        <div>
+          <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.ipWhitelistLabel')}</label>
+          <TagInput
+            value={ipWhitelist}
+            onChange={(v) => { setIpError(''); onIpWhitelistChange(v) }}
+            allowFreeText
+            tagVariant="mono"
+            validator={ipValidator}
+            onValidationError={() => {
+              setIpError('无效的 IP 地址格式')
+              setTimeout(() => setIpError(''), 3000)
+            }}
+            placeholder={t('guardrails.form.ipWhitelistPlaceholder')}
+            hint={t('guardrails.form.ipWhitelistHint')}
+          />
+          {ipError && <p className="text-xs text-mg-danger mt-1">{ipError}</p>}
+        </div>
+      )}
       {/* 提示词注入检测 — 仅全局/常规 Key 护栏显示；info 图标说明命中后的处理方式 */}
       {showPromptInjection && (
         <div>
@@ -152,22 +233,24 @@ export function GuardrailFormFields({
           </Select>
         </div>
       )}
-      {/* 成员 — 下拉多选 */}
-      <div>
-        <label className="block text-xs font-bold text-mg-text-2 mb-2">
-          <span className="inline-flex items-center gap-1.5">
-            <LuUsers className="w-3.5 h-3.5" />
-            {t('guardrails.form.membersLabel')}
-          </span>
-        </label>
-        <TagInput
-          value={memberIds}
-          onChange={onMemberIdsChange}
-          options={memberOptions.map((o) => ({ value: o.id, label: o.name }))}
-          placeholder={t('guardrails.form.membersPlaceholder')}
-          hint={t('guardrails.form.membersHint')}
-        />
-      </div>
+      {/* 成员 — 下拉多选（仅个人护栏绑定成员；全局/Key 护栏不在此绑定） */}
+      {scope === 'member' && (
+        <div>
+          <label className="block text-xs font-bold text-mg-text-2 mb-2">
+            <span className="inline-flex items-center gap-1.5">
+              <LuUsers className="w-3.5 h-3.5" />
+              {t('guardrails.form.membersLabel')}
+            </span>
+          </label>
+          <TagInput
+            value={memberIds}
+            onChange={onMemberIdsChange}
+            options={memberOptions.map((o) => ({ value: o.id, label: o.name }))}
+            placeholder={t('guardrails.form.membersPlaceholder')}
+            hint={t('guardrails.form.membersHint')}
+          />
+        </div>
+      )}
     </div>
   )
 }

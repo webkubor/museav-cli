@@ -1,47 +1,37 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 import { Pagination } from '@/components/ui/Pagination'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Badge } from '@/components/ui/Badge'
 import Select from '@/components/ui/Select'
 import { cn } from '@/lib/utils'
 import { formatDateTime } from '@/lib/format-date'
 import { useCursorPager } from '@/hooks/use-cursor-pager'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
-import { listTransactions } from '@/services/billing'
-import type { TransactionTransaction } from '@/types/generated-api-types'
+import { listIncomeRecords } from '@/services/billing'
+import type { IncomeRecord, IncomeRecordType, IncomeBalanceBucket } from '@/services/billing'
 import { BillingInvoiceTab } from './invoice/BillingInvoiceTab'
 
-// 后端交易类型枚举（Swagger transaction.type）→ 中文标签
-const TXN_TYPE_LABEL: Record<string, string> = {
-  recharge: '充值',
-  consume: '消费',
-  refund: '退款',
-  adjust_credit: '调增',
-  adjust_debit: '调减',
-  promo: '兑换',
-}
+const TYPE_FILTERS: Array<{ value: 'all' | IncomeRecordType }> = [
+  { value: 'all' },
+  { value: 'recharge' },
+  { value: 'gift' },
+  { value: 'reward' },
+]
 
-const TYPE_FILTERS = [
-  { value: 'all', label: '全部类型' },
-  { value: 'recharge', label: '充值' },
-  { value: 'consume', label: '消费' },
-  { value: 'refund', label: '退款' },
-  { value: 'promo', label: '兑换' },
-  { value: 'adjust_credit', label: '调增' },
-  { value: 'adjust_debit', label: '调减' },
+const BUCKET_FILTERS: Array<{ value: 'all' | IncomeBalanceBucket }> = [
+  { value: 'all' },
+  { value: 'main' },
+  { value: 'gift' },
+  { value: 'reward' },
 ]
 
 // 对齐 PRD billingTxnTimeFilters；range() 惰性算，避免模块加载时固定“现在”
-const TIME_FILTERS = [
-  { value: 'all', label: '全部时间' },
-  { value: 'last7d', label: '近7天' },
-  { value: 'last30d', label: '近30天' },
-  { value: 'thisMonth', label: '本月' },
-  { value: 'lastMonth', label: '上月' },
-] as const
-type TimeFilterKey = (typeof TIME_FILTERS)[number]['value']
+const TIME_FILTERS = ['all', 'last7d', 'last30d', 'thisMonth', 'lastMonth'] as const
+type TimeFilterKey = (typeof TIME_FILTERS)[number]
 
 function timeRange(key: TimeFilterKey): { from?: string; to?: string } {
   const now = new Date()
@@ -66,39 +56,36 @@ function timeRange(key: TimeFilterKey): { from?: string; to?: string } {
   return { from: from.toISOString(), to: to.toISOString() }
 }
 
-/** 账务对象：从 related 里取业务引用（充值单号 / 会话 / 模型 / 空间），回落到描述 */
-function objectRef(txn: TransactionTransaction): string {
-  const r = txn.related
-  return r?.recharge_order_no || r?.billing_session_id || r?.model_id || r?.workspace_id || txn.description || '—'
-}
-
-/** 金额展示：优先带符号金额，判断正负着色 */
-function amountText(txn: TransactionTransaction): { text: string; positive: boolean } {
-  const a = txn.amount
-  const signed = a?.signed_amount ?? a?.amount ?? '0'
-  const positive = !String(signed).trim().startsWith('-')
-  return { text: `${a?.currency ?? ''} ${signed}`.trim(), positive }
+/** 类型徽章配色：充值(brand) / 赠送(info) / 奖励(purple) */
+const TYPE_BADGE: Record<IncomeRecordType, 'default' | 'info' | 'purple'> = {
+  recharge: 'default',
+  gift: 'info',
+  reward: 'purple',
 }
 
 /**
- * 账单页统一账本（对齐 PRD BillingPage.billing-ledger-panel）：交易记录 / 发票两个内嵌 tab。
- * PRD 交易记录表还要「余额桶」「状态」两列，后端 transactions 响应暂无这两字段（已提 #425），
- * 后端补齐后再加列 + 余额桶筛选；当前渲染 API 已支持的 5 列 + 时间/类型两个筛选。
+ * 账单页收入账本（qa#433，对齐 PRD BillingPage.billing-ledger-panel）：
+ * 单一「入账记录」表 —— 充值 / 赠送 / 奖励三类收入流合成一张表，时间倒序、游标翻页。
+ * 数据来自 services/billing.listIncomeRecords（后端 #431 未交付前走充值+赠送前端合成回落）。
+ * 发票为内嵌 tab（BillingInvoiceTab）。
  */
 export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: string; currencySymbol: string }) {
+  const { t } = useTranslation()
   const { hasPermission } = usePermissions()
   const canInvoice = hasPermission(PERMS.BILLING_INVOICE_VIEW)
 
   const [ledgerTab, setLedgerTab] = useState<'transactions' | 'invoices'>('transactions')
-  const [type, setType] = useState('all')
+  const [type, setType] = useState<'all' | IncomeRecordType>('all')
+  const [bucket, setBucket] = useState<'all' | IncomeBalanceBucket>('all')
   const [timeFilter, setTimeFilter] = useState<TimeFilterKey>('all')
   const pager = useCursorPager()
 
   const { data, isFetching } = useQuery({
-    queryKey: ['billing', 'transactions', tenantId, type, timeFilter, pager.page, pager.cursor],
+    queryKey: ['billing', 'income-records', tenantId, type, bucket, timeFilter, pager.page, pager.cursor],
     queryFn: () =>
-      listTransactions(tenantId, {
+      listIncomeRecords(tenantId, {
         type: type === 'all' ? undefined : type,
+        bucket: bucket === 'all' ? undefined : bucket,
         ...timeRange(timeFilter),
         cursor: pager.cursor,
         page_size: 15,
@@ -111,7 +98,11 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
   const hasMore = Boolean(data?.has_more && data?.next_cursor)
 
   const onTypeChange = (v: string) => {
-    setType(v)
+    setType(v as 'all' | IncomeRecordType)
+    pager.reset()
+  }
+  const onBucketChange = (v: string) => {
+    setBucket(v as 'all' | IncomeBalanceBucket)
     pager.reset()
   }
   const onTimeChange = (v: string) => {
@@ -119,9 +110,19 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
     pager.reset()
   }
 
+  const channelLabel = (c: string) => t(`billing.income.channels.${c}`, { defaultValue: c })
+  const bucketLabel = (b: string) => t(`billing.income.buckets.${b}`, { defaultValue: b })
+
+  const renderAmount = (rec: IncomeRecord) => {
+    const raw = rec.amount?.amount ?? '0'
+    const num = Number(raw)
+    const display = Number.isFinite(num) ? num.toLocaleString() : raw
+    return `+${currencySymbol}${display}`
+  }
+
   return (
     <div className="rounded-lg border border-mg-border bg-card-bg p-6 space-y-4 shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b border-mg-border pb-3">
+      <div className="flex items-center justify-between gap-3 border-b border-mg-border pb-3 flex-wrap">
         <div className="flex gap-6">
           <button
             type="button"
@@ -131,7 +132,7 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
               ledgerTab === 'transactions' ? 'text-brand-base' : 'text-mg-text-3 hover:text-mg-text-2'
             )}
           >
-            交易记录
+            {t('billing.income.tab')}
             {ledgerTab === 'transactions' && (
               <span className="absolute left-0 right-0 -bottom-px h-0.5 rounded-full bg-brand-base" />
             )}
@@ -145,7 +146,7 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
                 ledgerTab === 'invoices' ? 'text-brand-base' : 'text-mg-text-3 hover:text-mg-text-2'
               )}
             >
-              发票
+              {t('billing.income.invoiceTab')}
               {ledgerTab === 'invoices' && (
                 <span className="absolute left-0 right-0 -bottom-px h-0.5 rounded-full bg-brand-base" />
               )}
@@ -153,15 +154,24 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
           )}
         </div>
         {ledgerTab === 'transactions' && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Select value={timeFilter} onChange={onTimeChange} className="h-8 w-28 text-xs rounded-lg">
-              {TIME_FILTERS.map((f) => (
-                <Select.Option key={f.value} value={f.value}>{f.label}</Select.Option>
+              {TIME_FILTERS.map((k) => (
+                <Select.Option key={k} value={k}>{t(`billing.income.timeFilters.${k}`)}</Select.Option>
               ))}
             </Select>
             <Select value={type} onChange={onTypeChange} className="h-8 w-28 text-xs rounded-lg">
               {TYPE_FILTERS.map((f) => (
-                <Select.Option key={f.value} value={f.value}>{f.label}</Select.Option>
+                <Select.Option key={f.value} value={f.value}>
+                  {f.value === 'all' ? t('billing.income.typeAll') : t(`billing.income.types.${f.value}`)}
+                </Select.Option>
+              ))}
+            </Select>
+            <Select value={bucket} onChange={onBucketChange} className="h-8 w-28 text-xs rounded-lg">
+              {BUCKET_FILTERS.map((f) => (
+                <Select.Option key={f.value} value={f.value}>
+                  {f.value === 'all' ? t('billing.income.bucketAll') : t(`billing.income.buckets.${f.value}`)}
+                </Select.Option>
               ))}
             </Select>
           </div>
@@ -171,32 +181,45 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
       {ledgerTab === 'invoices' ? (
         <BillingInvoiceTab tenantId={tenantId} currencySymbol={currencySymbol} />
       ) : items.length === 0 && !isFetching ? (
-        <EmptyState title="暂无交易记录" />
+        <EmptyState title={t('billing.income.empty')} />
       ) : (
         <>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>编号</TableHead>
-                <TableHead>时间</TableHead>
-                <TableHead>类型</TableHead>
-                <TableHead>金额</TableHead>
-                <TableHead>渠道</TableHead>
+                <TableHead>{t('billing.income.cols.recordRef')}</TableHead>
+                <TableHead>{t('billing.income.cols.time')}</TableHead>
+                <TableHead>{t('billing.income.cols.type')}</TableHead>
+                <TableHead>{t('billing.income.cols.channel')}</TableHead>
+                <TableHead>{t('billing.income.cols.bucket')}</TableHead>
+                <TableHead>{t('billing.income.cols.amount')}</TableHead>
+                <TableHead>{t('billing.income.cols.status')}</TableHead>
+                <TableHead>{t('billing.income.cols.invoice')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((txn) => {
-                const { text, positive } = amountText(txn)
-                return (
-                  <TableRow key={txn.transaction_id}>
-                    <TableCell className="font-mono text-xs text-mg-text-2 max-w-[140px] truncate">{txn.transaction_id}</TableCell>
-                    <TableCell className="text-xs text-mg-text-3 font-mono whitespace-nowrap">{formatDateTime(txn.happened_at)}</TableCell>
-                    <TableCell className="text-xs text-mg-text-2 font-semibold whitespace-nowrap">{TXN_TYPE_LABEL[txn.type ?? ''] ?? txn.type ?? '—'}</TableCell>
-                    <TableCell className={cn('text-xs font-bold font-mono whitespace-nowrap', positive ? 'text-mg-success' : 'text-mg-text-1')}>{text}</TableCell>
-                    <TableCell className="text-xs text-mg-text-2 max-w-[160px] truncate">{objectRef(txn)}</TableCell>
-                  </TableRow>
-                )
-              })}
+              {items.map((rec) => (
+                <TableRow key={rec.id}>
+                  <TableCell className="font-mono text-xs text-mg-text-2 max-w-[160px] truncate">{rec.record_ref}</TableCell>
+                  <TableCell className="text-xs text-mg-text-3 font-mono whitespace-nowrap">
+                    {rec.created_at ? formatDateTime(rec.created_at) : '—'}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    <Badge variant={TYPE_BADGE[rec.type]} size="sm">{t(`billing.income.types.${rec.type}`)}</Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-mg-text-2 max-w-[140px] truncate">{channelLabel(rec.channel)}</TableCell>
+                  <TableCell className="text-xs text-mg-text-2 whitespace-nowrap">{bucketLabel(rec.balance_bucket)}</TableCell>
+                  <TableCell className="text-xs font-bold font-mono whitespace-nowrap text-mg-success">{renderAmount(rec)}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    <Badge variant={rec.status === 'completed' ? 'success' : 'warning'} size="sm">
+                      {t(`billing.income.status.${rec.status}`)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-mg-text-3 whitespace-nowrap">
+                    {rec.invoice ? t(`billing.income.invoice.${rec.invoice.status}`) : t('billing.income.invoice.none')}
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
           <Pagination

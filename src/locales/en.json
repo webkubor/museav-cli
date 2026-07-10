@@ -201,6 +201,57 @@
   "billing": {
     "title": "Billing",
     "desc": "Manage account balance and track recharge orders.",
+    "income": {
+      "tab": "Income Records",
+      "invoiceTab": "Invoices",
+      "empty": "No income records match the current filters",
+      "typeAll": "All Types",
+      "bucketAll": "All Buckets",
+      "cols": {
+        "recordRef": "Ref No.",
+        "time": "Time",
+        "type": "Type",
+        "channel": "Channel",
+        "bucket": "Balance Bucket",
+        "amount": "Amount",
+        "status": "Status",
+        "invoice": "Invoice"
+      },
+      "types": {
+        "recharge": "Recharge",
+        "gift": "Gift Credit",
+        "reward": "Reward Credit"
+      },
+      "channels": {
+        "alipay": "Alipay",
+        "admin": "Admin Recharge",
+        "promo": "Promo Code",
+        "activity": "Campaign Gift",
+        "referral": "Referral Program"
+      },
+      "buckets": {
+        "main": "Main Balance",
+        "gift": "Gift Balance",
+        "reward": "Reward Balance"
+      },
+      "status": {
+        "completed": "Completed",
+        "processing": "Processing"
+      },
+      "invoice": {
+        "none": "—",
+        "available": "Available",
+        "processing": "Processing",
+        "issued": "Issued"
+      },
+      "timeFilters": {
+        "all": "All Time",
+        "last7d": "Last 7 Days",
+        "last30d": "Last 30 Days",
+        "thisMonth": "This Month",
+        "lastMonth": "Last Month"
+      }
+    },
     "balance": {
       "title": "Account Balance",
       "available": "Available Balance",

@@ -76,7 +76,9 @@ export default function WorkspacesPage() {
   const queryClient = useQueryClient()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const currentAccountEmail = useAuthStore((s) => s.account?.email)
-  const { isEnterprise, tenant } = useTenantRole()
+  const { isEnterprise, tenant, canManage } = useTenantRole()
+  // 创建工作空间仅 Owner/Admin 与个人租户可见；企业普通成员/空间负责人不可创建（PRD 角色权限模型）
+  const canCreateWorkspace = !isEnterprise || canManage
   const [searchValue, setSearchValue] = useState('')
   const [modalVisible, setModalVisible] = useState(false)
   // 单页结构：选中卡片在下方展开详情（不跳路由，对齐原型 .space-detail-shell）
@@ -246,6 +248,7 @@ export default function WorkspacesPage() {
         title={t('workspaces.title')}
         description={t('workspaces.subtitle')}
         actions={
+          canCreateWorkspace ? (
           <Button
             variant="brand"
             disabled={atWorkspaceLimit}
@@ -255,6 +258,7 @@ export default function WorkspacesPage() {
           >
             <LuPlus className="mr-1 shrink-0" /> {t('workspaces.createBtn')}
           </Button>
+          ) : undefined
         }
       />
 

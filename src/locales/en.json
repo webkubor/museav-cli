@@ -1121,7 +1121,11 @@
     },
     "distribution": {
       "title": "Model Distribution",
-      "bySpend": "By spend"
+      "memberTitle": "Member Distribution",
+      "apiKeyTitle": "API Key Distribution",
+      "bySpend": "By spend",
+      "total": "Total spend",
+      "other": "Other"
     },
     "apiKeyRank": {
       "title": "API Key Ranking",
@@ -1130,7 +1134,8 @@
         "apiKey": "API Key",
         "requests": "Requests",
         "tokens": "Total Tokens",
-        "spend": "Spend"
+        "spend": "Spend",
+        "owner": "Owner"
       }
     },
     "chart": {
@@ -1169,6 +1174,15 @@
       "title": "Usage Breakdown",
       "desc": "Review breakdowns within the selected time and workspace scope."
     },
+    "emptyState": {
+      "noDataTitle": "No usage data",
+      "noDataDesc": "There are no calls in the selected time range yet.",
+      "filteredTitle": "No results",
+      "filteredDesc": "No usage records match the current filters. Try adjusting them."
+    },
+    "attr": {
+      "workspace": "Workspaces"
+    },
     "dimension": {
       "model": "Models",
       "member": "Members",
@@ -1177,7 +1191,8 @@
     "member": {
       "title": "Member Ranking",
       "col": {
-        "member": "Member"
+        "member": "Member",
+        "modelCount": "Models"
       },
       "empty": "No member usage data",
       "emptyDesc": "No member usage is available for the current filters."

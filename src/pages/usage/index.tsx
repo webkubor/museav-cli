@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { type DateRangeValue } from '@/components/ui/DateRangePicker'
@@ -22,16 +22,18 @@ import { useAuthStore } from '@/store/auth'
 import { useTenantRole } from '@/hooks/use-tenant-role'
 import { SegmentedToggle } from '@/features/dashboard/workbench/SegmentedToggle'
 import { useCurrency } from '@/hooks/use-platform-config'
-import { trackPageView } from '@/lib/track'
+import { trackEvent, trackPageView } from '@/lib/track'
+import { densifyDailyBuckets as densifyGenericBuckets } from '@/lib/chart-buckets'
 import type { SeriesDataPoint, UsageRankingItem } from '@/types'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { LuActivity, LuBot, LuDatabase, LuKeyRound, LuRefreshCw, LuWallet, LuUsers } from 'react-icons/lu'
+import { LuActivity, LuBot, LuDatabase, LuKey, LuKeyRound, LuRefreshCw, LuWallet, LuUsers } from 'react-icons/lu'
 import {
   CostSourcePanel,
   type CostSourceSection,
   ApiKeyRankingPanel,
+  DistributionPanel,
   ModelDistributionPanel,
   UsageStatCard,
 } from './usage-panels'
@@ -41,6 +43,7 @@ import {
   rangeToDates,
   formatMoney,
   formatNumber,
+  densifyValueSeries,
   CHART_CAT_COLORS,
   CHART_CAT_MAX,
   CHART_OTHER_COLOR,
@@ -57,12 +60,29 @@ import { UsageFilterPanel } from './usage-filters'
 type UsageDimension = 'model' | 'member' | 'apiKey'
 type TrendGroupBy = 'none' | 'model' | 'provider' | 'workspace'
 
+/** 深链/下钻上下文：从 URL 参数推导初始时间范围（time_range 预设或 range_start/range_end 自定义）。 */
+function initialTimeRangeFromParams(sp: URLSearchParams): DateRangeValue {
+  const rangeStart = sp.get('range_start')
+  const rangeEnd = sp.get('range_end')
+  if (rangeStart && rangeEnd) return { preset: 'custom', startDate: rangeStart, endDate: rangeEnd }
+  const tr = sp.get('time_range')
+  const valid = ['today', '7d', '30d', 'thisMonth', 'lastMonth']
+  if (tr && valid.includes(tr)) return { preset: tr }
+  return { preset: 'thisMonth' }
+}
+
 /** 用量分析页面入口。 */
 export default function UsagePage() {
   const { t } = useTranslation()
-  const [timeRange, setTimeRange] = useState<DateRangeValue>({ preset: 'thisMonth' })
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  const [timeRange, setTimeRange] = useState<DateRangeValue>(() => initialTimeRangeFromParams(searchParams))
   const [metric, setMetric] = useState<Metric>('spend')
-  const [filterWorkspaceId, setFilterWorkspaceId] = useState<string>('')
+  // 深链上下文：?workspace_id=（或旧 ?workspace=）初始化工作空间筛选
+  const [filterWorkspaceId, setFilterWorkspaceId] = useState<string>(
+    () => searchParams.get('workspace_id') || searchParams.get('workspace') || '',
+  )
 
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const currentAccountId = useAuthStore((s) => s.account?.account_id)
@@ -71,14 +91,22 @@ export default function UsagePage() {
   // 视图切换（对齐原型 + PRD §9）：默认按角色，Owner/Admin=企业视图，其余=我的视图；
   // 我的视图对 owner/admin 传 account_id=self（后端 #328 已支持透传）。
   const { canManage, isEnterprise, isSpaceOwner, ownedWorkspaceIds } = useTenantRole()
-  // 从总览「查看更多」带来的上下文：?view= 初始化视图
-  const [searchParams] = useSearchParams()
+  // 从总览「查看更多」/下钻带来的上下文：?view= 初始化视图，?dimension= 或 ?model/member_id/api_key_id= 推导维度
   const viewParam = searchParams.get('view')
   const dimensionParam = searchParams.get('dimension')
+  const modelParam = searchParams.get('model')
+  const memberParam = searchParams.get('member_id') || searchParams.get('member')
+  const apiKeyParam = searchParams.get('api_key_id') || searchParams.get('api_key')
   const initialDimension: UsageDimension =
     dimensionParam === 'member' || dimensionParam === 'apiKey' || dimensionParam === 'model'
       ? dimensionParam
-      : 'model'
+      : memberParam
+        ? 'member'
+        : apiKeyParam
+          ? 'apiKey'
+          : modelParam
+            ? 'model'
+            : 'model'
   const [dimension, setDimension] = useState<UsageDimension>(initialDimension)
   // 趋势图分组维度（后端 /usage/series 的 group_by）：none=单条总量曲线，其余=多序列堆叠
   const [trendGroupBy, setTrendGroupBy] = useState<TrendGroupBy>('none')
@@ -91,6 +119,8 @@ export default function UsagePage() {
   const showViewToggle = isEnterprise && canManage
   const showSpaceViewToggle = !showViewToggle && canUseSpaceView
   const view = userView ?? (showViewToggle ? 'enterprise' : canUseSpaceView ? 'space' : 'mine')
+  // 成员维度只在能看到全员数据的视图（企业/空间）下有意义；我的视图/个人租户隐藏该维度
+  const canShowMemberDimension = view === 'enterprise' || view === 'space'
   // 对齐 PRD：说明文案按当前视图分三档（团队/负责空间/我的），不是一句固定文案
   const viewDesc = view === 'enterprise' ? t('usage.descTeam') : view === 'space' ? t('usage.descSpace') : t('usage.descMine')
   const { symbol: currencySymbol } = useCurrency()
@@ -98,6 +128,10 @@ export default function UsagePage() {
   useEffect(() => {
     trackPageView('usage')
   }, [])
+
+  // 切到不含成员维度的视图时，若当前停在成员维度则回落到模型维度（派生，不 setState，避免看空面板）
+  const effectiveDimension: UsageDimension =
+    !canShowMemberDimension && dimension === 'member' ? 'model' : dimension
 
   const usagePresets = [
     { key: 'today', label: t('usage.range.today') },
@@ -126,6 +160,11 @@ export default function UsagePage() {
     account_id: scopedAccountId,
   }), [scopedWorkspaceId, from, to, scopedAccountId])
 
+  // 空态分型：有筛选（工作空间/自定义时段）时的空 = 筛选无结果；无筛选仍空 = 暂无数据
+  const hasActiveFilter = !!filterWorkspaceId || timeRange.preset === 'custom'
+  const emptyTitle = hasActiveFilter ? t('usage.emptyState.filteredTitle') : t('usage.emptyState.noDataTitle')
+  const emptyDesc = hasActiveFilter ? t('usage.emptyState.filteredDesc') : t('usage.emptyState.noDataDesc')
+
   const workspacesQuery = useQuery({
     queryKey: ['workspaces-for-filter', activeTenantId],
     queryFn: () => listWorkspaces(),
@@ -135,7 +174,60 @@ export default function UsagePage() {
   const workspaceList = useMemo(() => workspacesQuery.data?.items ?? [], [workspacesQuery.data])
 
   function handleWorkspaceChange(val: string) {
-    setFilterWorkspaceId(val === '__all__' ? '' : val)
+    const next = val === '__all__' ? '' : val
+    setFilterWorkspaceId(next)
+    trackEvent('usage_filter_change', { filter: 'workspace', value: next ? 'specific' : 'all' }, { view_mode: view })
+  }
+
+  function handleTimeRangeChange(val: DateRangeValue) {
+    setTimeRange(val)
+    trackEvent('usage_filter_change', { filter: 'time_range', preset: val.preset ?? 'unknown' }, { view_mode: view })
+  }
+
+  function handleViewChange(v: 'enterprise' | 'mine' | 'space') {
+    trackEvent('usage_view_switch', { from_view: view, to_view: v }, { view_mode: v })
+    setUserView(v)
+  }
+
+  function handleDimensionChange(next: UsageDimension) {
+    trackEvent('usage_dimension_switch', { dimension: next }, { view_mode: view })
+    setDimension(next)
+  }
+
+  function handleMetricChange(next: Metric) {
+    trackEvent('usage_trend_metric_switch', { metric: next }, { view_mode: view })
+    setMetric(next)
+  }
+
+  // 下钻：携带当前时间范围/工作空间 + 具体上下文（模型/成员/Key/单日）跳调用日志
+  function buildLogsSearch(ctx: { model?: string; api_key?: string; member?: string; workspace?: string; day?: string }): string {
+    const p = new URLSearchParams()
+    p.set('view', view)
+    const ws = ctx.workspace ?? scopedWorkspaceId
+    if (ws) p.set('workspace', ws)
+    if (ctx.day) {
+      const d = ctx.day.slice(0, 10)
+      p.set('range_start', d)
+      p.set('range_end', d)
+    } else if (timeRange.preset === 'custom' && timeRange.startDate && timeRange.endDate) {
+      p.set('range_start', timeRange.startDate)
+      p.set('range_end', timeRange.endDate)
+    } else if (timeRange.preset) {
+      p.set('time_range', timeRange.preset)
+    }
+    if (ctx.model) p.set('model', ctx.model)
+    if (ctx.api_key) p.set('api_key', ctx.api_key)
+    if (ctx.member) p.set('member', ctx.member)
+    return p.toString()
+  }
+
+  function drillToLogs(
+    source: string,
+    ctx: { model?: string; api_key?: string; member?: string; workspace?: string; day?: string },
+  ) {
+    const kind = ctx.model ? 'model' : ctx.api_key ? 'apiKey' : ctx.member ? 'member' : ctx.workspace ? 'workspace' : 'time'
+    trackEvent('usage_drilldown', { source, kind }, { view_mode: view })
+    navigate(`/logs?${buildLogsSearch(ctx)}`)
   }
 
   const summaryQuery = useQuery({
@@ -179,13 +271,15 @@ export default function UsagePage() {
   const seriesData = useMemo<SeriesDataPoint[]>(() => {
     const points = seriesQuery.data?.groups?.[0]?.points
     if (!points) return []
-    return points.map((point) => ({
+    const mapped = points.map((point) => ({
       bucket_start: point.bucket_start,
       value: metric === 'spend'
         ? (point.spend?.amount ?? '0')
         : String(metric === 'requests' ? (point.requests ?? 0) : (point.tokens ?? 0)),
     }))
-  }, [metric, seriesQuery.data])
+    // 按 from~to 补 0，让曲线覆盖整个所选区间（后端仅返回有数据的天）
+    return densifyValueSeries(mapped, from, to)
+  }, [metric, seriesQuery.data, from, to])
 
   // 多序列趋势：把 series.groups 透视成 recharts 行 + 序列元数据。Top6 上色，其余折叠成「其他」。
   const groupedTrend = useMemo<{ rows: GroupedRow[]; series: GroupedSeries[] } | null>(() => {
@@ -233,8 +327,14 @@ export default function UsagePage() {
       if (hasOther) row.sOther = rest.reduce((sum, g) => sum + (valueByKeyBucket.get(g.key)?.get(b) ?? 0), 0)
       return row
     })
-    return { rows, series }
-  }, [trendGroupBy, seriesQuery.data, metric, workspaceList, t])
+    // 按 from~to 补 0：缺失天生成所有序列均为 0 的行，使堆叠面积覆盖整个区间
+    const denseRows = densifyGenericBuckets(rows, from, to, (bucket_start) => {
+      const r: GroupedRow = { bucket_start }
+      series.forEach((s) => { r[s.key] = 0 })
+      return r
+    })
+    return { rows: denseRows, series }
+  }, [trendGroupBy, seriesQuery.data, metric, workspaceList, from, to, t])
 
   const requestCount = summary?.total.requests ?? 0
   const totalSpend = summary ? formatMoney(summary.total.spend.amount, currencySymbol) : '—'
@@ -280,20 +380,24 @@ export default function UsagePage() {
       title: t('usage.sources.topWorkspace'),
       items: workspaceSourceItems,
       emptyLabel: t('usage.sources.empty'),
+      drillKind: 'workspace',
     },
     {
       title: t('usage.sources.topApiKey'),
       items: rankingsApiKeysQuery.data?.items ?? [],
       emptyLabel: t('usage.sources.empty'),
+      drillKind: 'apiKey',
     },
     {
       title: t('usage.sources.topModel'),
       items: rankingsModelsQuery.data?.items ?? [],
       emptyLabel: t('usage.sources.empty'),
+      drillKind: 'model',
     },
   ]
 
   function refetchUsageData() {
+    trackEvent('usage_refresh_click', undefined, { view_mode: view })
     void summaryQuery.refetch()
     void seriesQuery.refetch()
     void rankingsApiKeysQuery.refetch()
@@ -304,7 +408,8 @@ export default function UsagePage() {
 
   const dimensionButtons: Array<{ icon: ReactNode; label: string; value: UsageDimension }> = [
     { icon: <LuBot size={14} />, label: t('usage.dimension.model'), value: 'model' },
-    { icon: <LuUsers size={14} />, label: t('usage.dimension.member'), value: 'member' },
+    // 成员维度仅企业/空间视图可见（我的视图/个人租户隐藏）
+    ...(canShowMemberDimension ? [{ icon: <LuUsers size={14} />, label: t('usage.dimension.member'), value: 'member' as const }] : []),
     { icon: <LuKeyRound size={14} />, label: t('usage.dimension.apiKey'), value: 'apiKey' },
   ]
 
@@ -321,7 +426,7 @@ export default function UsagePage() {
               { value: 'enterprise', label: t('dashboard.workbench.view.enterprise') },
               { value: 'mine', label: t('dashboard.workbench.view.mine') },
             ]}
-            onChange={setUserView}
+            onChange={handleViewChange}
           />
         ) : showSpaceViewToggle ? (
           <SegmentedToggle<'space' | 'mine'>
@@ -331,7 +436,7 @@ export default function UsagePage() {
               { value: 'space', label: t('dashboard.workbench.view.space') },
               { value: 'mine', label: t('dashboard.workbench.view.mine') },
             ]}
-            onChange={setUserView}
+            onChange={handleViewChange}
           />
         ) : undefined}
       />
@@ -369,7 +474,7 @@ export default function UsagePage() {
             title: t('usage.filterPanel.title'),
             workspaces: t('usage.filter.allWorkspaces'),
           }}
-          onTimeRangeChange={setTimeRange}
+          onTimeRangeChange={handleTimeRangeChange}
           onWorkspaceChange={handleWorkspaceChange}
           presets={usagePresets}
           timeRange={timeRange}
@@ -451,7 +556,7 @@ export default function UsagePage() {
                       key={item}
                       label={metricLabels[item]}
                       active={metric === item}
-                      onClick={() => setMetric(item)}
+                      onClick={() => handleMetricChange(item)}
                     />
                   ))}
                 </div>
@@ -478,6 +583,7 @@ export default function UsagePage() {
                 currencySymbol={currencySymbol}
                 requestUnitLabel={t('usage.unit.requests')}
                 tokenUnitLabel={t('usage.unit.tokens')}
+                onPointClick={(bucket) => drillToLogs('trend', { day: bucket })}
               />
             ) : (
               <Sparkline
@@ -487,6 +593,7 @@ export default function UsagePage() {
                 currencySymbol={currencySymbol}
                 requestUnitLabel={t('usage.unit.requests')}
                 tokenUnitLabel={t('usage.unit.tokens')}
+                onPointClick={(bucket) => drillToLogs('trend', { day: bucket })}
               />
             )}
           </Card>
@@ -497,6 +604,12 @@ export default function UsagePage() {
             isLoading={rankingsModelsQuery.isLoading || rankingsApiKeysQuery.isLoading || workspaceSourceQuery.isLoading}
             isError={rankingsModelsQuery.isError || rankingsApiKeysQuery.isError || workspaceSourceQuery.isError}
             onRetry={refetchUsageData}
+            onDrill={(kind, item) => {
+              if (!item) return
+              if (kind === 'workspace') drillToLogs('cost_source', { workspace: item.key })
+              else if (kind === 'apiKey') drillToLogs('cost_source', { api_key: item.key })
+              else if (kind === 'model') drillToLogs('cost_source', { model: item.key })
+            }}
           />
         </div>
       </Card>
@@ -512,10 +625,10 @@ export default function UsagePage() {
               <button
                 key={item.value}
                 type="button"
-                onClick={() => setDimension(item.value)}
+                onClick={() => handleDimensionChange(item.value)}
                 className={[
                   'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 mg-text-caption font-bold transition-colors',
-                  dimension === item.value ? 'bg-mg-bg-0 text-brand-base shadow-sm' : 'text-mg-text-3 hover:text-mg-text-1',
+                  effectiveDimension === item.value ? 'bg-mg-bg-0 text-brand-base shadow-sm' : 'text-mg-text-3 hover:text-mg-text-1',
                 ].join(' ')}
               >
                 {item.icon}
@@ -525,32 +638,80 @@ export default function UsagePage() {
           </div>
         </div>
 
-        {dimension === 'model' && (
+        {effectiveDimension === 'model' && (
           <ModelDistributionPanel
             items={rankingsModelsQuery.data?.items ?? []}
+            totalSpendAmount={rankingsModelsQuery.data?.totals?.spend?.amount}
             isLoading={rankingsModelsQuery.isLoading}
             isError={rankingsModelsQuery.isError}
             onRetry={() => rankingsModelsQuery.refetch()}
             currencySymbol={currencySymbol}
+            emptyTitle={emptyTitle}
+            emptyDesc={emptyDesc}
+            onDrill={(item) => drillToLogs('ranking', { model: item.key })}
           />
         )}
-        {dimension === 'apiKey' && (
-          <ApiKeyRankingPanel
-            items={rankingsApiKeysQuery.data?.items ?? []}
-            isLoading={rankingsApiKeysQuery.isLoading}
-            isError={rankingsApiKeysQuery.isError}
-            onRetry={() => rankingsApiKeysQuery.refetch()}
-            currencySymbol={currencySymbol}
-          />
+        {effectiveDimension === 'apiKey' && (
+          <div className="space-y-5">
+            <DistributionPanel
+              title={t('usage.distribution.apiKeyTitle')}
+              items={rankingsApiKeysQuery.data?.items ?? []}
+              totalSpendAmount={rankingsApiKeysQuery.data?.totals?.spend?.amount}
+              currencySymbol={currencySymbol}
+              isLoading={rankingsApiKeysQuery.isLoading}
+              isError={rankingsApiKeysQuery.isError}
+              onRetry={() => rankingsApiKeysQuery.refetch()}
+              emptyTitle={emptyTitle}
+              emptyDesc={emptyDesc}
+              leading={() => (
+                <span className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-md bg-brand-selected-bg text-brand-base">
+                  <LuKey size={13} />
+                </span>
+              )}
+              onDrill={(item) => drillToLogs('ranking', { api_key: item.key })}
+            />
+            <ApiKeyRankingPanel
+              items={rankingsApiKeysQuery.data?.items ?? []}
+              isLoading={rankingsApiKeysQuery.isLoading}
+              isError={rankingsApiKeysQuery.isError}
+              onRetry={() => rankingsApiKeysQuery.refetch()}
+              currencySymbol={currencySymbol}
+              emptyTitle={emptyTitle}
+              emptyDesc={emptyDesc}
+              onDrill={(item) => drillToLogs('ranking', { api_key: item.key })}
+            />
+          </div>
         )}
-        {dimension === 'member' && (
-          <MemberRankingPanel
-            items={rankingsAccountsQuery.data?.items ?? []}
-            isLoading={rankingsAccountsQuery.isLoading}
-            isError={rankingsAccountsQuery.isError}
-            onRetry={() => rankingsAccountsQuery.refetch()}
-            currencySymbol={currencySymbol}
-          />
+        {effectiveDimension === 'member' && (
+          <div className="space-y-5">
+            <DistributionPanel
+              title={t('usage.distribution.memberTitle')}
+              items={rankingsAccountsQuery.data?.items ?? []}
+              totalSpendAmount={rankingsAccountsQuery.data?.totals?.spend?.amount}
+              currencySymbol={currencySymbol}
+              isLoading={rankingsAccountsQuery.isLoading}
+              isError={rankingsAccountsQuery.isError}
+              onRetry={() => rankingsAccountsQuery.refetch()}
+              emptyTitle={emptyTitle}
+              emptyDesc={emptyDesc}
+              leading={() => (
+                <span className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-md bg-brand-selected-bg text-brand-base">
+                  <LuUsers size={13} />
+                </span>
+              )}
+              onDrill={(item) => drillToLogs('ranking', { member: item.key })}
+            />
+            <MemberRankingPanel
+              items={rankingsAccountsQuery.data?.items ?? []}
+              isLoading={rankingsAccountsQuery.isLoading}
+              isError={rankingsAccountsQuery.isError}
+              onRetry={() => rankingsAccountsQuery.refetch()}
+              currencySymbol={currencySymbol}
+              emptyTitle={emptyTitle}
+              emptyDesc={emptyDesc}
+              onDrill={(item) => drillToLogs('ranking', { member: item.key })}
+            />
+          </div>
         )}
       </Card>
     </div>

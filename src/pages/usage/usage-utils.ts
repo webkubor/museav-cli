@@ -7,6 +7,7 @@
 import type { DateRangeValue } from '@/components/ui/DateRangePicker'
 import { densifyDailyBuckets as densifyDaily } from '@/lib/chart-buckets'
 import { addFromNowISO, endOfLocalDayISO, nowISO, startOfLocalDayISO, userTimeZone } from '@/lib/datetime'
+import type { SeriesDataPoint } from '@/types'
 
 /** 用量趋势支持的指标类型。 */
 export type Metric = 'spend' | 'requests' | 'tokens'
@@ -110,4 +111,13 @@ export function densifyDailyBuckets(
   toISO: string,
 ): { bucket_start: string; count: number }[] {
   return densifyDaily(buckets, fromISO, toISO, (bucket_start) => ({ bucket_start, count: 0 }))
+}
+
+/** 趋势单序列按天补齐缺失天（value='0'），使曲线覆盖整个 from~to 区间。 */
+export function densifyValueSeries(
+  points: SeriesDataPoint[],
+  fromISO: string,
+  toISO: string,
+): SeriesDataPoint[] {
+  return densifyDaily(points, fromISO, toISO, (bucket_start) => ({ bucket_start, value: '0' }))
 }

@@ -16,6 +16,7 @@ import { initDeviceFingerprint } from './lib/device-fingerprint'
 import { installDevAuth } from './lib/dev-auth'
 import { init as initTrack, TrackApp, TrackRegion } from '@model-go/track'
 import { getMarket } from './lib/market'
+import { apiBaseUrl } from './lib/request'
 import { useAuthStore } from './store/auth'
 
 // 前端运行时错误上报（仅 DEV）：未捕获异常 / rejection / 全控制台 + DOM 快照，
@@ -28,11 +29,13 @@ if (import.meta.env.DEV) installDevAuth()
 const PRD_VERSION = 'v1.0.3'
 
 // 埋点 SDK 初始化（@model-go/track，替代 Umami）：app=console_web，区域按域名判定；
-// baseURL 不传 = 相对路径走当前域名 /api 代理；上报时动态带当前租户上下文。
+// baseURL 与普通接口统一走 apiBaseUrl()（web-api 域名，SDK 自己拼 /api/v1/events:batch），
+// 与 doc-web 一致；不传会退化成相对路径打到控制台自身域名，测试环境无 /api 代理 → 上报打不到 web-api。
 initTrack({
   app: TrackApp.ConsoleWeb,
   region: getMarket() === 'global' ? TrackRegion.Global : TrackRegion.CN,
   prdVersion: PRD_VERSION,
+  baseURL: apiBaseUrl(),
   getAuthHeaders: () => {
     const tenantId = useAuthStore.getState().activeTenantId
     return tenantId ? { 'X-Tenant-Id': tenantId } : undefined

@@ -250,6 +250,12 @@ export default function UsagePage() {
   const tokensTotal = summary?.total.tokens ?? 0
   const reqPct = (n: number) => (requestCount > 0 ? (n / requestCount) * 100 : 0)
   const tokPct = (n: number) => (tokensTotal > 0 ? (n / tokensTotal) * 100 : 0)
+  // 费用分项（#385，Swagger usage.Totals：input/output/cache_cost 为金额字符串，币种同 spend）
+  const inputCostNum = Number(summary?.total.input_cost ?? 0)
+  const outputCostNum = Number(summary?.total.output_cost ?? 0)
+  const cacheCostNum = Number(summary?.total.cache_cost ?? 0)
+  const costTotal = inputCostNum + outputCostNum + cacheCostNum
+  const costPct = (n: number) => (costTotal > 0 ? (n / costTotal) * 100 : 0)
 
   const workspaceSourceItems = useMemo<UsageRankingItem[]>(() => {
     const items = workspaceSourceQuery.data?.items ?? []
@@ -379,13 +385,11 @@ export default function UsagePage() {
             suffix={currencySymbol === '¥' ? 'CNY' : undefined}
             loading={summaryQuery.isLoading}
             breakdownTitle={t('usage.summary.costStructure')}
-            // TODO(后端待接): usage/summary 无费用分项(输入/输出/缓存) → 占位 — 见 #420
             rows={[
-              { label: t('usage.summary.inputCost'), value: '—', bar: false },
-              { label: t('usage.summary.outputCost'), value: '—', bar: false },
-              { label: t('usage.summary.cacheCost'), value: '—', bar: false },
+              { label: t('usage.summary.inputCost'), value: summary ? formatMoney(summary.total.input_cost ?? '0', currencySymbol) : '—', pct: costPct(inputCostNum), variant: 'emerald' },
+              { label: t('usage.summary.outputCost'), value: summary ? formatMoney(summary.total.output_cost ?? '0', currencySymbol) : '—', pct: costPct(outputCostNum), variant: 'amber' },
+              { label: t('usage.summary.cacheCost'), value: summary ? formatMoney(summary.total.cache_cost ?? '0', currencySymbol) : '—', pct: costPct(cacheCostNum), variant: 'blue' },
             ]}
-            pendingHint={t('usage.summary.costPending')}
           />
           <UsageStatCard
             icon={<LuActivity size={16} />}

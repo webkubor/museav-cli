@@ -1156,7 +1156,6 @@
       "inputCost": "Input",
       "outputCost": "Output",
       "cacheCost": "Cache",
-      "costPending": "Per-type cost pending backend support",
       "requestStatus": "Request Status",
       "success": "Successful",
       "failed": "Failed",

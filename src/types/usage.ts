@@ -10,6 +10,10 @@ export interface UsageSummary {
     /** 缓存读/写 token（Swagger usage.Totals 有；「缓存 Token」= 读+写） */
     cache_read_tokens?: number
     cache_write_tokens?: number
+    /** 费用分项（Swagger usage.Totals，均为金额字符串，币种同 spend.currency；#385） */
+    input_cost?: string
+    output_cost?: string
+    cache_cost?: string
     average_latency_ms: number
     error_rate: number
   }

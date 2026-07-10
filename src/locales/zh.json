@@ -1155,7 +1155,6 @@
       "inputCost": "输入费用",
       "outputCost": "输出费用",
       "cacheCost": "缓存费用",
-      "costPending": "分项费用待后端支持",
       "requestStatus": "请求状态",
       "success": "成功请求",
       "failed": "失败请求",

@@ -39,6 +39,7 @@ import { PERMS } from '@/config/permissions'
 import { appToast } from '@/lib/app-toast'
 import { useMarket } from '@/hooks/useMarket'
 import { pageItems } from '@/lib/utils'
+import { ApiKeyProtocolBanner } from './ApiKeyProtocolBanner'
 import { ConnectModal } from './ConnectModal'
 import { CreateKeyModal } from './CreateKeyModal'
 import { ApiKeyTable } from './ApiKeyTable'
@@ -295,6 +296,12 @@ export default function ApiKeysPage() {
       />
 
       <ApiKeySummaryCards items={apiKeyItems} summary={summary} loading={isLoading} />
+
+      <ApiKeyProtocolBanner
+        openAIBaseUrl={openAIBaseUrl}
+        anthropicBaseUrl={anthropicBaseUrl}
+        docsUrl={docsUrl}
+      />
 
       {/* 工具条：搜索 + 类型/状态/负责人 筛选 + 创建 */}
       <div className="flex flex-wrap items-center gap-3">

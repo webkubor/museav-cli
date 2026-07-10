@@ -42,6 +42,18 @@ const VERB_LABEL: Record<string, string> = {
   exported: '导出',
   role_changed: '变更角色',
   ownership_transferred: '转移负责人',
+  // 邀请生命周期动词（#13：invitation.accepted 等此前漏词表 → 显示成原始 key）
+  accepted: '接受',
+  declined: '拒绝',
+  sent: '发送',
+  resent: '重新发送',
+  expired: '过期',
+  canceled: '取消',
+  cancelled: '取消',
+  joined: '加入',
+  left: '退出',
+  invited: '邀请',
+  transferred: '转移',
 }
 
 /** action 枚举 key → 中文文案；未知 key 兜底组合/原样。 */

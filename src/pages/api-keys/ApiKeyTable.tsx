@@ -5,6 +5,7 @@
 import { useTranslation } from 'react-i18next'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Button } from '@/components/ui/Button'
 import {
   Table,
   TableHeader,
@@ -13,7 +14,7 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/Table'
-import { LuCopy, LuKeyRound, LuLoaderCircle, LuShieldCheck } from 'react-icons/lu'
+import { LuCopy, LuFilterX, LuKeyRound, LuLoaderCircle, LuPlus, LuShieldCheck } from 'react-icons/lu'
 import { formatDateTime } from '@/lib/format-date'
 import { formatMoney } from '@/lib/utils'
 import type { ApiKeyItem } from '@/types'
@@ -26,22 +27,12 @@ import {
   lastCalledOf,
   isExpiringSoon,
   cap,
+  formatLimit,
 } from './derive'
 
 /** key 是否已过期：瞬时点比较（expires_at 为带 Z 的 UTC ISO）。放组件外避免 render 期调 Date.now。 */
 function isExpired(iso: string): boolean {
   return new Date(iso).getTime() < Date.now()
-}
-
-const PERIOD_LABEL: Record<string, string> = { hour: '小时', day: '日', week: '周', month: '月' }
-
-/** 限额副标：「¥800 / 每月」或「不限额」 */
-function limitLabel(item: ApiKeyItem): string {
-  const l = item.limit
-  if (!l || !l.amount || Number(l.amount) <= 0) return '不限额'
-  const unit = PERIOD_LABEL[l.period_unit] ?? l.period_unit
-  const per = l.period_length && l.period_length > 1 ? `每 ${l.period_length} ${unit}` : `每${unit}`
-  return `${l.currency} ${formatMoney(l.amount, '')} / ${per}`
 }
 
 const STATUS_MAP = {
@@ -69,6 +60,16 @@ type Props = {
   onCopyKey: (item: ApiKeyItem) => void
   /** 正在 reveal 的 key id（行内 loading） */
   copyingKeyId: string | null
+  /** 空态分型（PRD §7.4）：当前空间是否有任意 Key（用于区分「无 Key」vs「筛选无结果」） */
+  hasKeys: boolean
+  /** 是否处于筛选/搜索态 */
+  isFiltered: boolean
+  /** 是否可创建（无 Key 空态展示创建引导按钮） */
+  canCreate: boolean
+  /** 无 Key 空态点创建 */
+  onCreate: () => void
+  /** 筛选无结果空态点清空筛选 */
+  onClearFilters: () => void
 }
 
 export function ApiKeyTable({
@@ -79,6 +80,11 @@ export function ApiKeyTable({
   onToggleStatus,
   onCopyKey,
   copyingKeyId,
+  hasKeys,
+  isFiltered,
+  canCreate,
+  onCreate,
+  onClearFilters,
 }: Props) {
   const { t } = useTranslation()
   const colSpan = 9
@@ -109,11 +115,34 @@ export function ApiKeyTable({
             <TableCell colSpan={colSpan} className="text-center py-10 text-mg-text-3">{t('common.loading')}</TableCell>
           </TableRow>
         ) : items.length === 0 ? (
-          <EmptyState
-            icon={<LuKeyRound />}
-            title={t('apiKeys.table.noData')}
-            colSpan={colSpan}
-          />
+          isFiltered && hasKeys ? (
+            <EmptyState
+              icon={<LuFilterX />}
+              title="没有符合筛选条件的 Key"
+              description="试试调整类型、状态、负责人筛选或搜索关键词"
+              action={
+                <Button variant="outline" size="sm" onClick={onClearFilters}>
+                  清空筛选
+                </Button>
+              }
+              colSpan={colSpan}
+            />
+          ) : (
+            <EmptyState
+              icon={<LuKeyRound />}
+              title="当前工作空间还没有 API Key"
+              description="创建第一个 API Key，即可获取运行凭证接入模型调用"
+              action={
+                canCreate ? (
+                  <Button variant="brand" size="sm" onClick={onCreate}>
+                    <LuPlus className="w-4 h-4 mr-1.5" />
+                    {t('apiKeys.create')}
+                  </Button>
+                ) : undefined
+              }
+              colSpan={colSpan}
+            />
+          )
         ) : (
           items.map((record) => {
             const guardrailNames = (record.guardrails ?? []).map((g) => g.name).filter(Boolean)
@@ -208,7 +237,7 @@ export function ApiKeyTable({
                       ? `${periodSpend.currency} ${formatMoney(periodSpend.amount, '')}`
                       : <span className="text-mg-text-3">—</span>}
                   </div>
-                  <div className="text-xs text-mg-text-3">{limitLabel(record)}</div>
+                  <div className="text-xs text-mg-text-3">{formatLimit(record)}</div>
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-2">
                   {lastCalled ? formatDateTime(lastCalled) : <span className="text-mg-text-3">尚未调用</span>}

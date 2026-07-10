@@ -4,17 +4,24 @@
  * 抽屉头治理动作：轮转(gate) · 停用/启用 · 删除（变更负责人在治理批次接入）。
  * 详情/审计接口（#383/#384）未交付时以列表项兜底 + 空态降级，不阻塞、不报错。
  */
-import type { ReactNode } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useState, type ReactNode } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { SideSheet } from '@/components/ui/SideSheet'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import Select, { SelectItem } from '@/components/ui/Select'
+import { CopyButton } from '@/components/ui/CopyButton'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { LuShieldCheck, LuArrowRight } from 'react-icons/lu'
 import { formatDateTime } from '@/lib/format-date'
 import { formatMoney } from '@/lib/utils'
-import { getApiKeyAudit, getApiKeyDetail, getEffectiveGuardrails } from '@/services/api-keys'
+import { appToast } from '@/lib/app-toast'
+import { trackEvent } from '@/lib/track'
+import { useCurrency } from '@/hooks/use-platform-config'
+import { getApiKeyAudit, getApiKeyDetail, getEffectiveGuardrails, updateApiKey } from '@/services/api-keys'
 import type { ApiKeyItem } from '@/types'
+import { LIMIT_PERIOD_OPTIONS, type LimitPeriod } from './constants'
 import {
   KEY_TYPE_LABEL,
   STATUS_LABEL,
@@ -22,6 +29,9 @@ import {
   responsibleOf,
   periodSpendOf,
   cap,
+  formatLimit,
+  currentLimitPeriod,
+  buildSpendingLimit,
 } from './derive'
 
 const STATUS_MAP = {
@@ -83,11 +93,54 @@ interface Props {
   onChangeOwner: (item: ApiKeyItem) => void
   onEdit: (item: ApiKeyItem) => void
   onRevoke: (target: { id: string; name: string }) => void
+  /** 埋点 row_scope（workspace_all|self）——limit_save/jump_logs 带上 */
+  rowScope?: string
 }
 
-export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage, onToggleStatus, onRotate, onChangeOwner, onEdit, onRevoke }: Props) {
+export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage, onToggleStatus, onRotate, onChangeOwner, onEdit, onRevoke, rowScope }: Props) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { currency, symbol } = useCurrency()
   const keyId = item?.api_key_id
+
+  // 内联「调整限额」（PRD §9.2）——抽屉内直接改限额金额+周期，不走整表单。
+  // 用「正在编辑的 keyId」而非布尔：切换 Key 时编辑器自动收起，无需 effect。
+  const [editingForKeyId, setEditingForKeyId] = useState<string | null>(null)
+  const editingLimit = !!keyId && editingForKeyId === keyId
+  const [limitPeriod, setLimitPeriod] = useState<LimitPeriod>('none')
+  const [limitAmount, setLimitAmount] = useState('')
+  const commonTrack = { prd_version: 'api_keys_v0_1', ...(rowScope ? { row_scope: rowScope } : {}) }
+
+  const limitMutation = useMutation({
+    mutationFn: () => {
+      const value = buildSpendingLimit(limitPeriod, limitAmount, currency)
+      return updateApiKey(workspaceId, keyId!, {
+        spending_limit: { set: true, value: value ?? null },
+      })
+    },
+    onSuccess: () => {
+      appToast.success('限额已更新')
+      setEditingForKeyId(null)
+      queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
+      queryClient.invalidateQueries({ queryKey: ['api-key-detail', workspaceId, keyId] })
+      trackEvent('api_keys:limit_save', { ...commonTrack, new_limit_period: limitPeriod }, { result: 'success' })
+    },
+    onError: (err: unknown) => {
+      appToast.requestError(err, '限额更新失败')
+      trackEvent('api_keys:limit_save', { ...commonTrack, new_limit_period: limitPeriod }, { result: 'fail' })
+    },
+  })
+
+  function openLimitEditor(current: ApiKeyItem) {
+    setLimitPeriod(currentLimitPeriod(current))
+    setLimitAmount(current.limit?.amount && Number(current.limit.amount) > 0 ? current.limit.amount : '')
+    setEditingForKeyId(current.api_key_id)
+  }
+
+  function jumpLogs(path: string) {
+    trackEvent('api_keys:jump_logs', commonTrack)
+    navigate(path)
+  }
 
   // 详情/审计接口未交付时静默降级（catch→兜底值，避免全局错误 toast）
   const { data: detail } = useQuery({
@@ -130,6 +183,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
         {/* 治理动作 */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-xs text-mg-text-3">{view.masked}</span>
+          <CopyButton value={view.masked} aria-label="复制掩码 Key" toast="掩码 Key 已复制" size="sm" />
           <div className="ml-auto flex flex-wrap gap-2">
             {canRotate && (
               <Button variant="outline" size="sm" onClick={() => onRotate(view)}>轮转</Button>
@@ -168,16 +222,59 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
             )}
             <Field label="状态" value={<StatusBadge status={view.status} statusMap={STATUS_MAP} fallback={view.status} />} />
             <Field label="到期时间" value={view.expires_at ? formatDateTime(view.expires_at) : '永不过期'} />
+            <Field label="创建时间" value={view.created_at ? formatDateTime(view.created_at) : '—'} />
+            <Field label="最近调用时间" value={view.last_used_at ? formatDateTime(view.last_used_at) : '尚未调用'} />
           </div>
         </Section>
 
         {/* 用量与限额 */}
-        <Section title="用量与限额">
+        <Section
+          title="用量与限额"
+          action={
+            !editingLimit && cap(view.capabilities?.can_update_limit, canManage) && view.status !== 'revoked' ? (
+              <button
+                className="text-xs font-semibold text-brand-base hover:text-brand-deep transition-colors"
+                onClick={() => openLimitEditor(view)}
+              >
+                调整限额
+              </button>
+            ) : undefined
+          }
+        >
           <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 divide-y divide-mg-border/50">
             <Field label="本期消费" value={money(usage?.period_spend ?? periodSpendOf(view))} />
             <Field label="请求数" value={usage?.request_count != null ? usage.request_count.toLocaleString() : '—'} />
             <Field label="Tokens" value={usage?.token_count != null ? usage.token_count.toLocaleString() : '—'} />
+            <Field label="限额" value={formatLimit(view)} />
           </div>
+
+          {/* 内联调整限额 */}
+          {editingLimit && (
+            <div className="mt-2 rounded-md border border-mg-border bg-mg-fill-0/40 p-3 space-y-2.5">
+              <div className="flex gap-2.5">
+                <Input
+                  type="number" min="0" step="0.01"
+                  value={limitAmount}
+                  onChange={(e) => setLimitAmount(e.target.value)}
+                  placeholder="0.00"
+                  disabled={limitPeriod === 'none'}
+                  prefix={<span className="text-xs text-mg-text-3 font-mono select-none">{symbol}</span>}
+                  className="flex-1"
+                />
+                <Select value={limitPeriod} onChange={(v) => setLimitPeriod(v as LimitPeriod)} className="w-24">
+                  {LIMIT_PERIOD_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setEditingForKeyId(null)}>取消</Button>
+                <Button variant="brand" size="sm" loading={limitMutation.isPending} onClick={() => limitMutation.mutate()}>
+                  保存限额
+                </Button>
+              </div>
+            </div>
+          )}
         </Section>
 
         {/* 安全护栏 */}
@@ -241,7 +338,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
           action={
             <button
               className="inline-flex items-center gap-1 text-xs font-semibold text-brand-base hover:text-brand-deep"
-              onClick={() => navigate(`/workspace/${workspaceId}/logs`)}
+              onClick={() => jumpLogs(`/workspace/${workspaceId}/logs`)}
             >
               跳转日志 <LuArrowRight size={12} />
             </button>
@@ -252,7 +349,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canManage
               {recentCalls.slice(0, 5).map((c) => (
                 <button
                   key={c.log_id}
-                  onClick={() => navigate(`/workspace/${workspaceId}/logs?log_id=${c.log_id}`)}
+                  onClick={() => jumpLogs(`/workspace/${workspaceId}/logs?log_id=${c.log_id}`)}
                   className="flex w-full items-center justify-between gap-3 rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2 text-left transition-colors hover:border-brand-base/35"
                 >
                   <span className="min-w-0 flex-1 truncate font-mono text-xs text-mg-text-2">{c.model}</span>

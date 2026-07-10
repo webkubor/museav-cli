@@ -30,8 +30,9 @@ import {
   changeApiKeyOwner,
   getApiKeySummary,
 } from '@/services/api-keys'
-import { listWorkspaceMembers } from '@/services/workspaces'
+import { listWorkspaceMembers, listWorkspaces } from '@/services/workspaces'
 import { useCopy } from '@/hooks/use-copy'
+import { useCurrency } from '@/hooks/use-platform-config'
 import { getRequestErrorMessage, isApiErrorCode, errorCodeOf } from '@/lib/request-error-message'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
@@ -47,7 +48,7 @@ import { EditKeyModal } from './EditKeyModal'
 import { ApiKeySummaryCards } from './ApiKeySummaryCards'
 import { ApiKeyDetailDrawer } from './ApiKeyDetailDrawer'
 import { deriveKeyType, responsibleOf, isExpiringSoon } from './derive'
-import type { ApiKeyItem, ApiKeyType } from '@/types'
+import type { ApiKeyCreated, ApiKeyItem, ApiKeyType, WorkspaceItem } from '@/types'
 
 const ALL = 'all'
 
@@ -65,6 +66,8 @@ export default function ApiKeysPage() {
   const [createdVisible, setCreatedVisible] = useState(false)
   const [connectVisible, setConnectVisible] = useState(false)
   const [createdKeyText, setCreatedKeyText] = useState('')
+  const [createdKey, setCreatedKey] = useState<ApiKeyCreated | null>(null)
+  const [createdAt, setCreatedAt] = useState(0)
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null)
   const [disableTarget, setDisableTarget] = useState<ApiKeyItem | null>(null)
   const [editGuardrailKey, setEditGuardrailKey] = useState<ApiKeyItem | null>(null)
@@ -73,7 +76,12 @@ export default function ApiKeysPage() {
   const [newOwnerId, setNewOwnerId] = useState('')
 
   const activeWorkspaceId = useAuthStore((state) => state.activeWorkspaceId) || '01HV3KWS000000000000001'
-  const currentAccountId = useAuthStore((state) => state.account?.account_id)
+  const activeTenantId = useAuthStore((state) => state.activeTenantId)
+  const tenants = useAuthStore((state) => state.tenants)
+  const account = useAuthStore((state) => state.account)
+  const currentAccountId = account?.account_id
+  const isPersonalTenant = tenants.find((tn) => tn.tenant_id === activeTenantId)?.type === 'personal'
+  const { currency } = useCurrency()
   const { hasPermission } = usePermissions()
   const canCreate = hasPermission(PERMS.API_KEYS_CREATE)
   const canRevoke = hasPermission(PERMS.API_KEYS_REVOKE)
@@ -120,12 +128,25 @@ export default function ApiKeysPage() {
     retry: false,
   })
 
+  // 工作空间名（副标题用）——复用 WorkspaceSwitcher 的缓存 queryKey，避免重复请求
+  const { data: workspaces = [] } = useQuery<WorkspaceItem[]>({
+    queryKey: ['workspaces', activeTenantId],
+    queryFn: () => listWorkspaces().then((res) => res.items || []),
+    enabled: !!activeTenantId,
+    staleTime: 60_000,
+  })
+  const workspaceName =
+    workspaces.find((w) => w.workspace_id === activeWorkspaceId)?.name ?? t('header.defaultWorkspace')
+
   const apiKeyItems = pageItems(data)
   // #358 角色可见性：可见范围完全由后端返回的行决定（成员只回自己的，此处据「返回是否含他人」派生页头提示）
   const showsOthers = apiKeyItems.some(
     (k) => k.owner?.account_id && k.owner.account_id !== currentAccountId,
   )
   const distinctOwnerCount = new Set(apiKeyItems.map((k) => k.owner?.account_id).filter(Boolean)).size
+  // 埋点 row_scope（PRD §11.1）：能看到他人 Key = workspace_all，否则 self
+  const rowScope = showsOthers ? 'workspace_all' : 'self'
+  const commonEventProps = { prd_version: 'api_keys_v0_1', row_scope: rowScope }
 
   // 负责人筛选项（当前列表内去重）
   const ownerOptions = useMemo(() => {
@@ -260,11 +281,73 @@ export default function ApiKeysPage() {
     })
   }, [apiKeyItems, searchValue, typeFilter, statusFilter, ownerFilter])
 
-  const handleKeyCreated = useCallback((keyText: string) => {
+  const isFiltered = searchValue.trim() !== '' || typeFilter !== ALL || statusFilter !== ALL || ownerFilter !== ALL
+
+  // 筛选/搜索埋点（PRD §11.2）
+  const handleTypeFilter = (v: string) => {
+    setTypeFilter(v)
+    trackEvent('api_keys:filter_change', { ...commonEventProps, filter_type: 'type', filter_value: v }, { source: 'toolbar' })
+  }
+  const handleStatusFilter = (v: string) => {
+    setStatusFilter(v)
+    trackEvent('api_keys:filter_change', { ...commonEventProps, filter_type: 'status', filter_value: v }, { source: 'toolbar' })
+  }
+  const handleOwnerFilter = (v: string) => {
+    setOwnerFilter(v)
+    // 负责人为 PII，仅上报是否命中而非 account_id
+    trackEvent('api_keys:filter_change', { ...commonEventProps, filter_type: 'responsible', filter_value: v === ALL ? 'all' : 'selected' }, { source: 'toolbar' })
+  }
+  const handleSearchChange = (v: string) => {
+    setSearchValue(v)
+    trackEvent('api_keys:search', { ...commonEventProps, query_length: v.length }, { source: 'toolbar' })
+  }
+  const clearFilters = () => {
+    setSearchValue('')
+    setTypeFilter(ALL)
+    setStatusFilter(ALL)
+    setOwnerFilter(ALL)
+  }
+  const openCreate = (source: string) => {
+    trackAction(PERMS.API_KEYS_CREATE, undefined, { source, is_space_owner: isActiveWorkspaceOwner })
+    trackEvent('api_keys:create_open', commonEventProps, { source })
+    setCreateNonce((n) => n + 1)
+    setCreateVisible(true)
+  }
+
+  const handleKeyCreated = useCallback((created: ApiKeyCreated) => {
     setCreateVisible(false)
-    setCreatedKeyText(keyText)
+    setCreatedKey(created)
+    setCreatedKeyText(created.key)
+    setCreatedAt(Date.now())
     setCreatedVisible(true)
   }, [])
+
+  // 「我已保存密钥」（PRD §8.3）：关闭 → 刷新列表 → 打开新 Key 详情
+  const handleSecretSaved = () => {
+    if (createdKey) {
+      trackEvent('api_keys:secret_saved', { ...commonEventProps, time_to_save_ms: createdAt ? Date.now() - createdAt : 0 }, { source: 'create_success' })
+    }
+    setCreatedVisible(false)
+    queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
+    if (createdKey) {
+      const c = createdKey
+      setDetailKey({
+        api_key_id: c.api_key_id,
+        name: c.name,
+        prefix: c.prefix,
+        masked: c.masked,
+        env: c.env,
+        status: 'active',
+        owner: account ?? { account_id: '', display_name: '', email: '' },
+        expires_at: null,
+        last_used_at: null,
+        total_spend: { amount: '0', currency },
+        limit: { amount: '0', currency, period_unit: 'month', period_length: 1 },
+        created_at: c.created_at,
+        scope: c.scope,
+      })
+    }
+  }
 
   const openAIBaseUrl = GATEWAY_ENDPOINTS[0]?.baseUrl ?? ''
   const anthropicBaseUrl = GATEWAY_ENDPOINTS[1]?.baseUrl ?? openAIBaseUrl
@@ -282,6 +365,7 @@ export default function ApiKeysPage() {
     <div className="space-y-6">
       <PageHeader
         title={t('apiKeys.title')}
+        description={`${workspaceName} 工作空间的运行凭证、负责人、限额和到期时间`}
         actions={showViewToggle ? (
           <SegmentedToggle<'mine' | 'company'>
             ariaLabel={t('dashboard.workbench.view.enterprise')}
@@ -311,24 +395,25 @@ export default function ApiKeysPage() {
           placeholder="搜索 Key 名称、负责人"
           className="w-64"
           value={searchValue}
-          onChange={(e) => setSearchValue(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
         />
-        <Select value={typeFilter} onChange={setTypeFilter} className="w-32">
+        <Select value={typeFilter} onChange={handleTypeFilter} className="w-32">
           <SelectItem value={ALL}>全部类型</SelectItem>
           <SelectItem value={'personal' satisfies ApiKeyType}>私有 Key</SelectItem>
-          <SelectItem value={'member' satisfies ApiKeyType}>成员 Key</SelectItem>
+          {/* 个人租户无成员 Key（PRD §7.4） */}
+          {!isPersonalTenant && <SelectItem value={'member' satisfies ApiKeyType}>成员 Key</SelectItem>}
           <SelectItem value={'service' satisfies ApiKeyType}>服务 Key</SelectItem>
         </Select>
-        <Select value={statusFilter} onChange={setStatusFilter} className="w-32">
+        <Select value={statusFilter} onChange={handleStatusFilter} className="w-32">
+          {/* PRD §5.2：轮转是动作过渡态，不作为常规状态筛选项 */}
           <SelectItem value={ALL}>全部状态</SelectItem>
           <SelectItem value="active">启用中</SelectItem>
-          <SelectItem value="rotation_required">待轮转</SelectItem>
           <SelectItem value="limited">已达限额</SelectItem>
           <SelectItem value="expired">已过期</SelectItem>
           <SelectItem value="disabled">已停用</SelectItem>
           <SelectItem value="expiring">即将过期</SelectItem>
         </Select>
-        <Select value={ownerFilter} onChange={setOwnerFilter} className="w-36">
+        <Select value={ownerFilter} onChange={handleOwnerFilter} className="w-36">
           <SelectItem value={ALL}>全部负责人</SelectItem>
           {ownerOptions.map((o) => (
             <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
@@ -336,7 +421,7 @@ export default function ApiKeysPage() {
         </Select>
         <div className="ml-auto">
           {canCreate && (
-            <Button variant="brand" onClick={() => { trackAction(PERMS.API_KEYS_CREATE, undefined, { source: 'toolbar', is_space_owner: isActiveWorkspaceOwner }); setCreateNonce((n) => n + 1); setCreateVisible(true) }} className="rounded-full px-6 h-10 shadow-lg shadow-brand-glow/20">
+            <Button variant="brand" onClick={() => openCreate('toolbar')} className="rounded-full px-6 h-10 shadow-lg shadow-brand-glow/20">
               <LuPlus className="w-4 h-4 mr-1.5" />
               {t('apiKeys.create')}
             </Button>
@@ -356,7 +441,12 @@ export default function ApiKeysPage() {
         isLoading={isLoading}
         items={filteredData}
         canManage={canManage}
-        onOpenDetail={(item) => { trackEvent('api_keys:detail', undefined, { source: 'table_row', is_space_owner: isActiveWorkspaceOwner }); setDetailKey(item) }}
+        hasKeys={apiKeyItems.length > 0}
+        isFiltered={isFiltered}
+        canCreate={canCreate}
+        onCreate={() => openCreate('empty_state')}
+        onClearFilters={clearFilters}
+        onOpenDetail={(item) => { trackEvent('api_keys:detail', { ...commonEventProps, key_type: deriveKeyType(item) }, { source: 'table_row', is_space_owner: isActiveWorkspaceOwner }); setDetailKey(item) }}
         onToggleStatus={handleToggleStatus}
         onCopyKey={handleCopyKey}
         copyingKeyId={copyingKeyId}
@@ -368,6 +458,7 @@ export default function ApiKeysPage() {
         workspaceId={activeWorkspaceId}
         item={detailKey}
         canManage={canManage}
+        rowScope={rowScope}
         onToggleStatus={handleToggleStatus}
         onRotate={() => { /* 轮转接口 #384 未交付，按钮已 gate 隐藏；落地后接入 */ }}
         onChangeOwner={(item) => { setNewOwnerId(''); setChangeOwnerTarget(item) }}
@@ -384,8 +475,8 @@ export default function ApiKeysPage() {
         size="md"
         footer={
           <>
-            <Button variant="outline" onClick={() => setCreatedVisible(false)}>完成</Button>
-            <Button variant="brand" onClick={() => { setCreatedVisible(false); setConnectVisible(true) }}>快速接入</Button>
+            <Button variant="outline" onClick={() => { setCreatedVisible(false); setConnectVisible(true) }}>快速接入</Button>
+            <Button variant="brand" onClick={handleSecretSaved}>我已保存密钥</Button>
           </>
         }
       >

@@ -18,6 +18,7 @@ import { listGuardrails } from '@/services/guardrails'
 import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { useAuthStore } from '@/store/auth'
+import { useTenantRole } from '@/hooks/use-tenant-role'
 import { EXPIRATION_PRESETS, resolveExpiryISO, type ScopeType } from './constants'
 import { CreateGuardrailDialog } from './CreateGuardrailDialog'
 import { KEY_TYPE_LABEL, KEY_TYPE_DESC } from './derive'
@@ -48,11 +49,16 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const tenants = useAuthStore((s) => s.tenants)
   const isPersonalTenant = tenants.find((t) => t.tenant_id === activeTenantId)?.type === 'personal'
+  // 企业普通成员（非 Owner/Admin、非空间负责人）：只能建私有 Key、不可永不过期（PRD 角色权限模型）
+  const { isEnterprise, canManage, isSpaceOwner } = useTenantRole()
+  const isPlainMember = isEnterprise && !canManage && !isSpaceOwner
 
   const [name, setName] = useState('')
   const [scope, setScope] = useState<ScopeType>('workspace')
-  // 个人租户可选 个人/项目（无成员）；兜底防止残留的 member 被提交
-  const effectiveScope: ScopeType = isPersonalTenant && scope === 'member' ? 'workspace' : scope
+  // 个人租户可选 个人/项目（无成员）；普通成员强制私有；兜底防止残留的 member 被提交
+  const effectiveScope: ScopeType = isPlainMember
+    ? 'personal'
+    : isPersonalTenant && scope === 'member' ? 'workspace' : scope
   const [memberAccountId, setMemberAccountId] = useState('')
   const [guardrailIds, setGuardrailIds] = useState<string[]>([])
   const [guardrailDialogOpen, setGuardrailDialogOpen] = useState(false)
@@ -65,6 +71,14 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
     startDate: todayStr,
     endDate: '',
   })
+  // 普通成员不可「永不过期」：移除该预设，默认档从永不过期落到「30 天后」
+  const expiryPresets = isPlainMember ? EXPIRATION_PRESETS.filter((p) => p.key !== 'all') : EXPIRATION_PRESETS
+  useEffect(() => {
+    if (isPlainMember && expiryRange.preset === 'all') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setExpiryRange({ preset: '30d', startDate: todayStr, endDate: '' })
+    }
+  }, [isPlainMember, expiryRange.preset, todayStr])
 
   const membersQuery = useQuery({
     queryKey: ['workspace-members', workspaceId],
@@ -168,8 +182,11 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
           <div>
             <label className="block text-xs font-bold text-mg-text-2 mb-2">Key 类型</label>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-              {TYPE_CARDS.filter((c) => !(isPersonalTenant && c.type === 'member')).map((c) => {
-                const active = scope === c.scope
+              {TYPE_CARDS
+                .filter((c) => !(isPersonalTenant && c.type === 'member'))
+                .filter((c) => !(isPlainMember && c.type !== 'personal'))
+                .map((c) => {
+                const active = effectiveScope === c.scope
                 return (
                   <button
                     key={c.type}
@@ -287,12 +304,12 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
           {/* 过期时间 */}
           <div>
             <label className="block text-xs font-bold text-mg-text-2 mb-2">
-              过期时间 <span className="text-mg-text-3 font-normal">（可选，不填则永不过期）</span>
+              过期时间 <span className="text-mg-text-3 font-normal">{isPlainMember ? '（必填，普通成员不可永不过期）' : '（可选，不填则永不过期）'}</span>
             </label>
             <DateRangePicker
               value={expiryRange}
               onChange={setExpiryRange}
-              presets={EXPIRATION_PRESETS}
+              presets={expiryPresets}
               customTitle="过期预设"
               customLabel="选择截止时间"
               hideStartDate={true}

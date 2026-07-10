@@ -3,7 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
 import { TagInput } from '@/components/ui/TagInput'
-import { LuUsers } from 'react-icons/lu'
+import Select, { SelectItem } from '@/components/ui/Select'
+import { LuInfo, LuUsers } from 'react-icons/lu'
+import {
+  PROMPT_INJECTION_HINTS,
+  PROMPT_INJECTION_LABEL,
+  PROMPT_INJECTION_MODES,
+  type PromptInjectionMode,
+} from '../derive'
 
 // ─── 公共：表单字段组件（创建/编辑复用） ──────────────────────────────────────
 
@@ -14,6 +21,7 @@ export function GuardrailFormFields({
   isDefault, onIsDefaultChange,
   modelBlacklist, onModelBlacklistChange,
   ipWhitelist, onIpWhitelistChange,
+  promptInjectionMode, onPromptInjectionModeChange,
   modelSuggestions,
   memberIds, onMemberIdsChange, memberOptions,
 }: {
@@ -23,6 +31,7 @@ export function GuardrailFormFields({
   isDefault: boolean; onIsDefaultChange: (v: boolean) => void
   modelBlacklist: string[]; onModelBlacklistChange: (v: string[]) => void
   ipWhitelist: string[]; onIpWhitelistChange: (v: string[]) => void
+  promptInjectionMode: PromptInjectionMode; onPromptInjectionModeChange: (v: PromptInjectionMode) => void
   modelSuggestions?: string[]
   memberIds: string[]; onMemberIdsChange: (v: string[]) => void; memberOptions: { id: string; name: string }[]
 }) {
@@ -98,6 +107,38 @@ export function GuardrailFormFields({
           hint={t('guardrails.form.ipWhitelistHint')}
         />
         {ipError && <p className="text-xs text-mg-danger mt-1">{ipError}</p>}
+      </div>
+      {/* 提示词注入检测 — 下拉；info 图标说明命中后的处理方式 */}
+      <div>
+        <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-mg-text-2">
+          提示词注入检测
+          <span className="group relative inline-flex">
+            <button
+              type="button"
+              aria-label="命中后的处理方式"
+              className="inline-flex text-mg-text-3 outline-none transition-colors hover:text-mg-text-2 focus-visible:text-mg-text-2"
+            >
+              <LuInfo className="h-3.5 w-3.5" />
+            </button>
+            <span
+              role="tooltip"
+              className="pointer-events-none absolute left-0 top-6 z-20 w-[280px] rounded-md border border-mg-border bg-mg-bg-0 p-3 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+            >
+              <span className="mb-1.5 block text-[11px] font-bold text-mg-text-1">命中后的处理方式</span>
+              {PROMPT_INJECTION_HINTS.map((h) => (
+                <span key={h.mode} className="mt-1 flex gap-1.5 text-[10px]">
+                  <span className="shrink-0 font-bold text-mg-text-2">{PROMPT_INJECTION_LABEL[h.mode]}</span>
+                  <span className="font-medium leading-snug text-mg-text-3">{h.text}</span>
+                </span>
+              ))}
+            </span>
+          </span>
+        </label>
+        <Select value={promptInjectionMode} onChange={(v) => onPromptInjectionModeChange(v as PromptInjectionMode)} className="w-full">
+          {PROMPT_INJECTION_MODES.map((m) => (
+            <SelectItem key={m} value={m}>{PROMPT_INJECTION_LABEL[m]}</SelectItem>
+          ))}
+        </Select>
       </div>
       {/* 成员 — 下拉多选 */}
       <div>

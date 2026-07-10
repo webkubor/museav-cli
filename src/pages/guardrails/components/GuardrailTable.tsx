@@ -18,12 +18,14 @@ import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
 import {
   KIND_LABEL,
+  PROMPT_INJECTION_LABEL,
   apiKeyCount,
   boostExpiry,
   budgetByScope,
   deriveKind,
   deriveScope,
   formatBudget,
+  guardrailPromptInjectionMode,
   memberCount,
   metadataList,
   nameMatches,
@@ -274,6 +276,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
             <TableHead>默认 Key 预算</TableHead>
             <TableHead>模型黑名单</TableHead>
             <TableHead>IP 白名单</TableHead>
+            <TableHead>提示词注入</TableHead>
             <TableHead>最近更新</TableHead>
             <TableHead>状态</TableHead>
             <TableHead className="text-right">操作</TableHead>
@@ -296,6 +299,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
               </TableCell>
               <TableCell><TagCell values={metadataList(row, 'model_blacklist')} /></TableCell>
               <TableCell><TagCell values={metadataList(row, 'ip_whitelist')} /></TableCell>
+              <TableCell className="text-xs font-semibold text-mg-text-2">{PROMPT_INJECTION_LABEL[guardrailPromptInjectionMode(row)]}</TableCell>
               <TableCell className="text-xs text-mg-text-3">{formatDateTime(row.updated_at)}</TableCell>
               <TableCell><StatusCell row={row} canEdit={canEdit} onToggle={onToggle} /></TableCell>
               <TableCell className="text-right"><RowActions row={row} {...shared} /></TableCell>
@@ -369,6 +373,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
             <TableHead>提额到期时间</TableHead>
             <TableHead>模型黑名单</TableHead>
             <TableHead>IP 白名单</TableHead>
+            <TableHead>提示词注入</TableHead>
             <TableHead>最近更新</TableHead>
             <TableHead>状态</TableHead>
             <TableHead className="text-right">操作</TableHead>
@@ -393,6 +398,9 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                 </TableCell>
                 <TableCell>
                   {boost ? <span className="text-xs text-mg-text-3">不适用</span> : <TagCell values={metadataList(row, 'ip_whitelist')} />}
+                </TableCell>
+                <TableCell className="text-xs font-semibold text-mg-text-2">
+                  {boost ? <span className="font-normal text-mg-text-3">不适用</span> : PROMPT_INJECTION_LABEL[guardrailPromptInjectionMode(row)]}
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-3">{formatDateTime(row.updated_at)}</TableCell>
                 <TableCell><StatusCell row={row} canEdit={canEdit} onToggle={onToggle} /></TableCell>

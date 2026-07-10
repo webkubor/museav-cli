@@ -62,6 +62,37 @@ export function metadataList(g: GuardrailDetail, key: 'model_blacklist' | 'ip_wh
     : []
 }
 
+// ─── 提示词注入检测（PRD 2026-07-10）─────────────────────────────────
+// 网关侧真实检测/枚举字段落地前，模式经 metadata.prompt_injection_mode 往返
+// （同 model_blacklist / ip_whitelist 的既有做法）。
+export type PromptInjectionMode = 'off' | 'flag' | 'redact' | 'block'
+
+export const PROMPT_INJECTION_MODES: PromptInjectionMode[] = ['off', 'flag', 'redact', 'block']
+
+export const PROMPT_INJECTION_LABEL: Record<PromptInjectionMode, string> = {
+  off: '关闭',
+  flag: '仅记录',
+  redact: '脱敏',
+  block: '拦截',
+}
+
+/** info tooltip：命中后处理方式（只解释三种，不含关闭） */
+export const PROMPT_INJECTION_HINTS: { mode: Exclude<PromptInjectionMode, 'off'>; text: string }[] = [
+  { mode: 'flag', text: '记录命中，请求仍按原内容发送' },
+  { mode: 'redact', text: '将命中内容替换为 [PROMPT_INJECTION] 后继续发送' },
+  { mode: 'block', text: '直接拒绝请求，不发送给模型' },
+]
+
+export function isPromptInjectionMode(v: unknown): v is PromptInjectionMode {
+  return typeof v === 'string' && (PROMPT_INJECTION_MODES as string[]).includes(v)
+}
+
+/** 从 metadata 取提示词注入模式，缺省 off */
+export function guardrailPromptInjectionMode(g: GuardrailDetail): PromptInjectionMode {
+  const v = (g.metadata as Record<string, unknown> | undefined)?.prompt_injection_mode
+  return isPromptInjectionMode(v) ? v : 'off'
+}
+
 export function memberCount(g: GuardrailDetail): number {
   return assignmentsOf(g).filter((a) => a.subject_type === 'member' && a.account_id).length
 }

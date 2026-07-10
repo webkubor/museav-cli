@@ -12,7 +12,7 @@ import type { GuardrailDetail } from '@/interfaces/guardrails'
 import { PERIOD_LABEL } from '@/constants/status'
 import { GuardrailFormFields } from './GuardrailFormFields'
 import { isValidBudgetAmount, trimAmountScale } from '../budget'
-import type { BudgetAggScope } from '../derive'
+import type { BudgetAggScope, PromptInjectionMode } from '../derive'
 
 const GUARDRAIL_STATUS_MAP: Record<string, StatusConfig> = {
   active: { label: '已启用', variant: 'success' },
@@ -105,6 +105,7 @@ export function GuardrailDetailSheet({
   isDefault, onIsDefaultChange,
   modelBlacklist, onModelBlacklistChange,
   ipWhitelist, onIpWhitelistChange,
+  promptInjectionMode, onPromptInjectionModeChange,
   modelSuggestions,
   memberIds, onMemberIdsChange, memberOptions,
   // 作用范围
@@ -132,6 +133,7 @@ export function GuardrailDetailSheet({
   isDefault: boolean; onIsDefaultChange: (v: boolean) => void
   modelBlacklist: string[]; onModelBlacklistChange: (v: string[]) => void
   ipWhitelist: string[]; onIpWhitelistChange: (v: string[]) => void
+  promptInjectionMode: PromptInjectionMode; onPromptInjectionModeChange: (v: PromptInjectionMode) => void
   modelSuggestions?: string[]
   memberIds: string[]; onMemberIdsChange: (v: string[]) => void; memberOptions: { id: string; name: string }[]
   apiKeyIds: string[]; onApiKeyIdsChange: (v: string[]) => void; apiKeyOptions: { id: string; name: string; active: boolean }[]
@@ -225,6 +227,7 @@ export function GuardrailDetailSheet({
               isDefault={isDefault} onIsDefaultChange={onIsDefaultChange}
               modelBlacklist={modelBlacklist} onModelBlacklistChange={onModelBlacklistChange}
               ipWhitelist={ipWhitelist} onIpWhitelistChange={onIpWhitelistChange}
+              promptInjectionMode={promptInjectionMode} onPromptInjectionModeChange={onPromptInjectionModeChange}
               modelSuggestions={modelSuggestions}
               memberIds={memberIds} onMemberIdsChange={onMemberIdsChange} memberOptions={memberOptions}
             />

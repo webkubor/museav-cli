@@ -38,7 +38,7 @@ import { GuardrailSummaryCards } from './components/GuardrailSummaryCards'
 import { GuardrailDetailSheet } from './components/GuardrailDetailSheet'
 import { GuardrailConfirmModals } from './components/GuardrailConfirmModals'
 import { isValidBudgetAmount, trimAmountScale } from './budget'
-import { summarize, budgetByScope, type BudgetAggScope, type GuardrailScope } from './derive'
+import { summarize, budgetByScope, guardrailPromptInjectionMode, type BudgetAggScope, type GuardrailScope, type PromptInjectionMode } from './derive'
 
 type BudgetPolicy = NonNullable<GuardrailDetail['budget_policies']>[number]
 type PeriodUnit = 'hour' | 'day' | 'week' | 'month'
@@ -142,6 +142,7 @@ export default function GuardrailsPage() {
   const [priority, setPriority] = useState<number>(0)
   const [modelBlacklist, setModelBlacklist] = useState<string[]>([])
   const [ipWhitelist, setIpWhitelist] = useState<string[]>([])
+  const [promptInjectionMode, setPromptInjectionMode] = useState<PromptInjectionMode>('off')
   const [memberIds, setMemberIds] = useState<string[]>([])
 
   const modelsQuery = useQuery({
@@ -316,7 +317,7 @@ export default function GuardrailsPage() {
     setIsCreating(true)
     setDetailId(null)
     setName(''); setDescription(''); setIsDefault(false); setPriority(0)
-    setModelBlacklist([]); setIpWhitelist([]); setMemberIds([])
+    setModelBlacklist([]); setIpWhitelist([]); setPromptInjectionMode('off'); setMemberIds([])
     setSheetTab('info')
     setDetailOpen(true)
   }
@@ -327,7 +328,7 @@ export default function GuardrailsPage() {
     // 防串档：清掉上一条护栏的表单残留。加载成功后 syncFormFromDetail 回填；
     // 加载失败时抽屉只显示错误，而不是上一条护栏的可保存表单 (qa#162 review)
     setName(''); setDescription(''); setIsDefault(false); setPriority(0)
-    setModelBlacklist([]); setIpWhitelist([]); setMemberIds([]); setApiKeyIds([])
+    setModelBlacklist([]); setIpWhitelist([]); setPromptInjectionMode('off'); setMemberIds([]); setApiKeyIds([])
     setBudgetAmount(''); setBudgetPeriodUnit('month')
     setGlobalBudgets({
       guardrail_total: { ...EMPTY_BUDGET_DRAFT },
@@ -363,6 +364,7 @@ export default function GuardrailsPage() {
     const meta = d.metadata ?? {}
     setModelBlacklist(Array.isArray(meta.model_blacklist) ? meta.model_blacklist : [])
     setIpWhitelist(Array.isArray(meta.ip_whitelist) ? meta.ip_whitelist : [])
+    setPromptInjectionMode(guardrailPromptInjectionMode(d))
     // Scope (members + api_keys) lives in assignments; metadata.* is the input
     // we materialize from. Read assignments first (the enforced truth), falling
     // back to metadata for guardrails saved before materialization existed.
@@ -386,6 +388,7 @@ export default function GuardrailsPage() {
     const metadata: Record<string, unknown> = {
       model_blacklist: modelBlacklist,
       ip_whitelist: ipWhitelist,
+      prompt_injection_mode: promptInjectionMode,
       members: memberIds,
       api_keys: apiKeyIds,
     }
@@ -590,6 +593,7 @@ export default function GuardrailsPage() {
         isDefault={isDefault} onIsDefaultChange={setIsDefault}
         modelBlacklist={modelBlacklist} onModelBlacklistChange={setModelBlacklist}
         ipWhitelist={ipWhitelist} onIpWhitelistChange={setIpWhitelist}
+        promptInjectionMode={promptInjectionMode} onPromptInjectionModeChange={setPromptInjectionMode}
         modelSuggestions={modelSuggestions}
         memberIds={memberIds} onMemberIdsChange={setMemberIds} memberOptions={memberOptions}
         apiKeyIds={apiKeyIds} onApiKeyIdsChange={setApiKeyIds} apiKeyOptions={apiKeyOptions}

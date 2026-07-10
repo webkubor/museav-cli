@@ -8,16 +8,11 @@
  * 所有业务代码只能通过 storageKeys 访问 localStorage，禁止硬编码字符串 key。
  */
 
-// market 检测内联，避免与 market.ts 形成循环依赖
+import { marketFromHostname } from '@/lib/market-domain'
+
+// 域名→市场唯一真源（market-domain 是零依赖叶子，引它不成环）
 function detectMarket(): string {
-  const env = import.meta.env.VITE_MARKET
-  if (env === 'domestic' || env === 'global') return env
-  if (typeof window !== 'undefined') {
-    const h = window.location.hostname.toLowerCase()
-    if (h.includes('modelgo.com') || h.endsWith('.cn')) return 'domestic'
-    if (h.includes('modelgo.ai')) return 'global'
-  }
-  return 'global'
+  return typeof window === 'undefined' ? 'domestic' : marketFromHostname(window.location.hostname)
 }
 
 type Scope = 'market' | 'app'

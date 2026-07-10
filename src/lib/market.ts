@@ -1,35 +1,16 @@
 import { storageKeys } from '@/lib/storage'
+import { marketFromHostname, type Market } from '@/lib/market-domain'
 
-export type Market = 'domestic' | 'global'
+export type { Market } from '@/lib/market-domain'
 
-const DEFAULT_MARKET: Market = 'global'
-
-function isMarket(value: unknown): value is Market {
-  return value === 'domestic' || value === 'global'
-}
-
-function readDomainDefaultMarket(): Market | null {
-  if (typeof window === 'undefined') return null
-
-  // 模糊匹配，适应 console.modelgo.com 或是 test.modelgo.com 以及 cn 域名
-  const hostname = window.location.hostname.toLowerCase()
-  if (hostname.includes('modelgo.com') || hostname.endsWith('.cn')) {
-    return 'domestic'
-  }
-  if (hostname.includes('modelgo.ai')) {
-    return 'global'
-  }
-  return null
-}
-
-function readBuildMarket(): Market | null {
-  const market = import.meta.env.VITE_MARKET
-  return isMarket(market) ? market : null
-}
-
+/**
+ * 当前市场 = 域名的纯函数（唯一真源见 market-domain.ts）。
+ * 不读构建期变量、无兜底链——生产靠 modelgo.com / modelgo.ai 域名自然区分；
+ * dev/test 单域名下预览另一市场，走 store 运行时切换，不经过这里。
+ */
 export function getMarket(): Market {
-  // 环境变量优先 ──► 域名探测兜底 ──► 默认降级 global
-  return readBuildMarket() ?? readDomainDefaultMarket() ?? DEFAULT_MARKET
+  if (typeof window === 'undefined') return 'domestic'
+  return marketFromHostname(window.location.hostname)
 }
 
 export function isDomestic(): boolean {

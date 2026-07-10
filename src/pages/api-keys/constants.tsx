@@ -5,6 +5,7 @@ import { LuUser, LuBuilding2, LuUsers, LuZap } from 'react-icons/lu'
 import { SiCurl } from 'react-icons/si'
 import type { DateRangeValue } from '@/components/ui/DateRangePicker'
 import { addFromNowISO, endOfLocalDayISO, type TimeUnit } from '@/lib/datetime'
+import { marketFromHostname } from '@/lib/market-domain'
 import Claude from '@lobehub/icons/es/Claude'
 import ClaudeCode from '@lobehub/icons/es/ClaudeCode'
 import Codex from '@lobehub/icons/es/Codex'
@@ -138,12 +139,12 @@ export const MGC_CLIENT_OPTIONS: { id: string; label: string }[] = [
   { id: 'factory', label: 'Factory' },
 ]
 
-/** 从网关地址推导站点：*.ai → 国际站，其余 → 国内站 */
+/** 从网关地址推导站点，复用域名→市场唯一真源（market-domain） */
 export function deriveRegionFromBaseUrl(baseUrl: string): 'global' | 'domestic' {
   try {
-    return new URL(baseUrl).hostname.includes('modelgo.ai') ? 'global' : 'domestic'
+    return marketFromHostname(new URL(baseUrl).hostname)
   } catch {
-    return baseUrl.includes('modelgo.ai') ? 'global' : 'domestic'
+    return marketFromHostname(baseUrl)
   }
 }
 

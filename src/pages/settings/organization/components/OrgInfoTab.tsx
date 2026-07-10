@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
-import { getTenant, listTenantMembers, updateTenant, uploadTenantLogo, dissolveTenant, transferOwnership } from '@/services/tenants'
+import { getTenant, listTenants, listTenantMembers, updateTenant, uploadTenantLogo, dissolveTenant, transferOwnership } from '@/services/tenants'
 import { getSession } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import { Button } from '@/components/ui/Button'
@@ -51,6 +51,16 @@ export function OrgInfoTab({
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   })
+
+  // 已用工作空间数：TenantDetail 无该字段，从 tenants 列表项（TenantItem.current_workspace_count）取，
+  // 与 useTenantRole 共享 ['tenants'] 缓存，不额外发请求
+  const tenantsQuery = useQuery({
+    queryKey: ['tenants'],
+    queryFn: listTenants,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  })
+  const usedWorkspaces = tenantsQuery.data?.items?.find((it) => it.tenant_id === tenantId)?.current_workspace_count
 
   const members = membersQuery.data?.items ?? []
   const owner = members.find((m) => m.role === 'tenant_owner')
@@ -255,9 +265,8 @@ export function OrgInfoTab({
             <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.info.maxWorkspaces')}</label>
             <span className="text-xs text-mg-text-1 font-medium">
               {(tenant.max_workspaces ?? '—')}
-              {/* 已用工作空间：TenantDetail 无 used 字段 → 占位 */}
-              {/* TODO(后端待接): 组织已用工作空间数（TenantDetail.current_workspace_count） 见 #420 */}
-              <span className="text-mg-text-3"> · {t('enterprise.info.usedWorkspaces')} —</span>
+              {/* 已用工作空间：从 tenants 列表项 current_workspace_count 取（TenantDetail 无该字段） */}
+              <span className="text-mg-text-3"> · {t('enterprise.info.usedWorkspaces')} {tenantsQuery.isLoading ? '…' : (usedWorkspaces ?? '—')}</span>
             </span>
           </div>
           <div className="space-y-1">

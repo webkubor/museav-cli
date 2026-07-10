@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { addTenantMembers, getTenantInviteLink, resetTenantInviteLink } from '@/services/tenants'
+import { listWorkspaces } from '@/services/workspaces'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
 import { Input } from '@/components/ui/Input'
@@ -22,6 +23,20 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
   const [inviteRole, setInviteRole] = useState<'tenant_admin' | 'tenant_member'>('tenant_member')
   const [expiresInHours, setExpiresInHours] = useState<number>(72)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
+  // 授权工作空间：NONE=不指定（仅加入组织），透传 target_workspace_id（AddTenantMemberRequest 支持）。
+  // 用非空 sentinel（Radix Select.Item 禁止空串 value）。
+  const NONE_WORKSPACE = '__none__'
+  const [targetWorkspaceId, setTargetWorkspaceId] = useState(NONE_WORKSPACE)
+
+  // 空间列表作为「授权工作空间」下拉数据源
+  const workspacesQuery = useQuery({
+    queryKey: ['workspaces', tenantId],
+    queryFn: () => listWorkspaces().then((res) => res.items ?? []),
+    enabled: Boolean(tenantId),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  })
+  const workspaces = workspacesQuery.data ?? []
 
   const inviteLinkQuery = useQuery({
     queryKey: ['tenant-invite-link', tenantId],
@@ -58,11 +73,13 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
       emails: inviteEmails.split(/[\s,;]+/).map((e) => e.trim()).filter(Boolean),
       role: inviteRole,
       expires_in_hours: expiresInHours,
+      target_workspace_id: targetWorkspaceId === NONE_WORKSPACE ? undefined : targetWorkspaceId,
     }),
     onSuccess: () => {
       appToast.success('邀请已发出')
       setInviteEmails('')
       setExpiresInHours(72)
+      setTargetWorkspaceId(NONE_WORKSPACE)
       qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
     },
     onError: (err: Error) => appToast.requestError(err, '邀请失败'),
@@ -165,6 +182,15 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
                 onKeyDown={(e) => e.key === 'Enter' && addMembers.mutate()}
                 className="h-9 text-xs rounded-lg"
               />
+            </div>
+            <div className="w-full md:w-56 space-y-1">
+              <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.invite.targetWorkspace')}</label>
+              <Select value={targetWorkspaceId} onChange={setTargetWorkspaceId} className="h-9 text-xs rounded-lg">
+                <Select.Option value={NONE_WORKSPACE}>{t('enterprise.invite.targetWorkspaceNone')}</Select.Option>
+                {workspaces.map((ws) => (
+                  <Select.Option key={ws.workspace_id} value={ws.workspace_id}>{ws.name}</Select.Option>
+                ))}
+              </Select>
             </div>
             {canInvite && (
               <Button

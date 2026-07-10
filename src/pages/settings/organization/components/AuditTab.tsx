@@ -62,6 +62,16 @@ function AuditDetailContent({
 }) {
   const { t } = useTranslation()
 
+  // 集合字段折叠：默认展示前 10 项，超出可展开/收起；切换审计条目时重置为折叠态
+  // （渲染期对比上次 id，避免 effect 内 setState）
+  const COLLAPSE_LIMIT = 10
+  const [showAllChanges, setShowAllChanges] = useState(false)
+  const [observedDetailId, setObservedDetailId] = useState(detail?.id)
+  if (detail?.id !== observedDetailId) {
+    setObservedDetailId(detail?.id)
+    setShowAllChanges(false)
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-10">
@@ -70,6 +80,9 @@ function AuditDetailContent({
     )
   }
   if (!detail) return null
+
+  const changesOverLimit = detail.changes.length > COLLAPSE_LIMIT
+  const visibleChanges = showAllChanges ? detail.changes : detail.changes.slice(0, COLLAPSE_LIMIT)
 
   const errorCode = detail.result === 'failure'
     ? (detail.metadata?.error_code as string | number | undefined)
@@ -96,18 +109,31 @@ function AuditDetailContent({
         {detail.changes.length === 0 ? (
           <p className="text-xs text-mg-text-3">{t('enterprise.audit.detailNoChanges')}</p>
         ) : (
-          <ul className="space-y-2">
-            {detail.changes.map((change) => (
-              <li key={change.field} className="rounded-md border border-mg-border/50 bg-mg-fill-0/30 p-2.5">
-                <div className="mb-1 text-xs font-bold text-mg-text-3">{change.field}</div>
-                <div className="flex items-center gap-1.5 text-xs">
-                  <s className="min-w-0 truncate text-mg-text-4">{change.before || '—'}</s>
-                  <LuArrowRight className="h-3 w-3 shrink-0 text-mg-text-4" />
-                  <strong className="min-w-0 truncate font-bold text-mg-text-1">{change.after || '—'}</strong>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="space-y-2">
+              {visibleChanges.map((change) => (
+                <li key={change.field} className="rounded-md border border-mg-border/50 bg-mg-fill-0/30 p-2.5">
+                  <div className="mb-1 text-xs font-bold text-mg-text-3">{change.field}</div>
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <s className="min-w-0 truncate text-mg-text-4">{change.before || '—'}</s>
+                    <LuArrowRight className="h-3 w-3 shrink-0 text-mg-text-4" />
+                    <strong className="min-w-0 truncate font-bold text-mg-text-1">{change.after || '—'}</strong>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {changesOverLimit && (
+              <button
+                type="button"
+                onClick={() => setShowAllChanges((v) => !v)}
+                className="mt-2 text-xs font-bold text-brand-base hover:text-brand-base/80 bg-transparent border-none p-0 cursor-pointer transition-colors"
+              >
+                {showAllChanges
+                  ? t('enterprise.audit.changesCollapse')
+                  : t('enterprise.audit.changesShowAll', { count: detail.changes.length })}
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>

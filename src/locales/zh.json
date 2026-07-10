@@ -1120,7 +1120,11 @@
     },
     "distribution": {
       "title": "模型分布",
-      "bySpend": "按费用"
+      "memberTitle": "成员分布",
+      "apiKeyTitle": "API Key 分布",
+      "bySpend": "按费用",
+      "total": "总消费",
+      "other": "其他"
     },
     "apiKeyRank": {
       "title": "API Key 排行",
@@ -1129,7 +1133,8 @@
         "apiKey": "API Key",
         "requests": "请求数",
         "tokens": "Token 总数",
-        "spend": "费用"
+        "spend": "费用",
+        "owner": "归属人"
       }
     },
     "chart": {
@@ -1168,6 +1173,15 @@
       "title": "用量明细",
       "desc": "在当前时间和工作空间范围内查看明细。"
     },
+    "emptyState": {
+      "noDataTitle": "暂无用量数据",
+      "noDataDesc": "所选时间范围内还没有任何调用记录。",
+      "filteredTitle": "筛选无结果",
+      "filteredDesc": "当前筛选条件下没有用量记录，试试调整筛选范围。"
+    },
+    "attr": {
+      "workspace": "工作空间"
+    },
     "dimension": {
       "model": "模型",
       "member": "成员",
@@ -1176,7 +1190,8 @@
     "member": {
       "title": "成员排行",
       "col": {
-        "member": "成员"
+        "member": "成员",
+        "modelCount": "模型数"
       },
       "empty": "暂无成员维度数据",
       "emptyDesc": "当前筛选范围内还没有可展示的成员用量。"

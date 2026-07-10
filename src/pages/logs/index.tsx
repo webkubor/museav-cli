@@ -66,6 +66,17 @@ function isDefaultTimeRange(value: DateRangeValue) {
   return value.preset === DEFAULT_TIME_RANGE.preset && !value.startDate && !value.endDate
 }
 
+/** 用量统计下钻带来的时间上下文：time_range 预设 或 range_start/range_end 自定义。 */
+function initialLogsTimeRange(sp: URLSearchParams): DateRangeValue {
+  const rangeStart = sp.get('range_start')
+  const rangeEnd = sp.get('range_end')
+  if (rangeStart && rangeEnd) return { preset: 'custom', startDate: rangeStart, endDate: rangeEnd }
+  const tr = sp.get('time_range')
+  const valid = ['today', '7d', '30d', 'thisMonth', 'lastMonth']
+  if (tr && valid.includes(tr)) return { preset: tr }
+  return DEFAULT_TIME_RANGE
+}
+
 function timeRangeLabel(value: DateRangeValue) {
   if (value.preset === 'today') return '今天'
   if (value.preset === '7d') return '近 7 天'
@@ -131,18 +142,20 @@ export default function LogsPage() {
   const workspaceParam = searchParams.get('workspace')
   const [workspaceFilterRaw, setWorkspaceFilterRaw] = useState('all')
   const [workspaceFilterTouched, setWorkspaceFilterTouched] = useState(false)
-  const [modelFilter, setModelFilter] = useState('all')
-  const [apiKeyFilter, setApiKeyFilter] = useState('all')
-  const [memberFilter, setMemberFilter] = useState('all')
+  // 下钻上下文：用量统计跳来时 ?model/api_key/member/time_range 初始化对应筛选
+  const [modelFilter, setModelFilter] = useState(() => searchParams.get('model') || 'all')
+  const [apiKeyFilter, setApiKeyFilter] = useState(() => searchParams.get('api_key') || 'all')
+  const [memberFilter, setMemberFilter] = useState(() => searchParams.get('member') || 'all')
   const [guardrailFilter, setGuardrailFilter] = useState<LogGuardrailFilter>('all')
   const [searchValue, setSearchValue] = useState('')
-  // 从总览「最近调用·查看全部」带来的上下文：?period= 初始化时间预设
-  const periodParam = searchParams.get('period')
-  const initialTimeRange: DateRangeValue =
-    periodParam && LOG_TIME_PRESETS.some((p) => p.key === periodParam && p.key !== 'custom')
-      ? { preset: periodParam }
-      : DEFAULT_TIME_RANGE
-  const [timeRange, setTimeRange] = useState<DateRangeValue>(initialTimeRange)
+  // 初始时间范围同时兼容两种来源：总览「最近调用·查看全部」带 ?period=；用量统计下钻带 ?time_range/range_start/range_end
+  const [timeRange, setTimeRange] = useState<DateRangeValue>(() => {
+    const periodParam = searchParams.get('period')
+    if (periodParam && LOG_TIME_PRESETS.some((p) => p.key === periodParam && p.key !== 'custom')) {
+      return { preset: periodParam }
+    }
+    return initialLogsTimeRange(searchParams)
+  })
   const [showMoreFilters, setShowMoreFilters] = useState(false)
   const [selectedLog, setSelectedLog] = useState<CallLogItem | null>(null)
   const [payloadView, setPayloadView] = useState<PayloadView>('parsed')

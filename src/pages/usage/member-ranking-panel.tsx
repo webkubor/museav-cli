@@ -13,6 +13,9 @@ interface MemberRankingPanelProps {
   isError: boolean
   onRetry: () => void
   currencySymbol: string
+  emptyTitle: string
+  emptyDesc: string
+  onDrill?: (item: UsageRankingItem) => void
 }
 
 function displayRankingName(item: UsageRankingItem): string {
@@ -58,15 +61,19 @@ function RankBadge({ rank }: { rank: number }) {
   )
 }
 
-/** 成员消费排行，展示真实 account 维度数据。 */
+/** 成员消费排行，展示真实 account 维度数据；含「模型数」归因列，行可下钻到调用日志。 */
 export function MemberRankingPanel({
   items,
   isLoading,
   isError,
   onRetry,
   currencySymbol,
+  emptyTitle,
+  emptyDesc,
+  onDrill,
 }: MemberRankingPanelProps) {
   const { t } = useTranslation()
+  const grid = 'grid grid-cols-[58px_minmax(120px,1fr)_90px_100px_110px_96px] gap-3'
 
   return (
     <Card className="min-w-0 p-5 sm:p-6">
@@ -79,13 +86,14 @@ export function MemberRankingPanel({
       ) : isLoading ? (
         <PanelSkeleton />
       ) : items.length === 0 ? (
-        <EmptyState title={t('usage.rankings.empty')} description={t('usage.rankings.emptyDesc')} />
+        <EmptyState title={emptyTitle} description={emptyDesc} />
       ) : (
         <div className="overflow-x-auto">
-          <div className="min-w-[620px]">
-            <div className="grid grid-cols-[58px_minmax(120px,1fr)_100px_110px_96px] gap-3 border-b border-mg-border pb-3 text-[12px] font-semibold text-mg-text-3">
+          <div className="min-w-[700px]">
+            <div className={cn(grid, 'border-b border-mg-border pb-3 text-[12px] font-semibold text-mg-text-3')}>
               <span>{t('usage.apiKeyRank.col.rank')}</span>
               <span>{t('usage.member.col.member')}</span>
+              <span>{t('usage.member.col.modelCount')}</span>
               <span>{t('usage.apiKeyRank.col.requests')}</span>
               <span>{t('usage.apiKeyRank.col.tokens')}</span>
               <span className="text-right">{t('usage.apiKeyRank.col.spend')}</span>
@@ -94,11 +102,8 @@ export function MemberRankingPanel({
               {items.slice(0, 10).map((item, index) => {
                 const rank = item.rank ?? index + 1
                 const name = displayRankingName(item)
-                return (
-                  <div
-                    key={item.key ?? `${name}-${index}`}
-                    className="grid grid-cols-[58px_minmax(120px,1fr)_100px_110px_96px] items-center gap-3 py-3 text-sm"
-                  >
+                const row = (
+                  <>
                     <RankBadge rank={rank} />
                     <div className="flex min-w-0 items-center gap-2">
                       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-selected-bg text-brand-base">
@@ -106,9 +111,27 @@ export function MemberRankingPanel({
                       </span>
                       <span className="truncate font-medium text-mg-text-1" title={name}>{name}</span>
                     </div>
+                    {/* 模型数归因（Swagger usage.RankingItem.model_count，成员排行返回）；缺省「—」 */}
+                    <span className="font-mono text-mg-text-2">
+                      {typeof item.model_count === 'number' ? formatNumber(item.model_count) : '—'}
+                    </span>
                     <span className="font-mono text-mg-text-2">{formatNumber(item.requests ?? 0)}</span>
                     <span className="font-mono text-mg-text-2">{formatNumber(item.tokens ?? 0)}</span>
                     <span className="text-right font-mono text-mg-text-1">{formatRankingSpend(item, currencySymbol)}</span>
+                  </>
+                )
+                return onDrill ? (
+                  <button
+                    key={item.key ?? `${name}-${index}`}
+                    type="button"
+                    onClick={() => onDrill(item)}
+                    className={cn(grid, 'w-full items-center py-3 text-left text-sm transition-colors hover:bg-mg-fill-0')}
+                  >
+                    {row}
+                  </button>
+                ) : (
+                  <div key={item.key ?? `${name}-${index}`} className={cn(grid, 'items-center py-3 text-sm')}>
+                    {row}
                   </div>
                 )
               })}

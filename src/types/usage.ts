@@ -66,6 +66,22 @@ export interface UsageRankingItem {
   share_percent?: number
   spend?: Money
   tokens?: number
+  /** 分组最近一次调用时间（RFC3339），Swagger usage.RankingItem。 */
+  last_used?: string
+  /** 供应商标识，Swagger usage.RankingItem（模型排行）。 */
+  vendor?: string
+  /**
+   * 排行归因列（对齐 PRD，后端 #447 陆续补齐）：
+   * - model 维度 → 使用该模型的工作空间（Swagger 已有 workspaces 数组；workspace_name 为单值兜底）
+   * - member 维度 → 该成员调用的模型数（Swagger 已有 model_count）
+   * - apiKey 维度 → 归属人 owner（Swagger 暂无，TODO(#447) 待后端返回；值为空时渲染「—」）
+   */
+  workspaces?: string[]
+  workspace_name?: string
+  model_count?: number
+  meta?: string
+  // TODO(#447): 后端补 owner（API Key 归属人）后可直接渲染，现值为空时排行表显示「—」。
+  owner?: string
 }
 
 export interface UsageRankings {

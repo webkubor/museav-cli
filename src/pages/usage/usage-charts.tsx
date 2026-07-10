@@ -39,6 +39,16 @@ interface SparklineProps {
   currencySymbol: string
   requestUnitLabel: string
   tokenUnitLabel: string
+  /** 趋势点下钻：点击某天 → 携带该日期跳调用日志（bucket_start）。 */
+  onPointClick?: (bucketStart: string) => void
+}
+
+/** recharts chart onClick 回调里取被点中的 x 轴值（bucket_start）。 */
+type ChartClickState = { activeLabel?: string | number } | null
+function pickBucketFromClick(state: ChartClickState, onPointClick?: (bucketStart: string) => void) {
+  if (!onPointClick) return
+  const label = state?.activeLabel
+  if (label !== undefined && label !== null && label !== '') onPointClick(String(label))
 }
 
 interface SparklineTooltipProps {
@@ -84,6 +94,7 @@ export function Sparkline({
   currencySymbol,
   requestUnitLabel,
   tokenUnitLabel,
+  onPointClick,
 }: SparklineProps) {
   if (data.length === 0) {
     return (
@@ -98,7 +109,12 @@ export function Sparkline({
 
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <AreaChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: 4 }}>
+      <AreaChart
+        data={data}
+        margin={{ top: 8, right: 4, bottom: 0, left: 4 }}
+        onClick={(state) => pickBucketFromClick(state as ChartClickState, onPointClick)}
+        style={onPointClick ? { cursor: 'pointer' } : undefined}
+      >
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity={0.2} />
@@ -157,6 +173,8 @@ interface GroupedAreaChartProps {
   currencySymbol: string
   requestUnitLabel: string
   tokenUnitLabel: string
+  /** 趋势点下钻：点击某天 → 携带该日期跳调用日志（bucket_start）。 */
+  onPointClick?: (bucketStart: string) => void
 }
 
 interface GroupedTooltipProps {
@@ -234,6 +252,7 @@ export function GroupedAreaChart({
   currencySymbol,
   requestUnitLabel,
   tokenUnitLabel,
+  onPointClick,
 }: GroupedAreaChartProps) {
   if (rows.length === 0 || series.length === 0) {
     return (
@@ -245,7 +264,12 @@ export function GroupedAreaChart({
 
   return (
     <ResponsiveContainer width="100%" height={260}>
-      <AreaChart data={rows} margin={{ top: 8, right: 4, bottom: 0, left: 4 }}>
+      <AreaChart
+        data={rows}
+        margin={{ top: 8, right: 4, bottom: 0, left: 4 }}
+        onClick={(state) => pickBucketFromClick(state as ChartClickState, onPointClick)}
+        style={onPointClick ? { cursor: 'pointer' } : undefined}
+      >
         <CartesianGrid strokeDasharray="0" stroke="var(--mg-fill-0)" vertical={false} />
         <XAxis
           dataKey="bucket_start"

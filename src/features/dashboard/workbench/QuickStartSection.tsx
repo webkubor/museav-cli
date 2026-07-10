@@ -39,11 +39,12 @@ export function QuickStartSection() {
   const openAIBaseUrl = GATEWAY_ENDPOINTS[0]?.baseUrl ?? ''
   const anthropicBaseUrl = GATEWAY_ENDPOINTS[1]?.baseUrl ?? openAIBaseUrl
 
-  const trackOnboardingAction = (action: string) =>
-    trackEvent('overview_onboarding_action_click', { ...trackCtx, action })
+  const trackOnboardingAction = (action: string, extra?: Record<string, string>) =>
+    trackEvent('overview_onboarding_action_click', { ...trackCtx, action, ...extra })
 
   const handleDismiss = () => {
-    trackOnboardingAction('dismiss')
+    // 关闭态仅落 localStorage，不调后端 → dismiss_storage=local
+    trackOnboardingAction('dismiss_bubble', { dismiss_storage: 'local' })
     localStorage.setItem(DISMISS_KEY, '1')
     setDismissed(true)
   }
@@ -66,7 +67,7 @@ export function QuickStartSection() {
       desc: t('dashboard.workbench.quickStart.step2Desc'),
       action: t('dashboard.workbench.quickStart.step2Action'),
       onClick: () => {
-        trackOnboardingAction('open_connect')
+        trackOnboardingAction('open_connect_modal')
         setConnectOpen(true)
       },
     },

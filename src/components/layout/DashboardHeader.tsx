@@ -33,6 +33,7 @@ import type { TenantBrief, TenantItem, SessionResult } from '@/types'
 import type { TenantListResponse } from '@/interfaces'
 import { cn } from '@/lib/utils'
 import { trackEvent } from '@/lib/track'
+import { useTrackContext } from '@/hooks/use-track-context'
 import { toast } from 'sonner'
 import { ConnectModal } from '@/pages/api-keys/ConnectModal'
 import {
@@ -58,6 +59,7 @@ import {
 export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenuClick }) => {
   const navigate = useNavigate()
   const location = useLocation()
+  const trackCtx = useTrackContext()
   const market = useLangStore((s) => s.market)
   const marketConfig = getMarketConfig(market)
 
@@ -86,6 +88,16 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
     // 控制台：回到站内；在非 models/playground 的控制台页高亮
     { key: 'console', label: t('nav.console'), to: '/dashboard', match: (p) => !p.startsWith('/models') },
   ]
+  // 顶栏站内导航（模型广场/模型体验/控制台）点击埋点：与侧栏同事件名，source 区分 topnav
+  const handleTopNavClick = (navKey: string, to: string) => {
+    trackEvent(
+      'console_nav_click',
+      { ...trackCtx, nav_key: navKey, nav_group: 'topnav', target_route: to, scope_type: 'tenant' },
+      { source: 'topnav' },
+    )
+    navigate(to)
+  }
+
   const navRef = useRef<HTMLDivElement>(null)
   const [sliderStyle, setSliderStyle] = useState<React.CSSProperties>({
     left: 0,
@@ -468,7 +480,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
                 key={item.key}
                 type="button"
                 onMouseEnter={(e) => updateSlider(e.currentTarget)}
-                onClick={() => navigate(item.to!)}
+                onClick={() => handleTopNavClick(item.key, item.to!)}
                 aria-current={active ? 'page' : undefined}
                 className={navClass(active)}
               >
@@ -571,7 +583,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
                   key={item.key}
                   onClick={() =>
                     item.to
-                      ? navigate(item.to)
+                      ? handleTopNavClick(item.key, item.to)
                       : window.open(item.href, '_blank', 'noopener,noreferrer')
                   }
                 >

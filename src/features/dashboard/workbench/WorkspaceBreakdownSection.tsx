@@ -27,7 +27,8 @@ export function WorkspaceBreakdownSection({ granularity, accountId, view = 'ente
   const handleViewMore = () => {
     trackEvent('overview_breakdown_more_click', trackCtx, { view_mode: view })
     trackEvent('destination_page_view', { ...trackCtx, destination: '/usage' }, { source: 'workspace_breakdown' })
-    navigate(`/usage?view=${view}&granularity=${granularity}`)
+    // 明细按工作空间分组，跳转带全上下文：view + group_by=workspace（趋势图预置工作空间维度）+ granularity
+    navigate(`/usage?view=${view}&group_by=workspace&granularity=${granularity}`)
   }
 
   const range = useMemo(() => rangeForGranularity(granularity), [granularity])

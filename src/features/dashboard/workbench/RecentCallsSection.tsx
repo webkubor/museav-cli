@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 import { Money } from '@/components/ui/Money'
 import { formatDuration } from '@/lib/format-date'
-import type { WorkbenchView } from './shared'
+import type { Granularity, WorkbenchView } from './shared'
 
 /** 时间：MM-dd HH:mm:ss */
 function formatSimple(iso: string) {
@@ -24,17 +24,19 @@ function formatSimple(iso: string) {
  * 模块 8：最近调用日志（最近 3 条）。
  * 列：时间 / 状态 / 模型 / 归属 / Token / 费用 / 延迟；「查看全部」跳 /logs。
  */
-export function RecentCallsSection({ view = 'enterprise', accountId }: { view?: WorkbenchView; accountId?: string }) {
+export function RecentCallsSection({ view = 'enterprise', accountId, granularity = 'month' }: { view?: WorkbenchView; accountId?: string; granularity?: Granularity }) {
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const navigate = useNavigate()
   const trackCtx = useTrackContext()
   const isMine = view === 'mine'
+  // 总览时间粒度 → 日志页时间预设：day→今天，month→本月，跳转带全周期上下文
+  const period = granularity === 'day' ? 'today' : 'thisMonth'
 
   const handleViewAll = () => {
     trackEvent('overview_recent_logs_view_all_click', trackCtx, { view_mode: view })
     trackEvent('destination_page_view', { ...trackCtx, destination: '/logs' }, { source: 'recent_calls' })
-    navigate(`/logs?view=${view}`)
+    navigate(`/logs?view=${view}&period=${period}`)
   }
 
   // 总览是租户级页面：最近调用按租户口径取，不读工作空间选择器的 activeWorkspaceId

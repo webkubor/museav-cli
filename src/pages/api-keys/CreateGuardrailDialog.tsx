@@ -65,7 +65,8 @@ export function CreateGuardrailDialog({ open, onClose, workspaceId, onCreated }:
 
   const mutation = useMutation({
     mutationFn: () => {
-      const metadata: Record<string, unknown> = { model_blacklist: modelBlacklist, ip_whitelist: ipWhitelist }
+      // 从 Key 创建流附建的护栏恒为「常规 Key 护栏」（文档：Key 提额不进主流程）
+      const metadata: Record<string, unknown> = { model_blacklist: modelBlacklist, ip_whitelist: ipWhitelist, kind: 'regular' }
       // 「继承全局」= 不写该字段（缺省即继承）
       if (promptInjectionMode !== PROMPT_INJECTION_INHERIT) metadata.prompt_injection_mode = promptInjectionMode
       return createGuardrail(workspaceId, { name: name.trim(), metadata })

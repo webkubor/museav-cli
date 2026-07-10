@@ -38,7 +38,23 @@ import { GuardrailSummaryCards } from './components/GuardrailSummaryCards'
 import { GuardrailDetailSheet } from './components/GuardrailDetailSheet'
 import { GuardrailConfirmModals } from './components/GuardrailConfirmModals'
 import { isValidBudgetAmount, trimAmountScale } from './budget'
-import { summarize, budgetByScope, deriveScope, rawPromptInjectionMode, PROMPT_INJECTION_INHERIT, type BudgetAggScope, type GuardrailScope, type PromptInjectionFormValue } from './derive'
+import {
+  summarize,
+  budgetByScope,
+  deriveScope,
+  deriveKind,
+  boostExpiry,
+  globalDefaultAmount,
+  regularBudgetAmounts,
+  isoToLocalInput,
+  localInputToIso,
+  rawPromptInjectionMode,
+  PROMPT_INJECTION_INHERIT,
+  type BudgetAggScope,
+  type GuardrailScope,
+  type GuardrailKind,
+  type PromptInjectionFormValue,
+} from './derive'
 
 type BudgetPolicy = NonNullable<GuardrailDetail['budget_policies']>[number]
 type PeriodUnit = 'hour' | 'day' | 'week' | 'month'
@@ -135,15 +151,21 @@ export default function GuardrailsPage() {
   const forbidden = isApiErrorCode(guardrailsError, 40301)
 
   // ── 抽屉（创建+编辑+详情统一） ─────────────────────────────────────────
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; isActiveGlobal?: boolean } | null>(null)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [isDefault, setIsDefault] = useState(false)
+  // 显式分类（全局/个人/Key）+ 类型（常规/提额），替代旧的 isDefault 反推。
+  // is_default 由 scope === 'global' 派生；提额到期时间以 datetime-local 值持有。
+  const [scope, setScope] = useState<GuardrailScope>('global')
+  const [kind, setKind] = useState<GuardrailKind>('regular')
+  const [boostExpiresAt, setBoostExpiresAt] = useState('')
   const [priority, setPriority] = useState<number>(0)
   const [modelBlacklist, setModelBlacklist] = useState<string[]>([])
   const [ipWhitelist, setIpWhitelist] = useState<string[]>([])
   const [promptInjectionMode, setPromptInjectionMode] = useState<PromptInjectionFormValue>('off')
   const [memberIds, setMemberIds] = useState<string[]>([])
+  // 三分区共享的「有效 / 已过期已停用 / 全部」筛选（默认隐藏过期提额，文档§过期提额）
+  const [listFilter, setListFilter] = useState<'active' | 'expired' | 'all'>('active')
 
   const modelsQuery = useQuery({
     queryKey: ['catalog-models'],
@@ -171,12 +193,19 @@ export default function GuardrailsPage() {
   // ── API Key 作用范围本地状态（account_id 风格，与成员一致） ─────────────
   const [apiKeyIds, setApiKeyIds] = useState<string[]>([])
 
-  // 表单当前护栏作用域（与 deriveScope 同口径，由表单选择实时派生）：
-  // 文档要求提示词注入仅在 全局 / 常规 Key 护栏配置，个人护栏不出现该控件；
-  // 常规 Key 护栏可「继承全局」，全局护栏不可。
-  const formScope: GuardrailScope = isDefault ? 'global' : apiKeyIds.length ? 'key' : memberIds.length ? 'member' : 'global'
-  const showPromptInjection = formScope !== 'member'
-  const allowPromptInjectionInherit = formScope === 'key'
+  // 显式分类/类型驱动各字段显隐（文档§各护栏配置项）：
+  // - 模型黑名单 / IP 白名单 / 提示词注入：仅全局护栏与「常规 Key 护栏」配置；
+  //   个人护栏、提额护栏一概不配置。
+  // - 提示词注入「继承全局」：仅常规 Key 护栏可选，全局护栏不可。
+  const isDefault = scope === 'global'
+  const showModelIp = scope === 'global' || (scope === 'key' && kind === 'regular')
+  const showPromptInjection = showModelIp
+  const allowPromptInjectionInherit = scope === 'key' && kind === 'regular'
+  // 全局护栏恒为常规：切到全局时把类型归一到常规，避免残留 boost
+  function handleScopeChange(next: GuardrailScope) {
+    setScope(next)
+    if (next === 'global') setKind('regular')
+  }
   const piOptions: PromptInjectionFormValue[] = allowPromptInjectionInherit
     ? [PROMPT_INJECTION_INHERIT, 'off', 'flag', 'redact', 'block']
     : ['off', 'flag', 'redact', 'block']
@@ -326,12 +355,53 @@ export default function GuardrailsPage() {
       appToast.requestError(err, t('guardrails.toast.toggleError')),
   })
 
+  // 全局护栏单选级联（文档：同一空间同时最多 1 条启用中的全局护栏）：启用一条时
+  // 其余启用中的全局护栏自动停用。乐观更新即时反馈，onSettled 失效刷新兜底。
+  const cascadeGlobalMutation = useMutation({
+    mutationFn: async ({ activateId, deactivateIds }: { activateId: string; deactivateIds: string[] }) => {
+      for (const id of deactivateIds) await updateGuardrail(id, { status: 'inactive' })
+      await updateGuardrail(activateId, { status: 'active' })
+    },
+    onMutate: async ({ activateId, deactivateIds }) => {
+      await qc.cancelQueries({ queryKey: ['guardrails', activeWorkspaceId] })
+      const prev = qc.getQueryData<GuardrailDetail[]>(['guardrails', activeWorkspaceId])
+      qc.setQueryData<GuardrailDetail[]>(['guardrails', activeWorkspaceId], (old) =>
+        (old ?? []).map((g) =>
+          g.id === activateId
+            ? { ...g, status: 'active' }
+            : deactivateIds.includes(g.id)
+              ? { ...g, status: 'inactive' }
+              : g,
+        ),
+      )
+      return { prev }
+    },
+    onError: (err: unknown, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['guardrails', activeWorkspaceId], ctx.prev)
+      appToast.requestError(err, t('guardrails.toast.toggleError'))
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] }),
+  })
+
+  // 统一切换入口：启用某条全局护栏 → 走级联（停用其他启用中全局）；其余走普通切换。
+  function handleToggle({ id, status }: { id: string; status: 'active' | 'inactive' }) {
+    const row = guardrails.find((g) => g.id === id)
+    if (row?.is_default && status === 'active') {
+      const deactivateIds = guardrails
+        .filter((g) => g.is_default && g.status === 'active' && g.id !== id)
+        .map((g) => g.id)
+      cascadeGlobalMutation.mutate({ activateId: id, deactivateIds })
+    } else {
+      toggleMutation.mutate({ id, status })
+    }
+  }
+
   // ── 辅助函数 ────────────────────────────────────────────────────────────
   function openCreate() {
     setIsCreating(true)
     setDetailId(null)
-    setName(''); setDescription(''); setIsDefault(false); setPriority(0)
-    setModelBlacklist([]); setIpWhitelist([]); setPromptInjectionMode('off'); setMemberIds([])
+    setName(''); setDescription(''); setScope('global'); setKind('regular'); setBoostExpiresAt(''); setPriority(0)
+    setModelBlacklist([]); setIpWhitelist([]); setPromptInjectionMode('off'); setMemberIds([]); setApiKeyIds([])
     setSheetTab('info')
     setDetailOpen(true)
   }
@@ -341,7 +411,7 @@ export default function GuardrailsPage() {
     setDetailId(id)
     // 防串档：清掉上一条护栏的表单残留。加载成功后 syncFormFromDetail 回填；
     // 加载失败时抽屉只显示错误，而不是上一条护栏的可保存表单 (qa#162 review)
-    setName(''); setDescription(''); setIsDefault(false); setPriority(0)
+    setName(''); setDescription(''); setScope('global'); setKind('regular'); setBoostExpiresAt(''); setPriority(0)
     setModelBlacklist([]); setIpWhitelist([]); setPromptInjectionMode('off'); setMemberIds([]); setApiKeyIds([])
     setBudgetAmount(''); setBudgetPeriodUnit('month')
     setGlobalBudgets({
@@ -368,7 +438,10 @@ export default function GuardrailsPage() {
 
   function syncFormFromDetail(d: GuardrailDetail) {
     setName(d.name); setDescription(d.description ?? '')
-    setIsDefault(d.is_default); setPriority(d.priority)
+    // 分类/类型读真值（scope 由 is_default+assignments 派生兜底，kind 读 metadata.kind）
+    setScope(deriveScope(d)); setKind(deriveKind(d))
+    setBoostExpiresAt(isoToLocalInput(boostExpiry(d)))
+    setPriority(d.priority)
     // 预算 input 回填落库的规范金额（去掉 NUMERIC(24,12) 的 scale 尾零），
     // 保证回显值与保存值一致 (qa#156)
     const bp = currentBudgetPolicy(d)
@@ -395,22 +468,35 @@ export default function GuardrailsPage() {
 
   function handleSubmit() {
     if (!name.trim()) { appToast.error(t('guardrails.toast.nameRequired')); return }
+    // 提额必须设置到期时间（文档§校验规则：提额护栏没有到期时间时不能保存）
+    if (kind === 'boost') {
+      if (!boostExpiresAt || !localInputToIso(boostExpiresAt)) {
+        appToast.error('提额护栏必须设置到期时间')
+        return
+      }
+    }
     // ONE save for the whole drawer: rules (model_blacklist/ip_whitelist) round-
     // trip via metadata; scope (members + api_keys) is materialized into
     // assignments server-side. Always send all arrays (even empty) so empty =
     // clear. api_keys is only editable in edit mode (scope tab); on create it
     // stays whatever was selected (none).
+    // 分类/类型经 metadata 占位往返（后端 #378 未交付 scope/kind 显式字段前）：
+    // is_default 承载全局分类，kind='boost' 标记提额，expires_at 记提额到期。
     const metadata: Record<string, unknown> = {
-      model_blacklist: modelBlacklist,
-      ip_whitelist: ipWhitelist,
-      members: memberIds,
-      api_keys: apiKeyIds,
+      members: scope === 'member' ? memberIds : [],
+      api_keys: scope === 'key' ? apiKeyIds : [],
     }
+    // 文档：个人护栏、提额护栏不配置模型黑名单 / IP 白名单 → 隐藏且清空落库
+    metadata.model_blacklist = showModelIp ? modelBlacklist : []
+    metadata.ip_whitelist = showModelIp ? ipWhitelist : []
     // 文档：个人护栏不写提示词注入；常规 Key「继承全局」= 不写该字段（缺省即继承/关闭）。
     // 不写 = 清空，编辑时从显式模式切回继承/个人也能正确落空。
     if (showPromptInjection && normalizedPromptInjection !== PROMPT_INJECTION_INHERIT) {
       metadata.prompt_injection_mode = normalizedPromptInjection
     }
+    // 类型：全局护栏恒常规、不写 kind；个人/Key 护栏落 kind，提额附到期时间
+    if (scope !== 'global') metadata.kind = kind
+    if (kind === 'boost') metadata.expires_at = localInputToIso(boostExpiresAt)
     const payload: CreateGuardrailRequest = {
       name: name.trim(),
       description: description.trim() || undefined,
@@ -438,6 +524,25 @@ export default function GuardrailsPage() {
     if (!isValidBudgetAmount(amount)) {
       appToast.error('预算金额无效：请输入大于 0 的数字，整数最多 12 位，小数最多 2 位')
       return
+    }
+    // 预算上/下限校验（文档§校验规则）：本地拿全局默认预算比对。
+    // - 常规个人/Key 护栏：预算不得超过启用中全局护栏的对应默认预算。
+    // - 提额个人/Key 护栏：预算必须大于当前生效预算（无常规绑定时以全局默认为基线）。
+    const dScope = deriveScope(detail)
+    const dKind = deriveKind(detail)
+    if (dScope === 'member' || dScope === 'key') {
+      const aggScope: BudgetAggScope = dScope === 'member' ? 'per_member' : 'per_api_key'
+      const globalDefault = globalDefaultAmount(guardrails, aggScope)
+      const amt = Number(amount)
+      if (dKind === 'regular') {
+        if (globalDefault != null && amt > globalDefault) {
+          appToast.error(`常规护栏预算不能超过全局默认预算（${currencySymbol}${trimAmountScale(String(globalDefault))} / ${dScope === 'member' ? '每人' : '每 Key'}）`)
+          return
+        }
+      } else if (globalDefault != null && amt <= globalDefault) {
+        appToast.error(`提额预算必须大于当前生效预算（${currencySymbol}${trimAmountScale(String(globalDefault))}）`)
+        return
+      }
     }
     if (budget) {
       // 编辑：原地维护这唯一一条策略。只发真正变更的字段——金额没改就不发
@@ -477,14 +582,24 @@ export default function GuardrailsPage() {
     // 个人租户不显示、也不触碰「默认个人预算」(per_member) 档
     const scopes = GLOBAL_BUDGET_SCOPES.filter((s) => s !== 'per_member' || showMember)
     const ops: GlobalBudgetOp[] = []
-    for (const scope of scopes) {
-      const draft = globalBudgets[scope]
-      const existing = budgetByScope(detail, scope)
+    for (const aggScope of scopes) {
+      const draft = globalBudgets[aggScope]
+      const existing = budgetByScope(detail, aggScope)
       if (draft.limited) {
         const amount = draft.amount.trim()
         if (!isValidBudgetAmount(amount)) {
           appToast.error('预算金额无效：请输入大于 0 的数字，整数最多 12 位，小数最多 2 位')
           return
+        }
+        // 下调全局默认时，若存在预算高于新默认值的常规护栏，必须先调低那些常规护栏
+        // （文档§校验规则）。本地枚举同作用域常规护栏预算比对。
+        if (aggScope === 'per_member' || aggScope === 'per_api_key') {
+          const targetScope = aggScope === 'per_member' ? 'member' : 'key'
+          const higher = regularBudgetAmounts(guardrails, targetScope).filter((v) => v > Number(amount))
+          if (higher.length > 0) {
+            appToast.error(`存在预算高于新默认值的常规${targetScope === 'member' ? '个人' : 'Key'}护栏，需先调低这些常规护栏，才能下调全局默认预算`)
+            return
+          }
         }
         if (existing) {
           // 原地改：只发真正变更的字段（金额/周期），避免计费窗口无谓重锚
@@ -496,7 +611,7 @@ export default function GuardrailsPage() {
           ops.push({
             type: 'add',
             body: {
-              aggregation_scope: scope,
+              aggregation_scope: aggScope,
               period_unit: draft.period,
               period_length: 1,
               enforcement_mode: 'hard_limit',
@@ -586,10 +701,16 @@ export default function GuardrailsPage() {
         showMember={showMember}
         currencySymbol={currencySymbol}
         search={scopeSearch}
-        onSearchChange={(scope, value) => setScopeSearch((prev) => ({ ...prev, [scope]: value }))}
+        onSearchChange={(s, value) => setScopeSearch((prev) => ({ ...prev, [s]: value }))}
+        listFilter={listFilter}
+        onListFilterChange={setListFilter}
         onOpenDetail={openDetail}
-        onToggle={(args) => toggleMutation.mutate(args)}
-        onDelete={(target) => setDeleteTarget(target)}
+        onToggle={handleToggle}
+        onDelete={(target) => {
+          // 全局启用中护栏删除需二次提醒（文档：删除启用中全局按无全局处理）
+          const row = guardrails.find((g) => g.id === target.id)
+          setDeleteTarget({ ...target, isActiveGlobal: !!row?.is_default && row?.status === 'active' })
+        }}
         onCreate={openCreate}
       />
 
@@ -604,12 +725,16 @@ export default function GuardrailsPage() {
         detailRow={detailRow}
         sheetTab={sheetTab}
         onSheetTabChange={setSheetTab}
-        onToggleStatus={(args) => toggleMutation.mutate(args)}
+        onToggleStatus={handleToggle}
         syncFormFromDetail={syncFormFromDetail}
         name={name} onNameChange={setName}
         description={description} onDescriptionChange={setDescription}
         priority={priority} onPriorityChange={setPriority}
-        isDefault={isDefault} onIsDefaultChange={setIsDefault}
+        scope={scope} onScopeChange={handleScopeChange}
+        kind={kind} onKindChange={setKind}
+        lockScopeKind={!isCreating} showMemberScope={showMember}
+        boostExpiresAt={boostExpiresAt} onBoostExpiresAtChange={setBoostExpiresAt}
+        showModelIp={showModelIp}
         modelBlacklist={modelBlacklist} onModelBlacklistChange={setModelBlacklist}
         ipWhitelist={ipWhitelist} onIpWhitelistChange={setIpWhitelist}
         promptInjectionMode={normalizedPromptInjection} onPromptInjectionModeChange={setPromptInjectionMode}

@@ -17,6 +17,7 @@ import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { SCOPE_OPTIONS, EXPIRATION_PRESETS, resolveExpiryISO } from './constants'
 import { CreateGuardrailDialog } from './CreateGuardrailDialog'
+import { deriveScope } from '@/pages/guardrails/derive'
 import { PERIOD_LABEL } from '@/constants/status'
 import type { ApiKeyItem, SpendingPeriodUnit } from '@/types'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
@@ -189,7 +190,8 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
                 value={extraIds}
                 onChange={(addIds) => setGuardrailIds([...(defaultId ? [defaultId] : []), ...addIds])}
                 options={allGuardrails
-                  .filter((g) => !g.is_default)
+                  // 只叠加 Key 作用域护栏（含提额，可从 Key 详情页附加）；不列个人/全局
+                  .filter((g) => !g.is_default && deriveScope(g) === 'key')
                   .map((g) => ({ value: g.id, label: g.name }))}
                 placeholder="可选：叠加其他护栏"
                 hint="默认护栏始终绑定，可继续叠加多个护栏共同生效"

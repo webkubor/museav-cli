@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Switch } from '@/components/ui/Switch'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
+import Select, { SelectItem } from '@/components/ui/Select'
 import { EmptyState } from '@/components/ui/EmptyState'
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
@@ -27,6 +28,7 @@ import {
   deriveScope,
   formatBudget,
   guardrailPromptInjectionMode,
+  isBoostExpired,
   rawPromptInjectionMode,
   memberCount,
   metadataList,
@@ -34,6 +36,16 @@ import {
   primaryBudget,
   type GuardrailScope,
 } from '../derive'
+
+// 列表筛选：默认「有效」隐藏过期提额；可切到「已过期/已停用」或「全部」（文档§过期提额）
+export type GuardrailListFilter = 'active' | 'expired' | 'all'
+
+function passesFilter(g: GuardrailDetail, filter: GuardrailListFilter): boolean {
+  if (filter === 'all') return true
+  if (filter === 'expired') return isBoostExpired(g) || g.status === 'inactive'
+  // active（默认）：隐藏过期提额
+  return !isBoostExpired(g)
+}
 
 // ── 共用单元格 ──────────────────────────────────────────────────────────────
 
@@ -145,10 +157,8 @@ function RowActions({
       {canDelete && (
         <Button
           size="sm"
-          variant={row.is_default ? 'secondary' : 'destructive'}
-          disabled={row.is_default}
-          title={row.is_default ? '默认护栏不可删除' : undefined}
-          onClick={() => { if (!row.is_default) onDelete({ id: row.id, name: row.name }) }}
+          variant="destructive"
+          onClick={() => onDelete({ id: row.id, name: row.name })}
           className="h-7 text-xs"
         >
           删除
@@ -172,6 +182,7 @@ function ScopeSection({
   hasSearch,
   search,
   onSearch,
+  filterControl,
   canCreate,
   onCreate,
   children,
@@ -181,6 +192,7 @@ function ScopeSection({
   hasSearch: boolean
   search: string
   onSearch: (value: string) => void
+  filterControl?: ReactNode
   canCreate: boolean
   onCreate: () => void
   children: ReactNode
@@ -190,15 +202,18 @@ function ScopeSection({
     <section className="card-shadow-adaptive bg-card-bg rounded-md border border-mg-border overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-mg-border/70 px-4 py-3">
         <h4 className="text-sm font-bold text-mg-text-1">{meta.title}</h4>
-        <Input
-          variant="search"
-          prefix={<LuSearch className="w-3.5 h-3.5" />}
-          placeholder="搜索护栏名称"
-          aria-label={`搜索${meta.title}名称`}
-          className="w-56"
-          value={search}
-          onChange={(e) => onSearch(e.target.value)}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          {filterControl}
+          <Input
+            variant="search"
+            prefix={<LuSearch className="w-3.5 h-3.5" />}
+            placeholder="搜索护栏名称"
+            aria-label={`搜索${meta.title}名称`}
+            className="w-56"
+            value={search}
+            onChange={(e) => onSearch(e.target.value)}
+          />
+        </div>
       </div>
       {rows.length > 0 ? (
         <Table>{children}</Table>
@@ -227,6 +242,8 @@ export interface GuardrailSectionsProps {
   currencySymbol: string
   search: Record<GuardrailScope, string>
   onSearchChange: (scope: GuardrailScope, value: string) => void
+  listFilter: GuardrailListFilter
+  onListFilterChange: (v: GuardrailListFilter) => void
   onOpenDetail: (id: string) => void
   onToggle: (args: { id: string; status: 'active' | 'inactive' }) => void
   onDelete: (target: { id: string; name: string }) => void
@@ -236,8 +253,22 @@ export interface GuardrailSectionsProps {
 export function GuardrailSections(props: GuardrailSectionsProps) {
   const {
     guardrails, isLoading, canEdit, canDelete, canCreate, showMember, currencySymbol,
-    search, onSearchChange, onOpenDetail, onToggle, onDelete, onCreate,
+    search, onSearchChange, listFilter, onListFilterChange, onOpenDetail, onToggle, onDelete, onCreate,
   } = props
+
+  // 提额筛选控件（个人/Key 分区共用同一状态）：默认隐藏过期提额
+  const filterControl = (
+    <Select
+      value={listFilter}
+      onChange={(v) => onListFilterChange(v as GuardrailListFilter)}
+      aria-label="护栏状态筛选"
+      className="w-36"
+    >
+      <SelectItem value="active">有效</SelectItem>
+      <SelectItem value="expired">已过期 / 已停用</SelectItem>
+      <SelectItem value="all">全部</SelectItem>
+    </Select>
+  )
 
   if (isLoading) {
     return (
@@ -252,9 +283,11 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
   const byScope = (scope: GuardrailScope) =>
     guardrails.filter((g) => deriveScope(g) === scope && nameMatches(g, search[scope]))
 
+  // 全局分区不套提额筛选（无提额；启用/停用需始终可见以支持单选级联切换）；
+  // 个人 / Key 分区套 listFilter，默认隐藏过期提额。
   const globalRows = byScope('global')
-  const memberRows = byScope('member')
-  const keyRows = byScope('key')
+  const memberRows = byScope('member').filter((g) => passesFilter(g, listFilter))
+  const keyRows = byScope('key').filter((g) => passesFilter(g, listFilter))
 
   const shared = { canEdit, canDelete, onOpenDetail, onDelete }
 
@@ -318,6 +351,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
           hasSearch={search.member.trim().length > 0}
           search={search.member}
           onSearch={(v) => onSearchChange('member', v)}
+          filterControl={filterControl}
           canCreate={canCreate}
           onCreate={onCreate}
         >
@@ -363,6 +397,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
         hasSearch={search.key.trim().length > 0}
         search={search.key}
         onSearch={(v) => onSearchChange('key', v)}
+        filterControl={filterControl}
         canCreate={canCreate}
         onCreate={onCreate}
       >

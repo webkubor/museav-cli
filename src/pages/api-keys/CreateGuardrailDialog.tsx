@@ -10,7 +10,7 @@ import { createGuardrail } from '@/services/guardrails'
 import { listModels } from '@/services/catalog'
 import { appToast } from '@/lib/app-toast'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
-import { PROMPT_INJECTION_LABEL, PROMPT_INJECTION_MODES, type PromptInjectionMode } from '@/pages/guardrails/derive'
+import { PROMPT_INJECTION_INHERIT, PROMPT_INJECTION_INHERIT_LABEL, PROMPT_INJECTION_LABEL, PROMPT_INJECTION_MODES, type PromptInjectionFormValue } from '@/pages/guardrails/derive'
 
 type Props = {
   open: boolean
@@ -39,7 +39,8 @@ export function CreateGuardrailDialog({ open, onClose, workspaceId, onCreated }:
   const [name, setName] = useState('')
   const [modelBlacklist, setModelBlacklist] = useState<string[]>([])
   const [ipWhitelist, setIpWhitelist] = useState<string[]>([])
-  const [promptInjectionMode, setPromptInjectionMode] = useState<PromptInjectionMode>('off')
+  // 此弹窗建的是绑定到 Key 的常规护栏，提示词注入默认「继承全局」
+  const [promptInjectionMode, setPromptInjectionMode] = useState<PromptInjectionFormValue>(PROMPT_INJECTION_INHERIT)
   const [ipError, setIpError] = useState('')
 
   const modelsQuery = useQuery({
@@ -53,7 +54,7 @@ export function CreateGuardrailDialog({ open, onClose, workspaceId, onCreated }:
     setName('')
     setModelBlacklist([])
     setIpWhitelist([])
-    setPromptInjectionMode('off')
+    setPromptInjectionMode(PROMPT_INJECTION_INHERIT)
     setIpError('')
   }
 
@@ -63,11 +64,12 @@ export function CreateGuardrailDialog({ open, onClose, workspaceId, onCreated }:
   }
 
   const mutation = useMutation({
-    mutationFn: () =>
-      createGuardrail(workspaceId, {
-        name: name.trim(),
-        metadata: { model_blacklist: modelBlacklist, ip_whitelist: ipWhitelist, prompt_injection_mode: promptInjectionMode },
-      }),
+    mutationFn: () => {
+      const metadata: Record<string, unknown> = { model_blacklist: modelBlacklist, ip_whitelist: ipWhitelist }
+      // 「继承全局」= 不写该字段（缺省即继承）
+      if (promptInjectionMode !== PROMPT_INJECTION_INHERIT) metadata.prompt_injection_mode = promptInjectionMode
+      return createGuardrail(workspaceId, { name: name.trim(), metadata })
+    },
     onSuccess: (g) => {
       queryClient.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
       appToast.success(`护栏「${g.name}」已创建`)
@@ -149,8 +151,9 @@ export function CreateGuardrailDialog({ open, onClose, workspaceId, onCreated }:
 
         <div>
           <label className="block text-xs font-bold text-mg-text-2 mb-1.5">提示词注入检测</label>
-          <p className="text-xs text-mg-text-3 mb-2">命中后：仅记录继续 / 脱敏后继续 / 拦截请求</p>
-          <Select value={promptInjectionMode} onChange={(v) => setPromptInjectionMode(v as PromptInjectionMode)} className="w-full">
+          <p className="text-xs text-mg-text-3 mb-2">默认继承全局；也可单独设为仅记录继续 / 脱敏后继续 / 拦截请求</p>
+          <Select value={promptInjectionMode} onChange={(v) => setPromptInjectionMode(v as PromptInjectionFormValue)} className="w-full">
+            <SelectItem value={PROMPT_INJECTION_INHERIT}>{PROMPT_INJECTION_INHERIT_LABEL}</SelectItem>
             {PROMPT_INJECTION_MODES.map((m) => (
               <SelectItem key={m} value={m}>{PROMPT_INJECTION_LABEL[m]}</SelectItem>
             ))}

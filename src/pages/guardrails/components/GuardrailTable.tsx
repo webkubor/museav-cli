@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils'
 import {
   KIND_LABEL,
   PROMPT_INJECTION_LABEL,
+  PROMPT_INJECTION_INHERIT_LABEL,
   apiKeyCount,
   boostExpiry,
   budgetByScope,
@@ -26,6 +27,7 @@ import {
   deriveScope,
   formatBudget,
   guardrailPromptInjectionMode,
+  rawPromptInjectionMode,
   memberCount,
   metadataList,
   nameMatches,
@@ -400,7 +402,11 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                   {boost ? <span className="text-xs text-mg-text-3">不适用</span> : <TagCell values={metadataList(row, 'ip_whitelist')} />}
                 </TableCell>
                 <TableCell className="text-xs font-semibold text-mg-text-2">
-                  {boost ? <span className="font-normal text-mg-text-3">不适用</span> : PROMPT_INJECTION_LABEL[guardrailPromptInjectionMode(row)]}
+                  {boost
+                    ? <span className="font-normal text-mg-text-3">不适用</span>
+                    : (rawPromptInjectionMode(row)
+                        ? PROMPT_INJECTION_LABEL[rawPromptInjectionMode(row)!]
+                        : <span className="font-normal text-mg-text-3">{PROMPT_INJECTION_INHERIT_LABEL}</span>)}
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-3">{formatDateTime(row.updated_at)}</TableCell>
                 <TableCell><StatusCell row={row} canEdit={canEdit} onToggle={onToggle} /></TableCell>

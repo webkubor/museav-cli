@@ -1,6 +1,7 @@
-import { LuChevronRight } from 'react-icons/lu'
+import { LuChevronRight, LuInbox, LuSearch } from 'react-icons/lu'
 import type { ReactNode } from 'react'
 import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Money } from '@/components/ui/Money'
 import { Pagination } from '@/components/ui/Pagination'
@@ -56,10 +57,12 @@ function ownerLines(row: CallLogItem, workspaceNameById?: Map<string, string>) {
 }
 
 export function LogsTable({
+  hasActiveFilters,
   hasMore,
   isFetching,
   isLoading,
   items,
+  onClearFilters,
   onNext,
   onPrev,
   onSelectLog,
@@ -67,10 +70,12 @@ export function LogsTable({
   selectedLogId,
   workspaceNameById,
 }: {
+  hasActiveFilters?: boolean
   hasMore: boolean
   isFetching: boolean
   isLoading: boolean
   items: CallLogItem[]
+  onClearFilters?: () => void
   onNext: () => void
   onPrev: () => void
   onSelectLog: (row: CallLogItem) => void
@@ -81,9 +86,23 @@ export function LogsTable({
   if (isLoading) return <LogsTableSkeleton />
 
   if (items.length === 0) {
+    // 空态分型：有筛选=筛选无结果（给清除入口）；无筛选=真正暂无日志
     return (
       <div className="rounded-md border border-mg-border bg-mg-bg-0">
-        <EmptyState title="没有匹配的调用日志" description="调整筛选条件，或使用完整 Request ID 精确检索。" />
+        {hasActiveFilters ? (
+          <EmptyState
+            icon={<LuSearch />}
+            title="没有匹配的调用日志"
+            description="当前筛选条件下没有记录，试试放宽条件，或用完整 Request ID 精确检索。"
+            action={onClearFilters ? <Button variant="outline" size="sm" onClick={onClearFilters}>清除筛选</Button> : undefined}
+          />
+        ) : (
+          <EmptyState
+            icon={<LuInbox />}
+            title="暂无调用日志"
+            description="通过 API Key 发起模型调用后，请求会在这里按时间倒序展示。"
+          />
+        )}
       </div>
     )
   }

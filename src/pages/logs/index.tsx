@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { Input } from '@/components/ui/Input'
 import { PageHeader } from '@/components/ui/PageHeader'
 import Select from '@/components/ui/Select'
@@ -13,7 +14,8 @@ import { listTenantMembers } from '@/services/tenants'
 import { listWorkspaces } from '@/services/workspaces'
 import { useAuthStore } from '@/store/auth'
 import { useTenantRole } from '@/hooks/use-tenant-role'
-import { trackPageView } from '@/lib/track'
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
+import { trackEvent, trackPageView } from '@/lib/track'
 import { SegmentedToggle } from '@/features/dashboard/workbench/SegmentedToggle'
 import type { CallLogListParams } from '@/interfaces/logs'
 import type { CallLogItem } from '@/types'
@@ -29,7 +31,7 @@ import {
   type PayloadView,
 } from './detail'
 import { AsyncTasksPanel } from '@/pages/tasks'
-import { LuChevronDown, LuRefreshCw, LuSearch } from 'react-icons/lu'
+import { LuChevronDown, LuRefreshCw, LuSearch, LuTriangleAlert } from 'react-icons/lu'
 
 type RecordType = 'sync' | 'async'
 
@@ -75,6 +77,12 @@ function initialLogsTimeRange(sp: URLSearchParams): DateRangeValue {
   const valid = ['today', '7d', '30d', 'thisMonth', 'lastMonth']
   if (tr && valid.includes(tr)) return { preset: tr }
   return DEFAULT_TIME_RANGE
+}
+
+// Request ID 精确检索判定：单个 token、无空格、长度 ≥16（区别于模型名/错误摘要等模糊关键词）。
+// 命中则走独立 request_id 参数（精确匹配），否则走模糊 q。
+function isLikelyRequestId(value: string) {
+  return /^[A-Za-z0-9][A-Za-z0-9._:-]{15,}$/.test(value)
 }
 
 function timeRangeLabel(value: DateRangeValue) {
@@ -125,6 +133,7 @@ export default function LogsPage() {
     searchParams.get('record_type') === 'async' ? 'async' : 'sync',
   )
   function changeRecordType(next: RecordType) {
+    trackEvent('logs_record_type_switch', { record_type: next })
     setRecordType(next)
     setSelectedLog(null)
     resetPagination()
@@ -177,6 +186,9 @@ export default function LogsPage() {
     setSelectedLog(null)
     resetPagination()
   }
+
+  const trackFilter = (filter: string, value?: string) =>
+    trackEvent('logs_filter_change', { record_type: 'sync', filter, ...(value ? { value } : {}) })
 
   function clearFilters() {
     setStatusFilter('all')
@@ -232,6 +244,11 @@ export default function LogsPage() {
     staleTime: 5 * 60_000,
   })
 
+  // 搜索防抖：settle 350ms 后才进 queryKey，避免每次按键触发请求
+  const debouncedSearch = useDebouncedValue(searchValue.trim(), 350)
+  // Request ID 精确检索：识别为完整 ID → 走 request_id 参数（精确），否则走模糊 q
+  const isRequestIdSearch = isLikelyRequestId(debouncedSearch)
+
   const { from, to } = useMemo(() => rangeToDates(timeRange), [timeRange])
   const backendStatus = resolveBackendStatus(statusFilter)
   const selectedWorkspaceId = workspaceFilter === 'all' ? undefined : workspaceFilter
@@ -241,7 +258,7 @@ export default function LogsPage() {
   const effectiveAccountId =
     view === 'mine' ? currentAccountId || undefined : memberFilter === 'all' ? undefined : memberFilter
 
-  const { data, isFetching, isLoading, refetch } = useQuery({
+  const { data, isFetching, isLoading, isError, refetch } = useQuery({
     queryKey: [
       'logs',
       activeTenantId,
@@ -253,7 +270,8 @@ export default function LogsPage() {
       modelFilter,
       apiKeyFilter,
       memberFilter,
-      searchValue,
+      debouncedSearch,
+      isRequestIdSearch,
       timeRange,
       page,
       currentCursor,
@@ -266,7 +284,9 @@ export default function LogsPage() {
         model_id: modelFilter === 'all' ? undefined : modelFilter,
         api_key_id: apiKeyFilter === 'all' ? undefined : apiKeyFilter,
         account_id: effectiveAccountId,
-        q: searchValue.trim() || undefined,
+        // 精确 ID 与模糊关键词分流：命中 ID 走 request_id，否则走 q
+        request_id: isRequestIdSearch ? debouncedSearch : undefined,
+        q: isRequestIdSearch ? undefined : debouncedSearch || undefined,
         from,
         to,
         before_started_at: currentCursor ?? undefined,
@@ -300,6 +320,23 @@ export default function LogsPage() {
 
   const items = data?.items ?? []
   const hasMore = Boolean(data?.has_more && data.next_cursor)
+
+  // Request ID 精确检索命中唯一 → 自动展开详情（每个检索值只自动开一次；用户手动关掉后不再弹）
+  const autoOpenedRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!isRequestIdSearch || !data) return
+    if (data.items.length === 1 && autoOpenedRef.current !== debouncedSearch) {
+      autoOpenedRef.current = debouncedSearch
+      setSelectedLog(data.items[0])
+      setPayloadView('parsed')
+      trackEvent('logs_detail_view', { record_type: 'sync', source: 'request_id_autoopen' })
+    }
+  }, [data, isRequestIdSearch, debouncedSearch])
+
+  // 搜索埋点：防抖 settle 后一次，非空才报
+  useEffect(() => {
+    if (debouncedSearch) trackEvent('logs_search', { record_type: 'sync', is_request_id: isRequestIdSearch })
+  }, [debouncedSearch, isRequestIdSearch])
 
   const workspaceNameById = useMemo(() => {
     const map = new Map<string, string>()
@@ -363,11 +400,13 @@ export default function LogsPage() {
     a.download = `log-${selectedLog.request_id}.json`
     a.click()
     URL.revokeObjectURL(url)
+    trackEvent('logs_artifact_download', { record_type: 'sync', artifact: 'payload_json' })
   }
 
   function openLog(row: CallLogItem) {
     setSelectedLog(row)
     setPayloadView('parsed')
+    trackEvent('logs_detail_view', { record_type: 'sync', status: row.status })
   }
 
   return (
@@ -430,17 +469,17 @@ export default function LogsPage() {
       <section className="space-y-4 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[180px_180px_minmax(180px,1fr)_minmax(180px,1fr)_minmax(180px,1fr)_auto] lg:items-end">
           <FilterField label="时间范围">
-            <DateRangePicker value={timeRange} onChange={(value) => { setTimeRange(value); resetPagination() }} presets={LOG_TIME_PRESETS} />
+            <DateRangePicker value={timeRange} onChange={(value) => { setTimeRange(value); resetPagination(); trackFilter('time_range', value.preset) }} presets={LOG_TIME_PRESETS} />
           </FilterField>
           <FilterField label="调用状态">
-            <Select value={statusFilter} onChange={(value) => { setStatusFilter(value as LogStatusFilter); resetPagination() }}>
+            <Select value={statusFilter} onChange={(value) => { setStatusFilter(value as LogStatusFilter); resetPagination(); trackFilter('status', value) }}>
               {STATUS_OPTIONS.map((option) => (
                 <Select.Option key={option.value} value={option.value}>{option.label}</Select.Option>
               ))}
             </Select>
           </FilterField>
           <FilterField label="工作空间">
-            <Select value={workspaceFilter} onChange={(value) => { setWorkspaceFilter(value); setApiKeyFilter('all'); resetPagination() }}>
+            <Select value={workspaceFilter} onChange={(value) => { setWorkspaceFilter(value); setApiKeyFilter('all'); resetPagination(); trackFilter('workspace') }}>
               <Select.Option value="all">全部工作空间</Select.Option>
               {(workspacesData?.items ?? []).map((workspace) => (
                 <Select.Option key={workspace.workspace_id} value={workspace.workspace_id}>
@@ -450,7 +489,7 @@ export default function LogsPage() {
             </Select>
           </FilterField>
           <FilterField label="模型名称">
-            <Select value={modelFilter} onChange={(value) => { setModelFilter(value); resetPagination() }}>
+            <Select value={modelFilter} onChange={(value) => { setModelFilter(value); resetPagination(); trackFilter('model') }}>
               <Select.Option value="all">全部模型</Select.Option>
               {(modelsData?.items ?? []).map((model) => (
                 <Select.Option key={model.model_id} value={model.model_id}>
@@ -460,7 +499,7 @@ export default function LogsPage() {
             </Select>
           </FilterField>
           <FilterField label="API Key">
-            <Select value={apiKeyFilter} disabled={!apiKeyWorkspaceId} onChange={(value) => { setApiKeyFilter(value); resetPagination() }}>
+            <Select value={apiKeyFilter} disabled={!apiKeyWorkspaceId} onChange={(value) => { setApiKeyFilter(value); resetPagination(); trackFilter('api_key') }}>
               <Select.Option value="all">{apiKeyWorkspaceId ? '全部 API Key' : '先选择工作空间'}</Select.Option>
               {(apiKeysData?.items ?? []).map((key) => (
                 <Select.Option key={key.api_key_id} value={key.api_key_id}>
@@ -491,7 +530,7 @@ export default function LogsPage() {
             </FilterField>
             {(view === 'enterprise' || view === 'space') && (
               <FilterField label="成员">
-                <Select value={memberFilter} onChange={(value) => { setMemberFilter(value); resetPagination() }}>
+                <Select value={memberFilter} onChange={(value) => { setMemberFilter(value); resetPagination(); trackFilter('member') }}>
                   <Select.Option value="all">全部成员</Select.Option>
                   {(membersData?.items ?? []).map((member) => (
                     <Select.Option key={member.account.account_id} value={member.account.account_id}>
@@ -502,7 +541,7 @@ export default function LogsPage() {
               </FilterField>
             )}
             <FilterField label="护栏">
-              <Select value={guardrailFilter} onChange={(value) => { setGuardrailFilter(value as LogGuardrailFilter); resetPagination() }}>
+              <Select value={guardrailFilter} onChange={(value) => { setGuardrailFilter(value as LogGuardrailFilter); resetPagination(); trackFilter('guardrail', value) }}>
                 {GUARDRAIL_OPTIONS.map((option) => (
                   <Select.Option key={option.value} value={option.value}>{option.label}</Select.Option>
                 ))}
@@ -517,18 +556,36 @@ export default function LogsPage() {
         <ActiveFilterChips chips={activeChips} onClear={clearFilters} />
       </section>
 
-      <LogsTable
-        hasMore={hasMore}
-        isFetching={isFetching}
-        isLoading={isLoading}
-        items={items}
-        onNext={goNextPage}
-        onPrev={goPrevPage}
-        onSelectLog={openLog}
-        page={page}
-        selectedLogId={selectedLog?.call_log_id}
-        workspaceNameById={workspaceNameById}
-      />
+      {isError && !isLoading ? (
+        <div className="rounded-md border border-mg-border bg-mg-bg-0">
+          <EmptyState
+            icon={<LuTriangleAlert />}
+            title="调用日志加载失败"
+            description="接口拉取出错，请检查网络后重试。"
+            action={
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
+                <LuRefreshCw className={`mr-1.5 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+                重试
+              </Button>
+            }
+          />
+        </div>
+      ) : (
+        <LogsTable
+          hasActiveFilters={activeChips.length > 0}
+          hasMore={hasMore}
+          isFetching={isFetching}
+          isLoading={isLoading}
+          items={items}
+          onClearFilters={clearFilters}
+          onNext={goNextPage}
+          onPrev={goPrevPage}
+          onSelectLog={openLog}
+          page={page}
+          selectedLogId={selectedLog?.call_log_id}
+          workspaceNameById={workspaceNameById}
+        />
+      )}
 
       <LogDetailSheet
         requestPayloadText={requestPayloadText}

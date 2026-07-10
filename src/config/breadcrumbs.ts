@@ -13,7 +13,7 @@ export const breadcrumbConfig: BreadcrumbConfig = {
   'models/compare':    [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.models', path: '/models/playground' }, { label: 'nav.modelCompare' }],
   'api-keys':       [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.workspace', path: '/workspaces' }, { label: 'nav.apiKeys' }],
   usage:            [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.groupBilling' }, { label: 'nav.usage' }],
-  logs:             [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.analytics' }, { label: 'nav.logs' }],
+  logs:             [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.groupBilling' }, { label: 'nav.logs' }],
   billing:          [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.billing' }],
   referral:         [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.referral' }],
   tasks:            [{ label: 'nav.home', path: '/dashboard' }, { label: 'nav.tasks' }],

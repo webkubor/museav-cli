@@ -36,6 +36,8 @@ export interface CallLogListParams extends QueryParams {
   guardrail?: 'all' | 'hit' | 'not_hit'
   /** 关键词搜索 request_id 或消息片段 */
   q?: string
+  /** Request ID 精确检索：识别为完整 ID 时走此参数（与模糊 q 分流），命中唯一自动展开详情 */
+  request_id?: string
   cursor?: string
   limit?: number
   page_size?: number

@@ -1,16 +1,16 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import {
   LuSearch,
   LuClapperboard,
   LuImage,
   LuMusic,
-  LuX,
   LuRefreshCw,
   LuVideoOff,
   LuDownload,
   LuLink,
   LuTriangleAlert,
+  LuChevronDown,
 } from 'react-icons/lu'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { Badge } from '@/components/ui/Badge'
@@ -34,10 +34,11 @@ import { listWorkspaces } from '@/services/workspaces'
 import { listTenantMembers } from '@/services/tenants'
 import { listApiKeys } from '@/services/api-keys'
 import { GATEWAY_ENDPOINTS } from '@/config/gateway'
-import { post } from '@/lib/request'
 import { formatDateTime } from '@/lib/format-date'
+import { trackEvent } from '@/lib/track'
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { cn } from '@/lib/utils'
-import type { TaskItem, TaskDetail, TaskStatus, TaskKind } from '@/types'
+import type { TaskItem, TaskDetail, TaskKind } from '@/types'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { Money } from '@/components/ui/Money'
 import { VideoThumbnail } from './VideoThumbnail'
@@ -49,14 +50,18 @@ const PAGE_SIZE = 20
 const REFRESH_INTERVAL = 10 // 列表可见倒计时刷新间隔（秒）
 const EMPTY_TASK_ITEMS: TaskItem[] = []
 
-const STATUS_CONFIG: Record<TaskStatus, { label: string; variant: BadgeVariant; dot: boolean }> = {
+// 状态词以 PRD 为准：running→「生成中」；去 cancelled（异步任务不支持取消）。
+// 「已过期」不是后端状态，是产物 result_meta 过期派生的客户端筛选态（见 EXPIRED_FILTER）。
+const STATUS_CONFIG: Record<string, { label: string; variant: BadgeVariant; dot: boolean }> = {
   queued:    { label: '排队中', variant: 'secondary', dot: true },
-  running:   { label: '执行中', variant: 'info',      dot: true },
+  running:   { label: '生成中', variant: 'info',      dot: true },
   succeeded: { label: '已完成', variant: 'success',   dot: false },
   completed: { label: '已完成', variant: 'success',   dot: false },
   failed:    { label: '失败',   variant: 'danger',    dot: false },
-  cancelled: { label: '已取消', variant: 'outline',   dot: false },
 }
+
+// 「已过期」为客户端派生筛选值（非后端 status），不下发后端、改走本地过滤
+const EXPIRED_FILTER = 'expired'
 
 const KIND_CONFIG: Record<TaskKind, { label: string; icon: React.ReactNode }> = {
   video: { label: '视频生成', icon: <LuClapperboard size={13} /> },
@@ -189,7 +194,6 @@ function DetailRow({ label, value, hint, mono }: {
 // ─── 详情抽屉 ─────────────────────────────────────────────────────────────────
 
 function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose: () => void }) {
-  const qc = useQueryClient()
   const taskId = listTask.gateway_request_id
   const { data } = useQuery({
     queryKey: ['task-detail', taskId],
@@ -198,14 +202,6 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
     refetchInterval: (q) => {
       const s = q.state.data?.task.status
       return s === 'queued' || s === 'running' ? 3000 : false
-    },
-  })
-
-  const cancelMutation = useMutation({
-    mutationFn: () => post<void>(`async-tasks/${encodeURIComponent(taskId)}/cancel`, {}),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['tasks'] })
-      void qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
     },
   })
 
@@ -250,8 +246,17 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
   const showVideo = !!videoUrl && !videoUnavailable
   const gone = (isVideoTask && (expired || noMeta)) || videoUnavailable
 
+  // 产物元信息（#446）：后端未交付前统一占位「—」；有值才展示真实内容
+  const rm = data?.result_meta ?? task.result_meta
+  const artifactMeta = {
+    filename: rm?.result_filename || '—',
+    format: rm?.result_format || '—',
+    resolution: rm?.result_resolution || '—',
+    duration: rm?.result_duration_seconds ? `${rm.result_duration_seconds} 秒` : '—',
+  }
+
   return (
-    <SideSheet open onClose={onClose} width={460} title="任务详情">
+    <SideSheet open onClose={onClose} width={460} title="异步任务详情">
         <div className="space-y-5 px-[var(--mg-space-1)] py-[var(--mg-control-py-sm)] mg-text-body">
           {/* 头部徽章 */}
           <div className="flex flex-wrap items-center gap-2">
@@ -262,7 +267,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
             {task.from_image && <Badge variant="info">图生视频</Badge>}
           </div>
 
-          {/* 字段列表 */}
+          {/* 基本信息（去供应商/Prompt，对齐 PRD） */}
           <div className="rounded-md border border-mg-border bg-card-bg px-[var(--mg-panel-padding-md)]">
             <DetailRow label="任务 ID"   value={task.gateway_request_id} mono />
             <DetailRow
@@ -278,13 +283,9 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
                 </span>
               }
             />
-            {task.vendor && <DetailRow label="供应商" value={task.vendor} />}
             <DetailRow label="工作空间" value={workspaceName} />
             <DetailRow label="API Key 名称" value={apiKeyName} />
             <DetailRow label="成员" value={memberName} />
-            <DetailRow label="提交时间" value={fmtDate(task.created_at)} />
-            <DetailRow label="结束时间" value={fmtDate(task.completed_at)} />
-            <DetailRow label="耗时"     value={fmtDuration(task.created_at, task.completed_at)} />
             {(task.input_tokens != null || task.output_tokens != null) && (
               <DetailRow
                 label="Token 用量"
@@ -299,26 +300,34 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
             )}
             <DetailRow
               label="实际费用"
-              value={task.status === 'cancelled' || (task.status === 'failed' && !taskCost(task))
-                ? '无费用'
-                : fmtCost(task)}
+              value={task.status === 'failed' && !taskCost(task) ? '无费用' : fmtCost(task)}
               hint={costHint(task)}
             />
-            {expiry && (
-              <DetailRow
-                label="产物有效期"
-                value={
-                  expiry.expired ? (
-                    <span className="text-mg-text-4">已过期 · 已自动清理</span>
-                  ) : (
-                    <span className="text-mg-text-2">
-                      至 {fmtDate(expiry.expiresAt)} <span className="text-mg-text-3">· {expiry.remain}</span>
-                    </span>
-                  )
-                }
-                hint={expiry.expired ? undefined : '产物到期后自动清理，平台不长期存储'}
-              />
-            )}
+          </div>
+
+          {/* 生命周期：提交 → 结束 → 耗时 → 产物有效期 */}
+          <div>
+            <p className="mg-text-label text-mg-text-3 mb-2">生命周期</p>
+            <div className="rounded-md border border-mg-border bg-card-bg px-[var(--mg-panel-padding-md)]">
+              <DetailRow label="提交时间" value={fmtDate(task.created_at)} />
+              <DetailRow label="结束时间" value={fmtDate(task.completed_at)} />
+              <DetailRow label="耗时"     value={fmtDuration(task.created_at, task.completed_at)} />
+              {expiry && (
+                <DetailRow
+                  label="产物有效期"
+                  value={
+                    expiry.expired ? (
+                      <span className="text-mg-text-4">已过期 · 已自动清理</span>
+                    ) : (
+                      <span className="text-mg-text-2">
+                        至 {fmtDate(expiry.expiresAt)} <span className="text-mg-text-3">· {expiry.remain}</span>
+                      </span>
+                    )
+                  }
+                  hint={expiry.expired ? undefined : '产物到期后自动清理，平台不长期存储'}
+                />
+              )}
+            </div>
           </div>
 
           {/* 产物预览：视频任务成功态，直接用网关 content 端点播放 */}
@@ -334,6 +343,19 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
                 className="w-full rounded-lg bg-black max-h-72"
                 onError={() => setVideoUnavailable(true)}
               />
+            </div>
+          )}
+
+          {/* 产物信息：文件名/格式/分辨率/时长 —— TODO(#446) 后端未交付，缺省占位「—」 */}
+          {showVideo && (
+            <div>
+              <p className="mg-text-label text-mg-text-3 mb-2">产物信息</p>
+              <div className="rounded-md border border-mg-border bg-card-bg px-[var(--mg-panel-padding-md)]">
+                <DetailRow label="文件名" value={artifactMeta.filename} mono />
+                <DetailRow label="格式" value={artifactMeta.format} />
+                <DetailRow label="分辨率" value={artifactMeta.resolution} />
+                <DetailRow label="时长" value={artifactMeta.duration} />
+              </div>
             </div>
           )}
 
@@ -353,6 +375,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
                 download
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => trackEvent('logs_artifact_download', { record_type: 'async', kind, source: 'detail' })}
                 className="inline-flex w-full items-center justify-center gap-1.5 mg-control-md rounded-lg bg-mg-primary text-white mg-text-body font-semibold transition-opacity hover:opacity-90"
               >
                 <LuDownload size={14} />
@@ -377,14 +400,6 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
             </div>
           )}
 
-          {/* Prompt */}
-          {task.prompt && (
-            <div className="rounded-md border border-mg-border bg-card-bg mg-panel">
-              <p className="mg-text-label text-mg-text-3 mb-2">Prompt</p>
-              <p className="mg-text-body text-mg-text-2">{task.prompt}</p>
-            </div>
-          )}
-
           {/* 失败原因 */}
           {task.status === 'failed' && task.error_message && (
             <div className="rounded-md border border-[var(--mg-danger)]/20 bg-[var(--mg-danger)]/5 mg-panel">
@@ -392,22 +407,6 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
               <p className="mg-text-caption text-mg-text-2">{task.error_message}</p>
             </div>
           )}
-
-          {/* 操作按钮 */}
-          <div className="flex gap-2 pt-1">
-            {task.status === 'queued' && (
-              <Button
-                variant="destructive"
-                size="sm"
-                className="flex-1"
-                loading={cancelMutation.isPending}
-                onClick={() => cancelMutation.mutate()}
-              >
-                <LuX size={14} />
-                取消任务
-              </Button>
-            )}
-          </div>
         </div>
     </SideSheet>
   )
@@ -423,25 +422,52 @@ export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise'
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
 
   const [search, setSearch]         = useState('')
+  const debouncedSearch             = useDebouncedValue(search.trim(), 350)
   const [statusFilter, setStatus]   = useState('all')
   const [kindFilter, setKind]       = useState('all')
-  const [presetFilter, setPreset]   = useState('all')
+  const [presetFilter, setPreset]   = useState('7d') // 默认近 7 天（对齐 PRD，去 all）
+  const [workspaceFilter, setWorkspace] = useState('all')
+  const [apiKeyFilter, setApiKey]   = useState('all')
+  const [memberFilter, setMember]   = useState('all')
+  const [showMoreFilters, setShowMoreFilters] = useState(false)
   const [offset, setOffset]         = useState(0)
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   // 视频 404（无 result_meta 的老任务，产物已被清理）：列表据此显示「已过期」文案
   const [expiredIds, setExpiredIds] = useState<Set<string>>(new Set())
 
+  // 更多筛选取数：工作空间 / 成员 / API Key（API Key 归属具体空间，跟随工作空间筛选）
+  const { data: workspacesData } = useQuery({
+    queryKey: ['workspaces'],
+    queryFn: () => listWorkspaces().then((r) => r.items ?? []),
+    staleTime: 5 * 60_000,
+  })
+  const { data: memberPage } = useQuery({
+    queryKey: ['tenant-members', tenantId],
+    queryFn: () => listTenantMembers(tenantId),
+    enabled: !!tenantId,
+    staleTime: 5 * 60_000,
+  })
+  const apiKeyWorkspaceId = workspaceFilter === 'all' ? undefined : workspaceFilter
+  const { data: keyPage } = useQuery({
+    queryKey: ['api-keys', apiKeyWorkspaceId],
+    queryFn: () => listApiKeys(apiKeyWorkspaceId!),
+    enabled: !!apiKeyWorkspaceId,
+    staleTime: 60_000,
+  })
+
   const params = useMemo(() => ({
-    workspace_id: undefined,
-    // 「我的视图」按当前账号裁剪；企业/空间视图交服务端按角色/负责空间裁剪（见 #357 后端口径）
-    account_id: view === 'mine' ? currentAccountId || undefined : undefined,
-    status: statusFilter !== 'all' ? statusFilter : undefined,
+    // 「我的视图」锁当前账号；企业/空间视图用「成员」筛选（默认全部，服务端按角色/负责空间裁剪）
+    account_id: view === 'mine' ? currentAccountId || undefined : memberFilter === 'all' ? undefined : memberFilter,
+    workspace_id: workspaceFilter === 'all' ? undefined : workspaceFilter,
+    api_key_id: apiKeyFilter === 'all' ? undefined : apiKeyFilter,
+    // 「已过期」是客户端派生筛选，不下发后端；其余为后端真实 status
+    status: statusFilter !== 'all' && statusFilter !== EXPIRED_FILTER ? statusFilter : undefined,
     preset: presetFilter !== 'all' ? (presetFilter as '1h' | '24h' | '7d') : undefined,
-    search: search || undefined,
+    search: debouncedSearch || undefined,
     limit: PAGE_SIZE,
     offset,
-  }), [statusFilter, presetFilter, search, offset, view, currentAccountId])
+  }), [statusFilter, presetFilter, debouncedSearch, offset, view, currentAccountId, workspaceFilter, apiKeyFilter, memberFilter])
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['tasks', tenantId, params],
@@ -474,15 +500,39 @@ export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise'
   const pages  = Math.ceil(total / PAGE_SIZE)
   const page   = Math.floor(offset / PAGE_SIZE) + 1
 
-  const handleSearch = (v: string) => { setSearch(v); setOffset(0) }
-  const handleStatus = (v: string) => { setStatus(v); setOffset(0) }
-  const handleKind   = (v: string) => { setKind(v);   setOffset(0) }
-  const handlePreset = (v: string) => { setPreset(v); setOffset(0) }
+  const handleSearch = (v: string) => { setSearch(v); setOffset(0); if (v.trim()) trackEvent('logs_search', { record_type: 'async' }) }
+  const handleStatus = (v: string) => { setStatus(v); setOffset(0); trackEvent('logs_filter_change', { record_type: 'async', filter: 'status', value: v }) }
+  const handleKind   = (v: string) => { setKind(v);   setOffset(0); trackEvent('logs_filter_change', { record_type: 'async', filter: 'kind', value: v }) }
+  const handlePreset = (v: string) => { setPreset(v); setOffset(0); trackEvent('logs_filter_change', { record_type: 'async', filter: 'preset', value: v }) }
+  const handleWorkspace = (v: string) => { setWorkspace(v); setApiKey('all'); setOffset(0); trackEvent('logs_filter_change', { record_type: 'async', filter: 'workspace' }) }
+  const handleApiKey = (v: string) => { setApiKey(v); setOffset(0); trackEvent('logs_filter_change', { record_type: 'async', filter: 'api_key' }) }
+  const handleMember = (v: string) => { setMember(v); setOffset(0); trackEvent('logs_filter_change', { record_type: 'async', filter: 'member' }) }
+
+  const hasActiveFilters =
+    !!search.trim() || statusFilter !== 'all' || kindFilter !== 'all' ||
+    presetFilter !== '7d' || workspaceFilter !== 'all' || apiKeyFilter !== 'all' || memberFilter !== 'all'
+
+  function clearFilters() {
+    setSearch(''); setStatus('all'); setKind('all'); setPreset('7d')
+    setWorkspace('all'); setApiKey('all'); setMember('all'); setOffset(0)
+  }
+
+  const openDetail = (item: TaskItem) => {
+    setSelectedTask(item)
+    trackEvent('logs_detail_view', { record_type: 'async', kind: resolveKind(item), status: item.status })
+  }
 
   const filteredItems = useMemo(() => {
-    if (kindFilter === 'all') return items
-    return items.filter((t) => resolveKind(t) === kindFilter)
-  }, [items, kindFilter])
+    let list = kindFilter === 'all' ? items : items.filter((t) => resolveKind(t) === kindFilter)
+    // 「已过期」为客户端派生态：仅保留已过期的视频产物任务
+    if (statusFilter === EXPIRED_FILTER) {
+      list = list.filter((t) => {
+        const done = isTaskDone(t.status) && resolveKind(t) === 'video'
+        return done && (isVideoExpired(t) || !t.result_meta?.result_expires_at || expiredIds.has(t.gateway_request_id))
+      })
+    }
+    return list
+  }, [items, kindFilter, statusFilter, expiredIds])
 
   return (
     <div>
@@ -514,11 +564,20 @@ export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise'
         <Select value={statusFilter} onChange={handleStatus} className="mg-control-md w-32 mg-text-body">
           <Select.Option value="all">全部状态</Select.Option>
           <Select.Option value="queued">排队中</Select.Option>
-          <Select.Option value="running">执行中</Select.Option>
+          <Select.Option value="running">生成中</Select.Option>
           <Select.Option value="completed">已完成</Select.Option>
           <Select.Option value="failed">失败</Select.Option>
-          <Select.Option value="cancelled">已取消</Select.Option>
+          <Select.Option value={EXPIRED_FILTER}>已过期</Select.Option>
         </Select>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowMoreFilters((v) => !v)}
+        >
+          <LuChevronDown size={14} className={cn('transition-transform', showMoreFilters && 'rotate-180')} />
+          更多筛选
+        </Button>
 
         <div className="ml-auto flex items-center gap-3">
           {total > 0 && (
@@ -537,6 +596,44 @@ export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise'
         </div>
       </div>
 
+      {/* 更多筛选：工作空间 / API Key / 成员（API Key 归属具体空间，跟随工作空间筛选）
+          TODO(#446): 产物状态 / 计费状态筛选依赖后端 #446 交付后补入 */}
+      {showMoreFilters && (
+        <div className="flex items-end gap-3 mb-5 flex-wrap border-t border-mg-border pt-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="mg-text-label text-mg-text-3">工作空间</span>
+            <Select value={workspaceFilter} onChange={handleWorkspace} className="mg-control-md w-44 mg-text-body">
+              <Select.Option value="all">全部工作空间</Select.Option>
+              {(workspacesData ?? []).map((w) => (
+                <Select.Option key={w.workspace_id} value={w.workspace_id}>{w.name}</Select.Option>
+              ))}
+            </Select>
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="mg-text-label text-mg-text-3">API Key</span>
+            <Select value={apiKeyFilter} disabled={!apiKeyWorkspaceId} onChange={handleApiKey} className="mg-control-md w-44 mg-text-body">
+              <Select.Option value="all">{apiKeyWorkspaceId ? '全部 API Key' : '先选择工作空间'}</Select.Option>
+              {(keyPage?.items ?? []).map((k) => (
+                <Select.Option key={k.api_key_id} value={k.api_key_id}>{k.name}</Select.Option>
+              ))}
+            </Select>
+          </label>
+          {view !== 'mine' && (
+            <label className="flex flex-col gap-1.5">
+              <span className="mg-text-label text-mg-text-3">成员</span>
+              <Select value={memberFilter} onChange={handleMember} className="mg-control-md w-44 mg-text-body">
+                <Select.Option value="all">全部成员</Select.Option>
+                {(memberPage?.items ?? []).map((m) => (
+                  <Select.Option key={m.account.account_id} value={m.account.account_id}>
+                    {m.account.display_name || m.account.email}
+                  </Select.Option>
+                ))}
+              </Select>
+            </label>
+          )}
+        </div>
+      )}
+
       {/* 提示条：只放唯一注意事项（有效期/保存），不与页头描述重复 */}
       <p className="flex items-start gap-1.5 mg-text-caption text-[var(--mg-warning)] mb-4 px-1">
         <LuTriangleAlert size={13} className="shrink-0 mt-0.5" />
@@ -551,7 +648,7 @@ export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise'
               <TableHead align="center" className="w-20">预览</TableHead>
               <TableHead align="center">提交时间</TableHead>
               <TableHead align="center">类型</TableHead>
-              <TableHead align="center">模型 / 供应商</TableHead>
+              <TableHead align="center">模型</TableHead>
               <TableHead align="center">状态</TableHead>
               <TableHead align="center">实际费用</TableHead>
               <TableHead align="center">操作</TableHead>
@@ -561,18 +658,40 @@ export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise'
             {isLoading && (
               <EmptyState colSpan={7} title="加载中…" />
             )}
-            {isError && (
-              <EmptyState colSpan={7} title="加载失败，请稍后重试" />
-            )}
-            {!isLoading && !isError && filteredItems.length === 0 && (
+            {/* 接口失败不降级空态：明确报错 + 重试入口 */}
+            {isError && !isLoading && (
               <EmptyState
                 colSpan={7}
-                title={
-                  search || statusFilter !== 'all' || kindFilter !== 'all' || presetFilter !== 'all'
-                    ? '没有符合条件的任务'
-                    : '暂无任务'
+                icon={<LuTriangleAlert />}
+                title="加载失败"
+                description="任务列表拉取出错，请检查网络后重试。"
+                action={
+                  <Button variant="outline" size="sm" onClick={handleRefresh}>
+                    <LuRefreshCw size={13} className={cn(isFetching && 'animate-spin')} />
+                    重试
+                  </Button>
                 }
               />
+            )}
+            {/* 空态分型：有筛选=筛选无结果（给清除入口）；无筛选=真正暂无任务 */}
+            {!isLoading && !isError && filteredItems.length === 0 && (
+              hasActiveFilters ? (
+                <EmptyState
+                  colSpan={7}
+                  title="没有符合条件的任务"
+                  description="当前筛选条件下没有任务，试试放宽或清除筛选。"
+                  action={
+                    <Button variant="outline" size="sm" onClick={clearFilters}>清除筛选</Button>
+                  }
+                />
+              ) : (
+                <EmptyState
+                  colSpan={7}
+                  icon={<LuClapperboard />}
+                  title="暂无异步任务"
+                  description="发起视频、图片或音乐等异步生成任务后，会在这里显示状态、费用和产物。"
+                />
+              )
             )}
             {filteredItems.map((item) => {
               const kind    = resolveKind(item)
@@ -592,7 +711,7 @@ export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise'
                 <TableRow
                   key={item.gateway_request_id}
                   className="cursor-pointer hover:bg-mg-fill-0/50 transition-colors"
-                  onClick={() => setSelectedTask(item)}
+                  onClick={() => openDetail(item)}
                 >
                   <TableCell align="center">
                     {isExpired ? (
@@ -648,9 +767,6 @@ export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise'
                         {item.requested_model}
                       </p>
                     </span>
-                    {item.vendor && (
-                      <p className="mg-text-caption text-mg-text-3 mt-0.5">{item.vendor}</p>
-                    )}
                   </TableCell>
                   <TableCell align="center">
                     <StatusBadge status={item.status} statusMap={STATUS_CONFIG} />
@@ -661,16 +777,44 @@ export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise'
                     </span>
                   </TableCell>
                   <TableCell align="center">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setSelectedTask(item)
-                      }}
-                      className="mg-text-caption text-mg-text-3 hover:text-mg-text-1 font-semibold transition-colors"
-                    >
-                      详情
-                    </button>
+                    <div className="inline-flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openDetail(item)
+                        }}
+                        className="mg-text-caption text-mg-text-3 hover:text-mg-text-1 font-semibold transition-colors"
+                      >
+                        详情
+                      </button>
+                      {/* 下载：仅未过期的已完成视频产物可用；未完成/生成中/失败/过期置灰（TODO(#446) 图片/音乐产物地址待后端交付） */}
+                      <button
+                        type="button"
+                        disabled={!videoUrl}
+                        title={videoUrl ? '下载产物' : '产物不可下载（未完成 / 生成中 / 失败 / 已过期）'}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (!videoUrl) return
+                          const a = document.createElement('a')
+                          a.href = videoUrl
+                          a.download = ''
+                          a.target = '_blank'
+                          a.rel = 'noopener noreferrer'
+                          a.click()
+                          trackEvent('logs_artifact_download', { record_type: 'async', kind, source: 'list' })
+                        }}
+                        className={cn(
+                          'inline-flex items-center gap-1 mg-text-caption font-semibold transition-colors',
+                          videoUrl
+                            ? 'text-brand-base hover:text-brand-deep'
+                            : 'text-mg-text-4 cursor-not-allowed',
+                        )}
+                      >
+                        <LuDownload size={13} />
+                        下载
+                      </button>
+                    </div>
                   </TableCell>
                 </TableRow>
               )

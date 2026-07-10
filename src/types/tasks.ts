@@ -36,6 +36,11 @@ export interface TaskItem {
   result_meta?: {
     result_expires_at?: string
     result_ttl_seconds?: number
+    // TODO(#446): 产物文件名/格式/分辨率/时长 后端未交付，字段可选、缺省展示占位「—」
+    result_filename?: string
+    result_format?: string
+    result_resolution?: string
+    result_duration_seconds?: number
   }
 }
 
@@ -50,6 +55,11 @@ export interface TaskDetail {
   result_meta?: {
     result_expires_at?: string
     result_ttl_seconds?: number
+    // TODO(#446): 产物文件名/格式/分辨率/时长 后端未交付，字段可选、缺省展示占位「—」
+    result_filename?: string
+    result_format?: string
+    result_resolution?: string
+    result_duration_seconds?: number
   }
 }
 

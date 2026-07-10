@@ -196,12 +196,22 @@ export function DashboardLayout() {
 
   const handleNavSelect = (data: { itemKey: string | number }) => {
     const key = String(data.itemKey)
-    trackEvent('console_nav_click', { ...trackCtx, nav_key: key }, { source: 'sidebar_nav' })
-    if (navConfig.workspaceScopedKeys.has(key)) {
-      navigate(`/workspace/${activeWorkspaceId}/${key}`)
-    } else {
-      navigate(`/${key}`)
-    }
+    const isWorkspaceScoped = navConfig.workspaceScopedKeys.has(key)
+    const targetRoute = isWorkspaceScoped ? `/workspace/${activeWorkspaceId}/${key}` : `/${key}`
+    const group = navGroups.find((g) => g.items.some((it) => it.itemKey === key))
+    trackEvent(
+      'console_nav_click',
+      {
+        ...trackCtx,
+        nav_key: key,
+        nav_group: group?.key ?? '',
+        target_route: targetRoute,
+        scope_type: group?.scope ?? (isWorkspaceScoped ? 'workspace' : 'tenant'),
+        sidebar_state: collapsed ? 'collapsed' : 'expanded',
+      },
+      { source: 'sidebar_nav' },
+    )
+    navigate(targetRoute)
   }
 
   const isDashboardRoute = getSelectedKey() === 'dashboard'

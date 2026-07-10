@@ -9,6 +9,8 @@ import { CopyButton } from '@/components/ui/CopyButton'
 import { useTranslation } from 'react-i18next'
 import { LuZap, LuChevronRight, LuExternalLink, LuKey } from 'react-icons/lu'
 import { appendThemeParam } from '@/lib/theme'
+import { trackEvent } from '@/lib/track'
+import { useTrackContext } from '@/hooks/use-track-context'
 import { CONNECT_ACTIONS, buildConnectSnippets, getConnectAction, MGC_CLIENT_OPTIONS, deriveRegionFromBaseUrl, buildMgcCommand } from './constants'
 
 type Props = {
@@ -23,6 +25,7 @@ type Props = {
 
 export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl, onCreateKey }: Props) {
   const { t } = useTranslation()
+  const trackCtx = useTrackContext()
   const hasCreatedKey = createdKeyText.trim().length > 0
 
   // @model-go/config 一键接入：区域自动推导、Key 自动预填，客户端由用户勾选
@@ -83,17 +86,34 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
           </div>
           <div className="mt-4 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
             <div className="rounded-lg border border-mg-border/60 bg-mg-bg-0 px-3 py-2">
-              <div className="text-mg-text-3 mb-1">OpenAI /v1</div>
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <span className="text-mg-text-3">OpenAI /v1</span>
+                <CopyButton
+                  value={openAIBaseUrl}
+                  aria-label="复制 Base URL"
+                  onCopied={() => trackEvent('copy_connect_endpoint', { ...trackCtx, endpoint: 'openai' })}
+                />
+              </div>
               <code className="font-mono text-mg-text-1 break-all">{openAIBaseUrl}</code>
             </div>
             <div className="rounded-lg border border-mg-border/60 bg-mg-bg-0 px-3 py-2">
-              <div className="text-mg-text-3 mb-1">Anthropic</div>
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <span className="text-mg-text-3">Anthropic</span>
+                <CopyButton
+                  value={anthropicBaseUrl}
+                  aria-label="复制 Base URL"
+                  onCopied={() => trackEvent('copy_connect_endpoint', { ...trackCtx, endpoint: 'anthropic' })}
+                />
+              </div>
               <code className="font-mono text-mg-text-1 break-all">{anthropicBaseUrl}</code>
             </div>
           </div>
         </div>
 
-        <Tabs defaultValue="mgc">
+        <Tabs
+          defaultValue="mgc"
+          onValueChange={(method) => trackEvent('connect_method', { ...trackCtx, method })}
+        >
           <div className="flex items-center justify-between gap-3">
             <div className="text-xs font-bold text-mg-text-2">接入方式</div>
             <a
@@ -169,6 +189,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                   variant="labeled"
                   buttonVariant="brand"
                   label="复制命令"
+                  onCopied={() => trackEvent('copy_connect_params', { ...trackCtx, method: 'mgc' })}
                 />
               </div>
             </div>
@@ -205,6 +226,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                         value={item.copyText}
                         variant="labeled"
                         label={item.copyLabel}
+                        onCopied={() => trackEvent('copy_connect_params', { ...trackCtx, method: item.id })}
                       />
                     </div>
                   </div>

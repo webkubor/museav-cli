@@ -81,7 +81,13 @@ export default function UsagePage() {
       : 'model'
   const [dimension, setDimension] = useState<UsageDimension>(initialDimension)
   // 趋势图分组维度（后端 /usage/series 的 group_by）：none=单条总量曲线，其余=多序列堆叠
-  const [trendGroupBy, setTrendGroupBy] = useState<TrendGroupBy>('none')
+  // 从总览「工作空间明细·查看更多」带来的上下文：?group_by=workspace 预置趋势维度
+  const groupByParam = searchParams.get('group_by')
+  const initialTrendGroupBy: TrendGroupBy =
+    groupByParam === 'model' || groupByParam === 'provider' || groupByParam === 'workspace'
+      ? groupByParam
+      : 'none'
+  const [trendGroupBy, setTrendGroupBy] = useState<TrendGroupBy>(initialTrendGroupBy)
   const [userView, setUserView] = useState<'enterprise' | 'mine' | 'space' | null>(
     viewParam === 'mine' || viewParam === 'enterprise' || viewParam === 'space' ? viewParam : null,
   )

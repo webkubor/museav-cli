@@ -73,7 +73,7 @@ export default function DashboardPage() {
 
       <RankingsSection view={view} granularity={granularity} accountId={scopedAccountId} />
 
-      <RecentCallsSection view={view} accountId={scopedAccountId} />
+      <RecentCallsSection view={view} accountId={scopedAccountId} granularity={granularity} />
     </div>
   )
 }

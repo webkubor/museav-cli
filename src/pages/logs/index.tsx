@@ -136,7 +136,13 @@ export default function LogsPage() {
   const [memberFilter, setMemberFilter] = useState('all')
   const [guardrailFilter, setGuardrailFilter] = useState<LogGuardrailFilter>('all')
   const [searchValue, setSearchValue] = useState('')
-  const [timeRange, setTimeRange] = useState<DateRangeValue>(DEFAULT_TIME_RANGE)
+  // 从总览「最近调用·查看全部」带来的上下文：?period= 初始化时间预设
+  const periodParam = searchParams.get('period')
+  const initialTimeRange: DateRangeValue =
+    periodParam && LOG_TIME_PRESETS.some((p) => p.key === periodParam && p.key !== 'custom')
+      ? { preset: periodParam }
+      : DEFAULT_TIME_RANGE
+  const [timeRange, setTimeRange] = useState<DateRangeValue>(initialTimeRange)
   const [showMoreFilters, setShowMoreFilters] = useState(false)
   const [selectedLog, setSelectedLog] = useState<CallLogItem | null>(null)
   const [payloadView, setPayloadView] = useState<PayloadView>('parsed')

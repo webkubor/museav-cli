@@ -23,6 +23,7 @@ import { CreateGuardrailDialog } from './CreateGuardrailDialog'
 import { KEY_TYPE_LABEL, KEY_TYPE_DESC } from './derive'
 import { PERIOD_LABEL } from '@/constants/status'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
+import { activeGlobalGuardrail, PROMPT_INJECTION_LABEL, resolveKeyPromptInjection } from '@/pages/guardrails/derive'
 import type { ApiKeyType, SpendingPeriodUnit } from '@/types'
 
 /** PRD「Key 类型」→ 后端 scope 映射（私有→personal / 成员→member / 服务→workspace） */
@@ -140,6 +141,10 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const defaultId = defaultGuardrail?.id ?? ''
   const extraIds = guardrailIds.filter((id) => id !== defaultId)
 
+  // 生效规则预览：提示词注入最终模式 + 来源（常规 Key 护栏显式 > 启用全局 > 关闭）
+  const selectedGuardrails = allGuardrails.filter((g) => guardrailIds.includes(g.id))
+  const piResolved = resolveKeyPromptInjection(selectedGuardrails, activeGlobalGuardrail(allGuardrails))
+
   return (
     <>
       <Modal
@@ -248,6 +253,12 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                 placeholder="可选：叠加其他护栏"
                 hint="默认护栏始终绑定，可继续叠加多个护栏共同生效"
               />
+            </div>
+            {/* 生效规则预览：提示词注入最终模式 + 来源 */}
+            <div className="mt-2 flex items-center gap-1.5 rounded-md bg-brand-base/5 px-2.5 py-1.5 text-xs">
+              <span className="text-mg-text-3">生效提示词注入</span>
+              <span className="font-bold text-mg-text-1">{PROMPT_INJECTION_LABEL[piResolved.mode]}</span>
+              <span className="text-mg-text-3">· 来自 {piResolved.sourceLabel}</span>
             </div>
           </div>
 

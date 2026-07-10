@@ -38,7 +38,7 @@ import { GuardrailSummaryCards } from './components/GuardrailSummaryCards'
 import { GuardrailDetailSheet } from './components/GuardrailDetailSheet'
 import { GuardrailConfirmModals } from './components/GuardrailConfirmModals'
 import { isValidBudgetAmount, trimAmountScale } from './budget'
-import { summarize, budgetByScope, guardrailPromptInjectionMode, type BudgetAggScope, type GuardrailScope, type PromptInjectionMode } from './derive'
+import { summarize, budgetByScope, deriveScope, rawPromptInjectionMode, PROMPT_INJECTION_INHERIT, type BudgetAggScope, type GuardrailScope, type PromptInjectionFormValue } from './derive'
 
 type BudgetPolicy = NonNullable<GuardrailDetail['budget_policies']>[number]
 type PeriodUnit = 'hour' | 'day' | 'week' | 'month'
@@ -142,7 +142,7 @@ export default function GuardrailsPage() {
   const [priority, setPriority] = useState<number>(0)
   const [modelBlacklist, setModelBlacklist] = useState<string[]>([])
   const [ipWhitelist, setIpWhitelist] = useState<string[]>([])
-  const [promptInjectionMode, setPromptInjectionMode] = useState<PromptInjectionMode>('off')
+  const [promptInjectionMode, setPromptInjectionMode] = useState<PromptInjectionFormValue>('off')
   const [memberIds, setMemberIds] = useState<string[]>([])
 
   const modelsQuery = useQuery({
@@ -170,6 +170,20 @@ export default function GuardrailsPage() {
 
   // ── API Key 作用范围本地状态（account_id 风格，与成员一致） ─────────────
   const [apiKeyIds, setApiKeyIds] = useState<string[]>([])
+
+  // 表单当前护栏作用域（与 deriveScope 同口径，由表单选择实时派生）：
+  // 文档要求提示词注入仅在 全局 / 常规 Key 护栏配置，个人护栏不出现该控件；
+  // 常规 Key 护栏可「继承全局」，全局护栏不可。
+  const formScope: GuardrailScope = isDefault ? 'global' : apiKeyIds.length ? 'key' : memberIds.length ? 'member' : 'global'
+  const showPromptInjection = formScope !== 'member'
+  const allowPromptInjectionInherit = formScope === 'key'
+  const piOptions: PromptInjectionFormValue[] = allowPromptInjectionInherit
+    ? [PROMPT_INJECTION_INHERIT, 'off', 'flag', 'redact', 'block']
+    : ['off', 'flag', 'redact', 'block']
+  // 作用域切换后旧值可能不在选项里（如 Key→全局时的 inherit），归一到该作用域的默认值
+  const normalizedPromptInjection: PromptInjectionFormValue = piOptions.includes(promptInjectionMode)
+    ? promptInjectionMode
+    : (allowPromptInjectionInherit ? PROMPT_INJECTION_INHERIT : 'off')
 
   // ── 详情查询 ────────────────────────────────────────────────────────────
   const { data: detail, isLoading: detailLoading, error: detailError } = useQuery({
@@ -364,7 +378,8 @@ export default function GuardrailsPage() {
     const meta = d.metadata ?? {}
     setModelBlacklist(Array.isArray(meta.model_blacklist) ? meta.model_blacklist : [])
     setIpWhitelist(Array.isArray(meta.ip_whitelist) ? meta.ip_whitelist : [])
-    setPromptInjectionMode(guardrailPromptInjectionMode(d))
+    // 显式值直接回填；无值时 常规 Key 护栏=继承全局、其余=关闭
+    setPromptInjectionMode(rawPromptInjectionMode(d) ?? (deriveScope(d) === 'key' ? PROMPT_INJECTION_INHERIT : 'off'))
     // Scope (members + api_keys) lives in assignments; metadata.* is the input
     // we materialize from. Read assignments first (the enforced truth), falling
     // back to metadata for guardrails saved before materialization existed.
@@ -388,9 +403,13 @@ export default function GuardrailsPage() {
     const metadata: Record<string, unknown> = {
       model_blacklist: modelBlacklist,
       ip_whitelist: ipWhitelist,
-      prompt_injection_mode: promptInjectionMode,
       members: memberIds,
       api_keys: apiKeyIds,
+    }
+    // 文档：个人护栏不写提示词注入；常规 Key「继承全局」= 不写该字段（缺省即继承/关闭）。
+    // 不写 = 清空，编辑时从显式模式切回继承/个人也能正确落空。
+    if (showPromptInjection && normalizedPromptInjection !== PROMPT_INJECTION_INHERIT) {
+      metadata.prompt_injection_mode = normalizedPromptInjection
     }
     const payload: CreateGuardrailRequest = {
       name: name.trim(),
@@ -593,7 +612,8 @@ export default function GuardrailsPage() {
         isDefault={isDefault} onIsDefaultChange={setIsDefault}
         modelBlacklist={modelBlacklist} onModelBlacklistChange={setModelBlacklist}
         ipWhitelist={ipWhitelist} onIpWhitelistChange={setIpWhitelist}
-        promptInjectionMode={promptInjectionMode} onPromptInjectionModeChange={setPromptInjectionMode}
+        promptInjectionMode={normalizedPromptInjection} onPromptInjectionModeChange={setPromptInjectionMode}
+        showPromptInjection={showPromptInjection} allowPromptInjectionInherit={allowPromptInjectionInherit}
         modelSuggestions={modelSuggestions}
         memberIds={memberIds} onMemberIdsChange={setMemberIds} memberOptions={memberOptions}
         apiKeyIds={apiKeyIds} onApiKeyIdsChange={setApiKeyIds} apiKeyOptions={apiKeyOptions}

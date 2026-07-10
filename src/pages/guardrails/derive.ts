@@ -87,10 +87,46 @@ export function isPromptInjectionMode(v: unknown): v is PromptInjectionMode {
   return typeof v === 'string' && (PROMPT_INJECTION_MODES as string[]).includes(v)
 }
 
-/** 从 metadata 取提示词注入模式，缺省 off */
-export function guardrailPromptInjectionMode(g: GuardrailDetail): PromptInjectionMode {
+// 常规 Key 护栏可选「继承全局」；表单值 = 4 模式 + inherit。inherit 存库=不写该字段。
+export const PROMPT_INJECTION_INHERIT = 'inherit' as const
+export const PROMPT_INJECTION_INHERIT_LABEL = '继承全局护栏'
+export type PromptInjectionFormValue = PromptInjectionMode | typeof PROMPT_INJECTION_INHERIT
+
+/** 原始值：显式配置返回 mode，未配置返回 undefined（全局=按关闭兜底 / 常规 Key=按继承全局兜底，由调用方决定） */
+export function rawPromptInjectionMode(g: GuardrailDetail): PromptInjectionMode | undefined {
   const v = (g.metadata as Record<string, unknown> | undefined)?.prompt_injection_mode
-  return isPromptInjectionMode(v) ? v : 'off'
+  return isPromptInjectionMode(v) ? v : undefined
+}
+
+/** 全局护栏生效模式：缺省 off（文档：全局护栏缺该字段按 off 处理） */
+export function guardrailPromptInjectionMode(g: GuardrailDetail): PromptInjectionMode {
+  return rawPromptInjectionMode(g) ?? 'off'
+}
+
+/**
+ * API Key 提示词注入生效解析（文档§运行时）：常规 Key 护栏显式 > 启用中全局护栏 > off。
+ * 返回最终模式 + 来源标签，供 API Key 创建的「生效规则预览」展示。
+ */
+export function resolveKeyPromptInjection(
+  selectedGuardrails: GuardrailDetail[],
+  activeGlobal: GuardrailDetail | undefined,
+): { mode: PromptInjectionMode; sourceLabel: string } {
+  const keyExplicit = selectedGuardrails.find(
+    (g) => deriveScope(g) === 'key' && deriveKind(g) === 'regular' && rawPromptInjectionMode(g) !== undefined,
+  )
+  if (keyExplicit) {
+    return { mode: rawPromptInjectionMode(keyExplicit)!, sourceLabel: `常规 Key 护栏 · ${keyExplicit.name}` }
+  }
+  if (activeGlobal) {
+    const gm = rawPromptInjectionMode(activeGlobal)
+    if (gm) return { mode: gm, sourceLabel: `全局护栏 · ${activeGlobal.name}` }
+  }
+  return { mode: 'off', sourceLabel: '默认关闭' }
+}
+
+/** 从护栏列表挑出启用中的全局护栏（生效解析用） */
+export function activeGlobalGuardrail(list: GuardrailDetail[]): GuardrailDetail | undefined {
+  return list.find((g) => deriveScope(g) === 'global' && g.status === 'active')
 }
 
 export function memberCount(g: GuardrailDetail): number {

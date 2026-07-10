@@ -32,27 +32,12 @@ export default defineConfig(({ mode }) => {
     // 构建戳记：__APP_VERSION__/__BUILD_TAG__(最新 make-tag)/__BUILD_COMMIT__/__BUILD_TIME__ + dev GET /__version
     agentVersion(),
     agentDebugger(),
-    // 提交成功后推送飞书通知（dev 启动时幂等安装 post-commit 钩子；不动已有 pre-commit）
+    // 提交前门禁（dev 启动时幂等安装 pre-commit 钩子）
     agentGit({
-      projectLabel: '控制台',
       // 提交前门禁：cs check test（类型/规范/构建）+ UI 门禁（DESIGN.md 约定，见 scripts/ui-guard.sh）
       // 任一非零退出即阻断。force 接管既有手写 pre-commit —— cs check test 已并入下面 precommit，不丢。
       precommit: ['cs check test', 'bash scripts/ui-guard.sh'],
       force: true,
-      webhook: [
-        {
-          url: 'https://open.feishu.cn/open-apis/bot/v2/hook/4bd3a5cb-3bc3-4e07-b61c-541e94d826b6',
-          format: 'feishu',
-        },
-        // 可添加更多 webhook，例如：
-        // {
-        //   url: 'https://oapi.dingtalk.com/robot/send?access_token=xxxx',
-        //   format: (info) => ({
-        //     msgtype: 'text',
-        //     text: { content: `📝 [${info.project}] ${info.author} 提交（${info.branch}）\n🕐 ${info.timestamp}\n${info.message}` }
-        //   }),
-        // },
-      ],
     }),
     devRequirementsPlugin(),
     VitePWA({
@@ -154,6 +139,5 @@ export default defineConfig(({ mode }) => {
   },
   }
 })
-
 
 

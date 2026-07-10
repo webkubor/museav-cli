@@ -1,3 +1,8 @@
+/**
+ * Vitest 统一配置。
+ * 隔离 Vite 插件链，并覆盖前端与仓库内基础设施单元测试。
+ */
+
 import { defineConfig } from 'vitest/config'
 import { fileURLToPath } from 'node:url'
 import { version } from './package.json'
@@ -20,6 +25,6 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.test.{ts,tsx}'],
+    include: ['src/**/*.test.{ts,tsx}', 'infra/**/*.test.ts'],
   },
 })

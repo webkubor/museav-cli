@@ -39,6 +39,8 @@ export type {
   TenantDetail,
   TenantSettings,
   TenantMember,
+  PendingTenantInvite,
+  TenantMembersResponse,
   AddTenantMemberRequest,
   AddTenantMemberResult,
   AddTenantMemberResponse,

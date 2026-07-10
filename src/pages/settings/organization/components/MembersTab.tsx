@@ -10,7 +10,7 @@ import {
 } from '@/services/tenants'
 import { listWorkspaces } from '@/services/workspaces'
 import { formatDate } from '@/lib/format-date'
-import type { TenantMember } from '@/types'
+import type { TenantMember, PendingTenantInvite } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
@@ -125,6 +125,18 @@ export function MembersTab({
 
   const members = useMemo(() => membersQuery.data?.items ?? [], [membersQuery.data])
 
+  // 待接受的邮件邀请（#11）：与真实成员并列展示。后端 pending_invitations 恒在（never null）。
+  // 状态维度上属「待接受」，既非 active 也非 suspended → 仅在状态筛选=全部时展示；角色筛选照常应用。
+  const pendingInvites = useMemo<PendingTenantInvite[]>(() => {
+    const list = membersQuery.data?.pending_invitations ?? []
+    return list.filter((inv) => {
+      if (inv.status !== 'pending') return false
+      if (roleFilter !== 'all' && inv.role !== roleFilter) return false
+      if (statusFilter !== 'all') return false
+      return true
+    })
+  }, [membersQuery.data, roleFilter, statusFilter])
+
   // 当前操作者能否管理某成员（前端边界，服务端二次校验）
   function canManageMember(m: TenantMember): boolean {
     if (m.role === 'tenant_owner') return false // Owner 不可被管理
@@ -201,7 +213,10 @@ export function MembersTab({
             </select>
           </div>
           <span className="text-xs text-mg-text-3 bg-mg-fill-1 border border-mg-border/40 px-2 py-0.5 rounded-full font-medium">
-            {membersQuery.isLoading ? '…' : t('enterprise.members.count', { count: filtered.length })}
+            {membersQuery.isLoading
+              ? '…'
+              : t('enterprise.members.count', { count: filtered.length }) +
+                (pendingInvites.length > 0 ? ` · ${t('enterprise.members.pendingCount', { count: pendingInvites.length })}` : '')}
           </span>
         </div>
 
@@ -210,7 +225,7 @@ export function MembersTab({
             <div className="py-12 flex justify-center items-center">
               <div className="w-6 h-6 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
             </div>
-          ) : filtered.length === 0 ? (
+          ) : filtered.length === 0 && pendingInvites.length === 0 ? (
             <EmptyState
               title={
                 members.length === 0
@@ -299,6 +314,35 @@ export function MembersTab({
                     </TableRow>
                   )
                 })}
+                {/* 待接受邀请行（#11）：无 account/工作空间/操作，状态恒为「待接受」 */}
+                {pendingInvites.map((inv) => (
+                  <TableRow key={`pending-${inv.id}`} className="bg-mg-fill-0/20">
+                    <TableCell>
+                      <div className="font-semibold text-mg-text-1">{inv.email}</div>
+                      {inv.invited_by_display && (
+                        <div className="text-xs text-mg-text-3 mt-0.5">
+                          {t('enterprise.members.invitedBy', { name: inv.invited_by_display })}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={ROLE_BADGE[inv.role]} size="sm">{ROLE_LABEL[inv.role]}</Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-mg-text-3">—</TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-mg-warning">
+                        <span className="w-1.5 h-1.5 rounded-full bg-mg-warning" />
+                        {t('enterprise.members.statusPending')}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-xs text-mg-text-3 font-medium">
+                      {inv.expires_at ? t('enterprise.members.expiresAt', { date: formatDate(inv.expires_at) }) : '—'}
+                    </TableCell>
+                    <TableCell align="center">
+                      <span className="text-mg-text-4">—</span>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           )}

@@ -1,4 +1,5 @@
 import type { AccountBrief, Money, TenantBrief } from './account'
+import type { CursorPage } from './api'
 
 // ─── Tenant ─────────────────────────────────────────
 
@@ -43,6 +44,26 @@ export interface TenantMember {
   api_key_count: number
   spend_30d: Money
   status: 'active' | 'suspended'
+}
+
+/** 待接受的邮件邀请项（Swagger tenant.PendingInviteItem，#11） */
+export interface PendingTenantInvite {
+  id: string
+  email: string
+  role: 'tenant_admin' | 'tenant_member'
+  status: 'pending' | 'accepted' | 'expired' | 'revoked'
+  invited_by?: string
+  invited_by_display?: string
+  created_at?: string
+  expires_at?: string
+}
+
+/**
+ * GET /tenants/:id/members 响应：成员分页 + 待接受邀请。
+ * pending_invitations 不分页、恒存在（never null），与真实成员并列展示（#11）。
+ */
+export interface TenantMembersResponse extends CursorPage<TenantMember> {
+  pending_invitations: PendingTenantInvite[]
 }
 
 export interface AddTenantMemberRequest {

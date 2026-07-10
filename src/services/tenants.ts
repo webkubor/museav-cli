@@ -16,12 +16,11 @@ import type {
   AddTenantMemberRequest,
   AddTenantMemberResponse,
   ApiResponse,
-  CursorPage,
   TenantAuditLog,
   TenantAuditLogsResponse,
   TenantDetail,
   TenantInviteLink,
-  TenantMember,
+  TenantMembersResponse,
 } from '@/types'
 /** 当前 account 可访问的所有 tenant 列表（无分页） */
 export function listTenants() {
@@ -49,7 +48,7 @@ export function uploadTenantLogo(tenantId: string, file: File) {
 // ─── Tenant 成员管理 ───────────────────────────────
 
 export function listTenantMembers(tenantId: string, params?: TenantMemberListParams) {
-  return get<CursorPage<TenantMember>>(`tenants/${tenantId}/members`, params)
+  return get<TenantMembersResponse>(`tenants/${tenantId}/members`, params)
 }
 
 /** 批量添加 tenant 成员（发送邀请邮件） */

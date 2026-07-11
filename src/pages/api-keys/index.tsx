@@ -92,10 +92,11 @@ export default function ApiKeysPage() {
   const { ownedWorkspaceIds, isEnterprise, canManage: canManageTenant } = useTenantRole()
   const isActiveWorkspaceOwner = ownedWorkspaceIds.includes(activeWorkspaceId)
 
-  // 企业视图/我的视图：仅租户 owner/admin 可切（普通成员/空间负责人的可见范围已由后端角色裁剪，
-  // 见 #359，无需再手动切换）。后端 GET .../api-keys 支持 view=mine|company（Swagger 已确认），
-  // #22 反馈"切换视图数据不变"，根因是这里之前压根没接这个参数——不是账号切换的问题。
-  const showViewToggle = isEnterprise && canManageTenant
+  // 空间/我的视图切换：租户 owner/admin，或当前作用域工作空间的负责人（ws_owner）都可切。
+  // 空间负责人对自己负责的空间可见全部成员 Key（view=company），也可切回仅看自己（view=mine）；
+  // 普通成员的可见范围仍由后端角色裁剪、无需切换。后端 GET .../api-keys 支持 view=mine|company
+  // （Swagger 已确认）；#445 补齐此前空间负责人漏切 —— 之前只判 canManageTenant。
+  const showViewToggle = isEnterprise && (canManageTenant || isActiveWorkspaceOwner)
   const [userView, setUserView] = useState<'mine' | 'company' | null>(null)
   const view = userView ?? 'company'
 

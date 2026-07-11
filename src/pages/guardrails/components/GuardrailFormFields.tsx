@@ -36,6 +36,7 @@ export function GuardrailFormFields({
   showPromptInjection, allowPromptInjectionInherit,
   modelSuggestions,
   memberIds, onMemberIdsChange, memberOptions,
+  canEditInfo, canEditAssignment,
 }: {
   name: string; onNameChange: (v: string) => void
   description: string; onDescriptionChange: (v: string) => void
@@ -61,6 +62,8 @@ export function GuardrailFormFields({
   allowPromptInjectionInherit: boolean
   modelSuggestions?: string[]
   memberIds: string[]; onMemberIdsChange: (v: string[]) => void; memberOptions: { id: string; name: string }[]
+  canEditInfo: boolean
+  canEditAssignment: boolean
 }) {
   const { t } = useTranslation()
   const [ipError, setIpError] = useState('')
@@ -87,16 +90,16 @@ export function GuardrailFormFields({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.nameLabel')}<span className="text-mg-danger ml-1">*</span></label>
-          <Input value={name} onChange={(e) => onNameChange(e.target.value)} placeholder={t('guardrails.form.namePlaceholder')} />
+          <Input value={name} disabled={!canEditInfo} onChange={(e) => onNameChange(e.target.value)} placeholder={t('guardrails.form.namePlaceholder')} />
         </div>
         <div>
           <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.priorityLabel')}</label>
-          <Input type="number" value={priority} onChange={(e) => onPriorityChange(Number(e.target.value))} placeholder={t('guardrails.form.priorityPlaceholder')} />
+          <Input type="number" value={priority} disabled={!canEditInfo} onChange={(e) => onPriorityChange(Number(e.target.value))} placeholder={t('guardrails.form.priorityPlaceholder')} />
         </div>
       </div>
       <div>
         <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.descLabel')}</label>
-        <Input value={description} onChange={(e) => onDescriptionChange(e.target.value)} placeholder={t('guardrails.form.descPlaceholder')} />
+        <Input value={description} disabled={!canEditInfo} onChange={(e) => onDescriptionChange(e.target.value)} placeholder={t('guardrails.form.descPlaceholder')} />
       </div>
       {/* 分类 + 类型 — 显式选择（文档：创建时显式选「分类+类型」，非靠 isDefault/assignments 反推）。
           全局护栏恒为常规、无类型选择器；编辑态整体锁定（提额创建后类型不可切换）。 */}
@@ -108,7 +111,7 @@ export function GuardrailFormFields({
           <Select
             value={scope}
             onChange={(v) => onScopeChange(v as GuardrailScope)}
-            disabled={lockScopeKind}
+            disabled={lockScopeKind || !canEditInfo}
             aria-label="护栏分类"
             className="w-full"
           >
@@ -134,7 +137,7 @@ export function GuardrailFormFields({
             <Select
               value={kind}
               onChange={(v) => onKindChange(v as GuardrailKind)}
-              disabled={lockScopeKind}
+              disabled={lockScopeKind || !canEditInfo}
               aria-label="护栏类型"
               className="w-full"
             >
@@ -158,6 +161,7 @@ export function GuardrailFormFields({
             type="datetime-local"
             aria-label="提额到期时间"
             value={boostExpiresAt}
+            disabled={!canEditInfo}
             onChange={(e) => onBoostExpiresAtChange(e.target.value)}
           />
           <p className="text-xs text-mg-text-3 mt-1.5">到期后该提额自动失效，绑定对象回退到常规护栏或全局默认预算</p>
@@ -169,6 +173,7 @@ export function GuardrailFormFields({
           <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.modelBlacklistLabel')}</label>
           <TagInput
             value={modelBlacklist}
+            disabled={!canEditInfo}
             onChange={onModelBlacklistChange}
             suggestions={modelSuggestions}
             placeholder={t('guardrails.form.modelBlacklistPlaceholder')}
@@ -182,6 +187,7 @@ export function GuardrailFormFields({
           <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.ipWhitelistLabel')}</label>
           <TagInput
             value={ipWhitelist}
+            disabled={!canEditInfo}
             onChange={(v) => { setIpError(''); onIpWhitelistChange(v) }}
             allowFreeText
             tagVariant="mono"
@@ -223,7 +229,7 @@ export function GuardrailFormFields({
               </span>
             </span>
           </label>
-          <Select value={promptInjectionMode} onChange={(v) => onPromptInjectionModeChange(v as PromptInjectionFormValue)} className="w-full">
+          <Select value={promptInjectionMode} disabled={!canEditInfo} onChange={(v) => onPromptInjectionModeChange(v as PromptInjectionFormValue)} className="w-full">
             {allowPromptInjectionInherit && (
               <SelectItem value={PROMPT_INJECTION_INHERIT}>{PROMPT_INJECTION_INHERIT_LABEL}</SelectItem>
             )}
@@ -244,6 +250,7 @@ export function GuardrailFormFields({
           </label>
           <TagInput
             value={memberIds}
+            disabled={!canEditAssignment}
             onChange={onMemberIdsChange}
             options={memberOptions.map((o) => ({ value: o.id, label: o.name }))}
             placeholder={t('guardrails.form.membersPlaceholder')}

@@ -10,6 +10,8 @@ import Select from '@/components/ui/Select'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { listInvoiceRecords, getInvoiceDownloadUrl } from '@/services/invoice'
 import type { InvoiceRecord, InvoiceTitleType } from '@/types'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 
 const STATUS_MAP: Record<InvoiceRecord['status'], { label: string; cls: string }> = {
   pending: { label: '待开票', cls: 'bg-mg-fill-0 text-mg-text-2' },
@@ -31,6 +33,8 @@ export function InvoiceRecordsTab({
   tenantId: string
   currencySymbol: string
 }) {
+  const { hasPermission } = usePermissions()
+  const canDownload = hasPermission(PERMS.BILLING_INVOICE_DOWNLOAD)
   const [status, setStatus] = useState('all')
   const [keyword, setKeyword] = useState('')
   const [records, setRecords] = useState<InvoiceRecord[]>([])
@@ -129,7 +133,7 @@ export function InvoiceRecordsTab({
                   </div>
                 </div>
                 <div className="shrink-0">
-                  {r.status === 'invoiced' && (
+                  {r.status === 'invoiced' && canDownload && (
                     <Button variant="outline" size="sm" onClick={() => download(r.invoice_no)}>
                       <LuDownload size={13} className="mr-1" /> 下载
                     </Button>

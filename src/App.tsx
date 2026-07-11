@@ -39,6 +39,8 @@ const NotFoundPage = lazy(() => import('@/pages/not-found'))
 // 菜单驱动页面：key → 页面元素（路由/scope/权限见 config/console-routes 单一真源）
 const CONSOLE_ELEMENTS: Record<string, ReactNode> = {
   dashboard: <DashboardPage />,
+  organization: <OrganizationPage />,
+  workspaces: <WorkspacesPage />,
   billing: <BillingPage />,
   usage: <UsagePage />,
   logs: <LogsPage />,
@@ -225,9 +227,6 @@ export default function App() {
                 路径保持扁平（/organization、/workspaces），与 usage/logs/billing 同级。
                 历史上二者曾是 Settings 下的 tab，迁移后路径一直挂在 /settings/* 下，
                 导致面包屑误显示「设置」、URL 与信息架构不一致（用户实测发现，见 fix/nav-route-naming）。 */}
-            <Route path="organization" element={<OrganizationPage />} />
-            <Route path="workspaces" element={<WorkspacesPage />} />
-
             {/* 仅「账号设置」真正属于 Settings（底部固定入口） */}
             <Route path="settings">
               <Route index element={<Navigate to="account" replace />} />

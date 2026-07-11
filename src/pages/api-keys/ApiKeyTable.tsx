@@ -53,7 +53,8 @@ const KEY_TYPE_CLASS: Record<string, string> = {
 type Props = {
   isLoading: boolean
   items: ApiKeyItem[]
-  canManage: boolean
+  canEdit: boolean
+  canReveal: boolean
   onOpenDetail: (item: ApiKeyItem) => void
   onToggleStatus: (item: ApiKeyItem) => void
   /** 复制完整明文（#298）：父组件调 reveal → 剪贴板 */
@@ -75,7 +76,8 @@ type Props = {
 export function ApiKeyTable({
   isLoading,
   items,
-  canManage,
+  canEdit,
+  canReveal,
   onOpenDetail,
   onToggleStatus,
   onCopyKey,
@@ -156,10 +158,12 @@ export function ApiKeyTable({
             const lastCalled = lastCalledOf(record)
             const isDisabled = record.status === 'disabled'
             const canToggle = isDisabled
-              ? cap(record.capabilities?.can_enable, canManage)
-              : cap(record.capabilities?.can_disable, canManage)
+              ? cap(record.capabilities?.can_enable, canEdit)
+              : cap(record.capabilities?.can_disable, canEdit)
             const copyDisabledReason =
-              record.status !== 'active'
+              !canReveal
+                ? '无查看 API Key 明文权限'
+                : record.status !== 'active'
                 ? t('apiKeys.table.copyUnavailableInactive')
                 : record.revealable
                   ? null

@@ -16,18 +16,16 @@ import { appToast } from '@/lib/app-toast'
 
 export function OrgInfoTab({
   tenantId,
-  tenantRole,
   onDissolved,
 }: {
   tenantId: string
-  tenantRole?: 'tenant_owner' | 'tenant_admin' | 'tenant_member'
   onDissolved?: () => void | Promise<void>
 }) {
   const { t } = useTranslation()
   const { hasPermission } = usePermissions()
   const canEditOrg = hasPermission(PERMS.ORG_SETTINGS_EDIT)
-  const isOwner = tenantRole === 'tenant_owner'
-  const canDissolveOrg = isOwner
+  const canTransferOwnership = hasPermission(PERMS.ORG_OWNERSHIP_TRANSFER)
+  const canDissolveOrg = hasPermission(PERMS.ORG_DELETE)
   const account = useAuthStore((s) => s.account)
   const setAuth = useAuthStore((s) => s.setAuth)
   const qc = useQueryClient()
@@ -244,7 +242,7 @@ export function OrgInfoTab({
                   <div className="text-xs font-semibold text-mg-text-1 truncate">{owner.account.display_name || '—'}</div>
                   <div className="text-xs text-mg-text-3 truncate">{owner.account.email}</div>
                 </div>
-                {isOwner && tenant.type === 'enterprise' && (
+                {canTransferOwnership && tenant.type === 'enterprise' && (
                   <button
                     type="button"
                     disabled={transferableMembers.length === 0}

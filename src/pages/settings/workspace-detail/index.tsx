@@ -391,10 +391,13 @@ export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted:
   const { hasPermission } = usePermissions()
   const canRename = hasPermission(PERMS.WORKSPACE_RENAME)
   const canDelete = hasPermission(PERMS.WORKSPACE_DELETE)
+  const canEditSettings = hasPermission(PERMS.WORKSPACE_SETTINGS_EDIT)
   const [name, setName] = useState(ws.name)
   const [description, setDescription] = useState(ws.description ?? '')
   const [deleteOpen, setDeleteOpen] = useState(false)
   const dirty = name.trim() !== ws.name || description.trim() !== (ws.description ?? '')
+  const canSave = (canRename && name.trim() !== ws.name)
+    || (canEditSettings && description.trim() !== (ws.description ?? ''))
 
   const renameMutation = useMutation({
     mutationFn: () => updateWorkspace(ws.workspace_id, { name: name.trim(), description: description.trim() }),
@@ -440,16 +443,16 @@ export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted:
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            disabled={!canRename}
+            disabled={!canEditSettings}
             rows={3}
             placeholder={t('workspaces.detail.settings.descPlaceholder')}
             className="max-w-xl"
           />
         </div>
-        {canRename && (
+        {(canRename || canEditSettings) && (
           <Button
             variant="brand"
-            disabled={renameMutation.isPending || !name.trim() || !dirty}
+            disabled={renameMutation.isPending || !name.trim() || !dirty || !canSave}
             onClick={() => renameMutation.mutate()}
             className="h-9 px-4 rounded-lg font-semibold text-xs"
           >

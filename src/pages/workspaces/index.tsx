@@ -51,6 +51,7 @@ import { cn, formatMoney as fmtMoney } from '@/lib/utils'
 import { formatDate } from '@/lib/format-date'
 import { trackAction } from '@/lib/track'
 import { PERMS } from '@/config/permissions'
+import { usePermissions } from '@/hooks/use-permissions'
 import { useNavigate } from 'react-router-dom'
 import type { WorkspaceDetail, Money } from '@/types'
 
@@ -79,9 +80,10 @@ export default function WorkspacesPage() {
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const currentAccountEmail = useAuthStore((s) => s.account?.email)
   const currentAccountId = useAuthStore((s) => s.account?.account_id)
-  const { isEnterprise, tenant, canManage } = useTenantRole()
-  // 创建工作空间仅 Owner/Admin 与个人租户可见；企业普通成员/空间负责人不可创建（PRD 角色权限模型）
-  const canCreateWorkspace = !isEnterprise || canManage
+  const { isEnterprise, tenant } = useTenantRole()
+  const { hasPermission } = usePermissions()
+  // 具体角色由后端角色矩阵决定；前端只消费当前会话的 Permission ID。
+  const canCreateWorkspace = hasPermission(PERMS.WORKSPACE_CREATE)
   const [searchValue, setSearchValue] = useState('')
   const [modalVisible, setModalVisible] = useState(false)
   // 单页结构：选中卡片在下方展开详情（不跳路由，对齐原型 .space-detail-shell）
@@ -589,6 +591,7 @@ export default function WorkspacesPage() {
 function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: () => void }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { hasPermission } = usePermissions()
 
   const usageCards = [
     {
@@ -644,6 +647,7 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
       icon: <LuKey size={18} className="text-brand-base" />,
       bg: 'bg-brand-base/8',
       onClick: () => navigate(`/workspace/${ws.workspace_id}/api-keys`),
+      visible: hasPermission(PERMS.API_KEYS_VIEW),
     },
     {
       title: t('workspaces.card.guardrails'),
@@ -651,6 +655,7 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
       icon: <LuShield size={18} className="text-brand-base" />,
       bg: 'bg-brand-base/8',
       onClick: () => navigate(`/workspace/${ws.workspace_id}/guardrails`),
+      visible: hasPermission(PERMS.GUARDRAILS_VIEW),
     },
     {
       title: t('workspaces.detail.overview.logsTitle'),
@@ -658,6 +663,7 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
       icon: <LuClipboardList size={18} className="text-brand-base" />,
       bg: 'bg-brand-base/8',
       onClick: () => navigate(`/logs?workspace=${ws.workspace_id}`),
+      visible: hasPermission(PERMS.LOGS_VIEW),
     },
     {
       title: t('workspaces.detail.tabs.logs'),
@@ -665,6 +671,7 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
       icon: <LuSend size={18} className="text-brand-base" />,
       bg: 'bg-brand-base/8',
       onClick: onGoLogs,
+      visible: hasPermission(PERMS.OBSERVABILITY_VIEW),
       // 日志与转发卡：本页内切换到「日志与转发」页签（非外跳），动作用「设置」蓝色内联文本、无外跳箭头（对齐 PRD actionKind="inline"）
       inline: true,
     },
@@ -715,7 +722,7 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
       <div className="bg-mg-fill-0/10 border border-mg-border/20 rounded-lg p-5">
         <div className="text-xs font-bold text-mg-text-1 mb-4">{t('workspaces.detail.overview.quickAccessTitle')}</div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {shortcuts.map((s) => (
+          {shortcuts.filter((s) => s.visible).map((s) => (
             <button
               key={s.title}
               type="button"
@@ -759,6 +766,17 @@ function WorkspaceDashboard({ workspaceId, onDeleted }: WorkspaceDashboardProps)
   const [tab, setTab] = useState<'overview' | 'members' | 'logs' | 'settings'>('overview')
   // 个人租户没有企业成员，空间管理不该有「成员」tab（无人可邀请/管理）；仅企业租户显示。
   const { isEnterprise } = useTenantRole()
+  const { hasPermission } = usePermissions()
+  const canViewMembers = isEnterprise && hasPermission(PERMS.WORKSPACE_MEMBERS_VIEW)
+  const canViewLogs = hasPermission(PERMS.OBSERVABILITY_VIEW)
+  const canViewSettings = hasPermission(PERMS.WORKSPACE_SETTINGS_EDIT)
+    || hasPermission(PERMS.WORKSPACE_RENAME)
+    || hasPermission(PERMS.WORKSPACE_DELETE)
+  const activeTab = (
+    (tab === 'members' && !canViewMembers)
+    || (tab === 'logs' && !canViewLogs)
+    || (tab === 'settings' && !canViewSettings)
+  ) ? 'overview' : tab
 
   const detailQuery = useQuery({
     queryKey: ['workspace-detail', workspaceId],
@@ -850,27 +868,31 @@ function WorkspaceDashboard({ workspaceId, onDeleted }: WorkspaceDashboardProps)
       </div>
 
       {/* Tabs */}
-      <Tabs value={tab} onValueChange={(v) => setTab(v as 'overview' | 'members' | 'logs' | 'settings')}>
+      <Tabs value={activeTab} onValueChange={(v) => setTab(v as 'overview' | 'members' | 'logs' | 'settings')}>
         <TabsList variant="pills" className="mb-4">
           <TabsTrigger variant="pills" value="overview">{t('workspaces.detail.tabs.overview')}</TabsTrigger>
-          {isEnterprise && <TabsTrigger variant="pills" value="members">{t('workspaces.detail.tabs.members')}</TabsTrigger>}
-          <TabsTrigger variant="pills" value="logs">{t('workspaces.detail.tabs.logs')}</TabsTrigger>
-          <TabsTrigger variant="pills" value="settings">{t('workspaces.detail.tabs.settings')}</TabsTrigger>
+          {canViewMembers && <TabsTrigger variant="pills" value="members">{t('workspaces.detail.tabs.members')}</TabsTrigger>}
+          {canViewLogs && <TabsTrigger variant="pills" value="logs">{t('workspaces.detail.tabs.logs')}</TabsTrigger>}
+          {canViewSettings && <TabsTrigger variant="pills" value="settings">{t('workspaces.detail.tabs.settings')}</TabsTrigger>}
         </TabsList>
         <TabsContent value="overview">
-          <WorkspaceOverview ws={ws} onGoLogs={() => setTab('logs')} />
+          <WorkspaceOverview ws={ws} onGoLogs={() => { if (canViewLogs) setTab('logs') }} />
         </TabsContent>
-        {isEnterprise && (
+        {canViewMembers && (
           <TabsContent value="members">
             <MembersTab workspaceId={workspaceId} />
           </TabsContent>
         )}
-        <TabsContent value="logs">
-          <LogsForwardingTab workspaceId={workspaceId} />
-        </TabsContent>
-        <TabsContent value="settings">
-          <SettingsTab ws={ws} onDeleted={onDeleted} />
-        </TabsContent>
+        {canViewLogs && (
+          <TabsContent value="logs">
+            <LogsForwardingTab workspaceId={workspaceId} />
+          </TabsContent>
+        )}
+        {canViewSettings && (
+          <TabsContent value="settings">
+            <SettingsTab ws={ws} onDeleted={onDeleted} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

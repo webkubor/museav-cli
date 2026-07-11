@@ -17,6 +17,8 @@ import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { appToast } from '@/lib/app-toast'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 
 type TenantRole = 'tenant_owner' | 'tenant_admin' | 'tenant_member'
 type EditableRole = 'tenant_admin' | 'tenant_member'
@@ -50,6 +52,8 @@ export function MembersTab({
 }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const { hasPermission } = usePermissions()
+  const canManageMembers = hasPermission(PERMS.ORG_MEMBERS_MANAGE)
   const [editTarget, setEditTarget] = useState<TenantMember | null>(null)
   const [removeTarget, setRemoveTarget] = useState<string | null>(null)
   const [roleFilter, setRoleFilter] = useState<'all' | TenantRole>('all')
@@ -139,6 +143,7 @@ export function MembersTab({
 
   // 当前操作者能否管理某成员（前端边界，服务端二次校验）
   function canManageMember(m: TenantMember): boolean {
+    if (!canManageMembers) return false
     if (m.role === 'tenant_owner') return false // Owner 不可被管理
     if (isOwner) return true
     if (isAdmin) return m.role === 'tenant_member' // Admin 只能管 Member

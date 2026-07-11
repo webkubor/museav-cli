@@ -122,6 +122,7 @@ export default function GuardrailsPage() {
   const canCreate         = hasPermission(PERMS.GUARDRAILS_CREATE)
   const canEdit           = hasPermission(PERMS.GUARDRAILS_EDIT)
   const canDelete         = hasPermission(PERMS.GUARDRAILS_DELETE)
+  const canEditAssignment = hasPermission(PERMS.GUARDRAILS_ASSIGNMENT_EDIT)
   const canEditBudget     = hasPermission(PERMS.GUARDRAILS_BUDGET_EDIT)
   // 埋点顶层字段 is_space_owner：当前用户对本页作用域工作空间的 my_role 是否为 ws_owner
   const { ownedWorkspaceIds } = useTenantRole()
@@ -758,6 +759,8 @@ export default function GuardrailsPage() {
         savingGlobalBudget={saveGlobalBudgetMutation.isPending}
         onSaveGlobalBudgets={handleSaveGlobalBudgets}
         currencySymbol={currencySymbol}
+        canEdit={canEdit}
+        canEditAssignment={canEditAssignment}
         submitting={createMutation.isPending || updateMutation.isPending}
         onSubmit={handleSubmit}
       />

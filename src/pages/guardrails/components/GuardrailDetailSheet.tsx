@@ -124,7 +124,7 @@ export function GuardrailDetailSheet({
   onEnterBudgetTab, savingGlobalBudget, onSaveGlobalBudgets,
   currencySymbol,
   // 底部保存
-  submitting, onSubmit,
+  canEdit, canEditAssignment, submitting, onSubmit,
 }: {
   open: boolean; onClose: () => void
   isCreating: boolean
@@ -158,6 +158,8 @@ export function GuardrailDetailSheet({
   onEnterBudgetTab: () => void
   savingGlobalBudget: boolean; onSaveGlobalBudgets: () => void
   currencySymbol: string
+  canEdit: boolean
+  canEditAssignment: boolean
   submitting: boolean; onSubmit: () => void
 }) {
   const { t } = useTranslation()
@@ -169,6 +171,7 @@ export function GuardrailDetailSheet({
   // 抽屉只渲染错误说明。表单/保存一概不出——openDetail 虽已清空表单，
   // 但在加载失败的护栏上提交任何修改都是在脏数据上盲写 (qa#162 review)
   const detailLoadFailed = !isCreating && !detailLoading && !detail && !!detailLoadError
+  const canSubmitCurrentTab = isCreating || (sheetTab === 'scope' ? canEditAssignment : canEdit)
 
   return (
     <SideSheet
@@ -183,6 +186,7 @@ export function GuardrailDetailSheet({
           <StatusBadge status={detail.status} statusMap={GUARDRAIL_STATUS_MAP} />
           <Switch
             checked={detail.status === 'active'}
+            disabled={!canEdit}
             onChange={(checked) => onToggleStatus({ id: detail.id, status: checked ? 'active' : 'inactive' })}
           />
         </div>
@@ -248,6 +252,8 @@ export function GuardrailDetailSheet({
               showPromptInjection={showPromptInjection} allowPromptInjectionInherit={allowPromptInjectionInherit}
               modelSuggestions={modelSuggestions}
               memberIds={memberIds} onMemberIdsChange={onMemberIdsChange} memberOptions={memberOptions}
+              canEditInfo={isCreating || canEdit}
+              canEditAssignment={isCreating || canEditAssignment}
             />
           </div>
         )}
@@ -268,6 +274,7 @@ export function GuardrailDetailSheet({
                 </div>
                 <TagInput
                   value={apiKeyIds}
+                  disabled={!canEditAssignment}
                   onChange={onApiKeyIdsChange}
                   options={apiKeyOptions.map((o) => ({ value: o.id, label: o.name, disabled: !o.active }))}
                   placeholder="从下拉批量选择该工作区的 API Key"
@@ -403,13 +410,15 @@ export function GuardrailDetailSheet({
           </span>
           <div className="flex gap-2 shrink-0">
             <Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
-            <Button
-              variant="brand"
-              loading={submitting}
-              onClick={onSubmit}
-            >
-              {isCreating ? t('guardrails.modal.confirmCreate') : t('guardrails.modal.saveEdit')}
-            </Button>
+            {canSubmitCurrentTab && (
+              <Button
+                variant="brand"
+                loading={submitting}
+                onClick={onSubmit}
+              >
+                {isCreating ? t('guardrails.modal.confirmCreate') : t('guardrails.modal.saveEdit')}
+              </Button>
+            )}
           </div>
         </div>
       )}

@@ -375,7 +375,8 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                   {ipWhitelist.length > 0 ? ipWhitelist.join(', ') : '—'}
                 </span>
               </div>
-              <p className="text-mg-text-4 leading-relaxed">工作区级完整生效预览待后端交付（TODO #420），当前按全局 + 所选 Key 护栏叠加估算。</p>
+              {/* 用户可见文案：不暴露内部单号/实现细节。工作区级完整生效预览接口交付后再补全（内部跟踪 #420）。 */}
+              <p className="text-mg-text-4 leading-relaxed">以上为全局默认与所选 Key 护栏的叠加预估，实际生效以调用时网关合并结果为准。</p>
             </div>
           </div>
 

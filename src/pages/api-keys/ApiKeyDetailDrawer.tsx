@@ -68,10 +68,12 @@ function Field({ label, value }: { label: string; value: ReactNode }) {
   )
 }
 
+// 键必须对齐后端 aggregation_scope 枚举（guardrail_total/per_member/per_api_key）——
+// 曾误写成 workspace/member/api_key，导致 scopeLabel 全部 fallback 到原始枚举、UI 裸露「guardrail_total预算」。
 const SCOPE_LABEL: Record<string, string> = {
-  workspace: '工作空间',
-  member: '个人',
-  api_key: 'API Key',
+  guardrail_total: '工作空间',
+  per_member: '个人',
+  per_api_key: 'API Key',
 }
 const PERIOD_UNIT_LABEL: Record<string, string> = {
   hour: '小时',
@@ -326,9 +328,8 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canEdit, 
                 effective.effective.ip_whitelist.length === 0 && (
                   <p className="text-xs text-mg-text-3">无生效限制</p>
                 )}
-              {effective.enforcement_note && (
-                <p className="text-xs leading-relaxed text-mg-text-3">{effective.enforcement_note}</p>
-              )}
+              {/* enforcement_note 后端目前返回的是开发向说明（提及 CheckGuardrail/global_default/aggregation_scope 等内部实现），
+                  不面向终端用户，暂不渲染；待后端改为用户可读文案后再放开（已在联调单反馈）。 */}
             </div>
           )}
         </Section>

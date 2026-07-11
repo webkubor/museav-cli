@@ -136,7 +136,8 @@ export function LogDetailSheet({
                 <DiagnosticCard icon={<LuReceiptText />} label="费用" value={<Money amount={Number(row.cost.amount) > 0 ? row.cost.amount : null} currency={row.cost.currency} />} hint={row.billing_status || '计费状态未返回'} tone="warning" />
                 <DiagnosticCard icon={<LuDatabase />} label="Token" value={tokenFlow(row)} hint="输入 token -> 输出 token" tone="success" />
                 <DiagnosticCard icon={<LuGitFork />} label="Fallback" value={`${row.fallback_count} 次`} hint={row.fallback_count > 0 ? '已触发回退' : '未触发'} tone={row.fallback_count > 0 ? 'warning' : 'brand'} />
-                <DiagnosticCard icon={<LuGauge />} label="缓存" value={row.usage.cache_read_tokens > 0 ? '命中' : '未命中'} hint={`读 ${formatNumber(row.usage.cache_read_tokens)} Token`} tone={row.usage.cache_read_tokens > 0 ? 'success' : 'brand'} />
+                {/* 5 张卡在 2 列下第 5 张会孤行留半空——让「缓存」占满整行，分布均匀 */}
+                <DiagnosticCard className="sm:col-span-2" icon={<LuGauge />} label="缓存" value={row.usage.cache_read_tokens > 0 ? '命中' : '未命中'} hint={`读 ${formatNumber(row.usage.cache_read_tokens)} Token`} tone={row.usage.cache_read_tokens > 0 ? 'success' : 'brand'} />
               </>
             )}
           </section>
@@ -164,8 +165,10 @@ export function LogDetailSheet({
           )}
 
           <DetailSection title="请求链路">
-            <div className="grid gap-3 lg:grid-cols-2">
-              <DetailGrid>
+            {/* 单列堆叠：抽屉固定 680px，viewport 断点(lg)会误触发把链路图挤进 ~309px 半栏致节点/副标题重叠；
+                故不按视口分栏，链路图独占整宽。 */}
+            <div className="space-y-3">
+              <DetailGrid compact>
                 <DetailRow label="Request ID" value={row.request_id} mono />
                 <DetailRow label="HTTP 状态" value={httpStatus(row)} mono />
                 <DetailRow label="调用类型" value={row.call_type} />
@@ -227,9 +230,9 @@ const DIAGNOSTIC_TONE: Record<DiagnosticTone, string> = {
   danger: 'bg-mg-danger/10 text-mg-danger',
 }
 
-function DiagnosticCard({ hint, icon, label, value, tone = 'brand' }: { hint: string; icon: ReactNode; label: string; value: ReactNode; tone?: DiagnosticTone }) {
+function DiagnosticCard({ hint, icon, label, value, tone = 'brand', className }: { hint: string; icon: ReactNode; label: string; value: ReactNode; tone?: DiagnosticTone; className?: string }) {
   return (
-    <article className="min-w-0 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
+    <article className={cn('min-w-0 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]', className)}>
       <span className="flex items-center gap-2 mg-text-label text-mg-text-3">
         <span className={cn('flex h-6 w-6 shrink-0 items-center justify-center rounded-md [&_svg]:size-3.5', DIAGNOSTIC_TONE[tone])}>{icon}</span>
         {label}
@@ -268,6 +271,14 @@ function ChainNode({ icon, state, sub, title }: { icon: ReactNode; state: NodeSt
   )
 }
 
+/** 后端 provider.name 有时返回的是 UUID（而非厂商名），裸露到副标题很难看——像 UUID 就回退到模型名。 */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function providerLabel(row: CallLogItem) {
+  const name = row.provider.name?.trim()
+  if (name && !UUID_RE.test(name)) return name
+  return row.model.display_name
+}
+
 /** 请求链路可视化：Client → Gateway → Provider 三节点 + 链路状态摘要（数据由 status/http_status 推导）。 */
 function RequestChain({ row }: { row: CallLogItem }) {
   // 已拦截（护栏命中且模型未发起）→ Provider 跳过；脱敏后继续按正常链路（请求已下发到 Provider）。
@@ -277,7 +288,7 @@ function RequestChain({ row }: { row: CallLogItem }) {
   const nodes: { icon: ReactNode; title: string; sub: string; state: NodeState }[] = [
     { icon: <LuMonitor />, title: 'Client', sub: '用户客户端', state: 'ok' },
     { icon: <LuServer />, title: 'Gateway', sub: 'API 网关', state: blocked ? 'warn' : 'ok' },
-    { icon: <LuDatabase />, title: 'Provider', sub: row.provider.name || row.model.display_name, state: providerState },
+    { icon: <LuDatabase />, title: 'Provider', sub: providerLabel(row), state: providerState },
   ]
   const summary = blocked
     ? { tone: 'text-mg-warning', text: '护栏拦截 · 请求未下发到 Provider' }

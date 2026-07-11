@@ -656,7 +656,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
               className="px-2.5 pb-2 pt-1.5 text-xs leading-relaxed text-mg-text-4/80 select-text"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="font-mono">v{__APP_VERSION__} · {__BUILD_TAG__ || __BUILD_COMMIT__} · DEV</div>
+              <div className="font-mono">v{__APP_VERSION__} · {__BUILD_TAG__ || __BUILD_COMMIT__}{import.meta.env.MODE === 'production' ? '' : import.meta.env.MODE === 'test' ? ' · TEST' : ' · DEV'}</div>
               <div className="font-mono opacity-70">{__BUILD_TIME__.slice(0, 16).replace('T', ' ')} UTC</div>
             </div>
           </DropdownMenuContent>

@@ -442,7 +442,8 @@ function TranscriptCard({ pretty, text, title }: { pretty: boolean; text: string
     <div className="rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
       <div className="mb-2 mg-text-caption font-bold text-mg-text-2">{title}</div>
       {messages && messages.length > 0 ? (
-        <div className="space-y-2">
+        // 限高 + 滚动：长对话（多条/长内容）不再把抽屉整体顶得无限长，与 JSON 原文的 max-h-80 一致
+        <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
           {messages.map((m, i) => <MessageBubble key={`${m.role}-${i}`} role={m.role} content={m.content} />)}
         </div>
       ) : (
@@ -482,6 +483,13 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
   // 脱敏后继续：Request 只展示替换后的占位符，绝不展示原文（同时用于复制）。
   const redacted = isRedacted(row)
   const requestText = redacted ? REDACTION_PLACEHOLDER : requestPayloadText
+  // 响应是否产出：模型未发起（护栏拦截/rejected）或无输出即视为未生成，对齐 PRD 的响应态分支。
+  const responseGenerated = !isModelNotStarted(row) && (responsePayloadText.length > 0 || row.usage.output_tokens > 0)
+  const responseMissingReason = row.error
+    ? row.error
+    : isModelNotStarted(row)
+      ? t('logs.guardrail.notStartedHint')
+      : '模型未返回响应内容'
   if (payloadLoading) {
     return (
       <section className="space-y-3">
@@ -533,8 +541,18 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
         </p>
       )}
       <TranscriptCard title={`Request (${formatNumber(row.usage.input_tokens)} tokens)`} text={requestText} pretty={redacted ? false : pretty} />
-      {responsePayloadText && (
+      {/* 输出侧对齐 PRD：模型产出响应→展示 Response 转写；未产出（护栏拦截/调用失败）→「响应未生成 + 原因」，
+          而不是像原先那样 responsePayloadText 为空就整段消失（只做了输入没做输出）。 */}
+      {responseGenerated ? (
         <TranscriptCard title={`Response (${formatNumber(row.usage.output_tokens)} tokens)`} text={responsePayloadText} pretty={pretty} />
+      ) : (
+        <div className="flex gap-2 rounded-md border border-mg-warning/20 bg-mg-warning/5 p-[var(--mg-panel-padding-md)]">
+          <LuShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-mg-warning" />
+          <div>
+            <strong className="block mg-text-caption font-bold text-mg-text-1">响应未生成</strong>
+            <span className="block mg-text-caption text-mg-text-3">{responseMissingReason}</span>
+          </div>
+        </div>
       )}
       <p className="flex items-center gap-1.5 mg-text-caption text-mg-text-4">
         <LuShieldCheck className="h-3.5 w-3.5" />

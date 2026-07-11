@@ -15,6 +15,7 @@ import {
   LuArrowUpRight,
   LuDownload,
 } from 'react-icons/lu'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { CodeBlock } from '@/components/ui/CodeBlock'
@@ -25,15 +26,27 @@ import { StatusBadge, type StatusConfig } from '@/components/ui/StatusBadge'
 import { formatDateTimeWithSeconds, formatDuration } from '@/lib/format-date'
 import { cn, formatNumber } from '@/lib/utils'
 import type { CallLogItem } from '@/types'
+import {
+  deriveLogStatus,
+  guardrailAction,
+  isGuardrailHit,
+  isModelNotStarted,
+  isRedacted,
+  modelCallState,
+  REDACTION_PLACEHOLDER,
+  type DerivedLogStatus,
+} from './guardrail'
 
 export type PayloadKind = 'request' | 'response'
 export type PayloadView = 'parsed' | 'raw'
 
-const STATUS_MAP: Record<string, StatusConfig> = {
-  accepted: { label: '处理中', variant: 'secondary', dot: true },
-  succeeded: { label: '成功', variant: 'success' },
-  failed: { label: '异常', variant: 'destructive' },
-  rejected: { label: '护栏命中', variant: 'warning' },
+/** 派生三态 → StatusBadge 配置（详情头部与列表口径一致）。 */
+function buildStatusMap(t: (key: string) => string): Record<DerivedLogStatus, StatusConfig> {
+  return {
+    success: { label: t('logs.status.success'), variant: 'success' },
+    guarded: { label: t('logs.status.guarded'), variant: 'warning' },
+    error: { label: t('logs.status.error'), variant: 'destructive' },
+  }
 }
 
 function formatMaybeDuration(ms: number | null | undefined) {
@@ -86,6 +99,8 @@ export function LogDetailSheet({
   workspaceName?: string
   onViewTraceLogs?: (traceId: string) => void
 }) {
+  const { t } = useTranslation()
+  const statusMap = buildStatusMap(t)
   return (
     <SideSheet open={open} onClose={onClose} title={null} width={680} className="overflow-y-auto">
       {row && (
@@ -94,7 +109,7 @@ export function LogDetailSheet({
             <h2 className="mg-text-title-sm font-bold text-mg-text-1">调用日志详情</h2>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge variant="outline" className="max-w-full truncate">{row.model.display_name}</Badge>
-              <StatusBadge status={row.status} statusMap={STATUS_MAP} />
+              <StatusBadge status={deriveLogStatus(row)} statusMap={statusMap} />
               {row.call_type && <Badge variant="secondary">{row.call_type}</Badge>}
               <Badge variant={isLogSucceeded(row) ? 'success' : 'danger'}>{httpStatus(row)}</Badge>
             </div>
@@ -108,11 +123,12 @@ export function LogDetailSheet({
           </header>
 
           <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {row.status === 'rejected' ? (
+            {isModelNotStarted(row) ? (
               <>
-                {/* 护栏命中：模型请求未发起，无耗时/Token/费用可展示 → 换成两张定制诊断卡（对齐 PRD） */}
-                <DiagnosticCard icon={<LuShieldCheck />} label="请求状态" value="已拦截" hint="安全护栏命中" tone="warning" />
-                <DiagnosticCard icon={<LuNetwork />} label="模型请求" value="未发起" hint="未产生响应、Token、耗时或费用" tone="brand" />
+                {/* 模型请求未发起（如预算拦截）：无耗时/Token/费用 → 两张定制诊断卡。
+                    脱敏后继续的护栏命中不走这里，仍展示完整指标卡。 */}
+                <DiagnosticCard icon={<LuShieldCheck />} label={t('logs.guardrail.requestStatus')} value={t(`logs.guardrail.action.${guardrailAction(row)}`)} hint={t('logs.guardrail.blockedHint')} tone="warning" />
+                <DiagnosticCard icon={<LuNetwork />} label={t('logs.guardrail.modelRequest')} value={t('logs.guardrail.modelState.not_started')} hint={t('logs.guardrail.notStartedHint')} tone="brand" />
               </>
             ) : (
               <>
@@ -135,6 +151,17 @@ export function LogDetailSheet({
               <DetailRow label="计费状态" value={row.billing_status} />
             </DetailGrid>
           </DetailSection>
+
+          {isGuardrailHit(row) && (
+            <DetailSection title={t('logs.guardrail.sectionTitle')}>
+              <DetailGrid compact>
+                <DetailRow label={t('logs.guardrail.hitRule')} value={row.guardrail_decision?.rule_name || t('logs.guardrail.unknownRule')} />
+                <DetailRow label={t('logs.guardrail.result')} value={t(`logs.guardrail.action.${guardrailAction(row)}`)} />
+                <DetailRow label={t('logs.guardrail.ruleSource')} value={row.guardrail_decision?.rule_source || t('logs.guardrail.unknownSource')} />
+                <DetailRow label={t('logs.guardrail.modelCall')} value={t(`logs.guardrail.modelState.${modelCallState(row)}`)} />
+              </DetailGrid>
+            </DetailSection>
+          )}
 
           <DetailSection title="请求链路">
             <div className="grid gap-3 lg:grid-cols-2">
@@ -243,15 +270,16 @@ function ChainNode({ icon, state, sub, title }: { icon: ReactNode; state: NodeSt
 
 /** 请求链路可视化：Client → Gateway → Provider 三节点 + 链路状态摘要（数据由 status/http_status 推导）。 */
 function RequestChain({ row }: { row: CallLogItem }) {
-  const rejected = row.status === 'rejected'
-  const failed = row.status === 'failed'
-  const providerState: NodeState = rejected ? 'skipped' : failed ? 'error' : 'ok'
+  // 已拦截（护栏命中且模型未发起）→ Provider 跳过；脱敏后继续按正常链路（请求已下发到 Provider）。
+  const blocked = isGuardrailHit(row) && isModelNotStarted(row)
+  const failed = deriveLogStatus(row) === 'error'
+  const providerState: NodeState = blocked ? 'skipped' : failed ? 'error' : 'ok'
   const nodes: { icon: ReactNode; title: string; sub: string; state: NodeState }[] = [
     { icon: <LuMonitor />, title: 'Client', sub: '用户客户端', state: 'ok' },
-    { icon: <LuServer />, title: 'Gateway', sub: 'API 网关', state: rejected ? 'warn' : 'ok' },
+    { icon: <LuServer />, title: 'Gateway', sub: 'API 网关', state: blocked ? 'warn' : 'ok' },
     { icon: <LuDatabase />, title: 'Provider', sub: row.provider.name || row.model.display_name, state: providerState },
   ]
-  const summary = rejected
+  const summary = blocked
     ? { tone: 'text-mg-warning', text: '护栏拦截 · 请求未下发到 Provider' }
     : failed
       ? { tone: 'text-mg-danger', text: 'Provider 响应失败' }
@@ -300,11 +328,12 @@ function DetailRow({ label, mono = false, value }: { label: string; mono?: boole
 }
 
 function ResponseTiming({ row }: { row: CallLogItem }) {
-  if (row.status === 'rejected') {
+  const { t } = useTranslation()
+  if (isModelNotStarted(row)) {
     return (
       <div className="rounded-md border border-mg-border bg-mg-fill-0/30 p-[var(--mg-panel-padding-md)]">
-        <strong className="block mg-text-caption text-mg-text-1">请求状态：护栏命中</strong>
-        <span className="block mg-text-caption text-mg-text-3">模型请求未继续执行，无响应耗时</span>
+        <strong className="block mg-text-caption text-mg-text-1">{t('logs.guardrail.modelState.not_started')}</strong>
+        <span className="block mg-text-caption text-mg-text-3">{t('logs.guardrail.notStartedHint')}</span>
       </div>
     )
   }
@@ -438,6 +467,10 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
   responsePayloadText: string
   row: CallLogItem
 }) {
+  const { t } = useTranslation()
+  // 脱敏后继续：Request 只展示替换后的占位符，绝不展示原文（同时用于复制）。
+  const redacted = isRedacted(row)
+  const requestText = redacted ? REDACTION_PLACEHOLDER : requestPayloadText
   if (payloadLoading) {
     return (
       <section className="space-y-3">
@@ -446,7 +479,7 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
       </section>
     )
   }
-  if (!requestPayloadText && !responsePayloadText) {
+  if (!redacted && !requestPayloadText && !responsePayloadText) {
     return (
       <section className="space-y-3">
         <h3 className="mg-text-label text-mg-text-3">请求内容</h3>
@@ -469,7 +502,7 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
           <ViewToggle value={payloadView} onChange={onPayloadViewChange} />
           <CopyButton
             value={[
-              requestPayloadText && `// Request\n${requestPayloadText}`,
+              requestText && `// Request\n${requestText}`,
               responsePayloadText && `// Response\n${responsePayloadText}`,
             ].filter(Boolean).join('\n\n')}
             variant="labeled"
@@ -482,7 +515,13 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
           </Button>
         </div>
       </div>
-      <TranscriptCard title={`Request (${formatNumber(row.usage.input_tokens)} tokens)`} text={requestPayloadText} pretty={pretty} />
+      {redacted && (
+        <p className="flex items-start gap-1.5 rounded-md border border-mg-warning/20 bg-mg-warning/5 p-[var(--mg-panel-padding-sm)] mg-text-caption text-mg-text-2">
+          <LuShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-mg-warning" />
+          {t('logs.guardrail.redactedHint')}
+        </p>
+      )}
+      <TranscriptCard title={`Request (${formatNumber(row.usage.input_tokens)} tokens)`} text={requestText} pretty={redacted ? false : pretty} />
       {responsePayloadText && (
         <TranscriptCard title={`Response (${formatNumber(row.usage.output_tokens)} tokens)`} text={responsePayloadText} pretty={pretty} />
       )}

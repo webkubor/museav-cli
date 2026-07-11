@@ -596,6 +596,40 @@
       "payloadEmpty": "No raw payload",
       "payloadTruncated": "Truncated",
       "payloadCopied": "Payload copied"
+    },
+    "status": {
+      "success": "Success",
+      "guarded": "Guardrail hit",
+      "error": "Error"
+    },
+    "metrics": {
+      "notStarted": "Not sent",
+      "noResponse": "No response sent",
+      "noTokens": "No tokens"
+    },
+    "guardrail": {
+      "sectionTitle": "Guardrail Details",
+      "hitRule": "Matched rule",
+      "result": "Outcome",
+      "ruleSource": "Rule source",
+      "modelCall": "Model call",
+      "unknownRule": "Unknown rule",
+      "unknownSource": "Unknown source",
+      "requestStatus": "Request status",
+      "modelRequest": "Model request",
+      "blockedHint": "Guardrail hit",
+      "notStartedHint": "No response, tokens, latency or cost",
+      "action": {
+        "log_only": "Logged, continued",
+        "redacted": "Redacted, continued",
+        "blocked": "Blocked"
+      },
+      "modelState": {
+        "succeeded": "Success",
+        "failed": "Failed",
+        "not_started": "Not sent"
+      },
+      "redactedHint": "A prompt-injection rule matched; the request was redacted and the call continued. Only the redacted content is shown below, not the original."
     }
   },
   "observability": {

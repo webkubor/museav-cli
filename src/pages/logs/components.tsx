@@ -1,5 +1,6 @@
 import { LuChevronRight, LuInbox, LuSearch } from 'react-icons/lu'
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -18,12 +19,15 @@ import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { formatDateTimeWithSeconds, formatDuration } from '@/lib/format-date'
 import { cn, formatNumber } from '@/lib/utils'
 import type { CallLogItem } from '@/types'
+import { deriveLogStatus, isModelNotStarted, type DerivedLogStatus } from './guardrail'
 
-const STATUS_MAP: Record<string, StatusConfig> = {
-  accepted: { label: '处理中', variant: 'secondary', dot: true },
-  succeeded: { label: '成功', variant: 'success' },
-  failed: { label: '异常', variant: 'danger' },
-  rejected: { label: '护栏命中', variant: 'warning' },
+/** 派生三态 → StatusBadge 配置。i18n 文案在 buildStatusMap 里注入。 */
+function buildStatusMap(t: (key: string) => string): Record<DerivedLogStatus, StatusConfig> {
+  return {
+    success: { label: t('logs.status.success'), variant: 'success' },
+    guarded: { label: t('logs.status.guarded'), variant: 'warning' },
+    error: { label: t('logs.status.error'), variant: 'danger' },
+  }
 }
 
 /** 延迟阈值着色：>3s 警告色，>6s 危险色，其余默认。让慢请求一眼可见。 */
@@ -83,6 +87,8 @@ export function LogsTable({
   selectedLogId?: string
   workspaceNameById?: Map<string, string>
 }) {
+  const { t } = useTranslation()
+  const statusMap = buildStatusMap(t)
   if (isLoading) return <LogsTableSkeleton />
 
   if (items.length === 0) {
@@ -144,7 +150,7 @@ export function LogsTable({
                 {formatDateTimeWithSeconds(row.started_at)}
               </TableCell>
               <TableCell>
-                <StatusBadge status={row.status} statusMap={STATUS_MAP} />
+                <StatusBadge status={deriveLogStatus(row)} statusMap={statusMap} />
               </TableCell>
               <TableCell>
                 <div className="flex min-w-0 items-center gap-2">
@@ -175,7 +181,12 @@ export function LogsTable({
                 })()}
               </TableCell>
               <TableCell className="whitespace-nowrap">
-                {row.usage.total_tokens > 0 ? (
+                {isModelNotStarted(row) ? (
+                  <div className="min-w-0">
+                    <strong className="block text-mg-text-3">—</strong>
+                    <span className="block mg-text-caption text-mg-text-3">{t('logs.metrics.notStarted')}</span>
+                  </div>
+                ) : row.usage.total_tokens > 0 ? (
                   <div className="min-w-0">
                     <strong className="block font-mono font-bold tabular-nums text-mg-text-1">
                       {formatNumber(row.usage.total_tokens)}
@@ -187,18 +198,21 @@ export function LogsTable({
                 ) : (
                   <div className="min-w-0">
                     <strong className="block text-mg-text-3">—</strong>
-                    <span className="block mg-text-caption text-mg-text-3">未产生 Token</span>
+                    <span className="block mg-text-caption text-mg-text-3">{t('logs.metrics.noTokens')}</span>
                   </div>
                 )}
               </TableCell>
               <TableCell>
-                <Money amount={Number(row.cost.amount) > 0 ? row.cost.amount : null} currency={row.cost.currency} />
+                <Money
+                  amount={isModelNotStarted(row) ? null : Number(row.cost.amount) > 0 ? row.cost.amount : null}
+                  currency={row.cost.currency}
+                />
               </TableCell>
               <TableCell className="whitespace-nowrap">
-                {row.status === 'rejected' ? (
+                {isModelNotStarted(row) ? (
                   <div className="min-w-0">
                     <strong className="block text-mg-text-3">—</strong>
-                    <span className="block mg-text-caption text-mg-text-3">未发起响应</span>
+                    <span className="block mg-text-caption text-mg-text-3">{t('logs.metrics.notStarted')}</span>
                   </div>
                 ) : (
                   <div className="min-w-0">

@@ -118,6 +118,9 @@ export type {
   CallLogItem,
   LogStats,
   LogPayload,
+  ModelRequestState,
+  GuardrailAction,
+  GuardrailDecision,
 } from './logs'
 
 export type {

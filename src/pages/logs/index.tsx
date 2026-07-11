@@ -98,10 +98,10 @@ function timeRangeLabel(value: DateRangeValue) {
 }
 
 // 调用状态(status)与护栏命中(guardrail)是两个正交维度——一次调用可能失败但未命中护栏，
-// 也可能成功但命中护栏——故这里只负责 status 这一维度，guardrail 由 GET /model-logs 的
-// 独立 guardrail 参数（all|hit|not_hit）传递，不再耦合进 status。
+// 也可能成功但命中护栏（脱敏后继续）——故这里只负责 success/error 两个纯状态维度。
+// 「护栏命中」主状态不映射到某个 backend status（它跨 succeeded/rejected/failed），
+// 改由独立 guardrail 参数（按 guardrail_decision 判定命中）承接，见 effectiveGuardrail。
 function resolveBackendStatus(status: LogStatusFilter): CallLogListParams['status'] | undefined {
-  if (status === 'guarded') return 'rejected'
   if (status === 'error') return 'failed'
   if (status === 'success') return 'succeeded'
   return undefined
@@ -251,6 +251,10 @@ export default function LogsPage() {
 
   const { from, to } = useMemo(() => rangeToDates(timeRange), [timeRange])
   const backendStatus = resolveBackendStatus(statusFilter)
+  // 「护栏命中」跨多个 backend status，统一走 guardrail=hit（按 guardrail_decision 判定，
+  // 含仅记录、脱敏后继续、脱敏后下游失败的异常记录）。状态选「护栏命中」时优先此维度。
+  const effectiveGuardrail: LogGuardrailFilter | undefined =
+    statusFilter === 'guarded' ? 'hit' : guardrailFilter === 'all' ? undefined : guardrailFilter
   const selectedWorkspaceId = workspaceFilter === 'all' ? undefined : workspaceFilter
   // 空间视图（单空间场景）：锁定该负责空间的全员数据，覆盖手动的工作空间筛选。
   const effectiveWorkspaceId = view === 'space' ? ownedWorkspaceIds[0] : selectedWorkspaceId
@@ -280,7 +284,7 @@ export default function LogsPage() {
       listCallLogs({
         workspace_id: effectiveWorkspaceId,
         status: backendStatus,
-        guardrail: guardrailFilter === 'all' ? undefined : guardrailFilter,
+        guardrail: effectiveGuardrail,
         model_id: modelFilter === 'all' ? undefined : modelFilter,
         api_key_id: apiKeyFilter === 'all' ? undefined : apiKeyFilter,
         account_id: effectiveAccountId,

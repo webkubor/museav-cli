@@ -596,6 +596,40 @@
       "payloadEmpty": "暂无原始 Payload",
       "payloadTruncated": "已截断",
       "payloadCopied": "Payload 已复制"
+    },
+    "status": {
+      "success": "成功",
+      "guarded": "护栏命中",
+      "error": "异常"
+    },
+    "metrics": {
+      "notStarted": "未发起",
+      "noResponse": "未发起响应",
+      "noTokens": "未产生 Token"
+    },
+    "guardrail": {
+      "sectionTitle": "护栏详情",
+      "hitRule": "命中规则",
+      "result": "处理结果",
+      "ruleSource": "规则来源",
+      "modelCall": "模型调用",
+      "unknownRule": "未知规则",
+      "unknownSource": "未知来源",
+      "requestStatus": "请求状态",
+      "modelRequest": "模型请求",
+      "blockedHint": "安全护栏命中",
+      "notStartedHint": "未产生响应、Token、耗时或费用",
+      "action": {
+        "log_only": "记录后继续",
+        "redacted": "脱敏后继续",
+        "blocked": "已拦截"
+      },
+      "modelState": {
+        "succeeded": "成功",
+        "failed": "失败",
+        "not_started": "未发起"
+      },
+      "redactedHint": "命中提示词注入规则，已对请求内容脱敏后继续调用；下方仅展示脱敏后的内容，不含原文。"
     }
   },
   "observability": {

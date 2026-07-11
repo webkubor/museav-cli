@@ -3,7 +3,7 @@
  * 路由：/workspaces
  * API：GET /workspaces、POST /workspaces
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuthStore } from '@/store/auth'
 import { useTranslation } from 'react-i18next'
 import {
@@ -49,7 +49,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { TagInput, type TagOption } from '@/components/ui/TagInput'
 import { cn, formatMoney as fmtMoney } from '@/lib/utils'
 import { formatDate } from '@/lib/format-date'
-import { trackAction } from '@/lib/track'
+import { trackAction, trackPageView } from '@/lib/track'
 import { PERMS } from '@/config/permissions'
 import { usePermissions } from '@/hooks/use-permissions'
 import { useNavigate } from 'react-router-dom'
@@ -84,6 +84,11 @@ export default function WorkspacesPage() {
   const { hasPermission } = usePermissions()
   // 具体角色由后端角色矩阵决定；前端只消费当前会话的 Permission ID。
   const canCreateWorkspace = hasPermission(PERMS.WORKSPACE_CREATE)
+
+  useEffect(() => {
+    trackPageView('workspaces')
+  }, [])
+
   const [searchValue, setSearchValue] = useState('')
   const [modalVisible, setModalVisible] = useState(false)
   // 单页结构：选中卡片在下方展开详情（不跳路由，对齐原型 .space-detail-shell）

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
@@ -5,6 +6,7 @@ import { getSession, switchTenant } from '@/services/auth'
 import { OrgManagePanel } from './components/OrgManagePanel'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { appToast } from '@/lib/app-toast'
+import { trackPageView } from '@/lib/track'
 import { useTranslation } from 'react-i18next'
 
 /**
@@ -17,6 +19,10 @@ export default function OrganizationSettingsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { t } = useTranslation()
+
+  useEffect(() => {
+    trackPageView('organization')
+  }, [])
 
   // 当前企业：活跃租户是企业则用它；否则退回账号下第一个企业租户
   const firstEnterpriseId = tenants.find((tt) => tt.type !== 'personal')?.tenant_id ?? null

@@ -671,6 +671,7 @@
       "apiKeyFilter": "API Key Filter",
       "apiKeyFilterHint": "Leave empty to forward all keys; select to forward only chosen keys",
       "apiKeyFilterPlaceholder": "Select API Key...",
+      "apiKeyFilterCount": "{{count}} selected",
       "noApiKeys": "No API keys available in this workspace",
       "connectionTitle": "Connection settings",
       "connectionDesc": "Configure credentials and endpoint used for log forwarding.",

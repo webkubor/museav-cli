@@ -13,12 +13,12 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
 import { Switch } from '@/components/ui/Switch'
-import { TagInput } from '@/components/ui/TagInput'
 import { Textarea } from '@/components/ui/Textarea'
 import { appToast } from '@/lib/app-toast'
 import { createForward, updateForward } from '@/services/observability'
 import { listApiKeys } from '@/services/api-keys'
 import type { ForwardItem } from '@/types'
+import { ApiKeyMultiSelect } from './ApiKeyMultiSelect'
 import type { PlatformSelection } from './observability-utils'
 
 /** 转发目标新增/编辑弹窗。 */
@@ -46,6 +46,7 @@ export function PlatformConfigModal({
   const [sampling, setSampling] = useState(
     editingForward ? String(Math.round(editingForward.sampling_rate * 100)) : '100'
   )
+  // 多选下拉：回填已存的 Key id 数组，空数组=不指定（转发所有 Key）。
   const [apiKeyIds, setApiKeyIds] = useState<string[]>(editingForward?.api_key_ids ?? [])
 
   const keysQuery = useQuery({
@@ -197,12 +198,15 @@ export function PlatformConfigModal({
             <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-mg-text-2">
               {t('observability.form.apiKeyFilter')}
             </label>
-            <TagInput
+            <ApiKeyMultiSelect
               value={apiKeyIds}
               onChange={setApiKeyIds}
-              options={keyOptions.map((option) => ({ value: option.id, label: option.name }))}
-              placeholder={t('observability.form.apiKeyFilterPlaceholder')}
+              options={keyOptions}
+              loading={keysQuery.isLoading}
             />
+            <p className="mt-1.5 text-xs leading-relaxed text-mg-text-3">
+              {t('observability.form.apiKeyFilterHint')}
+            </p>
           </div>
         </div>
       </div>

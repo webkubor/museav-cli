@@ -671,6 +671,7 @@
       "apiKeyFilter": "指定 API Key",
       "apiKeyFilterHint": "不选则转发所有 Key 的日志；选择后仅转发勾选 Key 的请求",
       "apiKeyFilterPlaceholder": "选择 API Key…",
+      "apiKeyFilterCount": "已选 {{count}} 个",
       "noApiKeys": "当前工作空间暂无可用 API Key",
       "connectionTitle": "连接配置",
       "connectionDesc": "配置凭证与端点，保存后会用于日志转发。",

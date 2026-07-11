@@ -9,7 +9,7 @@
  * 禁止在组件里散落这套回退逻辑。
  */
 import type { GuardrailBudgetPolicy, GuardrailDetail } from '@/interfaces/guardrails'
-import { trimAmountScale } from './budget'
+import { trimAmountScale, groupThousands } from './budget'
 
 export type GuardrailScope = 'global' | 'member' | 'key'
 export type GuardrailKind = 'regular' | 'boost'
@@ -173,7 +173,7 @@ export function formatBudget(symbol: string, policy?: GuardrailBudgetPolicy | nu
   const amount = policy?.spend_limit_amount
   if (!policy || !amount || Number(amount) <= 0) return '不限额'
   const period = PERIOD_LABEL[policy.period_unit] ?? policy.period_unit
-  return `${symbol}${trimAmountScale(amount)} / ${period}`
+  return `${symbol}${groupThousands(trimAmountScale(amount))} / ${period}`
 }
 
 /**

@@ -13,6 +13,13 @@ use_count: 0
 > 3. **组件铁律**：主操作用 `Button variant="brand"`，禁止手写 `<button className="bg-brand-*">`；卡片用 `.mg-tile`，勿拿 `bg-mg-fill-0` 凑层次；圆角只用 `rounded-sm/md/lg/full`（**禁 `rounded-xl/2xl/3xl`**，它们是禁用刻度＝直角）；图标只用 `react-icons` 或 `@lobehub/icons`。
 > 4. 提交前 UI 门禁 `scripts/ui-guard.sh` 会硬拦上述违规；**完成前必须浏览器验证**（engineering_baseline §4.2 结构化验收），禁止"没验就说完成"。
 
+> ## 🧭 真源 & 交付铁律（硬性 · 治「不知信哪个源」+「不知交付没」两大返工坑，2026-07-11）
+> 1. **每个模块钉唯一真源**，动手前先声明「本模块以 X 为准」。真源候选：PRD 原型 `modelgo_prd/src/App.tsx`、飞书对应设计文档、现控制台代码、Swagger。冲突优先级 **PRD 原型 > 飞书文档 > 现代码**；命名一律 PRD 原型（租户/工作空间，非组织/项目）。定稿 PRD 与需求方新单冲突 → 贴证据回需求方澄清，不自行选边。
+>    - **飞书 PRD 真源在哪 & 怎么读**（别猜位置）：《ModelGo PRD by Release》，space `7636726268473543858`，根节点 `QR0Bw915SinU8Lkr67LcrEdpnyd`。读正文：`lark-cli --profile feishu-company api GET "/open-apis/docx/v1/documents/<node>/raw_content"`（见 skill `frontend-api-verify` / 记忆 `prd-by-release-tree`）。各页 node：企业&空间管理 `NDEBwSPQzifUdhkDgDwcIy3CnXe`｜左侧导航&总览 `JssswUWbOiNOpDkm9rLciE0qnSf`｜角色权限 `DGpFwOZEciHpZ1km5JmcHhkinfe`｜用量统计 `ZTrYwm0x0iC882kMopwccQKbnXb`｜调用日志 `YQSrw9MplixXNJkFflWcRyrhnnf`｜安全护栏产品模型 `UFBxwgdYmiHVhLk2SZtc5kJVnBh`｜安全护栏v0.1 `Ieplwa8Y7idSjyk1WSiclByRnN9`｜API Keys `VxSCwa6QMiPMYGkeyrUcaYXQnRc`。
+>    - **官网首页文案不在飞书**：真源是桌面 `首页-文案参考.md`（首页以此为准，非 `ModelGo国内官网-设计对接文案.md`）。
+>    - ⚠️ 上面 node token 会随 PRD 改版新增/失效；对不上时用 `lark-cli ... /open-apis/wiki/v2/spaces/7636726268473543858/nodes --params '{"parent_node_token":"<父>"}'` 重新列。
+> 2. **「交付」= 接口在 test 可打通，不是「代码写完」**。后端单挪「待验证」前，交付方在 test 打一枪确认路由注册 + 返回正常；前端联调前先 Swagger/实打确认接口存在，**别按看板状态盲信**（例 #385 标待验证但 rotate 打出 40401）。状态与 test 不符 → 带请求/响应证据退回后端，不静默兜底。判接口新旧看 paths 实测，别看 `swagger info.version`（静态注解）。
+
 # UI Review Polish
 
 Use this when the user says the UI is ugly, too AI-like, unclear, not polished, not responsive, too bland, visually noisy, or needs review before shipping.

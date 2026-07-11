@@ -16,8 +16,8 @@ use_count: 0
 > ## 🧭 真源 & 交付铁律（硬性 · 治「不知信哪个源」+「不知交付没」两大返工坑，2026-07-11）
 > 1. **每个模块钉唯一真源**，动手前先声明「本模块以 X 为准」。真源候选：PRD 原型 `modelgo_prd/src/App.tsx`、飞书对应设计文档、现控制台代码、Swagger。冲突优先级 **PRD 原型 > 飞书文档 > 现代码**；命名一律 PRD 原型（租户/工作空间，非组织/项目）。定稿 PRD 与需求方新单冲突 → 贴证据回需求方澄清，不自行选边。
 >    - **飞书 PRD 真源在哪 & 怎么读**（别猜位置）：《ModelGo PRD by Release》，space `7636726268473543858`，根节点 `QR0Bw915SinU8Lkr67LcrEdpnyd`。读正文：`lark-cli --profile feishu-company api GET "/open-apis/docx/v1/documents/<node>/raw_content"`（见 skill `frontend-api-verify` / 记忆 `prd-by-release-tree`）。各页 node：企业&空间管理 `NDEBwSPQzifUdhkDgDwcIy3CnXe`｜左侧导航&总览 `JssswUWbOiNOpDkm9rLciE0qnSf`｜角色权限 `DGpFwOZEciHpZ1km5JmcHhkinfe`｜用量统计 `ZTrYwm0x0iC882kMopwccQKbnXb`｜调用日志 `YQSrw9MplixXNJkFflWcRyrhnnf`｜安全护栏产品模型 `UFBxwgdYmiHVhLk2SZtc5kJVnBh`｜安全护栏v0.1 `Ieplwa8Y7idSjyk1WSiclByRnN9`｜API Keys `VxSCwa6QMiPMYGkeyrUcaYXQnRc`。
->    - **官网首页文案不在飞书**：真源是桌面 `首页-文案参考.md`（首页以此为准，非 `ModelGo国内官网-设计对接文案.md`）。
 >    - ⚠️ 上面 node token 会随 PRD 改版新增/失效；对不上时用 `lark-cli ... /open-apis/wiki/v2/spaces/7636726268473543858/nodes --params '{"parent_node_token":"<父>"}'` 重新列。
+>    - 注：官网（website）是**另一个产品**，不在本仓/本树；桌面那些 `首页-文案参考.md` 等是临时稿、非 PRD，别当真源。
 > 2. **「交付」= 接口在 test 可打通，不是「代码写完」**。后端单挪「待验证」前，交付方在 test 打一枪确认路由注册 + 返回正常；前端联调前先 Swagger/实打确认接口存在，**别按看板状态盲信**（例 #385 标待验证但 rotate 打出 40401）。状态与 test 不符 → 带请求/响应证据退回后端，不静默兜底。判接口新旧看 paths 实测，别看 `swagger info.version`（静态注解）。
 
 # UI Review Polish

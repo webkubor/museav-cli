@@ -13,13 +13,14 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from '@/components/ui/Table'
-import { LuSettings, LuSearch, LuShieldCheck, LuUserRound, LuKeyRound } from 'react-icons/lu'
+import { LuSettings, LuSearch, LuShieldCheck, LuUserRound, LuKeyRound, LuInfo } from 'react-icons/lu'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
 import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
 import {
   KIND_LABEL,
   PROMPT_INJECTION_LABEL,
+  PROMPT_INJECTION_HINTS,
   PROMPT_INJECTION_INHERIT_LABEL,
   apiKeyCount,
   boostExpiry,
@@ -36,6 +37,36 @@ import {
   primaryBudget,
   type GuardrailScope,
 } from '../derive'
+
+/** 列头「提示词注入」+ info tooltip（对齐 PRD：字段标题右侧说明命中后的处理方式），与表单内 tooltip 同源文案。 */
+function PromptInjectionHeaderLabel() {
+  return (
+    <span className="inline-flex items-center gap-1">
+      提示词注入
+      <span className="group relative inline-flex">
+        <button
+          type="button"
+          aria-label="命中后的处理方式"
+          className="inline-flex text-mg-text-3 outline-none transition-colors hover:text-mg-text-2 focus-visible:text-mg-text-2"
+        >
+          <LuInfo className="h-3.5 w-3.5" />
+        </button>
+        <span
+          role="tooltip"
+          className="pointer-events-none absolute right-0 top-6 z-20 w-[280px] rounded-md border border-mg-border bg-mg-bg-0 p-3 text-left font-normal normal-case opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+        >
+          <span className="mb-1.5 block text-[11px] font-bold text-mg-text-1">命中后的处理方式</span>
+          {PROMPT_INJECTION_HINTS.map((h) => (
+            <span key={h.mode} className="mt-1 flex gap-1.5 text-[10px]">
+              <span className="shrink-0 font-bold text-mg-text-2">{PROMPT_INJECTION_LABEL[h.mode]}</span>
+              <span className="font-medium leading-snug text-mg-text-3">{h.text}</span>
+            </span>
+          ))}
+        </span>
+      </span>
+    </span>
+  )
+}
 
 // 列表筛选：默认「有效」隐藏过期提额；可切到「已过期/已停用」或「全部」（文档§过期提额）
 export type GuardrailListFilter = 'active' | 'expired' | 'all'
@@ -311,7 +342,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
             <TableHead>默认 Key 预算</TableHead>
             <TableHead>模型黑名单</TableHead>
             <TableHead>IP 白名单</TableHead>
-            <TableHead>提示词注入</TableHead>
+            <TableHead><PromptInjectionHeaderLabel /></TableHead>
             <TableHead>最近更新</TableHead>
             <TableHead>状态</TableHead>
             <TableHead className="text-right">操作</TableHead>
@@ -410,7 +441,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
             <TableHead>提额到期时间</TableHead>
             <TableHead>模型黑名单</TableHead>
             <TableHead>IP 白名单</TableHead>
-            <TableHead>提示词注入</TableHead>
+            <TableHead><PromptInjectionHeaderLabel /></TableHead>
             <TableHead>最近更新</TableHead>
             <TableHead>状态</TableHead>
             <TableHead className="text-right">操作</TableHead>

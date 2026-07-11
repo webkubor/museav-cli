@@ -73,6 +73,8 @@ export function LogsTable({
   page,
   selectedLogId,
   workspaceNameById,
+  docsUrl,
+  onGoCreateKey,
 }: {
   hasActiveFilters?: boolean
   hasMore: boolean
@@ -86,6 +88,8 @@ export function LogsTable({
   page: number
   selectedLogId?: string
   workspaceNameById?: Map<string, string>
+  docsUrl?: string
+  onGoCreateKey?: () => void
 }) {
   const { t } = useTranslation()
   const statusMap = buildStatusMap(t)
@@ -107,6 +111,18 @@ export function LogsTable({
             icon={<LuInbox />}
             title="暂无调用日志"
             description="通过 API Key 发起模型调用后，请求会在这里按时间倒序展示。"
+            action={
+              (onGoCreateKey || docsUrl) ? (
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {onGoCreateKey && (
+                    <Button variant="brand" size="sm" onClick={onGoCreateKey}>创建 API Key</Button>
+                  )}
+                  {docsUrl && (
+                    <Button variant="outline" size="sm" onClick={() => window.open(docsUrl, '_blank', 'noopener')}>查看接入文档</Button>
+                  )}
+                </div>
+              ) : undefined
+            }
           />
         )}
       </div>

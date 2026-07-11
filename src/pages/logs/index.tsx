@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
@@ -13,6 +13,8 @@ import { listModels } from '@/services/catalog'
 import { listTenantMembers } from '@/services/tenants'
 import { listWorkspaces } from '@/services/workspaces'
 import { useAuthStore } from '@/store/auth'
+import { useMarket } from '@/hooks/useMarket'
+import { getMarketConfig } from '@/config/market'
 import { useTenantRole } from '@/hooks/use-tenant-role'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { trackEvent, trackPageView } from '@/lib/track'
@@ -112,7 +114,10 @@ export default function LogsPage() {
     trackPageView('logs')
   }, [])
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
+  const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const currentAccountId = useAuthStore((s) => s.account?.account_id)
+  const navigate = useNavigate()
+  const docsUrl = getMarketConfig(useMarket()).docsUrl
   const { canManage, isEnterprise, isSpaceOwner, ownedWorkspaceIds } = useTenantRole()
   // 视图默认：企业 Owner/Admin=企业视图，空间负责人（单空间）=空间视图，其余=我的视图；
   // 手动切换后不再被角色覆盖（同总览页）
@@ -588,7 +593,15 @@ export default function LogsPage() {
           page={page}
           selectedLogId={selectedLog?.call_log_id}
           workspaceNameById={workspaceNameById}
+          docsUrl={docsUrl}
+          onGoCreateKey={activeWorkspaceId ? () => navigate(`/workspace/${activeWorkspaceId}/api-keys`) : undefined}
         />
+      )}
+      {/* PRD §7.5：日志写入可能有短暂延迟，给出可预期提示 + 刷新引导 */}
+      {items.length > 0 && (
+        <p className="mg-text-caption text-mg-text-4">
+          日志写入可能有秒级延迟，刚发起的调用如未出现请稍后点「刷新」。
+        </p>
       )}
 
       <LogDetailSheet
@@ -603,6 +616,7 @@ export default function LogsPage() {
         row={selectedLog}
         workspaceName={selectedLog ? (workspaceNameById.get(selectedLog.workspace_id) || selectedLog.workspace_id) : undefined}
         onViewTraceLogs={viewTraceLogs}
+        onOpenLogSettings={(workspaceId) => navigate(`/workspace/${workspaceId}/observability`)}
       />
         </>
       )}

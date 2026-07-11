@@ -86,6 +86,7 @@ export function LogDetailSheet({
   row,
   workspaceName,
   onViewTraceLogs,
+  onOpenLogSettings,
 }: {
   requestPayloadText: string
   responsePayloadText: string
@@ -98,6 +99,7 @@ export function LogDetailSheet({
   row: CallLogItem | null
   workspaceName?: string
   onViewTraceLogs?: (traceId: string) => void
+  onOpenLogSettings?: (workspaceId: string) => void
 }) {
   const { t } = useTranslation()
   const statusMap = buildStatusMap(t)
@@ -201,6 +203,7 @@ export function LogDetailSheet({
             onPayloadViewChange={onPayloadViewChange}
             payloadLoading={payloadLoading}
             onDownload={onDownload}
+            onOpenLogSettings={onOpenLogSettings}
           />
 
           <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-mg-border pt-4">
@@ -470,7 +473,7 @@ function ViewToggle({ onChange, value }: { onChange: (view: PayloadView) => void
   )
 }
 
-function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, payloadView, requestPayloadText, responsePayloadText, row }: {
+function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, payloadView, requestPayloadText, responsePayloadText, row, onOpenLogSettings }: {
   onDownload: () => void
   onPayloadViewChange: (view: PayloadView) => void
   payloadLoading: boolean
@@ -478,6 +481,7 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
   requestPayloadText: string
   responsePayloadText: string
   row: CallLogItem
+  onOpenLogSettings?: (workspaceId: string) => void
 }) {
   const { t } = useTranslation()
   // 脱敏后继续：Request 只展示替换后的占位符，绝不展示原文（同时用于复制）。
@@ -504,7 +508,15 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
         <h3 className="mg-text-label text-mg-text-3">请求内容</h3>
         <div className="flex gap-2 rounded-md border border-mg-border bg-mg-fill-0/30 p-[var(--mg-panel-padding-md)] text-mg-text-3">
           <LuFileText className="mt-0.5 h-4 w-4 shrink-0" />
-          <p className="mg-text-caption">该工作空间未开启输入 / 输出日志。调用日志仅保留元数据、Token、费用、延迟、路由和错误摘要；需查看完整 Prompt 与 Response，请到空间管理的「日志与转发」中开启。</p>
+          <div className="min-w-0 space-y-2">
+            <p className="mg-text-caption">该工作空间未开启输入 / 输出日志。调用日志仅保留元数据、Token、费用、延迟、路由和错误摘要；需查看完整 Prompt 与 Response，请到空间管理的「日志与转发」中开启。</p>
+            {onOpenLogSettings && (
+              <Button size="xs" variant="outline" onClick={() => onOpenLogSettings(row.workspace_id)}>
+                去开启日志与转发
+                <LuArrowUpRight className="ml-1 h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
         </div>
       </section>
     )

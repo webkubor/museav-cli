@@ -449,6 +449,11 @@ export default function WorkspacesPage() {
                   </div>
                 </div>
 
+                {/* 描述（PRD 空间卡片字段，有才展示，最多两行） */}
+                {ws.description && (
+                  <p className="text-xs text-mg-text-3 leading-snug line-clamp-2">{ws.description}</p>
+                )}
+
                 {/* 负责人 */}
                 <div className="text-xs text-mg-text-3 mt-1">
                   {t('workspaces.card.owner')}{' '}

@@ -6,6 +6,7 @@ import { LuArrowLeft, LuCheck, LuCopy, LuScanQrCode, LuShieldCheck } from 'react
 import { WechatIcon } from '@/constants/brand-icons'
 import { useCopy } from '@/hooks/use-copy'
 import { appToast } from '@/lib/app-toast'
+import { trackEvent } from '@/lib/track'
 import { getRecharge } from '@/services/billing'
 
 /**
@@ -105,6 +106,17 @@ export default function WechatCashierPage() {
 
   const goBack = () => navigate(returnTo, { replace: true })
 
+  // 三态关键节点埋点：缺参兜底(fail) vs 有二维码进入等待轮询(pending)。仅进页触发一次。
+  useEffect(() => {
+    if (!qrCodeUrl) {
+      trackEvent('billing.wechat_cashier:missing_params', undefined, { result: 'fail', error_code: 'missing_params' })
+    } else {
+      trackEvent('billing.wechat_cashier:pending')
+    }
+    // 进页判定一次即可，参数来自 URL、本页生命周期内不变
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const handleCopyLink = async () => {
     const ok = await copy(qrCodeUrl)
     if (ok) appToast.success(t('billing.wechatCashier.copied'))
@@ -126,10 +138,12 @@ export default function WechatCashierPage() {
         if (!active) return
         if (order.status === 'paid') {
           setState('paid')
+          trackEvent('billing.wechat_cashier:paid', undefined, { result: 'success' })
           return
         }
         if (order.status === 'failed' || order.status === 'cancelled') {
           setState('closed')
+          trackEvent('billing.wechat_cashier:closed', undefined, { result: 'fail', error_code: order.status })
           return
         }
       } catch {

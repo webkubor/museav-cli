@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { ForbiddenState } from '@/components/ui/ForbiddenState'
-import { isApiErrorCode } from '@/lib/request-error-message'
+import { isApiErrorCode, errorCodeOf } from '@/lib/request-error-message'
 import { LuPlus } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
@@ -318,9 +318,12 @@ export default function GuardrailsPage() {
       setIsCreating(false)
       setDetailId(created.id)
       setSheetTab('scope')
+      trackAction(PERMS.GUARDRAILS_CREATE, undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
-    onError: (err: unknown) =>
-      appToast.requestError(err, t('guardrails.toast.createError')),
+    onError: (err: unknown) => {
+      appToast.requestError(err, t('guardrails.toast.createError'))
+      trackAction(PERMS.GUARDRAILS_CREATE, undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
+    },
   })
 
   const updateMutation = useMutation({
@@ -331,9 +334,12 @@ export default function GuardrailsPage() {
       setDetailOpen(false)
       qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
       qc.invalidateQueries({ queryKey: ['guardrail-detail', detailId] })
+      trackAction(PERMS.GUARDRAILS_EDIT, undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
-    onError: (err: unknown) =>
-      appToast.requestError(err, t('guardrails.toast.updateError')),
+    onError: (err: unknown) => {
+      appToast.requestError(err, t('guardrails.toast.updateError'))
+      trackAction(PERMS.GUARDRAILS_EDIT, undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
+    },
   })
 
   const deleteMutation = useMutation({
@@ -343,9 +349,12 @@ export default function GuardrailsPage() {
       setDeleteTarget(null)
       qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
       if (deleteTarget?.id === detailId) setDetailOpen(false)
+      trackAction(PERMS.GUARDRAILS_DELETE, undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
-    onError: (err: unknown) =>
-      appToast.requestError(err, t('guardrails.toast.deleteError')),
+    onError: (err: unknown) => {
+      appToast.requestError(err, t('guardrails.toast.deleteError'))
+      trackAction(PERMS.GUARDRAILS_DELETE, undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
+    },
   })
 
   const toggleMutation = useMutation({

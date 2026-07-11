@@ -13,6 +13,8 @@ import { AvatarUpload } from '@/components/ui/AvatarUpload'
 import { ReferralInviteCard } from '@/components/referral/ReferralInviteCard'
 import { getReferralOverview } from '@/services/referral'
 import { appToast } from '@/lib/app-toast'
+import { trackEvent } from '@/lib/track'
+import { errorCodeOf } from '@/lib/request-error-message'
 import { LuGift, LuLock } from 'react-icons/lu'
 
 interface BasicInfoTabProps {
@@ -65,8 +67,14 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())
 
   const handleSendEmailCode = async () => {
-    const r = await sendEmailCode(emailInput.trim())
-    return r.expires_in
+    try {
+      const r = await sendEmailCode(emailInput.trim())
+      trackEvent('account.email:send_code', undefined, { result: 'success' })
+      return r.expires_in
+    } catch (err) {
+      trackEvent('account.email:send_code', undefined, { result: 'fail', error_code: errorCodeOf(err) })
+      throw err
+    }
   }
 
   const bindEmailMutation = useMutation({
@@ -76,8 +84,12 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
       setEmailBindOpen(false)
       if (updated) queryClient.setQueryData<AccountProfile>(['account-profile'], updated)
       void queryClient.invalidateQueries({ queryKey: ['account-profile'] })
+      trackEvent('account.email:bind', undefined, { result: 'success' })
     },
-    onError: (err: unknown) => appToast.requestError(err, '邮箱绑定失败'),
+    onError: (err: unknown) => {
+      appToast.requestError(err, '邮箱绑定失败')
+      trackEvent('account.email:bind', undefined, { result: 'fail', error_code: errorCodeOf(err) })
+    },
   })
 
   const avatarLetter = (profile.display_name || profile.email || profile.phone || 'U').charAt(0).toUpperCase()
@@ -139,7 +151,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
               <span className="text-xs leading-relaxed text-mg-text-3">暂未绑定电子邮箱。</span>
               <button
                 type="button"
-                onClick={() => { setEmailInput(''); setEmailCode(''); setEmailBindOpen(true) }}
+                onClick={() => { setEmailInput(''); setEmailCode(''); setEmailBindOpen(true); trackEvent('account.email:bind_open') }}
                 className="shrink-0 text-xs font-bold text-brand-base hover:text-brand-base/80 bg-transparent border-none p-0 cursor-pointer transition-colors"
               >
                 绑定邮箱

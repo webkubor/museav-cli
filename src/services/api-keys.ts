@@ -14,6 +14,7 @@ import type {
   ChangeApiKeyOwnerRequest,
   CreateApiKeyRequest,
   CursorPage,
+  QueryParams,
   UpdateApiKeyRequest,
 } from '@/types'
 import type { ApiKeyListParams } from '@/interfaces/api-keys'
@@ -92,6 +93,10 @@ export interface EffectiveBudget {
   period_length: number
   period_unit: string
   spend_limit_amount: string
+  /** 后端 effective 额外返回：本期已用 / 剩余 / 来源护栏（创建前预览 per_api_key 已用为 0） */
+  spent?: string
+  remaining?: string
+  source_guardrail_id?: string
 }
 
 /** 单层护栏（组织/空间默认/Key 绑定等来源之一） */
@@ -122,6 +127,23 @@ export interface EffectiveGuardrails {
 /** 取 Key 的三层生效护栏（qa#379）：由 resolver 合并组织/空间默认/Key 绑定后的最终生效规则 */
 export function getEffectiveGuardrails(workspaceId: string, keyId: string) {
   return get<EffectiveGuardrails>(`workspaces/${workspaceId}/api-keys/${keyId}/effective-guardrails`)
+}
+
+/** 创建前「生效护栏预览」入参（qa#420 第1项）：Key 未创建，按类型/负责人/所选 Key 护栏/创建人预览 */
+export interface EffectiveGuardrailPreviewParams extends QueryParams {
+  api_key_type?: string
+  responsible_member_id?: string
+  key_guardrail_id?: string
+  created_by_member_id?: string
+}
+
+/**
+ * 工作区级三层生效护栏预览（qa#420 第1项，GET .../guardrails/effective-preview）。
+ * 与 .../{keyId}/effective-guardrails 同一 resolver（预览=实际拦截）：黑名单并集 / 白名单交集 / 预算最严。
+ * 返回同 EffectiveGuardrails 形状，key_id 为空。不含提示词注入（那部分仍由前端 resolveKeyPromptInjection 解析）。
+ */
+export function getEffectiveGuardrailPreview(workspaceId: string, params: EffectiveGuardrailPreviewParams) {
+  return get<EffectiveGuardrails>(`workspaces/${workspaceId}/guardrails/effective-preview`, params)
 }
 
 /** 轮转（#384）：新 Token 只回一次，旧 Token 进入过渡期 */

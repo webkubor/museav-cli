@@ -12,7 +12,7 @@ import { TagInput } from '@/components/ui/TagInput'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { createApiKey } from '@/services/api-keys'
+import { createApiKey, getEffectiveGuardrailPreview } from '@/services/api-keys'
 import { listWorkspaceMembers } from '@/services/workspaces'
 import { listGuardrails } from '@/services/guardrails'
 import { appToast } from '@/lib/app-toast'
@@ -29,11 +29,13 @@ import {
   deriveKind,
   deriveScope,
   PROMPT_INJECTION_LABEL,
+  PERIOD_LABEL,
   resolveKeyPromptInjection,
   metadataList,
   primaryBudget,
   formatBudget,
 } from '@/pages/guardrails/derive'
+import { groupThousands, trimAmountScale } from '@/pages/guardrails/budget'
 import type { ApiKeyCreated, ApiKeyType } from '@/types'
 
 /** PRD「Key 类型」→ 后端 scope 映射（私有→personal / 成员→member / 服务→workspace） */
@@ -195,17 +197,47 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const piResolved = resolveKeyPromptInjection(selectedGuardrails, activeGlobalGuardrail(allGuardrails))
 
   // 生效规则预览（PRD §8.2 预算闸门/模型黑名单/IP 白名单）：
-  // 工作区级完整生效预览接口 #420 未交付 —— 先由「全局护栏 + 所选 Key 护栏」的策略叠加兜底展示，
-  // 缺失字段占位「—」。落地后改读 effective-preview。
+  // 后端已交付工作区级生效预览接口（qa#420 第1项）：与调用时网关同一 resolver——黑名单并集/白名单交集/预算最严。
+  // 优先读真接口；加载中/失败回退「全局护栏 + 所选 Key 护栏」本地叠加，不阻塞、不回归。
+  const previewQuery = useQuery({
+    queryKey: ['guardrail-effective-preview', workspaceId, effectiveScope, memberAccountId, extraIds[0] ?? '', account?.account_id ?? ''],
+    queryFn: () =>
+      getEffectiveGuardrailPreview(workspaceId, {
+        api_key_type: effectiveScope,
+        responsible_member_id: effectiveScope === 'member' || needsMaintainer ? memberAccountId || undefined : undefined,
+        key_guardrail_id: extraIds[0] || undefined,
+        created_by_member_id: account?.account_id || undefined,
+      }).catch(() => undefined),
+    enabled: !!workspaceId && open,
+    staleTime: 30_000,
+  })
+  const eff = previewQuery.data?.effective
+
+  // 本地兜底源（真接口不可用时用）
   const globalGuardrail = activeGlobalGuardrail(allGuardrails)
   const previewGuardrails = [globalGuardrail, ...selectedGuardrails]
     .filter((g): g is GuardrailDetail => !!g)
     .filter((g, i, arr) => arr.findIndex((x) => x.id === g.id) === i)
-  const budgetLines = previewGuardrails
-    .map((g) => ({ name: g.name, text: formatBudget(symbol, primaryBudget(g)) }))
-    .filter((b) => b.text !== '不限额')
-  const modelBlacklist = [...new Set(previewGuardrails.flatMap((g) => metadataList(g, 'model_blacklist')))]
-  const ipWhitelist = [...new Set(previewGuardrails.flatMap((g) => metadataList(g, 'ip_whitelist')))]
+
+  // 预算闸门展示：真接口按 aggregation_scope 取最严；兜底按护栏名叠加
+  const AGG_LABEL: Record<string, string> = { guardrail_total: '总额', per_member: '每人', per_api_key: '每 Key' }
+  const budgetDisplay: string[] = eff
+    ? (eff.budgets ?? [])
+        .filter((b) => Number(b.spend_limit_amount) > 0)
+        .map(
+          (b) =>
+            `${symbol}${groupThousands(trimAmountScale(b.spend_limit_amount))} / ${PERIOD_LABEL[b.period_unit] ?? b.period_unit}（${AGG_LABEL[b.aggregation_scope] ?? b.aggregation_scope}）`,
+        )
+    : previewGuardrails
+        .map((g) => ({ name: g.name, text: formatBudget(symbol, primaryBudget(g)) }))
+        .filter((b) => b.text !== '不限额')
+        .map((b) => `${b.text}（${b.name}）`)
+  const modelBlacklist = eff
+    ? eff.model_blacklist
+    : [...new Set(previewGuardrails.flatMap((g) => metadataList(g, 'model_blacklist')))]
+  const ipWhitelist = eff
+    ? eff.ip_whitelist
+    : [...new Set(previewGuardrails.flatMap((g) => metadataList(g, 'ip_whitelist')))]
 
   return (
     <>
@@ -357,10 +389,8 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
               </div>
               <div className="flex items-start gap-1.5">
                 <span className="text-mg-text-3 shrink-0">预算闸门</span>
-                {budgetLines.length > 0 ? (
-                  <span className="font-semibold text-mg-text-1">
-                    {budgetLines.map((b) => `${b.text}（${b.name}）`).join('，')}
-                  </span>
+                {budgetDisplay.length > 0 ? (
+                  <span className="font-semibold text-mg-text-1">{budgetDisplay.join('，')}</span>
                 ) : (
                   <span className="text-mg-text-3">—</span>
                 )}
@@ -377,8 +407,8 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                   {ipWhitelist.length > 0 ? ipWhitelist.join(', ') : '—'}
                 </span>
               </div>
-              {/* 用户可见文案：不暴露内部单号/实现细节。工作区级完整生效预览接口交付后再补全（内部跟踪 #420）。 */}
-              <p className="text-mg-text-4 leading-relaxed">以上为全局默认与所选 Key 护栏的叠加预估，实际生效以调用时网关合并结果为准。</p>
+              {/* 后端生效预览已交付（内部跟踪 #420 第1项）；提示词注入不在该接口内，仍由前端解析。 */}
+              <p className="text-mg-text-4 leading-relaxed">以上为按当前配置的三层生效预览（黑名单取并集、白名单取交集、预算取最严），与调用时网关一致；Key 创建后可在详情查看最终生效。</p>
             </div>
           </div>
 

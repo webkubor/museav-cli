@@ -90,7 +90,7 @@ export function GuardrailFormFields({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.nameLabel')}<span className="text-mg-danger ml-1">*</span></label>
-          <Input data-testid="guardrail-create-name" value={name} disabled={!canEditInfo} onChange={(e) => onNameChange(e.target.value)} placeholder={t('guardrails.form.namePlaceholder')} />
+          <Input value={name} disabled={!canEditInfo} onChange={(e) => onNameChange(e.target.value)} placeholder={t('guardrails.form.namePlaceholder')} />
         </div>
         <div>
           <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.priorityLabel')}</label>
@@ -109,7 +109,6 @@ export function GuardrailFormFields({
             护栏分类<span className="text-mg-danger ml-1">*</span>
           </label>
           <Select
-            data-testid="guardrail-scope-select"
             value={scope}
             onChange={(v) => onScopeChange(v as GuardrailScope)}
             disabled={lockScopeKind || !canEditInfo}
@@ -136,7 +135,6 @@ export function GuardrailFormFields({
               护栏类型<span className="text-mg-danger ml-1">*</span>
             </label>
             <Select
-              data-testid="guardrail-kind-select"
               value={kind}
               onChange={(v) => onKindChange(v as GuardrailKind)}
               disabled={lockScopeKind || !canEditInfo}

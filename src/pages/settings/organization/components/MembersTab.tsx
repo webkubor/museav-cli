@@ -299,7 +299,6 @@ export function MembersTab({
                           <div className="flex items-center justify-center gap-1">
                             <button
                               type="button"
-                              data-testid="member-edit-trigger"
                               onClick={() => openEdit(m)}
                               className="text-mg-text-3 hover:text-brand-base hover:bg-brand-glow/10 px-2 py-1 rounded-md transition-all border-none bg-transparent cursor-pointer font-semibold text-xs"
                             >
@@ -368,7 +367,6 @@ export function MembersTab({
               {t('enterprise.members.cancel')}
             </Button>
             <Button
-              data-testid="member-edit-submit"
               variant="brand"
               loading={savingEdit}
               disabled={!editTarget || (draftRole === editTarget.role && draftStatus === editTarget.status)}
@@ -387,7 +385,6 @@ export function MembersTab({
                 {t('enterprise.members.roleLabel')}
               </label>
               <select
-                data-testid="member-role-select"
                 value={draftRole}
                 onChange={(e) => setDraftRole(e.target.value as EditableRole)}
                 className="w-full h-9 text-xs px-2.5 bg-mg-bg-0 border border-mg-border/50 rounded-lg font-semibold cursor-pointer text-mg-text-1 outline-none"

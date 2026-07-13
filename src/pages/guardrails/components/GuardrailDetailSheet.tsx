@@ -412,7 +412,6 @@ export function GuardrailDetailSheet({
             <Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
             {canSubmitCurrentTab && (
               <Button
-                data-testid="guardrail-create-submit"
                 variant="brand"
                 loading={submitting}
                 onClick={onSubmit}

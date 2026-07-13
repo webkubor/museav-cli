@@ -36,8 +36,6 @@ export interface CopyButtonProps {
   className?: string
   /** icon 变体的无障碍标签，默认「复制」 */
   'aria-label'?: string
-  /** 可测性：透传到底层按钮，供自动化/测试稳定定位 */
-  'data-testid'?: string
 }
 
 const ICON_BOX: Record<CopySize, string> = {
@@ -59,7 +57,6 @@ export function CopyButton({
   disabled,
   className,
   'aria-label': ariaLabel,
-  'data-testid': testId,
 }: CopyButtonProps) {
   const { copy, copied } = useCopy()
   const isDisabled = disabled || !value
@@ -87,7 +84,6 @@ export function CopyButton({
         disabled={isDisabled}
         icon={copied ? <LuCheck size={ICON_SIZE[size]} /> : <LuCopy size={ICON_SIZE[size]} />}
         className={cn('shrink-0', className)}
-        data-testid={testId}
       >
         {copied ? copiedLabel : label}
       </Button>
@@ -99,7 +95,6 @@ export function CopyButton({
       type="button"
       onClick={handleCopy}
       disabled={isDisabled}
-      data-testid={testId}
       aria-label={ariaLabel ?? label}
       title={copied ? copiedLabel : (ariaLabel ?? label)}
       className={cn(

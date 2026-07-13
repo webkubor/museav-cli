@@ -42,6 +42,15 @@ export function trackAction(permission: Permission, data?: TrackData, top?: Trac
   }
 }
 
+/**
+ * 可测性 hook：把埋点 event key 落成 DOM 属性 `data-track`，供自动化/QA 稳定定位。
+ * 与埋点单一真源（key 即 permission_id / `xxx:yyy` 约定），不额外维护 test-only id。
+ * 用法：`<Button {...trackable('api_keys:create')} onClick={...}>`；自动化按 `[data-track="api_keys:create"]` 定位。
+ */
+export function trackable(event: string): { 'data-track': string } {
+  return { 'data-track': event }
+}
+
 /** 页面浏览埋点：page = 菜单 menu_key */
 export function trackPageView(menuKey: string, data?: TrackData, top?: TrackTopFields): void {
   try {

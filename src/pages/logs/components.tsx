@@ -148,6 +148,7 @@ export function LogsTable({
           {items.map((row) => (
             <TableRow
               key={row.call_log_id}
+              data-track="logs:row"
               aria-selected={selectedLogId === row.call_log_id}
               className={cn(
                 'cursor-pointer outline-none hover:bg-mg-fill-0/70 focus-visible:bg-mg-fill-0/70',

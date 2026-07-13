@@ -90,7 +90,7 @@ export function GuardrailFormFields({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.nameLabel')}<span className="text-mg-danger ml-1">*</span></label>
-          <Input value={name} disabled={!canEditInfo} onChange={(e) => onNameChange(e.target.value)} placeholder={t('guardrails.form.namePlaceholder')} />
+          <Input value={name} data-track="guardrails:field_name" disabled={!canEditInfo} onChange={(e) => onNameChange(e.target.value)} placeholder={t('guardrails.form.namePlaceholder')} />
         </div>
         <div>
           <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.priorityLabel')}</label>
@@ -113,6 +113,7 @@ export function GuardrailFormFields({
             onChange={(v) => onScopeChange(v as GuardrailScope)}
             disabled={lockScopeKind || !canEditInfo}
             aria-label="护栏分类"
+            data-track="guardrails:field_scope"
             className="w-full"
           >
             {(['global', 'member', 'key'] as GuardrailScope[])
@@ -139,6 +140,7 @@ export function GuardrailFormFields({
               onChange={(v) => onKindChange(v as GuardrailKind)}
               disabled={lockScopeKind || !canEditInfo}
               aria-label="护栏类型"
+              data-track="guardrails:field_kind"
               className="w-full"
             >
               {(['regular', 'boost'] as GuardrailKind[]).map((k) => (

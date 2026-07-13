@@ -539,6 +539,7 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
             variant="labeled"
             label="复制全部"
             toast="请求 / 响应内容已复制"
+            data-track="logs:detail_copy"
           />
           <Button size="xs" variant="outline" onClick={onDownload}>
             <LuDownload className="mr-1 h-3 w-3" />

@@ -689,6 +689,7 @@ export default function GuardrailsPage() {
         actions={canCreate && (
           <Button
             variant="brand"
+            data-track="guardrails:create"
             onClick={openCreate}
             className="rounded-full px-5 h-10 shadow-lg shadow-brand-glow/20"
           >

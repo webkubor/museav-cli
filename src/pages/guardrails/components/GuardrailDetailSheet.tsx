@@ -413,6 +413,7 @@ export function GuardrailDetailSheet({
             {canSubmitCurrentTab && (
               <Button
                 variant="brand"
+                data-track="guardrails:create_submit"
                 loading={submitting}
                 onClick={onSubmit}
               >

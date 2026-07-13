@@ -299,6 +299,7 @@ export function MembersTab({
                           <div className="flex items-center justify-center gap-1">
                             <button
                               type="button"
+                              data-track="members:edit"
                               onClick={() => openEdit(m)}
                               className="text-mg-text-3 hover:text-brand-base hover:bg-brand-glow/10 px-2 py-1 rounded-md transition-all border-none bg-transparent cursor-pointer font-semibold text-xs"
                             >
@@ -368,6 +369,7 @@ export function MembersTab({
             </Button>
             <Button
               variant="brand"
+              data-track="members:edit_submit"
               loading={savingEdit}
               disabled={!editTarget || (draftRole === editTarget.role && draftStatus === editTarget.status)}
               className="h-8 px-4 rounded-lg text-xs font-semibold bg-brand-base text-white hover:bg-brand-base/90"
@@ -386,6 +388,7 @@ export function MembersTab({
               </label>
               <select
                 value={draftRole}
+                data-track="members:field_role"
                 onChange={(e) => setDraftRole(e.target.value as EditableRole)}
                 className="w-full h-9 text-xs px-2.5 bg-mg-bg-0 border border-mg-border/50 rounded-lg font-semibold cursor-pointer text-mg-text-1 outline-none"
               >

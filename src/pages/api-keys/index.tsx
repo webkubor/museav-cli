@@ -423,7 +423,7 @@ export default function ApiKeysPage() {
         </Select>
         <div className="ml-auto">
           {canCreate && (
-            <Button variant="brand" onClick={() => openCreate('toolbar')} className="rounded-full px-6 h-10 shadow-lg shadow-brand-glow/20">
+            <Button variant="brand" data-track="api_keys:create" onClick={() => openCreate('toolbar')} className="rounded-full px-6 h-10 shadow-lg shadow-brand-glow/20">
               <LuPlus className="w-4 h-4 mr-1.5" />
               {t('apiKeys.create')}
             </Button>

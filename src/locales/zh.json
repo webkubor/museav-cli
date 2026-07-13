@@ -485,8 +485,7 @@
       "global": "全局护栏",
       "member": "个人护栏",
       "key": "Key 护栏",
-      "boost": "提额护栏",
-      "inheritedDefault": "继承全局默认"
+      "boost": "提额护栏"
     },
     "table": {
       "name": "名称",

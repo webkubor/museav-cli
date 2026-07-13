@@ -238,42 +238,17 @@ export interface GuardrailSummary {
   member: number
   key: number
   boost: number
-  /** 继承全局默认：走工作空间全局默认策略、未自定义覆盖的个人/Key 常规护栏数（口径见 summarize 注释） */
-  inheritedDefault: number
 }
 
-/**
- * 顶部摘要卡计数（全局 / 个人 / Key / 提额 / 继承全局默认），由列表派生。
- *
- * 「继承全局默认」口径（前端近似）：
- *   PRD 摘要区要求展示「走全局默认策略、未被个人/Key 常规护栏单独覆盖」的数量。
- *   严格的「对象级」口径（工作空间内成员/Key 总数 − 已被自定义护栏覆盖的对象）需要
- *   后端提供 全部成员/Key 清单 + 护栏↔对象覆盖关系（#378 未交付显式 scope/coverage 字段）；
- *   本仓不为一张摘要卡额外 join 成员/Key 接口兜底。
- *   因此这里退化为「护栏级」可精确计算的近似：**存在启用中的全局默认护栏时，个人/Key 常规护栏中
- *   未显式配置提示词注入模式（rawPromptInjectionMode === undefined、即选择「继承全局护栏」）的条数**。
- *   语义对齐 resolveKeyPromptInjection 的 inherit 分支与 PRD 原型 App.tsx:9464
- *   （scope=key & kind=regular & 无 promptInjectionMode → 「继承全局护栏」）。
- *   无启用中的全局默认护栏时 = 0（无默认可继承）。
- *   精确口径（对象级覆盖计数）待后端补 护栏↔成员/Key 覆盖关系字段后替换。
- */
+/** 顶部摘要卡计数（全局 / 个人 / Key / 提额），由列表派生 */
 export function summarize(list: GuardrailDetail[]): GuardrailSummary {
-  const summary: GuardrailSummary = { global: 0, member: 0, key: 0, boost: 0, inheritedDefault: 0 }
-  const hasActiveGlobal = !!activeGlobalGuardrail(list)
+  const summary: GuardrailSummary = { global: 0, member: 0, key: 0, boost: 0 }
   for (const g of list) {
     const scope = deriveScope(g)
     if (scope === 'global') summary.global += 1
     else if (scope === 'member') summary.member += 1
     else summary.key += 1
     if (deriveKind(g) === 'boost') summary.boost += 1
-    if (
-      hasActiveGlobal &&
-      (scope === 'member' || scope === 'key') &&
-      deriveKind(g) === 'regular' &&
-      rawPromptInjectionMode(g) === undefined
-    ) {
-      summary.inheritedDefault += 1
-    }
   }
   return summary
 }

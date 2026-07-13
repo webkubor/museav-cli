@@ -485,8 +485,7 @@
       "global": "Global Guardrails",
       "member": "Member Guardrails",
       "key": "Key Guardrails",
-      "boost": "Boost Guardrails",
-      "inheritedDefault": "Inheriting Global Default"
+      "boost": "Boost Guardrails"
     },
     "table": {
       "name": "Name",

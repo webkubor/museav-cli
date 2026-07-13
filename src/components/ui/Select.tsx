@@ -158,17 +158,19 @@ interface SelectProps {
   className?: string
   children?: React.ReactNode
   emptyText?: string
+  /** 可测性：透传到触发器，供自动化/测试稳定定位（选项用 SelectItem 自带的 data-testid） */
+  'data-testid'?: string
 }
 
 interface SelectComponent extends React.FC<SelectProps> {
   Option: typeof SelectItem
 }
 
-const Select = (({ value, defaultValue, onChange, placeholder, disabled, className, children, emptyText = '暂无选项' }: SelectProps) => {
+const Select = (({ value, defaultValue, onChange, placeholder, disabled, className, children, emptyText = '暂无选项', 'data-testid': testId }: SelectProps) => {
   const isEmpty = React.Children.count(children) === 0
   return (
     <SelectRoot value={value} defaultValue={defaultValue} onValueChange={onChange} disabled={disabled || isEmpty}>
-      <SelectTrigger className={className}>
+      <SelectTrigger className={className} data-testid={testId}>
         <SelectValue placeholder={isEmpty ? emptyText : placeholder} />
       </SelectTrigger>
       {!isEmpty && (

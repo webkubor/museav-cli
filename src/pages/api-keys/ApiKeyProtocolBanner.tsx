@@ -39,7 +39,7 @@ export function ApiKeyProtocolBanner({ openAIBaseUrl, anthropicBaseUrl, docsUrl 
       {endpoints.map((endpoint) => (
         <div
           key={endpoint.label}
-          className="grid min-h-[38px] min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 rounded-md bg-mg-bg-0/70 px-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_3px_10px_rgba(72,103,166,0.06)]"
+          className="grid min-h-[38px] min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 rounded-md border border-mg-border bg-mg-bg-0/70 px-2.5 shadow-[0_3px_10px_rgba(72,103,166,0.06)]"
         >
           <span className="whitespace-nowrap text-xs font-bold text-mg-text-1">{endpoint.label}</span>
           <code className="min-w-0 font-mono text-xs text-mg-text-2 [overflow-wrap:anywhere]">

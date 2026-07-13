@@ -313,6 +313,17 @@ export default function GuardrailsPage() {
     mutationFn: (payload: CreateGuardrailRequest) =>
       createGuardrail(activeWorkspaceId!, payload),
     onSuccess: async (created) => {
+      // 全局护栏单选不变量（文档：同一空间最多 1 条启用中全局）：后端新建默认 active，
+      // 而创建不走 handleToggle 的级联 → 会与既有 active 全局并存。这里补级联：新建的是
+      // 全局护栏时，停用其余原本 active 的全局。（权威约束应由后端保证，已落单，前端先兜住 UI 路径。）
+      if (created.is_default) {
+        const staleActiveGlobals = guardrails.filter(
+          (g) => g.is_default && g.status === 'active' && g.id !== created.id,
+        )
+        for (const g of staleActiveGlobals) {
+          try { await updateGuardrail(g.id, { status: 'inactive' }) } catch { /* 单条失败不阻断创建，onSettled 刷新兜底 */ }
+        }
+      }
       // 对齐原型「一页填完」：护栏建好后补预算策略（后端预算挂在已存在护栏上，无法随创建下发）。
       // 全局三档 / 非全局单档；仅下发「限额且金额有效」的档。
       const ops: AddBudgetPolicyRequest[] = []

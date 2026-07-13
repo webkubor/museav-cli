@@ -4,6 +4,8 @@
  * PRD 2026-07-10（modelgo_prd design-qa.md / api-key-protocol-surface-design）。
  */
 import { LuArrowUpRight, LuCodeXml, LuFileText } from 'react-icons/lu'
+import OpenAI from '@lobehub/icons/es/OpenAI'
+import Claude from '@lobehub/icons/es/Claude'
 
 import { CopyButton } from '@/components/ui/CopyButton'
 
@@ -15,8 +17,8 @@ interface Props {
 
 export function ApiKeyProtocolBanner({ openAIBaseUrl, anthropicBaseUrl, docsUrl }: Props) {
   const endpoints = [
-    { label: 'OpenAI', value: openAIBaseUrl, copyLabel: '复制 OpenAI 地址' },
-    { label: 'Anthropic', value: anthropicBaseUrl, copyLabel: '复制 Anthropic 地址' },
+    { label: 'OpenAI', icon: <OpenAI size={14} />, value: openAIBaseUrl, copyLabel: '复制 OpenAI 地址' },
+    { label: 'Anthropic', icon: <Claude.Color size={14} />, value: anthropicBaseUrl, copyLabel: '复制 Anthropic 地址' },
   ].filter((e) => e.value)
 
   return (
@@ -41,7 +43,10 @@ export function ApiKeyProtocolBanner({ openAIBaseUrl, anthropicBaseUrl, docsUrl 
           key={endpoint.label}
           className="grid min-h-[38px] min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 rounded-md border border-mg-border bg-mg-bg-0/70 px-2.5 shadow-[0_3px_10px_rgba(72,103,166,0.06)]"
         >
-          <span className="whitespace-nowrap text-xs font-bold text-mg-text-1">{endpoint.label}</span>
+          <span className="flex items-center gap-1.5 whitespace-nowrap text-xs font-bold text-mg-text-1">
+            {endpoint.icon}
+            {endpoint.label}
+          </span>
           <code className="min-w-0 font-mono text-xs text-mg-text-2 [overflow-wrap:anywhere]">
             {endpoint.value}
           </code>

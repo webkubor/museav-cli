@@ -97,7 +97,7 @@ function NameCell({ row, onOpenDetail }: { row: GuardrailDetail; onOpenDetail: (
           </span>
         )}
       </span>
-      {row.is_default && (
+      {row.is_default && row.status === 'active' && (
         <Badge variant="warning" className="shrink-0">默认</Badge>
       )}
     </button>

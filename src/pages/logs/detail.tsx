@@ -159,7 +159,8 @@ export function LogDetailSheet({
           {isGuardrailHit(row) && (
             <DetailSection title={t('logs.guardrail.sectionTitle')}>
               <DetailGrid compact>
-                <DetailRow label={t('logs.guardrail.hitRule')} value={row.guardrail_decision?.rule_name || t('logs.guardrail.unknownRule')} />
+                {/* 字段缺失不兜底假标签：rule_name 空即后端未返，显「—」（不写「未知规则」/「提示词注入」） */}
+                <DetailRow label={t('logs.guardrail.hitRule')} value={row.guardrail_decision?.rule_name || '—'} />
                 <DetailRow label={t('logs.guardrail.result')} value={t(`logs.guardrail.action.${guardrailAction(row)}`)} />
                 {/* 规则来源 = 作用域前缀（全局/Key/成员护栏）+ · + 规则展示名（后端契约 #450） */}
                 <DetailRow label={t('logs.guardrail.ruleSource')} value={guardrailSourceLabel(row, t)} />

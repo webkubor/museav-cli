@@ -72,14 +72,14 @@ export function isRedacted(row: CallLogItem): boolean {
 /**
  * 规则来源展示（详情「规则来源」项，后端契约 #450）：
  * 作用域前缀（全局/Key/成员护栏）+ " · " + 规则展示名（guardrail_name，回退 rule_name）。
- * 作用域缺省则只显名；都无则显未知来源。
+ * 只拼后端真返回的字段，缺失不兜底假值：作用域缺省只显名、名缺省只显作用域、都无显「—」。
  */
 export function guardrailSourceLabel(row: CallLogItem, t: (key: string) => string): string {
   const scope = row.guardrail_decision?.rule_scope
   const name = row.guardrail_name || row.guardrail_decision?.rule_name || ''
   const scopeLabel = scope ? t(`logs.guardrail.scope.${scope}`) : ''
   if (scopeLabel && name) return `${scopeLabel} · ${name}`
-  return scopeLabel || name || t('logs.guardrail.unknownSource')
+  return scopeLabel || name || '—'
 }
 
 /** 脱敏占位符（替换命中的注入内容，展示用固定 token）。 */

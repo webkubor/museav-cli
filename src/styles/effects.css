@@ -230,6 +230,22 @@ body[theme-mode='dark'] .sidebar-flow-line::after {
   }
 }
 
+/* 🟢 运行中资源卡：常驻品牌流光边框，传达「在运行」的活感（工作空间活跃/选中卡）。
+   复用 borderGlow 关键帧 + 品牌渐变，克制版——细边、无重阴影；内层填 --mg-bg-0（双主题自适应）；
+   尊重 prefers-reduced-motion（降级为静态渐变边框，仍有活感、不动）。半径继承宿主。 */
+.mg-running-border {
+  border: 1px solid transparent !important;
+  background-image: linear-gradient(var(--mg-bg-0), var(--mg-bg-0)),
+                    linear-gradient(135deg, var(--brand-base) 0%, var(--brand-glow) 40%, var(--brand-base) 70%, var(--brand-glow) 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  background-size: 100% 100%, 200% 200%;
+  animation: borderGlow 5s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mg-running-border { animation: none; }
+}
+
 
 @keyframes spin {
   to { transform: rotate(360deg); }

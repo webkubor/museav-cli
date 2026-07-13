@@ -377,7 +377,7 @@ export default function WorkspacesPage() {
                 className={cn(
                   "group relative p-3 flex flex-col gap-1.5 cursor-pointer transition-all border overflow-hidden rounded-lg",
                   isSelected
-                    ? "bg-brand-base/[0.05] border-brand-base/35 shadow-sm"
+                    ? "mg-running-border shadow-sm"
                     : "bg-mg-bg-0 border-mg-border/40 hover:bg-mg-fill-0/20 hover:border-mg-border/60"
                 )}
               >
@@ -416,7 +416,7 @@ export default function WorkspacesPage() {
                 className={cn(
                   "group relative p-5 flex flex-col gap-4 cursor-pointer transition-all border overflow-hidden rounded-lg",
                   isSelected
-                    ? "bg-brand-base/[0.05] border-brand-base/35 shadow-sm"
+                    ? "mg-running-border shadow-sm"
                     : "bg-mg-bg-0 border-mg-border/40 hover:bg-mg-fill-0/20 hover:border-mg-border/60"
                 )}
               >

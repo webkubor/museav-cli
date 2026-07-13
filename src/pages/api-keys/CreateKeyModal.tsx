@@ -219,7 +219,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
             <Button variant="outline" onClick={onClose}>
               {t('apiKeys.createModal.cancel')}
             </Button>
-            <Button variant="brand" data-testid="apikey-create-submit" loading={createMutation.isPending} onClick={handleSubmit}>
+            <Button variant="brand" loading={createMutation.isPending} onClick={handleSubmit}>
               {t('apiKeys.createModal.confirm')}
             </Button>
           </>
@@ -232,7 +232,6 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
               {t('apiKeys.createModal.nameLabel')}
             </label>
             <Input
-              data-testid="apikey-create-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t('apiKeys.createModal.namePlaceholder')}
@@ -252,7 +251,6 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                   <button
                     key={c.type}
                     type="button"
-                    data-testid={`apikey-type-${c.type}`}
                     onClick={() => { setScope(c.scope); setMemberAccountId('') }}
                     className={[
                       'rounded-lg border p-3 text-left transition-all',
@@ -273,7 +271,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
           {effectiveScope === 'member' && (
             <div>
               <label className="block text-xs font-bold text-mg-text-2 mb-2">负责人</label>
-              <Select data-testid="apikey-owner-select" value={memberAccountId} onChange={setMemberAccountId} placeholder="请选择工作区成员" className="w-full">
+              <Select value={memberAccountId} onChange={setMemberAccountId} placeholder="请选择工作区成员" className="w-full">
                 {(membersQuery.data?.items ?? []).map((m) => (
                   <SelectItem key={m.account.account_id} value={m.account.account_id}>
                     {m.account.display_name || m.account.email}
@@ -297,7 +295,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                 </div>
               ) : (
                 <>
-                  <Select data-testid="apikey-maintainer-select" value={memberAccountId} onChange={setMemberAccountId} placeholder="请选择服务 Key 维护人" className="w-full">
+                  <Select value={memberAccountId} onChange={setMemberAccountId} placeholder="请选择服务 Key 维护人" className="w-full">
                     {(membersQuery.data?.items ?? []).map((m) => (
                       <SelectItem key={m.account.account_id} value={m.account.account_id}>
                         {m.account.display_name || m.account.email}

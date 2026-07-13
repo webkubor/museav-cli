@@ -48,6 +48,7 @@ type ModelLogRow = {
   runtime_detail?: Record<string, unknown>
   model?: { id?: string; display_name?: string }
   provider?: { id?: string; name?: string; type?: string }
+  workspace?: { workspace_id?: string; name?: string }
   api_key?: { api_key_id?: string; name?: string; masked?: string }
   account?: { account_id?: string; display_name?: string }
   app_name?: string | null
@@ -157,6 +158,8 @@ function toCallLogItem(row: ModelLogRow): CallLogItem {
       type: row.provider?.type || providerID,
     },
     workspace_id: row.workspace_id || '',
+    // 归属空间名（#459）：后端补 workspace{id,name} 后随行透传；未返回则 undefined，UI 显「—」不 join 兜底
+    workspace: row.workspace?.name ? { workspace_id: row.workspace.workspace_id, name: row.workspace.name } : undefined,
     tenant_id: row.tenant_id || '',
     trace_id: row.trace_id || stringFromMap(row.request_ctx, 'trace_id') || '',
     requested_model: row.requested_model || '',

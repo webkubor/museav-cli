@@ -86,10 +86,12 @@ export function RecentCallsSection({ view = 'enterprise', accountId, granularity
               {items.map((item) => {
                 const rawModel = item.model?.display_name || '—'
                 const model = rawModel.includes('/') ? rawModel.split('/').pop() : rawModel
-                // 我的视图：归属列不重复展示成员名（都是我），改显 API Key
+                // 归属列（需求方#36）：企业视图显示调用所属「空间名称」，取后端 workspace.name
+                //（#459 待后端在 model-logs 补该字段；未返回显「—」，不前端 join 工作空间列表兜底/不露 ULID）。
+                // 我的视图都是自己、改显 API Key 名（不重复展示成员名）。
                 const owner = isMine
                   ? (item.api_key?.name || '—')
-                  : (item.account?.display_name || item.api_key?.name || '—')
+                  : (item.workspace?.name || '—')
                 return (
                   <TableRow key={item.call_log_id}>
                     <TableCell className="text-xs text-mg-text-3 whitespace-nowrap">{formatSimple(item.started_at)}</TableCell>

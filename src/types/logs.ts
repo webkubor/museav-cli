@@ -37,6 +37,8 @@ export interface CallLogItem {
   model: { id: string; display_name: string }
   provider: { id: string; name: string; type: string }
   workspace_id: string
+  /** 归属空间显示名（#459 待后端在 model-logs 补 workspace{id,name}）；未返回时前端显「—」，不 join 兜底 */
+  workspace?: { workspace_id?: string; name?: string }
   tenant_id: string
   trace_id: string
   requested_model: string

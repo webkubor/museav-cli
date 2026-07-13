@@ -196,6 +196,15 @@
       "copyKeySuccess": "完整密钥已复制到剪贴板",
       "copyKeyError": "获取密钥失败，请稍后重试",
       "copyKeyClipboardError": "写入剪贴板失败，请检查浏览器权限"
+    },
+    "emptySelfScope": {
+      "title": "你名下暂无 API Key",
+      "desc": "仅展示由你负责的 Key；如需新的 Key，请联系空间负责人创建或指派给你"
+    },
+    "detailError": {
+      "title": "详情加载失败",
+      "desc": "无法获取该 Key 的最新详情，请重试",
+      "retry": "重试"
     }
   },
   "billing": {
@@ -472,6 +481,13 @@
     "desc": "配置提示词防御规则，拦截恶意的提示注入、敏感词以及不受控制的模型输出。",
     "create": "创建护栏",
     "empty": "暂无安全护栏，点击右上角创建一个",
+    "summary": {
+      "global": "全局护栏",
+      "member": "个人护栏",
+      "key": "Key 护栏",
+      "boost": "提额护栏",
+      "inheritedDefault": "继承全局默认"
+    },
     "table": {
       "name": "名称",
       "desc": "描述",

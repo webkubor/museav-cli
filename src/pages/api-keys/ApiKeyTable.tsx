@@ -67,6 +67,8 @@ type Props = {
   isFiltered: boolean
   /** 是否可创建（无 Key 空态展示创建引导按钮） */
   canCreate: boolean
+  /** 可见范围仅限自己（普通 Member，后端只回自己的行）：无 Key 空态显 Member 专属文案（#444） */
+  selfScopeOnly: boolean
   /** 无 Key 空态点创建 */
   onCreate: () => void
   /** 筛选无结果空态点清空筛选 */
@@ -85,6 +87,7 @@ export function ApiKeyTable({
   hasKeys,
   isFiltered,
   canCreate,
+  selfScopeOnly,
   onCreate,
   onClearFilters,
 }: Props) {
@@ -126,6 +129,21 @@ export function ApiKeyTable({
                 <Button variant="outline" size="sm" onClick={onClearFilters}>
                   清空筛选
                 </Button>
+              }
+              colSpan={colSpan}
+            />
+          ) : selfScopeOnly ? (
+            <EmptyState
+              icon={<LuKeyRound />}
+              title={t('apiKeys.emptySelfScope.title')}
+              description={t('apiKeys.emptySelfScope.desc')}
+              action={
+                canCreate ? (
+                  <Button variant="brand" size="sm" onClick={onCreate}>
+                    <LuPlus className="w-4 h-4 mr-1.5" />
+                    {t('apiKeys.create')}
+                  </Button>
+                ) : undefined
               }
               colSpan={colSpan}
             />

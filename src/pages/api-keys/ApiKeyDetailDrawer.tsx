@@ -7,13 +7,14 @@
 import { useState, type ReactNode } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { SideSheet } from '@/components/ui/SideSheet'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import Select, { SelectItem } from '@/components/ui/Select'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { StatusBadge } from '@/components/ui/StatusBadge'
-import { LuShieldCheck, LuArrowRight } from 'react-icons/lu'
+import { LuShieldCheck, LuArrowRight, LuTriangleAlert, LuRefreshCw } from 'react-icons/lu'
 import { formatDateTime } from '@/lib/format-date'
 import { formatMoney } from '@/lib/utils'
 import { appToast } from '@/lib/app-toast'
@@ -101,6 +102,7 @@ interface Props {
 }
 
 export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canEdit, canRevoke, onToggleStatus, onRotate, onChangeOwner, onEdit, onRevoke, rowScope }: Props) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { currency, symbol } = useCurrency()
@@ -145,12 +147,19 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canEdit, 
     navigate(path)
   }
 
-  // 详情/审计接口未交付时静默降级（catch→兜底值，避免全局错误 toast）
-  const { data: detail } = useQuery({
+  // 详情接口失败不静默降级：抽屉内显式错误块 + 重试（#444）。meta.silentError 抑制全局 toast，
+  // 由下方错误块承接；不影响护栏/审计段的独立静默降级。
+  const {
+    data: detail,
+    isError: detailError,
+    isFetching: detailFetching,
+    refetch: refetchDetail,
+  } = useQuery({
     queryKey: ['api-key-detail', workspaceId, keyId],
-    queryFn: () => getApiKeyDetail(workspaceId, keyId!).catch(() => undefined),
+    queryFn: () => getApiKeyDetail(workspaceId, keyId!),
     enabled: open && !!keyId,
     retry: false,
+    meta: { silentError: true },
   })
   const { data: audit } = useQuery({
     queryKey: ['api-key-audit', workspaceId, keyId],
@@ -215,6 +224,26 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canEdit, 
             )}
           </div>
         </div>
+
+        {/* 详情加载失败：显式错误块 + 重试（#444）。仍以列表项兜底展示下方字段，不阻塞其它段。 */}
+        {detailError && (
+          <div className="flex items-start gap-2.5 rounded-md border border-mg-danger/25 bg-mg-danger/5 px-3 py-2.5">
+            <LuTriangleAlert className="mt-0.5 w-4 h-4 shrink-0 text-mg-danger" />
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-bold text-mg-danger">{t('apiKeys.detailError.title')}</div>
+              <p className="mt-0.5 text-xs text-mg-text-3">{t('apiKeys.detailError.desc')}</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              loading={detailFetching}
+              onClick={() => refetchDetail()}
+            >
+              <LuRefreshCw className="w-3.5 h-3.5 mr-1" />
+              {t('apiKeys.detailError.retry')}
+            </Button>
+          </div>
+        )}
 
         {/* 基础信息 */}
         <Section title="基础信息">

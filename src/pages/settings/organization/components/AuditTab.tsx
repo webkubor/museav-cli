@@ -17,6 +17,7 @@ import { appToast } from '@/lib/app-toast'
 import { formatDateTimeWithSeconds } from '@/lib/format-date'
 import { isApiErrorCode } from '@/lib/request-error-message'
 import { cn } from '@/lib/utils'
+import { trackEvent } from '@/lib/track'
 import { exportTenantAuditLogs, getTenantAuditLog, listTenantAuditLogs } from '@/services/tenants'
 import { auditActionLabel } from '../audit-labels'
 import { listWorkspaces } from '@/services/workspaces'
@@ -267,7 +268,7 @@ export function AuditTab({ tenantId }: { tenantId: string }) {
               variant="outline"
               size="sm"
               loading={exportMutation.isPending}
-              onClick={() => exportMutation.mutate()}
+              onClick={() => { trackEvent('organization:audit_export'); exportMutation.mutate() }}
               className="h-8 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5"
             >
               <LuDownload size={13} />

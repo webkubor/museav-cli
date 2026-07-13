@@ -49,7 +49,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { TagInput, type TagOption } from '@/components/ui/TagInput'
 import { cn, formatMoney as fmtMoney } from '@/lib/utils'
 import { formatDate } from '@/lib/format-date'
-import { trackAction, trackPageView } from '@/lib/track'
+import { trackAction, trackPageView, trackEvent } from '@/lib/track'
 import { PERMS } from '@/config/permissions'
 import { usePermissions } from '@/hooks/use-permissions'
 import { useNavigate } from 'react-router-dom'
@@ -373,7 +373,7 @@ export default function WorkspacesPage() {
               <Card
                 key={ws.workspace_id}
                 level={2}
-                onClick={() => setSelectedId(ws.workspace_id)}
+                onClick={() => { trackEvent('workspaces:space_card_select', { workspace_id: ws.workspace_id }); setSelectedId(ws.workspace_id) }}
                 className={cn(
                   "group relative p-3 flex flex-col gap-1.5 cursor-pointer transition-all border overflow-hidden rounded-lg",
                   isSelected
@@ -412,7 +412,7 @@ export default function WorkspacesPage() {
               <Card
                 key={ws.workspace_id}
                 level={2}
-                onClick={() => setSelectedId(ws.workspace_id)}
+                onClick={() => { trackEvent('workspaces:space_card_select', { workspace_id: ws.workspace_id }); setSelectedId(ws.workspace_id) }}
                 className={cn(
                   "group relative p-5 flex flex-col gap-4 cursor-pointer transition-all border overflow-hidden rounded-lg",
                   isSelected
@@ -880,7 +880,7 @@ function WorkspaceDashboard({ workspaceId, onDeleted }: WorkspaceDashboardProps)
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setTab(v as 'overview' | 'members' | 'logs' | 'settings')}>
+      <Tabs value={activeTab} onValueChange={(v) => { trackEvent('workspaces:tab_click', { tab: v }); setTab(v as 'overview' | 'members' | 'logs' | 'settings') }}>
         <TabsList variant="pills" className="mb-4">
           <TabsTrigger variant="pills" value="overview">{t('workspaces.detail.tabs.overview')}</TabsTrigger>
           {canViewMembers && <TabsTrigger variant="pills" value="members">{t('workspaces.detail.tabs.members')}</TabsTrigger>}

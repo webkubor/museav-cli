@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
+import { trackEvent } from '@/lib/track'
 import { getTenant, listTenantMembers, listTenants } from '@/services/tenants'
 import { RoleBadge } from './RoleBadge'
 import { OrgInfoTab } from './OrgInfoTab'
@@ -127,7 +128,7 @@ export function OrgManagePanel({
         {visibleTabs.map((tb) => (
           <button
             key={tb.key}
-            onClick={() => setActiveSubTab(tb.key)}
+            onClick={() => { trackEvent('organization:tab_click', { tab: tb.key }); setActiveSubTab(tb.key) }}
             className={`pb-3 font-bold transition-all border-b-2 cursor-pointer bg-transparent border-none text-xs ${
               resolvedSubTab === tb.key
                 ? 'border-brand-base text-brand-base'

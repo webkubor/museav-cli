@@ -196,6 +196,15 @@
       "copyKeySuccess": "Full API key copied to clipboard",
       "copyKeyError": "Failed to retrieve the key, please try again later",
       "copyKeyClipboardError": "Could not write to clipboard; check browser permissions"
+    },
+    "emptySelfScope": {
+      "title": "You have no API keys yet",
+      "desc": "Only keys you own are shown here. Ask a workspace owner to create or assign one to you."
+    },
+    "detailError": {
+      "title": "Failed to load details",
+      "desc": "Could not fetch the latest details for this key. Please try again.",
+      "retry": "Retry"
     }
   },
   "billing": {
@@ -472,6 +481,13 @@
     "desc": "Configure prompt defense rules to block injection attacks, sensitive words, and uncontrolled outputs.",
     "create": "Create Guardrail",
     "empty": "No guardrails. Create one to get started.",
+    "summary": {
+      "global": "Global Guardrails",
+      "member": "Member Guardrails",
+      "key": "Key Guardrails",
+      "boost": "Boost Guardrails",
+      "inheritedDefault": "Inheriting Global Default"
+    },
     "table": {
       "name": "Name",
       "desc": "Description",

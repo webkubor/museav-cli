@@ -447,6 +447,7 @@ export default function ApiKeysPage() {
         hasKeys={apiKeyItems.length > 0}
         isFiltered={isFiltered}
         canCreate={canCreate}
+        selfScopeOnly={!showsOthers}
         onCreate={() => openCreate('empty_state')}
         onClearFilters={clearFilters}
         onOpenDetail={(item) => { trackEvent('api_keys:detail', { ...commonEventProps, key_type: deriveKeyType(item) }, { source: 'table_row', is_space_owner: isActiveWorkspaceOwner }); setDetailKey(item) }}

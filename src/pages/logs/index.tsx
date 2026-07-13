@@ -4,9 +4,11 @@ import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ForbiddenState } from '@/components/ui/ForbiddenState'
 import { Input } from '@/components/ui/Input'
 import { PageHeader } from '@/components/ui/PageHeader'
 import Select from '@/components/ui/Select'
+import { isApiErrorCode } from '@/lib/request-error-message'
 import { getLogPayload, listCallLogs } from '@/services/logs'
 import { listApiKeys } from '@/services/api-keys'
 import { listModels } from '@/services/catalog'
@@ -133,9 +135,10 @@ export default function LogsPage() {
   const showViewToggle = isEnterprise && canManage
   const showSpaceViewToggle = !showViewToggle && canUseSpaceView
   const view = userView ?? (showViewToggle ? 'enterprise' : canUseSpaceView ? 'space' : 'mine')
-  // 记录类型（#361）：同步调用（默认，现有调用日志）/ 异步任务（原任务历史）；URL record_type 同步
+  // 记录类型（#361）：同步调用（默认，现有调用日志）/ 异步任务（原任务历史）；URL record_type 同步。
+  // 带 ?task_id= 时说明是异步任务下钻，直接落到异步视图（#14）。
   const [recordType, setRecordType] = useState<RecordType>(
-    searchParams.get('record_type') === 'async' ? 'async' : 'sync',
+    searchParams.get('record_type') === 'async' || searchParams.get('task_id') ? 'async' : 'sync',
   )
   function changeRecordType(next: RecordType) {
     trackEvent('logs_record_type_switch', { record_type: next })
@@ -149,7 +152,11 @@ export default function LogsPage() {
       return p
     }, { replace: true })
   }
-  const [statusFilter, setStatusFilter] = useState<LogStatusFilter>('all')
+  // 下钻上下文（#14）：总览/护栏跳来时 ?status= 初始化调用状态筛选
+  const [statusFilter, setStatusFilter] = useState<LogStatusFilter>(() => {
+    const s = searchParams.get('status')
+    return s === 'success' || s === 'guarded' || s === 'error' ? s : 'all'
+  })
   // 从空间概览「调用日志」快捷入口带来的上下文：?workspace=；工作空间列表异步加载，
   // 派生（非 effect+setState）落值：只要用户还没手动切换过筛选，且该 id 已在加载到的列表里存在才采信，
   // 避免列表为空/还没到时直接选中一个不确定存在的选项
@@ -160,8 +167,13 @@ export default function LogsPage() {
   const [modelFilter, setModelFilter] = useState(() => searchParams.get('model') || 'all')
   const [apiKeyFilter, setApiKeyFilter] = useState(() => searchParams.get('api_key') || 'all')
   const [memberFilter, setMemberFilter] = useState(() => searchParams.get('member') || 'all')
-  const [guardrailFilter, setGuardrailFilter] = useState<LogGuardrailFilter>('all')
-  const [searchValue, setSearchValue] = useState('')
+  // 下钻上下文（#14）：护栏跳来时 ?guardrail_state= 初始化护栏筛选
+  const [guardrailFilter, setGuardrailFilter] = useState<LogGuardrailFilter>(() => {
+    const g = searchParams.get('guardrail_state')
+    return g === 'hit' || g === 'not_hit' ? g : 'all'
+  })
+  // 下钻上下文（#14）：?request_id= 落到关键词检索（精确 ID 走 request_id 参数），命中唯一后经下方自动展开详情
+  const [searchValue, setSearchValue] = useState(() => searchParams.get('request_id') || '')
   // 初始时间范围同时兼容两种来源：总览「最近调用·查看全部」带 ?period=；用量统计下钻带 ?time_range/range_start/range_end
   const [timeRange, setTimeRange] = useState<DateRangeValue>(() => {
     const periodParam = searchParams.get('period')
@@ -170,7 +182,10 @@ export default function LogsPage() {
     }
     return initialLogsTimeRange(searchParams)
   })
-  const [showMoreFilters, setShowMoreFilters] = useState(false)
+  // 关键词检索/护栏筛选在「更多筛选」里，带对应 URL 参数时默认展开，让下钻上下文可见（#14）
+  const [showMoreFilters, setShowMoreFilters] = useState(
+    () => Boolean(searchParams.get('request_id') || searchParams.get('guardrail_state')),
+  )
   const [selectedLog, setSelectedLog] = useState<CallLogItem | null>(null)
   const [payloadView, setPayloadView] = useState<PayloadView>('parsed')
   const [page, setPage] = useState(1)
@@ -267,7 +282,7 @@ export default function LogsPage() {
   const effectiveAccountId =
     view === 'mine' ? currentAccountId || undefined : memberFilter === 'all' ? undefined : memberFilter
 
-  const { data, isFetching, isLoading, isError, refetch } = useQuery({
+  const { data, isFetching, isLoading, isError, error, refetch } = useQuery({
     queryKey: [
       'logs',
       activeTenantId,
@@ -304,7 +319,13 @@ export default function LogsPage() {
     enabled: Boolean(activeTenantId) && recordType === 'sync',
     staleTime: 10_000,
     refetchOnWindowFocus: false,
+    retry: false, // 40301/无权限不重试，直接走兼容态
+    meta: { forbiddenHandled: true }, // 40301 由本页 ForbiddenState 承接，不弹全局 toast
   })
+
+  // 接口正常但业务码 40301（无权限，典型是进了自己无权的工作空间日志）→ 403 兼容态，
+  // 而不是让空数据伪装成「暂无调用日志」空态（对齐 api-keys 页处理）。
+  const forbidden = isApiErrorCode(error, 40301)
 
   // 详情内容区（transcript）需同时展示请求 + 响应两栏，故两份 payload 都加载
   const requestPayloadQuery = useQuery({
@@ -341,6 +362,23 @@ export default function LogsPage() {
       trackEvent('logs_detail_view', { record_type: 'sync', source: 'request_id_autoopen' })
     }
   }, [data, isRequestIdSearch, debouncedSearch])
+
+  // URL 下钻 ?request_id=（#14）：数据到位后按 request_id 精确匹配自动展开详情，一次性
+  // （用 ref 保证只弹一次；同时占位 autoOpenedRef 避免上面的通用自动展开重复触发/重复埋点）。
+  const urlRequestId = searchParams.get('request_id')
+  const urlAutoOpenedRef = useRef(false)
+  useEffect(() => {
+    if (urlAutoOpenedRef.current || !urlRequestId || !data) return
+    const match = data.items.find((item) => item.request_id === urlRequestId)
+    if (match) {
+      urlAutoOpenedRef.current = true
+      autoOpenedRef.current = urlRequestId
+      setSelectedLog(match)
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- URL 带 request_id 时数据到位后一次性打开详情（urlAutoOpenedRef 幂等）
+      setPayloadView('parsed')
+      trackEvent('logs_detail_view', { record_type: 'sync', source: 'url_request_id' })
+    }
+  }, [data, urlRequestId])
 
   // 搜索埋点：防抖 settle 后一次，非空才报
   useEffect(() => {
@@ -438,7 +476,7 @@ export default function LogsPage() {
                   { value: 'enterprise', label: '企业视图' },
                   { value: 'mine', label: '我的视图' },
                 ]}
-                onChange={(next) => { setUserView(next); if (next === 'mine') setMemberFilter('all'); setSelectedLog(null); resetPagination() }}
+                onChange={(next) => { setUserView(next); clearFilters(); setSelectedLog(null) }}
               />
             )}
             {showSpaceViewToggle && (
@@ -449,7 +487,7 @@ export default function LogsPage() {
                   { value: 'space', label: '空间视图' },
                   { value: 'mine', label: '我的视图' },
                 ]}
-                onChange={(next) => { setUserView(next); if (next === 'mine') setMemberFilter('all'); setSelectedLog(null); resetPagination() }}
+                onChange={(next) => { setUserView(next); clearFilters(); setSelectedLog(null) }}
               />
             )}
             <SegmentedToggle<RecordType>
@@ -472,7 +510,11 @@ export default function LogsPage() {
       />
 
       {recordType === 'async' ? (
-        <AsyncTasksPanel view={view} currentAccountId={currentAccountId} />
+        <AsyncTasksPanel view={view} currentAccountId={currentAccountId} initialTaskId={searchParams.get('task_id') ?? undefined} />
+      ) : forbidden ? (
+        <div className="rounded-md border border-mg-border bg-mg-bg-0">
+          <ForbiddenState resource="调用日志" />
+        </div>
       ) : (
         <>
       <section className="space-y-4 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">

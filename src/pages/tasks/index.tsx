@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   LuSearch,
@@ -418,10 +418,11 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
  * 异步任务面板（#361）：从原「任务历史」页抽出，内嵌到「调用日志」页的「异步任务」记录类型下。
  * 视图范围沿用调用日志：mine=按当前账号裁剪；enterprise/space=租户/空间范围（服务端权威裁剪）。
  */
-export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise' | 'mine' | 'space'; currentAccountId?: string }) {
+export function AsyncTasksPanel({ view, currentAccountId, initialTaskId }: { view: 'enterprise' | 'mine' | 'space'; currentAccountId?: string; initialTaskId?: string }) {
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
 
-  const [search, setSearch]         = useState('')
+  // ?task_id= 下钻（#14）：初始搜索落到该任务，命中后经下方自动展开详情
+  const [search, setSearch]         = useState(initialTaskId ?? '')
   const debouncedSearch             = useDebouncedValue(search.trim(), 350)
   const [statusFilter, setStatus]   = useState('all')
   const [kindFilter, setKind]       = useState('all')
@@ -533,6 +534,19 @@ export function AsyncTasksPanel({ view, currentAccountId }: { view: 'enterprise'
     }
     return list
   }, [items, kindFilter, statusFilter, expiredIds])
+
+  // ?task_id= 下钻（#14）：数据到位后按 gateway_request_id 精确匹配自动展开任务详情，一次性
+  const taskAutoOpenedRef = useRef(false)
+  useEffect(() => {
+    if (taskAutoOpenedRef.current || !initialTaskId) return
+    const match = items.find((t) => t.gateway_request_id === initialTaskId)
+    if (match) {
+      taskAutoOpenedRef.current = true
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- URL 带 task_id 时数据到位后一次性打开任务详情（taskAutoOpenedRef 幂等）
+      setSelectedTask(match)
+      trackEvent('logs_detail_view', { record_type: 'async', kind: resolveKind(match), status: match.status, source: 'url_task_id' })
+    }
+  }, [items, initialTaskId])
 
   return (
     <div>

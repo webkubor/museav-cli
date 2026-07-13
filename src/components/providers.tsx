@@ -11,6 +11,8 @@ const SILENT_CODES = new Set([
 ])
 
 function handleGlobalError(error: unknown, query?: { meta?: Record<string, unknown> }) {
+  // 该 query 自行在 UI 内承接错误态（如内联错误块 + 重试），不弹全局 toast
+  if (query?.meta?.silentError) return
   if (error instanceof ModelGoApiError) {
     if (SILENT_CODES.has(error.code)) return
     // 40301 无权限：若该 query 的页面已渲染专门的 403 兼容态（meta.forbiddenHandled），

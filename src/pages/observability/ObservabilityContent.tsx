@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Switch } from '@/components/ui/Switch'
 import { appToast } from '@/lib/app-toast'
 import { cn } from '@/lib/utils'
+import { trackEvent } from '@/lib/track'
 import { updateLoggingConfig } from '@/services/observability'
 import type { LoggingConfig } from '@/types'
 import { DestinationsPanel } from './DestinationsPanel'
@@ -100,6 +101,7 @@ export function ObservabilityContent({
   })
 
   function handleLoggingChange(value: boolean) {
+    trackEvent('workspaces:log_capture_toggle', { enabled: value })
     const next = { input_output_logging_enabled: value, broadcast_enabled: value ? broadcastEnabled : false }
     setLoggingEnabled(value)
     if (!value) setBroadcastEnabled(false)

@@ -59,7 +59,9 @@ while IFS= read -r f; do
   fi
 
   # ── WARN 2：疑似拿 3.5% 填充当卡片。卡片应 .mg-tile（白底+边框+阴影）。
-  hits="$(printf '%s' "$content" | grep -nE 'bg-mg-fill-0' | grep -E 'rounded|border' || true)"
+  # 排除分段切换器轨道（gap-1 + p-1 同现）——那是官方 SegmentedToggle 的正确写法，非假卡片；
+  # 卡片用 p-3/4/5/6，不会 p-1，故此签名可稳定区分。
+  hits="$(printf '%s' "$content" | grep -nE 'bg-mg-fill-0' | grep -E 'rounded|border' | grep -vE '(gap-1.*p-1)|(p-1.*gap-1)' || true)"
   if [ -n "$hits" ]; then
     echo "⚠ [疑似 fill 当卡片] $f — 卡片用 .mg-tile，别拿 bg-mg-fill-0 凑层次（DESIGN.md · Elevation）"
     warn=$((warn + 1))

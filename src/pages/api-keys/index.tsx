@@ -16,7 +16,6 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { ForbiddenState } from '@/components/ui/ForbiddenState'
 import { trackAction, trackEvent, trackPageView } from '@/lib/track'
 import { useTenantRole } from '@/hooks/use-tenant-role'
-import { SegmentedToggle } from '@/features/dashboard/workbench/SegmentedToggle'
 import { LuSearch, LuPlus } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -92,28 +91,22 @@ export default function ApiKeysPage() {
   const canRevoke = hasPermission(PERMS.API_KEYS_REVOKE)
   // 埋点顶层字段 is_space_owner：当前用户对本页作用域工作空间的 my_role 是否为 ws_owner
   // （不是 useTenantRole().isSpaceOwner —— 那个是「企业成员+自领至少一个空间」的 PRD 空间视图判定，口径更窄）
-  const { ownedWorkspaceIds, isEnterprise, canManage: canManageTenant } = useTenantRole()
+  const { ownedWorkspaceIds } = useTenantRole()
   const isActiveWorkspaceOwner = ownedWorkspaceIds.includes(activeWorkspaceId)
 
-  // 空间/我的视图切换：租户 owner/admin，或当前作用域工作空间的负责人（ws_owner）都可切。
-  // 空间负责人对自己负责的空间可见全部成员 Key（view=company），也可切回仅看自己（view=mine）；
-  // 普通成员的可见范围仍由后端角色裁剪、无需切换。后端 GET .../api-keys 支持 view=mine|company
-  // （Swagger 已确认）；#445 补齐此前空间负责人漏切 —— 之前只判 canManageTenant。
-  const showViewToggle = isEnterprise && (canManageTenant || isActiveWorkspaceOwner)
-  const [userView, setUserView] = useState<'mine' | 'company' | null>(null)
-  const view = userView ?? 'company'
-
+  // PRD 定稿：运行页无视图概念，作用域恒＝当前工作空间，行可见性纯由后端按角色裁剪
+  // （租户级角色 + 空间负责人看全部，普通成员只看自己）。不再有企业/我的视图切换。
   useEffect(() => {
-    trackPageView('api-keys', undefined, { is_space_owner: isActiveWorkspaceOwner, view_mode: view })
+    trackPageView('api-keys', undefined, { is_space_owner: isActiveWorkspaceOwner })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const { data, isLoading, error: listError } = useQuery({
-    queryKey: ['api-keys', activeWorkspaceId, showViewToggle ? view : undefined],
+    queryKey: ['api-keys', activeWorkspaceId],
     // 类型/负责人/状态/搜索四个筛选都在客户端做（其中 status 后端无筛选参数），因此必须把全量 Key
     // 一次拉齐，否则筛选/负责人下拉只覆盖首页会漏（#383）。单空间 Key 量级很小，page_size 拉满足够；
     // 若未来单空间 Key 超 200，再改真·游标分页 + 后端补 status 过滤参数。
-    queryFn: () => listApiKeys(activeWorkspaceId, { page_size: 200, view: showViewToggle ? view : undefined }).then(pageItems),
+    queryFn: () => listApiKeys(activeWorkspaceId, { page_size: 200 }).then(pageItems),
     enabled: !!activeWorkspaceId,
     retry: false, // 40301/无权限不重试，直接走兼容态
     meta: { forbiddenHandled: true }, // 40301 由本页 ForbiddenState 承接，不弹全局 toast
@@ -386,17 +379,6 @@ export default function ApiKeysPage() {
       <PageHeader
         title={t('apiKeys.title')}
         description={`${workspaceName} 工作空间的运行凭证、负责人、限额和到期时间`}
-        actions={showViewToggle ? (
-          <SegmentedToggle<'mine' | 'company'>
-            ariaLabel={t('dashboard.workbench.view.enterprise')}
-            value={view}
-            options={[
-              { value: 'company', label: t('dashboard.workbench.view.enterprise') },
-              { value: 'mine', label: t('dashboard.workbench.view.mine') },
-            ]}
-            onChange={setUserView}
-          />
-        ) : undefined}
       />
 
       <ApiKeySummaryCards items={apiKeyItems} summary={summary} loading={isLoading} />

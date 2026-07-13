@@ -24,10 +24,11 @@ export function getMarketDefaultLang(market: Market): Lang {
 }
 
 /**
- * 智能探测初始语言，实现完全解耦：
- * 1. 优先读取 localStorage 持久化偏好
- * 2. 智能匹配浏览器 navigator.language 前缀
- * 3. 降级为默认英文 'en'
+ * 初始语言：
+ * 1. 优先读取 localStorage 持久化偏好（用户显式切过的，跨域名/会话保留）
+ * 2. 无偏好 → 按域名/市场定默认（国内 modelgo.com→zh，海外 modelgo.ai→en）
+ *    —— 不看浏览器语言：否则海外站(.ai)遇中文浏览器会错误默认中文（违反「.ai 默认英文」）
+ * 3. SSR/无 window → 兜底 'en'
  */
 export function getInitialLang(): Lang {
   if (typeof window !== 'undefined') {
@@ -35,11 +36,8 @@ export function getInitialLang(): Lang {
     const saved = localStorage.getItem(storageKeys.lang()) || localStorage.getItem('i18nextLng')
     if (saved === 'zh' || saved === 'en') return saved
 
-    // 智能匹配浏览器默认语言
-    const browserLang = navigator.language || (navigator as Navigator & { userLanguage?: string }).userLanguage || ''
-    if (browserLang.toLowerCase().includes('zh')) {
-      return 'zh'
-    }
+    // 无显式偏好 → 域名/市场默认（.ai=en / .com=zh），域名意图优先于浏览器语言
+    return getMarketDefaultLang(getMarket())
   }
 
   return 'en'

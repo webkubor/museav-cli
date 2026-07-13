@@ -90,12 +90,14 @@ export function MetricsSection({
       icon: <LuActivity size={16} />,
       iconLead: true,
       trend: requestsTrend,
+      sub: t('dashboard.workbench.metrics.requestsSub'),
       onClick: () => onMetricCardClick('requests'),
     },
     {
       title: t('dashboard.workbench.metrics.spend'),
       value: summary ? formatMoney(summary.total.spend.amount, symbol) : undefined,
       loading: summaryLoading,
+      sub: t('dashboard.workbench.metrics.spendSub'),
       color: 'var(--mg-warning)',
       glowColor: 'rgba(245, 158, 11, 0.12)',
       hoverBorderClass: 'hover:border-amber-500/30',
@@ -116,6 +118,7 @@ export function MetricsSection({
       icon: <LuDatabase size={16} />,
       iconLead: true,
       trend: tokensTrend,
+      sub: t('dashboard.workbench.metrics.tokensSub'),
       onClick: () => onMetricCardClick('tokens'),
     },
     {
@@ -128,8 +131,8 @@ export function MetricsSection({
       icon: <LuWallet size={16} />,
       iconLead: true,
       // 账户余额为时点值、后端无历史快照，不显示涨跌徽章（保持真实，不造假数据）
-      // 低余额时：文字标签（颜色非唯一信息，§12.3）+ 充值入口（走全局充值弹窗）
-      sub: lowBalance ? t('dashboard.workbench.metrics.balanceLow') : undefined,
+      // 低余额时：文字标签（颜色非唯一信息，§12.3）+ 充值入口（走全局充值弹窗）；否则显介绍副文案
+      sub: lowBalance ? t('dashboard.workbench.metrics.balanceLow') : t('dashboard.workbench.metrics.balanceSub'),
       action: lowBalance ? { label: t('dashboard.workbench.metrics.recharge'), onClick: openRecharge } : undefined,
       onClick: () => onMetricCardClick('balance'),
     },

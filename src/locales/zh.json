@@ -1530,7 +1530,11 @@
         "balance": "账户余额",
         "balanceLow": "余额偏低",
         "recharge": "充值",
-        "vsPrev": "较上期"
+        "vsPrev": "较上期",
+        "requestsSub": "本月调用",
+        "spendSub": "本月消费",
+        "tokensSub": "本月输入和输出合计",
+        "balanceSub": "当前可用余额"
       },
       "trend": {
         "title": "用量趋势",

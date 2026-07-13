@@ -1531,7 +1531,11 @@
         "balance": "Balance",
         "balanceLow": "Low balance",
         "recharge": "Top up",
-        "vsPrev": "vs prev"
+        "vsPrev": "vs prev",
+        "requestsSub": "Calls this month",
+        "spendSub": "Spend this month",
+        "tokensSub": "Input + output this month",
+        "balanceSub": "Available balance"
       },
       "trend": {
         "title": "Usage trend",

@@ -263,13 +263,19 @@ export function GuardrailDetailSheet({
                       <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-mg-text-2">
                         <LuUserRound className="h-3.5 w-3.5" /> 成员<span className="text-mg-danger ml-1">*</span>
                       </label>
-                      <TagInput
-                        value={memberIds}
-                        onChange={onMemberIdsChange}
-                        options={memberOptions.map((o) => ({ value: o.id, label: o.name }))}
-                        placeholder="搜索并选择成员"
-                        hint="个人护栏至少绑定一位成员"
-                      />
+                      {memberOptions.length === 0 ? (
+                        <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2.5 text-xs text-mg-text-3">
+                          当前工作空间暂无可绑定的成员。
+                        </div>
+                      ) : (
+                        <TagInput
+                          value={memberIds}
+                          onChange={onMemberIdsChange}
+                          options={memberOptions.map((o) => ({ value: o.id, label: o.name }))}
+                          placeholder="搜索并选择成员"
+                          hint="个人护栏至少绑定一位成员"
+                        />
+                      )}
                     </div>
                   )}
                   {scope === 'key' && (
@@ -277,13 +283,19 @@ export function GuardrailDetailSheet({
                       <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-mg-text-2">
                         <LuKey className="h-3.5 w-3.5" /> 绑定 API Key<span className="text-mg-danger ml-1">*</span>
                       </label>
-                      <TagInput
-                        value={apiKeyIds}
-                        onChange={onApiKeyIdsChange}
-                        options={apiKeyOptions.map((o) => ({ value: o.id, label: o.name, disabled: !o.active }))}
-                        placeholder="搜索并选择该工作空间的 API Key"
-                        hint="Key 护栏必须至少绑定一把 API Key"
-                      />
+                      {apiKeyOptions.length === 0 ? (
+                        <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2.5 text-xs text-mg-text-3">
+                          当前工作空间暂无可绑定的 API Key，请先到「API Keys」页创建后再绑定。
+                        </div>
+                      ) : (
+                        <TagInput
+                          value={apiKeyIds}
+                          onChange={onApiKeyIdsChange}
+                          options={apiKeyOptions.map((o) => ({ value: o.id, label: o.name, disabled: !o.active }))}
+                          placeholder="搜索并选择该工作空间的 API Key"
+                          hint="Key 护栏必须至少绑定一把 API Key"
+                        />
+                      )}
                     </div>
                   )}
                   {/* 预算：全局三档 / 个人·Key 单档（提额预算亦在此，到期时间由下方 boost 字段承接） */}

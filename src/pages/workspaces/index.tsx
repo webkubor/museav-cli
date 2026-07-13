@@ -265,6 +265,7 @@ export default function WorkspacesPage() {
         actions={
           canCreateWorkspace ? (
           <Button
+            data-testid="workspace-create-open"
             variant="brand"
             disabled={atWorkspaceLimit}
             title={atWorkspaceLimit && tenant ? t('workspaces.toast.limitReached', { max: tenant.max_workspaces }) : undefined}
@@ -529,7 +530,7 @@ export default function WorkspacesPage() {
         footer={
           <>
             <Button variant="ghost" onClick={() => setModalVisible(false)}>{t('workspaces.modal.cancel')}</Button>
-            <Button variant="brand" loading={createMutation.isPending} onClick={handleCreateSubmit}>{t('workspaces.modal.confirm')}</Button>
+            <Button data-testid="workspace-create-submit" variant="brand" loading={createMutation.isPending} onClick={handleCreateSubmit}>{t('workspaces.modal.confirm')}</Button>
           </>
         }
       >
@@ -537,6 +538,7 @@ export default function WorkspacesPage() {
             <div className="flex flex-col gap-1.5">
               <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.nameLabel')}</div>
               <Input
+                data-testid="workspace-create-name"
                 value={name}
                 onChange={e => {
                   const v = e.target.value

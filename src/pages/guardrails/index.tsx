@@ -688,6 +688,7 @@ export default function GuardrailsPage() {
         title={t('guardrails.title')}
         actions={canCreate && (
           <Button
+            data-testid="guardrail-create-open"
             variant="brand"
             onClick={openCreate}
             className="rounded-full px-5 h-10 shadow-lg shadow-brand-glow/20"

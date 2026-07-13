@@ -532,6 +532,7 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
         <div className="flex flex-wrap items-center gap-2">
           <ViewToggle value={payloadView} onChange={onPayloadViewChange} />
           <CopyButton
+            data-testid="log-detail-copy"
             value={[
               requestText && `// Request\n${requestText}`,
               responsePayloadText && `// Response\n${responsePayloadText}`,

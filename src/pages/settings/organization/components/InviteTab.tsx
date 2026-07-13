@@ -108,7 +108,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
           <div className="flex gap-3 flex-wrap items-center">
             <div className="flex items-center gap-2">
               <span className={fieldLabel}>{t('enterprise.invite.defaultRole')}</span>
-              <Select value={inviteRole} onChange={handleRoleChange} className="h-8 w-28 text-xs rounded-lg">
+              <Select data-testid="invite-role-select" value={inviteRole} onChange={handleRoleChange} className="h-8 w-28 text-xs rounded-lg">
                 <Select.Option value="tenant_member">Member</Select.Option>
                 <Select.Option value="tenant_admin">Admin</Select.Option>
               </Select>
@@ -175,6 +175,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
             <div className="flex-1 min-w-[200px] space-y-1">
               <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.invite.emailTitle')}</label>
               <Input
+                data-testid="invite-email"
                 type="email"
                 placeholder={t('enterprise.invite.emailPlaceholder')}
                 value={inviteEmails}
@@ -185,7 +186,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
             </div>
             <div className="w-full md:w-56 space-y-1">
               <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.invite.targetWorkspace')}</label>
-              <Select value={targetWorkspaceId} onChange={setTargetWorkspaceId} className="h-9 text-xs rounded-lg">
+              <Select data-testid="invite-workspace-select" value={targetWorkspaceId} onChange={setTargetWorkspaceId} className="h-9 text-xs rounded-lg">
                 <Select.Option value={NONE_WORKSPACE}>{t('enterprise.invite.targetWorkspaceNone')}</Select.Option>
                 {workspaces.map((ws) => (
                   <Select.Option key={ws.workspace_id} value={ws.workspace_id}>{ws.name}</Select.Option>
@@ -194,6 +195,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
             </div>
             {canInvite && (
               <Button
+                data-testid="invite-submit"
                 variant="brand"
                 loading={addMembers.isPending}
                 className="font-semibold h-9 px-4 rounded-lg text-xs bg-brand-base text-white hover:bg-brand-base/90 shrink-0"

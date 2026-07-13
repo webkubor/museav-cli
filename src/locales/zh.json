@@ -642,16 +642,21 @@
       "blockedHint": "安全护栏命中",
       "notStartedHint": "未产生响应、Token、耗时或费用",
       "action": {
-        "log_only": "记录后继续",
-        "redacted": "脱敏后继续",
-        "blocked": "已拦截"
+        "flag": "仅标记并放行",
+        "redact": "脱敏后继续调用",
+        "block": "已拦截"
       },
       "modelState": {
-        "succeeded": "成功",
-        "failed": "失败",
-        "not_started": "未发起"
+        "completed": "调用成功",
+        "failed": "调用失败",
+        "not_started": "未调用"
       },
-      "redactedHint": "命中提示词注入规则，已对请求内容脱敏后继续调用；下方仅展示脱敏后的内容，不含原文。"
+      "redactedHint": "命中提示词注入规则，已对请求内容脱敏后继续调用；下方仅展示脱敏后的内容，不含原文。",
+      "scope": {
+        "global": "全局护栏",
+        "key": "Key 护栏",
+        "personal": "成员护栏"
+      }
     }
   },
   "observability": {

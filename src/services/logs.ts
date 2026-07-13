@@ -8,9 +8,11 @@ import type { CallLogListParams, LogHistogramParams, LogStatsParams } from '@/in
 import type {
   CallLogItem,
   CursorPage,
+  GuardrailDecision,
   LogHistogram,
   LogPayload,
   LogStats,
+  ModelRequestState,
   Money,
 } from '@/types'
 
@@ -65,6 +67,12 @@ type ModelLogRow = {
   speed?: { tps?: number; first_token_ms?: number }
   cost?: Money
   error?: string | null
+  // 护栏字段（后端契约 #450，随行返回）
+  guardrail_decision?: GuardrailDecision | null
+  model_request_state?: ModelRequestState | null
+  guardrail_id?: string | null
+  guardrail_name?: string | null
+  guardrail_reason?: string | null
 }
 
 type ModelLogListResponse = {
@@ -197,6 +205,12 @@ function toCallLogItem(row: ModelLogRow): CallLogItem {
     cost: row.cost ?? money(row.final_amount || row.cost_amount, row.currency),
     billing_status: row.billing_status || '',
     error: row.error ?? row.error_message ?? row.error_code ?? null,
+    // 护栏字段透传（后端契约 #450）：未命中/旧日志时后端不返，保持 undefined，UI 降级
+    guardrail_decision: row.guardrail_decision ?? undefined,
+    model_request_state: row.model_request_state ?? undefined,
+    guardrail_id: row.guardrail_id ?? undefined,
+    guardrail_name: row.guardrail_name ?? undefined,
+    guardrail_reason: row.guardrail_reason ?? undefined,
   }
 }
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Input } from '@/components/ui/Input'
 import { TagInput } from '@/components/ui/TagInput'
@@ -16,6 +16,46 @@ import {
   type GuardrailScope,
   type PromptInjectionFormValue,
 } from '../derive'
+
+// ─── 分段按钮组（对齐原型：分类/类型用分段切换，非下拉） ──────────────────────
+function SegGroup<T extends string>({
+  value, onChange, options, disabled, ariaLabel, track,
+}: {
+  value: T
+  onChange: (v: T) => void
+  options: { value: T; label: string }[]
+  disabled?: boolean
+  ariaLabel?: string
+  track?: string
+}) {
+  return (
+    <div role="radiogroup" aria-label={ariaLabel} className="grid gap-2" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0,1fr))` }}>
+      {options.map((o) => {
+        const active = value === o.value
+        return (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            disabled={disabled}
+            data-track={track}
+            onClick={() => onChange(o.value)}
+            className={[
+              'rounded-md border px-3 py-2 text-xs font-bold transition-all',
+              disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+              active
+                ? 'border-brand-base bg-brand-base/8 text-brand-base'
+                : 'border-mg-border bg-mg-fill-0/40 text-mg-text-2 hover:border-brand-base/35',
+            ].join(' ')}
+          >
+            {o.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
 
 // ─── 公共：表单字段组件（创建/编辑复用） ──────────────────────────────────────
 
@@ -37,6 +77,8 @@ export function GuardrailFormFields({
   modelSuggestions,
   memberIds, onMemberIdsChange, memberOptions,
   canEditInfo, canEditAssignment,
+  isCreating = false,
+  budgetSlot,
 }: {
   name: string; onNameChange: (v: string) => void
   description: string; onDescriptionChange: (v: string) => void
@@ -64,6 +106,10 @@ export function GuardrailFormFields({
   memberIds: string[]; onMemberIdsChange: (v: string[]) => void; memberOptions: { id: string; name: string }[]
   canEditInfo: boolean
   canEditAssignment: boolean
+  /** 创建态：对齐原型隐藏「优先级/描述」，仅编辑态展示 */
+  isCreating?: boolean
+  /** 创建态插槽：绑定对象 + 预算，插在分类/类型之后、规则(模型/IP/注入)之前（对齐原型顺序） */
+  budgetSlot?: ReactNode
 }) {
   const { t } = useTranslation()
   const [ipError, setIpError] = useState('')
@@ -87,72 +133,59 @@ export function GuardrailFormFields({
   }
   return (
     <div className="flex flex-col gap-5 py-2">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* 名称（对齐原型：创建态名称独占一行、无优先级/描述；编辑态保留优先级/描述） */}
+      {isCreating ? (
         <div>
-          <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.nameLabel')}<span className="text-mg-danger ml-1">*</span></label>
+          <label className="block text-xs font-bold text-mg-text-2 mb-2">护栏名称<span className="text-mg-danger ml-1">*</span></label>
           <Input value={name} data-track="guardrails:field_name" disabled={!canEditInfo} onChange={(e) => onNameChange(e.target.value)} placeholder={t('guardrails.form.namePlaceholder')} />
         </div>
-        <div>
-          <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.priorityLabel')}</label>
-          <Input type="number" value={priority} disabled={!canEditInfo} onChange={(e) => onPriorityChange(Number(e.target.value))} placeholder={t('guardrails.form.priorityPlaceholder')} />
-        </div>
-      </div>
-      <div>
-        <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.descLabel')}</label>
-        <Input value={description} disabled={!canEditInfo} onChange={(e) => onDescriptionChange(e.target.value)} placeholder={t('guardrails.form.descPlaceholder')} />
-      </div>
-      {/* 分类 + 类型 — 显式选择（文档：创建时显式选「分类+类型」，非靠 isDefault/assignments 反推）。
-          全局护栏恒为常规、无类型选择器；编辑态整体锁定（提额创建后类型不可切换）。 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-bold text-mg-text-2 mb-2">
-            护栏分类<span className="text-mg-danger ml-1">*</span>
-          </label>
-          <Select
-            value={scope}
-            onChange={(v) => onScopeChange(v as GuardrailScope)}
-            disabled={lockScopeKind || !canEditInfo}
-            aria-label="护栏分类"
-            data-track="guardrails:field_scope"
-            className="w-full"
-          >
-            {(['global', 'member', 'key'] as GuardrailScope[])
-              .filter((s) => s !== 'member' || showMemberScope)
-              .map((s) => (
-                <SelectItem key={s} value={s}>{SCOPE_LABEL[s]}护栏</SelectItem>
-              ))}
-          </Select>
-          <p className="text-xs text-mg-text-3 mt-1.5">
-            {scope === 'global'
-              ? '工作空间级默认策略与预算/模型/IP 边界'
-              : scope === 'member'
-                ? '按成员计量的预算策略，可绑定多位成员'
-                : '按 API Key 计量的策略，可绑定多把 Key'}
-          </p>
-        </div>
-        {scope !== 'global' && (
-          <div>
-            <label className="block text-xs font-bold text-mg-text-2 mb-2">
-              护栏类型<span className="text-mg-danger ml-1">*</span>
-            </label>
-            <Select
-              value={kind}
-              onChange={(v) => onKindChange(v as GuardrailKind)}
-              disabled={lockScopeKind || !canEditInfo}
-              aria-label="护栏类型"
-              data-track="guardrails:field_kind"
-              className="w-full"
-            >
-              {(['regular', 'boost'] as GuardrailKind[]).map((k) => (
-                <SelectItem key={k} value={k}>{KIND_LABEL[k]}护栏</SelectItem>
-              ))}
-            </Select>
-            <p className="text-xs text-mg-text-3 mt-1.5">
-              {kind === 'boost' ? '临时预算策略，必须设置到期时间，可超过全局默认' : '长期预算策略，无到期时间'}
-            </p>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.nameLabel')}<span className="text-mg-danger ml-1">*</span></label>
+              <Input value={name} data-track="guardrails:field_name" disabled={!canEditInfo} onChange={(e) => onNameChange(e.target.value)} placeholder={t('guardrails.form.namePlaceholder')} />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.priorityLabel')}</label>
+              <Input type="number" value={priority} disabled={!canEditInfo} onChange={(e) => onPriorityChange(Number(e.target.value))} placeholder={t('guardrails.form.priorityPlaceholder')} />
+            </div>
           </div>
-        )}
+          <div>
+            <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.descLabel')}</label>
+            <Input value={description} disabled={!canEditInfo} onChange={(e) => onDescriptionChange(e.target.value)} placeholder={t('guardrails.form.descPlaceholder')} />
+          </div>
+        </>
+      )}
+      {/* 分类 + 类型 — 分段按钮显式选择（对齐原型）。全局护栏恒常规、无类型选择器；编辑态锁定。 */}
+      <div>
+        <label className="block text-xs font-bold text-mg-text-2 mb-2">护栏分类<span className="text-mg-danger ml-1">*</span></label>
+        <SegGroup
+          value={scope}
+          onChange={(v) => onScopeChange(v)}
+          disabled={lockScopeKind || !canEditInfo}
+          ariaLabel="护栏分类"
+          track="guardrails:field_scope"
+          options={(['global', 'member', 'key'] as GuardrailScope[])
+            .filter((s) => s !== 'member' || showMemberScope)
+            .map((s) => ({ value: s, label: `${SCOPE_LABEL[s]}护栏` }))}
+        />
       </div>
+      {scope !== 'global' && (
+        <div>
+          <label className="block text-xs font-bold text-mg-text-2 mb-2">护栏类型<span className="text-mg-danger ml-1">*</span></label>
+          <SegGroup
+            value={kind}
+            onChange={(v) => onKindChange(v)}
+            disabled={lockScopeKind || !canEditInfo}
+            ariaLabel="护栏类型"
+            track="guardrails:field_kind"
+            options={(['regular', 'boost'] as GuardrailKind[]).map((k) => ({ value: k, label: `${KIND_LABEL[k]}护栏` }))}
+          />
+        </div>
+      )}
+      {/* 创建态插槽：绑定对象 + 预算（对齐原型：分类/类型之后、规则之前） */}
+      {budgetSlot}
       {/* 提额到期时间 — 仅提额护栏显示（文档：提额必须有到期时间） */}
       {kind === 'boost' && scope !== 'global' && (
         <div>
@@ -241,8 +274,9 @@ export function GuardrailFormFields({
           </Select>
         </div>
       )}
-      {/* 成员 — 下拉多选（仅个人护栏绑定成员；全局/Key 护栏不在此绑定） */}
-      {scope === 'member' && (
+      {/* 成员 — 下拉多选（仅个人护栏绑定成员；全局/Key 护栏不在此绑定）。
+          创建态由外部 budgetSlot 统一渲染绑定(保证顺序:绑定→预算),故此处仅编辑态。 */}
+      {scope === 'member' && !isCreating && (
         <div>
           <label className="block text-xs font-bold text-mg-text-2 mb-2">
             <span className="inline-flex items-center gap-1.5">

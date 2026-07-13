@@ -312,13 +312,41 @@ export default function GuardrailsPage() {
   const createMutation = useMutation({
     mutationFn: (payload: CreateGuardrailRequest) =>
       createGuardrail(activeWorkspaceId!, payload),
-    onSuccess: (created) => {
-      appToast.success(t('guardrails.toast.createSuccess'))
-      qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
-      setIsCreating(false)
-      setDetailId(created.id)
-      setSheetTab('scope')
-      trackAction(PERMS.GUARDRAILS_CREATE, undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
+    onSuccess: async (created) => {
+      // 对齐原型「一页填完」：护栏建好后补预算策略（后端预算挂在已存在护栏上，无法随创建下发）。
+      // 全局三档 / 非全局单档；仅下发「限额且金额有效」的档。
+      const ops: AddBudgetPolicyRequest[] = []
+      if (scope === 'global') {
+        for (const agg of GLOBAL_BUDGET_SCOPES.filter((s) => s !== 'per_member' || showMember)) {
+          const d = globalBudgets[agg]
+          const amt = d.amount.trim()
+          if (d.limited && isValidBudgetAmount(amt)) {
+            ops.push({ aggregation_scope: agg, period_unit: d.period, period_length: 1, enforcement_mode: 'hard_limit', spend_limit_amount: amt, enabled: true })
+          }
+        }
+      } else {
+        const agg: BudgetAggScope = scope === 'member' ? 'per_member' : 'per_api_key'
+        const amt = budgetAmount.trim()
+        if (amt && isValidBudgetAmount(amt)) {
+          ops.push({ aggregation_scope: agg, period_unit: budgetPeriodUnit, period_length: 1, enforcement_mode: 'hard_limit', spend_limit_amount: amt, enabled: true })
+        }
+      }
+      try {
+        for (const op of ops) await addBudgetPolicy(created.id, op)
+        appToast.success(t('guardrails.toast.createSuccess'))
+        qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
+        setDetailOpen(false)
+        setIsCreating(false)
+        trackAction(PERMS.GUARDRAILS_CREATE, undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
+      } catch (err) {
+        // 护栏已建、预算这步失败：保留护栏，转编辑「预算」Tab 让用户补，避免脏建
+        appToast.requestError(err, '护栏已创建，但预算保存失败，请在编辑中补充预算')
+        qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
+        setIsCreating(false)
+        setDetailId(created.id)
+        setSheetTab('budget')
+        trackAction(PERMS.GUARDRAILS_CREATE, undefined, { result: 'success', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
+      }
     },
     onError: (err: unknown) => {
       appToast.requestError(err, t('guardrails.toast.createError'))
@@ -493,6 +521,9 @@ export default function GuardrailsPage() {
     // 分类/类型经 metadata 占位往返（后端 #378 未交付 scope/kind 显式字段前）：
     // is_default 承载全局分类，kind='boost' 标记提额，expires_at 记提额到期。
     const metadata: Record<string, unknown> = {
+      // 显式落分类（后端 #378 未交付 scope 字段前的真源）：deriveScope 优先读它，
+      // 不再靠「有无绑定」反推——否则未绑对象的个人/Key 护栏会被误判成全局、全堆全局列表。
+      scope,
       members: scope === 'member' ? memberIds : [],
       api_keys: scope === 'key' ? apiKeyIds : [],
     }

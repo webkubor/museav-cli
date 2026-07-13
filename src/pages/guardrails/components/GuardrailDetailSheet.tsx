@@ -7,7 +7,7 @@ import { Select, SelectItem } from '@/components/ui/Select'
 import { TagInput } from '@/components/ui/TagInput'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import type { StatusConfig } from '@/components/ui/StatusBadge'
-import { LuKey, LuDollarSign } from 'react-icons/lu'
+import { LuKey, LuDollarSign, LuUserRound } from 'react-icons/lu'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
 import { PERIOD_LABEL } from '@/constants/status'
 import { GuardrailFormFields } from './GuardrailFormFields'
@@ -254,6 +254,77 @@ export function GuardrailDetailSheet({
               memberIds={memberIds} onMemberIdsChange={onMemberIdsChange} memberOptions={memberOptions}
               canEditInfo={isCreating || canEdit}
               canEditAssignment={isCreating || canEditAssignment}
+              isCreating={isCreating}
+              budgetSlot={isCreating ? (
+                <>
+                  {/* 绑定对象：个人护栏绑成员 / Key 护栏绑 API Key（对齐原型：分类类型后、预算前） */}
+                  {scope === 'member' && (
+                    <div>
+                      <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-mg-text-2">
+                        <LuUserRound className="h-3.5 w-3.5" /> 成员<span className="text-mg-danger ml-1">*</span>
+                      </label>
+                      <TagInput
+                        value={memberIds}
+                        onChange={onMemberIdsChange}
+                        options={memberOptions.map((o) => ({ value: o.id, label: o.name }))}
+                        placeholder="搜索并选择成员"
+                        hint="个人护栏至少绑定一位成员"
+                      />
+                    </div>
+                  )}
+                  {scope === 'key' && (
+                    <div>
+                      <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-mg-text-2">
+                        <LuKey className="h-3.5 w-3.5" /> 绑定 API Key<span className="text-mg-danger ml-1">*</span>
+                      </label>
+                      <TagInput
+                        value={apiKeyIds}
+                        onChange={onApiKeyIdsChange}
+                        options={apiKeyOptions.map((o) => ({ value: o.id, label: o.name, disabled: !o.active }))}
+                        placeholder="搜索并选择该工作空间的 API Key"
+                        hint="Key 护栏必须至少绑定一把 API Key"
+                      />
+                    </div>
+                  )}
+                  {/* 预算：全局三档 / 个人·Key 单档（提额预算亦在此，到期时间由下方 boost 字段承接） */}
+                  <div>
+                    <label className="block text-xs font-bold text-mg-text-2 mb-2">
+                      {scope === 'global' ? '预算（三档独立限额）' : kind === 'boost' ? '提额预算' : '预算'}
+                    </label>
+                    {scope === 'global' ? (
+                      <div className="space-y-3">
+                        {GLOBAL_BUDGET_META.filter((m) => !m.enterpriseOnly || showMember).map((m) => (
+                          <GlobalBudgetControl
+                            key={m.scope}
+                            label={m.label}
+                            hint={m.hint}
+                            draft={globalBudgets[m.scope]}
+                            onChange={(patch) => onGlobalBudgetChange(m.scope, patch)}
+                            disabled={false}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          aria-label="预算限额金额"
+                          value={budgetAmount}
+                          onChange={(e) => onBudgetAmountChange(e.target.value)}
+                          placeholder="输入限额金额，留空表示不限额"
+                          className="h-9 text-xs flex-1"
+                        />
+                        <Select value={budgetPeriodUnit} onChange={(v) => onBudgetPeriodUnitChange(v as PeriodUnit)} className="h-9 text-xs w-28">
+                          {(Object.entries(PERIOD_LABEL) as [PeriodUnit, string][]).map(([k, label]) => (
+                            <SelectItem key={k} value={k}>每{label}</SelectItem>
+                          ))}
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : undefined}
             />
           </div>
         )}

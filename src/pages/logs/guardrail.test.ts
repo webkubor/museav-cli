@@ -46,50 +46,50 @@ function makeRow(over: Partial<CallLogItem> = {}): CallLogItem {
 describe('deriveLogStatus - 原型新字段', () => {
   it('脱敏后继续 = 护栏命中 + 完整指标', () => {
     const row = makeRow({
-      model_request_state: 'succeeded',
-      guardrail_decision: { rule_name: '提示词注入', action: 'redacted', rule_source: '全局护栏' },
+      model_request_state: 'completed',
+      guardrail_decision: { rule_name: '提示词注入', action: 'redact', rule_scope: 'global' },
     })
     expect(deriveLogStatus(row)).toBe('guarded')
     expect(isModelNotStarted(row)).toBe(false)
     expect(isRedacted(row)).toBe(true)
-    expect(guardrailAction(row)).toBe('redacted')
-    expect(modelCallState(row)).toBe('succeeded')
+    expect(guardrailAction(row)).toBe('redact')
+    expect(modelCallState(row)).toBe('completed')
   })
 
-  it('预算拦截 = 护栏命中 + 指标置空', () => {
+  it('拦截 = 护栏命中 + 指标置空', () => {
     const row = makeRow({
       model_request_state: 'not_started',
-      guardrail_decision: { rule_name: '预算上限', action: 'blocked', rule_source: '空间护栏' },
+      guardrail_decision: { rule_name: '注入拦截', action: 'block', rule_scope: 'key' },
     })
     expect(deriveLogStatus(row)).toBe('guarded')
     expect(isModelNotStarted(row)).toBe(true)
     expect(isRedacted(row)).toBe(false)
-    expect(guardrailAction(row)).toBe('blocked')
+    expect(guardrailAction(row)).toBe('block')
     expect(modelCallState(row)).toBe('not_started')
   })
 
   it('model_request_state=failed 优先判为异常', () => {
     const row = makeRow({
       model_request_state: 'failed',
-      guardrail_decision: { rule_name: '注入', action: 'redacted', rule_source: '全局护栏' },
+      guardrail_decision: { rule_name: '注入', action: 'redact', rule_scope: 'global' },
     })
     expect(deriveLogStatus(row)).toBe('error')
     // 脱敏后下游失败：仍属护栏命中范畴（isGuardrailHit 只看 deriveLogStatus，这里是 error）
     expect(isGuardrailHit(row)).toBe(false)
   })
 
-  it('仅记录（log_only）= 护栏命中 + 完整指标', () => {
+  it('仅标记（flag）= 护栏命中 + 完整指标', () => {
     const row = makeRow({
-      model_request_state: 'succeeded',
-      guardrail_decision: { rule_name: '敏感词', action: 'log_only', rule_source: '个人护栏' },
+      model_request_state: 'completed',
+      guardrail_decision: { rule_name: '敏感词', action: 'flag', rule_scope: 'personal' },
     })
     expect(deriveLogStatus(row)).toBe('guarded')
-    expect(guardrailAction(row)).toBe('log_only')
+    expect(guardrailAction(row)).toBe('flag')
     expect(isModelNotStarted(row)).toBe(false)
   })
 
   it('无护栏命中 + 成功 = 成功', () => {
-    const row = makeRow({ model_request_state: 'succeeded' })
+    const row = makeRow({ model_request_state: 'completed' })
     expect(deriveLogStatus(row)).toBe('success')
     expect(isGuardrailHit(row)).toBe(false)
   })
@@ -106,7 +106,7 @@ describe('deriveLogStatus - 降级（后端未返回新字段）', () => {
     const row = makeRow({ status: 'rejected' })
     expect(deriveLogStatus(row)).toBe('guarded')
     expect(isModelNotStarted(row)).toBe(true)
-    expect(guardrailAction(row)).toBe('blocked')
+    expect(guardrailAction(row)).toBe('block')
     expect(modelCallState(row)).toBe('not_started')
   })
 })

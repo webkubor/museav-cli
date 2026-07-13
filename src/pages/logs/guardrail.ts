@@ -36,7 +36,7 @@ export function deriveLogStatus(row: CallLogItem): DerivedLogStatus {
 
 /**
  * 模型请求是否未发起 → Token/费用/延迟置空。
- * 脱敏后继续（model_request_state==='succeeded'）不置空，仍展示完整指标。
+ * 脱敏后继续（model_request_state==='completed'）不置空，仍展示完整指标。
  * 降级：无新字段时 rejected（旧口径的护栏拦截）视为未发起。
  */
 export function isModelNotStarted(row: CallLogItem): boolean {
@@ -50,23 +50,36 @@ export function isGuardrailHit(row: CallLogItem): boolean {
   return deriveLogStatus(row) === 'guarded'
 }
 
-/** 处理结果：优先 action；降级时按是否发起推断（未发起=已拦截，否则记录后继续）。 */
+/** 处理结果：优先 action；降级时按是否发起推断（未发起=已拦截 block，否则仅标记 flag）。 */
 export function guardrailAction(row: CallLogItem): GuardrailAction {
   if (row.guardrail_decision?.action) return row.guardrail_decision.action
-  return isModelNotStarted(row) ? 'blocked' : 'log_only'
+  return isModelNotStarted(row) ? 'block' : 'flag'
 }
 
-/** 模型调用态（详情「模型调用」项）。降级：failed→失败 / rejected→未发起 / 其余→成功。 */
+/** 模型调用态（详情「模型调用」项）。降级：failed→失败 / rejected→未发起 / 其余→调用成功。 */
 export function modelCallState(row: CallLogItem): ModelRequestState {
   if (row.model_request_state != null) return row.model_request_state
   if (row.status === 'failed') return 'failed'
   if (row.status === 'rejected') return 'not_started'
-  return 'succeeded'
+  return 'completed'
 }
 
 /** 是否脱敏后继续（Request 只展示替换后的占位符、不展示原文）。 */
 export function isRedacted(row: CallLogItem): boolean {
-  return isGuardrailHit(row) && guardrailAction(row) === 'redacted'
+  return isGuardrailHit(row) && guardrailAction(row) === 'redact'
+}
+
+/**
+ * 规则来源展示（详情「规则来源」项，后端契约 #450）：
+ * 作用域前缀（全局/Key/成员护栏）+ " · " + 规则展示名（guardrail_name，回退 rule_name）。
+ * 作用域缺省则只显名；都无则显未知来源。
+ */
+export function guardrailSourceLabel(row: CallLogItem, t: (key: string) => string): string {
+  const scope = row.guardrail_decision?.rule_scope
+  const name = row.guardrail_name || row.guardrail_decision?.rule_name || ''
+  const scopeLabel = scope ? t(`logs.guardrail.scope.${scope}`) : ''
+  if (scopeLabel && name) return `${scopeLabel} · ${name}`
+  return scopeLabel || name || t('logs.guardrail.unknownSource')
 }
 
 /** 脱敏占位符（替换命中的注入内容，展示用固定 token）。 */

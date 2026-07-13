@@ -29,6 +29,7 @@ import type { CallLogItem } from '@/types'
 import {
   deriveLogStatus,
   guardrailAction,
+  guardrailSourceLabel,
   isGuardrailHit,
   isModelNotStarted,
   isRedacted,
@@ -160,7 +161,8 @@ export function LogDetailSheet({
               <DetailGrid compact>
                 <DetailRow label={t('logs.guardrail.hitRule')} value={row.guardrail_decision?.rule_name || t('logs.guardrail.unknownRule')} />
                 <DetailRow label={t('logs.guardrail.result')} value={t(`logs.guardrail.action.${guardrailAction(row)}`)} />
-                <DetailRow label={t('logs.guardrail.ruleSource')} value={row.guardrail_decision?.rule_source || t('logs.guardrail.unknownSource')} />
+                {/* 规则来源 = 作用域前缀（全局/Key/成员护栏）+ · + 规则展示名（后端契约 #450） */}
+                <DetailRow label={t('logs.guardrail.ruleSource')} value={guardrailSourceLabel(row, t)} />
                 <DetailRow label={t('logs.guardrail.modelCall')} value={t(`logs.guardrail.modelState.${modelCallState(row)}`)} />
               </DetailGrid>
             </DetailSection>

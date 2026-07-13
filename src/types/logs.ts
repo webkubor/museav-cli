@@ -10,23 +10,35 @@ export interface LogHistogram {
   buckets: HistogramBucket[]
 }
 
-/** 模型请求执行态（原型阶段前端建模，后端 #432 未落地）：未发起 / 成功 / 失败。 */
-export type ModelRequestState = 'not_started' | 'succeeded' | 'failed'
+/** 模型请求执行态（后端契约 #450）：未发起 / 调用成功 / 调用失败。 */
+export type ModelRequestState = 'not_started' | 'completed' | 'failed'
 
-/** 护栏处理结果（原型阶段前端建模）：仅记录后继续 / 脱敏后继续 / 直接拦截。 */
-export type GuardrailAction = 'log_only' | 'redacted' | 'blocked'
+/** 护栏处理结果（后端契约 #450）：仅标记并放行 / 脱敏后继续 / 直接拦截。 */
+export type GuardrailAction = 'flag' | 'redact' | 'block'
+
+/** 护栏命中规则来源（后端契约 #450）：全局 / Key / 成员。 */
+export type GuardrailScope = 'global' | 'key' | 'personal'
+
+/** 护栏命中类别（后端契约 #450）。 */
+export type GuardrailCategory = 'text' | 'source' | 'capability' | 'action'
 
 /**
- * 护栏命中决策（原型字段 #434，后端 #432 未落地）。
- * 整体缺省（后端未返回）时，日志页面降级为原有 status 三状态派生，不依赖本字段。
+ * 护栏命中决策（后端契约 #450，随 model-logs 行返回）。
+ * 整体缺省（后端未返回 / 未命中）时，日志页面降级为原有 status 三状态派生，不依赖本字段。
  */
 export interface GuardrailDecision {
   /** 命中规则名 */
   rule_name?: string
-  /** 处理结果：记录后继续 / 脱敏后继续 / 已拦截 */
+  /** 处理结果：仅标记放行 flag / 脱敏后继续 redact / 已拦截 block */
   action?: GuardrailAction
-  /** 规则来源（如：全局护栏 / 空间护栏 / 个人护栏） */
-  rule_source?: string
+  /** 命中类别 */
+  category?: GuardrailCategory
+  /** 规则来源作用域 */
+  rule_scope?: GuardrailScope
+  /** 脱敏替换片段数，仅 redact 有值 */
+  transformed_fragment_count?: number
+  /** 脱敏替换标记（后端网关未下发，暂恒空，勿依赖） */
+  replacement_token?: string
 }
 
 export interface CallLogItem {
@@ -72,10 +84,14 @@ export interface CallLogItem {
    */
   guardrail_decision?: GuardrailDecision | null
   /**
-   * 模型请求执行态（原型字段 #434）。为 'not_started'（如预算拦截）时，
+   * 模型请求执行态（后端契约 #450）。为 'not_started'（如护栏拦截）时，
    * Token/费用/延迟展示为空。后端未返回时缺省，页面降级用 status 派生。
    */
   model_request_state?: ModelRequestState | null
+  /** 护栏备用扁平字段（后端契约 #450）：命中规则 id / 展示名 / 命中原因码 */
+  guardrail_id?: string | null
+  guardrail_name?: string | null
+  guardrail_reason?: string | null
 }
 
 export interface LogStats {

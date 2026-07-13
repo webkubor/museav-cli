@@ -45,6 +45,9 @@ function assignmentsOf(g: GuardrailDetail) {
  * is_default → 全局；含 api_key 分配 → Key；含成员分配 → 个人；否则回退全局。
  */
 export function deriveScope(g: GuardrailDetail): GuardrailScope {
+  // 显式 metadata.scope 优先（创建时落库）——避免未绑对象的个人/Key 护栏被反推成全局。
+  const metaScope = (g.metadata as Record<string, unknown> | undefined)?.scope
+  if (metaScope === 'global' || metaScope === 'member' || metaScope === 'key') return metaScope
   if (g.is_default) return 'global'
   const assignments = assignmentsOf(g)
   if (assignments.some((a) => a.subject_type === 'api_key' && a.api_key_id)) return 'key'

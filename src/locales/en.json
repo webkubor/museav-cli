@@ -642,16 +642,21 @@
       "blockedHint": "Guardrail hit",
       "notStartedHint": "No response, tokens, latency or cost",
       "action": {
-        "log_only": "Logged, continued",
-        "redacted": "Redacted, continued",
-        "blocked": "Blocked"
+        "flag": "Flagged, allowed",
+        "redact": "Redacted, continued",
+        "block": "Blocked"
       },
       "modelState": {
-        "succeeded": "Success",
-        "failed": "Failed",
-        "not_started": "Not sent"
+        "completed": "Call succeeded",
+        "failed": "Call failed",
+        "not_started": "Not called"
       },
-      "redactedHint": "A prompt-injection rule matched; the request was redacted and the call continued. Only the redacted content is shown below, not the original."
+      "redactedHint": "A prompt-injection rule matched; the request was redacted and the call continued. Only the redacted content is shown below, not the original.",
+      "scope": {
+        "global": "Global guardrail",
+        "key": "Key guardrail",
+        "personal": "Member guardrail"
+      }
     }
   },
   "observability": {

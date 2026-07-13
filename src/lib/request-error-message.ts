@@ -29,6 +29,13 @@ export function getRequestErrorMessage(error: unknown, fallback = '请求失败�
     if (isServerErrorCode(error.code)) return SERVER_ERROR_MESSAGE
     // 40401 = 资源/路由不存在（含后端功能未就绪）：裸文案「resource not found」不可读，归一为「服务暂不可用」
     if (error.code === 40401) return SERVICE_UNAVAILABLE_MESSAGE
+    // 参数校验失败等：后端在 data.field_errors 给了字段级具体原因，优先展示，
+    // 别让「参数校验失败」这种笼统 msg 盖住真正的原因（如「Key 护栏必须绑定至少一个对象」）。
+    const fieldErrors = (error.data as { field_errors?: { field?: string; message?: string }[] } | null | undefined)?.field_errors
+    if (Array.isArray(fieldErrors) && fieldErrors.length > 0) {
+      const detail = fieldErrors.map((f) => f?.message).filter((m): m is string => !!m).join('；')
+      if (detail) return import.meta.env.DEV && error.path ? `[${error.path}] ${detail}` : detail
+    }
     const msg = error.message || fallback
     if (import.meta.env.DEV && error.path) {
       return `[${error.path}] ${msg}`

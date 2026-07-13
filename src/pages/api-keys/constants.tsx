@@ -14,6 +14,14 @@ import OpenAI from '@lobehub/icons/es/OpenAI'
 export type ScopeType = 'personal' | 'workspace' | 'member'
 export type ConnectActionKey = 'mgc' | 'cc-switch' | 'claude-code' | 'codex' | 'openai-sdk' | 'curl'
 
+/**
+ * 轮转功能硬开关（qa#384 / #385）。
+ * 后端 `capabilities.can_rotate` 现已返回 true，但 `POST /api-keys/{keyId}/rotate` 仍打出
+ * 40401「resource not found」（路由未注册，2026-07-13 联调实测）。只信 can_rotate 会露出一个
+ * 点了没反应的死按钮，故用本开关强制钉死；`/rotate` 路由上线并联调通过后再置 true。
+ */
+export const ROTATE_ENABLED = false
+
 export type ConnectParam = {
   label: string
   value: string

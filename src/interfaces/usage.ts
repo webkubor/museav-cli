@@ -1,4 +1,4 @@
-import type { QueryParams } from '@/types'
+import type { QueryParams, ApiKeyType } from '@/types'
 
 /** 用量汇总查询参数 */
 export interface UsageSummaryParams extends QueryParams {
@@ -13,6 +13,8 @@ export interface UsageSummaryParams extends QueryParams {
   model_id?: string
   provider_id?: string
   api_key_id?: string
+  /** 按 API Key 类型过滤（私有/成员/服务）——需求 #22，后端 qa#449 支持 */
+  api_key_type?: ApiKeyType
 }
 
 /** 用量时间序列查询参数 */
@@ -30,6 +32,8 @@ export interface UsageSeriesParams extends QueryParams {
   account_id?: string
   model_id?: string
   provider_id?: string
+  /** 按 API Key 类型过滤（私有/成员/服务）——需求 #22，后端 qa#449 支持 */
+  api_key_type?: ApiKeyType
 }
 
 /** 用量排行查询参数 */
@@ -43,4 +47,6 @@ export interface UsageRankingsParams extends QueryParams {
   model_id?: string
   provider_id?: string
   api_key_id?: string
+  /** 按 API Key 类型过滤（私有/成员/服务）——需求 #22，后端 qa#449 支持 */
+  api_key_type?: ApiKeyType
 }

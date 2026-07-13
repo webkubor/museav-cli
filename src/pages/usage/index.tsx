@@ -56,6 +56,7 @@ import {
   type GroupedRow,
 } from './usage-charts'
 import { UsageFilterPanel } from './usage-filters'
+import { KEY_TYPE_ALL, apiKeyTypeParam, type ApiKeyTypeFilter } from '@/lib/api-key-type-filter'
 
 type UsageDimension = 'model' | 'member' | 'apiKey'
 type TrendGroupBy = 'none' | 'model' | 'provider' | 'workspace'
@@ -83,6 +84,8 @@ export default function UsagePage() {
   const [filterWorkspaceId, setFilterWorkspaceId] = useState<string>(
     () => searchParams.get('workspace_id') || searchParams.get('workspace') || '',
   )
+  // API Key 类型筛选（需求 #22）：仅企业拥有者/管理员可见，默认全部类型
+  const [keyTypeFilter, setKeyTypeFilter] = useState<ApiKeyTypeFilter>(KEY_TYPE_ALL)
 
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const currentAccountId = useAuthStore((s) => s.account?.account_id)
@@ -159,12 +162,15 @@ export default function UsagePage() {
   const scopedAccountId = view === 'mine' ? currentAccountId || undefined : undefined
   // 空间视图（单空间场景）：锁定该负责空间的全员数据，不传 account_id；覆盖手动的工作空间筛选。
   const scopedWorkspaceId = view === 'space' ? ownedWorkspaceIds[0] : filterWorkspaceId || undefined
+  // 类型筛选仅企业拥有者视图生效（其余视图恒为 undefined，不受 stale 值影响）
+  const scopedKeyType = showViewToggle ? apiKeyTypeParam(keyTypeFilter) : undefined
   const commonParams = useMemo(() => ({
     from,
     to,
     workspace_id: scopedWorkspaceId,
     account_id: scopedAccountId,
-  }), [scopedWorkspaceId, from, to, scopedAccountId])
+    api_key_type: scopedKeyType,
+  }), [scopedWorkspaceId, from, to, scopedAccountId, scopedKeyType])
 
   // 空态分型：有筛选（工作空间/自定义时段）时的空 = 筛选无结果；无筛选仍空 = 暂无数据
   const hasActiveFilter = !!filterWorkspaceId || timeRange.preset === 'custom'
@@ -188,6 +194,11 @@ export default function UsagePage() {
   function handleTimeRangeChange(val: DateRangeValue) {
     setTimeRange(val)
     trackEvent('usage_filter_change', { filter: 'time_range', preset: val.preset ?? 'unknown' }, { view_mode: view })
+  }
+
+  function handleKeyTypeChange(val: ApiKeyTypeFilter) {
+    setKeyTypeFilter(val)
+    trackEvent('usage_filter_change', { filter: 'api_key_type', value: val }, { view_mode: view })
   }
 
   function handleViewChange(v: 'enterprise' | 'mine' | 'space') {
@@ -485,6 +496,9 @@ export default function UsagePage() {
           presets={usagePresets}
           timeRange={timeRange}
           workspaceList={workspaceList}
+          {...(showViewToggle
+            ? { keyTypeFilter, onKeyTypeChange: handleKeyTypeChange }
+            : {})}
         />
 
         {/* 用量统计三大卡（对齐 PRD）：总费用/请求总量/总Tokens + 分解进度条 */}

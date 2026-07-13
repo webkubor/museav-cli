@@ -1,8 +1,15 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/store/auth'
+import Select from '@/components/ui/Select'
 import { SegmentedToggle } from './SegmentedToggle'
 import type { Granularity, WorkbenchView } from './shared'
+import {
+  KEY_TYPE_ALL,
+  API_KEY_TYPE_ORDER,
+  API_KEY_TYPE_I18N_KEY,
+  type ApiKeyTypeFilter,
+} from '@/lib/api-key-type-filter'
 
 /** 模块 1：问候区 + 视图/粒度切换 */
 export function GreetingHeader({
@@ -11,12 +18,17 @@ export function GreetingHeader({
   showViewToggle,
   granularity,
   onGranularityChange,
+  keyTypeFilter,
+  onKeyTypeChange,
 }: {
   view: WorkbenchView
   onViewChange: (v: WorkbenchView) => void
   showViewToggle: boolean
   granularity: Granularity
   onGranularityChange: (g: Granularity) => void
+  /** API Key 类型筛选（需求 #22）；未传 onKeyTypeChange 时不渲染 */
+  keyTypeFilter?: ApiKeyTypeFilter
+  onKeyTypeChange?: (v: ApiKeyTypeFilter) => void
 }) {
   const { t } = useTranslation()
   const account = useAuthStore((s) => s.account)
@@ -53,6 +65,18 @@ export function GreetingHeader({
               { value: 'mine', label: t('dashboard.workbench.view.mine') },
             ]}
           />
+        )}
+        {showViewToggle && onKeyTypeChange && (
+          <Select
+            value={keyTypeFilter ?? KEY_TYPE_ALL}
+            onChange={(v) => onKeyTypeChange(v as ApiKeyTypeFilter)}
+            className="w-32"
+          >
+            <Select.Option value={KEY_TYPE_ALL}>{t('common.keyTypeFilter.all')}</Select.Option>
+            {API_KEY_TYPE_ORDER.map((v) => (
+              <Select.Option key={v} value={v}>{t(API_KEY_TYPE_I18N_KEY[v])}</Select.Option>
+            ))}
+          </Select>
         )}
         <SegmentedToggle<Granularity>
           ariaLabel={t('dashboard.workbench.granularity.day')}

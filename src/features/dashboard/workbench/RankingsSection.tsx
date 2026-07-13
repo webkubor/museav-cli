@@ -11,7 +11,7 @@ import { Card } from '@/components/ui/Card'
 import { Money } from '@/components/ui/Money'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
 import { abbreviateNumber, rangeForGranularity, type Granularity, type WorkbenchView } from './shared'
-import type { UsageRankingItem } from '@/types'
+import type { UsageRankingItem, ApiKeyType } from '@/types'
 
 function RankingRow({ index, name, meta, spend, model }: { index: number; name: string; meta: string; spend?: { amount?: string; currency?: string }; model?: ModelIconLike }) {
   return (
@@ -97,7 +97,7 @@ function RankingCard({
  * 模块 7：排行卡（模型 / 成员 / API Keys，各 Top3 + 查看更多）。
  * 成员排行走 usage/rankings/accounts；我的视图隐藏成员排行，避免重复展示“我”。
  */
-export function RankingsSection({ view, granularity, accountId }: { view: WorkbenchView; granularity: Granularity; accountId?: string }) {
+export function RankingsSection({ view, granularity, accountId, apiKeyType }: { view: WorkbenchView; granularity: Granularity; accountId?: string; apiKeyType?: ApiKeyType }) {
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const navigate = useNavigate()
@@ -112,22 +112,22 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
   }
 
   const { data: models, isLoading: modelsLoading } = useQuery({
-    queryKey: ['workbench', 'rankings', 'models', activeTenantId, granularity, accountId],
-    queryFn: () => getUsageRankingsModels({ from: range.from, to: range.to, limit: 3, account_id: accountId }),
+    queryKey: ['workbench', 'rankings', 'models', activeTenantId, granularity, accountId, apiKeyType],
+    queryFn: () => getUsageRankingsModels({ from: range.from, to: range.to, limit: 3, account_id: accountId, api_key_type: apiKeyType }),
     enabled: !!activeTenantId,
     staleTime: 5 * 60_000,
   })
 
   const { data: apiKeys, isLoading: apiKeysLoading } = useQuery({
-    queryKey: ['workbench', 'rankings', 'api-keys', activeTenantId, granularity, accountId],
-    queryFn: () => getUsageRankingsApiKeys({ from: range.from, to: range.to, limit: 3, account_id: accountId }),
+    queryKey: ['workbench', 'rankings', 'api-keys', activeTenantId, granularity, accountId, apiKeyType],
+    queryFn: () => getUsageRankingsApiKeys({ from: range.from, to: range.to, limit: 3, account_id: accountId, api_key_type: apiKeyType }),
     enabled: !!activeTenantId,
     staleTime: 5 * 60_000,
   })
 
   const { data: members, isLoading: membersLoading } = useQuery({
-    queryKey: ['workbench', 'rankings', 'accounts', activeTenantId, granularity],
-    queryFn: () => getUsageRankingsAccounts({ from: range.from, to: range.to, limit: 3 }),
+    queryKey: ['workbench', 'rankings', 'accounts', activeTenantId, granularity, apiKeyType],
+    queryFn: () => getUsageRankingsAccounts({ from: range.from, to: range.to, limit: 3, api_key_type: apiKeyType }),
     enabled: !!activeTenantId && showMembers,
     staleTime: 5 * 60_000,
   })

@@ -35,7 +35,14 @@
       "total": "共 {{count}} 条",
       "loadMore": "加载更多"
     },
-    "changelog": "更新日志"
+    "changelog": "更新日志",
+    "keyTypeFilter": {
+      "all": "全部类型",
+      "personal": "私有 Key",
+      "member": "成员 Key",
+      "service": "服务 Key",
+      "label": "Key 类型"
+    }
   },
   "nav": {
     "home": "首页",

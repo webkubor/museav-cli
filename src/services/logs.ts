@@ -214,6 +214,7 @@ function toListQuery(params?: CallLogListParams) {
     model: params?.model_id,
     status: params?.status,
     guardrail: params?.guardrail,
+    api_key_type: params?.api_key_type,
     limit: params?.limit || params?.page_size,
   }
 }

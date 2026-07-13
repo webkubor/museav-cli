@@ -35,7 +35,14 @@
       "total": "{{count}} items",
       "loadMore": "Load More"
     },
-    "changelog": "Changelog"
+    "changelog": "Changelog",
+    "keyTypeFilter": {
+      "all": "All types",
+      "personal": "Personal Key",
+      "member": "Member Key",
+      "service": "Service Key",
+      "label": "Key type"
+    }
   },
   "nav": {
     "home": "Home",

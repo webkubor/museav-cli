@@ -11,13 +11,14 @@ import { trackEvent } from '@/lib/track'
 import { Card } from '@/components/ui/Card'
 import { Money } from '@/components/ui/Money'
 import { abbreviateNumber, rangeForGranularity, type Granularity, type WorkbenchView } from './shared'
+import type { ApiKeyType } from '@/types'
 
 /**
  * 模块 6：工作空间明细。getUsageSummary(group_by:'workspace') 取 groups。
  * 说明：groups 只含 label/spend/requests/tokens，后端未返回工作空间描述，
  * 次级行用「请求 · Tokens」代替描述展示。
  */
-export function WorkspaceBreakdownSection({ granularity, accountId, view = 'enterprise' }: { granularity: Granularity; accountId?: string; view?: WorkbenchView }) {
+export function WorkspaceBreakdownSection({ granularity, accountId, view = 'enterprise', apiKeyType }: { granularity: Granularity; accountId?: string; view?: WorkbenchView; apiKeyType?: ApiKeyType }) {
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const navigate = useNavigate()
@@ -34,8 +35,8 @@ export function WorkspaceBreakdownSection({ granularity, accountId, view = 'ente
   const range = useMemo(() => rangeForGranularity(granularity), [granularity])
 
   const { data, isLoading } = useQuery({
-    queryKey: ['workbench', 'summary', 'workspace', activeTenantId, granularity, accountId],
-    queryFn: () => getUsageSummary({ from: range.from, to: range.to, group_by: 'workspace', account_id: accountId }),
+    queryKey: ['workbench', 'summary', 'workspace', activeTenantId, granularity, accountId, apiKeyType],
+    queryFn: () => getUsageSummary({ from: range.from, to: range.to, group_by: 'workspace', account_id: accountId, api_key_type: apiKeyType }),
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })

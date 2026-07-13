@@ -13,6 +13,7 @@ import { KpiCard } from '@/components/ui/KpiCard'
 import { TiltCard } from '@/components/ui/TiltCard'
 import { formatMoney } from '@/lib/utils'
 import { abbreviateNumber, rangeForGranularity, prevRangeForGranularity, computeDelta, type Granularity, type WorkbenchView } from './shared'
+import type { ApiKeyType } from '@/types'
 
 /**
  * 模块 4：核心指标 4 卡（总请求 / 总费用 / 总 Tokens / 账户余额）。
@@ -23,10 +24,12 @@ export function MetricsSection({
   view,
   granularity,
   accountId,
+  apiKeyType,
 }: {
   view: WorkbenchView
   granularity: Granularity
   accountId?: string
+  apiKeyType?: ApiKeyType
 }) {
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
@@ -39,16 +42,16 @@ export function MetricsSection({
   const prevRange = useMemo(() => prevRangeForGranularity(granularity), [granularity])
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
-    queryKey: ['workbench', 'summary', 'none', activeTenantId, granularity, view, accountId],
-    queryFn: () => getUsageSummary({ from: range.from, to: range.to, group_by: 'none', account_id: accountId }),
+    queryKey: ['workbench', 'summary', 'none', activeTenantId, granularity, view, accountId, apiKeyType],
+    queryFn: () => getUsageSummary({ from: range.from, to: range.to, group_by: 'none', account_id: accountId, api_key_type: apiKeyType }),
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })
 
   // 上一等长区间 → 指标卡「较上期」涨跌（请求/费用/Tokens；余额为时点值、后端无历史快照，不计）
   const { data: prevSummary } = useQuery({
-    queryKey: ['workbench', 'summary', 'prev', activeTenantId, granularity, view, accountId],
-    queryFn: () => getUsageSummary({ from: prevRange.from, to: prevRange.to, group_by: 'none', account_id: accountId }),
+    queryKey: ['workbench', 'summary', 'prev', activeTenantId, granularity, view, accountId, apiKeyType],
+    queryFn: () => getUsageSummary({ from: prevRange.from, to: prevRange.to, group_by: 'none', account_id: accountId, api_key_type: apiKeyType }),
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })

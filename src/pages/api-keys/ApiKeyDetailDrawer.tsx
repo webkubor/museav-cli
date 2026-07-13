@@ -21,7 +21,7 @@ import { trackEvent } from '@/lib/track'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { getApiKeyAudit, getApiKeyDetail, getEffectiveGuardrails, updateApiKey } from '@/services/api-keys'
 import type { ApiKeyItem } from '@/types'
-import { LIMIT_PERIOD_OPTIONS, ROTATE_ENABLED, type LimitPeriod } from './constants'
+import { LIMIT_PERIOD_OPTIONS, type LimitPeriod } from './constants'
 import {
   KEY_TYPE_LABEL,
   STATUS_LABEL,
@@ -177,8 +177,8 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canEdit, 
   const auditRows = audit?.items ?? detail?.recent_audit ?? []
   const isDisabled = view.status === 'disabled'
   const canToggle = isDisabled ? cap(view.capabilities?.can_enable, canEdit) : cap(view.capabilities?.can_disable, canEdit)
-  // 端点未交付前严格隐藏：ROTATE_ENABLED 硬开关兜住后端过早返回 can_rotate=true（rotate 路由仍 40401，qa#384/#385）
-  const canRotate = ROTATE_ENABLED && canEdit && view.capabilities?.can_rotate === true
+  // 按后端 capability 正常渲染；rotate 路由未就绪（40401）时点击走 requestError → 「服务暂不可用」，不做死按钮/硬隐藏（qa#384/#385）
+  const canRotate = canEdit && view.capabilities?.can_rotate === true
   const canDelete = cap(view.capabilities?.can_delete, canRevoke) && view.status !== 'revoked'
 
   return (

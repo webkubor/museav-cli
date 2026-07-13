@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ModelGoApiError, SERVER_ERROR_MESSAGE } from '@/lib/request'
-import { getRequestErrorMessage } from '@/lib/request-error-message'
+import { getRequestErrorMessage, SERVICE_UNAVAILABLE_MESSAGE, isNotFoundError } from '@/lib/request-error-message'
 
 describe('request error message', () => {
   it('hides backend 5xx business messages from users', () => {
@@ -33,5 +33,26 @@ describe('request error message', () => {
     })
 
     expect(getRequestErrorMessage(error)).toBe(SERVER_ERROR_MESSAGE)
+  })
+
+  it('maps 40401 (resource/route not found) to service-unavailable copy', () => {
+    const error = new ModelGoApiError({
+      code: 40401,
+      msg: 'resource not found',
+      request_id: 'req_3',
+      data: null,
+    })
+
+    expect(getRequestErrorMessage(error)).toBe(SERVICE_UNAVAILABLE_MESSAGE)
+    expect(isNotFoundError(error)).toBe(true)
+  })
+
+  it('maps HTTP 404 to service-unavailable copy', () => {
+    const error = Object.assign(new Error('Not Found'), {
+      response: { status: 404 },
+    })
+
+    expect(getRequestErrorMessage(error)).toBe(SERVICE_UNAVAILABLE_MESSAGE)
+    expect(isNotFoundError(error)).toBe(true)
   })
 })

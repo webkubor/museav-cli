@@ -29,6 +29,7 @@ import {
   enableApiKey,
   changeApiKeyOwner,
   getApiKeySummary,
+  rotateApiKey,
 } from '@/services/api-keys'
 import { listWorkspaceMembers, listWorkspaces } from '@/services/workspaces'
 import { useCopy } from '@/hooks/use-copy'
@@ -74,6 +75,8 @@ export default function ApiKeysPage() {
   const [detailKey, setDetailKey] = useState<ApiKeyItem | null>(null)
   const [changeOwnerTarget, setChangeOwnerTarget] = useState<ApiKeyItem | null>(null)
   const [newOwnerId, setNewOwnerId] = useState('')
+  // 轮转成功后一次性明文（旧 Token 过渡期仍可用）——复用「一次性展示」承接，避免密钥丢失
+  const [rotatedKey, setRotatedKey] = useState<{ name: string; key: string } | null>(null)
 
   const activeWorkspaceId = useAuthStore((state) => state.activeWorkspaceId) || '01HV3KWS000000000000001'
   const activeTenantId = useAuthStore((state) => state.activeTenantId)
@@ -224,6 +227,22 @@ export default function ApiKeysPage() {
     onError: (err: unknown) => {
       appToast.requestError(err, '变更负责人失败')
       trackEvent('api_keys:change_owner', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
+    },
+  })
+
+  // 轮转（#384/#385）：路由未就绪时后端返 40401，错误层归一为「服务暂不可用」（见 request-error-message）；
+  // 交付后成功返回一次性 new_key，走下方 rotatedKey 弹窗一次性展示。不做死按钮、不硬隐藏。
+  const rotateMutation = useMutation({
+    mutationFn: (item: ApiKeyItem) => rotateApiKey(activeWorkspaceId, item.api_key_id),
+    onSuccess: (res, item) => {
+      setRotatedKey({ name: item.name, key: res.new_key })
+      queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
+      queryClient.invalidateQueries({ queryKey: ['api-key-detail', activeWorkspaceId, item.api_key_id] })
+      trackEvent('api_keys:rotate', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
+    },
+    onError: (err: unknown) => {
+      appToast.requestError(err, '轮转失败')
+      trackEvent('api_keys:rotate', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
     },
   })
 
@@ -463,7 +482,7 @@ export default function ApiKeysPage() {
         canRevoke={canRevoke}
         rowScope={rowScope}
         onToggleStatus={handleToggleStatus}
-        onRotate={() => { /* 轮转接口 #384 未交付，按钮已 gate 隐藏；落地后接入 */ }}
+        onRotate={(item) => rotateMutation.mutate(item)}
         onChangeOwner={(item) => { setNewOwnerId(''); setChangeOwnerTarget(item) }}
         onEdit={setEditGuardrailKey}
         onRevoke={setRevokeTarget}
@@ -499,6 +518,23 @@ export default function ApiKeysPage() {
         createdKeyText={createdKeyText}
         docsUrl={docsUrl}
       />
+
+      {/* 轮转成功：新 Token 只展示一次（旧 Token 过渡期内仍可用，验证通过后在详情点「已轮转」使其失效） */}
+      <Modal
+        open={!!rotatedKey}
+        onClose={() => setRotatedKey(null)}
+        title="轮转成功"
+        description="新 Token 已生效、只展示一次，请立即复制保存。旧 Token 仍在过渡期，验证无误后再点「已轮转」使其失效。"
+        size="md"
+        footer={<Button variant="brand" onClick={() => setRotatedKey(null)}>我已保存新 Token</Button>}
+      >
+        <div className="py-2">
+          <div className="flex items-center gap-2 rounded-md border border-mg-border bg-mg-code-bg px-3 py-2.5">
+            <span className="min-w-0 flex-1 truncate font-mono text-sm font-bold text-mg-success select-all">{rotatedKey?.key}</span>
+            <CopyButton value={rotatedKey?.key ?? ''} aria-label="复制新 Token" toast="新 Token 已复制" size="md" />
+          </div>
+        </div>
+      </Modal>
 
       <CreateKeyModal
         key={createNonce}

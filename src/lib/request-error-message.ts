@@ -5,6 +5,16 @@
  */
 import { ModelGoApiError, SERVER_ERROR_MESSAGE, isServerErrorCode } from '@/lib/request'
 
+/** 功能未就绪/接口未注册（业务码 40401 或 HTTP 404）的统一文案——不留死按钮，明确告知服务不可用 */
+export const SERVICE_UNAVAILABLE_MESSAGE = '服务暂不可用，请稍后再试'
+
+/** 是否为「资源/路由不存在」类错误：业务码 40401 或 HTTP 404 */
+export function isNotFoundError(error: unknown) {
+  if (error instanceof ModelGoApiError) return error.code === 40401
+  const status = (error as Error & { response?: { status?: number } })?.response?.status
+  return status === 404
+}
+
 export function isApiErrorCode(error: unknown, code: number) {
   return error instanceof ModelGoApiError && error.code === code
 }
@@ -17,6 +27,8 @@ export function errorCodeOf(error: unknown): string {
 export function getRequestErrorMessage(error: unknown, fallback = '请求失败，请稍后重试') {
   if (error instanceof ModelGoApiError) {
     if (isServerErrorCode(error.code)) return SERVER_ERROR_MESSAGE
+    // 40401 = 资源/路由不存在（含后端功能未就绪）：裸文案「resource not found」不可读，归一为「服务暂不可用」
+    if (error.code === 40401) return SERVICE_UNAVAILABLE_MESSAGE
     const msg = error.message || fallback
     if (import.meta.env.DEV && error.path) {
       return `[${error.path}] ${msg}`
@@ -26,6 +38,7 @@ export function getRequestErrorMessage(error: unknown, fallback = '请求失败�
 
   if (error instanceof Error) {
     if (isHttpServerError(error)) return SERVER_ERROR_MESSAGE
+    if (isHttpNotFound(error)) return SERVICE_UNAVAILABLE_MESSAGE
     if (error.name === 'TimeoutError') return '请求超时，请检查网络后重试'
     if (isNetworkError(error)) return '网络连接异常，请检查网络后重试'
   }
@@ -45,4 +58,9 @@ function isHttpServerError(error: Error) {
   const maybeHttpError = error as Error & { response?: { status?: number } }
   const status = maybeHttpError.response?.status
   return typeof status === 'number' && status >= 500 && status < 600
+}
+
+function isHttpNotFound(error: Error) {
+  const maybeHttpError = error as Error & { response?: { status?: number } }
+  return maybeHttpError.response?.status === 404
 }

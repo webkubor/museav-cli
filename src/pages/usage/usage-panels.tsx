@@ -4,7 +4,7 @@
  * API 来源：GET /usage/summary、GET /usage/rankings/*（含 /usage/rankings/workspaces）
  */
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -359,6 +359,7 @@ function buildDonutSlices(items: UsageRankingItem[], otherLabel: string): DonutS
       value: rest.reduce((sum, it) => sum + spendAmount(it), 0),
       share: rest.reduce((sum, it) => sum + rankingSharePercent(it), 0),
       color: CHART_OTHER_COLOR,
+      subCount: rest.length,
     })
   }
   return slices
@@ -376,6 +377,7 @@ export function ModelDistributionDonutPanel({
   emptyDesc,
 }: ModelDistributionPanelProps) {
   const { t } = useTranslation()
+  const [active, setActive] = useState<number | null>(null)
   const slices = buildDonutSlices(items, t('usage.distribution.other'))
   const totalAmount =
     totalSpendAmount != null ? parseFloat(totalSpendAmount) || 0 : items.reduce((s, it) => s + spendAmount(it), 0)
@@ -393,29 +395,48 @@ export function ModelDistributionDonutPanel({
       ) : slices.length === 0 ? (
         <EmptyState title={emptyTitle} description={emptyDesc} />
       ) : (
-        <div className="flex flex-col items-center gap-5 sm:flex-row">
-          <div className="w-full max-w-[220px] shrink-0">
+        <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
+          <div className="w-full max-w-[210px] shrink-0">
             <ModelDonutChart
               slices={slices}
               centerLabel={t('usage.distribution.total')}
               centerValue={formatMoney(String(totalAmount), currencySymbol)}
               currencySymbol={currencySymbol}
               noDataLabel={emptyTitle}
+              activeIndex={active}
+              onActiveChange={setActive}
             />
           </div>
-          <ul className="min-w-0 flex-1 space-y-2.5">
-            {slices.map((s) => (
-              <li key={s.key} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-                <div className="flex min-w-0 items-center gap-2">
+          <ul
+            className="min-w-0 flex-1 space-y-1 self-stretch overflow-y-auto pr-1 sm:max-h-[210px]"
+            onMouseLeave={() => setActive(null)}
+          >
+            {slices.map((s, i) => (
+              <li
+                key={s.key}
+                onMouseEnter={() => setActive(i)}
+                className={cn(
+                  'cursor-default rounded-md px-2 py-1.5 transition-colors',
+                  active === i ? 'bg-mg-bg-1' : 'bg-transparent',
+                )}
+              >
+                <div className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: s.color }} />
-                  <span className="truncate text-sm font-medium text-mg-text-1" title={s.label}>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-mg-text-1" title={s.label}>
                     {s.label}
+                    {s.subCount ? <span className="ml-1 text-mg-text-3">·{s.subCount}</span> : null}
+                  </span>
+                  <span className="shrink-0 text-right text-sm tabular-nums text-mg-text-2">
+                    {formatMoney(String(s.value), currencySymbol)}
+                    <span className="ml-1 text-[12px] text-mg-text-3">{s.share.toFixed(1)}%</span>
                   </span>
                 </div>
-                <span className="text-right text-sm tabular-nums text-mg-text-2">
-                  {formatMoney(String(s.value), currencySymbol)}
-                  <span className="ml-1 text-mg-text-3">({s.share.toFixed(1)}%)</span>
-                </span>
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-mg-bg-2">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-300"
+                    style={{ width: `${Math.max(2, Math.min(100, s.share))}%`, background: s.color }}
+                  />
+                </div>
               </li>
             ))}
           </ul>

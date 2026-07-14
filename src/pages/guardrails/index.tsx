@@ -1,4 +1,10 @@
+/**
+ * 工作空间安全护栏管理页。
+ * 路由：/workspace/:workspaceId/guardrails
+ * API：/workspaces/:workspaceId/guardrails、/members、/api-keys
+ */
 import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
@@ -109,8 +115,8 @@ function currentBudgetPolicy(detail?: GuardrailDetail | null) {
 
 export default function GuardrailsPage() {
   const { t } = useTranslation()
+  const { workspaceId = '' } = useParams<{ workspaceId: string }>()
   const qc = useQueryClient()
-  const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const tenants = useAuthStore((s) => s.tenants)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const { symbol: currencySymbol } = useCurrency()
@@ -126,7 +132,7 @@ export default function GuardrailsPage() {
   const canEditBudget     = hasPermission(PERMS.GUARDRAILS_BUDGET_EDIT)
   // 埋点顶层字段 is_space_owner：当前用户对本页作用域工作空间的 my_role 是否为 ws_owner
   const { ownedWorkspaceIds } = useTenantRole()
-  const isActiveWorkspaceOwner = !!activeWorkspaceId && ownedWorkspaceIds.includes(activeWorkspaceId)
+  const isActiveWorkspaceOwner = ownedWorkspaceIds.includes(workspaceId)
 
   useEffect(() => {
     trackPageView('guardrails', undefined, { is_space_owner: isActiveWorkspaceOwner })
@@ -135,12 +141,12 @@ export default function GuardrailsPage() {
 
   // ── 列表 ───────────────────────────────────────────────────────────────
   const { data: guardrails = [], isLoading, error: guardrailsError } = useQuery({
-    queryKey: ['guardrails', activeWorkspaceId],
+    queryKey: ['guardrails', workspaceId],
     queryFn: async () => {
-      const res = await listGuardrails(activeWorkspaceId!)
+      const res = await listGuardrails(workspaceId)
       return res.items ?? []
     },
-    enabled: Boolean(activeWorkspaceId),
+    enabled: Boolean(workspaceId),
     staleTime: 30_000,
     refetchOnWindowFocus: false,
     retry: false, // 40301/无权限不重试，直接走兼容态
@@ -243,16 +249,16 @@ export default function GuardrailsPage() {
   }, [detail, detailOpen, isCreating])
 
   const membersQuery = useQuery({
-    queryKey: ['workspace-members', activeWorkspaceId],
-    queryFn: () => listWorkspaceMembers(activeWorkspaceId!, { page_size: 100 }),
-    enabled: !!activeWorkspaceId && detailOpen,
+    queryKey: ['workspace-members', workspaceId],
+    queryFn: () => listWorkspaceMembers(workspaceId, { page_size: 100 }),
+    enabled: !!workspaceId && detailOpen,
     staleTime: 60_000,
   })
 
   const apiKeysQuery = useQuery({
-    queryKey: ['api-keys', activeWorkspaceId],
-    queryFn: () => listApiKeys(activeWorkspaceId!),
-    enabled: !!activeWorkspaceId && detailOpen,
+    queryKey: ['api-keys', workspaceId],
+    queryFn: () => listApiKeys(workspaceId),
+    enabled: !!workspaceId && detailOpen,
     staleTime: 60_000,
   })
 
@@ -311,7 +317,7 @@ export default function GuardrailsPage() {
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateGuardrailRequest) =>
-      createGuardrail(activeWorkspaceId!, payload),
+      createGuardrail(workspaceId, payload),
     onSuccess: async (created) => {
       // 全局护栏单选不变量（文档：同一空间最多 1 条启用中全局）：后端新建默认 active，
       // 而创建不走 handleToggle 的级联 → 会与既有 active 全局并存。这里补级联：新建的是
@@ -345,14 +351,14 @@ export default function GuardrailsPage() {
       try {
         for (const op of ops) await addBudgetPolicy(created.id, op)
         appToast.success(t('guardrails.toast.createSuccess'))
-        qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
+        qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
         setDetailOpen(false)
         setIsCreating(false)
         trackAction(PERMS.GUARDRAILS_CREATE, undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
       } catch (err) {
         // 护栏已建、预算这步失败：保留护栏，转编辑「预算」Tab 让用户补，避免脏建
         appToast.requestError(err, '护栏已创建，但预算保存失败，请在编辑中补充预算')
-        qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
+        qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
         setIsCreating(false)
         setDetailId(created.id)
         setSheetTab('budget')
@@ -371,7 +377,7 @@ export default function GuardrailsPage() {
     onSuccess: () => {
       appToast.success(t('guardrails.toast.updateSuccess'))
       setDetailOpen(false)
-      qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
+      qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
       qc.invalidateQueries({ queryKey: ['guardrail-detail', detailId] })
       trackAction(PERMS.GUARDRAILS_EDIT, undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
@@ -386,7 +392,7 @@ export default function GuardrailsPage() {
     onSuccess: () => {
       appToast.success(t('guardrails.toast.deleteSuccess'))
       setDeleteTarget(null)
-      qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] })
+      qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
       if (deleteTarget?.id === detailId) setDetailOpen(false)
       trackAction(PERMS.GUARDRAILS_DELETE, undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
@@ -399,7 +405,7 @@ export default function GuardrailsPage() {
   const toggleMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: 'active' | 'inactive' }) =>
       updateGuardrail(id, { status }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] }),
     onError: (err: unknown) =>
       appToast.requestError(err, t('guardrails.toast.toggleError')),
   })
@@ -412,9 +418,9 @@ export default function GuardrailsPage() {
       await updateGuardrail(activateId, { status: 'active' })
     },
     onMutate: async ({ activateId, deactivateIds }) => {
-      await qc.cancelQueries({ queryKey: ['guardrails', activeWorkspaceId] })
-      const prev = qc.getQueryData<GuardrailDetail[]>(['guardrails', activeWorkspaceId])
-      qc.setQueryData<GuardrailDetail[]>(['guardrails', activeWorkspaceId], (old) =>
+      await qc.cancelQueries({ queryKey: ['guardrails', workspaceId] })
+      const prev = qc.getQueryData<GuardrailDetail[]>(['guardrails', workspaceId])
+      qc.setQueryData<GuardrailDetail[]>(['guardrails', workspaceId], (old) =>
         (old ?? []).map((g) =>
           g.id === activateId
             ? { ...g, status: 'active' }
@@ -426,10 +432,10 @@ export default function GuardrailsPage() {
       return { prev }
     },
     onError: (err: unknown, _vars, ctx) => {
-      if (ctx?.prev) qc.setQueryData(['guardrails', activeWorkspaceId], ctx.prev)
+      if (ctx?.prev) qc.setQueryData(['guardrails', workspaceId], ctx.prev)
       appToast.requestError(err, t('guardrails.toast.toggleError'))
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['guardrails', activeWorkspaceId] }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] }),
   })
 
   // 统一切换入口：启用某条全局护栏 → 走级联（停用其他启用中全局）；其余走普通切换。

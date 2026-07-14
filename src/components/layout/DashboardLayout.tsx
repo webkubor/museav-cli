@@ -1,3 +1,7 @@
+/**
+ * 控制台主布局：渲染全局导航、工作空间侧栏、面包屑与嵌套路由内容。
+ * 路由：所有 DashboardLayout 下的鉴权路由。
+ */
 import { useState, useEffect, Suspense } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
@@ -46,14 +50,14 @@ const isDevTools = import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
 
 function WorkspaceGuard({
   currentKey,
+  workspaceId,
   children,
 }: {
   currentKey: string
+  workspaceId: string | null
   children: React.ReactNode
 }) {
-  const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
-
-  if (!activeWorkspaceId && navConfig.workspaceScopedKeys.has(currentKey)) {
+  if (!workspaceId && navConfig.workspaceScopedKeys.has(currentKey)) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4 select-none animate-in fade-in duration-300">
         <LuLock size={36} className="text-mg-text-3" />
@@ -74,6 +78,7 @@ export function DashboardLayout() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
+  const routeWorkspaceId = location.pathname.match(/^\/workspace\/([^/]+)(?:\/|$)/)?.[1]
   usePlatformConfig()
   const [collapsed, setCollapsed] = useState(false)
   const [navigating, setNavigating] = useState(false)
@@ -103,6 +108,7 @@ export function DashboardLayout() {
   const tenants = useAuthStore((s) => s.tenants)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
+  const currentWorkspaceId = routeWorkspaceId ?? activeWorkspaceId
   const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
   const rechargeOpen = useRechargeStore((s) => s.isOpen)
   const closeRecharge = useRechargeStore((s) => s.close)
@@ -176,10 +182,10 @@ export function DashboardLayout() {
   const menuSignature = navGroups.map((g) => `${g.scope}:${g.items.map((i) => i.itemKey).join(',')}`).join('|')
   useEffect(() => {
     if (!isDevTools) return
-    return installAgentTools({ navGroups, activeWorkspaceId, navigate })
+    return installAgentTools({ navGroups, activeWorkspaceId: currentWorkspaceId, navigate })
     // navGroups 用 menuSignature 稳定判等，避免每次渲染重挂
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [menuSignature, activeWorkspaceId, navigate])
+  }, [menuSignature, currentWorkspaceId, navigate])
 
   const getSelectedKey = () => {
     const path = location.pathname
@@ -197,7 +203,7 @@ export function DashboardLayout() {
   const handleNavSelect = (data: { itemKey: string | number }) => {
     const key = String(data.itemKey)
     const isWorkspaceScoped = navConfig.workspaceScopedKeys.has(key)
-    const targetRoute = isWorkspaceScoped ? `/workspace/${activeWorkspaceId}/${key}` : `/${key}`
+    const targetRoute = isWorkspaceScoped ? `/workspace/${currentWorkspaceId}/${key}` : `/${key}`
     const group = navGroups.find((g) => g.items.some((it) => it.itemKey === key))
     trackEvent(
       'console_nav_click',
@@ -291,7 +297,7 @@ export function DashboardLayout() {
               "bg-mg-bg-0 rounded-lg border border-mg-border/60 shadow-sm shadow-black/2 p-6 md:p-9 min-h-[320px] mb-8"
             )
           )}>
-            <WorkspaceGuard currentKey={getSelectedKey()}>
+            <WorkspaceGuard currentKey={getSelectedKey()} workspaceId={currentWorkspaceId}>
               {/* 内容区级 Suspense：切菜单时只在内容区转圈，侧栏/头/面包屑常驻不闪，
                   路由立即响应（不再被 App 级全屏 RouteFallback 盖住整屏） */}
               <Suspense

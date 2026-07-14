@@ -1,8 +1,11 @@
+/**
+ * 安全护栏页面回归测试：预算编辑、异常数据防线与 URL 工作空间作用域。
+ */
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
 import type {
   AddBudgetPolicyRequest,
@@ -132,13 +135,17 @@ function guardrailDetail(policies: GuardrailBudgetPolicy[]): GuardrailDetail {
 // the (mocked) save produced.
 let detailNow: GuardrailDetail
 
-function renderPage() {
+function renderPage(workspaceId = WORKSPACE_ID) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false } },
   })
   const Wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>{children}</MemoryRouter>
+      <MemoryRouter initialEntries={[`/workspace/${workspaceId}/guardrails`]}>
+        <Routes>
+          <Route path="/workspace/:workspaceId/guardrails" element={children} />
+        </Routes>
+      </MemoryRouter>
     </QueryClientProvider>
   )
   return render(<GuardrailsPage />, { wrapper: Wrapper })
@@ -171,6 +178,17 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks()
+})
+
+describe('GuardrailsPage — workspace route scope', () => {
+  it('uses the URL workspace even when Zustand points at another workspace', async () => {
+    useAuthStore.setState({ activeWorkspaceId: 'ws-from-store' })
+
+    renderPage('ws-from-url')
+
+    await waitFor(() => expect(listGuardrails).toHaveBeenCalledWith('ws-from-url'))
+    expect(listGuardrails).not.toHaveBeenCalledWith('ws-from-store')
+  })
 })
 
 // ── drawer fill: stored padded NUMERIC echoes back trimmed ────────────────────

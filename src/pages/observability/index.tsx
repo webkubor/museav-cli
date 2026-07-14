@@ -1,9 +1,10 @@
 /**
  * 可观测性独立页面入口
- * 路由：/observability
+ * 路由：/workspace/:workspaceId/observability
  * API：GET /workspaces/:id/observability/settings
  */
 import { useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -13,7 +14,6 @@ import { PERMS } from '@/config/permissions'
 import { usePermissions } from '@/hooks/use-permissions'
 import { getLoggingConfig } from '@/services/observability'
 import { trackPageView } from '@/lib/track'
-import { useAuthStore } from '@/store/auth'
 import { ObservabilityContent } from './ObservabilityContent'
 
 export { ObservabilityContent } from './ObservabilityContent'
@@ -21,7 +21,7 @@ export { ObservabilityContent } from './ObservabilityContent'
 /** 可观测性独立页面入口。 */
 export default function ObservabilityPage() {
   const { t } = useTranslation()
-  const activeWorkspaceId = useAuthStore((state) => state.activeWorkspaceId)
+  const { workspaceId = '' } = useParams<{ workspaceId: string }>()
   const { hasPermission } = usePermissions()
   const canEditLogging = hasPermission(PERMS.OBSERVABILITY_LOGGING_EDIT)
   const canManageForward = hasPermission(PERMS.OBSERVABILITY_FORWARD_MANAGE)
@@ -31,9 +31,9 @@ export default function ObservabilityPage() {
   }, [])
 
   const loggingQuery = useQuery({
-    queryKey: ['observability', 'logging', activeWorkspaceId],
-    queryFn: () => getLoggingConfig(activeWorkspaceId!),
-    enabled: Boolean(activeWorkspaceId),
+    queryKey: ['observability', 'logging', workspaceId],
+    queryFn: () => getLoggingConfig(workspaceId),
+    enabled: Boolean(workspaceId),
     staleTime: 30_000,
     refetchOnWindowFocus: false,
     retry: false, // 40301/无权限不重试，直接走兼容态
@@ -68,10 +68,10 @@ export default function ObservabilityPage() {
         </div>
       )}
 
-      {loggingQuery.data && activeWorkspaceId && (
+      {loggingQuery.data && workspaceId && (
         <ObservabilityContent
-          key={activeWorkspaceId}
-          workspaceId={activeWorkspaceId}
+          key={workspaceId}
+          workspaceId={workspaceId}
           config={loggingQuery.data}
           canEditLogging={canEditLogging}
           canManageForward={canManageForward}

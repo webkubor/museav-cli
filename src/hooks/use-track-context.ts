@@ -11,6 +11,7 @@ import { useTenantRole } from '@/hooks/use-tenant-role'
 
 export function useTrackContext(): Record<string, string> {
   const location = useLocation()
+  const routeWorkspaceId = location.pathname.match(/^\/workspace\/([^/]+)(?:\/|$)/)?.[1]
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const tenants = useAuthStore((s) => s.tenants)
@@ -21,6 +22,7 @@ export function useTrackContext(): Record<string, string> {
   if (activeTenantId) props.tenant_id = activeTenantId
   if (tenantType) props.tenant_type = tenantType
   if (role) props.role = role
-  if (activeWorkspaceId) props.workspace_id = activeWorkspaceId
+  const workspaceId = routeWorkspaceId ?? activeWorkspaceId
+  if (workspaceId) props.workspace_id = workspaceId
   return props
 }

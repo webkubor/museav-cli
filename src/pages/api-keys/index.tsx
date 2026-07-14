@@ -6,6 +6,7 @@
  */
 
 import { useMemo, useState, useCallback, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -54,6 +55,7 @@ const ALL = 'all'
 
 export default function ApiKeysPage() {
   const { t } = useTranslation()
+  const { workspaceId = '' } = useParams<{ workspaceId: string }>()
   const queryClient = useQueryClient()
   const market = useMarket()
   const docsUrl = getMarketConfig(market).docsUrl
@@ -77,7 +79,6 @@ export default function ApiKeysPage() {
   // 轮转成功后一次性明文（旧 Token 过渡期仍可用）——复用「一次性展示」承接，避免密钥丢失
   const [rotatedKey, setRotatedKey] = useState<{ name: string; key: string } | null>(null)
 
-  const activeWorkspaceId = useAuthStore((state) => state.activeWorkspaceId) || '01HV3KWS000000000000001'
   const activeTenantId = useAuthStore((state) => state.activeTenantId)
   const tenants = useAuthStore((state) => state.tenants)
   const account = useAuthStore((state) => state.account)
@@ -92,7 +93,7 @@ export default function ApiKeysPage() {
   // 埋点顶层字段 is_space_owner：当前用户对本页作用域工作空间的 my_role 是否为 ws_owner
   // （不是 useTenantRole().isSpaceOwner —— 那个是「企业成员+自领至少一个空间」的 PRD 空间视图判定，口径更窄）
   const { ownedWorkspaceIds } = useTenantRole()
-  const isActiveWorkspaceOwner = ownedWorkspaceIds.includes(activeWorkspaceId)
+  const isActiveWorkspaceOwner = ownedWorkspaceIds.includes(workspaceId)
 
   // PRD 定稿：运行页无视图概念，作用域恒＝当前工作空间，行可见性纯由后端按角色裁剪
   // （租户级角色 + 空间负责人看全部，普通成员只看自己）。不再有企业/我的视图切换。
@@ -102,12 +103,12 @@ export default function ApiKeysPage() {
   }, [])
 
   const { data, isLoading, error: listError } = useQuery({
-    queryKey: ['api-keys', activeWorkspaceId],
+    queryKey: ['api-keys', workspaceId],
     // 类型/负责人/状态/搜索四个筛选都在客户端做（其中 status 后端无筛选参数），因此必须把全量 Key
     // 一次拉齐，否则筛选/负责人下拉只覆盖首页会漏（#383）。单空间 Key 量级很小，page_size 拉满足够；
     // 若未来单空间 Key 超 200，再改真·游标分页 + 后端补 status 过滤参数。
-    queryFn: () => listApiKeys(activeWorkspaceId, { page_size: 200 }).then(pageItems),
-    enabled: !!activeWorkspaceId,
+    queryFn: () => listApiKeys(workspaceId, { page_size: 200 }).then(pageItems),
+    enabled: !!workspaceId,
     retry: false, // 40301/无权限不重试，直接走兼容态
     meta: { forbiddenHandled: true }, // 40301 由本页 ForbiddenState 承接，不弹全局 toast
   })
@@ -119,9 +120,9 @@ export default function ApiKeysPage() {
   // 摘要卡：后端 /summary（#383）未交付时静默降级（catch→undefined，避免全局错误 toast），
   // 由 SummaryCards 从列表派生兜底。
   const { data: summary } = useQuery({
-    queryKey: ['api-keys-summary', activeWorkspaceId],
-    queryFn: () => getApiKeySummary(activeWorkspaceId).catch(() => undefined),
-    enabled: !!activeWorkspaceId,
+    queryKey: ['api-keys-summary', workspaceId],
+    queryFn: () => getApiKeySummary(workspaceId).catch(() => undefined),
+    enabled: !!workspaceId,
     retry: false,
   })
 
@@ -133,7 +134,7 @@ export default function ApiKeysPage() {
     staleTime: 60_000,
   })
   const workspaceName =
-    workspaces.find((w) => w.workspace_id === activeWorkspaceId)?.name ?? t('header.defaultWorkspace')
+    workspaces.find((w) => w.workspace_id === workspaceId)?.name ?? t('header.defaultWorkspace')
 
   const apiKeyItems = pageItems(data)
   // #358 角色可见性：可见范围完全由后端返回的行决定（成员只回自己的，此处据「返回是否含他人」派生页头提示）
@@ -156,21 +157,21 @@ export default function ApiKeysPage() {
   }, [apiKeyItems])
 
   const revokeMutation = useMutation({
-    mutationFn: (keyId: string) => revokeApiKey(activeWorkspaceId, keyId),
+    mutationFn: (keyId: string) => revokeApiKey(workspaceId, keyId),
     onSuccess: () => {
       appToast.success(t('apiKeys.toast.revokeSuccess'))
       setRevokeTarget(null)
       setDetailKey(null)
-      queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
+      queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
     },
     onError: (err: unknown) => appToast.requestError(err, t('apiKeys.toast.revokeError')),
   })
 
   const enableMutation = useMutation({
-    mutationFn: (keyId: string) => enableApiKey(activeWorkspaceId, keyId),
+    mutationFn: (keyId: string) => enableApiKey(workspaceId, keyId),
     onSuccess: () => {
       appToast.success('已启用')
-      queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
+      queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
       trackEvent('api_keys:enable', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
     onError: (err: unknown) => {
@@ -180,11 +181,11 @@ export default function ApiKeysPage() {
   })
 
   const disableMutation = useMutation({
-    mutationFn: (keyId: string) => disableApiKey(activeWorkspaceId, keyId),
+    mutationFn: (keyId: string) => disableApiKey(workspaceId, keyId),
     onSuccess: () => {
       appToast.success('已停用')
       setDisableTarget(null)
-      queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
+      queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
       trackEvent('api_keys:disable', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
     onError: (err: unknown) => {
@@ -203,18 +204,18 @@ export default function ApiKeysPage() {
 
   // 变更负责人（change-owner 端点已就绪）
   const membersQuery = useQuery({
-    queryKey: ['workspace-members', activeWorkspaceId],
-    queryFn: () => listWorkspaceMembers(activeWorkspaceId, { page_size: 100 }),
-    enabled: !!activeWorkspaceId && !!changeOwnerTarget,
+    queryKey: ['workspace-members', workspaceId],
+    queryFn: () => listWorkspaceMembers(workspaceId, { page_size: 100 }),
+    enabled: !!workspaceId && !!changeOwnerTarget,
     staleTime: 60_000,
   })
   const changeOwnerMutation = useMutation({
-    mutationFn: () => changeApiKeyOwner(activeWorkspaceId, changeOwnerTarget!.api_key_id, { new_owner_account_id: newOwnerId }),
+    mutationFn: () => changeApiKeyOwner(workspaceId, changeOwnerTarget!.api_key_id, { new_owner_account_id: newOwnerId }),
     onSuccess: () => {
       appToast.success('负责人已变更')
       setChangeOwnerTarget(null)
       setNewOwnerId('')
-      queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
+      queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
       trackEvent('api_keys:change_owner', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
     onError: (err: unknown) => {
@@ -226,11 +227,11 @@ export default function ApiKeysPage() {
   // 轮转（#384/#385）：路由未就绪时后端返 40401，错误层归一为「服务暂不可用」（见 request-error-message）；
   // 交付后成功返回一次性 new_key，走下方 rotatedKey 弹窗一次性展示。不做死按钮、不硬隐藏。
   const rotateMutation = useMutation({
-    mutationFn: (item: ApiKeyItem) => rotateApiKey(activeWorkspaceId, item.api_key_id),
+    mutationFn: (item: ApiKeyItem) => rotateApiKey(workspaceId, item.api_key_id),
     onSuccess: (res, item) => {
       setRotatedKey({ name: item.name, key: res.new_key })
-      queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
-      queryClient.invalidateQueries({ queryKey: ['api-key-detail', activeWorkspaceId, item.api_key_id] })
+      queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
+      queryClient.invalidateQueries({ queryKey: ['api-key-detail', workspaceId, item.api_key_id] })
       trackEvent('api_keys:rotate', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
     onError: (err: unknown) => {
@@ -246,7 +247,7 @@ export default function ApiKeysPage() {
     async (item: ApiKeyItem) => {
       if (!canReveal || copyingKeyId) return
       setCopyingKeyId(item.api_key_id)
-      const plaintextPromise = revealApiKey(activeWorkspaceId, item.api_key_id).then((r) => r.key)
+      const plaintextPromise = revealApiKey(workspaceId, item.api_key_id).then((r) => r.key)
       plaintextPromise.catch(() => {})
       try {
         if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
@@ -273,7 +274,7 @@ export default function ApiKeysPage() {
         setCopyingKeyId(null)
       }
     },
-    [activeWorkspaceId, canReveal, copy, copyingKeyId, t]
+    [workspaceId, canReveal, copy, copyingKeyId, t]
   )
 
   const filteredData = useMemo(() => {
@@ -341,7 +342,7 @@ export default function ApiKeysPage() {
       trackEvent('api_keys:secret_saved', { ...commonEventProps, time_to_save_ms: createdAt ? Date.now() - createdAt : 0 }, { source: 'create_success' })
     }
     setCreatedVisible(false)
-    queryClient.invalidateQueries({ queryKey: ['api-keys', activeWorkspaceId] })
+    queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
     if (createdKey) {
       const c = createdKey
       setDetailKey({
@@ -459,7 +460,7 @@ export default function ApiKeysPage() {
       <ApiKeyDetailDrawer
         open={!!detailKey}
         onClose={() => setDetailKey(null)}
-        workspaceId={activeWorkspaceId}
+        workspaceId={workspaceId}
         item={detailKey}
         canEdit={canEdit}
         canRevoke={canRevoke}
@@ -523,7 +524,7 @@ export default function ApiKeysPage() {
         key={createNonce}
         open={createVisible}
         onClose={() => setCreateVisible(false)}
-        workspaceId={activeWorkspaceId}
+        workspaceId={workspaceId}
         onCreated={handleKeyCreated}
       />
 
@@ -597,7 +598,7 @@ export default function ApiKeysPage() {
       <EditKeyModal
         open={!!editGuardrailKey}
         onClose={() => setEditGuardrailKey(null)}
-        workspaceId={activeWorkspaceId}
+        workspaceId={workspaceId}
         apiKey={editGuardrailKey}
       />
     </div>

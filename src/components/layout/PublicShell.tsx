@@ -13,7 +13,7 @@ export function PublicShell() {
   // ponytail: 生产以域名为准，这里只读 ?market 覆盖（本地两主题预览 / 官网显式指定）
   useEffect(() => {
     const m = new URLSearchParams(window.location.search).get('market')
-    if (m === 'domestic' || m === 'global') {
+    if (m === 'china' || m === 'global') {
       document.documentElement.dataset.market = m
       useLangStore.getState().setMarket(m)
     }

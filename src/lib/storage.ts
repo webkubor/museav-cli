@@ -12,7 +12,18 @@ import { marketFromHostname } from '@/lib/market-domain'
 
 // 域名→市场唯一真源（market-domain 是零依赖叶子，引它不成环）
 function detectMarket(): string {
-  return typeof window === 'undefined' ? 'domestic' : marketFromHostname(window.location.hostname)
+  return typeof window === 'undefined' ? 'china' : marketFromHostname(window.location.hostname)
+}
+
+// 一次性归一：市场词汇 domestic→china（#479）。旧 key 前缀 mg:domestic:* 迁到
+// mg:china:*，避免已登录用户丢失记住的登录/租户/工作空间选择。仅旧值兼容，非兜底链。
+if (typeof window !== 'undefined') {
+  for (const key of Object.keys(localStorage)) {
+    if (!key.startsWith('mg:domestic:')) continue
+    const next = `mg:china:${key.slice('mg:domestic:'.length)}`
+    if (localStorage.getItem(next) === null) localStorage.setItem(next, localStorage.getItem(key)!)
+    localStorage.removeItem(key)
+  }
 }
 
 type Scope = 'market' | 'app'

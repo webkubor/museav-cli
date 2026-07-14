@@ -36,7 +36,7 @@ export function checkLoginEmail(email: string) {
   return post<CheckLoginEmailResult>('auth/email/check', { email })
 }
 
-// ─── 手机号一键登录/注册（国内 domestic） ──────────────────────
+// ─── 手机号一键登录/注册（国内 china） ──────────────────────
 // 国内市场登录与注册统一入口：手机号 + 短信验证码，验证通过即建号或登录。
 
 /**

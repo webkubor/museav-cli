@@ -9,12 +9,12 @@
 import { useMarket } from '@/hooks/useMarket'
 
 const LOGOS = {
-  domestic: '/brand/modelgo-cn-logo.svg',
+  china: '/brand/modelgo-cn-logo.svg',
   global: '/brand/modelgo-global-logo.svg',
 } as const
 
 const ICONS = {
-  domestic: '/brand/modelgo-app-icon-dark.svg',
+  china: '/brand/modelgo-app-icon-dark.svg',
   global: '/brand/modelgo-global-logo.svg',
 } as const
 

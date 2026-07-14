@@ -49,7 +49,8 @@ function requireEnv(value: string | undefined, key: string): string {
 }
 
 const configs: Record<Market, MarketConfig> = {
-  domestic: {
+  // 市场键随 Market 词汇为 'china'；env 变量名 VITE_DOMESTIC_* 是部署配置键，不改名
+  china: {
     domain: 'modelgo.com',
     apiDomain: isTestOrDev()
       ? 'test.modelgo.com'

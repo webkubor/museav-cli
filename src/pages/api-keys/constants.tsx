@@ -163,13 +163,19 @@ export const MGC_CLIENT_OPTIONS: { id: string; label: string }[] = [
   { id: 'factory', label: 'Factory' },
 ]
 
-/** 从网关地址推导站点，复用域名→市场唯一真源（market-domain） */
+/**
+ * 从网关地址推导站点，复用域名→市场唯一真源（market-domain）。
+ * 注意返回的是 @model-go/config CLI 的 --region 取值（外部已发布契约，只认
+ * global | domestic），不是前端 Market（'china' | 'global'）——市场词汇改名不改 CLI 参数。
+ */
 export function deriveRegionFromBaseUrl(baseUrl: string): 'global' | 'domestic' {
+  let market: 'china' | 'global'
   try {
-    return marketFromHostname(new URL(baseUrl).hostname)
+    market = marketFromHostname(new URL(baseUrl).hostname)
   } catch {
-    return marketFromHostname(baseUrl)
+    market = marketFromHostname(baseUrl)
   }
+  return market === 'global' ? 'global' : 'domestic'
 }
 
 /**

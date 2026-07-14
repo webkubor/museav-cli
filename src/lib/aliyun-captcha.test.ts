@@ -1,9 +1,11 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 
 // market is read at call time; mock it so we control region without a real DOM host.
+// getInitialLang 供依赖图中的 use-brand-store 模块级初始化使用（缺了会整树加载失败）。
 vi.mock('@/lib/market', () => ({
-  getMarket: () => 'domestic',
+  getMarket: () => 'china',
   getMarketDefaultLang: () => 'zh',
+  getInitialLang: () => 'zh',
 }))
 
 describe('aliyun-captcha graceful degrade (qa#299)', () => {

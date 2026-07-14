@@ -26,7 +26,7 @@ export function apiBaseUrl() {
   // 化解 platform-config 自身请求的鸡生蛋)，配置到达后覆盖——test 单域名可切两端验收（#466）。
   const market = useLangStore.getState().market
   const marketDomain =
-    market === 'domestic'
+    market === 'china'
       ? import.meta.env.VITE_DOMESTIC_API_DOMAIN
       : import.meta.env.VITE_GLOBAL_API_DOMAIN
 

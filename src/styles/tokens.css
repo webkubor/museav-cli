@@ -163,7 +163,7 @@
 
 /* 国内市场：代码块/网格的品牌色调（border/fill/语义交共享，本块只留控制台特有项） */
 :root,
-[data-market='domestic'] {
+[data-market='china'] {
   --mg-code-bg: #eef0f8;
   --grid-color: rgba(103, 67, 253, 0.025);
 }
@@ -218,8 +218,8 @@ body[theme-mode='dark'] {
 }
 
 /* 国内市场特有趋势 (红涨绿跌) */
-[data-market='domestic'] [theme-mode='dark'],
-[data-market='domestic'] body[theme-mode='dark'] {
+[data-market='china'] [theme-mode='dark'],
+[data-market='china'] body[theme-mode='dark'] {
   --mg-trend-up:   var(--mg-danger);
   --mg-trend-down: var(--mg-success);
 }

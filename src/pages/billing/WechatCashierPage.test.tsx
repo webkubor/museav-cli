@@ -11,6 +11,8 @@ vi.mock('@/services/billing', () => ({
 }))
 
 vi.mock('react-i18next', () => ({
+  // 依赖图里 @/i18n 模块级调用 initReactI18next（缺了整个测试文件加载失败）
+  initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
     t: (key: string, opts?: Record<string, unknown>) => {
       const copy: Record<string, string> = {

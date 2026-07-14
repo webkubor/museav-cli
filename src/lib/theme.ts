@@ -3,7 +3,7 @@ import { getMarket } from '@/lib/market'
 
 export type Theme = 'dark' | 'light' | 'system'
 
-/** 无用户偏好时的默认主题随市场：国外(global, modelgo.ai)深色、国内(domestic)浅色 */
+/** 无用户偏好时的默认主题随市场：国外(global, modelgo.ai)深色、国内(china)浅色 */
 export function getMarketDefaultTheme(): 'dark' | 'light' {
   return getMarket() === 'global' ? 'dark' : 'light'
 }

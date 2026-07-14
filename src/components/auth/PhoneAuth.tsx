@@ -1,7 +1,7 @@
 /**
- * 国内（domestic）手机号一键登录/注册入口
+ * 国内（china）手机号一键登录/注册入口
  * 职责：手机号 + 短信验证码统一入口，验证通过即建号或登录。登录与注册不分页。
- * 路由：复用 /login（不新增路由）；/signup 在 domestic 重定向到此
+ * 路由：复用 /login（不新增路由）；/signup 在 china（国内）重定向到此
  * API：POST /auth/sms-code/send；登录提交见 services/auth.ts phoneLoginRegister（接口待定）
  */
 

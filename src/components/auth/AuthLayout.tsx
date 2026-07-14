@@ -21,7 +21,7 @@ interface AuthLayoutProps {
  */
 export function AuthLayout({ title, subtitle, footer, children, wide = false }: AuthLayoutProps) {
   const market = useLangStore((s) => s.market)
-  const isDomestic = market === 'domestic'
+  const isDomestic = market === 'china'
   const siteLogo = useSiteLogo()
 
   // 自适应双氛围球的渐变渲染

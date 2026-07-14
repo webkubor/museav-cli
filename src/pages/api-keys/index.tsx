@@ -90,6 +90,10 @@ export default function ApiKeysPage() {
   const canEdit = hasPermission(PERMS.API_KEYS_EDIT)
   const canReveal = hasPermission(PERMS.API_KEYS_REVEAL)
   const canRevoke = hasPermission(PERMS.API_KEYS_REVOKE)
+  // 细粒度动作权限（#54）：停用/轮换/改负责人各用自己的 key,不再复用 edit
+  const canDisable = hasPermission(PERMS.API_KEYS_DISABLE)
+  const canRotate = hasPermission(PERMS.API_KEYS_ROTATE)
+  const canChangeOwner = hasPermission(PERMS.API_KEYS_CHANGE_OWNER)
   // 埋点顶层字段 is_space_owner：当前用户对本页作用域工作空间的 my_role 是否为 ws_owner
   // （不是 useTenantRole().isSpaceOwner —— 那个是「企业成员+自领至少一个空间」的 PRD 空间视图判定，口径更窄）
   const { ownedWorkspaceIds } = useTenantRole()
@@ -443,7 +447,7 @@ export default function ApiKeysPage() {
       <ApiKeyTable
         isLoading={isLoading}
         items={filteredData}
-        canEdit={canEdit}
+        canDisable={canDisable}
         canReveal={canReveal}
         hasKeys={apiKeyItems.length > 0}
         isFiltered={isFiltered}
@@ -464,6 +468,9 @@ export default function ApiKeysPage() {
         item={detailKey}
         canEdit={canEdit}
         canRevoke={canRevoke}
+        canDisable={canDisable}
+        canRotate={canRotate}
+        canChangeOwner={canChangeOwner}
         rowScope={rowScope}
         onToggleStatus={handleToggleStatus}
         onRotate={(item) => rotateMutation.mutate(item)}

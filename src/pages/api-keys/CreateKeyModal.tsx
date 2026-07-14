@@ -19,6 +19,8 @@ import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { useAuthStore } from '@/store/auth'
 import { useTenantRole } from '@/hooks/use-tenant-role'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 import { EXPIRATION_PRESETS, resolveExpiryISO, LIMIT_PERIOD_OPTIONS, type LimitPeriod, type ScopeType } from './constants'
 import { CreateGuardrailDialog } from './CreateGuardrailDialog'
 import { KEY_TYPE_LABEL, KEY_TYPE_DESC, buildSpendingLimit } from './derive'
@@ -68,16 +70,21 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const tenants = useAuthStore((s) => s.tenants)
   const account = useAuthStore((s) => s.account)
   const isPersonalTenant = tenants.find((t) => t.tenant_id === activeTenantId)?.type === 'personal'
-  // 企业普通成员（非 Owner/Admin、非空间负责人）：只能建私有 Key、不可永不过期（PRD 角色权限模型）
+  // 企业普通成员（非 Owner/Admin、非空间负责人）：不可永不过期（PRD §8.2 表单规则，非按钮权限）
   const { isEnterprise, canManage, isSpaceOwner } = useTenantRole()
   const isPlainMember = isEnterprise && !canManage && !isSpaceOwner
+  // Key 类型按各自细粒度创建权限 gate（#54 · PRD §8.1/§8.2）：无权限类型置灰并提示，绝不靠角色启发式
+  const { hasPermission } = usePermissions()
+  const canCreateScope: Record<ScopeType, boolean> = {
+    personal: hasPermission(PERMS.API_KEYS_CREATE_PERSONAL),
+    member: hasPermission(PERMS.API_KEYS_CREATE_MEMBER),
+    workspace: hasPermission(PERMS.API_KEYS_CREATE_SERVICE),
+  }
 
   const [name, setName] = useState('')
   const [scope, setScope] = useState<ScopeType>('workspace')
-  // 个人租户可选 个人/项目（无成员）；普通成员强制私有；兜底防止残留的 member 被提交
-  const effectiveScope: ScopeType = isPlainMember
-    ? 'personal'
-    : isPersonalTenant && scope === 'member' ? 'workspace' : scope
+  // 个人租户无「成员」Key，member 落到 workspace；类型可选性由上面的细粒度权限控制
+  const effectiveScope: ScopeType = isPersonalTenant && scope === 'member' ? 'workspace' : scope
   const [memberAccountId, setMemberAccountId] = useState('')
   const [guardrailIds, setGuardrailIds] = useState<string[]>([])
   const [guardrailDialogOpen, setGuardrailDialogOpen] = useState(false)
@@ -101,6 +108,15 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
       setExpiryRange({ preset: '30d', startDate: todayStr, endDate: '' })
     }
   }, [isPlainMember, expiryRange.preset, todayStr])
+  // 当前选中的类型无创建权限时，落到第一个有权限的类型（个人租户排除成员 Key）
+  useEffect(() => {
+    if (!open || canCreateScope[effectiveScope]) return
+    const firstAllowed = (['personal', 'member', 'workspace'] as ScopeType[]).find(
+      (s) => canCreateScope[s] && !(isPersonalTenant && s === 'member'),
+    )
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (firstAllowed) setScope(firstAllowed)
+  }, [open, effectiveScope, canCreateScope, isPersonalTenant])
 
   const membersQuery = useQuery({
     queryKey: ['workspace-members', workspaceId],
@@ -277,24 +293,28 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
               {TYPE_CARDS
                 .filter((c) => !(isPersonalTenant && c.type === 'member'))
-                .filter((c) => !(isPlainMember && c.type !== 'personal'))
+                .filter((c) => !(isPersonalTenant && c.type === 'member'))
                 .map((c) => {
                 const active = effectiveScope === c.scope
+                const allowed = canCreateScope[c.scope]
                 return (
                   <button
                     key={c.type}
                     type="button"
                     data-track={`api_keys:type_${c.type}`}
-                    onClick={() => { setScope(c.scope); setMemberAccountId('') }}
+                    disabled={!allowed}
+                    title={!allowed ? '你没有创建此类型 Key 的权限' : undefined}
+                    onClick={() => { if (!allowed) return; setScope(c.scope); setMemberAccountId('') }}
                     className={[
-                      'rounded-lg border p-3 text-left transition-all',
+                      'rounded-lg border p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-40',
                       active
                         ? 'border-brand-base bg-brand-base/5 ring-1 ring-brand-base/30'
-                        : 'border-mg-border bg-mg-fill-0/40 hover:border-brand-base/35',
+                        : 'border-mg-border bg-mg-fill-0/40 enabled:hover:border-brand-base/35',
                     ].join(' ')}
                   >
                     <div className="text-xs font-bold text-mg-text-1">{KEY_TYPE_LABEL[c.type]}</div>
                     <div className="mt-1 text-xs leading-relaxed text-mg-text-3">{KEY_TYPE_DESC[c.type]}</div>
+                    {!allowed && <div className="mt-1.5 text-[11px] text-mg-text-4">无创建权限</div>}
                   </button>
                 )
               })}

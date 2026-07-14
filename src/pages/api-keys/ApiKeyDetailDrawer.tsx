@@ -92,6 +92,9 @@ interface Props {
   item: ApiKeyItem | null
   canEdit: boolean
   canRevoke: boolean
+  canDisable: boolean
+  canRotate: boolean
+  canChangeOwner: boolean
   onToggleStatus: (item: ApiKeyItem) => void
   onRotate: (item: ApiKeyItem) => void
   onChangeOwner: (item: ApiKeyItem) => void
@@ -101,7 +104,7 @@ interface Props {
   rowScope?: string
 }
 
-export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canEdit, canRevoke, onToggleStatus, onRotate, onChangeOwner, onEdit, onRevoke, rowScope }: Props) {
+export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canEdit, canRevoke, canDisable, canRotate, canChangeOwner, onToggleStatus, onRotate, onChangeOwner, onEdit, onRevoke, rowScope }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -185,9 +188,9 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canEdit, 
   const recentCalls = detail?.recent_calls ?? []
   const auditRows = audit?.items ?? detail?.recent_audit ?? []
   const isDisabled = view.status === 'disabled'
-  const canToggle = isDisabled ? cap(view.capabilities?.can_enable, canEdit) : cap(view.capabilities?.can_disable, canEdit)
+  const canToggle = isDisabled ? cap(view.capabilities?.can_enable, canDisable) : cap(view.capabilities?.can_disable, canDisable)
   // 按后端 capability 正常渲染；rotate 路由未就绪（40401）时点击走 requestError → 「服务暂不可用」，不做死按钮/硬隐藏（qa#384/#385）
-  const canRotate = canEdit && view.capabilities?.can_rotate === true
+  const rotateEnabled = canRotate && view.capabilities?.can_rotate === true
   const canDelete = cap(view.capabilities?.can_delete, canRevoke) && view.status !== 'revoked'
 
   return (
@@ -198,7 +201,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canEdit, 
           <span className="font-mono text-xs text-mg-text-3">{view.masked}</span>
           <CopyButton value={view.masked} aria-label="复制掩码 Key" toast="掩码 Key 已复制" size="sm" />
           <div className="ml-auto flex flex-wrap gap-2">
-            {canRotate && (
+            {rotateEnabled && (
               <Button variant="outline" size="sm" onClick={() => onRotate(view)}>轮转</Button>
             )}
             {view.status !== 'revoked' && canToggle && (
@@ -206,7 +209,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canEdit, 
                 {isDisabled ? '启用' : '停用'}
               </Button>
             )}
-            {view.status !== 'revoked' && canEdit && (
+            {view.status !== 'revoked' && canChangeOwner && (
               <Button variant="outline" size="sm" onClick={() => onChangeOwner(view)}>变更负责人</Button>
             )}
             {view.status !== 'revoked' && canEdit && (

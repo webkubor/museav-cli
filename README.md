@@ -124,16 +124,74 @@ pnpm check:api-contract
    - 无权限对应的自定义事件：`trackEvent('xxx:yyy')`（沿用冒号约定）
    - 可测性：`{...trackable('api_keys:create')}` 落 `data-track`（= 埋点 key，供 QA/自动化定位，不另维护 test id）
    - 顶层契约字段（#423）：`view_mode/source/result/error_code/is_space_owner` 按场景补
-3. **同步到后端**（把权限目录 upsert 到 controller，埋点 key 目录随之对齐）：
-   ```bash
-   npm run sync:permissions              # 默认 apply，正式同步
-   npm run sync:permissions -- --dry-run # 只对账不写，预览 diff
-   npm run sync:permissions -- --check   # 仅本地目录校验
-   ```
-   输出 `"has_changes": false` = 后端已一致。
-   > 用 `npm run`，**别用 `pnpm run`**——pnpm 的 `runDepsStatusCheck` 会在 node_modules/lockfile 漂移时拦住并要清空重装。
+3. **同步到后端**（把权限目录 upsert 到 controller，埋点 key 目录随之对齐）。**推送分国内/国外两条命令**（见下「权限推送」）。
 
 **漏同步的后果**：新按钮/页面没进权限目录 → 角色矩阵漏授权、埋点无 key 上报不了、QA 的 `data-track` 也定位不到。
+
+### 权限推送（sync:permissions）· 现状
+
+**推送目标恒为测试环境**（单一域名 `modelgo-controller.test.modelgo.com`）；上线由服务器把测试库提生产，**不推生产**。
+
+**三条命令**（用 `npm run`，别用 `pnpm run`——pnpm 的 `runDepsStatusCheck` 会在 node_modules 漂移时拦住要清空重装）：
+
+```bash
+npm run sync:permissions:check     # ① 推送前核对:打印 国内/国外 菜单权限差异,不推
+npm run sync:permissions:cn        # ② 推国内菜单(含发票等国内特例) market=china
+npm run sync:permissions:global    # ③ 推国外菜单(剔除国内特例)     market=global
+# 每条可加 -- --dry-run 只对账不写 / -- --check 仅本地校验
+```
+
+**推送的数据结构**（`scripts/sync-permissions.ts` → `POST /menu-permissions/catalog/sync`）：
+
+`market` 与 `catalog_version` 走 **query 参数**（后端 body schema 严格，不接受 body 里多余字段）；`body` 只放**按该市场过滤后**的目录三段：
+
+```jsonc
+// URL: POST /menu-permissions/catalog/sync
+//   ?dry_run=false        预览用 true(只对账不写)
+//   &market=china|global  市场:决定 body 是否含发票等国内特例
+//   &catalog_version=1.0.0 目录版本(见下「全量更新」)
+
+// body:
+{
+  "source": "modelgo-console-web",        // 来源标识,固定
+  "menus": [                              // 菜单列表(按 market 过滤后)
+    {
+      "key": "billing",                   // 菜单 key,受 MENU_KEY_PATTERN 约束
+      "name": "账单管理", "name_en": "Billing",
+      "scope": "tenant",                  // tenant | workspace | settings
+      "view_permission": "billing:view",  // 该菜单可见所需权限 ID
+      "actions": ["billing.recharge:create", ...]  // 该菜单下按钮动作权限 ID(国外已剔发票)
+    }
+  ],
+  "permissions": [                        // 权限定义(仅上面 menus 引用到的)
+    { "permission_id": "billing:view", "granularity": "menu", "description": "查看账单管理" }
+    // granularity: menu | page | action
+  ]
+}
+```
+
+**版本号 · 全量更新**（`PERMISSION_CATALOG_VERSION`，`permission-catalog.ts`）：
+
+- 结构性改动(增删菜单/权限、改市场归属)时**手动 bump** `PERMISSION_CATALOG_VERSION`(SemVer)。
+- 语义:后端见 `catalog_version` **变化** → **全量刷新**该市场目录(丢弃旧的、以本次推送为准);**不变**则走增量对账(返回 `has_changes` / `created_*` / `deprecated_*`)。
+- 用途:结构大改后用 bump 版本强制全量,避免增量遗留脏数据。
+
+**国内/国外菜单权限怎么区分**（单一真源,`src/config/permission-catalog.ts`）：
+
+- 默认：一个权限**两市场都有**。
+- 市场特例：在 `PERMISSION_MARKET_RESTRICT` 里标该权限只属于哪些市场。例——发票仅国内：
+  ```ts
+  export const PERMISSION_MARKET_RESTRICT = {
+    [PERMS.BILLING_INVOICE_VIEW]:  ['china'],
+    [PERMS.BILLING_INVOICE_APPLY]: ['china'],
+    // …
+  }
+  ```
+- `catalogPayloadForMarket(market)` 按此过滤:`:cn` 带发票、`:global` 自动剔除。
+- 前端运行时同理用 `isDomestic()` 隐藏国外没有的按钮（如发票 tab）。
+- **新增市场特例**：往 `PERMISSION_MARKET_RESTRICT` 加一行 → `sync:permissions:check` 就能在「仅国内/仅国外」里看到 → 确认无误再推。
+
+> 输出 `"has_changes": false` = 后端已一致。`check` 示例:国内 10 菜单/51 权限、国外 10 菜单/47 权限、仅国内 = billing.invoice.*（4）。
 
 ### 业务 key 命名规范（正则强约束）
 

@@ -73,8 +73,9 @@ async function readEnvelope(response: Response): Promise<ApiEnvelope> {
 
 async function syncRemote(mode: Exclude<SyncMode, 'check'>, market: SyncMarket): Promise<Record<string, unknown>> {
   const dryRun = mode === 'dry-run'
-  // market 走 query（后端 body schema 严格）;body 用**按市场过滤后**的目录(国外剔除发票等国内特例)。
-  const url = `${apiBase()}/menu-permissions/catalog/sync?dry_run=${String(dryRun)}&market=${market}`
+  // market + catalog_version 走 query（后端 body schema 严格）;body 用**按市场过滤后**的目录。
+  // catalog_version 变化 → 后端全量刷新该市场目录;不变走增量对账。
+  const url = `${apiBase()}/menu-permissions/catalog/sync?dry_run=${String(dryRun)}&market=${market}&catalog_version=${permissionCatalogMeta.version}`
   const token = optionalAdminToken()
   const response = await fetch(url, {
     method: 'POST',
@@ -119,7 +120,7 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2)
   const mode = readMode(args)
   assertLocalCatalog()
-  console.log(`✓ 本地权限目录校验通过：${permissionCatalogMeta.menu_count} 个菜单 / ${permissionCatalogMeta.permission_count} 个 Permission ID`)
+  console.log(`✓ 本地权限目录校验通过 [v${permissionCatalogMeta.version}]：${permissionCatalogMeta.menu_count} 个菜单 / ${permissionCatalogMeta.permission_count} 个 Permission ID`)
 
   if (mode === 'check') {
     // check 不推送,只本地核对两市场差异

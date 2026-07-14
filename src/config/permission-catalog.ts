@@ -244,7 +244,15 @@ export function validatePermissionCatalog(): string[] {
   return errors
 }
 
+/**
+ * 权限目录版本号(SemVer)。**结构性改动**(增删菜单/权限、改市场归属)时手动 bump。
+ * 语义:后端见版本号变化 → **全量刷新**该市场目录(丢弃旧、以本次为准),而非逐条增量 diff。
+ * 不变则走增量对账(has_changes)。
+ */
+export const PERMISSION_CATALOG_VERSION = '1.0.0'
+
 export const permissionCatalogMeta = {
+  version: PERMISSION_CATALOG_VERSION,
   legacy_permission_ids: LEGACY_PERMISSION_IDS,
   permission_count: PERMISSION_CATALOG_DEFINITIONS.length,
   menu_count: PERMISSION_CATALOG_MENUS.length,

@@ -12,7 +12,7 @@ import { PERMS } from '@/config/permissions'
 import { useMouseGlow } from '@/hooks/use-mouse-glow'
 import { TopUpModal } from './TopUpModal'
 import { PromoRedeemForm } from './PromoRedeemForm'
-import { formatBalance } from './formatBalance'
+import { calculateSpendableBalance, formatBalance } from './formatBalance'
 
 export type BalanceTab = 'main' | 'gift' | 'reward'
 
@@ -35,8 +35,15 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
   const [refreshing, setRefreshing] = useState(false)
 
   const { data: balance, isLoading: balanceLoading } = useBalance(tenantId)
-  const { main: availableMain } = formatBalance(balance?.available.amount)
-  const { data: breakdown } = useBalanceBreakdown(tenantId)
+  const { data: breakdown, isLoading: breakdownLoading } = useBalanceBreakdown(tenantId)
+  const spendableBalance = calculateSpendableBalance(
+    balance?.available.amount,
+    breakdown?.gift.amount,
+    breakdown?.reward.amount,
+  )
+  const { main: spendableTotal } = formatBalance(
+    spendableBalance === undefined ? undefined : String(spendableBalance),
+  )
 
   const mainRef = useMouseGlow<HTMLButtonElement>()
   const giftRef = useMouseGlow<HTMLButtonElement>()
@@ -127,7 +134,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             <div className="flex items-baseline gap-1">
               <span className="text-lg font-medium text-mg-text-2">{currencySymbol}</span>
               <span className="text-4xl font-bold tracking-tight tabular-nums leading-none spendable-amount-glow">
-                {balanceLoading ? '...' : availableMain}
+                {balanceLoading || breakdownLoading ? '...' : spendableTotal}
               </span>
             </div>
           </div>

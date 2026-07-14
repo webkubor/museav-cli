@@ -8,3 +8,14 @@ export function formatBalance(amountStr: string | undefined): { main: string; ex
   const s = formatMoney(amountStr, '')
   return { main: s, exact: s }
 }
+
+/** PRD：可消费合计 = 可用主余额 + 赠送余额 + 奖励余额。 */
+export function calculateSpendableBalance(
+  availableMain: string | undefined,
+  gift: string | undefined,
+  reward: string | undefined,
+): number | undefined {
+  const amounts = [availableMain, gift, reward].map((amount) => Number(amount))
+  if (amounts.some((amount) => !Number.isFinite(amount))) return undefined
+  return amounts.reduce((total, amount) => total + amount, 0)
+}

@@ -1,7 +1,6 @@
 import ky, { type ResponsePromise } from 'ky'
 import type { ApiError, ApiResponse, QueryParams } from '@/types'
 import { injectHeaders } from '@/lib/request-headers'
-import { getMarket } from '@/lib/market'
 import { useLangStore } from '@/store/use-brand-store'
 import { handleSessionExpired } from '@/lib/auth/auth-controller'
 import { encryptRequest, decryptResponse } from '@/lib/crypto/secure-transport'
@@ -13,7 +12,6 @@ const API_V1_PREFIX = 'api/v1'
 // RSA+AES envelope instead of a plaintext JSON body, and receive an encrypted
 // {iv,data} response. Normalized (no leading slash) to match normalizePath.
 const SECURE_PATHS = new Set(['auth/login', 'auth/register', 'auth/password/reset'])
-const DEV_TOOLS_ENABLED = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
 export const SERVER_ERROR_MESSAGE = '服务暂时异常，请稍后再试'
 
 function normalizeApiHost(value: string | undefined): string | null {
@@ -24,8 +22,9 @@ function normalizeApiHost(value: string | undefined): string | null {
 }
 
 export function apiBaseUrl() {
-  // dev/test 工具条开启时从 store 读运行时 market，支持切换 API 域名
-  const market = DEV_TOOLS_ENABLED ? useLangStore.getState().market : getMarket()
+  // API 域名走 platform-config 驱动的 store（市场真源）。store 初值=域名探测(bootstrap 兜底,
+  // 化解 platform-config 自身请求的鸡生蛋)，配置到达后覆盖——test 单域名可切两端验收（#466）。
+  const market = useLangStore.getState().market
   const marketDomain =
     market === 'domestic'
       ? import.meta.env.VITE_DOMESTIC_API_DOMAIN

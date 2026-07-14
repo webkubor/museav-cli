@@ -14,7 +14,8 @@
  *   「禁用」，绝不因缺失而抛错或阻断（不进 vite REQUIRED_URL_ENV）。
  * - SDK 脚本异步注入、promise 去重单例，任何加载失败都降级为 resolve(null)。
  */
-import { getMarket, getMarketDefaultLang, type Market } from '@/lib/market'
+import { getMarketDefaultLang, type Market } from '@/lib/market'
+import { useLangStore } from '@/store/use-brand-store'
 
 const SDK_SRC = 'https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js'
 const LOAD_TIMEOUT_MS = 8000
@@ -52,7 +53,8 @@ function resolveSceneConfig(market: Market): { sceneId: string; prefix: string }
 
 /** True when the active region has a configured scene — the frontend "enabled" switch. */
 export function isCaptchaEnabled(): boolean {
-  return resolveSceneConfig(getMarket()) !== null
+  // 走 platform-config 驱动的 store（初值=域名探测,配置到达后覆盖）——test 单域名可切两端（#466）
+  return resolveSceneConfig(useLangStore.getState().market) !== null
 }
 
 let sdkPromise: Promise<boolean> | null = null
@@ -106,7 +108,7 @@ let mountSeq = 0
  * null immediately and never touches the SDK).
  */
 export function getCaptchaParam(): Promise<string | null> {
-  const market = getMarket()
+  const market = useLangStore.getState().market
   const scene = resolveSceneConfig(market)
   if (!scene) return Promise.resolve(null) // disabled for this region
 

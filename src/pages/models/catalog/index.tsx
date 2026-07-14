@@ -11,7 +11,7 @@ import { LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers } from 
 import { listModels, listModelTags, listModelFamilies } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
-import { getMarket } from '@/lib/market'
+import { useMarket } from '@/hooks/useMarket'
 import type { CatalogModelItem } from '@/types'
 import { GLOBAL_FALLBACK_MODELS } from './global-fallback-models'
 import { CatalogCard } from './CatalogCard'
@@ -35,7 +35,8 @@ export default function ModelsCatalogPage() {
   const isZh = i18n.language.startsWith('zh')
   // 海外(global)catalog 接口暂未到位 → 不请求后端，用静态兜底清单展示主流国际模型。
   // 接口就绪后删掉本 isGlobal 分支即可回到后端数据。
-  const isGlobal = getMarket() === 'global'
+  // 业务判断走 platform-config 驱动的 store（useMarket），而非域名——test 单域名可切两端验收（#466）
+  const isGlobal = useMarket() === 'global'
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   const [search, setSearch] = useState('')

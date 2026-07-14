@@ -15,41 +15,6 @@ interface DashboardSidebarProps {
   settingsLabel: string
 }
 
-const SidebarSystemStatus: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
-  const { t } = useTranslation()
-  const buildTime = __BUILD_TIME__.slice(0, 16).replace('T', ' ')
-  const buildMode = import.meta.env.MODE.toUpperCase()
-
-  if (collapsed) {
-    return (
-      <div
-        className="flex justify-center pb-3 pt-1"
-        title={`v${__APP_VERSION__} · ${buildMode} · ${t('common.online')}`}
-      >
-        <span className="h-2 w-2 rounded-full bg-mg-success shadow-[0_0_0_3px_color-mix(in_srgb,var(--mg-success)_14%,transparent)]" />
-      </div>
-    )
-  }
-
-  return (
-    <div className="mx-3 mb-3 mt-1 px-1.5 py-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate font-mono text-xs leading-none text-mg-text-3">
-          v{__APP_VERSION__} · {__BUILD_TAG__ || __BUILD_COMMIT__}
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-xs font-bold leading-none text-mg-success">
-          <span className="h-1.5 w-1.5 rounded-full bg-mg-success" />
-          {t('common.online')}
-        </span>
-      </div>
-      <div className="mt-2 flex items-center justify-between gap-2 font-mono text-xs leading-none text-mg-text-4">
-        <span>{buildMode}</span>
-        <span>{buildTime} UTC</span>
-      </div>
-    </div>
-  )
-}
-
 /** 分组小标题（左右分隔线 + 居中标题；折叠态只留一条分隔线） */
 const SidebarGroupLabel: React.FC<{ text: string; collapsed: boolean }> = ({ text, collapsed }) => (
   <div className={cn('flex items-center gap-2 py-3 select-none px-4', collapsed && 'px-2')}>
@@ -339,7 +304,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       {/* 底部促销轮播 */}
       <SidebarPromoCarousel collapsed={collapsed} />
 
-      {/* 底部设置及版本信息 */}
+      {/* 底部设置入口 */}
       <div className="pt-2 border-t border-mg-border/40 bg-mg-bg-0 shrink-0 relative">
         <SidebarSettingsButton
           collapsed={collapsed}
@@ -347,7 +312,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           onSelect={onSelect}
           label={settingsLabel}
         />
-        <SidebarSystemStatus collapsed={collapsed} />
       </div>
     </aside>
   )

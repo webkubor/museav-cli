@@ -104,17 +104,22 @@ POST /api/v1/menu-permissions/catalog/sync
 }
 ```
 
-## 7.5 市场入口差异 · platform-config 必须字段化
+## 7.5 市场准入规则 · 归「权限门」（不进 platform-config）
 
-国内/国外的**入口级差异**不属于权限目录,归 `GET /platform-config`(按 site 返回)。当前响应只有 login/pay/withdraw methods,**缺注册与手机号字段**,后端必须补:
+登录/注册/绑手机/模型体验这类**所有人可见、但需按市场强制约束**的行为,归权限体系的**权限门**(admin /perm-gate,路由级 enforce 拦截),不是 platform-config 的配置项。规则是**硬规则**:国内邮箱注册 = 无法注册,不是"开关可调"。
 
-| 字段 | 类型 | china | global | 驱动的前端行为 |
+**后端必须在权限门层按市场落这些规则:**
+
+| 规则 | china | global | 强制点(路由级) | 建议错误码 |
 | :--- | :--- | :--- | :--- | :--- |
-| `signup_methods` | string[] | `["phone"]` | `["email"]` | 注册入口:国外邮箱注册,国内无邮箱注册(手机号) |
-| `phone_binding_required` | boolean | `true` | `false` | 登录后强制绑手机弹窗:国内必须绑,国外不绑 |
+| 邮箱注册 | **拒绝**(无法注册) | 放行 | `POST /v1/auth/register`(email 通道) | `SIGNUP_METHOD_NOT_AVAILABLE` |
+| 手机注册 | 放行 | 拒绝 | `POST /v1/auth/register`(phone 通道)/ sms 发码 | 同上 |
+| 强制绑手机 | **已登录且未绑手机 → 拦截业务路由**,仅放行 绑定/登出/会话 相关路由 | 无此门 | 业务 /v1 路由统一前置检查 | `PHONE_BINDING_REQUIRED` |
+| 模型体验约束 | 按市场规则约束(匿名限次等) | 同左 | /v1/experience/* | — |
 
-- 前端现状:这两个差异目前按 `market === 'china'` 硬编码(signup/index.tsx、login/index.tsx、PhoneBindingGuard),字段就绪后改为**直读 platform-config**,删除硬编码判断。
-- 语义与既有 `enabled_login_methods` 一致:后端按 site 返回该市场的值,前端零判断直用。
+- **前端行为**(已实现,规则化硬编码即正解):国内不渲染邮箱注册入口、登录后未绑手机弹不可跳过的绑定弹窗;这只是体验层,**真正的拦截必须在权限门**(同 §11 "前端隐藏只是体验优化"原则)。
+- 前端会把上述错误码映射为对应引导(如收到 `PHONE_BINDING_REQUIRED` → 拉起绑定弹窗),错误码定稿后同步给前端。
+- platform-config 保持只管站点能力(支付渠道/币种/登录方式列表),**不加** signup/绑手机字段。
 
 ## 8. 后端必须实现（本契约为准）
 

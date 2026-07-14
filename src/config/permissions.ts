@@ -39,6 +39,11 @@ export const PERMISSION_DEFINITIONS = {
 
   // ── API Keys ─────────────────────────────────
   API_KEYS_CREATE: { id: 'api_keys:create', granularity: 'action', description: '创建 API Key' },
+  // 按类型细分创建权限（#54）：不同角色可创建的 Key 类型不同（成员=仅私有；owner/admin/空间负责人=全部）。
+  // 粒度细化后，后台角色矩阵可按类型单独授权，API 层可按类型强制，取代前端角色启发式。
+  API_KEYS_CREATE_PERSONAL: { id: 'api_keys.personal:create', granularity: 'action', description: '创建私有 Key' },
+  API_KEYS_CREATE_MEMBER:   { id: 'api_keys.member:create',   granularity: 'action', description: '创建成员 Key' },
+  API_KEYS_CREATE_SERVICE:  { id: 'api_keys.service:create',  granularity: 'action', description: '创建服务 Key' },
   API_KEYS_EDIT:   { id: 'api_keys:edit',   granularity: 'action', description: '编辑 API Key' },
   API_KEYS_REVEAL: { id: 'api_keys:reveal', granularity: 'action', description: '查看 API Key 明文' },
   API_KEYS_REVOKE: { id: 'api_keys:revoke', granularity: 'action', description: '撤销 API Key' },

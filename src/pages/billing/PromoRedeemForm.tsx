@@ -9,8 +9,10 @@ import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 
 // ─── Sub-components: PromoRedeemForm ──────────────────────────────────────
+// 弹窗内的兑换优惠码表单：垂直布局，含 BILLING_PROMO_REDEEM 权限门控。
+// 兑换成功后回调 onSuccess（用于关闭弹窗）。
 
-export function PromoRedeemForm({ tenantId }: { tenantId: string }) {
+export function PromoRedeemForm({ tenantId, onSuccess }: { tenantId: string; onSuccess?: () => void }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { hasPermission } = usePermissions()
@@ -24,6 +26,7 @@ export function PromoRedeemForm({ tenantId }: { tenantId: string }) {
       queryClient.invalidateQueries({ queryKey: ['balance', 'breakdown', tenantId] })
       appToast.success(t('billing.promo.success', { amount: data.credited.amount, currency: data.credited.currency }))
       setCode('')
+      onSuccess?.()
     },
     onError: (err: Error) => {
       appToast.error(getPromoRedeemErrorMessage(err, t))
@@ -42,20 +45,21 @@ export function PromoRedeemForm({ tenantId }: { tenantId: string }) {
   if (!canRedeem) return null
 
   return (
-    <form onSubmit={handleSubmit} className="flex-1 flex gap-2 min-w-0 sm:max-w-xs ml-auto">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <input
         type="text"
         value={code}
         onChange={(e) => setCode(e.target.value)}
         placeholder={t('billing.promo.placeholder')}
         disabled={redeem.isPending}
-        className="flex-1 min-w-0 h-10 px-3 rounded-md border border-mg-border bg-mg-fill-0/30 hover:bg-mg-fill-0 focus:bg-mg-fill-0 text-xs focus:outline-none focus:ring-1 focus:ring-brand-glow focus:border-brand-base transition-all font-medium text-mg-text-1"
+        autoFocus
+        className="w-full h-11 px-3.5 rounded-md border border-mg-border bg-mg-fill-0/30 hover:bg-mg-fill-0 focus:bg-mg-fill-0 text-sm focus:outline-none focus:ring-1 focus:ring-brand-glow focus:border-brand-base transition-all font-medium text-mg-text-1"
       />
       <Button
         type="submit"
-        variant="outline"
+        variant="brand"
         disabled={redeem.isPending || !code.trim()}
-        className="h-10 px-4 text-xs font-semibold rounded-md hover:bg-mg-fill-0 border border-mg-border shrink-0 transition-all select-none text-mg-text-2"
+        className="w-full h-11 text-sm font-bold rounded-md"
       >
         {redeem.isPending ? t('billing.rechargeModal.submitting') : t('billing.promo.submit')}
       </Button>

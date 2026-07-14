@@ -12,7 +12,8 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import type { UsageRankingItem } from '@/types'
 import { cn } from '@/lib/utils'
-import { formatMoney, formatNumber } from './usage-utils'
+import { formatMoney, formatNumber, CHART_CAT_COLORS, CHART_OTHER_COLOR } from './usage-utils'
+import { ModelDonutChart, type DonutSlice } from './usage-charts'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import {
   LuKey,
@@ -335,7 +336,96 @@ export function DistributionPanel({
   )
 }
 
-/** 模型消费分布卡（含工作空间归因次级行 + Top5 折叠「其他」）。 */
+/**
+ * 从消费排行项构建环形图分片（Top5 + 「其他」聚合），配色沿用趋势分组的分类色槽。
+ * 供「模型分布」饼图卡消费；返回空数组表示无数据。
+ */
+function buildDonutSlices(items: UsageRankingItem[], otherLabel: string): DonutSlice[] {
+  const withSpend = items.filter((it) => spendAmount(it) > 0)
+  if (withSpend.length === 0) return []
+  const top = withSpend.slice(0, DIST_TOP_N)
+  const rest = withSpend.slice(DIST_TOP_N)
+  const slices: DonutSlice[] = top.map((it, index) => ({
+    key: it.key ?? `${displayRankingName(it)}-${index}`,
+    label: displayRankingName(it),
+    value: spendAmount(it),
+    share: rankingSharePercent(it),
+    color: CHART_CAT_COLORS[index % CHART_CAT_COLORS.length],
+  }))
+  if (rest.length > 0) {
+    slices.push({
+      key: '__other__',
+      label: otherLabel,
+      value: rest.reduce((sum, it) => sum + spendAmount(it), 0),
+      share: rest.reduce((sum, it) => sum + rankingSharePercent(it), 0),
+      color: CHART_OTHER_COLOR,
+    })
+  }
+  return slices
+}
+
+/** 模型分布饼图卡（对齐 PRD #42）：环形图 + 中心总消费 + Top5/「其他」图例（名称·金额·占比）。 */
+export function ModelDistributionDonutPanel({
+  items,
+  totalSpendAmount,
+  isLoading,
+  isError,
+  onRetry,
+  currencySymbol,
+  emptyTitle,
+  emptyDesc,
+}: ModelDistributionPanelProps) {
+  const { t } = useTranslation()
+  const slices = buildDonutSlices(items, t('usage.distribution.other'))
+  const totalAmount =
+    totalSpendAmount != null ? parseFloat(totalSpendAmount) || 0 : items.reduce((s, it) => s + spendAmount(it), 0)
+
+  return (
+    <Card className="min-w-0 p-5 sm:p-6">
+      <div className="mb-5">
+        <div className="text-sm font-semibold text-mg-text-1">{t('usage.distribution.title')}</div>
+        <div className="mt-1 text-[12px] text-mg-text-3">{t('usage.distribution.chartDesc')}</div>
+      </div>
+      {isError ? (
+        <ErrorBlock message={t('usage.error.rankings')} onRetry={onRetry} />
+      ) : isLoading ? (
+        <PanelSkeleton rows={5} />
+      ) : slices.length === 0 ? (
+        <EmptyState title={emptyTitle} description={emptyDesc} />
+      ) : (
+        <div className="flex flex-col items-center gap-5 sm:flex-row">
+          <div className="w-full max-w-[220px] shrink-0">
+            <ModelDonutChart
+              slices={slices}
+              centerLabel={t('usage.distribution.total')}
+              centerValue={formatMoney(String(totalAmount), currencySymbol)}
+              currencySymbol={currencySymbol}
+              noDataLabel={emptyTitle}
+            />
+          </div>
+          <ul className="min-w-0 flex-1 space-y-2.5">
+            {slices.map((s) => (
+              <li key={s.key} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: s.color }} />
+                  <span className="truncate text-sm font-medium text-mg-text-1" title={s.label}>
+                    {s.label}
+                  </span>
+                </div>
+                <span className="text-right text-sm tabular-nums text-mg-text-2">
+                  {formatMoney(String(s.value), currencySymbol)}
+                  <span className="ml-1 text-mg-text-3">({s.share.toFixed(1)}%)</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </Card>
+  )
+}
+
+/** 模型消费排行卡（含工作空间归因次级行 + Top5 折叠「其他」）。 */
 export function ModelDistributionPanel({
   items,
   totalSpendAmount,
@@ -351,7 +441,7 @@ export function ModelDistributionPanel({
 
   return (
     <DistributionPanel
-      title={t('usage.distribution.title')}
+      title={t('usage.distribution.rankTitle')}
       items={items}
       totalSpendAmount={totalSpendAmount}
       currencySymbol={currencySymbol}

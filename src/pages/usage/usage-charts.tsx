@@ -8,11 +8,12 @@ import {
   ResponsiveContainer,
   AreaChart, Area,
   BarChart, Bar,
+  PieChart, Pie, Cell,
   XAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts'
 import type { SeriesDataPoint } from '@/types'
 import { formatChartTooltipDate } from '@/lib/format-date'
-import { type Metric, formatNumber } from './usage-utils'
+import { type Metric, formatMoney, formatNumber } from './usage-utils'
 
 // 指标配色与 KPI 卡片保持一致：消费=琥珀、请求=绿、Token=蓝
 const METRIC_COLOR: Record<Metric, string> = {
@@ -384,6 +385,102 @@ export function HistogramChart({ buckets, noDataLabel, requestUnitLabel }: Histo
         />
       </BarChart>
     </ResponsiveContainer>
+  )
+}
+
+// ─── Donut (Recharts Pie) 模型消费分布饼图 ────────────────
+
+export interface DonutSlice {
+  key: string
+  label: string
+  value: number
+  /** 该分片占总消费的百分比 0-100（后端 share_percent 或本地兜底）。 */
+  share: number
+  color: string
+}
+
+interface ModelDonutChartProps {
+  slices: DonutSlice[]
+  /** 圆环中心主标题（如「总消费」）。 */
+  centerLabel: string
+  /** 圆环中心金额（已带币种，如「¥2,683.4」）。 */
+  centerValue: string
+  currencySymbol: string
+  noDataLabel: string
+}
+
+interface DonutTooltipProps {
+  active?: boolean
+  payload?: Array<{ payload: DonutSlice }>
+  currencySymbol: string
+}
+
+function DonutTooltip({ active, payload, currencySymbol }: DonutTooltipProps) {
+  if (!active || !payload?.length) return null
+  const d = payload[0].payload
+  return (
+    <div style={TOOLTIP_STYLE}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+        <span style={{ width: 8, height: 8, borderRadius: 2, background: d.color, flexShrink: 0 }} />
+        <span style={{ color: 'var(--mg-text-1)', fontWeight: 700 }}>{d.label}</span>
+      </div>
+      <div style={{ color: 'var(--mg-text-2)', fontSize: '12px', fontVariantNumeric: 'tabular-nums' }}>
+        {formatMoney(String(d.value), currencySymbol)} · {d.share.toFixed(1)}%
+      </div>
+    </div>
+  )
+}
+
+/** 模型消费分布环形图：中心显示总消费，各分片按消费占比着色（Top5 + 「其他」，配色同趋势分组）。 */
+export function ModelDonutChart({ slices, centerLabel, centerValue, currencySymbol, noDataLabel }: ModelDonutChartProps) {
+  if (slices.length === 0) {
+    return (
+      <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mg-text-3)', fontSize: '13px' }}>
+        {noDataLabel}
+      </div>
+    )
+  }
+  return (
+    <div style={{ position: 'relative', width: '100%', height: 200 }}>
+      <ResponsiveContainer width="100%" height={200}>
+        <PieChart>
+          <Pie
+            data={slices}
+            dataKey="value"
+            nameKey="label"
+            innerRadius={62}
+            outerRadius={92}
+            paddingAngle={2}
+            startAngle={90}
+            endAngle={-270}
+            stroke="var(--mg-bg-0)"
+            strokeWidth={2}
+            isAnimationActive={false}
+          >
+            {slices.map((s) => (
+              <Cell key={s.key} fill={s.color} />
+            ))}
+          </Pie>
+          <Tooltip content={<DonutTooltip currencySymbol={currencySymbol} />} />
+        </PieChart>
+      </ResponsiveContainer>
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          pointerEvents: 'none',
+        }}
+      >
+        <span style={{ color: 'var(--mg-text-3)', fontSize: '12px' }}>{centerLabel}</span>
+        <span style={{ color: 'var(--mg-text-1)', fontSize: '18px', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+          {centerValue}
+        </span>
+      </div>
+    </div>
   )
 }
 

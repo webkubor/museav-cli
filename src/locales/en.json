@@ -1187,6 +1187,9 @@
     },
     "distribution": {
       "title": "Model Distribution",
+      "chartDesc": "Share of spend by model",
+      "rankTitle": "Model Ranking",
+      "rankDesc": "Sorted by spend",
       "memberTitle": "Member Distribution",
       "apiKeyTitle": "API Key Distribution",
       "bySpend": "By spend",

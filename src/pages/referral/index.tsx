@@ -21,6 +21,8 @@ import { FirstChargeLockGate } from '@/components/ui/FirstChargeLockGate'
 import { appToast } from '@/lib/app-toast'
 import { formatDateTime } from '@/lib/format-date'
 import { useAuthStore } from '@/store/auth'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useClientPage } from '@/hooks/use-client-page'
 import { useCursorPager } from '@/hooks/use-cursor-pager'
@@ -66,6 +68,9 @@ const WITHDRAWAL_STATUS_VARIANT: Record<WithdrawalStatus, 'warning' | 'success' 
 
 export default function ReferralPage() {
   const { i18n } = useTranslation()
+  const { hasPermission } = usePermissions()
+  // 提现入口:功能开关 + referral.reward:withdraw 权限双重门（#479）；开关一开也不会对无权限者裸奔
+  const canWithdraw = WITHDRAW_ENABLED && hasPermission(PERMS.REFERRAL_REWARD_WITHDRAW)
   const text = i18n.language.startsWith('zh') ? referralCopy.zh : referralCopy.en
 
   // 推荐计划按当前租户隔离：从哪个租户发出邀请，返佣就进入哪个租户的奖励余额。
@@ -223,7 +228,7 @@ export default function ReferralPage() {
   const tabs: { key: TabKey; label: string }[] = [
     { key: 'invitees', label: text.tabInvitees },
     { key: 'commissions', label: text.tabCommissions },
-    ...(WITHDRAW_ENABLED ? [{ key: 'withdrawals' as TabKey, label: text.tabWithdrawals }] : []),
+    ...(canWithdraw ? [{ key: 'withdrawals' as TabKey, label: text.tabWithdrawals }] : []),
   ]
 
   const isZh = i18n.language.startsWith('zh')
@@ -420,7 +425,7 @@ export default function ReferralPage() {
               onNext={() => rewardPager.next(rewardRecordsPage?.next_cursor)}
             />
           </TabsContent>
-          {WITHDRAW_ENABLED && (
+          {canWithdraw && (
             <TabsContent value="withdrawals" className="mt-0">
               <WithdrawalsTable withdrawals={withdrawalList} text={text} />
             </TabsContent>

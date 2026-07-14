@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { formatDateTime } from '@/lib/format-date'
 import { useCursorPager } from '@/hooks/use-cursor-pager'
 import { usePermissions } from '@/hooks/use-permissions'
+import { isDomestic } from '@/lib/market'
 import { PERMS } from '@/config/permissions'
 import { listIncomeRecords } from '@/services/billing'
 import type { IncomeRecord, IncomeRecordType, IncomeBalanceBucket } from '@/services/billing'
@@ -72,7 +73,8 @@ const TYPE_BADGE: Record<IncomeRecordType, 'default' | 'info' | 'purple'> = {
 export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: string; currencySymbol: string }) {
   const { t } = useTranslation()
   const { hasPermission } = usePermissions()
-  const canInvoice = hasPermission(PERMS.BILLING_INVOICE_VIEW)
+  // 发票功能仅国内站有（市场特例，PRD）；叠加 billing.invoice:view 权限
+  const canInvoice = isDomestic() && hasPermission(PERMS.BILLING_INVOICE_VIEW)
 
   const [ledgerTab, setLedgerTab] = useState<'transactions' | 'invoices'>('transactions')
   const [type, setType] = useState<'all' | IncomeRecordType>('all')

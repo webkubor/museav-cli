@@ -13,6 +13,8 @@ import {
 } from 'react-icons/lu'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { CodeBlock } from '@/components/ui/CodeBlock'
@@ -101,6 +103,9 @@ export function LogDetailSheet({
   onOpenLogSettings?: (workspaceId: string) => void
 }) {
   const { t } = useTranslation()
+  const { hasPermission } = usePermissions()
+  // 查看请求/响应原文需 logs.payload:view（#479）：无权限不展示原文区,只给占位,绝不泄露 Prompt/Response
+  const canViewPayload = hasPermission(PERMS.LOGS_PAYLOAD_VIEW)
   const statusMap = buildStatusMap(t)
   // 归属名称解析（#47）：model-logs 只回 id（api_key.name / account.display_name 实为 id），
   // 这里查成员/Key 列表映射成可读名称，取不到显示「—」，不再裸露 id。
@@ -218,16 +223,22 @@ export function LogDetailSheet({
             </section>
           )}
 
-          <TranscriptSection
-            row={row}
-            requestPayloadText={requestPayloadText}
-            responsePayloadText={responsePayloadText}
-            payloadView={payloadView}
-            onPayloadViewChange={onPayloadViewChange}
-            payloadLoading={payloadLoading}
-            onDownload={onDownload}
-            onOpenLogSettings={onOpenLogSettings}
-          />
+          {canViewPayload ? (
+            <TranscriptSection
+              row={row}
+              requestPayloadText={requestPayloadText}
+              responsePayloadText={responsePayloadText}
+              payloadView={payloadView}
+              onPayloadViewChange={onPayloadViewChange}
+              payloadLoading={payloadLoading}
+              onDownload={onDownload}
+              onOpenLogSettings={onOpenLogSettings}
+            />
+          ) : (
+            <section className="rounded-lg border border-mg-border bg-mg-fill-0/40 p-4 text-center mg-text-caption text-mg-text-3">
+              无查看请求/响应原文的权限
+            </section>
+          )}
 
           {/* #49：「查看同链路日志」需求里没有且无法正确跳转，已移除，仅保留复制 Trace。 */}
           <footer className="flex flex-wrap items-center gap-3 border-t border-mg-border pt-4">

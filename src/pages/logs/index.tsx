@@ -10,6 +10,8 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import Select from '@/components/ui/Select'
 import { isApiErrorCode } from '@/lib/request-error-message'
 import { getLogPayload, listCallLogs } from '@/services/logs'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 import { listApiKeys } from '@/services/api-keys'
 import { listModels } from '@/services/catalog'
 import { listTenantMembers } from '@/services/tenants'
@@ -338,15 +340,18 @@ export default function LogsPage() {
   const forbidden = isApiErrorCode(error, 40301)
 
   // 详情内容区（transcript）需同时展示请求 + 响应两栏，故两份 payload 都加载
+  // 仅 logs.payload:view 有权限才拉原文（#479）：无权限不发请求,不泄露 Prompt/Response
+  const { hasPermission } = usePermissions()
+  const canViewPayload = hasPermission(PERMS.LOGS_PAYLOAD_VIEW)
   const requestPayloadQuery = useQuery({
     queryKey: ['logs', selectedLog?.request_id, 'payload', 'request'],
     queryFn: () => getLogPayload(selectedLog!.request_id, 'request'),
-    enabled: Boolean(selectedLog?.request_id),
+    enabled: Boolean(selectedLog?.request_id) && canViewPayload,
   })
   const responsePayloadQuery = useQuery({
     queryKey: ['logs', selectedLog?.request_id, 'payload', 'response'],
     queryFn: () => getLogPayload(selectedLog!.request_id, 'response'),
-    enabled: Boolean(selectedLog?.request_id),
+    enabled: Boolean(selectedLog?.request_id) && canViewPayload,
   })
 
   const requestPayloadText = decodePayloadBody(requestPayloadQuery.data?.body_b64)

@@ -27,7 +27,7 @@ export type NavGroup = {
  *
  * 维度说明：
  *   isNonPersonal  — tenant.type !== 'personal'
- *   isDomestic     — market === 'domestic'
+ *   isDomestic     — market === 'china'
  *   isDevTools     — VITE_SHOW_DEV_TOOLS === 'true'
  *   isOrgManager / isSpaceManager — 保留给非权限型业务文案；菜单访问权统一由 Permission ID 决定。
  */

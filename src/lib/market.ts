@@ -9,18 +9,18 @@ export type { Market } from '@/lib/market-domain'
  * dev/test 单域名下预览另一市场，走 store 运行时切换，不经过这里。
  */
 export function getMarket(): Market {
-  if (typeof window === 'undefined') return 'domestic'
+  if (typeof window === 'undefined') return 'china'
   return marketFromHostname(window.location.hostname)
 }
 
 export function isDomestic(): boolean {
-  return getMarket() === 'domestic'
+  return getMarket() === 'china'
 }
 
 export type Lang = 'zh' | 'en'
 
 export function getMarketDefaultLang(market: Market): Lang {
-  return market === 'domestic' ? 'zh' : 'en'
+  return market === 'china' ? 'zh' : 'en'
 }
 
 /**

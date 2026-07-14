@@ -60,7 +60,7 @@ export function DevToolbar() {
   const switchMarket = (m: Market) => {
     setMarket(m)
     document.documentElement.dataset.market = m
-    // 重置品牌主题为 default，让主题色回到由 data-market 驱动（domestic=indigo / global=emerald）
+    // 重置品牌主题为 default，让主题色回到由 data-market 驱动（china=indigo / global=emerald）
     applyBrandTheme({ mode: 'default' })
     saveBrandTheme({ mode: 'default' })
     // 本地 dev：测试后端只有一套（platform-config 固定），override 业务真源缓存，
@@ -69,8 +69,8 @@ export function DevToolbar() {
       old
         ? {
             ...old,
-            site: m === 'domestic' ? 'china' : 'international',
-            settlement_currency: m === 'domestic' ? 'CNY' : 'USD',
+            site: m, // market 即 site（'china' | 'global'），无转换
+            settlement_currency: m === 'china' ? 'CNY' : 'USD',
           }
         : old
     )
@@ -101,7 +101,7 @@ export function DevToolbar() {
       <Seg
         value={market}
         options={[
-          { v: 'domestic', l: '国内' },
+          { v: 'china', l: '国内' },
           { v: 'global', l: '海外' },
         ]}
         onChange={switchMarket}

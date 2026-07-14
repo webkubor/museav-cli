@@ -10,7 +10,7 @@
  *                     （后端对缺失 param 亦 fail-open，默认 staged rollout 姿态）
  *
  * 设计要点：
- * - SceneId/prefix 走 build-time env，按国内(domestic)/海外(global)双端区分，未配即
+ * - SceneId/prefix 走 build-time env，按国内(china)/海外(global)双端区分，未配即
  *   「禁用」，绝不因缺失而抛错或阻断（不进 vite REQUIRED_URL_ENV）。
  * - SDK 脚本异步注入、promise 去重单例，任何加载失败都降级为 resolve(null)。
  */
@@ -43,7 +43,8 @@ declare global {
 
 /** Per-region scene config from build-time env; null when this region is unconfigured (= disabled). */
 function resolveSceneConfig(market: Market): { sceneId: string; prefix: string } | null {
-  const suffix = market === 'domestic' ? 'DOMESTIC' : 'GLOBAL'
+  // env 变量名后缀是部署配置键（VITE_ALIYUN_CAPTCHA_*_DOMESTIC），不随市场词汇改名
+  const suffix = market === 'china' ? 'DOMESTIC' : 'GLOBAL'
   const env = import.meta.env as Record<string, string | undefined>
   const sceneId = (env[`VITE_ALIYUN_CAPTCHA_SCENE_ID_${suffix}`] ?? '').trim()
   const prefix = (env[`VITE_ALIYUN_CAPTCHA_PREFIX_${suffix}`] ?? '').trim()
@@ -144,7 +145,7 @@ export function getCaptchaParam(): Promise<string | null> {
           element: `#${id}-el`,
           button: `#${id}-btn`,
           language: getMarketDefaultLang(market) === 'zh' ? 'cn' : 'en',
-          region: market === 'domestic' ? 'cn' : 'sgp',
+          region: market === 'china' ? 'cn' : 'sgp',
           // The SDK invokes this with the verify token once the user solves the
           // challenge. We resolve the outer promise with it and tell the widget
           // the "business" step succeeded so it closes; the real request is done

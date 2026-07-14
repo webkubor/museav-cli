@@ -9,9 +9,9 @@ describe('marketFromHostname — 域名→市场唯一真源', () => {
   })
 
   it('其余域名（含生产/测试/本地）一律国内', () => {
-    expect(marketFromHostname('console.modelgo.com')).toBe('domestic')
-    expect(marketFromHostname('console.test.modelgo.com')).toBe('domestic')
-    expect(marketFromHostname('localhost')).toBe('domestic')
-    expect(marketFromHostname('127.0.0.1')).toBe('domestic')
+    expect(marketFromHostname('console.modelgo.com')).toBe('china')
+    expect(marketFromHostname('console.test.modelgo.com')).toBe('china')
+    expect(marketFromHostname('localhost')).toBe('china')
+    expect(marketFromHostname('127.0.0.1')).toBe('china')
   })
 })

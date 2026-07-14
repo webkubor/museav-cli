@@ -37,6 +37,13 @@ vi.mock('@/services/auth', () => ({
 
 vi.mock('@/hooks/use-platform-config', () => ({
   useOAuthMethods: () => [],
+  useEmailAuthEnabled: () => true,
+}))
+
+// 本用例测的是邮箱登录链路；jsdom 的 localhost 会判为国内市场（手机号入口），
+// 固定为海外市场让入口直达 EmailLoginPage。
+vi.mock('@/hooks/useMarket', () => ({
+  useMarket: () => 'global',
 }))
 
 const mockedCheckLoginEmail = vi.mocked(checkLoginEmail)

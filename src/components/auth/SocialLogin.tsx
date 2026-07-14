@@ -15,8 +15,8 @@ export function SocialLogin({ redirectTo }: Props) {
   const oauthMethods = useOAuthMethods()
 
   const MARKET_FALLBACK: Record<string, string[]> = {
-    domestic: ['wechat', 'github'],
-    global:   ['google', 'github'],
+    china:  ['wechat', 'github'],
+    global: ['google', 'github'],
   }
   // OAUTH_ICONS 只收录受支持的 provider，过滤后即可安全收窄为 OAuthProvider
   const methods = (oauthMethods.length > 0 ? oauthMethods : (MARKET_FALLBACK[market] ?? []))

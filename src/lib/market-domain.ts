@@ -3,7 +3,8 @@
  *
  * 第一性原理：生产环境里「域名」就是市场的物理事实，市场是它的纯函数派生。
  * 全线只有两个市场、两个域名：modelgo.ai 系 = 海外(global)，其余（modelgo.com /
- * test / localhost）一律国内(domestic)。不读任何构建期变量、不做兜底链——
+ * test / localhost）一律国内(china)。词汇与后端 platform-config 的 site 对齐
+ * （'china' | 'global'）。不读任何构建期变量、不做兜底链——
  * 构建配置不得凌驾于域名之上（那正是 console.modelgo.ai 误载 test 构建时
  * 主题/API 全部错乱的根因）。
  *
@@ -11,9 +12,9 @@
  * 存活在 store 里，永不进本函数。
  */
 
-export type Market = 'domestic' | 'global'
+export type Market = 'china' | 'global'
 
 /** 唯一真源：主机名 → 市场。 */
 export function marketFromHostname(hostname: string): Market {
-  return hostname.toLowerCase().includes('modelgo.ai') ? 'global' : 'domestic'
+  return hostname.toLowerCase().includes('modelgo.ai') ? 'global' : 'china'
 }

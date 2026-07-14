@@ -46,12 +46,12 @@ const schema = z.object({
 type Fields = z.infer<typeof schema>
 
 /**
- * 注册页入口：国内（domestic）登录与注册统一为手机号一键入口，重定向到 /login；
+ * 注册页入口：国内（china）登录与注册统一为手机号一键入口，重定向到 /login；
  * 海外保留邮箱注册。在此切换而非组件内部 early-return，避免 hooks 数量不一致。
  */
 export default function SignupPage() {
   const market = useMarket()
-  return market === 'domestic' ? <DomesticSignupRedirect /> : <EmailSignupPage />
+  return market === 'china' ? <DomesticSignupRedirect /> : <EmailSignupPage />
 }
 
 function DomesticSignupRedirect() {

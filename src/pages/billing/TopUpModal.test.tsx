@@ -95,7 +95,7 @@ describe('TopUpModal', () => {
     expect(cashierURL.searchParams.get('order')).toBe('WX202606100001')
     expect(cashierURL.searchParams.get('amount')).toBe('100')
     expect(cashierURL.searchParams.get('currency')).toBe('CNY')
-    expect(cashierURL.searchParams.get('payee')).toBe('ModelGo')
+    expect(cashierURL.searchParams.get('payee')).toBe('杭州词元共生科技有限公司')
     expect(screen.queryByText('WX202606100001')).not.toBeInTheDocument()
     expect(close).not.toHaveBeenCalled()
     expect(createRecharge).toHaveBeenCalledWith(

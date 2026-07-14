@@ -24,7 +24,7 @@ export function PhoneBindingGuard() {
   const [loggingOut, setLoggingOut] = useState(false)
 
   // 仅国内环境 + 已登录 + 无手机号 → 强制补绑
-  const open = market === 'domestic' && !!account && !account.phone
+  const open = market === 'china' && !!account && !account.phone
 
   async function handleSendCode() {
     try {

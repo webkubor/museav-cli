@@ -17,7 +17,7 @@
   pointer-events: none;
   /* 用纯 CSS 渐变替代 1.2 MB PNG，消除首屏图片请求，彻底修复 LCP 瓶颈。
      渐变中心在右下角，模拟原图的光晕扩散效果。
-     domestic（靛紫）使用 --cn-base；global（翠绿）使用 --go-base。
+     china（靛紫）使用 --cn-base；global（翠绿）使用 --go-base。
      两个椭圆叠加：内层高亮核心 + 外层柔和散射，接近原 PNG 光晕质感。 */
   background-image:
     radial-gradient(

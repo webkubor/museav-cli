@@ -41,7 +41,7 @@ export function useEnabledChannels() {
   return data?.enabled_channels ?? []
 }
 
-/** 站点标识 ('china' | 'international'，API 返回) */
+/** 站点标识 ('china' | 'global'，API 返回，与前端 Market 同词汇) */
 export function useSite() {
   const { data } = usePlatformConfig()
   return data?.site ?? null

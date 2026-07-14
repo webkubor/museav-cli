@@ -73,9 +73,12 @@ import { Toaster } from 'sonner'
 // 注入市场标识（初始值用域名探测，PlatformLoader 会用 API 结果覆盖）
 document.documentElement.dataset.market = getMarket()
 
-/** 将 API 返回的 site 字段映射为 Market 枚举 */
-function siteToMarket(site: string): Market {
-  return site === 'international' ? 'global' : 'domestic'
+/**
+ * site 即 Market——市场词汇已与后端 platform-config 对齐（'china' | 'global'），
+ * 转换层消失。仅一次性归一历史遗留值（旧后端/旧 localStorage 缓存的 'international'）。
+ */
+function normalizeSite(site: string): Market {
+  return site === 'international' || site === 'global' ? 'global' : 'china'
 }
 
 function applyMarket(market: Market) {
@@ -94,7 +97,7 @@ function PlatformLoader({ onReady }: { onReady: () => void }) {
   useEffect(() => {
     const cached = localStorage.getItem(storageKeys.platformSite())
     if (cached) {
-      applyMarket(siteToMarket(cached))
+      applyMarket(normalizeSite(cached))
       onReady()
     }
 
@@ -104,7 +107,7 @@ function PlatformLoader({ onReady }: { onReady: () => void }) {
       .then((config) => {
         if (!config?.site) return
         localStorage.setItem(storageKeys.platformSite(), config.site)
-        applyMarket(siteToMarket(config.site))
+        applyMarket(normalizeSite(config.site))
       })
       .catch(() => {/* 静默失败，保持缓存/域名探测结果 */})
       .finally(() => {

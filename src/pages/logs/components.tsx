@@ -187,12 +187,11 @@ export function LogsTable({
                     size={20}
                   />
                   <div className="min-w-0">
+                    {/* 对齐 PRD 原型：模型列只显模型名，无副行（#50）。
+                        原 provider.name 副行会把后端返回的内部实例 UUID 当文案露出来，PRD 无此行。 */}
                     <strong className="block truncate mg-text-body font-bold text-mg-text-1">
                       {compactModelName(row.model.display_name)}
                     </strong>
-                    {row.provider.name && (
-                      <span className="block truncate mg-text-caption text-mg-text-3">{row.provider.name}</span>
-                    )}
                   </div>
                 </div>
               </TableCell>

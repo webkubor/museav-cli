@@ -61,6 +61,7 @@ function consoleRoute(meta: ConsoleRouteMeta) {
 }
 import { storageKeys } from '@/lib/storage'
 import { getMarket, type Market } from '@/lib/market'
+import { marketLockedByDomain } from '@/lib/market-domain'
 import { applyBrandTheme, applyTheme, getSavedBrandTheme, getSavedTheme, readThemeFromUrl, saveTheme } from '@/lib/theme'
 import { getPlatformConfig } from '@/services/platform'
 import { useLangStore } from '@/store/use-brand-store'
@@ -95,8 +96,17 @@ function applyMarket(market: Market) {
 function PlatformLoader({ onReady }: { onReady: () => void }) {
   const qc = useQueryClient()
   useEffect(() => {
+    // 生产域名前置锁定（注册入口/主题色/logo 域名一到手就定,秒渲染）：
+    // .ai=global、.com=china,platform-config 的 site 不得覆盖（后端配置错不能翻品牌,qa#480）。
+    // test 单域名/localhost 不锁,保持 platform-config 驱动可切两端（#466）。
+    const locked = marketLockedByDomain(window.location.hostname)
+    if (locked) {
+      applyMarket(locked)
+      onReady()
+    }
+
     const cached = localStorage.getItem(storageKeys.platformSite())
-    if (cached) {
+    if (!locked && cached) {
       applyMarket(normalizeSite(cached))
       onReady()
     }
@@ -107,12 +117,12 @@ function PlatformLoader({ onReady }: { onReady: () => void }) {
       .then((config) => {
         if (!config?.site) return
         localStorage.setItem(storageKeys.platformSite(), config.site)
-        applyMarket(normalizeSite(config.site))
+        if (!locked) applyMarket(normalizeSite(config.site))
       })
       .catch(() => {/* 静默失败，保持缓存/域名探测结果 */})
       .finally(() => {
-        // 无缓存时，fetch 完成后才解锁渲染
-        if (!cached) onReady()
+        // 锁定域名已提前 onReady；非锁定且无缓存时,fetch 完成后才解锁渲染
+        if (!locked && !cached) onReady()
       })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   return null

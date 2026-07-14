@@ -18,3 +18,18 @@ export type Market = 'china' | 'global'
 export function marketFromHostname(hostname: string): Market {
   return hostname.toLowerCase().includes('modelgo.ai') ? 'global' : 'china'
 }
+
+/**
+ * 生产域名 → 市场**锁定**（注册入口/主题色/logo 由域名前置决定，秒渲染）。
+ * 命中生产域名时返回市场，platform-config 的 site **不得覆盖**——
+ * 后端配置错误（如国外站误返 site:china，qa#480）不能把 .ai 翻成国内品牌。
+ * 返回 null = 非生产域名（test 单域名/localhost/预览），保持 platform-config
+ * 驱动可切两端（#466 验收能力不受影响）。
+ */
+export function marketLockedByDomain(hostname: string): Market | null {
+  const h = hostname.toLowerCase()
+  if (h.endsWith('test.modelgo.com') || h.endsWith('test.modelgo.ai')) return null
+  if (h.endsWith('modelgo.ai')) return 'global'
+  if (h.endsWith('modelgo.com')) return 'china'
+  return null
+}

@@ -105,15 +105,23 @@ function printDelta(result: Record<string, unknown>): void {
     console.log('· 无变更：后端目录已与本地一致')
     return
   }
+  // 后端 code=0 但 data 为空(重复推送时会这样):也要给回执,不能静默
+  if (Object.keys(result).length === 0) {
+    console.log('· 已受理(HTTP 200 / code 0)；后端未返回变更明细——通常表示与后端已一致')
+    return
+  }
   const rows: Array<[string, string[]]> = [
     ['新增菜单', arr('created_menu_keys')],
     ['新增权限', arr('created_permission_ids')],
     ['更新菜单', arr('updated_menu_keys')],
     ['废弃菜单', arr('deprecated_menu_keys')],
   ]
+  let printed = false
   for (const [label, ids] of rows) {
-    if (ids.length) console.log(`· ${label}(${ids.length})：${ids.join('、')}`)
+    if (ids.length) { console.log(`· ${label}(${ids.length})：${ids.join('、')}`); printed = true }
   }
+  // 变更数组全空也要给回执,不许静默
+  if (!printed) console.log('· 已受理(code 0)：无新增/更新/废弃——后端目录与本地一致')
 }
 
 async function main(): Promise<void> {

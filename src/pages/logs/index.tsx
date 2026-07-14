@@ -395,30 +395,8 @@ export default function LogsPage() {
     if (debouncedSearch) trackEvent('logs_search', { record_type: 'sync', is_request_id: isRequestIdSearch })
   }, [debouncedSearch, isRequestIdSearch])
 
-  const workspaceNameById = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const workspace of workspacesData?.items ?? []) {
-      map.set(workspace.workspace_id, workspace.name)
-    }
-    return map
-  }, [workspacesData?.items])
-
-  // 归属名称解析（#50）：列表 model-logs 只回 id（account.display_name / api_key.name 实为 id），
-  // 查成员/Key 列表映射成可读名称。取不到则不展示（不裸露 id）；API Key 需先选中工作空间才可解析。
-  const memberNameById = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const member of membersData?.items ?? []) {
-      map.set(member.account.account_id, member.account.display_name || member.account.email)
-    }
-    return map
-  }, [membersData?.items])
-  const apiKeyNameById = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const key of apiKeysData?.items ?? []) {
-      map.set(key.api_key_id, key.name)
-    }
-    return map
-  }, [apiKeysData?.items])
+  // 归属名称（#50）：直接用 model-logs 每行返回的 workspace/account/api_key 名字字段，
+  // 不再按 id 查映射表——那是"全部工作空间"视图下 API Key 名解析不出的根因。
 
   const activeChips = useMemo(() => {
     const chips: string[] = []
@@ -679,9 +657,6 @@ export default function LogsPage() {
           onSelectLog={openLog}
           page={page}
           selectedLogId={selectedLog?.call_log_id}
-          workspaceNameById={workspaceNameById}
-          memberNameById={memberNameById}
-          apiKeyNameById={apiKeyNameById}
           docsUrl={docsUrl}
           onGoCreateKey={activeWorkspaceId ? () => navigate(`/workspace/${activeWorkspaceId}/api-keys`) : undefined}
         />
@@ -703,7 +678,7 @@ export default function LogsPage() {
         onClose={() => setSelectedLog(null)}
         open={Boolean(selectedLog)}
         row={selectedLog}
-        workspaceName={selectedLog ? (workspaceNameById.get(selectedLog.workspace_id) || selectedLog.workspace_id) : undefined}
+        workspaceName={selectedLog?.workspace?.name}
         onOpenLogSettings={(workspaceId) => navigate(`/workspace/${workspaceId}/observability`)}
       />
         </>

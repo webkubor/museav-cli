@@ -48,16 +48,11 @@ function compactModelName(name: string) {
 }
 
 /** 归属列：工作空间为主，成员 · API Key 为辅（对齐原型）。
- *  成员/Key 解析成可读名称（#50）：model-logs 只回 id，查映射表得名称；取不到则留空不展示，绝不裸露 id。 */
-function ownerLines(
-  row: CallLogItem,
-  workspaceNameById?: Map<string, string>,
-  memberNameById?: Map<string, string>,
-  apiKeyNameById?: Map<string, string>,
-) {
-  const workspace = workspaceNameById?.get(row.workspace_id) || row.workspace_id
-  const member = memberNameById?.get(row.account.account_id) ?? ''
-  const key = apiKeyNameById?.get(row.api_key.api_key_id) ?? ''
+ *  名称直接用后端按行返回的名字字段（workspace/account/api_key）；名字缺失即留空，绝不拿 id 顶替。 */
+function ownerLines(row: CallLogItem) {
+  const workspace = row.workspace?.name ?? ''
+  const member = row.account.display_name
+  const key = row.api_key.name
   if (workspace) {
     // 主行=工作空间，副行=成员 · Key
     return { primary: workspace, secondary: [member, key].filter(Boolean).join(' · ') }
@@ -78,9 +73,6 @@ export function LogsTable({
   onSelectLog,
   page,
   selectedLogId,
-  workspaceNameById,
-  memberNameById,
-  apiKeyNameById,
   docsUrl,
   onGoCreateKey,
 }: {
@@ -95,9 +87,6 @@ export function LogsTable({
   onSelectLog: (row: CallLogItem) => void
   page: number
   selectedLogId?: string
-  workspaceNameById?: Map<string, string>
-  memberNameById?: Map<string, string>
-  apiKeyNameById?: Map<string, string>
   docsUrl?: string
   onGoCreateKey?: () => void
 }) {
@@ -197,7 +186,7 @@ export function LogsTable({
               </TableCell>
               <TableCell>
                 {(() => {
-                  const { primary, secondary } = ownerLines(row, workspaceNameById, memberNameById, apiKeyNameById)
+                  const { primary, secondary } = ownerLines(row)
                   return (
                     <div className="min-w-0">
                       <strong className="block truncate mg-text-caption font-bold text-mg-text-1">{primary}</strong>

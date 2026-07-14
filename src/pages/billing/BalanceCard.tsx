@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { LuRefreshCw, LuPlus } from 'react-icons/lu'
+import { LuRefreshCw, LuPlus, LuTicket } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 import { trackAction } from '@/lib/track'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
@@ -10,6 +11,7 @@ import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { useMouseGlow } from '@/hooks/use-mouse-glow'
 import { TopUpModal } from './TopUpModal'
+import { PromoRedeemForm } from './PromoRedeemForm'
 import { formatBalance } from './formatBalance'
 
 export type BalanceTab = 'main' | 'gift' | 'reward'
@@ -26,8 +28,10 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
   const qc = useQueryClient()
   const { hasPermission } = usePermissions()
   const canRecharge = hasPermission(PERMS.BILLING_RECHARGE_CREATE)
+  const canRedeem = hasPermission(PERMS.BILLING_PROMO_REDEEM)
 
   const [topUpVisible, setTopUpVisible] = useState(false)
+  const [redeemVisible, setRedeemVisible] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
   const { data: balance, isLoading: balanceLoading } = useBalance(tenantId)
@@ -64,6 +68,17 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
     <>
       <TopUpModal visible={topUpVisible} onClose={() => setTopUpVisible(false)} tenantId={tenantId} />
 
+      {/* 兑换优惠码弹窗：表单自带 BILLING_PROMO_REDEEM 权限门控，兑换成功后自动关闭 */}
+      <Modal
+        open={redeemVisible}
+        onClose={() => setRedeemVisible(false)}
+        size="sm"
+        title={t('billing.promo.title')}
+        description={t('billing.promo.subtitle', { defaultValue: '线下收款 / 促销码自助到账' })}
+      >
+        <PromoRedeemForm tenantId={tenantId} onSuccess={() => setRedeemVisible(false)} />
+      </Modal>
+
       <div className="rounded-lg border border-mg-border bg-card-bg p-6 space-y-5 shadow-sm">
         {/* 顶部标题 + 操作按钮 */}
         <div className="flex justify-between items-center">
@@ -79,6 +94,16 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             >
               <LuRefreshCw size={14} className={cn(refreshing && 'animate-spin')} />
             </button>
+            {canRedeem && (
+              <Button
+                variant="outline"
+                onClick={() => { trackAction(PERMS.BILLING_PROMO_REDEEM); setRedeemVisible(true) }}
+                className="rounded-md h-9 px-4 gap-1.5"
+              >
+                <LuTicket size={14} />
+                {t('billing.promo.title')}
+              </Button>
+            )}
             {canRecharge && (
               <Button
                 variant="brand"

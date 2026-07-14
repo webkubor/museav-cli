@@ -190,7 +190,9 @@ export function LogsTable({
                     <strong className="block truncate mg-text-body font-bold text-mg-text-1">
                       {compactModelName(row.model.display_name)}
                     </strong>
-                    <span className="block truncate mg-text-caption text-mg-text-3">{row.provider.name}</span>
+                    {row.provider.name && (
+                      <span className="block truncate mg-text-caption text-mg-text-3">{row.provider.name}</span>
+                    )}
                   </div>
                 </div>
               </TableCell>

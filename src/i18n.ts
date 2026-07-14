@@ -1,3 +1,9 @@
+/**
+ * 国际化初始化与文档语言同步
+ * 路由：全局
+ * API：无
+ */
+
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import { getInitialLang } from '@/lib/market'
@@ -13,11 +19,24 @@ const resources = {
   }
 }
 
+function documentLanguage(language: string) {
+  return language.startsWith('zh') ? 'zh-CN' : 'en'
+}
+
+function syncDocumentLanguage(language: string) {
+  if (typeof document === 'undefined') return
+  document.documentElement.lang = documentLanguage(language)
+}
+
+const initialLanguage = getInitialLang()
+syncDocumentLanguage(initialLanguage)
+i18n.on('languageChanged', syncDocumentLanguage)
+
 i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: getInitialLang(),
+    lng: initialLanguage,
     fallbackLng: 'en',
     interpolation: {
       escapeValue: false

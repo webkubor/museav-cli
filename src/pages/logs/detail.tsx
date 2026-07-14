@@ -122,7 +122,14 @@ export function LogDetailSheet({
   const apiKeyName = row ? keyPage?.items.find((k) => k.api_key_id === row.api_key.api_key_id)?.name || '—' : '—'
   const memberName = member?.display_name || member?.email || '—'
   return (
-    <SideSheet open={open} onClose={onClose} title={null} width={680} className="overflow-y-auto">
+    <SideSheet
+      open={open}
+      onClose={onClose}
+      title={null}
+      ariaTitle="调用日志详情"
+      width={680}
+      className="overflow-y-auto"
+    >
       {row && (
         <div className="space-y-6">
           <header className="border-b border-mg-border pb-4">

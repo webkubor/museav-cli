@@ -135,6 +135,31 @@ pnpm check:api-contract
 
 **漏同步的后果**：新按钮/页面没进权限目录 → 角色矩阵漏授权、埋点无 key 上报不了、QA 的 `data-track` 也定位不到。
 
+### 业务 key 命名规范（正则强约束）
+
+权限 ID / 埋点 key 统一格式（`src/config/permissions.ts` 的 `PERMISSION_ID_PATTERN`，由 `validatePermissionCatalog()` 逐条校验，不合规 `--check` 直接报「非法 Permission ID」）：
+
+```
+/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*:[a-z][a-z0-9_]*$/
+```
+
+= **`资源[.子资源]:动作`**
+
+- 冒号左 = 资源域，`.` 嵌套子资源（`billing.invoice`、`billing.invoice_title`）
+- 冒号右 = 动作
+- 全小写 **snake_case**，首字符字母，只允许 字母/数字/下划线
+- 菜单 key 另受 `MENU_KEY_PATTERN` 约束
+
+**三档粒度 `granularity`：**
+
+| 档 | 用途 | 样例 |
+| :--- | :--- | :--- |
+| `menu` | 菜单可见 | `api_keys:view` |
+| `page` | 子页可见 | `billing.invoice:view` |
+| `action` | 按钮动作 | `api_keys:create`、`billing.invoice:apply` |
+
+**动作动词用收敛词表**（复用现有、别造近义词）：`view / edit / create / manage / delete / transfer / withdraw / rotate / revoke / reveal / rename / redeem / export / download / disable / change_owner / cancel / apply`。埋点复用同一 key，自动继承本规范。
+
 ---
 
 ## 环境变量

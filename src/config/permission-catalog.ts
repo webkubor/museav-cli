@@ -99,7 +99,7 @@ export const PERMISSION_CATALOG_MENUS = [
     name_en: 'Call Logs',
     scope: 'tenant',
     view_permission: PERMS.LOGS_VIEW,
-    actions: [],
+    actions: [PERMS.LOGS_PAYLOAD_VIEW],
   },
   {
     key: 'referral',
@@ -121,6 +121,9 @@ export const PERMISSION_CATALOG_MENUS = [
       PERMS.API_KEYS_CREATE_MEMBER,
       PERMS.API_KEYS_CREATE_SERVICE,
       PERMS.API_KEYS_EDIT,
+      PERMS.API_KEYS_ROTATE,
+      PERMS.API_KEYS_CHANGE_OWNER,
+      PERMS.API_KEYS_DISABLE,
       PERMS.API_KEYS_REVEAL,
       PERMS.API_KEYS_REVOKE,
     ],

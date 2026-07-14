@@ -47,6 +47,10 @@ export const PERMISSION_DEFINITIONS = {
   API_KEYS_EDIT:   { id: 'api_keys:edit',   granularity: 'action', description: '编辑 API Key' },
   API_KEYS_REVEAL: { id: 'api_keys:reveal', granularity: 'action', description: '查看 API Key 明文' },
   API_KEYS_REVOKE: { id: 'api_keys:revoke', granularity: 'action', description: '撤销 API Key' },
+  // 动作细分（#54 举一反三）：轮转/变更负责人/启停 原全挤在 edit，拆出独立 perm 供后台按角色单独授权、API 层按动作强制。
+  API_KEYS_ROTATE:       { id: 'api_keys:rotate',       granularity: 'action', description: '轮转 API Key' },
+  API_KEYS_CHANGE_OWNER: { id: 'api_keys:change_owner', granularity: 'action', description: '变更 API Key 负责人' },
+  API_KEYS_DISABLE:      { id: 'api_keys:disable',      granularity: 'action', description: '启用/停用 API Key' },
 
   // ── 安全护栏 ──────────────────────────────────
   GUARDRAILS_CREATE:          { id: 'guardrails:create',          granularity: 'action', description: '创建安全护栏' },
@@ -58,6 +62,10 @@ export const PERMISSION_DEFINITIONS = {
   // ── 可观测性 ──────────────────────────────────
   OBSERVABILITY_LOGGING_EDIT:   { id: 'observability.logging:edit',   granularity: 'action', description: '编辑日志采集配置' },
   OBSERVABILITY_FORWARD_MANAGE: { id: 'observability.forward:manage', granularity: 'action', description: '管理日志转发目标' },
+
+  // ── 调用日志 ──────────────────────────────────
+  // 原文（请求/响应 prompt+completion）是敏感内容，原仅 logs:view 罩着，拆独立 perm 按角色控（#54 举一反三）。
+  LOGS_PAYLOAD_VIEW: { id: 'logs.payload:view', granularity: 'action', description: '查看调用日志请求/响应原文' },
 
   // ── 推荐计划 ──────────────────────────────────
   REFERRAL_REWARD_TRANSFER: { id: 'referral.reward:transfer', granularity: 'action', description: '划转推荐奖励' },

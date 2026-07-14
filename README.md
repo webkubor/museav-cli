@@ -110,6 +110,33 @@ pnpm check:api-contract
 
 ---
 
+## ⚠️ 菜单 / 功能 / 版本更新 → 必须同步「权限 + 埋点」
+
+> **单一真源 = 权限目录** `src/config/permission-catalog.ts`（菜单 `menu_key` + `Permission ID`）。
+> 埋点 event key **复用**权限 key，零漂移——权限目录一改，埋点目录随之对齐，**没有独立的埋点同步**。
+
+**每次新增/改动 菜单、按钮动作、功能，或发版前，按序做：**
+
+1. **改权限目录**：在 `permission-catalog.ts` 补 `menu_key`；动作按钮在 `src/config/permissions.ts`（`PERMS`）补 `permission_id`，并挂到菜单 `actions` / 角色矩阵。
+2. **埋点复用同一 key**（`src/lib/track.ts`，禁止另造 key）：
+   - 按钮动作：`trackAction(PERMS.XXX)` → event key = `permission_id`
+   - 页面浏览：`trackPageView(menuKey)` → page = `menu_key`
+   - 无权限对应的自定义事件：`trackEvent('xxx:yyy')`（沿用冒号约定）
+   - 可测性：`{...trackable('api_keys:create')}` 落 `data-track`（= 埋点 key，供 QA/自动化定位，不另维护 test id）
+   - 顶层契约字段（#423）：`view_mode/source/result/error_code/is_space_owner` 按场景补
+3. **同步到后端**（把权限目录 upsert 到 controller，埋点 key 目录随之对齐）：
+   ```bash
+   npm run sync:permissions              # 默认 apply，正式同步
+   npm run sync:permissions -- --dry-run # 只对账不写，预览 diff
+   npm run sync:permissions -- --check   # 仅本地目录校验
+   ```
+   输出 `"has_changes": false` = 后端已一致。
+   > 用 `npm run`，**别用 `pnpm run`**——pnpm 的 `runDepsStatusCheck` 会在 node_modules/lockfile 漂移时拦住并要清空重装。
+
+**漏同步的后果**：新按钮/页面没进权限目录 → 角色矩阵漏授权、埋点无 key 上报不了、QA 的 `data-track` 也定位不到。
+
+---
+
 ## 环境变量
 
 > 变量值必须来自已验证地址，禁止编造。

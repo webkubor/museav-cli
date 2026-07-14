@@ -105,6 +105,7 @@ export function GuardrailDetailSheet({
   scope, onScopeChange,
   kind, onKindChange,
   lockScopeKind, showMemberScope,
+  canCreateScope, canCreateBoost,
   boostExpiresAt, onBoostExpiresAtChange,
   showModelIp,
   modelBlacklist, onModelBlacklistChange,
@@ -138,6 +139,8 @@ export function GuardrailDetailSheet({
   scope: GuardrailScope; onScopeChange: (v: GuardrailScope) => void
   kind: GuardrailKind; onKindChange: (v: GuardrailKind) => void
   lockScopeKind: boolean; showMemberScope: boolean
+  /** 创建态按分类的细粒度创建权限（PRD §11）；编辑态锁定分类不参与 */
+  canCreateScope: Record<GuardrailScope, boolean>; canCreateBoost: boolean
   boostExpiresAt: string; onBoostExpiresAtChange: (v: string) => void
   showModelIp: boolean
   modelBlacklist: string[]; onModelBlacklistChange: (v: string[]) => void
@@ -244,6 +247,7 @@ export function GuardrailDetailSheet({
               scope={scope} onScopeChange={onScopeChange}
               kind={kind} onKindChange={onKindChange}
               lockScopeKind={lockScopeKind} showMemberScope={showMemberScope}
+              canCreateScope={canCreateScope} canCreateBoost={canCreateBoost}
               boostExpiresAt={boostExpiresAt} onBoostExpiresAtChange={onBoostExpiresAtChange}
               showModelIp={showModelIp}
               modelBlacklist={modelBlacklist} onModelBlacklistChange={onModelBlacklistChange}

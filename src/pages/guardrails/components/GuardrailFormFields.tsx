@@ -23,7 +23,8 @@ function SegGroup<T extends string>({
 }: {
   value: T
   onChange: (v: T) => void
-  options: { value: T; label: string }[]
+  /** 单项可带 disabled + title（如无创建权限的分类置灰并提示原因,PRD §11/§8.2 风格） */
+  options: { value: T; label: string; disabled?: boolean; title?: string }[]
   disabled?: boolean
   ariaLabel?: string
   track?: string
@@ -32,18 +33,20 @@ function SegGroup<T extends string>({
     <div role="radiogroup" aria-label={ariaLabel} className="grid gap-2" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0,1fr))` }}>
       {options.map((o) => {
         const active = value === o.value
+        const itemDisabled = disabled || o.disabled
         return (
           <button
             key={o.value}
             type="button"
             role="radio"
             aria-checked={active}
-            disabled={disabled}
+            disabled={itemDisabled}
+            title={o.title}
             data-track={track}
             onClick={() => onChange(o.value)}
             className={[
               'rounded-md border px-3 py-2 text-xs font-bold transition-all',
-              disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+              itemDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
               active
                 ? 'border-brand-base bg-brand-base/8 text-brand-base'
                 : 'border-mg-border bg-mg-fill-0/40 text-mg-text-2 hover:border-brand-base/35',
@@ -68,6 +71,7 @@ export function GuardrailFormFields({
   kind, onKindChange,
   lockScopeKind,
   showMemberScope,
+  canCreateScope, canCreateBoost,
   boostExpiresAt, onBoostExpiresAtChange,
   showModelIp,
   modelBlacklist, onModelBlacklistChange,
@@ -91,6 +95,10 @@ export function GuardrailFormFields({
   lockScopeKind: boolean
   /** 个人组织隐藏「个人」分类选项 */
   showMemberScope: boolean
+  /** 创建态：分类各自的细粒度创建权限（PRD §11）；无权限项置灰并提示 */
+  canCreateScope: Record<GuardrailScope, boolean>
+  /** 创建态：提额护栏创建权限（PRD §11：Member 不可建提额） */
+  canCreateBoost: boolean
   /** 提额到期时间（datetime-local 值）；仅提额显示 */
   boostExpiresAt: string; onBoostExpiresAtChange: (v: string) => void
   /** 文档：个人护栏与提额护栏不配置模型黑名单 / IP 白名单 */
@@ -168,7 +176,16 @@ export function GuardrailFormFields({
           track="guardrails:field_scope"
           options={(['global', 'member', 'key'] as GuardrailScope[])
             .filter((s) => s !== 'member' || showMemberScope)
-            .map((s) => ({ value: s, label: `${SCOPE_LABEL[s]}护栏` }))}
+            .map((s) => {
+              // 创建态按各分类的细粒度创建权限置灰（PRD §11:Member 仅可建常规 Key 护栏）
+              const denied = isCreating && !canCreateScope[s]
+              return {
+                value: s,
+                label: `${SCOPE_LABEL[s]}护栏`,
+                disabled: denied,
+                title: denied ? `你没有创建${SCOPE_LABEL[s]}护栏的权限` : undefined,
+              }
+            })}
         />
       </div>
       {scope !== 'global' && (
@@ -180,7 +197,16 @@ export function GuardrailFormFields({
             disabled={lockScopeKind || !canEditInfo}
             ariaLabel="护栏类型"
             track="guardrails:field_kind"
-            options={(['regular', 'boost'] as GuardrailKind[]).map((k) => ({ value: k, label: `${KIND_LABEL[k]}护栏` }))}
+            options={(['regular', 'boost'] as GuardrailKind[]).map((k) => {
+              // 创建态:无提额创建权限则「提额」置灰（PRD §11:Member 不可建提额）
+              const denied = isCreating && k === 'boost' && !canCreateBoost
+              return {
+                value: k,
+                label: `${KIND_LABEL[k]}护栏`,
+                disabled: denied,
+                title: denied ? '你没有创建提额护栏的权限' : undefined,
+              }
+            })}
           />
         </div>
       )}

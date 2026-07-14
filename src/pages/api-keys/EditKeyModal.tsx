@@ -15,6 +15,8 @@ import { updateApiKey } from '@/services/api-keys'
 import { listGuardrails } from '@/services/guardrails'
 import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 import { SCOPE_OPTIONS, EXPIRATION_PRESETS, resolveExpiryISO } from './constants'
 import { CreateGuardrailDialog } from './CreateGuardrailDialog'
 import { deriveScope } from '@/pages/guardrails/derive'
@@ -32,6 +34,7 @@ type Props = {
 export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
   const queryClient = useQueryClient()
   const { currency, symbol } = useCurrency()
+  const { hasPermission } = usePermissions()
 
   const [name, setName] = useState('')
   const [guardrailIds, setGuardrailIds] = useState<string[]>([])
@@ -168,13 +171,16 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-bold text-mg-text-2">安全护栏</label>
-              <button
-                type="button"
-                onClick={() => setGuardrailDialogOpen(true)}
-                className="flex items-center gap-1 text-xs text-brand-base hover:opacity-70 transition-opacity"
-              >
-                <LuPlus className="w-3.5 h-3.5" />新建护栏
-              </button>
+              {/* 附建护栏恒为常规 Key 护栏 → 按 guardrails.key:create gate（#479 · PRD §11） */}
+              {hasPermission(PERMS.GUARDRAILS_CREATE_KEY) && (
+                <button
+                  type="button"
+                  onClick={() => setGuardrailDialogOpen(true)}
+                  className="flex items-center gap-1 text-xs text-brand-base hover:opacity-70 transition-opacity"
+                >
+                  <LuPlus className="w-3.5 h-3.5" />新建护栏
+                </button>
+              )}
             </div>
             <div className="space-y-2">
               {defaultGuardrail && (

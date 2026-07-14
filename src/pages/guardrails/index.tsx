@@ -130,6 +130,14 @@ export default function GuardrailsPage() {
   const canDelete         = hasPermission(PERMS.GUARDRAILS_DELETE)
   const canEditAssignment = hasPermission(PERMS.GUARDRAILS_ASSIGNMENT_EDIT)
   const canEditBudget     = hasPermission(PERMS.GUARDRAILS_BUDGET_EDIT)
+  // 细粒度创建权限（#479 · PRD §11）：分类（全局/个人/Key）与提额各用自己的码,
+  // Member 仅授 guardrails.key:create → 创建弹窗只剩常规 Key 护栏可选
+  const canCreateScope: Record<GuardrailScope, boolean> = {
+    global: hasPermission(PERMS.GUARDRAILS_CREATE_GLOBAL),
+    member: hasPermission(PERMS.GUARDRAILS_CREATE_MEMBER),
+    key: hasPermission(PERMS.GUARDRAILS_CREATE_KEY),
+  }
+  const canCreateBoost = hasPermission(PERMS.GUARDRAILS_CREATE_BOOST)
   // 埋点顶层字段 is_space_owner：当前用户对本页作用域工作空间的 my_role 是否为 ws_owner
   const { ownedWorkspaceIds } = useTenantRole()
   const isActiveWorkspaceOwner = ownedWorkspaceIds.includes(workspaceId)
@@ -455,7 +463,12 @@ export default function GuardrailsPage() {
   function openCreate() {
     setIsCreating(true)
     setDetailId(null)
-    setName(''); setDescription(''); setScope('global'); setKind('regular'); setBoostExpiresAt(''); setPriority(0)
+    // 默认分类落到第一个有创建权限的（全局→个人→Key；个人组织无「个人」），全无权限时兜 global（选项均置灰,提交也进不去）
+    const defaultScope: GuardrailScope =
+      (['global', 'member', 'key'] as GuardrailScope[]).find(
+        (s) => canCreateScope[s] && !(s === 'member' && !showMember),
+      ) ?? 'global'
+    setName(''); setDescription(''); setScope(defaultScope); setKind('regular'); setBoostExpiresAt(''); setPriority(0)
     setModelBlacklist([]); setIpWhitelist([]); setPromptInjectionMode('off'); setMemberIds([]); setApiKeyIds([])
     setSheetTab('info')
     setDetailOpen(true)
@@ -792,6 +805,7 @@ export default function GuardrailsPage() {
         scope={scope} onScopeChange={handleScopeChange}
         kind={kind} onKindChange={setKind}
         lockScopeKind={!isCreating} showMemberScope={showMember}
+        canCreateScope={canCreateScope} canCreateBoost={canCreateBoost}
         boostExpiresAt={boostExpiresAt} onBoostExpiresAtChange={setBoostExpiresAt}
         showModelIp={showModelIp}
         modelBlacklist={modelBlacklist} onModelBlacklistChange={setModelBlacklist}

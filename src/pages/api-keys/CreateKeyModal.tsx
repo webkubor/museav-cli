@@ -370,14 +370,17 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
               <label className="text-xs font-bold text-mg-text-2">
                 {t('apiKeys.createModal.guardrailLabel')}
               </label>
-              <button
-                type="button"
-                onClick={() => setGuardrailDialogOpen(true)}
-                className="flex items-center gap-1 text-xs text-brand-base hover:opacity-70 transition-opacity"
-              >
-                <LuPlus className="w-3.5 h-3.5" />
-                新建护栏
-              </button>
+              {/* 附建护栏恒为常规 Key 护栏 → 按 guardrails.key:create gate（#479 · PRD §11） */}
+              {hasPermission(PERMS.GUARDRAILS_CREATE_KEY) && (
+                <button
+                  type="button"
+                  onClick={() => setGuardrailDialogOpen(true)}
+                  className="flex items-center gap-1 text-xs text-brand-base hover:opacity-70 transition-opacity"
+                >
+                  <LuPlus className="w-3.5 h-3.5" />
+                  新建护栏
+                </button>
+              )}
             </div>
             <div className="space-y-2">
               {defaultGuardrail && (

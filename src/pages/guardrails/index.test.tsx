@@ -44,6 +44,11 @@ vi.mock('@/services/workspaces', () => ({
   listWorkspaceMembers: vi.fn().mockResolvedValue({ items: [] }),
   listWorkspaces: vi.fn().mockResolvedValue({ items: [] }),
 }))
+// useTenantRole 还会调 listTenants;不 mock 会发真网络请求 → 40101 → clearAuth 异步洗掉
+// 测试刚 setState 的租户(跨用例竞态,曾致「个人租户隐藏默认个人预算」间歇挂)
+vi.mock('@/services/tenants', () => ({
+  listTenants: vi.fn().mockResolvedValue({ items: [] }),
+}))
 vi.mock('@/services/api-keys', () => ({
   listApiKeys: vi.fn().mockResolvedValue([]),
 }))

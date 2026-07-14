@@ -54,6 +54,11 @@ export const PERMISSION_DEFINITIONS = {
 
   // ── 安全护栏 ──────────────────────────────────
   GUARDRAILS_CREATE:          { id: 'guardrails:create',          granularity: 'action', description: '创建安全护栏' },
+  // 按护栏分类/类型的细粒度创建权限（PRD §11：Member 仅可建常规 Key 护栏，不可建全局/个人/提额）
+  GUARDRAILS_CREATE_GLOBAL: { id: 'guardrails.global:create', granularity: 'action', description: '创建全局护栏' },
+  GUARDRAILS_CREATE_MEMBER: { id: 'guardrails.member:create', granularity: 'action', description: '创建个人护栏' },
+  GUARDRAILS_CREATE_KEY:    { id: 'guardrails.key:create',    granularity: 'action', description: '创建 Key 护栏' },
+  GUARDRAILS_CREATE_BOOST:  { id: 'guardrails.boost:create',  granularity: 'action', description: '创建提额护栏' },
   GUARDRAILS_EDIT:            { id: 'guardrails:edit',            granularity: 'action', description: '编辑安全护栏' },
   GUARDRAILS_DELETE:          { id: 'guardrails:delete',          granularity: 'action', description: '删除安全护栏' },
   GUARDRAILS_ASSIGNMENT_EDIT: { id: 'guardrails.assignment:edit', granularity: 'action', description: '编辑护栏作用范围' },

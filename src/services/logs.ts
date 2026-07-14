@@ -25,6 +25,11 @@ type ModelLogRow = {
   tenant_id?: string
   account_id?: string
   api_key_id?: string
+  // 扁平归属名字段。仅 account_name 是真名可用；workspace_name / api_key_name 被后端
+  // 填成 id（id 当名字，见后端单），故不消费——workspace/api_key 名走各自 nested 对象。
+  account_name?: string
+  api_key_name?: string
+  workspace_name?: string
   trace_id?: string
   requested_model?: string
   provider_instance_id?: string
@@ -148,8 +153,14 @@ function toCallLogItem(row: ModelLogRow): CallLogItem {
   const durationMs = numberOrZero(row.latency_ms ?? row.duration_ms)
   const modelName = displayModel(row)
   const providerID = row.provider_instance_id || row.provider?.id || 'unknown'
-  const apiKeyID = row.api_key_id || row.api_key?.api_key_id || ''
-  const accountID = row.account_id || row.account?.account_id || ''
+  const apiKeyID = row.api_key_id || ''
+  const accountID = row.account_id || ''
+  // 归属名只取"诚实的名字字段"（无名回空,绝不是 id）：
+  //   account → 扁平 account_name（真名）；workspace/api_key → nested 对象的 name（无名为 ""/null）。
+  //   ⚠️ 扁平 workspace_name / api_key_name 被后端填成 id（id 当名字），不能用——见后端单。
+  const apiKeyName = row.api_key?.name || ''
+  const accountName = row.account_name || ''
+  const workspaceName = row.workspace?.name || ''
 
   return {
     call_log_id: row.call_log_id || row.request_id,
@@ -168,8 +179,8 @@ function toCallLogItem(row: ModelLogRow): CallLogItem {
       type: row.provider?.type || '',
     },
     workspace_id: row.workspace_id || '',
-    // 归属空间名（#459）：后端补 workspace{id,name} 后随行透传；未返回则 undefined，UI 显「—」不 join 兜底
-    workspace: row.workspace?.name ? { workspace_id: row.workspace.workspace_id, name: row.workspace.name } : undefined,
+    // 归属空间名：优先扁平 workspace_name，回退 nested workspace 对象。
+    workspace: workspaceName ? { workspace_id: row.workspace_id || '', name: workspaceName } : undefined,
     tenant_id: row.tenant_id || '',
     trace_id: row.trace_id || stringFromMap(row.request_ctx, 'trace_id') || '',
     requested_model: row.requested_model || '',
@@ -181,12 +192,12 @@ function toCallLogItem(row: ModelLogRow): CallLogItem {
     tpot_ms: numberOrZero(row.tpot_ms),
     api_key: {
       api_key_id: apiKeyID,
-      name: row.api_key?.name || apiKeyID || '—',
-      masked: row.api_key?.masked || apiKeyID || '—',
+      name: apiKeyName,
+      masked: row.api_key?.masked || '',
     },
     account: {
       account_id: accountID,
-      display_name: row.account?.display_name || accountID || '—',
+      display_name: accountName,
     },
     app_name: row.app_name ?? null,
     status: normalizeStatus(row.status),

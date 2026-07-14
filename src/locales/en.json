@@ -841,6 +841,7 @@
   "workspaces": {
     "title": "Workspaces",
     "subtitle": "Create workspaces and manage owners, members, and log forwarding.",
+    "subtitlePersonal": "Create workspaces and manage runtime resources and log forwarding.",
     "desc": "Manage workspace info, available models, and usage limits.",
     "currentLabel": "Current Workspace",
     "defaultOption": "Default Workspace",

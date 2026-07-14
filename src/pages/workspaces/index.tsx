@@ -3,7 +3,7 @@
  * 路由：/workspaces
  * API：GET /workspaces、POST /workspaces
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { useAuthStore } from '@/store/auth'
 import { useTranslation } from 'react-i18next'
 import {
@@ -211,6 +211,17 @@ export default function WorkspacesPage() {
     createMutation.mutate({ name, slug: finalSlug, description, inviteMembers: selectedMemberEmails, inviteRole })
   }
 
+  const selectWorkspace = (workspaceId: string) => {
+    trackEvent('workspaces:space_card_select', { workspace_id: workspaceId })
+    setSelectedId(workspaceId)
+  }
+
+  const handleWorkspaceCardKeyDown = (event: KeyboardEvent<HTMLDivElement>, workspaceId: string) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.preventDefault()
+    selectWorkspace(workspaceId)
+  }
+
   // 摘要条派生数据（PRD 原型：我的工作空间 / 我负责的空间 / 日志采集 / 转发状态）
   const list = data || []
   // 我负责的空间：对齐 PRD 原型口径（records.filter(owner === 当前身份)）——按空间负责人 account_id 判定，
@@ -261,7 +272,7 @@ export default function WorkspacesPage() {
       {/* 头部标题与描述 */}
       <PageHeader
         title={t('workspaces.title')}
-        description={t('workspaces.subtitle')}
+        description={t(isEnterprise ? 'workspaces.subtitle' : 'workspaces.subtitlePersonal')}
         actions={
           canCreateWorkspace ? (
           <Button
@@ -373,9 +384,13 @@ export default function WorkspacesPage() {
               <Card
                 key={ws.workspace_id}
                 level={2}
-                onClick={() => { trackEvent('workspaces:space_card_select', { workspace_id: ws.workspace_id }); setSelectedId(ws.workspace_id) }}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isSelected}
+                onClick={() => selectWorkspace(ws.workspace_id)}
+                onKeyDown={(event) => handleWorkspaceCardKeyDown(event, ws.workspace_id)}
                 className={cn(
-                  "group relative p-3 flex flex-col gap-1.5 cursor-pointer transition-all border overflow-hidden rounded-lg",
+                  "group relative p-3 flex flex-col gap-1.5 cursor-pointer transition-all border overflow-hidden rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base focus-visible:ring-offset-2",
                   isSelected
                     ? "mg-running-border shadow-sm"
                     : "bg-mg-bg-0 border-mg-border/40 hover:bg-mg-fill-0/20 hover:border-mg-border/60"
@@ -412,9 +427,13 @@ export default function WorkspacesPage() {
               <Card
                 key={ws.workspace_id}
                 level={2}
-                onClick={() => { trackEvent('workspaces:space_card_select', { workspace_id: ws.workspace_id }); setSelectedId(ws.workspace_id) }}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isSelected}
+                onClick={() => selectWorkspace(ws.workspace_id)}
+                onKeyDown={(event) => handleWorkspaceCardKeyDown(event, ws.workspace_id)}
                 className={cn(
-                  "group relative p-5 flex flex-col gap-4 cursor-pointer transition-all border overflow-hidden rounded-lg",
+                  "group relative p-5 flex flex-col gap-4 cursor-pointer transition-all border overflow-hidden rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base focus-visible:ring-offset-2",
                   isSelected
                     ? "mg-running-border shadow-sm"
                     : "bg-mg-bg-0 border-mg-border/40 hover:bg-mg-fill-0/20 hover:border-mg-border/60"
@@ -464,11 +483,13 @@ export default function WorkspacesPage() {
                 </div>
 
                 {/* 成员 / API Keys / 护栏 (居中三等分，用细线分割) */}
-                <div className="grid grid-cols-3 divide-x divide-mg-border/20 text-center py-2 bg-mg-fill-0/10 rounded-lg border border-mg-border/10">
-                  <div>
-                    <div className="text-sm font-bold text-mg-text-1">{ws.member_count}</div>
-                    <div className="text-xs text-mg-text-3 mt-0.5">{t('workspaces.card.members')}</div>
-                  </div>
+                <div className={cn("grid divide-x divide-mg-border/20 text-center py-2 bg-mg-fill-0/10 rounded-lg border border-mg-border/10", isEnterprise ? "grid-cols-3" : "grid-cols-2")}>
+                  {isEnterprise && (
+                    <div>
+                      <div className="text-sm font-bold text-mg-text-1">{ws.member_count}</div>
+                      <div className="text-xs text-mg-text-3 mt-0.5">{t('workspaces.card.members')}</div>
+                    </div>
+                  )}
                   <div>
                     <div className="text-sm font-bold text-mg-text-1">{ws.api_key_count}</div>
                     <div className="text-xs text-mg-text-3 mt-0.5">API Keys</div>
@@ -603,6 +624,7 @@ export default function WorkspacesPage() {
 function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: () => void }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { isEnterprise } = useTenantRole()
   const { hasPermission } = usePermissions()
 
   const usageCards = [
@@ -633,7 +655,7 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
   ]
 
   const resources = [
-    { label: t('workspaces.card.members'), value: String(ws.member_count ?? 0), icon: <LuUsers size={16} className="text-mg-text-3" /> },
+    ...(isEnterprise ? [{ label: t('workspaces.card.members'), value: String(ws.member_count ?? 0), icon: <LuUsers size={16} className="text-mg-text-3" /> }] : []),
     { label: t('workspaces.detail.overview.apiKeys'), value: String(ws.api_key_count ?? 0), icon: <LuKey size={16} className="text-mg-text-3" /> },
     { label: t('workspaces.card.guardrails'), value: String(ws.guardrail_count ?? 0), icon: <LuShield size={16} className="text-mg-text-3" /> },
     {

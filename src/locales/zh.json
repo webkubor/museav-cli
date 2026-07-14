@@ -841,6 +841,7 @@
   "workspaces": {
     "title": "空间管理",
     "subtitle": "创建工作空间，管理负责人、成员和日志转发策略。",
+    "subtitlePersonal": "创建工作空间，管理运行资源和日志转发策略。",
     "desc": "管理工作空间信息、可用模型和使用限额。",
     "currentLabel": "当前工作空间",
     "defaultOption": "默认工作空间",

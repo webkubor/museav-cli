@@ -24,6 +24,7 @@ import { SegmentedToggle } from '@/features/dashboard/workbench/SegmentedToggle'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { trackEvent, trackPageView } from '@/lib/track'
 import { densifyDailyBuckets as densifyGenericBuckets } from '@/lib/chart-buckets'
+import { formatDuration } from '@/lib/format-date'
 import type { SeriesDataPoint, UsageRankingItem } from '@/types'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -358,7 +359,9 @@ export default function UsagePage() {
   const totalSpend = summary ? formatMoney(summary.total.spend.amount, currencySymbol) : '—'
   const totalRequests = summary ? formatNumber(summary.total.requests) : '—'
   const totalTokens = summary ? formatNumber(summary.total.tokens) : '—'
-  const averageLatency = summary?.total.average_latency_ms ? `${Math.round(summary.total.average_latency_ms)}ms` : '—'
+  const averageLatency = summary?.total.average_latency_ms
+    ? formatDuration(Math.round(summary.total.average_latency_ms))
+    : '—'
   // 三大卡分解数据：成功/失败请求、Token 输入/输出/缓存 + 占比
   const failedRequests = summary ? Math.round(summary.total.requests * summary.total.error_rate) : 0
   const successRequests = requestCount - failedRequests

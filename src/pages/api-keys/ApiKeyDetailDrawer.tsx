@@ -175,7 +175,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canEdit, 
     retry: false,
   })
 
-  if (!item) return <SideSheet open={open} onClose={onClose} width={520} />
+  if (!item) return <SideSheet open={open} onClose={onClose} ariaTitle="API Key 详情" width={520} />
 
   const view = detail ?? item
   const keyType = deriveKeyType(view)

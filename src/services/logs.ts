@@ -162,8 +162,10 @@ function toCallLogItem(row: ModelLogRow): CallLogItem {
     },
     provider: {
       id: providerID,
-      name: row.provider?.name || providerID,
-      type: row.provider?.type || providerID,
+      // provider_instance_id 是内部实例 UUID，不是面向用户的供应商名称/类型。
+      // 后端未返回 provider 对象时保持空值，让展示层隐藏副行，禁止把内部 ID 当文案展示。
+      name: row.provider?.name || '',
+      type: row.provider?.type || '',
     },
     workspace_id: row.workspace_id || '',
     // 归属空间名（#459）：后端补 workspace{id,name} 后随行透传；未返回则 undefined，UI 显「—」不 join 兜底

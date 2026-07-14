@@ -20,7 +20,9 @@
     "version:minor": "npm version minor --no-git-tag-version",
     "version:major": "npm version major --no-git-tag-version",
     "sync:api": "bun run scripts/sync-api.ts",
-    "sync:permissions": "bun run scripts/sync-permissions.ts"
+    "sync:permissions:cn": "bun run scripts/sync-permissions.ts --market china",
+    "sync:permissions:global": "bun run scripts/sync-permissions.ts --market global",
+    "sync:permissions:check": "bun run scripts/sync-permissions.ts --check"
   },
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^5.2.0",

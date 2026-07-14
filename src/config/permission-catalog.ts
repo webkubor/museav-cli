@@ -166,6 +166,48 @@ export const PERMISSION_SYNC_PAYLOAD = {
   permissions: PERMISSION_CATALOG_DEFINITIONS,
 }
 
+// ─── 市场维度：国内/国外菜单差异 ──────────────────────────────────────────────
+export type CatalogMarket = 'china' | 'global'
+
+/**
+ * 市场限定：未列出的权限**两市场都有**;列出则**仅这些市场**。
+ * 例:发票功能仅国内站 → billing.invoice.* 标 ['china'],国外那份 catalog 自动剔除。
+ * 新的市场特例往这里加,推送前用 `sync:permissions:check` 核对差异。
+ */
+export const PERMISSION_MARKET_RESTRICT: Partial<Record<Permission, readonly CatalogMarket[]>> = {
+  [PERMS.BILLING_INVOICE_VIEW]: ['china'],
+  [PERMS.BILLING_INVOICE_APPLY]: ['china'],
+  [PERMS.BILLING_INVOICE_DOWNLOAD]: ['china'],
+  [PERMS.BILLING_INVOICE_TITLE_MANAGE]: ['china'],
+}
+
+function permInMarket(id: Permission, market: CatalogMarket): boolean {
+  const r = PERMISSION_MARKET_RESTRICT[id]
+  return !r || r.includes(market)
+}
+
+/** 按市场过滤后的 sync payload(body 不含 market,market 走 query)。 */
+export function catalogPayloadForMarket(market: CatalogMarket) {
+  const menus = PERMISSION_CATALOG_MENUS
+    .filter((m) => permInMarket(m.view_permission, market))
+    .map((m) => ({ ...m, actions: m.actions.filter((a) => permInMarket(a, market)) }))
+  const used = new Set<Permission>(menus.flatMap((m) => [m.view_permission, ...m.actions]))
+  const permissions = PERMISSION_CATALOG_DEFINITIONS.filter((p) => used.has(p.permission_id))
+  return { source: 'modelgo-console-web', menus, permissions }
+}
+
+/** 两市场差异:各自菜单/权限数 + 仅国内/仅国外的权限。供推送前 check 核对,确保一开始就推对。 */
+export function marketPermissionDiff() {
+  const cnPerms = new Set(catalogPayloadForMarket('china').permissions.map((p) => p.permission_id))
+  const glPerms = new Set(catalogPayloadForMarket('global').permissions.map((p) => p.permission_id))
+  return {
+    china: { menus: catalogPayloadForMarket('china').menus.length, perms: cnPerms.size },
+    global: { menus: catalogPayloadForMarket('global').menus.length, perms: glPerms.size },
+    onlyChina: [...cnPerms].filter((id) => !glPerms.has(id)),
+    onlyGlobal: [...glPerms].filter((id) => !cnPerms.has(id)),
+  }
+}
+
 const MENU_KEY_PATTERN = /^[a-z0-9]+(?:[-/][a-z0-9]+)*$/
 
 /** 同步前的纯本地契约校验；返回空数组才允许发请求。 */

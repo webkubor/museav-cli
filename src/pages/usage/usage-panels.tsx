@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import type { UsageRankingItem } from '@/types'
 import { cn } from '@/lib/utils'
-import { formatMoney, formatNumber, CHART_CAT_COLORS, CHART_OTHER_COLOR } from './usage-utils'
+import { formatMoney, formatNumber, CHART_OTHER_COLOR } from './usage-utils'
 import { ModelDonutChart, type DonutSlice } from './usage-charts'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import {
@@ -22,6 +22,20 @@ import {
 
 /** 分布图 Top N，超出折叠成「其他」。 */
 const DIST_TOP_N = 5
+
+/**
+ * 环形图专用「品牌靛蓝色阶」——按消费排名 深→浅 上色（Top1 最深）。
+ * 饼图分片是排序过的,用单一品牌色的明度阶梯让「颜色本身编码排名」,
+ * 比六色彩虹更和谐、更贴品牌;跨明暗主题随 --brand-* token 自动切。
+ * 「其他」用中性灰做弱化。趋势图仍用 CHART_CAT_COLORS(多序列需可辨异色)。
+ */
+const DONUT_BRAND_RAMP = [
+  'var(--brand-deep)',
+  'var(--brand-base)',
+  'var(--brand-mid)',
+  'var(--brand-light)',
+  'var(--brand-pale)',
+] as const
 
 export interface CostSourceSection {
   title: string
@@ -350,7 +364,7 @@ function buildDonutSlices(items: UsageRankingItem[], otherLabel: string): DonutS
     label: displayRankingName(it),
     value: spendAmount(it),
     share: rankingSharePercent(it),
-    color: CHART_CAT_COLORS[index % CHART_CAT_COLORS.length],
+    color: DONUT_BRAND_RAMP[index] ?? DONUT_BRAND_RAMP[DONUT_BRAND_RAMP.length - 1],
   }))
   if (rest.length > 0) {
     slices.push({

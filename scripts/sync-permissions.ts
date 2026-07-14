@@ -24,17 +24,20 @@ function readMode(args: readonly string[]): SyncMode {
   ].filter((mode): mode is SyncMode => mode !== null)
 
   if (selected.length > 1) throw new Error('只能选择 --check、--dry-run、--apply 中的一项')
-  return selected[0] ?? 'check'
+  // 缺省即正式同步：`npm run sync:permissions` 直接触发 apply；
+  // 预览用 -- --dry-run，仅本地校验用 -- --check。
+  return selected[0] ?? 'apply'
 }
 
 function normalizedApiBase(): string {
   return (process.env.PERMISSIONS_API_BASE ?? DEFAULT_API_BASE).replace(/\/$/, '')
 }
 
-function requireAdminToken(): string {
+// catalog/sync 是内网免鉴权的开发期脚手架接口（设计决定，2026-07-14），token
+// 非必需；设置 PERMISSIONS_ADMIN_TOKEN 时仍随请求携带，便于未来收口无需改脚本。
+function optionalAdminToken(): string | undefined {
   const token = process.env.PERMISSIONS_ADMIN_TOKEN?.trim()
-  if (!token) throw new Error('远端同步需要 PERMISSIONS_ADMIN_TOKEN；本地校验请使用 --check')
-  return token
+  return token || undefined
 }
 
 function assertLocalCatalog(): void {
@@ -66,10 +69,11 @@ async function readEnvelope(response: Response): Promise<ApiEnvelope> {
 async function syncRemote(mode: Exclude<SyncMode, 'check'>): Promise<unknown> {
   const dryRun = mode === 'dry-run'
   const url = `${normalizedApiBase()}/menu-permissions/catalog/sync?dry_run=${String(dryRun)}`
+  const token = optionalAdminToken()
   const response = await fetch(url, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${requireAdminToken()}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(PERMISSION_SYNC_PAYLOAD),
@@ -84,7 +88,7 @@ async function main(): Promise<void> {
   console.log(`✓ 本地权限目录校验通过：${permissionCatalogMeta.menu_count} 个菜单 / ${permissionCatalogMeta.permission_count} 个 Permission ID`)
 
   if (mode === 'check') {
-    console.log('仅执行本地校验；远端对账使用 --dry-run，正式同步使用 --apply')
+    console.log('仅执行本地校验；远端对账使用 --dry-run，正式同步直接 npm run sync:permissions')
     return
   }
 

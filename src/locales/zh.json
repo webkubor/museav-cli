@@ -1186,6 +1186,9 @@
     },
     "distribution": {
       "title": "模型分布",
+      "chartDesc": "按模型消费占比",
+      "rankTitle": "模型排行",
+      "rankDesc": "按消费金额降序",
       "memberTitle": "成员分布",
       "apiKeyTitle": "API Key 分布",
       "bySpend": "按费用",

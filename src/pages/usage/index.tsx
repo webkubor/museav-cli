@@ -34,6 +34,7 @@ import {
   type CostSourceSection,
   ApiKeyRankingPanel,
   DistributionPanel,
+  ModelDistributionDonutPanel,
   ModelDistributionPanel,
   UsageStatCard,
 } from './usage-panels'
@@ -659,17 +660,29 @@ export default function UsagePage() {
         </div>
 
         {effectiveDimension === 'model' && (
-          <ModelDistributionPanel
-            items={rankingsModelsQuery.data?.items ?? []}
-            totalSpendAmount={rankingsModelsQuery.data?.totals?.spend?.amount}
-            isLoading={rankingsModelsQuery.isLoading}
-            isError={rankingsModelsQuery.isError}
-            onRetry={() => rankingsModelsQuery.refetch()}
-            currencySymbol={currencySymbol}
-            emptyTitle={emptyTitle}
-            emptyDesc={emptyDesc}
-            onDrill={(item) => drillToLogs('ranking', { model: item.key })}
-          />
+          <div className="grid gap-5 xl:grid-cols-2">
+            <ModelDistributionDonutPanel
+              items={rankingsModelsQuery.data?.items ?? []}
+              totalSpendAmount={rankingsModelsQuery.data?.totals?.spend?.amount}
+              isLoading={rankingsModelsQuery.isLoading}
+              isError={rankingsModelsQuery.isError}
+              onRetry={() => rankingsModelsQuery.refetch()}
+              currencySymbol={currencySymbol}
+              emptyTitle={emptyTitle}
+              emptyDesc={emptyDesc}
+            />
+            <ModelDistributionPanel
+              items={rankingsModelsQuery.data?.items ?? []}
+              totalSpendAmount={rankingsModelsQuery.data?.totals?.spend?.amount}
+              isLoading={rankingsModelsQuery.isLoading}
+              isError={rankingsModelsQuery.isError}
+              onRetry={() => rankingsModelsQuery.refetch()}
+              currencySymbol={currencySymbol}
+              emptyTitle={emptyTitle}
+              emptyDesc={emptyDesc}
+              onDrill={(item) => drillToLogs('ranking', { model: item.key })}
+            />
+          </div>
         )}
         {effectiveDimension === 'apiKey' && (
           <div className="space-y-5">

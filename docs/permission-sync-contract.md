@@ -104,6 +104,18 @@ POST /api/v1/menu-permissions/catalog/sync
 }
 ```
 
+## 7.5 市场入口差异 · platform-config 必须字段化
+
+国内/国外的**入口级差异**不属于权限目录,归 `GET /platform-config`(按 site 返回)。当前响应只有 login/pay/withdraw methods,**缺注册与手机号字段**,后端必须补:
+
+| 字段 | 类型 | china | global | 驱动的前端行为 |
+| :--- | :--- | :--- | :--- | :--- |
+| `signup_methods` | string[] | `["phone"]` | `["email"]` | 注册入口:国外邮箱注册,国内无邮箱注册(手机号) |
+| `phone_binding_required` | boolean | `true` | `false` | 登录后强制绑手机弹窗:国内必须绑,国外不绑 |
+
+- 前端现状:这两个差异目前按 `market === 'china'` 硬编码(signup/index.tsx、login/index.tsx、PhoneBindingGuard),字段就绪后改为**直读 platform-config**,删除硬编码判断。
+- 语义与既有 `enabled_login_methods` 一致:后端按 site 返回该市场的值,前端零判断直用。
+
 ## 8. 后端必须实现（本契约为准）
 
 1. **接受** query 参数 `dry_run`、`market`、`catalog_version`;body 只解析 §3 三段,多余字段忽略(不得再对整包 400)。

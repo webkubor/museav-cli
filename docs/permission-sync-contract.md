@@ -88,8 +88,12 @@ POST /api/v1/menu-permissions/catalog/sync
 {
   "code": 0,               // 0=成功,非 0=失败(附 msg / request_id)
   "data": {
+    "market": "china",     // 本次落库的市场
+    "catalog_version": "1.0.0",  // 本次落库的版本
+    "synced_at": "2026-07-14T10:00:00Z",  // 该市场本次同步时间(供 admin 展示)
     "applied": true,       // 是否已落库(dry_run=true 时应为 false)
     "has_changes": false,  // 与后端现状是否有差异
+    "full_refresh": false, // 是否因版本变化走了全量刷新
     "created_menu_keys": [],
     "updated_menu_keys": [],
     "deprecated_menu_keys": [],   // 全量模式下,本次未出现而被废弃的
@@ -100,10 +104,11 @@ POST /api/v1/menu-permissions/catalog/sync
 }
 ```
 
-## 8. 后端当前待办(与本契约的差距)
+## 8. 后端必须实现（本契约为准）
 
-1. 接受并处理 query 参数 `market`、`catalog_version`(现在似乎未真正区分市场)。
-2. 按 `market` 分库存两套目录(china / global)。
-3. 实现 `catalog_version` 变化触发**全量刷新**。
-4. 角色授权矩阵按市场独立。
-5. (可选)返回各市场**上次同步时间**,供 admin「菜单权限管理」展示。
+1. **接受** query 参数 `dry_run`、`market`、`catalog_version`;body 只解析 §3 三段,多余字段忽略(不得再对整包 400)。
+2. **按 `market` 分库存**两套独立目录(china / global);同一 permission_id 可只存在于其一。
+3. **`catalog_version` 变化 → 全量刷新**该市场目录(§5):旧目录本次未出现者标废弃;版本不变则增量对账。
+4. **角色→权限授权矩阵按市场独立**;admin「菜单权限管理」按市场展示对应目录。
+5. **返回各市场上次同步时间**(响应 `data.synced_at` 或独立接口),供 admin 页展示「上次同步时间」。
+6. 按 §4 正则**校验** permission_id / menu key,不合规拒绝并回明确 msg。

@@ -139,7 +139,8 @@
     "personalTag": "Personal",
     "roleOwner": "Owner",
     "roleAdmin": "Admin",
-    "roleMember": "Member"
+    "roleMember": "Member",
+    "switchedOrgToSpace": "Switched to {{org}} · default workspace \"{{space}}\""
   },
   "apiKeys": {
     "title": "API Keys",

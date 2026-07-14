@@ -28,6 +28,7 @@ import { createOrganization } from '@/services/organizations'
 import { applyTheme, getUserTheme, saveTheme, appendThemeParam } from '@/lib/theme'
 import { useTranslation } from 'react-i18next'
 import { listWorkspaces } from '@/services/workspaces'
+import { CONSOLE_ROUTES, type ConsoleRouteMeta } from '@/config/console-routes'
 import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 import type { TenantBrief, TenantItem, SessionResult } from '@/types'
 import type { TenantListResponse } from '@/interfaces'
@@ -56,6 +57,17 @@ import {
 /**
  * 重构后的 DashboardHeader
  */
+/** 当前 pathname → CONSOLE_ROUTES 条目（工作空间页取 /workspace/:id/ 之后的段匹配）。用于切租户后判当前页可否留。 */
+function matchConsoleRoute(pathname: string): ConsoleRouteMeta | undefined {
+  const ws = pathname.match(/^\/workspace\/[^/]+\/(.+)$/)
+  if (ws) {
+    const sub = ws[1]
+    return CONSOLE_ROUTES.find((r) => r.scope === 'workspace' && (sub === r.path || sub.startsWith(r.path + '/')))
+  }
+  const p = pathname.replace(/^\//, '')
+  return CONSOLE_ROUTES.find((r) => r.scope === 'tenant' && (p === r.path || p.startsWith(r.path + '/')))
+}
+
 export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenuClick }) => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -277,30 +289,53 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
     try {
       await switchTenant({ tenant_id: tenant.tenant_id })
       setAuth(account!, tenant.tenant_id, tenants, undefined)
-      getSession()
-        .then((s) => applyRefreshedSession(s, tenant.tenant_id))
-        .catch((err) => console.warn('[permissions] 切换组织后会话重拉失败，使用本地矩阵回退', err))
+      // 新会话 granted 用于判断「当前页在目标租户是否可访问」——故 await 后再决定跳转（原为 fire-and-forget）
+      let grantedNew: string[] = []
+      try {
+        const s = await getSession()
+        applyRefreshedSession(s, tenant.tenant_id)
+        grantedNew = s.permissions?.granted ?? []
+      } catch (err) {
+        console.warn('[permissions] 切换组织后会话重拉失败，使用本地矩阵回退', err)
+      }
       queryClient.invalidateQueries({ queryKey: ['tenants'] })
-      queryClient.removeQueries({ queryKey: ['api-keys'] })
-      queryClient.removeQueries({ queryKey: ['guardrails'] })
-      queryClient.removeQueries({ queryKey: ['observability'] })
-      queryClient.removeQueries({ queryKey: ['billing'] })
-      queryClient.removeQueries({ queryKey: ['referral'] })
-      queryClient.removeQueries({ queryKey: ['usage'] })
-      queryClient.removeQueries({ queryKey: ['logs'] })
+      ;(['api-keys', 'guardrails', 'observability', 'billing', 'referral', 'usage', 'logs'] as const)
+        .forEach((k) => queryClient.removeQueries({ queryKey: [k] }))
+      let defaultWs: { workspace_id: string; name?: string } | undefined
       try {
         const wsItems = await queryClient.fetchQuery({
           queryKey: ['workspaces', tenant.tenant_id],
           queryFn: () => listWorkspaces().then(res => res.items || []),
           staleTime: 0,
         })
-        const defaultWs = wsItems.find((w) => w.is_default) ?? wsItems[0]
+        defaultWs = wsItems.find((w) => w.is_default) ?? wsItems[0]
         setActiveWorkspaceId(defaultWs?.workspace_id ?? '')
       } catch {
         setActiveWorkspaceId('')
       }
-      navigate('/dashboard', { replace: true })
-      toast.success(t('header.switchedOrg', { name: tenant.name }))
+
+      // 跳转决策（#470）：当前页在目标租户可访问就别无脑跳首页
+      // - 租户级页且有权限 → 留在原页（数据靠 tenant-id-keyed query 自动刷新），不跳
+      // - 工作空间级页 → 切到目标租户默认空间的同类页 + 提示（需求 B+提示）
+      // - 无权限/无法归类/无可用空间 → 回退首页兜底
+      const entry = matchConsoleRoute(location.pathname)
+      // 会话拉取失败 → grantedNew 为空 → 判为不可访问 → 回退首页（保守）
+      const accessible = !!entry && (!entry.permission || grantedNew.includes(entry.permission))
+      if (entry && accessible && entry.scope === 'workspace') {
+        if (defaultWs?.workspace_id) {
+          navigate(`/workspace/${defaultWs.workspace_id}/${entry.path}`, { replace: true })
+          toast.success(t('header.switchedOrgToSpace', { org: tenant.name, space: defaultWs.name || t('common.defaultWorkspace') }))
+        } else {
+          navigate('/dashboard', { replace: true })
+          toast.success(t('header.switchedOrg', { name: tenant.name }))
+        }
+      } else if (entry && accessible) {
+        // 租户级页可访问：留在原页，不跳转
+        toast.success(t('header.switchedOrg', { name: tenant.name }))
+      } else {
+        navigate('/dashboard', { replace: true })
+        toast.success(t('header.switchedOrg', { name: tenant.name }))
+      }
     } catch {
       toast.error(t('switchTenantFailed') || '切换组织失败')
     }
@@ -390,6 +425,8 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
       <DropdownMenuItem
         key={tenant.tenant_id}
         onClick={() => handleSwitchTenant(tenant)}
+        data-track="header:switch_tenant"
+        data-tenant-id={tenant.tenant_id}
         className={cn(
           'h-14 rounded-none px-3 text-[14px] font-bold',
           'border-b border-[var(--account-menu-border)] last:border-b-0',
@@ -511,6 +548,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
           <DropdownMenuTrigger asChild>
             {/* #304：右上角胶囊显式带「企业/个人」标识——头像 + 类型图标(企业=楼宇/个人=人) + 当前租户名 + 下拉箭头 */}
             <button
+              data-track="header:tenant_switcher_open"
               className={cn(
                 'flex items-center gap-2 rounded-full py-1 pl-1 pr-1.5 outline-none select-none md:pr-2.5',
                 'border border-mg-border/70 bg-[rgba(var(--mg-bg-0-rgb),0.4)] transition-all duration-200',

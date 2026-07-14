@@ -139,7 +139,8 @@
     "personalTag": "个人",
     "roleOwner": "所有者",
     "roleAdmin": "管理员",
-    "roleMember": "成员"
+    "roleMember": "成员",
+    "switchedOrgToSpace": "已切换到 {{org}}，当前在默认工作空间「{{space}}」"
   },
   "apiKeys": {
     "title": "API Keys",

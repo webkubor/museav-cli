@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   LuSearch,
@@ -418,7 +418,14 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
  * 异步任务面板（#361）：从原「任务历史」页抽出，内嵌到「调用日志」页的「异步任务」记录类型下。
  * 视图范围沿用调用日志：mine=按当前账号裁剪；enterprise/space=租户/空间范围（服务端权威裁剪）。
  */
-export function AsyncTasksPanel({ view, currentAccountId, initialTaskId }: { view: 'enterprise' | 'mine' | 'space'; currentAccountId?: string; initialTaskId?: string }) {
+export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refreshRef, onFetchingChange }: {
+  view: 'enterprise' | 'mine' | 'space'
+  currentAccountId?: string
+  initialTaskId?: string
+  /** 刷新桥（#46）：把刷新动作/态提给页头，让同步/异步刷新按钮一致。 */
+  refreshRef?: React.MutableRefObject<() => void>
+  onFetchingChange?: (fetching: boolean) => void
+}) {
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
 
   // ?task_id= 下钻（#14）：初始搜索落到该任务，命中后经下方自动展开详情
@@ -473,10 +480,10 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId }: { vie
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['tasks', tenantId, params],
     queryFn: () => listTasks(params),
-    // 不再静默后台轮询；改为页头可见的 10s 倒计时刷新（见下方 countdown）
+    // 每 10s 后台静默自动刷新（见下方 countdown 计时器）；手动刷新走页头刷新按钮（#46）
   })
 
-  // 可见倒计时刷新：每 10s 自动刷新一次，手动刷新会重置倒计时
+  // 后台自动刷新：每 10s 自动刷新一次（计时不再外显），手动刷新会重置倒计时
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL)
   useEffect(() => {
     // setState 全部放进 setTimeout 回调（异步），不在 effect 体内同步触发
@@ -491,10 +498,17 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId }: { vie
     return () => clearTimeout(id)
   }, [countdown, refetch])
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     void refetch()
     setCountdown(REFRESH_INTERVAL)
-  }
+  }, [refetch])
+
+  // 刷新桥（#46）：刷新动作与 loading 态上报给页头刷新按钮；卸载时复位。
+  useEffect(() => {
+    if (refreshRef) refreshRef.current = handleRefresh
+  }, [refreshRef, handleRefresh])
+  useEffect(() => { onFetchingChange?.(isFetching) }, [isFetching, onFetchingChange])
+  useEffect(() => () => onFetchingChange?.(false), [onFetchingChange])
 
   const items  = data?.items ?? EMPTY_TASK_ITEMS
   const total  = data?.total ?? 0
@@ -550,7 +564,7 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId }: { vie
 
   return (
     <div>
-      {/* 筛选栏（记录类型=异步任务：首屏筛选 搜索/类型/状态 + 右侧倒计时刷新） */}
+      {/* 筛选栏（记录类型=异步任务：首屏筛选 搜索/类型/状态 + 右侧计数；刷新按钮在页头） */}
       <div className="flex items-center gap-3 mb-5 flex-wrap">
         <div className="relative">
           <LuSearch size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-mg-text-3 pointer-events-none" />
@@ -593,21 +607,10 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId }: { vie
           更多筛选
         </Button>
 
-        <div className="ml-auto flex items-center gap-3">
-          {total > 0 && (
-            <span className="mg-text-caption text-mg-text-3">共 {total} 条</span>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isFetching}
-            title={`每 ${REFRESH_INTERVAL}s 自动刷新；点击立即刷新并重新计时`}
-          >
-            <LuRefreshCw size={13} className={cn(isFetching && 'animate-spin')} />
-            {isFetching ? '刷新中' : `刷新 · ${countdown}s`}
-          </Button>
-        </div>
+        {/* 刷新按钮已上移到页头（#46，与同步调用一致）；此处保留计数，自动刷新在后台静默进行。 */}
+        {total > 0 && (
+          <span className="ml-auto mg-text-caption text-mg-text-3">共 {total} 条</span>
+        )}
       </div>
 
       {/* 更多筛选：工作空间 / API Key / 成员（API Key 归属具体空间，跟随工作空间筛选）

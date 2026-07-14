@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import {
   LuClock3,
   LuDatabase,
@@ -8,13 +8,10 @@ import {
   LuReceiptText,
   LuShieldCheck,
   LuNetwork,
-  LuMonitor,
-  LuServer,
-  LuCheck,
-  LuArrowRight,
   LuArrowUpRight,
   LuDownload,
 } from 'react-icons/lu'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -25,6 +22,9 @@ import { SideSheet } from '@/components/ui/SideSheet'
 import { StatusBadge, type StatusConfig } from '@/components/ui/StatusBadge'
 import { formatDateTimeWithSeconds, formatDuration } from '@/lib/format-date'
 import { cn, formatNumber } from '@/lib/utils'
+import { listApiKeys } from '@/services/api-keys'
+import { listTenantMembers } from '@/services/tenants'
+import { useAuthStore } from '@/store/auth'
 import type { CallLogItem } from '@/types'
 import {
   deriveLogStatus,
@@ -86,7 +86,6 @@ export function LogDetailSheet({
   open,
   row,
   workspaceName,
-  onViewTraceLogs,
   onOpenLogSettings,
 }: {
   requestPayloadText: string
@@ -99,11 +98,29 @@ export function LogDetailSheet({
   open: boolean
   row: CallLogItem | null
   workspaceName?: string
-  onViewTraceLogs?: (traceId: string) => void
   onOpenLogSettings?: (workspaceId: string) => void
 }) {
   const { t } = useTranslation()
   const statusMap = buildStatusMap(t)
+  // 归属名称解析（#47）：model-logs 只回 id（api_key.name / account.display_name 实为 id），
+  // 这里查成员/Key 列表映射成可读名称，取不到显示「—」，不再裸露 id。
+  const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
+  const wsId = row?.workspace_id
+  const { data: memberPage } = useQuery({
+    queryKey: ['tenant-members', tenantId],
+    queryFn: () => listTenantMembers(tenantId),
+    enabled: !!tenantId,
+    staleTime: 5 * 60_000,
+  })
+  const { data: keyPage } = useQuery({
+    queryKey: ['api-keys', wsId],
+    queryFn: () => listApiKeys(wsId!),
+    enabled: !!wsId,
+    staleTime: 60_000,
+  })
+  const member = row ? memberPage?.items.find((m) => m.account.account_id === row.account.account_id)?.account : undefined
+  const apiKeyName = row ? keyPage?.items.find((k) => k.api_key_id === row.api_key.api_key_id)?.name || '—' : '—'
+  const memberName = member?.display_name || member?.email || '—'
   return (
     <SideSheet open={open} onClose={onClose} title={null} width={680} className="overflow-y-auto">
       {row && (
@@ -149,8 +166,8 @@ export function LogDetailSheet({
             <DetailGrid compact>
               <DetailRow label="模型" value={row.model.display_name} />
               <DetailRow label="工作空间" value={workspaceName || row.workspace_id} />
-              <DetailRow label="API Key 名称" value={row.api_key.name} />
-              <DetailRow label="成员" value={row.account.display_name} />
+              <DetailRow label="API Key 名称" value={apiKeyName} />
+              <DetailRow label="成员" value={memberName} />
               <DetailRow label="调用时间" value={formatDateTimeWithSeconds(row.started_at)} />
               <DetailRow label="计费状态" value={row.billing_status} />
             </DetailGrid>
@@ -170,18 +187,14 @@ export function LogDetailSheet({
           )}
 
           <DetailSection title="请求链路">
-            {/* 单列堆叠：抽屉固定 680px，viewport 断点(lg)会误触发把链路图挤进 ~309px 半栏致节点/副标题重叠；
-                故不按视口分栏，链路图独占整宽。 */}
-            <div className="space-y-3">
-              <DetailGrid compact>
-                <DetailRow label="Request ID" value={row.request_id} mono />
-                <DetailRow label="HTTP 状态" value={httpStatus(row)} mono />
-                <DetailRow label="调用类型" value={row.call_type} />
-                <DetailRow label="TPOT" value={row.tpot_ms > 0 ? `${row.tpot_ms}ms` : ''} mono />
-                <DetailRow label="TPM" value={tpmLabel(row)} mono />
-              </DetailGrid>
-              <RequestChain row={row} />
-            </div>
+            {/* #48：链路调用图（Client→Gateway→Provider）需求里没有，已移除，只保留请求元信息。 */}
+            <DetailGrid compact>
+              <DetailRow label="Request ID" value={row.request_id} mono />
+              <DetailRow label="HTTP 状态" value={httpStatus(row)} mono />
+              <DetailRow label="调用类型" value={row.call_type} />
+              <DetailRow label="TPOT" value={row.tpot_ms > 0 ? `${row.tpot_ms}ms` : ''} mono />
+              <DetailRow label="TPM" value={tpmLabel(row)} mono />
+            </DetailGrid>
           </DetailSection>
 
           <DetailSection title="响应耗时">
@@ -209,18 +222,9 @@ export function LogDetailSheet({
             onOpenLogSettings={onOpenLogSettings}
           />
 
-          <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-mg-border pt-4">
+          {/* #49：「查看同链路日志」需求里没有且无法正确跳转，已移除，仅保留复制 Trace。 */}
+          <footer className="flex flex-wrap items-center gap-3 border-t border-mg-border pt-4">
             <CopyButton value={row.trace_id} variant="labeled" label="复制 Trace" toast={false} />
-            {row.trace_id && onViewTraceLogs && (
-              <Button
-                variant="brand"
-                size="sm"
-                onClick={() => onViewTraceLogs(row.trace_id)}
-              >
-                查看同链路日志
-                <LuArrowUpRight className="ml-1.5 h-4 w-4" />
-              </Button>
-            )}
           </footer>
         </div>
       )}
@@ -245,76 +249,6 @@ function DiagnosticCard({ hint, icon, label, value, tone = 'brand', className }:
       </span>
       <strong className="mt-2 block truncate mg-text-value font-bold text-mg-text-1">{value}</strong>
       <small className="mt-1 block truncate mg-text-caption text-mg-text-3">{hint}</small>
-    </article>
-  )
-}
-
-type NodeState = 'ok' | 'warn' | 'error' | 'skipped'
-const NODE_TONE: Record<NodeState, string> = {
-  ok: 'bg-mg-success/10 text-mg-success',
-  warn: 'bg-mg-warning/10 text-mg-warning',
-  error: 'bg-mg-danger/10 text-mg-danger',
-  skipped: 'bg-mg-fill-1 text-mg-text-4',
-}
-
-function ChainNode({ icon, state, sub, title }: { icon: ReactNode; state: NodeState; sub: string; title: string }) {
-  return (
-    <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 text-center">
-      <span className={cn('relative flex h-10 w-10 items-center justify-center rounded-lg [&_svg]:size-5', NODE_TONE[state])}>
-        {icon}
-        <span className={cn(
-          'absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-mg-bg-0',
-          state === 'ok' ? 'bg-mg-success text-white' : state === 'warn' ? 'bg-mg-warning text-white' : state === 'error' ? 'bg-mg-danger text-white' : 'bg-mg-fill-2 text-mg-text-4'
-        )}>
-          {state === 'error' ? <LuNetwork className="h-2.5 w-2.5" /> : state === 'skipped' ? <span className="h-1.5 w-1.5 rounded-full bg-current" /> : <LuCheck className="h-2.5 w-2.5" />}
-        </span>
-      </span>
-      <div className="min-w-0">
-        <div className="mg-text-caption font-bold text-mg-text-1">{title}</div>
-        <div className="truncate mg-text-caption text-mg-text-3">{sub}</div>
-      </div>
-    </div>
-  )
-}
-
-/** 后端 provider.name 有时返回的是 UUID（而非厂商名），裸露到副标题很难看——像 UUID 就回退到模型名。 */
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-function providerLabel(row: CallLogItem) {
-  const name = row.provider.name?.trim()
-  if (name && !UUID_RE.test(name)) return name
-  return row.model.display_name
-}
-
-/** 请求链路可视化：Client → Gateway → Provider 三节点 + 链路状态摘要（数据由 status/http_status 推导）。 */
-function RequestChain({ row }: { row: CallLogItem }) {
-  // 已拦截（护栏命中且模型未发起）→ Provider 跳过；脱敏后继续按正常链路（请求已下发到 Provider）。
-  const blocked = isGuardrailHit(row) && isModelNotStarted(row)
-  const failed = deriveLogStatus(row) === 'error'
-  const providerState: NodeState = blocked ? 'skipped' : failed ? 'error' : 'ok'
-  const nodes: { icon: ReactNode; title: string; sub: string; state: NodeState }[] = [
-    { icon: <LuMonitor />, title: 'Client', sub: '用户客户端', state: 'ok' },
-    { icon: <LuServer />, title: 'Gateway', sub: 'API 网关', state: blocked ? 'warn' : 'ok' },
-    { icon: <LuDatabase />, title: 'Provider', sub: providerLabel(row), state: providerState },
-  ]
-  const summary = blocked
-    ? { tone: 'text-mg-warning', text: '护栏拦截 · 请求未下发到 Provider' }
-    : failed
-      ? { tone: 'text-mg-danger', text: 'Provider 响应失败' }
-      : { tone: 'text-mg-success', text: '链路正常 · 全部节点请求成功' }
-  return (
-    <article className="rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
-      <div className="flex items-center justify-between">
-        {nodes.map((node, i) => (
-          <Fragment key={node.title}>
-            <ChainNode icon={node.icon} title={node.title} sub={node.sub} state={node.state} />
-            {i < nodes.length - 1 && <LuArrowRight className="mx-1 h-4 w-4 shrink-0 self-start mt-2.5 text-mg-text-4" />}
-          </Fragment>
-        ))}
-      </div>
-      <div className={cn('mt-3 flex items-center justify-center gap-1.5 border-t border-mg-border/60 pt-2.5 mg-text-caption font-semibold', summary.tone)}>
-        <LuCheck className="h-3.5 w-3.5" />
-        {summary.text}
-      </div>
     </article>
   )
 }

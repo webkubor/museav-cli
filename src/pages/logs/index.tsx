@@ -201,21 +201,15 @@ export default function LogsPage() {
   const [payloadView, setPayloadView] = useState<PayloadView>('parsed')
   const [page, setPage] = useState(1)
   const [cursorStack, setCursorStack] = useState<Array<string | null>>([null])
+  // 异步任务的刷新桥（#46）：把面板内的刷新动作/态提上来，让页头刷新按钮在同步/异步两种记录类型下保持一致。
+  const [asyncFetching, setAsyncFetching] = useState(false)
+  const asyncRefreshRef = useRef<() => void>(() => {})
 
   const currentCursor = cursorStack[page - 1] ?? null
 
   function resetPagination() {
     setPage(1)
     setCursorStack([null])
-  }
-
-  // 详情「查看同链路日志」：用关键词检索按 trace 过滤同链路，展开更多筛选、关掉详情（事件处理里 setState，非 effect）
-  function viewTraceLogs(traceId: string) {
-    if (!traceId) return
-    setSearchValue(traceId)
-    setShowMoreFilters(true)
-    setSelectedLog(null)
-    resetPagination()
   }
 
   const trackFilter = (filter: string, value?: string) =>
@@ -409,6 +403,23 @@ export default function LogsPage() {
     return map
   }, [workspacesData?.items])
 
+  // 归属名称解析（#50）：列表 model-logs 只回 id（account.display_name / api_key.name 实为 id），
+  // 查成员/Key 列表映射成可读名称。取不到则不展示（不裸露 id）；API Key 需先选中工作空间才可解析。
+  const memberNameById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const member of membersData?.items ?? []) {
+      map.set(member.account.account_id, member.account.display_name || member.account.email)
+    }
+    return map
+  }, [membersData?.items])
+  const apiKeyNameById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const key of apiKeysData?.items ?? []) {
+      map.set(key.api_key_id, key.name)
+    }
+    return map
+  }, [apiKeysData?.items])
+
   const activeChips = useMemo(() => {
     const chips: string[] = []
     if (!isDefaultTimeRange(timeRange)) chips.push(timeRangeLabel(timeRange))
@@ -517,9 +528,15 @@ export default function LogsPage() {
               ]}
               onChange={changeRecordType}
             />
-            {recordType === 'sync' && (
+            {/* 刷新按钮：同步/异步两种记录类型统一放页头、统一样式（#46）。异步的自动刷新计时在面板内静默进行。 */}
+            {recordType === 'sync' ? (
               <Button variant="outline" disabled={isLoading || isFetching} onClick={() => refetch()}>
                 <LuRefreshCw className={`mr-1.5 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+                刷新
+              </Button>
+            ) : (
+              <Button variant="outline" disabled={asyncFetching} onClick={() => asyncRefreshRef.current()}>
+                <LuRefreshCw className={`mr-1.5 h-4 w-4 ${asyncFetching ? 'animate-spin' : ''}`} />
                 刷新
               </Button>
             )}
@@ -528,7 +545,7 @@ export default function LogsPage() {
       />
 
       {recordType === 'async' ? (
-        <AsyncTasksPanel view={view} currentAccountId={currentAccountId} initialTaskId={searchParams.get('task_id') ?? undefined} />
+        <AsyncTasksPanel view={view} currentAccountId={currentAccountId} initialTaskId={searchParams.get('task_id') ?? undefined} refreshRef={asyncRefreshRef} onFetchingChange={setAsyncFetching} />
       ) : forbidden ? (
         <div className="rounded-md border border-mg-border bg-mg-bg-0">
           <ForbiddenState resource="调用日志" />
@@ -663,6 +680,8 @@ export default function LogsPage() {
           page={page}
           selectedLogId={selectedLog?.call_log_id}
           workspaceNameById={workspaceNameById}
+          memberNameById={memberNameById}
+          apiKeyNameById={apiKeyNameById}
           docsUrl={docsUrl}
           onGoCreateKey={activeWorkspaceId ? () => navigate(`/workspace/${activeWorkspaceId}/api-keys`) : undefined}
         />
@@ -685,7 +704,6 @@ export default function LogsPage() {
         open={Boolean(selectedLog)}
         row={selectedLog}
         workspaceName={selectedLog ? (workspaceNameById.get(selectedLog.workspace_id) || selectedLog.workspace_id) : undefined}
-        onViewTraceLogs={viewTraceLogs}
         onOpenLogSettings={(workspaceId) => navigate(`/workspace/${workspaceId}/observability`)}
       />
         </>

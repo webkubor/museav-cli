@@ -1,93 +1,39 @@
----
-name: ui-review-polish
-description: Use when auditing, reviewing, or polishing an existing interface across visual hierarchy, accessibility, responsive behavior, motion, UX writing, color, and final product quality.
-updated: 2026-06-03
-last_used: ~
-use_count: 0
----
+# AGENTS.md — 本项目非-Claude Agent（codex/gpt/gemini…）冷启动协议
 
-# UI Review Polish
+> Claude Code 读 `CLAUDE.md`；其它 CLI（codex/gpt/gemini/opencode…）读本文件。
+> 两者指向**同一真源**，不重复内容——本文件只是入口指针。
 
-Use this when the user says the UI is ugly, too AI-like, unclear, not polished, not responsive, too bland, visually noisy, or needs review before shipping.
+## ⚠️ 动手前强制三步（不可跳过）
 
-## Decision Boundary
+```bash
+cs brief                 # 1. 项目信息 + 可用命令 + 进行中任务（冷启动快照）
+cs flow <task-type>      # 2. 任务类型 → 该读哪些规则（frontend/bugfix/deploy/board…）
+cs rule <规则名>          # 3. 读具体规范（frontend_design_standard / commit_convention / …）
+```
+**cs 是脑与规则的唯一入口**：查知识 `cs search`、决策前 `cs think --for "<决策>"`、记踩坑 `cs retro`。不猜路径、不记结构。
 
-Choose this skill when:
-- The main task is diagnosis, review, or targeted polish of an existing interface.
-- You need to decide whether the fix is visual direction, layout, copy, motion, accessibility, color, or responsive behavior.
-- The user asks for "review", "audit", "make it better", "高级感", "不好看", "太丑", "像 AI", "适配", "动效", "文案不清楚", or "打磨".
+## 本项目真源
 
-After diagnosis:
-- If the screen is product/app UI inside a framework, apply `framework-product-ui`.
-- If the screen is a public website or landing page, apply `css-website-design`.
+- **项目约定**：本仓 `CLAUDE.md`（环境/API/概念/导航/部署）+ `DESIGN.md`（UI 铁律）。
+- **UI 改动**：先 `cs flow frontend` + `cs rule frontend_design_standard`；提交前 `scripts/ui-guard.sh` 门禁 + 浏览器验证。
+- **接口真源**：Swagger `https://modelgo-web-api.test.modelgo.com/swagger/doc.json`；PRD 原型 `modelgo_prd/src/App.tsx`。
 
-## Review Order
+## 🔒 多 agent 协同（防重复改/返工/打架）——必守
 
-1. Purpose: what should the user understand or do first?
-2. Hierarchy: is the primary content/action visually dominant for the right reason?
-3. Layout: spacing, alignment, grouping, density, card use, responsive constraints.
-4. Typography: scale, weight, line length, label clarity, truncation, overflow.
-5. Color: semantic roles, contrast, accent discipline, theme token usage.
-6. Interaction: hover/focus/active/disabled/loading/error states, keyboard path.
-7. Motion: only purposeful transitions; no bounce/elastic gimmicks.
-8. UX writing: labels, errors, empty states, button text, duplicate copy.
-9. AI slop scan: generic gradients, glassmorphism, glowing dark UI, decorative orbs, repeated icon cards, hero metric templates.
+同一仓可能有多个 agent（不同 CLI/session）在跑。动看板任何单前：
 
-## Output Shape
+```bash
+S=~/.claude/skills/gitlab-board/agent-claim.mjs
+node $S status                  # 开工先看别人在改哪个单（进行中 + 认领信息）
+node $S claim <iid> --mode ...  # 动单前认领；被别的活 session 锁住 → 别碰，换一个
+node $S release <iid> --to ...  # 收工释放
+```
+- 认领锁只管「谁做哪个单」；**并发 agent 必须各自 git worktree 隔离，别挤同一个工作树**（否则 git/build 层照样打架）。
+- 看板：qa/ai-quality-platform(project 1，我的工单) + shared/modelgo_prd(project 46，PM 派单)。
 
-For review-only tasks, lead with findings:
-- Severity: P0/P1/P2/P3
-- File or screen reference when available
-- Problem and concrete fix
+## 决策与交付纪律（详见 cs rule / CLAUDE.md）
 
-For implementation tasks:
-- Make the smallest coherent polish pass that fixes the root visual issue.
-- Verify layout at desktop and mobile sizes when a browser target exists.
-- Mention any remaining design debt separately from completed fixes.
----
-name: framework-product-ui
-description: Use when improving or building product UI inside an existing component framework such as shadcn/ui, Radix, Ant Design, Naive UI, React Native Paper, or an internal design system. Keep the framework's component model and tokens as the source of truth.
-updated: 2026-06-03
-last_used: ~
-use_count: 0
----
-
-# Framework Product UI
-
-Use this for app, SaaS, dashboard, console, admin, CRM, editor, mobile app, or repeated workflow UI when the project already has a UI framework or design system.
-
-## Decision Boundary
-
-Choose this skill when:
-- The repo already uses a UI framework, component library, or design tokens.
-- The work is inside an app workflow: tables, forms, filters, dashboards, settings, editors, detail pages, sidebars, modals, drawers, command palettes, toolbars.
-- The main problem is information hierarchy, interaction density, component state, accessibility, or workflow efficiency.
-
-Do not choose this for:
-- Marketing websites, official sites, portfolio pages, brand landing pages, or editorial pages whose quality mostly comes from CSS composition. Use `css-website-design`.
-- Pure review with no implementation direction. Use `ui-review-polish`.
-
-## Operating Rules
-
-1. Inspect the current component system first: package dependencies, existing components, CSS variables, theme tokens, layout primitives, and examples already in the repo.
-2. Preserve the framework's semantics. Prefer existing Button, Input, Dialog, Select, Table, Tabs, Drawer, Toast, Menu, Tooltip, and Form components over custom HTML.
-3. Design within product constraints: dense but readable layouts, predictable navigation, clear state, keyboard accessibility, responsive behavior, and fast repeated actions.
-4. Use tokens and variants. Do not hardcode colors, spacing, or one-off styles unless the local system has no equivalent and the value is promoted into a token.
-5. Avoid marketing-page composition inside tools. No oversized heroes, decorative card gardens, gradient-orb backgrounds, or nested cards for operational screens.
-
-## Product UI Checklist
-
-- Navigation: user can move between list, detail, edit, settings, and empty/error states without dead ends.
-- Data density: tables, cards, and forms are scannable without looking sparse or cramped.
-- Controls: use familiar controls for the job: segmented controls for modes, tabs for view switching, menus for option sets, switches/checkboxes for binary settings, sliders/inputs for numeric values.
-- States: loading, empty, disabled, active, selected, error, success, and destructive states are visible and consistent.
-- Responsive: compact layouts preserve primary actions and do not hide critical workflows.
-- Accessibility: labels, focus states, keyboard paths, contrast, and hit targets are checked.
-
-## Output Shape
-
-When implementing, return:
-- The design intent in one short sentence.
-- The concrete components/paths changed.
-- Any framework constraints kept or fixed.
-- Verification run: build/typecheck/lint/browser check when available.
+- 决策前先 `cs think --for`；能自决就自决（真源+规则能推出动作即做），只在外发·不可逆要确认、或真无依据时问。
+- 「交付」= 接口在 test 可打通，不是代码写完；前端对后端有要求必须落 API 单。
+- 提单/需求用 SCQA（背景-冲突-问题-方案）讲清「为啥改/怎么改/改成啥」。
+- 提交规范走 `cs rule commit_convention`（中文 + Conventional + MECE）。

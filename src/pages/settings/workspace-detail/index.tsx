@@ -18,7 +18,7 @@ import {
 import { listTenantMembers } from '@/services/tenants'
 import { getLoggingConfig } from '@/services/observability'
 import { ObservabilityContent } from '@/pages/observability'
-import { cn, pageItems } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { TENANT_ROLE_LABEL } from '@/constants/roles'
 import type { TenantMember, WorkspaceDetail, WorkspaceMember } from '@/types'
 import { Button } from '@/components/ui/Button'
@@ -45,9 +45,15 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
   // 移除策略：transfer（转给负责人）/ disable（停用 Key）
   const [removeStrategy, setRemoveStrategy] = useState<'transfer' | 'disable' | ''>('')
 
+  // queryKey ['workspace-members', id] 是跨页共享缓存（api-keys / guardrails / CreateKeyModal 也用同一 key）。
+  // 那三处的 queryFn 直接返回后端原始响应（WorkspaceMembersResponse 对象，读 data.items），
+  // 唯独这里曾 .then(pageItems) 把 data 转成数组——同一 key 两种形状，谁后跑谁覆盖缓存。
+  // 用户多切换几次工作空间/租户后，别处先把缓存写成对象，这里再读时 data 就是对象、
+  // `data ?? []` 兜不住对象，members.find(...) 直接抛 "C.find is not a function"（#44）。
+  // 修法：与其余三处统一——queryFn 不转形状，消费端一律读 data?.items，杜绝形状冲突。
   const membersQuery = useQuery({
     queryKey: ['workspace-members', workspaceId],
-    queryFn: () => listWorkspaceMembers(workspaceId, { page_size: 100 }).then(pageItems),
+    queryFn: () => listWorkspaceMembers(workspaceId, { page_size: 100 }),
     enabled: Boolean(workspaceId),
     staleTime: 30_000,
   })
@@ -59,7 +65,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
     staleTime: 60_000,
   })
 
-  const members: WorkspaceMember[] = membersQuery.data ?? []
+  const members: WorkspaceMember[] = membersQuery.data?.items ?? []
   const owner = members.find((m) => m.role === 'ws_owner')
 
   const wsAccountIds = useMemo(() => {

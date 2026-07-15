@@ -119,6 +119,10 @@ export default defineConfig(({ mode }) => {
     // 固定控制台自己的 dev 端口 5175（与 CLAUDE.md 及下方 Origin 改写注释一致），
     // 避免默认 5173 与其它 Vite 项目抢端口；strictPort 不开，5175 被占仍自动顺延；PORT 可覆盖。
     port: process.env.PORT ? parseInt(process.env.PORT) : 5175,
+    // 多 agent 并行的 git worktree 嵌在仓库根下（.worktrees/ / .claude/worktrees/）:
+    // 不忽略的话,别的 agent 在 worktree 里改 tsconfig/文件会触发主树 dev server
+    // 清缓存强制全量 reload,打断正在开发的 HMR(README「已踩过的雷」)。
+    watch: { ignored: ['**/.worktrees/**', '**/.claude/**'] },
     proxy: {
       // 真 API 网关是 modelgo-web-api.test.modelgo.com（test.modelgo.com 网关白名单已收紧会返回 invalid domain）。
       // agentProxy 自带：proxy.log（header 真相）+ 本地 cookie 修复（去 Domain/剥 Secure/SameSite=None→Lax）。

@@ -50,7 +50,8 @@ vi.mock('@/services/tenants', () => ({
   listTenants: vi.fn().mockResolvedValue({ items: [] }),
 }))
 vi.mock('@/services/api-keys', () => ({
-  listApiKeys: vi.fn().mockResolvedValue([]),
+  // #60 起返回 CursorPage 分页对象（不再是裸数组）
+  listApiKeys: vi.fn().mockResolvedValue({ items: [], page_size: 0, has_more: false, next_cursor: null }),
 }))
 
 // Permission + platform-config hooks are page inputs, not what we test here:

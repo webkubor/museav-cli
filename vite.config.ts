@@ -43,10 +43,12 @@ export default defineConfig(({ mode }) => {
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'brand/**'],
+      // 国内版 manifest(默认);国际站(.ai)由 index.html 域名前置脚本切到
+      // public/manifest-global.webmanifest(qa#481)——单一构建产物,安装图标/名称随市场。
       manifest: {
-        name: 'ModelGo Console',
+        name: 'ModelGo 控制台',
         short_name: 'ModelGo',
-        description: 'ModelGo AI Platform Console',
+        description: 'ModelGo AI 平台控制台',
         theme_color: '#3b82f6',
         background_color: '#ffffff',
         display: 'standalone',

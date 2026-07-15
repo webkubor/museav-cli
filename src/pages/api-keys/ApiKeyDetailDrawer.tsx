@@ -21,7 +21,7 @@ import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { getApiKeyAudit, getApiKeyDetail, getEffectiveGuardrails, updateApiKey } from '@/services/api-keys'
-import type { ApiKeyItem } from '@/types'
+import type { ApiKeyItem, ApiKeyType } from '@/types'
 import { LIMIT_PERIOD_OPTIONS, type LimitPeriod } from './constants'
 import {
   KEY_TYPE_LABEL,
@@ -33,6 +33,7 @@ import {
   formatLimit,
   currentLimitPeriod,
   buildSpendingLimit,
+  type ApiKeyAction,
 } from './derive'
 
 const STATUS_MAP = {

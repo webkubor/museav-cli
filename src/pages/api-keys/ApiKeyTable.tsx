@@ -17,7 +17,7 @@ import {
 import { LuCopy, LuFilterX, LuKeyRound, LuLoaderCircle, LuPlus, LuShieldCheck } from 'react-icons/lu'
 import { formatDateTime } from '@/lib/format-date'
 import { formatMoney } from '@/lib/utils'
-import type { ApiKeyItem } from '@/types'
+import type { ApiKeyItem, ApiKeyType } from '@/types'
 import {
   KEY_TYPE_LABEL,
   STATUS_LABEL,
@@ -28,6 +28,7 @@ import {
   isExpiringSoon,
   cap,
   formatLimit,
+  type ApiKeyAction,
 } from './derive'
 
 /** key 是否已过期：瞬时点比较（expires_at 为带 Z 的 UTC ISO）。放组件外避免 render 期调 Date.now。 */

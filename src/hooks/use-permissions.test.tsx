@@ -157,7 +157,7 @@ describe('usePermissions — AUTHORITATIVE source (session.permissions.granted)'
     // and everything owner would otherwise unlock stays denied too.
     expect(result.current.hasPermission('org.settings:edit')).toBe(false)
     expect(result.current.hasPermission('api_keys:view')).toBe(false)
-    expect(result.current.hasPermission('api_keys:revoke')).toBe(false)
+    expect(result.current.hasPermission('api_keys.personal:revoke')).toBe(false)
     expect(result.current.hasPermission('billing:view')).toBe(false)
   })
 
@@ -197,7 +197,7 @@ describe('usePermissions — FAIL-CLOSED (granted === null, #344)', () => {
     expect(result.current.hasPermission('dashboard:view')).toBe(false)
     expect(result.current.hasPermission('org.settings:edit')).toBe(false)
     expect(result.current.hasPermission('api_keys:view')).toBe(false)
-    expect(result.current.hasPermission('api_keys:revoke')).toBe(false)
+    expect(result.current.hasPermission('api_keys.personal:revoke')).toBe(false)
   })
 })
 

@@ -20,6 +20,8 @@ cs rule <规则名>          # 3. 读具体规范（frontend_design_standard / c
 
 ## 🔒 多 agent 协同（防重复改/返工/打架）——必守
 
+**并发改代码必须各自 `git worktree add` 隔离(+ symlink node_modules),禁止共用主工作树**——共用会互踩 stash、撕裂 node_modules(deps 预检全挂)。其余实战雷区见 README「☠️ 已踩过的雷」(PWA 缓存验证假象/Jenkins 双发布线/同 queryKey 形状冲突/测试漏 mock 竞态等)。
+
 同一仓可能有多个 agent（不同 CLI/session）在跑。动看板任何单前：
 
 ```bash

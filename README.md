@@ -402,6 +402,18 @@ cs rule
 
 ---
 
+## ☠️ 已踩过的雷(实战教训,动手前读)
+
+1. **验证部署先破缓存**:本项目是 PWA,ServiceWorker 会缓存旧 bundle——部署成功但浏览器仍显旧版。**验部署必先注销 SW/清 caches,并核对页脚 commit hash**(侧栏底部 `v0.6.0 · <sha>`)。
+2. **Jenkins 双发布线**:`prod/modelgo-console-web` 只发**国内**(console.modelgo.com),国外(console.modelgo.ai)在 **`prod-global/`** 目录下——发版极易漏发国外,两条都要触发。
+3. **Jenkins 构建 SHA 别读第一个**:build 的 actions 里第一个 `lastBuiltRevision` 是 devops/cicd 流水线库,**项目 SHA 要认 remoteUrls 为本仓库的那条**。
+4. **React Query 同 key 只许一种形状**:同一 queryKey 在不同页面存不同形状(数组 vs 分页对象)会互相污染缓存 → 页面崩溃(需求方 #44 根因;#60 又扫出一处)。新查询前 grep 该 key 的既有消费方。
+5. **测试必须 mock 全被挂载 hook 的 service**:页面挂载的 hook(如 useTenantRole→listTenants)若没 mock,会发**真网络请求** → 40101 → `clearAuth()` **异步**洗掉下一个用例刚 setState 的 store——跨用例竞态、单跑过连跑挂、极难排查(guardrails 测试实案)。
+6. **多 agent 并发必须 worktree 隔离**:共用工作树会互踩 git stash、把 node_modules 与 lockfile 撕裂(pre-commit 的 `runDepsStatusCheck` 全挂)。并行改动各自 `git worktree add` + symlink node_modules;环境撕裂用 `CI=true pnpm install` 重装修复,别一路 `--no-verify` 绕。
+7. **前端不替后端遮丑**:后端把 id 塞进 `*_name` 字段、国外站返 `site:"china"` 这类语义污染——**不写兜底遮掩,开单钉死后端**(带 curl 铁证)。品牌/入口类已用「生产域名前置锁定」免疫(`marketLockedByDomain`),platform-config 不得覆盖。
+
+---
+
 ## 关联项目
 
 | 项目 | 仓库 | 说明 |

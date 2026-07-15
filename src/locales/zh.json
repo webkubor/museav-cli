@@ -140,7 +140,9 @@
     "roleOwner": "所有者",
     "roleAdmin": "管理员",
     "roleMember": "成员",
-    "switchedOrgToSpace": "已切换到 {{org}}，当前在默认工作空间「{{space}}」"
+    "switchedOrgToSpace": "已切换到 {{org}}，当前在默认工作空间「{{space}}」",
+    "searchWorkspace": "搜索空间名称或 Slug",
+    "noWorkspaceMatch": "没有匹配的工作空间"
   },
   "apiKeys": {
     "title": "API Keys",

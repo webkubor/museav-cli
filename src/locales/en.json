@@ -140,7 +140,9 @@
     "roleOwner": "Owner",
     "roleAdmin": "Admin",
     "roleMember": "Member",
-    "switchedOrgToSpace": "Switched to {{org}} · default workspace \"{{space}}\""
+    "switchedOrgToSpace": "Switched to {{org}} · default workspace \"{{space}}\"",
+    "searchWorkspace": "Search workspace name or slug",
+    "noWorkspaceMatch": "No matching workspace"
   },
   "apiKeys": {
     "title": "API Keys",

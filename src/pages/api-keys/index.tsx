@@ -18,7 +18,7 @@ import { ForbiddenState } from '@/components/ui/ForbiddenState'
 import { trackAction, trackEvent, trackPageView } from '@/lib/track'
 import { useTenantRole } from '@/hooks/use-tenant-role'
 import { LuSearch, LuPlus } from 'react-icons/lu'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { getMarketConfig } from '@/config/market'
 import {
@@ -40,7 +40,10 @@ import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { appToast } from '@/lib/app-toast'
 import { useMarket } from '@/hooks/useMarket'
-import { pageItems } from '@/lib/utils'
+import { useCursorPager } from '@/hooks/use-cursor-pager'
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
+import { Pagination } from '@/components/ui/Pagination'
+import type { ApiKeyListParams } from '@/interfaces/api-keys'
 import { ApiKeyProtocolBanner } from './ApiKeyProtocolBanner'
 import { ConnectModal } from './ConnectModal'
 import { CreateKeyModal } from './CreateKeyModal'
@@ -52,6 +55,8 @@ import { deriveKeyType, responsibleOf, isExpiringSoon } from './derive'
 import type { ApiKeyCreated, ApiKeyItem, ApiKeyType, WorkspaceItem } from '@/types'
 
 const ALL = 'all'
+/** 表格游标分页每页条数（#60） */
+const PAGE_SIZE = 20
 
 export default function ApiKeysPage() {
   const { t } = useTranslation()
@@ -106,16 +111,46 @@ export default function ApiKeysPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const { data, isLoading, error: listError } = useQuery({
-    queryKey: ['api-keys', workspaceId],
-    // 类型/负责人/状态/搜索四个筛选都在客户端做（其中 status 后端无筛选参数），因此必须把全量 Key
-    // 一次拉齐，否则筛选/负责人下拉只覆盖首页会漏（#383）。单空间 Key 量级很小，page_size 拉满足够；
-    // 若未来单空间 Key 超 200，再改真·游标分页 + 后端补 status 过滤参数。
-    queryFn: () => listApiKeys(workspaceId, { page_size: 200 }).then(pageItems),
+  const pager = useCursorPager()
+  // 切换工作空间回到第一页——渲染期调整状态模式（同 AuditTab），避免 useEffect 级联渲染
+  const [observedWorkspaceId, setObservedWorkspaceId] = useState(workspaceId)
+  if (workspaceId !== observedWorkspaceId) {
+    setObservedWorkspaceId(workspaceId)
+    pager.reset()
+  }
+  // 搜索防抖：settle 350ms 后才进 queryKey，避免每次按键触发请求（同 logs 页）
+  const debouncedSearch = useDebouncedValue(searchValue.trim(), 350)
+
+  // #60 列表接口已改为 CursorPage 分页对象：表格走真·游标分页（page_size=20，不处理 has_more 会漏显）。
+  // q / key_type / responsible_member_id 三个后端支持的筛选下推服务端，跨页命中不漏；
+  // status 后端无筛选参数（#383），仍在当前页客户端过滤（见 filteredData）。
+  const listParams: ApiKeyListParams = {
+    page_size: PAGE_SIZE,
+    cursor: pager.cursor,
+    q: debouncedSearch || undefined,
+    key_type: typeFilter === ALL ? undefined : (typeFilter as ApiKeyListParams['key_type']),
+    responsible_member_id: ownerFilter === ALL ? undefined : ownerFilter,
+  }
+  const { data, isLoading, isFetching, error: listError } = useQuery({
+    queryKey: ['api-keys', workspaceId, 'page', pager.page, pager.cursor, debouncedSearch, typeFilter, ownerFilter],
+    queryFn: () => listApiKeys(workspaceId, listParams),
     enabled: !!workspaceId,
+    placeholderData: keepPreviousData,
     retry: false, // 40301/无权限不重试，直接走兼容态
     meta: { forbiddenHandled: true }, // 40301 由本页 ForbiddenState 承接，不弹全局 toast
   })
+
+  // 汇总卡兜底/负责人筛选下拉/作用域提示需要全量视角：不带分页参数（page_size:0=不限）拉全量（#60 下拉候选类语义），
+  // 与 logs/tasks/guardrails 共用 ['api-keys', workspaceId] 缓存（同 key 只存 CursorPage 一种形状，杜绝 #44 类形状冲突）
+  const { data: allKeysPage, isLoading: allKeysLoading } = useQuery({
+    queryKey: ['api-keys', workspaceId],
+    queryFn: () => listApiKeys(workspaceId),
+    enabled: !!workspaceId,
+    staleTime: 60_000,
+    retry: false,
+    meta: { forbiddenHandled: true },
+  })
+  const allKeys = allKeysPage?.items ?? []
 
   // 接口正常但业务码 40301（无权限，典型是进了自己无权的工作空间 API Keys 页）→ 403 兼容态，
   // 而不是让空数据伪装成「暂无 Key」空态。
@@ -140,25 +175,27 @@ export default function ApiKeysPage() {
   const workspaceName =
     workspaces.find((w) => w.workspace_id === workspaceId)?.name ?? t('header.defaultWorkspace')
 
-  const apiKeyItems = pageItems(data)
-  // #358 角色可见性：可见范围完全由后端返回的行决定（成员只回自己的，此处据「返回是否含他人」派生页头提示）
-  const showsOthers = apiKeyItems.some(
+  const apiKeyItems = data?.items ?? []
+  const hasMore = Boolean(data?.has_more && data.next_cursor)
+  // #358 角色可见性：可见范围完全由后端返回的行决定（成员只回自己的，此处据「返回是否含他人」派生页头提示）；
+  // 用全量视角判定，避免翻页/筛选后的单页样本误判作用域
+  const showsOthers = allKeys.some(
     (k) => k.owner?.account_id && k.owner.account_id !== currentAccountId,
   )
-  const distinctOwnerCount = new Set(apiKeyItems.map((k) => k.owner?.account_id).filter(Boolean)).size
+  const distinctOwnerCount = new Set(allKeys.map((k) => k.owner?.account_id).filter(Boolean)).size
   // 埋点 row_scope（PRD §11.1）：能看到他人 Key = workspace_all，否则 self
   const rowScope = showsOthers ? 'workspace_all' : 'self'
   const commonEventProps = { prd_version: 'api_keys_v0_1', row_scope: rowScope }
 
-  // 负责人筛选项（当前列表内去重）
+  // 负责人筛选项（全量列表去重——分页后单页去重会漏掉其他页的负责人，#60）
   const ownerOptions = useMemo(() => {
     const map = new Map<string, string>()
-    apiKeyItems.forEach((k) => {
+    allKeys.forEach((k) => {
       const r = responsibleOf(k)
       if (r.account_id) map.set(r.account_id, r.display_name || r.email || r.account_id)
     })
     return [...map.entries()].map(([id, label]) => ({ id, label }))
-  }, [apiKeyItems])
+  }, [allKeys])
 
   const revokeMutation = useMutation({
     mutationFn: (keyId: string) => revokeApiKey(workspaceId, keyId),
@@ -281,29 +318,21 @@ export default function ApiKeysPage() {
     [workspaceId, canReveal, copy, copyingKeyId, t]
   )
 
+  // 搜索/类型/负责人已下推服务端（见 listParams）；status 后端无筛选参数，仅在当前页客户端过滤
   const filteredData = useMemo(() => {
-    const q = searchValue.toLowerCase()
     return apiKeyItems.filter((item) => {
-      if (q) {
-        const r = responsibleOf(item)
-        const hay = `${item.name} ${item.masked ?? ''} ${r.display_name ?? ''} ${r.email ?? ''}`.toLowerCase()
-        if (!hay.includes(q)) return false
-      }
-      if (typeFilter !== ALL && deriveKeyType(item) !== typeFilter) return false
-      if (statusFilter !== ALL) {
-        if (statusFilter === 'expiring') { if (!isExpiringSoon(item)) return false }
-        else if (item.status !== statusFilter) return false
-      }
-      if (ownerFilter !== ALL && responsibleOf(item).account_id !== ownerFilter) return false
-      return true
+      if (statusFilter === ALL) return true
+      if (statusFilter === 'expiring') return isExpiringSoon(item)
+      return item.status === statusFilter
     })
-  }, [apiKeyItems, searchValue, typeFilter, statusFilter, ownerFilter])
+  }, [apiKeyItems, statusFilter])
 
   const isFiltered = searchValue.trim() !== '' || typeFilter !== ALL || statusFilter !== ALL || ownerFilter !== ALL
 
-  // 筛选/搜索埋点（PRD §11.2）
+  // 筛选/搜索埋点（PRD §11.2）；筛选条件变化后回到第一页，避免把旧条件的 cursor 发给新数据源
   const handleTypeFilter = (v: string) => {
     setTypeFilter(v)
+    pager.reset()
     trackEvent('api_keys:filter_change', { ...commonEventProps, filter_type: 'type', filter_value: v }, { source: 'toolbar' })
   }
   const handleStatusFilter = (v: string) => {
@@ -312,11 +341,13 @@ export default function ApiKeysPage() {
   }
   const handleOwnerFilter = (v: string) => {
     setOwnerFilter(v)
+    pager.reset()
     // 负责人为 PII，仅上报是否命中而非 account_id
     trackEvent('api_keys:filter_change', { ...commonEventProps, filter_type: 'responsible', filter_value: v === ALL ? 'all' : 'selected' }, { source: 'toolbar' })
   }
   const handleSearchChange = (v: string) => {
     setSearchValue(v)
+    pager.reset()
     trackEvent('api_keys:search', { ...commonEventProps, query_length: v.length }, { source: 'toolbar' })
   }
   const clearFilters = () => {
@@ -324,6 +355,7 @@ export default function ApiKeysPage() {
     setTypeFilter(ALL)
     setStatusFilter(ALL)
     setOwnerFilter(ALL)
+    pager.reset()
   }
   const openCreate = (source: string) => {
     trackAction(PERMS.API_KEYS_CREATE, undefined, { source, is_space_owner: isActiveWorkspaceOwner })
@@ -386,7 +418,7 @@ export default function ApiKeysPage() {
         description={`${workspaceName} 工作空间的运行凭证、负责人、限额和到期时间`}
       />
 
-      <ApiKeySummaryCards items={apiKeyItems} summary={summary} loading={isLoading} />
+      <ApiKeySummaryCards items={allKeys} summary={summary} loading={allKeysLoading} />
 
       <ApiKeyProtocolBanner
         openAIBaseUrl={openAIBaseUrl}
@@ -436,7 +468,7 @@ export default function ApiKeysPage() {
         </div>
       </div>
 
-      {!isLoading && apiKeyItems.length > 0 && (
+      {!allKeysLoading && allKeys.length > 0 && (
         <p className="-mt-2 mg-text-caption text-mg-text-3">
           {showsOthers
             ? `作用域：当前工作空间 · 显示本空间全部成员的 API Key（${distinctOwnerCount} 位成员）`
@@ -449,7 +481,7 @@ export default function ApiKeysPage() {
         items={filteredData}
         canDisable={canDisable}
         canReveal={canReveal}
-        hasKeys={apiKeyItems.length > 0}
+        hasKeys={allKeys.length > 0}
         isFiltered={isFiltered}
         canCreate={canCreate}
         selfScopeOnly={!showsOthers}
@@ -460,6 +492,18 @@ export default function ApiKeysPage() {
         onCopyKey={handleCopyKey}
         copyingKeyId={copyingKeyId}
       />
+
+      {/* #60 游标翻页：首页且无更多时隐藏（同 AuditTab）；status 页内过滤可能使当前页显示少于 PAGE_SIZE 条 */}
+      {(pager.page > 1 || hasMore) && (
+        <Pagination
+          mode="cursor"
+          page={pager.page}
+          hasMore={hasMore}
+          loading={isFetching}
+          onPrev={pager.prev}
+          onNext={() => pager.next(data?.next_cursor)}
+        />
+      )}
 
       <ApiKeyDetailDrawer
         open={!!detailKey}

@@ -51,7 +51,8 @@ export function PlatformConfigModal({
 
   const keysQuery = useQuery({
     queryKey: ['api-keys', workspaceId],
-    queryFn: () => listApiKeys(workspaceId, { page_size: 100 }),
+    // 下拉候选需要全量：不带分页参数（page_size:0=不限），避免超过一页时静默截断（#60）
+    queryFn: () => listApiKeys(workspaceId),
     enabled: Boolean(platform) && Boolean(workspaceId),
   })
   const keyOptions = (keysQuery.data?.items ?? []).map((key) => ({

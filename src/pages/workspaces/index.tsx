@@ -189,8 +189,10 @@ export default function WorkspacesPage() {
       (value ?? '').toLowerCase().includes(searchKeyword),
     )
   })
-  // 密度不同、每页展示条数也不同：紧凑卡片小，一页装得下更多
-  const pageSize = density === 'compact' ? 12 : 6
+  // 密度不同、每页展示条数也不同：紧凑卡片小，一页装得下更多。
+  // 详细卡固定两行（4 张）封顶卡区高度——多空间时详情面板仍紧跟卡区可见，
+  // 不做卡区内嵌滚动（页内嵌套滚动条是布局异味），翻页承接剩余空间。
+  const pageSize = density === 'compact' ? 12 : 4
   const { paged: pagedData, page: currentPage, setPage: setCurrentPage, total: pagedTotal } = useClientPage(filteredData, pageSize)
 
   const handleCreateSubmit = () => {

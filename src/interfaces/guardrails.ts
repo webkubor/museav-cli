@@ -41,6 +41,8 @@ export interface GuardrailDetail {
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string
+  /** 创建人（shared/modelgo_prd#52，后端 qa#472 起下发；旧数据可能缺失） */
+  created_by?: { account_id: string; display_name: string }
   assignments: GuardrailAssignment[]
   budget_policies: GuardrailBudgetPolicy[]
 }

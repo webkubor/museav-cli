@@ -9,7 +9,6 @@ import {
   LuZap,
   LuBuilding2,
   LuCheck,
-  LuShield,
   LuChevronRight,
   LuChevronDown,
   LuUser,
@@ -660,23 +659,12 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
               )}
             </div>
 
-            <div className="px-2 pb-1.5 pt-4 text-[12px] font-semibold text-mg-text-3 select-none">
-              {t('nav.account')}
-            </div>
             <DropdownMenuItem
               onClick={() => navigate('/settings/account')}
-              className="h-11 px-2.5 text-[14px] font-bold text-[var(--account-menu-text-0)]"
+              className="mt-1.5 h-11 px-2.5 text-[14px] font-bold text-[var(--account-menu-text-0)]"
             >
               <LuSettings size={18} className="text-[var(--account-menu-text-2)] shrink-0" />
-              <span className="flex-1">{t('nav.account')}</span>
-              <LuChevronRight size={15} className="text-[var(--account-menu-text-3)] shrink-0" />
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => navigate('/settings/account?tab=security')}
-              className="h-11 px-2.5 text-[14px] font-bold text-[var(--account-menu-text-0)]"
-            >
-              <LuShield size={18} className="text-[var(--account-menu-text-2)] shrink-0" />
-              <span className="flex-1">{t('account.tabs.security')}</span>
+              <span className="flex-1">{t('nav.settings')}</span>
               <LuChevronRight size={15} className="text-[var(--account-menu-text-3)] shrink-0" />
             </DropdownMenuItem>
 

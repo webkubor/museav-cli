@@ -286,12 +286,11 @@ export function validatePermissionCatalog(): string[] {
 }
 
 /**
- * 权限目录版本号(SemVer)。**结构性改动**(增删菜单/权限、改市场归属)时手动 bump。
- * 语义:后端见版本号变化 → **全量刷新**该市场目录(丢弃旧、以本次为准),而非逐条增量 diff。
- * 不变则走增量对账(has_changes)。
+ * 权限目录版本号。**对齐前端/PRD 的 release 版本**(当前 V1.0.3)。
+ * 语义:后端见版本号变化 → **全量刷新**该市场目录(丢弃旧、以本次为准),而非逐条增量 diff;
+ * 不变则走增量对账(has_changes)。随前端 release 推进同步 bump。
  */
-// 1.1.0：sync 契约新增 resource_labels(资源组中文名),后端需存储并在 catalog 响应带回。
-export const PERMISSION_CATALOG_VERSION = '1.2.0'
+export const PERMISSION_CATALOG_VERSION = '1.0.3'
 
 export const permissionCatalogMeta = {
   version: PERMISSION_CATALOG_VERSION,

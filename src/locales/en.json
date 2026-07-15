@@ -397,7 +397,7 @@
     "desc": "Manage your profile, password, and connected accounts.",
     "tabs": {
       "info": "Profile",
-      "security": "Security",
+      "security": "Security & Login",
       "oauth": "Connected Accounts",
       "preferences": "Preferences"
     },

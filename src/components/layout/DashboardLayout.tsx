@@ -239,7 +239,6 @@ export function DashboardLayout() {
             selectedKey={getSelectedKey()}
             onSelect={handleNavSelect}
             groups={navGroups}
-            settingsLabel={t('nav.settings')}
           />
         </div>
 
@@ -271,7 +270,6 @@ export function DashboardLayout() {
                 setMobileOpen(false)
               }}
               groups={navGroups}
-              settingsLabel={t('nav.settings')}
             />
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { LuSettings, LuChevronLeft, LuChevronRight } from 'react-icons/lu'
+import { LuChevronLeft, LuChevronRight } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { SidebarPromoCarousel } from './SidebarPromoCarousel'
@@ -12,7 +12,6 @@ interface DashboardSidebarProps {
   selectedKey: string
   onSelect: (data: { itemKey: string | number }) => void
   groups: NavGroup[]
-  settingsLabel: string
 }
 
 /** 分组小标题（左右分隔线 + 居中标题；折叠态只留一条分隔线） */
@@ -184,48 +183,6 @@ const SidebarMenuGroup: React.FC<{
 }
 
 /**
- * 底部「设置」入口——直达账号设置。组织/工作区已上升为主入口（企业管理/空间管理），
- * 不再挂在设置弹层里。
- */
-const SidebarSettingsButton: React.FC<{
-  collapsed: boolean
-  selectedKey: string
-  onSelect: (data: { itemKey: string | number }) => void
-  label: string
-}> = ({ collapsed, selectedKey, onSelect, label }) => {
-  const isSelected = selectedKey === 'settings' || selectedKey.startsWith('settings/account')
-
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      title={collapsed ? label : undefined}
-      onClick={() => onSelect({ itemKey: 'settings/account' })}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect({ itemKey: 'settings/account' }) }}
-      className={cn(
-        "group flex items-center gap-3 mx-2 my-0.5 px-3.5 py-2.5 rounded-lg cursor-pointer transition-all duration-300 select-none outline-none focus-visible:ring-1 focus-visible:ring-brand-glow border",
-        collapsed ? "justify-center" : "justify-start",
-        isSelected
-          ? "bg-brand-selected-bg text-brand-base font-bold border-brand-base/15 shadow-sm shadow-brand-base/5"
-          : "text-mg-text-2 border-transparent hover:bg-mg-fill-0/50 hover:text-mg-text-1 hover:border-mg-border/20 active:scale-[0.96] hover:translate-x-[2px]"
-      )}
-    >
-      <span className={cn(
-        "inline-flex items-center justify-center text-base leading-none shrink-0 transition-transform duration-500 ease-out",
-        isSelected ? "text-brand-base scale-110" : "text-mg-text-3 group-hover:text-mg-text-1 group-hover:rotate-[60deg]"
-      )}>
-        <LuSettings />
-      </span>
-      {!collapsed && (
-        <span className="text-[15px] truncate tracking-tight font-medium leading-none">
-          {label}
-        </span>
-      )}
-    </div>
-  )
-}
-
-/**
  * 重构后的高颜值自定义 DashboardSidebar 组件——按对象边界分组渲染（PRD：五分组 IA）
  */
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
@@ -234,7 +191,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   selectedKey,
   onSelect,
   groups,
-  settingsLabel,
 }) => {
   const { t } = useTranslation()
   const [hovered, setHovered] = useState(false)
@@ -303,16 +259,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
       {/* 底部促销轮播 */}
       <SidebarPromoCarousel collapsed={collapsed} />
-
-      {/* 底部设置入口 */}
-      <div className="pt-2 border-t border-mg-border/40 bg-mg-bg-0 shrink-0 relative">
-        <SidebarSettingsButton
-          collapsed={collapsed}
-          selectedKey={selectedKey}
-          onSelect={onSelect}
-          label={settingsLabel}
-        />
-      </div>
     </aside>
   )
 }

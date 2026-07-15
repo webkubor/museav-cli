@@ -8,15 +8,20 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { BasicInfoTab } from '@/features/settings/account/components/BasicInfoTab'
 import { ChangePasswordTab } from '@/features/settings/account/components/ChangePasswordTab'
 import { OAuthBindingTab } from '@/features/settings/account/components/OAuthBindingTab'
+import { DeleteAccountSection } from '@/features/settings/account/components/DeleteAccountSection'
 import { PreferencesTab } from '@/features/settings/account/components/PreferencesTab'
 import { appToast } from '@/lib/app-toast'
 import type { OAuthProvider } from '@/interfaces/account'
 
-type Tab = 'info' | 'security' | 'oauth' | 'preferences'
-const TABS = new Set<Tab>(['info', 'security', 'oauth', 'preferences'])
+// 对齐原型：账号设置 3 tab（基本资料 / 安全与登录 / 偏好设置）。
+// 密码、OAuth 绑定、注销合并进「安全与登录」，页序 密码 → 绑定 → 注销。
+type Tab = 'info' | 'security' | 'preferences'
+const TABS = new Set<Tab>(['info', 'security', 'preferences'])
 const OAUTH_PROVIDERS = new Set<OAuthProvider>(['google', 'github', 'wechat'])
 
 function normalizeTab(value: string | null): Tab {
+  // 旧深链兼容：OAuth 已并入「安全与登录」，?tab=oauth 落到 security
+  if (value === 'oauth') return 'security'
   return TABS.has(value as Tab) ? (value as Tab) : 'info'
 }
 
@@ -82,12 +87,19 @@ export default function AccountSettingsPage() {
         <TabsList variant="pills" className="mb-6">
           <TabsTrigger variant="pills" value="info">{t('account.tabs.info')}</TabsTrigger>
           <TabsTrigger variant="pills" value="security">{t('account.tabs.security')}</TabsTrigger>
-          <TabsTrigger variant="pills" value="oauth">{t('account.tabs.oauth')}</TabsTrigger>
           <TabsTrigger variant="pills" value="preferences">{t('account.tabs.preferences')}</TabsTrigger>
         </TabsList>
         <TabsContent value="info"><BasicInfoTab profile={profile} /></TabsContent>
-        <TabsContent value="security"><ChangePasswordTab /></TabsContent>
-        <TabsContent value="oauth"><OAuthBindingTab connections={profile.connected_oauth} /></TabsContent>
+        {/* 安全与登录：密码 → OAuth 绑定 → 注销（危险区恒在末尾），对齐原型 */}
+        <TabsContent value="security">
+          <div className="flex flex-col gap-8">
+            <ChangePasswordTab />
+            <div className="border-t border-mg-border/40" />
+            <OAuthBindingTab connections={profile.connected_oauth} />
+            <div className="border-t border-mg-border/40" />
+            <DeleteAccountSection />
+          </div>
+        </TabsContent>
         <TabsContent value="preferences"><PreferencesTab /></TabsContent>
       </Tabs>
 

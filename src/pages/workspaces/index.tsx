@@ -432,7 +432,7 @@ export default function WorkspacesPage() {
                 onClick={() => selectWorkspace(ws.workspace_id)}
                 onKeyDown={(event) => handleWorkspaceCardKeyDown(event, ws.workspace_id)}
                 className={cn(
-                  "group relative p-5 flex flex-col gap-4 cursor-pointer transition-all border overflow-hidden rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base focus-visible:ring-offset-2",
+                  "group relative p-4 flex flex-col gap-3 cursor-pointer transition-all border overflow-hidden rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base focus-visible:ring-offset-2",
                   isSelected
                     ? "mg-running-border shadow-sm"
                     : "bg-mg-bg-0 border-mg-border/40 hover:bg-mg-fill-0/20 hover:border-mg-border/60"
@@ -468,13 +468,13 @@ export default function WorkspacesPage() {
                   </div>
                 </div>
 
-                {/* 描述（PRD 空间卡片字段，有才展示，最多两行） */}
-                {ws.description && (
-                  <p className="text-xs text-mg-text-3 leading-snug line-clamp-2">{ws.description}</p>
-                )}
+                {/* 描述恒占一行占位（无描述显 —）：避免同排卡因条件渲染节奏错位 */}
+                <p className="text-xs text-mg-text-3 leading-snug truncate" title={ws.description || undefined}>
+                  {ws.description || dash}
+                </p>
 
                 {/* 负责人 */}
-                <div className="text-xs text-mg-text-3 mt-1">
+                <div className="text-xs text-mg-text-3">
                   {t('workspaces.card.owner')}{' '}
                   <span className="font-semibold text-mg-text-2">
                     {ws.owner?.display_name || dash}
@@ -499,8 +499,8 @@ export default function WorkspacesPage() {
                   </div>
                 </div>
 
-                {/* 日志采集 / 转发状态 */}
-                <div className="flex items-center gap-3 pt-3 border-t border-mg-border/30">
+                {/* 日志采集 / 转发状态（mt-auto 锚底：同排等高时底边始终对齐） */}
+                <div className="mt-auto flex items-center gap-3 pt-2.5 border-t border-mg-border/30">
                   <div className="flex items-center gap-1.5 text-xs text-mg-text-3 bg-mg-fill-0/15 border border-mg-border/20 px-2 py-1 rounded-md">
                     <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", ws.logging_enabled ? "bg-mg-success animate-pulse" : "bg-mg-text-3/40")} />
                     <span>

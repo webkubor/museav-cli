@@ -14,6 +14,34 @@ import type {
 } from '@/types'
 import { formatMoney } from '@/lib/utils'
 import { LIMIT_PERIOD_LABEL, type LimitPeriod } from './constants'
+import { PERMS, type Permission } from '@/config/permissions'
+
+/** 行级治理动作（需求方#68：权限码按「类型 × 动作」细分） */
+export type ApiKeyAction = 'edit' | 'revoke' | 'disable' | 'rotate' | 'change_owner'
+
+/** 类型 × 动作 → Permission ID；私有 Key 无「变更负责人」（负责人恒为本人） */
+export const KEY_ACTION_PERMS: Record<ApiKeyType, Partial<Record<ApiKeyAction, Permission>>> = {
+  personal: {
+    edit: PERMS.API_KEYS_EDIT_PERSONAL,
+    revoke: PERMS.API_KEYS_REVOKE_PERSONAL,
+    disable: PERMS.API_KEYS_DISABLE_PERSONAL,
+    rotate: PERMS.API_KEYS_ROTATE_PERSONAL,
+  },
+  member: {
+    edit: PERMS.API_KEYS_EDIT_MEMBER,
+    revoke: PERMS.API_KEYS_REVOKE_MEMBER,
+    disable: PERMS.API_KEYS_DISABLE_MEMBER,
+    rotate: PERMS.API_KEYS_ROTATE_MEMBER,
+    change_owner: PERMS.API_KEYS_CHANGE_OWNER_MEMBER,
+  },
+  service: {
+    edit: PERMS.API_KEYS_EDIT_SERVICE,
+    revoke: PERMS.API_KEYS_REVOKE_SERVICE,
+    disable: PERMS.API_KEYS_DISABLE_SERVICE,
+    rotate: PERMS.API_KEYS_ROTATE_SERVICE,
+    change_owner: PERMS.API_KEYS_CHANGE_OWNER_SERVICE,
+  },
+}
 
 /** scope → key_type 回退映射（personal→私有 / member→成员 / workspace→服务） */
 const SCOPE_TO_TYPE: Record<ApiKeyItem['scope'], ApiKeyType> = {

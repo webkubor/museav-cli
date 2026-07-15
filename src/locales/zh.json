@@ -912,7 +912,11 @@
         "overview": "概览",
         "members": "成员",
         "logs": "日志与转发",
-        "settings": "设置"
+        "settings": "设置",
+        "overviewDesc": "空间用量和运行资源",
+        "membersDesc": "授权成员和负责人",
+        "logsDesc": "采集策略和转发目标",
+        "settingsDesc": "名称、Slug 和生命周期"
       },
       "overview": {
         "spend": "近 7 天消费",
@@ -934,7 +938,18 @@
         "resources": "运行资源",
         "usage7d": "近 7 天用量",
         "lastRequest": "最近调用",
-        "never": "从未"
+        "never": "从未",
+        "spendHint": "当前工作空间",
+        "tokensHint": "输入和输出合计",
+        "guardrailsHint": "{{count}} 个护栏",
+        "credLabel": "运行凭证",
+        "securityLabel": "安全策略",
+        "troubleshootLabel": "排障入口",
+        "guardrailsValue": "安全护栏",
+        "viewKey": "查看 Key",
+        "viewGuardrails": "查看护栏",
+        "viewLogs": "查看调用日志",
+        "notForwarded": "未转发"
       },
       "members": {
         "title": "空间成员",

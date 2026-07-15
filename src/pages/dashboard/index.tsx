@@ -17,7 +17,6 @@ import { WorkspaceBreakdownSection } from '@/features/dashboard/workbench/Worksp
 import { RankingsSection } from '@/features/dashboard/workbench/RankingsSection'
 import { RecentCallsSection } from '@/features/dashboard/workbench/RecentCallsSection'
 import type { Granularity, WorkbenchView } from '@/features/dashboard/workbench/shared'
-import { KEY_TYPE_ALL, apiKeyTypeParam, type ApiKeyTypeFilter } from '@/lib/api-key-type-filter'
 
 export default function DashboardPage() {
   const { canManage, isEnterprise } = useTenantRole()
@@ -33,9 +32,6 @@ export default function DashboardPage() {
   // 我的视图：总览各用量区块按当前账号裁剪（后端 #328/#314 支持 account_id 透传）
   const currentAccountId = useAuthStore((s) => s.account?.account_id)
   const scopedAccountId = view === 'mine' ? currentAccountId || undefined : undefined
-  // API Key 类型筛选（需求 #22）：仅企业拥有者/管理员可见，默认全部类型
-  const [keyTypeFilter, setKeyTypeFilter] = useState<ApiKeyTypeFilter>(KEY_TYPE_ALL)
-  const scopedKeyType = showViewToggle ? apiKeyTypeParam(keyTypeFilter) : undefined
 
   const trackCtx = useTrackContext()
 
@@ -56,11 +52,6 @@ export default function DashboardPage() {
     setGranularity(g)
   }
 
-  const handleKeyTypeChange = (v: ApiKeyTypeFilter) => {
-    trackEvent('overview_filter_change', { ...trackCtx, filter: 'api_key_type', value: v }, { view_mode: view })
-    setKeyTypeFilter(v)
-  }
-
   return (
     <div className="no-canvas-blur space-y-6 pb-10 animate-in fade-in duration-300">
       <GreetingHeader
@@ -69,22 +60,20 @@ export default function DashboardPage() {
         showViewToggle={showViewToggle}
         granularity={granularity}
         onGranularityChange={handleGranularityChange}
-        keyTypeFilter={keyTypeFilter}
-        onKeyTypeChange={handleKeyTypeChange}
       />
 
       <QuickStartSection />
 
-      <MetricsSection view={view} granularity={granularity} accountId={scopedAccountId} apiKeyType={scopedKeyType} />
+      <MetricsSection view={view} granularity={granularity} accountId={scopedAccountId} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 items-stretch">
-        <UsageTrendSection granularity={granularity} accountId={scopedAccountId} apiKeyType={scopedKeyType} />
-        <WorkspaceBreakdownSection granularity={granularity} accountId={scopedAccountId} view={view} apiKeyType={scopedKeyType} />
+        <UsageTrendSection granularity={granularity} accountId={scopedAccountId} />
+        <WorkspaceBreakdownSection granularity={granularity} accountId={scopedAccountId} view={view} />
       </div>
 
-      <RankingsSection view={view} granularity={granularity} accountId={scopedAccountId} apiKeyType={scopedKeyType} />
+      <RankingsSection view={view} granularity={granularity} accountId={scopedAccountId} />
 
-      <RecentCallsSection view={view} accountId={scopedAccountId} granularity={granularity} apiKeyType={scopedKeyType} />
+      <RecentCallsSection view={view} accountId={scopedAccountId} granularity={granularity} />
     </div>
   )
 }

@@ -912,7 +912,11 @@
         "overview": "Overview",
         "members": "Members",
         "logs": "Logs & Forwarding",
-        "settings": "Settings"
+        "settings": "Settings",
+        "overviewDesc": "Usage and running resources",
+        "membersDesc": "Authorized members and owner",
+        "logsDesc": "Capture policy and forwarding targets",
+        "settingsDesc": "Name, slug and lifecycle"
       },
       "overview": {
         "spend": "Spend (7d)",
@@ -934,7 +938,18 @@
         "resources": "Resources",
         "usage7d": "Last 7 days",
         "lastRequest": "Last request",
-        "never": "Never"
+        "never": "Never",
+        "spendHint": "Current workspace",
+        "tokensHint": "Input + output total",
+        "guardrailsHint": "{{count}} guardrails",
+        "credLabel": "Credentials",
+        "securityLabel": "Security policy",
+        "troubleshootLabel": "Troubleshooting",
+        "guardrailsValue": "Guardrails",
+        "viewKey": "View keys",
+        "viewGuardrails": "View guardrails",
+        "viewLogs": "View logs",
+        "notForwarded": "Not forwarded"
       },
       "members": {
         "title": "Workspace Members",

@@ -15,7 +15,7 @@ import { Select, SelectItem } from '@/components/ui/Select'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { ForbiddenState } from '@/components/ui/ForbiddenState'
-import { trackAction, trackEvent, trackPageView } from '@/lib/track'
+import { trackEvent, trackPageView } from '@/lib/track'
 import { useTenantRole } from '@/hooks/use-tenant-role'
 import { LuSearch, LuPlus } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
@@ -51,7 +51,7 @@ import { ApiKeyTable } from './ApiKeyTable'
 import { EditKeyModal } from './EditKeyModal'
 import { ApiKeySummaryCards } from './ApiKeySummaryCards'
 import { ApiKeyDetailDrawer } from './ApiKeyDetailDrawer'
-import { deriveKeyType, responsibleOf, isExpiringSoon } from './derive'
+import { deriveKeyType, responsibleOf, isExpiringSoon, KEY_ACTION_PERMS, type ApiKeyAction } from './derive'
 import type { ApiKeyCreated, ApiKeyItem, ApiKeyType, WorkspaceItem } from '@/types'
 
 const ALL = 'all'
@@ -91,14 +91,14 @@ export default function ApiKeysPage() {
   const isPersonalTenant = tenants.find((tn) => tn.tenant_id === activeTenantId)?.type === 'personal'
   const { currency } = useCurrency()
   const { hasPermission } = usePermissions()
-  const canCreate = hasPermission(PERMS.API_KEYS_CREATE)
-  const canEdit = hasPermission(PERMS.API_KEYS_EDIT)
+  // 「类型 × 动作」细粒度（需求方#68）：任一类型可建即显创建入口；行级动作按该行 Key 类型取码
+  const canCreate = [PERMS.API_KEYS_CREATE_PERSONAL, PERMS.API_KEYS_CREATE_MEMBER, PERMS.API_KEYS_CREATE_SERVICE]
+    .some((perm) => hasPermission(perm))
   const canReveal = hasPermission(PERMS.API_KEYS_REVEAL)
-  const canRevoke = hasPermission(PERMS.API_KEYS_REVOKE)
-  // 细粒度动作权限（#54）：停用/轮换/改负责人各用自己的 key,不再复用 edit
-  const canDisable = hasPermission(PERMS.API_KEYS_DISABLE)
-  const canRotate = hasPermission(PERMS.API_KEYS_ROTATE)
-  const canChangeOwner = hasPermission(PERMS.API_KEYS_CHANGE_OWNER)
+  const canAction = (type: ApiKeyType, action: ApiKeyAction) => {
+    const perm = KEY_ACTION_PERMS[type][action]
+    return perm ? hasPermission(perm) : false
+  }
   // 埋点顶层字段 is_space_owner：当前用户对本页作用域工作空间的 my_role 是否为 ws_owner
   // （不是 useTenantRole().isSpaceOwner —— 那个是「企业成员+自领至少一个空间」的 PRD 空间视图判定，口径更窄）
   const { ownedWorkspaceIds } = useTenantRole()
@@ -358,7 +358,7 @@ export default function ApiKeysPage() {
     pager.reset()
   }
   const openCreate = (source: string) => {
-    trackAction(PERMS.API_KEYS_CREATE, undefined, { source, is_space_owner: isActiveWorkspaceOwner })
+    trackEvent('api_keys:create', undefined, { source, is_space_owner: isActiveWorkspaceOwner })
     trackEvent('api_keys:create_open', commonEventProps, { source })
     setCreateNonce((n) => n + 1)
     setCreateVisible(true)
@@ -479,7 +479,7 @@ export default function ApiKeysPage() {
       <ApiKeyTable
         isLoading={isLoading}
         items={filteredData}
-        canDisable={canDisable}
+        canAction={canAction}
         canReveal={canReveal}
         hasKeys={allKeys.length > 0}
         isFiltered={isFiltered}
@@ -510,11 +510,7 @@ export default function ApiKeysPage() {
         onClose={() => setDetailKey(null)}
         workspaceId={workspaceId}
         item={detailKey}
-        canEdit={canEdit}
-        canRevoke={canRevoke}
-        canDisable={canDisable}
-        canRotate={canRotate}
-        canChangeOwner={canChangeOwner}
+        canAction={canAction}
         rowScope={rowScope}
         onToggleStatus={handleToggleStatus}
         onRotate={(item) => rotateMutation.mutate(item)}

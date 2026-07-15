@@ -11,8 +11,6 @@ import {
   LuPlus,
   LuKey,
   LuUser,
-  LuUsers,
-  LuShield,
   LuClipboardList,
   LuSend,
   LuChevronRight,
@@ -21,8 +19,7 @@ import {
   LuDatabase,
   LuFileText,
   LuLayoutGrid,
-  LuLayoutList,
-  LuClock
+  LuLayoutList
 } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listWorkspaces, createWorkspace, getWorkspace } from '@/services/workspaces'
@@ -48,7 +45,7 @@ import { Pagination } from '@/components/ui/Pagination'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { TagInput, type TagOption } from '@/components/ui/TagInput'
 import { cn, formatMoney as fmtMoney } from '@/lib/utils'
-import { formatDate } from '@/lib/format-date'
+import { formatRelativeTime } from '@/lib/format-date'
 import { trackAction, trackPageView, trackEvent } from '@/lib/track'
 import { PERMS } from '@/config/permissions'
 import { usePermissions } from '@/hooks/use-permissions'
@@ -619,169 +616,120 @@ export default function WorkspacesPage() {
 
 /**
  * 空间详情面板（主工作台概览）
- * 包含近 7 天消费/请求/TOKENS指标、运行资源和快捷入口
+ * PRD 原型 WorkspaceOverviewTab（需求方#67）：4 指标卡 + 资源磁贴两行，无「运行资源/快捷入口」分组框。
  */
 function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: () => void }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { isEnterprise } = useTenantRole()
   const { hasPermission } = usePermissions()
 
   const usageCards = [
     {
       label: t('workspaces.detail.overview.spend'),
       value: renderMoney(ws.usage_7d?.spend),
+      hint: t('workspaces.detail.overview.spendHint'),
       icon: <LuCircleDollarSign size={20} className="text-brand-base" />,
       bg: 'bg-brand-base/8'
     },
     {
       label: t('workspaces.detail.overview.requests'),
       value: (ws.usage_7d?.requests ?? 0).toLocaleString(),
+      hint: ws.last_request_at ? formatRelativeTime(ws.last_request_at) : t('workspaces.detail.overview.never'),
       icon: <LuActivity size={20} className="text-mg-success" />,
       bg: 'bg-mg-success/8'
     },
     {
       label: t('workspaces.detail.overview.tokens'),
       value: (ws.usage_7d?.tokens ?? 0).toLocaleString(),
+      hint: t('workspaces.detail.overview.tokensHint'),
       icon: <LuDatabase size={20} className="text-brand-base" />,
       bg: 'bg-brand-base/8'
     },
     {
-      label: t('workspaces.detail.overview.apiKeys'),
+      label: 'API Keys',
       value: (ws.api_key_count ?? 0).toLocaleString(),
+      hint: t('workspaces.detail.overview.guardrailsHint', { count: ws.guardrail_count ?? 0 }),
       icon: <LuKey size={20} className="text-brand-base" />,
       bg: 'bg-brand-base/8'
     },
   ]
 
-  const resources = [
-    ...(isEnterprise ? [{ label: t('workspaces.card.members'), value: String(ws.member_count ?? 0), icon: <LuUsers size={16} className="text-mg-text-3" /> }] : []),
-    { label: t('workspaces.detail.overview.apiKeys'), value: String(ws.api_key_count ?? 0), icon: <LuKey size={16} className="text-mg-text-3" /> },
-    { label: t('workspaces.card.guardrails'), value: String(ws.guardrail_count ?? 0), icon: <LuShield size={16} className="text-mg-text-3" /> },
+  // 资源磁贴（原型 SpaceResourceCard：小标签 + 资源名 + 描述 + 动作文本）
+  const resourceCards = [
     {
-      label: t('workspaces.summary.logging'),
-      value: ws.logging_enabled ? t('workspaces.card.collectOn') : t('workspaces.card.collectOff'),
-      icon: <LuClipboardList size={16} className="text-mg-text-3" />,
-      isStatus: true,
-      enabled: ws.logging_enabled
-    },
-    {
-      label: t('workspaces.summary.forwarding'),
-      value: ws.forward_enabled ? t('workspaces.card.forwardOn') : t('workspaces.card.forwardOff'),
-      icon: <LuSend size={16} className="text-mg-text-3" />,
-      isStatus: true,
-      enabled: ws.forward_enabled
-    },
-  ]
-
-  const shortcuts = [
-    {
-      title: 'API Keys',
-      desc: t('workspaces.detail.overview.keysOwner', { count: ws.api_key_count ?? 0, owner: ws.owner?.display_name || '-' }),
-      icon: <LuKey size={18} className="text-brand-base" />,
-      bg: 'bg-brand-base/8',
+      label: t('workspaces.detail.overview.credLabel'),
+      value: 'API Keys',
+      meta: t('workspaces.detail.overview.keysOwner', { count: ws.api_key_count ?? 0, owner: ws.owner?.display_name || '—' }),
+      action: t('workspaces.detail.overview.viewKey'),
       onClick: () => navigate(`/workspace/${ws.workspace_id}/api-keys`),
       visible: hasPermission(PERMS.API_KEYS_VIEW),
     },
     {
-      title: t('workspaces.card.guardrails'),
-      desc: t('workspaces.detail.overview.goGuardrailsDesc'),
-      icon: <LuShield size={18} className="text-brand-base" />,
-      bg: 'bg-brand-base/8',
+      label: t('workspaces.detail.overview.securityLabel'),
+      value: t('workspaces.detail.overview.guardrailsValue'),
+      meta: t('workspaces.detail.overview.guardrailsHint', { count: ws.guardrail_count ?? 0 }),
+      action: t('workspaces.detail.overview.viewGuardrails'),
       onClick: () => navigate(`/workspace/${ws.workspace_id}/guardrails`),
       visible: hasPermission(PERMS.GUARDRAILS_VIEW),
     },
     {
-      title: t('workspaces.detail.overview.logsTitle'),
-      desc: t('workspaces.detail.overview.goLogsDesc'),
-      icon: <LuClipboardList size={18} className="text-brand-base" />,
-      bg: 'bg-brand-base/8',
+      label: t('workspaces.detail.overview.troubleshootLabel'),
+      value: t('workspaces.detail.overview.logsTitle'),
+      meta: ws.last_request_at
+        ? `${t('workspaces.detail.overview.lastRequest')} ${formatRelativeTime(ws.last_request_at)}`
+        : t('workspaces.detail.overview.goLogsDesc'),
+      action: t('workspaces.detail.overview.viewLogs'),
       onClick: () => navigate(`/logs?workspace=${ws.workspace_id}`),
       visible: hasPermission(PERMS.LOGS_VIEW),
     },
     {
-      title: t('workspaces.detail.tabs.logs'),
-      desc: t('workspaces.detail.overview.goForwardingDesc'),
-      icon: <LuSend size={18} className="text-brand-base" />,
-      bg: 'bg-brand-base/8',
+      label: t('workspaces.detail.tabs.logs'),
+      value: ws.forward_enabled ? t('workspaces.card.forwardOn') : t('workspaces.card.forwardOff'),
+      meta: `${ws.logging_enabled ? t('workspaces.card.collectOn') : t('workspaces.card.collectOff')} · ${ws.forward_enabled ? t('workspaces.card.forwardOn') : t('workspaces.detail.overview.notForwarded')}`,
+      action: t('workspaces.detail.overview.configure'),
       onClick: onGoLogs,
       visible: hasPermission(PERMS.OBSERVABILITY_VIEW),
-      // 日志与转发卡：本页内切换到「日志与转发」页签（非外跳），动作用「设置」蓝色内联文本、无外跳箭头（对齐 PRD actionKind="inline"）
+      // 本页内切页签（非外跳）：动作用蓝色内联文本、无外跳箭头（对齐 PRD actionKind="inline"）
       inline: true,
     },
   ]
 
   return (
-    <div className="space-y-6">
-      {/* 4项 7天指标（近 7 天消费/请求/Tokens/API Keys 数，对齐 PRD space-overview-grid） */}
+    <div className="space-y-4">
+      {/* 4项 7天指标（对齐 PRD space-overview-grid：值 + 副行说明） */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {usageCards.map((c) => (
           <div key={c.label} className="flex items-center gap-4 bg-mg-fill-0/10 border border-mg-border/20 rounded-lg p-5">
             <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", c.bg)}>
               {c.icon}
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="text-xs font-medium text-mg-text-3">{c.label}</div>
               <div className="text-base font-bold text-mg-text-1 mt-0.5">{c.value}</div>
+              <div className="text-xs text-mg-text-3 mt-0.5 truncate">{c.hint}</div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* 运行资源 */}
-      <div className="bg-mg-fill-0/10 border border-mg-border/20 rounded-lg p-5">
-        <div className="text-xs font-bold text-mg-text-1 mb-4">{t('workspaces.detail.overview.resources')}</div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
-          {resources.map((r) => (
-            <div key={r.label} className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded bg-mg-fill-0/20 flex items-center justify-center text-mg-text-3">
-                {r.icon}
-              </div>
-              <div>
-                <div className="text-xs text-mg-text-3">{r.label}</div>
-                {r.isStatus ? (
-                  <div className={cn("text-[12px] font-bold mt-0.5", r.enabled ? "text-mg-success" : "text-mg-text-2")}>
-                    {r.value}
-                  </div>
-                ) : (
-                  <div className="text-sm font-bold text-mg-text-1 mt-0.5">{r.value}</div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 快捷入口 */}
-      <div className="bg-mg-fill-0/10 border border-mg-border/20 rounded-lg p-5">
-        <div className="text-xs font-bold text-mg-text-1 mb-4">{t('workspaces.detail.overview.quickAccessTitle')}</div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {shortcuts.filter((s) => s.visible).map((s) => (
-            <button
-              key={s.title}
-              type="button"
-              onClick={s.onClick}
-              className="text-left bg-mg-bg-0 border border-mg-border/30 rounded-lg p-4 flex items-center justify-between cursor-pointer transition-all hover:border-brand-base/40 hover:bg-mg-fill-0/10 group"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0", s.bg)}>
-                  {s.icon}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-mg-text-1">{s.title}</div>
-                  <div className="text-xs text-mg-text-3 mt-0.5 truncate">{s.desc}</div>
-                </div>
-              </div>
-              {'inline' in s && s.inline ? (
-                <span className="text-xs font-bold text-brand-base shrink-0 ml-2 group-hover:text-brand-base/80 transition-colors">
-                  {t('workspaces.detail.overview.configure')}
-                </span>
-              ) : (
-                <LuChevronRight size={14} className="text-mg-text-3 group-hover:text-brand-base transition-transform shrink-0" />
-              )}
-            </button>
-          ))}
-        </div>
+      {/* 资源磁贴（对齐 PRD space-resource-grid：运行凭证/安全策略/排障入口/日志与转发） */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {resourceCards.filter((c) => c.visible).map((c) => (
+          <button
+            key={c.label}
+            type="button"
+            onClick={c.onClick}
+            className="text-left bg-mg-fill-0/10 border border-mg-border/20 rounded-lg p-5 flex flex-col gap-1 cursor-pointer transition-all hover:border-brand-base/40 hover:bg-mg-fill-0/20 group"
+          >
+            <span className="text-xs text-mg-text-3">{c.label}</span>
+            <span className="text-sm font-bold text-mg-text-1">{c.value}</span>
+            <span className="text-xs text-mg-text-3 truncate">{c.meta}</span>
+            <span className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-brand-base group-hover:text-brand-base/80 transition-colors">
+              {c.action}
+              {!('inline' in c && c.inline) && <LuChevronRight size={12} />}
+            </span>
+          </button>
+        ))}
       </div>
     </div>
   )
@@ -838,76 +786,47 @@ function WorkspaceDashboard({ workspaceId, onDeleted }: WorkspaceDashboardProps)
     )
   }
 
+  // 详情页签（PRD 原型 space-detail-tabs：磁贴式，标题 + 说明副行；需求方#67）
+  const detailTabs = [
+    { value: 'overview', label: t('workspaces.detail.tabs.overview'), desc: t('workspaces.detail.tabs.overviewDesc'), visible: true },
+    { value: 'members', label: t('workspaces.detail.tabs.members'), desc: t('workspaces.detail.tabs.membersDesc'), visible: canViewMembers },
+    { value: 'logs', label: t('workspaces.detail.tabs.logs'), desc: t('workspaces.detail.tabs.logsDesc'), visible: canViewLogs },
+    { value: 'settings', label: t('workspaces.detail.tabs.settings'), desc: t('workspaces.detail.tabs.settingsDesc'), visible: canViewSettings },
+  ].filter((item) => item.visible)
+
   return (
     <div className="bg-mg-bg-0 border border-mg-border/40 rounded-lg p-6 flex flex-col gap-6 animate-in fade-in duration-300">
-      {/* 头部 */}
-      <div className="flex items-start justify-between gap-6 pb-6 border-b border-mg-border/30">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="font-mono text-xs text-mg-text-3 bg-mg-fill-0/20 px-2 py-0.5 rounded">@{ws.slug}</span>
-            <h3 className="text-lg font-bold text-mg-text-1 tracking-tight">{ws.name}</h3>
-            {ws.is_default && (
-              <Badge variant="secondary" className="bg-brand-base/8 text-brand-base border-brand-base/25">
-                {t('workspaces.defaultBadge')}
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-x-4 gap-y-1.5 flex-wrap text-xs text-mg-text-3">
-            <div className="flex items-center gap-1.5">
-              <LuUser size={13} className="text-mg-text-3/60" />
-              <span>{t('workspaces.card.owner')}：</span>
-              <span className="font-medium text-mg-text-2">{ws.owner?.display_name || '—'}</span>
-            </div>
-            {/* 创建时间 + 状态（WorkspaceDetail.created_at / status） */}
-            <div className="flex items-center gap-1.5">
-              <LuClock size={13} className="text-mg-text-3/60" />
-              <span>{t('workspaces.detail.overview.createdAt')}：</span>
-              <span className="font-medium text-mg-text-2">{formatDate(ws.created_at)}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className={cn(
-                "inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium border",
-                ws.status === 'active'
-                  ? "bg-mg-success/8 border-mg-success/20 text-mg-success"
-                  : "bg-mg-fill-0/20 border-mg-border/40 text-mg-text-3"
-              )}>
-                <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", ws.status === 'active' ? "bg-mg-success" : "bg-mg-text-3/40")} />
-                {ws.status === 'active' ? t('workspaces.detail.overview.statusActive') : t('workspaces.detail.overview.statusDeleted')}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* 右侧状态 pill */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div className={cn(
-            "flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium border",
-            ws.logging_enabled
-              ? "bg-mg-success/5 border-mg-success/20 text-mg-success"
-              : "bg-mg-fill-0/20 border-mg-border/40 text-mg-text-3"
-          )}>
-            <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", ws.logging_enabled ? "bg-mg-success" : "bg-mg-text-3/40")} />
-            <span>{t('workspaces.summary.logging')} {ws.logging_enabled ? t('workspaces.card.collectOn') : t('workspaces.card.collectOff')}</span>
-          </div>
-          <div className={cn(
-            "flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium border",
-            ws.forward_enabled
-              ? "bg-mg-success/5 border-mg-success/20 text-mg-success"
-              : "bg-mg-fill-0/20 border-mg-border/40 text-mg-text-3"
-          )}>
-            <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", ws.forward_enabled ? "bg-mg-success" : "bg-mg-text-3/40")} />
-            <span>{t('workspaces.summary.forwarding')} {ws.forward_enabled ? t('workspaces.card.forwardOn') : t('workspaces.card.forwardOff')}</span>
-          </div>
-        </div>
+      {/* 头部（PRD 原型 space-detail-head：仅 slug + 名称，其余信息归各页签；需求方#67） */}
+      <div className="space-y-1">
+        <span className="font-mono text-xs text-mg-text-3">@{ws.slug}</span>
+        <h3 className="text-lg font-bold text-mg-text-1 tracking-tight m-0">{ws.name}</h3>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => { trackEvent('workspaces:tab_click', { tab: v }); setTab(v as 'overview' | 'members' | 'logs' | 'settings') }}>
-        <TabsList variant="pills" className="mb-4">
-          <TabsTrigger variant="pills" value="overview">{t('workspaces.detail.tabs.overview')}</TabsTrigger>
-          {canViewMembers && <TabsTrigger variant="pills" value="members">{t('workspaces.detail.tabs.members')}</TabsTrigger>}
-          {canViewLogs && <TabsTrigger variant="pills" value="logs">{t('workspaces.detail.tabs.logs')}</TabsTrigger>}
-          {canViewSettings && <TabsTrigger variant="pills" value="settings">{t('workspaces.detail.tabs.settings')}</TabsTrigger>}
+        <TabsList
+          className={cn(
+            'grid w-full gap-px overflow-hidden rounded-lg border border-mg-border bg-mg-border/60 p-0',
+            detailTabs.length === 2 && 'grid-cols-2',
+            detailTabs.length === 3 && 'grid-cols-3',
+            detailTabs.length >= 4 && 'grid-cols-2 lg:grid-cols-4',
+          )}
+        >
+          {detailTabs.map((item) => (
+            <TabsTrigger
+              key={item.value}
+              value={item.value}
+              className={cn(
+                'flex flex-col items-start gap-0.5 rounded-none border-0 bg-mg-bg-0 px-4 py-3 text-left',
+                'data-[state=active]:bg-mg-fill-0/40',
+              )}
+            >
+              <strong className={cn('text-[13px] font-bold', activeTab === item.value ? 'text-brand-base' : 'text-mg-text-1')}>
+                {item.label}
+              </strong>
+              <span className="text-xs font-normal text-mg-text-3">{item.desc}</span>
+            </TabsTrigger>
+          ))}
         </TabsList>
         <TabsContent value="overview">
           <WorkspaceOverview ws={ws} onGoLogs={() => { if (canViewLogs) setTab('logs') }} />

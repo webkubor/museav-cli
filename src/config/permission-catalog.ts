@@ -117,17 +117,26 @@ export const PERMISSION_CATALOG_MENUS = [
     name_en: 'API Keys',
     scope: 'workspace',
     view_permission: PERMS.API_KEYS_VIEW,
+    // 「类型 × 动作」细分（需求方#68）：创建/编辑/删除/启停/轮转 按私有/成员/服务逐类型授权
     actions: [
-      PERMS.API_KEYS_CREATE,
       PERMS.API_KEYS_CREATE_PERSONAL,
+      PERMS.API_KEYS_EDIT_PERSONAL,
+      PERMS.API_KEYS_REVOKE_PERSONAL,
+      PERMS.API_KEYS_DISABLE_PERSONAL,
+      PERMS.API_KEYS_ROTATE_PERSONAL,
       PERMS.API_KEYS_CREATE_MEMBER,
+      PERMS.API_KEYS_EDIT_MEMBER,
+      PERMS.API_KEYS_REVOKE_MEMBER,
+      PERMS.API_KEYS_DISABLE_MEMBER,
+      PERMS.API_KEYS_ROTATE_MEMBER,
+      PERMS.API_KEYS_CHANGE_OWNER_MEMBER,
       PERMS.API_KEYS_CREATE_SERVICE,
-      PERMS.API_KEYS_EDIT,
-      PERMS.API_KEYS_ROTATE,
-      PERMS.API_KEYS_CHANGE_OWNER,
-      PERMS.API_KEYS_DISABLE,
+      PERMS.API_KEYS_EDIT_SERVICE,
+      PERMS.API_KEYS_REVOKE_SERVICE,
+      PERMS.API_KEYS_DISABLE_SERVICE,
+      PERMS.API_KEYS_ROTATE_SERVICE,
+      PERMS.API_KEYS_CHANGE_OWNER_SERVICE,
       PERMS.API_KEYS_REVEAL,
-      PERMS.API_KEYS_REVOKE,
     ],
   },
   {
@@ -282,7 +291,7 @@ export function validatePermissionCatalog(): string[] {
  * 不变则走增量对账(has_changes)。
  */
 // 1.1.0：sync 契约新增 resource_labels(资源组中文名),后端需存储并在 catalog 响应带回。
-export const PERMISSION_CATALOG_VERSION = '1.1.0'
+export const PERMISSION_CATALOG_VERSION = '1.2.0'
 
 export const permissionCatalogMeta = {
   version: PERMISSION_CATALOG_VERSION,

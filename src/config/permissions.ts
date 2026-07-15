@@ -38,19 +38,27 @@ export const PERMISSION_DEFINITIONS = {
   BILLING_PROMO_REDEEM:    { id: 'billing.promo:redeem',    granularity: 'action', description: '兑换优惠码' },
 
   // ── API Keys ─────────────────────────────────
-  API_KEYS_CREATE: { id: 'api_keys:create', granularity: 'action', description: '创建 API Key' },
-  // 按类型细分创建权限（#54）：不同角色可创建的 Key 类型不同（成员=仅私有；owner/admin/空间负责人=全部）。
-  // 粒度细化后，后台角色矩阵可按类型单独授权，API 层可按类型强制，取代前端角色启发式。
+  // 「类型 × 动作」全细分（#54 → 需求方#68）：创建/编辑/撤销/启停/轮转 逐 Key 类型授权，
+  // 后台角色矩阵按类型单独勾码、API 层按类型强制；变更负责人仅 成员/服务 Key（私有 Key 负责人恒为本人）。
+  // 查看列表(view)/查看明文(reveal) 保持 Key 级不分型。
   API_KEYS_CREATE_PERSONAL: { id: 'api_keys.personal:create', granularity: 'action', description: '创建私有 Key' },
   API_KEYS_CREATE_MEMBER:   { id: 'api_keys.member:create',   granularity: 'action', description: '创建成员 Key' },
   API_KEYS_CREATE_SERVICE:  { id: 'api_keys.service:create',  granularity: 'action', description: '创建服务 Key' },
-  API_KEYS_EDIT:   { id: 'api_keys:edit',   granularity: 'action', description: '编辑 API Key' },
+  API_KEYS_EDIT_PERSONAL: { id: 'api_keys.personal:edit', granularity: 'action', description: '编辑私有 Key' },
+  API_KEYS_EDIT_MEMBER:   { id: 'api_keys.member:edit',   granularity: 'action', description: '编辑成员 Key' },
+  API_KEYS_EDIT_SERVICE:  { id: 'api_keys.service:edit',  granularity: 'action', description: '编辑服务 Key' },
+  API_KEYS_REVOKE_PERSONAL: { id: 'api_keys.personal:revoke', granularity: 'action', description: '删除私有 Key' },
+  API_KEYS_REVOKE_MEMBER:   { id: 'api_keys.member:revoke',   granularity: 'action', description: '删除成员 Key' },
+  API_KEYS_REVOKE_SERVICE:  { id: 'api_keys.service:revoke',  granularity: 'action', description: '删除服务 Key' },
+  API_KEYS_DISABLE_PERSONAL: { id: 'api_keys.personal:disable', granularity: 'action', description: '启用/停用私有 Key' },
+  API_KEYS_DISABLE_MEMBER:   { id: 'api_keys.member:disable',   granularity: 'action', description: '启用/停用成员 Key' },
+  API_KEYS_DISABLE_SERVICE:  { id: 'api_keys.service:disable',  granularity: 'action', description: '启用/停用服务 Key' },
+  API_KEYS_ROTATE_PERSONAL: { id: 'api_keys.personal:rotate', granularity: 'action', description: '轮转私有 Key' },
+  API_KEYS_ROTATE_MEMBER:   { id: 'api_keys.member:rotate',   granularity: 'action', description: '轮转成员 Key' },
+  API_KEYS_ROTATE_SERVICE:  { id: 'api_keys.service:rotate',  granularity: 'action', description: '轮转服务 Key' },
+  API_KEYS_CHANGE_OWNER_MEMBER:  { id: 'api_keys.member:change_owner',  granularity: 'action', description: '变更成员 Key 负责人' },
+  API_KEYS_CHANGE_OWNER_SERVICE: { id: 'api_keys.service:change_owner', granularity: 'action', description: '变更服务 Key 负责人' },
   API_KEYS_REVEAL: { id: 'api_keys:reveal', granularity: 'action', description: '查看 API Key 明文' },
-  API_KEYS_REVOKE: { id: 'api_keys:revoke', granularity: 'action', description: '撤销 API Key' },
-  // 动作细分（#54 举一反三）：轮转/变更负责人/启停 原全挤在 edit，拆出独立 perm 供后台按角色单独授权、API 层按动作强制。
-  API_KEYS_ROTATE:       { id: 'api_keys:rotate',       granularity: 'action', description: '轮转 API Key' },
-  API_KEYS_CHANGE_OWNER: { id: 'api_keys:change_owner', granularity: 'action', description: '变更 API Key 负责人' },
-  API_KEYS_DISABLE:      { id: 'api_keys:disable',      granularity: 'action', description: '启用/停用 API Key' },
 
   // ── 安全护栏 ──────────────────────────────────
   GUARDRAILS_CREATE:          { id: 'guardrails:create',          granularity: 'action', description: '创建安全护栏' },
@@ -113,6 +121,13 @@ export const LEGACY_PERMISSION_IDS = [
   'invitations:manage',
   'dashboard:view.org',
   'logs:view.org',
+  // Key 级扁平动作码（需求方#68 起改为「类型 × 动作」细分，见 API_KEYS_* 定义）
+  'api_keys:create',
+  'api_keys:edit',
+  'api_keys:revoke',
+  'api_keys:rotate',
+  'api_keys:change_owner',
+  'api_keys:disable',
 ] as const
 
 /**

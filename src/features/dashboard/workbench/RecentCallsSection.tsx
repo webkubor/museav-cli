@@ -12,7 +12,6 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Money } from '@/components/ui/Money'
 import { formatDuration } from '@/lib/format-date'
 import type { Granularity, WorkbenchView } from './shared'
-import type { ApiKeyType } from '@/types'
 
 /** 时间：MM-dd HH:mm:ss */
 function formatSimple(iso: string) {
@@ -25,7 +24,7 @@ function formatSimple(iso: string) {
  * 模块 8：最近调用日志（最近 3 条）。
  * 列：时间 / 状态 / 模型 / 归属 / Token / 费用 / 延迟；「查看全部」跳 /logs。
  */
-export function RecentCallsSection({ view = 'enterprise', accountId, granularity = 'month', apiKeyType }: { view?: WorkbenchView; accountId?: string; granularity?: Granularity; apiKeyType?: ApiKeyType }) {
+export function RecentCallsSection({ view = 'enterprise', accountId, granularity = 'month' }: { view?: WorkbenchView; accountId?: string; granularity?: Granularity }) {
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const navigate = useNavigate()
@@ -43,8 +42,8 @@ export function RecentCallsSection({ view = 'enterprise', accountId, granularity
   // 总览是租户级页面：最近调用按租户口径取，不读工作空间选择器的 activeWorkspaceId
   // （PRD §7.3：选择器只驱动 workspace 级页面）。我的视图按 account_id 裁剪到当前账号。
   const { data, isLoading } = useQuery({
-    queryKey: ['workbench', 'recent-logs', activeTenantId, accountId, apiKeyType],
-    queryFn: () => listCallLogs({ limit: 3, account_id: accountId, api_key_type: apiKeyType }),
+    queryKey: ['workbench', 'recent-logs', activeTenantId, accountId],
+    queryFn: () => listCallLogs({ limit: 3, account_id: accountId }),
     enabled: !!activeTenantId,
     staleTime: 30_000,
   })

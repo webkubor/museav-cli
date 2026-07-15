@@ -536,7 +536,8 @@ export default function LogsPage() {
       ) : (
         <>
       <section className="space-y-4 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[180px_180px_minmax(180px,1fr)_minmax(180px,1fr)_minmax(180px,1fr)_auto] lg:items-end">
+        {/* auto-fit 自动换行：容器不够宽时整格折行，杜绝「更多筛选」被挤出卡片右缘（需求方#69） */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(180px,1fr))] lg:items-end">
           <FilterField label="时间范围">
             <DateRangePicker value={timeRange} onChange={(value) => { setTimeRange(value); resetPagination(); trackFilter('time_range', value.preset) }} presets={LOG_TIME_PRESETS} />
           </FilterField>

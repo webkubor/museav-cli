@@ -179,8 +179,6 @@ export default function GuardrailsPage() {
   const [ipWhitelist, setIpWhitelist] = useState<string[]>([])
   const [promptInjectionMode, setPromptInjectionMode] = useState<PromptInjectionFormValue>('off')
   const [memberIds, setMemberIds] = useState<string[]>([])
-  // 三分区共享的「有效 / 已过期已停用 / 全部」筛选（默认隐藏过期提额，文档§过期提额）
-  const [listFilter, setListFilter] = useState<'active' | 'expired' | 'all'>('active')
 
   const modelsQuery = useQuery({
     queryKey: ['catalog-models'],
@@ -774,8 +772,6 @@ export default function GuardrailsPage() {
         currencySymbol={currencySymbol}
         search={scopeSearch}
         onSearchChange={(s, value) => setScopeSearch((prev) => ({ ...prev, [s]: value }))}
-        listFilter={listFilter}
-        onListFilterChange={setListFilter}
         onOpenDetail={openDetail}
         onToggle={handleToggle}
         onDelete={(target) => {

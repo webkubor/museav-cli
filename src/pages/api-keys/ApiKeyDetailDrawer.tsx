@@ -90,11 +90,8 @@ interface Props {
   onClose: () => void
   workspaceId: string
   item: ApiKeyItem | null
-  canEdit: boolean
-  canRevoke: boolean
-  canDisable: boolean
-  canRotate: boolean
-  canChangeOwner: boolean
+  /** 行级动作权限（需求方#68）：按该行 Key 类型 × 动作取权限码 */
+  canAction: (type: ApiKeyType, action: ApiKeyAction) => boolean
   onToggleStatus: (item: ApiKeyItem) => void
   onRotate: (item: ApiKeyItem) => void
   onChangeOwner: (item: ApiKeyItem) => void
@@ -104,7 +101,7 @@ interface Props {
   rowScope?: string
 }
 
-export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canEdit, canRevoke, canDisable, canRotate, canChangeOwner, onToggleStatus, onRotate, onChangeOwner, onEdit, onRevoke, rowScope }: Props) {
+export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction, onToggleStatus, onRotate, onChangeOwner, onEdit, onRevoke, rowScope }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -188,10 +185,11 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canEdit, 
   const recentCalls = detail?.recent_calls ?? []
   const auditRows = audit?.items ?? detail?.recent_audit ?? []
   const isDisabled = view.status === 'disabled'
-  const canToggle = isDisabled ? cap(view.capabilities?.can_enable, canDisable) : cap(view.capabilities?.can_disable, canDisable)
+  const canToggle = isDisabled ? cap(view.capabilities?.can_enable, canAction(keyType, 'disable')) : cap(view.capabilities?.can_disable, canAction(keyType, 'disable'))
   // 按后端 capability 正常渲染；rotate 路由未就绪（40401）时点击走 requestError → 「服务暂不可用」，不做死按钮/硬隐藏（qa#384/#385）
-  const rotateEnabled = canRotate && view.capabilities?.can_rotate === true
-  const canDelete = cap(view.capabilities?.can_delete, canRevoke) && view.status !== 'revoked'
+  const rotateEnabled = canAction(keyType, 'rotate') && view.capabilities?.can_rotate === true
+  const canEdit = canAction(keyType, 'edit')
+  const canDelete = cap(view.capabilities?.can_delete, canAction(keyType, 'revoke')) && view.status !== 'revoked'
 
   return (
     <SideSheet open={open} onClose={onClose} title={item.name} width={520}>
@@ -209,7 +207,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canEdit, 
                 {isDisabled ? '启用' : '停用'}
               </Button>
             )}
-            {view.status !== 'revoked' && canChangeOwner && (
+            {view.status !== 'revoked' && canAction(keyType, 'change_owner') && (
               <Button variant="outline" size="sm" onClick={() => onChangeOwner(view)}>变更负责人</Button>
             )}
             {view.status !== 'revoked' && canEdit && (

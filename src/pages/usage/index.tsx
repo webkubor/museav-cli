@@ -23,7 +23,6 @@ import { useTenantRole } from '@/hooks/use-tenant-role'
 import { SegmentedToggle } from '@/features/dashboard/workbench/SegmentedToggle'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { trackEvent, trackPageView } from '@/lib/track'
-import { densifyDailyBuckets as densifyGenericBuckets } from '@/lib/chart-buckets'
 import { formatDuration } from '@/lib/format-date'
 import type { SeriesDataPoint, UsageRankingItem } from '@/types'
 import { Card } from '@/components/ui/Card'
@@ -46,22 +45,15 @@ import {
   formatMoney,
   formatNumber,
   densifyValueSeries,
-  CHART_CAT_COLORS,
-  CHART_CAT_MAX,
-  CHART_OTHER_COLOR,
 } from './usage-utils'
 import {
   Sparkline,
   MetricTab,
-  GroupedAreaChart,
-  type GroupedSeries,
-  type GroupedRow,
 } from './usage-charts'
 import { UsageFilterPanel } from './usage-filters'
 import { KEY_TYPE_ALL, apiKeyTypeParam, type ApiKeyTypeFilter } from '@/lib/api-key-type-filter'
 
 type UsageDimension = 'model' | 'member' | 'apiKey'
-type TrendGroupBy = 'none' | 'model' | 'provider' | 'workspace'
 
 /** 深链/下钻上下文：从 URL 参数推导初始时间范围（time_range 预设或 range_start/range_end 自定义）。 */
 function initialTimeRangeFromParams(sp: URLSearchParams): DateRangeValue {
@@ -113,14 +105,6 @@ export default function UsagePage() {
             ? 'model'
             : 'model'
   const [dimension, setDimension] = useState<UsageDimension>(initialDimension)
-  // 趋势图分组维度（后端 /usage/series 的 group_by）：none=单条总量曲线，其余=多序列堆叠
-  // 从总览「工作空间明细·查看更多」带来的上下文：?group_by=workspace 预置趋势维度
-  const groupByParam = searchParams.get('group_by')
-  const initialTrendGroupBy: TrendGroupBy =
-    groupByParam === 'model' || groupByParam === 'provider' || groupByParam === 'workspace'
-      ? groupByParam
-      : 'none'
-  const [trendGroupBy, setTrendGroupBy] = useState<TrendGroupBy>(initialTrendGroupBy)
   const [userView, setUserView] = useState<'enterprise' | 'mine' | 'space' | null>(
     viewParam === 'mine' || viewParam === 'enterprise' || viewParam === 'space' ? viewParam : null,
   )
@@ -256,8 +240,8 @@ export default function UsagePage() {
   })
 
   const seriesQuery = useQuery({
-    queryKey: ['usage-series', activeTenantId, commonParams, metric, trendGroupBy],
-    queryFn: () => getUsageSeries({ ...commonParams, metric, granularity: 'day', group_by: trendGroupBy }),
+    queryKey: ['usage-series', activeTenantId, commonParams, metric],
+    queryFn: () => getUsageSeries({ ...commonParams, metric, granularity: 'day' }),
     enabled: !!activeTenantId && rangeReady,
   })
 
@@ -300,60 +284,6 @@ export default function UsagePage() {
     return densifyValueSeries(mapped, from, to)
   }, [metric, seriesQuery.data, from, to])
 
-  // 多序列趋势：把 series.groups 透视成 recharts 行 + 序列元数据。Top6 上色，其余折叠成「其他」。
-  const groupedTrend = useMemo<{ rows: GroupedRow[]; series: GroupedSeries[] } | null>(() => {
-    if (trendGroupBy === 'none') return null
-    const groups = seriesQuery.data?.groups ?? []
-    if (groups.length === 0) return { rows: [], series: [] }
-
-    const pointValue = (p: { spend?: { amount?: string }; requests?: number; tokens?: number }) =>
-      metric === 'spend' ? Number(p.spend?.amount ?? 0) : Number((metric === 'requests' ? p.requests : p.tokens) ?? 0)
-    const groupTotal = (g: (typeof groups)[number]) =>
-      metric === 'spend'
-        ? Number(g.total?.spend?.amount ?? 0)
-        : Number((metric === 'requests' ? g.total?.requests : g.total?.tokens) ?? 0)
-
-    const nameById = new Map(workspaceList.map((w) => [w.workspace_id, w.name]))
-    const labelOf = (g: (typeof groups)[number]) =>
-      (trendGroupBy === 'workspace' ? nameById.get(g.key) : undefined) || g.label || g.key
-
-    const sorted = [...groups].sort((a, b) => groupTotal(b) - groupTotal(a))
-    const top = sorted.slice(0, CHART_CAT_MAX)
-    const rest = sorted.slice(CHART_CAT_MAX)
-
-    // dataKey 用合成键 s0/s1…，避免分组 key 含「.」被 recharts 当成嵌套路径
-    const series: GroupedSeries[] = top.map((g, i) => ({ key: `s${i}`, label: labelOf(g), color: CHART_CAT_COLORS[i] }))
-    const hasOther = rest.length > 0
-    if (hasOther) series.push({ key: 'sOther', label: t('usage.chart.groupBy.other'), color: CHART_OTHER_COLOR })
-
-    const valueByKeyBucket = new Map<string, Map<string, number>>()
-    const bucketSet = new Set<string>()
-    groups.forEach((g) => {
-      const m = new Map<string, number>()
-      g.points?.forEach((p) => {
-        m.set(p.bucket_start, pointValue(p))
-        bucketSet.add(p.bucket_start)
-      })
-      valueByKeyBucket.set(g.key, m)
-    })
-    const buckets = [...bucketSet].sort()
-
-    const rows: GroupedRow[] = buckets.map((b) => {
-      const row: GroupedRow = { bucket_start: b }
-      top.forEach((g, i) => {
-        row[`s${i}`] = valueByKeyBucket.get(g.key)?.get(b) ?? 0
-      })
-      if (hasOther) row.sOther = rest.reduce((sum, g) => sum + (valueByKeyBucket.get(g.key)?.get(b) ?? 0), 0)
-      return row
-    })
-    // 按 from~to 补 0：缺失天生成所有序列均为 0 的行，使堆叠面积覆盖整个区间
-    const denseRows = densifyGenericBuckets(rows, from, to, (bucket_start) => {
-      const r: GroupedRow = { bucket_start }
-      series.forEach((s) => { r[s.key] = 0 })
-      return r
-    })
-    return { rows: denseRows, series }
-  }, [trendGroupBy, seriesQuery.data, metric, workspaceList, from, to, t])
 
   const requestCount = summary?.total.requests ?? 0
   const totalSpend = summary ? formatMoney(summary.total.spend.amount, currencySymbol) : '—'
@@ -557,24 +487,6 @@ export default function UsagePage() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="flex gap-1 rounded-lg bg-mg-fill-0 p-1">
-                  {(['none', 'model', 'provider', 'workspace'] as TrendGroupBy[]).map((g) => (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => setTrendGroupBy(g)}
-                      aria-pressed={trendGroupBy === g}
-                      className={[
-                        'rounded-md px-3 py-1.5 text-[13px] transition-colors',
-                        trendGroupBy === g
-                          ? 'bg-mg-bg-1 text-mg-text-1 font-semibold shadow-sm'
-                          : 'text-mg-text-2 hover:text-mg-text-1',
-                      ].join(' ')}
-                    >
-                      {t(`usage.chart.groupBy.${g}`)}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex gap-1 rounded-lg bg-mg-fill-0 p-1">
                   {(['spend', 'requests', 'tokens'] as Metric[]).map((item) => (
                     <MetricTab
                       key={item}
@@ -598,17 +510,6 @@ export default function UsagePage() {
               <div className="flex h-[220px] items-center justify-center">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-mg-border border-t-brand-base" />
               </div>
-            ) : groupedTrend ? (
-              <GroupedAreaChart
-                rows={groupedTrend.rows}
-                series={groupedTrend.series}
-                metric={metric}
-                noDataLabel={t('usage.noData')}
-                currencySymbol={currencySymbol}
-                requestUnitLabel={t('usage.unit.requests')}
-                tokenUnitLabel={t('usage.unit.tokens')}
-                onPointClick={(bucket) => drillToLogs('trend', { day: bucket })}
-              />
             ) : (
               <Sparkline
                 data={seriesData}

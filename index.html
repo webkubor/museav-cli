@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/brand/modelgo-app-icon-dark.svg" media="(prefers-color-scheme: light)" />
@@ -7,6 +7,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#3b82f6" />
     <title>ModelGo 控制台</title>
+    <script>
+      // 市场前置(域名秒定,渲染前执行零闪烁):国际站(.ai)切 title/favicon/lang。
+      // 单一构建产物供 prod/prod-global 两条发布线共用;test/localhost 默认国内,运行时可切。
+      ;(function () {
+        if (!location.hostname.toLowerCase().endsWith('modelgo.ai')) return
+        document.title = 'ModelGo Console'
+        document.documentElement.lang = 'en'
+        document.querySelectorAll('link[rel="icon"]').forEach(function (l) {
+          l.href = '/brand/modelgo-global-logo.svg'
+          l.removeAttribute('media') // 国际标自带配色,明暗主题共用一份
+        })
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

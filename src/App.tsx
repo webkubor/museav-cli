@@ -6,6 +6,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { PublicShell } from '@/components/layout/PublicShell'
 import { AuthProvider, RequireAuth } from '@/components/auth/AuthProvider'
 import { RequirePermission } from '@/components/auth/RequirePermission'
+import { RequireEnterpriseTenant } from '@/components/auth/RequireEnterpriseTenant'
 import { CONSOLE_ROUTES, type ConsoleRouteMeta } from '@/config/console-routes'
 
 // 页面路由懒加载：各页面拆为独立 chunk，按需加载，缩小首屏体积
@@ -50,13 +51,15 @@ const CONSOLE_ELEMENTS: Record<string, ReactNode> = {
   observability: <ObservabilityPage />,
 }
 
-/** 按清单渲染一条菜单页路由：有 view 权限则套 RequirePermission 守卫，否则仅需登录 */
+/** 按清单渲染一条菜单页路由：有 view 权限则套 RequirePermission 守卫，否则仅需登录；
+    enterpriseOnly 页再叠租户类型守卫（个人租户 403，与菜单隐藏同源） */
 function consoleRoute(meta: ConsoleRouteMeta) {
-  const element = meta.permission ? (
+  let element = meta.permission ? (
     <RequirePermission perm={meta.permission}>{CONSOLE_ELEMENTS[meta.key]}</RequirePermission>
   ) : (
     CONSOLE_ELEMENTS[meta.key]
   )
+  if (meta.enterpriseOnly) element = <RequireEnterpriseTenant>{element}</RequireEnterpriseTenant>
   return <Route key={meta.key} path={meta.path} element={element} />
 }
 import { storageKeys } from '@/lib/storage'

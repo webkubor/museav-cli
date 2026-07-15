@@ -53,13 +53,17 @@ export const navConfig: NavConfig = {
   // observability 路由保留（第二阶段并入空间详情），但不出现在侧边栏 items。
   workspaceScopedKeys,
 
-  groups: (_ctx, t, icons) => [
+  groups: (ctx, t, icons) => [
     {
       key: 'main',
       scope: 'tenant',
       items: [
         { itemKey: 'dashboard', text: t('nav.dashboard'), icon: icons.home, permission: routePermission('dashboard') },
-        { itemKey: 'organization', text: t('nav.organization'), icon: icons.building, permission: routePermission('organization') },
+        // 企业管理仅企业租户展示（PRD 企业&空间管理：Member 和个人租户看不到入口）。
+        // 权限码只按角色下发，个人租户 owner 同样持有 ORG_VIEW，须叠加租户类型门。
+        ...(ctx.isNonPersonal
+          ? [{ itemKey: 'organization', text: t('nav.organization'), icon: icons.building, permission: routePermission('organization') }]
+          : []),
         { itemKey: 'workspaces', text: t('nav.workspace'), icon: icons.apps, permission: routePermission('workspaces') },
       ],
     },

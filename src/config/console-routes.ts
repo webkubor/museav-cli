@@ -76,11 +76,14 @@ export interface ConsoleRouteMeta {
   scope: RouteScope
   /** 菜单级 view 权限；缺省 = 仅需登录（如推荐计划） */
   permission?: Permission
+  /** 仅企业租户可见/可达（PRD 企业&空间管理：个人租户不展示企业管理入口）。
+      权限码按角色下发、表达不了租户类型，此维度必须单独声明。 */
+  enterpriseOnly?: boolean
 }
 
 export const CONSOLE_ROUTES: ConsoleRouteMeta[] = [
   { key: 'dashboard', path: 'dashboard', scope: 'tenant', permission: PERMS.DASHBOARD_VIEW },
-  { key: 'organization', path: 'organization', scope: 'tenant', permission: PERMS.ORG_VIEW },
+  { key: 'organization', path: 'organization', scope: 'tenant', permission: PERMS.ORG_VIEW, enterpriseOnly: true },
   { key: 'workspaces', path: 'workspaces', scope: 'tenant', permission: PERMS.WORKSPACE_VIEW },
   { key: 'billing', path: 'billing', scope: 'tenant', permission: PERMS.BILLING_VIEW },
   { key: 'usage', path: 'usage', scope: 'tenant', permission: PERMS.ANALYTICS_VIEW },
@@ -99,4 +102,9 @@ export const workspaceScopedKeys: ReadonlySet<string> = new Set(
 /** 按 itemKey 取菜单/路由的 view 权限（菜单过滤与路由守卫共用同一份） */
 export function routePermission(key: string): Permission | undefined {
   return CONSOLE_ROUTES.find((r) => r.key === key)?.permission
+}
+
+/** 该菜单/路由是否仅企业租户可见（菜单过滤与路由守卫共用同一份） */
+export function routeEnterpriseOnly(key: string): boolean {
+  return CONSOLE_ROUTES.find((r) => r.key === key)?.enterpriseOnly === true
 }

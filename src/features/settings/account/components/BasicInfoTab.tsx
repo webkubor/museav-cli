@@ -15,6 +15,7 @@ import { getReferralOverview } from '@/services/referral'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
 import { errorCodeOf } from '@/lib/request-error-message'
+import { useMarket } from '@/hooks/useMarket'
 import { LuGift, LuLock } from 'react-icons/lu'
 
 interface BasicInfoTabProps {
@@ -23,6 +24,7 @@ interface BasicInfoTabProps {
 
 export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
   const { t } = useTranslation()
+  const market = useMarket()
   const queryClient = useQueryClient()
   const [displayName, setDisplayName] = useState(profile.display_name)
   const tenantId = useAuthStore((s) => s.tenants.find((t) => t.is_default)?.tenant_id ?? '')
@@ -118,7 +120,8 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
 
       {/* 表单 */}
       <div className="flex flex-col gap-5 max-w-[480px]">
-        {profile.phone && (
+        {/* 手机号仅国内(china)有意义:国外账号无手机号绑定,按 market 约束不展示该模块 */}
+        {market === 'china' && profile.phone && (
           <div className="space-y-2">
             <span className="block text-xs font-semibold uppercase tracking-wider text-mg-text-2">
               手机号码

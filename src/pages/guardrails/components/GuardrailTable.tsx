@@ -343,6 +343,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
             <TableHead>模型黑名单</TableHead>
             <TableHead>IP 白名单</TableHead>
             <TableHead><PromptInjectionHeaderLabel /></TableHead>
+            <TableHead>创建人</TableHead>
             <TableHead>最近更新</TableHead>
             <TableHead>状态</TableHead>
             <TableHead className="text-right">操作</TableHead>
@@ -366,6 +367,10 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
               <TableCell><TagCell values={metadataList(row, 'model_blacklist')} /></TableCell>
               <TableCell><TagCell values={metadataList(row, 'ip_whitelist')} /></TableCell>
               <TableCell className="text-xs font-semibold text-mg-text-2">{PROMPT_INJECTION_LABEL[guardrailPromptInjectionMode(row)]}</TableCell>
+              {/* 创建人（PRD §7.2 / #52）：只显姓名，缺失显「—」，绝不回退到 account_id */}
+              <TableCell className="text-xs font-semibold text-mg-text-2">
+                {row.created_by?.display_name || <span className="font-normal text-mg-text-3">—</span>}
+              </TableCell>
               <TableCell className="text-xs text-mg-text-3">{formatDateTime(row.updated_at)}</TableCell>
               <TableCell><StatusCell row={row} canEdit={canEdit} onToggle={onToggle} /></TableCell>
               <TableCell className="text-right"><RowActions row={row} {...shared} /></TableCell>

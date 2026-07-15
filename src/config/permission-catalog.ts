@@ -3,6 +3,8 @@ import {
   PERMISSION_DEFINITIONS,
   PERMISSION_ID_PATTERN,
   PERMS,
+  RESOURCE_LABELS,
+  resourceOf,
   type Permission,
   type PermissionGranularity,
 } from './permissions.ts'
@@ -164,10 +166,24 @@ export const PERMISSION_CATALOG_DEFINITIONS: readonly SyncPermissionDefinition[]
   description: definition.description,
 }))
 
+/** 资源组标签 sync 项：资源段 → 中文名。随 catalog 下发落库,catalog 响应带回。 */
+export interface SyncResourceLabel {
+  resource: string
+  label: string
+}
+
+/** RESOURCE_LABELS 转成数组形态的 sync 项(按资源段字典序稳定)。 */
+export const PERMISSION_CATALOG_RESOURCE_LABELS: readonly SyncResourceLabel[] = Object.entries(
+  RESOURCE_LABELS,
+)
+  .map(([resource, label]) => ({ resource, label }))
+  .sort((a, b) => a.resource.localeCompare(b.resource))
+
 export const PERMISSION_SYNC_PAYLOAD = {
   source: 'modelgo-console-web',
   menus: PERMISSION_CATALOG_MENUS,
   permissions: PERMISSION_CATALOG_DEFINITIONS,
+  resource_labels: PERMISSION_CATALOG_RESOURCE_LABELS,
 }
 
 // ─── 市场维度：国内/国外菜单差异 ──────────────────────────────────────────────
@@ -197,7 +213,10 @@ export function catalogPayloadForMarket(market: CatalogMarket) {
     .map((m) => ({ ...m, actions: m.actions.filter((a) => permInMarket(a, market)) }))
   const used = new Set<Permission>(menus.flatMap((m) => [m.view_permission, ...m.actions]))
   const permissions = PERMISSION_CATALOG_DEFINITIONS.filter((p) => used.has(p.permission_id))
-  return { source: 'modelgo-console-web', menus, permissions }
+  // 资源组标签只下发该市场实际用到的资源段(如国外无 billing.invoice 就不带「发票」标签)。
+  const usedResources = new Set<string>([...used].map(resourceOf))
+  const resource_labels = PERMISSION_CATALOG_RESOURCE_LABELS.filter((r) => usedResources.has(r.resource))
+  return { source: 'modelgo-console-web', menus, permissions, resource_labels }
 }
 
 /** 两市场差异:各自菜单/权限数 + 仅国内/仅国外的权限。供推送前 check 核对,确保一开始就推对。 */
@@ -245,6 +264,15 @@ export function validatePermissionCatalog(): string[] {
     }
   }
 
+  // 资源组标签契约：所有出现的资源段必须有中文名(否则运营看到裸 key);标签 key 不得悬空。
+  const allResources = new Set<string>([...referencedIds].map(resourceOf))
+  for (const resource of allResources) {
+    if (!RESOURCE_LABELS[resource]) errors.push(`资源组缺中文名(RESOURCE_LABELS): ${resource}`)
+  }
+  for (const resource of Object.keys(RESOURCE_LABELS)) {
+    if (!allResources.has(resource)) errors.push(`RESOURCE_LABELS 悬空(无对应权限): ${resource}`)
+  }
+
   return errors
 }
 
@@ -253,11 +281,13 @@ export function validatePermissionCatalog(): string[] {
  * 语义:后端见版本号变化 → **全量刷新**该市场目录(丢弃旧、以本次为准),而非逐条增量 diff。
  * 不变则走增量对账(has_changes)。
  */
-export const PERMISSION_CATALOG_VERSION = '1.0.0'
+// 1.1.0：sync 契约新增 resource_labels(资源组中文名),后端需存储并在 catalog 响应带回。
+export const PERMISSION_CATALOG_VERSION = '1.1.0'
 
 export const permissionCatalogMeta = {
   version: PERMISSION_CATALOG_VERSION,
   legacy_permission_ids: LEGACY_PERMISSION_IDS,
   permission_count: PERMISSION_CATALOG_DEFINITIONS.length,
   menu_count: PERMISSION_CATALOG_MENUS.length,
+  resource_label_count: PERMISSION_CATALOG_RESOURCE_LABELS.length,
 } as const

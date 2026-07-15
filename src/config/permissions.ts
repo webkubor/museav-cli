@@ -114,3 +114,57 @@ export const LEGACY_PERMISSION_IDS = [
   'dashboard:view.org',
   'logs:view.org',
 ] as const
+
+/**
+ * 资源组中文名：Permission ID 的「资源段」(冒号前) → 中文标签。
+ *
+ * 后端权限目录会按资源段把权限收成分组节点(如 `billing.invoice:view/apply/download`
+ * 归到「发票」节点),但节点本身此前没有人话名称——运营侧看到的就是裸 key(#发票节点没描述)。
+ * 此表随 catalog sync 一并下发落库、并由 catalog 响应带回,给这些分组节点提供显示名。
+ * 延续「sync 即单一来源」:标签真源在前端,后端只存储与回吐,不自行造名。
+ *
+ * key 必须是某个 Permission ID 的资源段(冒号前),否则 validatePermissionCatalog 视为悬空标签。
+ * 顶层资源(如 billing/api_keys)与菜单名重合,列出是为让后端任意层级节点都能取到名。
+ */
+export const RESOURCE_LABELS: Record<string, string> = {
+  dashboard: '总览',
+  analytics: '用量统计',
+  logs: '调用日志',
+  'logs.payload': '调用原文',
+  billing: '账单',
+  'billing.invoice': '发票',
+  'billing.invoice_title': '发票抬头',
+  'billing.recharge': '充值',
+  'billing.promo': '优惠码',
+  api_keys: 'API Key',
+  'api_keys.personal': '私有 Key',
+  'api_keys.member': '成员 Key',
+  'api_keys.service': '服务 Key',
+  guardrails: '安全护栏',
+  'guardrails.global': '全局护栏',
+  'guardrails.member': '个人护栏',
+  'guardrails.key': 'Key 护栏',
+  'guardrails.boost': '提额护栏',
+  'guardrails.assignment': '护栏作用范围',
+  'guardrails.budget': '护栏预算',
+  observability: '日志与转发',
+  'observability.logging': '日志采集',
+  'observability.forward': '日志转发',
+  workspace: '空间管理',
+  'workspace.members': '空间成员',
+  'workspace.settings': '空间设置',
+  'workspace.audit': '空间审计',
+  org: '企业管理',
+  'org.settings': '企业设置',
+  'org.members': '企业成员',
+  'org.invite': '企业邀请',
+  'org.audit': '企业审计',
+  'org.ownership': '企业所有权',
+  referral: '推荐计划',
+  'referral.reward': '推荐奖励',
+}
+
+/** 取 Permission ID 的资源段(冒号前),用于按资源分组与匹配 RESOURCE_LABELS。 */
+export function resourceOf(permissionId: string): string {
+  return permissionId.split(':')[0] ?? permissionId
+}

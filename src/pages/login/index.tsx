@@ -16,8 +16,7 @@ import { Input } from '@/components/ui/Input'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { SocialLogin } from '@/components/auth/SocialLogin'
 import { PhoneAuth } from '@/components/auth/PhoneAuth'
-import { SliderCaptcha } from '@/components/auth/SliderCaptcha'
-import { getCaptchaParam, isCaptchaEnabled } from '@/lib/aliyun-captcha'
+import { getCaptchaParam } from '@/lib/aliyun-captcha'
 import { useMarket } from '@/hooks/useMarket'
 import { useEmailAuthEnabled } from '@/hooks/use-platform-config'
 import { checkLoginEmail, login, getSession } from '@/services/auth'
@@ -25,7 +24,6 @@ import { useAuthStore } from '@/store/auth'
 import {
   checkAuthGuard,
   clearAuthGuard,
-  getAuthGuardFailures,
   recordAuthGuardFailure,
   type AuthGuardAction,
 } from '@/lib/auth/front-guard'
@@ -106,14 +104,7 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [rememberPassword, setRememberPassword] = useState(Boolean(remembered))
-  // 人机校验：同一邮箱连续 3 次密码错误后要求滑块（按邮箱计数，换邮箱各自归零）
-  const [captchaVerified, setCaptchaVerified] = useState(false)
-  // 失败后 bump 触发重渲染，从而重读 localStorage 里的失败次数
-  const [, setFailureTick] = useState(0)
-  // 当前邮箱的连续密码失败次数（每次渲染直接读，按邮箱各自计数）
-  const pwdFailures = getAuthGuardFailures({ action: 'login-password', subject: email })
-  // 阿里云验证码启用时不再叠加旧滑块（避免双重人机验证，qa#299）。
-  const captchaRequired = !isCaptchaEnabled() && pwdFailures >= 3
+  // 人机校验统一走阿里云验证码 2.0（getCaptchaParam）；旧纯前端滑块已移除。
 
   const emailForm = useForm<EmailFields>({
     resolver: zodResolver(emailSchema),
@@ -157,10 +148,6 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
   }
 
   const onPasswordSubmit = async (data: PasswordFields) => {
-    if (captchaRequired && !captchaVerified) {
-      setServerError('请先完成滑块验证')
-      return
-    }
     if (!canSubmitAuth('login-password', email)) return
     // qa#299 人机验证：通过取 param；未启用/降级/超时 → null → 照常登录（后端 fail-open）。
     const captchaParam = await getCaptchaParam()
@@ -189,9 +176,6 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
     } catch {
       if (!loginOk) {
         recordAuthGuardFailure({ action: 'login-password', subject: email })
-        // 失败后重置滑块并 bump，重读次数（达到 3 次即显示滑块）
-        setCaptchaVerified(false)
-        setFailureTick((t) => t + 1)
       }
       // loginOk=true 但走进 catch = 登录成功但拉 session 失败；否则是凭据错误
       const errorCode = loginOk ? 'session_failed' : 'invalid_credentials'
@@ -284,7 +268,7 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
             <span className="auth-email-text">{email}</span>
             <button
               type="button"
-              onClick={() => { setStep('email'); setServerError(''); setCaptchaVerified(false) }}
+              onClick={() => { setStep('email'); setServerError('') }}
               className="auth-email-modify-btn"
             >
               修改
@@ -331,14 +315,6 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
             </label>
           </div>
           
-          {captchaRequired && (
-            <div className="auth-fade-in">
-              <label className="modern-auth-label">安全验证</label>
-              <p className="mb-2 text-xs text-mg-text-3">多次密码错误，请完成下方验证后再登录</p>
-              <SliderCaptcha onChange={(verified) => setCaptchaVerified(verified)} />
-            </div>
-          )}
-
           {serverError && <p className="auth-error-message">{serverError}</p>}
 
           <Button
@@ -346,7 +322,6 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
             variant="brand"
             size="lg"
             loading={loading}
-            disabled={captchaRequired && !captchaVerified}
           >
             登录
           </Button>

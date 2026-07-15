@@ -29,6 +29,7 @@ import { Modal } from '@/components/ui/Modal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 import { appToast } from '@/lib/app-toast'
+import { refreshSession } from '@/lib/auth/refresh-session'
 
 export function MembersTab({ workspaceId }: { workspaceId: string }) {
   const { t } = useTranslation()
@@ -112,6 +113,9 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
       qc.invalidateQueries({ queryKey: ['workspace-members', workspaceId] })
       qc.invalidateQueries({ queryKey: ['workspace-detail', workspaceId] })
       qc.invalidateQueries({ queryKey: ['workspaces'] })
+      // 负责人变更改变权限面（含把负责人从自己身上转走）：热刷新会话，
+      // 菜单/tab/按钮 gating 立即随新权限变化，不再要求手动刷新页面
+      void refreshSession()
     },
     onError: (err: unknown) => appToast.requestError(err, t('workspaces.detail.members.setOwnerError')),
   })

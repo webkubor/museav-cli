@@ -16,6 +16,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { appToast } from '@/lib/app-toast'
+import { refreshSession } from '@/lib/auth/refresh-session'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
@@ -111,6 +112,8 @@ export function MembersTab({
       }
       appToast.success(t('enterprise.members.saveSuccess'))
       qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
+      // 角色/状态变更改变权限面：热刷新会话，菜单/tab 即时随新权限变化（免手动刷新）
+      void refreshSession()
       setEditTarget(null)
     } catch {
       // 具体错误已由各 mutation 的 onError 提示，这里仅阻止弹窗关闭，方便用户重试

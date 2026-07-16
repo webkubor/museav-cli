@@ -23,6 +23,7 @@
 | 2026-07-15 | 1.1.0 | 新增 `resource_labels`（资源组中文名，随 sync 下发） | console#15 | 两市场 apply code 0 | — |
 | 2026-07-15 | 1.2.0 | API Key 权限按「类型 × 动作」全细分 | 需求方#68 | apply | — |
 | 2026-07-16 | 1.3.0 | 护栏管理动作按「分类 × 动作」细分：新增 `guardrails.{global,member,key}:{edit,delete}` | 需求方#57 §11（`ee24908`） | 目录已 apply（dry-run 无变更）| ⚠️ 见下（闭环未合）|
+| 2026-07-16 | 1.3.1 | observability:view 拆分：新增 `observability.logging:view`+`observability.forward:view`（菜单 view 仍 observability:view，两条 section view 控采集/转发区块） | 需求方#91 | 两市场 apply：新增 2 条 | ⚠️ 后端 enforce+授权待 #492 |
 
 ## 已知未闭环：1.3.0 授权矩阵滞后（后端）
 

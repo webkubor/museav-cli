@@ -132,11 +132,13 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
     staleTime: 60_000,
   })
 
-  // 默认护栏自动选中，始终排首位
+  // 默认护栏自动选中，始终排首位。
+  // 仅选 active 的默认护栏（需求方#96）：inactive/archived 的 default 后端 byID 收不到，
+  // 自动塞进 guardrail_ids 会导致建 key 报 GUARDRAIL_NOT_FOUND「selected guardrail not found」。
   useEffect(() => {
     const guardrails = Array.isArray(guardrailsQuery.data) ? guardrailsQuery.data : []
     if (!guardrails.length) return
-    const def = guardrails.find((g) => g.is_default)
+    const def = guardrails.find((g) => g.is_default && g.status === 'active')
     if (def && !guardrailIds.includes(def.id)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setGuardrailIds((prev) => [def.id, ...prev.filter((id) => id !== def.id)])

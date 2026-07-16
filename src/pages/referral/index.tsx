@@ -33,6 +33,7 @@ import {
   listReferralInvitees,
   listRewardRecords,
   listWithdrawals,
+  transferRewardToBalance,
   requestWithdrawal,
 } from '@/services/referral'
 
@@ -71,6 +72,8 @@ export default function ReferralPage() {
   const { hasPermission } = usePermissions()
   // 提现入口:功能开关 + referral.reward:withdraw 权限双重门（#479）；开关一开也不会对无权限者裸奔
   const canWithdraw = WITHDRAW_ENABLED && hasPermission(PERMS.REFERRAL_REWARD_WITHDRAW)
+  // 转入主余额入口：现网老功能，referral.reward:transfer 权限门；V1.0.3 范围内保留（1.0.4 才移除，不提前套用）
+  const canTransfer = hasPermission(PERMS.REFERRAL_REWARD_TRANSFER)
   const text = i18n.language.startsWith('zh') ? referralCopy.zh : referralCopy.en
 
   // 推荐计划按当前租户隔离：从哪个租户发出邀请，返佣就进入哪个租户的奖励余额。
@@ -164,6 +167,10 @@ export default function ReferralPage() {
   // 稳定幂等键：打开弹窗时生成，确认重试期间复用；金额修改即重铸。
   const [idempotencyKey, setIdempotencyKey] = useState('')
 
+  // 转入主余额弹窗
+  const [transferOpen, setTransferOpen] = useState(false)
+  const [transferAmount, setTransferAmount] = useState('')
+
   // 申请提现弹窗
   const [withdrawOpen, setWithdrawOpen] = useState(false)
   const [withdrawAmount, setWithdrawAmount] = useState('')
@@ -173,6 +180,9 @@ export default function ReferralPage() {
   const [bankCard, setBankCard] = useState('')
   const [bankHolder, setBankHolder] = useState('')
 
+  const transferNum = Number(transferAmount)
+  const transferValid = transferNum >= MIN_AMOUNT && transferNum <= rewardBalance
+
   const withdrawNum = Number(withdrawAmount)
   const withdrawAmountValid = withdrawNum >= MIN_AMOUNT && withdrawNum <= rewardBalance
   const accountValid =
@@ -181,9 +191,44 @@ export default function ReferralPage() {
       : bankName.trim().length > 0 && bankCard.trim().length > 0 && bankHolder.trim().length > 0
   const withdrawValid = withdrawAmountValid && accountValid
 
+  const handleTransfer = () => {
+    if (rewardBalance < MIN_AMOUNT) {
+      appToast.info(text.belowMin)
+      return
+    }
+    setIdempotencyKey(crypto.randomUUID())
+    setTransferAmount(String(rewardBalance))
+    setTransferOpen(true)
+  }
+
+  /** 金额一旦修改即重铸幂等键：同键不同额会被后端按原额重放，必须避免 */
+  const onTransferAmountChange = (v: string) => {
+    setIdempotencyKey(crypto.randomUUID())
+    setTransferAmount(v)
+  }
+
   const onWithdrawAmountChange = (v: string) => {
     setIdempotencyKey(crypto.randomUUID())
     setWithdrawAmount(v)
+  }
+
+  const transferMutation = useMutation({
+    mutationFn: () =>
+      transferRewardToBalance(tenantId, {
+        amount: String(transferNum),
+        idempotency_key: idempotencyKey,
+      }),
+    onSuccess: () => {
+      invalidateMoneyViews()
+      setTransferOpen(false)
+      appToast.success(text.transferSuccess.replace('{amount}', fmt(transferNum)))
+    },
+    onError: (err: Error) => appToast.requestError(err, text.transferFailed),
+  })
+
+  const confirmTransfer = () => {
+    if (!transferValid || transferMutation.isPending) return
+    transferMutation.mutate()
   }
 
   const withdrawMutation = useMutation({
@@ -275,6 +320,7 @@ export default function ReferralPage() {
           icon={<LuWallet size={16} />}
           color="var(--brand-base)"
           glowColor="var(--brand-glow)"
+          action={canTransfer && rewardBalance > 0 ? { label: text.transferToBalance, onClick: handleTransfer } : undefined}
         />
       </div>
 
@@ -356,11 +402,17 @@ export default function ReferralPage() {
             <div className="flex gap-2.5 items-start">
               <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">02</span>
               <div>
+                奖励余额<span className="text-[var(--brand-base)] font-bold">满 ¥100</span> 可<span className="text-[var(--brand-base)] font-bold">转入主余额</span>继续消费。
+              </div>
+            </div>
+            <div className="flex gap-2.5 items-start">
+              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">03</span>
+              <div>
                 返佣<span className="text-[var(--brand-base)] font-bold">上不封顶</span>；返佣档位、比例、门槛由平台统一配置。
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-mg-danger/10 text-mg-danger text-xs font-bold shrink-0">03</span>
+              <span className="mt-0.5 p-1 rounded-md bg-mg-danger/10 text-mg-danger text-xs font-bold shrink-0">04</span>
               <div>
                 平台对同主体 / 同 IP·设备 / 异常刷量保留核查与冻结权，保障返佣生态公平合规。
               </div>
@@ -377,11 +429,17 @@ export default function ReferralPage() {
             <div className="flex gap-2.5 items-start">
               <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">02</span>
               <div>
+                Reward balance <span className="text-[var(--brand-base)] font-bold">reaches ¥100</span> can be <span className="text-[var(--brand-base)] font-bold">transferred to main balance</span>.
+              </div>
+            </div>
+            <div className="flex gap-2.5 items-start">
+              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">03</span>
+              <div>
                 Commission has <span className="text-[var(--brand-base)] font-bold">no upper limit</span>. Tiers, rates, and thresholds are configured by the platform.
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-mg-danger/10 text-mg-danger text-xs font-bold shrink-0">03</span>
+              <span className="mt-0.5 p-1 rounded-md bg-mg-danger/10 text-mg-danger text-xs font-bold shrink-0">04</span>
               <div>
                 The platform reserves the right to audit and freeze same-entity / same-IP / abnormal farming activities.
               </div>
@@ -432,6 +490,26 @@ export default function ReferralPage() {
           )}
         </Tabs>
       </div>
+
+      {/* 转入主余额 */}
+      <Modal
+        open={transferOpen}
+        onClose={() => setTransferOpen(false)}
+        title={text.transferTitle}
+        size="sm"
+        footer={
+          <Button variant="brand" disabled={!transferValid} onClick={confirmTransfer}>
+            {text.transferConfirm}
+          </Button>
+        }
+      >
+        <div className="space-y-3 py-1">
+          <p className="text-xs text-mg-text-3">
+            {text.transferModalHint.replace('{balance}', fmt(rewardBalance))}
+          </p>
+          {moneyField(transferAmount, onTransferAmountChange)}
+        </div>
+      </Modal>
 
       {/* 申请提现 */}
       <Modal

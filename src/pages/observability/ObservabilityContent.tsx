@@ -12,6 +12,8 @@ import { Switch } from '@/components/ui/Switch'
 import { appToast } from '@/lib/app-toast'
 import { cn } from '@/lib/utils'
 import { trackEvent } from '@/lib/track'
+import { PERMS } from '@/config/permissions'
+import { usePermissions } from '@/hooks/use-permissions'
 import { updateLoggingConfig } from '@/services/observability'
 import type { LoggingConfig } from '@/types'
 import { DestinationsPanel } from './DestinationsPanel'
@@ -86,6 +88,10 @@ export function ObservabilityContent({
 }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const { hasPermission } = usePermissions()
+  // observability:view 拆分（需求方#91）：采集区随 logging:view 显隐，转发区（广播转发 + 转发目标）随 forward:view 显隐。
+  const canViewLogging = hasPermission(PERMS.OBSERVABILITY_LOGGING_VIEW)
+  const canViewForward = hasPermission(PERMS.OBSERVABILITY_FORWARD_VIEW)
   const [loggingEnabled, setLoggingEnabled] = useState(config.input_output_logging_enabled)
   const [broadcastEnabled, setBroadcastEnabled] = useState(config.broadcast_enabled)
 
@@ -126,43 +132,55 @@ export function ObservabilityContent({
         !embedded && 'max-w-6xl'
       )}
     >
-      <section className={panelClass}>
-        <SectionHeader title={t('observability.settingsTitle')} description={t('observability.settingsDesc')} />
-        <div className="divide-y divide-mg-border/70">
-          <ToggleRow
-            icon={<LuActivity size={17} />}
-            title={t('observability.logging.title')}
-            description={t('observability.logging.desc')}
-            meta={t('observability.logging.meta')}
-            checked={loggingEnabled}
-            loading={saveMutation.isPending}
-            disabled={!canEditLogging}
-            onChange={handleLoggingChange}
-          />
-          {!loggingEnabled && (
-            <div className="mx-5 mb-5 rounded-md border border-mg-warning/20 bg-mg-warning/10 px-4 py-3 text-xs leading-5 text-mg-warning">
-              {t('observability.loggingOffWarning')}
-            </div>
-          )}
-          <ToggleRow
-            icon={<LuDatabaseZap size={17} />}
-            title={t('observability.broadcast.title')}
-            description={t('observability.broadcast.desc')}
-            meta={t('observability.broadcast.meta')}
-            checked={broadcastEnabled}
-            loading={saveMutation.isPending}
-            disabled={!canEditLogging || !loggingEnabled}
-            onChange={handleBroadcastChange}
-          />
-        </div>
-      </section>
+      {/* 采集设置卡：采集区（输入/输出日志）与转发区的广播开关各自按 view 权限显隐；
+          两块都无 view 权限时整卡不渲染。 */}
+      {(canViewLogging || canViewForward) && (
+        <section className={panelClass}>
+          <SectionHeader title={t('observability.settingsTitle')} description={t('observability.settingsDesc')} />
+          <div className="divide-y divide-mg-border/70">
+            {canViewLogging && (
+              <>
+                <ToggleRow
+                  icon={<LuActivity size={17} />}
+                  title={t('observability.logging.title')}
+                  description={t('observability.logging.desc')}
+                  meta={t('observability.logging.meta')}
+                  checked={loggingEnabled}
+                  loading={saveMutation.isPending}
+                  disabled={!canEditLogging}
+                  onChange={handleLoggingChange}
+                />
+                {!loggingEnabled && (
+                  <div className="mx-5 mb-5 rounded-md border border-mg-warning/20 bg-mg-warning/10 px-4 py-3 text-xs leading-5 text-mg-warning">
+                    {t('observability.loggingOffWarning')}
+                  </div>
+                )}
+              </>
+            )}
+            {canViewForward && (
+              <ToggleRow
+                icon={<LuDatabaseZap size={17} />}
+                title={t('observability.broadcast.title')}
+                description={t('observability.broadcast.desc')}
+                meta={t('observability.broadcast.meta')}
+                checked={broadcastEnabled}
+                loading={saveMutation.isPending}
+                disabled={!canEditLogging || !loggingEnabled}
+                onChange={handleBroadcastChange}
+              />
+            )}
+          </div>
+        </section>
+      )}
 
-      <DestinationsPanel
-        workspaceId={workspaceId}
-        broadcastEnabled={broadcastEnabled}
-        canManageForward={canManageForward}
-        panelClass={panelClass}
-      />
+      {canViewForward && (
+        <DestinationsPanel
+          workspaceId={workspaceId}
+          broadcastEnabled={broadcastEnabled}
+          canManageForward={canManageForward}
+          panelClass={panelClass}
+        />
+      )}
     </div>
   )
 }

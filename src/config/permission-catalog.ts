@@ -166,8 +166,8 @@ export const PERMISSION_CATALOG_MENUS = [
     name: '日志与转发',
     name_en: 'Logging & Forwarding',
     scope: 'workspace',
-    view_permission: PERMS.OBSERVABILITY_VIEW,
-    actions: [PERMS.OBSERVABILITY_LOGGING_EDIT, PERMS.OBSERVABILITY_FORWARD_MANAGE],
+    view_permission: PERMS.OBSERVABILITY_LOGGING_VIEW,
+    actions: [PERMS.OBSERVABILITY_FORWARD_VIEW, PERMS.OBSERVABILITY_LOGGING_EDIT, PERMS.OBSERVABILITY_FORWARD_MANAGE],
   },
 ] as const satisfies readonly PermissionCatalogMenu[]
 
@@ -297,7 +297,8 @@ export function validatePermissionCatalog(): string[] {
 // ⚠️ 这是「权限目录结构版本」，不是产品发布版本（package.json 的 V1.0.3）——两者无关，
 // 千万别「同步版本号」：它驱动后端全量刷新语义（版本变→整市场目录全量刷新），必须只增不减。
 // 结构性改动（增删码/改层级）手动 bump minor；曾被 854f148 误降回 1.0.3（正确值 1.2.0），此处恢复并 +1 保单调。
-export const PERMISSION_CATALOG_VERSION = '1.3.0'
+// 1.3.1：observability:view 拆为 logging:view + forward:view（#91）
+export const PERMISSION_CATALOG_VERSION = '1.3.1'
 
 export const permissionCatalogMeta = {
   version: PERMISSION_CATALOG_VERSION,

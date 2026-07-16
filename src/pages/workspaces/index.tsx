@@ -690,7 +690,7 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
       meta: `${ws.logging_enabled ? t('workspaces.card.collectOn') : t('workspaces.card.collectOff')} · ${ws.forward_enabled ? t('workspaces.card.forwardOn') : t('workspaces.detail.overview.notForwarded')}`,
       action: t('workspaces.detail.overview.configure'),
       onClick: onGoLogs,
-      visible: hasPermission(PERMS.OBSERVABILITY_VIEW),
+      visible: hasPermission(PERMS.OBSERVABILITY_LOGGING_VIEW) || hasPermission(PERMS.OBSERVABILITY_FORWARD_VIEW),
       // 本页内切页签（非外跳）：动作用蓝色内联文本、无外跳箭头（对齐 PRD actionKind="inline"）
       inline: true,
     },
@@ -752,7 +752,7 @@ function WorkspaceDashboard({ workspaceId, onDeleted }: WorkspaceDashboardProps)
   const { isEnterprise } = useTenantRole()
   const { hasPermission } = usePermissions()
   const canViewMembers = isEnterprise && hasPermission(PERMS.WORKSPACE_MEMBERS_VIEW)
-  const canViewLogs = hasPermission(PERMS.OBSERVABILITY_VIEW)
+  const canViewLogs = hasPermission(PERMS.OBSERVABILITY_LOGGING_VIEW) || hasPermission(PERMS.OBSERVABILITY_FORWARD_VIEW)
   const canViewSettings = hasPermission(PERMS.WORKSPACE_SETTINGS_EDIT)
     || hasPermission(PERMS.WORKSPACE_RENAME)
     || hasPermission(PERMS.WORKSPACE_DELETE)

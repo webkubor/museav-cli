@@ -91,7 +91,7 @@ export const CONSOLE_ROUTES: ConsoleRouteMeta[] = [
   { key: 'referral', path: 'referral', scope: 'tenant', permission: PERMS.REFERRAL_VIEW },
   { key: 'api-keys', path: 'api-keys', scope: 'workspace', permission: PERMS.API_KEYS_VIEW },
   { key: 'guardrails', path: 'guardrails', scope: 'workspace', permission: PERMS.GUARDRAILS_VIEW },
-  { key: 'observability', path: 'observability', scope: 'workspace', permission: PERMS.OBSERVABILITY_VIEW },
+  { key: 'observability', path: 'observability', scope: 'workspace', permission: PERMS.OBSERVABILITY_LOGGING_VIEW },
 ]
 
 /** 工作区级页面 key 集合（DashboardLayout 据此把跳转前缀成 /workspace/:id/…） */

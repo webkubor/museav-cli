@@ -41,18 +41,19 @@ export function SideSheet({
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose() }}>
+      {/* flex 列 + 内容区内部滚动：抽屉内容超高时不再被视口硬裁（需求方#84 ③ 底部文字截断） */}
       <SheetContent
         side={side}
         style={width ? { width: `${width}px`, maxWidth: `${width}px` } : undefined}
-        className={className}
+        className={cn("flex flex-col", className)}
       >
-        <SheetHeader className={cn(!title && "sr-only")}>
+        <SheetHeader className={cn("shrink-0", !title && "sr-only")}>
           <SheetTitle>{accessibleTitle}</SheetTitle>
           <SheetDescription className={cn(!description && "sr-only")}>
             {description ?? accessibleTitle}
           </SheetDescription>
         </SheetHeader>
-        {children}
+        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
       </SheetContent>
     </Sheet>
   )

@@ -38,9 +38,11 @@ export function Modal({
 }: ModalProps) {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className={cn(SIZE_MAP[size], className)}>
+      {/* 三段式：标题/底栏固定，仅内容区内部滚动——长表单的主操作按钮恒在首屏可见（需求方#83）。
+          flex 覆盖基类 grid；!overflow-hidden 压掉基类的整体 overflow-y-auto（那会把 footer 一起滚出视口） */}
+      <DialogContent className={cn(SIZE_MAP[size], "flex flex-col !overflow-hidden", className)}>
         {(title || description) && (
-          <DialogHeader>
+          <DialogHeader className="shrink-0">
             {title && <DialogTitle>{title}</DialogTitle>}
             {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>
@@ -50,8 +52,8 @@ export function Modal({
             {typeof title === "string" ? title : "对话框"}
           </DialogDescription>
         )}
-        {children}
-        {footer && <DialogFooter>{footer}</DialogFooter>}
+        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+        {footer && <DialogFooter className="shrink-0">{footer}</DialogFooter>}
       </DialogContent>
     </Dialog>
   )

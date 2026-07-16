@@ -5,45 +5,28 @@
  * 详情/审计接口（#383/#384）未交付时以列表项兜底 + 空态降级，不阻塞、不报错。
  */
 import { useState, type ReactNode } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { SideSheet } from '@/components/ui/SideSheet'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import Select, { SelectItem } from '@/components/ui/Select'
 import { CopyButton } from '@/components/ui/CopyButton'
-import { StatusBadge } from '@/components/ui/StatusBadge'
-import { LuShieldCheck, LuArrowRight, LuTriangleAlert, LuRefreshCw } from 'react-icons/lu'
+import { LuArrowRight, LuTriangleAlert, LuRefreshCw, LuCopy, LuLoaderCircle } from 'react-icons/lu'
 import { formatDateTime } from '@/lib/format-date'
 import { formatMoney } from '@/lib/utils'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
-import { useCurrency } from '@/hooks/use-platform-config'
-import { getApiKeyAudit, getApiKeyDetail, getEffectiveGuardrails, updateApiKey } from '@/services/api-keys'
+import { getApiKeyAudit, getApiKeyDetail, getEffectiveGuardrails, revealApiKey } from '@/services/api-keys'
 import type { ApiKeyItem, ApiKeyType } from '@/types'
-import { LIMIT_PERIOD_OPTIONS, type LimitPeriod } from './constants'
+import { useCopy } from '@/hooks/use-copy'
 import {
   KEY_TYPE_LABEL,
-  STATUS_LABEL,
   deriveKeyType,
   responsibleOf,
   periodSpendOf,
   cap,
-  formatLimit,
-  currentLimitPeriod,
-  buildSpendingLimit,
   type ApiKeyAction,
 } from './derive'
-
-const STATUS_MAP = {
-  active: { label: STATUS_LABEL.active, variant: 'success' as const, dot: true },
-  rotation_required: { label: STATUS_LABEL.rotation_required, variant: 'info' as const },
-  limited: { label: STATUS_LABEL.limited, variant: 'warning' as const },
-  expired: { label: STATUS_LABEL.expired, variant: 'warning' as const },
-  disabled: { label: STATUS_LABEL.disabled, variant: 'outline' as const },
-  revoked: { label: STATUS_LABEL.revoked, variant: 'danger' as const },
-}
 
 function money(m?: { amount: string; currency: string }): string {
   return m?.amount ? `${m.currency} ${formatMoney(m.amount, '')}` : '—'
@@ -61,29 +44,34 @@ function Section({ title, action, children }: { title: string; action?: ReactNod
   )
 }
 
-function Field({ label, value }: { label: string; value: ReactNode }) {
+/** 原型式信息格：label 在上、值加粗在下（api-key-basic-grid / usage-grid，需求方#84） */
+function Cell({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-1.5">
-      <span className="text-xs text-mg-text-3">{label}</span>
-      <span className="text-xs font-semibold text-mg-text-1 text-right">{value}</span>
+    <div className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
+      <div className="text-xs text-mg-text-3">{label}</div>
+      <div className="mt-1 truncate text-sm font-bold text-mg-text-1">{value}</div>
     </div>
   )
 }
 
-// 键必须对齐后端 aggregation_scope 枚举（guardrail_total/per_member/per_api_key）——
-// 曾误写成 workspace/member/api_key，导致 scopeLabel 全部 fallback 到原始枚举、UI 裸露「guardrail_total预算」。
-const SCOPE_LABEL: Record<string, string> = {
-  guardrail_total: '工作空间',
-  per_member: '个人',
-  per_api_key: 'API Key',
+/** 生效层槽位标签（原型 api-key-preview-layers：全局 / 个人 / Key 三固定槽） */
+const LAYER_SLOTS: Array<{ key: string; label: string }> = [
+  { key: 'global_default', label: '全局护栏' },
+  { key: 'member', label: '个人护栏' },
+  { key: 'key', label: 'Key 护栏' },
+]
+const GATE_LABEL: Record<string, string> = {
+  guardrail_total: '工作空间总预算',
+  per_member: '个人预算',
+  per_api_key: 'Key 预算',
 }
+
 const PERIOD_UNIT_LABEL: Record<string, string> = {
   hour: '小时',
   day: '天',
   week: '周',
   month: '月',
 }
-const scopeLabel = (s: string) => SCOPE_LABEL[s] ?? s
 const periodLabel = (len: number, unit: string) => `${len}${PERIOD_UNIT_LABEL[unit] ?? unit}`
 
 interface Props {
@@ -93,6 +81,8 @@ interface Props {
   item: ApiKeyItem | null
   /** 行级动作权限（需求方#68）：按该行 Key 类型 × 动作取权限码 */
   canAction: (type: ApiKeyType, action: ApiKeyAction) => boolean
+  /** 查看明文权限（api_keys:reveal）：控制「复制完整 Key」入口 */
+  canReveal: boolean
   onToggleStatus: (item: ApiKeyItem) => void
   onRotate: (item: ApiKeyItem) => void
   onChangeOwner: (item: ApiKeyItem) => void
@@ -102,45 +92,27 @@ interface Props {
   rowScope?: string
 }
 
-export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction, onToggleStatus, onRotate, onChangeOwner, onEdit, onRevoke, rowScope }: Props) {
+export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction, canReveal, onToggleStatus, onRotate, onChangeOwner, onEdit, onRevoke, rowScope }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const { currency, symbol } = useCurrency()
   const keyId = item?.api_key_id
-
-  // 内联「调整限额」（PRD §9.2）——抽屉内直接改限额金额+周期，不走整表单。
-  // 用「正在编辑的 keyId」而非布尔：切换 Key 时编辑器自动收起，无需 effect。
-  const [editingForKeyId, setEditingForKeyId] = useState<string | null>(null)
-  const editingLimit = !!keyId && editingForKeyId === keyId
-  const [limitPeriod, setLimitPeriod] = useState<LimitPeriod>('none')
-  const [limitAmount, setLimitAmount] = useState('')
+  const { copy } = useCopy()
+  // 复制完整 Key（需求方#84 ①）：reveal 取回明文再复制，掩码只是展示
+  const [revealCopying, setRevealCopying] = useState(false)
   const commonTrack = { prd_version: 'api_keys_v0_1', ...(rowScope ? { row_scope: rowScope } : {}) }
 
-  const limitMutation = useMutation({
-    mutationFn: () => {
-      const value = buildSpendingLimit(limitPeriod, limitAmount, currency)
-      return updateApiKey(workspaceId, keyId!, {
-        spending_limit: { set: true, value: value ?? null },
-      })
-    },
-    onSuccess: () => {
-      appToast.success('限额已更新')
-      setEditingForKeyId(null)
-      queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
-      queryClient.invalidateQueries({ queryKey: ['api-key-detail', workspaceId, keyId] })
-      trackEvent('api_keys:limit_save', { ...commonTrack, new_limit_period: limitPeriod }, { result: 'success' })
-    },
-    onError: (err: unknown) => {
-      appToast.requestError(err, '限额更新失败')
-      trackEvent('api_keys:limit_save', { ...commonTrack, new_limit_period: limitPeriod }, { result: 'fail' })
-    },
-  })
-
-  function openLimitEditor(current: ApiKeyItem) {
-    setLimitPeriod(currentLimitPeriod(current))
-    setLimitAmount(current.limit?.amount && Number(current.limit.amount) > 0 ? current.limit.amount : '')
-    setEditingForKeyId(current.api_key_id)
+  async function copyFullKey(current: ApiKeyItem) {
+    if (revealCopying) return
+    setRevealCopying(true)
+    try {
+      const res = await revealApiKey(workspaceId, current.api_key_id)
+      await copy(res.key)
+      appToast.success('完整 Key 已复制')
+    } catch (err) {
+      appToast.requestError(err, '复制完整 Key 失败')
+    } finally {
+      setRevealCopying(false)
+    }
   }
 
   function jumpLogs(path: string) {
@@ -183,7 +155,6 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
   const responsible = responsibleOf(view)
   const creatorDiffers = view.owner?.account_id && responsible.account_id && view.owner.account_id !== responsible.account_id
   const usage = detail?.usage
-  const recentCalls = detail?.recent_calls ?? []
   const auditRows = audit?.items ?? detail?.recent_audit ?? []
   const isDisabled = view.status === 'disabled'
   const canToggle = isDisabled ? cap(view.capabilities?.can_enable, canAction(keyType, 'disable')) : cap(view.capabilities?.can_disable, canAction(keyType, 'disable'))
@@ -194,11 +165,23 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
 
   return (
     <SideSheet open={open} onClose={onClose} title={item.name} width={520}>
-      <div className="mt-4 space-y-6 overflow-y-auto pb-8">
+      <div className="mt-4 space-y-6 pb-8">
         {/* 治理动作 */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-xs text-mg-text-3">{view.masked}</span>
-          <CopyButton value={view.masked} aria-label="复制掩码 Key" toast="掩码 Key 已复制" size="sm" />
+          {canReveal && view.revealable && view.status === 'active' ? (
+            <button
+              type="button"
+              onClick={() => copyFullKey(view)}
+              aria-label="复制完整 Key"
+              title="复制完整 Key"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-md text-mg-text-3 transition-colors hover:bg-mg-fill-0 hover:text-mg-text-1"
+            >
+              {revealCopying ? <LuLoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <LuCopy className="h-3.5 w-3.5" />}
+            </button>
+          ) : (
+            <CopyButton value={view.masked} aria-label="复制掩码 Key" toast="掩码 Key 已复制" size="sm" />
+          )}
           <div className="ml-auto flex flex-wrap gap-2">
             {rotateEnabled && (
               <Button variant="outline" size="sm" onClick={() => onRotate(view)}>轮转</Button>
@@ -247,126 +230,108 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
           </div>
         )}
 
-        {/* 基础信息 */}
+        {/* 基础信息（原型 api-key-basic-grid：类型/负责人/到期时间 三格，需求方#84） */}
         <Section title="基础信息">
-          <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 divide-y divide-mg-border/50">
-            <Field label="类型" value={KEY_TYPE_LABEL[keyType]} />
-            <Field label="负责人" value={responsible.display_name || responsible.email || '—'} />
+          <div className="grid grid-cols-3 gap-2.5">
+            <Cell label="类型" value={KEY_TYPE_LABEL[keyType]} />
+            <Cell label="负责人" value={responsible.display_name || responsible.email || '—'} />
+            <Cell label="到期时间" value={view.expires_at ? formatDateTime(view.expires_at) : '永不过期'} />
             {creatorDiffers && (
-              <Field label="创建人" value={view.owner.display_name || view.owner.email || '—'} />
+              <Cell label="创建人" value={view.owner.display_name || view.owner.email || '—'} />
             )}
-            <Field label="状态" value={<StatusBadge status={view.status} statusMap={STATUS_MAP} fallback={view.status} />} />
-            <Field label="到期时间" value={view.expires_at ? formatDateTime(view.expires_at) : '永不过期'} />
-            <Field label="创建时间" value={view.created_at ? formatDateTime(view.created_at) : '—'} />
-            <Field label="最近调用时间" value={view.last_used_at ? formatDateTime(view.last_used_at) : '尚未调用'} />
           </div>
         </Section>
 
-        {/* 用量与限额 */}
-        <Section
-          title="用量与限额"
-          action={
-            !editingLimit && cap(view.capabilities?.can_update_limit, canEdit) && view.status !== 'revoked' ? (
-              <button
-                className="text-xs font-semibold text-brand-base hover:text-brand-deep transition-colors"
-                onClick={() => openLimitEditor(view)}
-              >
-                调整限额
-              </button>
-            ) : undefined
-          }
-        >
-          <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 divide-y divide-mg-border/50">
-            <Field label="本期消费" value={money(usage?.period_spend ?? periodSpendOf(view))} />
-            <Field label="请求数" value={usage?.request_count != null ? usage.request_count.toLocaleString() : '—'} />
-            <Field label="Tokens" value={usage?.token_count != null ? usage.token_count.toLocaleString() : '—'} />
-            <Field label="限额" value={formatLimit(view)} />
+        {/* 用量与限额（原型 api-key-usage-grid 三格；限额调整走「编辑」弹窗，原型无内联入口，需求方#84 ②） */}
+        <Section title="用量与限额">
+          <div className="grid grid-cols-3 gap-2.5">
+            <Cell label="本期消费" value={money(usage?.period_spend ?? periodSpendOf(view))} />
+            <Cell label="请求数" value={usage?.request_count != null ? usage.request_count.toLocaleString() : '—'} />
+            <Cell label="Tokens" value={usage?.token_count != null ? usage.token_count.toLocaleString() : '—'} />
           </div>
-
-          {/* 内联调整限额 */}
-          {editingLimit && (
-            <div className="mt-2 rounded-md border border-mg-border bg-mg-fill-0/40 p-3 space-y-2.5">
-              <div className="flex gap-2.5">
-                <Input
-                  type="number" min="0" step="0.01"
-                  value={limitAmount}
-                  onChange={(e) => setLimitAmount(e.target.value)}
-                  placeholder="0.00"
-                  disabled={limitPeriod === 'none'}
-                  prefix={<span className="text-xs text-mg-text-3 font-mono select-none">{symbol}</span>}
-                  className="flex-1"
-                />
-                <Select value={limitPeriod} onChange={(v) => setLimitPeriod(v as LimitPeriod)} className="w-24">
-                  {LIMIT_PERIOD_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </Select>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" size="sm" onClick={() => setEditingForKeyId(null)}>取消</Button>
-                <Button variant="brand" size="sm" loading={limitMutation.isPending} onClick={() => limitMutation.mutate()}>
-                  保存限额
-                </Button>
-              </div>
-            </div>
-          )}
         </Section>
 
-        {/* 安全护栏 */}
+        {/* 安全护栏（原型 EffectiveApiKeyGuardrailPreviewPanel，需求方#84） */}
         <Section title="安全护栏">
-          {(view.guardrails ?? []).length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {(view.guardrails ?? []).map((g) => (
-                <span key={g.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-500/10 border border-green-500/25 text-green-600">
-                  <LuShieldCheck className="w-3 h-3" />
-                  {g.name}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-mg-text-3">未绑定 Key 护栏</p>
-          )}
+          {effective ? (
+            <div className="space-y-3">
+              {/* 生效规则预览：全局 / 个人 / Key 三槽 */}
+              <div>
+                <div className="mb-1.5 text-xs font-bold text-mg-text-2">生效规则预览</div>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {LAYER_SLOTS.map((slot) => {
+                    const layer = effective.layers.find((l) => l.layer === slot.key)
+                    return (
+                      <Cell
+                        key={slot.key}
+                        label={slot.label}
+                        value={layer ? layer.guardrail_name || '—' : <span className="font-normal text-mg-text-3">—</span>}
+                      />
+                    )
+                  })}
+                </div>
+              </div>
 
-          {/* 三层生效护栏预览（qa#379）：resolver 合并后的最终生效规则 */}
-          {effective && (
-            <div className="mt-2 rounded-md border border-mg-border bg-mg-fill-0/40 p-3 space-y-2">
-              <div className="text-xs font-bold text-mg-text-2">生效预览</div>
+              {/* 预算闸门：按聚合口径逐档 + 来源护栏 */}
               {effective.effective.budgets.length > 0 && (
-                <div className="space-y-1">
-                  {effective.effective.budgets.map((b, i) => (
-                    <div key={i} className="flex items-center justify-between text-xs">
-                      <span className="text-mg-text-3">{scopeLabel(b.aggregation_scope)}预算</span>
-                      <span className="font-semibold text-mg-text-1">
-                        {money({ amount: b.spend_limit_amount, currency: b.currency })} / {periodLabel(b.period_length, b.period_unit)}
-                      </span>
+                <div>
+                  <div className="mb-1.5 text-xs font-bold text-mg-text-2">预算闸门</div>
+                  <div className="space-y-2">
+                    {effective.effective.budgets.map((b, i) => {
+                      const source = effective.layers.find((l) => l.guardrail_id === b.source_guardrail_id)?.guardrail_name
+                      return (
+                        <div key={i} className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
+                          <div className="text-xs text-mg-text-3">{GATE_LABEL[b.aggregation_scope] ?? b.aggregation_scope}</div>
+                          <div className="mt-1 text-sm font-bold text-mg-text-1">
+                            {money({ amount: b.spend_limit_amount, currency: b.currency })} / {periodLabel(b.period_length, b.period_unit)}
+                          </div>
+                          {source && <div className="mt-0.5 truncate text-xs text-mg-text-3">{source}</div>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 模型黑名单 / IP 白名单（有值才显示，含规则来源） */}
+              {(effective.effective.model_blacklist.length > 0 || effective.effective.ip_whitelist.length > 0) && (
+                <div className="grid grid-cols-2 gap-2.5">
+                  {effective.effective.model_blacklist.length > 0 && (
+                    <div className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
+                      <div className="text-xs text-mg-text-3">模型黑名单</div>
+                      <div className="mt-1 break-all text-xs font-semibold leading-relaxed text-mg-text-1">
+                        {effective.effective.model_blacklist.join(' / ')}
+                      </div>
                     </div>
-                  ))}
+                  )}
+                  {effective.effective.ip_whitelist.length > 0 && (
+                    <div className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
+                      <div className="text-xs text-mg-text-3">IP 白名单</div>
+                      <div className="mt-1 break-all font-mono text-xs font-semibold leading-relaxed text-mg-text-1">
+                        {effective.effective.ip_whitelist.join(', ')}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
-              {effective.effective.model_blacklist.length > 0 && (
-                <div className="text-xs">
-                  <span className="text-mg-text-3">模型黑名单：</span>
-                  <span className="text-mg-text-1">{effective.effective.model_blacklist.join('、')}</span>
-                </div>
-              )}
-              {effective.effective.ip_whitelist.length > 0 && (
-                <div className="text-xs">
-                  <span className="text-mg-text-3">IP 白名单：</span>
-                  <span className="font-mono text-mg-text-1">{effective.effective.ip_whitelist.join(', ')}</span>
-                </div>
-              )}
+
               {effective.effective.budgets.length === 0 &&
                 effective.effective.model_blacklist.length === 0 &&
                 effective.effective.ip_whitelist.length === 0 && (
                   <p className="text-xs text-mg-text-3">无生效限制</p>
                 )}
-              {/* enforcement_note 后端目前返回的是开发向说明（提及 CheckGuardrail/global_default/aggregation_scope 等内部实现），
-                  不面向终端用户，暂不渲染；待后端改为用户可读文案后再放开（已在联调单反馈）。 */}
+              {/* enforcement_note 后端目前是开发向说明，不面向终端用户，暂不渲染（已在联调单反馈） */}
             </div>
+          ) : (view.guardrails ?? []).length > 0 ? (
+            <p className="text-xs text-mg-text-3">
+              已绑定 {(view.guardrails ?? []).map((g) => g.name).join('、')}（生效预览接口暂不可用）
+            </p>
+          ) : (
+            <p className="text-xs text-mg-text-3">未绑定 Key 护栏</p>
           )}
         </Section>
 
-        {/* 最近调用 */}
+        {/* 最近调用（原型 api-key-call-row 单卡摘要，需求方#84） */}
         <Section
           title="最近调用"
           action={
@@ -378,38 +343,31 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
             </button>
           }
         >
-          {recentCalls.length > 0 ? (
-            <div className="space-y-1.5">
-              {recentCalls.slice(0, 5).map((c) => (
-                <button
-                  key={c.log_id}
-                  onClick={() => jumpLogs(`/workspace/${workspaceId}/logs?log_id=${c.log_id}`)}
-                  className="flex w-full items-center justify-between gap-3 rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2 text-left transition-colors hover:border-brand-base/35"
-                >
-                  <span className="min-w-0 flex-1 truncate font-mono text-xs text-mg-text-2">{c.model}</span>
-                  <span className="text-xs text-mg-text-3">{formatDateTime(c.created_at)}</span>
-                  <span className="font-mono text-xs text-mg-text-1">{money(c.cost)}</span>
-                </button>
-              ))}
+          {view.last_used_at ? (
+            <div className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
+              <div className="text-sm font-bold text-mg-text-1">{formatDateTime(view.last_used_at)}</div>
+              <div className="mt-0.5 text-xs text-mg-text-3">
+                {usage?.request_count != null ? `${usage.request_count.toLocaleString()} requests` : '—'}
+                {' · '}
+                {money(usage?.period_spend ?? periodSpendOf(view))}
+              </div>
             </div>
           ) : (
-            <p className="text-xs text-mg-text-3">{view.last_used_at ? '暂无明细（详情接口待上线）' : '尚未调用'}</p>
+            <p className="text-xs text-mg-text-3">尚未调用</p>
           )}
         </Section>
 
         {/* 操作审计 */}
         <Section title="操作审计">
           {auditRows.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {auditRows.slice(0, 8).map((a) => (
-                <div key={a.id} className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-mg-text-1">{a.action}</span>
-                    <span className="text-xs text-mg-text-3">{formatDateTime(a.created_at)}</span>
-                  </div>
+                <div key={a.id} className="border-l-2 border-mg-border pl-3">
+                  <div className="text-xs font-bold text-mg-text-1">{a.action}</div>
                   <div className="mt-0.5 text-xs text-mg-text-3">
-                    {a.actor_display || a.actor_account_id}
+                    {formatDateTime(a.created_at)} · {a.actor_display || a.actor_account_id}
                   </div>
+                  {a.target_label && <p className="mt-0.5 text-xs leading-relaxed text-mg-text-2">{a.target_label}</p>}
                 </div>
               ))}
             </div>

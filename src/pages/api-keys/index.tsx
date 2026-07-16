@@ -511,6 +511,7 @@ export default function ApiKeysPage() {
         workspaceId={workspaceId}
         item={detailKey}
         canAction={canAction}
+        canReveal={canReveal}
         rowScope={rowScope}
         onToggleStatus={handleToggleStatus}
         onRotate={(item) => rotateMutation.mutate(item)}

@@ -201,15 +201,18 @@ export function LogsTable({
                 {isModelNotStarted(row) ? (
                   <div className="min-w-0">
                     <strong className="block text-mg-text-3">—</strong>
-                    <span className="block mg-text-caption text-mg-text-3">{t('logs.metrics.notStarted')}</span>
+                    <span className="block mg-text-caption text-mg-text-3">{t('logs.metrics.noTokens')}</span>
                   </div>
                 ) : row.usage.total_tokens > 0 ? (
                   <div className="min-w-0">
                     <strong className="block font-mono font-bold tabular-nums text-mg-text-1">
-                      {formatNumber(row.usage.total_tokens)}
+                      总 Token {formatNumber(row.usage.total_tokens)}
                     </strong>
                     <span className="block font-mono tabular-nums mg-text-caption text-mg-text-3">
-                      输入 {formatNumber(row.usage.input_tokens)} · 输出 {formatNumber(row.usage.output_tokens)}
+                      输入 {formatNumber(row.usage.input_tokens)}
+                    </span>
+                    <span className="block font-mono tabular-nums mg-text-caption text-mg-text-3">
+                      输出 {formatNumber(row.usage.output_tokens)}
                     </span>
                   </div>
                 ) : (
@@ -229,15 +232,15 @@ export function LogsTable({
                 {isModelNotStarted(row) ? (
                   <div className="min-w-0">
                     <strong className="block text-mg-text-3">—</strong>
-                    <span className="block mg-text-caption text-mg-text-3">{t('logs.metrics.notStarted')}</span>
+                    <span className="block mg-text-caption text-mg-text-3">{t('logs.metrics.noResponse')}</span>
                   </div>
                 ) : (
                   <div className="min-w-0">
-                    <strong className={cn('block font-mono font-bold tabular-nums', durationTone(row.duration_ms))}>
-                      {formatMaybeDuration(row.duration_ms)}
+                    <strong className={cn('block font-mono font-bold tabular-nums', row.speed.first_token_ms > 0 ? durationTone(row.speed.first_token_ms) : 'text-mg-text-3')}>
+                      首包 {row.speed.first_token_ms > 0 ? formatDuration(row.speed.first_token_ms) : '—'}
                     </strong>
                     <span className="block font-mono tabular-nums mg-text-caption text-mg-text-3">
-                      首包 {row.speed.first_token_ms > 0 ? formatDuration(row.speed.first_token_ms) : '-'}
+                      总计 {formatMaybeDuration(row.duration_ms)}
                     </span>
                   </div>
                 )}

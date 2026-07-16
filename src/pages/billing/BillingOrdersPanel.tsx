@@ -11,7 +11,7 @@ import { Pagination } from '@/components/ui/Pagination'
 import type { StatusConfig } from '@/components/ui/StatusBadge'
 import { appToast } from '@/lib/app-toast'
 import { formatDateTime } from '@/lib/format-date'
-import { cn } from '@/lib/utils'
+import { cn, formatMoney } from '@/lib/utils'
 import { referralCopy } from '@/pages/referral/referral-data'
 import type { RechargeOrder } from '@/types'
 import { getRechargeOrderChannelDisplayName } from '@/constants/recharge-channels'
@@ -475,11 +475,11 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
                         </div>
                       </TableCell>
                       <TableCell>{renderTierBadge(rec.tierName)}</TableCell>
-                      <TableCell align="right" className="text-xs text-mg-text-2 font-mono">¥{Number(rec.spend).toLocaleString('zh-CN')}</TableCell>
+                      <TableCell align="right" className="text-xs text-mg-text-2 font-mono">{formatMoney(rec.spend)}</TableCell>
                       <TableCell align="right">
                         <span className="bg-brand-glow/10 text-brand-base text-xs font-bold px-1.5 py-0.5 rounded-md border border-brand-base/10 font-mono">{rec.rate}%</span>
                       </TableCell>
-                      <TableCell align="right" className="text-xs font-bold text-mg-success font-mono">+¥{Number(rec.amount).toLocaleString('zh-CN')}</TableCell>
+                      <TableCell align="right" className="text-xs font-bold text-mg-success font-mono">+{formatMoney(rec.amount)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

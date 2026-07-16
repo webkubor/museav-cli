@@ -16,7 +16,7 @@ export interface ReferralStats {
   activeInvited: number
   /** 已邀请总数 */
   invitedTotal: number
-  /** 奖励余额（可转入主余额 / 提现） */
+  /** 奖励余额（可转入主余额） */
   rewardBalance: string
 }
 
@@ -68,15 +68,6 @@ export interface ReferralCommissionRecord {
   tierName?: string
 }
 
-export type WithdrawalStatus = 'pending' | 'approved' | 'rejected'
-
-export interface ReferralWithdrawal {
-  appliedAt: string
-  amount: string
-  status: WithdrawalStatus
-  paidAt: string | null
-}
-
 export interface ReferralData {
   stats: ReferralStats
   inviteLink: string
@@ -84,7 +75,6 @@ export interface ReferralData {
   tier: ReferralTier
   invitees: ReferralInvitee[]
   commissions: ReferralCommissionRecord[]
-  withdrawals: ReferralWithdrawal[]
 }
 export const referralCopy = {
   zh: {
@@ -100,32 +90,15 @@ export const referralCopy = {
     transferModalHint: '可提取 {balance} · 单次≥¥100',
     transferConfirm: '确认转入',
     transferBalanceLabel: '可转入奖励余额',
-    withdrawBalanceLabel: '可提现奖励余额',
     ruleMin: '单次 ≥ ¥100',
     amountLabel: '转入金额',
     fillAll: '全部转入',
-    withdrawFillAll: '全部提现',
     errTooLow: '单次最低 ¥100',
     errExceed: '超出可用奖励余额',
     cancel: '取消',
     transferSuccess: '已成功转入 {amount} 到主余额',
     belowMin: '奖励余额需满 ¥100 才可操作',
     transferFailed: '转入失败，请稍后重试',
-    requestWithdrawal: '申请提现',
-    withdrawTitle: '申请提现',
-    withdrawModalHint: '可提现奖励余额 {balance} · 单次≥¥100',
-    withdrawAmountLabel: '提现金额',
-    withdrawMethodLabel: '收款方式',
-    methodAlipay: '支付宝',
-    methodBank: '银行卡',
-    alipayPlaceholder: '支付宝账号（手机号 / 邮箱）',
-    bankNamePlaceholder: '银行名称（如：招商银行）',
-    bankCardPlaceholder: '银行卡号',
-    bankHolderPlaceholder: '账户名称（开户人）',
-    withdrawNote: '提现申请提交后金额从奖励余额冻结，经运营审核通过后人工线下打款；驳回则退回奖励余额。',
-    withdrawSubmit: '提交提现申请',
-    withdrawSuccess: '提现申请已提交，等待运营审核',
-    withdrawFailed: '提现申请失败，请稍后重试',
     inviteLinkLabel: '我的专属邀请链接',
     copy: '复制',
     copied: '已复制',
@@ -146,7 +119,6 @@ export const referralCopy = {
     rules: '被邀请人每次实际付费消费实时计返佣（退款冲回、赠送/兑换码额度消费不计），按当前档位比例结算至奖励余额；奖励余额满 ¥100 可转入主余额继续消费，或申请提现（运营审核后人工线下打款）。返佣不封顶；平台对同主体 / 同 IP·设备 / 异常刷量保留核查与冻结权。返佣档位、比例、门槛由平台统一配置。',
     tabInvitees: '被邀请人',
     tabCommissions: '返佣流水',
-    tabWithdrawals: '提现记录',
     colInvitee: '被邀请人',
     colRegisteredAt: '注册时间',
     colTotalSpend: '累计消费',
@@ -158,13 +130,6 @@ export const referralCopy = {
     colRate: '比例',
     colTier: '档位',
     colAmount: '返佣',
-    colAppliedAt: '申请时间',
-    colWithdrawAmount: '金额',
-    colStatus: '状态',
-    colPaidAt: '到账时间',
-    statusPending: '审核中',
-    statusApproved: '已打款',
-    statusRejected: '已驳回',
     notYet: '—',
     empty: '暂无记录',
     gateTitle: '充值后开通推荐返佣',
@@ -185,32 +150,15 @@ export const referralCopy = {
     transferModalHint: 'Available {balance} · min ¥100 per transfer',
     transferConfirm: 'Confirm Transfer',
     transferBalanceLabel: 'Transferable reward balance',
-    withdrawBalanceLabel: 'Withdrawable reward balance',
     ruleMin: 'Min ¥100 per request',
     amountLabel: 'Amount',
     fillAll: 'Max',
-    withdrawFillAll: 'Max',
     errTooLow: 'Minimum ¥100 per request',
     errExceed: 'Exceeds available balance',
     cancel: 'Cancel',
     transferSuccess: 'Successfully transferred {amount} to main balance',
     belowMin: 'Reward balance must reach ¥100 to proceed',
     transferFailed: 'Transfer failed, please retry later',
-    requestWithdrawal: 'Withdraw',
-    withdrawTitle: 'Request Withdrawal',
-    withdrawModalHint: 'Withdrawable reward balance {balance} · min ¥100',
-    withdrawAmountLabel: 'Amount',
-    withdrawMethodLabel: 'Payout Method',
-    methodAlipay: 'Alipay',
-    methodBank: 'Bank Card',
-    alipayPlaceholder: 'Alipay account (phone / email)',
-    bankNamePlaceholder: 'Bank name (e.g. CMB)',
-    bankCardPlaceholder: 'Card number',
-    bankHolderPlaceholder: 'Account holder name',
-    withdrawNote: 'Once submitted, the amount is frozen from your reward balance and paid offline after operations review; rejected requests are returned to your reward balance.',
-    withdrawSubmit: 'Submit Request',
-    withdrawSuccess: 'Withdrawal request submitted, pending review',
-    withdrawFailed: 'Withdrawal request failed, please retry later',
     inviteLinkLabel: 'My Referral Link',
     copy: 'Copy',
     copied: 'Copied',
@@ -230,7 +178,6 @@ export const referralCopy = {
     rules: 'Commission accrues in real time on each actual paid spend (refunds are clawed back; gifted/redeemed credits excluded), settled to your reward balance at the current tier rate. Once the reward balance reaches ¥100 it can be transferred to your main balance or withdrawn (paid offline after operations review). No cap; the platform reserves the right to audit and freeze same-entity / same-IP·device / abnormal farming. Tiers, rates and thresholds are configured by the platform.',
     tabInvitees: 'Invitees',
     tabCommissions: 'Commission Log',
-    tabWithdrawals: 'Withdrawals',
     colInvitee: 'Invitee',
     colRegisteredAt: 'Registered',
     colTotalSpend: 'Total Spend',
@@ -242,13 +189,6 @@ export const referralCopy = {
     colRate: 'Rate',
     colTier: 'Tier',
     colAmount: 'Commission',
-    colAppliedAt: 'Applied',
-    colWithdrawAmount: 'Amount',
-    colStatus: 'Status',
-    colPaidAt: 'Paid At',
-    statusPending: 'Reviewing',
-    statusApproved: 'Paid',
-    statusRejected: 'Rejected',
     notYet: '—',
     empty: 'No records',
     gateTitle: 'Unlock referral program',

@@ -19,7 +19,7 @@ import { Composer } from '@/components/ui/Composer'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { useModels } from '@/features/models/hooks/useModels'
 import { appToast } from '@/lib/app-toast'
-import { cn, formatContextLength, formatModelPrice } from '@/lib/utils'
+import { cn, formatContextLength, formatModelPrice, formatMoney } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import {
   categories,
@@ -167,7 +167,7 @@ export default function ModelsPage() {
             <LuGift size={14} className="text-brand-base shrink-0" />
             <span className="text-xs font-semibold text-mg-text-3 leading-none">{text.freeQuota}</span>
             <span className="text-sm font-bold text-brand-base tabular-nums leading-none">
-              ¥{giftBalance.toLocaleString('zh-CN')}
+              {formatMoney(giftBalance)}
             </span>
           </button>
           <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-bold" onClick={() => setIsCompareOpen(true)}>

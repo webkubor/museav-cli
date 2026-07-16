@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
-import { cn } from '@/lib/utils'
+import { cn, formatMoney } from '@/lib/utils'
 import { useTranslation } from 'react-i18next'
 import { LuCoins, LuTrendingUp, LuUsers, LuWallet, LuSparkles, LuLock } from 'react-icons/lu'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
 import {
   Table,
   TableHeader,
@@ -25,7 +24,6 @@ import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
-import { useClientPage } from '@/hooks/use-client-page'
 import { useCursorPager } from '@/hooks/use-cursor-pager'
 import { trackPageView } from '@/lib/track'
 
@@ -33,9 +31,7 @@ import {
   getReferralOverview,
   listReferralInvitees,
   listRewardRecords,
-  listWithdrawals,
   transferRewardToBalance,
-  requestWithdrawal,
 } from '@/services/referral'
 
 import {
@@ -43,36 +39,15 @@ import {
   type ReferralCommissionRecord,
   type ReferralInvitee,
   type ReferralStats,
-  type ReferralWithdrawal,
-  type WithdrawalStatus,
 } from './referral-data'
 
-// 金额字段为字符串（后端约定），统一在此解析为数字再格式化。
-// 返佣多为亚分级（#273）：最多保留 4 位小数；正向极小值（0<n<0.0001）显示
-// "< ¥0.0001" 而非被舍入成 0，避免"已产生返佣却展示 0"。
-const fmt = (n: number | string) => {
-  const v = Number(n)
-  if (!Number.isFinite(v)) return '¥0'
-  if (v > 0 && v < 0.0001) return '< ¥0.0001'
-  return '¥' + v.toLocaleString('zh-CN', { maximumFractionDigits: 4 })
-}
+// 金额展示统一走 @/lib/utils 的 formatMoney（全站单一口径，含亚分级 <¥0.0001 特例，#273）。
 
-type TabKey = 'invitees' | 'commissions' | 'withdrawals'
-
-// 1.0 暂不开放提现：隐藏所有提现入口/记录/文案，功能代码保留，置 true 即可恢复
-const WITHDRAW_ENABLED = false
-
-const WITHDRAWAL_STATUS_VARIANT: Record<WithdrawalStatus, 'warning' | 'success' | 'outline'> = {
-  pending: 'warning',
-  approved: 'success',
-  rejected: 'outline',
-}
+type TabKey = 'invitees' | 'commissions'
 
 export default function ReferralPage() {
   const { i18n } = useTranslation()
   const { hasPermission } = usePermissions()
-  // 提现入口:功能开关 + referral.reward:withdraw 权限双重门（#479）；开关一开也不会对无权限者裸奔
-  const canWithdraw = WITHDRAW_ENABLED && hasPermission(PERMS.REFERRAL_REWARD_WITHDRAW)
   // 转入主余额入口：现网老功能，referral.reward:transfer 权限门；V1.0.3 范围内保留（1.0.4 才移除，不提前套用）
   const canTransfer = hasPermission(PERMS.REFERRAL_REWARD_TRANSFER)
   const text = i18n.language.startsWith('zh') ? referralCopy.zh : referralCopy.en
@@ -130,12 +105,6 @@ export default function ReferralPage() {
   useEffect(() => {
     resetRewardPager()
   }, [tenantId, resetRewardPager])
-  const { data: withdrawalList = [] } = useQuery({
-    queryKey: ['referral', 'withdrawals', tenantId],
-    queryFn: () => listWithdrawals(tenantId),
-    enabled: !!tenantId,
-    staleTime: 60_000,
-  })
 
   const emptyStats: ReferralStats = {
     totalCommission: '0',
@@ -152,10 +121,9 @@ export default function ReferralPage() {
   // 未首充时 inviteCode 为空字符串：整页门槛态
   const isQualified = !!inviteCode
 
-  /** 转出/提现成功后刷新所有受影响的余额与记录视图 */
+  /** 转出成功后刷新所有受影响的余额与记录视图 */
   const invalidateMoneyViews = () => {
     queryClient.invalidateQueries({ queryKey: ['referral', 'overview', tenantId] })
-    queryClient.invalidateQueries({ queryKey: ['referral', 'withdrawals', tenantId] })
     queryClient.invalidateQueries({ queryKey: ['referral', 'reward-records', tenantId] })
     queryClient.invalidateQueries({ queryKey: ['balance', tenantId] })
     queryClient.invalidateQueries({ queryKey: ['balance', 'breakdown', tenantId] })
@@ -172,25 +140,8 @@ export default function ReferralPage() {
   const [transferOpen, setTransferOpen] = useState(false)
   const [transferAmount, setTransferAmount] = useState('')
 
-  // 申请提现弹窗
-  const [withdrawOpen, setWithdrawOpen] = useState(false)
-  const [withdrawAmount, setWithdrawAmount] = useState('')
-  const [payMethod, setPayMethod] = useState<'alipay' | 'bank'>('alipay')
-  const [alipayAccount, setAlipayAccount] = useState('')
-  const [bankName, setBankName] = useState('')
-  const [bankCard, setBankCard] = useState('')
-  const [bankHolder, setBankHolder] = useState('')
-
   const transferNum = Number(transferAmount)
   const transferValid = transferNum >= MIN_AMOUNT && transferNum <= rewardBalance
-
-  const withdrawNum = Number(withdrawAmount)
-  const withdrawAmountValid = withdrawNum >= MIN_AMOUNT && withdrawNum <= rewardBalance
-  const accountValid =
-    payMethod === 'alipay'
-      ? alipayAccount.trim().length > 0
-      : bankName.trim().length > 0 && bankCard.trim().length > 0 && bankHolder.trim().length > 0
-  const withdrawValid = withdrawAmountValid && accountValid
 
   const handleTransfer = () => {
     if (rewardBalance < MIN_AMOUNT) {
@@ -208,11 +159,6 @@ export default function ReferralPage() {
     setTransferAmount(v)
   }
 
-  const onWithdrawAmountChange = (v: string) => {
-    setIdempotencyKey(crypto.randomUUID())
-    setWithdrawAmount(v)
-  }
-
   const transferMutation = useMutation({
     mutationFn: () =>
       transferRewardToBalance(tenantId, {
@@ -222,7 +168,7 @@ export default function ReferralPage() {
     onSuccess: () => {
       invalidateMoneyViews()
       setTransferOpen(false)
-      appToast.success(text.transferSuccess.replace('{amount}', fmt(transferNum)))
+      appToast.success(text.transferSuccess.replace('{amount}', formatMoney(transferNum)))
     },
     onError: (err: Error) => appToast.requestError(err, text.transferFailed),
   })
@@ -230,31 +176,6 @@ export default function ReferralPage() {
   const confirmTransfer = () => {
     if (!transferValid || transferMutation.isPending) return
     transferMutation.mutate()
-  }
-
-  const withdrawMutation = useMutation({
-    mutationFn: () =>
-      requestWithdrawal(tenantId, {
-        amount: String(withdrawNum),
-        method: payMethod,
-        idempotency_key: idempotencyKey,
-        alipay_account: payMethod === 'alipay' ? alipayAccount.trim() : undefined,
-        bank_name: payMethod === 'bank' ? bankName.trim() : undefined,
-        bank_card: payMethod === 'bank' ? bankCard.trim() : undefined,
-        bank_holder: payMethod === 'bank' ? bankHolder.trim() : undefined,
-      }),
-    onSuccess: () => {
-      invalidateMoneyViews()
-      setWithdrawOpen(false)
-      setActiveTab('withdrawals')
-      appToast.success(text.withdrawSuccess)
-    },
-    onError: (err: Error) => appToast.requestError(err, text.withdrawFailed),
-  })
-
-  const submitWithdraw = () => {
-    if (!withdrawValid || withdrawMutation.isPending) return
-    withdrawMutation.mutate()
   }
 
   /** 金额只留数字 + 最多一个小数点、两位小数（type=text 规避原生 spinner 与 step 校验气泡） */
@@ -278,7 +199,7 @@ export default function ReferralPage() {
     <div className="flex items-center justify-between rounded-lg border border-mg-border/60 bg-mg-fill-0/50 px-4 py-3">
       <div>
         <div className="text-xs text-mg-text-3">{label}</div>
-        <div className="mt-0.5 font-mono text-xl font-bold tabular-nums text-mg-text-1">{fmt(rewardBalance)}</div>
+        <div className="mt-0.5 font-mono text-xl font-bold tabular-nums text-mg-text-1">{formatMoney(rewardBalance)}</div>
       </div>
       <span className="rounded-full border border-mg-border/60 bg-mg-fill-0/60 px-2.5 py-1 text-xs font-semibold text-mg-text-2">
         {text.ruleMin}
@@ -322,7 +243,6 @@ export default function ReferralPage() {
   const tabs: { key: TabKey; label: string }[] = [
     { key: 'invitees', label: text.tabInvitees },
     { key: 'commissions', label: text.tabCommissions },
-    ...(canWithdraw ? [{ key: 'withdrawals' as TabKey, label: text.tabWithdrawals }] : []),
   ]
 
   const isZh = i18n.language.startsWith('zh')
@@ -343,14 +263,14 @@ export default function ReferralPage() {
       <div className="no-canvas-blur grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         <KpiCard
           title={text.kpiTotalCommission}
-          value={fmt(stats.totalCommission)}
+          value={formatMoney(stats.totalCommission)}
           icon={<LuCoins size={16} />}
           color="var(--brand-base)"
           glowColor="var(--brand-glow)"
         />
         <KpiCard
           title={text.kpiMonthCommission}
-          value={fmt(stats.monthCommission)}
+          value={formatMoney(stats.monthCommission)}
           icon={<LuTrendingUp size={16} />}
           color="var(--brand-base)"
           glowColor="var(--brand-glow)"
@@ -365,7 +285,7 @@ export default function ReferralPage() {
 
         <KpiCard
           title={text.kpiRewardBalance}
-          value={fmt(rewardBalance)}
+          value={formatMoney(rewardBalance)}
           icon={<LuWallet size={16} />}
           color="var(--brand-base)"
           glowColor="var(--brand-glow)"
@@ -532,11 +452,6 @@ export default function ReferralPage() {
               onNext={() => rewardPager.next(rewardRecordsPage?.next_cursor)}
             />
           </TabsContent>
-          {canWithdraw && (
-            <TabsContent value="withdrawals" className="mt-0">
-              <WithdrawalsTable withdrawals={withdrawalList} text={text} />
-            </TabsContent>
-          )}
         </Tabs>
       </div>
 
@@ -552,7 +467,7 @@ export default function ReferralPage() {
               {text.cancel}
             </Button>
             <Button variant="brand" disabled={!transferValid} onClick={confirmTransfer}>
-              {transferValid ? `${text.transferConfirm} ${fmt(transferNum)}` : text.transferConfirm}
+              {transferValid ? `${text.transferConfirm} ${formatMoney(transferNum)}` : text.transferConfirm}
             </Button>
           </div>
         }
@@ -563,85 +478,6 @@ export default function ReferralPage() {
             <label className="text-xs font-semibold text-mg-text-2">{text.amountLabel}</label>
             {moneyField(transferAmount, onTransferAmountChange, text.fillAll)}
           </div>
-        </div>
-      </Modal>
-
-      {/* 申请提现 */}
-      <Modal
-        open={withdrawOpen}
-        onClose={() => setWithdrawOpen(false)}
-        title={text.withdrawTitle}
-        size="sm"
-        footer={
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setWithdrawOpen(false)}>
-              {text.cancel}
-            </Button>
-            <Button variant="brand" disabled={!withdrawValid} onClick={submitWithdraw}>
-              {withdrawValid ? `${text.withdrawSubmit} ${fmt(withdrawNum)}` : text.withdrawSubmit}
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-4 py-1">
-          {balancePanel(text.withdrawBalanceLabel)}
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-mg-text-2">{text.withdrawAmountLabel}</label>
-            {moneyField(withdrawAmount, onWithdrawAmountChange, text.withdrawFillAll)}
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-mg-text-2">{text.withdrawMethodLabel}</label>
-            <div className="flex gap-2">
-              {(['alipay', 'bank'] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setPayMethod(m)}
-                  className={`flex-1 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
-                    payMethod === m
-                      ? 'border-brand-base text-brand-base bg-[var(--brand-base)]/5'
-                      : 'border-mg-border text-mg-text-2 hover:text-mg-text-1'
-                  }`}
-                >
-                  {m === 'alipay' ? text.methodAlipay : text.methodBank}
-                </button>
-              ))}
-            </div>
-
-            {payMethod === 'alipay' ? (
-              <input
-                value={alipayAccount}
-                onChange={(e) => setAlipayAccount(e.target.value)}
-                placeholder={text.alipayPlaceholder}
-                className="w-full rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 text-sm text-mg-text-1 outline-none placeholder:text-mg-text-3 focus:border-brand-base"
-              />
-            ) : (
-              <div className="space-y-2">
-                <input
-                  value={bankName}
-                  onChange={(e) => setBankName(e.target.value)}
-                  placeholder={text.bankNamePlaceholder}
-                  className="w-full rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 text-sm text-mg-text-1 outline-none placeholder:text-mg-text-3 focus:border-brand-base"
-                />
-                <input
-                  value={bankCard}
-                  onChange={(e) => setBankCard(e.target.value)}
-                  placeholder={text.bankCardPlaceholder}
-                  className="w-full rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 font-mono text-sm text-mg-text-1 outline-none placeholder:text-mg-text-3 focus:border-brand-base"
-                />
-                <input
-                  value={bankHolder}
-                  onChange={(e) => setBankHolder(e.target.value)}
-                  placeholder={text.bankHolderPlaceholder}
-                  className="w-full rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 text-sm text-mg-text-1 outline-none placeholder:text-mg-text-3 focus:border-brand-base"
-                />
-              </div>
-            )}
-          </div>
-
-          <p className="text-xs leading-relaxed text-mg-text-3">{text.withdrawNote}</p>
         </div>
       </Modal>
     </div>
@@ -729,8 +565,8 @@ function InviteesTable({
                   <div className="font-medium text-mg-text-1">{inv.name}</div>
                   <div className="text-xs text-mg-text-3 mt-0.5">{inv.email}</div>
                 </TableCell>
-                <TableCell className="text-right font-mono">{fmt(inv.totalSpend)}</TableCell>
-                <TableCell className="text-right font-mono">{fmt(inv.commission)}</TableCell>
+                <TableCell className="text-right font-mono">{formatMoney(inv.totalSpend)}</TableCell>
+                <TableCell className="text-right font-mono">{formatMoney(inv.commission)}</TableCell>
                 <TableCell>{inv.registeredAt}</TableCell>
                 <TableCell>
                   <TierBadge name={tierName} rate={tierRate} fallback={text.notYet} />
@@ -802,9 +638,9 @@ function CommissionsTable({
               <TableCell>
                 <TierBadge name={rec.tierName} fallback={text.notYet} />
               </TableCell>
-              <TableCell className="text-right font-mono">{fmt(rec.spend)}</TableCell>
+              <TableCell className="text-right font-mono">{formatMoney(rec.spend)}</TableCell>
               <TableCell className="text-right font-mono">{rec.rate}%</TableCell>
-              <TableCell className="text-right font-mono">{fmt(rec.amount)}</TableCell>
+              <TableCell className="text-right font-mono">{formatMoney(rec.amount)}</TableCell>
             </TableRow>
           ))
         )}
@@ -820,61 +656,6 @@ function CommissionsTable({
         onPrev={onPrev}
         onNext={onNext}
       />
-    )}
-    </>
-  )
-}
-
-function WithdrawalsTable({
-  withdrawals,
-  text,
-}: {
-  withdrawals: ReferralWithdrawal[]
-  text: TextCopy
-}) {
-  const statusLabel: Record<WithdrawalStatus, string> = {
-    pending: text.statusPending,
-    approved: text.statusApproved,
-    rejected: text.statusRejected,
-  }
-  const { paged, page, setPage, total, pageSize } = useClientPage(withdrawals)
-
-  return (
-    <>
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>{text.colAppliedAt}</TableHead>
-          <TableHead className="text-right">{text.colWithdrawAmount}</TableHead>
-          <TableHead>{text.colStatus}</TableHead>
-          <TableHead>{text.colPaidAt}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {withdrawals.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={4} className="text-center text-mg-text-3 py-8">
-              {text.empty}
-            </TableCell>
-          </TableRow>
-        ) : (
-          paged.map((w) => (
-            <TableRow key={`${w.appliedAt}-${w.amount}-${w.status}`}>
-              <TableCell>{w.appliedAt}</TableCell>
-              <TableCell className="text-right font-mono">{fmt(w.amount)}</TableCell>
-              <TableCell>
-                <Badge variant={WITHDRAWAL_STATUS_VARIANT[w.status]}>
-                  {statusLabel[w.status]}
-                </Badge>
-              </TableCell>
-              <TableCell>{w.paidAt ?? text.notYet}</TableCell>
-            </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
-    {total > pageSize && (
-      <Pagination mode="page" page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
     )}
     </>
   )

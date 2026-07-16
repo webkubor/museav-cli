@@ -40,8 +40,6 @@ const listRewardRecords =
       params?: { cursor?: string; page_size?: number }
     ) => Promise<CursorPage<ReferralCommissionRecord>>
   >().mockResolvedValue(emptyRewardPage)
-const listWithdrawals = vi.fn().mockResolvedValue([])
-const requestWithdrawal = vi.fn().mockResolvedValue({})
 
 vi.mock('@/services/referral', () => ({
   getReferralOverview: (tenantId: string) => getReferralOverview(tenantId),
@@ -49,8 +47,6 @@ vi.mock('@/services/referral', () => ({
     listReferralInvitees(tenantId, params),
   listRewardRecords: (tenantId: string, params?: { cursor?: string; page_size?: number }) =>
     listRewardRecords(tenantId, params),
-  listWithdrawals: (tenantId: string) => listWithdrawals(tenantId),
-  requestWithdrawal: (tenantId: string, body: unknown) => requestWithdrawal(tenantId, body),
 }))
 
 // The page consumes useTranslation ONLY for i18n.language (zh/en copy + region).
@@ -98,7 +94,7 @@ const OVERVIEW: ReferralOverview = {
     todayCommission: '80',
     activeInvited: 3,
     invitedTotal: 5,
-    rewardBalance: '1420', // ≥ MIN_AMOUNT (100) so transfer/withdraw are enabled
+    rewardBalance: '1420', // ≥ MIN_AMOUNT (100) so transfer is enabled
   },
   tier: {
     name: '核心伙伴',
@@ -130,8 +126,6 @@ beforeEach(() => {
   getReferralOverview.mockReset().mockResolvedValue(OVERVIEW)
   listReferralInvitees.mockReset().mockResolvedValue(emptyInviteesPage)
   listRewardRecords.mockReset().mockResolvedValue(emptyRewardPage)
-  listWithdrawals.mockClear()
-  requestWithdrawal.mockClear()
 
   useAuthStore.setState({
     activeTenantId: ORG_TENANT_ID,
@@ -157,12 +151,11 @@ describe('ReferralPage — active-tenant scoping (#157)', () => {
     await waitFor(() => expect(getReferralOverview).toHaveBeenCalled())
     expect(getReferralOverview).toHaveBeenCalledWith(ORG_TENANT_ID)
     expect(getReferralOverview).not.toHaveBeenCalledWith(DEFAULT_TENANT_ID)
-    // invitees + withdrawals queries are scoped identically
+    // invitees query is scoped identically
     expect(listReferralInvitees).toHaveBeenCalledWith(ORG_TENANT_ID, {
       cursor: undefined,
       page_size: 15,
     })
-    expect(listWithdrawals).toHaveBeenCalledWith(ORG_TENANT_ID)
   })
 
   it('falls back to the default tenant when no active tenant exists', async () => {

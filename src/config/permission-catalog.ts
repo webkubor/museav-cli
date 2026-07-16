@@ -145,14 +145,18 @@ export const PERMISSION_CATALOG_MENUS = [
     name_en: 'Guardrails',
     scope: 'workspace',
     view_permission: PERMS.GUARDRAILS_VIEW,
+    // 「分类 × 动作」细分（需求方#57）：创建/配置/删除 按全局/个人/Key 逐分类授权
     actions: [
-      PERMS.GUARDRAILS_CREATE,
       PERMS.GUARDRAILS_CREATE_GLOBAL,
+      PERMS.GUARDRAILS_EDIT_GLOBAL,
+      PERMS.GUARDRAILS_DELETE_GLOBAL,
       PERMS.GUARDRAILS_CREATE_MEMBER,
+      PERMS.GUARDRAILS_EDIT_MEMBER,
+      PERMS.GUARDRAILS_DELETE_MEMBER,
       PERMS.GUARDRAILS_CREATE_KEY,
+      PERMS.GUARDRAILS_EDIT_KEY,
+      PERMS.GUARDRAILS_DELETE_KEY,
       PERMS.GUARDRAILS_CREATE_BOOST,
-      PERMS.GUARDRAILS_EDIT,
-      PERMS.GUARDRAILS_DELETE,
       PERMS.GUARDRAILS_ASSIGNMENT_EDIT,
       PERMS.GUARDRAILS_BUDGET_EDIT,
     ],
@@ -293,7 +297,7 @@ export function validatePermissionCatalog(): string[] {
 // ⚠️ 这是「权限目录结构版本」，不是产品发布版本（package.json 的 V1.0.3）——两者无关，
 // 千万别「同步版本号」：它驱动后端全量刷新语义（版本变→整市场目录全量刷新），必须只增不减。
 // 结构性改动（增删码/改层级）手动 bump minor；曾被 854f148 误降回 1.0.3（正确值 1.2.0），此处恢复并 +1 保单调。
-export const PERMISSION_CATALOG_VERSION = '1.2.1'
+export const PERMISSION_CATALOG_VERSION = '1.3.0'
 
 export const permissionCatalogMeta = {
   version: PERMISSION_CATALOG_VERSION,

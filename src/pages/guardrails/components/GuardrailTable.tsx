@@ -251,8 +251,9 @@ function ScopeSection({
 export interface GuardrailSectionsProps {
   guardrails: GuardrailDetail[]
   isLoading: boolean
-  canEdit: boolean
-  canDelete: boolean
+  /** 分类 × 动作细粒度（需求方#57）：各分区行内动作按自己分类的码控 */
+  canEdit: Record<GuardrailScope, boolean>
+  canDelete: Record<GuardrailScope, boolean>
   canCreate: boolean
   showMember: boolean
   currencySymbol: string
@@ -289,7 +290,6 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
   const memberRows = byScope('member')
   const keyRows = byScope('key')
 
-  const shared = { canEdit, canDelete, onOpenDetail, onDelete }
 
   return (
     <div className="space-y-6">
@@ -341,8 +341,8 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                 {row.created_by?.display_name || <span className="font-normal text-mg-text-3">—</span>}
               </TableCell>
               <TableCell className="text-xs text-mg-text-3">{formatDateTime(row.updated_at)}</TableCell>
-              <TableCell><StatusCell row={row} canEdit={canEdit} onToggle={onToggle} /></TableCell>
-              <TableCell className="text-right"><RowActions row={row} {...shared} /></TableCell>
+              <TableCell><StatusCell row={row} canEdit={canEdit.global} onToggle={onToggle} /></TableCell>
+              <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.global} canDelete={canDelete.global} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -386,8 +386,8 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                     : '-'}
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-3">{formatDateTime(row.updated_at)}</TableCell>
-                <TableCell><StatusCell row={row} canEdit={canEdit} onToggle={onToggle} /></TableCell>
-                <TableCell className="text-right"><RowActions row={row} {...shared} /></TableCell>
+                <TableCell><StatusCell row={row} canEdit={canEdit.member} onToggle={onToggle} /></TableCell>
+                <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.member} canDelete={canDelete.member} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -447,8 +447,8 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                         : <span className="font-normal text-mg-text-3">{PROMPT_INJECTION_INHERIT_LABEL}</span>)}
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-3">{formatDateTime(row.updated_at)}</TableCell>
-                <TableCell><StatusCell row={row} canEdit={canEdit} onToggle={onToggle} /></TableCell>
-                <TableCell className="text-right"><RowActions row={row} {...shared} /></TableCell>
+                <TableCell><StatusCell row={row} canEdit={canEdit.key} onToggle={onToggle} /></TableCell>
+                <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.key} canDelete={canDelete.key} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
               </TableRow>
             )
           })}

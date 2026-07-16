@@ -15,7 +15,7 @@ import { LuPlus } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
-import { trackAction, trackPageView } from '@/lib/track'
+import { trackEvent, trackAction, trackPageView } from '@/lib/track'
 import { useTenantRole } from '@/hooks/use-tenant-role'
 import { listModels } from '@/services/catalog'
 import { appToast } from '@/lib/app-toast'
@@ -125,19 +125,29 @@ export default function GuardrailsPage() {
   // 三分区各自的名称搜索（全局 / 个人 / Key）
   const [scopeSearch, setScopeSearch] = useState<Record<GuardrailScope, string>>({ global: '', member: '', key: '' })
   const { hasPermission } = usePermissions()
-  const canCreate         = hasPermission(PERMS.GUARDRAILS_CREATE)
-  const canEdit           = hasPermission(PERMS.GUARDRAILS_EDIT)
-  const canDelete         = hasPermission(PERMS.GUARDRAILS_DELETE)
   const canEditAssignment = hasPermission(PERMS.GUARDRAILS_ASSIGNMENT_EDIT)
   const canEditBudget     = hasPermission(PERMS.GUARDRAILS_BUDGET_EDIT)
-  // 细粒度创建权限（#479 · PRD §11）：分类（全局/个人/Key）与提额各用自己的码,
-  // Member 仅授 guardrails.key:create → 创建弹窗只剩常规 Key 护栏可选
+  // 「分类 × 动作」细粒度（#479/#57 · PRD §11）：创建/配置/删除 按 全局/个人/Key 各用自己的码，
+  // 扁平 guardrails:create/edit/delete 已退役——Member 仅授 key 分类码时，
+  // 全局/个人分区的管理动作与创建分类自然不可达（不再靠角色启发式）。
   const canCreateScope: Record<GuardrailScope, boolean> = {
     global: hasPermission(PERMS.GUARDRAILS_CREATE_GLOBAL),
     member: hasPermission(PERMS.GUARDRAILS_CREATE_MEMBER),
     key: hasPermission(PERMS.GUARDRAILS_CREATE_KEY),
   }
+  const canEditScope: Record<GuardrailScope, boolean> = {
+    global: hasPermission(PERMS.GUARDRAILS_EDIT_GLOBAL),
+    member: hasPermission(PERMS.GUARDRAILS_EDIT_MEMBER),
+    key: hasPermission(PERMS.GUARDRAILS_EDIT_KEY),
+  }
+  const canDeleteScope: Record<GuardrailScope, boolean> = {
+    global: hasPermission(PERMS.GUARDRAILS_DELETE_GLOBAL),
+    member: hasPermission(PERMS.GUARDRAILS_DELETE_MEMBER),
+    key: hasPermission(PERMS.GUARDRAILS_DELETE_KEY),
+  }
   const canCreateBoost = hasPermission(PERMS.GUARDRAILS_CREATE_BOOST)
+  // 页头创建入口：任一分类可建才显示（全无码时不再打开一个必然 403 的表单）
+  const canCreate = canCreateScope.global || canCreateScope.member || canCreateScope.key
   // 埋点顶层字段 is_space_owner：当前用户对本页作用域工作空间的 my_role 是否为 ws_owner
   const { ownedWorkspaceIds } = useTenantRole()
   const isActiveWorkspaceOwner = ownedWorkspaceIds.includes(workspaceId)
@@ -360,7 +370,7 @@ export default function GuardrailsPage() {
         qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
         setDetailOpen(false)
         setIsCreating(false)
-        trackAction(PERMS.GUARDRAILS_CREATE, undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
+        trackEvent('guardrails:create', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
       } catch (err) {
         // 护栏已建、预算这步失败：保留护栏，转编辑「预算」Tab 让用户补，避免脏建
         appToast.requestError(err, '护栏已创建，但预算保存失败，请在编辑中补充预算')
@@ -368,12 +378,12 @@ export default function GuardrailsPage() {
         setIsCreating(false)
         setDetailId(created.id)
         setSheetTab('budget')
-        trackAction(PERMS.GUARDRAILS_CREATE, undefined, { result: 'success', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
+        trackEvent('guardrails:create', undefined, { result: 'success', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
       }
     },
     onError: (err: unknown) => {
       appToast.requestError(err, t('guardrails.toast.createError'))
-      trackAction(PERMS.GUARDRAILS_CREATE, undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
+      trackEvent('guardrails:create', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
     },
   })
 
@@ -385,11 +395,11 @@ export default function GuardrailsPage() {
       setDetailOpen(false)
       qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
       qc.invalidateQueries({ queryKey: ['guardrail-detail', detailId] })
-      trackAction(PERMS.GUARDRAILS_EDIT, undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
+      trackEvent('guardrails:edit', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
     onError: (err: unknown) => {
       appToast.requestError(err, t('guardrails.toast.updateError'))
-      trackAction(PERMS.GUARDRAILS_EDIT, undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
+      trackEvent('guardrails:edit', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
     },
   })
 
@@ -400,11 +410,11 @@ export default function GuardrailsPage() {
       setDeleteTarget(null)
       qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
       if (deleteTarget?.id === detailId) setDetailOpen(false)
-      trackAction(PERMS.GUARDRAILS_DELETE, undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
+      trackEvent('guardrails:delete', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
     onError: (err: unknown) => {
       appToast.requestError(err, t('guardrails.toast.deleteError'))
-      trackAction(PERMS.GUARDRAILS_DELETE, undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
+      trackEvent('guardrails:delete', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
     },
   })
 
@@ -574,10 +584,10 @@ export default function GuardrailsPage() {
       metadata,
     }
     if (!isCreating && detailId) {
-      trackAction(PERMS.GUARDRAILS_EDIT, undefined, { is_space_owner: isActiveWorkspaceOwner })
+      trackEvent('guardrails:edit', undefined, { is_space_owner: isActiveWorkspaceOwner })
       updateMutation.mutate({ id: detailId, payload })
     } else {
-      trackAction(PERMS.GUARDRAILS_CREATE, undefined, { is_space_owner: isActiveWorkspaceOwner })
+      trackEvent('guardrails:create', undefined, { is_space_owner: isActiveWorkspaceOwner })
       createMutation.mutate(payload)
     }
   }
@@ -765,8 +775,8 @@ export default function GuardrailsPage() {
       <GuardrailSections
         guardrails={guardrails}
         isLoading={isLoading}
-        canEdit={canEdit}
-        canDelete={canDelete}
+        canEdit={canEditScope}
+        canDelete={canDeleteScope}
         canCreate={canCreate}
         showMember={showMember}
         currencySymbol={currencySymbol}
@@ -827,7 +837,7 @@ export default function GuardrailsPage() {
         savingGlobalBudget={saveGlobalBudgetMutation.isPending}
         onSaveGlobalBudgets={handleSaveGlobalBudgets}
         currencySymbol={currencySymbol}
-        canEdit={canEdit}
+        canEdit={detail ? canEditScope[deriveScope(detail)] : false}
         canEditAssignment={canEditAssignment}
         submitting={createMutation.isPending || updateMutation.isPending}
         onSubmit={handleSubmit}
@@ -838,7 +848,7 @@ export default function GuardrailsPage() {
         deleteTarget={deleteTarget}
         onCloseDelete={() => setDeleteTarget(null)}
         deleting={deleteMutation.isPending}
-        onConfirmDelete={() => { if (deleteTarget) { trackAction(PERMS.GUARDRAILS_DELETE, undefined, { is_space_owner: isActiveWorkspaceOwner }); deleteMutation.mutate(deleteTarget.id) } }}
+        onConfirmDelete={() => { if (deleteTarget) { trackEvent('guardrails:delete', undefined, { is_space_owner: isActiveWorkspaceOwner }); deleteMutation.mutate(deleteTarget.id) } }}
         showClearBudget={showClearBudget}
         onCloseClear={() => setShowClearBudget(false)}
         clearing={removeBudgetMutation.isPending}

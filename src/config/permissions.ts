@@ -61,14 +61,20 @@ export const PERMISSION_DEFINITIONS = {
   API_KEYS_REVEAL: { id: 'api_keys:reveal', granularity: 'action', description: '查看 API Key 明文' },
 
   // ── 安全护栏 ──────────────────────────────────
-  GUARDRAILS_CREATE:          { id: 'guardrails:create',          granularity: 'action', description: '创建安全护栏' },
+
   // 按护栏分类/类型的细粒度创建权限（PRD §11：Member 仅可建常规 Key 护栏，不可建全局/个人/提额）
   GUARDRAILS_CREATE_GLOBAL: { id: 'guardrails.global:create', granularity: 'action', description: '创建全局护栏' },
   GUARDRAILS_CREATE_MEMBER: { id: 'guardrails.member:create', granularity: 'action', description: '创建个人护栏' },
   GUARDRAILS_CREATE_KEY:    { id: 'guardrails.key:create',    granularity: 'action', description: '创建 Key 护栏' },
   GUARDRAILS_CREATE_BOOST:  { id: 'guardrails.boost:create',  granularity: 'action', description: '创建提额护栏' },
-  GUARDRAILS_EDIT:            { id: 'guardrails:edit',            granularity: 'action', description: '编辑安全护栏' },
-  GUARDRAILS_DELETE:          { id: 'guardrails:delete',          granularity: 'action', description: '删除安全护栏' },
+  // 管理动作按分类细分（需求方#57 §11：Member 仅可删改自己创建的常规 Key 护栏，
+  // 全局/个人护栏管理动作不得因扁平码泄漏给 Member；own-only 由后端行级 enforce）
+  GUARDRAILS_EDIT_GLOBAL: { id: 'guardrails.global:edit', granularity: 'action', description: '配置全局护栏' },
+  GUARDRAILS_EDIT_MEMBER: { id: 'guardrails.member:edit', granularity: 'action', description: '配置个人护栏' },
+  GUARDRAILS_EDIT_KEY:    { id: 'guardrails.key:edit',    granularity: 'action', description: '配置 Key 护栏' },
+  GUARDRAILS_DELETE_GLOBAL: { id: 'guardrails.global:delete', granularity: 'action', description: '删除全局护栏' },
+  GUARDRAILS_DELETE_MEMBER: { id: 'guardrails.member:delete', granularity: 'action', description: '删除个人护栏' },
+  GUARDRAILS_DELETE_KEY:    { id: 'guardrails.key:delete',    granularity: 'action', description: '删除 Key 护栏' },
   GUARDRAILS_ASSIGNMENT_EDIT: { id: 'guardrails.assignment:edit', granularity: 'action', description: '编辑护栏作用范围' },
   GUARDRAILS_BUDGET_EDIT:     { id: 'guardrails.budget:edit',     granularity: 'action', description: '编辑护栏预算' },
 
@@ -121,6 +127,10 @@ export const LEGACY_PERMISSION_IDS = [
   'invitations:manage',
   'dashboard:view.org',
   'logs:view.org',
+  // 护栏扁平动作码（需求方#57 起改为「分类 × 动作」细分，见 GUARDRAILS_* 定义）
+  'guardrails:create',
+  'guardrails:edit',
+  'guardrails:delete',
   // Key 级扁平动作码（需求方#68 起改为「类型 × 动作」细分，见 API_KEYS_* 定义）
   'api_keys:create',
   'api_keys:edit',

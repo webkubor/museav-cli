@@ -166,8 +166,8 @@ export const PERMISSION_CATALOG_MENUS = [
     name: '日志与转发',
     name_en: 'Logging & Forwarding',
     scope: 'workspace',
-    view_permission: PERMS.OBSERVABILITY_LOGGING_VIEW,
-    actions: [PERMS.OBSERVABILITY_FORWARD_VIEW, PERMS.OBSERVABILITY_LOGGING_EDIT, PERMS.OBSERVABILITY_FORWARD_MANAGE],
+    view_permission: PERMS.OBSERVABILITY_VIEW,
+    actions: [PERMS.OBSERVABILITY_LOGGING_VIEW, PERMS.OBSERVABILITY_FORWARD_VIEW, PERMS.OBSERVABILITY_LOGGING_EDIT, PERMS.OBSERVABILITY_FORWARD_MANAGE],
   },
 ] as const satisfies readonly PermissionCatalogMenu[]
 

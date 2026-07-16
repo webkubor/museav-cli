@@ -78,7 +78,8 @@ export const PERMISSION_DEFINITIONS = {
   GUARDRAILS_BUDGET_EDIT:     { id: 'guardrails.budget:edit',     granularity: 'action', description: '编辑护栏预算' },
 
   // ── 可观测性 ──────────────────────────────────
-  // observability:view 拆为采集/转发两条独立 view（需求方#91）：日志采集区与转发区各自按 view 权限显隐。
+  // 菜单级 view = 能否进「日志与转发」页；采集/转发两条 page 级 view 分别控各区块显隐（需求方#91）。
+  OBSERVABILITY_VIEW:           { id: 'observability:view',           granularity: 'menu', description: '查看日志与转发' },
   OBSERVABILITY_LOGGING_VIEW:   { id: 'observability.logging:view',   granularity: 'page', description: '查看日志采集配置' },
   OBSERVABILITY_FORWARD_VIEW:   { id: 'observability.forward:view',   granularity: 'page', description: '查看日志转发配置' },
   OBSERVABILITY_LOGGING_EDIT:   { id: 'observability.logging:edit',   granularity: 'action', description: '编辑日志采集配置' },
@@ -125,8 +126,6 @@ export type Permission = PermissionDefinitions[keyof PermissionDefinitions]['id'
  */
 export const LEGACY_PERMISSION_IDS = [
   'models:view',
-  // 合并的可观测性 view 已拆为 observability.logging:view + observability.forward:view（需求方#91）
-  'observability:view',
   'invitations:view',
   'invitations:manage',
   'dashboard:view.org',
@@ -176,6 +175,7 @@ export const RESOURCE_LABELS: Record<string, string> = {
   'guardrails.boost': '提额护栏',
   'guardrails.assignment': '护栏作用范围',
   'guardrails.budget': '护栏预算',
+  observability: '日志与转发',
   'observability.logging': '日志采集',
   'observability.forward': '日志转发',
   workspace: '空间管理',

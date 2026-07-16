@@ -224,7 +224,8 @@ export function LogDetailSheet({
             </section>
           )}
 
-          {canViewPayload ? (
+          {/* 无 logs.payload:view 权限：整块不渲染（不给占位/提示，后台没勾即 UI 不存在，需求方#101） */}
+          {canViewPayload && (
             <TranscriptSection
               row={row}
               requestPayloadText={requestPayloadText}
@@ -235,10 +236,6 @@ export function LogDetailSheet({
               onDownload={onDownload}
               onOpenLogSettings={onOpenLogSettings}
             />
-          ) : (
-            <section className="rounded-lg border border-mg-border bg-mg-fill-0/40 p-4 text-center mg-text-caption text-mg-text-3">
-              无查看请求/响应原文的权限
-            </section>
           )}
 
           {/* #49：「查看同链路日志」需求里没有且无法正确跳转，已移除，仅保留复制 Trace。 */}

@@ -327,15 +327,21 @@ export default function LogsPage() {
   // 仅 logs.payload:view 有权限才拉原文（#479）：无权限不发请求,不泄露 Prompt/Response
   const { hasPermission } = usePermissions()
   const canViewPayload = hasPermission(PERMS.LOGS_PAYLOAD_VIEW)
+  // 有权限但空间未开采集时 payload 返回 40401（无数据，非故障）——静默不弹全局「服务暂不可用」，
+  // 由 TranscriptSection 走「未开启采集」空态提示（需求方#101：有权限没数据 ≠ 报错）
   const requestPayloadQuery = useQuery({
     queryKey: ['logs', selectedLog?.request_id, 'payload', 'request'],
     queryFn: () => getLogPayload(selectedLog!.request_id, 'request'),
     enabled: Boolean(selectedLog?.request_id) && canViewPayload,
+    retry: false,
+    meta: { silentError: true },
   })
   const responsePayloadQuery = useQuery({
     queryKey: ['logs', selectedLog?.request_id, 'payload', 'response'],
     queryFn: () => getLogPayload(selectedLog!.request_id, 'response'),
     enabled: Boolean(selectedLog?.request_id) && canViewPayload,
+    retry: false,
+    meta: { silentError: true },
   })
 
   const requestPayloadText = decodePayloadBody(requestPayloadQuery.data?.body_b64)

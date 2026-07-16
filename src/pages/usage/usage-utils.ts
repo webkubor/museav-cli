@@ -73,13 +73,6 @@ export function formatNumber(n: number): string {
   return String(n)
 }
 
-/** 格式化低金额均值，避免小额单次成本全部显示成 0。 */
-export function formatAverageMoney(amount: number, symbol: string): string {
-  if (!Number.isFinite(amount) || amount <= 0) return `${symbol}0.0000`
-  const decimals = amount < 0.0001 ? 6 : 4
-  return `${symbol}${amount.toFixed(decimals)}`
-}
-
 /** 格式化百分比。 */
 export function formatPercent(value: number): string {
   if (!Number.isFinite(value)) return '0.00%'

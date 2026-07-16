@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { cn } from '@/lib/utils'
 import { useTranslation } from 'react-i18next'
 import { LuCoins, LuTrendingUp, LuUsers, LuWallet, LuSparkles, LuLock } from 'react-icons/lu'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -256,19 +257,67 @@ export default function ReferralPage() {
     withdrawMutation.mutate()
   }
 
-  const moneyField = (value: string, onChange: (v: string) => void) => (
-    <div className="flex items-center rounded-lg border border-mg-border bg-mg-fill-0 px-3 focus-within:border-brand-base">
-      <span className="mr-1 text-sm text-mg-text-3">¥</span>
-      <input
-        type="number"
-        min={MIN_AMOUNT}
-        max={rewardBalance}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="min-w-0 flex-1 bg-transparent py-2 font-mono text-sm text-mg-text-1 outline-none"
-      />
+  /** 金额只留数字 + 最多一个小数点、两位小数（type=text 规避原生 spinner 与 step 校验气泡） */
+  const sanitizeAmount = (raw: string) => {
+    const cleaned = raw.replace(/[^\d.]/g, '').replace(/^(\d*\.\d*).*$/, '$1')
+    const [int, dec] = cleaned.split('.')
+    return dec !== undefined ? `${int}.${dec.slice(0, 2)}` : cleaned
+  }
+
+  /** 金额校验的内联错误（替代原生 tooltip）：仅在有输入时提示 */
+  const amountError = (raw: string) => {
+    if (!raw.trim()) return null
+    const n = Number(raw)
+    if (!(n >= MIN_AMOUNT)) return text.errTooLow
+    if (n > rewardBalance) return text.errExceed
+    return null
+  }
+
+  /** 余额面板：弹窗头部的可用额度 + 规则说明 */
+  const balancePanel = (label: string) => (
+    <div className="flex items-center justify-between rounded-lg border border-mg-border/60 bg-mg-fill-0/50 px-4 py-3">
+      <div>
+        <div className="text-xs text-mg-text-3">{label}</div>
+        <div className="mt-0.5 font-mono text-xl font-bold tabular-nums text-mg-text-1">{fmt(rewardBalance)}</div>
+      </div>
+      <span className="rounded-full border border-mg-border/60 bg-mg-fill-0/60 px-2.5 py-1 text-xs font-semibold text-mg-text-2">
+        {text.ruleMin}
+      </span>
     </div>
   )
+
+  /** 大号金额输入：¥ 前缀 + 快捷全部 + 内联错误 */
+  const moneyField = (value: string, onChange: (v: string) => void, fillLabel: string) => {
+    const error = amountError(value)
+    return (
+      <div>
+        <div
+          className={cn(
+            'flex items-center gap-2 rounded-lg border bg-mg-fill-0/40 px-4 py-3 transition-colors',
+            error ? 'border-mg-danger/60' : 'border-mg-border focus-within:border-brand-base',
+          )}
+        >
+          <span className="text-lg font-semibold text-mg-text-3">¥</span>
+          <input
+            type="text"
+            inputMode="decimal"
+            value={value}
+            onChange={(e) => onChange(sanitizeAmount(e.target.value))}
+            placeholder="0.00"
+            className="min-w-0 flex-1 bg-transparent font-mono text-2xl font-bold tabular-nums text-mg-text-1 outline-none placeholder:text-mg-text-4"
+          />
+          <button
+            type="button"
+            onClick={() => onChange(String(rewardBalance))}
+            className="shrink-0 text-xs font-bold text-brand-base transition-colors hover:text-brand-deep"
+          >
+            {fillLabel}
+          </button>
+        </div>
+        {error && <p className="mt-1.5 text-xs text-mg-danger">{error}</p>}
+      </div>
+    )
+  }
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: 'invitees', label: text.tabInvitees },
@@ -498,16 +547,22 @@ export default function ReferralPage() {
         title={text.transferTitle}
         size="sm"
         footer={
-          <Button variant="brand" disabled={!transferValid} onClick={confirmTransfer}>
-            {text.transferConfirm}
-          </Button>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setTransferOpen(false)}>
+              {text.cancel}
+            </Button>
+            <Button variant="brand" disabled={!transferValid} onClick={confirmTransfer}>
+              {transferValid ? `${text.transferConfirm} ${fmt(transferNum)}` : text.transferConfirm}
+            </Button>
+          </div>
         }
       >
-        <div className="space-y-3 py-1">
-          <p className="text-xs text-mg-text-3">
-            {text.transferModalHint.replace('{balance}', fmt(rewardBalance))}
-          </p>
-          {moneyField(transferAmount, onTransferAmountChange)}
+        <div className="space-y-4 py-1">
+          {balancePanel(text.transferBalanceLabel)}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-mg-text-2">{text.amountLabel}</label>
+            {moneyField(transferAmount, onTransferAmountChange, text.fillAll)}
+          </div>
         </div>
       </Modal>
 
@@ -518,19 +573,22 @@ export default function ReferralPage() {
         title={text.withdrawTitle}
         size="sm"
         footer={
-          <Button variant="brand" disabled={!withdrawValid} onClick={submitWithdraw}>
-            {text.withdrawSubmit}
-          </Button>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setWithdrawOpen(false)}>
+              {text.cancel}
+            </Button>
+            <Button variant="brand" disabled={!withdrawValid} onClick={submitWithdraw}>
+              {withdrawValid ? `${text.withdrawSubmit} ${fmt(withdrawNum)}` : text.withdrawSubmit}
+            </Button>
+          </div>
         }
       >
         <div className="space-y-4 py-1">
-          <p className="text-xs text-mg-text-3">
-            {text.withdrawModalHint.replace('{balance}', fmt(rewardBalance))}
-          </p>
+          {balancePanel(text.withdrawBalanceLabel)}
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-mg-text-2">{text.withdrawAmountLabel}</label>
-            {moneyField(withdrawAmount, onWithdrawAmountChange)}
+            {moneyField(withdrawAmount, onWithdrawAmountChange, text.withdrawFillAll)}
           </div>
 
           <div className="space-y-2">

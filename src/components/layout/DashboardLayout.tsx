@@ -135,14 +135,18 @@ export function DashboardLayout() {
     isSpaceManager: canManage || isPersonal || ownsWorkspace,
   }
 
+  // fail-closed（需求方#101 收尾）：叶子菜单项**必须声明 permission 且持有**才显示——
+  // 「后台没勾这个权限码即 UI 不出现」，杜绝将来新增菜单漏声明 permission 就恒显示的泄漏。
+  // 分组容器（有 items）按可见子项数决定：子项全被过滤则整组隐藏。
   const filterNavItems = (items: NavItem[]): NavItem[] =>
     items.reduce<NavItem[]>((acc, item) => {
-      if (item.permission && !hasPermission(item.permission)) return acc
       if (item.items) {
         const children = filterNavItems(item.items)
         if (children.length === 0) return acc
         return [...acc, { ...item, items: children }]
       }
+      // 叶子项 fail-closed：无 permission 声明 或 未持有该码 → 不渲染
+      if (!item.permission || !hasPermission(item.permission)) return acc
       return [...acc, item]
     }, [])
 

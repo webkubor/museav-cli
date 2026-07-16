@@ -82,5 +82,15 @@ export function guardrailSourceLabel(row: CallLogItem, t: (key: string) => strin
   return scopeLabel || name || '—'
 }
 
+/**
+ * 命中类别展示（详情「命中规则」项）：显示命中的**类别**（提示词注入 / Key 预算 …），
+ * 而非规则实例名（规则实例名已在「规则来源」展示）。取后端 guardrail_decision.category，
+ * 缺失/未返回时返回 ''，由调用方显「—」（不兜底假标签）。需后端返回语义 category（#461）。
+ */
+export function guardrailCategoryLabel(row: CallLogItem, t: (key: string) => string): string {
+  const category = row.guardrail_decision?.category
+  return category ? t(`logs.guardrail.category.${category}`) : ''
+}
+
 /** 脱敏占位符（替换命中的注入内容，展示用固定 token）。 */
 export const REDACTION_PLACEHOLDER = '[PROMPT_INJECTION]'

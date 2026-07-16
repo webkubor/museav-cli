@@ -638,20 +638,28 @@
       "blockedHint": "安全护栏命中",
       "notStartedHint": "未产生响应、Token、耗时或费用",
       "action": {
-        "flag": "仅标记并放行",
+        "flag": "记录后继续调用",
         "redact": "脱敏后继续调用",
         "block": "已拦截"
       },
       "modelState": {
         "completed": "调用成功",
         "failed": "调用失败",
-        "not_started": "未调用"
+        "not_started": "未发起"
       },
       "redactedHint": "命中提示词注入规则，已对请求内容脱敏后继续调用；下方仅展示脱敏后的内容，不含原文。",
       "scope": {
         "global": "全局护栏",
         "key": "Key 护栏",
-        "personal": "成员护栏"
+        "personal": "个人护栏"
+      },
+      "category": {
+        "prompt_injection": "提示词注入",
+        "workspace_budget": "Workspace 预算",
+        "member_budget": "个人预算",
+        "key_budget": "Key 预算",
+        "model_blacklist": "模型黑名单",
+        "ip_allowlist": "IP 白名单"
       }
     }
   },

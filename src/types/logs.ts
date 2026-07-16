@@ -20,7 +20,13 @@ export type GuardrailAction = 'flag' | 'redact' | 'block'
 export type GuardrailScope = 'global' | 'key' | 'personal'
 
 /** 护栏命中类别（后端契约 #450）。 */
-export type GuardrailCategory = 'text' | 'source' | 'capability' | 'action'
+export type GuardrailCategory =
+  | 'prompt_injection'
+  | 'workspace_budget'
+  | 'member_budget'
+  | 'key_budget'
+  | 'model_blacklist'
+  | 'ip_allowlist'
 
 /**
  * 护栏命中决策（后端契约 #450，随 model-logs 行返回）。

@@ -24,7 +24,6 @@ import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { trackEvent, trackPageView } from '@/lib/track'
 import { SegmentedToggle } from '@/features/dashboard/workbench/SegmentedToggle'
 import type { CallLogListParams } from '@/interfaces/logs'
-import { KEY_TYPE_ALL, apiKeyTypeParam, type ApiKeyTypeFilter } from '@/lib/api-key-type-filter'
 import type { CallLogItem } from '@/types'
 import { rangeToDates } from '@/pages/usage/usage-utils'
 import { decodePayloadBody, formatSSESummary, reassembleSSE } from './reassemble-sse'
@@ -60,14 +59,6 @@ const GUARDRAIL_OPTIONS: Array<{ label: string; value: LogGuardrailFilter }> = [
   { label: '全部护栏状态', value: 'all' },
   { label: '护栏命中', value: 'hit' },
   { label: '未命中护栏', value: 'not_hit' },
-]
-
-// API Key 类型筛选（需求 #22，后端 qa#449）；本页沿用硬编码中文标签（与页内其它筛选一致）
-const KEY_TYPE_OPTIONS: Array<{ label: string; value: ApiKeyTypeFilter }> = [
-  { label: '全部类型', value: KEY_TYPE_ALL },
-  { label: '私有 Key', value: 'personal' },
-  { label: '成员 Key', value: 'member' },
-  { label: '服务 Key', value: 'service' },
 ]
 
 const LOG_TIME_PRESETS = [
@@ -178,8 +169,6 @@ export default function LogsPage() {
   const [modelFilter, setModelFilter] = useState(() => searchParams.get('model') || 'all')
   const [apiKeyFilter, setApiKeyFilter] = useState(() => searchParams.get('api_key') || 'all')
   const [memberFilter, setMemberFilter] = useState(() => searchParams.get('member') || 'all')
-  // API Key 类型筛选（需求 #22）：仅企业拥有者/管理员可见，默认全部类型
-  const [keyTypeFilter, setKeyTypeFilter] = useState<ApiKeyTypeFilter>(KEY_TYPE_ALL)
   // 下钻上下文（#14）：护栏跳来时 ?guardrail_state= 初始化护栏筛选
   const [guardrailFilter, setGuardrailFilter] = useState<LogGuardrailFilter>(() => {
     const g = searchParams.get('guardrail_state')
@@ -224,7 +213,6 @@ export default function LogsPage() {
     setApiKeyFilter('all')
     setMemberFilter('all')
     setGuardrailFilter('all')
-    setKeyTypeFilter(KEY_TYPE_ALL)
     setSearchValue('')
     setTimeRange(DEFAULT_TIME_RANGE)
     resetPagination()
@@ -289,8 +277,6 @@ export default function LogsPage() {
   // 我的视图：锁定当前账号；企业视图/空间视图：用「成员」筛选（默认全部）
   const effectiveAccountId =
     view === 'mine' ? currentAccountId || undefined : memberFilter === 'all' ? undefined : memberFilter
-  // 类型筛选仅企业拥有者/管理员生效（其余视图恒 undefined，不受 stale 值影响）
-  const effectiveKeyType = showViewToggle ? apiKeyTypeParam(keyTypeFilter) : undefined
 
   const { data, isFetching, isLoading, isError, error, refetch } = useQuery({
     queryKey: [
@@ -299,7 +285,6 @@ export default function LogsPage() {
       view,
       effectiveAccountId,
       effectiveWorkspaceId,
-      effectiveKeyType,
       statusFilter,
       guardrailFilter,
       modelFilter,
@@ -318,7 +303,6 @@ export default function LogsPage() {
         guardrail: effectiveGuardrail,
         model_id: modelFilter === 'all' ? undefined : modelFilter,
         api_key_id: apiKeyFilter === 'all' ? undefined : apiKeyFilter,
-        api_key_type: effectiveKeyType,
         account_id: effectiveAccountId,
         // 精确 ID 与模糊关键词分流：命中 ID 走 request_id，否则走 q
         request_id: isRequestIdSearch ? debouncedSearch : undefined,
@@ -421,14 +405,12 @@ export default function LogsPage() {
       chips.push(`成员: ${member?.account.display_name ?? memberFilter}`)
     }
     if (guardrailFilter !== 'all') chips.push(GUARDRAIL_OPTIONS.find((item) => item.value === guardrailFilter)?.label ?? guardrailFilter)
-    if (keyTypeFilter !== 'all') chips.push(`Key 类型: ${KEY_TYPE_OPTIONS.find((item) => item.value === keyTypeFilter)?.label ?? keyTypeFilter}`)
     if (searchValue.trim()) chips.push(`关键词: ${searchValue.trim()}`)
     return chips
   }, [
     apiKeyFilter,
     apiKeysData?.items,
     guardrailFilter,
-    keyTypeFilter,
     memberFilter,
     membersData?.items,
     modelFilter,
@@ -606,16 +588,6 @@ export default function LogsPage() {
                     <Select.Option key={member.account.account_id} value={member.account.account_id}>
                       {member.account.display_name || member.account.email}
                     </Select.Option>
-                  ))}
-                </Select>
-              </FilterField>
-            )}
-            {/* API Key 类型筛选（需求 #22）：仅企业拥有者/管理员可见 */}
-            {showViewToggle && (
-              <FilterField label="Key 类型">
-                <Select value={keyTypeFilter} onChange={(value) => { setKeyTypeFilter(value as ApiKeyTypeFilter); resetPagination(); trackFilter('api_key_type', value) }}>
-                  {KEY_TYPE_OPTIONS.map((option) => (
-                    <Select.Option key={option.value} value={option.value}>{option.label}</Select.Option>
                   ))}
                 </Select>
               </FilterField>

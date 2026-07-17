@@ -8,6 +8,13 @@ vi.mock('@/lib/market', () => ({
   getInitialLang: () => 'zh',
 }))
 
+// 运行时验证码配置请求离线打桩：默认「接口不可达」→ 走 build-time env 旧路径，
+// 保持下面既有用例语义不变；单个用例可用 mockResolvedValueOnce 覆盖。
+const configGet = vi.hoisted(() =>
+  vi.fn<() => Promise<unknown>>(() => Promise.reject(new Error('offline')))
+)
+vi.mock('@/lib/request', () => ({ get: configGet }))
+
 describe('aliyun-captcha graceful degrade (qa#299)', () => {
   beforeEach(() => {
     vi.resetModules()
@@ -30,6 +37,28 @@ describe('aliyun-captcha graceful degrade (qa#299)', () => {
     await expect(getCaptchaParam()).resolves.toBeNull()
     expect(appendSpy).not.toHaveBeenCalled() // no script injected when disabled
     expect(window.initAliyunCaptcha).toBeUndefined()
+  })
+
+  it('getCaptchaParam dispatches to alicaptcha and degrades to null when ct4.js unavailable', async () => {
+    configGet.mockImplementationOnce(() =>
+      Promise.resolve({ enabled: true, provider: 'alicaptcha', app_id: 'app_1' })
+    )
+    // ct4.js 加载失败（未部署/被墙）→ 降级 null，不阻断
+    vi.spyOn(document.head, 'appendChild').mockImplementation((node: unknown) => {
+      const el = node as HTMLScriptElement
+      queueMicrotask(() => el.onerror?.(new Event('error')))
+      return el as never
+    })
+    const { getCaptchaParam } = await import('./aliyun-captcha')
+    await expect(getCaptchaParam()).resolves.toBeNull()
+  })
+
+  it('getCaptchaParam resolves null when runtime config says disabled', async () => {
+    configGet.mockImplementationOnce(() => Promise.resolve({ enabled: false }))
+    const appendSpy = vi.spyOn(document.head, 'appendChild')
+    const { getCaptchaParam } = await import('./aliyun-captcha')
+    await expect(getCaptchaParam()).resolves.toBeNull()
+    expect(appendSpy).not.toHaveBeenCalled()
   })
 
   it('getCaptchaParam degrades to null when SceneId set but SDK fails to load', async () => {

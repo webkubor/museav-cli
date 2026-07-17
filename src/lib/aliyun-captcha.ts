@@ -16,6 +16,7 @@
  */
 import { getMarketDefaultLang, type Market } from '@/lib/market'
 import { useLangStore } from '@/store/use-brand-store'
+import { fetchCaptchaConfig, getAlicaptchaParamOnce } from '@/lib/alicaptcha'
 
 const SDK_SRC = 'https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js'
 const LOAD_TIMEOUT_MS = 8000
@@ -108,8 +109,18 @@ let mountSeq = 0
  * SceneId on. Until then the deploy runs disabled (SceneId blank → this returns
  * null immediately and never touches the SDK).
  */
-export function getCaptchaParam(): Promise<string | null> {
+export async function getCaptchaParam(): Promise<string | null> {
   const market = useLangStore.getState().market
+  const lang = getMarketDefaultLang(market) === 'zh' ? 'zh' : 'en'
+  // provider 运行时下发（GET /api/v1/auth/captcha/config）：图形认证(alicaptcha)
+  // 走弹窗一次性流；aliyun(验证码 2.0)保留原 build-time env 流程；未启用/接口
+  // 不可达 → null 照常放行（后端 fail-open）。
+  const runtime = await fetchCaptchaConfig()
+  if (runtime?.provider === 'alicaptcha') {
+    if (!runtime.enabled || !runtime.app_id) return null
+    return getAlicaptchaParamOnce(lang)
+  }
+  if (runtime && !runtime.enabled) return null
   const scene = resolveSceneConfig(market)
   if (!scene) return Promise.resolve(null) // disabled for this region
 

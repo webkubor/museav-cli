@@ -5,7 +5,7 @@
  * API: POST /auth/login, POST /auth/check-email 等鉴权核心网络服务
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -17,6 +17,7 @@ import { AuthLayout } from '@/components/auth/AuthLayout'
 import { SocialLogin } from '@/components/auth/SocialLogin'
 import { PhoneAuth } from '@/components/auth/PhoneAuth'
 import { getCaptchaParam } from '@/lib/aliyun-captcha'
+import { CaptchaGate, type CaptchaGateHandle } from '@/components/auth/CaptchaGate'
 import { useMarket } from '@/hooks/useMarket'
 import { useEmailAuthEnabled } from '@/hooks/use-platform-config'
 import { checkLoginEmail, login, getSession } from '@/services/auth'
@@ -104,7 +105,11 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [rememberPassword, setRememberPassword] = useState(Boolean(remembered))
-  // 人机校验统一走阿里云验证码 2.0（getCaptchaParam）；旧纯前端滑块已移除。
+  // 人机校验：图形认证生效时页面渲染可见验证条（gateParam=四元组 JSON）；
+  // 验证条不可用/未启用时回退 getCaptchaParam 弹窗流（含验证码 2.0 与降级放行）。
+  const [gateParam, setGateParam] = useState<string | null>(null)
+  const [gateActive, setGateActive] = useState(false)
+  const gateRef = useRef<CaptchaGateHandle | null>(null)
 
   const emailForm = useForm<EmailFields>({
     resolver: zodResolver(emailSchema),
@@ -149,8 +154,13 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
 
   const onPasswordSubmit = async (data: PasswordFields) => {
     if (!canSubmitAuth('login-password', email)) return
-    // qa#299 人机验证：通过取 param；未启用/降级/超时 → null → 照常登录（后端 fail-open）。
-    const captchaParam = await getCaptchaParam()
+    // 验证条生效但未完成 → 调起挑战，等 onChange 回填后用户再次提交
+    if (gateActive && !gateParam) {
+      gateRef.current?.open()
+      return
+    }
+    // 验证条已通过用其四元组；否则走弹窗流（未启用/降级 → null 照常登录，后端 fail-open）
+    const captchaParam = gateParam ?? (await getCaptchaParam())
     setLoading(true)
     setServerError('')
     let loginOk = false
@@ -181,6 +191,7 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
       const errorCode = loginOk ? 'session_failed' : 'invalid_credentials'
       trackEvent('login_fail', { method: 'password' }, { result: 'fail', error_code: errorCode })
       setServerError(loginOk ? '登录成功但获取会话失败，请刷新重试' : '邮箱或密码错误')
+      if (!loginOk) gateRef.current?.reset()
     } finally {
       setLoading(false)
     }
@@ -315,6 +326,8 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
             </label>
           </div>
           
+          <CaptchaGate onChange={setGateParam} onAvailability={setGateActive} handleRef={(h) => { gateRef.current = h }} />
+
           {serverError && <p className="auth-error-message">{serverError}</p>}
 
           <Button

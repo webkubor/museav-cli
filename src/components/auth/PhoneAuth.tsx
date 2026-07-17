@@ -5,7 +5,7 @@
  * API：POST /auth/sms-code/send；登录提交见 services/auth.ts phoneLoginRegister（接口待定）
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -25,6 +25,7 @@ import {
 import { getRedirectTarget } from '@/lib/redirect'
 import { getRequestErrorMessage, errorCodeOf } from '@/lib/request-error-message'
 import { getCaptchaParam } from '@/lib/aliyun-captcha'
+import { CaptchaGate, type CaptchaGateHandle } from '@/components/auth/CaptchaGate'
 import { trackEvent } from '@/lib/track'
 
 const schema = z.object({
@@ -42,6 +43,11 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
 
   const [redirectAfterLogin] = useState(() => getRedirectTarget())
   const [serverError, setServerError] = useState('')
+  // 图形认证可见验证条：生效时发码前必须先通过（发码是刷量主入口）；发码消费
+  // 一次性四元组后自动重置。不可用时回退弹窗流/放行。
+  const [gateParam, setGateParam] = useState<string | null>(null)
+  const [gateActive, setGateActive] = useState(false)
+  const gateRef = useRef<CaptchaGateHandle | null>(null)
   const [loading, setLoading] = useState(false)
 
   const {
@@ -72,11 +78,17 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
       throw new Error(decision.message ?? '操作过于频繁，请稍后再试')
     }
     setServerError('')
-    // qa#299 人机验证：通过取 param；未启用/降级/超时 → null → 照常发码（后端 fail-open）。
-    const captchaParam = await getCaptchaParam()
+    // 验证条生效但未完成 → 调起挑战；完成后用户再点发送
+    if (gateActive && !gateParam) {
+      gateRef.current?.open()
+      throw new Error('请先完成安全验证')
+    }
+    // 验证条已通过用其四元组；否则弹窗流（未启用/降级 → null 照常发码，后端 fail-open）
+    const captchaParam = gateParam ?? (await getCaptchaParam())
     try {
       const result = await sendSmsCode(phone, captchaParam)
       clearAuthGuard({ action: 'phone-code', subject: phone })
+      gateRef.current?.reset() // 四元组一次性，发码即消费
       return result.expires_in
     } catch (error) {
       recordAuthGuardFailure({ action: 'phone-code', subject: phone })
@@ -165,6 +177,8 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
           />
           {errors.code && <p className="auth-error-message">{errors.code.message}</p>}
         </div>
+
+        <CaptchaGate onChange={setGateParam} onAvailability={setGateActive} handleRef={(h) => { gateRef.current = h }} />
 
         {serverError && <p className="auth-error-message">{serverError}</p>}
 

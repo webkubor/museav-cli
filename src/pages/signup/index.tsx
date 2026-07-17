@@ -7,7 +7,7 @@
 
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams, Link, Navigate } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
@@ -20,6 +20,7 @@ import { PasswordStrength } from '@/components/auth/PasswordStrength'
 import { VerificationCodeButton } from '@/components/auth/VerificationCodeButton'
 import { sendEmailCode, register } from '@/services/auth'
 import { getCaptchaParam } from '@/lib/aliyun-captcha'
+import { CaptchaGate, type CaptchaGateHandle } from '@/components/auth/CaptchaGate'
 import { useAuthStore } from '@/store/auth'
 import { ModelGoApiError } from '@/lib/request'
 import { errorCodeOf } from '@/lib/request-error-message'
@@ -63,6 +64,10 @@ function EmailSignupPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isSessionLoading = useAuthStore((s) => s.isLoading)
   const [serverError, setServerError] = useState('')
+  // 图形认证可见验证条：生效时注册前必须先通过；不可用时回退弹窗流/放行
+  const [gateParam, setGateParam] = useState<string | null>(null)
+  const [gateActive, setGateActive] = useState(false)
+  const gateRef = useRef<CaptchaGateHandle | null>(null)
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -131,8 +136,13 @@ function EmailSignupPage() {
       return
     }
 
-    // qa#299 人机验证：通过取 param；未启用/降级/超时 → null → 照常注册（后端 fail-open）。
-    const captchaParam = await getCaptchaParam()
+    // 验证条生效但未完成 → 调起挑战，等回填后再提交
+    if (gateActive && !gateParam) {
+      gateRef.current?.open()
+      return
+    }
+    // 验证条已通过用其四元组；否则弹窗流（未启用/降级 → null 照常注册，后端 fail-open）
+    const captchaParam = gateParam ?? (await getCaptchaParam())
 
     setLoading(true)
     setServerError('')
@@ -284,6 +294,8 @@ function EmailSignupPage() {
             </div>
           )}
         </div>
+
+        <CaptchaGate onChange={setGateParam} onAvailability={setGateActive} handleRef={(h) => { gateRef.current = h }} />
 
         {serverError && <p className="auth-error-message">{serverError}</p>}
 

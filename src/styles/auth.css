@@ -534,3 +534,34 @@ body[theme-mode='dark'] .auth-form-container .modern-input-wrapper.is-error {
 }
 
 
+
+/* 安全验证条（图形认证）：输入区与提交按钮之间的一行，视觉与输入框同宽同栅格 */
+.auth-captcha-gate {
+  @apply flex w-full items-center gap-2 rounded-md border px-3 text-sm cursor-pointer select-none;
+  height: 42px;
+  color: var(--mg-text-2);
+  border-color: var(--mg-border);
+  background: var(--mg-fill-1);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.auth-captcha-gate:hover {
+  color: var(--mg-text-1);
+  border-color: var(--mg-border-2);
+}
+
+.auth-captcha-gate.is-verified {
+  cursor: default;
+  color: var(--mg-success, #16a34a);
+  border-color: var(--mg-success, #16a34a);
+  background: transparent;
+}
+
+.auth-captcha-gate-reset {
+  @apply ml-auto inline-flex items-center rounded-sm p-1 cursor-pointer;
+  color: var(--mg-text-3);
+}
+
+.auth-captcha-gate-reset:hover {
+  color: var(--mg-text-1);
+}

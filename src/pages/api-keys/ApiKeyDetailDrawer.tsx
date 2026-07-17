@@ -351,7 +351,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
           action={
             <button
               className="inline-flex items-center gap-1 text-xs font-semibold text-brand-base hover:text-brand-deep"
-              onClick={() => jumpLogs(`/logs?workspace=${workspaceId}&api_key=${keyId}`)}
+              onClick={() => jumpLogs(`/workspace/${workspaceId}/observability`)}
             >
               跳转日志 <LuArrowRight size={12} />
             </button>

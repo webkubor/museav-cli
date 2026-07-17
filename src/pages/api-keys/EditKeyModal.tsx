@@ -83,7 +83,9 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
       )
       if (isAssigned) bound.push(g.id)
     }
-    const defaultId = guardrails.find((g) => g.is_default)?.id
+    // 只认 active 的默认护栏（同 #106）：存量可能有多条 is_default，inactive 的后端 byID 收不到，
+    // 强制塞进 guardrail_ids 保存会报「selected guardrail not found」——展示/提交都不能带它。
+    const defaultId = guardrails.find((g) => g.is_default && g.status === 'active')?.id
     const ordered = defaultId
       ? [defaultId, ...bound.filter((id) => id !== defaultId)]
       : bound
@@ -130,7 +132,7 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
   }
 
   const allGuardrails = Array.isArray(guardrailsQuery.data) ? guardrailsQuery.data : []
-  const defaultGuardrail = allGuardrails.find((g) => g.is_default)
+  const defaultGuardrail = allGuardrails.find((g) => g.is_default && g.status === 'active')
   const defaultId = defaultGuardrail?.id ?? ''
   const extraIds = guardrailIds.filter((id) => id !== defaultId)
   const scopeOpt = SCOPE_OPTIONS.find((o) => o.value === apiKey?.scope)

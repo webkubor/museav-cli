@@ -209,7 +209,7 @@ export default function ModelsCatalogPage() {
           {modelsQuery.isLoading ? (
             <div className="flex flex-col gap-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-[150px] animate-pulse rounded-[14px] border" style={{ background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' }} />
+                <div key={i} className="h-[150px] animate-pulse rounded-md border" style={{ background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' }} />
               ))}
             </div>
           ) : modelsQuery.isError ? (
@@ -217,7 +217,7 @@ export default function ModelsCatalogPage() {
               {t('modelsCatalog.error.load')}
             </div>
           ) : visibleModels.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-[14px] border py-20 text-center" style={{ background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' }}>
+            <div className="flex flex-col items-center justify-center rounded-md border py-20 text-center" style={{ background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' }}>
               <LuLayers size={28} className="mb-3" style={{ color: 'var(--mg-text-4)' }} />
               <p className="text-[13px]" style={{ color: 'var(--mg-text-3)' }}>{isZh ? '没有符合筛选条件的模型' : 'No models match your filters'}</p>
               <button type="button" onClick={reset} className="mt-3 text-[12px] underline-offset-2 hover:underline" style={{ color: 'var(--mg-text-3)' }}>

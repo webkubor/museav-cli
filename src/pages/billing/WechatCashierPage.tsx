@@ -77,7 +77,7 @@ function PayButton({
       onClick={onClick}
       disabled={disabled}
       style={style}
-      className={`inline-flex h-12 items-center justify-center gap-1.5 rounded-[12px] text-sm font-semibold tracking-[0.01em] transition-[filter] hover:brightness-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+      className={`inline-flex h-12 items-center justify-center gap-1.5 rounded-md text-sm font-semibold tracking-[0.01em] transition-[filter] hover:brightness-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
     >
       {children}
     </button>
@@ -182,7 +182,7 @@ export default function WechatCashierPage() {
           <button
             type="button"
             onClick={goBack}
-            className="inline-flex h-9 items-center gap-1.5 rounded-[12px] px-2.5 text-xs font-medium opacity-70 transition-opacity hover:opacity-100"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium opacity-70 transition-opacity hover:opacity-100"
           >
             <LuArrowLeft size={15} />
             {t('billing.wechatCashier.back')}
@@ -192,7 +192,7 @@ export default function WechatCashierPage() {
 
       <section className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-[980px] flex-col items-center justify-center px-4 py-8 sm:px-6">
         <div
-          className="relative w-full max-w-[480px] overflow-hidden rounded-[16px]"
+          className="relative w-full max-w-[480px] overflow-hidden rounded-lg"
           style={{ backgroundColor: PAY.surface, boxShadow: PAY.shadowCard }}
         >
           {/* 顶部进度条——轮询等待中(pending)时滑动，表示"正在处理"；支付结束后定格。

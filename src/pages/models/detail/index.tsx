@@ -56,7 +56,7 @@ export default function ModelDetailPage() {
       {detailQuery.isLoading ? (
         <div className="flex flex-col gap-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-[120px] animate-pulse rounded-[14px] border" style={{ background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' }} />
+            <div key={i} className="h-[120px] animate-pulse rounded-md border" style={{ background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' }} />
           ))}
         </div>
       ) : detailQuery.isError || !detail ? (

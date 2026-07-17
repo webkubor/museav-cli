@@ -134,17 +134,21 @@ function StatusCell({
   row,
   canEdit,
   onToggle,
+  lockOffReason,
 }: {
   row: GuardrailDetail
   canEdit: boolean
   onToggle: (args: { id: string; status: 'active' | 'inactive' }) => void
+  /** 非空 = 该 active 行不允许关闭（如「至少保留一条启用的全局护栏」），置灰开关并提示原因 */
+  lockOffReason?: string
 }) {
   const active = row.status === 'active'
+  const lockedOff = active && !!lockOffReason
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" title={lockedOff ? lockOffReason : undefined}>
       <Switch
         checked={active}
-        disabled={!canEdit}
+        disabled={!canEdit || lockedOff}
         onChange={(checked) => onToggle({ id: row.id, status: checked ? 'active' : 'inactive' })}
       />
       <span className={cn('mg-text-caption font-semibold', active ? 'text-mg-success' : 'text-mg-text-3')}>
@@ -288,6 +292,9 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
   // 过期/停用状态由「状态」列表达，行始终可见可管理。
   const globalRows = byScope('global')
   const memberRows = byScope('member')
+  // 全局护栏「至少保留一条启用」不变量（需求方#108）：仅剩 1 条 active 全局时，该条不允许关闭。
+  // 从全量算（不受搜索过滤影响），传给 StatusCell 置灰其停用开关。
+  const activeGlobalCount = guardrails.filter((g) => deriveScope(g) === 'global' && g.status === 'active').length
   const keyRows = byScope('key')
 
 
@@ -341,7 +348,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                 {row.created_by?.display_name || <span className="font-normal text-mg-text-3">—</span>}
               </TableCell>
               <TableCell className="text-xs text-mg-text-3">{formatDateTime(row.updated_at)}</TableCell>
-              <TableCell><StatusCell row={row} canEdit={canEdit.global} onToggle={onToggle} /></TableCell>
+              <TableCell><StatusCell row={row} canEdit={canEdit.global} onToggle={onToggle} lockOffReason={activeGlobalCount <= 1 ? '需至少保留一条启用的全局护栏' : undefined} /></TableCell>
               <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.global} canDelete={canDelete.global} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
             </TableRow>
           ))}

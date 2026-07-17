@@ -214,18 +214,9 @@ export function LogDetailSheet({
             <ResponseTiming row={row} />
           </DetailSection>
 
-          {/* 护栏命中是正常安全拦截（非故障），不飘红报错：命中详情已由上方「护栏详情」区表达，
-              且 row.error 是含 guardrail ULID/IP 的内部技术文案，不该暴露给终端用户（需求方#73，对齐原型）。
-              仅真正的调用故障（模型 5xx/超时等非护栏 error）才展示异常报错框。 */}
-          {row.error && !isGuardrailHit(row) && (
-            <section className="rounded-md border border-mg-danger/20 bg-mg-danger/5 p-[var(--mg-panel-padding-md)]">
-              <div className="mb-2 flex items-center gap-2 mg-text-label text-mg-danger">
-                <LuFileText className="h-4 w-4" />
-                异常报错信息
-              </div>
-              <pre className="whitespace-pre-wrap break-all mg-text-code text-mg-danger">{row.error}</pre>
-            </section>
-          )}
+          {/* 原型 LogDetailDrawer 无「异常报错信息」红框——护栏命中/500 故障都不飘红、不 dump raw error
+              （含 guardrail ULID/IP/stack 的内部技术文案不对终端用户展示，需求方#73）。错误/护栏信息由
+              状态 pill + 诊断卡 tone + 「响应未生成」中性提示表达，与原型一致，此块整体移除。 */}
 
           {/* 无 logs.payload:view 权限：整块不渲染（不给占位/提示，后台没勾即 UI 不存在，需求方#101） */}
           {canViewPayload && (
@@ -445,11 +436,11 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
   const requestText = redacted ? REDACTION_PLACEHOLDER : requestPayloadText
   // 响应是否产出：模型未发起（护栏拦截/rejected）或无输出即视为未生成，对齐 PRD 的响应态分支。
   const responseGenerated = !isModelNotStarted(row) && (responsePayloadText.length > 0 || row.usage.output_tokens > 0)
-  const responseMissingReason = row.error
-    ? row.error
-    : isModelNotStarted(row)
-      ? t('logs.guardrail.notStartedHint')
-      : '模型未返回响应内容'
+  // 响应未生成的原因：中性人话文案，不 dump raw row.error（技术文案含 ULID/IP，需求方#73 对齐原型）。
+  // 护栏拦截 → 护栏提示；其余（含 5xx 故障）→ 中性「模型未返回响应内容」。
+  const responseMissingReason = isModelNotStarted(row)
+    ? t('logs.guardrail.notStartedHint')
+    : '模型未返回响应内容'
   if (payloadLoading) {
     return (
       <section className="space-y-3">

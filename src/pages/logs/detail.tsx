@@ -214,7 +214,10 @@ export function LogDetailSheet({
             <ResponseTiming row={row} />
           </DetailSection>
 
-          {row.error && (
+          {/* 护栏命中是正常安全拦截（非故障），不飘红报错：命中详情已由上方「护栏详情」区表达，
+              且 row.error 是含 guardrail ULID/IP 的内部技术文案，不该暴露给终端用户（需求方#73，对齐原型）。
+              仅真正的调用故障（模型 5xx/超时等非护栏 error）才展示异常报错框。 */}
+          {row.error && !isGuardrailHit(row) && (
             <section className="rounded-md border border-mg-danger/20 bg-mg-danger/5 p-[var(--mg-panel-padding-md)]">
               <div className="mb-2 flex items-center gap-2 mg-text-label text-mg-danger">
                 <LuFileText className="h-4 w-4" />

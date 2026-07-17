@@ -99,7 +99,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '16px 20px',
-                borderRadius: '10px',
+                borderRadius: '8px',
                 border: '1px solid var(--mg-border)',
                 backgroundColor: 'var(--mg-bg-1)',
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
@@ -132,7 +132,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
                         marginLeft: '10px',
                         backgroundColor: 'var(--go-pale)',
                         padding: '1px 6px',
-                        borderRadius: '10px',
+                        borderRadius: '8px',
                         fontWeight: 600,
                         border: '1px solid var(--go-light)'
                       }}>
@@ -145,7 +145,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
                         marginLeft: '10px',
                         backgroundColor: 'var(--mg-fill-0)',
                         padding: '1px 6px',
-                        borderRadius: '10px',
+                        borderRadius: '8px',
                         fontWeight: 500,
                         border: '1px solid var(--mg-border)'
                       }}>
@@ -167,7 +167,6 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
                 disabled={isPending}
                 onClick={handleClick}
                 style={{
-                  borderRadius: '6px',
                   fontWeight: 600
                 }}
               >

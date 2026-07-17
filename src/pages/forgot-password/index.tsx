@@ -93,8 +93,8 @@ export default function ForgotPasswordPage() {
             style={{
               width: '48px',
               height: '48px',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+              borderRadius: '14px',
+              background: 'var(--mg-primary-light)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

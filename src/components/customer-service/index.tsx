@@ -258,8 +258,8 @@ export function CustomerService() {
               <span style={{
                 fontSize: 10, color: 'var(--mg-text-3)',
                 padding: '2px 8px', borderRadius: 100,
-                background: conversationId ? 'var(--mg-fill-0)' : '#eff6ff',
-                border: `1px solid ${conversationId ? 'var(--mg-border)' : '#bfdbfe'}`,
+                background: conversationId ? 'var(--mg-fill-0)' : 'var(--mg-primary-light)',
+                border: `1px solid ${conversationId ? 'var(--mg-border)' : 'var(--mg-primary)'}`,
               }}>
                 {conversationId ? 'Resumed' : 'New'}
               </span>

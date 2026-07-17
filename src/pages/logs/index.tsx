@@ -119,6 +119,7 @@ export default function LogsPage() {
   }, [])
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
+  const setActiveWorkspaceId = useAuthStore((s) => s.setActiveWorkspaceId)
   const currentAccountId = useAuthStore((s) => s.account?.account_id)
   const navigate = useNavigate()
   const docsUrl = getMarketConfig(useMarket()).docsUrl
@@ -663,7 +664,12 @@ export default function LogsPage() {
         open={Boolean(selectedLog)}
         row={selectedLog}
         workspaceName={selectedLog?.workspace?.name}
-        onOpenLogSettings={(workspaceId) => navigate(`/workspace/${workspaceId}/observability`)}
+        onOpenLogSettings={(workspaceId) => {
+          // 跳该日志所属空间的可观测性时，同步切换活跃空间——否则侧栏/上下文仍停在原空间，
+          // 页面显 A 空间设置、侧栏却显 B 空间，用户以为「跳错了」（需求方#109）。
+          if (workspaceId && workspaceId !== activeWorkspaceId) setActiveWorkspaceId(workspaceId)
+          navigate(`/workspace/${workspaceId}/observability`)
+        }}
       />
         </>
       )}

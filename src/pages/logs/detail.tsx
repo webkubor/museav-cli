@@ -62,11 +62,6 @@ function httpStatus(row: CallLogItem) {
   return row.http_status > 0 ? String(row.http_status) : '-'
 }
 
-function isLogSucceeded(row: CallLogItem) {
-  if (row.http_status > 0) return row.http_status < 400
-  return row.status === 'succeeded' || row.status === 'accepted'
-}
-
 function tokenFlow(row: CallLogItem) {
   return `${formatNumber(row.usage.input_tokens)} -> ${formatNumber(row.usage.output_tokens)}`
 }
@@ -140,11 +135,12 @@ export function LogDetailSheet({
         <div className="space-y-6">
           <header className="border-b border-mg-border pb-4">
             <h2 className="mg-text-title-sm font-bold text-mg-text-1">调用日志详情</h2>
+            {/* 顶部 chips 只留 模型 + 状态（对齐原型 log-detail-chips）：
+                调用类型(sync)/HTTP 状态码(403) 是技术细节，不当醒目标签甩给用户——
+                HTTP 状态作为下方「请求链路」的字段行保留即可（需求方反馈）。 */}
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge variant="outline" className="max-w-full truncate">{row.model.display_name}</Badge>
               <StatusBadge status={deriveLogStatus(row)} statusMap={statusMap} />
-              {row.call_type && <Badge variant="secondary">{row.call_type}</Badge>}
-              <Badge variant={isLogSucceeded(row) ? 'success' : 'danger'}>{httpStatus(row)}</Badge>
             </div>
             {row.trace_id && (
               <div className="mt-3 flex items-center gap-2">

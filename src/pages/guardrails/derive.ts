@@ -138,6 +138,16 @@ export function activeGlobalGuardrail(list: GuardrailDetail[]): GuardrailDetail 
   return list.find((g) => deriveScope(g) === 'global' && g.status === 'active')
 }
 
+/**
+ * 「当前生效的默认护栏」单一真源（需求方#106/#107/#89）。
+ * 存量数据可能同时存在多条 is_default（如 inactive 的旧默认 + active 的新默认），
+ * 只有 active 的那条才是真正生效、后端 byID 可绑定的默认；inactive 的被塞进 guardrail_ids
+ * 会报「selected guardrail not found」。所有「取默认护栏」的地方都必须走这个函数，别各写 find(is_default)。
+ */
+export function activeDefaultGuardrail(list: GuardrailDetail[]): GuardrailDetail | undefined {
+  return list.find((g) => g.is_default && g.status === 'active')
+}
+
 export function memberCount(g: GuardrailDetail): number {
   return assignmentsOf(g).filter((a) => a.subject_type === 'member' && a.account_id).length
 }

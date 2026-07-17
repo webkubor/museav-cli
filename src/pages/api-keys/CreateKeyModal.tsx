@@ -27,6 +27,7 @@ import { KEY_TYPE_LABEL, KEY_TYPE_DESC, buildSpendingLimit } from './derive'
 import { trackEvent } from '@/lib/track'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
 import {
+  activeDefaultGuardrail,
   activeGlobalGuardrail,
   deriveKind,
   deriveScope,
@@ -141,7 +142,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   useEffect(() => {
     const guardrails = Array.isArray(guardrailsQuery.data) ? guardrailsQuery.data : []
     if (!guardrails.length) return
-    const def = guardrails.find((g) => g.is_default && g.status === 'active')
+    const def = activeDefaultGuardrail(guardrails)
     if (def && !guardrailIds.includes(def.id)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setGuardrailIds((prev) => [def.id, ...prev.filter((id) => id !== def.id)])
@@ -212,7 +213,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   // 只认 active 的默认护栏（需求方#106）：存量数据可能有多条 is_default，其中 inactive 的
   // 后端 byID 收不到，若被 line 402 强行塞进 guardrail_ids 会导致建 key 报「selected guardrail not found」。
   // 与上方自动选择（#96）同口径，避免两处「默认」不一致。
-  const defaultGuardrail = allGuardrails.find((g) => g.is_default && g.status === 'active')
+  const defaultGuardrail = activeDefaultGuardrail(allGuardrails)
   const defaultId = defaultGuardrail?.id ?? ''
   const extraIds = guardrailIds.filter((id) => id !== defaultId)
 

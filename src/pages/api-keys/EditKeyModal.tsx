@@ -19,7 +19,7 @@ import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { SCOPE_OPTIONS, EXPIRATION_PRESETS, resolveExpiryISO } from './constants'
 import { CreateGuardrailDialog } from './CreateGuardrailDialog'
-import { deriveScope } from '@/pages/guardrails/derive'
+import { activeDefaultGuardrail, deriveScope } from '@/pages/guardrails/derive'
 import { PERIOD_LABEL } from '@/constants/status'
 import type { ApiKeyItem, SpendingPeriodUnit } from '@/types'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
@@ -83,9 +83,8 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
       )
       if (isAssigned) bound.push(g.id)
     }
-    // 只认 active 的默认护栏（同 #106）：存量可能有多条 is_default，inactive 的后端 byID 收不到，
-    // 强制塞进 guardrail_ids 保存会报「selected guardrail not found」——展示/提交都不能带它。
-    const defaultId = guardrails.find((g) => g.is_default && g.status === 'active')?.id
+    // 默认护栏走单一真源 activeDefaultGuardrail（只认 active，滤掉存量 inactive 的 is_default）
+    const defaultId = activeDefaultGuardrail(guardrails)?.id
     const ordered = defaultId
       ? [defaultId, ...bound.filter((id) => id !== defaultId)]
       : bound
@@ -132,7 +131,7 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
   }
 
   const allGuardrails = Array.isArray(guardrailsQuery.data) ? guardrailsQuery.data : []
-  const defaultGuardrail = allGuardrails.find((g) => g.is_default && g.status === 'active')
+  const defaultGuardrail = activeDefaultGuardrail(allGuardrails)
   const defaultId = defaultGuardrail?.id ?? ''
   const extraIds = guardrailIds.filter((id) => id !== defaultId)
   const scopeOpt = SCOPE_OPTIONS.find((o) => o.value === apiKey?.scope)

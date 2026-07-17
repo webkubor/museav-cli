@@ -57,6 +57,7 @@ export const EXPIRATION_PRESETS = [
   { key: '24h', label: '24 小时后' },
   { key: '7d', label: '7 天后' },
   { key: '30d', label: '30 天后' },
+  { key: '1y', label: '1 年后' },
   { key: 'custom', label: '自定义截止日期' },
 ]
 
@@ -102,6 +103,7 @@ export function resolveExpiryISO(range: DateRangeValue): string | null {
     '24h': [1, 'day'],
     '7d': [7, 'day'],
     '30d': [30, 'day'],
+    '1y': [365, 'day'],
   }
   const offset = offsets[range.preset]
   return offset ? addFromNowISO(offset[0], offset[1]) : null

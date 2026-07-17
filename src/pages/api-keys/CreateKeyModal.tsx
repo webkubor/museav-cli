@@ -70,9 +70,12 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const tenants = useAuthStore((s) => s.tenants)
   const account = useAuthStore((s) => s.account)
   const isPersonalTenant = tenants.find((t) => t.tenant_id === activeTenantId)?.type === 'personal'
-  // 企业普通成员（非 Owner/Admin、非空间负责人）：不可永不过期（PRD §8.2 表单规则，非按钮权限）
-  const { isEnterprise, canManage, isSpaceOwner } = useTenantRole()
-  const isPlainMember = isEnterprise && !canManage && !isSpaceOwner
+  // 企业下非 Owner/Admin（含空间负责人）：不可永不过期，必须设过期时间（需求方#104：
+  // 空间负责人 qa-test03 被点名要求禁永不过期——本单把范围从「仅普通成员」扩到「含空间负责人」，
+  // 即企业内只有 Owner/Admin 可永不过期；PRD §8.2 原只禁普通成员，此处按 #104 加严）。
+  // 个人租户 owner 不受限（isEnterprise=false）。
+  const { isEnterprise, canManage } = useTenantRole()
+  const mustSetExpiry = isEnterprise && !canManage
   // Key 类型按各自细粒度创建权限 gate（#54 · PRD §8.1/§8.2）：无权限类型置灰并提示，绝不靠角色启发式
   const { hasPermission } = usePermissions()
   const canCreateScope: Record<ScopeType, boolean> = {
@@ -100,14 +103,14 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
     startDate: todayStr,
     endDate: '',
   })
-  // 普通成员不可「永不过期」：移除该预设，默认档从永不过期落到「30 天后」
-  const expiryPresets = isPlainMember ? EXPIRATION_PRESETS.filter((p) => p.key !== 'all') : EXPIRATION_PRESETS
+  // 必须设过期者不可「永不过期」：移除该预设，默认档落「1 年后」（需求方#104：默认 1 年）
+  const expiryPresets = mustSetExpiry ? EXPIRATION_PRESETS.filter((p) => p.key !== 'all') : EXPIRATION_PRESETS
   useEffect(() => {
-    if (isPlainMember && expiryRange.preset === 'all') {
+    if (mustSetExpiry && expiryRange.preset === 'all') {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setExpiryRange({ preset: '30d', startDate: todayStr, endDate: '' })
+      setExpiryRange({ preset: '1y', startDate: todayStr, endDate: '' })
     }
-  }, [isPlainMember, expiryRange.preset, todayStr])
+  }, [mustSetExpiry, expiryRange.preset, todayStr])
   // 当前选中的类型无创建权限时，落到第一个有权限的类型（个人租户排除成员 Key）
   useEffect(() => {
     if (!open || canCreateScope[effectiveScope]) return
@@ -463,7 +466,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
           {/* 过期时间 */}
           <div>
             <label className="block text-xs font-bold text-mg-text-2 mb-2">
-              过期时间 <span className="text-mg-text-3 font-normal">{isPlainMember ? '（必填，普通成员不可永不过期）' : '（可选，不填则永不过期）'}</span>
+              过期时间 <span className="text-mg-text-3 font-normal">{mustSetExpiry ? '（必填，不可永不过期）' : '（可选，不填则永不过期）'}</span>
             </label>
             <DateRangePicker
               value={expiryRange}

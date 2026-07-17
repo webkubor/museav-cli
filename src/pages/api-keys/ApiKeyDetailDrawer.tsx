@@ -260,13 +260,27 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                 <div className="mb-1.5 text-xs font-bold text-mg-text-2">生效规则预览</div>
                 <div className="grid grid-cols-3 gap-2.5">
                   {LAYER_SLOTS.map((slot) => {
-                    const layer = effective.layers.find((l) => l.layer === slot.key)
+                    // 同层可绑定多条（个人/Key 护栏可多个，需求方#105）——列出全部，不再只取第一条
+                    const layers = effective.layers.filter((l) => l.layer === slot.key)
                     return (
-                      <Cell
+                      <div
                         key={slot.key}
-                        label={slot.label}
-                        value={layer ? layer.guardrail_name || '—' : <span className="font-normal text-mg-text-3">—</span>}
-                      />
+                        className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5"
+                      >
+                        <div className="text-xs text-mg-text-3">{slot.label}</div>
+                        {layers.length > 0 ? (
+                          <div className="mt-1 space-y-0.5">
+                            {layers.map((l) => (
+                              <div key={l.guardrail_id} className="flex items-center gap-1 truncate text-sm font-bold text-mg-text-1">
+                                <span className="truncate">{l.guardrail_name || '—'}</span>
+                                {l.is_default && <span className="shrink-0 text-xs font-normal text-mg-text-3">(默认)</span>}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="mt-1 text-sm font-normal text-mg-text-3">—</div>
+                        )}
+                      </div>
                     )
                   })}
                 </div>

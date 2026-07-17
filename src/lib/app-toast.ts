@@ -29,9 +29,10 @@ export const appToast = {
       return
     }
 
-    // 普通业务错误：文案本身可读，保留 request_id 便于追踪。
+    // 普通业务错误：只给用户看 data.field_errors 里的具体失败信息（getRequestErrorMessage 已提取）。
+    // 请求 ID 是排查用技术信息，不面向终端用户——仅 DEV 附上便于本地定位。
     const message = getRequestErrorMessage(error, fallback)
     const requestId = error instanceof ModelGoApiError ? error.requestId : undefined
-    return toast.error(message, requestId ? `请求 ID：${requestId}` : undefined)
+    return toast.error(message, import.meta.env.DEV && requestId ? `请求 ID：${requestId}` : undefined)
   },
 }

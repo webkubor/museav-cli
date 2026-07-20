@@ -67,6 +67,25 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, loading = false, htmlType, type, icon, children, disabled, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
 
+    // asChild 时 Slot 只能克隆「单个元素」：不能把 children 再包进 icon/loading 的 Fragment，
+    // 否则 className 等 props 会被克隆到 Fragment 上而被 React 丢弃，按钮样式整体失效（需求方#129）
+    if (asChild) {
+      const mappedSize = size === "small" ? "sm" : size === "large" ? "lg" : size
+      return (
+        <Slot
+          className={cn(buttonVariants({
+            variant: (variant ?? "default") as VariantProps<typeof buttonVariants>['variant'],
+            size: mappedSize as VariantProps<typeof buttonVariants>['size'],
+            className,
+          }))}
+          ref={ref as React.Ref<HTMLElement>}
+          {...props}
+        >
+          {children}
+        </Slot>
+      )
+    }
+
     // 1. 智能解析 variant (如果 type 传递了 Semi 颜色，自动映射为对应 variant)
     let resolvedVariant = variant
     if (!resolvedVariant) {

@@ -23,6 +23,8 @@ interface TagInputProps {
   allowFreeText?: boolean
   validator?: (value: string) => boolean
   onValidationError?: (value: string) => void
+  /** 批量分隔符（如 /[\s,;，；]+/）：提交时按其把一段文本拆成多个 tag——粘贴一串邮箱的场景 */
+  splitPattern?: RegExp
   className?: string
   tagVariant?: 'brand' | 'mono'
   disabled?: boolean
@@ -38,6 +40,7 @@ export function TagInput({
   allowFreeText = true,
   validator,
   onValidationError,
+  splitPattern,
   className,
   tagVariant = 'brand',
   disabled = false,
@@ -73,20 +76,29 @@ export function TagInput({
     (o) => o.value != null && !value.includes(o.value) && o.label.toLowerCase().includes(input.toLowerCase()),
   )
 
-  // 统一按「值」提交：选项模式传 option.value(id)，自由文本模式传输入文本本身
+  // 统一按「值」提交：选项模式传 option.value(id)，自由文本模式传输入文本本身。
+  // 有 splitPattern 时先按分隔符拆成多段（粘贴一串邮箱），逐段校验入列，非法段回调后跳过。
   const addTag = useCallback((tag: string) => {
     if (disabled) return
-    const trimmed = tag.trim()
-    if (!trimmed || value.includes(trimmed)) return
-    if (validator && !validator(trimmed)) {
-      onValidationError?.(trimmed)
-      return
+    const pieces = (splitPattern ? tag.split(splitPattern) : [tag]).map((p) => p.trim()).filter(Boolean)
+    if (pieces.length === 0) return
+    const next = [...value]
+    let rejected = 0
+    for (const piece of pieces) {
+      if (next.includes(piece)) continue
+      if (validator && !validator(piece)) {
+        onValidationError?.(piece)
+        rejected += 1
+        continue
+      }
+      next.push(piece)
     }
-    onChange([...value, trimmed])
-    setInput('')
+    if (next.length !== value.length) onChange(next)
+    // 全部被校验拒绝时保留输入原文，让用户就地改错（与旧单段行为一致）
+    if (!(rejected > 0 && next.length === value.length)) setInput('')
     setFocusIdx(-1)
     if (!hasSuggestions) setOpen(false)
-  }, [disabled, value, onChange, validator, onValidationError, hasSuggestions])
+  }, [disabled, value, onChange, validator, onValidationError, splitPattern, hasSuggestions])
 
   const removeTag = useCallback((tag: string) => {
     if (disabled) return

@@ -1938,8 +1938,8 @@
       "copyLink": "Copy link",
       "copied": "Copied",
       "emailTitle": "Email invitations",
-      "emailHint": "Send invitation emails to specific addresses, comma-separated",
-      "emailPlaceholder": "example@company.com, comma-separated",
+      "emailHint": "Send invitation emails to specific addresses; press Enter or comma to add each, paste a list to auto-split",
+      "emailPlaceholder": "Type an email and press Enter, add as many as needed",
       "targetWorkspace": "Grant workspace",
       "targetWorkspaceNone": "None (join org only)",
       "sendInvite": "Send invite",
@@ -1948,7 +1948,8 @@
       "queueEmptyDesc": "Invitations sent by email will appear here",
       "resetConfirmTitle": "Confirm reset invite link",
       "resetConfirmDesc": "The current invite link will be invalidated immediately. Continue?",
-      "confirmReset": "Reset"
+      "confirmReset": "Reset",
+      "emailInvalid": "{{email}} is not a valid email"
     }
   }
 }

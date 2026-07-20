@@ -9,7 +9,7 @@ import { addTenantMembers, getTenantInviteLink, resetTenantInviteLink } from '@/
 import { listWorkspaces } from '@/services/workspaces'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
-import { Input } from '@/components/ui/Input'
+import { TagInput } from '@/components/ui/TagInput'
 import { Modal } from '@/components/ui/Modal'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { appToast } from '@/lib/app-toast'
@@ -19,7 +19,8 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
   const { hasPermission } = usePermissions()
   const canInvite = hasPermission(PERMS.ORG_INVITE_MANAGE)
   const qc = useQueryClient()
-  const [inviteEmails, setInviteEmails] = useState('')
+  // 多邮箱 chips（需求方#116）：回车/逗号逐个添加，粘贴一串自动按分隔符拆分；发送时已是数组
+  const [inviteEmails, setInviteEmails] = useState<string[]>([])
   const [inviteRole, setInviteRole] = useState<'tenant_admin' | 'tenant_member'>('tenant_member')
   const [expiresInHours, setExpiresInHours] = useState<number>(72)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
@@ -70,14 +71,14 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
 
   const addMembers = useMutation({
     mutationFn: () => addTenantMembers(tenantId, {
-      emails: inviteEmails.split(/[\s,;]+/).map((e) => e.trim()).filter(Boolean),
+      emails: inviteEmails,
       role: inviteRole,
       expires_in_hours: expiresInHours,
       target_workspace_id: targetWorkspaceId === NONE_WORKSPACE ? undefined : targetWorkspaceId,
     }),
     onSuccess: () => {
       appToast.success('邀请已发出')
-      setInviteEmails('')
+      setInviteEmails([])
       setExpiresInHours(72)
       setTargetWorkspaceId(NONE_WORKSPACE)
       qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
@@ -174,16 +175,17 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
           <div className="p-4 flex gap-2 items-end flex-wrap md:flex-nowrap">
             <div className="flex-1 min-w-[200px] space-y-1">
               <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.invite.emailTitle')}</label>
-              <Input
-                type="email"
-                multiple
-                data-track="invitations:field_email"
-                placeholder={t('enterprise.invite.emailPlaceholder')}
-                value={inviteEmails}
-                onChange={(e) => setInviteEmails(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addMembers.mutate()}
-                className="h-9 text-xs rounded-lg"
-              />
+              {/* 回车/逗号=添加一个邮箱 chip，绝不直接提交；发送只走「发送邀请」按钮（需求方#116） */}
+              <div data-track="invitations:field_email">
+                <TagInput
+                  value={inviteEmails}
+                  onChange={setInviteEmails}
+                  placeholder={t('enterprise.invite.emailPlaceholder')}
+                  splitPattern={/[\s,;，；]+/}
+                  validator={(v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)}
+                  onValidationError={(v) => appToast.error(t('enterprise.invite.emailInvalid', { email: v }))}
+                />
+              </div>
             </div>
             <div className="w-full md:w-56 space-y-1">
               <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.invite.targetWorkspace')}</label>
@@ -199,6 +201,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
                 variant="brand"
                 data-track="invitations:send"
                 loading={addMembers.isPending}
+                disabled={inviteEmails.length === 0}
                 className="font-semibold h-9 px-4 rounded-lg text-xs bg-brand-base text-white hover:bg-brand-base/90 shrink-0"
                 onClick={() => addMembers.mutate()}
               >

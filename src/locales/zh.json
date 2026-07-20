@@ -1950,8 +1950,8 @@
       "copyLink": "复制链接",
       "copied": "已复制",
       "emailTitle": "邮箱邀请",
-      "emailHint": "直接向特定邮箱发送邀请邮件，多个用逗号分隔",
-      "emailPlaceholder": "example@company.com，多个用逗号分隔",
+      "emailHint": "直接向特定邮箱发送邀请邮件；输入后按回车或逗号逐个添加，可粘贴一串自动拆分",
+      "emailPlaceholder": "输入邮箱后按回车添加，可添加多个",
       "targetWorkspace": "授权工作空间",
       "targetWorkspaceNone": "不指定（仅加入组织）",
       "sendInvite": "发送邀请",
@@ -1960,7 +1960,8 @@
       "queueEmptyDesc": "通过邮箱发出的邀请会显示在这里",
       "resetConfirmTitle": "确认重置邀请链接",
       "resetConfirmDesc": "重置后当前邀请链接立即失效，确认重置？",
-      "confirmReset": "确认重置"
+      "confirmReset": "确认重置",
+      "emailInvalid": "{{email}} 不是有效邮箱"
     }
   }
 }

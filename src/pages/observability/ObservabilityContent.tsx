@@ -59,8 +59,9 @@ function ToggleRow({
               {checked ? t('observability.status.enabled') : t('observability.status.disabled')}
             </Badge>
           </div>
-          <p className="text-xs leading-5 text-mg-text-3">{description}</p>
-          <p className="mt-1 text-xs leading-4 text-mg-text-4">{meta}</p>
+          <p className="text-xs leading-5 text-mg-text-2">{description}</p>
+          {/* meta 是需读的状态说明（保留天数/关闭影响），非禁用内容——用 text-3 辅助色，勿用 text-4 禁用色（深色下不可读） */}
+          <p className="mt-1 text-xs leading-4 text-mg-text-3">{meta}</p>
         </div>
       </div>
       <div className="flex shrink-0 items-center justify-end gap-2">

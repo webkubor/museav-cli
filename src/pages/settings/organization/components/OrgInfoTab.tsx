@@ -237,7 +237,7 @@ export function OrgInfoTab({
           <div className="space-y-1">
             <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.info.owner')}</label>
             {owner ? (
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-3">
                 <div className="space-y-0.5 min-w-0">
                   <div className="text-xs font-semibold text-mg-text-1 truncate">{owner.account.display_name || '—'}</div>
                   <div className="text-xs text-mg-text-3 truncate">{owner.account.email}</div>

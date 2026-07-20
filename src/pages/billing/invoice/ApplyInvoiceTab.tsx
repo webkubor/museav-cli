@@ -233,7 +233,7 @@ export function ApplyInvoiceTab({
           </div>
         )}
 
-        <p className="text-xs leading-relaxed text-mg-text-4">
+        <p className="text-xs leading-relaxed text-mg-text-3">
           提交后系统会自动发起 FAPI 开票任务，出票后推送至接收邮箱。
         </p>
 

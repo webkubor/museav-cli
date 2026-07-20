@@ -245,7 +245,7 @@ export function PermissionsPanel() {
         ) : (
           <p className="text-xs text-mg-text-3">当前无任何 granted 权限（{granted === null ? 'null' : '空数组'}）。</p>
         )}
-        <p className="text-xs text-mg-text-4">
+        <p className="text-xs text-mg-text-3">
           对照上表：某菜单需要的权限若不在上面 granted 里，则当前角色实际看不到该菜单（即使角色门控 ✓）。
           带门控的菜单当前命中：
           {rows.filter((r) => r.permission && grantedSet.has(r.permission)).map((r) => r.text).join(' / ') || '（无）'}

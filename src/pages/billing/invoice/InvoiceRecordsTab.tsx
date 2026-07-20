@@ -155,7 +155,7 @@ export function InvoiceRecordsTab({
         </button>
       )}
 
-      <p className="pt-1 text-xs leading-relaxed text-mg-text-4">
+      <p className="pt-1 text-xs leading-relaxed text-mg-text-3">
         红冲为不可逆财税操作，仅运营端可发起；如需作废重开，请联系客服 / 由运营处理（D-INV15）。
       </p>
     </div>

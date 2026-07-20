@@ -131,7 +131,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
         <div className="px-6 py-5 space-y-5">
           {/* 金额选择标签 */}
           <div>
-            <div className="text-xs text-mg-text-4 font-bold mb-2.5 tracking-wider">{t('billing.rechargeModal.amount')}</div>
+            <div className="text-xs text-mg-text-3 font-bold mb-2.5 tracking-wider">{t('billing.rechargeModal.amount')}</div>
             <div className="grid grid-cols-3 gap-2">
               {PRESETS.map((p) => {
                 const active = amount === p && !customMode
@@ -169,7 +169,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
 
           {/* 支付方式 */}
           <div>
-            <div className="text-xs text-mg-text-4 font-bold mb-2.5 tracking-wider">{t('billing.rechargeModal.method')}</div>
+            <div className="text-xs text-mg-text-3 font-bold mb-2.5 tracking-wider">{t('billing.rechargeModal.method')}</div>
             <div className="flex gap-2.5">
               {CHANNELS.map((c) => {
                 const active = effectiveChannel === c.value

@@ -450,7 +450,7 @@ export function MembersTab({
               ) : (
                 <div className="rounded-lg border border-mg-border/40 bg-mg-fill-0/30 p-3 text-xs text-mg-text-3">
                   {t('enterprise.members.allWorkspaces')}
-                  <span className="ml-1 text-xs text-mg-text-4">· {t('enterprise.members.workspaceHintNonMember')}</span>
+                  <span className="ml-1 text-xs text-mg-text-3">· {t('enterprise.members.workspaceHintNonMember')}</span>
                 </div>
               )}
             </div>

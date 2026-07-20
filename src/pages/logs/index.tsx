@@ -648,7 +648,7 @@ export default function LogsPage() {
       )}
       {/* PRD §7.5：日志写入可能有短暂延迟，给出可预期提示 + 刷新引导 */}
       {items.length > 0 && (
-        <p className="mg-text-caption text-mg-text-4">
+        <p className="mg-text-caption text-mg-text-3">
           日志写入可能有秒级延迟，刚发起的调用如未出现请稍后点「刷新」。
         </p>
       )}

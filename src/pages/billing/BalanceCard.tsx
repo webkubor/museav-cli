@@ -128,7 +128,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
         <div className="space-y-1">
           <p className="text-xs text-mg-text-3">
             {t('billing.balance.spendableTotal')}
-            <span className="ml-1 text-mg-text-4">({t('billing.balance.spendableHint')})</span>
+            <span className="ml-1 text-mg-text-3">({t('billing.balance.spendableHint')})</span>
           </p>
           <div className="flex items-baseline gap-3 flex-wrap">
             <div className="flex items-baseline gap-1">

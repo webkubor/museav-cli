@@ -440,7 +440,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                 </span>
               </div>
               {/* 后端生效预览已交付（内部跟踪 #420 第1项）；提示词注入不在该接口内，仍由前端解析。 */}
-              <p className="text-mg-text-4 leading-relaxed">以上为按当前配置的三层生效预览（黑名单取并集、白名单取交集、预算取最严），与调用时网关一致；Key 创建后可在详情查看最终生效。</p>
+              <p className="text-mg-text-3 leading-relaxed">以上为按当前配置的三层生效预览（黑名单取并集、白名单取交集、预算取最严），与调用时网关一致；Key 创建后可在详情查看最终生效。</p>
             </div>
           </div>
 

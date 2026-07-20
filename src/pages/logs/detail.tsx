@@ -510,7 +510,7 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
           </div>
         </div>
       )}
-      <p className="flex items-center gap-1.5 mg-text-caption text-mg-text-4">
+      <p className="flex items-center gap-1.5 mg-text-caption text-mg-text-3">
         <LuShieldCheck className="h-3.5 w-3.5" />
         密钥与敏感字段已脱敏
       </p>

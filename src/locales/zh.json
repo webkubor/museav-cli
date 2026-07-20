@@ -11,6 +11,7 @@
     "orgSettings": "企业管理",
     "logout": "退出登录",
     "login": "登录 / 注册",
+    "refresh": "刷新",
     "theme": "主题设置",
     "themeLight": "明亮",
     "themeDark": "暗黑",
@@ -285,7 +286,8 @@
       "giftHint": "兑换码/体验金",
       "rewardBalance": "奖励余额",
       "rewardHint": "推荐返佣",
-      "frozenHint": "预扣/处理中"
+      "frozenHint": "预扣/处理中",
+      "refreshHint": "刷新余额与列表"
     },
     "tabs": {
       "orders": "充值订单",
@@ -315,6 +317,7 @@
       "orderNo": "订单号",
       "copy": "复制支付链接",
       "copied": "已复制",
+      "copyFailed": "复制失败，请手动复制",
       "paidTitle": "支付成功",
       "redirecting": "{{seconds}} 秒后自动返回账单",
       "backNow": "立即返回",
@@ -327,6 +330,7 @@
     },
     "promo": {
       "title": "兑换优惠码",
+      "subtitle": "线下收款 / 促销码自助到账",
       "placeholder": "输入 Promo Code",
       "submit": "立即兑换",
       "emptyWarning": "请输入 Promo Code",
@@ -341,6 +345,18 @@
     },
     "orders": {
       "empty": "暂无充值订单",
+      "emptyHint": "您的账户当前尚无历史充值或兑换交易流水，可在上方进行快速充值。",
+      "tab": {
+        "recharge": "充值记录",
+        "gift": "赠送余额明细",
+        "reward": "奖励记录"
+      },
+      "gift": {
+        "empty": "暂无赠送记录",
+        "source": "来源",
+        "amount": "金额",
+        "creditedAt": "到账时间"
+      },
       "loadMore": "加载更多",
       "detailTitle": "订单详情",
       "detailPlaceholder": "点击左侧订单查看详情",

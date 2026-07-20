@@ -11,6 +11,7 @@
     "orgSettings": "Organization",
     "logout": "Sign Out",
     "login": "Log in / Sign up",
+    "refresh": "Refresh",
     "theme": "Theme",
     "themeLight": "Light",
     "themeDark": "Dark",
@@ -285,7 +286,8 @@
       "giftHint": "Promo code / trial credit",
       "rewardBalance": "Reward Balance",
       "rewardHint": "Referral rebate",
-      "frozenHint": "Pre-authorization / processing"
+      "frozenHint": "Pre-authorization / processing",
+      "refreshHint": "Refresh balance and list"
     },
     "tabs": {
       "orders": "Orders",
@@ -315,6 +317,7 @@
       "orderNo": "Order No.",
       "copy": "Copy payment link",
       "copied": "Copied",
+      "copyFailed": "Copy failed. Please copy manually.",
       "paidTitle": "Payment successful",
       "redirecting": "Returning to Billing in {{seconds}}s",
       "backNow": "Back now",
@@ -327,6 +330,7 @@
     },
     "promo": {
       "title": "Redeem Promo Code",
+      "subtitle": "Offline payment / self-service promo redemption",
       "placeholder": "Enter Promo Code",
       "submit": "Redeem Now",
       "emptyWarning": "Please enter a Promo Code",
@@ -341,6 +345,18 @@
     },
     "orders": {
       "empty": "No orders",
+      "emptyHint": "Your account has no recharge or redemption transactions yet. Use the quick recharge above to get started.",
+      "tab": {
+        "recharge": "Recharge Records",
+        "gift": "Gift Balance Details",
+        "reward": "Reward Records"
+      },
+      "gift": {
+        "empty": "No gift records yet",
+        "source": "Source",
+        "amount": "Amount",
+        "creditedAt": "Credited At"
+      },
       "loadMore": "Load More",
       "detailTitle": "Order Details",
       "detailPlaceholder": "Click an order to view details",

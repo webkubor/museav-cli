@@ -101,21 +101,18 @@ export function OrgManagePanel({
 
   return (
     <div className="space-y-6">
-      {/* 企业摘要条 */}
+      {/* 企业摘要条：名称只在标题展示一次，账号类型/Owner 收进标题旁 Hint（需求方#128） */}
       <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg shadow-xs p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-sm font-bold text-mg-text-1">{tenantName}</span>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-3 min-w-0">
+          <span className="text-sm font-bold text-mg-text-1 truncate">{detail?.name ?? tenantName}</span>
           {tenantItem && <RoleBadge role={tenantItem.role} />}
+          <span className="text-xs text-mg-text-3 truncate">
+            {(detail ? (detail.type === 'personal' ? t('enterprise.summary.typePersonal') : t('enterprise.summary.typeEnterprise')) : '…')}
+            {' · '}
+            {t('enterprise.summary.owner')}: {owner?.account.display_name || owner?.account.email || (membersQuery.isLoading ? '…' : dash)}
+          </span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-3">
-          <SummaryStat label={t('enterprise.summary.name')} value={detail?.name ?? tenantName} />
-          <SummaryStat
-            label={t('enterprise.summary.accountType')}
-            value={detail
-              ? (detail.type === 'personal' ? t('enterprise.summary.typePersonal') : t('enterprise.summary.typeEnterprise'))
-              : dash}
-          />
-          <SummaryStat label={t('enterprise.summary.owner')} value={owner?.account.display_name || owner?.account.email || (membersQuery.isLoading ? '…' : dash)} />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
           <SummaryStat label={t('enterprise.summary.members')} value={membersQuery.isLoading ? '…' : members.length} />
           <SummaryStat label={t('enterprise.summary.admins')} value={membersQuery.isLoading ? '…' : adminCount} />
           <SummaryStat label={t('enterprise.summary.pendingInvites')} value={membersQuery.isLoading ? '…' : pendingInviteCount} />

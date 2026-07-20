@@ -1878,8 +1878,6 @@
     "title": "Enterprise",
     "subtitle": "Manage members, invitations, organization profile, and audit log",
     "summary": {
-      "name": "Name",
-      "accountType": "Account type",
       "owner": "Owner",
       "members": "Members",
       "admins": "Admins",

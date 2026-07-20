@@ -1890,8 +1890,6 @@
     "title": "企业管理",
     "subtitle": "管理企业成员、邀请、组织资料和操作审计",
     "summary": {
-      "name": "企业名称",
-      "accountType": "账号类型",
       "owner": "Owner",
       "members": "成员数",
       "admins": "管理员数",

@@ -1508,6 +1508,63 @@
       "copied": "API ID 已复制",
       "copyFailed": "复制失败"
     },
+    "page": {
+      "title": "模型广场",
+      "subtitle": "一个 API，接入主流大模型"
+    },
+    "filtersButton": "筛选",
+    "search": {
+      "placeholder": "搜索模型名、API ID、供应商或描述关键词…"
+    },
+    "sort": {
+      "default": "推荐排序",
+      "popular": "热门",
+      "newest": "最新",
+      "cheapest": "最便宜"
+    },
+    "count": "共 {{n}} 个模型",
+    "emptyFiltered": "没有符合筛选条件的模型",
+    "clearFilters": "清除所有筛选",
+    "sidebar": {
+      "family": "模型系列",
+      "allFamilies": "全部系列",
+      "tags": "功能标签",
+      "context": "上下文长度",
+      "pricing": "价格类型",
+      "all": "全部",
+      "free": "免费",
+      "paid": "付费",
+      "more": "展开更多",
+      "less": "收起"
+    },
+    "heroStats": {
+      "models": "已接入模型",
+      "modelsSub": "覆盖主流大模型",
+      "providers": "官方供应商",
+      "providersSub": "与全球顶级厂商合作",
+      "uptime": "API 可用率",
+      "uptimeSub": "企业级稳定保障",
+      "sla": "SLA 保障",
+      "failover": "智能容灾",
+      "multiRegion": "多地域部署",
+      "trending": "热门模型"
+    },
+    "card": {
+      "favorite": "收藏",
+      "free": "免费",
+      "copyApiId": "复制 API ID",
+      "apiDocs": "API 文档",
+      "compare": "对比模型",
+      "context": "上下文长度",
+      "input": "输入价格",
+      "output": "输出价格"
+    },
+    "modality": {
+      "text": "文本",
+      "image": "图像",
+      "audio": "音频",
+      "video": "视频"
+    },
     "detail.title": "模型详情",
     "error.loadDetail": "加载模型详情失败，请稍后重试。"
   },

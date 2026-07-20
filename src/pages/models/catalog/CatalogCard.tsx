@@ -19,10 +19,6 @@ import { formatContextLength, prettyModelName } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 
 const MODALITY_ICON: Record<string, IconType> = { text: LuFileText, image: LuImage, audio: LuMic, video: LuVideo }
-const MODALITY_LABEL: Record<'zh' | 'en', Record<string, string>> = {
-  zh: { text: '文本', image: '图像', audio: '音频', video: '视频' },
-  en: { text: 'Text', image: 'Image', audio: 'Audio', video: 'Video' },
-}
 const MODALITY_CODES = ['text', 'image', 'audio', 'video']
 const TAG_DENYLIST = new Set(['modelgo_tool', 'test', 'free', 'internal', 'tool'])
 
@@ -50,10 +46,10 @@ function writeFav(id: string, on: boolean) {
 // 货币代码 → 符号（后端给的是 CNY/USD 这类代码）
 const CCY_SYMBOL: Record<string, string> = { CNY: '¥', RMB: '¥', USD: '$', EUR: '€', '¥': '¥', $: '$' }
 
-function priceText(amount: number | string | null | undefined, symbol: string, isZh: boolean) {
+function priceText(amount: number | string | null | undefined, symbol: string, freeLabel: string) {
   const n = typeof amount === 'string' ? parseFloat(amount) : amount
   if (amount == null || amount === '' || Number.isNaN(n) || (n ?? 0) <= 0) {
-    return { value: isZh ? '免费' : 'Free', unit: '' }
+    return { value: freeLabel, unit: '' }
   }
   return { value: `${symbol} ${amount}`, unit: '/1M tokens' }
 }
@@ -84,13 +80,14 @@ export function CatalogCard({ model, isZh, onTry, onCompare, canCompare }: Props
     .filter((tg) => !MODALITY_CODES.includes(tg))
     .filter((tg) => !TAG_DENYLIST.has(tg.toLowerCase()) && !vendorish.has(tg.toLowerCase()))
   const chips = [
-    ...modalities.map((m) => ({ key: `m-${m}`, icon: MODALITY_ICON[m], label: MODALITY_LABEL[isZh ? 'zh' : 'en'][m] ?? m })),
+    ...modalities.map((m) => ({ key: `m-${m}`, icon: MODALITY_ICON[m], label: t(`modelsCatalog.modality.${m}`) })),
     ...capabilities.map((c) => ({ key: `c-${c}`, icon: tagIcon(c), label: c })),
   ]
   const shownChips = chips.slice(0, 5)
 
-  const input = priceText(model.pricing?.input_per_1m, symbol, isZh)
-  const output = priceText(model.pricing?.output_per_1m, symbol, isZh)
+  const freeLabel = t('modelsCatalog.card.free')
+  const input = priceText(model.pricing?.input_per_1m, symbol, freeLabel)
+  const output = priceText(model.pricing?.output_per_1m, symbol, freeLabel)
 
   const toggleFav = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -106,7 +103,7 @@ export function CatalogCard({ model, isZh, onTry, onCompare, canCompare }: Props
         onClick={toggleFav}
         className={`mg-card-fav ${fav ? 'is-on' : ''}`}
         aria-pressed={fav}
-        aria-label={isZh ? '收藏' : 'Favorite'}
+        aria-label={t('modelsCatalog.card.favorite')}
       >
         <LuHeart size={16} fill={fav ? 'currentColor' : 'none'} />
       </button>
@@ -120,7 +117,7 @@ export function CatalogCard({ model, isZh, onTry, onCompare, canCompare }: Props
             {isFree && (
               <span className="mg-card-free">
                 <span className="mg-card-free-dot" />
-                {isZh ? '免费' : 'Free'}
+                {t('modelsCatalog.card.free')}
               </span>
             )}
           </div>
@@ -133,7 +130,7 @@ export function CatalogCard({ model, isZh, onTry, onCompare, canCompare }: Props
                 <span className="inline-flex shrink-0" onClick={(e) => e.stopPropagation()}>
                   <CopyButton
                     value={model.model_id}
-                    aria-label={isZh ? '复制 API ID' : 'Copy API ID'}
+                    aria-label={t('modelsCatalog.card.copyApiId')}
                     toast={false}
                     className="h-5 w-5"
                   />
@@ -157,9 +154,9 @@ export function CatalogCard({ model, isZh, onTry, onCompare, canCompare }: Props
 
       {/* 中：指标 */}
       <div className="mg-card-metrics">
-        <Metric label={isZh ? '上下文长度' : 'Context'} value={ctxValue} />
-        <Metric label={isZh ? '输入价格' : 'Input'} value={input.value} unit={input.unit} accent />
-        <Metric label={isZh ? '输出价格' : 'Output'} value={output.value} unit={output.unit} accent />
+        <Metric label={t('modelsCatalog.card.context')} value={ctxValue} />
+        <Metric label={t('modelsCatalog.card.input')} value={input.value} unit={input.unit} accent />
+        <Metric label={t('modelsCatalog.card.output')} value={output.value} unit={output.unit} accent />
       </div>
 
       {/* 右：操作 */}
@@ -170,14 +167,14 @@ export function CatalogCard({ model, isZh, onTry, onCompare, canCompare }: Props
         </button>
         <div className="mg-card-links">
           <button type="button" onClick={(e) => { e.stopPropagation(); navigate(`/models/${model.id}`) }}>
-            {isZh ? 'API 文档' : 'API docs'}
+            {t('modelsCatalog.card.apiDocs')}
           </button>
           {canCompare && onCompare && (
             <>
               <span className="mg-card-links-sep" />
               <button type="button" onClick={onCompare}>
                 <LuGitCompareArrows size={12} />
-                {isZh ? '对比模型' : 'Compare'}
+                {t('modelsCatalog.card.compare')}
               </button>
             </>
           )}

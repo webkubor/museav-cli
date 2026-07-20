@@ -5,6 +5,7 @@
  * 选中态全部写在父级的 selected: string[]，key 形如 "dim:code"。
  */
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { LuBoxes, LuTag, LuRuler, LuCircleDollarSign, LuChevronDown } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
@@ -16,9 +17,7 @@ const CTX_CHIPS = [
   { code: '8k', label: '>8K' }, { code: '32k', label: '>32K' }, { code: '128k', label: '>128K' },
   { code: '256k', label: '>256K' }, { code: '1m', label: '>1M' },
 ]
-const PRICE_CHIPS = [
-  { code: 'free', zh: '免费', en: 'Free' }, { code: 'paid', zh: '付费', en: 'Paid' },
-]
+const PRICE_CHIPS = [{ code: 'free' }, { code: 'paid' }] as const
 const FAMILY_PREVIEW = 7
 const TAG_PREVIEW = 8
 
@@ -31,6 +30,7 @@ interface Props {
 }
 
 export function CatalogSidebar({ families, tags, selected, setSelected, isZh }: Props) {
+  const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [showAllFamilies, setShowAllFamilies] = useState(false)
   const [showAllTags, setShowAllTags] = useState(false)
@@ -60,10 +60,10 @@ export function CatalogSidebar({ families, tags, selected, setSelected, isZh }: 
 
   return (
     <aside className="mg-side">
-      <Group id="family" icon={LuBoxes} title={isZh ? '模型系列' : 'Model Family'} collapsed={collapsed} onToggle={toggleCollapse}>
+      <Group id="family" icon={LuBoxes} title={t('modelsCatalog.sidebar.family')} collapsed={collapsed} onToggle={toggleCollapse}>
         <div className="mg-side-list">
           <button type="button" className={`mg-side-row ${!familyActive ? 'is-active' : ''}`} onClick={() => pickOne('family', null)}>
-            {isZh ? '全部系列' : 'All families'}
+            {t('modelsCatalog.sidebar.allFamilies')}
           </button>
           {shownFamilies.map((f) => {
             const label = isZh ? f.name_zh || f.code : f.name_en || f.code
@@ -78,7 +78,7 @@ export function CatalogSidebar({ families, tags, selected, setSelected, isZh }: 
           })}
           {families.length > FAMILY_PREVIEW && (
             <button type="button" className="mg-side-more" onClick={() => setShowAllFamilies((v) => !v)}>
-              {showAllFamilies ? (isZh ? '收起' : 'Less') : (isZh ? '展开更多' : 'More')}
+              {showAllFamilies ? t('modelsCatalog.sidebar.less') : t('modelsCatalog.sidebar.more')}
               <LuChevronDown size={13} className={showAllFamilies ? 'rotate-180' : ''} />
             </button>
           )}
@@ -86,7 +86,7 @@ export function CatalogSidebar({ families, tags, selected, setSelected, isZh }: 
       </Group>
 
       {tags.length > 0 && (
-        <Group id="tags" icon={LuTag} title={isZh ? '功能标签' : 'Tags'} collapsed={collapsed} onToggle={toggleCollapse}>
+        <Group id="tags" icon={LuTag} title={t('modelsCatalog.sidebar.tags')} collapsed={collapsed} onToggle={toggleCollapse}>
           <div className="mg-side-chips">
             {shownTags.map((tg) => (
               <Chip key={tg.code} active={has(`tag:${tg.code}`)} onClick={() => toggle(`tag:${tg.code}`)}>
@@ -95,7 +95,7 @@ export function CatalogSidebar({ families, tags, selected, setSelected, isZh }: 
             ))}
             {tags.length > TAG_PREVIEW && (
               <button type="button" className="mg-side-more" onClick={() => setShowAllTags((v) => !v)}>
-                {showAllTags ? (isZh ? '收起' : 'Less') : (isZh ? '展开更多' : 'More')}
+                {showAllTags ? t('modelsCatalog.sidebar.less') : t('modelsCatalog.sidebar.more')}
                 <LuChevronDown size={13} className={showAllTags ? 'rotate-180' : ''} />
               </button>
             )}
@@ -103,9 +103,9 @@ export function CatalogSidebar({ families, tags, selected, setSelected, isZh }: 
         </Group>
       )}
 
-      <Group id="ctx" icon={LuRuler} title={isZh ? '上下文长度' : 'Context'} collapsed={collapsed} onToggle={toggleCollapse}>
+      <Group id="ctx" icon={LuRuler} title={t('modelsCatalog.sidebar.context')} collapsed={collapsed} onToggle={toggleCollapse}>
         <div className="mg-side-chips">
-          <Chip active={!ctxActive} onClick={() => pickOne('ctx', null)}>{isZh ? '全部' : 'All'}</Chip>
+          <Chip active={!ctxActive} onClick={() => pickOne('ctx', null)}>{t('modelsCatalog.sidebar.all')}</Chip>
           {CTX_CHIPS.map((c) => (
             <Chip key={c.code} active={ctxActive === c.code} onClick={() => pickOne('ctx', ctxActive === c.code ? null : c.code)}>
               {c.label}
@@ -114,12 +114,12 @@ export function CatalogSidebar({ families, tags, selected, setSelected, isZh }: 
         </div>
       </Group>
 
-      <Group id="price" icon={LuCircleDollarSign} title={isZh ? '价格类型' : 'Pricing'} collapsed={collapsed} onToggle={toggleCollapse}>
+      <Group id="price" icon={LuCircleDollarSign} title={t('modelsCatalog.sidebar.pricing')} collapsed={collapsed} onToggle={toggleCollapse}>
         <div className="mg-side-chips">
-          <Chip active={!priceActive} onClick={() => pickOne('price', null)}>{isZh ? '全部' : 'All'}</Chip>
+          <Chip active={!priceActive} onClick={() => pickOne('price', null)}>{t('modelsCatalog.sidebar.all')}</Chip>
           {PRICE_CHIPS.map((c) => (
             <Chip key={c.code} active={priceActive === c.code} onClick={() => pickOne('price', priceActive === c.code ? null : c.code)}>
-              {isZh ? c.zh : c.en}
+              {t(`modelsCatalog.sidebar.${c.code}`)}
             </Chip>
           ))}
         </div>

@@ -11,9 +11,7 @@ import { LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers } from 
 import { listModels, listModelTags, listModelFamilies } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
-import { useMarket } from '@/hooks/useMarket'
 import type { CatalogModelItem } from '@/types'
-import { GLOBAL_FALLBACK_MODELS } from './global-fallback-models'
 import { CatalogCard } from './CatalogCard'
 import { CatalogHero } from './CatalogHero'
 import { CatalogSidebar } from './CatalogSidebar'
@@ -33,10 +31,6 @@ export default function ModelsCatalogPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const isZh = i18n.language.startsWith('zh')
-  // 海外(global)catalog 接口暂未到位 → 不请求后端，用静态兜底清单展示主流国际模型。
-  // 接口就绪后删掉本 isGlobal 分支即可回到后端数据。
-  // 业务判断走 platform-config 驱动的 store（useMarket），而非域名——test 单域名可切两端验收（#466）
-  const isGlobal = useMarket() === 'global'
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   const [search, setSearch] = useState('')
@@ -48,9 +42,12 @@ export default function ModelsCatalogPage() {
   const [compareInitialIds, setCompareInitialIds] = useState<string[]>([])
   const sortRef = useRef<HTMLDivElement>(null)
 
-  const sortLabels: Record<SortKey, string> = isZh
-    ? { default: '推荐排序', popular: '热门', newest: '最新', cheapest: '最便宜' }
-    : { default: 'Recommended', popular: 'Popular', newest: 'Newest', cheapest: 'Cheapest' }
+  const sortLabels: Record<SortKey, string> = {
+    default: t('modelsCatalog.sort.default'),
+    popular: t('modelsCatalog.sort.popular'),
+    newest: t('modelsCatalog.sort.newest'),
+    cheapest: t('modelsCatalog.sort.cheapest'),
+  }
 
   const selectedFamily = selected.find((k) => k.startsWith('family:'))?.split(':')[1]
   const selectedTags = selected.filter((k) => k.startsWith('tag:')).map((k) => k.split(':')[1])
@@ -61,17 +58,14 @@ export default function ModelsCatalogPage() {
     queryKey: ['catalog-models', { family: selectedFamily }],
     queryFn: () => listModels({ page_size: 100, family: selectedFamily || undefined }),
     staleTime: 5 * 60_000,
-    enabled: !isGlobal, // 海外不请求后端，走静态兜底
   })
-  const tagsQuery = useQuery({ queryKey: ['catalog-model-tags'], queryFn: () => listModelTags(true), staleTime: 5 * 60_000, enabled: !isGlobal })
-  const familiesQuery = useQuery({ queryKey: ['catalog-model-families'], queryFn: () => listModelFamilies(true), staleTime: 5 * 60_000, enabled: !isGlobal })
+  const tagsQuery = useQuery({ queryKey: ['catalog-model-tags'], queryFn: () => listModelTags(true), staleTime: 5 * 60_000 })
+  const familiesQuery = useQuery({ queryKey: ['catalog-model-families'], queryFn: () => listModelFamilies(true), staleTime: 5 * 60_000 })
 
   // 过滤后端测试数据（pytest-* 不该出现在公开广场）
   const allModels = useMemo(
-    () => isGlobal
-      ? GLOBAL_FALLBACK_MODELS
-      : (modelsQuery.data?.items ?? []).filter((m) => !/^pytest/i.test(m.model_id)),
-    [isGlobal, modelsQuery.data?.items],
+    () => (modelsQuery.data?.items ?? []).filter((m) => !/^pytest/i.test(m.model_id)),
+    [modelsQuery.data?.items],
   )
   const families = useMemo(
     () => (familiesQuery.data?.items ?? []).filter((f) => f.enabled).sort((a, b) => a.sort_order - b.sort_order),
@@ -139,7 +133,7 @@ export default function ModelsCatalogPage() {
         style={{ background: 'var(--mg-bg-0)', borderColor: filtersOpen ? 'var(--brand-base)' : 'var(--mg-border)', color: filtersOpen ? 'var(--brand-base)' : 'var(--mg-text-2)' }}
       >
         <LuSlidersHorizontal size={15} />
-        {isZh ? '筛选' : 'Filters'}
+        {t('modelsCatalog.filtersButton')}
       </button>
 
       {/* 主体：左 sidebar + 右内容 */}
@@ -152,17 +146,17 @@ export default function ModelsCatalogPage() {
           {/* 标题 */}
           <div className="mb-6">
             <h1 className="catalog-title text-[34px] font-bold tracking-tight" style={{ color: 'var(--mg-text-1)' }}>
-              {isZh ? '模型广场' : 'Models'}
+              {t('modelsCatalog.page.title')}
             </h1>
             <p className="mt-1.5 text-[14px]" style={{ color: 'var(--mg-text-3)' }}>
-              {isZh ? '一个 API，接入主流大模型' : 'One API, access leading models'}
+              {t('modelsCatalog.page.subtitle')}
             </p>
           </div>
 
           {/* 顶部数据卡 + 热门模型 */}
           {!modelsQuery.isLoading && !modelsQuery.isError && allModels.length > 0 && (
             <div className="mb-6">
-              <CatalogHero models={allModels} isZh={isZh} onPickHot={setSearch} />
+              <CatalogHero models={allModels} onPickHot={setSearch} />
             </div>
           )}
 
@@ -172,7 +166,7 @@ export default function ModelsCatalogPage() {
               <LuSearch size={16} className="catalog-search-icon absolute left-4 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder={isZh ? '搜索模型名、API ID、供应商或描述关键词…' : 'Search model, API ID, provider or keyword…'}
+                placeholder={t('modelsCatalog.search.placeholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="mg-search-input"
@@ -202,7 +196,7 @@ export default function ModelsCatalogPage() {
             </div>
           </div>
           {!modelsQuery.isLoading && !modelsQuery.isError && (
-            <p className="mg-count">{isZh ? `共 ${visibleModels.length} 个模型` : `${visibleModels.length} models`}</p>
+            <p className="mg-count">{t('modelsCatalog.count', { n: visibleModels.length })}</p>
           )}
 
           {/* 列表状态 */}
@@ -219,9 +213,9 @@ export default function ModelsCatalogPage() {
           ) : visibleModels.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-md border py-20 text-center" style={{ background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' }}>
               <LuLayers size={28} className="mb-3" style={{ color: 'var(--mg-text-4)' }} />
-              <p className="text-[13px]" style={{ color: 'var(--mg-text-3)' }}>{isZh ? '没有符合筛选条件的模型' : 'No models match your filters'}</p>
+              <p className="text-[13px]" style={{ color: 'var(--mg-text-3)' }}>{t('modelsCatalog.emptyFiltered')}</p>
               <button type="button" onClick={reset} className="mt-3 text-[12px] underline-offset-2 hover:underline" style={{ color: 'var(--mg-text-3)' }}>
-                {isZh ? '清除所有筛选' : 'Clear all filters'}
+                {t('modelsCatalog.clearFilters')}
               </button>
             </div>
           ) : (

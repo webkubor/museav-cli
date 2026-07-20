@@ -105,4 +105,8 @@ export interface UpdateBudgetPolicyRequest {
 
 export interface GuardrailListResponse {
   items: GuardrailDetail[]
+  /** 继承全局默认个人预算的成员数（qa#460，产品模型 143/150） */
+  inherited_default_member_count?: number
+  /** 继承全局默认 Key 预算的 Key 数（qa#460） */
+  inherited_default_key_count?: number
 }

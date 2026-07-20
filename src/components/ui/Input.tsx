@@ -34,7 +34,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (resolvedType === 'email') {
-        const filtered = e.target.value.replace(/[^a-zA-Z0-9._%+\-@]/g, '')
+        // multiple（HTML 标准多邮箱语义）时必须放行分隔符 , ; 及空格，否则多邮箱永远打不进去（需求方#116）
+        const emailChars = props.multiple ? /[^a-zA-Z0-9._%+\-@,;\s]/g : /[^a-zA-Z0-9._%+\-@]/g
+        const filtered = e.target.value.replace(emailChars, '')
         if (filtered !== e.target.value) {
           const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
           setter?.call(e.target, filtered)

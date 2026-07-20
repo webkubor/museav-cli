@@ -176,6 +176,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
               <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.invite.emailTitle')}</label>
               <Input
                 type="email"
+                multiple
                 data-track="invitations:field_email"
                 placeholder={t('enterprise.invite.emailPlaceholder')}
                 value={inviteEmails}

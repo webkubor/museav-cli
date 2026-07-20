@@ -1204,8 +1204,7 @@
       "tokens": "tokens"
     },
     "overview": {
-      "title": "Cost Overview",
-      "desc": "Summarizes key usage for the selected workspace and time range."
+      "title": "Cost Overview"
     },
     "insights": {
       "title": "Key Insights",
@@ -1272,10 +1271,6 @@
       "time": "Time Range",
       "workspace": "Workspace",
       "apiKey": "API Key"
-    },
-    "filterPanel": {
-      "title": "Filters",
-      "desc": "Review real usage by workspace, API Key, model, and time range."
     },
     "breakdown": {
       "title": "Usage Breakdown",

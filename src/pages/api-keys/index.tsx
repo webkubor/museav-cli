@@ -594,7 +594,7 @@ export default function ApiKeysPage() {
         open={!!disableTarget}
         onClose={() => setDisableTarget(null)}
         title="确认停用 API Key"
-        description="停用后该 Key 将立即停止调用，可稍后重新启用。"
+        description={disableTarget ? `停用后「${disableTarget.name}」将立即停止调用，可稍后重新启用。` : undefined}
         size="sm"
         footer={
           <>
@@ -604,7 +604,15 @@ export default function ApiKeysPage() {
             </Button>
           </>
         }
-      />
+      >
+        {/* #157：确认弹窗回显对应 Masked Key，避免误停用错 Key */}
+        {disableTarget && (
+          <div className="rounded-md border border-mg-border bg-mg-fill-0 px-3 py-2.5">
+            <div className="text-xs text-mg-text-3">Masked Key</div>
+            <div className="mt-1 font-mono text-sm font-semibold text-mg-text-1">{disableTarget.masked}</div>
+          </div>
+        )}
+      </Modal>
 
       {/* 变更负责人 */}
       <Modal

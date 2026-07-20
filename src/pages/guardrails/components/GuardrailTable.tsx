@@ -330,7 +330,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
             <TableHead>创建人</TableHead>
             <TableHead>最近更新</TableHead>
             <TableHead>状态</TableHead>
-            <TableHead className="text-right">操作</TableHead>
+            <TableHead className="w-40 text-right">操作</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -384,7 +384,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
               <TableHead>提额到期时间</TableHead>
               <TableHead>最近更新</TableHead>
               <TableHead>状态</TableHead>
-              <TableHead className="text-right">操作</TableHead>
+              <TableHead className="w-40 text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -433,7 +433,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
             <TableHead><PromptInjectionHeaderLabel /></TableHead>
             <TableHead>最近更新</TableHead>
             <TableHead>状态</TableHead>
-            <TableHead className="text-right">操作</TableHead>
+            <TableHead className="w-40 text-right">操作</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

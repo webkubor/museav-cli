@@ -1949,7 +1949,10 @@
       "resetConfirmTitle": "Confirm reset invite link",
       "resetConfirmDesc": "The current invite link will be invalidated immediately. Continue?",
       "confirmReset": "Reset",
-      "emailInvalid": "{{email}} is not a valid email"
+      "emailInvalid": "{{email}} is not a valid email",
+      "emailAlreadyPending": "{{email}} already has a pending invitation",
+      "emailAlreadyMember": "{{email}} is already a member",
+      "duplicatePending": "Some emails already have pending invitations (conflict). Others in this batch may have been sent — check the member list"
     }
   }
 }

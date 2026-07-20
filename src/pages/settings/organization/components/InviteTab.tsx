@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { LuTriangleAlert } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
-import { addTenantMembers, getTenantInviteLink, resetTenantInviteLink } from '@/services/tenants'
+import { addTenantMembers, getTenantInviteLink, listTenantMembers, resetTenantInviteLink } from '@/services/tenants'
+import { ModelGoApiError } from '@/lib/request'
 import { listWorkspaces } from '@/services/workspaces'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
@@ -28,6 +29,22 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
   // 用非空 sentinel（Radix Select.Item 禁止空串 value）。
   const NONE_WORKSPACE = '__none__'
   const [targetWorkspaceId, setTargetWorkspaceId] = useState(NONE_WORKSPACE)
+
+  // 成员 + 待接受邀请（与 MembersTab 同 key 共享缓存）：发送前预筛重复，免得撞后端 40901
+  const membersQuery = useQuery({
+    queryKey: ['tenant-members', tenantId],
+    queryFn: () => listTenantMembers(tenantId),
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  })
+  const pendingEmails = useMemo(
+    () => new Set((membersQuery.data?.pending_invitations ?? []).filter((i) => i.status === 'pending').map((i) => i.email.toLowerCase())),
+    [membersQuery.data],
+  )
+  const memberEmails = useMemo(
+    () => new Set((membersQuery.data?.items ?? []).map((m) => m.account.email?.toLowerCase()).filter(Boolean)),
+    [membersQuery.data],
+  )
 
   // 空间列表作为「授权工作空间」下拉数据源
   const workspacesQuery = useQuery({
@@ -83,7 +100,16 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
       setTargetWorkspaceId(NONE_WORKSPACE)
       qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
     },
-    onError: (err: Error) => appToast.requestError(err, '邀请失败'),
+    onError: (err: Error) => {
+      // 40901=重复邀请。后端批量非原子：撞重前的邮箱其实已发出（已实测）——必须刷新列表并说清，
+      // 否则用户以为全失败去重发。语义修正案已挂 #116 由后端跟进。
+      if (err instanceof ModelGoApiError && err.code === 40901) {
+        qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
+        appToast.error(t('enterprise.invite.duplicatePending'))
+        return
+      }
+      appToast.requestError(err, '邀请失败')
+    },
   })
 
   const inviteLinkUrl = inviteLinkQuery.data
@@ -182,8 +208,16 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
                   onChange={setInviteEmails}
                   placeholder={t('enterprise.invite.emailPlaceholder')}
                   splitPattern={/[\s,;，；]+/}
-                  validator={(v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)}
-                  onValidationError={(v) => appToast.error(t('enterprise.invite.emailInvalid', { email: v }))}
+                  validator={(v) => {
+                    const email = v.toLowerCase()
+                    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && !pendingEmails.has(email) && !memberEmails.has(email)
+                  }}
+                  onValidationError={(v) => {
+                    const email = v.toLowerCase()
+                    if (pendingEmails.has(email)) appToast.error(t('enterprise.invite.emailAlreadyPending', { email: v }))
+                    else if (memberEmails.has(email)) appToast.error(t('enterprise.invite.emailAlreadyMember', { email: v }))
+                    else appToast.error(t('enterprise.invite.emailInvalid', { email: v }))
+                  }}
                 />
               </div>
             </div>

@@ -1961,7 +1961,10 @@
       "resetConfirmTitle": "确认重置邀请链接",
       "resetConfirmDesc": "重置后当前邀请链接立即失效，确认重置？",
       "confirmReset": "确认重置",
-      "emailInvalid": "{{email}} 不是有效邮箱"
+      "emailInvalid": "{{email}} 不是有效邮箱",
+      "emailAlreadyPending": "{{email}} 已有待接受邀请",
+      "emailAlreadyMember": "{{email}} 已是成员",
+      "duplicatePending": "有邮箱已存在待接受邀请（资源冲突）。注意：同批其他邮箱可能已发出，请以成员列表为准"
     }
   }
 }

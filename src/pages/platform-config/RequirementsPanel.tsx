@@ -129,6 +129,8 @@ export function RequirementsPanel() {
   const [activeAction, setActiveAction] = useState<string | null>(null)
   const [comments, setComments] = useState<Record<string, string>>({})
   const [assigneeIds, setAssigneeIds] = useState<Record<string, string>>({})
+  // 待验证 = 等 PM 复核，不是我的待办——默认折叠，点顶部徽章展开
+  const [showVerifying, setShowVerifying] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const sync = async () => {
@@ -173,18 +175,16 @@ export function RequirementsPanel() {
     }
   }, [])
 
-  // 单一视图：指派给我 + 未关闭（QA + 需求方）。标「已完成」但没关单的属于收尾噪音，不展示；
-  // 待验证的排后面、真正待动手的排前面；跨项目 iid 无可比性，同组内按创建时间倒序。
-  const visibleIssues = useMemo(() => {
+  // 指派给我 + 未关闭（QA + 需求方）。标「已完成」但没关单的属于收尾噪音，不展示。
+  // 默认只看待处理（要我动手的）；待验证（等 PM 复核）收进折叠区，跨项目按创建时间倒序。
+  const myOpenIssues = useMemo(() => {
     return items
       .filter(isOpenGitlabIssue)
       .filter((item) => item.assignee === 'webkubor' && !isRequirementDone(item))
-      .sort((a, b) => {
-        const rank = (i: Requirement) => (isRequirementVerifying(i) ? 1 : 0)
-        return rank(a) - rank(b) || b.createdAt.localeCompare(a.createdAt)
-      })
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   }, [items])
-  const pendingCount = visibleIssues.filter((item) => !isRequirementVerifying(item)).length
+  const pendingIssues = useMemo(() => myOpenIssues.filter((item) => !isRequirementVerifying(item)), [myOpenIssues])
+  const verifyingIssues = useMemo(() => myOpenIssues.filter(isRequirementVerifying), [myOpenIssues])
 
   const updateLocalItem = (updated: Requirement) => {
     setItems((current) => current.map((item) => item.id === updated.id ? { ...item, ...updated } : item))
@@ -255,13 +255,22 @@ export function RequirementsPanel() {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-base font-bold text-mg-text-1">我的问题</h2>
-            <Badge variant="danger" size="sm">待处理 {pendingCount}</Badge>
-            {visibleIssues.length - pendingCount > 0 && (
-              <Badge variant="warning" size="sm">待验证 {visibleIssues.length - pendingCount}</Badge>
+            <Badge variant="danger" size="sm">待处理 {pendingIssues.length}</Badge>
+            {verifyingIssues.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowVerifying((v) => !v)}
+                title={showVerifying ? '收起待验证' : '展开待验证'}
+                className="cursor-pointer"
+              >
+                <Badge variant={showVerifying ? 'warning' : 'secondary'} size="sm">
+                  待验证 {verifyingIssues.length} {showVerifying ? '▾' : '▸'}
+                </Badge>
+              </button>
             )}
           </div>
           <p className="mt-1 text-xs text-mg-text-3">
-            指派给我且未关闭的问题（QA + 需求方两看板），支持完成、评论和重新指派。
+            指派给我且未关闭的问题（QA + 需求方两看板）；默认只列待处理，待验证点上方徽章展开。
           </p>
         </div>
         <Button size="sm" variant="outline" onClick={sync} loading={isSyncing} icon={<LuRefreshCw className="h-3.5 w-3.5" />}>
@@ -279,7 +288,7 @@ export function RequirementsPanel() {
         <div className="rounded-md border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-3">
           正在读取本地问题列表...
         </div>
-      ) : visibleIssues.length === 0 ? (
+      ) : myOpenIssues.length === 0 ? (
         <div className="rounded-md border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-3">
           没有指派给你的未关闭问题。点击同步 GitLab 后再查看。
         </div>
@@ -293,11 +302,28 @@ export function RequirementsPanel() {
             <span>优先级</span>
           </div>
           <div className="divide-y divide-mg-border">
-            {visibleIssues.map((item) => {
-              const currentAssignee = users.find((user) => user.username === item.assignee)
-              const selectedAssignee = assigneeIds[item.id] ?? (currentAssignee ? String(currentAssignee.id) : '')
+            {pendingIssues.length === 0 && !showVerifying && (
+              <div className="px-4 py-6 text-center text-sm text-mg-text-3">没有待处理问题 🎉</div>
+            )}
+            {pendingIssues.map(renderIssueRow)}
+            {showVerifying && verifyingIssues.length > 0 && (
+              <div className="border-t border-mg-border bg-mg-fill-0 px-4 py-2 text-xs font-bold text-mg-text-3">
+                待验证 · 等 PM 复核
+              </div>
+            )}
+            {showVerifying && verifyingIssues.map(renderIssueRow)}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 
-              return (
+  // 行渲染。函数声明有提升，放 return 之后，避免大段 JSX 上移搅乱 diff
+  function renderIssueRow(item: Requirement) {
+    const currentAssignee = users.find((user) => user.username === item.assignee)
+    const selectedAssignee = assigneeIds[item.id] ?? (currentAssignee ? String(currentAssignee.id) : '')
+
+    return (
                 <div
                   key={item.id}
                   className={cn('px-4 py-3 text-sm transition-colors hover:bg-mg-fill-0/70', isRequirementDone(item) && 'opacity-70')}
@@ -390,11 +416,6 @@ export function RequirementsPanel() {
                     </div>
                   </div>
                 </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  )
+    )
+  }
 }

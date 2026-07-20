@@ -7,7 +7,7 @@ import { Select, SelectItem } from '@/components/ui/Select'
 import { TagInput } from '@/components/ui/TagInput'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import type { StatusConfig } from '@/components/ui/StatusBadge'
-import { LuKey, LuDollarSign, LuUserRound } from 'react-icons/lu'
+import { LuKey, LuDollarSign, LuUserRound, LuInfo } from 'react-icons/lu'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
 import { PERIOD_LABEL } from '@/constants/status'
 import { GuardrailFormFields } from './GuardrailFormFields'
@@ -17,6 +17,27 @@ import { budgetTimezone, type BudgetAggScope, type GuardrailKind, type Guardrail
 const GUARDRAIL_STATUS_MAP: Record<string, StatusConfig> = {
   active: { label: '已启用', variant: 'success' },
   inactive: { label: '已停用', variant: 'secondary' },
+}
+
+/** 标签旁的 info tooltip（需求方#156）：把冗余的行内 hint 收进小圆圈 info，与「提示词注入」同一模式。 */
+function InfoTip({ text, label }: { text: string; label: string }) {
+  return (
+    <span className="group relative inline-flex">
+      <button
+        type="button"
+        aria-label={label}
+        className="inline-flex text-mg-text-3 outline-none transition-colors hover:text-mg-text-2 focus-visible:text-mg-text-2"
+      >
+        <LuInfo className="h-3.5 w-3.5" />
+      </button>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute left-0 top-6 z-20 w-[220px] rounded-md border border-mg-border bg-mg-bg-0 p-3 text-left font-normal normal-case tracking-normal opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+      >
+        <span className="block text-[11px] font-medium leading-snug text-mg-text-3">{text}</span>
+      </span>
+    </span>
+  )
 }
 
 type PeriodUnit = 'hour' | 'day' | 'week' | 'month'
@@ -277,7 +298,6 @@ export function GuardrailDetailSheet({
                           onChange={onMemberIdsChange}
                           options={memberOptions.map((o) => ({ value: o.id, label: o.name }))}
                           placeholder="搜索并选择成员"
-                          hint="个人护栏至少绑定一位成员"
                         />
                       )}
                     </div>
@@ -297,7 +317,6 @@ export function GuardrailDetailSheet({
                           onChange={onApiKeyIdsChange}
                           options={apiKeyOptions.map((o) => ({ value: o.id, label: o.name, disabled: !o.active }))}
                           placeholder="搜索并选择该工作空间的 API Key"
-                          hint="Key 护栏必须至少绑定一把 API Key"
                         />
                       )}
                     </div>
@@ -394,6 +413,7 @@ export function GuardrailDetailSheet({
             <section className="space-y-4">
               <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-2 uppercase tracking-wider">
                 <LuDollarSign className="w-3.5 h-3.5" /> 预算策略
+                <InfoTip text="三档独立生效，可分别限额或不限额" label="预算策略说明" />
               </div>
               <div className="space-y-3">
                 {GLOBAL_BUDGET_META.filter((m) => !m.enterpriseOnly || showMember).map((m) => (
@@ -408,17 +428,14 @@ export function GuardrailDetailSheet({
                 ))}
               </div>
               {canEditBudget && (
-                <div className="flex items-center justify-between">
-                  <Button
-                    variant="brand"
-                    className="h-9 px-5 text-xs font-semibold"
-                    loading={savingGlobalBudget}
-                    onClick={onSaveGlobalBudgets}
-                  >
-                    保存预算
-                  </Button>
-                  <span className="text-xs text-mg-text-3">三档独立生效，可分别限额或不限额</span>
-                </div>
+                <Button
+                  variant="brand"
+                  className="h-9 px-5 text-xs font-semibold"
+                  loading={savingGlobalBudget}
+                  onClick={onSaveGlobalBudgets}
+                >
+                  保存预算
+                </Button>
               )}
               <p className="text-xs text-mg-text-3">
                 各档均按<span className="font-semibold text-mg-text-2">滚动窗口</span>计量（统计当前时刻往前一个周期长度内的累计消费，非自然日/周/月重置）· 时区 <span className="font-mono">{tz}</span>

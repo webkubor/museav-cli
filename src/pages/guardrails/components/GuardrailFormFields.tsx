@@ -238,7 +238,6 @@ export function GuardrailFormFields({
             onChange={onModelBlacklistChange}
             suggestions={modelSuggestions}
             placeholder={t('guardrails.form.modelBlacklistPlaceholder')}
-            hint={t('guardrails.form.modelBlacklistHint')}
           />
         </div>
       )}
@@ -258,7 +257,6 @@ export function GuardrailFormFields({
               setTimeout(() => setIpError(''), 3000)
             }}
             placeholder={t('guardrails.form.ipWhitelistPlaceholder')}
-            hint={t('guardrails.form.ipWhitelistHint')}
           />
           {ipError && <p className="text-xs text-mg-danger mt-1">{ipError}</p>}
         </div>

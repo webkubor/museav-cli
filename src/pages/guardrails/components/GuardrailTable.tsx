@@ -117,8 +117,10 @@ function TagCell({ values }: { values: string[] }) {
 
 function KindBadge({ row }: { row: GuardrailDetail }) {
   const kind = deriveKind(row)
+  // 类型 Tag 用两种语义色区分且一致（需求方#152）：常规=品牌色（标准/默认），提额=警示橙（临时提额）。
+  // 不用 secondary 灰——灰读起来像「无类型/禁用」，难以快速识别类型。
   return (
-    <Badge variant={kind === 'boost' ? 'warning' : 'secondary'}>{KIND_LABEL[kind]}</Badge>
+    <Badge variant={kind === 'boost' ? 'warning' : 'brand'}>{KIND_LABEL[kind]}</Badge>
   )
 }
 
@@ -337,22 +339,22 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
           {globalRows.map((row) => (
             <TableRow key={row.id}>
               <TableCell><NameCell row={row} onOpenDetail={onOpenDetail} /></TableCell>
-              <TableCell className="text-xs font-semibold text-mg-text-2">
+              <TableCell className="text-xs text-mg-text-2">
                 {formatBudget(currencySymbol, budgetByScope(row, 'guardrail_total'))}
               </TableCell>
               {showMember && (
-                <TableCell className="text-xs font-semibold text-mg-text-2">
+                <TableCell className="text-xs text-mg-text-2">
                   {formatBudget(currencySymbol, budgetByScope(row, 'per_member'))}
                 </TableCell>
               )}
-              <TableCell className="text-xs font-semibold text-mg-text-2">
+              <TableCell className="text-xs text-mg-text-2">
                 {formatBudget(currencySymbol, budgetByScope(row, 'per_api_key'))}
               </TableCell>
               <TableCell><TagCell values={metadataList(row, 'model_blacklist')} /></TableCell>
               <TableCell><TagCell values={metadataList(row, 'ip_whitelist')} /></TableCell>
-              <TableCell className="text-xs font-semibold text-mg-text-2">{PROMPT_INJECTION_LABEL[guardrailPromptInjectionMode(row)]}</TableCell>
+              <TableCell className="text-xs text-mg-text-2">{PROMPT_INJECTION_LABEL[guardrailPromptInjectionMode(row)]}</TableCell>
               {/* 创建人（PRD §7.2 / #52）：只显姓名，缺失显「—」，绝不回退到 account_id */}
-              <TableCell className="text-xs font-semibold text-mg-text-2">
+              <TableCell className="text-xs text-mg-text-2">
                 {row.created_by?.display_name || <span className="font-normal text-mg-text-3">—</span>}
               </TableCell>
               <TableCell className="text-xs text-mg-text-3">{formatDateTime(row.updated_at)}</TableCell>
@@ -393,7 +395,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                 <TableCell><NameCell row={row} onOpenDetail={onOpenDetail} /></TableCell>
                 <TableCell><KindBadge row={row} /></TableCell>
                 <TableCell><CountBadge count={memberCount(row)} unit="名成员" /></TableCell>
-                <TableCell className="text-xs font-semibold text-mg-text-2">
+                <TableCell className="text-xs text-mg-text-2">
                   {formatBudget(currencySymbol, primaryBudget(row))}
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-3">
@@ -444,7 +446,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                 <TableCell><NameCell row={row} onOpenDetail={onOpenDetail} /></TableCell>
                 <TableCell><KindBadge row={row} /></TableCell>
                 <TableCell><CountBadge count={apiKeyCount(row)} unit="个 Key" /></TableCell>
-                <TableCell className="text-xs font-semibold text-mg-text-2">
+                <TableCell className="text-xs text-mg-text-2">
                   {formatBudget(currencySymbol, primaryBudget(row))}
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-3">
@@ -456,7 +458,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                 <TableCell>
                   {boost ? <span className="text-xs text-mg-text-3">不适用</span> : <TagCell values={metadataList(row, 'ip_whitelist')} />}
                 </TableCell>
-                <TableCell className="text-xs font-semibold text-mg-text-2">
+                <TableCell className="text-xs text-mg-text-2">
                   {boost
                     ? <span className="font-normal text-mg-text-3">不适用</span>
                     : (rawPromptInjectionMode(row)

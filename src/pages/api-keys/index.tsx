@@ -31,7 +31,8 @@ import {
   getApiKeySummary,
   rotateApiKey,
 } from '@/services/api-keys'
-import { listWorkspaceMembers, listWorkspaces } from '@/services/workspaces'
+import { listWorkspaceMembers } from '@/services/workspaces'
+import { WorkspaceTitleTag } from '@/components/layout/WorkspaceTitleTag'
 import { useCopy } from '@/hooks/use-copy'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { getRequestErrorMessage, isApiErrorCode, errorCodeOf } from '@/lib/request-error-message'
@@ -52,7 +53,7 @@ import { EditKeyModal } from './EditKeyModal'
 import { ApiKeySummaryCards } from './ApiKeySummaryCards'
 import { ApiKeyDetailDrawer } from './ApiKeyDetailDrawer'
 import { deriveKeyType, responsibleOf, isExpiringSoon, KEY_ACTION_PERMS, type ApiKeyAction } from './derive'
-import type { ApiKeyCreated, ApiKeyItem, ApiKeyType, WorkspaceItem } from '@/types'
+import type { ApiKeyCreated, ApiKeyItem, ApiKeyType } from '@/types'
 
 const ALL = 'all'
 /** 表格游标分页每页条数（#60） */
@@ -164,16 +165,6 @@ export default function ApiKeysPage() {
     enabled: !!workspaceId,
     retry: false,
   })
-
-  // 工作空间名（副标题用）——复用 WorkspaceSwitcher 的缓存 queryKey，避免重复请求
-  const { data: workspaces = [] } = useQuery<WorkspaceItem[]>({
-    queryKey: ['workspaces', activeTenantId],
-    queryFn: () => listWorkspaces().then((res) => res.items || []),
-    enabled: !!activeTenantId,
-    staleTime: 60_000,
-  })
-  const workspaceName =
-    workspaces.find((w) => w.workspace_id === workspaceId)?.name ?? t('header.defaultWorkspace')
 
   const apiKeyItems = data?.items ?? []
   const hasMore = Boolean(data?.has_more && data.next_cursor)
@@ -413,9 +404,14 @@ export default function ApiKeysPage() {
 
   return (
     <div className="space-y-6">
+      {/* 需求方#125：标题旁加当前工作空间 Tag，去掉标题下的多余 Hint */}
       <PageHeader
-        title={t('apiKeys.title')}
-        description={`${workspaceName} 工作空间的运行凭证、负责人、限额和到期时间`}
+        title={
+          <span className="inline-flex items-center gap-2.5">
+            {t('apiKeys.title')}
+            <WorkspaceTitleTag workspaceId={workspaceId} />
+          </span>
+        }
       />
 
       <ApiKeySummaryCards items={allKeys} summary={summary} loading={allKeysLoading} />

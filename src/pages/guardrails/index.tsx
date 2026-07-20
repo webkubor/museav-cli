@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { WorkspaceTitleTag } from '@/components/layout/WorkspaceTitleTag'
 import { ForbiddenState } from '@/components/ui/ForbiddenState'
 import { isApiErrorCode, errorCodeOf } from '@/lib/request-error-message'
 import { LuPlus } from 'react-icons/lu'
@@ -777,8 +778,14 @@ export default function GuardrailsPage() {
 
   return (
     <div className="space-y-6">
+      {/* 需求方#125：标题旁加当前工作空间 Tag */}
       <PageHeader
-        title={t('guardrails.title')}
+        title={
+          <span className="inline-flex items-center gap-2.5">
+            {t('guardrails.title')}
+            <WorkspaceTitleTag workspaceId={workspaceId} />
+          </span>
+        }
         actions={canCreate && (
           <Button
             variant="brand"

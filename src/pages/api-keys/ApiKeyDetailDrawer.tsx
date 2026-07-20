@@ -71,7 +71,9 @@ const PERIOD_UNIT_LABEL: Record<string, string> = {
   week: '周',
   month: '月',
 }
-const periodLabel = (len: number, unit: string) => `${len}${PERIOD_UNIT_LABEL[unit] ?? unit}`
+// 周期文案对齐护栏预算展示（formatBudget 的「/ 月」口径）：period_length 恒为 1，只取单位，
+// 避免出现「1月」这类既像日期又冗余的文案（需求方#146）。
+const periodLabel = (unit: string) => PERIOD_UNIT_LABEL[unit] ?? unit
 
 interface Props {
   open: boolean
@@ -181,7 +183,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
           ) : (
             <CopyButton value={view.masked} aria-label="复制掩码 Key" toast="掩码 Key 已复制" size="sm" />
           )}
-          <div className="ml-auto flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
             {rotateEnabled && (
               <Button variant="outline" size="sm" onClick={() => onRotate(view)}>轮转</Button>
             )}
@@ -296,7 +298,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                         <div key={i} className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
                           <div className="text-xs text-mg-text-3">{GATE_LABEL[b.aggregation_scope] ?? b.aggregation_scope}</div>
                           <div className="mt-1 text-sm font-bold text-mg-text-1">
-                            {money({ amount: b.spend_limit_amount, currency: b.currency })} / {periodLabel(b.period_length, b.period_unit)}
+                            {money({ amount: b.spend_limit_amount, currency: b.currency })} / {periodLabel(b.period_unit)}
                           </div>
                           {source && <div className="mt-0.5 truncate text-xs text-mg-text-3">{source}</div>}
                         </div>

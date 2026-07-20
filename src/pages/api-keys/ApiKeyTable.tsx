@@ -103,17 +103,12 @@ export function ApiKeyTable({
           <TableHead>{t('apiKeys.table.name')}</TableHead>
           <TableHead>类型</TableHead>
           <TableHead>负责人</TableHead>
-          <TableHead>
-            <span className="inline-flex items-center gap-1">
-              <LuShieldCheck className="w-3.5 h-3.5 text-green-500" />
-              安全护栏
-            </span>
-          </TableHead>
+          <TableHead>安全护栏</TableHead>
           <TableHead>{t('apiKeys.table.status')}</TableHead>
           <TableHead>本期消费 / 限额</TableHead>
           <TableHead>最近调用</TableHead>
           <TableHead>{t('apiKeys.table.expiresAt')}</TableHead>
-          <TableHead className="text-right">{t('apiKeys.table.actions')}</TableHead>
+          <TableHead className="w-32 text-right">{t('apiKeys.table.actions')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -175,6 +170,7 @@ export function ApiKeyTable({
               responsible.account_id &&
               record.owner.account_id !== responsible.account_id
             const periodSpend = periodSpendOf(record)
+            const hasLimit = !!record.limit && Number(record.limit.amount) > 0
             const lastCalled = lastCalledOf(record)
             const isDisabled = record.status === 'disabled'
             const canToggle = isDisabled
@@ -221,7 +217,7 @@ export function ApiKeyTable({
                   </span>
                 </TableCell>
                 <TableCell>
-                  <div className="text-xs font-semibold text-mg-text-1">
+                  <div className="text-xs font-semibold text-mg-text-2">
                     {responsible.display_name || responsible.email || '—'}
                   </div>
                   {creatorDiffers && (
@@ -261,7 +257,8 @@ export function ApiKeyTable({
                       ? `${periodSpend.currency} ${formatMoney(periodSpend.amount, '')}`
                       : <span className="text-mg-text-3">—</span>}
                   </div>
-                  <div className="text-xs text-mg-text-3">{formatLimit(record)}</div>
+                  {/* #148：限额直接带「限额」前缀，一眼区分于上方本期消费，无需额外 Hint */}
+                  <div className="text-xs text-mg-text-3">{hasLimit ? `限额 ${formatLimit(record)}` : formatLimit(record)}</div>
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-2">
                   {lastCalled ? formatDateTime(lastCalled) : <span className="text-mg-text-3">尚未调用</span>}

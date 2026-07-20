@@ -52,7 +52,9 @@ function compactModelName(name: string) {
 function ownerLines(row: CallLogItem) {
   const workspace = row.workspace?.name ?? ''
   const member = row.account.display_name
-  const key = row.api_key.name
+  // API Key 归属（需求方#132）：优先名称，无名回退 masked（PRD 允许「名称或 masked」）；
+  // 两者皆空 = 后端 model-logs 未回该字段（api_key.name 现被填为 id/空，见 services/logs.ts #50），归后端补。
+  const key = row.api_key.name || row.api_key.masked
   if (workspace) {
     // 主行=工作空间，副行=成员 · Key
     return { primary: workspace, secondary: [member, key].filter(Boolean).join(' · ') }
@@ -72,6 +74,9 @@ export function LogsTable({
   onPrev,
   onSelectLog,
   page,
+  pageSize,
+  pageSizeOptions,
+  onPageSizeChange,
   selectedLogId,
   docsUrl,
   onGoCreateKey,
@@ -86,6 +91,9 @@ export function LogsTable({
   onPrev: () => void
   onSelectLog: (row: CallLogItem) => void
   page: number
+  pageSize?: number
+  pageSizeOptions?: number[]
+  onPageSizeChange?: (size: number) => void
   selectedLogId?: string
   docsUrl?: string
   onGoCreateKey?: () => void
@@ -162,7 +170,9 @@ export function LogsTable({
               }}
               tabIndex={0}
             >
-              <TableCell className="whitespace-nowrap mg-text-caption text-mg-text-2">
+              {/* 需求方#161：列表主值统一 mg-text-body（对齐 Table/Money 行内基准），
+                  次行/辅助文案统一 mg-text-caption；避免各列主值大小不一。 */}
+              <TableCell className="whitespace-nowrap mg-text-body text-mg-text-2">
                 {formatDateTimeWithSeconds(row.started_at)}
               </TableCell>
               <TableCell>
@@ -189,7 +199,7 @@ export function LogsTable({
                   const { primary, secondary } = ownerLines(row)
                   return (
                     <div className="min-w-0">
-                      <strong className="block truncate mg-text-caption font-bold text-mg-text-1">{primary}</strong>
+                      <strong className="block truncate mg-text-body font-bold text-mg-text-1">{primary}</strong>
                       {secondary && (
                         <span className="block truncate mg-text-caption text-mg-text-3">{secondary}</span>
                       )}
@@ -257,6 +267,9 @@ export function LogsTable({
         page={page}
         hasMore={hasMore}
         total={items.length}
+        pageSize={pageSize}
+        pageSizeOptions={pageSizeOptions}
+        onPageSizeChange={onPageSizeChange}
         onPrev={onPrev}
         onNext={onNext}
         loading={isFetching}

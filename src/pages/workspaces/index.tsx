@@ -267,7 +267,8 @@ export default function WorkspacesPage() {
   ]
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+    // space-y-6（非 flex gap）：PageHeader 的 mb-6 与容器间距折叠为 24px，对齐企业管理页（需求方#167）
+    <div className="space-y-6 animate-in fade-in duration-300">
       {/* 头部标题与描述 */}
       <PageHeader
         title={t('workspaces.title')}

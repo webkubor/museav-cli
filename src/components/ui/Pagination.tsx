@@ -8,6 +8,7 @@
  */
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
+import Select from '@/components/ui/Select'
 
 /** 游标翻页：后端 CursorPage，前端维护 cursor 栈 */
 interface CursorPaginationProps {
@@ -22,6 +23,12 @@ interface CursorPaginationProps {
   loading?: boolean
   /** 本页条数，可选展示 */
   total?: number
+  /** 每页条数（传入即在左侧展示「每页 N 条」选择器） */
+  pageSize?: number
+  /** 每页条数可选项，默认 [10, 15, 20, 50] */
+  pageSizeOptions?: number[]
+  /** 每页条数变更回调；不传则不展示选择器 */
+  onPageSizeChange?: (size: number) => void
 }
 
 /** 页码导航：total 已知，可跳转任意页 */
@@ -102,12 +109,31 @@ export function Pagination(props: PaginationProps) {
   }
 
   // mode === 'cursor'
-  const { page, hasMore, onPrev, onNext, loading, total } = props
+  const { page, hasMore, onPrev, onNext, loading, total, pageSize, pageSizeOptions, onPageSizeChange } = props
+  const sizeOptions = pageSizeOptions ?? [10, 15, 20, 50]
   return (
     <div className={WRAP}>
-      <span className="mg-text-caption text-mg-text-3">
-        {typeof total === 'number' ? t('common.pagination.total', { count: total }) : ''}
-      </span>
+      <div className="flex items-center gap-2 mg-text-caption text-mg-text-3">
+        {typeof total === 'number' && (
+          <span>{t('common.pagination.total', { count: total })}</span>
+        )}
+        {onPageSizeChange && pageSize != null && (
+          <span className="flex items-center gap-1.5">
+            每页
+            <Select
+              value={String(pageSize)}
+              onChange={(v) => onPageSizeChange(Number(v))}
+              className="w-20"
+              disabled={loading}
+            >
+              {sizeOptions.map((size) => (
+                <Select.Option key={size} value={String(size)}>{size}</Select.Option>
+              ))}
+            </Select>
+            条
+          </span>
+        )}
+      </div>
       <div className="flex items-center gap-2">
         <Button
           size="sm"

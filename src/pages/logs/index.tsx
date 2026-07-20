@@ -45,7 +45,8 @@ type LogStatusFilter = 'all' | 'success' | 'guarded' | 'error'
 type LogGuardrailFilter = 'all' | 'hit' | 'not_hit'
 type LogView = 'enterprise' | 'mine' | 'space'
 
-const PAGE_SIZE = 15
+const DEFAULT_PAGE_SIZE = 15
+const PAGE_SIZE_OPTIONS = [10, 15, 20, 50]
 const DEFAULT_TIME_RANGE: DateRangeValue = { preset: '7d' }
 
 const STATUS_OPTIONS: Array<{ label: string; value: LogStatusFilter }> = [
@@ -193,6 +194,8 @@ export default function LogsPage() {
   const [payloadView, setPayloadView] = useState<PayloadView>('parsed')
   const [page, setPage] = useState(1)
   const [cursorStack, setCursorStack] = useState<Array<string | null>>([null])
+  // 每页条数（需求方#160）：默认 15，可选 10/15/20/50；改动即重置翻页游标。
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   // 异步任务的刷新桥（#46）：把面板内的刷新动作/态提上来，让页头刷新按钮在同步/异步两种记录类型下保持一致。
   const [asyncFetching, setAsyncFetching] = useState(false)
   const asyncRefreshRef = useRef<() => void>(() => {})
@@ -296,6 +299,7 @@ export default function LogsPage() {
       timeRange,
       page,
       currentCursor,
+      pageSize,
     ],
     queryFn: () =>
       listCallLogs({
@@ -311,7 +315,7 @@ export default function LogsPage() {
         from,
         to,
         before_started_at: currentCursor ?? undefined,
-        limit: PAGE_SIZE,
+        limit: pageSize,
       }),
     enabled: Boolean(activeTenantId) && recordType === 'sync',
     staleTime: 10_000,
@@ -458,7 +462,9 @@ export default function LogsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    // space-y-6（非 flex gap）：让 PageHeader 的 mb-6 与容器间距折叠为单档 24px，
+    // 对齐企业管理页；flex gap 不折叠会叠成 48px，标题到正文间距过大（需求方#167）。
+    <div className="space-y-6">
       <PageHeader
         title="调用日志"
         description={
@@ -525,10 +531,11 @@ export default function LogsPage() {
       ) : (
         <>
       <section className="space-y-4 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
-        {/* auto-fit 自动换行：容器不够宽时整格折行，杜绝「更多筛选」被挤出卡片右缘（需求方#69） */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(180px,1fr))] lg:items-end">
+        {/* 收紧筛选布局（需求方#131）：控件宽度封顶 200px（原 1fr 会铺满整行留大白），justify-start 左对齐；
+            时间范围选择器 w-full 填满单元格去掉内部留白；auto-fit 窄屏整格折行，保留「更多筛选」不被挤出卡片（#69）。 */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(160px,200px))] lg:justify-start lg:items-end">
           <FilterField label="时间范围">
-            <DateRangePicker value={timeRange} onChange={(value) => { setTimeRange(value); resetPagination(); trackFilter('time_range', value.preset) }} presets={LOG_TIME_PRESETS} />
+            <DateRangePicker className="w-full" value={timeRange} onChange={(value) => { setTimeRange(value); resetPagination(); trackFilter('time_range', value.preset) }} presets={LOG_TIME_PRESETS} />
           </FilterField>
           <FilterField label="调用状态">
             <Select value={statusFilter} onChange={(value) => { setStatusFilter(value as LogStatusFilter); resetPagination(); trackFilter('status', value) }}>
@@ -641,6 +648,9 @@ export default function LogsPage() {
           onPrev={goPrevPage}
           onSelectLog={openLog}
           page={page}
+          pageSize={pageSize}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
+          onPageSizeChange={(size) => { setPageSize(size); resetPagination() }}
           selectedLogId={selectedLog?.call_log_id}
           docsUrl={docsUrl}
           onGoCreateKey={activeWorkspaceId ? () => navigate(`/workspace/${activeWorkspaceId}/api-keys`) : undefined}

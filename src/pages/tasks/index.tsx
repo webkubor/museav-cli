@@ -11,6 +11,9 @@ import {
   LuLink,
   LuTriangleAlert,
   LuChevronDown,
+  LuActivity,
+  LuReceiptText,
+  LuPackage,
 } from 'react-icons/lu'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { Badge } from '@/components/ui/Badge'
@@ -191,6 +194,44 @@ function DetailRow({ label, value, hint, mono }: {
   )
 }
 
+// ─── 详情：诊断指标卡（对齐同步调用详情 DiagnosticCard 视觉，需求方#165/#166） ──────────
+
+type SummaryTone = 'brand' | 'success' | 'warning' | 'danger'
+const SUMMARY_TONE: Record<SummaryTone, string> = {
+  brand: 'bg-brand-base/10 text-brand-base',
+  success: 'bg-mg-success/10 text-mg-success',
+  warning: 'bg-mg-warning/10 text-mg-warning',
+  danger: 'bg-mg-danger/10 text-mg-danger',
+}
+
+function SummaryCard({ icon, label, value, hint, tone = 'brand' }: {
+  icon: React.ReactNode
+  label: string
+  value: React.ReactNode
+  hint?: string | null
+  tone?: SummaryTone
+}) {
+  return (
+    <article className="min-w-0 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-sm)]">
+      <span className="flex items-center gap-1.5 mg-text-label text-mg-text-3">
+        <span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-md [&_svg]:size-3', SUMMARY_TONE[tone])}>{icon}</span>
+        {label}
+      </span>
+      <strong className="mt-1.5 block truncate mg-text-value font-bold text-mg-text-1">{value}</strong>
+      {hint && <small className="mt-0.5 block truncate mg-text-caption text-mg-text-3">{hint}</small>}
+    </article>
+  )
+}
+
+/** 产物状态派生：可下载 / 生成中 / 生成失败 / 已过期 / —（对齐 PRD 异步任务详情）。 */
+function artifactStatus(task: TaskItem, expired: boolean): { label: string; tone: SummaryTone } {
+  if (task.status === 'queued' || task.status === 'running') return { label: '生成中', tone: 'brand' }
+  if (task.status === 'failed') return { label: '生成失败', tone: 'danger' }
+  if (expired) return { label: '已过期', tone: 'warning' }
+  if (isTaskDone(task.status)) return { label: '可下载', tone: 'success' }
+  return { label: '—', tone: 'brand' }
+}
+
 // ─── 详情抽屉 ─────────────────────────────────────────────────────────────────
 
 function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose: () => void }) {
@@ -256,59 +297,119 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
   }
 
   return (
-    <SideSheet open onClose={onClose} width={460} title="异步任务详情">
+    <SideSheet open onClose={onClose} width={560} title="异步任务详情">
         <div className="space-y-5 px-[var(--mg-space-1)] py-[var(--mg-control-py-sm)] mg-text-body">
-          {/* 头部徽章 */}
+          {(() => {
+            // 派生：概览/摘要/任务信息用到的状态与文案（对齐 PRD 异步任务详情 §7.4.2）
+            const statusLabel = STATUS_CONFIG[task.status]?.label ?? task.status
+            const statusTone: SummaryTone = isTaskDone(task.status) ? 'success' : task.status === 'failed' ? 'danger' : 'brand'
+            const art = artifactStatus(task, expired)
+            const billing = task.billing_status
+              ? (({ settled: '已结算', pending: '待结算', partial: '部分计费', unbilled: '未计费', none: '未计费' } as Record<string, string>)[task.billing_status] ?? task.billing_status)
+              : '—'
+            const costPending = task.status === 'queued' || task.status === 'running'
+            return (
+              <>
+          {/* 头部 chips：任务类型、模型、状态（对齐 PRD，不展示供应商） */}
           <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={task.status} statusMap={STATUS_CONFIG} />
             <Badge variant="secondary" className="flex items-center gap-1">
               {kindCfg.icon}{kindCfg.label}
             </Badge>
+            <Badge variant="outline" className="max-w-full truncate">{task.requested_model}</Badge>
+            <StatusBadge status={task.status} statusMap={STATUS_CONFIG} />
             {task.from_image && <Badge variant="info">图生视频</Badge>}
           </div>
 
-          {/* 基本信息（去供应商/Prompt，对齐 PRD） */}
-          <div className="rounded-md border border-mg-border bg-card-bg px-[var(--mg-panel-padding-md)]">
-            <DetailRow label="任务 ID"   value={task.gateway_request_id} mono />
-            <DetailRow
-              label="模型"
-              value={
-                <span className="inline-flex items-center gap-1.5">
-                  <ModelIcon
-                    model={{ display_name: task.requested_model, vendor: task.vendor ?? undefined }}
-                    size={18}
-                    rounded="rounded-md"
-                  />
-                  <span className="font-mono">{task.requested_model}</span>
-                </span>
-              }
+          {/* 诊断指标（Summary）：任务状态 / 实际费用 / 产物状态（对齐同步调用详情，需求方#165） */}
+          <div className="grid grid-cols-3 gap-2">
+            <SummaryCard
+              icon={<LuActivity />}
+              label="任务状态"
+              value={statusLabel}
+              hint={fmtDate(task.created_at)}
+              tone={statusTone}
             />
-            <DetailRow label="工作空间" value={workspaceName} />
-            <DetailRow label="API Key 名称" value={apiKeyName} />
-            <DetailRow label="成员" value={memberName} />
-            {(task.input_tokens != null || task.output_tokens != null) && (
+            <SummaryCard
+              icon={<LuReceiptText />}
+              label="实际费用"
+              value={costPending ? '待结算' : (task.status === 'failed' && !taskCost(task) ? '无费用' : fmtCost(task))}
+              hint={billing}
+              tone={costPending ? 'warning' : 'success'}
+            />
+            <SummaryCard
+              icon={<LuPackage />}
+              label="产物"
+              value={art.label}
+              hint={expiry && !expiry.expired ? expiry.remain : undefined}
+              tone={art.tone}
+            />
+          </div>
+
+          {/* 概览：模型、工作空间、API Key 名称、成员（顺序与同步调用一致，需求方#165） */}
+          <div>
+            <p className="mg-text-label text-mg-text-3 mb-2">概览</p>
+            <div className="rounded-md border border-mg-border bg-mg-bg-0 px-[var(--mg-panel-padding-md)]">
               <DetailRow
-                label="Token 用量"
+                label="模型"
                 value={
-                  <span className="mg-text-caption text-mg-text-2">
-                    输入 <strong className="text-mg-text-1">{(task.input_tokens ?? 0).toLocaleString()}</strong>
-                    {' · '}
-                    输出 <strong className="text-mg-text-1">{(task.output_tokens ?? 0).toLocaleString()}</strong>
+                  <span className="inline-flex items-center gap-1.5">
+                    <ModelIcon
+                      model={{ display_name: task.requested_model, vendor: task.vendor ?? undefined }}
+                      size={18}
+                      rounded="rounded-md"
+                    />
+                    <span className="font-mono">{task.requested_model}</span>
                   </span>
                 }
               />
-            )}
-            <DetailRow
-              label="实际费用"
-              value={task.status === 'failed' && !taskCost(task) ? '无费用' : fmtCost(task)}
-              hint={costHint(task)}
-            />
+              <DetailRow label="工作空间" value={workspaceName} />
+              <DetailRow label="API Key 名称" value={apiKeyName} />
+              <DetailRow label="成员" value={memberName} />
+              {(task.input_tokens != null || task.output_tokens != null) && (
+                <DetailRow
+                  label="Token 用量"
+                  value={
+                    <span className="mg-text-caption text-mg-text-2">
+                      输入 <strong className="text-mg-text-1">{(task.input_tokens ?? 0).toLocaleString()}</strong>
+                      {' · '}
+                      输出 <strong className="text-mg-text-1">{(task.output_tokens ?? 0).toLocaleString()}</strong>
+                    </span>
+                  }
+                />
+              )}
+            </div>
           </div>
+
+          {/* 任务信息：任务 ID、提交时间、任务状态、产物状态、计费状态、实际费用、产物有效期 */}
+          <div>
+            <p className="mg-text-label text-mg-text-3 mb-2">任务信息</p>
+            <div className="rounded-md border border-mg-border bg-mg-bg-0 px-[var(--mg-panel-padding-md)]">
+              <DetailRow label="任务 ID" value={task.gateway_request_id} mono />
+              <DetailRow label="提交时间" value={fmtDate(task.created_at)} />
+              <DetailRow label="任务状态" value={statusLabel} />
+              <DetailRow label="产物状态" value={art.label} />
+              <DetailRow label="计费状态" value={billing} />
+              <DetailRow
+                label="实际费用"
+                value={task.status === 'failed' && !taskCost(task) ? '无费用' : fmtCost(task)}
+                hint={costHint(task)}
+              />
+              {expiry && (
+                <DetailRow
+                  label="产物有效期"
+                  value={expiry.expired ? '已过期 · 已自动清理' : `至 ${fmtDate(expiry.expiresAt)} · ${expiry.remain}`}
+                />
+              )}
+            </div>
+          </div>
+              </>
+            )
+          })()}
 
           {/* 生命周期：提交 → 结束 → 耗时 → 产物有效期 */}
           <div>
             <p className="mg-text-label text-mg-text-3 mb-2">生命周期</p>
-            <div className="rounded-md border border-mg-border bg-card-bg px-[var(--mg-panel-padding-md)]">
+            <div className="rounded-md border border-mg-border bg-mg-bg-0 px-[var(--mg-panel-padding-md)]">
               <DetailRow label="提交时间" value={fmtDate(task.created_at)} />
               <DetailRow label="结束时间" value={fmtDate(task.completed_at)} />
               <DetailRow label="耗时"     value={fmtDuration(task.created_at, task.completed_at)} />
@@ -332,7 +433,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
 
           {/* 产物预览：视频任务成功态，直接用网关 content 端点播放 */}
           {showVideo && (
-            <div className="rounded-md border border-mg-border bg-card-bg mg-panel-tight">
+            <div className="rounded-md border border-mg-border bg-mg-bg-0 mg-panel-tight">
               <p className="mg-text-label text-mg-text-3 mb-2">产物预览</p>
               <video
                 key={videoUrl}
@@ -350,7 +451,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
           {showVideo && (
             <div>
               <p className="mg-text-label text-mg-text-3 mb-2">产物信息</p>
-              <div className="rounded-md border border-mg-border bg-card-bg px-[var(--mg-panel-padding-md)]">
+              <div className="rounded-md border border-mg-border bg-mg-bg-0 px-[var(--mg-panel-padding-md)]">
                 <DetailRow label="文件名" value={artifactMeta.filename} mono />
                 <DetailRow label="格式" value={artifactMeta.format} />
                 <DetailRow label="分辨率" value={artifactMeta.resolution} />
@@ -361,7 +462,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
 
           {/* 产物链接 + 下载 */}
           {showVideo && (
-            <div className="rounded-md border border-mg-border bg-card-bg mg-panel space-y-2.5">
+            <div className="rounded-md border border-mg-border bg-mg-bg-0 mg-panel space-y-2.5">
               <p className="mg-text-label text-mg-text-3">产物链接</p>
               <div className="group flex w-full items-center gap-2 rounded-lg border border-mg-border bg-mg-fill-0/40 px-[var(--mg-control-px-sm)] py-[var(--mg-control-py-sm)] text-left transition-colors hover:border-brand-base/40">
                 <LuLink size={13} className="shrink-0 text-mg-text-4" />
@@ -393,7 +494,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
 
           {/* 产物已过期 / 已被清理 */}
           {gone && kind === 'video' && isTaskDone(task.status) && (
-            <div className="rounded-md border border-mg-border bg-card-bg mg-panel-relaxed flex flex-col items-center gap-2 text-mg-text-4">
+            <div className="rounded-md border border-mg-border bg-mg-bg-0 mg-panel-relaxed flex flex-col items-center gap-2 text-mg-text-4">
               <LuVideoOff size={32} />
               <p className="mg-text-body font-semibold">产物已过期</p>
               <p className="mg-text-caption text-mg-text-3">视频文件已自动清理，不支持预览与下载</p>
@@ -563,9 +664,11 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
   }, [items, initialTaskId])
 
   return (
-    <div>
+    <div className="space-y-4">
+      {/* 筛选区白卡：与同步调用一致的卡片底色/容器（需求方#166），不再让筛选裸露在页面灰底上 */}
+      <section className="space-y-4 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
       {/* 筛选栏（记录类型=异步任务：首屏筛选 搜索/类型/状态 + 右侧计数；刷新按钮在页头） */}
-      <div className="flex items-center gap-3 mb-5 flex-wrap">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="relative">
           <LuSearch size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-mg-text-3 pointer-events-none" />
           <input
@@ -616,7 +719,7 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
       {/* 更多筛选：工作空间 / API Key / 成员（API Key 归属具体空间，跟随工作空间筛选）
           TODO(#446): 产物状态 / 计费状态筛选依赖后端 #446 交付后补入 */}
       {showMoreFilters && (
-        <div className="flex items-end gap-3 mb-5 flex-wrap border-t border-mg-border pt-4">
+        <div className="flex items-end gap-3 flex-wrap border-t border-mg-border pt-4">
           <label className="flex flex-col gap-1.5">
             <span className="mg-text-label text-mg-text-3">工作空间</span>
             <Select value={workspaceFilter} onChange={handleWorkspace} className="mg-control-md w-44 mg-text-body">
@@ -650,15 +753,16 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
           )}
         </div>
       )}
+      </section>
 
       {/* 提示条：只放唯一注意事项（有效期/保存），不与页头描述重复 */}
-      <p className="flex items-start gap-1.5 mg-text-caption text-[var(--mg-warning)] mb-4 px-1">
+      <p className="flex items-start gap-1.5 mg-text-caption text-[var(--mg-warning)] px-1">
         <LuTriangleAlert size={13} className="shrink-0 mt-0.5" />
         <span>视频产物有有效期（见各任务「产物有效期」），过期后平台不再保留，请及时下载保存到本地。</span>
       </p>
 
       {/* 表格 */}
-      <div className="rounded-md border border-mg-border overflow-hidden">
+      <div className="rounded-md border border-mg-border bg-mg-bg-0 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -842,7 +946,7 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
 
       {/* 分页 */}
       {pages > 1 && (
-        <div className="flex items-center justify-between mt-4 mg-text-caption text-mg-text-3">
+        <div className="flex items-center justify-between mg-text-caption text-mg-text-3">
           <span>第 {page} / {pages} 页</span>
           <div className="flex gap-2">
             <Button

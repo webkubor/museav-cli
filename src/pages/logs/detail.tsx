@@ -120,7 +120,12 @@ export function LogDetailSheet({
     staleTime: 60_000,
   })
   const member = row ? memberPage?.items.find((m) => m.account.account_id === row.account.account_id)?.account : undefined
-  const apiKeyName = row ? keyPage?.items.find((k) => k.api_key_id === row.api_key.api_key_id)?.name || '—' : '—'
+  // API Key 名称（需求方#132）：空间 Key 列表命中优先 → 行内 name → masked → 「—」。
+  // 全为空时是后端 model-logs 未回 api_key.name（现被填为 id/空，见 services/logs.ts #50），归后端。
+  const apiKeyName = row
+    ? keyPage?.items.find((k) => k.api_key_id === row.api_key.api_key_id)?.name
+        || row.api_key.name || row.api_key.masked || '—'
+    : '—'
   const memberName = member?.display_name || member?.email || '—'
   return (
     <SideSheet
@@ -228,10 +233,8 @@ export function LogDetailSheet({
             />
           )}
 
-          {/* #49：「查看同链路日志」需求里没有且无法正确跳转，已移除，仅保留复制 Trace。 */}
-          <footer className="flex flex-wrap items-center gap-3 border-t border-mg-border pt-4">
-            <CopyButton value={row.trace_id} variant="labeled" label="复制 Trace" toast={false} />
-          </footer>
+          {/* 需求方#143：复制 Trace 的入口已就近放在头部 Trace ID 旁（小图标按钮），
+              不再于底部放独立「复制 Trace」按钮，避免复制入口远离 Trace ID。 */}
         </div>
       )}
     </SideSheet>
@@ -301,8 +304,10 @@ function ResponseTiming({ row }: { row: CallLogItem }) {
     <div className="space-y-3 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
       {streaming ? (
         <>
+          {/* 流式耗时按时间轴瀑布展示（需求方#144）：首 Token 从 0 起；
+              响应生成段从首 Token 结束处起（offsetMs=ftt）靠右延伸，而非从左侧铺满。 */}
           <TimingBar label="首 Token 耗时" durationMs={ftt} totalMs={total} tone="success" />
-          <TimingBar label="响应生成耗时" durationMs={total - ftt} totalMs={total} tone="brand" />
+          <TimingBar label="响应生成耗时" durationMs={total - ftt} offsetMs={ftt} totalMs={total} tone="brand" />
         </>
       ) : (
         <TimingBar label="总响应耗时" durationMs={total} totalMs={total} tone={row.status === 'failed' ? 'danger' : 'brand'} />
@@ -321,14 +326,17 @@ function ResponseTiming({ row }: { row: CallLogItem }) {
   )
 }
 
-function TimingBar({ durationMs, label, tone, totalMs }: { durationMs: number; label: string; tone: 'success' | 'brand' | 'danger'; totalMs: number }) {
-  const pct = totalMs > 0 ? Math.max(6, Math.min(100, (durationMs / totalMs) * 100)) : 100
+function TimingBar({ durationMs, label, tone, totalMs, offsetMs = 0 }: { durationMs: number; label: string; tone: 'success' | 'brand' | 'danger'; totalMs: number; offsetMs?: number }) {
+  const rawPct = totalMs > 0 ? (durationMs / totalMs) * 100 : 100
+  const offsetPct = totalMs > 0 ? Math.max(0, Math.min(100, (offsetMs / totalMs) * 100)) : 0
+  // 段宽不超过剩余轨道（offset+width ≤ 100），保底 6% 让极短段仍可见。
+  const pct = Math.max(6, Math.min(100 - offsetPct, rawPct))
   const barColor = tone === 'success' ? 'bg-mg-success' : tone === 'danger' ? 'bg-mg-danger' : 'bg-brand-base'
   return (
     <div className="flex items-center gap-3">
       <span className="w-24 shrink-0 mg-text-caption text-mg-text-2">{label}</span>
       <div className="h-2 flex-1 overflow-hidden rounded-full bg-mg-fill-1">
-        <span className={cn('block h-2 rounded-full', barColor)} style={{ width: `${pct}%` }} />
+        <span className={cn('block h-2 rounded-full', barColor)} style={{ width: `${pct}%`, marginLeft: `${offsetPct}%` }} />
       </div>
       <span className="w-14 shrink-0 text-right font-mono mg-text-caption font-bold text-mg-text-1">{formatMaybeDuration(durationMs)}</span>
     </div>

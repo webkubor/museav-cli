@@ -200,7 +200,7 @@ function EmailSignupPage() {
     >
       <form
         className="auth-form-container auth-fade-in"
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={(e) => void handleSubmit(onSubmit)(e)}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
           <div>

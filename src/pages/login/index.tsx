@@ -273,7 +273,7 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
         <form
           key="password-step"
           className="auth-form-container auth-slide-in"
-          onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}
+          onSubmit={(e) => void passwordForm.handleSubmit(onPasswordSubmit)(e)}
         >
           <div className="auth-email-preview">
             <span className="auth-email-text">{email}</span>

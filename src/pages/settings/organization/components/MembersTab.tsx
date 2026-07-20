@@ -29,9 +29,10 @@ const ROLE_LABEL: Record<TenantRole, string> = {
   tenant_admin: 'Admin',
   tenant_member: 'Member',
 }
-const ROLE_BADGE: Record<TenantRole, 'purple' | 'default' | 'secondary'> = {
+// 统一浅色调徽章家族（勿混实心 default）：Owner=紫 / Admin=品牌色 / Member=中性灰
+const ROLE_BADGE: Record<TenantRole, 'purple' | 'brand' | 'secondary'> = {
   tenant_owner: 'purple',
-  tenant_admin: 'default',
+  tenant_admin: 'brand',
   tenant_member: 'secondary',
 }
 
@@ -299,7 +300,8 @@ export function MembersTab({
                       </TableCell>
                       <TableCell align="center">
                         {manageable ? (
-                          <div className="flex items-center justify-center gap-1">
+                          // nowrap：CJK 按钮文本在列被挤压时会按字竖排折行（需求方#84 截图）
+                          <div className="flex items-center justify-center gap-1 whitespace-nowrap">
                             <button
                               type="button"
                               data-track="members:edit"

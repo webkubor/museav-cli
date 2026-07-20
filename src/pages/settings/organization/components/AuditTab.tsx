@@ -314,7 +314,8 @@ export function AuditTab({ tenantId }: { tenantId: string }) {
                     <TableCell className="max-w-[160px] truncate text-xs text-mg-text-2" title={row.target_label}>
                       {row.target_label || row.target_id || '—'}
                     </TableCell>
-                    <TableCell className="text-xs text-mg-text-3">{scopeText(row.workspace_id)}</TableCell>
+                    {/* break-keep：作用范围含 CJK 词（如「默认项目」），禁止词中折行，只在「 / 」分隔处换行 */}
+                    <TableCell className="break-keep text-xs text-mg-text-3">{scopeText(row.workspace_id)}</TableCell>
                     <TableCell>
                       <StatusBadge status={row.result} statusMap={RESULT_STATUS_MAP} fallback={row.result} />
                     </TableCell>

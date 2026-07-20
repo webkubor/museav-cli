@@ -283,7 +283,7 @@ export function ApiKeyTable({
                   )}
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex justify-end gap-4 text-xs font-bold">
+                  <div className="flex justify-end gap-4 whitespace-nowrap text-xs font-bold">
                     <button
                       onClick={() => onOpenDetail(record)}
                       className="text-brand-base hover:text-brand-deep transition-colors cursor-pointer"

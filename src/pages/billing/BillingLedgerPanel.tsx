@@ -57,9 +57,9 @@ function timeRange(key: TimeFilterKey): { from?: string; to?: string } {
   return { from: from.toISOString(), to: to.toISOString() }
 }
 
-/** 类型徽章配色：充值(brand) / 赠送(info) / 奖励(purple) */
-const TYPE_BADGE: Record<IncomeRecordType, 'default' | 'info' | 'purple'> = {
-  recharge: 'default',
+/** 类型徽章配色：充值(brand) / 赠送(info) / 奖励(purple)——统一浅色调家族，只差色相（需求方#84 反馈实心/描边混排） */
+const TYPE_BADGE: Record<IncomeRecordType, 'brand' | 'info' | 'purple'> = {
+  recharge: 'brand',
   gift: 'info',
   reward: 'purple',
 }

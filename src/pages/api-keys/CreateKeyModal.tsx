@@ -329,6 +329,23 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
             </div>
           </div>
 
+          {/* 过期时间 */}
+          <div>
+            <label className="block text-xs font-bold text-mg-text-2 mb-2">
+              过期时间 <span className="text-mg-text-3 font-normal">{mustSetExpiry ? '（必填，不可永不过期）' : '（可选，不填则永不过期）'}</span>
+            </label>
+            <DateRangePicker
+              value={expiryRange}
+              onChange={setExpiryRange}
+              presets={expiryPresets}
+              customTitle="过期预设"
+              customLabel="选择截止时间"
+              hideStartDate={true}
+              placeholder="选择过期失效时间"
+              className="w-full rounded-md h-10 justify-between"
+            />
+          </div>
+
           {/* 负责人（成员 Key）：管理员代建指定被负责成员 */}
           {effectiveScope === 'member' && (
             <div>
@@ -466,23 +483,6 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                 ))}
               </Select>
             </div>
-          </div>
-
-          {/* 过期时间 */}
-          <div>
-            <label className="block text-xs font-bold text-mg-text-2 mb-2">
-              过期时间 <span className="text-mg-text-3 font-normal">{mustSetExpiry ? '（必填，不可永不过期）' : '（可选，不填则永不过期）'}</span>
-            </label>
-            <DateRangePicker
-              value={expiryRange}
-              onChange={setExpiryRange}
-              presets={expiryPresets}
-              customTitle="过期预设"
-              customLabel="选择截止时间"
-              hideStartDate={true}
-              placeholder="选择过期失效时间"
-              className="w-full rounded-md h-10 justify-between"
-            />
           </div>
         </div>
       </Modal>

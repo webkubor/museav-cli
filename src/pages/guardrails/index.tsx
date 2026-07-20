@@ -451,8 +451,10 @@ export default function GuardrailsPage() {
   // 其余启用中的全局护栏自动停用。乐观更新即时反馈，onSettled 失效刷新兜底。
   const cascadeGlobalMutation = useMutation({
     mutationFn: async ({ activateId, deactivateIds }: { activateId: string; deactivateIds: string[] }) => {
-      for (const id of deactivateIds) await updateGuardrail(id, { status: 'inactive' })
+      // 先启用新的、再停用旧的：切换全程始终 ≥1 条启用，绕开后端「至少保留一条启用全局护栏」校验（需求方#162）。
+      // 反序（先停后启）会在中间态出现 0 条启用而报错。
       await updateGuardrail(activateId, { status: 'active' })
+      for (const id of deactivateIds) await updateGuardrail(id, { status: 'inactive' })
     },
     onMutate: async ({ activateId, deactivateIds }) => {
       await qc.cancelQueries({ queryKey: ['guardrails', workspaceId] })
@@ -479,12 +481,13 @@ export default function GuardrailsPage() {
     },
   })
 
-  // 统一切换入口：启用某条全局护栏 → 走级联（停用其他启用中全局）；其余走普通切换。
+  // 统一切换入口：启用任一「全局护栏」→ 走级联（自动停用其他启用中的全局护栏，保证全局单选）；其余走普通切换。
+  // 之前只对 is_default 级联，非默认全局启用不级联 → 累积多条 active 全局 → #108 置灰失效 → 逐条停用时撞后端「至少保留一条」报错（需求方#162）。
   function handleToggle({ id, status }: { id: string; status: 'active' | 'inactive' }) {
     const row = guardrails.find((g) => g.id === id)
-    if (row?.is_default && status === 'active') {
+    if (row && deriveScope(row) === 'global' && status === 'active') {
       const deactivateIds = guardrails
-        .filter((g) => g.is_default && g.status === 'active' && g.id !== id)
+        .filter((g) => deriveScope(g) === 'global' && g.status === 'active' && g.id !== id)
         .map((g) => g.id)
       cascadeGlobalMutation.mutate({ activateId: id, deactivateIds })
     } else {

@@ -54,6 +54,9 @@ import { UsageFilterPanel } from './usage-filters'
 
 type UsageDimension = 'model' | 'member' | 'apiKey'
 
+/** 页面默认时间范围（本月）。既作深链无参数时的初值，也是切换视图时的复位目标（#154）。 */
+const DEFAULT_TIME_RANGE: DateRangeValue = { preset: 'thisMonth' }
+
 /** 深链/下钻上下文：从 URL 参数推导初始时间范围（time_range 预设或 range_start/range_end 自定义）。 */
 function initialTimeRangeFromParams(sp: URLSearchParams): DateRangeValue {
   const rangeStart = sp.get('range_start')
@@ -62,7 +65,7 @@ function initialTimeRangeFromParams(sp: URLSearchParams): DateRangeValue {
   const tr = sp.get('time_range')
   const valid = ['today', '7d', '30d', 'thisMonth', 'lastMonth']
   if (tr && valid.includes(tr)) return { preset: tr }
-  return { preset: 'thisMonth' }
+  return DEFAULT_TIME_RANGE
 }
 
 /** 用量分析页面入口。 */
@@ -179,6 +182,10 @@ export default function UsagePage() {
   function handleViewChange(v: 'enterprise' | 'mine' | 'space') {
     trackEvent('usage_view_switch', { from_view: view, to_view: v }, { view_mode: v })
     setUserView(v)
+    // #154：切换视图（企业/我的/空间）后，筛选项恢复各视图默认值——时间范围回本月、
+    // 工作空间回全部——避免残留旧筛选导致新视图数据口径被误读。
+    setTimeRange(DEFAULT_TIME_RANGE)
+    setFilterWorkspaceId('')
   }
 
   function handleDimensionChange(next: UsageDimension) {

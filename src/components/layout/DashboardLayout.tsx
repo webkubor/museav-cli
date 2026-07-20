@@ -34,7 +34,7 @@ import { useRechargeStore } from '@/store/use-recharge-store'
 import { navConfig } from '@/config/nav'
 import type { NavItem } from '@/config/nav'
 import { installAgentTools } from '@/lib/dev-agent-tools'
-import { breadcrumbConfig, FLAT_ROUTES } from '@/config/breadcrumbs'
+import { breadcrumbConfig, FLAT_ROUTES, HOME_CRUMB } from '@/config/breadcrumbs'
 import { usePlatformConfig, useSite } from '@/hooks/use-platform-config'
 import { usePermissions } from '@/hooks/use-permissions'
 import { useTenantRole } from '@/hooks/use-tenant-role'
@@ -200,7 +200,7 @@ export function DashboardLayout() {
 
   const getBreadcrumbs = () => {
     const key = getSelectedKey()
-    const raw = breadcrumbConfig[key] ?? [{ label: 'nav.home', path: '/dashboard' }]
+    const raw = breadcrumbConfig[key] ?? HOME_CRUMB
     return raw.map((item) => ({ ...item, label: t(item.label) }))
   }
 

@@ -120,7 +120,7 @@ export function RecentCallsSection({ view = 'enterprise', accountId, granularity
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <span className="text-2xl mb-2">📭</span>
           <p className="text-xs text-mg-text-3 font-medium">{t('dashboard.workbench.recent.empty')}</p>
-          <p className="mt-1 text-xs text-mg-text-4 max-w-[280px]">{t('dashboard.workbench.recent.emptyHint')}</p>
+          <p className="mt-1 text-xs text-mg-text-3 max-w-[280px]">{t('dashboard.workbench.recent.emptyHint')}</p>
         </div>
       )}
     </Card>

@@ -337,34 +337,34 @@ export function BillingOrdersPanel({ tenantId, activeTab, onTabChange, site }: B
                     </div>
                     <div className="font-mono text-xs space-y-3 border-t border-b border-dashed border-mg-border/80 py-3.5 text-mg-text-2">
                       <div className="flex justify-between gap-3">
-                        <span className="text-mg-text-4">{t('billing.orders.detail.orderNo')}:</span>
+                        <span className="text-mg-text-3">{t('billing.orders.detail.orderNo')}:</span>
                         <span className="text-mg-text-1 font-bold select-all truncate max-w-[130px]" title={selectedOrder.order_no}>{selectedOrder.order_no}</span>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <span className="text-mg-text-4">{t('billing.orders.detail.amount')}:</span>
+                        <span className="text-mg-text-3">{t('billing.orders.detail.amount')}:</span>
                         <span className="text-mg-text-1 font-extrabold text-xs font-mono tabular-nums">{selectedOrder.currency} {selectedOrder.amount}</span>
                       </div>
                       {selectedOrder.credited_amount && (
                         <div className="flex justify-between gap-3">
-                          <span className="text-mg-text-4">{t('billing.orders.detail.credited')}:</span>
+                          <span className="text-mg-text-3">{t('billing.orders.detail.credited')}:</span>
                           <span className="text-mg-success font-extrabold font-mono tabular-nums">{selectedOrder.currency} {selectedOrder.credited_amount}</span>
                         </div>
                       )}
                       {selectedOrder.channel && (
                         <div className="flex justify-between gap-3">
-                          <span className="text-mg-text-4">{t('billing.orders.detail.channel')}:</span>
+                          <span className="text-mg-text-3">{t('billing.orders.detail.channel')}:</span>
                           <span className="text-mg-text-1 font-semibold">{getRechargeOrderChannelDisplayName(selectedOrder)}</span>
                         </div>
                       )}
                       {selectedOrder.paid_at && (
                         <div className="flex justify-between gap-3">
-                          <span className="text-mg-text-4">{t('billing.orders.detail.paidAt')}:</span>
+                          <span className="text-mg-text-3">{t('billing.orders.detail.paidAt')}:</span>
                           <span className="text-mg-text-3 text-xs text-right">{formatDateTime(selectedOrder.paid_at)}</span>
                         </div>
                       )}
                       {selectedOrder.promo_code && (
                         <div className="flex justify-between gap-3">
-                          <span className="text-mg-text-4">{t('billing.orders.detail.promo')}:</span>
+                          <span className="text-mg-text-3">{t('billing.orders.detail.promo')}:</span>
                           <span className="text-brand-base font-bold bg-brand-glow/10 px-1.5 rounded-sm text-xs">{selectedOrder.promo_code}</span>
                         </div>
                       )}

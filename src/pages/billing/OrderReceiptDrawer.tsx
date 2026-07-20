@@ -79,7 +79,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
 
             {/* Status Big Badge */}
             <div className="flex flex-col items-center py-2 space-y-1">
-              <div className="text-xs uppercase tracking-wider text-mg-text-4 font-bold">
+              <div className="text-xs uppercase tracking-wider text-mg-text-3 font-bold">
                 {t('billing.orders.detail.status')}
               </div>
               <StatusBadge status={order.status} statusMap={orderStatusMap} />
@@ -88,20 +88,20 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
             {/* Receipt Details rows inside monospace grid */}
             <div className="font-mono text-xs space-y-3.5 border-t border-b border-dashed border-mg-border/80 py-4 text-mg-text-2">
               <div className="flex justify-between gap-4">
-                <span className="text-mg-text-4">{t('billing.orders.detail.orderNo')}:</span>
+                <span className="text-mg-text-3">{t('billing.orders.detail.orderNo')}:</span>
                 <span className="text-mg-text-1 font-bold select-all truncate max-w-[180px]" title={order.order_no}>
                   {order.order_no}
                 </span>
               </div>
               <div className="flex justify-between gap-4">
-                <span className="text-mg-text-4">{t('billing.orders.detail.amount')}:</span>
+                <span className="text-mg-text-3">{t('billing.orders.detail.amount')}:</span>
                 <span className="text-mg-text-1 font-extrabold text-sm leading-none">
                   {order.currency} {order.amount}
                 </span>
               </div>
               {order.credited_amount && (
                 <div className="flex justify-between gap-4">
-                  <span className="text-mg-text-4">{t('billing.orders.detail.credited')}:</span>
+                  <span className="text-mg-text-3">{t('billing.orders.detail.credited')}:</span>
                   <span className="text-mg-success font-extrabold">
                     {order.currency} {order.credited_amount}
                   </span>
@@ -109,7 +109,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
               )}
               {order.channel && (
                 <div className="flex justify-between gap-4">
-                  <span className="text-mg-text-4">{t('billing.orders.detail.channel')}:</span>
+                  <span className="text-mg-text-3">{t('billing.orders.detail.channel')}:</span>
                   <span className="text-mg-text-1 font-semibold">
                     {getRechargeOrderChannelDisplayName(order)}
                   </span>
@@ -117,7 +117,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
               )}
               {order.paid_at && (
                 <div className="flex justify-between gap-4">
-                  <span className="text-mg-text-4">{t('billing.orders.detail.paidAt')}:</span>
+                  <span className="text-mg-text-3">{t('billing.orders.detail.paidAt')}:</span>
                   <span className="text-mg-text-3 text-xs">
                     {formatDateTime(order.paid_at)}
                   </span>
@@ -125,7 +125,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
               )}
               {order.promo_code && (
                 <div className="flex justify-between gap-4">
-                  <span className="text-mg-text-4">{t('billing.orders.detail.promo')}:</span>
+                  <span className="text-mg-text-3">{t('billing.orders.detail.promo')}:</span>
                   <span className="text-brand-base font-bold bg-brand-glow/10 px-1.5 rounded-sm text-xs">
                     {order.promo_code}
                   </span>
@@ -135,7 +135,7 @@ export function OrderReceiptDrawer({ isOpen, order, onClose, cancelMutation, lab
 
             <OrderBarcode value={order.order_no} />
 
-            <div className="text-center text-xs text-mg-text-4 font-semibold pt-2">
+            <div className="text-center text-xs text-mg-text-3 font-semibold pt-2">
               {t('billing.orders.detail.receiptFooter')}
             </div>
 

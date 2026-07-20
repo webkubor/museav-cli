@@ -146,7 +146,7 @@ export function UsageTrendSection({ granularity, accountId }: { granularity: Gra
           <div className="flex flex-col items-center justify-center h-[220px] text-center">
             <LuTrendingUp size={24} className="mb-2 text-mg-text-3" />
             <p className="text-xs text-mg-text-3 font-medium">{t('dashboard.workbench.trend.empty')}</p>
-            <p className="mt-1 text-xs text-mg-text-4 max-w-[260px]">{t('dashboard.workbench.trend.emptyHint')}</p>
+            <p className="mt-1 text-xs text-mg-text-3 max-w-[260px]">{t('dashboard.workbench.trend.emptyHint')}</p>
           </div>
         )}
       </div>

@@ -20,7 +20,7 @@ export function EmptyState({ icon, title, description, action, className, colSpa
       )}
       <p className="mg-text-body font-medium text-mg-text-3">{title}</p>
       {description && (
-        <p className="mt-1 mg-text-caption text-mg-text-4">{description}</p>
+        <p className="mt-1 mg-text-caption text-mg-text-3">{description}</p>
       )}
       {action && <div className="mt-4">{action}</div>}
     </div>

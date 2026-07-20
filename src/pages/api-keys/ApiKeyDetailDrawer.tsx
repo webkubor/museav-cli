@@ -54,10 +54,9 @@ function Cell({ label, value }: { label: string; value: ReactNode }) {
   )
 }
 
-/** 生效层槽位标签（原型 api-key-preview-layers：全局 / 个人 / Key 三固定槽） */
+/** 生效层槽位（PRD 安全护栏产品模型：个人护栏是「人」的策略，不参与 Key 生效——Key 详情只看全局 + Key，需求方#147） */
 const LAYER_SLOTS: Array<{ key: string; label: string }> = [
   { key: 'global_default', label: '全局护栏' },
-  { key: 'member', label: '个人护栏' },
   { key: 'key', label: 'Key 护栏' },
 ]
 const GATE_LABEL: Record<string, string> = {
@@ -255,12 +254,12 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
         <Section title="安全护栏">
           {effective ? (
             <div className="space-y-3">
-              {/* 生效规则预览：全局 / 个人 / Key 三槽 */}
+              {/* 生效规则预览：全局 / Key 两槽（个人护栏不参与 Key 生效，PRD/需求方#147） */}
               <div>
                 <div className="mb-1.5 text-xs font-bold text-mg-text-2">生效规则预览</div>
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-2 gap-2.5">
                   {LAYER_SLOTS.map((slot) => {
-                    // 同层可绑定多条（个人/Key 护栏可多个，需求方#105）——列出全部，不再只取第一条
+                    // Key 层最多 1 常规 + 1 提额（PRD：一把 Key 最多 1 有效常规 Key 护栏 + 1 有效 Key 提额）——列出该层全部
                     const layers = effective.layers.filter((l) => l.layer === slot.key)
                     return (
                       <div

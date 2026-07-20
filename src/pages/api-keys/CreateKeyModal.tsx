@@ -8,7 +8,6 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import Select, { SelectItem } from '@/components/ui/Select'
-import { TagInput } from '@/components/ui/TagInput'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -401,16 +400,18 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                   </div>
                 </div>
               )}
-              <TagInput
-                value={extraIds}
-                onChange={(addIds) => setGuardrailIds([...(defaultId ? [defaultId] : []), ...addIds])}
-                options={allGuardrails
+              {/* PRD：一把 Key 最多 1 条有效常规 Key 护栏，不叠加（需求方#147）——单选，'__none__' 表示不额外绑定 */}
+              <Select
+                value={extraIds[0] ?? '__none__'}
+                onChange={(v) => setGuardrailIds([...(defaultId ? [defaultId] : []), ...(v === '__none__' ? [] : [v])])}
+              >
+                <SelectItem value="__none__">不额外绑定（仅默认全局护栏）</SelectItem>
+                {allGuardrails
                   // 文档：创建 API Key 只展示常规 Key 护栏，不展示 Key 提额、个人或全局护栏
                   .filter((g) => !g.is_default && deriveScope(g) === 'key' && deriveKind(g) === 'regular')
-                  .map((g) => ({ value: g.id, label: g.name }))}
-                placeholder="可选：叠加其他护栏"
-                hint="默认护栏始终绑定，可继续叠加多个护栏共同生效"
-              />
+                  .map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+              </Select>
+              <p className="mt-1 text-xs text-mg-text-3">默认全局护栏始终生效；最多再绑定 1 条常规 Key 护栏</p>
             </div>
             {/* 生效规则预览（PRD §8.2）：提示词注入 + 预算闸门 / 模型黑名单 / IP 白名单叠加结果 */}
             <div className="mt-2 space-y-1.5 rounded-md bg-brand-base/5 px-2.5 py-2 text-xs">

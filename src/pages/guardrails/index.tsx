@@ -437,7 +437,11 @@ export default function GuardrailsPage() {
   const toggleMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: 'active' | 'inactive' }) =>
       updateGuardrail(id, { status }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] }),
+    // 详情抽屉开关读 ['guardrail-detail'] 独立缓存——必须一并失活，否则抽屉内开关点了不动（需求方#149）
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
+      qc.invalidateQueries({ queryKey: ['guardrail-detail', vars.id] })
+    },
     onError: (err: unknown) =>
       appToast.requestError(err, t('guardrails.toast.toggleError')),
   })
@@ -467,7 +471,11 @@ export default function GuardrailsPage() {
       if (ctx?.prev) qc.setQueryData(['guardrails', workspaceId], ctx.prev)
       appToast.requestError(err, t('guardrails.toast.toggleError'))
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] }),
+    onSettled: (_d, _e, vars) => {
+      qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
+      // 抽屉内切换的是 activateId 那条 → 失活其详情缓存，开关即时反映（需求方#149）
+      qc.invalidateQueries({ queryKey: ['guardrail-detail', vars.activateId] })
+    },
   })
 
   // 统一切换入口：启用某条全局护栏 → 走级联（停用其他启用中全局）；其余走普通切换。

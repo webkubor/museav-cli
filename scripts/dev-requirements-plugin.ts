@@ -6,6 +6,8 @@ import type { Plugin } from 'vite'
 const DATA_FILE = path.resolve(process.cwd(), '.requirements.json')
 const GITLAB_HOST = 'gitlab.ops.modelgo.com'
 const GITLAB_PROJECT_ID = 1
+// 同步范围：指派给我的未关闭 issue，限这两个看板（QA=1 / 需求方 shared/modelgo_prd=46）
+const GITLAB_PROJECT_IDS = [1, 46]
 const GITLAB_USER_ID = 8
 const GLAB_BIN_CANDIDATES = [
   process.env.GLAB_BIN,
@@ -27,10 +29,15 @@ export interface Requirement {
   gitlabState?: string
   gitlabLabels?: string[]
   assignee?: string
+  /** 所属 GitLab project（1=QA / 46=需求方）；历史条目缺省按 1 */
+  projectId?: number
+  webUrl?: string
 }
 
 interface GitLabIssue {
   iid: number
+  project_id: number
+  web_url: string
   title: string
   state: string
   labels: string[]
@@ -125,29 +132,35 @@ function gitlabStatusToLocal(issue: GitLabIssue): Requirement['status'] {
   return 'pending'
 }
 
-// 开发者菜单只服务“当前需要我监控的问题”，不做 GitLab 历史台账。
+// 开发者菜单只服务「指派给我、未关闭」的问题（QA + 需求方两看板），不做 GitLab 历史台账。
+// 与 ~/.claude/patrol/run.sh 同口径：全局 scope=assigned_to_me 再按 project 过滤。
 // 这里仍然分页拉取，避免未关闭事项超过 100 条时被截断。
 function fetchOpenGitlabIssues(): GitLabIssue[] {
   const perPage = 100
   const all: GitLabIssue[] = []
   for (let page = 1; ; page += 1) {
     const batch = glabJson<GitLabIssue[]>(
-      `"groups/qa/issues?state=opened&per_page=${perPage}&page=${page}"`
+      `"issues?state=opened&scope=assigned_to_me&per_page=${perPage}&page=${page}"`
     )
-    all.push(...batch)
+    all.push(...batch.filter((issue) => GITLAB_PROJECT_IDS.includes(issue.project_id)))
     if (batch.length < perPage) break
   }
   return all
 }
 
+// iid 是 project 内编号，跨项目会撞——合并键必须带 project；历史条目缺省按 project 1
+const issueKey = (projectId: number, iid: number) => `${projectId}:${iid}`
+
 function syncFromGitlab(items: Requirement[]): Requirement[] {
   const issues = fetchOpenGitlabIssues()
-  const iidMap = new Map(items.filter((i) => i.gitlabIid).map((i) => [i.gitlabIid!, i]))
+  const iidMap = new Map(
+    items.filter((i) => i.gitlabIid).map((i) => [issueKey(i.projectId ?? GITLAB_PROJECT_ID, i.gitlabIid!), i])
+  )
 
   const merged = [...items]
 
   for (const issue of issues) {
-    const existing = iidMap.get(issue.iid)
+    const existing = iidMap.get(issueKey(issue.project_id, issue.iid))
     if (existing) {
       const idx = merged.indexOf(existing)
       merged[idx] = {
@@ -157,10 +170,12 @@ function syncFromGitlab(items: Requirement[]): Requirement[] {
         gitlabState: issue.state,
         gitlabLabels: issue.labels,
         assignee: issue.assignee?.username ?? undefined,
+        projectId: issue.project_id,
+        webUrl: issue.web_url,
       }
     } else {
       merged.push({
-        id: `gl-${issue.iid}`,
+        id: `gl-${issue.project_id}-${issue.iid}`,
         title: issue.title.replace(/^\[Console需求\]\s*/, '').replace(/^\[cs:claude\]\s*/, ''),
         priority: gitlabStatusToPriority(issue.labels),
         status: gitlabStatusToLocal(issue),
@@ -169,6 +184,8 @@ function syncFromGitlab(items: Requirement[]): Requirement[] {
         gitlabState: issue.state,
         gitlabLabels: issue.labels,
         assignee: issue.assignee?.username ?? undefined,
+        projectId: issue.project_id,
+        webUrl: issue.web_url,
       })
     }
   }
@@ -176,23 +193,26 @@ function syncFromGitlab(items: Requirement[]): Requirement[] {
   return merged
 }
 
+/** 条目所属 project（历史条目缺省按 1）——所有写操作都必须按它发，不能硬编码 */
+const projectOf = (item: Requirement) => item.projectId ?? GITLAB_PROJECT_ID
+
 function claimIssue(items: Requirement[], localId: string): Requirement[] {
   const item = items.find((i) => i.id === localId)
   if (!item?.gitlabIid) throw new Error('no_gitlab_link')
 
-  const issue = glabJson<GitLabIssue>(`"projects/${GITLAB_PROJECT_ID}/issues/${item.gitlabIid}"`)
+  const issue = glabJson<GitLabIssue>(`"projects/${projectOf(item)}/issues/${item.gitlabIid}"`)
   const bizLabels = issue.labels.filter((l) => !STATUS_LABELS.includes(l))
   const isClaimed = !!issue.assignee
 
   if (isClaimed) {
-    glab(`-X PUT "projects/${GITLAB_PROJECT_ID}/issues/${item.gitlabIid}" --field "assignee_id=0"`)
+    glab(`-X PUT "projects/${projectOf(item)}/issues/${item.gitlabIid}" --field "assignee_id=0"`)
     return items.map((i) =>
       i.id === localId ? { ...i, assignee: undefined } : i
     )
   }
 
   const newLabels = [...bizLabels, '已认领'].join(',')
-  glab(`-X PUT "projects/${GITLAB_PROJECT_ID}/issues/${item.gitlabIid}" --field "assignee_id=${GITLAB_USER_ID}" --field "labels=${newLabels}"`)
+  glab(`-X PUT "projects/${projectOf(item)}/issues/${item.gitlabIid}" --field "assignee_id=${GITLAB_USER_ID}" --field "labels=${newLabels}"`)
   return items.map((i) =>
     i.id === localId
       ? { ...i, assignee: 'webkubor', gitlabLabels: [...bizLabels, '已认领'] }
@@ -221,10 +241,10 @@ function finishIssue(items: Requirement[], localId: string): Requirement[] {
   if (!item) throw new Error('not_found')
 
   if (item.gitlabIid) {
-    const issue = glabJson<GitLabIssue>(`"projects/${GITLAB_PROJECT_ID}/issues/${item.gitlabIid}"`)
+    const issue = glabJson<GitLabIssue>(`"projects/${projectOf(item)}/issues/${item.gitlabIid}"`)
     const bizLabels = issue.labels.filter((l) => !STATUS_LABELS.includes(l))
     const newLabels = [...bizLabels, '已完成'].join(',')
-    glab(`-X PUT "projects/${GITLAB_PROJECT_ID}/issues/${item.gitlabIid}" --field "labels=${newLabels}" --field "state_event=close"`)
+    glab(`-X PUT "projects/${projectOf(item)}/issues/${item.gitlabIid}" --field "labels=${newLabels}" --field "state_event=close"`)
   }
 
   return items.map((i) =>
@@ -241,7 +261,7 @@ function commentIssue(items: Requirement[], localId: string, content: string): R
   const trimmed = content.trim()
   if (!trimmed) throw new Error('empty_comment')
 
-  glab(`-X POST "projects/${GITLAB_PROJECT_ID}/issues/${item.gitlabIid}/notes" --field ${shellArg(`body=${trimmed}`)}`)
+  glab(`-X POST "projects/${projectOf(item)}/issues/${item.gitlabIid}/notes" --field ${shellArg(`body=${trimmed}`)}`)
   return item
 }
 
@@ -254,7 +274,7 @@ function assignIssue(items: Requirement[], localId: string, assigneeId: number):
   if (!assignee) throw new Error('assignee_not_found')
 
   const updatedIssue = glabJson<GitLabIssue>(
-    `-X PUT "projects/${GITLAB_PROJECT_ID}/issues/${item.gitlabIid}" --field "assignee_id=${assignee.id}"`
+    `-X PUT "projects/${projectOf(item)}/issues/${item.gitlabIid}" --field "assignee_id=${assignee.id}"`
   )
 
   return items.map((i) =>

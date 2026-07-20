@@ -14,9 +14,6 @@ import { cn } from '@/lib/utils'
 
 type RequirementStatus = 'pending' | 'done'
 type RequirementPriority = 'high' | 'medium' | 'low'
-// 顶部「我的问题」三态筛选：待处理 / 待验证 / 已完成，互斥且覆盖全部开放 issue
-type RequirementFilter = 'pending' | 'verifying' | 'done'
-type AssigneeFilter = 'mine' | 'unassigned' | 'all'
 
 interface Requirement {
   id: string
@@ -29,6 +26,8 @@ interface Requirement {
   gitlabState?: string
   gitlabLabels?: string[]
   assignee?: string
+  projectId?: number
+  webUrl?: string
 }
 
 interface GitLabUser {
@@ -58,6 +57,11 @@ function isOpenGitlabIssue(item: Requirement): boolean {
   return item.gitlabIid ? item.gitlabState === 'opened' : item.status !== 'done'
 }
 
+// 两个源头：QA 看板(project 1) / 需求方看板(project 46)；历史条目缺省 QA
+function sourceText(item: Requirement): string {
+  return item.projectId === 46 ? '需求方' : 'QA'
+}
+
 function statusVariant(item: Requirement): 'success' | 'warning' | 'secondary' | 'info' {
   const text = statusText(item)
   if (text === '已完成') return 'success'
@@ -72,8 +76,11 @@ function priorityText(priority: RequirementPriority): string {
   return '中'
 }
 
-function gitlabIssueUrl(iid: number): string {
-  return `https://gitlab.ops.modelgo.com/qa/ai-quality-platform/-/issues/${iid}`
+function gitlabIssueUrl(item: Requirement): string | undefined {
+  if (item.webUrl) return item.webUrl
+  if (!item.gitlabIid) return undefined
+  const path = item.projectId === 46 ? 'shared/modelgo_prd' : 'qa/ai-quality-platform'
+  return `https://gitlab.ops.modelgo.com/${path}/-/issues/${item.gitlabIid}`
 }
 
 async function requestRequirements(): Promise<Requirement[]> {
@@ -122,8 +129,6 @@ export function RequirementsPanel() {
   const [activeAction, setActiveAction] = useState<string | null>(null)
   const [comments, setComments] = useState<Record<string, string>>({})
   const [assigneeIds, setAssigneeIds] = useState<Record<string, string>>({})
-  const [issueFilter, setIssueFilter] = useState<RequirementFilter>('pending')
-  const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>('mine')
   const [error, setError] = useState<string | null>(null)
 
   const sync = async () => {
@@ -168,27 +173,18 @@ export function RequirementsPanel() {
     }
   }, [])
 
-  const openIssues = useMemo(() => {
+  // 单一视图：指派给我 + 未关闭（QA + 需求方）。标「已完成」但没关单的属于收尾噪音，不展示；
+  // 待验证的排后面、真正待动手的排前面；跨项目 iid 无可比性，同组内按创建时间倒序。
+  const visibleIssues = useMemo(() => {
     return items
       .filter(isOpenGitlabIssue)
-      .sort((a, b) => Number(b.gitlabIid ?? 0) - Number(a.gitlabIid ?? 0))
+      .filter((item) => item.assignee === 'webkubor' && !isRequirementDone(item))
+      .sort((a, b) => {
+        const rank = (i: Requirement) => (isRequirementVerifying(i) ? 1 : 0)
+        return rank(a) - rank(b) || b.createdAt.localeCompare(a.createdAt)
+      })
   }, [items])
-
-  const scopedIssues = useMemo(() => {
-    if (assigneeFilter === 'mine') return openIssues.filter((item) => item.assignee === 'webkubor')
-    if (assigneeFilter === 'unassigned') return openIssues.filter((item) => !item.assignee)
-    return openIssues
-  }, [assigneeFilter, openIssues])
-
-  const pendingCount = scopedIssues.filter((item) => !isRequirementDone(item) && !isRequirementVerifying(item)).length
-  const verifyingCount = scopedIssues.filter(isRequirementVerifying).length
-  const doneCount = scopedIssues.length - pendingCount - verifyingCount
-  const visibleIssues = useMemo(() => {
-    if (issueFilter === 'verifying') return scopedIssues.filter(isRequirementVerifying)
-    if (issueFilter === 'done') return scopedIssues.filter(isRequirementDone)
-    // pending：既不是已完成也不是待验证，即真正没处理的
-    return scopedIssues.filter((item) => !isRequirementDone(item) && !isRequirementVerifying(item))
-  }, [issueFilter, scopedIssues])
+  const pendingCount = visibleIssues.filter((item) => !isRequirementVerifying(item)).length
 
   const updateLocalItem = (updated: Requirement) => {
     setItems((current) => current.map((item) => item.id === updated.id ? { ...item, ...updated } : item))
@@ -253,64 +249,24 @@ export function RequirementsPanel() {
     }
   }
 
-  const filterOptions: Array<{ value: RequirementFilter; label: string; count: number }> = [
-    { value: 'pending', label: '待处理', count: pendingCount },
-    { value: 'verifying', label: '待验证', count: verifyingCount },
-    { value: 'done', label: '已完成', count: doneCount },
-  ]
-  const assigneeFilterOptions: Array<{ value: AssigneeFilter; label: string; count: number }> = [
-    { value: 'mine', label: '我的', count: openIssues.filter((item) => item.assignee === 'webkubor').length },
-    { value: 'unassigned', label: '未分配', count: openIssues.filter((item) => !item.assignee).length },
-    { value: 'all', label: '全部开放', count: openIssues.length },
-  ]
-
   return (
     <div className="space-y-4 pt-2">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-mg-border bg-card-bg px-4 py-3">
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-base font-bold text-mg-text-1">我的问题</h2>
-            <Badge variant="danger" size="sm">OPEN {openIssues.length}</Badge>
+            <Badge variant="danger" size="sm">待处理 {pendingCount}</Badge>
+            {visibleIssues.length - pendingCount > 0 && (
+              <Badge variant="warning" size="sm">待验证 {visibleIssues.length - pendingCount}</Badge>
+            )}
           </div>
           <p className="mt-1 text-xs text-mg-text-3">
-            显示 GitLab 中未关闭的问题，包括需求、BUG 和未分配事项，支持完成、评论和重新指派。
+            指派给我且未关闭的问题（QA + 需求方两看板），支持完成、评论和重新指派。
           </p>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <div className="flex rounded-lg border border-mg-border bg-mg-fill-0 p-0.5">
-            {assigneeFilterOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setAssigneeFilter(option.value)}
-                className={cn(
-                  'h-7 rounded-md px-2.5 text-xs font-bold text-mg-text-3 transition-colors hover:text-mg-text-1',
-                  assigneeFilter === option.value && 'bg-card-bg text-brand-base shadow-sm'
-                )}
-              >
-                {option.label} {option.count}
-              </button>
-            ))}
-          </div>
-          <div className="flex rounded-lg border border-mg-border bg-mg-fill-0 p-0.5">
-            {filterOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setIssueFilter(option.value)}
-                className={cn(
-                  'h-7 rounded-md px-2.5 text-xs font-bold text-mg-text-3 transition-colors hover:text-mg-text-1',
-                  issueFilter === option.value && 'bg-card-bg text-brand-base shadow-sm'
-                )}
-              >
-                {option.label} {option.count}
-              </button>
-            ))}
-          </div>
-          <Button size="sm" variant="outline" onClick={sync} loading={isSyncing} icon={<LuRefreshCw className="h-3.5 w-3.5" />}>
-            同步 GitLab
-          </Button>
-        </div>
+        <Button size="sm" variant="outline" onClick={sync} loading={isSyncing} icon={<LuRefreshCw className="h-3.5 w-3.5" />}>
+          同步 GitLab
+        </Button>
       </div>
 
       {error && (
@@ -323,19 +279,16 @@ export function RequirementsPanel() {
         <div className="rounded-md border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-3">
           正在读取本地问题列表...
         </div>
-      ) : openIssues.length === 0 ? (
-        <div className="rounded-md border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-3">
-          暂无未关闭问题。点击同步 GitLab 后再查看。
-        </div>
       ) : visibleIssues.length === 0 ? (
         <div className="rounded-md border border-mg-border bg-card-bg px-4 py-8 text-center text-sm text-mg-text-3">
-          当前筛选下没有问题。
+          没有指派给你的未关闭问题。点击同步 GitLab 后再查看。
         </div>
       ) : (
         <div className="overflow-hidden rounded-md border border-mg-border bg-card-bg">
-          <div className="grid grid-cols-[84px_1fr_92px_86px] gap-3 border-b border-mg-border bg-mg-fill-0 px-4 py-2.5 text-xs font-bold text-mg-text-3">
+          <div className="grid grid-cols-[84px_1fr_64px_92px_86px] gap-3 border-b border-mg-border bg-mg-fill-0 px-4 py-2.5 text-xs font-bold text-mg-text-3">
             <span>Issue</span>
             <span>标题</span>
+            <span>来源</span>
             <span>状态</span>
             <span>优先级</span>
           </div>
@@ -349,9 +302,9 @@ export function RequirementsPanel() {
                   key={item.id}
                   className={cn('px-4 py-3 text-sm transition-colors hover:bg-mg-fill-0/70', isRequirementDone(item) && 'opacity-70')}
                 >
-                  <div className="grid grid-cols-[84px_1fr_92px_86px] items-center gap-3">
+                  <div className="grid grid-cols-[84px_1fr_64px_92px_86px] items-center gap-3">
                     <a
-                      href={item.gitlabIid ? gitlabIssueUrl(item.gitlabIid) : undefined}
+                      href={gitlabIssueUrl(item)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-mono text-xs font-bold text-brand-base hover:text-brand-deep"
@@ -364,6 +317,7 @@ export function RequirementsPanel() {
                         {item.gitlabLabels?.join(' / ') || '本地问题'}
                       </p>
                     </div>
+                    <Badge variant={item.projectId === 46 ? 'purple' : 'info'} size="sm">{sourceText(item)}</Badge>
                     <Badge variant={statusVariant(item)} size="sm">{statusText(item)}</Badge>
                     <Badge variant={item.priority === 'high' ? 'danger' : 'secondary'} size="sm">
                       {priorityText(item.priority)}
@@ -424,7 +378,7 @@ export function RequirementsPanel() {
                       </Button>
                       {item.gitlabIid && (
                         <a
-                          href={gitlabIssueUrl(item.gitlabIid)}
+                          href={gitlabIssueUrl(item)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex h-7 w-7 items-center justify-center rounded-md text-mg-text-3 transition-colors hover:bg-mg-fill-1 hover:text-mg-text-1"

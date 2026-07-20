@@ -1203,8 +1203,7 @@
       "tokens": "tokens"
     },
     "overview": {
-      "title": "成本概览",
-      "desc": "按当前工作空间和时间范围汇总核心用量。"
+      "title": "成本概览"
     },
     "insights": {
       "title": "关键洞察",
@@ -1271,10 +1270,6 @@
       "time": "时间范围",
       "workspace": "工作空间",
       "apiKey": "API Key"
-    },
-    "filterPanel": {
-      "title": "数据筛选",
-      "desc": "按工作空间、API Key、模型和时间范围查看真实用量。"
     },
     "breakdown": {
       "title": "用量明细",

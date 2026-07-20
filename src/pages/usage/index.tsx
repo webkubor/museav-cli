@@ -392,10 +392,7 @@ export default function UsagePage() {
 
       <Card className="space-y-5 p-5 sm:p-6" id="usage-cost-overview">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="mg-text-title-sm font-bold text-mg-text-1">{t('usage.overview.title')}</h2>
-            <p className="mg-text-caption text-mg-text-3">{t('usage.overview.desc')}</p>
-          </div>
+          <h2 className="mg-text-title-sm font-bold text-mg-text-1">{t('usage.overview.title')}</h2>
           <Button
             variant="outline"
             size="sm"
@@ -411,7 +408,7 @@ export default function UsagePage() {
           labels={{
             customRangePlaceholder: t('usage.customRange.placeholder'),
             time: t('usage.filter.time'),
-            title: t('usage.filterPanel.title'),
+            workspace: t('usage.filter.workspace'),
             workspaces: t('usage.filter.allWorkspaces'),
           }}
           onTimeRangeChange={handleTimeRangeChange}

@@ -336,7 +336,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
         toast.success(t('header.switchedOrg', { name: tenant.name }))
       }
     } catch {
-      toast.error(t('switchTenantFailed') || '切换组织失败')
+      toast.error(t('header.switchTenantFailed'))
     }
   }
 

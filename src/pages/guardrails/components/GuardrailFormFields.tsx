@@ -150,30 +150,32 @@ export function GuardrailFormFields({
           <Input value={description} disabled={!canEditInfo} onChange={(e) => onDescriptionChange(e.target.value)} placeholder={t('guardrails.form.descPlaceholder')} />
         </div>
       )}
-      {/* 分类 + 类型 — 分段按钮显式选择（对齐原型）。全局护栏恒常规、无类型选择器；编辑态锁定。 */}
-      <div>
-        <label className="block text-xs font-bold text-mg-text-2 mb-2">护栏分类<span className="text-mg-danger ml-1">*</span></label>
-        <SegGroup
-          value={scope}
-          onChange={(v) => onScopeChange(v)}
-          disabled={lockScopeKind || !canEditInfo}
-          ariaLabel="护栏分类"
-          track="guardrails:field_scope"
-          options={(['global', 'member', 'key'] as GuardrailScope[])
-            .filter((s) => s !== 'member' || showMemberScope)
-            .map((s) => {
-              // 创建态按各分类的细粒度创建权限置灰（PRD §11:Member 仅可建常规 Key 护栏）
-              const denied = isCreating && !canCreateScope[s]
-              return {
-                value: s,
-                label: `${SCOPE_LABEL[s]}护栏`,
-                disabled: denied,
-                title: denied ? `你没有创建${SCOPE_LABEL[s]}护栏的权限` : undefined,
-              }
-            })}
-        />
-      </div>
-      {scope !== 'global' && (
+      {/* 分类 + 类型 — 分段按钮显式选择（对齐原型）。仅创建态出现；编辑态不再展示分类/类型（需求方#189）。 */}
+      {isCreating && (
+        <div>
+          <label className="block text-xs font-bold text-mg-text-2 mb-2">护栏分类<span className="text-mg-danger ml-1">*</span></label>
+          <SegGroup
+            value={scope}
+            onChange={(v) => onScopeChange(v)}
+            disabled={lockScopeKind || !canEditInfo}
+            ariaLabel="护栏分类"
+            track="guardrails:field_scope"
+            options={(['global', 'member', 'key'] as GuardrailScope[])
+              .filter((s) => s !== 'member' || showMemberScope)
+              .map((s) => {
+                // 创建态按各分类的细粒度创建权限置灰（PRD §11:Member 仅可建常规 Key 护栏）
+                const denied = isCreating && !canCreateScope[s]
+                return {
+                  value: s,
+                  label: `${SCOPE_LABEL[s]}护栏`,
+                  disabled: denied,
+                  title: denied ? `你没有创建${SCOPE_LABEL[s]}护栏的权限` : undefined,
+                }
+              })}
+          />
+        </div>
+      )}
+      {isCreating && scope !== 'global' && (
         <div>
           <label className="block text-xs font-bold text-mg-text-2 mb-2">护栏类型<span className="text-mg-danger ml-1">*</span></label>
           <SegGroup

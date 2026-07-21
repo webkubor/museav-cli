@@ -95,7 +95,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const [spendingAmount, setSpendingAmount] = useState('')
   // 限额周期（PRD §8.2）：不限额 / 每日 / 每月 / 总额；默认不限额（金额禁用）
   const [limitPeriod, setLimitPeriod] = useState<LimitPeriod>('none')
-  // 服务 Key 维护人（复用成员下拉）；个人租户固定为自己
+  // 服务 Key 负责人（复用成员下拉）；个人租户固定为自己
   const needsMaintainer = effectiveScope === 'workspace' && !isPersonalTenant
   const todayStr = new Date().toISOString().split('T')[0]
   const [expiryRange, setExpiryRange] = useState<DateRangeValue>({
@@ -162,7 +162,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
       createApiKey(workspaceId, {
         name: name.trim(),
         scope: effectiveScope,
-        // 成员 Key → 目标成员；服务 Key → 维护人（个人租户维护人固定自己，留空由后端默认创建者）
+        // 成员 Key → 目标成员；服务 Key → 负责人（个人租户负责人固定自己，留空由后端默认创建者）
         member_account_id:
           effectiveScope === 'member' || needsMaintainer ? memberAccountId || undefined : undefined,
         spending_limit: buildSpendingLimit(limitPeriod, spendingAmount, currency),
@@ -192,7 +192,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
       return
     }
     if (needsMaintainer && !memberAccountId) {
-      appToast.error('请选择服务 Key 维护人')
+      appToast.error('请选择服务 Key 负责人')
       return
     }
     createMutation.mutate()
@@ -363,10 +363,10 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
             </div>
           )}
 
-          {/* 维护人（服务 Key，PRD §8.2 必填）：企业租户选空间成员；个人租户固定自己 */}
+          {/* 负责人（服务 Key，PRD §8.2 必填）：企业租户选空间成员；个人租户固定自己（命名以 PRD 原型为准=负责人，需求方#183） */}
           {effectiveScope === 'workspace' && (
             <div>
-              <label className="block text-xs font-bold text-mg-text-2 mb-2">维护人</label>
+              <label className="block text-xs font-bold text-mg-text-2 mb-2">负责人</label>
               {isPersonalTenant ? (
                 <div className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-mg-border bg-mg-fill-0/50 text-xs text-mg-text-2">
                   {account?.display_name || account?.email || '当前账户'}
@@ -374,7 +374,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                 </div>
               ) : (
                 <>
-                  <Select value={memberAccountId} onChange={setMemberAccountId} placeholder="请选择服务 Key 维护人" className="w-full" data-track="api_keys:field_maintainer">
+                  <Select value={memberAccountId} onChange={setMemberAccountId} placeholder="请选择服务 Key 负责人" className="w-full" data-track="api_keys:field_maintainer">
                     {(membersQuery.data?.items ?? []).map((m) => (
                       <SelectItem key={m.account.account_id} value={m.account.account_id}>
                         {m.account.display_name || m.account.email}

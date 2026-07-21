@@ -1892,7 +1892,7 @@
   },
   "enterprise": {
     "title": "Enterprise",
-    "subtitle": "Manage members, invitations, organization profile, and audit log",
+    "subtitle": "Manage members, invitations, organization profile, and audit log.",
     "summary": {
       "owner": "Owner",
       "members": "Members",
@@ -1900,7 +1900,9 @@
       "pendingInvites": "Pending invites",
       "workspaces": "Workspaces",
       "typeEnterprise": "Enterprise",
-      "typePersonal": "Personal"
+      "typePersonal": "Personal",
+      "accountEnterprise": "Enterprise account",
+      "accountPersonal": "Personal account"
     },
     "tabs": {
       "members": "Members",
@@ -1913,6 +1915,9 @@
       "filterWorkspace": "Workspace",
       "filterStatus": "Status",
       "all": "All",
+      "filterAllRoles": "All roles",
+      "filterAllWorkspaces": "All workspaces",
+      "filterAllStatus": "All statuses",
       "colMember": "Member",
       "colRole": "Role",
       "colWorkspaces": "Workspaces",
@@ -1940,6 +1945,7 @@
       "statusActive": "Active",
       "statusSuspended": "Suspended",
       "save": "Save",
+      "saveChanges": "Save changes",
       "cancel": "Cancel",
       "removeTitle": "Remove member",
       "removeDesc": "The member will lose access to this organization and its workspaces. This cannot be undone.",

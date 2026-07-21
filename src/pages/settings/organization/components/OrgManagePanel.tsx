@@ -107,9 +107,9 @@ export function OrgManagePanel({
           <span className="text-sm font-bold text-mg-text-1 truncate">{detail?.name ?? tenantName}</span>
           {tenantItem && <RoleBadge role={tenantItem.role} />}
           <span className="text-xs text-mg-text-3 truncate">
-            {(detail ? (detail.type === 'personal' ? t('enterprise.summary.typePersonal') : t('enterprise.summary.typeEnterprise')) : '…')}
+            {(detail ? (detail.type === 'personal' ? t('enterprise.summary.accountPersonal') : t('enterprise.summary.accountEnterprise')) : '…')}
             {' · '}
-            {t('enterprise.summary.owner')}: {owner?.account.display_name || owner?.account.email || (membersQuery.isLoading ? '…' : dash)}
+            {t('enterprise.summary.owner')} {owner?.account.display_name || owner?.account.email || (membersQuery.isLoading ? '…' : dash)}
           </span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">

@@ -62,6 +62,28 @@ export const EXPIRATION_PRESETS = [
 ]
 
 /**
+ * 限额周期（PRD §8.2）：不限额 / 每日 / 每月。
+ * 后端当前只接受 none/daily/monthly；生命周期「总额」待后端 #420 交付后再开放。
+ */
+export type LimitPeriod = 'none' | 'day' | 'month' | 'total'
+
+export const LIMIT_PERIOD_OPTIONS: { value: LimitPeriod; label: string }[] = [
+  { value: 'none', label: '不限额' },
+  { value: 'day', label: '每日' },
+  { value: 'month', label: '每月' },
+]
+
+/** 周期 → 展示文案（含兼容旧数据 hour/week） */
+export const LIMIT_PERIOD_LABEL: Record<string, string> = {
+  none: '不限额',
+  day: '每日',
+  month: '每月',
+  total: '总额',
+  hour: '每小时',
+  week: '每周',
+}
+
+/**
  * 把过期时间选择器的值解析成后端要的 ISO 时刻；永不过期返回 null。
  * 创建/编辑两处共用，避免各写一份导致行为漂移。
  *

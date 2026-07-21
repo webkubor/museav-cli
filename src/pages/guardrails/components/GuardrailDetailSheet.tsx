@@ -7,12 +7,24 @@ import { Select, SelectItem } from '@/components/ui/Select'
 import { TagInput } from '@/components/ui/TagInput'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import type { StatusConfig } from '@/components/ui/StatusBadge'
-import { LuKey, LuDollarSign, LuUserRound, LuInfo } from 'react-icons/lu'
-import type { GuardrailDetail } from '@/interfaces/guardrails'
+import { formatDateTime } from '@/lib/format-date'
+import { LuKey, LuUserRound, LuInfo, LuShieldAlert } from 'react-icons/lu'
+import type { GuardrailAuditLog, GuardrailDetail } from '@/interfaces/guardrails'
 import { PERIOD_LABEL } from '@/constants/status'
 import { GuardrailFormFields } from './GuardrailFormFields'
 import { isValidBudgetAmount } from '../budget'
-import { budgetTimezone, type BudgetAggScope, type GuardrailKind, type GuardrailScope, type PromptInjectionFormValue } from '../derive'
+import {
+  budgetTimezone,
+  PROMPT_INJECTION_INHERIT,
+  PROMPT_INJECTION_INHERIT_LABEL,
+  PROMPT_INJECTION_LABEL,
+  PROMPT_INJECTION_MODES,
+  SCOPE_LABEL,
+  type BudgetAggScope,
+  type GuardrailKind,
+  type GuardrailScope,
+  type PromptInjectionFormValue,
+} from '../derive'
 
 const GUARDRAIL_STATUS_MAP: Record<string, StatusConfig> = {
   active: { label: '已启用', variant: 'success' },
@@ -46,7 +58,8 @@ type BudgetPolicy = NonNullable<GuardrailDetail['budget_policies']>[number]
 // 全局护栏三档编辑草稿（与 index.tsx 的 ScopeBudgetDraft 同形）
 interface ScopeBudgetDraft { amount: string; period: PeriodUnit; limited: boolean }
 
-// 三档预算的展示元信息（对齐 PRD 原型的标签/说明）
+// 三档预算的展示元信息（对齐 PRD 原型的标签/说明与顺序：
+// 工作空间总预算 → 默认个人预算(企业) → 默认 Key 预算）
 const GLOBAL_BUDGET_META: { scope: BudgetAggScope; label: string; hint: string; enterpriseOnly?: boolean }[] = [
   { scope: 'guardrail_total', label: '工作空间总预算', hint: '该工作空间所有调用的合计上限' },
   { scope: 'per_member', label: '默认个人预算', hint: '每位成员的默认上限（可被个人护栏覆盖）', enterpriseOnly: true },
@@ -98,6 +111,7 @@ function GlobalBudgetControl({
             onChange={(v) => onChange({ period: v as PeriodUnit })}
             aria-label={`${label}周期`}
             className="h-9 text-xs w-28"
+            disabled={disabled}
           >
             {(Object.entries(PERIOD_LABEL) as [PeriodUnit, string][]).map(([k, l]) => (
               <SelectItem key={k} value={k}>每{l}</SelectItem>
@@ -109,6 +123,121 @@ function GlobalBudgetControl({
         <p className="text-xs text-mg-danger">预算金额无效：大于 0，整数最多 12 位，小数最多 2 位</p>
       )}
     </div>
+  )
+}
+
+/** 编辑态字段块：label（可带必填星/图标/InfoTip）+ 内容 */
+function Field({ label, required, icon, tip, children }: {
+  label: string
+  required?: boolean
+  icon?: React.ReactNode
+  tip?: { text: string; label: string }
+  children: React.ReactNode
+}) {
+  return (
+    <div>
+      <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-mg-text-2">
+        {icon}
+        {label}
+        {required && <span className="text-mg-danger">*</span>}
+        {tip && <InfoTip text={tip.text} label={tip.label} />}
+      </label>
+      {children}
+    </div>
+  )
+}
+
+/** 个人 / Key 护栏单档预算（金额 + 周期）。对齐现状控制台：不限额语义不落到成员/Key 档。 */
+function MemberKeyBudgetControl({
+  label, amount, onAmountChange, period, onPeriodChange, disabled, error,
+}: {
+  label: string
+  amount: string
+  onAmountChange: (v: string) => void
+  period: PeriodUnit
+  onPeriodChange: (v: PeriodUnit) => void
+  disabled: boolean
+  error?: string
+}) {
+  return (
+    <Field label={label} required>
+      <div className="flex items-center gap-2">
+        <Input
+          type="text"
+          inputMode="decimal"
+          aria-label={`${label}金额`}
+          value={amount}
+          onChange={(e) => onAmountChange(e.target.value)}
+          placeholder="输入限额金额（最多两位小数）"
+          className="h-9 text-xs flex-1"
+          disabled={disabled}
+        />
+        <Select
+          value={period}
+          onChange={(v) => onPeriodChange(v as PeriodUnit)}
+          aria-label={`${label}周期`}
+          className="h-9 text-xs w-28"
+          disabled={disabled}
+        >
+          {(Object.entries(PERIOD_LABEL) as [PeriodUnit, string][]).map(([k, l]) => (
+            <SelectItem key={k} value={k}>每{l}</SelectItem>
+          ))}
+        </Select>
+      </div>
+      {error && <p className="text-xs text-mg-danger mt-1.5">{error}</p>}
+    </Field>
+  )
+}
+
+/** 提示词注入模式选择（编辑态；allowInherit 决定是否含「继承全局护栏」） */
+function PromptInjectionField({ value, onChange, allowInherit, disabled }: {
+  value: PromptInjectionFormValue
+  onChange: (v: PromptInjectionFormValue) => void
+  allowInherit: boolean
+  disabled: boolean
+}) {
+  return (
+    <Field
+      label="提示词注入检测"
+      tip={{ label: '命中后的处理方式', text: '仅记录=记录命中仍原样发送；脱敏=命中内容替换后发送；拦截=直接拒绝请求' }}
+    >
+      <Select value={value} onChange={(v) => onChange(v as PromptInjectionFormValue)} disabled={disabled} className="w-full">
+        {allowInherit && <SelectItem value={PROMPT_INJECTION_INHERIT}>{PROMPT_INJECTION_INHERIT_LABEL}</SelectItem>}
+        {PROMPT_INJECTION_MODES.map((m) => (
+          <SelectItem key={m} value={m}>{PROMPT_INJECTION_LABEL[m]}</SelectItem>
+        ))}
+      </Select>
+    </Field>
+  )
+}
+
+/** 操作记录区（对齐 PRD GuardrailAuditSection + 现状 API Key 详情抽屉「操作审计」列表样式）。
+ *  审计接口按工作空间返回、已在上层按 target_id 过滤到本护栏；空/失败均给空态，不造假数据。 */
+function GuardrailAuditSection({ rows, loading }: { rows: GuardrailAuditLog[]; loading: boolean }) {
+  return (
+    <section className="space-y-2.5 border-t border-mg-border/50 pt-6">
+      <h3 className="text-xs font-bold uppercase tracking-wider text-mg-text-3">操作记录</h3>
+      {loading ? (
+        <div className="space-y-2 animate-pulse">
+          <div className="h-4 w-2/3 rounded-sm bg-mg-fill-0" />
+          <div className="h-4 w-1/2 rounded-sm bg-mg-fill-0" />
+        </div>
+      ) : rows.length > 0 ? (
+        <div className="space-y-3">
+          {rows.slice(0, 8).map((a) => (
+            <div key={a.id} className="border-l-2 border-mg-border pl-3">
+              <div className="text-xs font-bold text-mg-text-1">{a.action}</div>
+              <div className="mt-0.5 text-xs text-mg-text-3">
+                {formatDateTime(a.created_at)} · {a.actor_display || a.actor_account_id || '—'}
+              </div>
+              {a.target_label && <p className="mt-0.5 text-xs leading-relaxed text-mg-text-2">{a.target_label}</p>}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-mg-text-3">暂无操作记录</p>
+      )}
+    </section>
   )
 }
 
@@ -137,11 +266,11 @@ export function GuardrailDetailSheet({
   // 预算
   budget, budgetConflict, budgetAmount, onBudgetAmountChange,
   budgetPeriodUnit, onBudgetPeriodUnitChange,
-  canEditBudget, savingBudget, onSaveBudget, onShowClearBudget,
+  canEditBudget,
   // 全局护栏三档预算
-  isGlobal, showMember, globalBudgets, onGlobalBudgetChange,
-  savingGlobalBudget, onSaveGlobalBudgets,
-  currencySymbol,
+  showMember, globalBudgets, onGlobalBudgetChange,
+  // 操作记录
+  auditRows, auditLoading,
   // 底部保存
   canEdit, canEditAssignment, submitting, onSubmit,
 }: {
@@ -169,12 +298,12 @@ export function GuardrailDetailSheet({
   budgetConflict: boolean
   budgetAmount: string; onBudgetAmountChange: (v: string) => void
   budgetPeriodUnit: PeriodUnit; onBudgetPeriodUnitChange: (v: PeriodUnit) => void
-  canEditBudget: boolean; savingBudget: boolean; onSaveBudget: () => void; onShowClearBudget: () => void
-  isGlobal: boolean; showMember: boolean
+  canEditBudget: boolean
+  showMember: boolean
   globalBudgets: Record<BudgetAggScope, ScopeBudgetDraft>
   onGlobalBudgetChange: (scope: BudgetAggScope, patch: Partial<ScopeBudgetDraft>) => void
-  savingGlobalBudget: boolean; onSaveGlobalBudgets: () => void
-  currencySymbol: string
+  auditRows: GuardrailAuditLog[]
+  auditLoading: boolean
   canEdit: boolean
   canEditAssignment: boolean
   submitting: boolean; onSubmit: () => void
@@ -185,10 +314,24 @@ export function GuardrailDetailSheet({
   const tz = budgetTimezone(budget ?? detail?.budget_policies?.[0])
 
   // 详情加载失败（含后端对多条生效预算策略返回的 409「预算配置数据错误」）：
-  // 抽屉只渲染错误说明。表单/保存一概不出——openDetail 虽已清空表单，
-  // 但在加载失败的护栏上提交任何修改都是在脏数据上盲写 (qa#162 review)
+  // 抽屉只渲染错误说明。表单/保存一概不出——在加载失败的护栏上提交任何修改
+  // 都是在脏数据上盲写 (qa#162 review)
   const detailLoadFailed = !isCreating && !detailLoading && !detail && !!detailLoadError
-  const canSubmitCurrentTab = isCreating || canEdit || canEditAssignment
+
+  // 编辑态保存门：任一细粒度写权限 + 必填校验（金额上下限等复杂校验在页面侧串行编排里报 toast）
+  const missingMember = canEditAssignment && scope === 'member' && memberIds.length === 0
+  const missingKey = canEditAssignment && scope === 'key' && apiKeyIds.length === 0
+  const missingBoostExpiry = canEdit && kind === 'boost' && !boostExpiresAt
+  const missingRegularBudget = canEditBudget && scope !== 'global' && !budgetAmount.trim()
+  const editCanSave =
+    (canEdit || canEditAssignment || canEditBudget) &&
+    !budgetConflict &&
+    !missingMember && !missingKey && !missingBoostExpiry && !missingRegularBudget
+  const canSubmit = isCreating ? (canEdit || canEditAssignment) : editCanSave
+
+  const scopeLabel = `${SCOPE_LABEL[scope]}护栏`
+  const memberBudgetLabel = kind === 'boost' ? '提额预算' : '个人预算'
+  const keyBudgetLabel = kind === 'boost' ? '提额预算' : 'Key 预算'
 
   return (
     <SideSheet
@@ -209,11 +352,10 @@ export function GuardrailDetailSheet({
         </div>
       )}
 
-      <div className="border-b border-mg-border px-6 py-3 text-xs font-semibold text-mg-text-2">
-        护栏配置
+      <div className="flex items-center gap-2 border-b border-mg-border px-6 py-3 text-xs font-semibold text-mg-text-2">
+        <LuShieldAlert className="h-3.5 w-3.5 text-mg-text-3" />
+        {isCreating ? '护栏配置' : scopeLabel}
       </div>
-
-      {/* 详情内容合并展示：基本信息、作用范围和预算不再拆分 Tab。 */}
 
       <div className="p-6 overflow-y-auto flex-1">
         {/* ── 详情加载失败：只渲染错误说明 ── */}
@@ -223,269 +365,304 @@ export function GuardrailDetailSheet({
           </div>
         )}
 
-        {/* ── 基本信息（创建/编辑共用） ── */}
-        {!detailLoadFailed && (isCreating || Boolean(detail)) && (
-          <div>
-            <GuardrailFormFields
-              name={name} onNameChange={onNameChange}
-              description={description} onDescriptionChange={onDescriptionChange}
-              scope={scope} onScopeChange={onScopeChange}
-              kind={kind} onKindChange={onKindChange}
-              lockScopeKind={lockScopeKind} showMemberScope={showMemberScope}
-              canCreateScope={canCreateScope} canCreateBoost={canCreateBoost}
-              boostExpiresAt={boostExpiresAt} onBoostExpiresAtChange={onBoostExpiresAtChange}
-              showModelIp={showModelIp}
-              modelBlacklist={modelBlacklist} onModelBlacklistChange={onModelBlacklistChange}
-              ipWhitelist={ipWhitelist} onIpWhitelistChange={onIpWhitelistChange}
-              promptInjectionMode={promptInjectionMode} onPromptInjectionModeChange={onPromptInjectionModeChange}
-              showPromptInjection={showPromptInjection} allowPromptInjectionInherit={allowPromptInjectionInherit}
-              modelSuggestions={modelSuggestions}
-              memberIds={memberIds} onMemberIdsChange={onMemberIdsChange} memberOptions={memberOptions}
-              canEditInfo={isCreating || canEdit}
-              canEditAssignment={isCreating || canEditAssignment}
-              isCreating={isCreating}
-              budgetSlot={isCreating ? (
-                <>
-                  {/* 绑定对象：个人护栏绑成员 / Key 护栏绑 API Key（对齐原型：分类类型后、预算前） */}
-                  {scope === 'member' && (
-                    <div>
-                      <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-mg-text-2">
-                        <LuUserRound className="h-3.5 w-3.5" /> 成员<span className="text-mg-danger ml-1">*</span>
-                      </label>
-                      {memberOptions.length === 0 ? (
-                        <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2.5 text-xs text-mg-text-3">
-                          当前工作空间暂无可绑定的成员。
-                        </div>
-                      ) : (
-                        <TagInput
-                          value={memberIds}
-                          onChange={onMemberIdsChange}
-                          options={memberOptions.map((o) => ({ value: o.id, label: o.name }))}
-                          placeholder="搜索并选择成员"
-                        />
-                      )}
-                    </div>
-                  )}
-                  {scope === 'key' && (
-                    <div>
-                      <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-mg-text-2">
-                        <LuKey className="h-3.5 w-3.5" /> 绑定 API Key<span className="text-mg-danger ml-1">*</span>
-                      </label>
-                      {apiKeyOptions.length === 0 ? (
-                        <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2.5 text-xs text-mg-text-3">
-                          当前工作空间暂无可绑定的 API Key，请先到「API Keys」页创建后再绑定。
-                        </div>
-                      ) : (
-                        <TagInput
-                          value={apiKeyIds}
-                          onChange={onApiKeyIdsChange}
-                          options={apiKeyOptions.map((o) => ({ value: o.id, label: o.name, disabled: !o.active }))}
-                          placeholder="搜索并选择该工作空间的 API Key"
-                        />
-                      )}
-                    </div>
-                  )}
-                  {/* 预算：全局三档 / 个人·Key 单档（提额预算亦在此，到期时间由下方 boost 字段承接） */}
-                  <div>
-                    <label className="block text-xs font-bold text-mg-text-2 mb-2">
-                      {scope === 'global' ? '预算（三档独立限额）' : kind === 'boost' ? '提额预算' : '预算'}
-                    </label>
-                    {scope === 'global' ? (
-                      <div className="space-y-3">
-                        {GLOBAL_BUDGET_META.filter((m) => !m.enterpriseOnly || showMember).map((m) => (
-                          <GlobalBudgetControl
-                            key={m.scope}
-                            label={m.label}
-                            hint={m.hint}
-                            draft={globalBudgets[m.scope]}
-                            onChange={(patch) => onGlobalBudgetChange(m.scope, patch)}
-                            disabled={false}
-                          />
-                        ))}
+        {/* ── 创建态：分类/类型 + 绑定 + 预算 + 规则（GuardrailFormFields 承接，保持原型创建顺序） ── */}
+        {!detailLoadFailed && isCreating && (
+          <GuardrailFormFields
+            name={name} onNameChange={onNameChange}
+            description={description} onDescriptionChange={onDescriptionChange}
+            scope={scope} onScopeChange={onScopeChange}
+            kind={kind} onKindChange={onKindChange}
+            lockScopeKind={lockScopeKind} showMemberScope={showMemberScope}
+            canCreateScope={canCreateScope} canCreateBoost={canCreateBoost}
+            boostExpiresAt={boostExpiresAt} onBoostExpiresAtChange={onBoostExpiresAtChange}
+            showModelIp={showModelIp}
+            modelBlacklist={modelBlacklist} onModelBlacklistChange={onModelBlacklistChange}
+            ipWhitelist={ipWhitelist} onIpWhitelistChange={onIpWhitelistChange}
+            promptInjectionMode={promptInjectionMode} onPromptInjectionModeChange={onPromptInjectionModeChange}
+            showPromptInjection={showPromptInjection} allowPromptInjectionInherit={allowPromptInjectionInherit}
+            modelSuggestions={modelSuggestions}
+            memberIds={memberIds} onMemberIdsChange={onMemberIdsChange} memberOptions={memberOptions}
+            canEditInfo={isCreating || canEdit}
+            canEditAssignment={isCreating || canEditAssignment}
+            isCreating={isCreating}
+            budgetSlot={(
+              <>
+                {/* 绑定对象：个人护栏绑成员 / Key 护栏绑 API Key（对齐原型：分类类型后、预算前） */}
+                {scope === 'member' && (
+                  <Field label="成员" required icon={<LuUserRound className="h-3.5 w-3.5" />}>
+                    {memberOptions.length === 0 ? (
+                      <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2.5 text-xs text-mg-text-3">
+                        当前工作空间暂无可绑定的成员。
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          aria-label="预算限额金额"
-                          value={budgetAmount}
-                          onChange={(e) => onBudgetAmountChange(e.target.value)}
-                          placeholder="输入限额金额，留空表示不限额"
-                          className="h-9 text-xs flex-1"
-                        />
-                        <Select value={budgetPeriodUnit} onChange={(v) => onBudgetPeriodUnitChange(v as PeriodUnit)} className="h-9 text-xs w-28">
-                          {(Object.entries(PERIOD_LABEL) as [PeriodUnit, string][]).map(([k, label]) => (
-                            <SelectItem key={k} value={k}>每{label}</SelectItem>
-                          ))}
-                        </Select>
-                      </div>
+                      <TagInput
+                        value={memberIds}
+                        onChange={onMemberIdsChange}
+                        options={memberOptions.map((o) => ({ value: o.id, label: o.name }))}
+                        placeholder="搜索并选择成员"
+                      />
                     )}
-                  </div>
-                </>
-              ) : undefined}
-            />
-          </div>
+                  </Field>
+                )}
+                {scope === 'key' && (
+                  <Field label="绑定 API Key" required icon={<LuKey className="h-3.5 w-3.5" />}>
+                    {apiKeyOptions.length === 0 ? (
+                      <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2.5 text-xs text-mg-text-3">
+                        当前工作空间暂无可绑定的 API Key，请先到「API Keys」页创建后再绑定。
+                      </div>
+                    ) : (
+                      <TagInput
+                        value={apiKeyIds}
+                        onChange={onApiKeyIdsChange}
+                        options={apiKeyOptions.map((o) => ({ value: o.id, label: o.name, disabled: !o.active }))}
+                        placeholder="搜索并选择该工作空间的 API Key"
+                      />
+                    )}
+                  </Field>
+                )}
+                {/* 预算：全局三档 / 个人·Key 单档（提额预算亦在此，到期时间由下方 boost 字段承接） */}
+                <div>
+                  <label className="block text-xs font-bold text-mg-text-2 mb-2">
+                    {scope === 'global' ? '预算（三档独立限额）' : kind === 'boost' ? '提额预算' : '预算'}
+                  </label>
+                  {scope === 'global' ? (
+                    <div className="space-y-3">
+                      {GLOBAL_BUDGET_META.filter((m) => !m.enterpriseOnly || showMember).map((m) => (
+                        <GlobalBudgetControl
+                          key={m.scope}
+                          label={m.label}
+                          hint={m.hint}
+                          draft={globalBudgets[m.scope]}
+                          onChange={(patch) => onGlobalBudgetChange(m.scope, patch)}
+                          disabled={false}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        aria-label="预算限额金额"
+                        value={budgetAmount}
+                        onChange={(e) => onBudgetAmountChange(e.target.value)}
+                        placeholder="输入限额金额，留空表示不限额"
+                        className="h-9 text-xs flex-1"
+                      />
+                      <Select value={budgetPeriodUnit} onChange={(v) => onBudgetPeriodUnitChange(v as PeriodUnit)} className="h-9 text-xs w-28">
+                        {(Object.entries(PERIOD_LABEL) as [PeriodUnit, string][]).map(([k, label]) => (
+                          <SelectItem key={k} value={k}>每{label}</SelectItem>
+                        ))}
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          />
         )}
 
-        {/* ── 作用范围（成员 + API Key） ── */}
+        {/* ── 编辑态：单滚动体、按 scope 出一个 section（严格对齐 PRD 字段顺序） ── */}
         {!detailLoadFailed && !isCreating && (
           detailLoading ? (
             <div className="space-y-4 animate-pulse">
               <div className="h-5 bg-mg-fill-0 rounded-sm w-1/2" />
               <div className="h-4 bg-mg-fill-0 rounded-sm w-full" />
+              <div className="h-4 bg-mg-fill-0 rounded-sm w-2/3" />
             </div>
           ) : detail ? (
-            <div className="space-y-7">
-              {/* API Keys — 下拉多选（与成员一致，id 风格；统一由底部保存） */}
-              <section>
-                <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-2 uppercase tracking-wider mb-3">
-                  <LuKey className="w-3.5 h-3.5" /> API Keys
+            <div className="flex flex-col gap-5">
+              {budgetConflict && (
+                <div role="alert" className="p-3 rounded-lg border border-mg-danger/40 bg-mg-danger/5 text-xs text-mg-danger">
+                  预算配置数据错误：存在多条生效中的预算策略，请联系管理员处理
                 </div>
-                <TagInput
-                  value={apiKeyIds}
-                  disabled={!canEditAssignment}
-                  onChange={onApiKeyIdsChange}
-                  options={apiKeyOptions.map((o) => ({ value: o.id, label: o.name, disabled: !o.active }))}
-                  placeholder="从下拉批量选择该工作区的 API Key"
-                  hint="选中的 Key 将绑定到该护栏，点击底部「保存修改」生效，供网关护栏鉴权使用"
-                />
-              </section>
-            </div>
-          ) : null
-        )}
+              )}
 
-        {/* ── 预算 ── */}
-        {!detailLoadFailed && !isCreating && (
-          detailLoading ? (
-            <div className="space-y-4 animate-pulse">
-              <div className="h-5 bg-mg-fill-0 rounded-sm w-1/3" />
-            </div>
-          ) : detail && budgetConflict ? (
-            // 单条不变量被破坏（接口返回多条生效策略）：直接报错，禁止任何
-            // 预算编辑——在脏数据上替换/清除只会加深不一致 (qa#162)
-            <section className="space-y-4">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-2 uppercase tracking-wider">
-                <LuDollarSign className="w-3.5 h-3.5" /> 预算策略
-              </div>
-              <div role="alert" className="p-3 rounded-lg border border-mg-danger/40 bg-mg-danger/5 text-xs text-mg-danger">
-                预算配置数据错误：存在多条生效中的预算策略，请联系管理员处理
-              </div>
-            </section>
-          ) : detail && isGlobal ? (
-            // 全局护栏：按 aggregation_scope 三档独立编辑（个人租户隐藏「默认个人预算」档）
-            <section className="space-y-4">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-2 uppercase tracking-wider">
-                <LuDollarSign className="w-3.5 h-3.5" /> 预算策略
-                <InfoTip text="三档独立生效，可分别限额或不限额" label="预算策略说明" />
-              </div>
-              <div className="space-y-3">
-                {GLOBAL_BUDGET_META.filter((m) => !m.enterpriseOnly || showMember).map((m) => (
-                  <GlobalBudgetControl
-                    key={m.scope}
-                    label={m.label}
-                    hint={m.hint}
-                    draft={globalBudgets[m.scope]}
-                    onChange={(patch) => onGlobalBudgetChange(m.scope, patch)}
-                    disabled={!canEditBudget}
-                  />
-                ))}
-              </div>
-              {canEditBudget && (
-                <Button
-                  variant="brand"
-                  className="h-9 px-5 text-xs font-semibold"
-                  loading={savingGlobalBudget}
-                  onClick={onSaveGlobalBudgets}
-                >
-                  保存预算
-                </Button>
-              )}
-              <p className="text-xs text-mg-text-3">
-                各档均按<span className="font-semibold text-mg-text-2">滚动窗口</span>计量（统计当前时刻往前一个周期长度内的累计消费，非自然日/周/月重置）· 时区 <span className="font-mono">{tz}</span>
-              </p>
-            </section>
-          ) : detail ? (
-            <section className="space-y-4">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-mg-text-2 uppercase tracking-wider">
-                <LuDollarSign className="w-3.5 h-3.5" /> 预算策略
-              </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="text"
-                  inputMode="decimal"
-                  aria-label="预算限额金额"
-                  value={budgetAmount}
-                  onChange={(e) => onBudgetAmountChange(e.target.value)}
-                  placeholder="输入限额金额（最多两位小数）"
-                  className="h-9 text-xs flex-1"
-                />
-                <Select value={budgetPeriodUnit} onChange={(v) => onBudgetPeriodUnitChange(v as PeriodUnit)} className="h-9 text-xs w-28">
-                  {(Object.entries(PERIOD_LABEL) as [PeriodUnit, string][]).map(([k, label]) => (
-                    <SelectItem key={k} value={k}>每{label}</SelectItem>
+              {/* 护栏名称（各 scope 首字段） */}
+              <Field label={t('guardrails.form.nameLabel')} required>
+                <Input value={name} disabled={!canEdit} onChange={(e) => onNameChange(e.target.value)} placeholder={t('guardrails.form.namePlaceholder')} />
+              </Field>
+
+              {/* 全局护栏：总预算 → 默认个人预算(企业) → 默认 Key 预算 → 模型黑名单 → IP 白名单 → 提示词注入(不可继承) */}
+              {scope === 'global' && (
+                <>
+                  {GLOBAL_BUDGET_META.filter((m) => !m.enterpriseOnly || showMember).map((m) => (
+                    <GlobalBudgetControl
+                      key={m.scope}
+                      label={m.label}
+                      hint={m.hint}
+                      draft={globalBudgets[m.scope]}
+                      onChange={(patch) => onGlobalBudgetChange(m.scope, patch)}
+                      disabled={!canEditBudget || budgetConflict}
+                    />
                   ))}
-                </Select>
-              </div>
-              {canEditBudget && (
-                <div className="flex items-center justify-between">
-                  <Button
-                    variant="brand"
-                    className="h-9 px-5 text-xs font-semibold"
-                    loading={savingBudget}
-                    onClick={onSaveBudget}
-                  >
-                    保存预算
-                  </Button>
-                  {budget && (
-                    <button
-                      onClick={onShowClearBudget}
-                      className="text-xs text-mg-text-3 hover:text-mg-danger transition-colors cursor-pointer"
-                    >
-                      清除预算
-                    </button>
+                  <Field label={t('guardrails.form.modelBlacklistLabel')}>
+                    <TagInput
+                      value={modelBlacklist}
+                      disabled={!canEdit}
+                      onChange={onModelBlacklistChange}
+                      suggestions={modelSuggestions}
+                      placeholder={t('guardrails.form.modelBlacklistPlaceholder')}
+                    />
+                  </Field>
+                  <Field label={t('guardrails.form.ipWhitelistLabel')}>
+                    <TagInput
+                      value={ipWhitelist}
+                      disabled={!canEdit}
+                      onChange={onIpWhitelistChange}
+                      allowFreeText
+                      tagVariant="mono"
+                      placeholder={t('guardrails.form.ipWhitelistPlaceholder')}
+                    />
+                  </Field>
+                  <PromptInjectionField value={promptInjectionMode} onChange={onPromptInjectionModeChange} allowInherit={false} disabled={!canEdit} />
+                </>
+              )}
+
+              {/* 个人护栏：成员多选 → [提额:提额预算 | 常规:个人预算+周期] → [提额:到期时间] */}
+              {scope === 'member' && (
+                <>
+                  <Field label={t('guardrails.form.membersLabel')} required icon={<LuUserRound className="h-3.5 w-3.5" />}>
+                    {memberOptions.length === 0 ? (
+                      <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2.5 text-xs text-mg-text-3">
+                        当前工作空间暂无可绑定的成员。
+                      </div>
+                    ) : (
+                      <TagInput
+                        value={memberIds}
+                        disabled={!canEditAssignment}
+                        onChange={onMemberIdsChange}
+                        options={memberOptions.map((o) => ({ value: o.id, label: o.name }))}
+                        placeholder={t('guardrails.form.membersPlaceholder')}
+                        hint={t('guardrails.form.membersHint')}
+                      />
+                    )}
+                  </Field>
+                  <MemberKeyBudgetControl
+                    label={memberBudgetLabel}
+                    amount={budgetAmount}
+                    onAmountChange={onBudgetAmountChange}
+                    period={budgetPeriodUnit}
+                    onPeriodChange={onBudgetPeriodUnitChange}
+                    disabled={!canEditBudget || budgetConflict}
+                  />
+                  {kind === 'boost' && (
+                    <Field label="提额到期时间" required>
+                      <Input
+                        type="datetime-local"
+                        aria-label="提额到期时间"
+                        value={boostExpiresAt}
+                        disabled={!canEdit}
+                        onChange={(e) => onBoostExpiresAtChange(e.target.value)}
+                      />
+                      <p className="text-xs text-mg-text-3 mt-1.5">到期后该提额自动失效，绑定对象回退到常规护栏或全局默认预算</p>
+                    </Field>
                   )}
-                </div>
+                </>
               )}
-              {budget && (
-                <div className="p-3 rounded-lg border border-mg-border bg-mg-fill-0/50 text-xs text-mg-text-2 space-y-1">
-                  <div>
-                    当前生效：<span className="font-semibold text-brand-base">{currencySymbol}{parseFloat(budget.spend_limit_amount).toLocaleString()} / 每{PERIOD_LABEL[budget.period_unit]}</span>
-                  </div>
-                  <div className="text-mg-text-3">
-                    按<span className="font-semibold text-mg-text-2">滚动窗口</span>计量 · 时区 <span className="font-mono">{tz}</span>
-                  </div>
-                </div>
+
+              {/* Key 护栏：API Key 多选 → [提额:提额预算 | 常规:Key 预算+周期] → [提额:到期] → [常规:模型黑名单+IP 白名单+提示词注入(可继承)] */}
+              {scope === 'key' && (
+                <>
+                  <Field label="绑定 API Key" required icon={<LuKey className="h-3.5 w-3.5" />}>
+                    {apiKeyOptions.length === 0 ? (
+                      <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2.5 text-xs text-mg-text-3">
+                        当前工作空间暂无可绑定的 API Key，请先到「API Keys」页创建后再绑定。
+                      </div>
+                    ) : (
+                      <TagInput
+                        value={apiKeyIds}
+                        disabled={!canEditAssignment}
+                        onChange={onApiKeyIdsChange}
+                        options={apiKeyOptions.map((o) => ({ value: o.id, label: o.name, disabled: !o.active }))}
+                        placeholder="从下拉批量选择该工作空间的 API Key"
+                        hint="选中的 Key 将绑定到该护栏，供网关护栏鉴权使用"
+                      />
+                    )}
+                  </Field>
+                  <MemberKeyBudgetControl
+                    label={keyBudgetLabel}
+                    amount={budgetAmount}
+                    onAmountChange={onBudgetAmountChange}
+                    period={budgetPeriodUnit}
+                    onPeriodChange={onBudgetPeriodUnitChange}
+                    disabled={!canEditBudget || budgetConflict}
+                  />
+                  {kind === 'boost' && (
+                    <Field label="提额到期时间" required>
+                      <Input
+                        type="datetime-local"
+                        aria-label="提额到期时间"
+                        value={boostExpiresAt}
+                        disabled={!canEdit}
+                        onChange={(e) => onBoostExpiresAtChange(e.target.value)}
+                      />
+                      <p className="text-xs text-mg-text-3 mt-1.5">到期后该提额自动失效，绑定对象回退到常规护栏或全局默认预算</p>
+                    </Field>
+                  )}
+                  {kind === 'regular' && (
+                    <>
+                      <Field label={t('guardrails.form.modelBlacklistLabel')}>
+                        <TagInput
+                          value={modelBlacklist}
+                          disabled={!canEdit}
+                          onChange={onModelBlacklistChange}
+                          suggestions={modelSuggestions}
+                          placeholder={t('guardrails.form.modelBlacklistPlaceholder')}
+                        />
+                      </Field>
+                      <Field label={t('guardrails.form.ipWhitelistLabel')}>
+                        <TagInput
+                          value={ipWhitelist}
+                          disabled={!canEdit}
+                          onChange={onIpWhitelistChange}
+                          allowFreeText
+                          tagVariant="mono"
+                          placeholder={t('guardrails.form.ipWhitelistPlaceholder')}
+                        />
+                      </Field>
+                      <PromptInjectionField value={promptInjectionMode} onChange={onPromptInjectionModeChange} allowInherit disabled={!canEdit} />
+                    </>
+                  )}
+                </>
               )}
-            </section>
+
+              {/* 预算计量口径说明（滚动窗口 + 时区） */}
+              {!budgetConflict && (
+                <p className="text-xs text-mg-text-3">
+                  预算按<span className="font-semibold text-mg-text-2">滚动窗口</span>计量（统计当前时刻往前一个周期长度内的累计消费，非自然日/周/月重置）· 时区 <span className="font-mono">{tz}</span>
+                </p>
+              )}
+
+              {/* 操作记录（fieldset 下方，只读，对齐 PRD GuardrailAuditSection） */}
+              <GuardrailAuditSection rows={auditRows} loading={auditLoading} />
+            </div>
           ) : null
         )}
       </div>
 
-      {/* 统一底部保存：基本信息 + 作用范围（成员/API Keys）一次保存。
-          预算是独立的增删策略，保留其自有按钮。 */}
+      {/* 统一底部：关闭 + 单一「保存护栏」（编辑态一次编排 护栏 PATCH + 预算增改删） */}
       {!detailLoadFailed && (isCreating || Boolean(detail)) && (
         <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-mg-border/50 shrink-0">
-          {/* 影响范围预览（保存前）：按分类上下文化——个人护栏只提成员数，
-              Key 护栏只提 Key 数，全局护栏说明作用于工作空间默认策略（文档§编辑行为） */}
           <span className="text-xs text-mg-text-3 truncate">
             {scope === 'global' ? (
-              '保存后作用于当前工作空间的默认策略'
+              '作用于当前工作空间的默认策略'
             ) : scope === 'member' ? (
-              <>将作用于 <span className="font-semibold text-mg-text-2">{memberIds.length}</span> 位成员</>
+              <>作用于 <span className="font-semibold text-mg-text-2">{memberIds.length}</span> 位成员</>
             ) : (
-              <>将作用于 <span className="font-semibold text-mg-text-2">{apiKeyIds.length}</span> 把 API Key</>
+              <>作用于 <span className="font-semibold text-mg-text-2">{apiKeyIds.length}</span> 把 API Key</>
             )}
           </span>
           <div className="flex gap-2 shrink-0">
-            <Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
-            {canSubmitCurrentTab && (
+            <Button variant="outline" onClick={onClose}>{isCreating ? t('common.cancel') : '关闭'}</Button>
+            {canSubmit && (
               <Button
                 variant="brand"
                 data-track="guardrails:create_submit"
                 loading={submitting}
                 onClick={onSubmit}
               >
-                {isCreating ? t('guardrails.modal.confirmCreate') : t('guardrails.modal.saveEdit')}
+                {isCreating ? t('guardrails.modal.confirmCreate') : '保存护栏'}
               </Button>
             )}
           </div>

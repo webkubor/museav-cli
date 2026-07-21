@@ -3,6 +3,7 @@ import type {
   AddBudgetPolicyRequest,
   AssignmentInput,
   CreateGuardrailRequest,
+  GuardrailAuditLogsResponse,
   GuardrailDetail,
   GuardrailListResponse,
   UpdateBudgetPolicyRequest,
@@ -11,6 +12,12 @@ import type {
 
 export function listGuardrails(workspaceId: string) {
   return get<GuardrailListResponse>(`workspaces/${workspaceId}/guardrails`)
+}
+
+/** 操作记录（GET /workspaces/{workspaceId}/guardrails/audit）：按工作空间返回，
+ *  调用方按 target_id 过滤出单条护栏的记录。 */
+export function listGuardrailAudit(workspaceId: string, params?: { cursor?: string; limit?: number }) {
+  return get<GuardrailAuditLogsResponse>(`workspaces/${workspaceId}/guardrails/audit`, params)
 }
 
 export function createGuardrail(workspaceId: string, body: CreateGuardrailRequest) {

@@ -105,6 +105,39 @@ export interface UpdateBudgetPolicyRequest {
   timezone?: string
 }
 
+/** 操作记录变更项（后端 guardrail.AuditChange） */
+export interface GuardrailAuditChange {
+  field: string
+  before?: string
+  after?: string
+}
+
+/** 操作记录条目（后端 guardrail.AuditLog）。审计接口按工作空间返回，
+ *  详情抽屉按 target_id === 护栏 id 过滤出本护栏的记录。 */
+export interface GuardrailAuditLog {
+  id: string
+  action: string
+  actor_account_id?: string
+  actor_display?: string
+  changes?: GuardrailAuditChange[]
+  created_at: string
+  impacted_keys?: number
+  impacted_members?: number
+  request_id?: string
+  result?: 'success' | 'failure' | 'denied'
+  target_id?: string
+  target_label?: string
+  target_type?: string
+  tenant_id?: string
+  workspace_id?: string
+}
+
+/** 审计列表响应（后端 guardrail.AuditLogsResponse） */
+export interface GuardrailAuditLogsResponse {
+  items: GuardrailAuditLog[]
+  next_cursor?: string
+}
+
 export interface GuardrailListResponse {
   items: GuardrailDetail[]
   /** 继承全局默认个人预算的成员数（qa#460，产品模型 143/150） */

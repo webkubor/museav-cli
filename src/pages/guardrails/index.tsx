@@ -24,6 +24,7 @@ import {
   createGuardrail,
   deleteGuardrail,
   listGuardrails,
+  listGuardrailAudit,
   updateGuardrail,
   getGuardrail,
   addBudgetPolicy,
@@ -204,7 +205,6 @@ export default function GuardrailsPage() {
   // ── 预算内联编辑状态 ────────────────────────────────────────────────────
   const [budgetAmount, setBudgetAmount] = useState('')
   const [budgetPeriodUnit, setBudgetPeriodUnit] = useState<'hour' | 'day' | 'week' | 'month'>('month')
-  const [showClearBudget, setShowClearBudget] = useState(false)
 
   // ── 全局护栏三档预算编辑状态（各档对应一个 aggregation_scope） ───────────
   const [globalBudgets, setGlobalBudgets] = useState<Record<BudgetAggScope, ScopeBudgetDraft>>({
@@ -268,42 +268,24 @@ export default function GuardrailsPage() {
     staleTime: 60_000,
   })
 
+  // 操作记录：审计接口按工作空间返回全部记录，详情抽屉按 target_id 过滤到本护栏
+  // （Swagger 无 guardrail_id 过滤参数，只有 workspaceId/cursor/limit）。仅编辑态拉取。
+  const auditQuery = useQuery({
+    queryKey: ['guardrail-audit', workspaceId],
+    queryFn: () => listGuardrailAudit(workspaceId).catch(() => undefined),
+    enabled: !!workspaceId && detailOpen && !isCreating,
+    staleTime: 30_000,
+  })
+  const auditRows = (auditQuery.data?.items ?? []).filter((a) => a.target_id === detailId)
+
   // ── 突变 ────────────────────────────────────────────────────────────────
-  // qa#164 单条维护语义：首次设置 POST 新增唯一一条；已有预算时 PATCH 原地
-  // 编辑同一条（同一 id），不再停旧建新——策略 id 稳定，计费侧当期已消耗
-  // 额度不会因为改限额而重置。
-  type SaveBudgetVars =
-    | { id: string; policyId: string; body: UpdateBudgetPolicyRequest }
-    | { id: string; policyId?: undefined; body: AddBudgetPolicyRequest }
-  const setBudgetMutation = useMutation({
-    mutationFn: (vars: SaveBudgetVars) =>
-      vars.policyId !== undefined
-        ? updateBudgetPolicy(vars.id, vars.policyId, vars.body)
-        : addBudgetPolicy(vars.id, vars.body),
-    onSuccess: (updated, vars) => {
-      appToast.success('预算已保存')
-      // 响应就是最新 detail：先写缓存（立即同步 budget 状态），再失效兜底
-      qc.setQueryData(['guardrail-detail', vars.id], updated)
-      qc.invalidateQueries({ queryKey: ['guardrail-detail', vars.id] })
-    },
-    onError: (err: unknown) =>
-      appToast.requestError(err, '保存失败'),
-  })
-
-  const removeBudgetMutation = useMutation({
-    mutationFn: ({ guardrailId, policyId }: { guardrailId: string; policyId: string }) =>
-      deleteBudgetPolicy(guardrailId, policyId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['guardrail-detail', detailId] })
-    },
-    onError: (err: unknown) =>
-      appToast.requestError(err, '删除失败'),
-  })
-
-  // 全局护栏三档保存：一次点击可涉及多档的 增/改/删，按顺序串行执行，
-  // 以最后一条响应回写缓存（三档互相独立、可并存，后端无单条限制）。
-  const saveGlobalBudgetMutation = useMutation({
-    mutationFn: async ({ id, ops }: { id: string; ops: GlobalBudgetOp[] }) => {
+  // 编辑态单保存编排（对齐 PRD 单一「保存护栏」）：一次点击串行执行
+  //   ① 护栏本身 PATCH /guardrails/{id}（名称 + 提示词注入 + metadata 承载分类/成员/Key/模型/IP/提额到期）
+  //   ② 预算 增/改/删 POST|PATCH|DELETE /guardrails/{id}/budget-policies（全局三档 or 个人/Key 单档）
+  // 任一失败即整体报错（不静默兜底）；qa#164 单条维护语义：已有策略 PATCH 原地编辑同一条。
+  const saveGuardrailMutation = useMutation({
+    mutationFn: async ({ id, payload, ops }: { id: string; payload?: UpdateGuardrailRequest; ops: GlobalBudgetOp[] }) => {
+      if (payload) await updateGuardrail(id, payload)
       let latest: GuardrailDetail | undefined
       for (const op of ops) {
         if (op.type === 'add') latest = await addBudgetPolicy(id, op.body)
@@ -313,12 +295,18 @@ export default function GuardrailsPage() {
       return latest
     },
     onSuccess: (updated, vars) => {
-      appToast.success('预算已保存')
+      appToast.success(t('guardrails.toast.updateSuccess'))
+      setDetailOpen(false)
       if (updated) qc.setQueryData(['guardrail-detail', vars.id], updated)
+      qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
       qc.invalidateQueries({ queryKey: ['guardrail-detail', vars.id] })
+      qc.invalidateQueries({ queryKey: ['guardrail-audit', workspaceId] })
+      trackEvent('guardrails:edit', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
-    onError: (err: unknown) =>
-      appToast.requestError(err, '保存失败'),
+    onError: (err: unknown) => {
+      appToast.requestError(err, t('guardrails.toast.updateError'))
+      trackEvent('guardrails:edit', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
+    },
   })
 
   const createMutation = useMutation({
@@ -373,22 +361,6 @@ export default function GuardrailsPage() {
     onError: (err: unknown) => {
       appToast.requestError(err, t('guardrails.toast.createError'))
       trackEvent('guardrails:create', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
-    },
-  })
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: UpdateGuardrailRequest }) =>
-      updateGuardrail(id, payload),
-    onSuccess: () => {
-      appToast.success(t('guardrails.toast.updateSuccess'))
-      setDetailOpen(false)
-      qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
-      qc.invalidateQueries({ queryKey: ['guardrail-detail', detailId] })
-      trackEvent('guardrails:edit', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
-    },
-    onError: (err: unknown) => {
-      appToast.requestError(err, t('guardrails.toast.updateError'))
-      trackEvent('guardrails:edit', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
     },
   })
 
@@ -549,44 +521,11 @@ export default function GuardrailsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync helper intentionally runs only when detail identity changes
   }, [detail, detailOpen, isCreating])
 
-  function handleSubmit() {
-    if (!name.trim()) { appToast.error(t('guardrails.toast.nameRequired')); return }
-    // 需求方#498：创建个人/Key 护栏必须绑定至少一个对象，否则后端返 40001。
-    // 提交前预校验拦截并给友好提示，不把后端原始错误弹给用户。（编辑态绑定在作用范围 Tab 单独管理，此处只管创建）
-    if (isCreating) {
-      if (scope === 'member' && memberIds.length === 0) { appToast.error('请至少绑定一个成员'); return }
-      if (scope === 'key' && apiKeyIds.length === 0) { appToast.error('请至少绑定一个 API Key'); return }
-    }
-    // 提额必须设置到期时间（文档§校验规则：提额护栏没有到期时间时不能保存）
-    if (kind === 'boost') {
-      if (!boostExpiresAt || !localInputToIso(boostExpiresAt)) {
-        appToast.error('提额护栏必须设置到期时间')
-        return
-      }
-    }
-    // 需求方#190：创建常规个人/Key 护栏时，预算不得超过全局默认（当前个人/Key）预算。
-    // 编辑走 handleSaveBudget 的同一校验；创建预算随 handleSubmit 一页提交，故此处补校验，禁止提交。
-    if (isCreating && (scope === 'member' || scope === 'key') && kind === 'regular') {
-      const amt = budgetAmount.trim()
-      if (amt && isValidBudgetAmount(amt)) {
-        const aggScope: BudgetAggScope = scope === 'member' ? 'per_member' : 'per_api_key'
-        const globalDefault = globalDefaultAmount(guardrails, aggScope)
-        if (globalDefault != null && Number(amt) > globalDefault) {
-          appToast.error(`常规护栏预算不能超过全局默认预算（${currencySymbol}${trimAmountScale(String(globalDefault))} / ${scope === 'member' ? '每人' : '每 Key'}）`)
-          return
-        }
-      }
-    }
-    // ONE save for the whole drawer: rules (model_blacklist/ip_whitelist) round-
-    // trip via metadata; scope (members + api_keys) is materialized into
-    // assignments server-side. Always send all arrays (even empty) so empty =
-    // clear. api_keys is only editable in edit mode (scope tab); on create it
-    // stays whatever was selected (none).
-    // 分类/类型经 metadata 占位往返（后端 #378 未交付 scope/kind 显式字段前）：
-    // is_default 承载全局分类，kind='boost' 标记提额，effective_to 记提额到期（后端契约，需求方#151）。
+  // 护栏本身 payload（名称 + 提示词注入 + metadata 承载分类/成员/Key/模型/IP/提额到期）。
+  // 分类/类型经 metadata 占位往返（后端 #378 未交付 scope/kind 显式字段前）：
+  // is_default 承载全局分类，kind='boost' 标记提额，effective_to 记提额到期（需求方#151）。
+  function buildGuardrailPayload(): CreateGuardrailRequest {
     const metadata: Record<string, unknown> = {
-      // 显式落分类（后端 #378 未交付 scope 字段前的真源）：deriveScope 优先读它，
-      // 不再靠「有无绑定」反推——否则未绑对象的个人/Key 护栏会被误判成全局、全堆全局列表。
       scope,
       members: scope === 'member' ? memberIds : [],
       api_keys: scope === 'key' ? apiKeyIds : [],
@@ -594,15 +533,9 @@ export default function GuardrailsPage() {
     // 文档：个人护栏、提额护栏不配置模型黑名单 / IP 白名单 → 隐藏且清空落库
     metadata.model_blacklist = showModelIp ? modelBlacklist : []
     metadata.ip_whitelist = showModelIp ? ipWhitelist : []
-    // 提示词注入模式是后端 UpdateRequest/CreateRequest 的顶层字段，不能放进
-    // metadata（Swagger 中 metadata 仍是历史数组契约；详情响应才是对象）。
-    // 常规 Key 选择「继承全局」时省略该字段，保留后端的继承语义。
-    // 类型：全局护栏恒常规、不写 kind；个人/Key 护栏落 kind，提额附到期时间
-    // 需求方#151：后端读 metadata.effective_to 作为提额到期（非 expires_at）——
-    // 字段名不一致会让后端判定「提额护栏未设置到期时间」而创建失败（40001）。实测验证。
     if (scope !== 'global') metadata.kind = kind
     if (kind === 'boost') metadata.effective_to = localInputToIso(boostExpiresAt)
-    const payload: CreateGuardrailRequest = {
+    return {
       name: name.trim(),
       description: description.trim() || undefined,
       is_default: isDefault,
@@ -612,107 +545,29 @@ export default function GuardrailsPage() {
         : {}),
       metadata,
     }
-    if (!isCreating && detailId) {
-      trackEvent('guardrails:edit', undefined, { is_space_owner: isActiveWorkspaceOwner })
-      updateMutation.mutate({ id: detailId, payload })
-    } else {
-      trackEvent('guardrails:create', undefined, { is_space_owner: isActiveWorkspaceOwner })
-      createMutation.mutate(payload)
-    }
   }
 
-  function handleSaveBudget() {
-    if (!detail) return
-    if (budgetConflict) {
-      appToast.error('预算配置数据错误：存在多条生效中的预算策略，请联系管理员处理')
-      return
-    }
-    const amount = budgetAmount.trim()
-    // 与后端校验同一契约：输入什么就存什么，存不了的直接拒绝
-    if (!isValidBudgetAmount(amount)) {
-      appToast.error('预算金额无效：请输入大于 0 的数字，整数最多 12 位，小数最多 2 位')
-      return
-    }
-    // 预算上/下限校验（文档§校验规则）：本地拿全局默认预算比对。
-    // - 常规个人/Key 护栏：预算不得超过启用中全局护栏的对应默认预算。
-    // - 提额个人/Key 护栏：预算必须大于当前生效预算（无常规绑定时以全局默认为基线）。
-    const dScope = deriveScope(detail)
-    const dKind = deriveKind(detail)
-    if (dScope === 'member' || dScope === 'key') {
-      const aggScope: BudgetAggScope = dScope === 'member' ? 'per_member' : 'per_api_key'
-      const globalDefault = globalDefaultAmount(guardrails, aggScope)
-      const amt = Number(amount)
-      if (dKind === 'regular') {
-        if (globalDefault != null && amt > globalDefault) {
-          appToast.error(`常规护栏预算不能超过全局默认预算（${currencySymbol}${trimAmountScale(String(globalDefault))} / ${dScope === 'member' ? '每人' : '每 Key'}）`)
-          return
-        }
-      } else if (globalDefault != null && amt <= globalDefault) {
-        appToast.error(`提额预算必须大于当前生效预算（${currencySymbol}${trimAmountScale(String(globalDefault))}）`)
-        return
-      }
-    }
-    if (budget) {
-      // 编辑：原地维护这唯一一条策略。只发真正变更的字段——金额没改就不发
-      // 金额、周期没改就不发周期：计费当期消耗 counter 按 (policy id, 周期窗口)
-      // 累计，少发未变字段可避免无谓的窗口重锚。
-      const body: UpdateBudgetPolicyRequest = {}
-      if (amount !== trimAmountScale(budget.spend_limit_amount)) body.spend_limit_amount = amount
-      if (budgetPeriodUnit !== budget.period_unit) body.period_unit = budgetPeriodUnit
-      if (Object.keys(body).length === 0) {
-        appToast.info('预算未发生变化')
-        return
-      }
-      setBudgetMutation.mutate({ id: detail.id, policyId: budget.id, body })
-    } else {
-      // 首次设置：新增唯一一条
-      setBudgetMutation.mutate({
-        id: detail.id,
-        body: {
-          aggregation_scope: 'guardrail_total',
-          period_unit: budgetPeriodUnit,
-          period_length: 1,
-          enforcement_mode: 'hard_limit',
-          spend_limit_amount: amount,
-          enabled: true,
-        },
-      })
-    }
-  }
-
-  // 全局护栏三档保存：逐档比对当前生效策略 → 增（无）/ 改（有且变了）/ 删（清空）。
-  function handleSaveGlobalBudgets() {
-    if (!detail) return
-    if (budgetConflict) {
-      appToast.error('预算配置数据错误：存在多条生效中的预算策略，请联系管理员处理')
-      return
-    }
-    // 个人租户不显示、也不触碰「默认个人预算」(per_member) 档
+  // 全局护栏三档预算 → 增/改/删 ops（对齐 PRD：清「不限额」= 删该档策略）。返回 error 即校验未过。
+  function buildGlobalBudgetOps(d: GuardrailDetail): { ops: GlobalBudgetOp[] } | { error: string } {
     const scopes = GLOBAL_BUDGET_SCOPES.filter((s) => s !== 'per_member' || showMember)
     const ops: GlobalBudgetOp[] = []
     for (const aggScope of scopes) {
       const draft = globalBudgets[aggScope]
-      const existing = budgetByScope(detail, aggScope)
+      const existing = budgetByScope(d, aggScope)
       if (draft.limited) {
         const amount = draft.amount.trim()
         if (!isValidBudgetAmount(amount)) {
-          appToast.error('预算金额无效：请输入大于 0 的数字，整数最多 12 位，小数最多 2 位')
-          return
+          return { error: '预算金额无效：请输入大于 0 的数字，整数最多 12 位，小数最多 2 位' }
         }
-        // 下调全局默认时，若存在预算高于新默认值的常规护栏，必须先调低那些常规护栏
-        // （文档§校验规则）。本地枚举同作用域常规护栏预算比对。
+        // 下调全局默认时，若存在预算高于新默认值的常规护栏，必须先调低那些常规护栏（文档§校验规则）。
         if (aggScope === 'per_member' || aggScope === 'per_api_key') {
           const targetScope = aggScope === 'per_member' ? 'member' : 'key'
           const higher = regularBudgetAmounts(guardrails, targetScope).filter((v) => v > Number(amount))
           if (higher.length > 0) {
-            appToast.error(`存在预算高于新默认值的常规${targetScope === 'member' ? '个人' : 'Key'}护栏，需先调低这些常规护栏，才能下调全局默认预算`)
-            return
+            return { error: `存在预算高于新默认值的常规${targetScope === 'member' ? '个人' : 'Key'}护栏，需先调低这些常规护栏，才能下调全局默认预算` }
           }
         }
         if (existing) {
-          // 全局默认预算更新时补齐策略身份与周期长度。部分后端版本虽将这些
-          // 字段标为可选，但 PATCH 解码后会以零值参与校验，导致只提交金额时报错。
-          // 透传当前值不会改变策略语义，也避免默认预算保存失败。
           const amountChanged = amount !== trimAmountScale(existing.spend_limit_amount)
           const periodChanged = draft.period !== existing.period_unit
           if (amountChanged || periodChanged) {
@@ -738,16 +593,118 @@ export default function GuardrailsPage() {
           })
         }
       } else if (existing) {
-        // 清空该档 → 删除其生效策略
+        // 清空该档（不限额）→ 删除其生效策略
         ops.push({ type: 'delete', policyId: existing.id })
       }
     }
-    if (ops.length === 0) {
-      appToast.info('预算未发生变化')
+    return { ops }
+  }
+
+  // 个人/Key 护栏单档预算 → 增/改 op（对齐现状：成员/Key 档预算必填，无不限额）。返回 error 即校验未过。
+  function buildMemberKeyBudgetOps(d: GuardrailDetail): { ops: GlobalBudgetOp[] } | { error: string } {
+    const amount = budgetAmount.trim()
+    if (!isValidBudgetAmount(amount)) {
+      return { error: '预算金额无效：请输入大于 0 的数字，整数最多 12 位，小数最多 2 位' }
+    }
+    // 预算上/下限校验（文档§校验规则）：常规不得超过全局默认；提额必须大于当前生效预算。
+    const dScope = deriveScope(d)
+    const dKind = deriveKind(d)
+    if (dScope === 'member' || dScope === 'key') {
+      const aggScope: BudgetAggScope = dScope === 'member' ? 'per_member' : 'per_api_key'
+      const globalDefault = globalDefaultAmount(guardrails, aggScope)
+      const amt = Number(amount)
+      if (dKind === 'regular') {
+        if (globalDefault != null && amt > globalDefault) {
+          return { error: `常规护栏预算不能超过全局默认预算（${currencySymbol}${trimAmountScale(String(globalDefault))} / ${dScope === 'member' ? '每人' : '每 Key'}）` }
+        }
+      } else if (globalDefault != null && amt <= globalDefault) {
+        return { error: `提额预算必须大于当前生效预算（${currencySymbol}${trimAmountScale(String(globalDefault))}）` }
+      }
+    }
+    if (budget) {
+      // qa#164：原地维护同一条策略，只发真正变更的字段（避免计费窗口重锚）
+      const body: UpdateBudgetPolicyRequest = {}
+      if (amount !== trimAmountScale(budget.spend_limit_amount)) body.spend_limit_amount = amount
+      if (budgetPeriodUnit !== budget.period_unit) body.period_unit = budgetPeriodUnit
+      if (Object.keys(body).length === 0) return { ops: [] }
+      return { ops: [{ type: 'update', policyId: budget.id, body }] }
+    }
+    return {
+      ops: [{
+        type: 'add',
+        body: {
+          aggregation_scope: 'guardrail_total',
+          period_unit: budgetPeriodUnit,
+          period_length: 1,
+          enforcement_mode: 'hard_limit',
+          spend_limit_amount: amount,
+          enabled: true,
+        },
+      }],
+    }
+  }
+
+  function handleSubmit() {
+    // 编辑态走单保存编排（护栏 PATCH + 预算增改删一次性）
+    if (!isCreating) { handleSaveGuardrail(); return }
+    if (!name.trim()) { appToast.error(t('guardrails.toast.nameRequired')); return }
+    // 需求方#498：创建个人/Key 护栏必须绑定至少一个对象，否则后端返 40001。
+    if (scope === 'member' && memberIds.length === 0) { appToast.error('请至少绑定一个成员'); return }
+    if (scope === 'key' && apiKeyIds.length === 0) { appToast.error('请至少绑定一个 API Key'); return }
+    // 提额必须设置到期时间（文档§校验规则）
+    if (kind === 'boost') {
+      if (!boostExpiresAt || !localInputToIso(boostExpiresAt)) {
+        appToast.error('提额护栏必须设置到期时间')
+        return
+      }
+    }
+    // 需求方#190：创建常规个人/Key 护栏时，预算不得超过全局默认（当前个人/Key）预算。
+    if ((scope === 'member' || scope === 'key') && kind === 'regular') {
+      const amt = budgetAmount.trim()
+      if (amt && isValidBudgetAmount(amt)) {
+        const aggScope: BudgetAggScope = scope === 'member' ? 'per_member' : 'per_api_key'
+        const globalDefault = globalDefaultAmount(guardrails, aggScope)
+        if (globalDefault != null && Number(amt) > globalDefault) {
+          appToast.error(`常规护栏预算不能超过全局默认预算（${currencySymbol}${trimAmountScale(String(globalDefault))} / ${scope === 'member' ? '每人' : '每 Key'}）`)
+          return
+        }
+      }
+    }
+    trackEvent('guardrails:create', undefined, { is_space_owner: isActiveWorkspaceOwner })
+    createMutation.mutate(buildGuardrailPayload())
+  }
+
+  // 编辑态单保存（对齐 PRD 单一「保存护栏」）：护栏 PATCH + 预算增改删串行编排。
+  function handleSaveGuardrail() {
+    if (!detail || !detailId) return
+    if (budgetConflict) {
+      appToast.error('预算配置数据错误：存在多条生效中的预算策略，请联系管理员处理')
       return
     }
-    trackAction(PERMS.GUARDRAILS_BUDGET_EDIT, undefined, { is_space_owner: isActiveWorkspaceOwner })
-    saveGlobalBudgetMutation.mutate({ id: detail.id, ops })
+    if (!name.trim()) { appToast.error(t('guardrails.toast.nameRequired')); return }
+    const dScope = deriveScope(detail)
+    // 绑定必填（编辑态绑定可改，不能清空到 0）
+    if (canEditAssignment) {
+      if (dScope === 'member' && memberIds.length === 0) { appToast.error('请至少绑定一个成员'); return }
+      if (dScope === 'key' && apiKeyIds.length === 0) { appToast.error('请至少绑定一个 API Key'); return }
+    }
+    // 提额到期时间必填
+    if (canEdit && deriveKind(detail) === 'boost' && (!boostExpiresAt || !localInputToIso(boostExpiresAt))) {
+      appToast.error('提额护栏必须设置到期时间')
+      return
+    }
+    // 预算 ops（仅当有预算编辑权限时计算/下发；否则不触碰预算）
+    let ops: GlobalBudgetOp[] = []
+    if (canEditBudget) {
+      const result = isGlobal ? buildGlobalBudgetOps(detail) : buildMemberKeyBudgetOps(detail)
+      if ('error' in result) { appToast.error(result.error); return }
+      ops = result.ops
+    }
+    const payload = (canEdit || canEditAssignment) ? buildGuardrailPayload() : undefined
+    if (!payload && ops.length === 0) { appToast.info('未发生变化'); return }
+    trackEvent('guardrails:edit', undefined, { is_space_owner: isActiveWorkspaceOwner })
+    if (canEditBudget && ops.length > 0) trackAction(PERMS.GUARDRAILS_BUDGET_EDIT, undefined, { is_space_owner: isActiveWorkspaceOwner })
+    saveGuardrailMutation.mutate({ id: detailId, payload, ops })
   }
 
   // ── 派生数据 ────────────────────────────────────────────────────────────
@@ -778,6 +735,8 @@ export default function GuardrailsPage() {
   }))
 
   const detailRow = guardrails.find(g => g.id === detailId)
+  // 编辑态基本信息写权限（按当前护栏派生分类取细粒度码）
+  const canEdit = detail ? canEditScope[deriveScope(detail)] : false
 
   // ── JSX ─────────────────────────────────────────────────────────────────
   if (forbidden) {
@@ -866,39 +825,23 @@ export default function GuardrailsPage() {
         budgetAmount={budgetAmount} onBudgetAmountChange={setBudgetAmount}
         budgetPeriodUnit={budgetPeriodUnit} onBudgetPeriodUnitChange={setBudgetPeriodUnit}
         canEditBudget={canEditBudget}
-        savingBudget={setBudgetMutation.isPending}
-        onSaveBudget={handleSaveBudget}
-        onShowClearBudget={() => setShowClearBudget(true)}
-        isGlobal={isGlobal}
         showMember={showMember}
         globalBudgets={globalBudgets}
         onGlobalBudgetChange={handleGlobalBudgetChange}
-        savingGlobalBudget={saveGlobalBudgetMutation.isPending}
-        onSaveGlobalBudgets={handleSaveGlobalBudgets}
-        currencySymbol={currencySymbol}
-        canEdit={detail ? canEditScope[deriveScope(detail)] : false}
+        auditRows={auditRows}
+        auditLoading={auditQuery.isLoading}
+        canEdit={canEdit}
         canEditAssignment={canEditAssignment}
-        submitting={createMutation.isPending || updateMutation.isPending}
+        submitting={createMutation.isPending || saveGuardrailMutation.isPending}
         onSubmit={handleSubmit}
       />
 
-      {/* 删除 + 清除预算确认 Modal */}
+      {/* 删除确认 Modal */}
       <GuardrailConfirmModals
         deleteTarget={deleteTarget}
         onCloseDelete={() => setDeleteTarget(null)}
         deleting={deleteMutation.isPending}
         onConfirmDelete={() => { if (deleteTarget) { trackEvent('guardrails:delete', undefined, { is_space_owner: isActiveWorkspaceOwner }); deleteMutation.mutate(deleteTarget.id) } }}
-        showClearBudget={showClearBudget}
-        onCloseClear={() => setShowClearBudget(false)}
-        clearing={removeBudgetMutation.isPending}
-        onConfirmClear={() => {
-          // budgetConflict 防线：确认弹窗是独立状态，版本错位下 detail 可能在
-          // 弹窗打开后才变脏——脏数据上清除最新策略只会留下更旧的那条
-          if (detail && budget && !budgetConflict) {
-            removeBudgetMutation.mutate({ guardrailId: detail.id, policyId: budget.id })
-            setShowClearBudget(false)
-          }
-        }}
       />
     </div>
   )

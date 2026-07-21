@@ -371,31 +371,13 @@ export default function ApiKeysPage() {
     setCreatedVisible(true)
   }, [])
 
-  // 「我已保存密钥」（PRD §8.3）：关闭 → 刷新列表 → 打开新 Key 详情
+  // 「我已保存密钥」（PRD 原型 handleCreate）：仅关闭弹窗 + 刷新列表，不跳详情页（需求方#186）
   const handleSecretSaved = () => {
     if (createdKey) {
       trackEvent('api_keys:secret_saved', { ...commonEventProps, time_to_save_ms: createdAt ? Date.now() - createdAt : 0 }, { source: 'create_success' })
     }
     setCreatedVisible(false)
     queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
-    if (createdKey) {
-      const c = createdKey
-      setDetailKey({
-        api_key_id: c.api_key_id,
-        name: c.name,
-        prefix: c.prefix,
-        masked: c.masked,
-        env: c.env,
-        status: 'active',
-        owner: account ?? { account_id: '', display_name: '', email: '' },
-        expires_at: null,
-        last_used_at: null,
-        total_spend: { amount: '0', currency },
-        limit: { amount: '0', currency, period_unit: 'month', period_length: 1 },
-        created_at: c.created_at,
-        scope: c.scope,
-      })
-    }
   }
 
   const openAIBaseUrl = GATEWAY_ENDPOINTS[0]?.baseUrl ?? ''

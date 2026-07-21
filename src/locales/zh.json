@@ -1213,6 +1213,7 @@
     },
     "sources": {
       "title": "成本来源",
+      "desc": "当前筛选下的主要来源",
       "topProject": "最高消费项目",
       "topWorkspace": "最高消费工作空间",
       "topApiKey": "最高消费 API Key",
@@ -1220,26 +1221,27 @@
       "empty": "暂无来源数据"
     },
     "distribution": {
-      "title": "模型分布",
-      "chartDesc": "按模型消费占比",
-      "rankTitle": "模型排行",
-      "rankDesc": "按消费金额降序",
-      "memberTitle": "成员分布",
-      "apiKeyTitle": "API Key 分布",
+      "model": {
+        "title": "模型分布",
+        "chartDesc": "按模型消费占比",
+        "rankTitle": "模型 排行"
+      },
+      "member": {
+        "title": "成员分布",
+        "chartDesc": "按成员消费占比",
+        "rankTitle": "成员 排行"
+      },
+      "apiKey": {
+        "title": "API Keys 分布",
+        "chartDesc": "按 API Keys 消费占比",
+        "rankTitle": "API Keys 排行"
+      },
       "bySpend": "按费用 · 降序",
       "total": "总消费",
       "other": "其他"
     },
-    "apiKeyRank": {
-      "title": "API Key 排行",
-      "col": {
-        "rank": "排名",
-        "apiKey": "API Key",
-        "requests": "请求数",
-        "tokens": "Token 总数",
-        "spend": "费用",
-        "owner": "归属人"
-      }
+    "meta": {
+      "models": "{{count}} 模型"
     },
     "chart": {
       "trendTitle": "{{metric}}趋势",
@@ -1271,7 +1273,7 @@
     },
     "breakdown": {
       "title": "用量明细",
-      "desc": "在当前时间和工作空间范围内查看明细。"
+      "desc": "在当前时间和工作空间范围内查看明细"
     },
     "emptyState": {
       "noDataTitle": "暂无用量数据",

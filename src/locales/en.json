@@ -1214,6 +1214,7 @@
     },
     "sources": {
       "title": "Cost Sources",
+      "desc": "Top sources under the current filters",
       "topProject": "Top Project",
       "topWorkspace": "Top Workspace",
       "topApiKey": "Top API Key",
@@ -1221,26 +1222,27 @@
       "empty": "No source data"
     },
     "distribution": {
-      "title": "Model Distribution",
-      "chartDesc": "Share of spend by model",
-      "rankTitle": "Model Ranking",
-      "rankDesc": "Sorted by spend",
-      "memberTitle": "Member Distribution",
-      "apiKeyTitle": "API Key Distribution",
+      "model": {
+        "title": "Model Distribution",
+        "chartDesc": "Share of spend by model",
+        "rankTitle": "Model Ranking"
+      },
+      "member": {
+        "title": "Member Distribution",
+        "chartDesc": "Share of spend by member",
+        "rankTitle": "Member Ranking"
+      },
+      "apiKey": {
+        "title": "API Keys Distribution",
+        "chartDesc": "Share of spend by API Keys",
+        "rankTitle": "API Keys Ranking"
+      },
       "bySpend": "By spend · Desc",
       "total": "Total spend",
       "other": "Other"
     },
-    "apiKeyRank": {
-      "title": "API Key Ranking",
-      "col": {
-        "rank": "Rank",
-        "apiKey": "API Key",
-        "requests": "Requests",
-        "tokens": "Total Tokens",
-        "spend": "Spend",
-        "owner": "Owner"
-      }
+    "meta": {
+      "models": "{{count}} models"
     },
     "chart": {
       "trendTitle": "{{metric}} Trend",
@@ -1272,7 +1274,7 @@
     },
     "breakdown": {
       "title": "Usage Breakdown",
-      "desc": "Review breakdowns within the selected time and workspace scope."
+      "desc": "Review breakdowns within the selected time and workspace scope"
     },
     "emptyState": {
       "noDataTitle": "No usage data",

@@ -9,16 +9,11 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { ModelIcon } from '@/features/models/components/ModelIcon'
 import type { UsageRankingItem } from '@/types'
 import { cn } from '@/lib/utils'
-import { formatMoney, formatNumber, CHART_OTHER_COLOR } from './usage-utils'
+import { formatMoney, CHART_OTHER_COLOR } from './usage-utils'
 import { ModelDonutChart, type DonutSlice } from './usage-charts'
 import { ProgressBar } from '@/components/ui/ProgressBar'
-import {
-  LuKey,
-  LuTable2,
-} from 'react-icons/lu'
 
 /** 分布图 Top N，超出折叠成「其他」。 */
 const DIST_TOP_N = 5
@@ -74,7 +69,11 @@ interface DistributionPanelProps {
   onDrill?: (item: UsageRankingItem) => void
 }
 
-interface ModelDistributionPanelProps {
+interface DistributionDonutPanelProps {
+  /** 卡标题（如「模型分布」「API Keys 分布」，按维度传入）。 */
+  title: string
+  /** 卡副标题（如「按模型消费占比」，按维度传入）。 */
+  chartDesc: string
   items: UsageRankingItem[]
   totalSpendAmount?: string
   isLoading: boolean
@@ -83,18 +82,6 @@ interface ModelDistributionPanelProps {
   currencySymbol: string
   emptyTitle: string
   emptyDesc: string
-  onDrill?: (item: UsageRankingItem) => void
-}
-
-interface RankingPanelProps {
-  items: UsageRankingItem[]
-  isLoading: boolean
-  isError: boolean
-  onRetry: () => void
-  currencySymbol: string
-  emptyTitle: string
-  emptyDesc: string
-  onDrill?: (item: UsageRankingItem) => void
 }
 
 function displayRankingName(item: UsageRankingItem): string {
@@ -195,18 +182,6 @@ function DistributionBarRow({
   return <div className={cn(DIST_ROW_GRID, 'px-1 py-1')}>{inner}</div>
 }
 
-function ApiKeyRankBadge({ rank }: { rank: number }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold',
-        rank <= 3 ? 'bg-brand-selected-bg text-brand-base' : 'bg-mg-fill-1 text-mg-text-3',
-      )}
-    >
-      {rank.toString().padStart(2, '0')}
-    </span>
-  )
-}
 
 /**
  * 成本来源侧栏（对齐 PRD §9）：三类各展示「最高消费」的 Top 1
@@ -225,7 +200,10 @@ export function CostSourcePanel({
 
   return (
     <Card className="min-w-0 p-5 sm:p-6">
-      <div className="mb-4 text-sm font-semibold text-mg-text-1">{t('usage.sources.title')}</div>
+      <div className="mb-4">
+        <div className="text-sm font-semibold text-mg-text-1">{t('usage.sources.title')}</div>
+        <div className="mt-1 text-[12px] text-mg-text-3">{t('usage.sources.desc')}</div>
+      </div>
 
       {isError ? (
         <ErrorBlock message={t('usage.error.rankings')} onRetry={onRetry} />
@@ -372,8 +350,13 @@ function buildDonutSlices(items: UsageRankingItem[], otherLabel: string): DonutS
   return slices
 }
 
-/** 模型分布饼图卡（对齐 PRD #42）：环形图 + 中心总消费 + Top5/「其他」图例（名称·金额·占比）。 */
-export function ModelDistributionDonutPanel({
+/**
+ * 消费分布饼图卡（对齐 PRD 用量明细·分布）：环形图 + 中心总消费 + Top/「其他」图例（名称·金额·占比）。
+ * 模型/成员/API Keys 三维共用，标题与副标题按维度传入。
+ */
+export function DistributionDonutPanel({
+  title,
+  chartDesc,
   items,
   totalSpendAmount,
   isLoading,
@@ -382,7 +365,7 @@ export function ModelDistributionDonutPanel({
   currencySymbol,
   emptyTitle,
   emptyDesc,
-}: ModelDistributionPanelProps) {
+}: DistributionDonutPanelProps) {
   const { t } = useTranslation()
   const [active, setActive] = useState<number | null>(null)
   const slices = buildDonutSlices(items, t('usage.distribution.other'))
@@ -392,8 +375,8 @@ export function ModelDistributionDonutPanel({
   return (
     <Card className="min-w-0 p-5 sm:p-6">
       <div className="mb-5">
-        <div className="text-sm font-semibold text-mg-text-1">{t('usage.distribution.title')}</div>
-        <div className="mt-1 text-[12px] text-mg-text-3">{t('usage.distribution.chartDesc')}</div>
+        <div className="text-sm font-semibold text-mg-text-1">{title}</div>
+        <div className="mt-1 text-[12px] text-mg-text-3">{chartDesc}</div>
       </div>
       {isError ? (
         <ErrorBlock message={t('usage.error.rankings')} onRetry={onRetry} />
@@ -447,125 +430,6 @@ export function ModelDistributionDonutPanel({
               </li>
             ))}
           </ul>
-        </div>
-      )}
-    </Card>
-  )
-}
-
-/** 模型消费排行卡（含工作空间归因次级行 + Top5 折叠「其他」）。 */
-export function ModelDistributionPanel({
-  items,
-  totalSpendAmount,
-  isLoading,
-  isError,
-  onRetry,
-  currencySymbol,
-  emptyTitle,
-  emptyDesc,
-  onDrill,
-}: ModelDistributionPanelProps) {
-  const { t } = useTranslation()
-
-  return (
-    <DistributionPanel
-      title={t('usage.distribution.rankTitle')}
-      items={items}
-      totalSpendAmount={totalSpendAmount}
-      currencySymbol={currencySymbol}
-      isLoading={isLoading}
-      isError={isError}
-      onRetry={onRetry}
-      emptyTitle={emptyTitle}
-      emptyDesc={emptyDesc}
-      leading={(item) => (
-        <ModelIcon model={{ display_name: displayRankingName(item), vendor: item.vendor || item.name || item.key || '' }} size={22} rounded="rounded-md" />
-      )}
-      secondary={(item) => {
-        // 归因：使用该模型的工作空间（Swagger usage.RankingItem.workspaces 数组，或单值 workspace_name）。
-        // TODO(#447): 后端未返回归因时显示占位「—」。
-        const ws = item.workspaces?.length ? item.workspaces.join('、') : item.workspace_name
-        return `${t('usage.attr.workspace')}: ${ws || '—'}`
-      }}
-      onDrill={onDrill}
-    />
-  )
-}
-
-/** API Key 排行卡，保留表格扫描效率；含「归属人」归因列（#447 未返回时「—」），行可下钻。 */
-export function ApiKeyRankingPanel({
-  items,
-  isLoading,
-  isError,
-  onRetry,
-  currencySymbol,
-  emptyTitle,
-  emptyDesc,
-  onDrill,
-}: RankingPanelProps) {
-  const { t } = useTranslation()
-  const grid = 'grid grid-cols-[58px_minmax(120px,1fr)_120px_100px_110px_96px] gap-3'
-
-  return (
-    <Card className="min-w-0 p-5 sm:p-6">
-      <div className="mb-5 flex items-center gap-2 text-sm font-semibold text-mg-text-1">
-        <LuTable2 size={15} className="text-brand-base" />
-        {t('usage.apiKeyRank.title')}
-      </div>
-      {isError ? (
-        <ErrorBlock message={t('usage.error.rankings')} onRetry={onRetry} />
-      ) : isLoading ? (
-        <PanelSkeleton rows={5} />
-      ) : items.length === 0 ? (
-        <EmptyState title={emptyTitle} description={emptyDesc} />
-      ) : (
-        <div className="overflow-x-auto">
-          <div className="min-w-[740px]">
-            <div className={cn(grid, 'border-b border-mg-border pb-3 text-[12px] font-semibold text-mg-text-3')}>
-              <span>{t('usage.apiKeyRank.col.rank')}</span>
-              <span>{t('usage.apiKeyRank.col.apiKey')}</span>
-              <span>{t('usage.apiKeyRank.col.owner')}</span>
-              <span>{t('usage.apiKeyRank.col.requests')}</span>
-              <span>{t('usage.apiKeyRank.col.tokens')}</span>
-              <span className="text-right">{t('usage.apiKeyRank.col.spend')}</span>
-            </div>
-            <div className="divide-y divide-mg-border">
-              {items.slice(0, 10).map((item, index) => {
-                const rank = item.rank ?? index + 1
-                const name = displayRankingName(item)
-                const row = (
-                  <>
-                    <ApiKeyRankBadge rank={rank} />
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-selected-bg text-brand-base">
-                        <LuKey size={14} />
-                      </span>
-                      <span className="truncate font-medium text-mg-text-1" title={name}>{name}</span>
-                    </div>
-                    {/* TODO(#447): owner 后端返回后直接显示，缺省「—」 */}
-                    <span className="truncate text-mg-text-2" title={item.owner ?? undefined}>{item.owner || '—'}</span>
-                    <span className="font-mono text-mg-text-2">{formatNumber(item.requests ?? 0)}</span>
-                    <span className="font-mono text-mg-text-2">{formatNumber(item.tokens ?? 0)}</span>
-                    <span className="text-right font-mono text-mg-text-1">{formatRankingSpend(item, currencySymbol)}</span>
-                  </>
-                )
-                return onDrill ? (
-                  <button
-                    key={item.key ?? `${name}-${index}`}
-                    type="button"
-                    onClick={() => onDrill(item)}
-                    className={cn(grid, 'w-full items-center py-3 text-left text-sm transition-colors hover:bg-mg-fill-0')}
-                  >
-                    {row}
-                  </button>
-                ) : (
-                  <div key={item.key ?? `${name}-${index}`} className={cn(grid, 'items-center py-3 text-sm')}>
-                    {row}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
         </div>
       )}
     </Card>

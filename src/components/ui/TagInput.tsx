@@ -28,6 +28,10 @@ interface TagInputProps {
   className?: string
   tagVariant?: 'brand' | 'mono'
   disabled?: boolean
+  /** 锁定的 tag：始终以 chip 展示、不可移除（无 × 按钮），如创建空间时的负责人 */
+  lockedValues?: string[]
+  /** 锁定 chip 上展示的小标签文案（如「负责人」）；不传则仅隐藏移除按钮 */
+  lockedBadge?: string
 }
 
 export function TagInput({
@@ -44,7 +48,10 @@ export function TagInput({
   className,
   tagVariant = 'brand',
   disabled = false,
+  lockedValues,
+  lockedBadge,
 }: TagInputProps) {
+  const isLocked = useCallback((v: string) => Boolean(lockedValues?.includes(v)), [lockedValues])
   const optionMode = Array.isArray(options)
   // 选项模式禁用自由文本：只能从候选里选既有 id，避免把随手输入当成 id 提交
   const freeText = allowFreeText && !optionMode
@@ -101,9 +108,9 @@ export function TagInput({
   }, [disabled, value, onChange, validator, onValidationError, splitPattern, hasSuggestions])
 
   const removeTag = useCallback((tag: string) => {
-    if (disabled) return
+    if (disabled || isLocked(tag)) return
     onChange(value.filter((v) => v !== tag))
-  }, [disabled, value, onChange])
+  }, [disabled, isLocked, value, onChange])
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (disabled) return
@@ -117,7 +124,9 @@ export function TagInput({
       return
     }
     if (e.key === 'Backspace' && !input && value.length > 0) {
-      removeTag(value[value.length - 1])
+      // 从末尾往前删第一个可删（非锁定）的 tag，锁定项（如负责人）跳过
+      const lastRemovable = [...value].reverse().find((v) => !isLocked(v))
+      if (lastRemovable) removeTag(lastRemovable)
       return
     }
     if (hasSuggestions) {
@@ -177,19 +186,26 @@ export function TagInput({
         className={`flex flex-wrap items-center gap-1.5 min-h-[var(--mg-control-h-md)] px-[var(--mg-control-px-xs)] py-1.5 rounded-lg border border-mg-border bg-mg-bg-0 transition-colors focus-within:border-brand-base ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-text'}`}
         onClick={() => { if (!disabled) inputRef.current?.focus() }}
       >
-        {value.map((tag) => (
-          <span key={tag} className={`inline-flex items-center gap-1 px-[var(--mg-control-px-xs)] py-0.5 rounded-md mg-compact-badge border ${tagClass}`}>
-            <code className="font-mono">{labelOf(tag)}</code>
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={(e) => { e.stopPropagation(); removeTag(tag) }}
-              className="hover:text-rose-500 transition-colors cursor-pointer"
-            >
-              <LuX size={10} />
-            </button>
-          </span>
-        ))}
+        {value.map((tag) => {
+          const locked = isLocked(tag)
+          return (
+            <span key={tag} className={`inline-flex items-center gap-1 px-[var(--mg-control-px-xs)] py-0.5 rounded-md mg-compact-badge border ${tagClass}`}>
+              <code className="font-mono">{labelOf(tag)}</code>
+              {locked ? (
+                lockedBadge && <span className="shrink-0 whitespace-nowrap font-semibold not-italic opacity-80">{lockedBadge}</span>
+              ) : (
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={(e) => { e.stopPropagation(); removeTag(tag) }}
+                  className="hover:text-rose-500 transition-colors cursor-pointer"
+                >
+                  <LuX size={10} />
+                </button>
+              )}
+            </span>
+          )
+        })}
         <div className="flex-1 min-w-[80px] flex items-center">
           <input
             ref={inputRef}

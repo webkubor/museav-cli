@@ -127,10 +127,13 @@ export default function WorkspacesPage() {
     }))
   }, [tenantMembersQuery.data])
 
-  // 初始成员不重复展示负责人；负责人由单独字段选择并随创建请求一起提交。
-  const memberOptions: TagOption[] = useMemo(() => {
-    return ownerOptions.filter((option) => option.value !== ownerEmail)
-  }, [ownerEmail, ownerOptions])
+  // 初始成员 chip 行含负责人（锁定不可移除）+ 其他成员；候选池用 ownerOptions 全量，
+  // TagInput 内部会把已选（含负责人）从下拉里排除，故不再单独过滤负责人。
+  // 负责人+其他成员合成 chip 行的展示值；负责人排首位并锁定。
+  const memberChipValue = useMemo(
+    () => (ownerEmail ? [ownerEmail, ...selectedMemberEmails.filter((e) => e !== ownerEmail)] : selectedMemberEmails),
+    [ownerEmail, selectedMemberEmails],
+  )
 
   // 工作空间数已达当前租户上限（现有 ['tenants'] query，不重复发请求）
   const atWorkspaceLimit = Boolean(
@@ -616,12 +619,14 @@ export default function WorkspacesPage() {
                 <div className="flex flex-col gap-1.5">
                   <div className="text-xs font-bold text-mg-text-2">初始成员</div>
                   <TagInput
-                    value={selectedMemberEmails}
-                    onChange={setSelectedMemberEmails}
-                    options={memberOptions}
+                    value={memberChipValue}
+                    onChange={(next) => setSelectedMemberEmails(next.filter((email) => email !== ownerEmail))}
+                    options={ownerOptions}
+                    lockedValues={ownerEmail ? [ownerEmail] : undefined}
+                    lockedBadge="负责人"
                     placeholder="搜索企业成员，回车添加"
                   />
-                  <div className="text-xs text-mg-text-3">负责人会自动加入空间；其他成员以普通成员身份加入。</div>
+                  <div className="text-xs text-mg-text-3">负责人已自动加入空间且不可移除；其他成员以普通成员身份加入。</div>
                 </div>
               </div>
             )}

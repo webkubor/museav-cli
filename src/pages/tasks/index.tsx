@@ -46,6 +46,7 @@ import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { Money } from '@/components/ui/Money'
 import { VideoThumbnail } from './VideoThumbnail'
 import { getSnapshotLifecycleEvents } from './lifecycle'
+import { artifactSummary } from './artifact-summary'
 import { VideoPreviewModal } from './VideoPreviewModal'
 
 // ─── 常量 ────────────────────────────────────────────────────────────────────
@@ -344,6 +345,10 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
     resolution: rm?.result_resolution || '—',
     duration: rm?.result_duration_seconds ? `${rm.result_duration_seconds} 秒` : '—',
   }
+  const requestSummary = artifactSummary(data?.request_summary)
+  const artifactTechnicalSummary = [artifactMeta.format, artifactMeta.resolution, artifactMeta.duration]
+    .filter((value) => value !== '—')
+    .join(' · ')
   const lifecycleEvents = getLifecycleEvents(
     task,
     data?.result_meta?.status_timestamps ?? task.result_meta?.status_timestamps,
@@ -490,7 +495,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
                     {artifactMeta.filename === '—' ? '产物文件' : artifactMeta.filename}
                   </strong>
                   <span className="mg-text-caption text-mg-text-3">
-                    {[artifactMeta.format, artifactMeta.resolution, artifactMeta.duration].filter((value) => value !== '—').join(' · ') || '产物信息暂未提供'}
+                    {requestSummary || artifactTechnicalSummary || '产物信息暂未提供'}
                   </span>
                 </div>
                 {expiry && <p className="mg-text-caption text-mg-text-3">产物有效期：{expiry.expired ? '已过期 · 已自动清理' : `${fmtDate(expiry.expiresAt)} · ${expiry.remain}`}</p>}

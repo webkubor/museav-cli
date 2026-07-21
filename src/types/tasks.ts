@@ -23,6 +23,15 @@ export interface TaskResultMeta {
   result_duration_seconds?: number
 }
 
+/** 异步任务输入的脱敏摘要；由后端从提示词提取，非原始请求载荷。 */
+export interface TaskRequestSummary {
+  prompt?: string
+  parameters?: Record<string, string>
+  reference_image_count?: number
+  input_file_count?: number
+  redaction_state?: 'captured' | 'redacted' | 'not_captured'
+}
+
 /** 异步任务列表项（GET /async-tasks） */
 export interface TaskItem {
   gateway_request_id: string
@@ -65,6 +74,7 @@ export interface TaskItem {
 /** 异步任务详情（GET /async-tasks/{requestId}） */
 export interface TaskDetail {
   task: TaskItem
+  request_summary?: TaskRequestSummary
   provider_meta?: Record<string, unknown>
   /** 上游原始响应透传（未类型化），视频任务的产物 URL 一般在其中（如 Ark 的 content.video_url） */
   provider_response?: Record<string, unknown>

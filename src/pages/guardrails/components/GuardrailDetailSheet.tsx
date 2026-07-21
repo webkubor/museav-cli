@@ -409,7 +409,13 @@ export function GuardrailDetailSheet({
     <SideSheet
       open={open}
       onClose={onClose}
-      title={isCreating ? t('guardrails.modal.createTitle') : (detailRow?.name ?? t('guardrails.modal.editTitle'))}
+      title={
+        <span className="flex flex-col gap-0.5">
+          {/* 眉标在标题上方（对齐 PRD 抽屉头：创建=「安全护栏」/编辑=作用域标签） */}
+          <span className="text-[11px] font-normal leading-none text-mg-text-3">{isCreating ? '安全护栏' : scopeLabel}</span>
+          <span>{isCreating ? t('guardrails.modal.createTitle') : (detailRow?.name ?? t('guardrails.modal.editTitle'))}</span>
+        </span>
+      }
       width={600}
     >
       {/* 状态切换 */}
@@ -423,11 +429,6 @@ export function GuardrailDetailSheet({
           />
         </div>
       )}
-
-      {/* 头部小眼标（对齐 PRD 抽屉：创建=「安全护栏」/编辑=作用域标签；无「护栏配置」子栏、无盾牌图标） */}
-      <div className="px-6 pt-3 text-xs text-mg-text-3">
-        {isCreating ? '安全护栏' : scopeLabel}
-      </div>
 
       <div className="p-6 overflow-y-auto flex-1">
         {/* ── 详情加载失败：只渲染错误说明 ── */}

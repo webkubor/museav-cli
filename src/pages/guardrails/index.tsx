@@ -567,6 +567,12 @@ export default function GuardrailsPage() {
 
   function handleSubmit() {
     if (!name.trim()) { appToast.error(t('guardrails.toast.nameRequired')); return }
+    // 需求方#498：创建个人/Key 护栏必须绑定至少一个对象，否则后端返 40001。
+    // 提交前预校验拦截并给友好提示，不把后端原始错误弹给用户。（编辑态绑定在作用范围 Tab 单独管理，此处只管创建）
+    if (isCreating) {
+      if (scope === 'member' && memberIds.length === 0) { appToast.error('请至少绑定一个成员'); return }
+      if (scope === 'key' && apiKeyIds.length === 0) { appToast.error('请至少绑定一个 API Key'); return }
+    }
     // 提额必须设置到期时间（文档§校验规则：提额护栏没有到期时间时不能保存）
     if (kind === 'boost') {
       if (!boostExpiresAt || !localInputToIso(boostExpiresAt)) {

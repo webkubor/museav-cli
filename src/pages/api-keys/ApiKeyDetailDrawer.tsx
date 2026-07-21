@@ -1,6 +1,6 @@
 /**
  * API Key 详情抽屉（PRD v1.0.3）
- * 段落：基础信息 / 用量与限额 / 安全护栏 / 最近调用 / 操作审计
+ * 段落：基础信息 / 用量 / 安全护栏 / 最近调用 / 操作审计
  * 抽屉头治理动作：轮转(gate) · 停用/启用 · 删除（变更负责人在治理批次接入）。
  * 详情/审计接口（#383/#384）未交付时以列表项兜底 + 空态降级，不阻塞、不报错。
  */
@@ -244,8 +244,10 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
           </div>
         </Section>
 
-        {/* 用量与限额（原型 api-key-usage-grid 三格；限额调整走「编辑」弹窗，原型无内联入口，需求方#84 ②） */}
-        <Section title="用量与限额">
+        {/* 用量（原型 api-key-usage-grid 三格：本期消费/请求数/Tokens）。
+            Key 级消费限额已按需求方定案移除（限额统一走安全护栏预算，见下方「安全护栏」预算闸门），
+            故此段不再含「限额」与「调整限额」入口（需求方#122 / #84 ④作废）。 */}
+        <Section title="用量">
           <div className="grid grid-cols-3 gap-2.5">
             <Cell label="本期消费" value={money(usage?.period_spend ?? periodSpendOf(view))} />
             <Cell label="请求数" value={usage?.request_count != null ? usage.request_count.toLocaleString() : '—'} />

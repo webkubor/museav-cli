@@ -1230,7 +1230,7 @@
       "rankDesc": "Sorted by spend",
       "memberTitle": "Member Distribution",
       "apiKeyTitle": "API Key Distribution",
-      "bySpend": "By spend",
+      "bySpend": "By spend · Desc",
       "total": "Total spend",
       "other": "Other"
     },

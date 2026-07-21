@@ -1229,7 +1229,7 @@
       "rankDesc": "按消费金额降序",
       "memberTitle": "成员分布",
       "apiKeyTitle": "API Key 分布",
-      "bySpend": "按费用",
+      "bySpend": "按费用 · 降序",
       "total": "总消费",
       "other": "其他"
     },

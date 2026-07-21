@@ -275,11 +275,10 @@ export function CostSourcePanel({
   )
 }
 
-/** 通用消费分布卡（Top5 + 「其他」聚合 + 总消费），模型/成员/API Key 三维共用。 */
+/** 通用消费分布卡（Top5 + 「其他」聚合），模型/成员/API Key 三维共用。 */
 export function DistributionPanel({
   title,
   items,
-  totalSpendAmount,
   currencySymbol,
   isLoading,
   isError,
@@ -296,19 +295,13 @@ export function DistributionPanel({
   const rest = items.slice(DIST_TOP_N)
   const otherSpend = rest.reduce((sum, it) => sum + spendAmount(it), 0)
   const otherShare = rest.reduce((sum, it) => sum + rankingSharePercent(it), 0)
-  const totalAmount = totalSpendAmount != null ? parseFloat(totalSpendAmount) || 0 : items.reduce((s, it) => s + spendAmount(it), 0)
 
   return (
     <Card className="min-w-0 p-5 sm:p-6">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
         <div className="text-sm font-semibold text-mg-text-1">{title}</div>
         <div className="flex items-center gap-2">
-          {items.length > 0 && (
-            <span className="text-[12px] text-mg-text-3">
-              {t('usage.distribution.total')}
-              <span className="ml-1 font-semibold tabular-nums text-mg-text-1">{formatMoney(String(totalAmount), currencySymbol)}</span>
-            </span>
-          )}
+          {/* 用量明细卡不展示总费用，仅保留排序标签「按费用 · 降序」（需求方#179） */}
           <span className="rounded-lg border border-mg-border bg-mg-fill-0 px-2.5 py-1 text-[12px] text-mg-text-3">
             {t('usage.distribution.bySpend')}
           </span>

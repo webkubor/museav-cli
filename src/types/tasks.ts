@@ -3,6 +3,26 @@ export type TaskKind = 'video' | 'image' | 'audio'
 export type TaskBillingState = 'settled' | 'pending' | 'unbilled' | 'partial'
 export type TaskArtifactState = 'generating' | 'available' | 'expired' | 'failed'
 
+/** 异步任务在 ModelGo / 上游各状态首次出现的时间。 */
+export interface TaskStatusTimestamps {
+  submitted?: string
+  queued?: string
+  running?: string
+  succeeded?: string
+  failed?: string
+}
+
+export interface TaskResultMeta {
+  result_expires_at?: string
+  result_ttl_seconds?: number
+  status_timestamps?: TaskStatusTimestamps
+  // TODO(#446): 产物文件名/格式/分辨率/时长 后端未交付，字段可选、缺省展示占位「—」
+  result_filename?: string
+  result_format?: string
+  result_resolution?: string
+  result_duration_seconds?: number
+}
+
 /** 异步任务列表项（GET /async-tasks） */
 export interface TaskItem {
   gateway_request_id: string
@@ -39,15 +59,7 @@ export interface TaskItem {
   prompt?: string
   from_image?: boolean
   /** 产物有效期信息（后端填充后才有值） */
-  result_meta?: {
-    result_expires_at?: string
-    result_ttl_seconds?: number
-    // TODO(#446): 产物文件名/格式/分辨率/时长 后端未交付，字段可选、缺省展示占位「—」
-    result_filename?: string
-    result_format?: string
-    result_resolution?: string
-    result_duration_seconds?: number
-  }
+  result_meta?: TaskResultMeta
 }
 
 /** 异步任务详情（GET /async-tasks/{requestId}） */
@@ -58,15 +70,7 @@ export interface TaskDetail {
   provider_response?: Record<string, unknown>
   call_log_snapshot?: Record<string, unknown>
   /** 产物有效期信息（详情接口独立返回，可能与 task.result_meta 不同步） */
-  result_meta?: {
-    result_expires_at?: string
-    result_ttl_seconds?: number
-    // TODO(#446): 产物文件名/格式/分辨率/时长 后端未交付，字段可选、缺省展示占位「—」
-    result_filename?: string
-    result_format?: string
-    result_resolution?: string
-    result_duration_seconds?: number
-  }
+  result_meta?: TaskResultMeta
 }
 
 /** 任务列表查询参数 */

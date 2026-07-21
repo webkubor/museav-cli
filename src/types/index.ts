@@ -161,6 +161,8 @@ export type {
   TaskKind,
   TaskBillingState,
   TaskArtifactState,
+  TaskStatusTimestamps,
+  TaskResultMeta,
   TaskItem,
   TaskDetail,
   TaskListParams,

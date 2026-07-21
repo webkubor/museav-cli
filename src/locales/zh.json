@@ -173,7 +173,7 @@
     },
     "createModal": {
       "title": "创建 API Key",
-      "nameLabel": "密钥名称",
+      "nameLabel": "Key 名称",
       "namePlaceholder": "如：生产测试 Key",
       "nameRequired": "密钥名称不能为空",
       "envLabel": "调用环境",

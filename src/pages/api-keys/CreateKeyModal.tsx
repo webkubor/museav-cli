@@ -375,9 +375,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
 
           {/* 过期时间（PRD 原型：创建生命周期字段，Member 不可选择永不过期） */}
           <div>
-            <label className="block text-xs font-bold text-mg-text-2 mb-2">
-              过期时间 <span className="text-mg-text-3 font-normal">{mustSetExpiry ? '（必填，不可永不过期）' : '（可选，不填则永不过期）'}</span>
-            </label>
+            <label className="block text-xs font-bold text-mg-text-2 mb-2">过期时间</label>
             <DateRangePicker
               value={expiryRange}
               onChange={setExpiryRange}

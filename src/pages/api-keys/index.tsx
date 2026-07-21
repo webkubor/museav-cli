@@ -31,7 +31,6 @@ import {
   getApiKeySummary,
   rotateApiKey,
 } from '@/services/api-keys'
-import { listWorkspaceMembers } from '@/services/workspaces'
 import { WorkspaceTitleTag } from '@/components/layout/WorkspaceTitleTag'
 import { useCopy } from '@/hooks/use-copy'
 import { getRequestErrorMessage, isApiErrorCode, errorCodeOf } from '@/lib/request-error-message'
@@ -48,7 +47,6 @@ import { ApiKeyProtocolBanner } from './ApiKeyProtocolBanner'
 import { ConnectModal } from './ConnectModal'
 import { CreateKeyModal } from './CreateKeyModal'
 import { ApiKeyTable } from './ApiKeyTable'
-import { EditKeyModal } from './EditKeyModal'
 import { ApiKeySummaryCards } from './ApiKeySummaryCards'
 import { ApiKeyDetailDrawer } from './ApiKeyDetailDrawer'
 import { deriveKeyType, responsibleOf, isExpiringSoon, KEY_ACTION_PERMS, type ApiKeyAction } from './derive'
@@ -77,10 +75,7 @@ export default function ApiKeysPage() {
   const [createdAt, setCreatedAt] = useState(0)
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null)
   const [disableTarget, setDisableTarget] = useState<ApiKeyItem | null>(null)
-  const [editGuardrailKey, setEditGuardrailKey] = useState<ApiKeyItem | null>(null)
   const [detailKey, setDetailKey] = useState<ApiKeyItem | null>(null)
-  const [changeOwnerTarget, setChangeOwnerTarget] = useState<ApiKeyItem | null>(null)
-  const [newOwnerId, setNewOwnerId] = useState('')
   // 轮转成功后一次性明文（旧 Token 过渡期仍可用）——复用「一次性展示」承接，避免密钥丢失
   const [rotatedKey, setRotatedKey] = useState<{ name: string; key: string } | null>(null)
 
@@ -240,20 +235,15 @@ export default function ApiKeysPage() {
     }
   }, [enableMutation])
 
-  // 变更负责人（change-owner 端点已就绪）
-  const membersQuery = useQuery({
-    queryKey: ['workspace-members', workspaceId],
-    queryFn: () => listWorkspaceMembers(workspaceId, { page_size: 100 }),
-    enabled: !!workspaceId && !!changeOwnerTarget,
-    staleTime: 60_000,
-  })
+  // 变更负责人（PRD：详情「基础信息」内联下拉，选中即变更；change-owner 端点已就绪）
   const changeOwnerMutation = useMutation({
-    mutationFn: () => changeApiKeyOwner(workspaceId, changeOwnerTarget!.api_key_id, { new_owner_account_id: newOwnerId }),
-    onSuccess: () => {
+    mutationFn: ({ item, newOwnerId }: { item: ApiKeyItem; newOwnerId: string }) =>
+      changeApiKeyOwner(workspaceId, item.api_key_id, { new_owner_account_id: newOwnerId }),
+    onSuccess: (_res, { item }) => {
       appToast.success('负责人已变更')
-      setChangeOwnerTarget(null)
-      setNewOwnerId('')
       queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
+      // 抽屉内联下拉即时回填最新负责人（#185 同口径）
+      queryClient.invalidateQueries({ queryKey: ['api-key-detail', workspaceId, item.api_key_id] })
       trackEvent('api_keys:change_owner', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
     onError: (err: unknown) => {
@@ -499,8 +489,7 @@ export default function ApiKeysPage() {
         rowScope={rowScope}
         onToggleStatus={handleToggleStatus}
         onRotate={(item) => rotateMutation.mutate(item)}
-        onChangeOwner={(item) => { setNewOwnerId(''); setChangeOwnerTarget(item) }}
-        onEdit={setEditGuardrailKey}
+        onChangeOwner={(item, newOwnerId) => changeOwnerMutation.mutate({ item, newOwnerId })}
         onRevoke={setRevokeTarget}
       />
 
@@ -602,45 +591,6 @@ export default function ApiKeysPage() {
         )}
       </Modal>
 
-      {/* 变更负责人 */}
-      <Modal
-        open={!!changeOwnerTarget}
-        onClose={() => setChangeOwnerTarget(null)}
-        title="变更负责人"
-        description={changeOwnerTarget ? `为「${changeOwnerTarget.name}」指定新的负责人` : undefined}
-        size="sm"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setChangeOwnerTarget(null)}>{t('apiKeys.createModal.cancel')}</Button>
-            <Button
-              variant="brand"
-              loading={changeOwnerMutation.isPending}
-              disabled={!newOwnerId}
-              onClick={() => changeOwnerMutation.mutate()}
-            >
-              确认变更
-            </Button>
-          </>
-        }
-      >
-        <div className="py-2">
-          <label className="block text-xs font-bold text-mg-text-2 mb-2">新负责人</label>
-          <Select value={newOwnerId} onChange={setNewOwnerId} placeholder="请选择工作区成员" className="w-full">
-            {(membersQuery.data?.items ?? []).map((m) => (
-              <SelectItem key={m.account.account_id} value={m.account.account_id}>
-                {m.account.display_name || m.account.email}
-              </SelectItem>
-            ))}
-          </Select>
-        </div>
-      </Modal>
-
-      <EditKeyModal
-        open={!!editGuardrailKey}
-        onClose={() => setEditGuardrailKey(null)}
-        workspaceId={workspaceId}
-        apiKey={editGuardrailKey}
-      />
     </div>
   )
 }

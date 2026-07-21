@@ -65,7 +65,6 @@ function SegGroup<T extends string>({
 export function GuardrailFormFields({
   name, onNameChange,
   description, onDescriptionChange,
-  priority, onPriorityChange,
   // 分类（全局/个人/Key）+ 类型（常规/提额）显式选择，替代旧 isDefault 反推
   scope, onScopeChange,
   kind, onKindChange,
@@ -86,7 +85,6 @@ export function GuardrailFormFields({
 }: {
   name: string; onNameChange: (v: string) => void
   description: string; onDescriptionChange: (v: string) => void
-  priority: number; onPriorityChange: (v: number) => void
   /** 护栏分类：显式选择，创建后不可改（编辑锁定） */
   scope: GuardrailScope; onScopeChange: (v: GuardrailScope) => void
   /** 护栏类型：常规 / 提额；全局护栏恒常规、无此选择器 */
@@ -114,7 +112,7 @@ export function GuardrailFormFields({
   memberIds: string[]; onMemberIdsChange: (v: string[]) => void; memberOptions: { id: string; name: string }[]
   canEditInfo: boolean
   canEditAssignment: boolean
-  /** 创建态：对齐原型隐藏「优先级/描述」，仅编辑态展示 */
+  /** 创建态：对齐原型隐藏「描述」，仅编辑态展示 */
   isCreating?: boolean
   /** 创建态插槽：绑定对象 + 预算，插在分类/类型之后、规则(模型/IP/注入)之前（对齐原型顺序） */
   budgetSlot?: ReactNode
@@ -141,29 +139,16 @@ export function GuardrailFormFields({
   }
   return (
     <div className="flex flex-col gap-5 py-2">
-      {/* 名称（对齐原型：创建态名称独占一行、无优先级/描述；编辑态保留优先级/描述） */}
-      {isCreating ? (
+      {/* 名称（对齐原型：创建/编辑均名称独占一行、无优先级；编辑态额外保留描述） */}
+      <div>
+        <label className="block text-xs font-bold text-mg-text-2 mb-2">{isCreating ? '护栏名称' : t('guardrails.form.nameLabel')}<span className="text-mg-danger ml-1">*</span></label>
+        <Input value={name} data-track="guardrails:field_name" disabled={!canEditInfo} onChange={(e) => onNameChange(e.target.value)} placeholder={t('guardrails.form.namePlaceholder')} />
+      </div>
+      {!isCreating && (
         <div>
-          <label className="block text-xs font-bold text-mg-text-2 mb-2">护栏名称<span className="text-mg-danger ml-1">*</span></label>
-          <Input value={name} data-track="guardrails:field_name" disabled={!canEditInfo} onChange={(e) => onNameChange(e.target.value)} placeholder={t('guardrails.form.namePlaceholder')} />
+          <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.descLabel')}</label>
+          <Input value={description} disabled={!canEditInfo} onChange={(e) => onDescriptionChange(e.target.value)} placeholder={t('guardrails.form.descPlaceholder')} />
         </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.nameLabel')}<span className="text-mg-danger ml-1">*</span></label>
-              <Input value={name} data-track="guardrails:field_name" disabled={!canEditInfo} onChange={(e) => onNameChange(e.target.value)} placeholder={t('guardrails.form.namePlaceholder')} />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.priorityLabel')}</label>
-              <Input type="number" value={priority} disabled={!canEditInfo} onChange={(e) => onPriorityChange(Number(e.target.value))} placeholder={t('guardrails.form.priorityPlaceholder')} />
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.descLabel')}</label>
-            <Input value={description} disabled={!canEditInfo} onChange={(e) => onDescriptionChange(e.target.value)} placeholder={t('guardrails.form.descPlaceholder')} />
-          </div>
-        </>
       )}
       {/* 分类 + 类型 — 分段按钮显式选择（对齐原型）。全局护栏恒常规、无类型选择器；编辑态锁定。 */}
       <div>

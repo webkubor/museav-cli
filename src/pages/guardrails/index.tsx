@@ -848,7 +848,6 @@ export default function GuardrailsPage() {
         onToggleStatus={handleToggle}
         name={name} onNameChange={setName}
         description={description} onDescriptionChange={setDescription}
-        priority={priority} onPriorityChange={setPriority}
         scope={scope} onScopeChange={handleScopeChange}
         kind={kind} onKindChange={setKind}
         lockScopeKind={!isCreating} showMemberScope={showMember}

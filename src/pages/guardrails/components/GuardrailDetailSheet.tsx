@@ -120,7 +120,6 @@ export function GuardrailDetailSheet({
   // 基本信息表单
   name, onNameChange,
   description, onDescriptionChange,
-  priority, onPriorityChange,
   scope, onScopeChange,
   kind, onKindChange,
   lockScopeKind, showMemberScope,
@@ -152,7 +151,6 @@ export function GuardrailDetailSheet({
   onToggleStatus: (args: { id: string; status: 'active' | 'inactive' }) => void
   name: string; onNameChange: (v: string) => void
   description: string; onDescriptionChange: (v: string) => void
-  priority: number; onPriorityChange: (v: number) => void
   scope: GuardrailScope; onScopeChange: (v: GuardrailScope) => void
   kind: GuardrailKind; onKindChange: (v: GuardrailKind) => void
   lockScopeKind: boolean; showMemberScope: boolean
@@ -231,7 +229,6 @@ export function GuardrailDetailSheet({
             <GuardrailFormFields
               name={name} onNameChange={onNameChange}
               description={description} onDescriptionChange={onDescriptionChange}
-              priority={priority} onPriorityChange={onPriorityChange}
               scope={scope} onScopeChange={onScopeChange}
               kind={kind} onKindChange={onKindChange}
               lockScopeKind={lockScopeKind} showMemberScope={showMemberScope}

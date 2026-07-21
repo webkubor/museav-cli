@@ -27,6 +27,7 @@ const Card = React.forwardRef<
           : "hover:bg-mg-bg-3 hover:shadow-[var(--shadow-lg)] hover:border-brand-base/30 active:scale-[0.98]"
       ),
       glass && "glass-card-glow",
+      glass && hoverable && "glass-card-glow-interactive",
       className
     )}
     {...props}

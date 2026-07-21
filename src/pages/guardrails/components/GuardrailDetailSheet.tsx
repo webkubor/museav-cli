@@ -416,7 +416,6 @@ export function GuardrailDetailSheet({
           <span>{isCreating ? t('guardrails.modal.createTitle') : (detailRow?.name ?? t('guardrails.modal.editTitle'))}</span>
         </span>
       }
-      width={600}
     >
       {/* 状态切换 */}
       {!isCreating && detail && (

@@ -163,7 +163,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
     retry: false,
   })
 
-  if (!item) return <SideSheet open={open} onClose={onClose} ariaTitle="API Key 详情" width={520} />
+  if (!item) return <SideSheet open={open} onClose={onClose} ariaTitle="API Key 详情" />
 
   const view = detail ?? item
   const keyType = deriveKeyType(view)
@@ -179,7 +179,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
   const canDelete = cap(view.capabilities?.can_delete, canAction(keyType, 'revoke')) && view.status !== 'revoked'
 
   return (
-    <SideSheet open={open} onClose={onClose} title={item.name} width={520}>
+    <SideSheet open={open} onClose={onClose} title={item.name}>
       {/* 头部与标题间距由 SheetContent 的 gap-4 统一给出，勿再加 mt-* 造成双倍留白（需求方#182） */}
       <div className="space-y-6 pb-8">
         {/* 治理动作 */}

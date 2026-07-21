@@ -414,7 +414,7 @@ describe('GuardrailsPage — 全局护栏三档预算', () => {
     expect(gid).toBe(GUARDRAIL_ID)
     expect(policyId).toBe('bp-total')
     expect(body.spend_limit_amount).toBe('2000')
-    expect(Object.keys(body)).toEqual(['spend_limit_amount']) // 周期没动就不发
+    expect(Object.keys(body)).toEqual(['aggregation_scope', 'period_length', 'spend_limit_amount']) // PATCH 补齐策略身份与周期长度
     // 未改动的 per_api_key 档不产生任何调用
     expect(addBudgetPolicy).not.toHaveBeenCalled()
     expect(deleteBudgetPolicy).not.toHaveBeenCalled()

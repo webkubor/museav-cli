@@ -726,11 +726,20 @@ export default function GuardrailsPage() {
           }
         }
         if (existing) {
-          // 原地改：只发真正变更的字段（金额/周期），避免计费窗口无谓重锚
-          const body: UpdateBudgetPolicyRequest = {}
-          if (amount !== trimAmountScale(existing.spend_limit_amount)) body.spend_limit_amount = amount
-          if (draft.period !== existing.period_unit) body.period_unit = draft.period
-          if (Object.keys(body).length > 0) ops.push({ type: 'update', policyId: existing.id, body })
+          // 全局默认预算更新时补齐策略身份与周期长度。部分后端版本虽将这些
+          // 字段标为可选，但 PATCH 解码后会以零值参与校验，导致只提交金额时报错。
+          // 透传当前值不会改变策略语义，也避免默认预算保存失败。
+          const amountChanged = amount !== trimAmountScale(existing.spend_limit_amount)
+          const periodChanged = draft.period !== existing.period_unit
+          if (amountChanged || periodChanged) {
+            const body: UpdateBudgetPolicyRequest = {
+              aggregation_scope: existing.aggregation_scope,
+              period_length: existing.period_length,
+            }
+            if (amountChanged) body.spend_limit_amount = amount
+            if (periodChanged) body.period_unit = draft.period
+            ops.push({ type: 'update', policyId: existing.id, body })
+          }
         } else {
           ops.push({
             type: 'add',

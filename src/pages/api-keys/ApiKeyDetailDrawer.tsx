@@ -166,7 +166,8 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
 
   return (
     <SideSheet open={open} onClose={onClose} title={item.name} width={520}>
-      <div className="mt-4 space-y-6 pb-8">
+      {/* 头部与标题间距由 SheetContent 的 gap-4 统一给出，勿再加 mt-* 造成双倍留白（需求方#182） */}
+      <div className="space-y-6 pb-8">
         {/* 治理动作 */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-xs text-mg-text-3">{view.masked}</span>

@@ -41,7 +41,7 @@ import { formatDateTime } from '@/lib/format-date'
 import { trackEvent } from '@/lib/track'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { cn } from '@/lib/utils'
-import type { TaskItem, TaskDetail, TaskKind } from '@/types'
+import type { TaskArtifactState, TaskBillingState, TaskItem, TaskDetail, TaskKind } from '@/types'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { Money } from '@/components/ui/Money'
 import { VideoThumbnail } from './VideoThumbnail'
@@ -53,8 +53,8 @@ const PAGE_SIZE = 20
 const REFRESH_INTERVAL = 10 // 列表可见倒计时刷新间隔（秒）
 const EMPTY_TASK_ITEMS: TaskItem[] = []
 
-// 状态词以 PRD 为准：running→「生成中」；去 cancelled（异步任务不支持取消）。
-// 「已过期」不是后端状态，是产物 result_meta 过期派生的客户端筛选态（见 EXPIRED_FILTER）。
+// 状态词以 PRD 与接口新契约为准：queued→「排队中」、running→「生成中」。
+// 已过期属于 artifact_state，不再混入 status；旧字段仅保留兼容回退。
 const STATUS_CONFIG: Record<string, { label: string; variant: BadgeVariant; dot: boolean }> = {
   queued:    { label: '排队中', variant: 'secondary', dot: true },
   running:   { label: '生成中', variant: 'info',      dot: true },
@@ -64,7 +64,12 @@ const STATUS_CONFIG: Record<string, { label: string; variant: BadgeVariant; dot:
 }
 
 // 「已过期」为客户端派生筛选值（非后端 status），不下发后端、改走本地过滤
-const EXPIRED_FILTER = 'expired'
+const ARTIFACT_STATE_OPTIONS: Array<{ label: string; value: TaskArtifactState }> = [
+  { label: '生成中', value: 'generating' },
+  { label: '可下载', value: 'available' },
+  { label: '已过期', value: 'expired' },
+  { label: '生成失败', value: 'failed' },
+]
 
 const KIND_CONFIG: Record<TaskKind, { label: string; icon: React.ReactNode }> = {
   video: { label: '视频生成', icon: <LuClapperboard size={13} /> },
@@ -217,12 +222,23 @@ function SummaryCard({ icon, label, value, hint, tone = 'brand' }: {
   )
 }
 
-/** 产物状态派生：可下载 / 生成中 / 生成失败 / 已过期 / —（对齐 PRD 异步任务详情）。 */
+/** 读取后端产物状态；旧环境缺字段时才回退到本地兼容推导。 */
+function getArtifactState(task: TaskItem, expired: boolean): TaskArtifactState | null {
+  if (task.artifact_state) return task.artifact_state
+  if (task.status === 'queued' || task.status === 'running') return 'generating'
+  if (task.status === 'failed') return 'failed'
+  if (expired) return 'expired'
+  if (isTaskDone(task.status)) return 'available'
+  return null
+}
+
+/** 产物状态展示：优先使用接口 artifact_state，兼容旧接口的派生结果。 */
 function artifactStatus(task: TaskItem, expired: boolean): { label: string; tone: SummaryTone } {
-  if (task.status === 'queued' || task.status === 'running') return { label: '生成中', tone: 'brand' }
-  if (task.status === 'failed') return { label: '生成失败', tone: 'danger' }
-  if (expired) return { label: '已过期', tone: 'warning' }
-  if (isTaskDone(task.status)) return { label: '可下载', tone: 'success' }
+  const state = getArtifactState(task, expired)
+  if (state === 'generating') return { label: '生成中', tone: 'brand' }
+  if (state === 'failed') return { label: '生成失败', tone: 'danger' }
+  if (state === 'expired') return { label: '已过期', tone: 'warning' }
+  if (state === 'available') return { label: '可下载', tone: 'success' }
   return { label: '—', tone: 'brand' }
 }
 
@@ -301,9 +317,10 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
   const kind = resolveKind(task)
   const kindCfg = KIND_CONFIG[kind]
   const expired = isVideoExpired(task) || isVideoExpired(data)
+  const artifactState = getArtifactState(task, expired)
   // 产物有效期：详情接口优先（result_meta 可能比列表项新），回落到列表项
   const expiry = resultExpiry(data) ?? resultExpiry(task)
-  const isVideoTask = kind === 'video' && isTaskDone(task.status)
+  const isVideoTask = kind === 'video' && isTaskDone(task.status) && artifactState === 'available'
   // 无 result_meta 字段（空）= 按已过期算（与列表一致）
   const noMeta = isVideoTask && !data?.result_meta?.result_expires_at && !task.result_meta?.result_expires_at
   // 视频产物：成功态直接用网关 content 端点（凭 gateway_request_id，302 转 OSS）；过期/无字段则不展示
@@ -331,8 +348,9 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
             const statusLabel = STATUS_CONFIG[task.status]?.label ?? task.status
             const statusTone: SummaryTone = isTaskDone(task.status) ? 'success' : task.status === 'failed' ? 'danger' : 'brand'
             const art = artifactStatus(task, expired)
-            const billing = task.billing_status
-              ? (({ settled: '已结算', pending: '待结算', partial: '部分计费', unbilled: '未计费', none: '未计费' } as Record<string, string>)[task.billing_status] ?? task.billing_status)
+            const billingState = task.billing_state ?? task.billing_status
+            const billing = billingState
+              ? (({ settled: '已结算', pending: '待结算', partial: '部分计费', unbilled: '未计费', none: '未计费', billed: '已结算' } as Record<string, string>)[billingState] ?? billingState)
               : '—'
             const costPending = task.status === 'queued' || task.status === 'running'
             return (
@@ -493,7 +511,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
           </div>
 
           {/* 产物已过期 / 已被清理 */}
-          {gone && kind === 'video' && isTaskDone(task.status) && (
+          {gone && kind === 'video' && isTaskDone(task.status) && artifactState === 'expired' && (
             <div className="rounded-md border border-mg-border bg-mg-bg-0 mg-panel-relaxed flex flex-col items-center gap-2 text-mg-text-4">
               <LuVideoOff size={32} />
               <p className="mg-text-body font-semibold">产物已过期</p>
@@ -502,7 +520,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
           )}
 
           {/* 失败原因 */}
-          {task.status === 'failed' && task.error_message && (
+          {artifactState === 'failed' && task.error_message && (
             <div className="rounded-md border border-[var(--mg-danger)]/20 bg-[var(--mg-danger)]/5 mg-panel">
               <p className="mg-text-label text-[var(--mg-danger)] mb-1.5">失败原因</p>
               <p className="mg-text-caption text-mg-text-2">{task.error_message}</p>
@@ -533,6 +551,8 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
   const [search, setSearch]         = useState(initialTaskId ?? '')
   const debouncedSearch             = useDebouncedValue(search.trim(), 350)
   const [statusFilter, setStatus]   = useState('all')
+  const [artifactFilter, setArtifact] = useState<TaskArtifactState | 'all'>('all')
+  const [billingFilter, setBilling] = useState<TaskBillingState | 'all'>('all')
   const [kindFilter, setKind]       = useState('all')
   const [presetFilter, setPreset]   = useState('7d') // 默认近 7 天（对齐 PRD，去 all）
   const [workspaceFilter, setWorkspace] = useState('all')
@@ -570,13 +590,14 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
     account_id: view === 'mine' ? currentAccountId || undefined : memberFilter === 'all' ? undefined : memberFilter,
     workspace_id: workspaceFilter === 'all' ? undefined : workspaceFilter,
     api_key_id: apiKeyFilter === 'all' ? undefined : apiKeyFilter,
-    // 「已过期」是客户端派生筛选，不下发后端；其余为后端真实 status
-    status: statusFilter !== 'all' && statusFilter !== EXPIRED_FILTER ? statusFilter : undefined,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    artifact_state: artifactFilter !== 'all' ? artifactFilter : undefined,
+    billing_state: billingFilter !== 'all' ? billingFilter : undefined,
     preset: presetFilter !== 'all' ? (presetFilter as '1h' | '24h' | '7d') : undefined,
     search: debouncedSearch || undefined,
     limit: PAGE_SIZE,
     offset,
-  }), [statusFilter, presetFilter, debouncedSearch, offset, view, currentAccountId, workspaceFilter, apiKeyFilter, memberFilter])
+  }), [statusFilter, artifactFilter, billingFilter, presetFilter, debouncedSearch, offset, view, currentAccountId, workspaceFilter, apiKeyFilter, memberFilter])
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['tasks', tenantId, params],
@@ -618,6 +639,8 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
 
   const handleSearch = (v: string) => { setSearch(v); setOffset(0); if (v.trim()) trackEvent('logs_search', { record_type: 'async' }) }
   const handleStatus = (v: string) => { setStatus(v); setOffset(0); trackEvent('logs_filter_change', { record_type: 'async', filter: 'status', value: v }) }
+  const handleArtifact = (v: string) => { setArtifact(v as TaskArtifactState | 'all'); setOffset(0); trackEvent('logs_filter_change', { record_type: 'async', filter: 'artifact_state', value: v }) }
+  const handleBilling = (v: string) => { setBilling(v as TaskBillingState | 'all'); setOffset(0); trackEvent('logs_filter_change', { record_type: 'async', filter: 'billing_state', value: v }) }
   const handleKind   = (v: string) => { setKind(v);   setOffset(0); trackEvent('logs_filter_change', { record_type: 'async', filter: 'kind', value: v }) }
   const handlePreset = (v: string) => { setPreset(v); setOffset(0); trackEvent('logs_filter_change', { record_type: 'async', filter: 'preset', value: v }) }
   const handleWorkspace = (v: string) => { setWorkspace(v); setApiKey('all'); setOffset(0); trackEvent('logs_filter_change', { record_type: 'async', filter: 'workspace' }) }
@@ -625,11 +648,11 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
   const handleMember = (v: string) => { setMember(v); setOffset(0); trackEvent('logs_filter_change', { record_type: 'async', filter: 'member' }) }
 
   const hasActiveFilters =
-    !!search.trim() || statusFilter !== 'all' || kindFilter !== 'all' ||
+    !!search.trim() || statusFilter !== 'all' || artifactFilter !== 'all' || billingFilter !== 'all' || kindFilter !== 'all' ||
     presetFilter !== '7d' || workspaceFilter !== 'all' || apiKeyFilter !== 'all' || memberFilter !== 'all'
 
   function clearFilters() {
-    setSearch(''); setStatus('all'); setKind('all'); setPreset('7d')
+    setSearch(''); setStatus('all'); setArtifact('all'); setBilling('all'); setKind('all'); setPreset('7d')
     setWorkspace('all'); setApiKey('all'); setMember('all'); setOffset(0)
   }
 
@@ -640,15 +663,14 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
 
   const filteredItems = useMemo(() => {
     let list = kindFilter === 'all' ? items : items.filter((t) => resolveKind(t) === kindFilter)
-    // 「已过期」为客户端派生态：仅保留已过期的视频产物任务
-    if (statusFilter === EXPIRED_FILTER) {
-      list = list.filter((t) => {
-        const done = isTaskDone(t.status) && resolveKind(t) === 'video'
-        return done && (isVideoExpired(t) || !t.result_meta?.result_expires_at || expiredIds.has(t.gateway_request_id))
-      })
+    if (artifactFilter !== 'all') {
+      list = list.filter((task) => getArtifactState(task, isVideoExpired(task) || expiredIds.has(task.gateway_request_id)) === artifactFilter)
+    }
+    if (billingFilter !== 'all') {
+      list = list.filter((task) => (task.billing_state ?? task.billing_status) === billingFilter)
     }
     return list
-  }, [items, kindFilter, statusFilter, expiredIds])
+  }, [items, kindFilter, artifactFilter, billingFilter, expiredIds])
 
   // ?task_id= 下钻（#14）：数据到位后按 gateway_request_id 精确匹配自动展开任务详情，一次性
   const taskAutoOpenedRef = useRef(false)
@@ -696,9 +718,8 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
           <Select.Option value="all">全部状态</Select.Option>
           <Select.Option value="queued">排队中</Select.Option>
           <Select.Option value="running">生成中</Select.Option>
-          <Select.Option value="completed">已完成</Select.Option>
+          <Select.Option value="succeeded">已完成</Select.Option>
           <Select.Option value="failed">失败</Select.Option>
-          <Select.Option value={EXPIRED_FILTER}>已过期</Select.Option>
         </Select>
 
         <Button
@@ -716,10 +737,26 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
         )}
       </div>
 
-      {/* 更多筛选：工作空间 / API Key / 成员（API Key 归属具体空间，跟随工作空间筛选）
-          TODO(#446): 产物状态 / 计费状态筛选依赖后端 #446 交付后补入 */}
+      {/* 更多筛选：工作空间 / API Key / 成员 / 产物状态 / 计费状态 */}
       {showMoreFilters && (
         <div className="flex items-end gap-3 flex-wrap border-t border-mg-border pt-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="mg-text-label text-mg-text-3">产物状态</span>
+            <Select value={artifactFilter} onChange={handleArtifact} className="mg-control-md w-32 mg-text-body">
+              <Select.Option value="all">全部产物状态</Select.Option>
+              {ARTIFACT_STATE_OPTIONS.map((option) => <Select.Option key={option.value} value={option.value}>{option.label}</Select.Option>)}
+            </Select>
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="mg-text-label text-mg-text-3">计费状态</span>
+            <Select value={billingFilter} onChange={handleBilling} className="mg-control-md w-32 mg-text-body">
+              <Select.Option value="all">全部计费状态</Select.Option>
+              <Select.Option value="settled">已结算</Select.Option>
+              <Select.Option value="pending">待结算</Select.Option>
+              <Select.Option value="unbilled">未计费</Select.Option>
+              <Select.Option value="partial">部分计费</Select.Option>
+            </Select>
+          </label>
           <label className="flex flex-col gap-1.5">
             <span className="mg-text-label text-mg-text-3">工作空间</span>
             <Select value={workspaceFilter} onChange={handleWorkspace} className="mg-control-md w-44 mg-text-body">

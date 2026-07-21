@@ -11,14 +11,12 @@ import { useTranslation } from 'react-i18next'
 import { SideSheet } from '@/components/ui/SideSheet'
 import { Button } from '@/components/ui/Button'
 import { CopyButton } from '@/components/ui/CopyButton'
-import Select, { SelectItem } from '@/components/ui/Select'
 import { LuArrowRight, LuTriangleAlert, LuRefreshCw, LuCopy, LuLoaderCircle } from 'react-icons/lu'
 import { formatDateTime } from '@/lib/format-date'
 import { formatMoney } from '@/lib/utils'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
 import { getApiKeyAudit, getApiKeyDetail, getEffectiveGuardrails, revealApiKey } from '@/services/api-keys'
-import { listWorkspaceMembers } from '@/services/workspaces'
 import type { ApiKeyItem, ApiKeyType } from '@/types'
 import { useCopy } from '@/hooks/use-copy'
 import {
@@ -102,14 +100,14 @@ interface Props {
   canReveal: boolean
   onToggleStatus: (item: ApiKeyItem) => void
   onRotate: (item: ApiKeyItem) => void
-  /** 变更负责人（PRD 基础信息内联下拉，选中即变更） */
-  onChangeOwner: (item: ApiKeyItem, newOwnerAccountId: string) => void
+  onChangeOwner: (item: ApiKeyItem) => void
+  onEdit: (item: ApiKeyItem) => void
   onRevoke: (target: { id: string; name: string }) => void
   /** 埋点 row_scope（workspace_all|self）——limit_save/jump_logs 带上 */
   rowScope?: string
 }
 
-export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction, canReveal, onToggleStatus, onRotate, onChangeOwner, onRevoke, rowScope }: Props) {
+export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction, canReveal, onToggleStatus, onRotate, onChangeOwner, onEdit, onRevoke, rowScope }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const keyId = item?.api_key_id
@@ -164,40 +162,21 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
     enabled: open && !!keyId,
     retry: false,
   })
-  // 变更负责人（PRD：基础信息内联下拉）——仅当该行有变更负责人权限时拉空间成员做候选
-  const canChangeOwnerEnabled =
-    open && !!item && item.status !== 'revoked' && canAction(deriveKeyType(item), 'change_owner')
-  const { data: members } = useQuery({
-    queryKey: ['workspace-members', workspaceId],
-    queryFn: () => listWorkspaceMembers(workspaceId, { page_size: 100 }),
-    enabled: !!workspaceId && canChangeOwnerEnabled,
-    staleTime: 60_000,
-  })
 
   if (!item) return <SideSheet open={open} onClose={onClose} ariaTitle="API Key 详情" />
 
   const view = detail ?? item
   const keyType = deriveKeyType(view)
   const responsible = responsibleOf(view)
+  const creatorDiffers = view.owner?.account_id && responsible.account_id && view.owner.account_id !== responsible.account_id
   const usage = detail?.usage
   const auditRows = audit?.items ?? detail?.recent_audit ?? []
   const isDisabled = view.status === 'disabled'
   const canToggle = isDisabled ? cap(view.capabilities?.can_enable, canAction(keyType, 'disable')) : cap(view.capabilities?.can_disable, canAction(keyType, 'disable'))
   // 按后端 capability 正常渲染；rotate 路由未就绪（40401）时点击走 requestError → 「服务暂不可用」，不做死按钮/硬隐藏（qa#384/#385）
   const rotateEnabled = canAction(keyType, 'rotate') && view.capabilities?.can_rotate === true
+  const canEdit = canAction(keyType, 'edit')
   const canDelete = cap(view.capabilities?.can_delete, canAction(keyType, 'revoke')) && view.status !== 'revoked'
-  const canChangeOwner = view.status !== 'revoked' && canAction(keyType, 'change_owner')
-  // 负责人下拉候选（PRD uniqueSorted([owner, ...members])）：确保当前负责人始终在选项内，避免存量负责人已离开空间时选中项丢失
-  const ownerOptions = (() => {
-    const opts = (members?.items ?? []).map((m) => ({
-      id: m.account.account_id,
-      label: m.account.display_name || m.account.email || m.account.account_id,
-    }))
-    if (responsible.account_id && !opts.some((o) => o.id === responsible.account_id)) {
-      opts.unshift({ id: responsible.account_id, label: responsible.display_name || responsible.email || responsible.account_id })
-    }
-    return opts
-  })()
 
   return (
     <SideSheet open={open} onClose={onClose} title={item.name}>
@@ -227,6 +206,12 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
               <Button variant="outline" size="sm" onClick={() => onToggleStatus(view)}>
                 {isDisabled ? '启用' : '停用'}
               </Button>
+            )}
+            {view.status !== 'revoked' && canAction(keyType, 'change_owner') && (
+              <Button variant="outline" size="sm" onClick={() => onChangeOwner(view)}>变更负责人</Button>
+            )}
+            {view.status !== 'revoked' && canEdit && (
+              <Button variant="outline" size="sm" onClick={() => onEdit(view)}>编辑</Button>
             )}
             {canDelete && (
               <Button
@@ -261,27 +246,15 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
           </div>
         )}
 
-        {/* 基础信息（原型 api-key-basic-grid：类型/负责人/到期时间 三格；负责人可内联变更，需求方#84） */}
+        {/* 基础信息（原型 api-key-basic-grid：类型/负责人/到期时间 三格，需求方#84） */}
         <Section title="基础信息">
           <div className="grid grid-cols-3 gap-2.5">
             <Cell label="类型" value={KEY_TYPE_LABEL[keyType]} />
-            {canChangeOwner ? (
-              <div className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
-                <div className="text-xs text-mg-text-3">负责人</div>
-                <Select
-                  className="mt-1 h-8 w-full"
-                  value={responsible.account_id ?? ''}
-                  onChange={(v) => { if (v && v !== responsible.account_id) onChangeOwner(view, v) }}
-                >
-                  {ownerOptions.map((o) => (
-                    <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
-                  ))}
-                </Select>
-              </div>
-            ) : (
-              <Cell label="负责人" value={responsible.display_name || responsible.email || '—'} />
-            )}
+            <Cell label="负责人" value={responsible.display_name || responsible.email || '—'} />
             <Cell label="到期时间" value={view.expires_at ? formatDateTime(view.expires_at) : '永不过期'} />
+            {creatorDiffers && (
+              <Cell label="创建人" value={view.owner.display_name || view.owner.email || '—'} />
+            )}
           </div>
         </Section>
 

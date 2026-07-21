@@ -111,6 +111,9 @@ export function DashboardLayout() {
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const currentWorkspaceId = routeWorkspaceId ?? activeWorkspaceId
   const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
+  const tenantBreadcrumbName = activeTenant?.type === 'personal'
+    ? (account?.display_name ?? t('nav.tenant'))
+    : (activeTenant?.name ?? account?.display_name ?? t('nav.tenant'))
   const rechargeOpen = useRechargeStore((s) => s.isOpen)
   const closeRecharge = useRechargeStore((s) => s.close)
 
@@ -204,7 +207,7 @@ export function DashboardLayout() {
     const raw = breadcrumbConfig[key] ?? HOME_CRUMB
     return raw.map((item) => ({
       ...item,
-      label: item.label === 'nav.tenant' ? (account?.display_name ?? t(item.label)) : t(item.label),
+      label: item.label === 'nav.tenant' ? tenantBreadcrumbName : t(item.label),
     }))
   }
 

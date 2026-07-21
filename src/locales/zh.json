@@ -1676,6 +1676,7 @@
         "title": "工作空间明细",
         "titleMine": "我的工作空间",
         "subtitle": "按工作空间聚合的本期消费",
+        "subtitleMine": "我有调用或 API Key 的工作空间",
         "viewMore": "查看更多",
         "empty": "暂无工作空间用量",
         "noDesc": "暂无描述"

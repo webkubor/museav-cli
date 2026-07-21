@@ -1677,6 +1677,7 @@
         "title": "Workspace breakdown",
         "titleMine": "My workspaces",
         "subtitle": "Spend aggregated by workspace for this period",
+        "subtitleMine": "Workspaces where I have calls or API keys",
         "viewMore": "View more",
         "empty": "No workspace usage",
         "noDesc": "No description"

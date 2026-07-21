@@ -24,6 +24,8 @@ export interface CursorPage<T> {
   has_more: boolean
   /** 下一页游标；没有下一页时为 null。 */
   next_cursor: string | null
+  /** 当前筛选命中的总条数；仅首页/显式 with_total 请求返回，游标翻页省略（qa#510）。 */
+  total?: number
 }
 
 /** API 错误 */

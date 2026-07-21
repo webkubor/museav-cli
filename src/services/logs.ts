@@ -83,6 +83,8 @@ type ModelLogRow = {
 type ModelLogListResponse = {
   items?: ModelLogRow[]
   limit?: number
+  /** 当前筛选命中总数（qa#510）：首页默认返回，游标翻页省略以省 COUNT。 */
+  total?: number
 }
 
 type ModelLogStatsResponse = {
@@ -260,6 +262,7 @@ function toCursorPage(
     page_size: limit,
     has_more: hasMore,
     next_cursor: hasMore && last?.started_at ? last.started_at : null,
+    total: typeof data.total === 'number' ? data.total : undefined,
   }
 }
 

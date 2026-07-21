@@ -66,6 +66,7 @@ function ownerLines(row: CallLogItem) {
 export function LogsTable({
   hasActiveFilters,
   hasMore,
+  total,
   isFetching,
   isLoading,
   items,
@@ -83,6 +84,8 @@ export function LogsTable({
 }: {
   hasActiveFilters?: boolean
   hasMore: boolean
+  /** 当前筛选命中总数（后端首页返回，qa#510）；未知时不展示「共 N 条」 */
+  total?: number
   isFetching: boolean
   isLoading: boolean
   items: CallLogItem[]
@@ -269,7 +272,7 @@ export function LogsTable({
         mode="cursor"
         page={page}
         hasMore={hasMore}
-        total={items.length}
+        total={total}
         pageSize={pageSize}
         pageSizeOptions={pageSizeOptions}
         onPageSizeChange={onPageSizeChange}

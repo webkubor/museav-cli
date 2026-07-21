@@ -21,7 +21,7 @@ interface CursorPaginationProps {
   onNext: () => void
   /** 翻页请求进行中，禁用按钮 */
   loading?: boolean
-  /** 本页条数，可选展示 */
+  /** 当前筛选命中的总条数，可选展示「共 N 条」；与 pageSize 同传时页码显示 X / Y 总页数 */
   total?: number
   /** 每页条数（传入即在左侧展示「每页 N 条」选择器） */
   pageSize?: number
@@ -111,6 +111,8 @@ export function Pagination(props: PaginationProps) {
   // mode === 'cursor'
   const { page, hasMore, onPrev, onNext, loading, total, pageSize, pageSizeOptions, onPageSizeChange } = props
   const sizeOptions = pageSizeOptions ?? [10, 15, 20, 50]
+  // 总页数（需求方#160）：后端补 total 后可算；未知时退回「第 X 页」
+  const totalPages = typeof total === 'number' && pageSize ? Math.max(1, Math.ceil(total / pageSize)) : null
   return (
     <div className={WRAP}>
       <div className="flex items-center gap-2 mg-text-caption text-mg-text-3">
@@ -144,7 +146,7 @@ export function Pagination(props: PaginationProps) {
         >
           {t('common.pagination.prev')}
         </Button>
-        <span className={PAGE_BADGE}>{t('common.pagination.page', { page })}</span>
+        <span className={PAGE_BADGE}>{totalPages != null ? `${page} / ${totalPages}` : t('common.pagination.page', { page })}</span>
         <Button
           size="sm"
           variant="outline"

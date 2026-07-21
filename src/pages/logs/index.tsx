@@ -201,10 +201,14 @@ export default function LogsPage() {
   const asyncRefreshRef = useRef<() => void>(() => {})
 
   const currentCursor = cursorStack[page - 1] ?? null
+  // 总条数（需求方#160）：后端仅在首页返回 total（游标翻页省略，qa#510）。
+  // 任何筛选变化都会 resetPagination 回首页拿新 total，故缓存首页值供后续翻页展示。
+  const [knownTotal, setKnownTotal] = useState<number | undefined>(undefined)
 
   function resetPagination() {
     setPage(1)
     setCursorStack([null])
+    setKnownTotal(undefined)
   }
 
   const trackFilter = (filter: string, value?: string) =>
@@ -360,6 +364,11 @@ export default function LogsPage() {
 
   const items = data?.items ?? []
   const hasMore = Boolean(data?.has_more && data.next_cursor)
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 首页响应带 total、游标页省略（qa#510），需缓存最近一次 total 供翻页期间展示
+    if (typeof data?.total === 'number') setKnownTotal(data.total)
+  }, [data?.total])
 
   // Request ID 精确检索命中唯一 → 自动展开详情（每个检索值只自动开一次；用户手动关掉后不再弹）
   const autoOpenedRef = useRef<string | null>(null)
@@ -655,6 +664,7 @@ export default function LogsPage() {
           onSelectLog={openLog}
           page={page}
           pageSize={pageSize}
+          total={knownTotal}
           pageSizeOptions={PAGE_SIZE_OPTIONS}
           onPageSizeChange={(size) => { setPageSize(size); resetPagination() }}
           selectedLogId={selectedLog?.call_log_id}

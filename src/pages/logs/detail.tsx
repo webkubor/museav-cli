@@ -146,13 +146,6 @@ export function LogDetailSheet({
               <Badge variant="outline" className="max-w-full truncate">{row.model.display_name}</Badge>
               <StatusBadge status={deriveLogStatus(row)} statusMap={statusMap} />
             </div>
-            {row.trace_id && (
-              <div className="mt-3 flex items-center gap-2">
-                <span className="shrink-0 mg-text-caption font-bold text-mg-text-3">Trace ID</span>
-                <span className="min-w-0 flex-1 truncate font-mono mg-text-caption text-mg-text-2">{row.trace_id}</span>
-                <CopyButton value={row.trace_id} variant="icon" aria-label="复制 Trace ID" toast={false} />
-              </div>
-            )}
           </header>
 
           <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -181,8 +174,6 @@ export function LogDetailSheet({
               <DetailRow label="工作空间" value={workspaceName || row.workspace_id} />
               <DetailRow label="API Key 名称" value={apiKeyName} />
               <DetailRow label="成员" value={memberName} />
-              <DetailRow label="调用时间" value={formatDateTimeWithSeconds(row.started_at)} />
-              <DetailRow label="计费状态" value={row.billing_status} />
             </DetailGrid>
           </DetailSection>
 
@@ -199,12 +190,16 @@ export function LogDetailSheet({
             </DetailSection>
           )}
 
-          <DetailSection title="请求链路">
-            {/* #48：链路调用图（Client→Gateway→Provider）需求里没有，已移除，只保留请求元信息。 */}
-            <DetailGrid compact>
+          <DetailSection title="请求">
+            {/* 字段顺序对齐 PRD 原型 LogDetailDrawer 「请求」区：Request ID → Trace ID → 调用时间
+                → HTTP 状态 → 计费状态 →（billable 时）调用类型 → TPOT → TPM。单列布局（非 compact）。 */}
+            <DetailGrid>
               <DetailRow label="Request ID" value={row.request_id} mono />
+              <DetailRow label="Trace ID" value={row.trace_id} mono />
+              <DetailRow label="调用时间" value={formatDateTimeWithSeconds(row.started_at)} />
               <DetailRow label="HTTP 状态" value={httpStatus(row)} mono />
-              <DetailRow label="调用类型" value={row.call_type} />
+              <DetailRow label="计费状态" value={row.billing_status} />
+              {!isModelNotStarted(row) && <DetailRow label="调用类型" value={row.call_type} />}
               <DetailRow label="TPOT" value={row.tpot_ms > 0 ? `${row.tpot_ms}ms` : ''} mono />
               <DetailRow label="TPM" value={tpmLabel(row)} mono />
             </DetailGrid>
@@ -459,7 +454,8 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
         <div className="flex gap-2 rounded-md border border-mg-border bg-mg-fill-0/30 p-[var(--mg-panel-padding-md)] text-mg-text-3">
           <LuFileText className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="min-w-0 space-y-2">
-            <p className="mg-text-caption">该工作空间未开启输入 / 输出日志。调用日志仅保留元数据、Token、费用、延迟、路由和错误摘要；需查看完整 Prompt 与 Response，请到空间管理的「日志与转发」中开启。</p>
+            <strong className="block mg-text-caption font-bold text-mg-text-1">该工作空间未开启输入/输出日志</strong>
+            <p className="mg-text-caption">调用日志仅保留元数据、Token、费用、延迟、路由和错误/护栏摘要。需要查看完整 Prompt 与 Response，请到空间管理的日志与转发中开启输入 / 输出日志。</p>
             {onOpenLogSettings && (
               <Button size="xs" variant="outline" onClick={() => onOpenLogSettings(row.workspace_id)}>
                 去开启日志与转发
@@ -517,10 +513,6 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
           </div>
         </div>
       )}
-      <p className="flex items-center gap-1.5 mg-text-caption text-mg-text-3">
-        <LuShieldCheck className="h-3.5 w-3.5" />
-        密钥与敏感字段已脱敏
-      </p>
     </section>
   )
 }

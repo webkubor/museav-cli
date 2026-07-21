@@ -1,4 +1,4 @@
-import { LuChevronRight, LuInbox, LuSearch } from 'react-icons/lu'
+import { LuInbox, LuSearch } from 'react-icons/lu'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
@@ -15,7 +15,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/Table'
-import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { formatDateTimeWithSeconds, formatDuration } from '@/lib/format-date'
 import { cn, formatNumber } from '@/lib/utils'
 import type { CallLogItem } from '@/types'
@@ -149,7 +148,7 @@ export function LogsTable({
             <TableHead>Token</TableHead>
             <TableHead>费用</TableHead>
             <TableHead>延迟</TableHead>
-            <TableHead className="w-10" />
+            <TableHead>操作</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -180,19 +179,12 @@ export function LogsTable({
                 <StatusBadge status={deriveLogStatus(row)} statusMap={statusMap} />
               </TableCell>
               <TableCell>
-                <div className="flex min-w-0 items-center gap-2">
-                  <ModelIcon
-                    model={{ display_name: row.model.display_name, vendor: row.provider.name }}
-                    rounded="rounded-md"
-                    size={20}
-                  />
-                  <div className="min-w-0">
-                    {/* 对齐 PRD 原型：模型列只显模型名，无副行（#50）。
-                        原 provider.name 副行会把后端返回的内部实例 UUID 当文案露出来，PRD 无此行。 */}
-                    <strong className="block truncate mg-text-body font-bold text-mg-text-1">
-                      {compactModelName(row.model.display_name)}
-                    </strong>
-                  </div>
+                {/* 对齐 PRD 原型 LogTable：模型列只显模型名纯文本，无图标、无副行（#50）。
+                    控制台自身「最近调用」表同样纯文本，此处与之统一。 */}
+                <div className="min-w-0">
+                  <strong className="block truncate mg-text-body font-bold text-mg-text-1">
+                    {compactModelName(row.model.display_name)}
+                  </strong>
                 </div>
               </TableCell>
               <TableCell>
@@ -256,8 +248,18 @@ export function LogsTable({
                   </div>
                 )}
               </TableCell>
-              <TableCell align="right">
-                <LuChevronRight className="ml-auto h-4 w-4 text-mg-text-3" />
+              <TableCell>
+                {/* 对齐 PRD 原型：操作列为「详情」按钮（整行也可点开）。 */}
+                <Button
+                  variant="outline"
+                  size="xs"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    onSelectLog(row)
+                  }}
+                >
+                  详情
+                </Button>
               </TableCell>
             </TableRow>
           ))}

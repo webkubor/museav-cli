@@ -42,7 +42,6 @@ import { trackEvent } from '@/lib/track'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { cn } from '@/lib/utils'
 import type { TaskItem, TaskDetail, TaskKind } from '@/types'
-import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { Money } from '@/components/ui/Money'
 import { VideoThumbnail } from './VideoThumbnail'
 import { VideoPreviewModal } from './VideoPreviewModal'
@@ -287,15 +286,6 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
   const showVideo = !!videoUrl && !videoUnavailable
   const gone = (isVideoTask && (expired || noMeta)) || videoUnavailable
 
-  // 产物元信息（#446）：后端未交付前统一占位「—」；有值才展示真实内容
-  const rm = data?.result_meta ?? task.result_meta
-  const artifactMeta = {
-    filename: rm?.result_filename || '—',
-    format: rm?.result_format || '—',
-    resolution: rm?.result_resolution || '—',
-    duration: rm?.result_duration_seconds ? `${rm.result_duration_seconds} 秒` : '—',
-  }
-
   return (
     <SideSheet open onClose={onClose} width={560} title="异步任务详情">
         <div className="space-y-5 px-[var(--mg-space-1)] py-[var(--mg-control-py-sm)] mg-text-body">
@@ -310,14 +300,13 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
             const costPending = task.status === 'queued' || task.status === 'running'
             return (
               <>
-          {/* 头部 chips：任务类型、模型、状态（对齐 PRD，不展示供应商） */}
+          {/* 头部 chips：任务类型、模型、状态（对齐 PRD，只留这三项，不展示供应商/图生视频等额外标签） */}
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="flex items-center gap-1">
               {kindCfg.icon}{kindCfg.label}
             </Badge>
             <Badge variant="outline" className="max-w-full truncate">{task.requested_model}</Badge>
             <StatusBadge status={task.status} statusMap={STATUS_CONFIG} />
-            {task.from_image && <Badge variant="info">图生视频</Badge>}
           </div>
 
           {/* 诊断指标（Summary）：任务状态 / 实际费用 / 产物状态（对齐同步调用详情，需求方#165） */}
@@ -357,18 +346,6 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
               <DetailRow label="工作空间" value={workspaceName} />
               <DetailRow label="API Key 名称" value={apiKeyName} />
               <DetailRow label="成员" value={memberName} />
-              {(task.input_tokens != null || task.output_tokens != null) && (
-                <DetailRow
-                  label="Token 用量"
-                  value={
-                    <span className="mg-text-caption text-mg-text-2">
-                      输入 <strong className="text-mg-text-1">{(task.input_tokens ?? 0).toLocaleString()}</strong>
-                      {' · '}
-                      输出 <strong className="text-mg-text-1">{(task.output_tokens ?? 0).toLocaleString()}</strong>
-                    </span>
-                  }
-                />
-              )}
             </div>
           </div>
 
@@ -436,19 +413,6 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
                 className="w-full rounded-lg bg-black max-h-72"
                 onError={() => setVideoUnavailable(true)}
               />
-            </div>
-          )}
-
-          {/* 产物信息：文件名/格式/分辨率/时长 —— TODO(#446) 后端未交付，缺省占位「—」 */}
-          {showVideo && (
-            <div>
-              <p className="mg-text-label text-mg-text-3 mb-2">产物信息</p>
-              <div className="rounded-md border border-mg-border bg-mg-bg-0 px-[var(--mg-panel-padding-md)]">
-                <DetailRow label="文件名" value={artifactMeta.filename} mono />
-                <DetailRow label="格式" value={artifactMeta.format} />
-                <DetailRow label="分辨率" value={artifactMeta.resolution} />
-                <DetailRow label="时长" value={artifactMeta.duration} />
-              </div>
             </div>
           )}
 
@@ -659,8 +623,40 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
     <div className="space-y-4">
       {/* 筛选区白卡：与同步调用一致的卡片底色/容器（需求方#166），不再让筛选裸露在页面灰底上 */}
       <section className="space-y-4 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
-      {/* 筛选栏（记录类型=异步任务：首屏筛选 搜索/类型/状态 + 右侧计数；刷新按钮在页头） */}
-      <div className="flex items-center gap-3 flex-wrap">
+      {/* 筛选栏：字段顺序/标签对齐 PRD 原型 async-task-filter-bar —— 时间范围 / 任务类型 / 任务状态 / 搜索 / 更多筛选。
+          刷新按钮在页头（#46），自动刷新后台静默进行。 */}
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1.5">
+          <span className="mg-text-label text-mg-text-3">时间范围</span>
+          <Select value={presetFilter} onChange={handlePreset} className="mg-control-md w-32 mg-text-body">
+            {TIME_PRESET_OPTIONS.map((option) => (
+              <Select.Option key={option.value} value={option.value}>{option.label}</Select.Option>
+            ))}
+          </Select>
+        </label>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="mg-text-label text-mg-text-3">任务类型</span>
+          <Select value={kindFilter} onChange={handleKind} className="mg-control-md w-32 mg-text-body">
+            <Select.Option value="all">全部类型</Select.Option>
+            <Select.Option value="video">视频生成</Select.Option>
+            <Select.Option value="image">图片生成</Select.Option>
+            <Select.Option value="audio">音乐生成</Select.Option>
+          </Select>
+        </label>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="mg-text-label text-mg-text-3">任务状态</span>
+          <Select value={statusFilter} onChange={handleStatus} className="mg-control-md w-32 mg-text-body">
+            <Select.Option value="all">全部状态</Select.Option>
+            <Select.Option value="queued">排队中</Select.Option>
+            <Select.Option value="running">生成中</Select.Option>
+            <Select.Option value="completed">已完成</Select.Option>
+            <Select.Option value="failed">失败</Select.Option>
+            <Select.Option value={EXPIRED_FILTER}>已过期</Select.Option>
+          </Select>
+        </label>
+
         <div className="relative">
           <LuSearch size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-mg-text-3 pointer-events-none" />
           <input
@@ -671,28 +667,6 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
           />
         </div>
 
-        <Select value={presetFilter} onChange={handlePreset} className="mg-control-md w-32 mg-text-body">
-          {TIME_PRESET_OPTIONS.map((option) => (
-            <Select.Option key={option.value} value={option.value}>{option.label}</Select.Option>
-          ))}
-        </Select>
-
-        <Select value={kindFilter} onChange={handleKind} className="mg-control-md w-32 mg-text-body">
-          <Select.Option value="all">全部类型</Select.Option>
-          <Select.Option value="video">视频生成</Select.Option>
-          <Select.Option value="image">图片生成</Select.Option>
-          <Select.Option value="audio">音乐生成</Select.Option>
-        </Select>
-
-        <Select value={statusFilter} onChange={handleStatus} className="mg-control-md w-32 mg-text-body">
-          <Select.Option value="all">全部状态</Select.Option>
-          <Select.Option value="queued">排队中</Select.Option>
-          <Select.Option value="running">生成中</Select.Option>
-          <Select.Option value="completed">已完成</Select.Option>
-          <Select.Option value="failed">失败</Select.Option>
-          <Select.Option value={EXPIRED_FILTER}>已过期</Select.Option>
-        </Select>
-
         <Button
           variant="outline"
           size="sm"
@@ -701,11 +675,6 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
           <LuChevronDown size={14} className={cn('transition-transform', showMoreFilters && 'rotate-180')} />
           更多筛选
         </Button>
-
-        {/* 刷新按钮已上移到页头（#46，与同步调用一致）；此处保留计数，自动刷新在后台静默进行。 */}
-        {total > 0 && (
-          <span className="ml-auto mg-text-caption text-mg-text-3">共 {total} 条</span>
-        )}
       </div>
 
       {/* 更多筛选：工作空间 / API Key / 成员（API Key 归属具体空间，跟随工作空间筛选）
@@ -869,17 +838,10 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
                     </span>
                   </TableCell>
                   <TableCell align="center">
-                    <span className="inline-flex items-center gap-1.5 max-w-[220px] mx-auto truncate">
-                      <ModelIcon
-                        model={{ display_name: item.requested_model, vendor: item.vendor ?? undefined }}
-                        size={18}
-                        rounded="rounded-md"
-                        className="shrink-0"
-                      />
-                      <p className="mg-text-code text-mg-text-1 truncate">
-                        {item.requested_model}
-                      </p>
-                    </span>
+                    {/* 对齐 PRD 原型 AsyncTaskTable：模型列纯文本，无图标。 */}
+                    <p className="mg-text-code text-mg-text-1 truncate max-w-[220px] mx-auto">
+                      {item.requested_model}
+                    </p>
                   </TableCell>
                   <TableCell align="center">
                     <StatusBadge status={item.status} statusMap={STATUS_CONFIG} />

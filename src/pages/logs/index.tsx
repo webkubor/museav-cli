@@ -37,7 +37,7 @@ import {
   type PayloadView,
 } from './detail'
 import { AsyncTasksPanel } from '@/pages/tasks'
-import { LuChevronDown, LuRefreshCw, LuSearch, LuTriangleAlert } from 'react-icons/lu'
+import { LuChevronDown, LuFileText, LuRefreshCw, LuSearch, LuTriangleAlert } from 'react-icons/lu'
 
 type RecordType = 'sync' | 'async'
 
@@ -468,9 +468,14 @@ export default function LogsPage() {
       <PageHeader
         title="调用日志"
         description={
-          recordType === 'sync'
-            ? '按工作空间、成员和 API Key 追踪同步调用。'
-            : '查看视频、图片、音乐等异步生成任务的状态、费用和产物。'
+          // 副标题逐字对齐 PRD 原型 headerSubtitle：异步 / 企业视图 / 空间视图 / 我的视图 四态。
+          recordType === 'async'
+            ? '查看多模态异步任务的执行状态、产物和下载有效期。'
+            : view === 'mine'
+              ? '查看我的调用记录和排障详情。'
+              : view === 'space'
+                ? '查看负责空间内全部成员的调用。'
+                : '按工作空间、成员和 API Key 追踪企业调用。'
         }
         actions={
           <div className="flex items-center gap-3">
@@ -586,7 +591,7 @@ export default function LogsPage() {
 
         {showMoreFilters && (
           <div className="grid grid-cols-1 gap-3 border-t border-mg-border pt-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(180px,1fr)_minmax(180px,1fr)_minmax(260px,1.2fr)] lg:items-end">
-            <FilterField label="Request ID / 关键词检索">
+            <FilterField label="Request ID 精确检索">
               <Input
                 value={searchValue}
                 onChange={(event) => { setSearchValue(event.target.value); resetPagination() }}
@@ -613,8 +618,9 @@ export default function LogsPage() {
                 ))}
               </Select>
             </FilterField>
-            <div className="rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-sm)] mg-text-caption text-mg-text-3">
-              Request/Response 全文搜索仅覆盖已开启输入 / 输出日志采集的记录；未开启时仅展示调用元数据。
+            <div className="flex items-start gap-2 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-sm)] mg-text-caption text-mg-text-3">
+              <LuFileText className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>Request/Response 全文搜索仅覆盖已开启输入/输出日志采集的记录。</span>
             </div>
           </div>
         )}
@@ -656,13 +662,6 @@ export default function LogsPage() {
           onGoCreateKey={activeWorkspaceId ? () => navigate(`/workspace/${activeWorkspaceId}/api-keys`) : undefined}
         />
       )}
-      {/* PRD §7.5：日志写入可能有短暂延迟，给出可预期提示 + 刷新引导 */}
-      {items.length > 0 && (
-        <p className="mg-text-caption text-mg-text-3">
-          日志写入可能有秒级延迟，刚发起的调用如未出现请稍后点「刷新」。
-        </p>
-      )}
-
       <LogDetailSheet
         requestPayloadText={requestPayloadText}
         responsePayloadText={responsePayloadText}

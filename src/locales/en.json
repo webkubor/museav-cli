@@ -42,6 +42,7 @@
   "nav": {
     "home": "Home",
     "console": "Console",
+    "tenant": "Tenant",
     "dashboard": "Dashboard",
     "models": "Model Hub",
     "playground": "Chat",

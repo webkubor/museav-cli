@@ -6,7 +6,6 @@ import {
   getMemberWorkspaces,
   listTenantMembers,
   reactivateTenantMember,
-  removeTenantMember,
   resendTenantInvite,
   suspendTenantMember,
   updateTenantMemberRole,
@@ -111,9 +110,8 @@ export function MembersTab({
   const { hasPermission } = usePermissions()
   const canManageMembers = hasPermission(PERMS.ORG_MEMBERS_MANAGE)
   const [editTarget, setEditTarget] = useState<TenantMember | null>(null)
-  const [removeTarget, setRemoveTarget] = useState<string | null>(null)
   const [roleFilter, setRoleFilter] = useState<'all' | TenantRole>('all')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'pending'>('all')
   const [wsFilter, setWsFilter] = useState<'all' | string>('all')
 
   // 编辑弹窗内的可变状态
@@ -175,16 +173,6 @@ export function MembersTab({
     }
   }
 
-  const removeMember = useMutation({
-    mutationFn: (accountId: string) => removeTenantMember(tenantId, accountId),
-    onSuccess: () => {
-      appToast.success('成员已移除')
-      qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
-      setRemoveTarget(null)
-    },
-    onError: (err: Error) => appToast.requestError(err, '移除成员失败'),
-  })
-
   // 重发待接受邀请（#176）：仅 pending 邀请可重发；重发后延长有效期，刷新列表拿到新 expires_at。
   const resendInvite = useMutation({
     mutationFn: (invitationId: string) => resendTenantInvite(tenantId, invitationId),
@@ -198,13 +186,13 @@ export function MembersTab({
   const members = useMemo(() => membersQuery.data?.items ?? [], [membersQuery.data])
 
   // 待接受的邮件邀请（#11）：与真实成员并列展示。后端 pending_invitations 恒在（never null）。
-  // 状态维度上属「待接受」，既非 active 也非 suspended → 仅在状态筛选=全部时展示；角色筛选照常应用。
+  // 状态维度上属「待接受」，既非 active 也非 suspended → 仅在状态筛选=全部或=待接受时展示；角色筛选照常应用。
   const pendingInvites = useMemo<PendingTenantInvite[]>(() => {
     const list = membersQuery.data?.pending_invitations ?? []
     return list.filter((inv) => {
       if (inv.status !== 'pending') return false
       if (roleFilter !== 'all' && inv.role !== roleFilter) return false
-      if (statusFilter !== 'all') return false
+      if (statusFilter !== 'all' && statusFilter !== 'pending') return false
       return true
     })
   }, [membersQuery.data, roleFilter, statusFilter])
@@ -219,6 +207,8 @@ export function MembersTab({
   }
 
   const filtered = useMemo(() => {
+    // 「待接受」是邀请维度状态：选中它时只看待接受邀请，不显示任何已入职成员
+    if (statusFilter === 'pending') return []
     return members.filter((m) => {
       if (roleFilter !== 'all' && m.role !== roleFilter) return false
       if (statusFilter !== 'all' && m.status !== statusFilter) return false
@@ -257,7 +247,7 @@ export function MembersTab({
               className={pillSelect}
               aria-label={t('enterprise.members.filterRole')}
             >
-              <option value="all">{t('enterprise.members.filterRole')}：{t('enterprise.members.all')}</option>
+              <option value="all">{t('enterprise.members.filterAllRoles')}</option>
               <option value="tenant_owner">Owner</option>
               <option value="tenant_admin">Admin</option>
               <option value="tenant_member">Member</option>
@@ -269,7 +259,7 @@ export function MembersTab({
               aria-label={t('enterprise.members.filterWorkspace')}
               disabled={workspaces.length === 0}
             >
-              <option value="all">{t('enterprise.members.filterWorkspace')}：{t('enterprise.members.all')}</option>
+              <option value="all">{t('enterprise.members.filterAllWorkspaces')}</option>
               {workspaces.map((w) => (
                 <option key={w.workspace_id} value={w.workspace_id}>{w.name}</option>
               ))}
@@ -280,8 +270,9 @@ export function MembersTab({
               className={pillSelect}
               aria-label={t('enterprise.members.filterStatus')}
             >
-              <option value="all">{t('enterprise.members.filterStatus')}：{t('enterprise.members.all')}</option>
+              <option value="all">{t('enterprise.members.filterAllStatus')}</option>
               <option value="active">{t('enterprise.members.statusActive')}</option>
+              <option value="pending">{t('enterprise.members.statusPending')}</option>
               <option value="suspended">{t('enterprise.members.statusSuspended')}</option>
             </select>
           </div>
@@ -382,8 +373,9 @@ export function MembersTab({
                       </TableCell>
                       <TableCell align="center">
                         {manageable ? (
+                          // PRD 成员行操作仅「编辑」；停用/离职经编辑弹窗的状态切换完成，无独立「移除」。
                           // nowrap：CJK 按钮文本在列被挤压时会按字竖排折行（需求方#84 截图）
-                          <div className="flex items-center justify-center gap-1 whitespace-nowrap">
+                          <div className="flex items-center justify-center whitespace-nowrap">
                             <button
                               type="button"
                               data-track="members:edit"
@@ -391,13 +383,6 @@ export function MembersTab({
                               className="text-mg-text-3 hover:text-brand-base hover:bg-brand-glow/10 px-2 py-1 rounded-md transition-all border-none bg-transparent cursor-pointer font-semibold text-xs"
                             >
                               {t('enterprise.members.edit')}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setRemoveTarget(m.account.account_id)}
-                              className="text-mg-text-3 hover:text-mg-danger hover:bg-mg-danger/5 px-2 py-1 rounded-md transition-all border-none bg-transparent cursor-pointer font-semibold text-xs"
-                            >
-                              {t('enterprise.members.remove')}
                             </button>
                           </div>
                         ) : (
@@ -478,7 +463,7 @@ export function MembersTab({
               className="h-8 px-4 rounded-lg text-xs font-semibold bg-brand-base text-white hover:bg-brand-base/90"
               onClick={handleSaveEdit}
             >
-              {t('enterprise.members.save')}
+              {t('enterprise.members.saveChanges')}
             </Button>
           </div>
         }
@@ -499,6 +484,26 @@ export function MembersTab({
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
+            </div>
+            {/* 授权工作空间：Owner/Admin 只读「全部工作空间」；仅 Member 可改。PRD 顺序：角色 → 授权工作空间 → 状态 */}
+            <div>
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-mg-text-2">
+                {t('enterprise.members.workspaceLabel')}
+              </label>
+              {draftRole === 'tenant_member' ? (
+                <div className="rounded-lg border border-mg-border/40 bg-mg-fill-0/30 p-3 text-xs text-mg-text-3">
+                  {/* 后端无「设置成员授权工作空间」接口 → 只做展示占位 */}
+                  {/* TODO(后端待接): 设置成员授权工作空间接口 见 #420 */}
+                  {workspaces.length === 0
+                    ? '—'
+                    : `${t('enterprise.members.workspaceLabel')}：${editTarget.workspace_count} / ${workspaces.length}`}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-mg-border/40 bg-mg-fill-0/30 p-3 text-xs text-mg-text-3">
+                  {t('enterprise.members.allWorkspaces')}
+                  <span className="ml-1 text-xs text-mg-text-3">· {t('enterprise.members.workspaceHintNonMember')}</span>
+                </div>
+              )}
             </div>
             {/* 状态：Owner 不可停用（复用 canManageMember 的边界判断，与操作列一致） */}
             <div>
@@ -532,53 +537,10 @@ export function MembersTab({
                 </button>
               </div>
             </div>
-            {/* 授权工作空间：Owner/Admin 只读「全部工作空间」；仅 Member 可改 */}
-            <div>
-              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-mg-text-2">
-                {t('enterprise.members.workspaceLabel')}
-              </label>
-              {draftRole === 'tenant_member' ? (
-                <div className="rounded-lg border border-mg-border/40 bg-mg-fill-0/30 p-3 text-xs text-mg-text-3">
-                  {/* 后端无「设置成员授权工作空间」接口 → 只做展示占位 */}
-                  {/* TODO(后端待接): 设置成员授权工作空间接口 见 #420 */}
-                  {workspaces.length === 0
-                    ? '—'
-                    : `${t('enterprise.members.workspaceLabel')}：${editTarget.workspace_count} / ${workspaces.length}`}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-mg-border/40 bg-mg-fill-0/30 p-3 text-xs text-mg-text-3">
-                  {t('enterprise.members.allWorkspaces')}
-                  <span className="ml-1 text-xs text-mg-text-3">· {t('enterprise.members.workspaceHintNonMember')}</span>
-                </div>
-              )}
-            </div>
           </div>
         )}
       </Modal>
 
-      {/* 移除成员确认弹窗 */}
-      <Modal
-        open={removeTarget !== null}
-        onClose={() => setRemoveTarget(null)}
-        size="sm"
-        title={t('enterprise.members.removeTitle')}
-        description={t('enterprise.members.removeDesc')}
-        footer={
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" className="h-8 px-3 rounded-lg text-xs" onClick={() => setRemoveTarget(null)}>
-              {t('enterprise.members.cancel')}
-            </Button>
-            <Button
-              variant="brand"
-              disabled={removeMember.isPending}
-              onClick={() => removeMember.mutate(removeTarget!)}
-              className="h-8 px-4 rounded-lg text-xs font-semibold bg-mg-danger text-white hover:bg-mg-danger/90"
-            >
-              {removeMember.isPending ? '…' : t('enterprise.members.confirmRemove')}
-            </Button>
-          </div>
-        }
-      />
     </>
   )
 }

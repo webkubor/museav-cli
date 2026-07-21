@@ -7,10 +7,12 @@ import { useAuthStore } from '@/store/auth'
 import { useTrackContext } from '@/hooks/use-track-context'
 import { trackEvent } from '@/lib/track'
 import { Card } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 import { Money } from '@/components/ui/Money'
 import { formatDuration } from '@/lib/format-date'
+import { deriveLogStatus } from '@/pages/logs/guardrail'
+import { buildStatusMap } from '@/pages/logs/components'
 import type { Granularity, WorkbenchView } from './shared'
 
 /** 时间：MM-dd HH:mm:ss */
@@ -30,6 +32,8 @@ export function RecentCallsSection({ view = 'enterprise', accountId, granularity
   const navigate = useNavigate()
   const trackCtx = useTrackContext()
   const isMine = view === 'mine'
+  // 状态语义复用调用日志页（需求方#174）：不另造 ACCEPTED/REJECTED，走同一份派生 + 映射（成功/护栏命中/异常）
+  const statusMap = buildStatusMap(t)
   // 总览时间粒度 → 日志页时间预设：day→今天，month→本月，跳转带全周期上下文
   const period = granularity === 'day' ? 'today' : 'thisMonth'
 
@@ -96,12 +100,7 @@ export function RecentCallsSection({ view = 'enterprise', accountId, granularity
                   <TableRow key={item.call_log_id}>
                     <TableCell className="text-xs text-mg-text-3 whitespace-nowrap">{formatSimple(item.started_at)}</TableCell>
                     <TableCell>
-                      <Badge
-                        variant={item.status === 'failed' ? 'destructive' : item.status === 'rejected' ? 'secondary' : 'default'}
-                        size="sm"
-                      >
-                        {item.status.toUpperCase()}
-                      </Badge>
+                      <StatusBadge status={deriveLogStatus(item)} statusMap={statusMap} />
                     </TableCell>
                     <TableCell className="text-xs font-semibold text-mg-text-1">{model}</TableCell>
                     <TableCell className="text-xs text-mg-text-2 max-w-[140px] truncate">{owner}</TableCell>

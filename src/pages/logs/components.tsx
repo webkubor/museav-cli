@@ -21,8 +21,9 @@ import { cn, formatNumber } from '@/lib/utils'
 import type { CallLogItem } from '@/types'
 import { deriveLogStatus, isModelNotStarted, type DerivedLogStatus } from './guardrail'
 
-/** 派生三态 → StatusBadge 配置。i18n 文案在 buildStatusMap 里注入。 */
-function buildStatusMap(t: (key: string) => string): Record<DerivedLogStatus, StatusConfig> {
+/** 派生三态 → StatusBadge 配置。i18n 文案在 buildStatusMap 里注入。
+ *  调用日志状态语义的唯一真源，总览「最近调用」复用同一份映射（需求方#174）。 */
+export function buildStatusMap(t: (key: string) => string): Record<DerivedLogStatus, StatusConfig> {
   return {
     success: { label: t('logs.status.success'), variant: 'success' },
     guarded: { label: t('logs.status.guarded'), variant: 'warning' },

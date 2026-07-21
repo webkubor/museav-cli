@@ -172,22 +172,6 @@ export default function GuardrailsPage() {
     meta: { forbiddenHandled: true }, // 40301 由本页 ForbiddenState 承接，不弹全局 toast
   })
 
-  // 「继承全局默认」计数（qa#460，产品模型 143/150）：同端点但独立 key——
-  // ['guardrails'] 缓存形状被 CreateKey/EditKey 弹窗与本页乐观更新按 GuardrailDetail[] 锁死，
-  // 为两个计数字段重构共享形状不值当，单独取一份（30s staleTime，代价一个轻量 GET）。
-  const { data: inheritedCounts } = useQuery({
-    queryKey: ['guardrails-inherited-counts', workspaceId],
-    queryFn: async () => {
-      const res = await listGuardrails(workspaceId)
-      return { member: res.inherited_default_member_count, key: res.inherited_default_key_count }
-    },
-    enabled: Boolean(workspaceId),
-    staleTime: 30_000,
-    refetchOnWindowFocus: false,
-    retry: false,
-    meta: { forbiddenHandled: true },
-  })
-
   // 接口正常返回但业务码 40301（无权限，典型是进了自己无权的工作空间护栏页）→ 渲染 403 兼容态，
   // 而不是让空数据伪装成「暂无护栏」空态。
   const forbidden = isApiErrorCode(guardrailsError, 40301)
@@ -834,7 +818,6 @@ export default function GuardrailsPage() {
       {/* 三分区列表：全局 / 个人 / Key */}
       <GuardrailSections
         guardrails={guardrails}
-        inheritedCounts={inheritedCounts}
         isLoading={isLoading}
         canEdit={canEditScope}
         canDelete={canDeleteScope}

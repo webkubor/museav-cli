@@ -209,7 +209,6 @@ function ScopeSection({
   onSearch,
   canCreate,
   onCreate,
-  subtitle,
   children,
 }: {
   scope: GuardrailScope
@@ -219,8 +218,6 @@ function ScopeSection({
   onSearch: (value: string) => void
   canCreate: boolean
   onCreate: () => void
-  /** 分区头副注（如「继承全局默认」计数，qa#460） */
-  subtitle?: ReactNode
   children: ReactNode
 }) {
   const meta = SCOPE_META[scope]
@@ -229,7 +226,6 @@ function ScopeSection({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-mg-border/70 px-4 py-3">
         <div className="flex flex-wrap items-baseline gap-2">
           <h4 className="text-sm font-bold text-mg-text-1">{meta.title}</h4>
-          {subtitle && <span className="text-xs text-mg-text-3">{subtitle}</span>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Input
@@ -262,8 +258,6 @@ function ScopeSection({
 
 export interface GuardrailSectionsProps {
   guardrails: GuardrailDetail[]
-  /** 「继承全局默认」计数（qa#460）：member=继承默认个人预算的成员数，key=继承默认 Key 预算的 Key 数 */
-  inheritedCounts?: { member?: number; key?: number }
   isLoading: boolean
   /** 分类 × 动作细粒度（需求方#57）：各分区行内动作按自己分类的码控 */
   canEdit: Record<GuardrailScope, boolean>
@@ -281,7 +275,7 @@ export interface GuardrailSectionsProps {
 
 export function GuardrailSections(props: GuardrailSectionsProps) {
   const {
-    guardrails, inheritedCounts, isLoading, canEdit, canDelete, canCreate, showMember, currencySymbol,
+    guardrails, isLoading, canEdit, canDelete, canCreate, showMember, currencySymbol,
     search, onSearchChange, onOpenDetail, onToggle, onDelete, onCreate,
   } = props
 
@@ -375,7 +369,6 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
           onSearch={(v) => onSearchChange('member', v)}
           canCreate={canCreate}
           onCreate={onCreate}
-          subtitle={inheritedCounts?.member != null ? `${inheritedCounts.member} 名成员继承全局默认个人预算` : undefined}
         >
           <TableHeader>
             <TableRow>
@@ -421,7 +414,6 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
         onSearch={(v) => onSearchChange('key', v)}
         canCreate={canCreate}
         onCreate={onCreate}
-        subtitle={inheritedCounts?.key != null ? `${inheritedCounts.key} 个 Key 继承全局默认 Key 预算` : undefined}
       >
         <TableHeader>
           <TableRow>

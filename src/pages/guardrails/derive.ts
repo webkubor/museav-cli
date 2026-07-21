@@ -49,6 +49,10 @@ export function deriveScope(g: GuardrailDetail): GuardrailScope {
   const metaScope = (g.metadata as Record<string, unknown> | undefined)?.scope
   if (metaScope === 'global' || metaScope === 'member' || metaScope === 'key') return metaScope
   if (g.is_default) return 'global'
+  const metadata = g.metadata as Record<string, unknown> | undefined
+  // 兼容旧版列表接口：部分护栏的 assignments 为空，但 metadata 仍保留绑定对象。
+  if (Array.isArray(metadata?.api_keys) && metadata.api_keys.some((id): id is string => typeof id === 'string' && id.length > 0)) return 'key'
+  if (Array.isArray(metadata?.members) && metadata.members.some((id): id is string => typeof id === 'string' && id.length > 0)) return 'member'
   const assignments = assignmentsOf(g)
   if (assignments.some((a) => a.subject_type === 'api_key' && a.api_key_id)) return 'key'
   if (assignments.some((a) => a.subject_type === 'member' && a.account_id)) return 'member'

@@ -1,5 +1,5 @@
 /**
- * 编辑 API Key 弹窗：名称、护栏（多选）、消费限额、过期时间
+ * 编辑 API Key 弹窗：名称、单层护栏绑定、消费限额、过期时间
  * 作用域只读（创建后不可变）。
  */
 import { useEffect, useState } from 'react'
@@ -8,7 +8,6 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import Select, { SelectItem } from '@/components/ui/Select'
-import { TagInput } from '@/components/ui/TagInput'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { updateApiKey } from '@/services/api-keys'
@@ -19,7 +18,7 @@ import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { SCOPE_OPTIONS, EXPIRATION_PRESETS, resolveExpiryISO } from './constants'
 import { CreateGuardrailDialog } from './CreateGuardrailDialog'
-import { activeDefaultGuardrail, deriveScope } from '@/pages/guardrails/derive'
+import { activeDefaultGuardrail, deriveKind, deriveScope } from '@/pages/guardrails/derive'
 import { PERIOD_LABEL } from '@/constants/status'
 import type { ApiKeyItem, SpendingPeriodUnit } from '@/types'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
@@ -72,24 +71,20 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [open, apiKey])  // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 护栏数据就绪后，从 assignments 反查该 key 已绑定的护栏 ID
+  // 护栏数据就绪后，从 assignments 反查该 key 的两条合法槽位：常规 1 条 + 提额 1 条。
+  // 存量脏数据若有多条同类绑定，编辑态只保留第一条，下一次保存会收敛到 PRD 模型。
   useEffect(() => {
     const guardrails = Array.isArray(guardrailsQuery.data) ? guardrailsQuery.data : []
     if (!guardrails.length || !apiKey) return
-    const bound: string[] = []
-    for (const g of guardrails) {
-      const isAssigned = g.assignments?.some(
-        (a) => a.subject_type === 'api_key' && a.api_key_id === apiKey.api_key_id
-      )
-      if (isAssigned) bound.push(g.id)
-    }
-    // 默认护栏走单一真源 activeDefaultGuardrail（只认 active，滤掉存量 inactive 的 is_default）
+    const bound = guardrails.filter((g) =>
+      g.assignments?.some((a) => a.subject_type === 'api_key' && a.api_key_id === apiKey.api_key_id),
+    )
     const defaultId = activeDefaultGuardrail(guardrails)?.id
-    const ordered = defaultId
-      ? [defaultId, ...bound.filter((id) => id !== defaultId)]
-      : bound
+    const regularId = bound.find((g) => deriveScope(g) === 'key' && deriveKind(g) === 'regular')?.id
+    const boostId = bound.find((g) => deriveScope(g) === 'key' && deriveKind(g) === 'boost')?.id
+    const nextIds = [defaultId, regularId, boostId].filter((id): id is string => Boolean(id))
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setGuardrailIds(ordered.length > 0 ? ordered : defaultId ? [defaultId] : [])
+    setGuardrailIds(nextIds)
   }, [guardrailsQuery.data, apiKey?.api_key_id])  // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateMutation = useMutation({
@@ -126,14 +121,31 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
     updateMutation.mutate()
   }
 
-  function handleGuardrailCreated(g: GuardrailDetail) {
-    setGuardrailIds((prev) => prev.includes(g.id) ? prev : [...prev, g.id])
-  }
-
   const allGuardrails = Array.isArray(guardrailsQuery.data) ? guardrailsQuery.data : []
   const defaultGuardrail = activeDefaultGuardrail(allGuardrails)
   const defaultId = defaultGuardrail?.id ?? ''
-  const extraIds = guardrailIds.filter((id) => id !== defaultId)
+  const regularOptions = allGuardrails.filter(
+    (g) => !g.is_default && deriveScope(g) === 'key' && deriveKind(g) === 'regular',
+  )
+  const boostOptions = allGuardrails.filter(
+    (g) => !g.is_default && deriveScope(g) === 'key' && deriveKind(g) === 'boost',
+  )
+  const regularId = guardrailIds.find((id) => regularOptions.some((g) => g.id === id)) ?? ''
+  const boostId = guardrailIds.find((id) => boostOptions.some((g) => g.id === id)) ?? ''
+  const canEditBinding = hasPermission(PERMS.GUARDRAILS_ASSIGNMENT_EDIT)
+  const canManageBoost = canEditBinding && hasPermission(PERMS.GUARDRAILS_CREATE_BOOST)
+  const showBoostField = canManageBoost || Boolean(boostId)
+
+  function selectGuardrail(kind: 'regular' | 'boost', id: string) {
+    const nextRegularId = kind === 'regular' ? id : regularId
+    const nextBoostId = kind === 'boost' ? id : boostId
+    setGuardrailIds([defaultId, nextRegularId, nextBoostId].filter((value): value is string => Boolean(value)))
+  }
+
+  function handleGuardrailCreated(g: GuardrailDetail) {
+    if (deriveScope(g) !== 'key' || deriveKind(g) !== 'regular') return
+    selectGuardrail('regular', g.id)
+  }
   const scopeOpt = SCOPE_OPTIONS.find((o) => o.value === apiKey?.scope)
 
   return (
@@ -193,16 +205,36 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
                   </div>
                 </div>
               )}
-              <TagInput
-                value={extraIds}
-                onChange={(addIds) => setGuardrailIds([...(defaultId ? [defaultId] : []), ...addIds])}
-                options={allGuardrails
-                  // 只叠加 Key 作用域护栏（含提额，可从 Key 详情页附加）；不列个人/全局
-                  .filter((g) => !g.is_default && deriveScope(g) === 'key')
-                  .map((g) => ({ value: g.id, label: g.name }))}
-                placeholder="可选：叠加其他护栏"
-                hint="默认护栏始终绑定，可继续叠加多个护栏共同生效"
-              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-xs text-mg-text-3">常规 Key 护栏 <span>（最多 1 条）</span></label>
+                  <Select
+                    value={regularId || '__none__'}
+                    disabled={!canEditBinding}
+                    onChange={(value) => selectGuardrail('regular', value === '__none__' ? '' : value)}
+                  >
+                    <SelectItem value="__none__">不绑定</SelectItem>
+                    {regularOptions.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                  </Select>
+                </div>
+                {showBoostField && (
+                  <div>
+                    <label className="mb-1.5 block text-xs text-mg-text-3">Key 提额护栏 <span>（最多 1 条）</span></label>
+                    <Select
+                      value={boostId || '__none__'}
+                      disabled={!canManageBoost}
+                      onChange={(value) => selectGuardrail('boost', value === '__none__' ? '' : value)}
+                    >
+                      <SelectItem value="__none__">不绑定</SelectItem>
+                      {boostOptions.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                    </Select>
+                  </div>
+                )}
+              </div>
+              <p className="mt-1.5 text-xs text-mg-text-3">
+                默认全局护栏始终继承；一把 Key 最多绑定 1 条常规护栏和 1 条有效提额护栏。
+                {!canEditBinding && ' 当前角色无权修改护栏绑定。'}
+              </p>
             </div>
           </div>
 

@@ -593,7 +593,7 @@ export default function GuardrailsPage() {
     // clear. api_keys is only editable in edit mode (scope tab); on create it
     // stays whatever was selected (none).
     // 分类/类型经 metadata 占位往返（后端 #378 未交付 scope/kind 显式字段前）：
-    // is_default 承载全局分类，kind='boost' 标记提额，expires_at 记提额到期。
+    // is_default 承载全局分类，kind='boost' 标记提额，effective_to 记提额到期（后端契约，需求方#151）。
     const metadata: Record<string, unknown> = {
       // 显式落分类（后端 #378 未交付 scope 字段前的真源）：deriveScope 优先读它，
       // 不再靠「有无绑定」反推——否则未绑对象的个人/Key 护栏会被误判成全局、全堆全局列表。
@@ -610,8 +610,10 @@ export default function GuardrailsPage() {
       metadata.prompt_injection_mode = normalizedPromptInjection
     }
     // 类型：全局护栏恒常规、不写 kind；个人/Key 护栏落 kind，提额附到期时间
+    // 需求方#151：后端读 metadata.effective_to 作为提额到期（非 expires_at）——
+    // 字段名不一致会让后端判定「提额护栏未设置到期时间」而创建失败（40001）。实测验证。
     if (scope !== 'global') metadata.kind = kind
-    if (kind === 'boost') metadata.expires_at = localInputToIso(boostExpiresAt)
+    if (kind === 'boost') metadata.effective_to = localInputToIso(boostExpiresAt)
     const payload: CreateGuardrailRequest = {
       name: name.trim(),
       description: description.trim() || undefined,

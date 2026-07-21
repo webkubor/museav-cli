@@ -191,10 +191,11 @@ export function formatBudget(symbol: string, policy?: GuardrailBudgetPolicy | nu
 
 /**
  * 提额到期时间（#378/#379 提额语义未交付时兜底）：
- * metadata.expires_at 优先，否则取主预算 effective_to；都没有则 null（列显示「-」/「永不过期」）。
+ * metadata.effective_to 优先（需求方#151：后端读写此字段作为提额到期），
+ * 否则取主预算 effective_to；都没有则 null（列显示「-」/「永不过期」）。
  */
 export function boostExpiry(g: GuardrailDetail): string | null {
-  const meta = (g.metadata as Record<string, unknown> | undefined)?.expires_at
+  const meta = (g.metadata as Record<string, unknown> | undefined)?.effective_to
   if (typeof meta === 'string' && meta) return meta
   return primaryBudget(g)?.effective_to || null
 }

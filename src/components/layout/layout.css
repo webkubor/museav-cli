@@ -118,65 +118,88 @@ body[theme-mode='dark'] .dashboard-global-bottom-bg {
   }
 }
 
-/* ── 玻璃感光毛玻璃卡片样式 ── */
+/* ── 玻璃层级：静态玻璃只负责材质，可交互玻璃才抬升 ── */
 .glass-card-glow {
   position: relative;
+  isolation: isolate;
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  /* 浅色模式下增加不透明度（0.82）以形成洁净乳白玻璃，提升文字阅读对比度 */
-  background-color: rgba(255, 255, 255, 0.82) !important;
-  border: 1px solid rgba(15, 23, 42, 0.08) !important;
-  /* 顶光高光线 + 分层柔和阴影（悬浮感） */
+  /* 透明度跟随主题 surface token，避免浅/深色下出现白底白字。 */
+  background-color: rgba(var(--mg-bg-0-rgb), 0.82) !important;
+  border: 1px solid color-mix(in srgb, var(--mg-border) 82%, transparent) !important;
   box-shadow:
-    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.7),
-    var(--shadow-md) !important;
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    var(--shadow-sm) !important;
+  transition:
+    border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 body[theme-mode='dark'] .glass-card-glow {
-  /* 深色模式下继续保持高透太空感 */
-  background-color: rgba(26, 26, 29, 0.55) !important; /* 映射 var(--mg-bg-0) */
-  border: 1px solid rgba(255, 255, 255, 0.04) !important;
-  /* 深色模式下顶光反射线更加明显 */
-  box-shadow: 
-    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.15),
-    0 8px 32px 0 rgba(0, 0, 0, 0.20), 
-    0 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  background-color: rgba(var(--mg-bg-0-rgb), 0.62) !important;
+  border-color: color-mix(in srgb, var(--mg-border) 90%, transparent) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    var(--shadow-sm) !important;
 }
 
-/* 顶部 1px 极细光流线 */
+/* 顶部反射线只作为材质反馈，避免静态弹窗/下拉浮层也产生抬升。 */
 .glass-card-glow::before {
   content: "";
   position: absolute;
-  top: -1px; /* 完美贴合在 border 上方 */
-  left: 50%;
-  transform: translateX(-50%);
+  inset: 0 12% auto;
   height: 1px;
   width: 0;
-  background: linear-gradient(90deg, transparent, var(--brand-base) 50%, transparent);
-  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, transparent, var(--brand-base), transparent);
+  opacity: 0.72;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: none;
-  z-index: 10;
+  z-index: 1;
 }
 
-.glass-card-glow:hover::before {
-  width: 80%; /* 悬停时，1px 顶光线条缓缓从中间舒展开 */
+.glass-card-glow-interactive {
+  cursor: pointer;
 }
 
-.glass-card-glow:hover {
-  border-color: color-mix(in srgb, var(--brand-base) 22%, transparent) !important; /* 浅色 hover 勾勒外沿（克制，不生硬） */
+.glass-card-glow-interactive:hover,
+.glass-card-glow-interactive:focus-visible {
+  border-color: color-mix(in srgb, var(--brand-base) 30%, var(--mg-border)) !important;
   box-shadow:
-    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.8),
-    var(--shadow-lg) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.76),
+    var(--shadow-md) !important;
   transform: translateY(-2px);
 }
 
-body[theme-mode='dark'] .glass-card-glow:hover {
-  border-color: color-mix(in srgb, var(--brand-base) 40%, transparent) !important; /* 深色下点亮外沿 */
+.glass-card-glow-interactive:hover::before,
+.glass-card-glow-interactive:focus-visible::before {
+  width: 76%;
+}
+
+.glass-card-glow-interactive:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus), var(--shadow-md) !important;
+}
+
+.glass-card-glow-interactive:active {
+  transform: translateY(0) scale(0.995);
+  box-shadow: var(--shadow-sm) !important;
+}
+
+body[theme-mode='dark'] .glass-card-glow-interactive:hover,
+body[theme-mode='dark'] .glass-card-glow-interactive:focus-visible {
+  border-color: color-mix(in srgb, var(--brand-base) 46%, var(--mg-border)) !important;
   box-shadow:
-    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.25),
-    0 12px 35px 0 rgba(0, 0, 0, 0.28),
-    0 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    var(--shadow-md) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-card-glow,
+  .glass-card-glow::before {
+    transition: none !important;
+  }
 }
 
 /* ── Dashboard 首屏卡片：去掉 backdrop-filter ──
@@ -193,7 +216,7 @@ body[theme-mode='dark'] .glass-card-glow:hover {
     var(--shadow-md) !important;
 }
 
-.no-canvas-blur .glass-card-glow:hover {
+.no-canvas-blur .glass-card-glow-interactive:hover {
   box-shadow:
     inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.8),
     var(--shadow-lg) !important;

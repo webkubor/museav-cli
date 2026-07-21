@@ -1,7 +1,7 @@
 /**
  * API Key 详情抽屉（PRD v1.0.3）
  * 段落：基础信息 / 用量 / 安全护栏 / 最近调用 / 操作审计
- * 抽屉头治理动作：轮转(gate) · 停用/启用 · 删除（变更负责人在治理批次接入）。
+ * 抽屉头治理动作：轮转(gate) · 停用/启用 · 删除（PRD 无编辑/变更负责人，负责人为静态展示）。
  * 详情/审计接口（#383/#384）未交付时以列表项兜底 + 空态降级，不阻塞、不报错。
  */
 import { useState, type ReactNode } from 'react'
@@ -100,14 +100,12 @@ interface Props {
   canReveal: boolean
   onToggleStatus: (item: ApiKeyItem) => void
   onRotate: (item: ApiKeyItem) => void
-  onChangeOwner: (item: ApiKeyItem) => void
-  onEdit: (item: ApiKeyItem) => void
   onRevoke: (target: { id: string; name: string }) => void
   /** 埋点 row_scope（workspace_all|self）——limit_save/jump_logs 带上 */
   rowScope?: string
 }
 
-export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction, canReveal, onToggleStatus, onRotate, onChangeOwner, onEdit, onRevoke, rowScope }: Props) {
+export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction, canReveal, onToggleStatus, onRotate, onRevoke, rowScope }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const keyId = item?.api_key_id
@@ -168,14 +166,12 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
   const view = detail ?? item
   const keyType = deriveKeyType(view)
   const responsible = responsibleOf(view)
-  const creatorDiffers = view.owner?.account_id && responsible.account_id && view.owner.account_id !== responsible.account_id
   const usage = detail?.usage
   const auditRows = audit?.items ?? detail?.recent_audit ?? []
   const isDisabled = view.status === 'disabled'
   const canToggle = isDisabled ? cap(view.capabilities?.can_enable, canAction(keyType, 'disable')) : cap(view.capabilities?.can_disable, canAction(keyType, 'disable'))
   // 按后端 capability 正常渲染；rotate 路由未就绪（40401）时点击走 requestError → 「服务暂不可用」，不做死按钮/硬隐藏（qa#384/#385）
   const rotateEnabled = canAction(keyType, 'rotate') && view.capabilities?.can_rotate === true
-  const canEdit = canAction(keyType, 'edit')
   const canDelete = cap(view.capabilities?.can_delete, canAction(keyType, 'revoke')) && view.status !== 'revoked'
 
   return (
@@ -206,12 +202,6 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
               <Button variant="outline" size="sm" onClick={() => onToggleStatus(view)}>
                 {isDisabled ? '启用' : '停用'}
               </Button>
-            )}
-            {view.status !== 'revoked' && canAction(keyType, 'change_owner') && (
-              <Button variant="outline" size="sm" onClick={() => onChangeOwner(view)}>变更负责人</Button>
-            )}
-            {view.status !== 'revoked' && canEdit && (
-              <Button variant="outline" size="sm" onClick={() => onEdit(view)}>编辑</Button>
             )}
             {canDelete && (
               <Button
@@ -252,9 +242,6 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
             <Cell label="类型" value={KEY_TYPE_LABEL[keyType]} />
             <Cell label="负责人" value={responsible.display_name || responsible.email || '—'} />
             <Cell label="到期时间" value={view.expires_at ? formatDateTime(view.expires_at) : '永不过期'} />
-            {creatorDiffers && (
-              <Cell label="创建人" value={view.owner.display_name || view.owner.email || '—'} />
-            )}
           </div>
         </Section>
 

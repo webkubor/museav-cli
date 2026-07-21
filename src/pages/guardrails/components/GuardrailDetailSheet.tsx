@@ -493,12 +493,10 @@ export function GuardrailDetailSheet({
                     )}
                   </Field>
                 )}
-                {/* 预算：全局三档 / 个人·Key 单档（提额预算亦在此，到期时间由下方 boost 字段承接） */}
-                <div>
-                  <label className="block text-xs font-bold text-mg-text-2 mb-2">
-                    {scope === 'global' ? '预算（三档独立限额）' : kind === 'boost' ? '提额预算' : '预算'}
-                  </label>
-                  {scope === 'global' ? (
+                {/* 预算（对齐 PRD）：全局三档 / 个人·Key 提额=不限额|限额分段 / 常规=必填金额+周期（label「个人预算」「Key 预算」） */}
+                {scope === 'global' ? (
+                  <div>
+                    <label className="block text-xs font-bold text-mg-text-2 mb-2">预算（三档独立限额）</label>
                     <div className="space-y-3">
                       {GLOBAL_BUDGET_META.filter((m) => !m.enterpriseOnly || showMember).map((m) => (
                         <GlobalBudgetControl
@@ -511,15 +509,28 @@ export function GuardrailDetailSheet({
                         />
                       ))}
                     </div>
-                  ) : (
+                  </div>
+                ) : kind === 'boost' ? (
+                  <MemberKeyBoostBudgetControl
+                    label={scope === 'member' ? memberBudgetLabel : keyBudgetLabel}
+                    limited={budgetLimited}
+                    onLimitedChange={onBudgetLimitedChange}
+                    amount={budgetAmount}
+                    onAmountChange={onBudgetAmountChange}
+                    period={budgetPeriodUnit}
+                    onPeriodChange={onBudgetPeriodUnitChange}
+                    disabled={false}
+                  />
+                ) : (
+                  <Field label={scope === 'member' ? memberBudgetLabel : keyBudgetLabel} required>
                     <div className="flex items-center gap-2">
                       <Input
                         type="text"
                         inputMode="decimal"
-                        aria-label="预算限额金额"
+                        aria-label={scope === 'member' ? memberBudgetLabel : keyBudgetLabel}
                         value={budgetAmount}
                         onChange={(e) => onBudgetAmountChange(e.target.value)}
-                        placeholder="输入限额金额，留空表示不限额"
+                        placeholder="输入限额金额（最多两位小数）"
                         className="h-9 text-xs flex-1"
                       />
                       <Select value={budgetPeriodUnit} onChange={(v) => onBudgetPeriodUnitChange(v as PeriodUnit)} className="h-9 text-xs w-28">
@@ -528,8 +539,8 @@ export function GuardrailDetailSheet({
                         ))}
                       </Select>
                     </div>
-                  )}
-                </div>
+                  </Field>
+                )}
               </>
             )}
           />

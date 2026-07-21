@@ -340,7 +340,9 @@ export default function GuardrailsPage() {
       } else {
         const agg: BudgetAggScope = scope === 'member' ? 'per_member' : 'per_api_key'
         const amt = budgetAmount.trim()
-        if (amt && isValidBudgetAmount(amt)) {
+        // 提额「不限额」档不下发预算策略；常规恒限额、提额限额档才发。
+        const budgetOn = kind === 'regular' || budgetLimited
+        if (budgetOn && amt && isValidBudgetAmount(amt)) {
           ops.push({ aggregation_scope: agg, period_unit: budgetPeriodUnit, period_length: 1, enforcement_mode: 'hard_limit', spend_limit_amount: amt, enabled: true })
         }
       }
@@ -659,6 +661,13 @@ export default function GuardrailsPage() {
     // 需求方#498：创建个人/Key 护栏必须绑定至少一个对象，否则后端返 40001。
     if (scope === 'member' && memberIds.length === 0) { appToast.error('请至少绑定一个成员'); return }
     if (scope === 'key' && apiKeyIds.length === 0) { appToast.error('请至少绑定一个 API Key'); return }
+    // 预算必填（对齐 PRD）：个人/Key 常规护栏预算必填（无「不限额」）；提额「限额」档必填、「不限额」档可空。
+    if (scope === 'member' || scope === 'key') {
+      const amt = budgetAmount.trim()
+      const budgetRequired = kind === 'regular' || budgetLimited
+      if (budgetRequired && !amt) { appToast.error(kind === 'boost' ? '请填写提额预算' : '请填写预算'); return }
+      if (budgetRequired && amt && !isValidBudgetAmount(amt)) { appToast.error('预算金额无效：大于 0，整数最多 12 位，小数最多 2 位'); return }
+    }
     // 提额必须设置到期时间（文档§校验规则）
     if (kind === 'boost') {
       if (!boostExpiresAt || !localInputToIso(boostExpiresAt)) {

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { LuFolderOpen, LuChevronsUpDown, LuCheck, LuSettings, LuSearch } from 'react-icons/lu'
+import { LuFolderOpen, LuChevronsUpDown, LuCheck, LuSearch } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { useTrackContext } from '@/hooks/use-track-context'
@@ -14,7 +14,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
 } from '@/components/ui/DropdownMenu'
 
 interface WorkspaceSwitcherProps {
@@ -70,7 +69,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
     }
   }
 
-  /** 下拉内容：标题 + （超阈值时）搜索 + 限高滚动列表 + 空间管理入口。折叠/展开两态共用。 */
+  /** 下拉内容：标题 + （超阈值时）搜索 + 限高滚动列表。折叠/展开两态共用。 */
   const menuContent = (
     <>
       <div className="px-2 py-1.5 text-xs font-bold text-mg-text-3 uppercase tracking-wider">
@@ -133,11 +132,6 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
           ))
         )}
       </div>
-      <DropdownMenuSeparator />
-      <DropdownMenuItem onClick={() => navigate('/workspaces')}>
-        <LuSettings size={13} className="mr-2 text-mg-text-3 shrink-0" />
-        <span>{t('header.workspaceMgmt')}</span>
-      </DropdownMenuItem>
     </>
   )
 

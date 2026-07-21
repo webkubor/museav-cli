@@ -6,7 +6,7 @@ import { cn, formatMoney } from '@/lib/utils'
  * 规范（在此定死，调用方只选 size / tone，不自定义色/字重/字体）：
  * - 字体：JetBrains Mono（font-mono）+ tabular-nums（等宽对齐）
  * - 数字：font-bold；颜色由 tone 决定（默认主文字 text-0）
- * - 符号：0.82em 小一号 + font-semibold + 次要色 text-2（从属于数字）
+ * - 符号：0.82em 小一号 + font-semibold；颜色随数字 tone（默认主文字 text-1，即黑色，需求方#180）
  * - 无值：显示「—」（text-3，不带符号）
  *
  * size: sm(默认,列表/行内) | md(卡片次要) | lg(KPI/余额大数)
@@ -43,7 +43,7 @@ export function Money({
   const text = formatMoney(amount, '')
   return (
     <span className={cn('font-mono tabular-nums whitespace-nowrap font-bold', SIZE[size], TONE[tone], className)}>
-      <span className="text-[0.82em] font-semibold text-mg-text-3 mr-[0.12em]">{sym}</span>
+      <span className="text-[0.82em] font-semibold mr-[0.12em]">{sym}</span>
       {text}
     </span>
   )

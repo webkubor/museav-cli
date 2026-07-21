@@ -8,7 +8,7 @@ import { TagInput } from '@/components/ui/TagInput'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import type { StatusConfig } from '@/components/ui/StatusBadge'
 import { formatDateTime } from '@/lib/format-date'
-import { LuKey, LuUserRound, LuInfo, LuShieldAlert } from 'react-icons/lu'
+import { LuKey, LuUserRound, LuInfo } from 'react-icons/lu'
 import type { GuardrailAuditLog, GuardrailDetail } from '@/interfaces/guardrails'
 import { PERIOD_LABEL } from '@/constants/status'
 import { GuardrailFormFields } from './GuardrailFormFields'
@@ -77,22 +77,24 @@ function GlobalBudgetControl({
   disabled: boolean
 }) {
   const invalid = draft.limited && draft.amount.trim() !== '' && !isValidBudgetAmount(draft.amount)
+  // 交互形态对齐 PRD GuardrailBudgetControl：两按钮分段「不限额 | 限额」，非 Switch。
+  const modeBtn = (active: boolean) =>
+    [
+      'rounded-md border px-3 py-2 text-xs font-bold transition-all',
+      disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+      active
+        ? 'border-brand-base bg-brand-base/8 text-brand-base'
+        : 'border-mg-border bg-mg-fill-0/40 text-mg-text-2 hover:border-brand-base/35',
+    ].join(' ')
   return (
     <div className="rounded-lg border border-mg-border p-4 space-y-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-xs font-bold text-mg-text-1">{label}</div>
-          <div className="text-xs text-mg-text-3 mt-0.5">{hint}</div>
-        </div>
-        <label className="flex items-center gap-2 shrink-0 text-xs text-mg-text-2">
-          <span>{draft.limited ? '限额' : '不限额'}</span>
-          <Switch
-            checked={draft.limited}
-            onChange={(checked) => onChange({ limited: checked })}
-            disabled={disabled}
-            aria-label={`${label}是否限额`}
-          />
-        </label>
+      <div>
+        <div className="text-xs font-bold text-mg-text-1">{label}</div>
+        <div className="text-xs text-mg-text-3 mt-0.5">{hint}</div>
+      </div>
+      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={`${label}额度类型`}>
+        <button type="button" role="radio" aria-checked={!draft.limited} disabled={disabled} onClick={() => onChange({ limited: false })} className={modeBtn(!draft.limited)}>不限额</button>
+        <button type="button" role="radio" aria-checked={draft.limited} disabled={disabled} onClick={() => onChange({ limited: true })} className={modeBtn(draft.limited)}>限额</button>
       </div>
       {draft.limited && (
         <div className="flex items-center gap-2">
@@ -422,9 +424,9 @@ export function GuardrailDetailSheet({
         </div>
       )}
 
-      <div className="flex items-center gap-2 border-b border-mg-border px-6 py-3 text-xs font-semibold text-mg-text-2">
-        <LuShieldAlert className="h-3.5 w-3.5 text-mg-text-3" />
-        {isCreating ? '护栏配置' : scopeLabel}
+      {/* 头部小眼标（对齐 PRD 抽屉：创建=「安全护栏」/编辑=作用域标签；无「护栏配置」子栏、无盾牌图标） */}
+      <div className="px-6 pt-3 text-xs text-mg-text-3">
+        {isCreating ? '安全护栏' : scopeLabel}
       </div>
 
       <div className="p-6 overflow-y-auto flex-1">

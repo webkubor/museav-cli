@@ -915,10 +915,7 @@
       "descPlaceholder": "简述该工作空间的用途...",
       "inviteLabel": "初始成员 (选填)",
       "invitePlaceholder": "搜索组织成员姓名或邮箱...",
-      "inviteHint": "创建成功后将同时发送工作空间邀请，最多 20 人。",
-      "inviteRoleLabel": "成员角色",
-      "inviteRoleMember": "成员",
-      "inviteRoleAdmin": "管理员"
+      "inviteHint": "创建成功后将同时发送工作空间邀请，最多 20 人。"
     },
     "toast": {
       "createSuccess": "工作空间 \"{{name}}\" 创建成功",
@@ -945,7 +942,7 @@
         "requests": "近 7 天请求数",
         "tokens": "近 7 天 Tokens",
         "slug": "唯一标识",
-        "owner": "拥有者",
+        "owner": "负责人",
         "createdAt": "创建时间",
         "apiKeys": "API Key 数量",
         "keysOwner": "{{count}} 个 Key · 负责人 {{owner}}",

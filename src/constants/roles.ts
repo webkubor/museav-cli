@@ -1,7 +1,8 @@
 import type { BadgeVariant } from '@/components/ui/Badge'
 
+// 工作空间角色文案统一为 PRD 原型口径：ws_owner=负责人（需求方#177）
 export const WS_ROLE_LABEL: Record<'ws_owner' | 'ws_admin' | 'ws_member', string> = {
-  ws_owner:  '拥有者',
+  ws_owner:  '负责人',
   ws_admin:  '管理员',
   ws_member: '成员',
 }

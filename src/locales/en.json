@@ -915,10 +915,7 @@
       "descPlaceholder": "Describe the purpose...",
       "inviteLabel": "Initial members (Optional)",
       "invitePlaceholder": "Search org members by name or email...",
-      "inviteHint": "Invitations are sent after creation. Up to 20 people.",
-      "inviteRoleLabel": "Role",
-      "inviteRoleMember": "Member",
-      "inviteRoleAdmin": "Admin"
+      "inviteHint": "Invitations are sent after creation. Up to 20 people."
     },
     "toast": {
       "createSuccess": "Workspace \"{{name}}\" created",

@@ -52,8 +52,6 @@ import { usePermissions } from '@/hooks/use-permissions'
 import { useNavigate } from 'react-router-dom'
 import type { WorkspaceDetail, Money } from '@/types'
 
-type InviteRole = 'ws_admin' | 'ws_member'
-
 const MAX_INVITE_MEMBERS = 20
 
 /** 名称派生 slug：小写化、空白转短横线，过滤非字母数字短横线的非法字符 */
@@ -101,9 +99,9 @@ export default function WorkspacesPage() {
   // 用户是否手动改过 Slug：改过之后名称变化不再联动覆盖
   const [slugTouched, setSlugTouched] = useState(false)
   const [description, setDescription] = useState('')
-  // 初始成员：企业租户下从组织成员里搜索选取，值为对方邮箱（直接对齐 invite_members 参数）
+  // 创建空间先选负责人，再选初始成员；接口用 ws_owner / ws_member 区分两者。
+  const [ownerEmail, setOwnerEmail] = useState(currentAccountEmail ?? '')
   const [selectedMemberEmails, setSelectedMemberEmails] = useState<string[]>([])
-  const [inviteRole, setInviteRole] = useState<InviteRole>('ws_member')
 
   // ─── 1. TanStack Query 真实获取工作空间接口数据 ─────────────────
   const { data, isLoading } = useQuery({
@@ -121,16 +119,18 @@ export default function WorkspacesPage() {
     staleTime: 60_000,
   })
 
-  // 候选成员：排除自己（创建者自动成为负责人，无需再邀请自己）
-  const memberOptions: TagOption[] = useMemo(() => {
+  const ownerOptions: TagOption[] = useMemo(() => {
     const items = tenantMembersQuery.data?.items ?? []
-    return items
-      .filter((m) => m.account.email !== currentAccountEmail)
-      .map((m) => ({
-        value: m.account.email,
-        label: `${m.account.display_name} (${m.account.email})`,
-      }))
-  }, [tenantMembersQuery.data, currentAccountEmail])
+    return items.map((m) => ({
+      value: m.account.email,
+      label: `${m.account.display_name} (${m.account.email})`,
+    }))
+  }, [tenantMembersQuery.data])
+
+  // 初始成员不重复展示负责人；负责人由单独字段选择并随创建请求一起提交。
+  const memberOptions: TagOption[] = useMemo(() => {
+    return ownerOptions.filter((option) => option.value !== ownerEmail)
+  }, [ownerEmail, ownerOptions])
 
   // 工作空间数已达当前租户上限（现有 ['tenants'] query，不重复发请求）
   const atWorkspaceLimit = Boolean(
@@ -146,9 +146,12 @@ export default function WorkspacesPage() {
 
   // ─── 2. Mutation 真实绑定新建工作空间接口 ─────────────────────
   const createMutation = useMutation({
-    mutationFn: (vals: { name: string; slug: string; description?: string; inviteMembers: string[]; inviteRole: InviteRole }) => {
-      const invite_members = vals.inviteMembers.length > 0
-        ? vals.inviteMembers.map((email) => ({ email, role: vals.inviteRole }))
+    mutationFn: (vals: { name: string; slug: string; description?: string; owner: string; members: string[] }) => {
+      const invite_members = isEnterprise
+        ? [
+            { email: vals.owner, role: 'ws_owner' as const },
+            ...vals.members.map((email) => ({ email, role: 'ws_member' as const })),
+          ]
         : undefined
       return createWorkspace({
         name: vals.name,
@@ -165,8 +168,8 @@ export default function WorkspacesPage() {
       setSlug('')
       setSlugTouched(false)
       setDescription('')
+      setOwnerEmail(currentAccountEmail ?? '')
       setSelectedMemberEmails([])
-      setInviteRole('ws_member')
       queryClient.invalidateQueries({ queryKey: ['workspaces', activeTenantId] })
     },
     onError: (err: unknown) => {
@@ -200,6 +203,10 @@ export default function WorkspacesPage() {
       toast.error(t('workspaces.toast.nameRequired'))
       return
     }
+    if (!ownerEmail) {
+      toast.error('请选择空间负责人')
+      return
+    }
     if (selectedMemberEmails.length > MAX_INVITE_MEMBERS) {
       toast.error(t('workspaces.toast.inviteLimit', { count: MAX_INVITE_MEMBERS }))
       return
@@ -207,7 +214,7 @@ export default function WorkspacesPage() {
     // Slug 允许留空：提交时统一派生/清洗；纯中文等非 ASCII 名称派生结果也可能为空，
     // 最终落到「租户 slug-序号」兜底，保证提交前一定有合法 slug（后端 minLength 2 必填）
     const finalSlug = slugify(slug) || slugify(name) || fallbackSlug(tenant?.slug, items.length)
-    createMutation.mutate({ name, slug: finalSlug, description, inviteMembers: selectedMemberEmails, inviteRole })
+    createMutation.mutate({ name, slug: finalSlug, description, owner: ownerEmail, members: selectedMemberEmails })
   }
 
   const selectWorkspace = (workspaceId: string) => {
@@ -589,25 +596,32 @@ export default function WorkspacesPage() {
                 className="min-h-[84px]"
               />
             </div>
-            {/* 初始成员：仅企业租户可选（个人租户没有其他企业成员可邀请） */}
+            {/* PRD：先设置负责人，再配置初始成员；不在创建弹窗里配置多个管理员。 */}
             {isEnterprise && (
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_128px]">
+              <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.inviteLabel')}</div>
+                  <div className="text-xs font-bold text-mg-text-2">空间负责人</div>
+                  <Select
+                    value={ownerEmail}
+                    onChange={(value) => {
+                      setOwnerEmail(value)
+                      setSelectedMemberEmails((current) => current.filter((email) => email !== value))
+                    }}
+                  >
+                    {ownerOptions.map((option) => (
+                      <Select.Option key={option.value} value={option.value}>{option.label}</Select.Option>
+                    ))}
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <div className="text-xs font-bold text-mg-text-2">初始成员</div>
                   <TagInput
                     value={selectedMemberEmails}
                     onChange={setSelectedMemberEmails}
                     options={memberOptions}
-                    placeholder={t('workspaces.modal.invitePlaceholder')}
+                    placeholder="搜索企业成员，回车添加"
                   />
-                  <div className="text-xs text-mg-text-3">{t('workspaces.modal.inviteHint')}</div>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.inviteRoleLabel')}</div>
-                  <Select value={inviteRole} onChange={(value) => setInviteRole(value as InviteRole)}>
-                    <Select.Option value="ws_member">{t('workspaces.modal.inviteRoleMember')}</Select.Option>
-                    <Select.Option value="ws_admin">{t('workspaces.modal.inviteRoleAdmin')}</Select.Option>
-                  </Select>
+                  <div className="text-xs text-mg-text-3">负责人会自动加入空间；其他成员以普通成员身份加入。</div>
                 </div>
               </div>
             )}

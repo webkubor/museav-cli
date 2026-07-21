@@ -167,7 +167,7 @@ export interface CreateWorkspaceRequest {
   slug: string
   description?: string
   kind?: 'team'
-  invite_members?: Array<{ email: string; role: 'ws_member' | 'ws_admin' }>
+  invite_members?: Array<{ email: string; role: 'ws_owner' | 'ws_member' }>
 }
 
 export interface UpdateWorkspaceRequest {

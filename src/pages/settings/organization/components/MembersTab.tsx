@@ -5,6 +5,7 @@ import {
   listTenantMembers,
   reactivateTenantMember,
   removeTenantMember,
+  resendTenantInvite,
   suspendTenantMember,
   updateTenantMemberRole,
 } from '@/services/tenants'
@@ -129,6 +130,16 @@ export function MembersTab({
       setRemoveTarget(null)
     },
     onError: (err: Error) => appToast.requestError(err, '移除成员失败'),
+  })
+
+  // 重发待接受邀请（#176）：仅 pending 邀请可重发；重发后延长有效期，刷新列表拿到新 expires_at。
+  const resendInvite = useMutation({
+    mutationFn: (invitationId: string) => resendTenantInvite(tenantId, invitationId),
+    onSuccess: () => {
+      appToast.success(t('enterprise.members.resendSuccess'))
+      qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
+    },
+    onError: (err: Error) => appToast.requestError(err, t('enterprise.members.resendError')),
   })
 
   const members = useMemo(() => membersQuery.data?.items ?? [], [membersQuery.data])
@@ -350,7 +361,23 @@ export function MembersTab({
                       {inv.expires_at ? t('enterprise.members.expiresAt', { date: formatDate(inv.expires_at) }) : '—'}
                     </TableCell>
                     <TableCell align="center">
-                      <span className="text-mg-text-4">—</span>
+                      {canManageMembers ? (
+                        <div className="flex items-center justify-center whitespace-nowrap">
+                          <button
+                            type="button"
+                            data-track="members:resend_invite"
+                            disabled={resendInvite.isPending && resendInvite.variables === inv.id}
+                            onClick={() => resendInvite.mutate(inv.id)}
+                            className="text-mg-text-3 hover:text-brand-base hover:bg-brand-glow/10 px-2 py-1 rounded-md transition-all border-none bg-transparent cursor-pointer font-semibold text-xs disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {resendInvite.isPending && resendInvite.variables === inv.id
+                              ? t('enterprise.members.resending')
+                              : t('enterprise.members.resendInvite')}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-mg-text-4">—</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

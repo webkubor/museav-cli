@@ -80,6 +80,17 @@ export function reactivateTenantMember(tenantId: string, accountId: string) {
   return post<null>(`tenants/${tenantId}/members/${accountId}/reactivate`, {})
 }
 
+/**
+ * 重发租户邀请邮件（#176）。仅对 pending 邀请有效——重发并延长有效期。
+ * 后端：POST /tenants/:id/invites/:invitationId/resend（非 pending → code=40901）。
+ */
+export function resendTenantInvite(tenantId: string, invitationId: string) {
+  return post<{ email: string; invitation_id: string; status: string }>(
+    `tenants/${tenantId}/invites/${invitationId}/resend`,
+    {},
+  )
+}
+
 /** 解散组织（仅 tenant_owner） */
 export function dissolveTenant(tenantId: string) {
   return del<null>(`tenants/${tenantId}`)

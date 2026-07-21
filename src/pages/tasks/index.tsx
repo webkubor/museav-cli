@@ -349,18 +349,10 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
           <div>
             <p className="mg-text-label text-mg-text-3 mb-2">概览</p>
             <div className="rounded-md border border-mg-border bg-mg-bg-0 px-[var(--mg-panel-padding-md)]">
+              {/* 需求方#181：异步任务详情模型名前不带图标（对齐同步调用详情概览） */}
               <DetailRow
                 label="模型"
-                value={
-                  <span className="inline-flex items-center gap-1.5">
-                    <ModelIcon
-                      model={{ display_name: task.requested_model, vendor: task.vendor ?? undefined }}
-                      size={18}
-                      rounded="rounded-md"
-                    />
-                    <span className="font-mono">{task.requested_model}</span>
-                  </span>
-                }
+                value={<span className="font-mono">{task.requested_model}</span>}
               />
               <DetailRow label="工作空间" value={workspaceName} />
               <DetailRow label="API Key 名称" value={apiKeyName} />

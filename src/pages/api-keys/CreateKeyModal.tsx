@@ -255,7 +255,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
     ? eff.ip_whitelist
     : [...new Set(previewGuardrails.flatMap((g) => metadataList(g, 'ip_whitelist')))]
   const memberApplies = effectiveScope !== 'workspace'
-  const memberLayer = eff?.layers?.find((layer) => /member|personal/i.test(layer.layer))
+  const memberLayer = previewQuery.data?.layers?.find((layer) => /member|personal/i.test(layer.layer))
   const effectiveLayerRows = [
     { label: '全局护栏', name: globalGuardrail?.name ?? '未配置', state: globalGuardrail ? 'active' : 'inactive' },
     {

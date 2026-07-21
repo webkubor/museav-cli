@@ -1942,7 +1942,14 @@
       "workspaceHintNonMember": "Owner / 管理员默认可访问全部工作空间",
       "saveSuccess": "修改已保存",
       "roleUpdateError": "更新角色失败",
-      "statusUpdateError": "更新状态失败"
+      "statusUpdateError": "更新状态失败",
+      "workspaceCount": "{{count}} 个空间",
+      "workspacesLoading": "加载中…",
+      "workspacesError": "加载失败，请重试",
+      "workspacesPanelEmpty": "暂无授权工作空间",
+      "wsRoleOwner": "负责人",
+      "wsRoleMember": "成员",
+      "wsDefault": "默认"
     },
     "info": {
       "avatarHint": "点击头像更换 · 支持 PNG/JPEG/WebP，最大 2MB",

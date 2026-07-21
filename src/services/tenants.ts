@@ -21,6 +21,7 @@ import type {
   TenantDetail,
   TenantInviteLink,
   TenantMembersResponse,
+  MemberWorkspacesResponse,
 } from '@/types'
 /** 当前 account 可访问的所有 tenant 列表（无分页） */
 export function listTenants() {
@@ -89,6 +90,14 @@ export function resendTenantInvite(tenantId: string, invitationId: string) {
     `tenants/${tenantId}/invites/${invitationId}/resend`,
     {},
   )
+}
+
+/**
+ * 列出成员被授权的 workspaces（qa#420-3 / 需求方#175）。
+ * 用于成员列表「授权工作空间」列点开后按需（懒加载）展示空间名称明细，避免列表逐行 N+1。
+ */
+export function getMemberWorkspaces(tenantId: string, accountId: string) {
+  return get<MemberWorkspacesResponse>(`tenants/${tenantId}/members/${accountId}/workspaces`)
 }
 
 /** 解散组织（仅 tenant_owner） */

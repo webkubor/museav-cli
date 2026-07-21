@@ -41,6 +41,8 @@ export type {
   TenantMember,
   PendingTenantInvite,
   TenantMembersResponse,
+  MemberWorkspaceItem,
+  MemberWorkspacesResponse,
   AddTenantMemberRequest,
   AddTenantMemberResult,
   AddTenantMemberResponse,

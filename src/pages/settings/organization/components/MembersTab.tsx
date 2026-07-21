@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { LuLayers } from 'react-icons/lu'
 import {
+  getMemberWorkspaces,
   listTenantMembers,
   reactivateTenantMember,
   removeTenantMember,
@@ -15,6 +17,7 @@ import type { TenantMember, PendingTenantInvite } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
+import { Popover } from '@/components/ui/Popover'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { appToast } from '@/lib/app-toast'
 import { refreshSession } from '@/lib/auth/refresh-session'
@@ -35,6 +38,56 @@ const ROLE_BADGE: Record<TenantRole, 'purple' | 'brand' | 'secondary'> = {
   tenant_owner: 'purple',
   tenant_admin: 'brand',
   tenant_member: 'secondary',
+}
+
+/**
+ * 授权工作空间明细面板（需求方#175）：懒加载——仅在 Popover 打开、本组件挂载时才拉取该成员的 workspaces，
+ * 避免成员列表逐行 N+1。react-query 按 [member-workspaces, tenantId, accountId] 缓存，重复打开不重复请求。
+ */
+function MemberWorkspacesPanel({ tenantId, accountId }: { tenantId: string; accountId: string }) {
+  const { t } = useTranslation()
+  const q = useQuery({
+    queryKey: ['member-workspaces', tenantId, accountId],
+    queryFn: () => getMemberWorkspaces(tenantId, accountId),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  })
+  const items = q.data?.items ?? []
+  return (
+    <div className="w-64 max-h-72 overflow-y-auto p-2">
+      {q.isLoading ? (
+        <div className="flex items-center gap-2 px-2 py-3 text-xs text-mg-text-3">
+          <span className="w-3.5 h-3.5 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
+          {t('enterprise.members.workspacesLoading')}
+        </div>
+      ) : q.isError ? (
+        <div className="px-2 py-3 text-xs text-mg-danger">{t('enterprise.members.workspacesError')}</div>
+      ) : items.length === 0 ? (
+        <div className="px-2 py-3 text-xs text-mg-text-3">{t('enterprise.members.workspacesPanelEmpty')}</div>
+      ) : (
+        <ul className="flex flex-col gap-0.5">
+          {items.map((w) => (
+            <li
+              key={w.workspace_id}
+              className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-mg-fill-0/50 transition-colors"
+            >
+              <span className="text-xs font-medium text-mg-text-1 truncate">{w.name}</span>
+              <span className="flex items-center gap-1 shrink-0">
+                {w.is_default && (
+                  <Badge variant="secondary" size="sm">{t('enterprise.members.wsDefault')}</Badge>
+                )}
+                <Badge variant={w.role === 'ws_owner' ? 'brand' : 'secondary'} size="sm">
+                  {w.role === 'ws_owner'
+                    ? t('enterprise.members.wsRoleOwner')
+                    : t('enterprise.members.wsRoleMember')}
+                </Badge>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
 }
 
 /**
@@ -282,11 +335,28 @@ export function MembersTab({
                       <TableCell className="text-xs text-mg-text-2 font-medium">
                         {isPrivileged ? (
                           <span className="text-mg-text-3">{t('enterprise.members.allWorkspaces')}</span>
+                        ) : m.workspace_count > 0 ? (
+                          // 需求方#175：列保留数量，点开 Popover 懒加载展示空间名称明细（qa#420-3 接口）。
+                          <Popover
+                            position="bottom"
+                            trigger={
+                              <button
+                                type="button"
+                                data-track="members:view_workspaces"
+                                className="inline-flex items-center gap-1 border-none bg-transparent p-0 cursor-pointer text-xs font-medium text-mg-text-2 hover:text-brand-base transition-colors"
+                              >
+                                <LuLayers className="w-3.5 h-3.5" />
+                                <span className="underline decoration-dotted underline-offset-2">
+                                  {t('enterprise.members.workspaceCount', { count: m.workspace_count })}
+                                </span>
+                              </button>
+                            }
+                            content={
+                              <MemberWorkspacesPanel tenantId={tenantId} accountId={m.account.account_id} />
+                            }
+                          />
                         ) : (
-                          // 需求方#175 要求展示「空间名称」而非数量；Swagger tenant.Member 仅返 workspace_count，
-                          // 无明细/名称 → 不前端 join 别列表兜底，暂以数量占位，待后端补名称明细。
-                          // TODO(后端待接): 成员-工作空间授权明细/名称 见 QA#420(第3项，duanlingxiao)
-                          <span>{m.workspace_count > 0 ? `${m.workspace_count}` : '—'}</span>
+                          <span className="text-mg-text-3">—</span>
                         )}
                       </TableCell>
                       <TableCell>

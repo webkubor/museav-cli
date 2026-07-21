@@ -1930,7 +1930,14 @@
       "workspaceHintNonMember": "Owners / admins can access all workspaces by default",
       "saveSuccess": "Changes saved",
       "roleUpdateError": "Failed to update role",
-      "statusUpdateError": "Failed to update status"
+      "statusUpdateError": "Failed to update status",
+      "workspaceCount": "{{count}} workspaces",
+      "workspacesLoading": "Loading…",
+      "workspacesError": "Failed to load, please retry",
+      "workspacesPanelEmpty": "No authorized workspaces",
+      "wsRoleOwner": "Owner",
+      "wsRoleMember": "Member",
+      "wsDefault": "Default"
     },
     "info": {
       "avatarHint": "Click to change · PNG/JPEG/WebP, max 2MB",

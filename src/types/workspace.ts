@@ -66,6 +66,23 @@ export interface TenantMembersResponse extends CursorPage<TenantMember> {
   pending_invitations: PendingTenantInvite[]
 }
 
+/**
+ * 成员被授权的单个 workspace（Swagger tenant.MemberWorkspaceItem，qa#420-3 / 需求方#175）。
+ * 用于成员列表「授权工作空间」列点开后按需展示空间名称明细。
+ */
+export interface MemberWorkspaceItem {
+  workspace_id: string
+  name: string
+  slug: string
+  role: 'ws_owner' | 'ws_member'
+  is_default: boolean
+}
+
+/** GET /tenants/:id/members/:accountId/workspaces 响应（Swagger tenant.MemberWorkspacesResponse） */
+export interface MemberWorkspacesResponse {
+  items: MemberWorkspaceItem[]
+}
+
 export interface AddTenantMemberRequest {
   emails: string[]
   role: 'tenant_admin' | 'tenant_member'

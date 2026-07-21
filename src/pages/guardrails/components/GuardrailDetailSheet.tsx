@@ -1,12 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Switch } from '@/components/ui/Switch'
 import { SideSheet } from '@/components/ui/SideSheet'
 import { Select, SelectItem } from '@/components/ui/Select'
 import { TagInput } from '@/components/ui/TagInput'
-import { StatusBadge } from '@/components/ui/StatusBadge'
-import type { StatusConfig } from '@/components/ui/StatusBadge'
 import { formatDateTime } from '@/lib/format-date'
 import { LuKey, LuUserRound, LuInfo } from 'react-icons/lu'
 import type { GuardrailAuditLog, GuardrailDetail } from '@/interfaces/guardrails'
@@ -14,7 +11,6 @@ import { PERIOD_LABEL } from '@/constants/status'
 import { GuardrailFormFields } from './GuardrailFormFields'
 import { isValidBudgetAmount } from '../budget'
 import {
-  budgetTimezone,
   PROMPT_INJECTION_INHERIT,
   PROMPT_INJECTION_INHERIT_LABEL,
   PROMPT_INJECTION_LABEL,
@@ -25,11 +21,6 @@ import {
   type GuardrailScope,
   type PromptInjectionFormValue,
 } from '../derive'
-
-const GUARDRAIL_STATUS_MAP: Record<string, StatusConfig> = {
-  active: { label: '已启用', variant: 'success' },
-  inactive: { label: '已停用', variant: 'secondary' },
-}
 
 /** 标签旁的 info tooltip（需求方#156）：把冗余的行内 hint 收进小圆圈 info，与「提示词注入」同一模式。 */
 function InfoTip({ text, label }: { text: string; label: string }) {
@@ -53,25 +44,23 @@ function InfoTip({ text, label }: { text: string; label: string }) {
 }
 
 type PeriodUnit = 'hour' | 'day' | 'week' | 'month'
-type BudgetPolicy = NonNullable<GuardrailDetail['budget_policies']>[number]
 
 // 全局护栏三档编辑草稿（与 index.tsx 的 ScopeBudgetDraft 同形）
 interface ScopeBudgetDraft { amount: string; period: PeriodUnit; limited: boolean }
 
-// 三档预算的展示元信息（对齐 PRD 原型的标签/说明与顺序：
+// 三档预算的展示元信息（对齐 PRD GuardrailBudgetControl：仅 label + 分段 + 金额，无 hint。顺序：
 // 工作空间总预算 → 默认个人预算(企业) → 默认 Key 预算）
-const GLOBAL_BUDGET_META: { scope: BudgetAggScope; label: string; hint: string; enterpriseOnly?: boolean }[] = [
-  { scope: 'guardrail_total', label: '工作空间总预算', hint: '该工作空间所有调用的合计上限' },
-  { scope: 'per_member', label: '默认个人预算', hint: '每位成员的默认上限（可被个人护栏覆盖）', enterpriseOnly: true },
-  { scope: 'per_api_key', label: '默认 Key 预算', hint: '每个 API Key 的默认上限（可被 Key 护栏覆盖）' },
+const GLOBAL_BUDGET_META: { scope: BudgetAggScope; label: string; enterpriseOnly?: boolean }[] = [
+  { scope: 'guardrail_total', label: '工作空间总预算' },
+  { scope: 'per_member', label: '默认个人预算', enterpriseOnly: true },
+  { scope: 'per_api_key', label: '默认 Key 预算' },
 ]
 
-/** 单档全局预算控件：不限额 / 限额 切换 + 金额 + 周期（复用控制台 ui/* + token） */
+/** 单档全局预算控件：不限额 / 限额 切换 + 金额 + 周期（对齐 PRD GuardrailBudgetControl，无 hint 说明） */
 function GlobalBudgetControl({
-  label, hint, draft, onChange, disabled,
+  label, draft, onChange, disabled,
 }: {
   label: string
-  hint: string
   draft: ScopeBudgetDraft
   onChange: (patch: Partial<ScopeBudgetDraft>) => void
   disabled: boolean
@@ -88,10 +77,7 @@ function GlobalBudgetControl({
     ].join(' ')
   return (
     <div className="rounded-lg border border-mg-border p-4 space-y-3">
-      <div>
-        <div className="text-xs font-bold text-mg-text-1">{label}</div>
-        <div className="text-xs text-mg-text-3 mt-0.5">{hint}</div>
-      </div>
+      <div className="text-xs font-bold text-mg-text-1">{label}</div>
       <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={`${label}额度类型`}>
         <button type="button" role="radio" aria-checked={!draft.limited} disabled={disabled} onClick={() => onChange({ limited: false })} className={modeBtn(!draft.limited)}>不限额</button>
         <button type="button" role="radio" aria-checked={draft.limited} disabled={disabled} onClick={() => onChange({ limited: true })} className={modeBtn(draft.limited)}>限额</button>
@@ -312,7 +298,6 @@ export function GuardrailDetailSheet({
   open, onClose,
   isCreating,
   detail, detailLoading, detailLoadError, detailRow,
-  onToggleStatus,
   // 基本信息表单
   name, onNameChange,
   description, onDescriptionChange,
@@ -331,7 +316,7 @@ export function GuardrailDetailSheet({
   // 作用范围
   apiKeyIds, onApiKeyIdsChange, apiKeyOptions,
   // 预算
-  budget, budgetConflict, budgetAmount, onBudgetAmountChange,
+  budgetConflict, budgetAmount, onBudgetAmountChange,
   budgetPeriodUnit, onBudgetPeriodUnitChange,
   budgetLimited, onBudgetLimitedChange,
   canEditBudget,
@@ -345,7 +330,6 @@ export function GuardrailDetailSheet({
   open: boolean; onClose: () => void
   isCreating: boolean
   detail: GuardrailDetail | undefined; detailLoading: boolean; detailLoadError: string | null; detailRow: GuardrailDetail | undefined
-  onToggleStatus: (args: { id: string; status: 'active' | 'inactive' }) => void
   name: string; onNameChange: (v: string) => void
   description: string; onDescriptionChange: (v: string) => void
   scope: GuardrailScope; onScopeChange: (v: GuardrailScope) => void
@@ -362,7 +346,6 @@ export function GuardrailDetailSheet({
   modelSuggestions?: string[]
   memberIds: string[]; onMemberIdsChange: (v: string[]) => void; memberOptions: { id: string; name: string }[]
   apiKeyIds: string[]; onApiKeyIdsChange: (v: string[]) => void; apiKeyOptions: { id: string; name: string; active: boolean }[]
-  budget: BudgetPolicy | null
   budgetConflict: boolean
   budgetAmount: string; onBudgetAmountChange: (v: string) => void
   budgetPeriodUnit: PeriodUnit; onBudgetPeriodUnitChange: (v: PeriodUnit) => void
@@ -379,9 +362,6 @@ export function GuardrailDetailSheet({
   submitting: boolean; onSubmit: () => void
 }) {
   const { t } = useTranslation()
-
-  // 预算计量时区（文档§周期计量：均按租户时区、滚动窗口）；无策略时回退浏览器时区
-  const tz = budgetTimezone(budget ?? detail?.budget_policies?.[0])
 
   // 详情加载失败（含后端对多条生效预算策略返回的 409「预算配置数据错误」）：
   // 抽屉只渲染错误说明。表单/保存一概不出——在加载失败的护栏上提交任何修改
@@ -417,18 +397,6 @@ export function GuardrailDetailSheet({
         </span>
       }
     >
-      {/* 状态切换 */}
-      {!isCreating && detail && (
-        <div className="flex items-center justify-between px-6 py-3 border-b border-mg-border/50">
-          <StatusBadge status={detail.status} statusMap={GUARDRAIL_STATUS_MAP} />
-          <Switch
-            checked={detail.status === 'active'}
-            disabled={!canEdit}
-            onChange={(checked) => onToggleStatus({ id: detail.id, status: checked ? 'active' : 'inactive' })}
-          />
-        </div>
-      )}
-
       <div className="p-6 overflow-y-auto flex-1">
         {/* ── 详情加载失败：只渲染错误说明 ── */}
         {detailLoadFailed && (
@@ -471,7 +439,7 @@ export function GuardrailDetailSheet({
                         value={memberIds}
                         onChange={onMemberIdsChange}
                         options={memberOptions.map((o) => ({ value: o.id, label: o.name }))}
-                        placeholder="搜索并选择成员"
+                        placeholder="搜索成员"
                       />
                     )}
                   </Field>
@@ -487,27 +455,23 @@ export function GuardrailDetailSheet({
                         value={apiKeyIds}
                         onChange={onApiKeyIdsChange}
                         options={apiKeyOptions.map((o) => ({ value: o.id, label: o.name, disabled: !o.active }))}
-                        placeholder="搜索并选择该工作空间的 API Key"
+                        placeholder="搜索 API Key"
                       />
                     )}
                   </Field>
                 )}
-                {/* 预算（对齐 PRD）：全局三档 / 个人·Key 提额=不限额|限额分段 / 常规=必填金额+周期（label「个人预算」「Key 预算」） */}
+                {/* 预算（对齐 PRD GuardrailBudgetControl）：全局三档直接排列（无外层「预算」标签）/ 个人·Key 提额=不限额|限额分段 / 常规=必填金额+周期 */}
                 {scope === 'global' ? (
-                  <div>
-                    <label className="block text-xs font-bold text-mg-text-2 mb-2">预算（三档独立限额）</label>
-                    <div className="space-y-3">
-                      {GLOBAL_BUDGET_META.filter((m) => !m.enterpriseOnly || showMember).map((m) => (
-                        <GlobalBudgetControl
-                          key={m.scope}
-                          label={m.label}
-                          hint={m.hint}
-                          draft={globalBudgets[m.scope]}
-                          onChange={(patch) => onGlobalBudgetChange(m.scope, patch)}
-                          disabled={false}
-                        />
-                      ))}
-                    </div>
+                  <div className="space-y-3">
+                    {GLOBAL_BUDGET_META.filter((m) => !m.enterpriseOnly || showMember).map((m) => (
+                      <GlobalBudgetControl
+                        key={m.scope}
+                        label={m.label}
+                        draft={globalBudgets[m.scope]}
+                        onChange={(patch) => onGlobalBudgetChange(m.scope, patch)}
+                        disabled={false}
+                      />
+                    ))}
                   </div>
                 ) : kind === 'boost' ? (
                   <MemberKeyBoostBudgetControl
@@ -555,6 +519,9 @@ export function GuardrailDetailSheet({
             </div>
           ) : detail ? (
             <div className="flex flex-col gap-5">
+              {/* section 标题（对齐 PRD GuardrailDetailDrawer：全局护栏 / 个人护栏 / Key 护栏） */}
+              <h4 className="text-sm font-bold text-mg-text-1">{scopeLabel}</h4>
+
               {budgetConflict && (
                 <div role="alert" className="p-3 rounded-lg border border-mg-danger/40 bg-mg-danger/5 text-xs text-mg-danger">
                   预算配置数据错误：存在多条生效中的预算策略，请联系管理员处理
@@ -573,7 +540,6 @@ export function GuardrailDetailSheet({
                     <GlobalBudgetControl
                       key={m.scope}
                       label={m.label}
-                      hint={m.hint}
                       draft={globalBudgets[m.scope]}
                       onChange={(patch) => onGlobalBudgetChange(m.scope, patch)}
                       disabled={!canEditBudget || budgetConflict}
@@ -617,7 +583,6 @@ export function GuardrailDetailSheet({
                         onChange={onMemberIdsChange}
                         options={memberOptions.map((o) => ({ value: o.id, label: o.name }))}
                         placeholder={t('guardrails.form.membersPlaceholder')}
-                        hint={t('guardrails.form.membersHint')}
                       />
                     )}
                   </Field>
@@ -651,7 +616,6 @@ export function GuardrailDetailSheet({
                         disabled={!canEdit}
                         onChange={(e) => onBoostExpiresAtChange(e.target.value)}
                       />
-                      <p className="text-xs text-mg-text-3 mt-1.5">到期后该提额自动失效，绑定对象回退到常规护栏或全局默认预算</p>
                     </Field>
                   )}
                 </>
@@ -671,8 +635,7 @@ export function GuardrailDetailSheet({
                         disabled={!canEditAssignment}
                         onChange={onApiKeyIdsChange}
                         options={apiKeyOptions.map((o) => ({ value: o.id, label: o.name, disabled: !o.active }))}
-                        placeholder="从下拉批量选择该工作空间的 API Key"
-                        hint="选中的 Key 将绑定到该护栏，供网关护栏鉴权使用"
+                        placeholder="搜索 API Key"
                       />
                     )}
                   </Field>
@@ -706,7 +669,6 @@ export function GuardrailDetailSheet({
                         disabled={!canEdit}
                         onChange={(e) => onBoostExpiresAtChange(e.target.value)}
                       />
-                      <p className="text-xs text-mg-text-3 mt-1.5">到期后该提额自动失效，绑定对象回退到常规护栏或全局默认预算</p>
                     </Field>
                   )}
                   {kind === 'regular' && (
@@ -736,32 +698,16 @@ export function GuardrailDetailSheet({
                 </>
               )}
 
-              {/* 预算计量口径说明（滚动窗口 + 时区） */}
-              {!budgetConflict && (
-                <p className="text-xs text-mg-text-3">
-                  预算按<span className="font-semibold text-mg-text-2">滚动窗口</span>计量（统计当前时刻往前一个周期长度内的累计消费，非自然日/周/月重置）· 时区 <span className="font-mono">{tz}</span>
-                </p>
-              )}
-
-              {/* 操作记录（fieldset 下方，只读，对齐 PRD GuardrailAuditSection） */}
+              {/* 操作记录（只读，对齐 PRD GuardrailAuditSection） */}
               <GuardrailAuditSection rows={auditRows} loading={auditLoading} />
             </div>
           ) : null
         )}
       </div>
 
-      {/* 统一底部：关闭 + 单一「保存护栏」（编辑态一次编排 护栏 PATCH + 预算增改删） */}
+      {/* 统一底部：仅 取消/关闭 + 创建/保存（对齐 PRD 抽屉底部，无「作用于 N…」预览） */}
       {!detailLoadFailed && (isCreating || Boolean(detail)) && (
-        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-mg-border/50 shrink-0">
-          <span className="text-xs text-mg-text-3 truncate">
-            {scope === 'global' ? (
-              '作用于当前工作空间的默认策略'
-            ) : scope === 'member' ? (
-              <>作用于 <span className="font-semibold text-mg-text-2">{memberIds.length}</span> 位成员</>
-            ) : (
-              <>作用于 <span className="font-semibold text-mg-text-2">{apiKeyIds.length}</span> 把 API Key</>
-            )}
-          </span>
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mg-border/50 shrink-0">
           <div className="flex gap-2 shrink-0">
             <Button variant="outline" onClick={onClose}>{isCreating ? t('common.cancel') : '关闭'}</Button>
             {canSubmit && (

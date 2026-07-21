@@ -821,7 +821,6 @@ export default function GuardrailsPage() {
         detailLoading={detailLoading}
         detailLoadError={detailLoadError}
         detailRow={detailRow}
-        onToggleStatus={handleToggle}
         name={name} onNameChange={setName}
         description={description} onDescriptionChange={setDescription}
         scope={scope} onScopeChange={handleScopeChange}
@@ -837,7 +836,6 @@ export default function GuardrailsPage() {
         modelSuggestions={modelSuggestions}
         memberIds={memberIds} onMemberIdsChange={setMemberIds} memberOptions={memberOptions}
         apiKeyIds={apiKeyIds} onApiKeyIdsChange={setApiKeyIds} apiKeyOptions={apiKeyOptions}
-        budget={budget}
         budgetConflict={budgetConflict}
         budgetAmount={budgetAmount} onBudgetAmountChange={setBudgetAmount}
         budgetPeriodUnit={budgetPeriodUnit} onBudgetPeriodUnitChange={setBudgetPeriodUnit}

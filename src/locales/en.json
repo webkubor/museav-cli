@@ -539,13 +539,13 @@
       "modelWhitelistPlaceholder": "Type or select models from dropdown",
       "modelWhitelistHint": "Select from dropdown or type model ID, press Enter to add. Leave empty for no restriction.",
       "modelBlacklistLabel": "Model Blacklist",
-      "modelBlacklistPlaceholder": "Type or select models from dropdown",
+      "modelBlacklistPlaceholder": "Search models",
       "modelBlacklistHint": "Models matching the blacklist will be rejected. Leave empty for no restriction.",
       "ipWhitelistLabel": "IP Whitelist",
-      "ipWhitelistPlaceholder": "Type IP or CIDR, press Enter to add",
+      "ipWhitelistPlaceholder": "Press Enter to add. Supports IPv4/IPv6/CIDR. Leave empty for no restriction.",
       "ipWhitelistHint": "Press Enter to add. Supports IPv4/IPv6/CIDR. Leave empty for no restriction.",
       "membersLabel": "Members",
-      "membersPlaceholder": "Select workspace members from dropdown",
+      "membersPlaceholder": "Search members",
       "membersHint": "Select members to bind to this guardrail. Leave empty for no restriction.",
       "isDefaultLabel": "Apply by Default",
       "isDefaultHint": "Automatically apply to all requests"
@@ -555,7 +555,7 @@
       "editTitle": "Configure Guardrail",
       "cancel": "Cancel",
       "saveEdit": "Save Changes",
-      "confirmCreate": "Confirm Create"
+      "confirmCreate": "Create Guardrail"
     },
     "deleteModal": {
       "title": "Delete Guardrail",

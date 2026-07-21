@@ -163,6 +163,7 @@ export type {
   TaskArtifactState,
   TaskStatusTimestamps,
   TaskResultMeta,
+  TaskRequestSummary,
   TaskItem,
   TaskDetail,
   TaskListParams,

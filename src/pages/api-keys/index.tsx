@@ -250,10 +250,12 @@ export default function ApiKeysPage() {
   const changeOwnerMutation = useMutation({
     mutationFn: () => changeApiKeyOwner(workspaceId, changeOwnerTarget!.api_key_id, { new_owner_account_id: newOwnerId }),
     onSuccess: () => {
+      const keyId = changeOwnerTarget?.api_key_id
       appToast.success('负责人已变更')
       setChangeOwnerTarget(null)
       setNewOwnerId('')
       queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
+      if (keyId) queryClient.invalidateQueries({ queryKey: ['api-key-detail', workspaceId, keyId] })
       trackEvent('api_keys:change_owner', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
     onError: (err: unknown) => {

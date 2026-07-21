@@ -37,6 +37,7 @@ import {
 } from '@/pages/guardrails/derive'
 import { groupThousands, trimAmountScale } from '@/pages/guardrails/budget'
 import type { ApiKeyCreated, ApiKeyType } from '@/types'
+import { LuInfo } from 'react-icons/lu'
 
 /** PRD「Key 类型」→ 后端 scope 映射（私有→personal / 成员→member / 服务→workspace） */
 const TYPE_CARDS: { type: ApiKeyType; scope: ScopeType }[] = [
@@ -253,9 +254,16 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const ipWhitelist = eff
     ? eff.ip_whitelist
     : [...new Set(previewGuardrails.flatMap((g) => metadataList(g, 'ip_whitelist')))]
+  const memberApplies = effectiveScope !== 'workspace'
+  const memberLayer = eff?.layers?.find((layer) => /member|personal/i.test(layer.layer))
   const effectiveLayerRows = [
-    { label: '全局护栏', name: globalGuardrail?.name ?? '未配置全局护栏', active: !!globalGuardrail },
-    { label: 'Key 护栏', name: selectedGuardrail?.name ?? '不使用 Key 护栏', active: !!selectedGuardrail },
+    { label: '全局护栏', name: globalGuardrail?.name ?? '未配置', state: globalGuardrail ? 'active' : 'inactive' },
+    {
+      label: '个人护栏',
+      name: memberApplies ? (memberLayer?.guardrail_name ?? (globalGuardrail ? '全局默认个人预算' : '未配置')) : '个人预算不适用',
+      state: memberApplies && (memberLayer || globalGuardrail) ? 'active' : 'inactive',
+    },
+    { label: 'Key 护栏', name: selectedGuardrail?.name ?? '不使用 Key 护栏', state: selectedGuardrail || globalGuardrail ? 'active' : 'inactive' },
   ]
   const budgetGateRows = [
     { label: '工作空间总预算', scope: 'guardrail_total' },
@@ -318,7 +326,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                       'rounded-lg border p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-40',
                       active
                         ? 'border-brand-base bg-brand-base/5 ring-1 ring-brand-base/30'
-                        : 'border-mg-border bg-mg-fill-0/40 enabled:hover:border-brand-base/35',
+                        : 'border-mg-border bg-mg-bg-1 enabled:hover:border-brand-base/35',
                     ].join(' ')}
                   >
                     <div className="text-xs font-bold text-mg-text-1">{KEY_TYPE_LABEL[c.type]}</div>
@@ -352,7 +360,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
             <div>
               <label className="block text-xs font-bold text-mg-text-2 mb-2">负责人</label>
               {isPersonalTenant ? (
-                <div className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-mg-border bg-mg-fill-0/50 text-xs text-mg-text-2">
+                <div className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-mg-border bg-mg-bg-1 text-xs text-mg-text-2">
                   {account?.display_name || account?.email || '当前账户'}
                   <span className="text-mg-text-3">（个人租户固定为你自己）</span>
                 </div>
@@ -408,7 +416,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                 <p className="text-sm text-mg-text-2">暂无 Key 护栏</p>
               )}
             </div>
-            <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-4 py-3">
+            <div className="mg-tile px-4 py-3">
               <span className="block text-sm text-mg-text-2">{selectedGuardrail ? '已选 Key 护栏' : '当前策略'}</span>
               <strong className="mt-1 block text-base text-mg-text-1">
                 {selectedGuardrail?.name ?? '不使用 Key 护栏'}
@@ -417,40 +425,38 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                 {selectedGuardrail ? (budgetDisplay.join('，') || '未配置预算') : '未绑定 Key 护栏'}
               </em>
             </div>
-            <div className="rounded-md border border-mg-border bg-mg-fill-0/30 p-4">
-              <div className="mb-4 flex flex-col items-start gap-1">
-                <strong className="text-base text-mg-text-1">生效规则预览</strong>
-                <span className="text-sm text-mg-text-2">运行时会同时检查这些预算闸门</span>
+            <div className="mg-tile grid gap-2.5 p-3">
+              <div className="flex items-center gap-1.5">
+                <strong className="text-[13px] font-extrabold text-mg-text-1">生效规则预览</strong>
+                <LuInfo className="text-mg-text-3" size={14} aria-label="运行时会同时检查这些预算闸门" title="运行时会同时检查这些预算闸门" />
               </div>
-              <div className="space-y-3 border-b border-mg-border pb-4">
+              <div className="grid grid-cols-3 gap-2">
                 {effectiveLayerRows.map((row) => (
-                  <div className="flex items-center justify-between gap-3 text-sm" key={row.label}>
-                    <span className="text-mg-text-2">{row.label}</span>
-                    <strong className={row.active ? 'text-mg-text-1' : 'text-mg-text-2'}>{row.name}</strong>
+                  <div className={`grid min-w-0 gap-1 rounded-lg border bg-mg-bg-0 px-2.5 py-2 ${row.state === 'active' ? 'border-blue-200' : 'border-mg-border'}`} key={row.label}>
+                    <span className="text-[11px] font-bold text-mg-text-2">{row.label}</span>
+                    <strong className="break-words text-xs font-bold text-mg-text-1">{row.name}</strong>
                   </div>
                 ))}
               </div>
-              <div className="py-4">
-                <div className="mb-3 flex flex-col items-start gap-1">
-                  <strong className="text-sm text-mg-text-1">预算闸门</strong>
-                  <span className="text-sm text-mg-text-2">按最先触发的预算停止调用</span>
-                </div>
-                <div className="space-y-3">
-                  {budgetGateRows.map((row) => (
-                    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 text-sm" key={row.label}>
-                      <span className="text-mg-text-2">{row.label}</span>
-                      <strong className={row.value === '不限额' ? 'text-mg-text-2' : 'text-mg-text-1'}>{row.value}</strong>
-                      <em className="text-right not-italic text-mg-text-3">{row.source}</em>
-                    </div>
-                  ))}
-                </div>
+              <div className="flex items-center gap-1.5">
+                <strong className="text-[13px] font-extrabold text-mg-text-1">预算闸门</strong>
+                <LuInfo className="text-mg-text-3" size={14} aria-label="按最先触发的预算停止调用" title="按最先触发的预算停止调用" />
               </div>
-              <div className="space-y-3 border-t border-mg-border pt-4">
+              <div className="grid gap-2">
+                {budgetGateRows.map((row) => (
+                  <div className="grid min-w-0 gap-1 rounded-lg border border-mg-border bg-mg-bg-0 px-2.5 py-2" key={row.label}>
+                    <span className="text-[11px] font-bold text-mg-text-2">{row.label}</span>
+                    <strong className="text-xs font-bold text-mg-text-1">{row.value}</strong>
+                    <em className="text-[11px] not-italic text-mg-text-2">{row.source}</em>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
                 {previewRuleRows.map((row) => (
-                  <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm" key={row.label}>
-                    <span className="text-mg-text-2">{row.label}</span>
-                    <strong className={row.value === '未配置' ? 'text-mg-text-2' : 'text-mg-text-1'}>{row.value}</strong>
-                    <span className="col-start-2 text-xs text-mg-text-2">规则来源：{row.source}</span>
+                  <div className="grid min-w-0 gap-1 rounded-lg border border-mg-border bg-mg-bg-0 px-2.5 py-2" key={row.label}>
+                    <span className="text-[11px] font-bold text-mg-text-2">{row.label}</span>
+                    <strong className="break-words text-xs font-bold text-mg-text-1">{row.value}</strong>
+                    <em className="break-words text-[11px] not-italic text-mg-text-2">规则来源：{row.source}</em>
                   </div>
                 ))}
               </div>

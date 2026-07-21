@@ -215,7 +215,6 @@ export default function GuardrailsPage() {
   const modelSuggestions = modelsQuery.data?.items?.map((m) => m.model_id) ?? []
   const [detailId, setDetailId] = useState<string | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
-  const [sheetTab, setSheetTab] = useState<'info' | 'scope' | 'budget'>('info')
   const [isCreating, setIsCreating] = useState(false)
 
   // ── 预算内联编辑状态 ────────────────────────────────────────────────────
@@ -270,16 +269,6 @@ export default function GuardrailsPage() {
       : detailError
         ? '护栏详情加载失败'
         : null
-
-  // Populate the whole form (info fields + scope: members + api_keys) once the
-  // detail loads, regardless of the active tab — the single bottom Save button
-  // persists all of it, so every field's state must be ready even if the user
-  // never visits the scope tab.
-  useEffect(() => {
-    if (!isCreating && detailOpen && detail) {
-      syncFormFromDetail(detail)
-    }
-  }, [detail, detailOpen, isCreating])
 
   const membersQuery = useQuery({
     queryKey: ['workspace-members', workspaceId],
@@ -394,7 +383,6 @@ export default function GuardrailsPage() {
         qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
         setIsCreating(false)
         setDetailId(created.id)
-        setSheetTab('budget')
         trackEvent('guardrails:create', undefined, { result: 'success', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
       }
     },
@@ -506,7 +494,6 @@ export default function GuardrailsPage() {
       ) ?? 'global'
     setName(''); setDescription(''); setScope(defaultScope); setKind('regular'); setBoostExpiresAt(''); setPriority(0)
     setModelBlacklist([]); setIpWhitelist([]); setPromptInjectionMode('off'); setMemberIds([]); setApiKeyIds([])
-    setSheetTab('info')
     setDetailOpen(true)
   }
 
@@ -523,7 +510,6 @@ export default function GuardrailsPage() {
       per_member: { ...EMPTY_BUDGET_DRAFT },
       per_api_key: { ...EMPTY_BUDGET_DRAFT },
     })
-    setSheetTab('info')
     setDetailOpen(true)
   }
 
@@ -569,6 +555,15 @@ export default function GuardrailsPage() {
       ?? (Array.isArray(meta.api_keys) ? (meta.api_keys as string[]) : [])
     )
   }
+
+  // 详情加载后一次性回填基本信息、作用范围和预算；详情页不再依赖 Tab 切换触发回填。
+  useEffect(() => {
+    if (!isCreating && detailOpen && detail) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate the editor after the detail request resolves
+      syncFormFromDetail(detail)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync helper intentionally runs only when detail identity changes
+  }, [detail, detailOpen, isCreating])
 
   function handleSubmit() {
     if (!name.trim()) { appToast.error(t('guardrails.toast.nameRequired')); return }
@@ -836,10 +831,7 @@ export default function GuardrailsPage() {
         detailLoading={detailLoading}
         detailLoadError={detailLoadError}
         detailRow={detailRow}
-        sheetTab={sheetTab}
-        onSheetTabChange={setSheetTab}
         onToggleStatus={handleToggle}
-        syncFormFromDetail={syncFormFromDetail}
         name={name} onNameChange={setName}
         description={description} onDescriptionChange={setDescription}
         priority={priority} onPriorityChange={setPriority}
@@ -868,7 +860,6 @@ export default function GuardrailsPage() {
         showMember={showMember}
         globalBudgets={globalBudgets}
         onGlobalBudgetChange={handleGlobalBudgetChange}
-        onEnterBudgetTab={() => { if (detail) fillGlobalBudgetsFromDetail(detail) }}
         savingGlobalBudget={saveGlobalBudgetMutation.isPending}
         onSaveGlobalBudgets={handleSaveGlobalBudgets}
         currencySymbol={currencySymbol}

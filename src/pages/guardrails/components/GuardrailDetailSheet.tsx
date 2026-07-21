@@ -11,7 +11,7 @@ import { LuKey, LuDollarSign, LuUserRound, LuInfo } from 'react-icons/lu'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
 import { PERIOD_LABEL } from '@/constants/status'
 import { GuardrailFormFields } from './GuardrailFormFields'
-import { isValidBudgetAmount, trimAmountScale } from '../budget'
+import { isValidBudgetAmount } from '../budget'
 import { budgetTimezone, type BudgetAggScope, type GuardrailKind, type GuardrailScope, type PromptInjectionFormValue } from '../derive'
 
 const GUARDRAIL_STATUS_MAP: Record<string, StatusConfig> = {
@@ -116,9 +116,7 @@ export function GuardrailDetailSheet({
   open, onClose,
   isCreating,
   detail, detailLoading, detailLoadError, detailRow,
-  sheetTab, onSheetTabChange,
   onToggleStatus,
-  syncFormFromDetail,
   // 基本信息表单
   name, onNameChange,
   description, onDescriptionChange,
@@ -143,7 +141,7 @@ export function GuardrailDetailSheet({
   canEditBudget, savingBudget, onSaveBudget, onShowClearBudget,
   // 全局护栏三档预算
   isGlobal, showMember, globalBudgets, onGlobalBudgetChange,
-  onEnterBudgetTab, savingGlobalBudget, onSaveGlobalBudgets,
+  savingGlobalBudget, onSaveGlobalBudgets,
   currencySymbol,
   // 底部保存
   canEdit, canEditAssignment, submitting, onSubmit,
@@ -151,9 +149,7 @@ export function GuardrailDetailSheet({
   open: boolean; onClose: () => void
   isCreating: boolean
   detail: GuardrailDetail | undefined; detailLoading: boolean; detailLoadError: string | null; detailRow: GuardrailDetail | undefined
-  sheetTab: 'info' | 'scope' | 'budget'; onSheetTabChange: (tab: 'info' | 'scope' | 'budget') => void
   onToggleStatus: (args: { id: string; status: 'active' | 'inactive' }) => void
-  syncFormFromDetail: (d: GuardrailDetail) => void
   name: string; onNameChange: (v: string) => void
   description: string; onDescriptionChange: (v: string) => void
   priority: number; onPriorityChange: (v: number) => void
@@ -179,7 +175,6 @@ export function GuardrailDetailSheet({
   isGlobal: boolean; showMember: boolean
   globalBudgets: Record<BudgetAggScope, ScopeBudgetDraft>
   onGlobalBudgetChange: (scope: BudgetAggScope, patch: Partial<ScopeBudgetDraft>) => void
-  onEnterBudgetTab: () => void
   savingGlobalBudget: boolean; onSaveGlobalBudgets: () => void
   currencySymbol: string
   canEdit: boolean
@@ -195,7 +190,7 @@ export function GuardrailDetailSheet({
   // 抽屉只渲染错误说明。表单/保存一概不出——openDetail 虽已清空表单，
   // 但在加载失败的护栏上提交任何修改都是在脏数据上盲写 (qa#162 review)
   const detailLoadFailed = !isCreating && !detailLoading && !detail && !!detailLoadError
-  const canSubmitCurrentTab = isCreating || (sheetTab === 'scope' ? canEditAssignment : canEdit)
+  const canSubmitCurrentTab = isCreating || canEdit || canEditAssignment
 
   return (
     <SideSheet
@@ -216,39 +211,11 @@ export function GuardrailDetailSheet({
         </div>
       )}
 
-      {/* Tab 导航 */}
-      {!isCreating && !detailLoadFailed && (
-        <div className="flex border-b border-mg-border px-6 pt-1">
-          {([
-            { key: 'info', label: '基本信息' },
-            { key: 'scope', label: '作用范围' },
-            { key: 'budget', label: '预算' },
-          ] as const).map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => {
-                onSheetTabChange(tab.key)
-                if (tab.key === 'info' && detail) syncFormFromDetail(detail)
-                if (tab.key === 'budget' && detail) {
-                  // 回填规范化金额（去 NUMERIC 尾零），切 Tab 即放弃未保存的输入
-                  const bp = budget
-                  onBudgetAmountChange(bp ? trimAmountScale(bp.spend_limit_amount) : '')
-                  onBudgetPeriodUnitChange((bp?.period_unit as PeriodUnit) ?? 'month')
-                  // 全局护栏三档同步回填
-                  onEnterBudgetTab()
-                }
-              }}
-              className={`px-4 py-2.5 text-xs font-bold transition-colors border-b-2 -mb-px cursor-pointer ${
-                sheetTab === tab.key
-                  ? 'border-brand-base text-brand-base'
-                  : 'border-transparent text-mg-text-3 hover:text-mg-text-1'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="border-b border-mg-border px-6 py-3 text-xs font-semibold text-mg-text-2">
+        护栏配置
+      </div>
+
+      {/* 详情内容合并展示：基本信息、作用范围和预算不再拆分 Tab。 */}
 
       <div className="p-6 overflow-y-auto flex-1">
         {/* ── 详情加载失败：只渲染错误说明 ── */}
@@ -258,8 +225,8 @@ export function GuardrailDetailSheet({
           </div>
         )}
 
-        {/* ── Tab: 基本信息（创建/编辑共用） ── */}
-        {!detailLoadFailed && (isCreating || sheetTab === 'info') && (
+        {/* ── 基本信息（创建/编辑共用） ── */}
+        {!detailLoadFailed && (isCreating || Boolean(detail)) && (
           <div>
             <GuardrailFormFields
               name={name} onNameChange={onNameChange}
@@ -364,8 +331,8 @@ export function GuardrailDetailSheet({
           </div>
         )}
 
-        {/* ── Tab: 作用范围（成员 + API Key） ── */}
-        {!isCreating && sheetTab === 'scope' && (
+        {/* ── 作用范围（成员 + API Key） ── */}
+        {!detailLoadFailed && !isCreating && (
           detailLoading ? (
             <div className="space-y-4 animate-pulse">
               <div className="h-5 bg-mg-fill-0 rounded-sm w-1/2" />
@@ -391,8 +358,8 @@ export function GuardrailDetailSheet({
           ) : null
         )}
 
-        {/* ── Tab: 预算 ── */}
-        {!isCreating && sheetTab === 'budget' && (
+        {/* ── 预算 ── */}
+        {!detailLoadFailed && !isCreating && (
           detailLoading ? (
             <div className="space-y-4 animate-pulse">
               <div className="h-5 bg-mg-fill-0 rounded-sm w-1/3" />
@@ -499,7 +466,7 @@ export function GuardrailDetailSheet({
 
       {/* 统一底部保存：基本信息 + 作用范围（成员/API Keys）一次保存。
           预算是独立的增删策略，保留其自有按钮。 */}
-      {!detailLoadFailed && (isCreating || sheetTab !== 'budget') && (
+      {!detailLoadFailed && (isCreating || Boolean(detail)) && (
         <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-mg-border/50 shrink-0">
           {/* 影响范围预览（保存前）：按分类上下文化——个人护栏只提成员数，
               Key 护栏只提 Key 数，全局护栏说明作用于工作空间默认策略（文档§编辑行为） */}

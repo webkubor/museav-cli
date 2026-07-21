@@ -157,12 +157,11 @@ function renderPage(workspaceId = WORKSPACE_ID) {
   return render(<GuardrailsPage />, { wrapper: Wrapper })
 }
 
-// Open the drawer from the table row, switch to the budget tab, and wait for
-// the input to be back-filled from the active policy (detail load is async).
+// Open the drawer from the table row and wait for the budget section to be
+// back-filled from the active policy (detail load is async).
 async function openBudgetTab() {
   renderPage()
   fireEvent.click(await screen.findByRole('button', { name: GUARDRAIL_NAME }))
-  fireEvent.click(await screen.findByRole('button', { name: '预算' }))
   const input = (await screen.findByRole('textbox', { name: '预算限额金额' })) as HTMLInputElement
   await waitFor(() => expect(input.value).toBe('100'))
   return input
@@ -286,7 +285,6 @@ describe('GuardrailsPage — valid budget save', () => {
 
     renderPage()
     fireEvent.click(await screen.findByRole('button', { name: GUARDRAIL_NAME }))
-    fireEvent.click(await screen.findByRole('button', { name: '预算' }))
     const input = (await screen.findByRole('textbox', { name: '预算限额金额' })) as HTMLInputElement
     expect(input.value).toBe('')
 
@@ -316,7 +314,6 @@ describe('GuardrailsPage — 多条生效预算策略（脏数据）防线 qa#16
 
     renderPage()
     fireEvent.click(await screen.findByRole('button', { name: GUARDRAIL_NAME }))
-    fireEvent.click(await screen.findByRole('button', { name: '预算' }))
 
     const alert = await screen.findByRole('alert')
     expect(alert.textContent).toContain('预算配置数据错误')
@@ -337,7 +334,6 @@ describe('GuardrailsPage — 多条生效预算策略（脏数据）防线 qa#16
 
     renderPage()
     fireEvent.click(await screen.findByRole('button', { name: GUARDRAIL_NAME }))
-    fireEvent.click(await screen.findByRole('button', { name: '预算' }))
 
     const input = (await screen.findByRole('textbox', { name: '预算限额金额' })) as HTMLInputElement
     await waitFor(() => expect(input.value).toBe('500'))
@@ -371,12 +367,11 @@ function globalGuardrailDetail(policies: GuardrailBudgetPolicy[]): GuardrailDeta
   return { ...guardrailDetail(policies), is_default: true }
 }
 
-// 打开全局护栏抽屉 → 预算 Tab，等三档编辑器就绪（总预算档标签金额可作为锚点）
+// 打开全局护栏抽屉，等三档预算编辑器就绪（总预算档标签金额可作为锚点）
 async function openGlobalBudgetTab() {
   renderPage()
   // is_default 护栏的名称按钮带「默认」徽标，可及名含徽标文案 → 用正则匹配
   fireEvent.click(await screen.findByRole('button', { name: new RegExp(GUARDRAIL_NAME) }))
-  fireEvent.click(await screen.findByRole('button', { name: '预算' }))
   await screen.findByRole('switch', { name: '工作空间总预算是否限额' })
 }
 

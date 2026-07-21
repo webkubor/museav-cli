@@ -197,6 +197,8 @@ export function GuardrailFormFields({
           />
         </div>
       )}
+      {/* section 标题（对齐 PRD GuardrailCreateModal：全局护栏 / 个人护栏 / Key 护栏，位于分类/类型之后、规则之前） */}
+      {isCreating && <h4 className="text-sm font-bold text-mg-text-1">{SCOPE_LABEL[scope]}护栏</h4>}
       {/* 创建态插槽：绑定对象 + 预算（对齐原型：分类/类型之后、规则之前） */}
       {budgetSlot}
       {/* 提额到期时间 — 仅提额护栏显示（文档：提额必须有到期时间） */}
@@ -212,7 +214,6 @@ export function GuardrailFormFields({
             disabled={!canEditInfo}
             onChange={(e) => onBoostExpiresAtChange(e.target.value)}
           />
-          <p className="text-xs text-mg-text-3 mt-1.5">到期后该提额自动失效，绑定对象回退到常规护栏或全局默认预算</p>
         </div>
       )}
       {/* 模型黑名单 — 仅全局 / 常规 Key 护栏显示（个人、提额护栏不配置） */}

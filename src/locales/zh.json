@@ -539,13 +539,13 @@
       "modelWhitelistPlaceholder": "输入或从下拉选择模型",
       "modelWhitelistHint": "从下拉列表选择或直接输入模型 ID，回车添加。留空表示不限制。",
       "modelBlacklistLabel": "模型黑名单",
-      "modelBlacklistPlaceholder": "输入或从下拉选择模型",
+      "modelBlacklistPlaceholder": "搜索模型",
       "modelBlacklistHint": "命中黑名单的模型将被拒绝调用。留空表示不限制。",
       "ipWhitelistLabel": "IP 白名单",
-      "ipWhitelistPlaceholder": "输入 IP 或 CIDR 后回车添加",
+      "ipWhitelistPlaceholder": "输入后按回车添加，支持 IPv4/IPv6/CIDR 格式。留空表示不限制。",
       "ipWhitelistHint": "输入后按回车添加，支持 IPv4/IPv6/CIDR 格式。留空表示不限制。",
       "membersLabel": "成员",
-      "membersPlaceholder": "从下拉选择工作区成员",
+      "membersPlaceholder": "搜索成员",
       "membersHint": "选择需要绑定此护栏的工作区成员，留空表示不限制。",
       "isDefaultLabel": "默认应用",
       "isDefaultHint": "自动应用此护栏到所有模型请求"
@@ -555,7 +555,7 @@
       "editTitle": "配置护栏",
       "cancel": "取消",
       "saveEdit": "保存修改",
-      "confirmCreate": "确认创建"
+      "confirmCreate": "创建护栏"
     },
     "deleteModal": {
       "title": "删除护栏",

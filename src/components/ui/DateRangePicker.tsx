@@ -184,10 +184,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           onClick={() => handleDateClick(dateStr)}
           className={cn(
             "h-[var(--mg-calendar-cell-size)] w-[var(--mg-calendar-cell-size)] rounded-lg mg-compact-badge transition-all flex items-center justify-center cursor-pointer active:scale-95",
-            isSelected && "bg-brand-base text-white shadow-sm shadow-brand-glow",
+            isSelected && "bg-brand-base text-white font-bold shadow-sm shadow-brand-glow",
             isInRange && "bg-brand-base/15 text-brand-base rounded-none",
-            !isSelected && !isInRange && !isDisabled && "text-mg-text-1 hover:bg-mg-fill-0/40",
-            isDisabled && "text-mg-text-3/40 cursor-not-allowed opacity-30"
+            !isSelected && !isInRange && !isDisabled && "text-mg-text-1 font-medium hover:bg-mg-fill-0/40",
+            isDisabled && "text-mg-text-3/60 cursor-not-allowed opacity-40"
           )}
         >
           {day}
@@ -203,7 +203,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           <button
             type="button"
             onClick={handlePrevMonth}
-            className="p-[var(--mg-space-1)] rounded-lg hover:bg-mg-fill-0 text-mg-text-3 hover:text-mg-text-1 cursor-pointer mg-text-caption"
+            className="p-[var(--mg-space-1)] rounded-lg hover:bg-mg-fill-0 text-mg-text-2 hover:text-mg-text-1 cursor-pointer mg-text-caption"
           >
             &lt;
           </button>
@@ -213,7 +213,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           <button
             type="button"
             onClick={handleNextMonth}
-            className="p-[var(--mg-space-1)] rounded-lg hover:bg-mg-fill-0 text-mg-text-3 hover:text-mg-text-1 cursor-pointer mg-text-caption"
+            className="p-[var(--mg-space-1)] rounded-lg hover:bg-mg-fill-0 text-mg-text-2 hover:text-mg-text-1 cursor-pointer mg-text-caption"
           >
             &gt;
           </button>
@@ -221,7 +221,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
         <div className="grid grid-cols-7 gap-1 text-center">
           {weekDays.map(w => (
-            <span key={w} className="mg-compact-badge text-mg-text-3">{w}</span>
+            <span key={w} className="mg-compact-badge font-semibold text-mg-text-2">{w}</span>
           ))}
         </div>
 
@@ -241,7 +241,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         'flex flex-col gap-0.5 shrink-0',
         isCustomActive ? 'pr-3 mr-3 border-r border-mg-border/50 w-[108px]' : 'w-full'
       )}>
-        <span className="mg-text-label text-mg-text-3 mb-1.5 px-[var(--mg-control-px-xs)]">{customTitle || '常用时间'}</span>
+        <span className="mg-text-label font-semibold text-mg-text-2 mb-1.5 px-[var(--mg-control-px-xs)]">{customTitle || '常用时间'}</span>
         {activePresets.map(p => (
           <button
             key={p.key}
@@ -250,8 +250,8 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
             className={cn(
               "px-[var(--mg-control-px-xs)] py-1.5 rounded-lg mg-compact-badge text-left cursor-pointer transition-colors",
               activePreset === p.key
-                ? "bg-brand-selected-bg text-brand-base"
-                : "text-mg-text-2 hover:text-mg-text-1 hover:bg-mg-fill-1"
+                ? "bg-brand-base/15 text-brand-base font-bold ring-1 ring-brand-base/25"
+                : "text-mg-text-1 font-medium hover:text-mg-text-1 hover:bg-mg-fill-1"
             )}
           >
             {p.label}
@@ -262,10 +262,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
       {/* Custom Area：仅选中「自定义范围」时展开，切回其他预设自动收起 */}
       {isCustomActive && (
       <div className="flex-1 flex flex-col gap-2.5 min-w-0">
-        <span className="mg-text-label text-mg-text-3">{customLabel || '自定义日期区间'}</span>
+        <span className="mg-text-label font-semibold text-mg-text-2">{customLabel || '自定义日期区间'}</span>
 
         {/* Selected preview bar — 轻量纯文本 */}
-        <div className="flex items-center justify-between gap-2 px-[var(--mg-control-px-xs)] py-[var(--mg-space-1)] rounded-lg bg-mg-fill-1 mg-text-caption font-semibold text-mg-text-2">
+        <div className="flex items-center justify-between gap-2 px-[var(--mg-control-px-xs)] py-[var(--mg-space-1)] rounded-lg border border-brand-base/20 bg-brand-base/5 mg-text-caption font-semibold text-mg-text-1">
           {hideStartDate ? (
             <span className={customEnd ? 'text-mg-text-1' : 'text-mg-text-4'}>
               截止: {customEnd || '请在下方选择'}
@@ -305,7 +305,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     <button
       type="button"
       className={cn(
-        "group flex items-center gap-2 px-[var(--mg-control-px-md)] py-[var(--mg-control-py-sm)] border border-mg-border/70 rounded-full bg-mg-fill-0/20 hover:bg-mg-fill-0/40 mg-text-body font-bold text-mg-text-2 hover:text-mg-text-1 hover:border-brand-mid transition-all duration-300 shadow-inner select-none active:scale-[0.97]",
+        "group flex items-center gap-2 px-[var(--mg-control-px-md)] py-[var(--mg-control-py-sm)] border border-mg-border rounded-full bg-mg-fill-0/50 hover:bg-mg-fill-0/70 mg-text-body font-bold text-mg-text-1 hover:text-mg-text-1 hover:border-brand-mid transition-all duration-300 shadow-inner select-none active:scale-[0.97]",
         className
       )}
     >

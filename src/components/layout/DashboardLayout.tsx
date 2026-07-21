@@ -105,6 +105,7 @@ export function DashboardLayout() {
     return () => window.removeEventListener('keydown', onKey)
   }, [mobileOpen])
 
+  const account = useAuthStore((s) => s.account)
   const tenants = useAuthStore((s) => s.tenants)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
@@ -201,7 +202,10 @@ export function DashboardLayout() {
   const getBreadcrumbs = () => {
     const key = getSelectedKey()
     const raw = breadcrumbConfig[key] ?? HOME_CRUMB
-    return raw.map((item) => ({ ...item, label: t(item.label) }))
+    return raw.map((item) => ({
+      ...item,
+      label: item.label === 'nav.tenant' ? (account?.display_name ?? t(item.label)) : t(item.label),
+    }))
   }
 
   const handleNavSelect = (data: { itemKey: string | number }) => {

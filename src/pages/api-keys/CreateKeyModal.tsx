@@ -3,7 +3,6 @@
  */
 import { useEffect, useState } from 'react'
 import confetti from 'canvas-confetti'
-import { LuPlus } from 'react-icons/lu'
 import { SideSheet } from '@/components/ui/SideSheet'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
 import { Button } from '@/components/ui/Button'
@@ -21,7 +20,6 @@ import { usePermissions } from '@/hooks/use-permissions'
 import { useTenantRole } from '@/hooks/use-tenant-role'
 import { PERMS } from '@/config/permissions'
 import { EXPIRATION_PRESETS, resolveExpiryISO, type ScopeType } from './constants'
-import { CreateGuardrailDialog } from './CreateGuardrailDialog'
 import { KEY_TYPE_LABEL, KEY_TYPE_DESC } from './derive'
 import { trackEvent } from '@/lib/track'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
@@ -86,7 +84,6 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const effectiveScope: ScopeType = isPersonalTenant && scope === 'member' ? 'workspace' : scope
   const [memberAccountId, setMemberAccountId] = useState('')
   const [guardrailIds, setGuardrailIds] = useState<string[]>([])
-  const [guardrailDialogOpen, setGuardrailDialogOpen] = useState(false)
   const todayStr = new Date().toISOString().split('T')[0]
   const [expiryRange, setExpiryRange] = useState<DateRangeValue>({ preset: mustSetExpiry ? '1y' : 'all', startDate: todayStr, endDate: '' })
   const expiryPresets = mustSetExpiry ? EXPIRATION_PRESETS.filter((preset) => preset.key !== 'all') : EXPIRATION_PRESETS
@@ -190,10 +187,6 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
     createMutation.mutate()
   }
 
-  function handleGuardrailCreated(g: GuardrailDetail) {
-    setGuardrailIds((prev) => prev.includes(g.id) ? prev : [...prev, g.id])
-  }
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawData = guardrailsQuery.data as any
   const allGuardrails: GuardrailDetail[] = Array.isArray(rawData)
@@ -255,6 +248,26 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const ipWhitelist = eff
     ? eff.ip_whitelist
     : [...new Set(previewGuardrails.flatMap((g) => metadataList(g, 'ip_whitelist')))]
+  const effectiveLayerRows = [
+    { label: '全局护栏', name: globalGuardrail?.name ?? '未配置全局护栏', active: !!globalGuardrail },
+    { label: 'Key 护栏', name: selectedGuardrail?.name ?? '不使用 Key 护栏', active: !!selectedGuardrail },
+  ]
+  const budgetGateRows = [
+    { label: '工作空间总预算', scope: 'guardrail_total' },
+    { label: '个人预算', scope: 'per_member' },
+    { label: 'Key 预算', scope: 'per_api_key' },
+  ].map(({ label, scope: aggregationScope }) => {
+    const budget = eff?.budgets?.find((item) => item.aggregation_scope === aggregationScope)
+    const value = budget
+      ? `${symbol}${groupThousands(trimAmountScale(budget.spend_limit_amount))} / ${PERIOD_LABEL[budget.period_unit] ?? budget.period_unit}`
+      : '不限额'
+    return { label, value, source: budget ? '生效规则' : '未配置预算' }
+  })
+  const previewRuleRows = [
+    { label: '模型黑名单', value: modelBlacklist.length > 0 ? modelBlacklist.join('、') : '未配置', source: modelBlacklist.length > 0 ? '全局 / Key 护栏规则' : '无' },
+    { label: 'IP 白名单', value: ipWhitelist.length > 0 ? ipWhitelist.join(', ') : '未配置', source: ipWhitelist.length > 0 ? '全局 / Key 护栏规则' : '无' },
+    { label: '提示词注入', value: PROMPT_INJECTION_LABEL[piResolved.mode], source: piResolved.sourceLabel },
+  ]
 
   return (
     <>
@@ -372,70 +385,69 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
             />
           </div>
 
-          {/* 安全策略（PRD 原型） */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-bold text-mg-text-1">安全策略</h4>
-              {/* 附建护栏恒为常规 Key 护栏 → 按 guardrails.key:create gate（#479 · PRD §11） */}
-              {hasPermission(PERMS.GUARDRAILS_CREATE_KEY) && (
-                <button
-                  type="button"
-                  onClick={() => setGuardrailDialogOpen(true)}
-                  className="flex items-center gap-1 text-xs text-brand-base hover:opacity-70 transition-opacity"
-                >
-                  <LuPlus className="w-3.5 h-3.5" />
-                  新建护栏
-                </button>
-              )}
-            </div>
+          {/* 安全策略（严格对齐 PRD 原型：选择 → 当前策略 → 生效规则预览） */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-bold text-mg-text-1">安全策略</h4>
             <div className="space-y-2">
-              <label className="mb-1.5 block text-xs text-mg-text-3">Key 护栏</label>
+              <label className="block text-xs font-bold text-mg-text-2">Key 护栏</label>
               <Select
                 value={extraIds[0] ?? '__none__'}
-                onChange={(v) => setGuardrailIds([...(defaultId ? [defaultId] : []), ...(v === '__none__' ? [] : [v])])}
+                onChange={(value) => setGuardrailIds([...(defaultId ? [defaultId] : []), ...(value === '__none__' ? [] : [value])])}
               >
-                <SelectItem value="__none__">继承全局默认 Key 策略</SelectItem>
+                <SelectItem value="__none__">不使用 Key 护栏</SelectItem>
                 {allGuardrails
-                  // 文档：创建 API Key 只展示常规 Key 护栏，不展示 Key 提额、个人或全局护栏
                   .filter((g) => !g.is_default && deriveScope(g) === 'key' && deriveKind(g) === 'regular')
                   .map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
               </Select>
-              <div className="mt-2 rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2">
-                <span className="block text-xs text-mg-text-3">{selectedGuardrail ? '已选 Key 护栏' : '当前策略'}</span>
-                <strong className="mt-0.5 block text-sm text-mg-text-1">
-                  {selectedGuardrail?.name ?? (defaultGuardrail ? '继承全局默认 Key 策略' : '不使用 Key 护栏')}
-                </strong>
-                <span className="mt-0.5 block text-xs text-mg-text-3">
-                  {selectedGuardrail ? (budgetDisplay.join('，') || '已选择常规 Key 护栏') : (budgetDisplay.join('，') || '未绑定 Key 护栏')}
-                </span>
-              </div>
+              {allGuardrails.filter((g) => !g.is_default && deriveScope(g) === 'key' && deriveKind(g) === 'regular').length === 0 && (
+                <p className="text-xs text-mg-text-3">暂无 Key 护栏</p>
+              )}
             </div>
-            {/* 生效规则预览（PRD §8.2）：提示词注入 + 预算闸门 / 模型黑名单 / IP 白名单叠加结果 */}
-            <div className="mt-2 space-y-1.5 rounded-md bg-brand-base/5 px-2.5 py-2 text-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="text-mg-text-3 shrink-0">提示词注入</span>
-                <span className="font-bold text-mg-text-1">{PROMPT_INJECTION_LABEL[piResolved.mode]}</span>
-                <span className="text-mg-text-3">· 来自 {piResolved.sourceLabel}</span>
+            <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2">
+              <span className="block text-xs text-mg-text-3">{selectedGuardrail ? '已选 Key 护栏' : '当前策略'}</span>
+              <strong className="mt-0.5 block text-sm text-mg-text-1">
+                {selectedGuardrail?.name ?? '不使用 Key 护栏'}
+              </strong>
+              <em className="mt-1 block text-xs not-italic text-mg-text-3">
+                {selectedGuardrail ? (budgetDisplay.join('，') || '未配置预算') : '未绑定 Key 护栏'}
+              </em>
+            </div>
+            <div className="rounded-md border border-mg-border bg-mg-fill-0/30 p-3">
+              <div className="mb-3 flex items-center justify-between">
+                <strong className="text-sm text-mg-text-1">生效规则预览</strong>
+                <span className="text-xs text-mg-text-3">运行时会同时检查这些预算闸门</span>
               </div>
-              <div className="flex items-start gap-1.5">
-                <span className="text-mg-text-3 shrink-0">预算闸门</span>
-                {budgetDisplay.length > 0 ? (
-                  <span className="font-semibold text-mg-text-1">{budgetDisplay.join('，')}</span>
-                ) : (
-                  <span className="text-mg-text-3">—</span>
-                )}
+              <div className="space-y-2 border-b border-mg-border pb-3">
+                {effectiveLayerRows.map((row) => (
+                  <div className="flex items-center justify-between gap-3 text-xs" key={row.label}>
+                    <span className="text-mg-text-3">{row.label}</span>
+                    <strong className={row.active ? 'text-mg-text-1' : 'text-mg-text-3'}>{row.name}</strong>
+                  </div>
+                ))}
               </div>
-              <div className="flex items-start gap-1.5">
-                <span className="text-mg-text-3 shrink-0">模型黑名单</span>
-                <span className={modelBlacklist.length > 0 ? 'font-semibold text-mg-text-1' : 'text-mg-text-3'}>
-                  {modelBlacklist.length > 0 ? modelBlacklist.join('、') : '—'}
-                </span>
+              <div className="py-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <strong className="text-xs text-mg-text-1">预算闸门</strong>
+                  <span className="text-xs text-mg-text-3">按最先触发的预算停止调用</span>
+                </div>
+                <div className="space-y-2">
+                  {budgetGateRows.map((row) => (
+                    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-xs" key={row.label}>
+                      <span className="text-mg-text-3">{row.label}</span>
+                      <strong className={row.value === '不限额' ? 'text-mg-text-3' : 'text-mg-text-1'}>{row.value}</strong>
+                      <em className="text-right not-italic text-mg-text-3">{row.source}</em>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="flex items-start gap-1.5">
-                <span className="text-mg-text-3 shrink-0">IP 白名单</span>
-                <span className={ipWhitelist.length > 0 ? 'font-mono font-semibold text-mg-text-1' : 'text-mg-text-3'}>
-                  {ipWhitelist.length > 0 ? ipWhitelist.join(', ') : '—'}
-                </span>
+              <div className="space-y-2 border-t border-mg-border pt-3">
+                {previewRuleRows.map((row) => (
+                  <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs" key={row.label}>
+                    <span className="text-mg-text-3">{row.label}</span>
+                    <strong className={row.value === '未配置' ? 'text-mg-text-3' : 'text-mg-text-1'}>{row.value}</strong>
+                    <span className="col-start-2 text-mg-text-3">规则来源：{row.source}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -450,13 +462,6 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
           </Button>
         </div>
       </SideSheet>
-
-      <CreateGuardrailDialog
-        open={guardrailDialogOpen}
-        onClose={() => setGuardrailDialogOpen(false)}
-        workspaceId={workspaceId}
-        onCreated={handleGuardrailCreated}
-      />
     </>
   )
 }

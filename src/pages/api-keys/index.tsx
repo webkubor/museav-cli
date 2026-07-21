@@ -201,9 +201,13 @@ export default function ApiKeysPage() {
 
   const enableMutation = useMutation({
     mutationFn: (keyId: string) => enableApiKey(workspaceId, keyId),
-    onSuccess: () => {
+    onSuccess: (_res, keyId) => {
       appToast.success('已启用')
       queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
+      // 详情抽屉状态实时同步（#185）：失效详情查询 + 同步本地快照，
+      // 使抽屉按钮文案（启用/停用）随最新 status 即时刷新，无需手动刷页。
+      queryClient.invalidateQueries({ queryKey: ['api-key-detail', workspaceId, keyId] })
+      setDetailKey((prev) => (prev && prev.api_key_id === keyId ? { ...prev, status: 'active' } : prev))
       trackEvent('api_keys:enable', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
     onError: (err: unknown) => {
@@ -214,10 +218,14 @@ export default function ApiKeysPage() {
 
   const disableMutation = useMutation({
     mutationFn: (keyId: string) => disableApiKey(workspaceId, keyId),
-    onSuccess: () => {
+    onSuccess: (_res, keyId) => {
       appToast.success('已停用')
       setDisableTarget(null)
       queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
+      // 详情抽屉状态实时同步（#185）：失效详情查询 + 同步本地快照，
+      // 使抽屉按钮文案（启用/停用）随最新 status 即时刷新，无需手动刷页。
+      queryClient.invalidateQueries({ queryKey: ['api-key-detail', workspaceId, keyId] })
+      setDetailKey((prev) => (prev && prev.api_key_id === keyId ? { ...prev, status: 'disabled' } : prev))
       trackEvent('api_keys:disable', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
     onError: (err: unknown) => {

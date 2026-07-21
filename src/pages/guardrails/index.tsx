@@ -574,6 +574,19 @@ export default function GuardrailsPage() {
         return
       }
     }
+    // 需求方#190：创建常规个人/Key 护栏时，预算不得超过全局默认（当前个人/Key）预算。
+    // 编辑走 handleSaveBudget 的同一校验；创建预算随 handleSubmit 一页提交，故此处补校验，禁止提交。
+    if (isCreating && (scope === 'member' || scope === 'key') && kind === 'regular') {
+      const amt = budgetAmount.trim()
+      if (amt && isValidBudgetAmount(amt)) {
+        const aggScope: BudgetAggScope = scope === 'member' ? 'per_member' : 'per_api_key'
+        const globalDefault = globalDefaultAmount(guardrails, aggScope)
+        if (globalDefault != null && Number(amt) > globalDefault) {
+          appToast.error(`常规护栏预算不能超过全局默认预算（${currencySymbol}${trimAmountScale(String(globalDefault))} / ${scope === 'member' ? '每人' : '每 Key'}）`)
+          return
+        }
+      }
+    }
     // ONE save for the whole drawer: rules (model_blacklist/ip_whitelist) round-
     // trip via metadata; scope (members + api_keys) is materialized into
     // assignments server-side. Always send all arrays (even empty) so empty =

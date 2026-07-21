@@ -119,6 +119,11 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
     staleTime: 60_000,
   })
 
+  // 抽屉保持挂载时，重新打开不会触发 React Query 的 mount 刷新；每次打开主动拉取，确保新建/编辑的 Key 护栏进入下拉。
+  useEffect(() => {
+    if (open && workspaceId) void guardrailsQuery.refetch()
+  }, [open, workspaceId, guardrailsQuery.refetch])
+
   const workspaceQuery = useQuery({
     queryKey: ['workspaces', activeTenantId],
     queryFn: () => listWorkspaces().then((res) => res.items ?? []),

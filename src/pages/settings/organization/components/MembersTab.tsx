@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
 import { Popover } from '@/components/ui/Popover'
+import { Select } from '@/components/ui/Select'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { appToast } from '@/lib/app-toast'
 import { refreshSession } from '@/lib/auth/refresh-session'
@@ -242,8 +243,8 @@ export function MembersTab({
       ]
     : [{ value: 'tenant_member', label: 'Member' }]
 
-  const pillSelect =
-    'h-8 text-xs py-0 pr-7 pl-2.5 bg-mg-bg-0 border border-mg-border/50 rounded-full font-semibold cursor-pointer text-mg-text-1 outline-none hover:border-brand-base/40 transition-colors'
+  // 统一走共享 Select（与 InviteTab 一致），修掉原生 <select> 下拉字体不一致（需求方#127）
+  const filterSelectCls = 'h-8 text-xs rounded-lg font-semibold'
 
   return (
     <>
@@ -251,39 +252,36 @@ export function MembersTab({
         {/* 筛选条 */}
         <div className="flex items-center justify-between gap-3 p-4 border-b border-mg-border/50 bg-mg-fill-0/20 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap">
-            <select
+            <Select
               value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value as typeof roleFilter)}
-              className={pillSelect}
-              aria-label={t('enterprise.members.filterRole')}
+              onChange={(v) => setRoleFilter(v as typeof roleFilter)}
+              className={`${filterSelectCls} w-36`}
             >
-              <option value="all">{t('enterprise.members.filterRole')}：{t('enterprise.members.all')}</option>
-              <option value="tenant_owner">Owner</option>
-              <option value="tenant_admin">Admin</option>
-              <option value="tenant_member">Member</option>
-            </select>
-            <select
+              <Select.Option value="all">{t('enterprise.members.filterRole')}：{t('enterprise.members.all')}</Select.Option>
+              <Select.Option value="tenant_owner">Owner</Select.Option>
+              <Select.Option value="tenant_admin">Admin</Select.Option>
+              <Select.Option value="tenant_member">Member</Select.Option>
+            </Select>
+            <Select
               value={wsFilter}
-              onChange={(e) => setWsFilter(e.target.value)}
-              className={pillSelect}
-              aria-label={t('enterprise.members.filterWorkspace')}
+              onChange={setWsFilter}
+              className={`${filterSelectCls} w-44`}
               disabled={workspaces.length === 0}
             >
-              <option value="all">{t('enterprise.members.filterWorkspace')}：{t('enterprise.members.all')}</option>
+              <Select.Option value="all">{t('enterprise.members.filterWorkspace')}：{t('enterprise.members.all')}</Select.Option>
               {workspaces.map((w) => (
-                <option key={w.workspace_id} value={w.workspace_id}>{w.name}</option>
+                <Select.Option key={w.workspace_id} value={w.workspace_id}>{w.name}</Select.Option>
               ))}
-            </select>
-            <select
+            </Select>
+            <Select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              className={pillSelect}
-              aria-label={t('enterprise.members.filterStatus')}
+              onChange={(v) => setStatusFilter(v as typeof statusFilter)}
+              className={`${filterSelectCls} w-36`}
             >
-              <option value="all">{t('enterprise.members.filterStatus')}：{t('enterprise.members.all')}</option>
-              <option value="active">{t('enterprise.members.statusActive')}</option>
-              <option value="suspended">{t('enterprise.members.statusSuspended')}</option>
-            </select>
+              <Select.Option value="all">{t('enterprise.members.filterStatus')}：{t('enterprise.members.all')}</Select.Option>
+              <Select.Option value="active">{t('enterprise.members.statusActive')}</Select.Option>
+              <Select.Option value="suspended">{t('enterprise.members.statusSuspended')}</Select.Option>
+            </Select>
           </div>
           <span className="text-xs text-mg-text-3 bg-mg-fill-1 border border-mg-border/40 px-2 py-0.5 rounded-full font-medium">
             {membersQuery.isLoading
@@ -489,16 +487,16 @@ export function MembersTab({
               <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-mg-text-2">
                 {t('enterprise.members.roleLabel')}
               </label>
-              <select
+              <Select
                 value={draftRole}
+                onChange={(v) => setDraftRole(v as EditableRole)}
+                className="h-9 text-xs rounded-lg font-semibold"
                 data-track="members:field_role"
-                onChange={(e) => setDraftRole(e.target.value as EditableRole)}
-                className="w-full h-9 text-xs px-2.5 bg-mg-bg-0 border border-mg-border/50 rounded-lg font-semibold cursor-pointer text-mg-text-1 outline-none"
               >
                 {roleOptions.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                  <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>
                 ))}
-              </select>
+              </Select>
             </div>
             {/* 状态：Owner 不可停用（复用 canManageMember 的边界判断，与操作列一致） */}
             <div>

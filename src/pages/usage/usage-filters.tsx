@@ -1,7 +1,5 @@
-import type { ReactNode } from 'react'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
 import Select from '@/components/ui/Select'
-import { cn } from '@/lib/utils'
 
 type WorkspaceOption = {
   workspace_id: string
@@ -12,8 +10,6 @@ interface UsageFilterPanelProps {
   filterWorkspaceId: string
   labels: {
     customRangePlaceholder: string
-    time: string
-    workspace: string
     workspaces: string
   }
   onTimeRangeChange: (value: DateRangeValue) => void
@@ -23,6 +19,10 @@ interface UsageFilterPanelProps {
   workspaceList: WorkspaceOption[]
 }
 
+/**
+ * 成本概览筛选条（对齐 PRD）：时间 / 工作空间两枚下拉，无独立字段标签，
+ * 下拉当前值自描述（如「本月」「全部工作空间」）。
+ */
 export function UsageFilterPanel({
   filterWorkspaceId,
   labels,
@@ -33,17 +33,17 @@ export function UsageFilterPanel({
   workspaceList,
 }: UsageFilterPanelProps) {
   return (
-    <div className="flex flex-wrap items-end gap-3">
-      <UsageFilterField label={labels.time}>
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="w-full sm:w-52">
         <DateRangePicker
           value={timeRange}
           onChange={onTimeRangeChange}
           presets={presets}
           placeholder={labels.customRangePlaceholder}
         />
-      </UsageFilterField>
+      </div>
 
-      <UsageFilterField label={labels.workspace} className="w-full sm:w-60">
+      <div className="w-full sm:w-60">
         <Select
           value={filterWorkspaceId === '' ? '__all__' : filterWorkspaceId}
           onChange={onWorkspaceChange}
@@ -56,16 +56,7 @@ export function UsageFilterPanel({
             </Select.Option>
           ))}
         </Select>
-      </UsageFilterField>
+      </div>
     </div>
-  )
-}
-
-function UsageFilterField({ children, className, label }: { children: ReactNode; className?: string; label: string }) {
-  return (
-    <label className={cn('flex min-w-0 flex-col gap-1.5', className)}>
-      <span className="mg-text-label text-mg-text-3">{label}</span>
-      {children}
-    </label>
   )
 }

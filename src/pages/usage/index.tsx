@@ -29,16 +29,14 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { LuActivity, LuBot, LuDatabase, LuKey, LuKeyRound, LuRefreshCw, LuWallet, LuUsers } from 'react-icons/lu'
+import { ModelIcon } from '@/features/models/components/ModelIcon'
 import {
   CostSourcePanel,
   type CostSourceSection,
-  ApiKeyRankingPanel,
   DistributionPanel,
-  ModelDistributionDonutPanel,
-  ModelDistributionPanel,
+  DistributionDonutPanel,
   UsageStatCard,
 } from './usage-panels'
-import { MemberRankingPanel } from './member-ranking-panel'
 import {
   type Metric,
   rangeToDates,
@@ -322,6 +320,7 @@ export default function UsagePage() {
     })
   }, [workspaceSourceQuery.data, workspaceList])
 
+  // 顺序对齐 PRD：最高消费工作空间 → 最高消费模型 → 最高消费 API Key
   const sourceSections: CostSourceSection[] = [
     {
       title: t('usage.sources.topWorkspace'),
@@ -330,16 +329,16 @@ export default function UsagePage() {
       drillKind: 'workspace',
     },
     {
-      title: t('usage.sources.topApiKey'),
-      items: rankingsApiKeysQuery.data?.items ?? [],
-      emptyLabel: t('usage.sources.empty'),
-      drillKind: 'apiKey',
-    },
-    {
       title: t('usage.sources.topModel'),
       items: rankingsModelsQuery.data?.items ?? [],
       emptyLabel: t('usage.sources.empty'),
       drillKind: 'model',
+    },
+    {
+      title: t('usage.sources.topApiKey'),
+      items: rankingsApiKeysQuery.data?.items ?? [],
+      emptyLabel: t('usage.sources.empty'),
+      drillKind: 'apiKey',
     },
   ]
 
@@ -359,6 +358,53 @@ export default function UsagePage() {
     ...(canShowMemberDimension ? [{ icon: <LuUsers size={14} />, label: t('usage.dimension.member'), value: 'member' as const }] : []),
     { icon: <LuKeyRound size={14} />, label: t('usage.dimension.apiKey'), value: 'apiKey' },
   ]
+
+  // 用量明细：三维（模型/成员/API Keys）统一为 PRD 结构——左「分布」环形图 + 右「排行」列表。
+  const dimQuery =
+    effectiveDimension === 'apiKey'
+      ? rankingsApiKeysQuery
+      : effectiveDimension === 'member'
+        ? rankingsAccountsQuery
+        : rankingsModelsQuery
+  const dimItems = dimQuery.data?.items ?? []
+  const dimTotalSpend = dimQuery.data?.totals?.spend?.amount
+
+  // 行首图标：模型用 ModelIcon，成员/API Keys 用通用徽标
+  const dimLeading = (item: UsageRankingItem) => {
+    if (effectiveDimension === 'model') {
+      return (
+        <ModelIcon
+          model={{ display_name: item.name || item.key || '', vendor: item.vendor || item.name || item.key || '' }}
+          size={22}
+          rounded="rounded-md"
+        />
+      )
+    }
+    const Icon = effectiveDimension === 'member' ? LuUsers : LuKey
+    return (
+      <span className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-md bg-brand-selected-bg text-brand-base">
+        <Icon size={13} />
+      </span>
+    )
+  }
+
+  // 次级说明（归因）：模型→工作空间，成员→模型数，API Keys→归属人；缺省「—」（#447 归因未返回时）
+  const dimSecondary = (item: UsageRankingItem) => {
+    if (effectiveDimension === 'model') {
+      const ws = item.workspaces?.length ? item.workspaces.join('、') : item.workspace_name
+      return `${t('usage.attr.workspace')}: ${ws || '—'}`
+    }
+    if (effectiveDimension === 'member') {
+      return typeof item.model_count === 'number' ? t('usage.meta.models', { count: item.model_count }) : '—'
+    }
+    return item.owner || '—'
+  }
+
+  function drillFromRanking(item: UsageRankingItem) {
+    if (effectiveDimension === 'model') drillToLogs('ranking', { model: item.key })
+    else if (effectiveDimension === 'member') drillToLogs('ranking', { member: item.key })
+    else drillToLogs('ranking', { api_key: item.key })
+  }
 
   return (
     <div className="space-y-6">
@@ -398,8 +444,22 @@ export default function UsagePage() {
       )}
 
       <Card className="space-y-5 p-5 sm:p-6" id="usage-cost-overview">
+        <h2 className="mg-text-title-sm font-bold text-mg-text-1">{t('usage.overview.title')}</h2>
+
+        {/* 对齐 PRD：筛选下拉（时间 / 工作空间）与「刷新」同处一行，筛选无独立字段标签 */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="mg-text-title-sm font-bold text-mg-text-1">{t('usage.overview.title')}</h2>
+          <UsageFilterPanel
+            filterWorkspaceId={filterWorkspaceId}
+            labels={{
+              customRangePlaceholder: t('usage.customRange.placeholder'),
+              workspaces: t('usage.filter.allWorkspaces'),
+            }}
+            onTimeRangeChange={handleTimeRangeChange}
+            onWorkspaceChange={handleWorkspaceChange}
+            presets={usagePresets}
+            timeRange={timeRange}
+            workspaceList={workspaceList}
+          />
           <Button
             variant="outline"
             size="sm"
@@ -409,21 +469,6 @@ export default function UsagePage() {
             {t('usage.refresh')}
           </Button>
         </div>
-
-        <UsageFilterPanel
-          filterWorkspaceId={filterWorkspaceId}
-          labels={{
-            customRangePlaceholder: t('usage.customRange.placeholder'),
-            time: t('usage.filter.time'),
-            workspace: t('usage.filter.workspace'),
-            workspaces: t('usage.filter.allWorkspaces'),
-          }}
-          onTimeRangeChange={handleTimeRangeChange}
-          onWorkspaceChange={handleWorkspaceChange}
-          presets={usagePresets}
-          timeRange={timeRange}
-          workspaceList={workspaceList}
-        />
 
         {/* 用量统计三大卡（对齐 PRD）：总费用/请求总量/总Tokens + 分解进度条 */}
         <div className="grid gap-4 md:grid-cols-3">
@@ -553,93 +598,34 @@ export default function UsagePage() {
           </div>
         </div>
 
-        {effectiveDimension === 'model' && (
-          <div className="grid gap-5 xl:grid-cols-2">
-            <ModelDistributionDonutPanel
-              items={rankingsModelsQuery.data?.items ?? []}
-              totalSpendAmount={rankingsModelsQuery.data?.totals?.spend?.amount}
-              isLoading={rankingsModelsQuery.isLoading}
-              isError={rankingsModelsQuery.isError}
-              onRetry={() => rankingsModelsQuery.refetch()}
-              currencySymbol={currencySymbol}
-              emptyTitle={emptyTitle}
-              emptyDesc={emptyDesc}
-            />
-            <ModelDistributionPanel
-              items={rankingsModelsQuery.data?.items ?? []}
-              totalSpendAmount={rankingsModelsQuery.data?.totals?.spend?.amount}
-              isLoading={rankingsModelsQuery.isLoading}
-              isError={rankingsModelsQuery.isError}
-              onRetry={() => rankingsModelsQuery.refetch()}
-              currencySymbol={currencySymbol}
-              emptyTitle={emptyTitle}
-              emptyDesc={emptyDesc}
-              onDrill={(item) => drillToLogs('ranking', { model: item.key })}
-            />
-          </div>
-        )}
-        {effectiveDimension === 'apiKey' && (
-          <div className="space-y-5">
-            <DistributionPanel
-              title={t('usage.distribution.apiKeyTitle')}
-              items={rankingsApiKeysQuery.data?.items ?? []}
-              totalSpendAmount={rankingsApiKeysQuery.data?.totals?.spend?.amount}
-              currencySymbol={currencySymbol}
-              isLoading={rankingsApiKeysQuery.isLoading}
-              isError={rankingsApiKeysQuery.isError}
-              onRetry={() => rankingsApiKeysQuery.refetch()}
-              emptyTitle={emptyTitle}
-              emptyDesc={emptyDesc}
-              leading={() => (
-                <span className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-md bg-brand-selected-bg text-brand-base">
-                  <LuKey size={13} />
-                </span>
-              )}
-              onDrill={(item) => drillToLogs('ranking', { api_key: item.key })}
-            />
-            <ApiKeyRankingPanel
-              items={rankingsApiKeysQuery.data?.items ?? []}
-              isLoading={rankingsApiKeysQuery.isLoading}
-              isError={rankingsApiKeysQuery.isError}
-              onRetry={() => rankingsApiKeysQuery.refetch()}
-              currencySymbol={currencySymbol}
-              emptyTitle={emptyTitle}
-              emptyDesc={emptyDesc}
-              onDrill={(item) => drillToLogs('ranking', { api_key: item.key })}
-            />
-          </div>
-        )}
-        {effectiveDimension === 'member' && (
-          <div className="space-y-5">
-            <DistributionPanel
-              title={t('usage.distribution.memberTitle')}
-              items={rankingsAccountsQuery.data?.items ?? []}
-              totalSpendAmount={rankingsAccountsQuery.data?.totals?.spend?.amount}
-              currencySymbol={currencySymbol}
-              isLoading={rankingsAccountsQuery.isLoading}
-              isError={rankingsAccountsQuery.isError}
-              onRetry={() => rankingsAccountsQuery.refetch()}
-              emptyTitle={emptyTitle}
-              emptyDesc={emptyDesc}
-              leading={() => (
-                <span className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-md bg-brand-selected-bg text-brand-base">
-                  <LuUsers size={13} />
-                </span>
-              )}
-              onDrill={(item) => drillToLogs('ranking', { member: item.key })}
-            />
-            <MemberRankingPanel
-              items={rankingsAccountsQuery.data?.items ?? []}
-              isLoading={rankingsAccountsQuery.isLoading}
-              isError={rankingsAccountsQuery.isError}
-              onRetry={() => rankingsAccountsQuery.refetch()}
-              currencySymbol={currencySymbol}
-              emptyTitle={emptyTitle}
-              emptyDesc={emptyDesc}
-              onDrill={(item) => drillToLogs('ranking', { member: item.key })}
-            />
-          </div>
-        )}
+        <div className="grid gap-5 xl:grid-cols-2">
+          <DistributionDonutPanel
+            title={t(`usage.distribution.${effectiveDimension}.title`)}
+            chartDesc={t(`usage.distribution.${effectiveDimension}.chartDesc`)}
+            items={dimItems}
+            totalSpendAmount={dimTotalSpend}
+            isLoading={dimQuery.isLoading}
+            isError={dimQuery.isError}
+            onRetry={() => dimQuery.refetch()}
+            currencySymbol={currencySymbol}
+            emptyTitle={emptyTitle}
+            emptyDesc={emptyDesc}
+          />
+          <DistributionPanel
+            title={t(`usage.distribution.${effectiveDimension}.rankTitle`)}
+            items={dimItems}
+            totalSpendAmount={dimTotalSpend}
+            currencySymbol={currencySymbol}
+            isLoading={dimQuery.isLoading}
+            isError={dimQuery.isError}
+            onRetry={() => dimQuery.refetch()}
+            emptyTitle={emptyTitle}
+            emptyDesc={emptyDesc}
+            leading={dimLeading}
+            secondary={dimSecondary}
+            onDrill={drillFromRanking}
+          />
+        </div>
       </Card>
     </div>
   )

@@ -283,8 +283,9 @@ export function MembersTab({
                         {isPrivileged ? (
                           <span className="text-mg-text-3">{t('enterprise.members.allWorkspaces')}</span>
                         ) : (
-                          // 后端未返回成员授权工作空间明细，仅有 workspace_count → 占位
-                          // TODO(后端待接): 成员-工作空间授权明细接口 见 #420
+                          // 需求方#175 要求展示「空间名称」而非数量；Swagger tenant.Member 仅返 workspace_count，
+                          // 无明细/名称 → 不前端 join 别列表兜底，暂以数量占位，待后端补名称明细。
+                          // TODO(后端待接): 成员-工作空间授权明细/名称 见 QA#420(第3项，duanlingxiao)
                           <span>{m.workspace_count > 0 ? `${m.workspace_count}` : '—'}</span>
                         )}
                       </TableCell>

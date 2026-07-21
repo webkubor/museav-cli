@@ -883,10 +883,13 @@
       "collectUnknown": "Content unknown",
       "forwardOn": "Forwarding",
       "forwardOff": "Forward off",
-      "forwardUnknown": "Forward unknown"
+      "forwardUnknown": "Forward unknown",
+      "metaMembers": "{{count}} members",
+      "metaKeys": "{{count}} API Keys",
+      "metaGuardrails": "{{count}} guardrails"
     },
     "countSuffix": "{{count}} spaces",
-    "searchPlaceholder": "Search by name, slug, workspace ID, description, or owner",
+    "searchPlaceholder": "Search by name, slug or workspace ID",
     "createBtn": "Create Space",
     "loading": "Loading...",
     "empty": "No matching workspaces",
@@ -904,18 +907,19 @@
       "edit": "Manage"
     },
     "modal": {
-      "title": "Create Workspace",
+      "title": "Create workspace",
       "cancel": "Cancel",
       "confirm": "Create",
       "nameLabel": "Name",
       "namePlaceholder": "e.g. Production App",
       "slugLabel": "Slug",
       "slugPlaceholder": "e.g. prod-app",
-      "descLabel": "Description (Optional)",
+      "descLabel": "Description",
       "descPlaceholder": "Describe the purpose...",
       "inviteLabel": "Initial members (Optional)",
       "invitePlaceholder": "Search org members by name or email...",
-      "inviteHint": "Invitations are sent after creation. Up to 20 people."
+      "inviteHint": "Invitations are sent after creation. Up to 20 people.",
+      "subtitle": "New workspace for {{tenant}}"
     },
     "toast": {
       "createSuccess": "Workspace \"{{name}}\" created",
@@ -968,7 +972,11 @@
         "viewKey": "View keys",
         "viewGuardrails": "View guardrails",
         "viewLogs": "View logs",
-        "notForwarded": "Not forwarded"
+        "notForwarded": "Not forwarded",
+        "guardrailsActiveHint": "{{count}} active",
+        "lastRequestPrefix": "Last request",
+        "capturedFull": "Input/output captured",
+        "metaOnly": "Metadata only"
       },
       "members": {
         "title": "Workspace Members",
@@ -1031,7 +1039,9 @@
         "deleteError": "Delete failed",
         "defaultCannotDelete": "Default workspace cannot be deleted"
       }
-    }
+    },
+    "noMatchTitle": "No matching workspaces",
+    "clearSearch": "Clear search"
   },
   "platformConfig": {
     "title": "Dev Menu",

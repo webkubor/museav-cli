@@ -883,10 +883,13 @@
       "collectUnknown": "采集未知",
       "forwardOn": "转发开启",
       "forwardOff": "转发关闭",
-      "forwardUnknown": "转发未知"
+      "forwardUnknown": "转发未知",
+      "metaMembers": "{{count}} 成员",
+      "metaKeys": "{{count}} API Keys",
+      "metaGuardrails": "{{count}} 护栏"
     },
     "countSuffix": "{{count}} 个空间",
-    "searchPlaceholder": "按名称、Slug、工作空间 ID、描述或负责人搜索",
+    "searchPlaceholder": "搜索空间名称、Slug 或 Workspace ID",
     "createBtn": "创建空间",
     "loading": "正在获取数据...",
     "empty": "暂无匹配的工作空间数据",
@@ -904,18 +907,19 @@
       "edit": "管理"
     },
     "modal": {
-      "title": "创建新工作空间",
+      "title": "创建空间",
       "cancel": "取消",
       "confirm": "确认创建",
       "nameLabel": "空间名称",
       "namePlaceholder": "如：生产环境应用区",
       "slugLabel": "唯一标识 (Slug)",
       "slugPlaceholder": "如：prod-app",
-      "descLabel": "空间描述 (选填)",
+      "descLabel": "空间描述",
       "descPlaceholder": "简述该工作空间的用途...",
       "inviteLabel": "初始成员 (选填)",
       "invitePlaceholder": "搜索组织成员姓名或邮箱...",
-      "inviteHint": "创建成功后将同时发送工作空间邀请，最多 20 人。"
+      "inviteHint": "创建成功后将同时发送工作空间邀请，最多 20 人。",
+      "subtitle": "为 {{tenant}} 创建新的工作空间"
     },
     "toast": {
       "createSuccess": "工作空间 \"{{name}}\" 创建成功",
@@ -968,7 +972,11 @@
         "viewKey": "查看 Key",
         "viewGuardrails": "查看护栏",
         "viewLogs": "查看调用日志",
-        "notForwarded": "未转发"
+        "notForwarded": "未转发",
+        "guardrailsActiveHint": "{{count}} 个启用中",
+        "lastRequestPrefix": "最近请求",
+        "capturedFull": "输入/输出已采集",
+        "metaOnly": "仅元数据"
       },
       "members": {
         "title": "空间成员",
@@ -1031,7 +1039,9 @@
         "deleteError": "删除失败",
         "defaultCannotDelete": "默认工作空间不可删除"
       }
-    }
+    },
+    "noMatchTitle": "没有匹配的工作空间",
+    "clearSearch": "清空搜索"
   },
   "platformConfig": {
     "title": "开发者菜单",

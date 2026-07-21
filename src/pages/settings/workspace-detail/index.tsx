@@ -184,7 +184,9 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <span className="text-xs text-mg-text-1 font-medium">{m.api_key_count ?? dash}</span>
+                        <span className="text-xs text-mg-text-1 font-medium">
+                          {m.api_key_count != null ? `${m.api_key_count} 个` : dash}
+                        </span>
                       </TableCell>
                       <TableCell align="right">
                         {!isOwner && canManageMembers ? (

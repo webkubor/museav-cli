@@ -10,22 +10,16 @@ import {
   LuSearch,
   LuPlus,
   LuKey,
-  LuUser,
-  LuClipboardList,
-  LuSend,
   LuChevronRight,
   LuCircleDollarSign,
   LuActivity,
   LuDatabase,
-  LuFileText,
-  LuLayoutGrid,
-  LuLayoutList
+  LuFolderKanban
 } from 'react-icons/lu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listWorkspaces, createWorkspace, getWorkspace } from '@/services/workspaces'
 import { listTenantMembers } from '@/services/tenants'
 import { useTenantRole } from '@/hooks/use-tenant-role'
-import { useClientPage } from '@/hooks/use-client-page'
 import {
   MembersTab,
   LogsForwardingTab,
@@ -35,13 +29,10 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Select } from '@/components/ui/Select'
-import { Badge } from '@/components/ui/Badge'
 import { toast } from 'sonner'
 import { Modal } from '@/components/ui/Modal'
 import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { EmptyState } from '@/components/ui/EmptyState'
-import { Pagination } from '@/components/ui/Pagination'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { TagInput, type TagOption } from '@/components/ui/TagInput'
 import { cn, formatMoney as fmtMoney } from '@/lib/utils'
@@ -88,10 +79,6 @@ export default function WorkspacesPage() {
   const [modalVisible, setModalVisible] = useState(false)
   // 单页结构：选中卡片在下方展开详情（不跳路由，对齐原型 .space-detail-shell）
   const [selectedId, setSelectedId] = useState<string>('')
-  // 卡片密度：detailed=两列大卡（全字段）｜ compact=四列小卡（仅名称/slug/负责人）。
-  // 两档都是换行网格、跟随页面纵向滚动，不做横向滚动——密度和"是否横滚"是两件事，
-  // 之前把两者混在一起删掉是错的（见反馈）。
-  const [density, setDensity] = useState<'detailed' | 'compact'>('detailed')
 
   // 受控表单状态
   const [name, setName] = useState('')
@@ -195,12 +182,6 @@ export default function WorkspacesPage() {
       (value ?? '').toLowerCase().includes(searchKeyword),
     )
   })
-  // 密度不同、每页展示条数也不同：紧凑卡片小，一页装得下更多。
-  // 详细卡固定两行（4 张）封顶卡区高度——多空间时详情面板仍紧跟卡区可见，
-  // 不做卡区内嵌滚动（页内嵌套滚动条是布局异味），翻页承接剩余空间。
-  const pageSize = density === 'compact' ? 12 : 4
-  const { paged: pagedData, page: currentPage, setPage: setCurrentPage, total: pagedTotal } = useClientPage(filteredData, pageSize)
-
   const handleCreateSubmit = () => {
     if (!name.trim()) {
       toast.error(t('workspaces.toast.nameRequired'))
@@ -244,36 +225,12 @@ export default function WorkspacesPage() {
   const forwardOnCount = list.filter((w) => w.forward_enabled).length
   const dash = '—'
 
+  // 摘要条对齐 PRD space-summary-strip：4 项等分、仅「标签 + 值」，无图标/无状态徽标。
   const summaryItems = [
-    {
-      label: t('workspaces.summary.myWorkspaces'),
-      // 工作空间数 / 上限（tenant.max_workspaces），拿不到租户上限时仅显数量
-      value: tenant ? `${list.length} / ${tenant.max_workspaces}` : String(list.length),
-      icon: <LuFileText size={16} className="text-brand-base" />,
-      bg: 'bg-brand-base/8'
-    },
-    {
-      label: t('workspaces.summary.myOwned'),
-      value: myOwnedCount,
-      icon: <LuUser size={16} className="text-brand-base" />,
-      bg: 'bg-brand-base/8'
-    },
-    {
-      label: t('workspaces.summary.logging'),
-      value: loggingKnown ? loggingOnCount : 0,
-      hasStatus: true,
-      enabled: loggingKnown && loggingOnCount > 0,
-      icon: <LuClipboardList size={16} className="text-brand-base" />,
-      bg: 'bg-brand-base/8'
-    },
-    {
-      label: t('workspaces.summary.forwarding'),
-      value: forwardKnown ? forwardOnCount : 0,
-      hasStatus: true,
-      enabled: forwardKnown && forwardOnCount > 0,
-      icon: <LuSend size={16} className="text-brand-base" />,
-      bg: 'bg-brand-base/8'
-    },
+    { label: t('workspaces.summary.myWorkspaces'), value: String(list.length) },
+    { label: t('workspaces.summary.myOwned'), value: String(myOwnedCount) },
+    { label: t('workspaces.summary.logging'), value: t('workspaces.summary.enabledCount', { count: loggingKnown ? loggingOnCount : 0 }) },
+    { label: t('workspaces.summary.forwarding'), value: t('workspaces.summary.enabledCount', { count: forwardKnown ? forwardOnCount : 0 }) },
   ]
 
   return (
@@ -299,32 +256,20 @@ export default function WorkspacesPage() {
         }
       />
 
-      {/* 摘要条 */}
-      <div className="bg-mg-bg-0 border border-mg-border/40 rounded-lg p-4 grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-0 divide-y lg:divide-y-0 lg:divide-x divide-mg-border/30">
-        {summaryItems.map((item, idx) => (
-          <div key={item.label} className={cn("flex items-center gap-3", idx > 0 ? "lg:pl-6" : "", idx < 3 ? "lg:pr-6" : "")}>
-            <div className="w-9 h-9 rounded-lg bg-brand-base/8 text-brand-base flex items-center justify-center shrink-0">
-              {item.icon}
-            </div>
-            <div>
-              <div className="text-xs font-medium text-mg-text-3">{item.label}</div>
-              <div className="text-base font-bold text-mg-text-1 mt-0.5 flex items-baseline gap-1">
-                <span>{item.value}</span>
-                {item.hasStatus && (
-                  <span className={cn("text-xs font-semibold ml-1.5 px-1.5 py-0.5 rounded-sm bg-mg-success/8 text-mg-success")}>
-                    {item.label === t('workspaces.summary.logging') ? t('workspaces.card.collectOn') : t('workspaces.card.forwardOn')}
-                  </span>
-                )}
-              </div>
-            </div>
+      {/* 摘要条（对齐 PRD space-summary-strip：4 项等分、竖线分隔、仅标签+值） */}
+      <div className="bg-mg-bg-0 border border-mg-border/40 rounded-lg grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-mg-border/30 overflow-hidden">
+        {summaryItems.map((item) => (
+          <div key={item.label} className="flex flex-col gap-1 px-5 py-4 min-w-0">
+            <span className="text-xs font-bold text-mg-text-3 uppercase tracking-wider truncate">{item.label}</span>
+            <span className="text-lg font-bold text-mg-text-1 truncate">{item.value}</span>
           </div>
         ))}
       </div>
 
-      {/* 控制台操作区域 */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 w-full">
-        <div className="flex flex-1 items-center gap-3 w-full max-w-[560px]">
-          {/* 圆角微阴影输入框 */}
+      {/* 空间列表面板（对齐 PRD panel.space-list-panel：工具条 + 卡片网格同处一个面板内） */}
+      <div className="bg-mg-bg-0 border border-mg-border/40 rounded-lg p-4 flex flex-col gap-3.5">
+        {/* 工具条：搜索框 + 空间计数（对齐 PRD space-toolbar） */}
+        <div className="flex items-center gap-3">
           <Input
             variant="search"
             placeholder={t('workspaces.searchPlaceholder')}
@@ -333,214 +278,98 @@ export default function WorkspacesPage() {
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />
-          {/* 空间计数（对齐原型：X 个空间） */}
-          <span className="text-xs text-mg-text-3 whitespace-nowrap">
+          <span className="text-xs font-bold text-mg-text-3 whitespace-nowrap">
             {t('workspaces.countSuffix', { count: filteredData.length })}
           </span>
         </div>
 
-        {/* 密度切换：详细大卡 ↔ 紧凑小卡，两档都是换行网格，不做横向滚动 */}
-        {filteredData.length > 0 && (
-          <div className="flex items-center gap-1 bg-mg-fill-0/10 p-0.5 rounded-lg border border-mg-border/20 shrink-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setDensity('detailed')}
-              className={cn(
-                "h-7 w-7 !rounded-md flex items-center justify-center border transition-all p-0",
-                density === 'detailed'
-                  ? "bg-brand-base/10 text-brand-base shadow-sm border-brand-base/20"
-                  : "bg-transparent text-mg-text-3 border-transparent hover:text-mg-text-1 hover:bg-mg-fill-0/20"
-              )}
-              title={t('workspaces.density.detailed')}
-            >
-              <LuLayoutGrid size={14} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setDensity('compact')}
-              className={cn(
-                "h-7 w-7 !rounded-md flex items-center justify-center border transition-all p-0",
-                density === 'compact'
-                  ? "bg-brand-base/10 text-brand-base shadow-sm border-brand-base/20"
-                  : "bg-transparent text-mg-text-3 border-transparent hover:text-mg-text-1 hover:bg-mg-fill-0/20"
-              )}
-              title={t('workspaces.density.compact')}
-            >
-              <LuLayoutList size={14} />
-            </Button>
+        {/* 卡片网格（对齐 PRD space-card-grid：两列等分） */}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20 text-mg-text-3 gap-2">
+            <svg className="animate-spin h-5 w-5 text-brand-base" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            <span className="font-semibold tracking-wide text-sm">{t('workspaces.loading')}</span>
+          </div>
+        ) : filteredData.length === 0 ? (
+          /* 空态（对齐 PRD space-empty-state：图标 + 文案 + 清空搜索） */
+          <div className="flex flex-col items-center justify-center gap-2 border border-dashed border-mg-border rounded-lg py-14 text-mg-text-3">
+            <LuFolderKanban size={24} />
+            <strong className="text-sm font-bold text-mg-text-2">{t('workspaces.noMatchTitle')}</strong>
+            {searchValue.trim() && (
+              <button type="button" onClick={() => setSearchValue('')} className="text-xs font-bold text-brand-base hover:underline">
+                {t('workspaces.clearSearch')}
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {filteredData.map((ws) => {
+              const isSelected = validSelectedId === ws.workspace_id
+              return (
+                <Card
+                  key={ws.workspace_id}
+                  level={2}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isSelected}
+                  onClick={() => selectWorkspace(ws.workspace_id)}
+                  onKeyDown={(event) => handleWorkspaceCardKeyDown(event, ws.workspace_id)}
+                  className={cn(
+                    "flex flex-col gap-2.5 p-3.5 min-h-[176px] cursor-pointer transition-colors border rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base focus-visible:ring-offset-2",
+                    isSelected
+                      ? "border-brand-base bg-brand-base/5"
+                      : "bg-mg-bg-0 border-mg-border/40 hover:bg-mg-fill-0/20 hover:border-mg-border/60"
+                  )}
+                >
+                  {/* 头部：名称 + slug / 默认标识（对齐 PRD space-card-head） */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="font-extrabold text-mg-text-1 text-[15px] truncate">{ws.name}</h3>
+                      <div className="font-mono text-xs text-mg-text-3 truncate mt-1">@{ws.slug}</div>
+                    </div>
+                    {ws.is_default && (
+                      <span className="shrink-0 text-xs font-bold px-2 py-1 rounded-full bg-mg-warning/8 text-mg-warning">
+                        {t('workspaces.defaultBadge')}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 描述（对齐 PRD space-card p） */}
+                  <p className="text-xs text-mg-text-3 leading-relaxed line-clamp-2" title={ws.description || undefined}>
+                    {ws.description || dash}
+                  </p>
+
+                  {/* 元信息 2×2（对齐 PRD space-card-meta：负责人 / 成员 / API Keys / 护栏） */}
+                  <div className="mt-auto grid grid-cols-2 gap-y-1.5 gap-x-3 text-xs text-mg-text-3">
+                    <span className="truncate">{t('workspaces.card.owner')} {ws.owner?.display_name || dash}</span>
+                    {isEnterprise && <span className="truncate">{t('workspaces.card.metaMembers', { count: ws.member_count ?? 0 })}</span>}
+                    <span className="truncate">{t('workspaces.card.metaKeys', { count: ws.api_key_count ?? 0 })}</span>
+                    <span className="truncate">{t('workspaces.card.metaGuardrails', { count: ws.guardrail_count ?? 0 })}</span>
+                  </div>
+
+                  {/* 状态行（对齐 PRD space-card-status-row：采集 / 转发 状态胶囊） */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={cn(
+                      "text-xs font-bold px-2 py-0.5 rounded-full",
+                      ws.logging_enabled ? "bg-mg-success/10 text-mg-success" : "bg-mg-fill-0/40 text-mg-text-3"
+                    )}>
+                      {ws.logging_enabled ? t('workspaces.card.collectOn') : t('workspaces.card.collectOff')}
+                    </span>
+                    <span className={cn(
+                      "text-xs font-bold px-2 py-0.5 rounded-full",
+                      ws.forward_enabled ? "bg-mg-success/10 text-mg-success" : "bg-mg-fill-0/40 text-mg-text-3"
+                    )}>
+                      {ws.forward_enabled ? t('workspaces.card.forwardOn') : t('workspaces.card.forwardOff')}
+                    </span>
+                  </div>
+                </Card>
+              )
+            })}
           </div>
         )}
       </div>
-
-      {/* 空间列表区域 */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20 text-mg-text-3 gap-2">
-          <svg className="animate-spin h-5 w-5 text-brand-base" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
-          <span className="font-semibold tracking-wide text-sm">{t('workspaces.loading')}</span>
-        </div>
-      ) : filteredData.length === 0 ? (
-        <EmptyState title={t('workspaces.empty')} />
-      ) : density === 'compact' ? (
-        /* 紧凑网格：四列小卡，只留名称/slug/负责人——换行网格，不横滚 */
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {pagedData.map((ws) => {
-            const isSelected = validSelectedId === ws.workspace_id
-            return (
-              <Card
-                key={ws.workspace_id}
-                level={2}
-                role="button"
-                tabIndex={0}
-                aria-pressed={isSelected}
-                onClick={() => selectWorkspace(ws.workspace_id)}
-                onKeyDown={(event) => handleWorkspaceCardKeyDown(event, ws.workspace_id)}
-                className={cn(
-                  "group relative p-3 flex flex-col gap-1.5 cursor-pointer transition-all border overflow-hidden rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base focus-visible:ring-offset-2",
-                  isSelected
-                    ? "mg-running-border shadow-sm"
-                    : "bg-mg-bg-0 border-mg-border/40 hover:bg-mg-fill-0/20 hover:border-mg-border/60"
-                )}
-              >
-                {isSelected && (
-                  <span className="absolute top-2 right-2 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-base opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-base"></span>
-                  </span>
-                )}
-                <div className="flex items-center gap-1.5">
-                  <h3 className="font-bold text-mg-text-1 text-[13px] truncate">{ws.name}</h3>
-                  {ws.is_default && (
-                    <span className="shrink-0 scale-75 origin-left text-xs font-semibold px-1.5 py-0.5 rounded-sm bg-mg-warning/8 text-mg-warning border border-mg-warning/15">
-                      {t('workspaces.defaultBadge')}
-                    </span>
-                  )}
-                </div>
-                <div className="text-xs font-mono text-mg-text-3 truncate">@{ws.slug}</div>
-                <div className="text-xs text-mg-text-3 truncate">
-                  {t('workspaces.card.owner')} <span className="font-semibold text-mg-text-2">{ws.owner?.display_name || dash}</span>
-                </div>
-              </Card>
-            )
-          })}
-        </div>
-      ) : (
-        /* 详细网格：两列大卡，全字段——对齐 PRD .space-card-grid，换行网格随页面纵向滚动 */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {pagedData.map((ws) => {
-            const isSelected = validSelectedId === ws.workspace_id
-            return (
-              <Card
-                key={ws.workspace_id}
-                level={2}
-                role="button"
-                tabIndex={0}
-                aria-pressed={isSelected}
-                onClick={() => selectWorkspace(ws.workspace_id)}
-                onKeyDown={(event) => handleWorkspaceCardKeyDown(event, ws.workspace_id)}
-                className={cn(
-                  "group relative p-4 flex flex-col gap-3 cursor-pointer transition-all border overflow-hidden rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base focus-visible:ring-offset-2",
-                  isSelected
-                    ? "mg-running-border shadow-sm"
-                    : "bg-mg-bg-0 border-mg-border/40 hover:bg-mg-fill-0/20 hover:border-mg-border/60"
-                )}
-              >
-                {/* 右上角品牌色脉动呼吸点 */}
-                {isSelected && (
-                  <span className="absolute top-2 right-2 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-base opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-base"></span>
-                  </span>
-                )}
-
-                {/* 头部：名称/默认/钥匙图标和菜单 */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-mg-text-1 text-[15px] truncate">{ws.name}</h3>
-                      {ws.is_default && (
-                        <Badge variant="warning" dot className="shrink-0">
-                          {t('workspaces.defaultBadge')}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-1 text-xs font-mono text-mg-text-3">
-                      <span className="truncate">@{ws.slug}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <div className="w-8 h-8 rounded-lg bg-brand-base/8 border border-brand-base/15 flex items-center justify-center text-brand-base">
-                      <LuKey size={14} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* 描述恒占一行占位（无描述显 —）：避免同排卡因条件渲染节奏错位 */}
-                <p className="text-xs text-mg-text-3 leading-snug truncate" title={ws.description || undefined}>
-                  {ws.description || dash}
-                </p>
-
-                {/* 负责人 */}
-                <div className="text-xs text-mg-text-3">
-                  {t('workspaces.card.owner')}{' '}
-                  <span className="font-semibold text-mg-text-2">
-                    {ws.owner?.display_name || dash}
-                  </span>
-                </div>
-
-                {/* 成员 / API Keys / 护栏 (居中三等分，用细线分割) */}
-                <div className={cn("grid divide-x divide-mg-border/20 text-center py-2 bg-mg-fill-0/10 rounded-lg border border-mg-border/10", isEnterprise ? "grid-cols-3" : "grid-cols-2")}>
-                  {isEnterprise && (
-                    <div>
-                      <div className="text-sm font-bold text-mg-text-1">{ws.member_count}</div>
-                      <div className="text-xs text-mg-text-3 mt-0.5">{t('workspaces.card.members')}</div>
-                    </div>
-                  )}
-                  <div>
-                    <div className="text-sm font-bold text-mg-text-1">{ws.api_key_count}</div>
-                    <div className="text-xs text-mg-text-3 mt-0.5">API Keys</div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-mg-text-1">{ws.guardrail_count ?? dash}</div>
-                    <div className="text-xs text-mg-text-3 mt-0.5">{t('workspaces.card.guardrails')}</div>
-                  </div>
-                </div>
-
-                {/* 日志采集 / 转发状态（mt-auto 锚底：同排等高时底边始终对齐） */}
-                <div className="mt-auto flex items-center gap-3 pt-2.5 border-t border-mg-border/30">
-                  <div className="flex items-center gap-1.5 text-xs text-mg-text-3 bg-mg-fill-0/15 border border-mg-border/20 px-2 py-1 rounded-md">
-                    <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", ws.logging_enabled ? "bg-mg-success animate-pulse" : "bg-mg-text-3/40")} />
-                    <span>
-                      {t('workspaces.summary.logging')}{' '}
-                      <span className={ws.logging_enabled ? "text-mg-success font-semibold" : "text-mg-text-2"}>
-                        {ws.logging_enabled ? t('workspaces.card.collectOn') : t('workspaces.card.collectOff')}
-                      </span>
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-mg-text-3 bg-mg-fill-0/15 border border-mg-border/20 px-2 py-1 rounded-md">
-                    <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", ws.forward_enabled ? "bg-mg-success animate-pulse" : "bg-mg-text-3/40")} />
-                    <span>
-                      {t('workspaces.summary.forwarding')}{' '}
-                      <span className={ws.forward_enabled ? "text-mg-success font-semibold" : "text-mg-text-2"}>
-                        {ws.forward_enabled ? t('workspaces.card.forwardOn') : t('workspaces.card.forwardOff')}
-                      </span>
-                    </span>
-                  </div>
-                </div>
-              </Card>
-            )
-          })}
-        </div>
-      )}
-
-      {/* 客户端分页：搜索后的全量结果做展示层切片，不影响搜索范围 */}
-      {!isLoading && pagedTotal > pageSize && (
-        <Pagination mode="page" page={currentPage} total={pagedTotal} pageSize={pageSize} onPageChange={setCurrentPage} />
-      )}
 
       {/* 下方详情区改为主工作台 */}
       {validSelectedId && !isLoading && filteredData.length > 0 && (
@@ -558,6 +387,7 @@ export default function WorkspacesPage() {
         open={modalVisible}
         onClose={() => setModalVisible(false)}
         title={t('workspaces.modal.title')}
+        description={t('workspaces.modal.subtitle', { tenant: tenant?.name ?? '' })}
         footer={
           <>
             <Button variant="ghost" onClick={() => setModalVisible(false)}>{t('workspaces.modal.cancel')}</Button>
@@ -626,7 +456,6 @@ export default function WorkspacesPage() {
                     lockedBadge="负责人"
                     placeholder="搜索企业成员，回车添加"
                   />
-                  <div className="text-xs text-mg-text-3">负责人已自动加入空间且不可移除；其他成员以普通成员身份加入。</div>
                 </div>
               </div>
             )}
@@ -689,7 +518,7 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
     {
       label: t('workspaces.detail.overview.securityLabel'),
       value: t('workspaces.detail.overview.guardrailsValue'),
-      meta: t('workspaces.detail.overview.guardrailsHint', { count: ws.guardrail_count ?? 0 }),
+      meta: t('workspaces.detail.overview.guardrailsActiveHint', { count: ws.guardrail_count ?? 0 }),
       action: t('workspaces.detail.overview.viewGuardrails'),
       onClick: () => navigate(`/workspace/${ws.workspace_id}/guardrails`),
       visible: hasPermission(PERMS.GUARDRAILS_VIEW),
@@ -697,9 +526,8 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
     {
       label: t('workspaces.detail.overview.troubleshootLabel'),
       value: t('workspaces.detail.overview.logsTitle'),
-      meta: ws.last_request_at
-        ? `${t('workspaces.detail.overview.lastRequest')} ${formatRelativeTime(ws.last_request_at)}`
-        : t('workspaces.detail.overview.goLogsDesc'),
+      // 对齐 PRD：「最近请求 {时间}」，无调用记录回落「从未」
+      meta: `${t('workspaces.detail.overview.lastRequestPrefix')} ${ws.last_request_at ? formatRelativeTime(ws.last_request_at) : t('workspaces.detail.overview.never')}`,
       action: t('workspaces.detail.overview.viewLogs'),
       onClick: () => navigate(`/logs?workspace=${ws.workspace_id}`),
       visible: hasPermission(PERMS.LOGS_VIEW),
@@ -707,7 +535,8 @@ function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoLogs: ()
     {
       label: t('workspaces.detail.tabs.logs'),
       value: ws.forward_enabled ? t('workspaces.card.forwardOn') : t('workspaces.card.forwardOff'),
-      meta: `${ws.logging_enabled ? t('workspaces.card.collectOn') : t('workspaces.card.collectOff')} · ${ws.forward_enabled ? t('workspaces.card.forwardOn') : t('workspaces.detail.overview.notForwarded')}`,
+      // 对齐 PRD：「{输入/输出已采集|仅元数据} · {转发开启|未转发}」
+      meta: `${ws.logging_enabled ? t('workspaces.detail.overview.capturedFull') : t('workspaces.detail.overview.metaOnly')} · ${ws.forward_enabled ? t('workspaces.card.forwardOn') : t('workspaces.detail.overview.notForwarded')}`,
       action: t('workspaces.detail.overview.configure'),
       onClick: onGoLogs,
       visible: hasPermission(PERMS.OBSERVABILITY_VIEW),

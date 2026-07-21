@@ -324,7 +324,7 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
   const lifecycleEvents = getLifecycleEvents(task)
 
   return (
-    <SideSheet open onClose={onClose} width={680} title="异步任务详情">
+    <SideSheet open onClose={onClose} title="异步任务详情">
         <div className="space-y-5 px-[var(--mg-space-1)] py-[var(--mg-control-py-sm)] mg-text-body">
           {(() => {
             // 派生：概览/摘要/任务信息用到的状态与文案（对齐 PRD 异步任务详情 §7.4.2）

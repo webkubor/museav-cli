@@ -289,7 +289,6 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
         onClose={onClose}
         title={t('apiKeys.createModal.title')}
         description={`为 ${workspaceName} 工作空间创建运行凭证`}
-        width={680}
       >
         <div className="flex flex-col gap-7 px-1 py-3 pb-24">
           {/* Key 名称（PRD 原型顺序） */}

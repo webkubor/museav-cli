@@ -133,7 +133,6 @@ export function LogDetailSheet({
       onClose={onClose}
       title={null}
       ariaTitle="调用日志详情"
-      width={680}
       className="overflow-y-auto"
     >
       {row && (

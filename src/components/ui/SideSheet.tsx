@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/Sheet"
 import { cn } from "@/lib/utils"
 
+const SIDE_SHEET_WIDTH = 680
+
 interface SideSheetProps {
   open: boolean
   onClose: () => void
@@ -22,7 +24,6 @@ interface SideSheetProps {
   description?: React.ReactNode
   children?: React.ReactNode
   side?: "left" | "right"
-  width?: number
   className?: string
 }
 
@@ -34,7 +35,6 @@ export function SideSheet({
   description,
   children,
   side = "right",
-  width,
   className,
 }: SideSheetProps) {
   const accessibleTitle = title ?? ariaTitle ?? "详情"
@@ -44,7 +44,10 @@ export function SideSheet({
       {/* flex 列 + 内容区内部滚动：抽屉内容超高时不再被视口硬裁（需求方#84 ③ 底部文字截断） */}
       <SheetContent
         side={side}
-        style={width ? { width: `${width}px`, maxWidth: `${width}px` } : undefined}
+        style={{
+          width: `${SIDE_SHEET_WIDTH}px`,
+          maxWidth: "calc(100vw - 2rem)",
+        }}
         className={cn("flex flex-col", className)}
       >
         <SheetHeader className={cn("shrink-0", !title && "sr-only")}>

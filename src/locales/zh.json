@@ -1920,7 +1920,11 @@
       "members": "成员",
       "info": "企业信息",
       "audit": "操作审计",
-      "invite": "成员邀请"
+      "invite": "成员邀请",
+      "membersDesc": "查看成员和可访问的工作空间",
+      "infoDesc": "维护企业名称、头像和组织资料",
+      "auditDesc": "查看成员与设置变更记录",
+      "inviteDesc": "生成邀请链接或发送邮件"
     },
     "members": {
       "filterRole": "角色",

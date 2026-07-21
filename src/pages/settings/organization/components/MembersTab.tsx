@@ -6,7 +6,6 @@ import {
   getMemberWorkspaces,
   listTenantMembers,
   reactivateTenantMember,
-  removeTenantMember,
   resendTenantInvite,
   suspendTenantMember,
   updateTenantMemberRole,
@@ -112,9 +111,8 @@ export function MembersTab({
   const { hasPermission } = usePermissions()
   const canManageMembers = hasPermission(PERMS.ORG_MEMBERS_MANAGE)
   const [editTarget, setEditTarget] = useState<TenantMember | null>(null)
-  const [removeTarget, setRemoveTarget] = useState<string | null>(null)
   const [roleFilter, setRoleFilter] = useState<'all' | TenantRole>('all')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'pending'>('all')
   const [wsFilter, setWsFilter] = useState<'all' | string>('all')
 
   // 编辑弹窗内的可变状态
@@ -176,16 +174,6 @@ export function MembersTab({
     }
   }
 
-  const removeMember = useMutation({
-    mutationFn: (accountId: string) => removeTenantMember(tenantId, accountId),
-    onSuccess: () => {
-      appToast.success('成员已移除')
-      qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
-      setRemoveTarget(null)
-    },
-    onError: (err: Error) => appToast.requestError(err, '移除成员失败'),
-  })
-
   // 重发待接受邀请（#176）：仅 pending 邀请可重发；重发后延长有效期，刷新列表拿到新 expires_at。
   const resendInvite = useMutation({
     mutationFn: (invitationId: string) => resendTenantInvite(tenantId, invitationId),
@@ -199,13 +187,13 @@ export function MembersTab({
   const members = useMemo(() => membersQuery.data?.items ?? [], [membersQuery.data])
 
   // 待接受的邮件邀请（#11）：与真实成员并列展示。后端 pending_invitations 恒在（never null）。
-  // 状态维度上属「待接受」，既非 active 也非 suspended → 仅在状态筛选=全部时展示；角色筛选照常应用。
+  // 状态维度上属「待接受」，既非 active 也非 suspended → 状态筛选=全部或=待接受时展示；角色筛选照常应用。
   const pendingInvites = useMemo<PendingTenantInvite[]>(() => {
     const list = membersQuery.data?.pending_invitations ?? []
     return list.filter((inv) => {
       if (inv.status !== 'pending') return false
       if (roleFilter !== 'all' && inv.role !== roleFilter) return false
-      if (statusFilter !== 'all') return false
+      if (statusFilter !== 'all' && statusFilter !== 'pending') return false
       return true
     })
   }, [membersQuery.data, roleFilter, statusFilter])
@@ -257,7 +245,7 @@ export function MembersTab({
               onChange={(v) => setRoleFilter(v as typeof roleFilter)}
               className={`${filterSelectCls} w-36`}
             >
-              <Select.Option value="all">{t('enterprise.members.filterRole')}：{t('enterprise.members.all')}</Select.Option>
+              <Select.Option value="all">{t('enterprise.members.filterAllRoles')}</Select.Option>
               <Select.Option value="tenant_owner">Owner</Select.Option>
               <Select.Option value="tenant_admin">Admin</Select.Option>
               <Select.Option value="tenant_member">Member</Select.Option>
@@ -268,7 +256,7 @@ export function MembersTab({
               className={`${filterSelectCls} w-44`}
               disabled={workspaces.length === 0}
             >
-              <Select.Option value="all">{t('enterprise.members.filterWorkspace')}：{t('enterprise.members.all')}</Select.Option>
+              <Select.Option value="all">{t('enterprise.members.filterAllWorkspaces')}</Select.Option>
               {workspaces.map((w) => (
                 <Select.Option key={w.workspace_id} value={w.workspace_id}>{w.name}</Select.Option>
               ))}
@@ -278,17 +266,12 @@ export function MembersTab({
               onChange={(v) => setStatusFilter(v as typeof statusFilter)}
               className={`${filterSelectCls} w-36`}
             >
-              <Select.Option value="all">{t('enterprise.members.filterStatus')}：{t('enterprise.members.all')}</Select.Option>
+              <Select.Option value="all">{t('enterprise.members.filterAllStatus')}</Select.Option>
               <Select.Option value="active">{t('enterprise.members.statusActive')}</Select.Option>
+              <Select.Option value="pending">{t('enterprise.members.statusPending')}</Select.Option>
               <Select.Option value="suspended">{t('enterprise.members.statusSuspended')}</Select.Option>
             </Select>
           </div>
-          <span className="text-xs text-mg-text-3 bg-mg-fill-1 border border-mg-border/40 px-2 py-0.5 rounded-full font-medium">
-            {membersQuery.isLoading
-              ? '…'
-              : t('enterprise.members.count', { count: filtered.length }) +
-                (pendingInvites.length > 0 ? ` · ${t('enterprise.members.pendingCount', { count: pendingInvites.length })}` : '')}
-          </span>
         </div>
 
         <div className="overflow-x-auto w-full p-2">
@@ -389,13 +372,6 @@ export function MembersTab({
                               className="text-mg-text-3 hover:text-brand-base hover:bg-brand-glow/10 px-2 py-1 rounded-md transition-all border-none bg-transparent cursor-pointer font-semibold text-xs"
                             >
                               {t('enterprise.members.edit')}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setRemoveTarget(m.account.account_id)}
-                              className="text-mg-text-3 hover:text-mg-danger hover:bg-mg-danger/5 px-2 py-1 rounded-md transition-all border-none bg-transparent cursor-pointer font-semibold text-xs"
-                            >
-                              {t('enterprise.members.remove')}
                             </button>
                           </div>
                         ) : (
@@ -553,30 +529,6 @@ export function MembersTab({
           </div>
         )}
       </Modal>
-
-      {/* 移除成员确认弹窗 */}
-      <Modal
-        open={removeTarget !== null}
-        onClose={() => setRemoveTarget(null)}
-        size="sm"
-        title={t('enterprise.members.removeTitle')}
-        description={t('enterprise.members.removeDesc')}
-        footer={
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" className="h-8 px-3 rounded-lg text-xs" onClick={() => setRemoveTarget(null)}>
-              {t('enterprise.members.cancel')}
-            </Button>
-            <Button
-              variant="brand"
-              disabled={removeMember.isPending}
-              onClick={() => removeMember.mutate(removeTarget!)}
-              className="h-8 px-4 rounded-lg text-xs font-semibold bg-mg-danger text-white hover:bg-mg-danger/90"
-            >
-              {removeMember.isPending ? '…' : t('enterprise.members.confirmRemove')}
-            </Button>
-          </div>
-        }
-      />
     </>
   )
 }

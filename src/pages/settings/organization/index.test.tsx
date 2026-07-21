@@ -196,7 +196,7 @@ describe('OrganizationSettingsPage', () => {
   it('switches to the personal tenant and returns home after dissolving an organization', async () => {
     renderPage()
 
-    fireEvent.click(await screen.findByRole('button', { name: '企业信息' }))
+    fireEvent.click(await screen.findByRole('button', { name: /企业信息/ }))
     fireEvent.click(await screen.findByRole('button', { name: '解散组织' }))
     fireEvent.change(screen.getByPlaceholderText(orgTenant.name), { target: { value: orgTenant.name } })
     fireEvent.click(screen.getByRole('button', { name: '确认解散' }))

@@ -1908,7 +1908,11 @@
       "members": "Members",
       "info": "Organization",
       "audit": "Audit log",
-      "invite": "Invitations"
+      "invite": "Invitations",
+      "membersDesc": "See members and the workspaces they can access",
+      "infoDesc": "Manage organization name, avatar and profile",
+      "auditDesc": "Review member and setting change records",
+      "inviteDesc": "Generate invite links or send emails"
     },
     "members": {
       "filterRole": "Role",

@@ -6,7 +6,6 @@ import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { trackEvent } from '@/lib/track'
 import { getTenant, listTenantMembers, listTenants } from '@/services/tenants'
-import { RoleBadge } from './RoleBadge'
 import { OrgInfoTab } from './OrgInfoTab'
 import { MembersTab } from './MembersTab'
 import { InviteTab } from './InviteTab'
@@ -88,11 +87,11 @@ export function OrgManagePanel({
   const pendingInviteCount = (membersQuery.data?.pending_invitations ?? []).filter((inv) => inv.status === 'pending').length
   const dash = '—'
 
-  const tabs: { key: SubTab; label: string; show: boolean }[] = [
-    { key: 'members', label: t('enterprise.tabs.members'), show: true },
-    { key: 'info', label: t('enterprise.tabs.info'), show: true },
-    { key: 'audit', label: t('enterprise.tabs.audit'), show: canViewAudit },
-    { key: 'invite', label: t('enterprise.tabs.invite'), show: canManageInvite },
+  const tabs: { key: SubTab; label: string; desc: string; show: boolean }[] = [
+    { key: 'members', label: t('enterprise.tabs.members'), desc: t('enterprise.tabs.membersDesc'), show: true },
+    { key: 'info', label: t('enterprise.tabs.info'), desc: t('enterprise.tabs.infoDesc'), show: true },
+    { key: 'audit', label: t('enterprise.tabs.audit'), desc: t('enterprise.tabs.auditDesc'), show: canViewAudit },
+    { key: 'invite', label: t('enterprise.tabs.invite'), desc: t('enterprise.tabs.inviteDesc'), show: canManageInvite },
   ]
   const visibleTabs = tabs.filter((tab) => tab.show)
   const resolvedSubTab = visibleTabs.some((tab) => tab.key === activeSubTab)
@@ -105,7 +104,6 @@ export function OrgManagePanel({
       <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg shadow-xs p-4">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-3 min-w-0">
           <span className="text-sm font-bold text-mg-text-1 truncate">{detail?.name ?? tenantName}</span>
-          {tenantItem && <RoleBadge role={tenantItem.role} />}
           <span className="text-xs text-mg-text-3 truncate">
             {(detail ? (detail.type === 'personal' ? t('enterprise.summary.accountPersonal') : t('enterprise.summary.accountEnterprise')) : '…')}
             {' · '}
@@ -120,21 +118,26 @@ export function OrgManagePanel({
         </div>
       </div>
 
-      {/* Tab 导航（保留原生 button，便于测试与无障碍聚焦） */}
-      <div className="border-b border-mg-border/60 flex gap-6 text-sm bg-transparent">
-        {visibleTabs.map((tb) => (
-          <button
-            key={tb.key}
-            onClick={() => { trackEvent('organization:tab_click', { tab: tb.key }); setActiveSubTab(tb.key) }}
-            className={`pb-3 font-bold transition-all border-b-2 cursor-pointer bg-transparent border-none text-xs ${
-              resolvedSubTab === tb.key
-                ? 'border-brand-base text-brand-base'
-                : 'border-transparent text-mg-text-3 hover:text-mg-text-1'
-            }`}
-          >
-            {tb.label}
-          </button>
-        ))}
+      {/* Tab 导航（PRD：卡片式带描述，保留原生 button 便于测试与无障碍聚焦） */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {visibleTabs.map((tb) => {
+          const active = resolvedSubTab === tb.key
+          return (
+            <button
+              key={tb.key}
+              type="button"
+              onClick={() => { trackEvent('organization:tab_click', { tab: tb.key }); setActiveSubTab(tb.key) }}
+              className={`flex flex-col items-start gap-1 text-left p-4 rounded-lg border transition-all cursor-pointer ${
+                active
+                  ? 'border-brand-base bg-brand-glow/8 shadow-xs'
+                  : 'border-mg-border/50 bg-mg-bg-0 hover:border-brand-base/40'
+              }`}
+            >
+              <span className={`text-sm font-bold ${active ? 'text-brand-base' : 'text-mg-text-1'}`}>{tb.label}</span>
+              <span className="text-xs text-mg-text-3 leading-relaxed">{tb.desc}</span>
+            </button>
+          )
+        })}
       </div>
 
       <div className="pt-1 animate-in fade-in slide-in-from-top-1 duration-200">

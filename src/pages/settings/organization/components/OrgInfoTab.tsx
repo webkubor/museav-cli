@@ -23,7 +23,10 @@ export function OrgInfoTab({
 }) {
   const { t } = useTranslation()
   const { hasPermission } = usePermissions()
+  // Logo/头像等「部分字段」Admin 可改（org.settings:edit）；企业更名与解散为 Owner 独占，
+  // 分别走 org:rename / org:delete，避免 Admin 借 org.settings:edit 连带看到更名入口（需求方#153）。
   const canEditOrg = hasPermission(PERMS.ORG_SETTINGS_EDIT)
+  const canRenameOrg = hasPermission(PERMS.ORG_RENAME)
   const canTransferOwnership = hasPermission(PERMS.ORG_OWNERSHIP_TRANSFER)
   const canDissolveOrg = hasPermission(PERMS.ORG_DELETE)
   const account = useAuthStore((s) => s.account)
@@ -207,7 +210,7 @@ export function OrgInfoTab({
           ) : (
             <div className="flex items-center gap-3">
               <span className="text-lg font-bold text-mg-text-1">{tenant.name}</span>
-              {canEditOrg && (
+              {canRenameOrg && (
                 <button
                   type="button"
                   className="text-xs font-bold text-brand-base hover:text-brand-base/80 bg-transparent border-none p-0 cursor-pointer transition-colors"

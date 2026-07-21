@@ -46,6 +46,7 @@ export const PERMISSION_CATALOG_MENUS = [
     scope: 'tenant',
     view_permission: PERMS.ORG_VIEW,
     actions: [
+      PERMS.ORG_RENAME,
       PERMS.ORG_SETTINGS_EDIT,
       PERMS.ORG_MEMBERS_MANAGE,
       PERMS.ORG_INVITE_MANAGE,
@@ -298,7 +299,8 @@ export function validatePermissionCatalog(): string[] {
 // 千万别「同步版本号」：它驱动后端全量刷新语义（版本变→整市场目录全量刷新），必须只增不减。
 // 结构性改动（增删码/改层级）手动 bump minor；曾被 854f148 误降回 1.0.3（正确值 1.2.0），此处恢复并 +1 保单调。
 // 1.3.1：observability:view 拆为 logging:view + forward:view（#91）
-export const PERMISSION_CATALOG_VERSION = '1.3.1'
+// 1.4.0：新增 org:rename（企业更名，Owner 独占，从 org.settings:edit 拆出，需求方#153）
+export const PERMISSION_CATALOG_VERSION = '1.4.0'
 
 export const permissionCatalogMeta = {
   version: PERMISSION_CATALOG_VERSION,

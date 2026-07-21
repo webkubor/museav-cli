@@ -103,6 +103,11 @@ export const PERMISSION_DEFINITIONS = {
   WORKSPACE_AUDIT_VIEW:     { id: 'workspace.audit:view',     granularity: 'page', description: '查看空间审计记录' },
 
   // ── 企业管理 ──────────────────────────────────
+  // 企业更名（改企业名称）是 Owner 独占：Admin 的「修改企业信息」仅限部分字段(如 Logo，走 org.settings:edit)，
+  // 不含更名与解散(需求方#153 / PRD 角色权限「修改企业信息：Owner=全部字段 / Admin=部分字段」)。
+  // 与 workspace:rename 同构——rename 单独成码，不并进 org.settings:edit，避免 Admin 借 Logo 权限连带看到更名。
+  // ⚠️ 后端角色矩阵需把本码授予 tenant_owner（不授 admin），否则 Owner 也会 fail-closed 看不到更名：qa/ai-quality-platform#500。
+  ORG_RENAME:             { id: 'org:rename',             granularity: 'action', description: '企业更名' },
   ORG_SETTINGS_EDIT:      { id: 'org.settings:edit',      granularity: 'action', description: '编辑企业设置' },
   ORG_MEMBERS_MANAGE:     { id: 'org.members:manage',     granularity: 'action', description: '管理企业成员' },
   ORG_INVITE_MANAGE:      { id: 'org.invite:manage',      granularity: 'action', description: '管理企业邀请' },

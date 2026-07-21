@@ -1623,23 +1623,26 @@
       },
       "quickStart": {
         "title": "快速开始",
-        "subtitle": "三步完成接入，开始调用模型",
-        "stepsBadge": "3 步完成接入",
+        "subtitle": "3 步完成第一次模型调用",
         "dismiss": "关闭",
         "step1Title": "创建 API Key",
-        "step1Desc": "生成用于鉴权的密钥凭证",
-        "step1Action": "去创建",
-        "step2Title": "接入客户端",
-        "step2Desc": "选择接入方式并填入 Base URL 与 Key",
-        "step2Action": "立即接入",
+        "step1Desc": "创建一个用于本地开发或服务端调用的 Key。",
+        "step1Action": "创建",
+        "step2Title": "配置客户端",
+        "step2Desc": "复制 Base URL 和 API Key，填到你的 SDK 或 HTTP 客户端里。",
+        "step2Action": "复制地址",
         "step3Title": "发送测试请求",
-        "step3Desc": "发起一次调用并在日志中确认结果",
+        "step3Desc": "发起第一次调用，确认模型返回结果并生成日志。",
         "step3Action": "查看日志",
         "cliTitle": "一键配置本地开发环境",
         "cliBadge": "推荐",
-        "cliHint": "或用 CLI 一键安装接入",
+        "cliHint": "在终端运行以下命令，自动写入 Base URL 和 API Key",
         "cliCopied": "命令已复制到剪贴板",
         "cliCopyFailed": "复制失败，请手动复制"
+      },
+      "periodLabel": {
+        "day": "今日",
+        "month": "本月"
       },
       "metrics": {
         "requests": "总请求",
@@ -1648,11 +1651,14 @@
         "balance": "账户余额",
         "balanceLow": "余额偏低",
         "recharge": "充值",
-        "vsPrev": "较上期",
         "requestsSub": "本月调用",
         "spendSub": "本月消费",
         "tokensSub": "本月输入和输出合计",
-        "balanceSub": "当前可用余额"
+        "requestsSubDay": "今日调用",
+        "spendSubDay": "今日消费",
+        "tokensSubDay": "今日输入和输出合计",
+        "balanceSub": "当前可用余额",
+        "balanceSubTenant": "租户可用余额"
       },
       "trend": {
         "title": "用量趋势",
@@ -1676,7 +1682,7 @@
       "workspaces": {
         "title": "工作空间明细",
         "titleMine": "我的工作空间",
-        "subtitle": "按工作空间聚合的本期消费",
+        "subtitle": "按工作空间聚合",
         "subtitleMine": "我有调用或 API Key 的工作空间",
         "viewMore": "查看更多",
         "empty": "暂无工作空间用量",
@@ -1720,7 +1726,7 @@
       "defaultName": "开发者",
       "desc": "欢迎回来，以下是当前系统的实时运行概览。",
       "descEnterprise": "欢迎回来，看看团队的实时调用情况。",
-      "descMine": "看看你自己的实时调用情况。",
+      "descMine": "欢迎回来，看看自己的实时调用情况。",
       "liveBadge": "实时概览"
     },
     "status": {

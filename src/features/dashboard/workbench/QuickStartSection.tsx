@@ -100,10 +100,10 @@ export function QuickStartSection() {
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-base/12 text-brand-base">
             <LuZap size={17} />
           </span>
-          <h3 className="text-base font-bold text-mg-text-1 m-0">{t('dashboard.workbench.quickStart.title')}</h3>
-          <span className="inline-flex items-center rounded-full bg-brand-base/12 px-2 py-0.5 text-xs font-bold text-brand-base">
-            {t('dashboard.workbench.quickStart.stepsBadge')}
-          </span>
+          <div className="min-w-0">
+            <h3 className="text-base font-bold text-mg-text-1 m-0">{t('dashboard.workbench.quickStart.title')}</h3>
+            <p className="text-xs text-mg-text-3 mt-0.5 m-0">{t('dashboard.workbench.quickStart.subtitle')}</p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-0">

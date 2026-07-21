@@ -39,6 +39,9 @@ export interface GuardrailDetail {
   tenant_id: string
   workspace_id: string
   metadata: Record<string, unknown>
+  /** 提示词注入检测模式（后端顶层字段，Swagger guardrail.Detail，qa#193）。
+   *  off/flag/redact/block；旧数据可能落在 metadata.prompt_injection_mode。 */
+  prompt_injection_mode?: 'off' | 'flag' | 'redact' | 'block'
   created_at: string
   updated_at: string
   /** 创建人（shared/modelgo_prd#52，后端 qa#472 起下发；旧数据可能缺失） */

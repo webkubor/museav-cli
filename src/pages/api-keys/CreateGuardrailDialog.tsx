@@ -67,9 +67,14 @@ export function CreateGuardrailDialog({ open, onClose, workspaceId, onCreated }:
     mutationFn: () => {
       // 从 Key 创建流附建的护栏恒为「常规 Key 护栏」（文档：Key 提额不进主流程）
       const metadata: Record<string, unknown> = { model_blacklist: modelBlacklist, ip_whitelist: ipWhitelist, kind: 'regular' }
-      // 「继承全局」= 不写该字段（缺省即继承）
-      if (promptInjectionMode !== PROMPT_INJECTION_INHERIT) metadata.prompt_injection_mode = promptInjectionMode
-      return createGuardrail(workspaceId, { name: name.trim(), metadata })
+      // 提示词注入走顶层字段 prompt_injection_mode（Swagger 契约，qa#193）；「继承全局」= 不写该字段（缺省即继承）
+      return createGuardrail(workspaceId, {
+        name: name.trim(),
+        metadata,
+        ...(promptInjectionMode !== PROMPT_INJECTION_INHERIT
+          ? { prompt_injection_mode: promptInjectionMode }
+          : {}),
+      })
     },
     onSuccess: (g) => {
       queryClient.invalidateQueries({ queryKey: ['guardrails', workspaceId] })

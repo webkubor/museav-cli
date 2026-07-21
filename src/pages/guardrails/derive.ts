@@ -76,8 +76,8 @@ export function metadataList(g: GuardrailDetail, key: 'model_blacklist' | 'ip_wh
 }
 
 // ─── 提示词注入检测（PRD 2026-07-10）─────────────────────────────────
-// 网关侧真实检测/枚举字段落地前，模式经 metadata.prompt_injection_mode 往返
-// （同 model_blacklist / ip_whitelist 的既有做法）。
+// 后端已交付顶层字段 `prompt_injection_mode`（Swagger guardrail.Detail / UpdateRequest，qa#193），
+// 读写均以顶层为准；早期落在 metadata.prompt_injection_mode 的旧数据仅作读取兜底。
 export type PromptInjectionMode = 'off' | 'flag' | 'redact' | 'block'
 
 export const PROMPT_INJECTION_MODES: PromptInjectionMode[] = ['off', 'flag', 'redact', 'block']
@@ -105,8 +105,11 @@ export const PROMPT_INJECTION_INHERIT = 'inherit' as const
 export const PROMPT_INJECTION_INHERIT_LABEL = '继承全局护栏'
 export type PromptInjectionFormValue = PromptInjectionMode | typeof PROMPT_INJECTION_INHERIT
 
-/** 原始值：显式配置返回 mode，未配置返回 undefined（全局=按关闭兜底 / 常规 Key=按继承全局兜底，由调用方决定） */
+/** 原始值：显式配置返回 mode，未配置返回 undefined（全局=按关闭兜底 / 常规 Key=按继承全局兜底，由调用方决定）。
+ *  真源=后端顶层字段 `prompt_injection_mode`（Swagger guardrail.Detail，qa#193）；写入也走顶层。
+ *  旧数据可能仍落在 metadata.prompt_injection_mode，作兜底兼容。 */
 export function rawPromptInjectionMode(g: GuardrailDetail): PromptInjectionMode | undefined {
+  if (isPromptInjectionMode(g.prompt_injection_mode)) return g.prompt_injection_mode
   const v = (g.metadata as Record<string, unknown> | undefined)?.prompt_injection_mode
   return isPromptInjectionMode(v) ? v : undefined
 }

@@ -36,6 +36,12 @@ import {
   type GuardrailScope,
 } from '../derive'
 
+// 数据值单元格统一字号/字重/颜色（需求方#155）：一律 text-xs·常规字重·text-2，
+// 「不限制/继承全局护栏/关闭/时间」等有效值同为一档；仅「—/-/不适用/永不过期」空占位降为 text-3。
+// 新增列必须复用这两个常量，别再散写 class（#192 加创建人列时散写 font-semibold 曾致本单返工）。
+const DATA_CELL = 'text-xs text-mg-text-2'
+const PLACEHOLDER = 'font-normal text-mg-text-3'
+
 /** 列头「提示词注入」+ info tooltip（对齐 PRD：字段标题右侧说明命中后的处理方式），与表单内 tooltip 同源文案。 */
 function PromptInjectionHeaderLabel() {
   return (
@@ -94,7 +100,7 @@ function NameCell({ row, onOpenDetail }: { row: GuardrailDetail; onOpenDetail: (
 
 function TagCell({ values }: { values: string[] }) {
   if (values.length === 0) {
-    return <span className="text-xs text-mg-text-3">不限制</span>
+    return <span className={DATA_CELL}>不限制</span>
   }
   return (
     <div className="flex max-w-[220px] flex-wrap gap-1.5">
@@ -332,25 +338,25 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
           {globalRows.map((row) => (
             <TableRow key={row.id}>
               <TableCell><NameCell row={row} onOpenDetail={onOpenDetail} /></TableCell>
-              <TableCell className="text-xs text-mg-text-2">
+              <TableCell className={DATA_CELL}>
                 {formatBudget(currencySymbol, budgetByScope(row, 'guardrail_total'))}
               </TableCell>
               {showMember && (
-                <TableCell className="text-xs text-mg-text-2">
+                <TableCell className={DATA_CELL}>
                   {formatBudget(currencySymbol, budgetByScope(row, 'per_member'))}
                 </TableCell>
               )}
-              <TableCell className="text-xs text-mg-text-2">
+              <TableCell className={DATA_CELL}>
                 {formatBudget(currencySymbol, budgetByScope(row, 'per_api_key'))}
               </TableCell>
               <TableCell><TagCell values={metadataList(row, 'model_blacklist')} /></TableCell>
               <TableCell><TagCell values={metadataList(row, 'ip_whitelist')} /></TableCell>
-              <TableCell className="text-xs text-mg-text-2">{PROMPT_INJECTION_LABEL[guardrailPromptInjectionMode(row)]}</TableCell>
+              <TableCell className={DATA_CELL}>{PROMPT_INJECTION_LABEL[guardrailPromptInjectionMode(row)]}</TableCell>
               {/* 创建人（PRD §7.2 / #52）：只显姓名，缺失显「—」，绝不回退到 account_id */}
-              <TableCell className="text-xs text-mg-text-2">
-                {row.created_by?.display_name || <span className="font-normal text-mg-text-3">—</span>}
+              <TableCell className={DATA_CELL}>
+                {row.created_by?.display_name || <span className={PLACEHOLDER}>—</span>}
               </TableCell>
-              <TableCell className="text-xs text-mg-text-3">{formatDateTime(row.updated_at)}</TableCell>
+              <TableCell className={DATA_CELL}>{formatDateTime(row.updated_at)}</TableCell>
               <TableCell><StatusCell row={row} canEdit={canEdit.global} onToggle={onToggle} lockOffReason={activeGlobalCount <= 1 ? '需至少保留一条启用的全局护栏' : undefined} /></TableCell>
               <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.global} canDelete={canDelete.global} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
             </TableRow>
@@ -388,18 +394,18 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                 <TableCell><NameCell row={row} onOpenDetail={onOpenDetail} /></TableCell>
                 <TableCell><KindBadge row={row} /></TableCell>
                 <TableCell><CountBadge count={memberCount(row)} unit="名成员" /></TableCell>
-                <TableCell className="text-xs text-mg-text-2">
+                <TableCell className={DATA_CELL}>
                   {formatBudget(currencySymbol, primaryBudget(row))}
                 </TableCell>
-                <TableCell className="text-xs text-mg-text-3">
+                <TableCell className={DATA_CELL}>
                   {deriveKind(row) === 'boost'
-                    ? (boostExpiry(row) ? formatDateTime(boostExpiry(row)) : '永不过期')
-                    : '-'}
+                    ? (boostExpiry(row) ? formatDateTime(boostExpiry(row)) : <span className={PLACEHOLDER}>永不过期</span>)
+                    : <span className={PLACEHOLDER}>-</span>}
                 </TableCell>
-                <TableCell className="text-xs font-semibold text-mg-text-2">
-                  {row.created_by?.display_name || <span className="font-normal text-mg-text-3">—</span>}
+                <TableCell className={DATA_CELL}>
+                  {row.created_by?.display_name || <span className={PLACEHOLDER}>—</span>}
                 </TableCell>
-                <TableCell className="text-xs text-mg-text-3">{formatDateTime(row.updated_at)}</TableCell>
+                <TableCell className={DATA_CELL}>{formatDateTime(row.updated_at)}</TableCell>
                 <TableCell><StatusCell row={row} canEdit={canEdit.member} onToggle={onToggle} /></TableCell>
                 <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.member} canDelete={canDelete.member} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
               </TableRow>
@@ -442,29 +448,29 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                 <TableCell><NameCell row={row} onOpenDetail={onOpenDetail} /></TableCell>
                 <TableCell><KindBadge row={row} /></TableCell>
                 <TableCell><CountBadge count={apiKeyCount(row)} unit="个 Key" /></TableCell>
-                <TableCell className="text-xs text-mg-text-2">
+                <TableCell className={DATA_CELL}>
                   {formatBudget(currencySymbol, primaryBudget(row))}
                 </TableCell>
-                <TableCell className="text-xs text-mg-text-3">
-                  {boost ? (boostExpiry(row) ? formatDateTime(boostExpiry(row)) : '永不过期') : '-'}
+                <TableCell className={DATA_CELL}>
+                  {boost ? (boostExpiry(row) ? formatDateTime(boostExpiry(row)) : <span className={PLACEHOLDER}>永不过期</span>) : <span className={PLACEHOLDER}>-</span>}
                 </TableCell>
                 <TableCell>
-                  {boost ? <span className="text-xs text-mg-text-3">不适用</span> : <TagCell values={metadataList(row, 'model_blacklist')} />}
+                  {boost ? <span className={cn('text-xs', PLACEHOLDER)}>不适用</span> : <TagCell values={metadataList(row, 'model_blacklist')} />}
                 </TableCell>
                 <TableCell>
-                  {boost ? <span className="text-xs text-mg-text-3">不适用</span> : <TagCell values={metadataList(row, 'ip_whitelist')} />}
+                  {boost ? <span className={cn('text-xs', PLACEHOLDER)}>不适用</span> : <TagCell values={metadataList(row, 'ip_whitelist')} />}
                 </TableCell>
-                <TableCell className="text-xs text-mg-text-2">
+                <TableCell className={DATA_CELL}>
                   {boost
-                    ? <span className="font-normal text-mg-text-3">不适用</span>
+                    ? <span className={PLACEHOLDER}>不适用</span>
                     : (rawPromptInjectionMode(row)
                         ? PROMPT_INJECTION_LABEL[rawPromptInjectionMode(row)!]
-                        : <span className="font-normal text-mg-text-3">{PROMPT_INJECTION_INHERIT_LABEL}</span>)}
+                        : PROMPT_INJECTION_INHERIT_LABEL)}
                 </TableCell>
-                <TableCell className="text-xs font-semibold text-mg-text-2">
-                  {row.created_by?.display_name || <span className="font-normal text-mg-text-3">—</span>}
+                <TableCell className={DATA_CELL}>
+                  {row.created_by?.display_name || <span className={PLACEHOLDER}>—</span>}
                 </TableCell>
-                <TableCell className="text-xs text-mg-text-3">{formatDateTime(row.updated_at)}</TableCell>
+                <TableCell className={DATA_CELL}>{formatDateTime(row.updated_at)}</TableCell>
                 <TableCell><StatusCell row={row} canEdit={canEdit.key} onToggle={onToggle} /></TableCell>
                 <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.key} canDelete={canDelete.key} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
               </TableRow>

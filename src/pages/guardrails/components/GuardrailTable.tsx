@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from '@/components/ui/Table'
-import { LuSettings, LuSearch, LuShieldCheck, LuUserRound, LuKeyRound, LuInfo } from 'react-icons/lu'
+import { LuSearch, LuShieldCheck, LuUserRound, LuKeyRound, LuInfo } from 'react-icons/lu'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
 import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
@@ -175,9 +175,8 @@ function RowActions({
 }) {
   return (
     <div className="flex justify-end gap-2">
-      <Button size="sm" variant="outline" onClick={() => onOpenDetail(row.id)} className="h-7 text-xs font-semibold">
-        <LuSettings className="w-3.5 h-3.5 mr-1" />
-        {canEdit ? '配置' : '查看'}
+      <Button size="sm" variant="ghost" onClick={() => onOpenDetail(row.id)} className="h-7 px-1 text-xs font-semibold text-brand-base">
+        {canEdit ? '编辑' : '查看'}
       </Button>
       {canDelete && (
         <Button
@@ -377,6 +376,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
               <TableHead>成员</TableHead>
               <TableHead>预算</TableHead>
               <TableHead>提额到期时间</TableHead>
+              <TableHead>创建人</TableHead>
               <TableHead>最近更新</TableHead>
               <TableHead>状态</TableHead>
               <TableHead className="w-40 text-right">操作</TableHead>
@@ -395,6 +395,9 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                   {deriveKind(row) === 'boost'
                     ? (boostExpiry(row) ? formatDateTime(boostExpiry(row)) : '永不过期')
                     : '-'}
+                </TableCell>
+                <TableCell className="text-xs font-semibold text-mg-text-2">
+                  {row.created_by?.display_name || <span className="font-normal text-mg-text-3">—</span>}
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-3">{formatDateTime(row.updated_at)}</TableCell>
                 <TableCell><StatusCell row={row} canEdit={canEdit.member} onToggle={onToggle} /></TableCell>
@@ -425,6 +428,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
             <TableHead>模型黑名单</TableHead>
             <TableHead>IP 白名单</TableHead>
             <TableHead><PromptInjectionHeaderLabel /></TableHead>
+            <TableHead>创建人</TableHead>
             <TableHead>最近更新</TableHead>
             <TableHead>状态</TableHead>
             <TableHead className="w-40 text-right">操作</TableHead>
@@ -456,6 +460,9 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                     : (rawPromptInjectionMode(row)
                         ? PROMPT_INJECTION_LABEL[rawPromptInjectionMode(row)!]
                         : <span className="font-normal text-mg-text-3">{PROMPT_INJECTION_INHERIT_LABEL}</span>)}
+                </TableCell>
+                <TableCell className="text-xs font-semibold text-mg-text-2">
+                  {row.created_by?.display_name || <span className="font-normal text-mg-text-3">—</span>}
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-3">{formatDateTime(row.updated_at)}</TableCell>
                 <TableCell><StatusCell row={row} canEdit={canEdit.key} onToggle={onToggle} /></TableCell>

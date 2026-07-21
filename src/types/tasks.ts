@@ -1,5 +1,7 @@
 export type TaskStatus = 'queued' | 'running' | 'succeeded' | 'completed' | 'failed' | 'cancelled'
 export type TaskKind = 'video' | 'image' | 'audio'
+export type TaskBillingState = 'settled' | 'pending' | 'unbilled' | 'partial'
+export type TaskArtifactState = 'generating' | 'available' | 'expired' | 'failed'
 
 /** 异步任务列表项（GET /async-tasks） */
 export interface TaskItem {
@@ -22,8 +24,12 @@ export interface TaskItem {
   output_tokens?: number
   /** 实际费用（decimal 字符串，如 "0.000000000000"），配合 currency 显示 */
   final_amount?: string
-  /** 计费状态，如 settled */
+  /** 新契约计费状态：settled / pending / unbilled / partial */
+  billing_state?: TaskBillingState
+  /** 旧字段兼容：仅用于后端尚未切换的环境 */
   billing_status?: string
+  /** 新契约产物状态：generating / available / expired / failed */
+  artifact_state?: TaskArtifactState
   /** 计费币种 CNY/USD */
   currency?: string
   // ── 以下为后端扩展字段（非核心 Row，待接入）─────────
@@ -70,6 +76,10 @@ export interface TaskListParams {
   search?: string
   /** 时间窗口预设，后端仅支持这三档（无 from/to 自定义区间） */
   preset?: '1h' | '24h' | '7d'
+  /** 新契约产物状态筛选 */
+  artifact_state?: TaskArtifactState
+  /** 新契约计费状态筛选 */
+  billing_state?: TaskBillingState
   limit?: number
   offset?: number
   [key: string]: string | number | boolean | null | undefined

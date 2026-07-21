@@ -159,6 +159,8 @@ export type {
 export type {
   TaskStatus,
   TaskKind,
+  TaskBillingState,
+  TaskArtifactState,
   TaskItem,
   TaskDetail,
   TaskListParams,

@@ -12,11 +12,11 @@ export type BreadcrumbConfig = Record<string, BreadcrumbItem[]>
 //   工作空间 = API Keys / 安全护栏 / 可观测性
 //   活动中心 = 推荐计划 / 任务历史
 // nav.home（首页）仅保留给顶栏跳官网外链，不进面包屑。
-export const HOME_CRUMB: BreadcrumbItem[] = [{ label: 'nav.tenant' }, { label: 'nav.dashboard' }]
+export const HOME_CRUMB: BreadcrumbItem[] = [{ label: 'nav.dashboard' }]
 
 export const breadcrumbConfig: BreadcrumbConfig = {
   // 租户级
-  dashboard:        [{ label: 'nav.tenant' }, { label: 'nav.dashboard' }],
+  dashboard:        [{ label: 'nav.dashboard' }],
   organization:     [{ label: 'nav.tenant' }, { label: 'nav.organization' }],
   workspaces:       [{ label: 'nav.tenant' }, { label: 'nav.workspace' }],
   // 账单与用量

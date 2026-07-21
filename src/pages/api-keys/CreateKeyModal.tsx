@@ -11,7 +11,7 @@ import Select, { SelectItem } from '@/components/ui/Select'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { createApiKey, getEffectiveGuardrailPreview } from '@/services/api-keys'
-import { listWorkspaceMembers } from '@/services/workspaces'
+import { listWorkspaceMembers, listWorkspaces } from '@/services/workspaces'
 import { listGuardrails } from '@/services/guardrails'
 import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
@@ -108,6 +108,14 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
     enabled: !!workspaceId && open,
     staleTime: 60_000,
   })
+
+  const workspaceQuery = useQuery({
+    queryKey: ['workspaces', activeTenantId],
+    queryFn: () => listWorkspaces().then((res) => res.items ?? []),
+    enabled: !!activeTenantId && open,
+    staleTime: 60_000,
+  })
+  const workspaceName = workspaceQuery.data?.find((workspace) => workspace.workspace_id === workspaceId)?.name ?? '当前工作空间'
 
   // 默认护栏自动选中，始终排首位。
   // 仅选 active 的默认护栏（需求方#96）：inactive/archived 的 default 后端 byID 收不到，
@@ -243,17 +251,12 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
         width={560}
       >
         <div className="flex flex-col gap-7 px-1 py-3 pb-24">
-          {/* 名称（PRD §8.2：放弹窗首位） */}
+          {/* 基础归属（PRD §创建弹窗信息架构） */}
           <div>
-            <label className="block text-xs font-bold text-mg-text-2 mb-2">
-              {t('apiKeys.createModal.nameLabel')}
-            </label>
-            <Input
-              value={name}
-              data-track="api_keys:field_name"
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t('apiKeys.createModal.namePlaceholder')}
-            />
+            <label className="block text-xs font-bold text-mg-text-2 mb-2">所属工作空间</label>
+            <div className="flex min-h-10 items-center rounded-md border border-mg-border bg-mg-fill-0/50 px-3 text-sm text-mg-text-1">
+              {workspaceName}
+            </div>
           </div>
 
           {/* Key 类型（PRD §10.1）——卡片栅格，映射到后端 scope；个人租户无「成员 Key」 */}
@@ -261,7 +264,6 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
             <label className="block text-xs font-bold text-mg-text-2 mb-2">Key 类型</label>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
               {TYPE_CARDS
-                .filter((c) => !(isPersonalTenant && c.type === 'member'))
                 .filter((c) => !(isPersonalTenant && c.type === 'member'))
                 .map((c) => {
                 const active = effectiveScope === c.scope
@@ -288,6 +290,19 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                 )
               })}
             </div>
+          </div>
+
+          {/* 名称（PRD §创建弹窗信息架构） */}
+          <div>
+            <label className="block text-xs font-bold text-mg-text-2 mb-2">
+              {t('apiKeys.createModal.nameLabel')}
+            </label>
+            <Input
+              value={name}
+              data-track="api_keys:field_name"
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t('apiKeys.createModal.namePlaceholder')}
+            />
           </div>
 
           {/* 负责人（成员 Key）：管理员代建指定被负责成员 */}
@@ -354,10 +369,10 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
             <div className="space-y-2">
               {defaultGuardrail && (
                 <div className="flex items-center gap-1.5">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-green-500/10 border border-green-500/20 text-xs font-bold text-green-600">
+                  <div className="inline-flex items-center gap-1.5 rounded-md border border-brand-base/20 bg-brand-base/10 px-2.5 py-1 text-xs font-bold text-brand-base">
                     <LuShieldCheck className="w-3 h-3 shrink-0" />
-                    {defaultGuardrail.name}
-                    <span className="font-normal text-green-500/70 ml-0.5">默认</span>
+                    继承全局默认 Key 策略
+                    <span className="font-normal text-mg-text-3">· {defaultGuardrail.name}</span>
                   </div>
                 </div>
               )}
@@ -366,13 +381,13 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                 value={extraIds[0] ?? '__none__'}
                 onChange={(v) => setGuardrailIds([...(defaultId ? [defaultId] : []), ...(v === '__none__' ? [] : [v])])}
               >
-                <SelectItem value="__none__">不额外绑定（仅默认全局护栏）</SelectItem>
+                <SelectItem value="__none__">继承全局默认 Key 策略</SelectItem>
                 {allGuardrails
                   // 文档：创建 API Key 只展示常规 Key 护栏，不展示 Key 提额、个人或全局护栏
                   .filter((g) => !g.is_default && deriveScope(g) === 'key' && deriveKind(g) === 'regular')
                   .map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
               </Select>
-              <p className="mt-1 text-xs text-mg-text-3">默认全局护栏始终生效；最多再绑定 1 条常规 Key 护栏</p>
+              <p className="mt-1 text-xs text-mg-text-3">常规 Key 护栏可选；不选择时继承全局默认策略。</p>
             </div>
             {/* 生效规则预览（PRD §8.2）：提示词注入 + 预算闸门 / 模型黑名单 / IP 白名单叠加结果 */}
             <div className="mt-2 space-y-1.5 rounded-md bg-brand-base/5 px-2.5 py-2 text-xs">
@@ -401,8 +416,6 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                   {ipWhitelist.length > 0 ? ipWhitelist.join(', ') : '—'}
                 </span>
               </div>
-              {/* 后端生效预览已交付（内部跟踪 #420 第1项）；提示词注入不在该接口内，仍由前端解析。 */}
-              <p className="text-mg-text-3 leading-relaxed">以上为按当前配置的三层生效预览（黑名单取并集、白名单取交集、预算取最严），与调用时网关一致；Key 创建后可在详情查看最终生效。</p>
             </div>
           </div>
 

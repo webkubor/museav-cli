@@ -1,10 +1,11 @@
 /**
- * 创建 API Key 弹窗：作用域、名称、护栏与最终生效规则预览
+ * 创建 API Key 抽屉：名称、类型、负责人、过期时间、护栏与最终生效规则预览
  */
 import { useEffect, useState } from 'react'
 import confetti from 'canvas-confetti'
-import { LuPlus, LuShieldCheck } from 'react-icons/lu'
+import { LuPlus } from 'react-icons/lu'
 import { SideSheet } from '@/components/ui/SideSheet'
+import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import Select, { SelectItem } from '@/components/ui/Select'
@@ -17,8 +18,9 @@ import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
+import { useTenantRole } from '@/hooks/use-tenant-role'
 import { PERMS } from '@/config/permissions'
-import { type ScopeType } from './constants'
+import { EXPIRATION_PRESETS, resolveExpiryISO, type ScopeType } from './constants'
 import { CreateGuardrailDialog } from './CreateGuardrailDialog'
 import { KEY_TYPE_LABEL, KEY_TYPE_DESC } from './derive'
 import { trackEvent } from '@/lib/track'
@@ -70,6 +72,8 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const isPersonalTenant = tenants.find((t) => t.tenant_id === activeTenantId)?.type === 'personal'
   // Key 类型按各自细粒度创建权限 gate（#54 · PRD §8.1/§8.2）：无权限类型置灰并提示，绝不靠角色启发式
   const { hasPermission } = usePermissions()
+  const { isEnterprise, canManage } = useTenantRole()
+  const mustSetExpiry = isEnterprise && !canManage
   const canCreateScope: Record<ScopeType, boolean> = {
     personal: hasPermission(PERMS.API_KEYS_CREATE_PERSONAL),
     member: hasPermission(PERMS.API_KEYS_CREATE_MEMBER),
@@ -83,6 +87,15 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const [memberAccountId, setMemberAccountId] = useState('')
   const [guardrailIds, setGuardrailIds] = useState<string[]>([])
   const [guardrailDialogOpen, setGuardrailDialogOpen] = useState(false)
+  const todayStr = new Date().toISOString().split('T')[0]
+  const [expiryRange, setExpiryRange] = useState<DateRangeValue>({ preset: mustSetExpiry ? '1y' : 'all', startDate: todayStr, endDate: '' })
+  const expiryPresets = mustSetExpiry ? EXPIRATION_PRESETS.filter((preset) => preset.key !== 'all') : EXPIRATION_PRESETS
+  useEffect(() => {
+    if (mustSetExpiry && expiryRange.preset === 'all') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setExpiryRange({ preset: '1y', startDate: todayStr, endDate: '' })
+    }
+  }, [mustSetExpiry, expiryRange.preset, todayStr])
   // 服务 Key 负责人（复用成员下拉）；个人租户固定为自己
   const needsMaintainer = effectiveScope === 'workspace' && !isPersonalTenant
   // 当前选中的类型无创建权限时，落到第一个有权限的类型（个人租户排除成员 Key）
@@ -146,6 +159,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
         member_account_id:
           effectiveScope === 'member' || needsMaintainer ? memberAccountId || undefined : undefined,
         guardrail_ids: guardrailIds.length > 0 ? guardrailIds : undefined,
+        expires_at: resolveExpiryISO(expiryRange) ?? undefined,
       }),
     onSuccess: (newKey) => {
       appToast.success(t('apiKeys.toast.createSuccess', { name: newKey.name }))
@@ -193,6 +207,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const defaultGuardrail = activeDefaultGuardrail(allGuardrails)
   const defaultId = defaultGuardrail?.id ?? ''
   const extraIds = guardrailIds.filter((id) => id !== defaultId)
+  const selectedGuardrail = allGuardrails.find((g) => g.id === extraIds[0])
 
   // 生效规则预览：提示词注入最终模式 + 来源（常规 Key 护栏显式 > 启用全局 > 关闭）
   const selectedGuardrails = allGuardrails.filter((g) => guardrailIds.includes(g.id))
@@ -247,16 +262,21 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
         open={open}
         onClose={onClose}
         title={t('apiKeys.createModal.title')}
-        description="创建 API Key，并预览其最终生效的安全护栏规则。"
+        description={`为 ${workspaceName} 工作空间创建运行凭证`}
         width={560}
       >
         <div className="flex flex-col gap-7 px-1 py-3 pb-24">
-          {/* 基础归属（PRD §创建弹窗信息架构） */}
+          {/* Key 名称（PRD 原型顺序） */}
           <div>
-            <label className="block text-xs font-bold text-mg-text-2 mb-2">所属工作空间</label>
-            <div className="flex min-h-10 items-center rounded-md border border-mg-border bg-mg-fill-0/50 px-3 text-sm text-mg-text-1">
-              {workspaceName}
-            </div>
+            <label className="block text-xs font-bold text-mg-text-2 mb-2">
+              {t('apiKeys.createModal.nameLabel')}
+            </label>
+            <Input
+              value={name}
+              data-track="api_keys:field_name"
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t('apiKeys.createModal.namePlaceholder')}
+            />
           </div>
 
           {/* Key 类型（PRD §10.1）——卡片栅格，映射到后端 scope；个人租户无「成员 Key」 */}
@@ -290,19 +310,6 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                 )
               })}
             </div>
-          </div>
-
-          {/* 名称（PRD §创建弹窗信息架构） */}
-          <div>
-            <label className="block text-xs font-bold text-mg-text-2 mb-2">
-              {t('apiKeys.createModal.nameLabel')}
-            </label>
-            <Input
-              value={name}
-              data-track="api_keys:field_name"
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t('apiKeys.createModal.namePlaceholder')}
-            />
           </div>
 
           {/* 负责人（成员 Key）：管理员代建指定被负责成员 */}
@@ -348,12 +355,27 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
             </div>
           )}
 
-          {/* 安全护栏 */}
+          {/* 过期时间（PRD 原型：创建生命周期字段，Member 不可选择永不过期） */}
+          <div>
+            <label className="block text-xs font-bold text-mg-text-2 mb-2">
+              过期时间 <span className="text-mg-text-3 font-normal">{mustSetExpiry ? '（必填，不可永不过期）' : '（可选，不填则永不过期）'}</span>
+            </label>
+            <DateRangePicker
+              value={expiryRange}
+              onChange={setExpiryRange}
+              presets={expiryPresets}
+              customTitle="过期预设"
+              customLabel="选择截止时间"
+              hideStartDate={true}
+              placeholder="选择过期失效时间"
+              className="w-full rounded-md h-10 justify-between"
+            />
+          </div>
+
+          {/* 安全策略（PRD 原型） */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-bold text-mg-text-2">
-                {t('apiKeys.createModal.guardrailLabel')}
-              </label>
+              <h4 className="text-sm font-bold text-mg-text-1">安全策略</h4>
               {/* 附建护栏恒为常规 Key 护栏 → 按 guardrails.key:create gate（#479 · PRD §11） */}
               {hasPermission(PERMS.GUARDRAILS_CREATE_KEY) && (
                 <button
@@ -367,16 +389,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
               )}
             </div>
             <div className="space-y-2">
-              {defaultGuardrail && (
-                <div className="flex items-center gap-1.5">
-                  <div className="inline-flex items-center gap-1.5 rounded-md border border-brand-base/20 bg-brand-base/10 px-2.5 py-1 text-xs font-bold text-brand-base">
-                    <LuShieldCheck className="w-3 h-3 shrink-0" />
-                    继承全局默认 Key 策略
-                    <span className="font-normal text-mg-text-3">· {defaultGuardrail.name}</span>
-                  </div>
-                </div>
-              )}
-              {/* PRD：一把 Key 最多 1 条有效常规 Key 护栏，不叠加（需求方#147）——单选，'__none__' 表示不额外绑定 */}
+              <label className="mb-1.5 block text-xs text-mg-text-3">Key 护栏</label>
               <Select
                 value={extraIds[0] ?? '__none__'}
                 onChange={(v) => setGuardrailIds([...(defaultId ? [defaultId] : []), ...(v === '__none__' ? [] : [v])])}
@@ -387,7 +400,15 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                   .filter((g) => !g.is_default && deriveScope(g) === 'key' && deriveKind(g) === 'regular')
                   .map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
               </Select>
-              <p className="mt-1 text-xs text-mg-text-3">常规 Key 护栏可选；不选择时继承全局默认策略。</p>
+              <div className="mt-2 rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2">
+                <span className="block text-xs text-mg-text-3">{selectedGuardrail ? '已选 Key 护栏' : '当前策略'}</span>
+                <strong className="mt-0.5 block text-sm text-mg-text-1">
+                  {selectedGuardrail?.name ?? (defaultGuardrail ? '继承全局默认 Key 策略' : '不使用 Key 护栏')}
+                </strong>
+                <span className="mt-0.5 block text-xs text-mg-text-3">
+                  {selectedGuardrail ? (budgetDisplay.join('，') || '已选择常规 Key 护栏') : (budgetDisplay.join('，') || '未绑定 Key 护栏')}
+                </span>
+              </div>
             </div>
             {/* 生效规则预览（PRD §8.2）：提示词注入 + 预算闸门 / 模型黑名单 / IP 白名单叠加结果 */}
             <div className="mt-2 space-y-1.5 rounded-md bg-brand-base/5 px-2.5 py-2 text-xs">

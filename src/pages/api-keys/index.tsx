@@ -34,7 +34,6 @@ import {
 import { listWorkspaceMembers } from '@/services/workspaces'
 import { WorkspaceTitleTag } from '@/components/layout/WorkspaceTitleTag'
 import { useCopy } from '@/hooks/use-copy'
-import { useCurrency } from '@/hooks/use-platform-config'
 import { getRequestErrorMessage, isApiErrorCode, errorCodeOf } from '@/lib/request-error-message'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
@@ -90,7 +89,6 @@ export default function ApiKeysPage() {
   const account = useAuthStore((state) => state.account)
   const currentAccountId = account?.account_id
   const isPersonalTenant = tenants.find((tn) => tn.tenant_id === activeTenantId)?.type === 'personal'
-  const { currency } = useCurrency()
   const { hasPermission } = usePermissions()
   // 「类型 × 动作」细粒度（需求方#68）：任一类型可建即显创建入口；行级动作按该行 Key 类型取码
   const canCreate = [PERMS.API_KEYS_CREATE_PERSONAL, PERMS.API_KEYS_CREATE_MEMBER, PERMS.API_KEYS_CREATE_SERVICE]

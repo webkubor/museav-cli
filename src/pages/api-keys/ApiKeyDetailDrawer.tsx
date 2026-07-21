@@ -82,6 +82,7 @@ const AUDIT_ACTION_LABEL: Record<string, string> = {
   'api_key.disabled': '停用 API Key',
   'api_key.rotated': '轮转 API Key',
   'api_key.revoked': '删除 API Key',
+  'api_key.revealed': '查看完整 Key',
 }
 
 function auditActionLabel(action: string): string {

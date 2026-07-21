@@ -386,10 +386,10 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
           </div>
 
           {/* 安全策略（严格对齐 PRD 原型：选择 → 当前策略 → 生效规则预览） */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-bold text-mg-text-1">安全策略</h4>
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-mg-text-2">Key 护栏</label>
+          <div className="space-y-5">
+            <h4 className="text-base font-bold text-mg-text-1">安全策略</h4>
+            <div className="space-y-2.5">
+              <label className="block text-sm font-bold text-mg-text-1">Key 护栏</label>
               <Select
                 value={extraIds[0] ?? '__none__'}
                 onChange={(value) => setGuardrailIds([...(defaultId ? [defaultId] : []), ...(value === '__none__' ? [] : [value])])}
@@ -400,52 +400,52 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
                   .map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
               </Select>
               {allGuardrails.filter((g) => !g.is_default && deriveScope(g) === 'key' && deriveKind(g) === 'regular').length === 0 && (
-                <p className="text-xs text-mg-text-3">暂无 Key 护栏</p>
+                <p className="text-sm text-mg-text-2">暂无 Key 护栏</p>
               )}
             </div>
-            <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2">
-              <span className="block text-xs text-mg-text-3">{selectedGuardrail ? '已选 Key 护栏' : '当前策略'}</span>
-              <strong className="mt-0.5 block text-sm text-mg-text-1">
+            <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-4 py-3">
+              <span className="block text-sm text-mg-text-2">{selectedGuardrail ? '已选 Key 护栏' : '当前策略'}</span>
+              <strong className="mt-1 block text-base text-mg-text-1">
                 {selectedGuardrail?.name ?? '不使用 Key 护栏'}
               </strong>
-              <em className="mt-1 block text-xs not-italic text-mg-text-3">
+              <em className="mt-1.5 block text-sm not-italic text-mg-text-2">
                 {selectedGuardrail ? (budgetDisplay.join('，') || '未配置预算') : '未绑定 Key 护栏'}
               </em>
             </div>
-            <div className="rounded-md border border-mg-border bg-mg-fill-0/30 p-3">
-              <div className="mb-3 flex items-center justify-between">
-                <strong className="text-sm text-mg-text-1">生效规则预览</strong>
-                <span className="text-xs text-mg-text-3">运行时会同时检查这些预算闸门</span>
+            <div className="rounded-md border border-mg-border bg-mg-fill-0/30 p-4">
+              <div className="mb-4 flex flex-col items-start gap-1">
+                <strong className="text-base text-mg-text-1">生效规则预览</strong>
+                <span className="text-sm text-mg-text-2">运行时会同时检查这些预算闸门</span>
               </div>
-              <div className="space-y-2 border-b border-mg-border pb-3">
+              <div className="space-y-3 border-b border-mg-border pb-4">
                 {effectiveLayerRows.map((row) => (
-                  <div className="flex items-center justify-between gap-3 text-xs" key={row.label}>
-                    <span className="text-mg-text-3">{row.label}</span>
-                    <strong className={row.active ? 'text-mg-text-1' : 'text-mg-text-3'}>{row.name}</strong>
+                  <div className="flex items-center justify-between gap-3 text-sm" key={row.label}>
+                    <span className="text-mg-text-2">{row.label}</span>
+                    <strong className={row.active ? 'text-mg-text-1' : 'text-mg-text-2'}>{row.name}</strong>
                   </div>
                 ))}
               </div>
-              <div className="py-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <strong className="text-xs text-mg-text-1">预算闸门</strong>
-                  <span className="text-xs text-mg-text-3">按最先触发的预算停止调用</span>
+              <div className="py-4">
+                <div className="mb-3 flex flex-col items-start gap-1">
+                  <strong className="text-sm text-mg-text-1">预算闸门</strong>
+                  <span className="text-sm text-mg-text-2">按最先触发的预算停止调用</span>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {budgetGateRows.map((row) => (
-                    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-xs" key={row.label}>
-                      <span className="text-mg-text-3">{row.label}</span>
-                      <strong className={row.value === '不限额' ? 'text-mg-text-3' : 'text-mg-text-1'}>{row.value}</strong>
+                    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 text-sm" key={row.label}>
+                      <span className="text-mg-text-2">{row.label}</span>
+                      <strong className={row.value === '不限额' ? 'text-mg-text-2' : 'text-mg-text-1'}>{row.value}</strong>
                       <em className="text-right not-italic text-mg-text-3">{row.source}</em>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="space-y-2 border-t border-mg-border pt-3">
+              <div className="space-y-3 border-t border-mg-border pt-4">
                 {previewRuleRows.map((row) => (
-                  <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs" key={row.label}>
-                    <span className="text-mg-text-3">{row.label}</span>
-                    <strong className={row.value === '未配置' ? 'text-mg-text-3' : 'text-mg-text-1'}>{row.value}</strong>
-                    <span className="col-start-2 text-mg-text-3">规则来源：{row.source}</span>
+                  <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm" key={row.label}>
+                    <span className="text-mg-text-2">{row.label}</span>
+                    <strong className={row.value === '未配置' ? 'text-mg-text-2' : 'text-mg-text-1'}>{row.value}</strong>
+                    <span className="col-start-2 text-xs text-mg-text-2">规则来源：{row.source}</span>
                   </div>
                 ))}
               </div>

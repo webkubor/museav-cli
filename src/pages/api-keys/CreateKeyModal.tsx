@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react'
 import confetti from 'canvas-confetti'
 import { LuPlus, LuShieldCheck } from 'react-icons/lu'
-import { Modal } from '@/components/ui/Modal'
+import { SideSheet } from '@/components/ui/SideSheet'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import Select, { SelectItem } from '@/components/ui/Select'
@@ -235,23 +235,14 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
 
   return (
     <>
-      <Modal
+      <SideSheet
         open={open}
         onClose={onClose}
         title={t('apiKeys.createModal.title')}
-        size="lg"
-        footer={
-          <>
-            <Button variant="outline" onClick={onClose}>
-              {t('apiKeys.createModal.cancel')}
-            </Button>
-            <Button variant="brand" data-track="api_keys:create_submit" loading={createMutation.isPending} onClick={handleSubmit}>
-              {t('apiKeys.createModal.confirm')}
-            </Button>
-          </>
-        }
+        description="创建 API Key，并预览其最终生效的安全护栏规则。"
+        width={560}
       >
-        <div className="flex flex-col gap-7 py-3">
+        <div className="flex flex-col gap-7 px-1 py-3 pb-24">
           {/* 名称（PRD §8.2：放弹窗首位） */}
           <div>
             <label className="block text-xs font-bold text-mg-text-2 mb-2">
@@ -416,7 +407,15 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
           </div>
 
         </div>
-      </Modal>
+        <div className="sticky bottom-0 flex justify-end gap-2 border-t border-mg-border bg-mg-bg-0/95 py-4 backdrop-blur">
+          <Button variant="outline" onClick={onClose}>
+            {t('apiKeys.createModal.cancel')}
+          </Button>
+          <Button variant="brand" data-track="api_keys:create_submit" loading={createMutation.isPending} onClick={handleSubmit}>
+            {t('apiKeys.createModal.confirm')}
+          </Button>
+        </div>
+      </SideSheet>
 
       <CreateGuardrailDialog
         open={guardrailDialogOpen}

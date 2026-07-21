@@ -604,11 +604,9 @@ export default function GuardrailsPage() {
     // 文档：个人护栏、提额护栏不配置模型黑名单 / IP 白名单 → 隐藏且清空落库
     metadata.model_blacklist = showModelIp ? modelBlacklist : []
     metadata.ip_whitelist = showModelIp ? ipWhitelist : []
-    // 文档：个人护栏不写提示词注入；常规 Key「继承全局」= 不写该字段（缺省即继承/关闭）。
-    // 不写 = 清空，编辑时从显式模式切回继承/个人也能正确落空。
-    if (showPromptInjection && normalizedPromptInjection !== PROMPT_INJECTION_INHERIT) {
-      metadata.prompt_injection_mode = normalizedPromptInjection
-    }
+    // 提示词注入模式是后端 UpdateRequest/CreateRequest 的顶层字段，不能放进
+    // metadata（Swagger 中 metadata 仍是历史数组契约；详情响应才是对象）。
+    // 常规 Key 选择「继承全局」时省略该字段，保留后端的继承语义。
     // 类型：全局护栏恒常规、不写 kind；个人/Key 护栏落 kind，提额附到期时间
     // 需求方#151：后端读 metadata.effective_to 作为提额到期（非 expires_at）——
     // 字段名不一致会让后端判定「提额护栏未设置到期时间」而创建失败（40001）。实测验证。
@@ -619,6 +617,9 @@ export default function GuardrailsPage() {
       description: description.trim() || undefined,
       is_default: isDefault,
       priority,
+      ...(showPromptInjection && normalizedPromptInjection !== PROMPT_INJECTION_INHERIT
+        ? { prompt_injection_mode: normalizedPromptInjection }
+        : {}),
       metadata,
     }
     if (!isCreating && detailId) {

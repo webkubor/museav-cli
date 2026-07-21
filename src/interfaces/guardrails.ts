@@ -52,6 +52,7 @@ export interface CreateGuardrailRequest {
   description?: string
   is_default?: boolean
   priority?: number
+  prompt_injection_mode?: 'off' | 'flag' | 'redact' | 'block'
   metadata?: Record<string, unknown>
 }
 
@@ -61,6 +62,7 @@ export interface UpdateGuardrailRequest {
   is_default?: boolean
   priority?: number
   status?: 'active' | 'inactive' | 'archived'
+  prompt_injection_mode?: 'off' | 'flag' | 'redact' | 'block'
   metadata?: Record<string, unknown>
 }
 

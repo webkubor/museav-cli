@@ -1,5 +1,5 @@
 /**
- * 编辑 API Key 弹窗：名称、单层护栏绑定、消费限额、过期时间
+ * 编辑 API Key 弹窗：名称、单层护栏绑定与 Key 生命周期
  * 作用域只读（创建后不可变）。
  */
 import { useEffect, useState } from 'react'
@@ -13,14 +13,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { updateApiKey } from '@/services/api-keys'
 import { listGuardrails } from '@/services/guardrails'
 import { appToast } from '@/lib/app-toast'
-import { useCurrency } from '@/hooks/use-platform-config'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { SCOPE_OPTIONS, EXPIRATION_PRESETS, resolveExpiryISO } from './constants'
 import { CreateGuardrailDialog } from './CreateGuardrailDialog'
 import { activeDefaultGuardrail, deriveKind, deriveScope } from '@/pages/guardrails/derive'
-import { PERIOD_LABEL } from '@/constants/status'
-import type { ApiKeyItem, SpendingPeriodUnit } from '@/types'
+import type { ApiKeyItem } from '@/types'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
 
 type Props = {
@@ -32,14 +30,11 @@ type Props = {
 
 export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
   const queryClient = useQueryClient()
-  const { currency, symbol } = useCurrency()
   const { hasPermission } = usePermissions()
 
   const [name, setName] = useState('')
   const [guardrailIds, setGuardrailIds] = useState<string[]>([])
   const [guardrailDialogOpen, setGuardrailDialogOpen] = useState(false)
-  const [spendingAmount, setSpendingAmount] = useState('')
-  const [spendingPeriodUnit, setSpendingPeriodUnit] = useState<SpendingPeriodUnit>('month')
   const todayStr = new Date().toISOString().split('T')[0]
   const [expiryRange, setExpiryRange] = useState<DateRangeValue>({ preset: 'all', startDate: todayStr, endDate: '' })
 
@@ -55,14 +50,6 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
     if (!open || !apiKey) return
     /* eslint-disable react-hooks/set-state-in-effect -- 弹窗打开时同步重置表单 */
     setName(apiKey.name)
-    const limit = apiKey.limit
-    if (limit?.amount && parseFloat(limit.amount) > 0) {
-      setSpendingAmount(limit.amount)
-      setSpendingPeriodUnit(limit.period_unit ?? 'month')
-    } else {
-      setSpendingAmount('')
-      setSpendingPeriodUnit('month')
-    }
     if (apiKey.expires_at) {
       setExpiryRange({ preset: 'custom', startDate: todayStr, endDate: apiKey.expires_at.split('T')[0] })
     } else {
@@ -95,12 +82,6 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
       const expiresValue = resolveExpiryISO(expiryRange) ?? ''
       return updateApiKey(workspaceId, apiKey.api_key_id, {
         name: name.trim(),
-        spending_limit: {
-          set: true,
-          value: spendingAmount
-            ? { amount: spendingAmount, currency, period_unit: spendingPeriodUnit, period_length: 1 }
-            : null,
-        },
         expires_at: { set: true, value: expiresValue },
         guardrail_ids: guardrailIds.length > 0 ? guardrailIds : null,
       })
@@ -235,28 +216,6 @@ export function EditKeyModal({ open, onClose, workspaceId, apiKey }: Props) {
                 默认全局护栏始终继承；一把 Key 最多绑定 1 条常规护栏和 1 条有效提额护栏。
                 {!canEditBinding && ' 当前角色无权修改护栏绑定。'}
               </p>
-            </div>
-          </div>
-
-          {/* 消费限额 —— 直接显示，留空即不限额；时间维度对齐安全护栏 */}
-          <div>
-            <label className="block text-xs font-bold text-mg-text-2 mb-3">
-              消费限额 <span className="text-mg-text-3 font-normal">（可选，留空则不限额）</span>
-            </label>
-            <div className="flex gap-3">
-              <Input
-                type="number" min="0" step="0.01"
-                value={spendingAmount}
-                onChange={(e) => setSpendingAmount(e.target.value)}
-                placeholder="0.00"
-                prefix={<span className="text-xs text-mg-text-3 font-mono select-none">{symbol}</span>}
-                className="flex-1"
-              />
-              <Select value={spendingPeriodUnit} onChange={(v) => setSpendingPeriodUnit(v as SpendingPeriodUnit)} className="w-28">
-                {(Object.entries(PERIOD_LABEL) as [SpendingPeriodUnit, string][]).map(([k, label]) => (
-                  <SelectItem key={k} value={k}>每{label}</SelectItem>
-                ))}
-              </Select>
             </div>
           </div>
 

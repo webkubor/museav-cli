@@ -1,5 +1,5 @@
 /**
- * 创建 API Key 弹窗：作用域（Tab）、名称、护栏、消费限额、过期时间
+ * 创建 API Key 弹窗：作用域、名称、护栏与最终生效规则预览
  */
 import { useEffect, useState } from 'react'
 import confetti from 'canvas-confetti'
@@ -8,7 +8,6 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import Select, { SelectItem } from '@/components/ui/Select'
-import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { createApiKey, getEffectiveGuardrailPreview } from '@/services/api-keys'
@@ -17,12 +16,11 @@ import { listGuardrails } from '@/services/guardrails'
 import { appToast } from '@/lib/app-toast'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { useAuthStore } from '@/store/auth'
-import { useTenantRole } from '@/hooks/use-tenant-role'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
-import { EXPIRATION_PRESETS, resolveExpiryISO, LIMIT_PERIOD_OPTIONS, type LimitPeriod, type ScopeType } from './constants'
+import { type ScopeType } from './constants'
 import { CreateGuardrailDialog } from './CreateGuardrailDialog'
-import { KEY_TYPE_LABEL, KEY_TYPE_DESC, buildSpendingLimit } from './derive'
+import { KEY_TYPE_LABEL, KEY_TYPE_DESC } from './derive'
 import { trackEvent } from '@/lib/track'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
 import {
@@ -64,18 +62,12 @@ type Props = {
 export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const { currency, symbol } = useCurrency()
+  const { symbol } = useCurrency()
   // 个人租户可选 个人/项目 作用域，但没有「成员」（企业专属）
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const tenants = useAuthStore((s) => s.tenants)
   const account = useAuthStore((s) => s.account)
   const isPersonalTenant = tenants.find((t) => t.tenant_id === activeTenantId)?.type === 'personal'
-  // 企业下非 Owner/Admin（含空间负责人）：不可永不过期，必须设过期时间（需求方#104：
-  // 空间负责人 qa-test03 被点名要求禁永不过期——本单把范围从「仅普通成员」扩到「含空间负责人」，
-  // 即企业内只有 Owner/Admin 可永不过期；PRD §8.2 原只禁普通成员，此处按 #104 加严）。
-  // 个人租户 owner 不受限（isEnterprise=false）。
-  const { isEnterprise, canManage } = useTenantRole()
-  const mustSetExpiry = isEnterprise && !canManage
   // Key 类型按各自细粒度创建权限 gate（#54 · PRD §8.1/§8.2）：无权限类型置灰并提示，绝不靠角色启发式
   const { hasPermission } = usePermissions()
   const canCreateScope: Record<ScopeType, boolean> = {
@@ -91,26 +83,8 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   const [memberAccountId, setMemberAccountId] = useState('')
   const [guardrailIds, setGuardrailIds] = useState<string[]>([])
   const [guardrailDialogOpen, setGuardrailDialogOpen] = useState(false)
-
-  const [spendingAmount, setSpendingAmount] = useState('')
-  // 限额周期（PRD §8.2）：不限额 / 每日 / 每月 / 总额；默认不限额（金额禁用）
-  const [limitPeriod, setLimitPeriod] = useState<LimitPeriod>('none')
   // 服务 Key 负责人（复用成员下拉）；个人租户固定为自己
   const needsMaintainer = effectiveScope === 'workspace' && !isPersonalTenant
-  const todayStr = new Date().toISOString().split('T')[0]
-  const [expiryRange, setExpiryRange] = useState<DateRangeValue>({
-    preset: 'all',
-    startDate: todayStr,
-    endDate: '',
-  })
-  // 必须设过期者不可「永不过期」：移除该预设，默认档落「1 年后」（需求方#104：默认 1 年）
-  const expiryPresets = mustSetExpiry ? EXPIRATION_PRESETS.filter((p) => p.key !== 'all') : EXPIRATION_PRESETS
-  useEffect(() => {
-    if (mustSetExpiry && expiryRange.preset === 'all') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setExpiryRange({ preset: '1y', startDate: todayStr, endDate: '' })
-    }
-  }, [mustSetExpiry, expiryRange.preset, todayStr])
   // 当前选中的类型无创建权限时，落到第一个有权限的类型（个人租户排除成员 Key）
   useEffect(() => {
     if (!open || canCreateScope[effectiveScope]) return
@@ -153,8 +127,6 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
     prd_version: 'api_keys_v0_1',
     key_type: KEY_TYPE_OF_SCOPE[effectiveScope],
     has_key_guardrail: guardrailIds.length > 0,
-    has_limit: limitPeriod !== 'none' && !!spendingAmount,
-    limit_period: limitPeriod,
   })
 
   const createMutation = useMutation({
@@ -165,8 +137,6 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
         // 成员 Key → 目标成员；服务 Key → 负责人（个人租户负责人固定自己，留空由后端默认创建者）
         member_account_id:
           effectiveScope === 'member' || needsMaintainer ? memberAccountId || undefined : undefined,
-        spending_limit: buildSpendingLimit(limitPeriod, spendingAmount, currency),
-        expires_at: resolveExpiryISO(expiryRange) ?? undefined,
         guardrail_ids: guardrailIds.length > 0 ? guardrailIds : undefined,
       }),
     onSuccess: (newKey) => {
@@ -329,23 +299,6 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
             </div>
           </div>
 
-          {/* 过期时间 */}
-          <div>
-            <label className="block text-xs font-bold text-mg-text-2 mb-2">
-              过期时间 <span className="text-mg-text-3 font-normal">{mustSetExpiry ? '（必填，不可永不过期）' : '（可选，不填则永不过期）'}</span>
-            </label>
-            <DateRangePicker
-              value={expiryRange}
-              onChange={setExpiryRange}
-              presets={expiryPresets}
-              customTitle="过期预设"
-              customLabel="选择截止时间"
-              hideStartDate={true}
-              placeholder="选择过期失效时间"
-              className="w-full rounded-md h-10 justify-between"
-            />
-          </div>
-
           {/* 负责人（成员 Key）：管理员代建指定被负责成员 */}
           {effectiveScope === 'member' && (
             <div>
@@ -462,28 +415,6 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
             </div>
           </div>
 
-          {/* 消费限额 —— 周期=不限额时金额禁用（PRD §8.2） */}
-          <div>
-            <label className="block text-xs font-bold text-mg-text-2 mb-3">
-              消费限额 <span className="text-mg-text-3 font-normal">（选择周期后填写金额，不限额则无需填写）</span>
-            </label>
-            <div className="flex gap-3">
-              <Input
-                type="number" min="0" step="0.01"
-                value={spendingAmount}
-                onChange={(e) => setSpendingAmount(e.target.value)}
-                placeholder="0.00"
-                disabled={limitPeriod === 'none'}
-                prefix={<span className="text-xs text-mg-text-3 font-mono select-none">{symbol}</span>}
-                className="flex-1"
-              />
-              <Select value={limitPeriod} onChange={(v) => setLimitPeriod(v as LimitPeriod)} className="w-28">
-                {LIMIT_PERIOD_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                ))}
-              </Select>
-            </div>
-          </div>
         </div>
       </Modal>
 

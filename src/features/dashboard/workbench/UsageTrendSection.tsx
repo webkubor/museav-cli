@@ -81,7 +81,9 @@ export function UsageTrendSection({ granularity, accountId }: { granularity: Gra
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="font-bold text-base text-mg-text-1 m-0">{t('dashboard.workbench.trend.title')}</h3>
-          <span className="text-xs text-mg-text-3 block mt-1">{t(`dashboard.workbench.trend.metric.${metric}`)}</span>
+          {/* 需求方#170：hint 不再只重复指标名，补上时间范围（对齐 PRD「近 N 时段 + 指标」结构），
+              范围文案按实际查询区间取（day=近30天 / month=近12个月，见 shared.rangeForGranularity），不写死 PRD 的 7天/6个月避免与真实数据不符 */}
+          <span className="text-xs text-mg-text-3 block mt-1">{`${t(`dashboard.workbench.trend.range.${granularity}`)} ${t(`dashboard.workbench.trend.metric.${metric}`)}`}</span>
         </div>
         <SegmentedToggle<TrendMetric>
           size="sm"

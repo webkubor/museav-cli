@@ -1665,6 +1665,10 @@
           "spend": "Spend",
           "tokens": "Tokens"
         },
+        "range": {
+          "day": "Last 30 days",
+          "month": "Last 12 months"
+        },
         "unit": {
           "requests": "reqs",
           "spend": "",

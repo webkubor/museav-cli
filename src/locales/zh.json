@@ -1664,6 +1664,10 @@
           "spend": "费用",
           "tokens": "Tokens"
         },
+        "range": {
+          "day": "近 30 天",
+          "month": "近 12 个月"
+        },
         "unit": {
           "requests": "次",
           "spend": "",

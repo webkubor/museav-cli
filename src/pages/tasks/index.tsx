@@ -41,10 +41,11 @@ import { formatDateTime } from '@/lib/format-date'
 import { trackEvent } from '@/lib/track'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { cn } from '@/lib/utils'
-import type { TaskArtifactState, TaskBillingState, TaskItem, TaskDetail, TaskKind } from '@/types'
+import type { TaskArtifactState, TaskBillingState, TaskItem, TaskDetail, TaskKind, TaskStatusTimestamps } from '@/types'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { Money } from '@/components/ui/Money'
 import { VideoThumbnail } from './VideoThumbnail'
+import { getSnapshotLifecycleEvents } from './lifecycle'
 import { VideoPreviewModal } from './VideoPreviewModal'
 
 // ─── 常量 ────────────────────────────────────────────────────────────────────
@@ -250,7 +251,12 @@ interface LifecycleEvent {
 }
 
 /** 基于后端真实时间字段生成生命周期，缺少中间态时不虚构时间。 */
-function getLifecycleEvents(task: TaskItem): LifecycleEvent[] {
+function getLifecycleEvents(task: TaskItem, statusTimestamps?: TaskStatusTimestamps): LifecycleEvent[] {
+  const snapshotEvents = getSnapshotLifecycleEvents(statusTimestamps)
+  if (snapshotEvents.length > 0) {
+    return snapshotEvents.map((event) => ({ ...event, time: fmtDate(event.time) }))
+  }
+
   const events: LifecycleEvent[] = [{
     time: fmtDate(task.created_at),
     label: '已提交',
@@ -338,7 +344,10 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
     resolution: rm?.result_resolution || '—',
     duration: rm?.result_duration_seconds ? `${rm.result_duration_seconds} 秒` : '—',
   }
-  const lifecycleEvents = getLifecycleEvents(task)
+  const lifecycleEvents = getLifecycleEvents(
+    task,
+    data?.result_meta?.status_timestamps ?? task.result_meta?.status_timestamps,
+  )
 
   return (
     <SideSheet open onClose={onClose} title="异步任务详情">

@@ -10,10 +10,7 @@ import type {
   ApiKeySummary,
   ApiKeyType,
   Money,
-  SpendingLimit,
 } from '@/types'
-import { formatMoney } from '@/lib/utils'
-import { LIMIT_PERIOD_LABEL, type LimitPeriod } from './constants'
 import { PERMS, type Permission } from '@/config/permissions'
 
 /** 行级治理动作（需求方#68：权限码按「类型 × 动作」细分） */
@@ -141,30 +138,4 @@ export function deriveSummary(items: ApiKeyItem[]): ApiKeySummary {
 /** 行级能力回退：后端 can_* 优先，否则用传入的权限布尔 */
 export function cap(itemFlag: boolean | undefined, permFallback: boolean): boolean {
   return itemFlag ?? permFallback
-}
-
-/** 限额副标：「¥800 / 每月」或「不限额」（PRD §8.2 周期口径，兼容旧 hour/week） */
-export function formatLimit(item: ApiKeyItem): string {
-  const l = item.limit
-  if (!l || !l.amount || Number(l.amount) <= 0) return '不限额'
-  const unit = LIMIT_PERIOD_LABEL[l.period_unit as string] ?? `每${l.period_unit}`
-  return `${l.currency} ${formatMoney(l.amount, '')} / ${unit}`
-}
-
-/** 当前 Key 的限额周期（用于「调整限额」内联表单回填）；旧 hour/week 归一到 month */
-export function currentLimitPeriod(item: ApiKeyItem): LimitPeriod {
-  const l = item.limit
-  if (!l || !l.amount || Number(l.amount) <= 0) return 'none'
-  const u = l.period_unit as string
-  if (u === 'day' || u === 'month' || u === 'total') return u
-  return 'month'
-}
-
-/**
- * 由「限额周期 + 金额」构建下发的 spending_limit；none/空金额 → undefined（不限额）。
- * total 保留用于兼容历史回显，但当前创建 UI 不提供该选项，避免发送后端不接受的 period_unit。
- */
-export function buildSpendingLimit(period: LimitPeriod, amount: string, currency: string): SpendingLimit | undefined {
-  if (period === 'none' || period === 'total' || !amount || Number(amount) <= 0) return undefined
-  return { amount, currency, period_unit: period as unknown as SpendingLimit['period_unit'], period_length: 1 }
 }

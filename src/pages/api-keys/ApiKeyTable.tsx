@@ -1,5 +1,6 @@
 /**
- * API Key 列表表格（PRD v1.0.3）：名称 / 类型 / 负责人 / 安全护栏 / 状态 / 本期消费·限额 / 最近调用 / 到期时间 / 操作
+ * API Key 列表表格（PRD v1.0.3）：名称 / 类型 / 负责人 / 安全护栏 / 状态 / 本期消费 / 最近调用 / 到期时间 / 操作
+ * Key 级消费限额已按需求方定案移除（限额统一走安全护栏预算），列表只展示本期消费（需求方#122）。
  * 行点击开详情抽屉；治理动作（停用/启用）行内直达，轮转/删除在抽屉。
  */
 import { useTranslation } from 'react-i18next'
@@ -27,7 +28,6 @@ import {
   lastCalledOf,
   isExpiringSoon,
   cap,
-  formatLimit,
   type ApiKeyAction,
 } from './derive'
 
@@ -105,7 +105,7 @@ export function ApiKeyTable({
           <TableHead>负责人</TableHead>
           <TableHead>安全护栏</TableHead>
           <TableHead>{t('apiKeys.table.status')}</TableHead>
-          <TableHead>本期消费 / 限额</TableHead>
+          <TableHead>本期消费</TableHead>
           <TableHead>最近调用</TableHead>
           <TableHead>{t('apiKeys.table.expiresAt')}</TableHead>
           <TableHead className="w-32 text-right">{t('apiKeys.table.actions')}</TableHead>
@@ -170,7 +170,6 @@ export function ApiKeyTable({
               responsible.account_id &&
               record.owner.account_id !== responsible.account_id
             const periodSpend = periodSpendOf(record)
-            const hasLimit = !!record.limit && Number(record.limit.amount) > 0
             const lastCalled = lastCalledOf(record)
             const isDisabled = record.status === 'disabled'
             const canToggle = isDisabled
@@ -257,8 +256,6 @@ export function ApiKeyTable({
                       ? `${periodSpend.currency} ${formatMoney(periodSpend.amount, '')}`
                       : <span className="text-mg-text-3">—</span>}
                   </div>
-                  {/* #148：限额直接带「限额」前缀，一眼区分于上方本期消费，无需额外 Hint */}
-                  <div className="text-xs text-mg-text-3">{hasLimit ? `限额 ${formatLimit(record)}` : formatLimit(record)}</div>
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-2">
                   {lastCalled ? formatDateTime(lastCalled) : <span className="text-mg-text-3">尚未调用</span>}

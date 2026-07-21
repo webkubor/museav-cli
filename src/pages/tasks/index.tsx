@@ -87,12 +87,6 @@ function fmtDate(iso: string | undefined) {
   return formatDateTime(iso)
 }
 
-function fmtDuration(start: string | undefined, end: string | undefined) {
-  if (!start || !end) return '—'
-  const secs = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 1000)
-  return `${secs} 秒`
-}
-
 /** 解析任务实际费用：后端返回 final_amount（decimal 字符串）；非数值返回 null */
 function taskCost(item: TaskItem): number | null {
   if (item.final_amount == null) return null
@@ -232,6 +226,38 @@ function artifactStatus(task: TaskItem, expired: boolean): { label: string; tone
   return { label: '—', tone: 'brand' }
 }
 
+interface LifecycleEvent {
+  time: string
+  label: string
+  note: string
+  tone: SummaryTone
+}
+
+/** 基于后端真实时间字段生成生命周期，缺少中间态时不虚构时间。 */
+function getLifecycleEvents(task: TaskItem): LifecycleEvent[] {
+  const events: LifecycleEvent[] = [{
+    time: fmtDate(task.created_at),
+    label: '已提交',
+    note: '任务创建',
+    tone: 'brand',
+  }]
+  if (task.status === 'queued' || task.status === 'running') {
+    events.push({
+      time: fmtDate(task.updated_at),
+      label: task.status === 'queued' ? '排队中' : '生成中',
+      note: task.status === 'queued' ? '等待调度' : '生成进行中',
+      tone: 'brand',
+    })
+  }
+  if (isTaskDone(task.status)) {
+    events.push({ time: fmtDate(task.completed_at), label: '已完成', note: '产物可下载', tone: 'success' })
+  }
+  if (task.status === 'failed') {
+    events.push({ time: fmtDate(task.updated_at), label: '失败', note: task.error_message || '任务执行失败', tone: 'danger' })
+  }
+  return events
+}
+
 // ─── 详情抽屉 ─────────────────────────────────────────────────────────────────
 
 function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose: () => void }) {
@@ -295,9 +321,10 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
     resolution: rm?.result_resolution || '—',
     duration: rm?.result_duration_seconds ? `${rm.result_duration_seconds} 秒` : '—',
   }
+  const lifecycleEvents = getLifecycleEvents(task)
 
   return (
-    <SideSheet open onClose={onClose} width={560} title="异步任务详情">
+    <SideSheet open onClose={onClose} width={680} title="异步任务详情">
         <div className="space-y-5 px-[var(--mg-space-1)] py-[var(--mg-control-py-sm)] mg-text-body">
           {(() => {
             // 派生：概览/摘要/任务信息用到的状态与文案（对齐 PRD 异步任务详情 §7.4.2）
@@ -357,18 +384,6 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
               <DetailRow label="工作空间" value={workspaceName} />
               <DetailRow label="API Key 名称" value={apiKeyName} />
               <DetailRow label="成员" value={memberName} />
-              {(task.input_tokens != null || task.output_tokens != null) && (
-                <DetailRow
-                  label="Token 用量"
-                  value={
-                    <span className="mg-text-caption text-mg-text-2">
-                      输入 <strong className="text-mg-text-1">{(task.input_tokens ?? 0).toLocaleString()}</strong>
-                      {' · '}
-                      输出 <strong className="text-mg-text-1">{(task.output_tokens ?? 0).toLocaleString()}</strong>
-                    </span>
-                  }
-                />
-              )}
             </div>
           </div>
 
@@ -398,91 +413,84 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
             )
           })()}
 
-          {/* 生命周期：提交 → 结束 → 耗时 → 产物有效期 */}
+          {/* 生命周期：只展示接口已提供的真实节点，结构对齐 PRD 时间线 */}
           <div>
             <p className="mg-text-label text-mg-text-3 mb-2">生命周期</p>
-            <div className="rounded-md border border-mg-border bg-mg-bg-0 px-[var(--mg-panel-padding-md)]">
-              <DetailRow label="提交时间" value={fmtDate(task.created_at)} />
-              <DetailRow label="结束时间" value={fmtDate(task.completed_at)} />
-              <DetailRow label="耗时"     value={fmtDuration(task.created_at, task.completed_at)} />
-              {expiry && (
-                <DetailRow
-                  label="产物有效期"
-                  value={
-                    expiry.expired ? (
-                      <span className="text-mg-text-4">已过期 · 已自动清理</span>
-                    ) : (
-                      <span className="text-mg-text-2">
-                        至 {fmtDate(expiry.expiresAt)} <span className="text-mg-text-3">· {expiry.remain}</span>
-                      </span>
-                    )
-                  }
-                  hint={expiry.expired ? undefined : '产物到期后自动清理，平台不长期存储'}
-                />
-              )}
+            <div className="rounded-md border border-mg-border bg-mg-bg-0 px-[var(--mg-panel-padding-md)] py-1">
+              {lifecycleEvents.map((event, index) => (
+                <div key={`${event.label}-${event.time}`} className="flex gap-3 py-3">
+                  <div className="flex w-4 shrink-0 flex-col items-center">
+                    <span className={cn(
+                      'mt-1 h-2.5 w-2.5 rounded-full',
+                      event.tone === 'success' ? 'bg-mg-success' : event.tone === 'danger' ? 'bg-mg-danger' : 'bg-brand-base',
+                    )} />
+                    {index < lifecycleEvents.length - 1 && <span className="mt-1 w-px flex-1 bg-mg-border" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                      <strong className="mg-text-body text-mg-text-1">{event.label}</strong>
+                      <time className="mg-text-caption text-mg-text-3">{event.time}</time>
+                    </div>
+                    <p className="mt-0.5 mg-text-caption text-mg-text-3">{event.note}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* 产物预览：视频任务成功态，直接用网关 content 端点播放 */}
-          {showVideo && (
-            <div className="rounded-md border border-mg-border bg-mg-bg-0 mg-panel-tight">
-              <p className="mg-text-label text-mg-text-3 mb-2">产物预览</p>
-              <video
-                key={videoUrl}
-                src={videoUrl ?? undefined}
-                controls
-                preload="metadata"
-                playsInline
-                className="w-full rounded-lg bg-black max-h-72"
-                onError={() => setVideoUnavailable(true)}
-              />
-            </div>
-          )}
-
-          {/* 产物信息：文件名/格式/分辨率/时长 —— TODO(#446) 后端未交付，缺省占位「—」 */}
-          {showVideo && (
-            <div>
-              <p className="mg-text-label text-mg-text-3 mb-2">产物信息</p>
-              <div className="rounded-md border border-mg-border bg-mg-bg-0 px-[var(--mg-panel-padding-md)]">
-                <DetailRow label="文件名" value={artifactMeta.filename} mono />
-                <DetailRow label="格式" value={artifactMeta.format} />
-                <DetailRow label="分辨率" value={artifactMeta.resolution} />
-                <DetailRow label="时长" value={artifactMeta.duration} />
+          {/* 产物：预览、元信息和下载动作合并为 PRD 单张产物卡 */}
+          <div>
+            <p className="mg-text-label text-mg-text-3 mb-2">产物</p>
+            <article className="overflow-hidden rounded-md border border-mg-border bg-mg-bg-0">
+              {showVideo ? (
+                <video
+                  key={videoUrl}
+                  src={videoUrl ?? undefined}
+                  controls
+                  preload="metadata"
+                  playsInline
+                  className="max-h-72 w-full bg-mg-fill-1 object-contain"
+                  onError={() => setVideoUnavailable(true)}
+                />
+              ) : (
+                <div className="flex h-36 items-center justify-center bg-mg-fill-1 text-mg-text-4">
+                  <LuPackage size={28} />
+                </div>
+              )}
+              <div className="space-y-3 p-[var(--mg-panel-padding-md)]">
+                <div>
+                  <strong className="block truncate mg-text-body text-mg-text-1">
+                    {artifactMeta.filename === '—' ? '产物文件' : artifactMeta.filename}
+                  </strong>
+                  <span className="mg-text-caption text-mg-text-3">
+                    {[artifactMeta.format, artifactMeta.resolution, artifactMeta.duration].filter((value) => value !== '—').join(' · ') || '产物信息暂未提供'}
+                  </span>
+                </div>
+                {expiry && <p className="mg-text-caption text-mg-text-3">产物有效期：{expiry.expired ? '已过期 · 已自动清理' : `${fmtDate(expiry.expiresAt)} · ${expiry.remain}`}</p>}
+                {showVideo && videoUrl && (
+                  <>
+                    <div className="flex items-center gap-2 rounded-md border border-mg-border bg-mg-fill-0/40 px-[var(--mg-control-px-sm)] py-[var(--mg-control-py-sm)]">
+                      <LuLink size={13} className="shrink-0 text-mg-text-4" />
+                      <span className="flex-1 truncate mg-text-code text-mg-text-2" title={videoUrl}>{videoUrl}</span>
+                      <CopyButton value={videoUrl} aria-label="复制链接" toast="链接已复制" className="h-5 w-5 shrink-0" />
+                    </div>
+                    <a
+                      href={videoUrl}
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => trackEvent('logs_artifact_download', { record_type: 'async', kind, source: 'detail' })}
+                      className="inline-flex w-full items-center justify-center gap-1.5 mg-control-md rounded-md bg-mg-primary text-white mg-text-body font-semibold transition-opacity hover:opacity-90"
+                    >
+                      <LuDownload size={14} />
+                      下载
+                    </a>
+                  </>
+                )}
+                {expiry && !expiry.expired && <p className="flex items-start gap-1.5 mg-text-caption text-[var(--mg-warning)]"><LuTriangleAlert size={13} className="mt-0.5 shrink-0" /><span>产物到期后平台不再保留，请尽快下载保存。</span></p>}
               </div>
-            </div>
-          )}
-
-          {/* 产物链接 + 下载 */}
-          {showVideo && (
-            <div className="rounded-md border border-mg-border bg-mg-bg-0 mg-panel space-y-2.5">
-              <p className="mg-text-label text-mg-text-3">产物链接</p>
-              <div className="group flex w-full items-center gap-2 rounded-lg border border-mg-border bg-mg-fill-0/40 px-[var(--mg-control-px-sm)] py-[var(--mg-control-py-sm)] text-left transition-colors hover:border-brand-base/40">
-                <LuLink size={13} className="shrink-0 text-mg-text-4" />
-                <span className="flex-1 truncate mg-text-code text-mg-text-2" title={videoUrl}>
-                  {videoUrl}
-                </span>
-                <CopyButton value={videoUrl} aria-label="复制链接" toast="链接已复制" className="h-5 w-5 shrink-0" />
-              </div>
-              <a
-                href={videoUrl}
-                download
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackEvent('logs_artifact_download', { record_type: 'async', kind, source: 'detail' })}
-                className="inline-flex w-full items-center justify-center gap-1.5 mg-control-md rounded-lg bg-mg-primary text-white mg-text-body font-semibold transition-opacity hover:opacity-90"
-              >
-                <LuDownload size={14} />
-                下载
-              </a>
-              <p className="flex items-start gap-1.5 mg-text-caption text-[var(--mg-warning)]">
-                <LuTriangleAlert size={13} className="shrink-0 mt-0.5" />
-                <span>
-                  视频地址有有效期{expiry ? `（至 ${fmtDate(expiry.expiresAt)}，${expiry.remain}）` : ''}，
-                  过期后平台不再保留，请尽快下载保存到本地。
-                </span>
-              </p>
-            </div>
-          )}
+            </article>
+          </div>
 
           {/* 产物已过期 / 已被清理 */}
           {gone && kind === 'video' && isTaskDone(task.status) && (

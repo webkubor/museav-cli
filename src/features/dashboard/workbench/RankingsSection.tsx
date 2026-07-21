@@ -30,6 +30,7 @@ function RankingRow({ index, name, meta, spend, model }: { index: number; name: 
 function RankingCard({
   icon,
   title,
+  periodLabel,
   items,
   isLoading,
   emptyHint,
@@ -38,6 +39,7 @@ function RankingCard({
 }: {
   icon: React.ReactNode
   title: string
+  periodLabel: string
   items: UsageRankingItem[] | null
   isLoading?: boolean
   emptyHint?: string
@@ -51,6 +53,8 @@ function RankingCard({
         <div className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-base/10 text-brand-base">{icon}</span>
           <h3 className="text-sm font-bold text-mg-text-1 m-0">{title}</h3>
+          {/* PRD 排行卡头右显统计周期（今日/本月） */}
+          <span className="text-xs text-mg-text-3">{periodLabel}</span>
         </div>
         {onViewMore && (
           <button
@@ -76,7 +80,7 @@ function RankingCard({
                 key={item.key ?? i}
                 index={i}
                 name={item.name || item.key || '—'}
-                meta={`${abbreviateNumber(item.requests ?? 0)} · ${abbreviateNumber(item.tokens ?? 0)} tokens`}
+                meta={`${abbreviateNumber(item.tokens ?? 0)} tokens · ${abbreviateNumber(item.requests ?? 0)} calls`}
                 spend={item.spend}
                 model={withModelIcon ? { display_name: item.name || item.key || '—', vendor: item.key || item.name || '' } : undefined}
               />
@@ -104,6 +108,7 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
   const trackCtx = useTrackContext()
   const range = useMemo(() => rangeForGranularity(granularity), [granularity])
   const showMembers = view === 'enterprise'
+  const periodLabel = t(`dashboard.workbench.periodLabel.${granularity}`)
 
   const handleRankingMore = (dimension: 'models' | 'members' | 'apiKeys', target: string) => {
     trackEvent('overview_ranking_more_click', { ...trackCtx, dimension }, { view_mode: view })
@@ -137,6 +142,7 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
       <RankingCard
         icon={<LuBot size={15} />}
         title={t(showMembers ? 'dashboard.workbench.rankings.models' : 'dashboard.workbench.rankings.myModels')}
+        periodLabel={periodLabel}
         items={models?.items ?? null}
         isLoading={modelsLoading}
         emptyHint={t('dashboard.workbench.rankings.emptyHint')}
@@ -148,6 +154,7 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
         <RankingCard
           icon={<LuUsers size={15} />}
           title={t('dashboard.workbench.rankings.members')}
+          periodLabel={periodLabel}
           items={members?.items ?? null}
           isLoading={membersLoading}
           emptyHint={t('dashboard.workbench.rankings.emptyHint')}
@@ -158,6 +165,7 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
       <RankingCard
         icon={<LuKeyRound size={15} />}
         title={t(showMembers ? 'dashboard.workbench.rankings.apiKeys' : 'dashboard.workbench.rankings.myApiKeys')}
+        periodLabel={periodLabel}
         items={apiKeys?.items ?? null}
         isLoading={apiKeysLoading}
         emptyHint={t('dashboard.workbench.rankings.emptyHint')}

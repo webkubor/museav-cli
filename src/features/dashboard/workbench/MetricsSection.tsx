@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { LuActivity, LuTrendingUp, LuDatabase, LuWallet } from 'react-icons/lu'
+import { LuActivity, LuReceiptText, LuDatabase, LuWalletCards } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
 import { useBalance } from '@/hooks/use-balance'
 import { useTrackContext } from '@/hooks/use-track-context'
@@ -12,7 +12,7 @@ import { getUsageSummary } from '@/services/usage'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { TiltCard } from '@/components/ui/TiltCard'
 import { formatMoney } from '@/lib/utils'
-import { abbreviateNumber, rangeForGranularity, prevRangeForGranularity, computeDelta, type Granularity, type WorkbenchView } from './shared'
+import { abbreviateNumber, rangeForGranularity, type Granularity, type WorkbenchView } from './shared'
 
 /**
  * 模块 4：核心指标 4 卡（总请求 / 总费用 / 总 Tokens / 账户余额）。
@@ -36,19 +36,10 @@ export function MetricsSection({
     trackEvent('overview_metric_card_click', { ...trackCtx, metric }, { view_mode: view })
 
   const range = useMemo(() => rangeForGranularity(granularity), [granularity])
-  const prevRange = useMemo(() => prevRangeForGranularity(granularity), [granularity])
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
     queryKey: ['workbench', 'summary', 'none', activeTenantId, granularity, view, accountId],
     queryFn: () => getUsageSummary({ from: range.from, to: range.to, group_by: 'none', account_id: accountId }),
-    enabled: !!activeTenantId,
-    staleTime: 60_000,
-  })
-
-  // 上一等长区间 → 指标卡「较上期」涨跌（请求/费用/Tokens；余额为时点值、后端无历史快照，不计）
-  const { data: prevSummary } = useQuery({
-    queryKey: ['workbench', 'summary', 'prev', activeTenantId, granularity, view, accountId],
-    queryFn: () => getUsageSummary({ from: prevRange.from, to: prevRange.to, group_by: 'none', account_id: accountId }),
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })
@@ -67,15 +58,15 @@ export function MetricsSection({
   const requests = summary?.total.requests
   const tokens = summary?.total.tokens
 
-  // 「较上期」涨跌（上一等长区间对比）；上期为 0/缺失则不显示徽章
-  const trendLabel = t('dashboard.workbench.metrics.vsPrev')
-  const withLabel = (d?: { value: string; up: boolean }) => (d ? { ...d, label: trendLabel } : undefined)
-  const requestsTrend = withLabel(computeDelta(requests, prevSummary?.total.requests))
-  const tokensTrend = withLabel(computeDelta(tokens, prevSummary?.total.tokens))
-  const spendTrend = withLabel(computeDelta(
-    summary ? Number.parseFloat(summary.total.spend.amount) : undefined,
-    prevSummary ? Number.parseFloat(prevSummary.total.spend.amount) : undefined,
-  ))
+  // PRD 总览指标卡：icon + label + value + hint（今日/本月随周期切换），无「较上期」涨跌徽章（原型未含）
+  const isDay = granularity === 'day'
+  const requestsSub = t(isDay ? 'dashboard.workbench.metrics.requestsSubDay' : 'dashboard.workbench.metrics.requestsSub')
+  const spendSub = t(isDay ? 'dashboard.workbench.metrics.spendSubDay' : 'dashboard.workbench.metrics.spendSub')
+  const tokensSub = t(isDay ? 'dashboard.workbench.metrics.tokensSubDay' : 'dashboard.workbench.metrics.tokensSub')
+  // 我的视图下余额仍为租户级（后端无个人余额），hint 标注「租户可用余额」以正名口径（PRD balanceHint）
+  const balanceSub = view === 'mine'
+    ? t('dashboard.workbench.metrics.balanceSubTenant')
+    : t('dashboard.workbench.metrics.balanceSub')
 
   const cards = [
     {
@@ -89,21 +80,19 @@ export function MetricsSection({
       hoverBorderClass: 'hover:border-emerald-500/30',
       icon: <LuActivity size={16} />,
       iconLead: true,
-      trend: requestsTrend,
-      sub: t('dashboard.workbench.metrics.requestsSub'),
+      sub: requestsSub,
       onClick: () => onMetricCardClick('requests'),
     },
     {
       title: t('dashboard.workbench.metrics.spend'),
       value: summary ? formatMoney(summary.total.spend.amount, symbol) : undefined,
       loading: summaryLoading,
-      sub: t('dashboard.workbench.metrics.spendSub'),
+      sub: spendSub,
       color: 'var(--mg-warning)',
       glowColor: 'rgba(245, 158, 11, 0.12)',
       hoverBorderClass: 'hover:border-amber-500/30',
-      icon: <LuTrendingUp size={16} />,
+      icon: <LuReceiptText size={16} />,
       iconLead: true,
-      trend: spendTrend,
       onClick: () => onMetricCardClick('spend'),
     },
     {
@@ -117,8 +106,7 @@ export function MetricsSection({
       hoverBorderClass: 'hover:border-brand-base/30',
       icon: <LuDatabase size={16} />,
       iconLead: true,
-      trend: tokensTrend,
-      sub: t('dashboard.workbench.metrics.tokensSub'),
+      sub: tokensSub,
       onClick: () => onMetricCardClick('tokens'),
     },
     {
@@ -128,11 +116,10 @@ export function MetricsSection({
       color: lowBalance ? 'var(--mg-warning)' : 'var(--mg-primary)',
       glowColor: lowBalance ? 'rgba(245, 158, 11, 0.12)' : 'var(--brand-glow)',
       hoverBorderClass: lowBalance ? 'hover:border-amber-500/30' : 'hover:border-brand-base/30',
-      icon: <LuWallet size={16} />,
+      icon: <LuWalletCards size={16} />,
       iconLead: true,
-      // 账户余额为时点值、后端无历史快照，不显示涨跌徽章（保持真实，不造假数据）
       // 低余额时：文字标签（颜色非唯一信息，§12.3）+ 充值入口（走全局充值弹窗）；否则显介绍副文案
-      sub: lowBalance ? t('dashboard.workbench.metrics.balanceLow') : t('dashboard.workbench.metrics.balanceSub'),
+      sub: lowBalance ? t('dashboard.workbench.metrics.balanceLow') : balanceSub,
       action: lowBalance ? { label: t('dashboard.workbench.metrics.recharge'), onClick: openRecharge } : undefined,
       onClick: () => onMetricCardClick('balance'),
     },

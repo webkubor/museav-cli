@@ -65,7 +65,8 @@ export function WorkspaceBreakdownSection({ granularity, accountId, view = 'ente
           </span>
           <div>
             <h3 className="font-bold text-base text-mg-text-1 m-0">{t(isMine ? 'dashboard.workbench.workspaces.titleMine' : 'dashboard.workbench.workspaces.title')}</h3>
-            <p className="text-xs text-mg-text-3 mt-0.5 m-0">{t(isMine ? 'dashboard.workbench.workspaces.subtitleMine' : 'dashboard.workbench.workspaces.subtitle')}</p>
+            {/* PRD 副标题结构「聚合口径 · 周期」，周期随粒度切换（今日/本月） */}
+            <p className="text-xs text-mg-text-3 mt-0.5 m-0">{`${t(isMine ? 'dashboard.workbench.workspaces.subtitleMine' : 'dashboard.workbench.workspaces.subtitle')} · ${t(`dashboard.workbench.periodLabel.${granularity}`)}`}</p>
           </div>
         </div>
         <button

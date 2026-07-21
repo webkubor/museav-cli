@@ -1624,23 +1624,26 @@
       },
       "quickStart": {
         "title": "Quick start",
-        "subtitle": "Three steps to connect and start calling models",
-        "stepsBadge": "3 steps to integrate",
+        "subtitle": "3 steps to your first model call",
         "dismiss": "Dismiss",
         "step1Title": "Create API Key",
-        "step1Desc": "Generate a credential for authentication",
+        "step1Desc": "Create a key for local development or server-side calls.",
         "step1Action": "Create",
-        "step2Title": "Connect client",
-        "step2Desc": "Pick an integration and fill in Base URL and Key",
-        "step2Action": "Connect now",
+        "step2Title": "Configure client",
+        "step2Desc": "Copy the Base URL and API Key into your SDK or HTTP client.",
+        "step2Action": "Copy URL",
         "step3Title": "Send a test request",
-        "step3Desc": "Make a call and confirm the result in logs",
+        "step3Desc": "Make your first call and confirm the model responds and logs it.",
         "step3Action": "View logs",
         "cliTitle": "Set up local dev in one command",
         "cliBadge": "Recommended",
-        "cliHint": "Or install via CLI in one command",
+        "cliHint": "Run the command below in your terminal to auto-write Base URL and API Key",
         "cliCopied": "Command copied to clipboard",
         "cliCopyFailed": "Copy failed. Please copy manually."
+      },
+      "periodLabel": {
+        "day": "Today",
+        "month": "This month"
       },
       "metrics": {
         "requests": "Total requests",
@@ -1649,11 +1652,14 @@
         "balance": "Balance",
         "balanceLow": "Low balance",
         "recharge": "Top up",
-        "vsPrev": "vs prev",
         "requestsSub": "Calls this month",
         "spendSub": "Spend this month",
         "tokensSub": "Input + output this month",
-        "balanceSub": "Available balance"
+        "requestsSubDay": "Calls today",
+        "spendSubDay": "Spend today",
+        "tokensSubDay": "Input + output today",
+        "balanceSub": "Available balance",
+        "balanceSubTenant": "Tenant available balance"
       },
       "trend": {
         "title": "Usage trend",
@@ -1677,7 +1683,7 @@
       "workspaces": {
         "title": "Workspace breakdown",
         "titleMine": "My workspaces",
-        "subtitle": "Spend aggregated by workspace for this period",
+        "subtitle": "Aggregated by workspace",
         "subtitleMine": "Workspaces where I have calls or API keys",
         "viewMore": "View more",
         "empty": "No workspace usage",
@@ -1721,7 +1727,7 @@
       "defaultName": "Developer",
       "desc": "Welcome back. Here is the real-time operating overview for your workspace.",
       "descEnterprise": "Welcome back — here's your team's real-time usage.",
-      "descMine": "Here's your own real-time usage.",
+      "descMine": "Welcome back — here's your own real-time usage.",
       "liveBadge": "Live overview"
     },
     "status": {

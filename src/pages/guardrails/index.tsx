@@ -205,6 +205,8 @@ export default function GuardrailsPage() {
   // ── 预算内联编辑状态 ────────────────────────────────────────────────────
   const [budgetAmount, setBudgetAmount] = useState('')
   const [budgetPeriodUnit, setBudgetPeriodUnit] = useState<'hour' | 'day' | 'week' | 'month'>('month')
+  // 个人/Key「提额」预算是否限额（常规档恒为限额=必填）。true=限额，false=不限额（不下发/删除预算策略）。
+  const [budgetLimited, setBudgetLimited] = useState(true)
 
   // ── 全局护栏三档预算编辑状态（各档对应一个 aggregation_scope） ───────────
   const [globalBudgets, setGlobalBudgets] = useState<Record<BudgetAggScope, ScopeBudgetDraft>>({
@@ -460,7 +462,7 @@ export default function GuardrailsPage() {
     // 加载失败时抽屉只显示错误，而不是上一条护栏的可保存表单 (qa#162 review)
     setName(''); setDescription(''); setScope('global'); setKind('regular'); setBoostExpiresAt(''); setPriority(0)
     setModelBlacklist([]); setIpWhitelist([]); setPromptInjectionMode('off'); setMemberIds([]); setApiKeyIds([])
-    setBudgetAmount(''); setBudgetPeriodUnit('month')
+    setBudgetAmount(''); setBudgetPeriodUnit('month'); setBudgetLimited(true)
     setGlobalBudgets({
       guardrail_total: { ...EMPTY_BUDGET_DRAFT },
       per_member: { ...EMPTY_BUDGET_DRAFT },
@@ -493,6 +495,8 @@ export default function GuardrailsPage() {
     const bp = currentBudgetPolicy(d)
     setBudgetAmount(bp ? trimAmountScale(bp.spend_limit_amount) : '')
     setBudgetPeriodUnit(bp?.period_unit ?? 'month')
+    // 提额档：有生效策略=限额，无策略=不限额；常规档恒为限额（必填）。
+    setBudgetLimited(deriveKind(d) === 'boost' ? !!bp : true)
     fillGlobalBudgetsFromDetail(d)
     const meta = d.metadata ?? {}
     setModelBlacklist(Array.isArray(meta.model_blacklist) ? meta.model_blacklist : [])
@@ -600,15 +604,19 @@ export default function GuardrailsPage() {
     return { ops }
   }
 
-  // 个人/Key 护栏单档预算 → 增/改 op（对齐现状：成员/Key 档预算必填，无不限额）。返回 error 即校验未过。
+  // 个人/Key 护栏单档预算 → 增/改/删 op。常规档预算必填；提额档支持不限额（对齐 PRD GuardrailBudgetControl）。
+  // 提额不限额：删除既有生效策略（若有），不新增、不跑「>当前生效预算」校验。返回 error 即校验未过。
   function buildMemberKeyBudgetOps(d: GuardrailDetail): { ops: GlobalBudgetOp[] } | { error: string } {
+    const dScope = deriveScope(d)
+    const dKind = deriveKind(d)
+    if (dKind === 'boost' && !budgetLimited) {
+      return { ops: budget ? [{ type: 'delete', policyId: budget.id }] : [] }
+    }
     const amount = budgetAmount.trim()
     if (!isValidBudgetAmount(amount)) {
       return { error: '预算金额无效：请输入大于 0 的数字，整数最多 12 位，小数最多 2 位' }
     }
     // 预算上/下限校验（文档§校验规则）：常规不得超过全局默认；提额必须大于当前生效预算。
-    const dScope = deriveScope(d)
-    const dKind = deriveKind(d)
     if (dScope === 'member' || dScope === 'key') {
       const aggScope: BudgetAggScope = dScope === 'member' ? 'per_member' : 'per_api_key'
       const globalDefault = globalDefaultAmount(guardrails, aggScope)
@@ -824,6 +832,7 @@ export default function GuardrailsPage() {
         budgetConflict={budgetConflict}
         budgetAmount={budgetAmount} onBudgetAmountChange={setBudgetAmount}
         budgetPeriodUnit={budgetPeriodUnit} onBudgetPeriodUnitChange={setBudgetPeriodUnit}
+        budgetLimited={budgetLimited} onBudgetLimitedChange={setBudgetLimited}
         canEditBudget={canEditBudget}
         showMember={showMember}
         globalBudgets={globalBudgets}

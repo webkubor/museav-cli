@@ -189,6 +189,71 @@ function MemberKeyBudgetControl({
   )
 }
 
+/** 个人 / Key「提额」预算控件：不限额 / 限额 分段切换 + 金额 + 周期。
+ *  交互形态对齐 PRD GuardrailBudgetControl（两按钮分段 guardrail-budget-mode-toggle，非 Switch）；
+ *  视觉沿用本仓分段按钮样式（rounded-md border + brand 高亮，见 GuardrailFormFields.SegGroup）。
+ *  点「不限额」→ 隐藏金额/周期、保存不下发预算策略（有旧策略则删除）；点「限额」→ 金额+周期必填。 */
+function MemberKeyBoostBudgetControl({
+  label, limited, onLimitedChange, amount, onAmountChange, period, onPeriodChange, disabled, error,
+}: {
+  label: string
+  limited: boolean
+  onLimitedChange: (v: boolean) => void
+  amount: string
+  onAmountChange: (v: string) => void
+  period: PeriodUnit
+  onPeriodChange: (v: PeriodUnit) => void
+  disabled: boolean
+  error?: string
+}) {
+  const invalid = limited && amount.trim() !== '' && !isValidBudgetAmount(amount)
+  const modeBtn = (active: boolean) =>
+    [
+      'rounded-md border px-3 py-2 text-xs font-bold transition-all',
+      disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+      active
+        ? 'border-brand-base bg-brand-base/8 text-brand-base'
+        : 'border-mg-border bg-mg-fill-0/40 text-mg-text-2 hover:border-brand-base/35',
+    ].join(' ')
+  return (
+    <Field label={label} required={limited}>
+      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={`${label}额度类型`}>
+        <button type="button" role="radio" aria-checked={!limited} disabled={disabled} onClick={() => onLimitedChange(false)} className={modeBtn(!limited)}>不限额</button>
+        <button type="button" role="radio" aria-checked={limited} disabled={disabled} onClick={() => onLimitedChange(true)} className={modeBtn(limited)}>限额</button>
+      </div>
+      {limited && (
+        <div className="mt-2 flex items-center gap-2">
+          <Input
+            type="text"
+            inputMode="decimal"
+            aria-label={`${label}金额`}
+            value={amount}
+            onChange={(e) => onAmountChange(e.target.value)}
+            placeholder="输入限额金额（最多两位小数）"
+            disabled={disabled}
+            className="h-9 text-xs flex-1"
+          />
+          <Select
+            value={period}
+            onChange={(v) => onPeriodChange(v as PeriodUnit)}
+            aria-label={`${label}周期`}
+            className="h-9 text-xs w-28"
+            disabled={disabled}
+          >
+            {(Object.entries(PERIOD_LABEL) as [PeriodUnit, string][]).map(([k, l]) => (
+              <SelectItem key={k} value={k}>每{l}</SelectItem>
+            ))}
+          </Select>
+        </div>
+      )}
+      {invalid && (
+        <p className="mt-1.5 text-xs text-mg-danger">预算金额无效：大于 0，整数最多 12 位，小数最多 2 位</p>
+      )}
+      {error && <p className="mt-1.5 text-xs text-mg-danger">{error}</p>}
+    </Field>
+  )
+}
+
 /** 提示词注入模式选择（编辑态；allowInherit 决定是否含「继承全局护栏」） */
 function PromptInjectionField({ value, onChange, allowInherit, disabled }: {
   value: PromptInjectionFormValue
@@ -266,6 +331,7 @@ export function GuardrailDetailSheet({
   // 预算
   budget, budgetConflict, budgetAmount, onBudgetAmountChange,
   budgetPeriodUnit, onBudgetPeriodUnitChange,
+  budgetLimited, onBudgetLimitedChange,
   canEditBudget,
   // 全局护栏三档预算
   showMember, globalBudgets, onGlobalBudgetChange,
@@ -298,6 +364,8 @@ export function GuardrailDetailSheet({
   budgetConflict: boolean
   budgetAmount: string; onBudgetAmountChange: (v: string) => void
   budgetPeriodUnit: PeriodUnit; onBudgetPeriodUnitChange: (v: PeriodUnit) => void
+  /** 个人/Key「提额」预算是否限额（常规档恒为限额=必填，全局走 globalBudgets） */
+  budgetLimited: boolean; onBudgetLimitedChange: (v: boolean) => void
   canEditBudget: boolean
   showMember: boolean
   globalBudgets: Record<BudgetAggScope, ScopeBudgetDraft>
@@ -322,11 +390,13 @@ export function GuardrailDetailSheet({
   const missingMember = canEditAssignment && scope === 'member' && memberIds.length === 0
   const missingKey = canEditAssignment && scope === 'key' && apiKeyIds.length === 0
   const missingBoostExpiry = canEdit && kind === 'boost' && !boostExpiresAt
-  const missingRegularBudget = canEditBudget && scope !== 'global' && !budgetAmount.trim()
+  // 常规个人/Key 预算恒必填；提额仅在「限额」时必填（不限额档无需金额）。
+  const missingBudget =
+    canEditBudget && scope !== 'global' && (kind === 'regular' || budgetLimited) && !budgetAmount.trim()
   const editCanSave =
     (canEdit || canEditAssignment || canEditBudget) &&
     !budgetConflict &&
-    !missingMember && !missingKey && !missingBoostExpiry && !missingRegularBudget
+    !missingMember && !missingKey && !missingBoostExpiry && !missingBudget
   const canSubmit = isCreating ? (canEdit || canEditAssignment) : editCanSave
 
   const scopeLabel = `${SCOPE_LABEL[scope]}护栏`
@@ -538,14 +608,27 @@ export function GuardrailDetailSheet({
                       />
                     )}
                   </Field>
-                  <MemberKeyBudgetControl
-                    label={memberBudgetLabel}
-                    amount={budgetAmount}
-                    onAmountChange={onBudgetAmountChange}
-                    period={budgetPeriodUnit}
-                    onPeriodChange={onBudgetPeriodUnitChange}
-                    disabled={!canEditBudget || budgetConflict}
-                  />
+                  {kind === 'boost' ? (
+                    <MemberKeyBoostBudgetControl
+                      label={memberBudgetLabel}
+                      limited={budgetLimited}
+                      onLimitedChange={onBudgetLimitedChange}
+                      amount={budgetAmount}
+                      onAmountChange={onBudgetAmountChange}
+                      period={budgetPeriodUnit}
+                      onPeriodChange={onBudgetPeriodUnitChange}
+                      disabled={!canEditBudget || budgetConflict}
+                    />
+                  ) : (
+                    <MemberKeyBudgetControl
+                      label={memberBudgetLabel}
+                      amount={budgetAmount}
+                      onAmountChange={onBudgetAmountChange}
+                      period={budgetPeriodUnit}
+                      onPeriodChange={onBudgetPeriodUnitChange}
+                      disabled={!canEditBudget || budgetConflict}
+                    />
+                  )}
                   {kind === 'boost' && (
                     <Field label="提额到期时间" required>
                       <Input
@@ -580,14 +663,27 @@ export function GuardrailDetailSheet({
                       />
                     )}
                   </Field>
-                  <MemberKeyBudgetControl
-                    label={keyBudgetLabel}
-                    amount={budgetAmount}
-                    onAmountChange={onBudgetAmountChange}
-                    period={budgetPeriodUnit}
-                    onPeriodChange={onBudgetPeriodUnitChange}
-                    disabled={!canEditBudget || budgetConflict}
-                  />
+                  {kind === 'boost' ? (
+                    <MemberKeyBoostBudgetControl
+                      label={keyBudgetLabel}
+                      limited={budgetLimited}
+                      onLimitedChange={onBudgetLimitedChange}
+                      amount={budgetAmount}
+                      onAmountChange={onBudgetAmountChange}
+                      period={budgetPeriodUnit}
+                      onPeriodChange={onBudgetPeriodUnitChange}
+                      disabled={!canEditBudget || budgetConflict}
+                    />
+                  ) : (
+                    <MemberKeyBudgetControl
+                      label={keyBudgetLabel}
+                      amount={budgetAmount}
+                      onAmountChange={onBudgetAmountChange}
+                      period={budgetPeriodUnit}
+                      onPeriodChange={onBudgetPeriodUnitChange}
+                      disabled={!canEditBudget || budgetConflict}
+                    />
+                  )}
                   {kind === 'boost' && (
                     <Field label="提额到期时间" required>
                       <Input

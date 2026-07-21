@@ -36,7 +36,7 @@ function Section({ title, action, children }: { title: string; action?: ReactNod
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-mg-text-3">{title}</h3>
+        <h3 className="text-sm font-bold text-mg-text-1">{title}</h3>
         {action}
       </div>
       {children}
@@ -74,6 +74,19 @@ const PERIOD_UNIT_LABEL: Record<string, string> = {
 // 周期文案对齐护栏预算展示（formatBudget 的「/ 月」口径）：period_length 恒为 1，只取单位，
 // 避免出现「1月」这类既像日期又冗余的文案（需求方#146）。
 const periodLabel = (unit: string) => PERIOD_UNIT_LABEL[unit] ?? unit
+
+const AUDIT_ACTION_LABEL: Record<string, string> = {
+  'api_key.issued': '创建 API Key',
+  'api_key.updated': '更新 API Key',
+  'api_key.enabled': '启用 API Key',
+  'api_key.disabled': '停用 API Key',
+  'api_key.rotated': '轮转 API Key',
+  'api_key.revoked': '删除 API Key',
+}
+
+function auditActionLabel(action: string): string {
+  return AUDIT_ACTION_LABEL[action] ?? action.replaceAll('_', ' ')
+}
 
 interface Props {
   open: boolean
@@ -371,7 +384,9 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
               </div>
             </div>
           ) : (
-            <p className="text-xs text-mg-text-3">尚未调用</p>
+            <div className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
+              <div className="text-sm font-semibold text-mg-text-1">尚未调用</div>
+            </div>
           )}
         </Section>
 
@@ -380,12 +395,12 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
           {auditRows.length > 0 ? (
             <div className="space-y-3">
               {auditRows.slice(0, 8).map((a) => (
-                <div key={a.id} className="border-l-2 border-mg-border pl-3">
-                  <div className="text-xs font-bold text-mg-text-1">{a.action}</div>
-                  <div className="mt-0.5 text-xs text-mg-text-3">
-                    {formatDateTime(a.created_at)} · {a.actor_display || a.actor_account_id}
+                <div key={a.id} className="border-l-2 border-brand-base/35 pl-4">
+                  <div className="text-sm font-bold text-mg-text-1">{auditActionLabel(a.action)}</div>
+                  <div className="mt-1 text-xs text-mg-text-2">
+                    {formatDateTime(a.created_at)} · {a.actor_display || a.actor_account_id || '—'}
                   </div>
-                  {a.target_label && <p className="mt-0.5 text-xs leading-relaxed text-mg-text-2">{a.target_label}</p>}
+                  {a.target_label && <p className="mt-1 text-sm leading-relaxed text-mg-text-2">{a.target_label}</p>}
                 </div>
               ))}
             </div>

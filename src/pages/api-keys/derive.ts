@@ -162,9 +162,9 @@ export function currentLimitPeriod(item: ApiKeyItem): LimitPeriod {
 
 /**
  * 由「限额周期 + 金额」构建下发的 spending_limit；none/空金额 → undefined（不限额）。
- * total 暂无独立后端 period_unit（#420），先按 period_unit='total' 兜底上报，落地即真值。
+ * total 保留用于兼容历史回显，但当前创建 UI 不提供该选项，避免发送后端不接受的 period_unit。
  */
 export function buildSpendingLimit(period: LimitPeriod, amount: string, currency: string): SpendingLimit | undefined {
-  if (period === 'none' || !amount || Number(amount) <= 0) return undefined
+  if (period === 'none' || period === 'total' || !amount || Number(amount) <= 0) return undefined
   return { amount, currency, period_unit: period as unknown as SpendingLimit['period_unit'], period_length: 1 }
 }

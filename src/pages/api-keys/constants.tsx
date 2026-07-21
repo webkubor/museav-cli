@@ -62,9 +62,8 @@ export const EXPIRATION_PRESETS = [
 ]
 
 /**
- * 限额周期（PRD §8.2）：不限额 / 每日 / 每月 / 总额。
- * none = 不限额（金额输入禁用，不下发 spending_limit）。
- * total = 总额（生命周期上限）后端独立 period_unit 待 #420；落地前按 period_unit='total' 上报兜底。
+ * 限额周期（PRD §8.2）：不限额 / 每日 / 每月。
+ * 后端当前只接受 none/daily/monthly；生命周期「总额」待后端 #420 交付后再开放。
  */
 export type LimitPeriod = 'none' | 'day' | 'month' | 'total'
 
@@ -72,7 +71,6 @@ export const LIMIT_PERIOD_OPTIONS: { value: LimitPeriod; label: string }[] = [
   { value: 'none', label: '不限额' },
   { value: 'day', label: '每日' },
   { value: 'month', label: '每月' },
-  { value: 'total', label: '总额' },
 ]
 
 /** 周期 → 展示文案（含兼容旧数据 hour/week） */

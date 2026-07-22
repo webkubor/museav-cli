@@ -175,6 +175,23 @@ export function TagInput({
     }
   }, [showDropdown, filtered.length])
 
+  // 需求方#211：下拉 portal 到 document.body,当它开在 modal 抽屉/弹窗(Radix Dialog/SideSheet)内时,
+  // Radix 的 react-remove-scroll 在 document 上拦截滚轮、只放行弹窗自身子树 → 本下拉(在白名单外)原生
+  // 滚轮被吞、无法滚动(程序化 scrollTop 不受影响,故 bug 只在真实滚轮时出现)。这里加非被动 wheel 监听,
+  // 手动接管滚动,绕过滚动锁;不在弹窗内时同样正常(preventDefault 防与页面双滚)。
+  useEffect(() => {
+    if (!showDropdown) return
+    const el = dropdownRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      el.scrollTop += e.deltaY
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [showDropdown, menuPos])
+
   const tagClass = tagVariant === 'mono'
     ? 'bg-mg-fill-0 text-mg-text-1 border-mg-border'
     : 'bg-brand-base/10 text-brand-base border-brand-base/20'

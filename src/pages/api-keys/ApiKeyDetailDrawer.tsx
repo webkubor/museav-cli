@@ -170,6 +170,12 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
   const responsible = responsibleOf(view)
   const usage = detail?.usage
   const auditRows = audit?.items ?? detail?.recent_audit ?? []
+  const rotationAudit = auditRows.find((row) => row.action === 'api_key.rotated')
+  const rotationTokenChange = rotationAudit?.changes?.find((change) => change.field.toLowerCase() === 'token')
+  const auditRotation = view.status === 'rotation_required' && rotationTokenChange?.before && rotationTokenChange.after
+    ? { keyId: view.api_key_id, oldMasked: rotationTokenChange.before, newMasked: rotationTokenChange.after }
+    : undefined
+  const displayedRotation = rotationTransition ?? auditRotation
   const isDisabled = view.status === 'disabled'
   const canToggle = isDisabled ? cap(view.capabilities?.can_enable, canAction(keyType, 'disable')) : cap(view.capabilities?.can_disable, canAction(keyType, 'disable'))
   // 按后端 capability 正常渲染；rotate 路由未就绪（40401）时点击走 requestError → 「服务暂不可用」，不做死按钮/硬隐藏（qa#384/#385）
@@ -182,13 +188,13 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
       <div className="space-y-6 pb-8">
         {/* 治理动作 */}
         <div className="flex flex-wrap items-center gap-2">
-          {rotationTransition?.keyId === view.api_key_id ? (
+          {displayedRotation?.keyId === view.api_key_id ? (
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
               <span className="rounded-sm bg-brand-base/10 px-1.5 py-0.5 text-[10px] font-bold text-brand-base">新</span>
-              <span className="truncate font-mono text-xs text-mg-text-2">{rotationTransition.newMasked}</span>
-              <CopyButton value={rotationTransition.newMasked} aria-label="复制新 Token 掩码" toast="新 Token 掩码已复制" size="sm" />
+              <span className="truncate font-mono text-xs text-mg-text-2">{displayedRotation.newMasked}</span>
+              <CopyButton value={displayedRotation.newMasked} aria-label="复制新 Token 掩码" toast="新 Token 掩码已复制" size="sm" />
               <span className="rounded-sm bg-mg-fill-1 px-1.5 py-0.5 text-[10px] font-bold text-mg-text-3">旧</span>
-              <span className="truncate font-mono text-xs text-mg-text-3">{rotationTransition.oldMasked}</span>
+              <span className="truncate font-mono text-xs text-mg-text-3">{displayedRotation.oldMasked}</span>
             </div>
           ) : (
             <>

@@ -24,9 +24,12 @@ export interface InputProps
  * 统一的高阶 Input 输入组件
  */
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, prefix, suffix, mode, variant, onChange, onEnterPress, onKeyDown, onBlur, error, success, ...props }, ref) => {
+  ({ className, type, prefix, suffix, mode, variant, onChange, onEnterPress, onKeyDown, onBlur, onClick, error, success, ...props }, ref) => {
     // 智能属性映射：mode="password" 自动解析为 type="password"
     const resolvedType = type || (mode === "password" ? "password" : "text")
+    // date/datetime/time 等原生控件默认只有点日历小图标才弹选择器，点输入框文字区不弹。
+    // 统一：点整个输入框即弹（showPicker 由 click 用户手势触发，合法），治「时间选择器不弹」。
+    const isDateLike = resolvedType === "date" || resolvedType === "datetime-local" || resolvedType === "time" || resolvedType === "month" || resolvedType === "week"
     const shouldTrim = resolvedType === "text" || resolvedType === "search" || resolvedType === "url" || resolvedType === "email"
     const variantClasses = variant === "search"
       ? "modern-input-search rounded-full mg-flow-input"
@@ -51,6 +54,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       if (e.key === "Enter" && onEnterPress) {
         onEnterPress(e)
       }
+    }
+
+    const handleClick = (e: React.MouseEvent<HTMLInputElement>) => {
+      if (isDateLike) {
+        try { (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.() } catch { /* 非用户手势或不支持时静默 */ }
+      }
+      onClick?.(e)
     }
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -85,6 +95,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
+          onClick={handleClick}
           onBlur={handleBlur}
           {...props}
         />

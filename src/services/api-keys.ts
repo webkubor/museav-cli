@@ -51,6 +51,14 @@ export function revealApiKey(workspaceId: string, keyId: string) {
   return post<{ key: string }>(`workspaces/${workspaceId}/api-keys/${keyId}/reveal`, {})
 }
 
+/**
+ * 取回轮转前旧 Key 明文（需求方#218）。轮转后、点「已轮转」确认前有效；
+ * 服务端持久保存旧密文，刷新页面后仍可读，不再依赖前端本地暂存。
+ */
+export function revealPreviousApiKey(workspaceId: string, keyId: string) {
+  return post<{ key: string }>(`workspaces/${workspaceId}/api-keys/${keyId}/reveal-previous`, {})
+}
+
 // ─── 治理动作（后端已就绪，S3）────────────────────────
 
 /** 停用 API Key（可逆）：立即对网关失效，可再启用 */

@@ -493,7 +493,7 @@ export default function ApiKeysPage() {
         canAction={canAction}
         canReveal={canReveal}
         rowScope={rowScope}
-        rotationTransition={rotationTransition}
+        rotationTransition={rotationTransition ?? undefined}
         onToggleStatus={handleToggleStatus}
         onRotate={(item) => rotateMutation.mutate(item)}
         onCompleteRotation={setRotationConfirmTarget}

@@ -171,7 +171,9 @@ export function ApiKeyTable({
               responsible.account_id &&
               record.owner.account_id !== responsible.account_id
             const periodSpend = periodSpendOf(record)
-            const hasLimit = !!record.limit && Number(record.limit.amount) > 0
+            // qa#516：限额展示以 effective_limit（含护栏 per_api_key 预算，最严）优先
+            const effLimit = record.effective_limit ?? record.limit
+            const hasLimit = !!effLimit && Number(effLimit.amount) > 0
             const lastCalled = lastCalledOf(record)
             const isDisabled = record.status === 'disabled'
             const canToggle = isDisabled

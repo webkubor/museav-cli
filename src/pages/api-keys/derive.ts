@@ -143,9 +143,13 @@ export function cap(itemFlag: boolean | undefined, permFallback: boolean): boole
   return itemFlag ?? permFallback
 }
 
-/** 限额副标：「¥800 / 每月」或「不限额」（PRD §8.2 周期口径，兼容旧 hour/week） */
+/**
+ * 限额副标：「¥800 / 每月」或「不限额」（PRD §8.2 周期口径，兼容旧 hour/week）。
+ * 优先读接口权威的 effective_limit（qa#516：含绑定 key 护栏的 per_api_key 预算，
+ * 取最严）；缺失时回退 key 自身 limit（旧后端兼容）。
+ */
 export function formatLimit(item: ApiKeyItem): string {
-  const l = item.limit
+  const l = item.effective_limit ?? item.limit
   if (!l || !l.amount || Number(l.amount) <= 0) return '不限额'
   const unit = LIMIT_PERIOD_LABEL[l.period_unit as string] ?? `每${l.period_unit}`
   return `${l.currency} ${formatMoney(l.amount, '')} / ${unit}`

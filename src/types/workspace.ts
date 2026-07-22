@@ -323,6 +323,12 @@ export interface ApiKeyItem {
   last_used_at: string | null
   total_spend: Money
   limit: SpendingLimit
+  /**
+   * 实际约束该 key 的最严 per_api_key 预算（qa#516，接口权威）：key 自身
+   * spending_limit 与生效护栏层 active per_api_key budget 中金额最小者；
+   * 全部无限额时缺失。限额列展示优先读它，limit 仍为 key 自身限额。
+   */
+  effective_limit?: SpendingLimit
   created_at: string
   scope: 'personal' | 'workspace' | 'member'
   guardrail_id?: string

@@ -406,6 +406,8 @@ export interface ApiKeyDetail extends ApiKeyItem {
 export interface ApiKeyRotateResponse {
   new_key: string
   rotated_at: string
+  /** 旧 Token 掩码(服务端权威返回,宽限期内仍有效)——#515/#218 */
+  previous_masked?: string
   /** 旧 Token 过渡期截止 */
   old_key_grace_until?: string
 }

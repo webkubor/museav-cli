@@ -252,10 +252,10 @@ export default function ApiKeysPage() {
     mutationFn: (item: ApiKeyItem) => rotateApiKey(workspaceId, item.api_key_id),
     onSuccess: (res, item) => {
       setRotatedKey({ id: item.api_key_id, name: item.name, key: res.new_key })
-      // 临时:旧 Token 掩码用本地 item.masked、新 Token 本地 mask,刷新退回审计日志派生。
-      // 待后端 #515 交付后改为读接口权威字段(RotateResponse/DetailResponse 的 previous_masked +
-      // masked + old_key_grace_until),去掉 item.masked 兜底与审计派生(待轮转态新旧都由接口返回)。
-      setRotationTransition({ keyId: item.api_key_id, oldMasked: item.masked, newMasked: maskRotatedKey(res.new_key), graceUntil: res.old_key_grace_until })
+      // 旧 Token 掩码用服务端权威 res.previous_masked(#515/#218 后端已交付),item.masked 仅兜底;
+      // 新 Token 掩码同样优先服务端(轮转响应无 masked 时本地 mask new_key)。刷新后详情抽屉读
+      // DetailResponse.previous_masked 持续展示,不再依赖前端缓存/审计派生。
+      setRotationTransition({ keyId: item.api_key_id, oldMasked: res.previous_masked ?? item.masked, newMasked: maskRotatedKey(res.new_key), graceUntil: res.old_key_grace_until })
       queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
       queryClient.invalidateQueries({ queryKey: ['api-key-detail', workspaceId, item.api_key_id] })
       trackEvent('api_keys:rotate', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })

@@ -354,30 +354,28 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
             </div>
           )}
 
-          {/* 负责人（服务 Key，PRD §8.2 必填）：企业租户选空间成员；个人租户固定自己（命名以 PRD 原型为准=负责人，需求方#183） */}
+          {/* 负责人（服务 Key，PRD §8.2 必填）：企业租户选空间成员必填；
+              个人租户无多成员、无需指定负责人——PRD 原型仅显示「维护人为自己」提示，不出现「负责人」字段（需求方#210） */}
           {effectiveScope === 'workspace' && (
-            <div>
-              <label className="block text-xs font-bold text-mg-text-2 mb-2">负责人</label>
-              {isPersonalTenant ? (
-                <div className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-mg-border bg-mg-bg-1 text-xs text-mg-text-2">
-                  {account?.display_name || account?.email || '当前账户'}
-                  <span className="text-mg-text-3">（个人租户固定为你自己）</span>
-                </div>
-              ) : (
-                <>
-                  <Select value={memberAccountId} onChange={setMemberAccountId} placeholder="请选择服务 Key 负责人" className="w-full" data-track="api_keys:field_maintainer">
-                    {(membersQuery.data?.items ?? []).map((m) => (
-                      <SelectItem key={m.account.account_id} value={m.account.account_id}>
-                        {m.account.display_name || m.account.email}
-                      </SelectItem>
-                    ))}
-                  </Select>
-                  {membersQuery.data?.items.length === 0 && (
-                    <p className="text-xs text-mg-text-3 mt-1.5">该工作区暂无成员</p>
-                  )}
-                </>
-              )}
-            </div>
+            isPersonalTenant ? (
+              <div className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-mg-border bg-mg-bg-1 text-xs text-mg-text-2">
+                维护人为自己（{account?.display_name || account?.email || '当前账户'}）
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-bold text-mg-text-2 mb-2">负责人</label>
+                <Select value={memberAccountId} onChange={setMemberAccountId} placeholder="请选择服务 Key 负责人" className="w-full" data-track="api_keys:field_maintainer">
+                  {(membersQuery.data?.items ?? []).map((m) => (
+                    <SelectItem key={m.account.account_id} value={m.account.account_id}>
+                      {m.account.display_name || m.account.email}
+                    </SelectItem>
+                  ))}
+                </Select>
+                {membersQuery.data?.items.length === 0 && (
+                  <p className="text-xs text-mg-text-3 mt-1.5">该工作区暂无成员</p>
+                )}
+              </div>
+            )
           )}
 
           {/* 过期时间（PRD 原型：创建生命周期字段，Member 不可选择永不过期） */}

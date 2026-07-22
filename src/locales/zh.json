@@ -1650,7 +1650,9 @@
         "cliBadge": "推荐",
         "cliHint": "在终端运行以下命令，自动写入 Base URL 和 API Key",
         "cliCopied": "命令已复制到剪贴板",
-        "cliCopyFailed": "复制失败，请手动复制"
+        "cliCopyFailed": "复制失败，请手动复制",
+        "cliHintPrefix": "在终端运行",
+        "cliHintSuffix": "自动写入 Base URL 和 API Key。"
       },
       "periodLabel": {
         "day": "今日",

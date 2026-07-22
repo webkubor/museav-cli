@@ -143,29 +143,32 @@ export function QuickStartSection() {
           ))}
         </div>
 
-        <div className="mg-tile mt-4 flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-base/12 text-brand-base">
-              <LuSquareTerminal size={17} />
-            </span>
-            <div className="flex flex-col gap-0.5">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-mg-text-1">{t('dashboard.workbench.quickStart.cliTitle')}</span>
-                <span className="inline-flex items-center rounded-full bg-brand-base/12 px-1.5 py-px text-xs font-bold text-brand-base">
-                  {t('dashboard.workbench.quickStart.cliBadge')}
-                </span>
-              </div>
-              <span className="text-xs text-mg-text-3">{t('dashboard.workbench.quickStart.cliHint')}</span>
+        {/* 命令内嵌在提示句里(对齐 PRD FirstRunGuide cli-recommend-card,需求方#171):
+            「在终端运行 <命令> 自动写入 Base URL 和 API Key。」——不再是右侧独立命令块,避免命令难找 */}
+        <div className="mg-tile mt-4 flex items-start gap-2.5 p-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-base/12 text-brand-base">
+            <LuSquareTerminal size={17} />
+          </span>
+          <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-mg-text-1">{t('dashboard.workbench.quickStart.cliTitle')}</span>
+              <span className="inline-flex items-center rounded-full bg-brand-base/12 px-1.5 py-px text-xs font-bold text-brand-base">
+                {t('dashboard.workbench.quickStart.cliBadge')}
+              </span>
             </div>
-          </div>
-          <div className="inline-flex items-center gap-2 rounded-md border border-mg-border bg-mg-bg-0 pl-3 pr-1.5 py-1 font-mono text-xs text-mg-text-1">
-            <code>{CLI_COMMAND}</code>
-            <CopyButton
-              value={CLI_COMMAND}
-              aria-label="复制命令"
-              toast={t('dashboard.workbench.quickStart.cliCopied')}
-              onCopied={() => trackOnboardingAction('copy_cli')}
-            />
+            <p className="text-xs leading-relaxed text-mg-text-3">
+              {t('dashboard.workbench.quickStart.cliHintPrefix')}
+              <span className="mx-1 inline-flex items-center gap-1 rounded-md border border-mg-border bg-mg-bg-0 px-1.5 py-0.5 align-middle font-mono text-mg-text-1">
+                <code>{CLI_COMMAND}</code>
+                <CopyButton
+                  value={CLI_COMMAND}
+                  aria-label="复制命令"
+                  toast={t('dashboard.workbench.quickStart.cliCopied')}
+                  onCopied={() => trackOnboardingAction('copy_cli')}
+                />
+              </span>
+              {t('dashboard.workbench.quickStart.cliHintSuffix')}
+            </p>
           </div>
         </div>
       </Card>

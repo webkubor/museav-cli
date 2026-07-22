@@ -1651,7 +1651,9 @@
         "cliBadge": "Recommended",
         "cliHint": "Run the command below in your terminal to auto-write Base URL and API Key",
         "cliCopied": "Command copied to clipboard",
-        "cliCopyFailed": "Copy failed. Please copy manually."
+        "cliCopyFailed": "Copy failed. Please copy manually.",
+        "cliHintPrefix": "Run ",
+        "cliHintSuffix": " to auto-write Base URL and API Key."
       },
       "periodLabel": {
         "day": "Today",

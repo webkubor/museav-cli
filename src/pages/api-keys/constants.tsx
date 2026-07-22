@@ -178,6 +178,19 @@ export function deriveRegionFromBaseUrl(baseUrl: string): 'global' | 'domestic' 
   return market === 'global' ? 'global' : 'domestic'
 }
 
+/** 已发布 CLI 包名（外部契约唯一真源，别在业务代码里内联字面量）。 */
+export const MGC_PACKAGE = '@model-go/config'
+/** CLI 基础调用前缀 `npx @model-go/config`。 */
+export const MGC_NPX = `npx ${MGC_PACKAGE}`
+
+/**
+ * 通用一键安装命令（首页快速开始用）：只带区域、不带 Key，由 CLI 交互补 Key。
+ * `npx @model-go/config -r <domestic|global>`。
+ */
+export function buildMgcInstallCommand(region: 'global' | 'domestic'): string {
+  return `${MGC_NPX} -r ${region}`
+}
+
 /**
  * 生成 @model-go/config 一键接入命令：Key 与站点已预填，客户端由 UI 勾选。
  * all=true → --only all；否则用所选 id；一个都没选时回退到 claude,codex。
@@ -189,7 +202,7 @@ export function buildMgcCommand(args: {
   all: boolean
 }): string {
   const only = args.all ? 'all' : args.selected.length ? args.selected.join(',') : 'claude,codex'
-  return `npx @model-go/config -k ${args.apiKey} -r ${args.region} --only ${only}`
+  return `${MGC_NPX} -k ${args.apiKey} -r ${args.region} --only ${only}`
 }
 
 export function formatEndpointDisplay(baseUrl: string) {

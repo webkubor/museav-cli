@@ -11,7 +11,7 @@ import { trackEvent } from '@/lib/track'
 import { useTrackContext } from '@/hooks/use-track-context'
 import { useAuthStore } from '@/store/auth'
 import { ConnectModal } from '@/pages/api-keys/ConnectModal'
-import { deriveRegionFromBaseUrl } from '@/pages/api-keys/constants'
+import { deriveRegionFromBaseUrl, buildMgcInstallCommand } from '@/pages/api-keys/constants'
 
 const DISMISS_KEY = 'modelgo_workbench_quickstart_dismissed'
 
@@ -37,9 +37,9 @@ export function QuickStartSection() {
 
   const docsUrl = getMarketConfig(market).docsUrl
   const openAIBaseUrl = GATEWAY_ENDPOINTS[0]?.baseUrl ?? ''
-  // CLI 命令用已发布的真实包 @model-go/config + 按市场区域(-r domestic|global,外部已发布契约);
-  // 不用 PRD 原型占位的 @model-go/cli@latest install。通用安装态不带 -k,由 CLI 交互补 Key。
-  const cliCommand = `npx @model-go/config -r ${deriveRegionFromBaseUrl(openAIBaseUrl)}`
+  // CLI 命令用已发布真实包(常量 MGC_PACKAGE)+ 按市场区域,统一走 constants 的 builder,
+  // 不在业务代码内联包名/命令字面量(与接入弹窗同包同契约)。
+  const cliCommand = buildMgcInstallCommand(deriveRegionFromBaseUrl(openAIBaseUrl))
   const anthropicBaseUrl = GATEWAY_ENDPOINTS[1]?.baseUrl ?? openAIBaseUrl
 
   const trackOnboardingAction = (action: string, extra?: Record<string, string>) =>

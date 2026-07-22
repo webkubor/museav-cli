@@ -87,6 +87,9 @@ export default function ApiKeysPage() {
   const [rotatedKey, setRotatedKey] = useState<{ id: string; name: string; key: string } | null>(null)
   const [rotationTransition, setRotationTransition] = useState<RotationTransition | null>(null)
   const [rotationConfirmTarget, setRotationConfirmTarget] = useState<ApiKeyItem | null>(null)
+  const rotationConfirmOldMasked = rotationConfirmTarget && rotationTransition?.keyId === rotationConfirmTarget.api_key_id
+    ? rotationTransition.oldMasked
+    : rotationConfirmTarget?.masked
 
   const activeTenantId = useAuthStore((state) => state.activeTenantId)
   const tenants = useAuthStore((state) => state.tenants)
@@ -570,7 +573,7 @@ export default function ApiKeysPage() {
       >
         <div className="flex items-center justify-between rounded-md border border-mg-border bg-mg-fill-0 px-3 py-2.5 text-sm">
           <span className="text-mg-text-3">旧 Token</span>
-          <span className="font-mono font-bold text-mg-text-1">{rotationConfirmTarget?.masked}</span>
+          <span className="font-mono font-bold text-mg-text-1">{rotationConfirmOldMasked}</span>
         </div>
       </Modal>
 

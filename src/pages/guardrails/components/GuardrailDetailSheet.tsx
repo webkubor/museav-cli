@@ -379,7 +379,8 @@ export function GuardrailDetailSheet({
     (canEdit || canEditAssignment || canEditBudget) &&
     !budgetConflict &&
     !missingMember && !missingKey && !missingBoostExpiry && !missingBudget
-  const canSubmit = isCreating ? (canEdit || canEditAssignment) : editCanSave
+  const createCanSave = canCreateScope[scope] && (kind !== 'boost' || canCreateBoost)
+  const canSubmit = isCreating ? createCanSave : editCanSave
 
   const scopeLabel = `${SCOPE_LABEL[scope]}护栏`
   const memberBudgetLabel = kind === 'boost' ? '提额预算' : '个人预算'

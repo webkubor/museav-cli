@@ -53,6 +53,7 @@ import {
   deriveKind,
   boostExpiry,
   globalDefaultAmount,
+  guardrailBudgetPeriodLength,
   regularBudgetAmounts,
   isoToLocalInput,
   localInputToIso,
@@ -334,7 +335,7 @@ export default function GuardrailsPage() {
           const d = globalBudgets[agg]
           const amt = d.amount.trim()
           if (d.limited && isValidBudgetAmount(amt)) {
-            ops.push({ aggregation_scope: agg, period_unit: d.period, period_length: 1, enforcement_mode: 'hard_limit', spend_limit_amount: amt, enabled: true })
+            ops.push({ aggregation_scope: agg, period_unit: d.period, period_length: guardrailBudgetPeriodLength(d.period), enforcement_mode: 'hard_limit', spend_limit_amount: amt, enabled: true })
           }
         }
       } else {
@@ -343,7 +344,7 @@ export default function GuardrailsPage() {
         // 提额「不限额」档不下发预算策略；常规恒限额、提额限额档才发。
         const budgetOn = kind === 'regular' || budgetLimited
         if (budgetOn && amt && isValidBudgetAmount(amt)) {
-          ops.push({ aggregation_scope: agg, period_unit: budgetPeriodUnit, period_length: 1, enforcement_mode: 'hard_limit', spend_limit_amount: amt, enabled: true })
+          ops.push({ aggregation_scope: agg, period_unit: budgetPeriodUnit, period_length: guardrailBudgetPeriodLength(budgetPeriodUnit), enforcement_mode: 'hard_limit', spend_limit_amount: amt, enabled: true })
         }
       }
       try {
@@ -589,7 +590,8 @@ export default function GuardrailsPage() {
               period_length: existing.period_length,
             }
             if (amountChanged) body.spend_limit_amount = amount
-            if (periodChanged) body.period_unit = draft.period
+            // 周期变更时同步 period_length（「每 5 小时」= hour+5，其余 1；#11）
+            if (periodChanged) { body.period_unit = draft.period; body.period_length = guardrailBudgetPeriodLength(draft.period) }
             ops.push({ type: 'update', policyId: existing.id, body })
           }
         } else {
@@ -598,7 +600,7 @@ export default function GuardrailsPage() {
             body: {
               aggregation_scope: aggScope,
               period_unit: draft.period,
-              period_length: 1,
+              period_length: guardrailBudgetPeriodLength(draft.period),
               enforcement_mode: 'hard_limit',
               spend_limit_amount: amount,
               enabled: true,
@@ -642,7 +644,8 @@ export default function GuardrailsPage() {
       // qa#164：原地维护同一条策略，只发真正变更的字段（避免计费窗口重锚）
       const body: UpdateBudgetPolicyRequest = {}
       if (amount !== trimAmountScale(budget.spend_limit_amount)) body.spend_limit_amount = amount
-      if (budgetPeriodUnit !== budget.period_unit) body.period_unit = budgetPeriodUnit
+      // 周期变更时同步 period_length（「每 5 小时」= hour+5，其余 1；#11）
+      if (budgetPeriodUnit !== budget.period_unit) { body.period_unit = budgetPeriodUnit; body.period_length = guardrailBudgetPeriodLength(budgetPeriodUnit) }
       if (Object.keys(body).length === 0) return { ops: [] }
       return { ops: [{ type: 'update', policyId: budget.id, body }] }
     }
@@ -652,7 +655,7 @@ export default function GuardrailsPage() {
         body: {
           aggregation_scope: 'guardrail_total',
           period_unit: budgetPeriodUnit,
-          period_length: 1,
+          period_length: guardrailBudgetPeriodLength(budgetPeriodUnit),
           enforcement_mode: 'hard_limit',
           spend_limit_amount: amount,
           enabled: true,

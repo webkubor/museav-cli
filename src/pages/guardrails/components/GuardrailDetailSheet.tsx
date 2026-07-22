@@ -7,10 +7,10 @@ import { TagInput } from '@/components/ui/TagInput'
 import { formatDateTime } from '@/lib/format-date'
 import { LuKey, LuUserRound, LuInfo } from 'react-icons/lu'
 import type { GuardrailAuditLog, GuardrailDetail } from '@/interfaces/guardrails'
-import { PERIOD_LABEL } from '@/constants/status'
 import { GuardrailFormFields } from './GuardrailFormFields'
 import { isValidBudgetAmount } from '../budget'
 import {
+  GUARDRAIL_BUDGET_PERIOD_OPTIONS,
   PROMPT_INJECTION_INHERIT,
   PROMPT_INJECTION_INHERIT_LABEL,
   PROMPT_INJECTION_LABEL,
@@ -101,8 +101,8 @@ function GlobalBudgetControl({
             className="h-9 text-xs w-28"
             disabled={disabled}
           >
-            {(Object.entries(PERIOD_LABEL) as [PeriodUnit, string][]).map(([k, l]) => (
-              <SelectItem key={k} value={k}>每{l}</SelectItem>
+            {GUARDRAIL_BUDGET_PERIOD_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
             ))}
           </Select>
         </div>
@@ -167,8 +167,8 @@ function MemberKeyBudgetControl({
           className="h-9 text-xs w-28"
           disabled={disabled}
         >
-          {(Object.entries(PERIOD_LABEL) as [PeriodUnit, string][]).map(([k, l]) => (
-            <SelectItem key={k} value={k}>每{l}</SelectItem>
+          {GUARDRAIL_BUDGET_PERIOD_OPTIONS.map((o) => (
+            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
           ))}
         </Select>
       </div>
@@ -228,8 +228,8 @@ function MemberKeyBoostBudgetControl({
             className="h-9 text-xs w-28"
             disabled={disabled}
           >
-            {(Object.entries(PERIOD_LABEL) as [PeriodUnit, string][]).map(([k, l]) => (
-              <SelectItem key={k} value={k}>每{l}</SelectItem>
+            {GUARDRAIL_BUDGET_PERIOD_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
             ))}
           </Select>
         </div>
@@ -497,8 +497,8 @@ export function GuardrailDetailSheet({
                         className="h-9 text-xs flex-1"
                       />
                       <Select value={budgetPeriodUnit} onChange={(v) => onBudgetPeriodUnitChange(v as PeriodUnit)} className="h-9 text-xs w-28">
-                        {(Object.entries(PERIOD_LABEL) as [PeriodUnit, string][]).map(([k, label]) => (
-                          <SelectItem key={k} value={k}>每{label}</SelectItem>
+                        {GUARDRAIL_BUDGET_PERIOD_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                         ))}
                       </Select>
                     </div>

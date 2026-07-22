@@ -14,12 +14,26 @@ import { trimAmountScale, groupThousands } from './budget'
 export type GuardrailScope = 'global' | 'member' | 'key'
 export type GuardrailKind = 'regular' | 'boost'
 
-/** 预算周期单位 → 中文档位（对齐 PRD「/ 月」等文案） */
+/** 预算周期单位 → 中文档位（对齐 PRD 原型 apiKeyLimitPeriodOptions 文案：每 5 小时 / 每日 / 每周 / 每月，#11） */
 export const PERIOD_LABEL: Record<string, string> = {
-  hour: '小时',
-  day: '天',
-  week: '周',
-  month: '月',
+  hour: '每 5 小时',
+  day: '每日',
+  week: '每周',
+  month: '每月',
+}
+
+// PRD 护栏预算周期（原型 configurableBudgetPeriodOptions）：每 5 小时 / 每日 / 每周 / 每月。
+// value = 后端 period_unit；「每 5 小时」= period_unit 'hour' + period_length 5（后端契约支持，实测已通过）。
+export const GUARDRAIL_BUDGET_PERIOD_OPTIONS: { value: 'hour' | 'day' | 'week' | 'month'; label: string }[] = [
+  { value: 'hour', label: '每 5 小时' },
+  { value: 'day', label: '每日' },
+  { value: 'week', label: '每周' },
+  { value: 'month', label: '每月' },
+]
+
+/** period_unit → period_length：护栏「每 5 小时」用 hour+5，其余档位 length=1（#11） */
+export function guardrailBudgetPeriodLength(unit: string): number {
+  return unit === 'hour' ? 5 : 1
 }
 
 export const KIND_LABEL: Record<GuardrailKind, string> = {

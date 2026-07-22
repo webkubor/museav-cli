@@ -219,6 +219,15 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
           </div>
         </div>
 
+        {view.status === 'rotation_required' && (
+          <div className="flex items-start gap-2.5 rounded-md border border-mg-warning/30 bg-mg-warning/10 px-3 py-2.5">
+            <div className="min-w-0">
+              <div className="text-sm font-bold text-mg-warning">新 Token 已生效，旧 Token 暂不失效</div>
+              <p className="mt-1 text-xs leading-5 text-mg-text-2">请复制新 Token 并替换到调用方配置中。验证通过后点击“已轮转”，旧 Token 将立即失效。</p>
+            </div>
+          </div>
+        )}
+
         {/* 详情加载失败：显式错误块 + 重试（#444）。仍以列表项兜底展示下方字段，不阻塞其它段。 */}
         {detailError && (
           <div className="flex items-start gap-2.5 rounded-md border border-mg-danger/25 bg-mg-danger/5 px-3 py-2.5">

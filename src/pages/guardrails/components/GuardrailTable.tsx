@@ -138,6 +138,17 @@ function CountBadge({ count, unit }: { count: number; unit: string }) {
   )
 }
 
+/** 创建人：只显姓名，超长截断 + hover 显全名（需求方#52 不回退 account_id；长文本不撑列） */
+function CreatedByCell({ row }: { row: GuardrailDetail }) {
+  const name = row.created_by?.display_name
+  if (!name) return <span className={PLACEHOLDER}>—</span>
+  return (
+    <span className="block max-w-[120px] truncate" title={name}>
+      {name}
+    </span>
+  )
+}
+
 function StatusCell({
   row,
   canEdit,
@@ -152,16 +163,16 @@ function StatusCell({
 }) {
   const active = row.status === 'active'
   const lockedOff = active && !!lockOffReason
+  // 状态列只保留开关本身表达启用/停用（需求方反馈：文字「启用/停用」冗余且占宽致列头换行）；
+  // 语义交给 Switch 的开/关态 + title/aria，锁定态则提示原因。
   return (
-    <div className="flex items-center gap-2" title={lockedOff ? lockOffReason : undefined}>
+    <div className="flex items-center" title={lockedOff ? lockOffReason : active ? '启用' : '停用'}>
       <Switch
         checked={active}
         disabled={!canEdit || lockedOff}
+        aria-label={active ? '启用' : '停用'}
         onChange={(checked) => onToggle({ id: row.id, status: checked ? 'active' : 'inactive' })}
       />
-      <span className={cn('mg-text-caption font-semibold', active ? 'text-mg-success' : 'text-mg-text-3')}>
-        {active ? '启用' : '停用'}
-      </span>
     </div>
   )
 }
@@ -354,7 +365,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
               <TableCell className={DATA_CELL}>{PROMPT_INJECTION_LABEL[guardrailPromptInjectionMode(row)]}</TableCell>
               {/* 创建人（PRD §7.2 / #52）：只显姓名，缺失显「—」，绝不回退到 account_id */}
               <TableCell className={DATA_CELL}>
-                {row.created_by?.display_name || <span className={PLACEHOLDER}>—</span>}
+                <CreatedByCell row={row} />
               </TableCell>
               <TableCell className={DATA_CELL}>{formatDateTime(row.updated_at)}</TableCell>
               <TableCell><StatusCell row={row} canEdit={canEdit.global} onToggle={onToggle} lockOffReason={activeGlobalCount <= 1 ? '需至少保留一条启用的全局护栏' : undefined} /></TableCell>
@@ -403,7 +414,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                     : <span className={PLACEHOLDER}>-</span>}
                 </TableCell>
                 <TableCell className={DATA_CELL}>
-                  {row.created_by?.display_name || <span className={PLACEHOLDER}>—</span>}
+                  <CreatedByCell row={row} />
                 </TableCell>
                 <TableCell className={DATA_CELL}>{formatDateTime(row.updated_at)}</TableCell>
                 <TableCell><StatusCell row={row} canEdit={canEdit.member} onToggle={onToggle} /></TableCell>
@@ -468,7 +479,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                         : PROMPT_INJECTION_INHERIT_LABEL)}
                 </TableCell>
                 <TableCell className={DATA_CELL}>
-                  {row.created_by?.display_name || <span className={PLACEHOLDER}>—</span>}
+                  <CreatedByCell row={row} />
                 </TableCell>
                 <TableCell className={DATA_CELL}>{formatDateTime(row.updated_at)}</TableCell>
                 <TableCell><StatusCell row={row} canEdit={canEdit.key} onToggle={onToggle} /></TableCell>

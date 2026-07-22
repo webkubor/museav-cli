@@ -85,7 +85,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-[var(--mg-table-head-h)] px-[var(--mg-table-cell-px)] align-middle mg-text-label text-mg-text-3 [&:has([role=checkbox])]:pr-0 select-none",
+      "h-[var(--mg-table-head-h)] px-[var(--mg-table-cell-px)] align-middle mg-text-label text-mg-text-3 whitespace-nowrap [&:has([role=checkbox])]:pr-0 select-none",
       ALIGN_CLASS[align],
       className
     )}

@@ -11,9 +11,9 @@ import { trackEvent } from '@/lib/track'
 import { useTrackContext } from '@/hooks/use-track-context'
 import { useAuthStore } from '@/store/auth'
 import { ConnectModal } from '@/pages/api-keys/ConnectModal'
+import { deriveRegionFromBaseUrl } from '@/pages/api-keys/constants'
 
 const DISMISS_KEY = 'modelgo_workbench_quickstart_dismissed'
-const CLI_COMMAND = 'npx @model-go/cli@latest install'
 
 function scopedWorkspacePath(workspaceId: string | null, path: string) {
   return workspaceId ? `/workspace/${workspaceId}/${path}` : '/workspaces'
@@ -37,6 +37,9 @@ export function QuickStartSection() {
 
   const docsUrl = getMarketConfig(market).docsUrl
   const openAIBaseUrl = GATEWAY_ENDPOINTS[0]?.baseUrl ?? ''
+  // CLI 命令用已发布的真实包 @model-go/config + 按市场区域(-r domestic|global,外部已发布契约);
+  // 不用 PRD 原型占位的 @model-go/cli@latest install。通用安装态不带 -k,由 CLI 交互补 Key。
+  const cliCommand = `npx @model-go/config -r ${deriveRegionFromBaseUrl(openAIBaseUrl)}`
   const anthropicBaseUrl = GATEWAY_ENDPOINTS[1]?.baseUrl ?? openAIBaseUrl
 
   const trackOnboardingAction = (action: string, extra?: Record<string, string>) =>
@@ -159,9 +162,9 @@ export function QuickStartSection() {
             <p className="text-xs leading-relaxed text-mg-text-3">
               {t('dashboard.workbench.quickStart.cliHintPrefix')}
               <span className="mx-1 inline-flex items-center gap-1 rounded-md border border-mg-border bg-mg-bg-0 px-1.5 py-0.5 align-middle font-mono text-mg-text-1">
-                <code>{CLI_COMMAND}</code>
+                <code>{cliCommand}</code>
                 <CopyButton
-                  value={CLI_COMMAND}
+                  value={cliCommand}
                   aria-label="复制命令"
                   toast={t('dashboard.workbench.quickStart.cliCopied')}
                   onCopied={() => trackOnboardingAction('copy_cli')}

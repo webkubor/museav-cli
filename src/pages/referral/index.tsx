@@ -5,6 +5,7 @@ import { LuCoins, LuTrendingUp, LuUsers, LuWallet, LuSparkles, LuLock } from 're
 import { PageHeader } from '@/components/ui/PageHeader'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { Button } from '@/components/ui/Button'
+import { TruncatedText } from '@/components/ui/TruncatedText'
 import {
   Table,
   TableHeader,
@@ -562,8 +563,8 @@ function InviteesTable({
             return (
               <TableRow key={`${inv.email}-${inv.registeredAt}`}>
                 <TableCell>
-                  <div className="font-medium text-mg-text-1">{inv.name}</div>
-                  <div className="text-xs text-mg-text-3 mt-0.5">{inv.email}</div>
+                  <TruncatedText text={inv.name} maxWidth={180} className="font-medium text-mg-text-1" />
+                  <TruncatedText text={inv.email} maxWidth={180} className="text-xs text-mg-text-3 mt-0.5" />
                 </TableCell>
                 <TableCell className="text-right font-mono">{formatMoney(inv.totalSpend)}</TableCell>
                 <TableCell className="text-right font-mono">{formatMoney(inv.commission)}</TableCell>
@@ -634,7 +635,7 @@ function CommissionsTable({
           records.map((rec, index) => (
             <TableRow key={`${rec.date}-${rec.source}-${index}`}>
               <TableCell className="font-mono text-xs">{formatDateTime(rec.date)}</TableCell>
-              <TableCell>{rec.source}</TableCell>
+              <TableCell><TruncatedText text={rec.source} maxWidth={160} /></TableCell>
               <TableCell>
                 <TierBadge name={rec.tierName} fallback={text.notYet} />
               </TableCell>

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
+import { TruncatedText } from '@/components/ui/TruncatedText'
 import {
   Table,
   TableHeader,
@@ -191,7 +192,7 @@ export function ApiKeyTable({
                 onClick={() => onOpenDetail(record)}
               >
                 <TableCell>
-                  <div className="font-semibold text-mg-text-1 text-[13.5px]">{record.name}</div>
+                  <TruncatedText text={record.name} maxWidth={200} className="font-semibold text-mg-text-1 text-[13.5px]" />
                   {/* #298：名称下方掩码 + 复制完整明文按钮 */}
                   <div className="mt-1 flex items-center gap-1.5">
                     <span className="font-mono text-xs text-mg-text-3 tracking-tight">{record.masked}</span>
@@ -217,12 +218,19 @@ export function ApiKeyTable({
                   </span>
                 </TableCell>
                 <TableCell>
-                  <div className="text-xs font-semibold text-mg-text-2">
-                    {responsible.display_name || responsible.email || '—'}
-                  </div>
+                  <TruncatedText
+                    text={responsible.display_name || responsible.email}
+                    maxWidth={140}
+                    className="text-xs font-semibold text-mg-text-2"
+                  />
                   {creatorDiffers && (
-                    <div className="text-xs text-mg-text-3">
-                      创建人 {record.owner.display_name || record.owner.email}
+                    <div className="mt-0.5 flex items-center gap-1 text-xs text-mg-text-3">
+                      <span className="shrink-0">创建人</span>
+                      <TruncatedText
+                        text={record.owner.display_name || record.owner.email}
+                        maxWidth={110}
+                        className="text-xs text-mg-text-3"
+                      />
                     </div>
                   )}
                 </TableCell>

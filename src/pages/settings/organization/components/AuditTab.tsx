@@ -4,6 +4,7 @@ import { useMutation, useQuery, keepPreviousData } from '@tanstack/react-query'
 import { LuArrowRight, LuClipboardList, LuDownload } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { TruncatedText } from '@/components/ui/TruncatedText'
 import { Modal } from '@/components/ui/Modal'
 import { Pagination } from '@/components/ui/Pagination'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -309,7 +310,7 @@ export function AuditTab({ tenantId }: { tenantId: string }) {
                     <TableCell className="whitespace-nowrap font-mono text-xs text-mg-text-2">
                       {formatDateTimeWithSeconds(row.created_at)}
                     </TableCell>
-                    <TableCell className="text-xs font-semibold text-mg-text-1">{row.actor_display || '—'}</TableCell>
+                    <TableCell><TruncatedText text={row.actor_display} maxWidth={140} className="text-xs font-semibold text-mg-text-1" /></TableCell>
                     <TableCell className="text-xs text-mg-text-2">{auditActionLabel(row.action)}</TableCell>
                     <TableCell className="max-w-[160px] truncate text-xs text-mg-text-2" title={row.target_label}>
                       {row.target_label || row.target_id || '—'}

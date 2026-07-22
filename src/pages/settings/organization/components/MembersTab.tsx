@@ -15,6 +15,7 @@ import { formatDate } from '@/lib/format-date'
 import type { TenantMember, PendingTenantInvite } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
+import { TruncatedText } from '@/components/ui/TruncatedText'
 import { Badge } from '@/components/ui/Badge'
 import { Popover } from '@/components/ui/Popover'
 import { Select } from '@/components/ui/Select'
@@ -307,8 +308,8 @@ export function MembersTab({
                   return (
                     <TableRow key={m.account.account_id}>
                       <TableCell>
-                        <div className="font-semibold text-mg-text-1">{m.account.display_name || '—'}</div>
-                        <div className="text-xs text-mg-text-3 mt-0.5">{m.account.email}</div>
+                        <TruncatedText text={m.account.display_name} maxWidth={180} className="font-semibold text-mg-text-1" />
+                        <TruncatedText text={m.account.email} maxWidth={180} className="text-xs text-mg-text-3 mt-0.5" />
                       </TableCell>
                       <TableCell>
                         <Badge variant={ROLE_BADGE[m.role]} size="sm">{ROLE_LABEL[m.role]}</Badge>

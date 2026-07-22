@@ -80,7 +80,7 @@ export function CreateKeyModal({ open, onClose, workspaceId, onCreated }: Props)
   }
 
   const [name, setName] = useState('')
-  const [scope, setScope] = useState<ScopeType>('workspace')
+  const [scope, setScope] = useState<ScopeType>('personal')
   // 个人租户无「成员」Key，member 落到 workspace；类型可选性由上面的细粒度权限控制
   const effectiveScope: ScopeType = isPersonalTenant && scope === 'member' ? 'workspace' : scope
   const [memberAccountId, setMemberAccountId] = useState('')

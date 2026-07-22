@@ -286,7 +286,8 @@ export interface GuardrailSectionsProps {
   onOpenDetail: (id: string) => void
   onToggle: (args: { id: string; status: 'active' | 'inactive' }) => void
   onDelete: (target: { id: string; name: string }) => void
-  onCreate: () => void
+  /** scope：从某分区入口创建时带上该分区分类，默认选中对应作用范围（需求方#202） */
+  onCreate: (scope?: GuardrailScope) => void
 }
 
 export function GuardrailSections(props: GuardrailSectionsProps) {
@@ -328,7 +329,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
         search={search.global}
         onSearch={(v) => onSearchChange('global', v)}
         canCreate={canCreate}
-        onCreate={onCreate}
+        onCreate={() => onCreate('global')}
       >
         <TableHeader>
           <TableRow>
@@ -384,7 +385,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
           search={search.member}
           onSearch={(v) => onSearchChange('member', v)}
           canCreate={canCreate}
-          onCreate={onCreate}
+          onCreate={() => onCreate('member')}
         >
           <TableHeader>
             <TableRow>
@@ -433,7 +434,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
         search={search.key}
         onSearch={(v) => onSearchChange('key', v)}
         canCreate={canCreate}
-        onCreate={onCreate}
+        onCreate={() => onCreate('key')}
       >
         <TableHeader>
           <TableRow>

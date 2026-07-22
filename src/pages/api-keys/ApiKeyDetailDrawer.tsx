@@ -188,9 +188,11 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
   const auditRows = audit?.items ?? detail?.recent_audit ?? []
   const rotationAudit = auditRows.find((row) => row.action === 'api_key.rotated')
   const rotationTokenChange = rotationAudit?.changes?.find((change) => change.field.toLowerCase() === 'token')
-  const auditRotation = view.status === 'rotation_required' && rotationTokenChange?.before && rotationTokenChange.after
-    ? { keyId: view.api_key_id, oldMasked: rotationTokenChange.before, newMasked: rotationTokenChange.after }
-    : undefined
+  const auditRotation = view.status === 'rotation_required' && view.previous_masked
+    ? { keyId: view.api_key_id, oldMasked: view.previous_masked, newMasked: view.masked }
+    : view.status === 'rotation_required' && rotationTokenChange?.before && rotationTokenChange.after
+      ? { keyId: view.api_key_id, oldMasked: rotationTokenChange.before, newMasked: rotationTokenChange.after }
+      : undefined
   const displayedRotation = rotationTransition ?? auditRotation
   const isDisabled = view.status === 'disabled'
   const canToggle = isDisabled ? cap(view.capabilities?.can_enable, canAction(keyType, 'disable')) : cap(view.capabilities?.can_disable, canAction(keyType, 'disable'))

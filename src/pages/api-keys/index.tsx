@@ -87,9 +87,8 @@ export default function ApiKeysPage() {
   const [rotatedKey, setRotatedKey] = useState<{ id: string; name: string; key: string } | null>(null)
   const [rotationTransition, setRotationTransition] = useState<RotationTransition | null>(null)
   const [rotationConfirmTarget, setRotationConfirmTarget] = useState<ApiKeyItem | null>(null)
-  const rotationConfirmOldMasked = rotationConfirmTarget && rotationTransition?.keyId === rotationConfirmTarget.api_key_id
-    ? rotationTransition.oldMasked
-    : rotationConfirmTarget?.masked
+  const rotationConfirmOldMasked = rotationConfirmTarget?.previous_masked
+    ?? (rotationConfirmTarget && rotationTransition?.keyId === rotationConfirmTarget.api_key_id ? rotationTransition.oldMasked : rotationConfirmTarget?.masked)
 
   const activeTenantId = useAuthStore((state) => state.activeTenantId)
   const tenants = useAuthStore((state) => state.tenants)

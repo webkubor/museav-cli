@@ -78,6 +78,7 @@ export default function ApiKeysPage() {
   const [detailKey, setDetailKey] = useState<ApiKeyItem | null>(null)
   // 轮转成功后一次性明文（旧 Token 过渡期仍可用）——复用「一次性展示」承接，避免密钥丢失
   const [rotatedKey, setRotatedKey] = useState<{ id: string; name: string; key: string } | null>(null)
+  const [rotationConfirmTarget, setRotationConfirmTarget] = useState<ApiKeyItem | null>(null)
 
   const activeTenantId = useAuthStore((state) => state.activeTenantId)
   const tenants = useAuthStore((state) => state.tenants)
@@ -254,7 +255,7 @@ export default function ApiKeysPage() {
   const confirmRotateMutation = useMutation({
     mutationFn: (keyId: string) => confirmRotateApiKey(workspaceId, keyId),
     onSuccess: (_res, keyId) => {
-      setRotatedKey(null)
+      setRotationConfirmTarget(null)
       queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
       queryClient.invalidateQueries({ queryKey: ['api-key-detail', workspaceId, keyId] })
       appToast.success('旧 Token 已失效')
@@ -484,6 +485,7 @@ export default function ApiKeysPage() {
         rowScope={rowScope}
         onToggleStatus={handleToggleStatus}
         onRotate={(item) => rotateMutation.mutate(item)}
+        onCompleteRotation={setRotationConfirmTarget}
         onRevoke={setRevokeTarget}
       />
 
@@ -525,17 +527,36 @@ export default function ApiKeysPage() {
         title="轮转成功"
         description="新 Token 已生效、只展示一次，请立即复制保存。旧 Token 仍在过渡期，验证无误后再点「已轮转」使其失效。"
         size="md"
-        footer={<Button
-          variant="brand"
-          loading={confirmRotateMutation.isPending}
-          onClick={() => rotatedKey && confirmRotateMutation.mutate(rotatedKey.id)}
-        >我已保存新 Token</Button>}
+        footer={<Button variant="brand" onClick={() => setRotatedKey(null)}>我已复制 Token</Button>}
       >
         <div className="py-2">
           <div className="flex items-center gap-2 rounded-md border border-mg-border bg-mg-code-bg px-3 py-2.5">
             <span className="min-w-0 flex-1 truncate font-mono text-sm font-bold text-mg-success select-all">{rotatedKey?.key}</span>
             <CopyButton value={rotatedKey?.key ?? ''} aria-label="复制新 Token" toast="新 Token 已复制" size="md" />
           </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={!!rotationConfirmTarget}
+        onClose={() => setRotationConfirmTarget(null)}
+        title="确认完成轮换"
+        description="确认后旧 Token 将立即失效，新 Token 保持生效。"
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setRotationConfirmTarget(null)}>取消</Button>
+            <Button
+              variant="brand"
+              loading={confirmRotateMutation.isPending}
+              onClick={() => rotationConfirmTarget && confirmRotateMutation.mutate(rotationConfirmTarget.api_key_id)}
+            >已轮转</Button>
+          </>
+        }
+      >
+        <div className="flex items-center justify-between rounded-md border border-mg-border bg-mg-fill-0 px-3 py-2.5 text-sm">
+          <span className="text-mg-text-3">旧 Token</span>
+          <span className="font-mono font-bold text-mg-text-1">{rotationConfirmTarget?.masked}</span>
         </div>
       </Modal>
 

@@ -100,12 +100,13 @@ interface Props {
   canReveal: boolean
   onToggleStatus: (item: ApiKeyItem) => void
   onRotate: (item: ApiKeyItem) => void
+  onCompleteRotation: (item: ApiKeyItem) => void
   onRevoke: (target: { id: string; name: string }) => void
   /** 埋点 row_scope（workspace_all|self）——limit_save/jump_logs 带上 */
   rowScope?: string
 }
 
-export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction, canReveal, onToggleStatus, onRotate, onRevoke, rowScope }: Props) {
+export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction, canReveal, onToggleStatus, onRotate, onCompleteRotation, onRevoke, rowScope }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const keyId = item?.api_key_id
@@ -195,9 +196,11 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
             <CopyButton value={view.masked} aria-label="复制掩码 Key" toast="掩码 Key 已复制" size="sm" />
           )}
           <div className="flex flex-wrap gap-2">
-            {rotateEnabled && (
+            {view.status === 'rotation_required' ? (
+              <Button variant="outline" size="sm" onClick={() => onCompleteRotation(view)}>已轮转</Button>
+            ) : rotateEnabled ? (
               <Button variant="outline" size="sm" onClick={() => onRotate(view)}>轮转</Button>
-            )}
+            ) : null}
             {view.status !== 'revoked' && canToggle && (
               <Button variant="outline" size="sm" onClick={() => onToggleStatus(view)}>
                 {isDisabled ? '启用' : '停用'}

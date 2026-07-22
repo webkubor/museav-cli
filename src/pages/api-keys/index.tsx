@@ -335,11 +335,12 @@ export default function ApiKeysPage() {
 
   const handleKeyCreated = useCallback((created: ApiKeyCreated) => {
     setCreateVisible(false)
+    queryClient.invalidateQueries({ queryKey: ['api-keys-summary', workspaceId] })
     setCreatedKey(created)
     setCreatedKeyText(created.key)
     setCreatedAt(Date.now())
     setCreatedVisible(true)
-  }, [])
+  }, [queryClient, workspaceId])
 
   // 「我已保存密钥」（PRD 原型 handleCreate）：仅关闭弹窗 + 刷新列表，不跳详情页（需求方#186）
   const handleSecretSaved = () => {

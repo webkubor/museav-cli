@@ -104,9 +104,10 @@ interface Props {
   onRevoke: (target: { id: string; name: string }) => void
   /** 埋点 row_scope（workspace_all|self）——limit_save/jump_logs 带上 */
   rowScope?: string
+  rotationTransition?: { keyId: string; oldMasked: string; newMasked: string; graceUntil?: string }
 }
 
-export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction, canReveal, onToggleStatus, onRotate, onCompleteRotation, onRevoke, rowScope }: Props) {
+export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction, canReveal, onToggleStatus, onRotate, onCompleteRotation, onRevoke, rowScope, rotationTransition }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const keyId = item?.api_key_id
@@ -181,19 +182,31 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
       <div className="space-y-6 pb-8">
         {/* 治理动作 */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-xs text-mg-text-3">{view.masked}</span>
-          {canReveal && view.revealable && view.status === 'active' ? (
-            <button
-              type="button"
-              onClick={() => copyFullKey(view)}
-              aria-label="复制完整 Key"
-              title="复制完整 Key"
-              className="inline-flex h-6 w-6 items-center justify-center rounded-md text-mg-text-3 transition-colors hover:bg-mg-fill-0 hover:text-mg-text-1"
-            >
-              {revealCopying ? <LuLoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <LuCopy className="h-3.5 w-3.5" />}
-            </button>
+          {rotationTransition?.keyId === view.api_key_id ? (
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+              <span className="rounded-sm bg-brand-base/10 px-1.5 py-0.5 text-[10px] font-bold text-brand-base">新</span>
+              <span className="truncate font-mono text-xs text-mg-text-2">{rotationTransition.newMasked}</span>
+              <CopyButton value={rotationTransition.newMasked} aria-label="复制新 Token 掩码" toast="新 Token 掩码已复制" size="sm" />
+              <span className="rounded-sm bg-mg-fill-1 px-1.5 py-0.5 text-[10px] font-bold text-mg-text-3">旧</span>
+              <span className="truncate font-mono text-xs text-mg-text-3">{rotationTransition.oldMasked}</span>
+            </div>
           ) : (
-            <CopyButton value={view.masked} aria-label="复制掩码 Key" toast="掩码 Key 已复制" size="sm" />
+            <>
+              <span className="font-mono text-xs text-mg-text-3">{view.masked}</span>
+              {canReveal && view.revealable && view.status === 'active' ? (
+                <button
+                  type="button"
+                  onClick={() => copyFullKey(view)}
+                  aria-label="复制完整 Key"
+                  title="复制完整 Key"
+                  className="inline-flex h-6 w-6 items-center justify-center rounded-md text-mg-text-3 transition-colors hover:bg-mg-fill-0 hover:text-mg-text-1"
+                >
+                  {revealCopying ? <LuLoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <LuCopy className="h-3.5 w-3.5" />}
+                </button>
+              ) : (
+                <CopyButton value={view.masked} aria-label="复制掩码 Key" toast="掩码 Key 已复制" size="sm" />
+              )}
+            </>
           )}
           <div className="flex flex-wrap gap-2">
             {view.status === 'rotation_required' ? (

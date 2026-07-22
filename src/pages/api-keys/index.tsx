@@ -53,6 +53,13 @@ import { deriveKeyType, responsibleOf, isExpiringSoon, KEY_ACTION_PERMS, type Ap
 import type { ApiKeyCreated, ApiKeyItem, ApiKeyType } from '@/types'
 
 const ALL = 'all'
+type RotationTransition = { keyId: string; oldMasked: string; newMasked: string; graceUntil?: string }
+
+function maskRotatedKey(secret: string): string {
+  const prefix = secret.split('_').slice(0, 2).join('_')
+  return `${prefix}_${secret.slice(-8, -4)}...${secret.slice(-4)}`
+}
+
 /** 表格游标分页每页条数（#60） */
 const PAGE_SIZE = 20
 
@@ -78,6 +85,7 @@ export default function ApiKeysPage() {
   const [detailKey, setDetailKey] = useState<ApiKeyItem | null>(null)
   // 轮转成功后一次性明文（旧 Token 过渡期仍可用）——复用「一次性展示」承接，避免密钥丢失
   const [rotatedKey, setRotatedKey] = useState<{ id: string; name: string; key: string } | null>(null)
+  const [rotationTransition, setRotationTransition] = useState<RotationTransition | null>(null)
   const [rotationConfirmTarget, setRotationConfirmTarget] = useState<ApiKeyItem | null>(null)
 
   const activeTenantId = useAuthStore((state) => state.activeTenantId)
@@ -242,6 +250,7 @@ export default function ApiKeysPage() {
     mutationFn: (item: ApiKeyItem) => rotateApiKey(workspaceId, item.api_key_id),
     onSuccess: (res, item) => {
       setRotatedKey({ id: item.api_key_id, name: item.name, key: res.new_key })
+      setRotationTransition({ keyId: item.api_key_id, oldMasked: item.masked, newMasked: maskRotatedKey(res.new_key), graceUntil: res.old_key_grace_until })
       queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
       queryClient.invalidateQueries({ queryKey: ['api-key-detail', workspaceId, item.api_key_id] })
       trackEvent('api_keys:rotate', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
@@ -256,6 +265,7 @@ export default function ApiKeysPage() {
     mutationFn: (keyId: string) => confirmRotateApiKey(workspaceId, keyId),
     onSuccess: (_res, keyId) => {
       setRotationConfirmTarget(null)
+      setRotationTransition(null)
       queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
       queryClient.invalidateQueries({ queryKey: ['api-key-detail', workspaceId, keyId] })
       appToast.success('旧 Token 已失效')
@@ -483,6 +493,7 @@ export default function ApiKeysPage() {
         canAction={canAction}
         canReveal={canReveal}
         rowScope={rowScope}
+        rotationTransition={rotationTransition}
         onToggleStatus={handleToggleStatus}
         onRotate={(item) => rotateMutation.mutate(item)}
         onCompleteRotation={setRotationConfirmTarget}

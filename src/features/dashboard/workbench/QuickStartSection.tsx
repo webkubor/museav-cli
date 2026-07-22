@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { LuKeyRound, LuPlug, LuScrollText, LuArrowRight, LuX, LuSquareTerminal, LuZap, LuChevronRight } from 'react-icons/lu'
+import { LuKeyRound, LuPlug, LuScrollText, LuArrowRight, LuX, LuZap, LuChevronRight } from 'react-icons/lu'
 import { Card } from '@/components/ui/Card'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { useMarket } from '@/hooks/useMarket'
@@ -146,22 +146,24 @@ export function QuickStartSection() {
           ))}
         </div>
 
-        {/* 命令内嵌在提示句里(对齐 PRD FirstRunGuide cli-recommend-card,需求方#171):
-            「在终端运行 <命令> 自动写入 Base URL 和 API Key。」——不再是右侧独立命令块,避免命令难找 */}
-        <div className="mg-tile mt-4 flex items-start gap-2.5 p-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-base/12 text-brand-base">
-            <LuSquareTerminal size={17} />
+        {/* 布局对齐 PRD FirstRunGuide cli-recommend-card(需求方#171):
+            横排 icon(左) + copy 块(标题行 + 段落),命令内联在段落左侧「在终端运行 <命令> 自动写入…」,
+            视觉用控制台 token(非 PRD hex)。 */}
+        <div className="mg-tile mt-4 flex items-center gap-4 p-4">
+          {/* PRD cli-icon:48×48 方形「>_」单色 */}
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-mg-border bg-brand-base/10 font-mono text-base font-extrabold text-brand-base">
+            &gt;_
           </span>
           <div className="flex min-w-0 flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-mg-text-1">{t('dashboard.workbench.quickStart.cliTitle')}</span>
-              <span className="inline-flex items-center rounded-full bg-brand-base/12 px-1.5 py-px text-xs font-bold text-brand-base">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="text-base font-bold text-mg-text-1">{t('dashboard.workbench.quickStart.cliTitle')}</span>
+              <span className="inline-flex items-center rounded-md border border-brand-base/25 bg-brand-base/10 px-1.5 py-px text-xs font-bold text-brand-base">
                 {t('dashboard.workbench.quickStart.cliBadge')}
               </span>
             </div>
-            <p className="text-xs leading-relaxed text-mg-text-3">
+            <p className="text-[13px] leading-relaxed text-mg-text-3">
               {t('dashboard.workbench.quickStart.cliHintPrefix')}
-              <span className="mx-1 inline-flex items-center gap-1 rounded-md border border-mg-border bg-mg-bg-0 px-1.5 py-0.5 align-middle font-mono text-mg-text-1">
+              <span className="mx-1 inline-flex items-center gap-1 rounded-md border border-mg-border bg-mg-bg-0 px-2 py-0.5 align-middle font-mono text-xs text-brand-base">
                 <code>{cliCommand}</code>
                 <CopyButton
                   value={cliCommand}

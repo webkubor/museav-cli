@@ -316,6 +316,8 @@ export interface ApiKeyItem {
   name: string
   prefix: string
   masked: string
+  /** 轮转宽限期内的旧 Token 掩码（qa#515）；确认完成轮转后为空。 */
+  previous_masked?: string
   env: 'live' | 'test'
   status: ApiKeyStatus
   owner: ApiKeyMember

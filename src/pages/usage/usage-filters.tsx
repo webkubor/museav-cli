@@ -34,7 +34,7 @@ export function UsageFilterPanel({
 }: UsageFilterPanelProps) {
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <div className="w-full sm:w-52">
+      <div className="w-full sm:w-auto">
         <DateRangePicker
           value={timeRange}
           onChange={onTimeRangeChange}

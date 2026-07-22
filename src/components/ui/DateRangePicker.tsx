@@ -310,7 +310,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
       )}
     >
       <LuCalendar size={14} className="text-brand-base group-hover:scale-110 transition-transform duration-300" />
-      <span className="truncate max-w-[200px]">{getDisplayText()}</span>
+      <span className="truncate">{getDisplayText()}</span>
     </button>
   )
 

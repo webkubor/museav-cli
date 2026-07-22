@@ -454,6 +454,13 @@ export default function GuardrailsPage() {
       ) ?? 'global'
     setName(''); setDescription(''); setScope(defaultScope); setKind('regular'); setBoostExpiresAt(''); setPriority(0)
     setModelBlacklist([]); setIpWhitelist([]); setPromptInjectionMode('off'); setMemberIds([]); setApiKeyIds([])
+    // 预算字段也要清（否则会带上一次创建/编辑的残留值——个人/Key 单档 + 全局三档）
+    setBudgetAmount(''); setBudgetPeriodUnit('month'); setBudgetLimited(true)
+    setGlobalBudgets({
+      guardrail_total: { ...EMPTY_BUDGET_DRAFT },
+      per_member: { ...EMPTY_BUDGET_DRAFT },
+      per_api_key: { ...EMPTY_BUDGET_DRAFT },
+    })
     setDetailOpen(true)
   }
 

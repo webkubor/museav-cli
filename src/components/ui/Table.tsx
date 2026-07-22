@@ -101,7 +101,10 @@ const TableCell = React.forwardRef<
   <td
     ref={ref}
     className={cn(
-      "px-[var(--mg-table-cell-px)] py-[var(--mg-table-cell-py)] align-middle [&:has([role=checkbox])]:pr-0 mg-text-body text-mg-text-2",
+      // 数据表单元格默认单行不换行：短值(金额/日期/枚举/计数)保持自然宽度不被挤到换行，
+      // 列宽超出容器时由 Table 外层 overflow-auto 横向滚动，而非压缩列宽致内容换行。
+      // 长自由文本用 TruncatedText 单行截断；需要多行的单元格自行传 whitespace-normal 覆盖。
+      "px-[var(--mg-table-cell-px)] py-[var(--mg-table-cell-py)] align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 mg-text-body text-mg-text-2",
       ALIGN_CLASS[align],
       className
     )}

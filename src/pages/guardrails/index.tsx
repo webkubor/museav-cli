@@ -445,14 +445,18 @@ export default function GuardrailsPage() {
   }
 
   // ── 辅助函数 ────────────────────────────────────────────────────────────
-  function openCreate() {
+  // preferScope：从某个分区入口（如「个人护栏」区）创建时，默认选中该分区分类（需求方#202）。
+  // 仅当该分类可建且可见时采纳；否则回退到「第一个有创建权限」的默认逻辑。
+  function openCreate(preferScope?: GuardrailScope) {
     setIsCreating(true)
     setDetailId(null)
-    // 默认分类落到第一个有创建权限的（全局→个人→Key；个人组织无「个人」），全无权限时兜 global（选项均置灰,提交也进不去）
+    // 默认分类：优先入口分区分类（可建+可见），否则落到第一个有创建权限的（全局→个人→Key；
+    // 个人组织无「个人」），全无权限时兜 global（选项均置灰,提交也进不去）
+    const scopeVisible = (s: GuardrailScope) => canCreateScope[s] && !(s === 'member' && !showMember)
     const defaultScope: GuardrailScope =
-      (['global', 'member', 'key'] as GuardrailScope[]).find(
-        (s) => canCreateScope[s] && !(s === 'member' && !showMember),
-      ) ?? 'global'
+      (preferScope && scopeVisible(preferScope) ? preferScope : undefined) ??
+      (['global', 'member', 'key'] as GuardrailScope[]).find(scopeVisible) ??
+      'global'
     setName(''); setDescription(''); setScope(defaultScope); setKind('regular'); setBoostExpiresAt(''); setPriority(0)
     setModelBlacklist([]); setIpWhitelist([]); setPromptInjectionMode('off'); setMemberIds([]); setApiKeyIds([])
     // 预算字段也要清（否则会带上一次创建/编辑的残留值——个人/Key 单档 + 全局三档）
@@ -515,14 +519,24 @@ export default function GuardrailsPage() {
     setPromptInjectionMode(rawPromptInjectionMode(d) ?? (deriveScope(d) === 'key' ? PROMPT_INJECTION_INHERIT : 'off'))
     // Scope (members + api_keys) lives in assignments; metadata.* is the input
     // we materialize from. Read assignments first (the enforced truth), falling
-    // back to metadata for guardrails saved before materialization existed.
+    // back to metadata when assignments carry no matching entry.
+    // 需求方#207：不能用 `?? metadata`——assignments 为 `[]`（后端未物化/未返回绑定）
+    // 时 `??` 不触发回退，成员就丢了不回显。改判「派生结果为空才回退 metadata」。
+    const memberFromAssignments = (d.assignments ?? [])
+      .filter((a) => a.subject_type === 'member' && a.account_id)
+      .map((a) => a.account_id as string)
     setMemberIds(
-      d.assignments?.filter(a => a.subject_type === 'member' && a.account_id).map(a => a.account_id as string)
-      ?? (Array.isArray(meta.members) ? (meta.members as string[]) : [])
+      memberFromAssignments.length > 0
+        ? memberFromAssignments
+        : (Array.isArray(meta.members) ? (meta.members as string[]) : [])
     )
+    const apiKeyFromAssignments = (d.assignments ?? [])
+      .filter((a) => a.subject_type === 'api_key' && a.api_key_id)
+      .map((a) => a.api_key_id as string)
     setApiKeyIds(
-      d.assignments?.filter(a => a.subject_type === 'api_key' && a.api_key_id).map(a => a.api_key_id as string)
-      ?? (Array.isArray(meta.api_keys) ? (meta.api_keys as string[]) : [])
+      apiKeyFromAssignments.length > 0
+        ? apiKeyFromAssignments
+        : (Array.isArray(meta.api_keys) ? (meta.api_keys as string[]) : [])
     )
   }
 
@@ -789,7 +803,7 @@ export default function GuardrailsPage() {
           <Button
             variant="brand"
             data-track="guardrails:create"
-            onClick={openCreate}
+            onClick={() => openCreate()}
             className="rounded-full px-5 h-10 shadow-lg shadow-brand-glow/20"
           >
             <LuPlus className="w-4 h-4 mr-1.5" />
@@ -819,6 +833,7 @@ export default function GuardrailsPage() {
           const row = guardrails.find((g) => g.id === target.id)
           setDeleteTarget({ ...target, isActiveGlobal: !!row?.is_default && row?.status === 'active' })
         }}
+        // 分区内创建入口带上该分区分类，默认选中对应作用范围（需求方#202）
         onCreate={openCreate}
       />
 

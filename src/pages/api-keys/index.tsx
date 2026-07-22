@@ -29,6 +29,7 @@ import {
   enableApiKey,
   getApiKeySummary,
   rotateApiKey,
+  confirmRotateApiKey,
 } from '@/services/api-keys'
 import { WorkspaceTitleTag } from '@/components/layout/WorkspaceTitleTag'
 import { useCopy } from '@/hooks/use-copy'
@@ -76,7 +77,7 @@ export default function ApiKeysPage() {
   const [disableTarget, setDisableTarget] = useState<ApiKeyItem | null>(null)
   const [detailKey, setDetailKey] = useState<ApiKeyItem | null>(null)
   // 轮转成功后一次性明文（旧 Token 过渡期仍可用）——复用「一次性展示」承接，避免密钥丢失
-  const [rotatedKey, setRotatedKey] = useState<{ name: string; key: string } | null>(null)
+  const [rotatedKey, setRotatedKey] = useState<{ id: string; name: string; key: string } | null>(null)
 
   const activeTenantId = useAuthStore((state) => state.activeTenantId)
   const tenants = useAuthStore((state) => state.tenants)
@@ -239,7 +240,7 @@ export default function ApiKeysPage() {
   const rotateMutation = useMutation({
     mutationFn: (item: ApiKeyItem) => rotateApiKey(workspaceId, item.api_key_id),
     onSuccess: (res, item) => {
-      setRotatedKey({ name: item.name, key: res.new_key })
+      setRotatedKey({ id: item.api_key_id, name: item.name, key: res.new_key })
       queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
       queryClient.invalidateQueries({ queryKey: ['api-key-detail', workspaceId, item.api_key_id] })
       trackEvent('api_keys:rotate', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
@@ -248,6 +249,17 @@ export default function ApiKeysPage() {
       appToast.requestError(err, '轮转失败')
       trackEvent('api_keys:rotate', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
     },
+  })
+
+  const confirmRotateMutation = useMutation({
+    mutationFn: (keyId: string) => confirmRotateApiKey(workspaceId, keyId),
+    onSuccess: (_res, keyId) => {
+      setRotatedKey(null)
+      queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
+      queryClient.invalidateQueries({ queryKey: ['api-key-detail', workspaceId, keyId] })
+      appToast.success('旧 Token 已失效')
+    },
+    onError: (err: unknown) => appToast.requestError(err, '确认轮转失败'),
   })
 
   const { copy } = useCopy()
@@ -513,7 +525,11 @@ export default function ApiKeysPage() {
         title="轮转成功"
         description="新 Token 已生效、只展示一次，请立即复制保存。旧 Token 仍在过渡期，验证无误后再点「已轮转」使其失效。"
         size="md"
-        footer={<Button variant="brand" onClick={() => setRotatedKey(null)}>我已保存新 Token</Button>}
+        footer={<Button
+          variant="brand"
+          loading={confirmRotateMutation.isPending}
+          onClick={() => rotatedKey && confirmRotateMutation.mutate(rotatedKey.id)}
+        >我已保存新 Token</Button>}
       >
         <div className="py-2">
           <div className="flex items-center gap-2 rounded-md border border-mg-border bg-mg-code-bg px-3 py-2.5">

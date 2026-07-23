@@ -42,7 +42,9 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
     const hardReload = () => {
       if (reloaded) return
       reloaded = true
-      window.location.reload()
+      const url = new URL(window.location.href)
+      url.searchParams.set('mg_update', String(Date.now()))
+      window.location.replace(url.toString())
     }
     if (!updateSW) {
       hardReload()

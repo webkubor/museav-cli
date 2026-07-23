@@ -12,14 +12,13 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from '@/components/ui/Table'
-import { LuSearch, LuShieldCheck, LuUserRound, LuKeyRound, LuInfo } from 'react-icons/lu'
+import { LuSearch, LuShieldCheck, LuUserRound, LuKeyRound } from 'react-icons/lu'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
 import { formatDateTime } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
 import {
   KIND_LABEL,
   PROMPT_INJECTION_LABEL,
-  PROMPT_INJECTION_HINTS,
   PROMPT_INJECTION_INHERIT_LABEL,
   apiKeyCount,
   boostExpiry,
@@ -42,93 +41,7 @@ import {
 const DATA_CELL = 'text-xs text-mg-text-2'
 const PLACEHOLDER = 'font-normal text-mg-text-3'
 
-/** 列头「提示词注入」+ info tooltip（对齐 PRD：字段标题右侧说明命中后的处理方式），与表单内 tooltip 同源文案。 */
-function PromptInjectionHeaderLabel() {
-  return (
-    <span className="inline-flex items-center gap-1">
-      提示词注入
-      <span className="group relative inline-flex">
-        <button
-          type="button"
-          aria-label="命中后的处理方式"
-          className="inline-flex text-mg-text-3 outline-none transition-colors hover:text-mg-text-2 focus-visible:text-mg-text-2"
-        >
-          <LuInfo className="h-3.5 w-3.5" />
-        </button>
-        <span
-          role="tooltip"
-          className="pointer-events-none absolute right-0 top-6 z-20 w-[280px] rounded-md border border-mg-border bg-mg-bg-0 p-3 text-left font-normal normal-case opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-        >
-          <span className="mb-1.5 block text-[11px] font-bold text-mg-text-1">命中后的处理方式</span>
-          {PROMPT_INJECTION_HINTS.map((h) => (
-            <span key={h.mode} className="mt-1 flex gap-1.5 text-[10px]">
-              <span className="shrink-0 font-bold text-mg-text-2">{PROMPT_INJECTION_LABEL[h.mode]}</span>
-              <span className="font-medium leading-snug text-mg-text-3">{h.text}</span>
-            </span>
-          ))}
-        </span>
-      </span>
-    </span>
-  )
-}
-
 // ── 共用单元格 ──────────────────────────────────────────────────────────────
-
-function NameCell({ row, onOpenDetail }: { row: GuardrailDetail; onOpenDetail: (id: string) => void }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onOpenDetail(row.id)}
-      className="group flex max-w-[240px] items-center gap-2 text-left"
-    >
-      <span className="min-w-0">
-        <span className="block truncate text-[13.5px] font-bold text-mg-text-1 group-hover:text-brand-base">
-          {row.name}
-        </span>
-        {row.description && (
-          <span className="mt-0.5 block truncate text-xs font-medium text-mg-text-3">
-            {row.description}
-          </span>
-        )}
-      </span>
-      {row.is_default && row.status === 'active' && (
-        <Badge variant="warning" className="shrink-0">默认</Badge>
-      )}
-    </button>
-  )
-}
-
-function TagCell({ values }: { values: string[] }) {
-  if (values.length === 0) {
-    return <span className={DATA_CELL}>不限制</span>
-  }
-  return (
-    <div className="flex max-w-[220px] flex-wrap gap-1.5">
-      {values.slice(0, 3).map((value) => (
-        <span
-          key={value}
-          className="rounded-full border border-mg-border bg-mg-fill-0 px-2 py-0.5 font-mono text-xs font-semibold text-mg-text-2"
-        >
-          {value}
-        </span>
-      ))}
-      {values.length > 3 && (
-        <span className="rounded-full bg-mg-fill-1 px-2 py-0.5 text-xs font-bold text-mg-text-3">
-          +{values.length - 3}
-        </span>
-      )}
-    </div>
-  )
-}
-
-function KindBadge({ row }: { row: GuardrailDetail }) {
-  const kind = deriveKind(row)
-  // 类型 Tag 用两种语义色区分且一致（需求方#152）：常规=品牌色（标准/默认），提额=警示橙（临时提额）。
-  // 不用 secondary 灰——灰读起来像「无类型/禁用」，难以快速识别类型。
-  return (
-    <Badge variant={kind === 'boost' ? 'warning' : 'brand'}>{KIND_LABEL[kind]}</Badge>
-  )
-}
 
 function CountBadge({ count, unit }: { count: number; unit: string }) {
   return (
@@ -138,14 +51,78 @@ function CountBadge({ count, unit }: { count: number; unit: string }) {
   )
 }
 
-/** 创建人：只显姓名，超长截断 + hover 显全名（需求方#52 不回退 account_id；长文本不撑列） */
-function CreatedByCell({ row }: { row: GuardrailDetail }) {
-  const name = row.created_by?.display_name
-  if (!name) return <span className={PLACEHOLDER}>—</span>
+// ── 合并单元格（主行/次行，减少列数、消除小屏横向滚动）─────────────────────────
+// 列太多(全局/Key 各 11-12 列)导致小屏必横向滚动；把语义相关的字段并进一列、用主/次两行承载。
+
+/** 护栏主列：名称(+描述) + 类型徽标 + 默认徽标。合并原「名称 / 类型」两列。global 无类型(showKind=false)。 */
+function NameKindCell({ row, onOpenDetail, showKind }: { row: GuardrailDetail; onOpenDetail: (id: string) => void; showKind: boolean }) {
+  const kind = deriveKind(row)
   return (
-    <span className="block max-w-[120px] truncate" title={name}>
-      {name}
-    </span>
+    <button type="button" onClick={() => onOpenDetail(row.id)} className="group flex max-w-[260px] flex-col items-start gap-1 text-left">
+      <span className="flex max-w-full min-w-0 items-center gap-1.5">
+        <span className="truncate text-[13.5px] font-bold text-mg-text-1 group-hover:text-brand-base">{row.name}</span>
+        {row.is_default && row.status === 'active' && <Badge variant="warning" className="shrink-0">默认</Badge>}
+      </span>
+      <span className="flex min-w-0 max-w-full items-center gap-1.5">
+        {showKind && <Badge variant={kind === 'boost' ? 'warning' : 'brand'} className="shrink-0">{KIND_LABEL[kind]}</Badge>}
+        {row.description && <span className="truncate text-xs font-medium text-mg-text-3">{row.description}</span>}
+      </span>
+    </button>
+  )
+}
+
+/** 预算列：主行=生效预算，次行=提额到期(仅提额类型)。合并原「预算 / 提额到期时间」两列。 */
+function BudgetCell({ row, currencySymbol }: { row: GuardrailDetail; currencySymbol: string }) {
+  const boost = deriveKind(row) === 'boost'
+  const expiry = boost ? boostExpiry(row) : null
+  return (
+    <div className="min-w-0">
+      <div className={DATA_CELL}>{formatBudget(currencySymbol, primaryBudget(row))}</div>
+      {boost && (
+        <div className="mt-0.5 text-[11px] text-mg-text-3">
+          {expiry ? `到期 ${formatDateTime(expiry)}` : '永不过期'}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** 全局预算列：三档预算合一列（总预算主行 + 个人/Key 次行）。合并原三个预算列。 */
+function GlobalBudgetCell({ row, currencySymbol, showMember }: { row: GuardrailDetail; currencySymbol: string; showMember: boolean }) {
+  return (
+    <div className="min-w-0 space-y-0.5">
+      <div className={DATA_CELL}>总 {formatBudget(currencySymbol, budgetByScope(row, 'guardrail_total'))}</div>
+      <div className="text-[11px] text-mg-text-3">
+        {showMember && <>个人 {formatBudget(currencySymbol, budgetByScope(row, 'per_member'))} · </>}
+        Key {formatBudget(currencySymbol, budgetByScope(row, 'per_api_key'))}
+      </div>
+    </div>
+  )
+}
+
+/** 规则列：模型黑名单/IP 白名单(计数) + 提示词注入(模式) 合一列。合并原三列；提额类型不适用。 */
+function RulesCell({ row, boost, injectionLabel }: { row: GuardrailDetail; boost: boolean; injectionLabel: string }) {
+  if (boost) return <span className={cn('text-xs', PLACEHOLDER)}>不适用</span>
+  const bl = metadataList(row, 'model_blacklist')
+  const ip = metadataList(row, 'ip_whitelist')
+  return (
+    <div className="min-w-0 space-y-0.5">
+      <div className={DATA_CELL}>
+        黑名单 {bl.length || '不限'} · IP {ip.length || '不限'}
+      </div>
+      <div className="text-[11px] text-mg-text-3">注入 {injectionLabel}</div>
+    </div>
+  )
+}
+
+/** 创建/更新列：主行=创建人，次行=最近更新时间。合并原「创建人 / 最近更新」两列。 */
+function MetaCell({ row }: { row: GuardrailDetail }) {
+  const name = row.created_by?.display_name
+  return (
+    <div className="min-w-0">
+      <div className={cn('max-w-[140px] truncate', name ? DATA_CELL : PLACEHOLDER)} title={name || ''}>{name || '—'}</div>
+      <div className="mt-0.5 text-[11px] text-mg-text-3">{formatDateTime(row.updated_at)}</div>
+    </div>
   )
 }
 
@@ -333,42 +310,21 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
       >
         <TableHeader>
           <TableRow>
-            <TableHead>名称</TableHead>
-            <TableHead>工作空间总预算</TableHead>
-            {showMember && <TableHead>默认个人预算</TableHead>}
-            <TableHead>默认 Key 预算</TableHead>
-            <TableHead>模型黑名单</TableHead>
-            <TableHead>IP 白名单</TableHead>
-            <TableHead><PromptInjectionHeaderLabel /></TableHead>
-            <TableHead>创建人</TableHead>
-            <TableHead>最近更新</TableHead>
+            <TableHead>护栏</TableHead>
+            <TableHead>预算（总 / 个人 / Key）</TableHead>
+            <TableHead>规则</TableHead>
+            <TableHead>创建 / 更新</TableHead>
             <TableHead>状态</TableHead>
-            <TableHead className="w-40 text-right">操作</TableHead>
+            <TableHead className="w-32 text-right">操作</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {globalRows.map((row) => (
             <TableRow key={row.id}>
-              <TableCell><NameCell row={row} onOpenDetail={onOpenDetail} /></TableCell>
-              <TableCell className={DATA_CELL}>
-                {formatBudget(currencySymbol, budgetByScope(row, 'guardrail_total'))}
-              </TableCell>
-              {showMember && (
-                <TableCell className={DATA_CELL}>
-                  {formatBudget(currencySymbol, budgetByScope(row, 'per_member'))}
-                </TableCell>
-              )}
-              <TableCell className={DATA_CELL}>
-                {formatBudget(currencySymbol, budgetByScope(row, 'per_api_key'))}
-              </TableCell>
-              <TableCell><TagCell values={metadataList(row, 'model_blacklist')} /></TableCell>
-              <TableCell><TagCell values={metadataList(row, 'ip_whitelist')} /></TableCell>
-              <TableCell className={DATA_CELL}>{PROMPT_INJECTION_LABEL[guardrailPromptInjectionMode(row)]}</TableCell>
-              {/* 创建人（PRD §7.2 / #52）：只显姓名，缺失显「—」，绝不回退到 account_id */}
-              <TableCell className={DATA_CELL}>
-                <CreatedByCell row={row} />
-              </TableCell>
-              <TableCell className={DATA_CELL}>{formatDateTime(row.updated_at)}</TableCell>
+              <TableCell><NameKindCell row={row} onOpenDetail={onOpenDetail} showKind={false} /></TableCell>
+              <TableCell><GlobalBudgetCell row={row} currencySymbol={currencySymbol} showMember={showMember} /></TableCell>
+              <TableCell><RulesCell row={row} boost={false} injectionLabel={PROMPT_INJECTION_LABEL[guardrailPromptInjectionMode(row)]} /></TableCell>
+              <TableCell><MetaCell row={row} /></TableCell>
               <TableCell><StatusCell row={row} canEdit={canEdit.global} onToggle={onToggle} lockOffReason={activeGlobalCount <= 1 ? '需至少保留一条启用的全局护栏' : undefined} /></TableCell>
               <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.global} canDelete={canDelete.global} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
             </TableRow>
@@ -389,35 +345,21 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
         >
           <TableHeader>
             <TableRow>
-              <TableHead>名称</TableHead>
-              <TableHead>类型</TableHead>
+              <TableHead>护栏</TableHead>
               <TableHead>成员</TableHead>
               <TableHead>预算</TableHead>
-              <TableHead>提额到期时间</TableHead>
-              <TableHead>创建人</TableHead>
-              <TableHead>最近更新</TableHead>
+              <TableHead>创建 / 更新</TableHead>
               <TableHead>状态</TableHead>
-              <TableHead className="w-40 text-right">操作</TableHead>
+              <TableHead className="w-32 text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {memberRows.map((row) => (
               <TableRow key={row.id}>
-                <TableCell><NameCell row={row} onOpenDetail={onOpenDetail} /></TableCell>
-                <TableCell><KindBadge row={row} /></TableCell>
+                <TableCell><NameKindCell row={row} onOpenDetail={onOpenDetail} showKind /></TableCell>
                 <TableCell><CountBadge count={memberCount(row)} unit="名成员" /></TableCell>
-                <TableCell className={DATA_CELL}>
-                  {formatBudget(currencySymbol, primaryBudget(row))}
-                </TableCell>
-                <TableCell className={DATA_CELL}>
-                  {deriveKind(row) === 'boost'
-                    ? (boostExpiry(row) ? formatDateTime(boostExpiry(row)) : <span className={PLACEHOLDER}>永不过期</span>)
-                    : <span className={PLACEHOLDER}>-</span>}
-                </TableCell>
-                <TableCell className={DATA_CELL}>
-                  <CreatedByCell row={row} />
-                </TableCell>
-                <TableCell className={DATA_CELL}>{formatDateTime(row.updated_at)}</TableCell>
+                <TableCell><BudgetCell row={row} currencySymbol={currencySymbol} /></TableCell>
+                <TableCell><MetaCell row={row} /></TableCell>
                 <TableCell><StatusCell row={row} canEdit={canEdit.member} onToggle={onToggle} /></TableCell>
                 <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.member} canDelete={canDelete.member} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
               </TableRow>
@@ -438,51 +380,28 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
       >
         <TableHeader>
           <TableRow>
-            <TableHead>名称</TableHead>
-            <TableHead>类型</TableHead>
-            <TableHead>绑定 Key</TableHead>
+            <TableHead>护栏</TableHead>
+            <TableHead>作用对象</TableHead>
             <TableHead>预算</TableHead>
-            <TableHead>提额到期时间</TableHead>
-            <TableHead>模型黑名单</TableHead>
-            <TableHead>IP 白名单</TableHead>
-            <TableHead><PromptInjectionHeaderLabel /></TableHead>
-            <TableHead>创建人</TableHead>
-            <TableHead>最近更新</TableHead>
+            <TableHead>规则</TableHead>
+            <TableHead>创建 / 更新</TableHead>
             <TableHead>状态</TableHead>
-            <TableHead className="w-40 text-right">操作</TableHead>
+            <TableHead className="w-32 text-right">操作</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {keyRows.map((row) => {
             const boost = deriveKind(row) === 'boost'
+            const injectionLabel = rawPromptInjectionMode(row)
+              ? PROMPT_INJECTION_LABEL[rawPromptInjectionMode(row)!]
+              : PROMPT_INJECTION_INHERIT_LABEL
             return (
               <TableRow key={row.id}>
-                <TableCell><NameCell row={row} onOpenDetail={onOpenDetail} /></TableCell>
-                <TableCell><KindBadge row={row} /></TableCell>
+                <TableCell><NameKindCell row={row} onOpenDetail={onOpenDetail} showKind /></TableCell>
                 <TableCell><CountBadge count={apiKeyCount(row)} unit="个 Key" /></TableCell>
-                <TableCell className={DATA_CELL}>
-                  {formatBudget(currencySymbol, primaryBudget(row))}
-                </TableCell>
-                <TableCell className={DATA_CELL}>
-                  {boost ? (boostExpiry(row) ? formatDateTime(boostExpiry(row)) : <span className={PLACEHOLDER}>永不过期</span>) : <span className={PLACEHOLDER}>-</span>}
-                </TableCell>
-                <TableCell>
-                  {boost ? <span className={cn('text-xs', PLACEHOLDER)}>不适用</span> : <TagCell values={metadataList(row, 'model_blacklist')} />}
-                </TableCell>
-                <TableCell>
-                  {boost ? <span className={cn('text-xs', PLACEHOLDER)}>不适用</span> : <TagCell values={metadataList(row, 'ip_whitelist')} />}
-                </TableCell>
-                <TableCell className={DATA_CELL}>
-                  {boost
-                    ? <span className={PLACEHOLDER}>不适用</span>
-                    : (rawPromptInjectionMode(row)
-                        ? PROMPT_INJECTION_LABEL[rawPromptInjectionMode(row)!]
-                        : PROMPT_INJECTION_INHERIT_LABEL)}
-                </TableCell>
-                <TableCell className={DATA_CELL}>
-                  <CreatedByCell row={row} />
-                </TableCell>
-                <TableCell className={DATA_CELL}>{formatDateTime(row.updated_at)}</TableCell>
+                <TableCell><BudgetCell row={row} currencySymbol={currencySymbol} /></TableCell>
+                <TableCell><RulesCell row={row} boost={boost} injectionLabel={injectionLabel} /></TableCell>
+                <TableCell><MetaCell row={row} /></TableCell>
                 <TableCell><StatusCell row={row} canEdit={canEdit.key} onToggle={onToggle} /></TableCell>
                 <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.key} canDelete={canDelete.key} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
               </TableRow>

@@ -102,7 +102,8 @@ while IFS= read -r f; do
   fi
 
   # BLOCK 4：内联 style 裸数值圆角（borderRadius: 8 / '8px'）。圆角只认 rounded-sm/md/lg/full token。
-  hits="$(printf '%s' "$added" | grep -nE "borderRadius:[[:space:]]*['\"]?[0-9]" || true)"
+  # 仅匹配单值 px/裸数字，并要求值后是属性分隔符；放行 50% 圆形与多值气泡圆角。
+  hits="$(printf '%s' "$added" | grep -nE "borderRadius:[[:space:]]*['\"]?[0-9]+(\.[0-9]+)?(px)?['\"]?[[:space:]]*(,|})" || true)"
   if [ -n "$hits" ]; then
     echo "✗ [内联裸圆角] $f — 别用 style borderRadius 裸值，用 rounded-sm/md/lg/full（DESIGN.md · Shapes）"
     printf '%s\n' "$hits" | sed 's/^/      /'

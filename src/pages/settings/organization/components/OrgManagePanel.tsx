@@ -118,8 +118,9 @@ export function OrgManagePanel({
         </div>
       </div>
 
-      {/* Tab 导航（PRD：卡片式带描述，保留原生 button 便于测试与无障碍聚焦） */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Tab 导航（对齐 PRD enterprise-tabs：整体分段条——单圆角边框盒子 + 竖线分隔的等宽格，
+          非分离浮空卡片；激活态 brand-soft 底 + 品牌色字。保留原生 button 便于测试/无障碍。） */}
+      <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-mg-border lg:grid-cols-4">
         {visibleTabs.map((tb) => {
           const active = resolvedSubTab === tb.key
           return (
@@ -127,14 +128,12 @@ export function OrgManagePanel({
               key={tb.key}
               type="button"
               onClick={() => { trackEvent('organization:tab_click', { tab: tb.key }); setActiveSubTab(tb.key) }}
-              className={`flex flex-col items-start gap-1 text-left p-4 rounded-lg border transition-all cursor-pointer ${
-                active
-                  ? 'border-brand-base bg-brand-glow/8 shadow-xs'
-                  : 'border-mg-border/50 bg-mg-bg-0 hover:border-brand-base/40'
+              className={`flex min-h-[58px] flex-col items-start justify-center gap-0.5 border-mg-border px-3.5 py-2.5 text-left transition-colors cursor-pointer [&:not(:last-child)]:border-r ${
+                active ? 'bg-brand-soft' : 'bg-mg-bg-0 hover:bg-mg-fill-0/60'
               }`}
             >
-              <span className={`text-sm font-bold ${active ? 'text-brand-base' : 'text-mg-text-1'}`}>{tb.label}</span>
-              <span className="text-xs text-mg-text-3 leading-relaxed">{tb.desc}</span>
+              <span className={`text-[13px] font-bold ${active ? 'text-brand-base' : 'text-mg-text-1'}`}>{tb.label}</span>
+              <span className={`text-[11px] leading-snug ${active ? 'text-brand-base/80' : 'text-mg-text-3'}`}>{tb.desc}</span>
             </button>
           )
         })}

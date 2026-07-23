@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { SideSheet } from '@/components/ui/SideSheet'
 import { Button } from '@/components/ui/Button'
+import { InfoTip } from '@/components/ui/InfoTip'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { LuArrowRight, LuTriangleAlert, LuRefreshCw, LuCopy, LuLoaderCircle } from 'react-icons/lu'
 import { formatDateTime } from '@/lib/format-date'
@@ -323,7 +324,10 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
             <div className="space-y-3">
               {/* 生效规则预览：全局 / Key 两槽（个人护栏不参与 Key 生效，PRD/需求方#147） */}
               <div>
-                <div className="mb-1.5 text-xs font-bold text-mg-text-2">生效规则预览</div>
+                <div className="mb-1.5 flex items-center gap-1 text-xs font-bold text-mg-text-2">
+                  生效规则预览
+                  <InfoTip text="运行时会同时检查这些预算闸门" />
+                </div>
                 <div className="grid grid-cols-2 gap-2.5">
                   {LAYER_SLOTS.map((slot) => {
                     // Key 层最多 1 常规 + 1 提额（PRD：一把 Key 最多 1 有效常规 Key 护栏 + 1 有效 Key 提额）——列出该层全部
@@ -355,7 +359,10 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
               {/* 预算闸门：按聚合口径逐档 + 来源护栏 */}
               {effective.effective.budgets.length > 0 && (
                 <div>
-                  <div className="mb-1.5 text-xs font-bold text-mg-text-2">预算闸门</div>
+                  <div className="mb-1.5 flex items-center gap-1 text-xs font-bold text-mg-text-2">
+                    预算闸门
+                    <InfoTip text="按最先触发的预算停止调用" />
+                  </div>
                   <div className="space-y-2">
                     {effective.effective.budgets.map((b, i) => {
                       const source = effective.layers.find((l) => l.guardrail_id === b.source_guardrail_id)?.guardrail_name

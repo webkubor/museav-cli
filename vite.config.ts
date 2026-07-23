@@ -79,15 +79,15 @@ export default defineConfig(({ mode }) => {
         display: 'standalone',
         icons: [
           {
-            src: '/brand/modelgo-pwa-icon.svg',
+            src: '/brand/modelgo-pwa-icon.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
+            type: 'image/png',
             purpose: 'any',
           },
           {
-            src: '/brand/modelgo-pwa-icon.svg',
+            src: '/brand/modelgo-pwa-icon.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
+            type: 'image/png',
             purpose: 'maskable',
           },
         ],

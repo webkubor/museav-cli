@@ -1,16 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/i18n'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
 import { Switch } from '@/components/ui/Switch'
+import { SegmentedToggle } from '@/features/dashboard/workbench/SegmentedToggle'
 import { getPreferences, updatePreferences } from '@/services/preferences'
 import { appToast } from '@/lib/app-toast'
 import { useLangStore } from '@/store/use-brand-store'
 import { useAuthStore } from '@/store/auth'
 import { applyTheme, getSavedTheme, getUserTheme, saveTheme, type Theme } from '@/lib/theme'
-import { cn } from '@/lib/utils'
 import { LuSun, LuMoon, LuMonitor } from 'react-icons/lu'
 import {
   BROWSER_TIME_ZONE,
@@ -69,6 +69,12 @@ const THEME_OPTIONS: Array<{
     descKey: 'account.preferences.themeSystemDesc',
   },
 ]
+
+const THEME_ICONS: Record<Theme, ReactNode> = {
+  light: <LuSun size={13} />,
+  dark: <LuMoon size={13} />,
+  system: <LuMonitor size={13} />,
+}
 
 function toI18nLang(language: PreferenceLanguage): Lang {
   return LANGUAGE_OPTIONS.find((item) => item.value === language)?.i18nLang ?? 'zh'
@@ -190,32 +196,22 @@ export function PreferencesTab() {
             </div>
           </div>
 
-          {/* 语言 Segmented 控制器 */}
-          <div className="flex bg-mg-fill-0/30 p-1 rounded-md border border-mg-border/40 shrink-0 self-start md:self-center">
-            {LANGUAGE_OPTIONS.map((option) => {
-              const isSelected = language === option.value
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    setLanguage(option.value)
-                    const lang = toI18nLang(option.value)
-                    i18n.changeLanguage(lang)
-                    setGlobalLang(lang)
-                  }}
-                  className={cn(
-                    "px-4 py-2 rounded-lg text-xs font-bold transition-all duration-300 cursor-pointer select-none active:scale-[0.96]",
-                    isSelected
-                      ? "bg-mg-fill-0 text-brand-base shadow-sm font-black border border-mg-border/30"
-                      : "text-mg-text-3 hover:text-mg-text-1"
-                  )}
-                >
-                  {t(option.titleKey)}
-                </button>
-              )
-            })}
-          </div>
+          {/* 语言 Segmented（统一用共享 SegmentedToggle） */}
+          <SegmentedToggle
+            className="shrink-0 self-start md:self-center"
+            ariaLabel={t('account.preferences.languageTitle')}
+            value={language}
+            onChange={(value) => {
+              setLanguage(value)
+              const lang = toI18nLang(value)
+              i18n.changeLanguage(lang)
+              setGlobalLang(lang)
+            }}
+            options={LANGUAGE_OPTIONS.map((option) => ({
+              value: option.value,
+              label: t(option.titleKey),
+            }))}
+          />
         </div>
 
         {/* 界面主题（Theme） */}
@@ -229,33 +225,18 @@ export function PreferencesTab() {
             </div>
           </div>
 
-          {/* 主题选择卡片并排 */}
-          <div className="grid grid-cols-3 gap-2 shrink-0 w-full md:w-auto">
-            {THEME_OPTIONS.map((option) => {
-              const isSelected = theme === option.value
-              const themeIcons: Record<string, React.ReactNode> = {
-                light: <LuSun size={13} />,
-                dark: <LuMoon size={13} />,
-                system: <LuMonitor size={13} />,
-              }
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleThemeChange(option.value)}
-                  className={cn(
-                    "flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold border cursor-pointer select-none transition-all active:scale-[0.96]",
-                    isSelected
-                      ? "bg-brand-selected-bg text-brand-base border-brand-base/40 shadow-sm shadow-brand-glow/5"
-                      : "bg-mg-fill-0/30 text-mg-text-3 border-mg-border/50 hover:bg-mg-fill-0/50 hover:text-mg-text-1 hover:translate-y-[-1px]"
-                  )}
-                >
-                  {themeIcons[option.value]}
-                  <span>{t(option.titleKey)}</span>
-                </button>
-              )
-            })}
-          </div>
+          {/* 主题 Segmented（与语言统一用共享 SegmentedToggle，带图标） */}
+          <SegmentedToggle
+            className="shrink-0 self-start md:self-center"
+            ariaLabel={t('account.preferences.themeTitle')}
+            value={theme}
+            onChange={(value) => handleThemeChange(value)}
+            options={THEME_OPTIONS.map((option) => ({
+              value: option.value,
+              label: t(option.titleKey),
+              icon: THEME_ICONS[option.value],
+            }))}
+          />
         </div>
 
         {/* 显示时区（Time Zone） */}

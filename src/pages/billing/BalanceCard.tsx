@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { LuRefreshCw, LuPlus, LuTicket } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
+import { InfoTip } from '@/components/ui/InfoTip'
 import { cn } from '@/lib/utils'
 import { trackAction } from '@/lib/track'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
@@ -126,9 +127,9 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
 
         {/* 可消费合计 */}
         <div className="space-y-1">
-          <p className="text-xs text-mg-text-3">
+          <p className="flex items-center gap-1 text-xs text-mg-text-3">
             {t('billing.balance.spendableTotal')}
-            <span className="ml-1 text-mg-text-3">({t('billing.balance.spendableHint')})</span>
+            <InfoTip text="调用消费时按 赠送 → 奖励 → 主余额 的顺序扣减。" />
           </p>
           <div className="flex items-baseline gap-3 flex-wrap">
             <div className="flex items-baseline gap-1">
@@ -168,8 +169,9 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             className={cn(cardCls(activeTab === 'gift'), activeTab === 'gift' && 'active-gift')}
           >
             <div className="shimmer-light" />
-            <div className={cn('text-xs transition-colors duration-300', activeTab === 'gift' ? 'text-sky-600 font-semibold' : 'text-mg-text-3')}>
+            <div className={cn('flex items-center gap-1 text-xs transition-colors duration-300', activeTab === 'gift' ? 'text-sky-600 font-semibold' : 'text-mg-text-3')}>
               {t('billing.balance.giftBalance')}
+              <InfoTip text="活动、兑换码等赠送额度，调用消费时优先扣减。" />
             </div>
             <div className="flex items-baseline gap-0.5 mt-1 select-none">
               <span className="text-xs font-semibold text-mg-text-3">{currencySymbol}</span>
@@ -187,8 +189,9 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             className={cn(cardCls(activeTab === 'reward'), activeTab === 'reward' && 'active-reward')}
           >
             <div className="shimmer-light" />
-            <div className={cn('text-xs transition-colors duration-300', activeTab === 'reward' ? 'text-amber-500 font-semibold' : 'text-mg-text-3')}>
+            <div className={cn('flex items-center gap-1 text-xs transition-colors duration-300', activeTab === 'reward' ? 'text-amber-500 font-semibold' : 'text-mg-text-3')}>
               {t('billing.balance.rewardBalance')}
+              <InfoTip text="推荐返佣等产生的奖励，调用消费时在主余额前扣减。" />
             </div>
             <div className="flex items-baseline gap-0.5 mt-1 select-none">
               <span className="text-xs font-semibold text-mg-text-3">{currencySymbol}</span>

@@ -27,6 +27,7 @@ import { useTranslation } from 'react-i18next'
 import { DashboardHeader } from './DashboardHeader'
 import { DashboardSidebar } from './DashboardSidebar'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { CustomerService } from '@/components/customer-service'
 import { PhoneBindingGuard } from '@/components/auth/PhoneBindingGuard'
 import { TopUpModal } from '@/pages/billing/TopUpModal'
@@ -309,15 +310,18 @@ export function DashboardLayout() {
             <WorkspaceGuard currentKey={getSelectedKey()} workspaceId={currentWorkspaceId}>
               {/* 内容区级 Suspense：切菜单时只在内容区转圈，侧栏/头/面包屑常驻不闪，
                   路由立即响应（不再被 App 级全屏 RouteFallback 盖住整屏） */}
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center py-24">
-                    <div className="h-7 w-7 animate-spin rounded-full border-2 border-mg-border border-t-brand-base" />
-                  </div>
-                }
-              >
-                <Outlet />
-              </Suspense>
+              {/* 基本容错：页面级组件抛错时显降级 UI 而非整页白屏；resetKey=pathname 切页后自动恢复 */}
+              <ErrorBoundary resetKey={location.pathname}>
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center py-24">
+                      <div className="h-7 w-7 animate-spin rounded-full border-2 border-mg-border border-t-brand-base" />
+                    </div>
+                  }
+                >
+                  <Outlet />
+                </Suspense>
+              </ErrorBoundary>
             </WorkspaceGuard>
           </div>
         </main>

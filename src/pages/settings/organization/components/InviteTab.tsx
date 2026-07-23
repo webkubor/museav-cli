@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { addTenantMembers, getTenantInviteLink, listTenantMembers, resetTenantInviteLink } from '@/services/tenants'
+import { formatDate } from '@/lib/format-date'
 import { ModelGoApiError } from '@/lib/request'
 import { listWorkspaces } from '@/services/workspaces'
 import { Button } from '@/components/ui/Button'
@@ -45,6 +46,12 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
     () => new Set((membersQuery.data?.items ?? []).map((m) => m.account.email?.toLowerCase()).filter(Boolean)),
     [membersQuery.data],
   )
+  // 邀请队列：后端 /tenants/{id}/members 响应本就返回 pending_invitations(与成员页同源),此前误以为「无接口」留空占位。
+  const pendingInvites = useMemo(
+    () => (membersQuery.data?.pending_invitations ?? []).filter((i) => i.status === 'pending'),
+    [membersQuery.data],
+  )
+  const roleLabel = (r: string) => (r === 'tenant_admin' ? '管理员' : '成员')
 
   // 空间列表作为「授权工作空间」下拉数据源
   const workspacesQuery = useQuery({
@@ -245,16 +252,38 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
           </div>
         </div>
 
-        {/* 邀请队列 —— 后端无租户级邀请队列接口 → 占位空态 */}
-        {/* TODO(后端待接): 租户级邀请队列接口（邮箱/角色/授权空间/邀请人/过期/状态 + 重发/撤销） 见 #420 */}
+        {/* 邀请队列(对齐 PRD enterprise-invite-card:只读列表 email + 角色·邀请人 + 过期;重发在成员 tab)。
+            数据用 members 接口返回的 pending_invitations(与成员页同源)。 */}
         <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg overflow-hidden shadow-sm">
           <div className="p-4 border-b border-mg-border/50 bg-mg-fill-0/20">
             <div className="text-xs font-bold text-mg-text-1">{t('enterprise.invite.queueTitle')}</div>
+            <div className="mt-0.5 text-xs text-mg-text-3">{pendingInvites.length} 个邀请待接受</div>
           </div>
-          <EmptyState
-            title={t('enterprise.invite.queueEmptyTitle')}
-            description={t('enterprise.invite.queueEmptyDesc')}
-          />
+          {pendingInvites.length === 0 ? (
+            <EmptyState
+              title={t('enterprise.invite.queueEmptyTitle')}
+              description={t('enterprise.invite.queueEmptyDesc')}
+            />
+          ) : (
+            <div className="divide-y divide-mg-border/40">
+              {pendingInvites.map((inv) => (
+                <div key={inv.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-mg-text-1">{inv.email}</div>
+                    <div className="mt-0.5 truncate text-xs text-mg-text-3">
+                      {roleLabel(inv.role)}
+                      {inv.invited_by_display && ` · ${t('enterprise.members.invitedBy', { name: inv.invited_by_display })}`}
+                    </div>
+                  </div>
+                  {inv.expires_at && (
+                    <span className="shrink-0 text-xs text-mg-text-3">
+                      {t('enterprise.members.expiresAt', { date: formatDate(inv.expires_at) })}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

@@ -14,6 +14,8 @@ export interface ProgressBarProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: "brand" | "rainbow" | "emerald" | "amber" | "blue"
   size?: "xs" | "sm" | "md" | "lg"
   showGlow?: boolean
+  /** 填充条上叠一层流光扫过（"流动感"），复用全局 shimmer-slide keyframe */
+  flow?: boolean
   showLabel?: boolean
   labelPosition?: "top" | "bottom" | "right" | "none"
   formatLabel?: (val: number, max: number) => React.ReactNode
@@ -31,6 +33,7 @@ export const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
       variant = "brand",
       size = "md",
       showGlow = true,
+      flow = false,
       showLabel = false,
       labelPosition = "none",
       formatLabel,
@@ -160,6 +163,18 @@ export const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
               )}
               style={{ width: percentString }}
             >
+              {/* 流光扫过（"流动感"）：复用全局 shimmer-slide keyframe，只叠在已填充部分 */}
+              {flow && percentage > 0 && (
+                <div
+                  className="pointer-events-none absolute inset-0 rounded-full"
+                  style={{
+                    backgroundImage:
+                      'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%)',
+                    backgroundSize: '200% 100%',
+                    animation: 'shimmer-slide 2s ease-in-out infinite',
+                  }}
+                />
+              )}
               {/* 进度条前端的高光指示器 (Glow Thumb) */}
               {showGlow && percentage > 0 && percentage < 1 && (
                 <div

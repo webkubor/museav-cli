@@ -162,6 +162,7 @@ function DistributionBarRow({
         variant={highlight ? 'brand' : 'blue'}
         size="xs"
         showGlow={highlight}
+        flow
         className={cn('w-full', muted && 'opacity-60')}
       />
       <span className={cn('text-right text-sm tabular-nums', highlight ? 'font-bold text-brand-base' : 'text-mg-text-2')}>
@@ -423,9 +424,20 @@ export function DistributionDonutPanel({
                 </div>
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-mg-bg-2">
                   <div
-                    className="h-full rounded-full transition-[width] duration-300"
+                    className="relative h-full overflow-hidden rounded-full transition-[width] duration-300"
                     style={{ width: `${Math.max(2, Math.min(100, s.share))}%`, background: s.color }}
-                  />
+                  >
+                    {/* 流光扫过（"流动感"）：复用全局 shimmer-slide keyframe */}
+                    <div
+                      className="pointer-events-none absolute inset-0 rounded-full"
+                      style={{
+                        backgroundImage:
+                          'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%)',
+                        backgroundSize: '200% 100%',
+                        animation: 'shimmer-slide 2s ease-in-out infinite',
+                      }}
+                    />
+                  </div>
                 </div>
               </li>
             ))}
@@ -489,7 +501,7 @@ export function UsageStatCard({ icon, label, value, suffix, loading, breakdownTi
               <span className="font-mono font-semibold text-mg-text-1">{r.value}</span>
             </div>
             {r.bar !== false && (
-              <ProgressBar value={r.pct ?? 0} variant={r.variant ?? 'brand'} size="xs" showGlow={false} />
+              <ProgressBar value={r.pct ?? 0} variant={r.variant ?? 'brand'} size="xs" showGlow={false} flow />
             )}
           </div>
         ))}

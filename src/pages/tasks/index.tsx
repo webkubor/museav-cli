@@ -230,6 +230,7 @@ function getArtifactState(task: TaskItem, expired: boolean): TaskArtifactState |
   if (task.status === 'queued' || task.status === 'running') return 'generating'
   if (task.status === 'failed') return 'failed'
   if (expired) return 'expired'
+  if (isTaskDone(task.status) && task.artifact_count === 0) return 'generating'
   if (isTaskDone(task.status)) return 'available'
   return null
 }
@@ -328,14 +329,12 @@ function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose:
   // 产物有效期：详情接口优先（result_meta 可能比列表项新），回落到列表项
   const expiry = resultExpiry(data) ?? resultExpiry(task)
   const isVideoTask = kind === 'video' && isTaskDone(task.status) && artifactState === 'available'
-  // 无 result_meta 字段（空）= 按已过期算（与列表一致）
-  const noMeta = isVideoTask && !data?.result_meta?.result_expires_at && !task.result_meta?.result_expires_at
-  // 视频产物：成功态直接用网关 content 端点（凭 gateway_request_id，302 转 OSS）；过期/无字段则不展示
-  const videoUrl = isVideoTask && !expired && !noMeta ? videoContentUrl(taskId) : null
+  // 视频产物：仅在服务端确认可用且未过期时访问网关内容端点。
+  const videoUrl = isVideoTask && !expired ? videoContentUrl(taskId) : null
   // 运行时兜底：result_meta 在有效期内但视频实际已被清理（404）→ 当作不可用
   const [videoUnavailable, setVideoUnavailable] = useState(false)
   const showVideo = !!videoUrl && !videoUnavailable
-  const gone = (isVideoTask && (expired || noMeta)) || videoUnavailable
+  const gone = (isVideoTask && expired) || videoUnavailable
 
   // 产物元信息（#446）：后端未交付前统一占位「—」；有值才展示真实内容
   const rm = data?.result_meta ?? task.result_meta
@@ -870,13 +869,11 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
               const kindCfg = KIND_CONFIG[kind]
               const expiry  = resultExpiry(item)
               const isVideoTask = kind === 'video' && isTaskDone(item.status)
-              // 过期以 artifact_state 为权威（需求方#223：刚生成的视频不能因 result_expires_at 未回填就误判已过期）：
-              // expired 态 ∪ result_expires_at 确已过期 ∪ 运行时 404；
-              // 仅当后端未回 artifact_state（旧契约）时才回退到「缺 expiry 视为过期」。
+              // 过期以服务端 artifact_state / result_expires_at / 运行时 404 为准。
+              // 缺少有效期字段表示元数据尚未回填，不能直接判定为过期。
               const isExpired =
                 item.artifact_state === 'expired' ||
                 isVideoExpired(item) ||
-                (item.artifact_state == null && isVideoTask && !item.result_meta?.result_expires_at) ||
                 expiredIds.has(item.gateway_request_id)
               // 仅未过期的已完成视频任务有可播放/可抓帧的地址
               const videoUrl = isVideoTask && !isExpired

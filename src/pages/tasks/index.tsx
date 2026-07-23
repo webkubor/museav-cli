@@ -870,10 +870,13 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
               const kindCfg = KIND_CONFIG[kind]
               const expiry  = resultExpiry(item)
               const isVideoTask = kind === 'video' && isTaskDone(item.status)
-              // 过期 = 元数据已过期 ∪ 无 result_meta 字段（空＝按已过期算）∪ 运行时 404
+              // 过期以 artifact_state 为权威（需求方#223：刚生成的视频不能因 result_expires_at 未回填就误判已过期）：
+              // expired 态 ∪ result_expires_at 确已过期 ∪ 运行时 404；
+              // 仅当后端未回 artifact_state（旧契约）时才回退到「缺 expiry 视为过期」。
               const isExpired =
+                item.artifact_state === 'expired' ||
                 isVideoExpired(item) ||
-                (isVideoTask && !item.result_meta?.result_expires_at) ||
+                (item.artifact_state == null && isVideoTask && !item.result_meta?.result_expires_at) ||
                 expiredIds.has(item.gateway_request_id)
               // 仅未过期的已完成视频任务有可播放/可抓帧的地址
               const videoUrl = isVideoTask && !isExpired

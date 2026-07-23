@@ -7,7 +7,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
-import { toast } from 'sonner'
 import './index.css'
 import './i18n'
 import App from './App.tsx'
@@ -18,6 +17,7 @@ import { init as initTrack, TrackApp, TrackRegion } from '@model-go/track'
 import { getMarket } from './lib/market'
 import { apiBaseUrl } from './lib/request'
 import { useAuthStore } from './store/auth'
+import { useAppUpdateStore } from './store/use-app-update-store'
 
 // 前端运行时错误上报（仅 DEV）：未捕获异常 / rejection / 全控制台 + DOM 快照，
 // 内置 5s 去重 + 去 HMR 戳防刷爆。统一由 vite-plugin-agent-eyes 提供，替代原 dev-error-reporter。
@@ -82,18 +82,38 @@ if ('serviceWorker' in navigator) {
 }
 
 if (import.meta.env.PROD) {
-  registerSW({
+  // PWA 版本更新（registerType: 'prompt'）：检测到新版本 → 置 store.updateReady →
+  // 全局 <AppUpdatePrompt/> 弹强制更新窗；用户点「立即更新」调 updateSW(true) 激活新 SW + 刷新。
+  const updateSW = registerSW({
     onNeedRefresh() {
-      toast.info('检测到新版本', {
-        action: {
-          label: '立即刷新',
-          onClick: () => window.location.reload(),
-        },
-        duration: Infinity,
+      useAppUpdateStore.getState().setUpdateReady(true)
+    },
+    onRegisteredSW(_swUrl, registration) {
+      if (!registration) return
+      // 主动轮询新版本（每 5 分钟）+ 标签页重新可见时各查一次，让更新提示尽快出现，
+      // 不必等用户手动刷新才发现新版本。
+      const checkUpdate = () => registration.update().catch(() => {})
+      setInterval(checkUpdate, 5 * 60 * 1000)
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') checkUpdate()
       })
     },
   })
+  useAppUpdateStore.getState().setUpdateSW(updateSW)
 }
+
+// 兜底（不限 PROD）：部署后旧 hash chunk 被清除，停留旧页面的用户导航时动态 import 会失败
+// （服务器 SPA 回退把缺失的 /assets/*.js 返成 index.html/text/html → MIME 报错 → 白屏，需求方#233）。
+// 捕获 Vite 的 preloadError，强制整页刷新拉取最新 index.html + chunk；10s 时间窗防刷新循环。
+window.addEventListener('vite:preloadError', (event) => {
+  const key = 'mg:preload-reload-ts'
+  const last = Number(sessionStorage.getItem(key) || '0')
+  if (Date.now() - last > 10_000) {
+    sessionStorage.setItem(key, String(Date.now()))
+    event.preventDefault()
+    window.location.reload()
+  }
+})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

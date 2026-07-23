@@ -41,7 +41,9 @@ export default defineConfig(({ mode }) => {
     }),
     devRequirementsPlugin(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // prompt 模式：新版本就绪时触发 onNeedRefresh，由 <AppUpdatePrompt/> 弹强制更新窗，
+      // 而非 autoUpdate 静默替换（静默模式下页面仍跑旧代码，导航易撞旧 chunk 白屏，需求方#233）。
+      registerType: 'prompt',
       includeAssets: ['favicon.svg', 'brand/**'],
       // 国内版 manifest(默认);国际站(.ai)由 index.html 域名前置脚本切到
       // public/manifest-global.webmanifest(qa#481)——单一构建产物,安装图标/名称随市场。

@@ -24,6 +24,8 @@ interface ModalProps {
   children?: React.ReactNode
   size?: "sm" | "md" | "lg"
   className?: string
+  /** 是否显示右上角关闭按钮，默认显示；强制类弹窗（如新版本强制更新）传 false 隐藏 */
+  closeButton?: boolean
 }
 
 export function Modal({
@@ -35,12 +37,13 @@ export function Modal({
   children,
   size = "md",
   className,
+  closeButton = true,
 }: ModalProps) {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
       {/* 三段式：标题/底栏固定，仅内容区内部滚动——长表单的主操作按钮恒在首屏可见（需求方#83）。
           flex 覆盖基类 grid；!overflow-hidden 压掉基类的整体 overflow-y-auto（那会把 footer 一起滚出视口） */}
-      <DialogContent className={cn(SIZE_MAP[size], "flex flex-col !overflow-hidden", className)}>
+      <DialogContent closeButton={closeButton} className={cn(SIZE_MAP[size], "flex flex-col !overflow-hidden", className)}>
         {(title || description) && (
           <DialogHeader className="shrink-0">
             {title && <DialogTitle>{title}</DialogTitle>}

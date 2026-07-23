@@ -59,6 +59,8 @@ export interface TaskItem {
   billing_status?: string
   /** 新契约产物状态：generating / available / expired / failed */
   artifact_state?: TaskArtifactState
+  /** 产物数量；成功但仍为 0 时表示产物尚未落库。 */
+  artifact_count?: number
   /** 计费币种 CNY/USD */
   currency?: string
   // ── 以下为后端扩展字段（非核心 Row，待接入）─────────

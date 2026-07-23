@@ -430,7 +430,7 @@ export function CreateKeyModal({
                       setMemberAccountId("");
                     }}
                     className={[
-                      "rounded-lg border p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-40",
+                      "rounded-md border p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-40",
                       active
                         ? "border-brand-base bg-brand-base/5 ring-1 ring-brand-base/30"
                         : "border-mg-border bg-mg-bg-1 enabled:hover:border-brand-base/35",
@@ -538,7 +538,7 @@ export function CreateKeyModal({
               customLabel="选择截止时间"
               hideStartDate={true}
               placeholder="选择过期失效时间"
-              className="w-full rounded-md h-10 justify-between"
+              className="w-full rounded-md h-10 justify-between !bg-mg-bg-1"
             />
           </div>
 
@@ -550,7 +550,7 @@ export function CreateKeyModal({
               aria-controls="api-key-advanced-panel"
               data-track="api_keys:advanced_toggle"
               onClick={() => setAdvancedOpen((v) => !v)}
-              className="flex w-full items-center justify-between gap-3 rounded-lg border border-mg-border bg-mg-bg-1 px-3 py-2.5 text-left transition-colors hover:border-brand-base/60"
+              className="flex w-full items-center justify-between gap-3 rounded-md border border-mg-border bg-mg-bg-1 px-3 py-2.5 text-left transition-colors hover:border-brand-base/60"
             >
               <span className="flex min-w-0 flex-col gap-0.5">
                 <strong className="text-[13px] font-bold text-mg-text-1">

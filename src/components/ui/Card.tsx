@@ -18,9 +18,10 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "text-mg-text-1 shadow-[var(--shadow-md)] transition-all duration-300",
+      // Apple 卡片语言：淡边框 + 柔和扩散阴影（--mg-card-*，深浅各一套，见 DESIGN.md Card）
+      "text-mg-text-1 shadow-[var(--mg-card-shadow)] transition-all duration-300",
       level === 1 ? "rounded-lg bg-mg-bg-0" : "rounded-lg bg-mg-bg-2",
-      !noBorder && "border border-mg-border",
+      !noBorder && "border border-[color:var(--mg-card-border)]",
       hoverable && !glass && (
         level === 1
           ? "hover:shadow-[var(--shadow-lg)] hover:-translate-y-1 hover:border-brand-base/20"

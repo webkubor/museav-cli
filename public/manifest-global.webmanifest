@@ -9,14 +9,14 @@
   "scope": "/",
   "icons": [
     {
-      "src": "/brand/modelgo-global-logo.svg",
-      "sizes": "any",
+      "src": "/brand/modelgo-pwa-icon.svg",
+      "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/brand/modelgo-global-logo.svg",
-      "sizes": "any",
+      "src": "/brand/modelgo-pwa-icon.svg",
+      "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "maskable"
     }

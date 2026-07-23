@@ -9,8 +9,9 @@ import {
 } from "@/components/ui/Dialog"
 import { cn } from "@/lib/utils"
 
+// 尺寸标准：sm=纯确认框(短提示+按钮)｜md=默认,内容型表单/公告｜lg=复杂多区
 const SIZE_MAP = {
-  sm: "sm:max-w-[360px]",
+  sm: "sm:max-w-[400px]",
   md: "sm:max-w-[520px]",
   lg: "sm:max-w-[720px]",
 }

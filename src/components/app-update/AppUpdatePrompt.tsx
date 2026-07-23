@@ -32,7 +32,7 @@ export function AppUpdatePrompt() {
       // 强制更新：不提供关闭入口——onClose 空实现（点遮罩/Esc 不关）+ 隐藏右上角 X
       onClose={() => {}}
       closeButton={false}
-      size="sm"
+      size="md"
       title={
         <span className="flex items-center gap-2">
           <LuRocket size={18} className="text-brand-base" />
@@ -49,7 +49,7 @@ export function AppUpdatePrompt() {
         我们发布了新版本，带来了功能改进与问题修复。为确保正常使用，请更新后继续。
       </p>
       {/* 版本对比：当前运行版本(烘焙) → 服务器最新版本(拉取)。version.json 拉取失败则只显当前。 */}
-      <div className="mt-3 space-y-1.5 rounded-md border border-mg-border bg-mg-fill-0/50 px-3 py-2.5">
+      <div className="mt-3 space-y-1.5 rounded-md border border-mg-border px-3 py-2.5">
         <div className="flex items-center justify-between gap-3 text-xs">
           <span className="shrink-0 text-mg-text-3">当前版本</span>
           <span className="truncate font-mono text-mg-text-2" title={currentLine}>{currentLine || '—'}</span>

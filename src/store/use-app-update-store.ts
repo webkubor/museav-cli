@@ -4,6 +4,8 @@ import type { AppVersionInfo } from '@/lib/app-version'
 /** PWA 版本更新调度：main.tsx 注册 SW 时回填 updateSW，检测到新版本置 updateReady。 */
 type UpdateSW = (reloadPage?: boolean) => Promise<void>
 
+const UPDATE_FALLBACK_MS = 1200
+
 interface AppUpdateState {
   /** 检测到新版本、SW 已就绪待激活 */
   updateReady: boolean
@@ -35,14 +37,14 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
     // 关键:保证「立即更新」一定生效,不出现「一直点没反应/卡更新中」。
     // 整页刷新会拉取最新 index.html + chunk——即使 SW 的 skipWaiting/controllerchange
     // 机制异常或挂起,刷新本身也能真正更新到新版本。故无论 updateSW 成功/失败/挂起,
-    // 都在 3s 内强制兜底刷新。
+    // 都在短暂等待后强制兜底刷新，避免用户误以为首次点击无效。
     let reloaded = false
     const hardReload = () => {
       if (reloaded) return
       reloaded = true
       window.location.reload()
     }
-    const timer = setTimeout(hardReload, 3000)
+    const timer = setTimeout(hardReload, UPDATE_FALLBACK_MS)
     const finish = () => {
       clearTimeout(timer)
       hardReload()

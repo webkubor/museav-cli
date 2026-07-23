@@ -4,7 +4,7 @@ import type { AppVersionInfo } from '@/lib/app-version'
 /** PWA 版本更新调度：main.tsx 注册 SW 时回填 updateSW，检测到新版本置 updateReady。 */
 type UpdateSW = (reloadPage?: boolean) => Promise<void>
 
-const UPDATE_FALLBACK_MS = 1200
+const UPDATE_FALLBACK_MS = 5000
 
 interface AppUpdateState {
   /** 检测到新版本、SW 已就绪待激活 */
@@ -44,16 +44,24 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
       reloaded = true
       window.location.reload()
     }
-    const timer = setTimeout(hardReload, UPDATE_FALLBACK_MS)
-    const finish = () => {
-      clearTimeout(timer)
+    if (!updateSW) {
       hardReload()
+      return
     }
-    if (updateSW) {
-      // updateSW(true) 正常会 skipWaiting 后自身 reload；若未 reload/失败,由 finish/timer 兜底
-      updateSW(true).then(finish).catch(finish)
-    } else {
-      hardReload()
-    }
+
+    const activation = new Promise<void>((resolve) => {
+      if (!('serviceWorker' in navigator)) {
+        resolve()
+        return
+      }
+      navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true })
+      setTimeout(resolve, UPDATE_FALLBACK_MS)
+    })
+
+    // 先激活新 SW，再由这里统一刷新一次，避免 updateSW(true) 与兜底刷新竞态导致白屏。
+    updateSW(false)
+      .then(() => activation)
+      .then(hardReload)
+      .catch(hardReload)
   },
 }))

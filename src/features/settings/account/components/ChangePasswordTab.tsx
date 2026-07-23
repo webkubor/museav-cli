@@ -166,14 +166,18 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
   )
 }
 
+/**
+ * 「登录密码」行——不自带卡片，由 index.tsx 的「安全与登录」统一卡片承载，
+ * 与偏好设置页同一「一张卡 + 分隔行」结构（DESIGN.md Card 铁律）。
+ */
 export const ChangePasswordTab: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false)
 
   return (
-    <div className="max-w-[520px] pt-2">
-      <div className="flex items-center justify-between gap-4 rounded-lg border border-mg-border bg-mg-bg-1 px-5 py-4">
+    <>
+      <div className="flex items-center justify-between gap-4 pb-5 border-b border-mg-border/40">
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-mg-text-1">登录密码</div>
+          <div className="text-[14px] font-bold text-mg-text-1">登录密码</div>
           <div className="mt-1 text-xs leading-relaxed text-mg-text-3">
             {HAS_PASSWORD ? '用于账号密码登录。' : '账号还未设置密码，设置后可用密码登录。'}
           </div>
@@ -190,6 +194,6 @@ export const ChangePasswordTab: React.FC = () => {
       </div>
 
       <PasswordDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />
-    </div>
+    </>
   )
 }

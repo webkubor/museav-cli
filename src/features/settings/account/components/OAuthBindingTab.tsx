@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 import React, { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useOAuthMethods } from '@/hooks/use-platform-config'
@@ -71,114 +72,66 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
 
   return (
     <>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '520px', paddingTop: '8px' }}>
-      <div style={{ fontSize: '13px', color: 'var(--mg-text-2)', marginBottom: '8px', lineHeight: '1.5' }}>
-        {t('account.oauth.desc')}
-      </div>
+      {/* OAuth 绑定区——不自带卡片，作为「安全与登录」统一卡片内的一段分隔行 */}
+      <div className="pt-5">
+        <div className="mb-4 text-xs leading-relaxed text-mg-text-2">
+          {t('account.oauth.desc')}
+        </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {PROVIDERS.map((provider) => {
-          const conn = connMap.get(provider)
-          const isBound = !!conn?.connected_at
-          const isPending = bindMutation.variables === provider && bindMutation.isPending
-            || unbindMutation.variables === provider && unbindMutation.isPending
+        <div className="flex flex-col">
+          {PROVIDERS.map((provider) => {
+            const conn = connMap.get(provider)
+            const isBound = !!conn?.connected_at
+            const isPending = (bindMutation.variables === provider && bindMutation.isPending)
+              || (unbindMutation.variables === provider && unbindMutation.isPending)
 
-          const handleClick = () => {
-            if (isBound) {
-              handleUnbindClick(provider)
-              return
+            const handleClick = () => {
+              if (isBound) {
+                handleUnbindClick(provider)
+                return
+              }
+              bindMutation.mutate(provider)
             }
-            bindMutation.mutate(provider)
-          }
 
-          return (
-            <div
-              key={provider}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '16px 20px',
-                borderRadius: '8px',
-                border: '1px solid var(--mg-border)',
-                backgroundColor: 'var(--mg-bg-1)',
-                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--mg-bg-0)';
-                e.currentTarget.style.borderColor = 'var(--brand-glow)';
-                e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--mg-bg-1)';
-                e.currentTarget.style.borderColor = 'var(--mg-border)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
-                  {OAUTH_ICONS_LG[provider]}
-                </span>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 600, color: 'var(--mg-text-1)', fontSize: '14.5px', letterSpacing: '-0.01em' }}>
-                      {t(`account.oauth.${provider}`)}
-                    </span>
-                    {isBound ? (
-                      <span style={{ 
-                        fontSize: '12px', 
-                        color: 'var(--go-deep)', 
-                        marginLeft: '10px',
-                        backgroundColor: 'var(--go-pale)',
-                        padding: '1px 6px',
-                        borderRadius: '8px',
-                        fontWeight: 600,
-                        border: '1px solid var(--go-light)'
-                      }}>
-                        {t('account.oauth.bound')}
+            return (
+              <div
+                key={provider}
+                className="flex items-center justify-between gap-4 py-3.5 border-b border-mg-border/40 last:border-b-0"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="shrink-0 flex items-center">{OAUTH_ICONS_LG[provider]}</span>
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-sm font-semibold text-mg-text-1">
+                        {t(`account.oauth.${provider}`)}
                       </span>
-                    ) : (
-                      <span style={{
-                        fontSize: '12px',
-                        color: 'var(--mg-text-3)',
-                        marginLeft: '10px',
-                        backgroundColor: 'var(--mg-fill-0)',
-                        padding: '1px 6px',
-                        borderRadius: '8px',
-                        fontWeight: 500,
-                        border: '1px solid var(--mg-border)'
-                      }}>
-                        {t('account.oauth.notBound')}
+                      <Badge variant={isBound ? 'success' : 'secondary'} size="sm">
+                        {t(isBound ? 'account.oauth.bound' : 'account.oauth.notBound')}
+                      </Badge>
+                    </div>
+                    {isBound && conn.external_email && (
+                      <span className="text-xs text-mg-text-3">
+                        {t('account.oauth.emailLabel', { email: conn.external_email })}
                       </span>
                     )}
                   </div>
-                  {isBound && conn.external_email && (
-                    <span style={{ fontSize: '12px', color: 'var(--mg-text-3)' }}>
-                      {t('account.oauth.emailLabel', { email: conn.external_email })}
-                    </span>
-                  )}
                 </div>
+                <Button
+                  size="small"
+                  variant={isBound ? 'outline' : 'brand'}
+                  loading={isPending}
+                  disabled={isPending}
+                  onClick={handleClick}
+                >
+                  {isPending
+                    ? t('account.oauth.processing')
+                    : isBound ? t('account.oauth.unbind') : t('account.oauth.bind')}
+                </Button>
               </div>
-              <Button
-                size="small"
-                variant={isBound ? "outline" : "brand"}
-                loading={isPending}
-                disabled={isPending}
-                onClick={handleClick}
-                style={{
-                  fontWeight: 600
-                }}
-              >
-                {isPending
-                  ? t('account.oauth.processing')
-                  : isBound ? t('account.oauth.unbind') : t('account.oauth.bind')}
-              </Button>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
-    </div>
 
       <Modal
         open={pendingUnbind !== null}
@@ -186,23 +139,24 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
         size="sm"
         title="解绑确认"
         footer={
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <div className="flex justify-end gap-2">
             <Button size="small" variant="secondary" onClick={handleUnbindCancel}>
               取消
             </Button>
             <Button
               size="small"
+              variant="brand"
               loading={unbindMutation.isPending}
               disabled={unbindMutation.isPending}
               onClick={handleUnbindConfirm}
-              style={{ color: isOnlyLoginMethod ? 'var(--mg-danger)' : undefined }}
+              className={isOnlyLoginMethod ? 'text-mg-danger' : undefined}
             >
               确认解绑
             </Button>
           </div>
         }
       >
-        <p style={{ fontSize: '14px', color: isOnlyLoginMethod ? 'var(--mg-danger)' : 'var(--mg-text-2)', margin: 0 }}>
+        <p className={`m-0 text-sm ${isOnlyLoginMethod ? 'text-mg-danger' : 'text-mg-text-2'}`}>
           {confirmMessage}
         </p>
       </Modal>

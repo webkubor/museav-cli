@@ -91,15 +91,16 @@ export default function AccountSettingsPage() {
           <TabsTrigger variant="pills" value="preferences">{t('account.tabs.preferences')}</TabsTrigger>
         </TabsList>
         <TabsContent value="info"><BasicInfoTab profile={profile} /></TabsContent>
-        {/* 安全与登录：密码 → OAuth 绑定 → 注销（危险区恒在末尾），对齐原型 */}
+        {/* 安全与登录：密码 → OAuth 绑定 → 注销（危险区恒在末尾），对齐原型。
+            与偏好设置同一「一张卡(bg-0+border+rounded-lg+shadow-sm) + 分隔行」结构，DESIGN.md Card 铁律 */}
         <TabsContent value="security">
-          <div className="flex flex-col gap-8">
-            <ChangePasswordTab />
-            <div className="border-t border-mg-border/40" />
-            <OAuthBindingTab connections={profile.connected_oauth} />
-            {/* 注销账号功能未测试,暂不上线——隐藏渲染,组件代码(DeleteAccountSection)保留,测试通过后放开 */}
-            {/* <div className="border-t border-mg-border/40" />
-            <DeleteAccountSection /> */}
+          <div className="max-w-[620px] pt-2">
+            <div className="mg-tile flex flex-col p-6">
+              <ChangePasswordTab />
+              <OAuthBindingTab connections={profile.connected_oauth} />
+              {/* 注销账号功能未测试,暂不上线——隐藏渲染,组件代码(DeleteAccountSection)保留,测试通过后放开 */}
+              {/* <DeleteAccountSection /> */}
+            </div>
           </div>
         </TabsContent>
         <TabsContent value="preferences"><PreferencesTab /></TabsContent>

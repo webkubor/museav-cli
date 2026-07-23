@@ -183,7 +183,7 @@ export function PreferencesTab() {
 
   return (
     <div className="flex max-w-[620px] flex-col gap-2 pt-2 animate-in fade-in duration-300">
-      <div className="bg-mg-bg-0 border border-mg-border rounded-lg p-6 shadow-sm flex flex-col">
+      <div className="mg-tile flex flex-col p-6">
         
         {/* 界面语言（Language） */}
         <div className="pb-5 border-b border-mg-border/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -281,8 +281,8 @@ export function PreferencesTab() {
               ))}
             </Select>
 
-            {/* 高端时间预览小面板：磨砂质感和科技绿点 */}
-            <div className="rounded-md border border-mg-border/40 bg-mg-fill-0/40 px-3.5 py-2.5 flex items-center justify-between text-xs select-none">
+            {/* 时间预览小面板（内嵌块，用 bg-1 非 fill 凑卡片） */}
+            <div className="rounded-md border border-mg-border bg-mg-bg-1 px-3.5 py-2.5 flex items-center justify-between text-xs select-none">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0 animate-pulse" />
                 <span className="text-mg-text-3 uppercase text-xs font-bold tracking-wider truncate" title={resolvedTimeZone}>
@@ -315,12 +315,12 @@ export function PreferencesTab() {
 
       </div>
 
-      <div className="pt-3">
+      <div className="flex justify-end pt-3">
         <Button
           variant="brand"
           loading={saveMutation.isPending}
           onClick={() => saveMutation.mutate()}
-          className="rounded-md px-6 h-10 font-bold active:scale-[0.97] transition-all"
+          className="px-6 font-bold"
         >
           {t('account.preferences.save')}
         </Button>

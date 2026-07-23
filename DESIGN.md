@@ -179,7 +179,7 @@ YAML front matter 里的值是 **「国内 + 浅色」** 默认态；其余三�
 ## Components
 
 - **Button**：主操作用 `variant="brand"`（品牌底 + 白字 + `rounded-full`，hover→mid、active→deep）；次级用 `variant="outline"`。禁止自写 `<button>` 替代。
-- **Card**：`bg-0` + `border` + `rounded-lg`(18) + `shadow-sm`。操作型界面**不要嵌套卡片**、不要装饰性 card garden。
+- **Card（Apple 卡片语言，2026-07-23 定）**：`bg-0` + **淡边框 `--mg-card-border`（hairline，近乎无）** + **柔和扩散阴影 `--mg-card-shadow`**——卡片靠阴影"浮起"，不靠硬线框。**统一走 `.mg-tile` 类**（`src/styles/components.css`，已绑 `--mg-card-*`，深浅各一套见 `tokens.css`）；**禁止**再手写 `bg-mg-bg-0 border border-mg-border shadow-sm` 拼卡（那是旧硬边框风、且边框用满色 `--mg-border`）。深色下阴影近不可见，靠顶部高光描边 + inset 高光提亮。可交互卡追加 `.mg-tile-hover`。内容卡**实心不透明**（毛玻璃只给浮层，见 Don'ts）；操作型界面**不要嵌套卡片**、不要装饰性 card garden。
 - **Input / Select / Table / Modal / Drawer / Tabs / Badge / Pagination / DateRangePicker**：一律用 `src/components/ui/*` 既有组件，保持 hover/focus/disabled/loading/empty/error 状态一致。
 - **CopyButton（复制交互唯一真源）**：任何「复制到剪贴板」用 `src/components/ui/CopyButton`，禁止各页手写复制图标/按钮。场景 → 变体：
   - 行内 / 字段行 / ID / 链接旁的紧凑复制 → `variant="icon"`（默认，一个图标搞定，别上大按钮）
@@ -199,6 +199,7 @@ YAML front matter 里的值是 **「国内 + 浅色」** 默认态；其余三�
 - ❌ 硬编码 hex / 裸数值圆角。**唯一例外**：语义状态色 green/red/yellow、`box-shadow` 里的 rgba。
 - ❌ 直接写 `--cn-*` / `--go-*`（会锁死单一市场）。
 - ❌ 给 `<PageHeader>` 传 `mb-0` 等覆盖间距。
-- ❌ AI slop：通用渐变、玻璃拟态(glassmorphism)、发光暗色 UI、装饰性光球(orbs)、重复图标卡阵、模板化 hero metric。
+- ❌ AI slop：通用渐变、发光暗色 UI、装饰性光球(orbs)、重复图标卡阵、模板化 hero metric。
+- **毛玻璃(glassmorphism)分场景**（2026-07-23 定）：**内容面（卡片/面板/列表行/表格）禁半透明毛玻璃**，一律实心 `bg-0`（贴 Apple「内容实心、chrome 通透」的分工，也避免压在粒子 canvas 上糊字）。**通透/`backdrop-filter` 只留给浮层 chrome**——顶栏、下拉菜单、SideSheet/Modal，且**绝不叠在动画 canvas 上**（见下条）。
 - ❌ 用未安装的 UI 框架——本项目是 **Radix + 自有 ui 组件**，**不是 Semi**（CLAUDE.md 旧述已过时）。
 - ❌ 在动画 canvas 上叠 `backdrop-filter: blur()`（持续重绘卡顿）。

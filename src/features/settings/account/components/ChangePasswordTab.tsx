@@ -11,11 +11,7 @@ import { appToast } from '@/lib/app-toast'
 /**
  * 登录密码：对齐原型 AccountPasswordDialog——「行 + 按钮 → 两步弹窗(验证身份 → 设新密码)」。
  *
- * ⚠️ 待后端(凌霄，见 GitLab 单)三项，到位前只有「修改密码(输当前密码)」可用：
- *  1. AccountProfile.has_password —— 判断显示「设置密码」还是「修改密码」；现无字段，暂按已设密码。
- *  2. 免当前密码的「设置密码」接口 —— 手机/OAuth 注册的无密码用户首次设密码。
- *  3. 手机验证码验证改/设密码接口 —— 「忘记密码？改用手机验证码验证」。
- * 上述未就绪的入口先 disabled 并标注，接口到位后点亮。
+ * 当前仅支持已设置密码的用户通过当前密码验证后修改密码；忘记密码走独立的邮箱重置流程。
  */
 const HAS_PASSWORD = true // TODO(待后端 has_password)：暂无法探测，按已设密码处理
 
@@ -123,15 +119,6 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
               placeholder={t('account.security.currentPlaceholder')}
             />
           </div>
-          {/* 待后端(凌霄)：手机验证码验证接口就绪后点亮 */}
-          <button
-            type="button"
-            disabled
-            title="待后端支持"
-            className="cursor-not-allowed text-xs font-medium text-mg-text-3/70"
-          >
-            忘记密码？改用手机验证码验证（待后端）
-          </button>
         </div>
       ) : (
         <div className="space-y-3">

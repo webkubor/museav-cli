@@ -10,16 +10,21 @@ import { Button } from '@/components/ui/Button'
 import { useMarket } from '@/hooks/useMarket'
 import { getMarketConfig } from '@/config/market'
 import { useAppUpdateStore } from '@/store/use-app-update-store'
+import { CURRENT_VERSION, formatVersionLine } from '@/lib/app-version'
 
 export function AppUpdatePrompt() {
   const updateReady = useAppUpdateStore((s) => s.updateReady)
   const updating = useAppUpdateStore((s) => s.updating)
   const applyUpdate = useAppUpdateStore((s) => s.applyUpdate)
+  const latestVersion = useAppUpdateStore((s) => s.latestVersion)
   const market = useMarket()
   // 更新日志按环境/市场取文档域名：国内 docs.modelgo.com / 国际 docs.modelgo.ai / 测试 docs.test.modelgo.com
   const changelogUrl = `${getMarketConfig(market).docsUrl}/changelog`
 
   if (!updateReady) return null
+
+  const currentLine = formatVersionLine(CURRENT_VERSION)
+  const latestLine = latestVersion ? formatVersionLine(latestVersion) : ''
 
   return (
     <Modal
@@ -43,6 +48,19 @@ export function AppUpdatePrompt() {
       <p className="text-sm leading-relaxed text-mg-text-2">
         我们发布了新版本，带来了功能改进与问题修复。为确保正常使用，请更新后继续。
       </p>
+      {/* 版本对比：当前运行版本(烘焙) → 服务器最新版本(拉取)。version.json 拉取失败则只显当前。 */}
+      <div className="mt-3 space-y-1.5 rounded-md border border-mg-border bg-mg-fill-0/50 px-3 py-2.5">
+        <div className="flex items-center justify-between gap-3 text-xs">
+          <span className="shrink-0 text-mg-text-3">当前版本</span>
+          <span className="truncate font-mono text-mg-text-2" title={currentLine}>{currentLine || '—'}</span>
+        </div>
+        {latestLine && (
+          <div className="flex items-center justify-between gap-3 text-xs">
+            <span className="shrink-0 text-mg-text-3">最新版本</span>
+            <span className="truncate font-mono font-bold text-brand-base" title={latestLine}>{latestLine}</span>
+          </div>
+        )}
+      </div>
       <div className="mt-3">
         <a
           href={changelogUrl}

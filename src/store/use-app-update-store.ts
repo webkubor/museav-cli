@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { AppVersionInfo } from '@/lib/app-version'
 
 /** PWA 版本更新调度：main.tsx 注册 SW 时回填 updateSW，检测到新版本置 updateReady。 */
 type UpdateSW = (reloadPage?: boolean) => Promise<void>
@@ -10,8 +11,11 @@ interface AppUpdateState {
   updating: boolean
   /** vite-plugin-pwa registerSW 返回的更新函数；updateSW(true) = skipWaiting + 刷新 */
   updateSW: UpdateSW | null
+  /** 服务器最新部署版本（拉取 /version.json），供弹窗「当前 → 最新」对比 */
+  latestVersion: AppVersionInfo | null
   setUpdateReady: (ready: boolean) => void
   setUpdateSW: (fn: UpdateSW) => void
+  setLatestVersion: (info: AppVersionInfo | null) => void
   /** 应用更新：激活新 SW 并整页刷新，拿到最新 index.html + chunk */
   applyUpdate: () => void
 }
@@ -20,8 +24,10 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
   updateReady: false,
   updating: false,
   updateSW: null,
+  latestVersion: null,
   setUpdateReady: (ready) => set({ updateReady: ready }),
   setUpdateSW: (fn) => set({ updateSW: fn }),
+  setLatestVersion: (info) => set({ latestVersion: info }),
   applyUpdate: () => {
     const { updating, updateSW } = get()
     if (updating) return // 防重复触发

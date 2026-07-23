@@ -1,10 +1,32 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
+import { execSync } from 'child_process'
+import { readFileSync } from 'fs'
 import { agentDebugger, agentProxy, agentGit, agentVersion } from 'vite-plugin-agent-eyes'
 import { devRequirementsPlugin } from './scripts/dev-requirements-plugin'
+
+// 构建时产出 /version.json：供「新版本强制更新弹窗」拉取最新部署的版本号做「当前→最新」对比。
+// package version 很少 bump，真正区分每次部署的是 commit + 构建时间，故三者都带上。
+function emitVersionJson(): Plugin {
+  return {
+    name: 'emit-version-json',
+    apply: 'build',
+    generateBundle() {
+      let commit = ''
+      try { commit = execSync('git rev-parse --short HEAD').toString().trim() } catch { /* 无 git 环境时留空 */ }
+      let version = ''
+      try { version = JSON.parse(readFileSync('package.json', 'utf-8')).version } catch { /* ignore */ }
+      this.emitFile({
+        type: 'asset',
+        fileName: 'version.json',
+        source: JSON.stringify({ version, commit, time: new Date().toISOString() }),
+      })
+    },
+  }
+}
 
 // 跳转地址（官网/控制台/文档）每个环境都必须按市场配齐——缺一个就中断构建，
 // 不允许带着空配置/硬编码兜底上线（兜底的真正含义：配置缺失就不让过）。
@@ -31,6 +53,7 @@ export default defineConfig(({ mode }) => {
     react(),
     // 构建戳记：__APP_VERSION__/__BUILD_TAG__(最新 make-tag)/__BUILD_COMMIT__/__BUILD_TIME__ + dev GET /__version
     agentVersion(),
+    emitVersionJson(),
     agentDebugger(),
     // 提交前门禁（dev 启动时幂等安装 pre-commit 钩子）
     agentGit({

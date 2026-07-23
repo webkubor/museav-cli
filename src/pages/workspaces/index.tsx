@@ -108,10 +108,14 @@ export default function WorkspacesPage() {
 
   const ownerOptions: TagOption[] = useMemo(() => {
     const items = tenantMembersQuery.data?.items ?? []
-    return items.map((m) => ({
-      value: m.account.email,
-      label: `${m.account.display_name} (${m.account.email})`,
-    }))
+    // 过滤 email 为空的成员：Radix Select.Item 的 value 不允许空字符串(空串留给 clear/placeholder),
+    // 空 email 会渲染出 value="" 的 Option 直接抛错致整页白屏(需求方#222);负责人必须有 email,空的本就不可选。
+    return items
+      .filter((m) => !!m.account.email)
+      .map((m) => ({
+        value: m.account.email,
+        label: `${m.account.display_name} (${m.account.email})`,
+      }))
   }, [tenantMembersQuery.data])
 
   // 初始成员 chip 行含负责人（锁定不可移除）+ 其他成员；候选池用 ownerOptions 全量，

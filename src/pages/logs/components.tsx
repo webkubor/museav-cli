@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Money } from '@/components/ui/Money'
 import { Pagination } from '@/components/ui/Pagination'
-import { StatusBadge, type StatusConfig } from '@/components/ui/StatusBadge'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 import {
   Table,
   TableBody,
@@ -18,17 +18,8 @@ import {
 import { formatDateTimeWithSeconds, formatDuration } from '@/lib/format-date'
 import { cn, formatNumber } from '@/lib/utils'
 import type { CallLogItem } from '@/types'
-import { deriveLogStatus, isModelNotStarted, type DerivedLogStatus } from './guardrail'
-
-/** 派生三态 → StatusBadge 配置。i18n 文案在 buildStatusMap 里注入。
- *  调用日志状态语义的唯一真源，总览「最近调用」复用同一份映射（需求方#174）。 */
-export function buildStatusMap(t: (key: string) => string): Record<DerivedLogStatus, StatusConfig> {
-  return {
-    success: { label: t('logs.status.success'), variant: 'success' },
-    guarded: { label: t('logs.status.guarded'), variant: 'warning' },
-    error: { label: t('logs.status.error'), variant: 'danger' },
-  }
-}
+import { deriveLogStatus, isModelNotStarted } from './guardrail'
+import { buildStatusMap } from './status-map'
 
 /** 延迟阈值着色：>3s 警告色，>6s 危险色，其余默认。让慢请求一眼可见。 */
 function durationTone(ms: number | null | undefined): string {

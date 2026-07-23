@@ -12,7 +12,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Money } from '@/components/ui/Money'
 import { formatDuration } from '@/lib/format-date'
 import { deriveLogStatus } from '@/pages/logs/guardrail'
-import { buildStatusMap } from '@/pages/logs/components'
+import { buildStatusMap } from '@/pages/logs/status-map'
 import type { Granularity, WorkbenchView } from './shared'
 
 /** 时间：MM-dd HH:mm:ss */

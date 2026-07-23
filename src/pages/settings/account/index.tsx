@@ -8,7 +8,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { BasicInfoTab } from '@/features/settings/account/components/BasicInfoTab'
 import { ChangePasswordTab } from '@/features/settings/account/components/ChangePasswordTab'
 import { OAuthBindingTab } from '@/features/settings/account/components/OAuthBindingTab'
-import { DeleteAccountSection } from '@/features/settings/account/components/DeleteAccountSection'
+// 注销账号未测试暂不上线,隐藏渲染(组件保留);测试通过后恢复此 import + 下方渲染
+// import { DeleteAccountSection } from '@/features/settings/account/components/DeleteAccountSection'
 import { PreferencesTab } from '@/features/settings/account/components/PreferencesTab'
 import { appToast } from '@/lib/app-toast'
 import type { OAuthProvider } from '@/interfaces/account'
@@ -96,8 +97,9 @@ export default function AccountSettingsPage() {
             <ChangePasswordTab />
             <div className="border-t border-mg-border/40" />
             <OAuthBindingTab connections={profile.connected_oauth} />
-            <div className="border-t border-mg-border/40" />
-            <DeleteAccountSection />
+            {/* 注销账号功能未测试,暂不上线——隐藏渲染,组件代码(DeleteAccountSection)保留,测试通过后放开 */}
+            {/* <div className="border-t border-mg-border/40" />
+            <DeleteAccountSection /> */}
           </div>
         </TabsContent>
         <TabsContent value="preferences"><PreferencesTab /></TabsContent>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { LuCheck, LuLock } from 'react-icons/lu'
+import { LuCheck, LuLock, LuEye, LuEyeOff } from 'react-icons/lu'
 import { changePassword } from '@/services/account'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -22,6 +22,19 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
+  const [showPwd, setShowPwd] = useState(false)
+  // 复用的小眼睛切换(显示/隐藏密码)
+  const eyeSuffix = (
+    <button
+      type="button"
+      onClick={() => setShowPwd((v) => !v)}
+      aria-label={showPwd ? '隐藏密码' : '显示密码'}
+      className="inline-flex text-mg-text-3 transition-colors hover:text-mg-text-1 cursor-pointer"
+    >
+      {showPwd ? <LuEyeOff size={16} /> : <LuEye size={16} />}
+    </button>
+  )
+  const pwdType = showPwd ? 'text' : 'password'
 
   const reset = () => {
     setStep('verify')
@@ -29,6 +42,7 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
     setNewPassword('')
     setConfirmPassword('')
     setError('')
+    setShowPwd(false)
   }
 
   const mutation = useMutation({
@@ -74,7 +88,7 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
     <Modal
       open={open}
       onClose={handleClose}
-      size="sm"
+      size="md"
       title={HAS_PASSWORD ? '修改密码' : '设置密码'}
       footer={
         step === 'verify' ? (
@@ -112,11 +126,12 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
           <div>
             <span className="mb-2 block text-xs font-semibold text-mg-text-2">{t('account.security.currentPassword')}</span>
             <Input
-              type="password"
+              type={pwdType}
               autoFocus
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder={t('account.security.currentPlaceholder')}
+              suffix={eyeSuffix}
             />
           </div>
         </div>
@@ -125,20 +140,22 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
           <div>
             <span className="mb-2 block text-xs font-semibold text-mg-text-2">{t('account.security.newPassword')}</span>
             <Input
-              type="password"
+              type={pwdType}
               autoFocus
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder={t('account.security.newPlaceholder')}
+              suffix={eyeSuffix}
             />
           </div>
           <div>
             <span className="mb-2 block text-xs font-semibold text-mg-text-2">{t('account.security.confirmPassword')}</span>
             <Input
-              type="password"
+              type={pwdType}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder={t('account.security.confirmPlaceholder')}
+              suffix={eyeSuffix}
             />
           </div>
         </div>

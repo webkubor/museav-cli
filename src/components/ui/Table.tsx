@@ -78,7 +78,7 @@ const ALIGN_CLASS: Record<CellAlign, string> = {
   // 需显式 justify-center、flex-col 需 items-center 才真正居中。排除操作列的 justify-end/between
   // 与显式 justify-start，避免右对齐/两端对齐布局被打散。（需求方：全站表格统一居中，共享处一次改）
   center:
-    "text-center [&_.flex:not(.justify-end):not(.justify-between):not(.justify-start)]:justify-center [&_.flex-col]:items-center",
+    "text-center [&>*]:mx-auto [&_.flex:not(.justify-end):not(.justify-between):not(.justify-start)]:justify-center [&_.flex-col]:items-center [&_.items-start]:items-center [&_.text-left]:text-center",
   right: "text-right",
 }
 

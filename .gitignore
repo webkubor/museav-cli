@@ -41,3 +41,4 @@ dist-ssr
 .agents/
 .codex/
 .worktrees/
+.workbuddy/

@@ -6,6 +6,10 @@ last_used: ~
 use_count: 0
 ---
 
+> ## ⚠️ 入场先读（比下面所有规则都优先）
+> 1. `PROJECT-BRIEF.md` — 冷启动快照（8 个有效命令、真源优先级、PRD V1.0.3 限制）
+> 2. `docs/COLLABORATION.md` — 协同 SOP（worktree/认领锁/提单格式/UI 测试/验证闭环）
+
 > ## 🚦 UI 改动开工前置（硬性 · 先做再动手）
 > 治「不读规范就动手」——本仓 UI/组件/样式任何改动，先按序做：
 > 1. `cs flow frontend` → 拿到必读规则与禁止项

@@ -45,7 +45,7 @@ const PLACEHOLDER = 'font-normal text-mg-text-3'
 
 function CountBadge({ count, unit }: { count: number; unit: string }) {
   return (
-    <Badge variant={count > 0 ? 'info' : 'outline'}>
+    <Badge variant={count > 0 ? 'info' : 'outline'} title={count > 0 ? `已绑定 ${count} ${unit}` : `未绑定${unit.replace(/^名|^个 /, '')}`}>
       {count} {unit}
     </Badge>
   )
@@ -85,23 +85,23 @@ function ScopeBudgetCell({ row, currencySymbol, agg }: { row: GuardrailDetail; c
 
 /** 提额到期时间列：提额类型显到期(或永不过期)，常规不适用 */
 function BoostExpiryCell({ row }: { row: GuardrailDetail }) {
-  if (deriveKind(row) !== 'boost') return <span className={cn('text-xs', PLACEHOLDER)}>不适用</span>
+  if (deriveKind(row) !== 'boost') return <span className={cn('cursor-help text-xs', PLACEHOLDER)} title="常规护栏不涉及提额到期">不适用</span>
   const expiry = boostExpiry(row)
-  return <span className={cn('text-xs', expiry ? DATA_CELL : PLACEHOLDER)}>{expiry ? formatDateTime(expiry) : '永不过期'}</span>
+  return <span className={cn('text-xs', expiry ? DATA_CELL : PLACEHOLDER)} title={expiry ? '提额护栏到期后自动失效' : '未设到期，提额长期有效'}>{expiry ? formatDateTime(expiry) : '永不过期'}</span>
 }
 
 /** 模型黑名单列：列出黑名单模型，空=不限制 */
 function ModelBlacklistCell({ row }: { row: GuardrailDetail }) {
   const bl = metadataList(row, 'model_blacklist')
-  if (!bl.length) return <span className={cn('text-xs', PLACEHOLDER)}>不限制</span>
-  return <span className={cn('block max-w-[180px] truncate', DATA_CELL)} title={bl.join(' / ')}>{bl.join(' / ')}</span>
+  if (!bl.length) return <span className={cn('cursor-help text-xs', PLACEHOLDER)} title="未设模型黑名单，允许调用全部模型">不限制</span>
+  return <span className={cn('block max-w-[180px] cursor-help truncate', DATA_CELL)} title={`共 ${bl.length} 个：${bl.join(' / ')}`}>{bl.join(' / ')}</span>
 }
 
 /** IP 白名单列：列出白名单 IP，空=不限制 */
 function IpWhitelistCell({ row }: { row: GuardrailDetail }) {
   const ip = metadataList(row, 'ip_whitelist')
-  if (!ip.length) return <span className={cn('text-xs', PLACEHOLDER)}>不限制</span>
-  return <span className={cn('block max-w-[160px] truncate font-mono', DATA_CELL)} title={ip.join(', ')}>{ip.join(', ')}</span>
+  if (!ip.length) return <span className={cn('cursor-help text-xs', PLACEHOLDER)} title="未设 IP 白名单，允许任意来源 IP">不限制</span>
+  return <span className={cn('block max-w-[160px] cursor-help truncate font-mono', DATA_CELL)} title={`共 ${ip.length} 条：${ip.join(', ')}`}>{ip.join(', ')}</span>
 }
 
 /** 提示词注入列 */

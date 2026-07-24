@@ -242,7 +242,7 @@ export function LogsTable({
                     <span className="block mg-text-caption text-mg-text-3">{t('logs.metrics.noResponse')}</span>
                   </div>
                 ) : (
-                  <div className="min-w-0">
+                  <div className="min-w-0 cursor-help" title="首包：收到首个 token 的耗时（流式响应体感）· 总计：完整响应耗时">
                     <strong className={cn('block font-mono font-bold tabular-nums', row.speed.first_token_ms > 0 ? durationTone(row.speed.first_token_ms) : 'text-mg-text-3')}>
                       首包 {row.speed.first_token_ms > 0 ? formatDuration(row.speed.first_token_ms) : '—'}
                     </strong>

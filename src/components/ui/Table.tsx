@@ -70,11 +70,15 @@ const TableRow = React.forwardRef<
 ))
 TableRow.displayName = "TableRow"
 
-/** 列水平对齐。默认 center（整列居中，表头+单元格一致）；金额/操作等列显式传 align="right" 覆盖。 */
+/** 列水平对齐。默认 center（表头+内容整列居中，需求方要求）；金额/操作等列显式传 align="right"、需左对齐传 align="left" 覆盖。 */
 type CellAlign = "left" | "center" | "right"
 const ALIGN_CLASS: Record<CellAlign, string> = {
   left: "text-left",
-  center: "text-center",
+  // 居中列：text-center 只作用于行内文字；单元格内的 flex 容器(名称+副标题行/tag 组/图标文本)
+  // 需显式 justify-center、flex-col 需 items-center 才真正居中。排除操作列的 justify-end/between
+  // 与显式 justify-start，避免右对齐/两端对齐布局被打散。（需求方：全站表格统一居中，共享处一次改）
+  center:
+    "text-center [&_.flex:not(.justify-end):not(.justify-between):not(.justify-start)]:justify-center [&_.flex-col]:items-center",
   right: "text-right",
 }
 

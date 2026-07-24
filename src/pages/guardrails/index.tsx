@@ -52,10 +52,6 @@ import {
   deriveScope,
   deriveKind,
   boostExpiry,
-  globalDefaultMonthly,
-  toMonthlyAmount,
-  hasHigherMonthlyRegularBudget,
-  PERIOD_LABEL,
   guardrailBudgetPeriodLength,
   isoToLocalInput,
   localInputToIso,
@@ -308,8 +304,12 @@ export default function GuardrailsPage() {
       qc.invalidateQueries({ queryKey: ['guardrail-audit', workspaceId] })
       trackEvent('guardrails:edit', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
-    onError: (err: unknown) => {
+    onError: (err: unknown, vars) => {
       appToast.requestError(err, t('guardrails.toast.updateError'))
+      // 编排是串行多请求：中途被后端校验拦下时，前面的护栏 PATCH / 预算 op 可能已
+      // 落库，刷新缓存让表格与抽屉反映真实的部分保存状态。
+      qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
+      qc.invalidateQueries({ queryKey: ['guardrail-detail', vars.id] })
       trackEvent('guardrails:edit', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
     },
   })
@@ -589,14 +589,9 @@ export default function GuardrailsPage() {
         if (!isValidBudgetAmount(amount)) {
           return { error: '预算金额无效：请输入大于 0 的数字，整数最多 12 位，小数最多 2 位' }
         }
-        // 下调全局默认时，若存在月度折算后高于新默认值的常规护栏，必须先调低（#239 周期换算）。
-        if (aggScope === 'per_member' || aggScope === 'per_api_key') {
-          const targetScope = aggScope === 'per_member' ? 'member' : 'key'
-          const newMonthly = toMonthlyAmount(amount, draft.period)
-          if (hasHigherMonthlyRegularBudget(guardrails, targetScope, newMonthly)) {
-            return { error: `存在预算高于新默认值的常规${targetScope === 'member' ? '个人' : 'Key'}护栏（已按各自周期折算为月度），需先调低这些常规护栏，才能下调全局默认预算` }
-          }
-        }
+        // 跨护栏比对（下调全局默认不得低于常规护栏折算额等）由后端权威校验
+        // （permissions assertBudgetComparisonRules），失败时 toast 透传后端提示；
+        // 前端不再本地复刻（曾因漏过滤停用护栏产生误拦，见 fix/guardrail-budget-validation）。
         if (existing) {
           const amountChanged = amount !== trimAmountScale(existing.spend_limit_amount)
           const periodChanged = draft.period !== existing.period_unit
@@ -634,7 +629,6 @@ export default function GuardrailsPage() {
   // 个人/Key 护栏单档预算 → 增/改/删 op。常规档预算必填；提额档支持不限额（对齐 PRD GuardrailBudgetControl）。
   // 提额不限额：删除既有生效策略（若有），不新增、不跑「>当前生效预算」校验。返回 error 即校验未过。
   function buildMemberKeyBudgetOps(d: GuardrailDetail): { ops: GlobalBudgetOp[] } | { error: string } {
-    const dScope = deriveScope(d)
     const dKind = deriveKind(d)
     if (dKind === 'boost' && !budgetLimited) {
       return { ops: budget ? [{ type: 'delete', policyId: budget.id }] : [] }
@@ -643,24 +637,8 @@ export default function GuardrailsPage() {
     if (!isValidBudgetAmount(amount)) {
       return { error: '预算金额无效：请输入大于 0 的数字，整数最多 12 位，小数最多 2 位' }
     }
-    // 预算上/下限校验（文档§校验规则 + #239 周期换算）：常规不得超过全局默认；提额必须大于当前生效预算。
-    // 比较前双方均折算为月度金额，消除周期差异。
-    if (dScope === 'member' || dScope === 'key') {
-      const aggScope: BudgetAggScope = dScope === 'member' ? 'per_member' : 'per_api_key'
-      const globalDef = globalDefaultMonthly(guardrails, aggScope)
-      const amt = Number(amount)
-      const monthlyAmt = toMonthlyAmount(amt, budgetPeriodUnit)
-      if (dKind === 'regular') {
-        if (globalDef != null && monthlyAmt > globalDef.monthlyAmount) {
-          const defLabel = globalDef.periodUnit === budgetPeriodUnit
-            ? `${currencySymbol}${trimAmountScale(String(globalDef.amount))}`
-            : `${currencySymbol}${trimAmountScale(String(globalDef.amount))}/${PERIOD_LABEL[globalDef.periodUnit] ?? globalDef.periodUnit}（≈ ¥${trimAmountScale(String(globalDef.monthlyAmount))}/月）`
-          return { error: `按当前周期预计最高可使用 ¥${trimAmountScale(String(monthlyAmt))}/月，超过默认个人预算 ${defLabel}。如需提高额度，请创建个人提额护栏。` }
-        }
-      } else if (globalDef != null && monthlyAmt <= globalDef.monthlyAmount) {
-        return { error: `提额预算必须大于当前生效预算（${currencySymbol}${trimAmountScale(String(globalDef.amount))}）` }
-      }
-    }
+    // 「常规 ≤ 全局默认」「提额 > 被替代生效预算」由后端权威校验（含月度折算与
+    // 启停状态过滤），失败时 toast 透传后端提示；前端不再本地复刻。
     if (budget) {
       // qa#164：原地维护同一条策略，只发真正变更的字段（避免计费窗口重锚）
       const body: UpdateBudgetPolicyRequest = {}
@@ -706,22 +684,8 @@ export default function GuardrailsPage() {
         return
       }
     }
-    // 需求方#190 + #239：创建常规个人/Key 护栏时，折算月度预算不得超过全局默认月度预算。
-    if ((scope === 'member' || scope === 'key') && kind === 'regular') {
-      const amt = budgetAmount.trim()
-      if (amt && isValidBudgetAmount(amt)) {
-        const aggScope: BudgetAggScope = scope === 'member' ? 'per_member' : 'per_api_key'
-        const globalDef = globalDefaultMonthly(guardrails, aggScope)
-        const monthlyAmt = toMonthlyAmount(amt, budgetPeriodUnit)
-        if (globalDef != null && monthlyAmt > globalDef.monthlyAmount) {
-          const defLabel = globalDef.periodUnit === budgetPeriodUnit
-            ? `${currencySymbol}${trimAmountScale(String(globalDef.amount))}`
-            : `${currencySymbol}${trimAmountScale(String(globalDef.amount))}/${PERIOD_LABEL[globalDef.periodUnit] ?? globalDef.periodUnit}（≈ ¥${trimAmountScale(String(globalDef.monthlyAmount))}/月）`
-          appToast.error(`按当前周期预计最高可使用 ¥${trimAmountScale(String(monthlyAmt))}/月，超过默认个人预算 ${defLabel}。如需提高额度，请创建个人提额护栏。`)
-          return
-        }
-      }
-    }
+    // 需求方#190 + #239「常规 ≤ 全局默认」由后端在预算策略写入时权威校验；创建流程
+    // 预算这步失败会走「护栏已创建，但预算保存失败」引导补填，后端错误提示原样透传。
     trackEvent('guardrails:create', undefined, { is_space_owner: isActiveWorkspaceOwner })
     createMutation.mutate(buildGuardrailPayload())
   }

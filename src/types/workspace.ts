@@ -421,6 +421,9 @@ export interface ApiKeyGuardrailSummary {
   id: string
   name: string
   is_default: boolean
+  /** 护栏作用域（需求方#246/#147）：区分全局/个人/Key，列表「Key护栏」列按 scope==='key' 筛 */
+  scope?: 'global' | 'personal' | 'member' | 'key'
+  kind?: 'regular' | 'boost'
 }
 
 export interface CreateApiKeyRequest {

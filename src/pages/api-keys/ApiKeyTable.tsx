@@ -164,7 +164,8 @@ export function ApiKeyTable({
           )
         ) : (
           items.map((record) => {
-            const guardrailNames = (record.guardrails ?? []).map((g) => g.name).filter(Boolean)
+            // 「Key护栏」列只显示 key 作用域护栏（需求方#246）；全局/个人由 scope 区分不混入
+            const guardrailNames = (record.guardrails ?? []).filter((g) => g.scope === 'key').map((g) => g.name).filter(Boolean)
             const keyType = deriveKeyType(record)
             const responsible = responsibleOf(record)
             const creatorDiffers =
@@ -256,7 +257,8 @@ export function ApiKeyTable({
                       )}
                     </div>
                   ) : (
-                    <span className="text-mg-text-3 text-xs">—</span>
+                    // 无 key 作用域护栏（需求方#246）：显示「不使用Key护栏」，与详情抽屉 Key 护栏槽口径一致
+                    <span className="text-mg-text-3 text-xs">不使用Key护栏</span>
                   )}
                 </TableCell>
                 <TableCell>

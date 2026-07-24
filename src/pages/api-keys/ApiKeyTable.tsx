@@ -104,7 +104,7 @@ export function ApiKeyTable({
           <TableHead>{t('apiKeys.table.name')}</TableHead>
           <TableHead>类型</TableHead>
           <TableHead>负责人</TableHead>
-          <TableHead>安全护栏</TableHead>
+          <TableHead>Key护栏</TableHead>
           <TableHead>{t('apiKeys.table.status')}</TableHead>
           <TableHead>本期消费 / 限额</TableHead>
           <TableHead>最近调用</TableHead>

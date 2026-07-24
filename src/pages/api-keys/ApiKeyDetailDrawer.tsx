@@ -18,6 +18,7 @@ import { formatMoney } from '@/lib/utils'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
 import { getApiKeyAudit, getApiKeyDetail, getEffectiveGuardrails, revealApiKey, revealPreviousApiKey } from '@/services/api-keys'
+import { listGuardrails } from '@/services/guardrails'
 import type { ApiKeyItem, ApiKeyType } from '@/types'
 import { useCopy } from '@/hooks/use-copy'
 import {
@@ -28,6 +29,14 @@ import {
   cap,
   type ApiKeyAction,
 } from './derive'
+import {
+  resolveKeyPromptInjection,
+  activeGlobalGuardrail,
+  deriveScope,
+  deriveKind,
+  rawPromptInjectionMode,
+  PROMPT_INJECTION_LABEL,
+} from '../guardrails/derive'
 
 function money(m?: { amount: string; currency: string }): string {
   return m?.amount ? `${m.currency} ${formatMoney(m.amount, '')}` : '—'
@@ -181,6 +190,13 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
     queryKey: ['api-key-effective-guardrails', workspaceId, keyId],
     queryFn: () => getEffectiveGuardrails(workspaceId, keyId!).catch(() => undefined),
     enabled: open && !!keyId,
+    retry: false,
+  })
+  // 护栏列表（用于解析提示词注入来源 + 个人护栏信息）
+  const { data: guardrails } = useQuery({
+    queryKey: ['guardrails', workspaceId],
+    queryFn: () => listGuardrails(workspaceId).then((res) => res.items ?? []),
+    enabled: open && !!workspaceId,
     retry: false,
   })
 
@@ -405,6 +421,46 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                   )}
                 </div>
               )}
+
+              {/* 提示词注入检测（#241：来源 + 模式） */}
+              {guardrails && (() => {
+                const pi = resolveKeyPromptInjection(guardrails, activeGlobalGuardrail(guardrails))
+                return (
+                  <div className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
+                    <div className="text-xs text-mg-text-3">提示词注入检测</div>
+                    <div className="mt-1 text-sm font-bold text-mg-text-1">{PROMPT_INJECTION_LABEL[pi.mode]}</div>
+                    <div className="mt-0.5 text-xs text-mg-text-3">来源：{pi.sourceLabel}</div>
+                  </div>
+                )
+              })()}
+
+              {/* 个人护栏（#234：展示绑定的个人护栏或「个人预算不适用」） */}
+              {guardrails && (() => {
+                const keyType = deriveKeyType(view)
+                const isServiceKey = keyType === 'service'
+                if (isServiceKey) {
+                  return (
+                    <div className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
+                      <div className="text-xs text-mg-text-3">个人护栏</div>
+                      <div className="mt-1 text-sm text-mg-text-3">个人预算不适用</div>
+                    </div>
+                  )
+                }
+                const memberGuardrails = guardrails.filter((g) => deriveScope(g) === 'member' && deriveKind(g) === 'regular' && rawPromptInjectionMode(g) !== undefined)
+                if (memberGuardrails.length > 0) {
+                  return (
+                    <div className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
+                      <div className="text-xs text-mg-text-3">个人护栏</div>
+                      <div className="mt-1 space-y-0.5">
+                        {memberGuardrails.map((g) => (
+                          <div key={g.id} className="text-sm font-bold text-mg-text-1">{g.name}</div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                }
+                return null
+              })()}
 
               {effective.effective.budgets.length === 0 &&
                 effective.effective.model_blacklist.length === 0 &&

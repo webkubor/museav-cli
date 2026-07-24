@@ -298,6 +298,12 @@ node $S release <iid> --to 待验证    # 释放锁
 
 ## 8. 真源阅读指南
 
+### 模块 UI 参考（改业务模块前先读）
+
+改 API Keys / 安全护栏等业务模块前，先读 `docs/ui-reference/<module>.md`（现有 `api-keys.md`、`guardrails.md`）——已提炼好该模块的 **UI 框架 + 字段文案（照 PRD 原型常量）+ 不同身份（owner/admin/space owner/member）显示差异**，省掉每次全量扫代码。
+
+⚠️ **衍生文档、非真源**：冲突时以 PRD 原型 + 现状代码为准；PRD 改版后按 `docs/ui-reference/README.md` 重跑同步。新增模块参考放同一目录并更新其清单 + 本节。
+
 ### PRD 飞书文档
 
 **必须用 `--profile feishu-company`（企业版账户）**——其他账户没有该文档空间的访问权限。

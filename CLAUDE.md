@@ -17,6 +17,7 @@ use_count: 0
 > 3. **组件铁律**：主操作用 `Button variant="brand"`，禁止手写 `<button className="bg-brand-*">`；卡片用 `.mg-tile`，勿拿 `bg-mg-fill-0` 凑层次；圆角只用 `rounded-sm/md/lg/full`（**禁 `rounded-xl/2xl/3xl`**，它们是禁用刻度＝直角）；图标只用 `react-icons` 或 `@lobehub/icons`。
 > 4. 提交前 UI 门禁 `scripts/ui-guard.sh` 会硬拦上述违规；**完成前必须浏览器验证**（engineering_baseline §4.2 结构化验收），禁止"没验就说完成"。
 > 5. **布局/排版对标现状，不对标原型视觉（前置，别只靠最后验证）**：原型只给「功能 + 交互」，它自身的视觉 ≠ 本控制台视觉。布局、排版、间距、组件用法的真源是**现状控制台**——动手前先挑一个现有最像的页/模块（同类 表格/表单/抽屉/卡片/筛选条）当参照，照它的结构 + `ui/*` 组件 + `DESIGN.md` + token 排；别照原型视觉、也别凭空排。PRD 没 UI 方向是正常的（PRD 给功能，UI 方向的真源是现状代码）。UI 验证应是**开工选参照 + 中途对着它比**，不是最后才发现排版不对。
+> 6. **动业务模块前先读 `docs/ui-reference/<module>.md`**（现有：`api-keys`、`guardrails`）——里面是该模块的 UI 框架 + 字段文案（照 PRD 原型常量）+ 不同身份（owner/admin/space owner/member）的显示差异，是开工对齐的提炼，省掉每次全量扫代码。⚠️ 它是**衍生文档非真源**，冲突时以 PRD 原型 + 现状代码为准；PRD 改版后按 `docs/ui-reference/README.md` 重跑同步。
 
 > ## 🧭 真源 & 交付铁律（硬性 · 治「不知信哪个源」+「不知交付没」两大返工坑，2026-07-11）
 > 1. **每个模块钉唯一真源**，动手前先声明「本模块以 X 为准」。真源候选：PRD 原型 `modelgo_prd/src/App.tsx`、飞书对应设计文档、现控制台代码、Swagger。冲突优先级 **PRD 原型 > 飞书文档 > 现代码**；命名一律 PRD 原型（租户/工作空间，非组织/项目）。定稿 PRD 与需求方新单冲突 → 贴证据回需求方澄清，不自行选边。

@@ -23,6 +23,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { appToast } from '@/lib/app-toast'
 import { refreshSession } from '@/lib/auth/refresh-session'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
+import { MemberAvatar } from '@/components/MemberAvatar'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 
@@ -292,7 +293,7 @@ export function MembersTab({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('enterprise.members.colMember')}</TableHead>
+                  <TableHead align="left">{t('enterprise.members.colMember')}</TableHead>
                   <TableHead>{t('enterprise.members.colRole')}</TableHead>
                   <TableHead>{t('enterprise.members.colWorkspaces')}</TableHead>
                   <TableHead>{t('enterprise.members.colStatus')}</TableHead>
@@ -307,9 +308,14 @@ export function MembersTab({
                   const status = m.status
                   return (
                     <TableRow key={m.account.account_id}>
-                      <TableCell>
-                        <TruncatedText text={m.account.display_name} maxWidth={180} className="font-semibold text-mg-text-1" />
-                        <TruncatedText text={m.account.email} maxWidth={180} className="text-xs text-mg-text-3 mt-0.5" />
+                      <TableCell align="left">
+                        <div className="flex items-center gap-2.5">
+                          <MemberAvatar account={m.account} accent="emerald" />
+                          <div className="min-w-0">
+                            <TruncatedText text={m.account.display_name} maxWidth={180} className="font-semibold text-mg-text-1" />
+                            <TruncatedText text={m.account.email} maxWidth={180} className="text-xs text-mg-text-3 mt-0.5" />
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant={ROLE_BADGE[m.role]} size="sm">{ROLE_LABEL[m.role]}</Badge>

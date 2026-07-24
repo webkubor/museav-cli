@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
+import { MemberAvatar } from '@/components/MemberAvatar'
 import { appToast } from '@/lib/app-toast'
 import { refreshSession } from '@/lib/auth/refresh-session'
 
@@ -168,7 +169,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
                     <TableRow key={m.account.account_id}>
                       <TableCell align="left">
                         <div className="flex items-center gap-2.5">
-                          <MemberAvatar member={m} accent="emerald" />
+                          <MemberAvatar account={m.account} accent="emerald" />
                           <div className="min-w-0">
                             <div className="text-[12px] font-semibold text-mg-text-1 truncate">{m.account.display_name}</div>
                             <div className="text-xs text-mg-text-3 truncate">{m.account.email}</div>
@@ -250,7 +251,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
               ) : (
                 candidates.map((m: TenantMember) => (
                   <div key={m.account.account_id} className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-mg-fill-0/30 transition-colors">
-                    <MemberAvatar member={m} accent="brand" />
+                    <MemberAvatar account={m.account} accent="brand" />
                     <div className="flex-1 min-w-0">
                       <div className="text-[12px] font-semibold text-mg-text-1 truncate">{m.account.display_name}</div>
                       <div className="text-xs text-mg-text-3 truncate">{m.account.email}</div>
@@ -343,18 +344,6 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
           <p className="text-sm text-mg-text-2">{t('workspaces.detail.members.removeNoKeyDesc')}</p>
         )}
       </Modal>
-    </div>
-  )
-}
-
-function MemberAvatar({ member, accent }: { member: WorkspaceMember | TenantMember; accent: 'brand' | 'emerald' }) {
-  const bg = accent === 'emerald' ? 'bg-emerald-600' : 'bg-brand-base'
-  if (member.account.avatar_url) {
-    return <img src={member.account.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
-  }
-  return (
-    <div className={`w-7 h-7 rounded-full ${bg} text-white text-xs font-bold flex items-center justify-center shrink-0 uppercase`}>
-      {member.account.display_name?.[0] ?? '?'}
     </div>
   )
 }

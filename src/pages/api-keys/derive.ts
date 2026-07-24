@@ -151,7 +151,10 @@ export function cap(itemFlag: boolean | undefined, permFallback: boolean): boole
 export function formatLimit(item: ApiKeyItem): string {
   const l = item.effective_limit ?? item.limit
   if (!l || !l.amount || Number(l.amount) <= 0) return '不限额'
-  const unit = LIMIT_PERIOD_LABEL[l.period_unit as string] ?? `每${l.period_unit}`
+  // period_length 保留（如 hour+5=「每 5 小时」），否则「每 5 小时」护栏会被错显为「每小时」（需求方#237）
+  const base = LIMIT_PERIOD_LABEL[l.period_unit as string] ?? `每${l.period_unit}`
+  const len = Number.isInteger(l.period_length) && l.period_length > 1 ? l.period_length : 0
+  const unit = len ? `每 ${len} ${base.replace(/^每/, '')}` : base
   return `${l.currency} ${formatMoney(l.amount, '')} / ${unit}`
 }
 

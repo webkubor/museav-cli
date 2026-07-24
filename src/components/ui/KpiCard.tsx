@@ -20,6 +20,7 @@ export interface KpiCardProps {
   formatter?: (n: number) => string // 配合 rawNumber 使用的格式化函数
   action?: { label: string; onClick: () => void } // 卡片内快捷操作按钮（如充值）
   onClick?: () => void // 卡片整体点击（当前仅用于埋点占位，暂无下钻交互）
+  ratio?: { current: number; total: number } // 占比环形（当前/总量快照，如「启用中/全部」）；不需趋势数据
 }
 
 function Sparkline({ data, color }: { data: number[]; color: string }) {
@@ -50,6 +51,28 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
   )
 }
 
+/** 占比环形进度（当前/总量快照），中心显示百分比。用于「启用中/全部」等无需趋势的占比可视化。 */
+function RatioRing({ current, total, color }: { current: number; total: number; color: string }) {
+  const pct = total > 0 ? Math.min(current / total, 1) : 0
+  const r = 16
+  const circ = 2 * Math.PI * r
+  return (
+    <div className="relative w-11 h-11 shrink-0" aria-label={`${current}/${total}`}>
+      <svg viewBox="0 0 44 44" className="w-11 h-11">
+        <circle cx="22" cy="22" r={r} fill="none" stroke="var(--mg-fill-2)" strokeWidth="3.5" />
+        <circle
+          cx="22" cy="22" r={r} fill="none" stroke={color} strokeWidth="3.5" strokeLinecap="round"
+          strokeDasharray={circ} strokeDashoffset={circ * (1 - pct)} transform="rotate(-90 22 22)"
+          style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.22,1,0.36,1)' }}
+        />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center mg-text-caption font-bold" style={{ color }}>
+        {Math.round(pct * 100)}%
+      </span>
+    </div>
+  )
+}
+
 export const KpiCard: React.FC<KpiCardProps> = ({
   title,
   label,
@@ -67,6 +90,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   formatter,
   action,
   onClick,
+  ratio,
 }) => {
   const displayTitle = title || label || ''
   const animated = useCountUp(loading ? 0 : (rawNumber ?? 0))
@@ -146,34 +170,37 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         {loading ? (
           <div className="animate-pulse bg-mg-fill-2 rounded-full h-[var(--mg-skeleton-h-md)] w-2/3" />
         ) : (
-          <div>
-            <div className="flex items-end gap-2">
-              <span
-                className="mg-text-display-sm font-bold tracking-tight block font-mono select-all kpi-value-text"
-                style={{
-                  color: color === 'var(--mg-text-1)' ? 'var(--mg-text-1)' : color,
-                  fontVariantNumeric: 'tabular-nums'
-                }}
-              >
-                {displayValue ?? '—'}
-              </span>
-              {computedTrend && !iconLead && !loading && (
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-end gap-2">
                 <span
-                  className="mg-compact-badge mb-1.5 px-1.5 py-0.5 rounded-md"
+                  className="mg-text-display-sm font-bold tracking-tight block font-mono select-all kpi-value-text"
                   style={{
-                    color: computedTrend.up ? 'var(--mg-trend-up)' : 'var(--mg-trend-down)',
-                    backgroundColor: `color-mix(in srgb, ${computedTrend.up ? 'var(--mg-trend-up)' : 'var(--mg-trend-down)'} 12%, transparent)`,
+                    color: color === 'var(--mg-text-1)' ? 'var(--mg-text-1)' : color,
+                    fontVariantNumeric: 'tabular-nums'
                   }}
                 >
-                  {computedTrend.up ? '↑' : '↓'} {computedTrend.value}
+                  {displayValue ?? '—'}
+                </span>
+                {computedTrend && !iconLead && !loading && (
+                  <span
+                    className="mg-compact-badge mb-1.5 px-1.5 py-0.5 rounded-md"
+                    style={{
+                      color: computedTrend.up ? 'var(--mg-trend-up)' : 'var(--mg-trend-down)',
+                      backgroundColor: `color-mix(in srgb, ${computedTrend.up ? 'var(--mg-trend-up)' : 'var(--mg-trend-down)'} 12%, transparent)`,
+                    }}
+                  >
+                    {computedTrend.up ? '↑' : '↓'} {computedTrend.value}
+                  </span>
+                )}
+              </div>
+              {sub && (
+                <span className="mg-text-caption text-mg-text-3 mt-1.5 block select-none">
+                  {sub}
                 </span>
               )}
             </div>
-            {sub && (
-              <span className="mg-text-caption text-mg-text-3 mt-1.5 block select-none">
-                {sub}
-              </span>
-            )}
+            {ratio && ratio.total > 0 && <RatioRing current={ratio.current} total={ratio.total} color={color} />}
           </div>
         )}
       </div>

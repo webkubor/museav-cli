@@ -307,7 +307,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
             <TableHead>名称</TableHead>
             <TableHead>工作空间总预算</TableHead>
             {showMember && <TableHead>默认个人预算</TableHead>}
-            <TableHead>默认 Key 预算</TableHead>
+            <TableHead className="normal-case">默认 Key 预算</TableHead>
             <TableHead>模型黑名单</TableHead>
             <TableHead>IP 白名单</TableHead>
             <TableHead>提示词注入</TableHead>
@@ -392,7 +392,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
           <TableRow>
             <TableHead>名称</TableHead>
             <TableHead>类型</TableHead>
-            <TableHead>绑定 Key</TableHead>
+            <TableHead className="normal-case">绑定 Key</TableHead>
             <TableHead>预算</TableHead>
             <TableHead>提额到期时间</TableHead>
             <TableHead>模型黑名单</TableHead>

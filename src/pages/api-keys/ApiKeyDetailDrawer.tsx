@@ -62,9 +62,11 @@ function Cell({ label, value }: { label: string; value: ReactNode }) {
   )
 }
 
-/** 生效层槽位（PRD 安全护栏产品模型：个人护栏是「人」的策略，不参与 Key 生效——Key 详情只看全局 + Key，需求方#147） */
+/** 生效层槽位：PRD 原型「生效规则预览」为三层 全局 / 个人 / Key（modelgo_prd App.tsx preview.layers）；
+ *  修正 #147 旧决策的两槽——个人护栏确实作用于 Key（预算闸门也展示个人预算），需求方#234/#241 判两槽为缺失。 */
 const LAYER_SLOTS: Array<{ key: string; label: string }> = [
   { key: 'global_default', label: '全局护栏' },
+  { key: 'member', label: '个人护栏' },
   { key: 'key', label: 'Key 护栏' },
 ]
 const GATE_LABEL: Record<string, string> = {
@@ -340,14 +342,27 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
         <Section title="安全护栏">
           {effective ? (
             <div className="space-y-3">
-              {/* 生效规则预览：全局 / Key 两槽（个人护栏不参与 Key 生效，PRD/需求方#147） */}
+              {/* 生效规则预览：PRD 原型三层 全局 / 个人 / Key（modelgo_prd App.tsx preview.layers） */}
               <div>
                 <div className="mb-1.5 flex items-center gap-1 text-xs font-bold text-mg-text-2">
                   生效规则预览
                   <InfoTip text="运行时会同时检查这些预算闸门" />
                 </div>
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-3 gap-2.5">
                   {LAYER_SLOTS.map((slot) => {
+                    // 个人护栏（member）：PRD 语义——服务 Key「个人预算不适用」；否则责任人绑定的 active 个人护栏(提额优先)，无则「全局默认个人预算」
+                    if (slot.key === 'member') {
+                      const isServiceKey = deriveKeyType(view) === 'service'
+                      const memberGuardrail = isServiceKey || !guardrails ? null : activeMemberBudgetGuardrail(guardrails, responsibleOf(view).account_id)
+                      const memberLabel = isServiceKey ? '个人预算不适用' : memberGuardrail?.name ?? '全局默认个人预算'
+                      const memberClass = isServiceKey ? 'font-normal text-mg-text-3' : memberGuardrail ? 'font-bold text-mg-text-1' : 'font-normal text-mg-text-2'
+                      return (
+                        <div key={slot.key} className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
+                          <div className="text-xs text-mg-text-3">{slot.label}</div>
+                          <div className={`mt-1 truncate text-sm ${memberClass}`}>{memberLabel}</div>
+                        </div>
+                      )
+                    }
                     // Key 层最多 1 常规 + 1 提额（PRD：一把 Key 最多 1 有效常规 Key 护栏 + 1 有效 Key 提额）——列出该层全部
                     const layers = effective.layers.filter((l) => l.layer === slot.key)
                     return (
@@ -428,31 +443,6 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                     <div className="text-xs text-mg-text-3">提示词注入检测</div>
                     <div className="mt-1 text-sm font-bold text-mg-text-1">{PROMPT_INJECTION_LABEL[pi.mode]}</div>
                     <div className="mt-0.5 text-xs text-mg-text-3">来源：{pi.sourceLabel}</div>
-                  </div>
-                )
-              })()}
-
-              {/* 个人护栏（#234/#241：按 Key 责任人匹配生效个人护栏，对齐 PRD 原型 resolveApiKeyGuardrailPreview 的 member 层）
-                  - service Key 不参与个人预算 → 「个人预算不适用」
-                  - 否则取责任人绑定的 active 个人护栏（提额优先/其次常规），无则回退「全局默认个人预算」
-                  与提示词注入无关（旧实现误用 prompt_injection_mode 过滤，致纯预算个人护栏永不显示） */}
-              {guardrails && (() => {
-                const isServiceKey = deriveKeyType(view) === 'service'
-                const memberGuardrail = isServiceKey
-                  ? null
-                  : activeMemberBudgetGuardrail(guardrails, responsibleOf(view).account_id)
-                const label = isServiceKey
-                  ? '个人预算不适用'
-                  : memberGuardrail?.name ?? '全局默认个人预算'
-                const valueClass = isServiceKey
-                  ? 'text-mg-text-3'
-                  : memberGuardrail
-                    ? 'font-bold text-mg-text-1'
-                    : 'text-mg-text-2'
-                return (
-                  <div className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
-                    <div className="text-xs text-mg-text-3">个人护栏</div>
-                    <div className={`mt-1 text-sm ${valueClass}`}>{label}</div>
                   </div>
                 )
               })()}

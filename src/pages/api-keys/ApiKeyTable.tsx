@@ -104,7 +104,8 @@ export function ApiKeyTable({
           <TableHead>{t('apiKeys.table.name')}</TableHead>
           <TableHead>类型</TableHead>
           <TableHead>负责人</TableHead>
-          <TableHead>Key护栏</TableHead>
+          {/* normal-case 覆盖表头 mg-text-label 的 uppercase，保留「Key」首字母大写而非「KEY」 */}
+          <TableHead className="normal-case">Key护栏</TableHead>
           <TableHead>{t('apiKeys.table.status')}</TableHead>
           <TableHead>本期消费 / 限额</TableHead>
           <TableHead>最近调用</TableHead>

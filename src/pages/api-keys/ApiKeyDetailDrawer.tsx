@@ -441,12 +441,12 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                   )
                 })()}
                 {(() => {
-                  const pi = guardrails ? resolveKeyPromptInjection(guardrails, activeGlobalGuardrail(guardrails)) : null
+                  const pi = resolveKeyPromptInjection(guardrails ?? [], activeGlobalGuardrail(guardrails ?? []))
                   return (
                     <div className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
                       <div className="text-xs text-mg-text-3">提示词注入</div>
-                      <div className="mt-1 text-sm font-bold text-mg-text-1">{pi ? PROMPT_INJECTION_LABEL[pi.mode] : '—'}</div>
-                      <div className="mt-1 text-xs text-mg-text-3">规则来源：{pi?.sourceLabel ?? '未配置规则'}</div>
+                      <div className="mt-1 text-sm font-bold text-mg-text-1">{PROMPT_INJECTION_LABEL[pi.mode]}</div>
+                      <div className="mt-1 text-xs text-mg-text-3">规则来源：{pi.sourceLabel}</div>
                     </div>
                   )
                 })()}

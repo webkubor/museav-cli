@@ -142,17 +142,18 @@ export function resolveKeyPromptInjection(
   selectedGuardrails: GuardrailDetail[],
   activeGlobal: GuardrailDetail | undefined,
 ): { mode: PromptInjectionMode; sourceLabel: string } {
+  // 来源=护栏名（对齐 PRD 原型 resolvePromptInjectionRule：keyGuardrail.name / globalGuardrail.name / 未配置全局护栏），
+  // 不加「常规 Key 护栏 ·」等自造前缀（需求方要求文案照 PRD）
   const keyExplicit = selectedGuardrails.find(
     (g) => deriveScope(g) === 'key' && deriveKind(g) === 'regular' && rawPromptInjectionMode(g) !== undefined,
   )
   if (keyExplicit) {
-    return { mode: rawPromptInjectionMode(keyExplicit)!, sourceLabel: `常规 Key 护栏 · ${keyExplicit.name}` }
+    return { mode: rawPromptInjectionMode(keyExplicit)!, sourceLabel: keyExplicit.name }
   }
   if (activeGlobal) {
-    const gm = rawPromptInjectionMode(activeGlobal)
-    if (gm) return { mode: gm, sourceLabel: `全局护栏 · ${activeGlobal.name}` }
+    return { mode: rawPromptInjectionMode(activeGlobal) ?? 'off', sourceLabel: activeGlobal.name }
   }
-  return { mode: 'off', sourceLabel: '默认关闭' }
+  return { mode: 'off', sourceLabel: '未配置全局护栏' }
 }
 
 /** 从护栏列表挑出启用中的全局护栏（生效解析用） */

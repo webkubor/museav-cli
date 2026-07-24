@@ -381,7 +381,8 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                             ))}
                           </div>
                         ) : (
-                          <div className="mt-1 text-sm font-normal text-mg-text-3">—</div>
+                          // PRD 空值文案：全局→「未配置」，Key→「不使用Key护栏」
+                          <div className="mt-1 text-sm font-normal text-mg-text-2">{slot.key === 'key' ? '不使用Key护栏' : '未配置'}</div>
                         )}
                       </div>
                     )
@@ -413,45 +414,43 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                 </div>
               )}
 
-              {/* 模型黑名单 / IP 白名单（有值才显示，含规则来源） */}
-              {(effective.effective.model_blacklist.length > 0 || effective.effective.ip_whitelist.length > 0) && (
-                <div className="grid grid-cols-2 gap-2.5">
-                  {effective.effective.model_blacklist.length > 0 && (
+              {/* 规则清单：模型黑名单 / IP白名单 / 提示词注入 三卡恒显示，各带「规则来源」
+                  （PRD 原型 api-key-preview-rule-list；#241 原诉求「缺少规则来源字段」）
+                  值空→「不限制」；来源=贡献该规则的护栏层名，空→「未配置规则」 */}
+              <div className="grid grid-cols-3 gap-2.5">
+                {(() => {
+                  const items = effective.effective.model_blacklist
+                  const sources = effective.layers.filter((l) => l.model_blacklist.length > 0).map((l) => l.guardrail_name)
+                  return (
                     <div className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
                       <div className="text-xs text-mg-text-3">模型黑名单</div>
-                      <div className="mt-1 break-all text-xs font-semibold leading-relaxed text-mg-text-1">
-                        {effective.effective.model_blacklist.join(' / ')}
-                      </div>
+                      <div className="mt-1 break-all text-xs font-semibold leading-relaxed text-mg-text-1">{items.length ? items.join(' / ') : '不限制'}</div>
+                      <div className="mt-1 text-xs text-mg-text-3">规则来源：{sources.length ? sources.join(' / ') : '未配置规则'}</div>
                     </div>
-                  )}
-                  {effective.effective.ip_whitelist.length > 0 && (
+                  )
+                })()}
+                {(() => {
+                  const items = effective.effective.ip_whitelist
+                  const sources = effective.layers.filter((l) => l.ip_whitelist.length > 0).map((l) => l.guardrail_name)
+                  return (
                     <div className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
                       <div className="text-xs text-mg-text-3">IP 白名单</div>
-                      <div className="mt-1 break-all font-mono text-xs font-semibold leading-relaxed text-mg-text-1">
-                        {effective.effective.ip_whitelist.join(', ')}
-                      </div>
+                      <div className="mt-1 break-all font-mono text-xs font-semibold leading-relaxed text-mg-text-1">{items.length ? items.join(', ') : '不限制'}</div>
+                      <div className="mt-1 text-xs text-mg-text-3">规则来源：{sources.length ? sources.join(' / ') : '未配置规则'}</div>
                     </div>
-                  )}
-                </div>
-              )}
-
-              {/* 提示词注入检测（#241：来源 + 模式） */}
-              {guardrails && (() => {
-                const pi = resolveKeyPromptInjection(guardrails, activeGlobalGuardrail(guardrails))
-                return (
-                  <div className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
-                    <div className="text-xs text-mg-text-3">提示词注入检测</div>
-                    <div className="mt-1 text-sm font-bold text-mg-text-1">{PROMPT_INJECTION_LABEL[pi.mode]}</div>
-                    <div className="mt-0.5 text-xs text-mg-text-3">来源：{pi.sourceLabel}</div>
-                  </div>
-                )
-              })()}
-
-              {effective.effective.budgets.length === 0 &&
-                effective.effective.model_blacklist.length === 0 &&
-                effective.effective.ip_whitelist.length === 0 && (
-                  <p className="text-xs text-mg-text-3">无生效限制</p>
-                )}
+                  )
+                })()}
+                {(() => {
+                  const pi = guardrails ? resolveKeyPromptInjection(guardrails, activeGlobalGuardrail(guardrails)) : null
+                  return (
+                    <div className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
+                      <div className="text-xs text-mg-text-3">提示词注入</div>
+                      <div className="mt-1 text-sm font-bold text-mg-text-1">{pi ? PROMPT_INJECTION_LABEL[pi.mode] : '—'}</div>
+                      <div className="mt-1 text-xs text-mg-text-3">规则来源：{pi?.sourceLabel ?? '未配置规则'}</div>
+                    </div>
+                  )
+                })()}
+              </div>
               {/* enforcement_note 后端目前是开发向说明，不面向终端用户，暂不渲染（已在联调单反馈） */}
             </div>
           ) : (view.guardrails ?? []).length > 0 ? (

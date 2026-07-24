@@ -287,7 +287,7 @@ export function MembersTab({
           </div>
         </div>
 
-        <div className="overflow-x-auto w-full p-2">
+        <div className="overflow-auto max-h-[560px] w-full p-2">
           {membersQuery.isLoading ? (
             <div className="py-12 flex justify-center items-center">
               <div className="w-6 h-6 border-2 border-mg-border border-t-brand-base rounded-full animate-spin" />
@@ -403,7 +403,7 @@ export function MembersTab({
                 {/* 待接受邀请行（#11）：无 account/工作空间/操作，状态恒为「待接受」 */}
                 {pendingInvites.map((inv) => (
                   <TableRow key={`pending-${inv.id}`} className="bg-mg-fill-0/20">
-                    <TableCell>
+                    <TableCell align="left">
                       <div className="font-semibold text-mg-text-1">{inv.email}</div>
                       {inv.invited_by_display && (
                         <div className="text-xs text-mg-text-3 mt-0.5">

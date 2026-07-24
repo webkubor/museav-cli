@@ -148,7 +148,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('workspaces.detail.members.colMember')}</TableHead>
+                <TableHead align="left">{t('workspaces.detail.members.colMember')}</TableHead>
                 <TableHead>{t('workspaces.detail.members.colEnterpriseRole')}</TableHead>
                 <TableHead>{t('workspaces.detail.members.colResponsibility')}</TableHead>
                 <TableHead>{t('workspaces.detail.members.colKeys')}</TableHead>
@@ -166,7 +166,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
                   const tenantRole = tenantRoleByAccount.get(m.account.account_id)
                   return (
                     <TableRow key={m.account.account_id}>
-                      <TableCell>
+                      <TableCell align="left">
                         <div className="flex items-center gap-2.5">
                           <MemberAvatar member={m} accent="emerald" />
                           <div className="min-w-0">

@@ -203,8 +203,12 @@ export function LogsTable({
                 ) : row.usage.total_tokens > 0 ? (
                   // 单行：粗体总数 + 淡色输入/输出内联（原三行过高，需求方要求一行）
                   <div className="min-w-0 inline-flex items-center gap-1 whitespace-nowrap font-mono tabular-nums">
-                    {/* 绿色「T」= Token 总量标记（与用量页 token=emerald 口径一致，需求方） */}
-                    <span className="inline-flex items-center justify-center rounded bg-green-500/10 px-1 py-0.5 text-[10px] font-bold leading-none text-green-600" aria-label="总 Token">T</span>
+                    {/* 绿色「T」= Token 总量标记（与用量页 token=emerald 口径一致，需求方）；hover 加深 + tooltip 释义 */}
+                    <span
+                      className="inline-flex cursor-default items-center justify-center rounded bg-green-500/10 px-1 py-0.5 text-[10px] font-bold leading-none text-green-600 transition-colors hover:bg-green-500/20"
+                      title="总 Token（输入 + 输出）"
+                      aria-label="总 Token"
+                    >T</span>
                     <strong className="font-bold text-mg-text-1">{formatNumber(row.usage.total_tokens)}</strong>
                     <span className="mg-text-caption text-mg-text-3">· 输入 {formatNumber(row.usage.input_tokens)} / 输出 {formatNumber(row.usage.output_tokens)}</span>
                   </div>
@@ -216,10 +220,20 @@ export function LogsTable({
                 )}
               </TableCell>
               <TableCell>
-                <Money
-                  amount={isModelNotStarted(row) ? null : Number(row.cost.amount) > 0 ? row.cost.amount : null}
-                  currency={row.cost.currency}
-                />
+                {(() => {
+                  const val = Number(row.cost.amount)
+                  const shown = isModelNotStarted(row) ? null : val > 0 ? row.cost.amount : null
+                  // 仅极小额(显示为「< 0.0001」的近似值)才 hover 提示精确原值，普通费用保持干净（需求方·细节）
+                  const tiny = shown != null && val > 0 && val < 0.0001
+                  const sym = row.cost.currency === 'USD' ? '$' : '¥'
+                  return tiny ? (
+                    <span title={`精确费用 ${sym}${row.cost.amount}`} className="cursor-help border-b border-dashed border-mg-border/60">
+                      <Money amount={shown} currency={row.cost.currency} />
+                    </span>
+                  ) : (
+                    <Money amount={shown} currency={row.cost.currency} />
+                  )
+                })()}
               </TableCell>
               <TableCell className="whitespace-nowrap">
                 {isModelNotStarted(row) ? (

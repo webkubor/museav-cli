@@ -311,7 +311,7 @@ export function globalDefaultAmount(
  */
 export function regularBudgetAmounts(list: GuardrailDetail[], scope: 'member' | 'key'): number[] {
   return list
-    .filter((g) => deriveScope(g) === scope && deriveKind(g) === 'regular')
+    .filter((g) => g.status === 'active' && deriveScope(g) === scope && deriveKind(g) === 'regular')
     .map((g) => {
       const amt = primaryBudget(g)?.spend_limit_amount
       return amt && Number(amt) > 0 ? Number(amt) : null
@@ -329,7 +329,7 @@ export function hasHigherMonthlyRegularBudget(
   newDefaultMonthlyAmount: number,
 ): boolean {
   return list
-    .filter((g) => deriveScope(g) === scope && deriveKind(g) === 'regular')
+    .filter((g) => g.status === 'active' && deriveScope(g) === scope && deriveKind(g) === 'regular')
     .some((g) => {
       const p = primaryBudget(g)
       const amt = p?.spend_limit_amount

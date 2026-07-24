@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { GuardrailDetail } from '@/interfaces/guardrails'
-import { activeMemberBudgetGuardrail, guardrailIncludesMember } from './derive'
+import { activeMemberBudgetGuardrail, guardrailIncludesMember, hasHigherMonthlyRegularBudget } from './derive'
 
 // 契约镜像自后端护栏列表（qa#378 未交付显式 scope/kind，前端由 metadata 派生）。
 // 个人护栏是「人」的预算策略：Key 详情按 Key 责任人 account_id 匹配「生效(active)」的个人护栏展示，
@@ -63,5 +63,30 @@ describe('activeMemberBudgetGuardrail', () => {
     const globalG = g({ is_default: true, metadata: { scope: 'global' } })
     const keyG = g({ metadata: { scope: 'key', kind: 'regular', api_keys: ['ak_1'] } })
     expect(activeMemberBudgetGuardrail([globalG, keyG], ME)).toBeNull()
+  })
+})
+
+describe('hasHigherMonthlyRegularBudget（prd#239 打回：关闭的护栏不参与下调校验）', () => {
+  const active = g({
+    metadata: { scope: 'member', kind: 'regular', members: [ME] },
+    budget_policies: [
+      { aggregation_scope: 'per_member', spend_limit_amount: '50', period_unit: 'day', period_length: 1, enabled: true },
+    ],
+  })
+  const closed = g({
+    status: 'inactive',
+    metadata: { scope: 'member', kind: 'regular', members: [ME] },
+    budget_policies: [
+      { aggregation_scope: 'per_member', spend_limit_amount: '99999', period_unit: 'month', period_length: 1, enabled: true },
+    ],
+  })
+
+  it('active 常规按月度折算参与比较（每日50=1500/月 > 1000）', () => {
+    expect(hasHigherMonthlyRegularBudget([active], 'member', 1000)).toBe(true)
+  })
+
+  it('inactive/archived 常规被忽略——关闭全部护栏后下调全局默认必须放行', () => {
+    expect(hasHigherMonthlyRegularBudget([closed], 'member', 1000)).toBe(false)
+    expect(hasHigherMonthlyRegularBudget([g({ ...closed, status: 'archived' })], 'member', 1000)).toBe(false)
   })
 })

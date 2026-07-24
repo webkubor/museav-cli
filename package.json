@@ -43,6 +43,7 @@
     "copy-to-clipboard": "^4.0.2",
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.21",
+    "decimal.js": "^10.6.0",
     "i18next": "^26.2.0",
     "jsencrypt": "^3.5.4",
     "ky": "^2.0.2",

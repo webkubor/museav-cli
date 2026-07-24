@@ -8,6 +8,7 @@
  * 让 UI 先按 PRD 结构跑起来，后端补齐字段后把这些函数换成读真值即可。
  * 禁止在组件里散落这套回退逻辑。
  */
+import Decimal from 'decimal.js'
 import type { GuardrailBudgetPolicy, GuardrailDetail } from '@/interfaces/guardrails'
 import { trimAmountScale, groupThousands } from './budget'
 
@@ -188,6 +189,41 @@ export function activePolicies(g: GuardrailDetail): GuardrailBudgetPolicy[] {
   return (g.budget_policies ?? []).filter(isActivePolicy)
 }
 
+// ─── 预算周期换算（#239：个人/Key 护栏预算需跨周期换算后再做上限比对）──────────
+// 换算基准：统一折算为「每月」。period_length 已由后端处理（hour=5, 其余=1），
+// 此处只按 period_unit 做倍率换算。用 decimal.js 避免浮点失精。
+
+/** 各周期单位折算为月的倍率 */
+const PERIOD_TO_MONTHLY: Record<string, number> = {
+  hour: 144,  // 每5小时 → 30天×(24/5)≈144
+  day: 30,    // 每日 → 30天
+  week: 5,    // 每周 → ~4.3周≈5（对齐 PRD 换算表）
+  month: 1,
+}
+
+/** 将某个周期的金额折算为月度金额（精确计算，返回数值） */
+export function toMonthlyAmount(amount: number | string, periodUnit: string): number {
+  const multiplier = PERIOD_TO_MONTHLY[periodUnit] ?? 1
+  return new Decimal(amount).mul(multiplier).toNumber()
+}
+
+/**
+ * 全局护栏某档的月度折算金额（#239）。
+ * 返回 { amount, monthlyAmount, periodUnit } 或 null（无生效策略/不限额）。
+ */
+export function globalDefaultMonthly(
+  list: GuardrailDetail[],
+  scope: 'per_member' | 'per_api_key',
+): { amount: number; monthlyAmount: number; periodUnit: string } | null {
+  const g = activeGlobalGuardrail(list)
+  if (!g) return null
+  const p = budgetByScope(g, scope)
+  const amt = p?.spend_limit_amount
+  if (!p || !amt || Number(amt) <= 0) return null
+  const amount = Number(amt)
+  return { amount, monthlyAmount: toMonthlyAmount(amt, p.period_unit), periodUnit: p.period_unit }
+}
+
 /** 取某一聚合口径下的生效预算（多条时取 effective_from 最新一条） */
 export function budgetByScope(g: GuardrailDetail, scope: BudgetAggScope): GuardrailBudgetPolicy | null {
   const matched = activePolicies(g).filter((p) => p.aggregation_scope === scope)
@@ -251,7 +287,7 @@ export function globalDefaultAmount(
 
 /**
  * 某作用域下所有「常规护栏」的生效预算金额（数值）。下调全局默认时，
- * 若存在高于新默认值的常规护栏须报错（文档§校验规则）用它枚举比对。
+ * 若存在预算高于新默认值的常规护栏须报错（文档§校验规则）用它枚举比对。
  */
 export function regularBudgetAmounts(list: GuardrailDetail[], scope: 'member' | 'key'): number[] {
   return list
@@ -261,6 +297,25 @@ export function regularBudgetAmounts(list: GuardrailDetail[], scope: 'member' | 
       return amt && Number(amt) > 0 ? Number(amt) : null
     })
     .filter((n): n is number => n !== null)
+}
+
+/**
+ * #239：检查是否存在月度折算后高于新默认值的常规护栏。
+ * 各护栏周期可能不同，需逐个换算为月度后再比对。
+ */
+export function hasHigherMonthlyRegularBudget(
+  list: GuardrailDetail[],
+  scope: 'member' | 'key',
+  newDefaultMonthlyAmount: number,
+): boolean {
+  return list
+    .filter((g) => deriveScope(g) === scope && deriveKind(g) === 'regular')
+    .some((g) => {
+      const p = primaryBudget(g)
+      const amt = p?.spend_limit_amount
+      if (!amt || Number(amt) <= 0) return false
+      return toMonthlyAmount(amt, p.period_unit) > newDefaultMonthlyAmount
+    })
 }
 
 /** 预算策略的计量时区（文档§周期计量：涉及日期计算均用租户时区）；缺省回退浏览器时区 */

@@ -62,6 +62,9 @@ importers:
       dayjs:
         specifier: ^1.11.21
         version: 1.11.21
+      decimal.js:
+        specifier: ^10.6.0
+        version: 10.6.0
       i18next:
         specifier: ^26.2.0
         version: 26.2.0(typescript@6.0.3)

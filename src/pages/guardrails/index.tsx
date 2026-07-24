@@ -52,9 +52,11 @@ import {
   deriveScope,
   deriveKind,
   boostExpiry,
-  globalDefaultAmount,
+  globalDefaultMonthly,
+  toMonthlyAmount,
+  hasHigherMonthlyRegularBudget,
+  PERIOD_LABEL,
   guardrailBudgetPeriodLength,
-  regularBudgetAmounts,
   isoToLocalInput,
   localInputToIso,
   rawPromptInjectionMode,
@@ -587,12 +589,12 @@ export default function GuardrailsPage() {
         if (!isValidBudgetAmount(amount)) {
           return { error: '预算金额无效：请输入大于 0 的数字，整数最多 12 位，小数最多 2 位' }
         }
-        // 下调全局默认时，若存在预算高于新默认值的常规护栏，必须先调低那些常规护栏（文档§校验规则）。
+        // 下调全局默认时，若存在月度折算后高于新默认值的常规护栏，必须先调低（#239 周期换算）。
         if (aggScope === 'per_member' || aggScope === 'per_api_key') {
           const targetScope = aggScope === 'per_member' ? 'member' : 'key'
-          const higher = regularBudgetAmounts(guardrails, targetScope).filter((v) => v > Number(amount))
-          if (higher.length > 0) {
-            return { error: `存在预算高于新默认值的常规${targetScope === 'member' ? '个人' : 'Key'}护栏，需先调低这些常规护栏，才能下调全局默认预算` }
+          const newMonthly = toMonthlyAmount(amount, draft.period)
+          if (hasHigherMonthlyRegularBudget(guardrails, targetScope, newMonthly)) {
+            return { error: `存在预算高于新默认值的常规${targetScope === 'member' ? '个人' : 'Key'}护栏（已按各自周期折算为月度），需先调低这些常规护栏，才能下调全局默认预算` }
           }
         }
         if (existing) {
@@ -641,17 +643,22 @@ export default function GuardrailsPage() {
     if (!isValidBudgetAmount(amount)) {
       return { error: '预算金额无效：请输入大于 0 的数字，整数最多 12 位，小数最多 2 位' }
     }
-    // 预算上/下限校验（文档§校验规则）：常规不得超过全局默认；提额必须大于当前生效预算。
+    // 预算上/下限校验（文档§校验规则 + #239 周期换算）：常规不得超过全局默认；提额必须大于当前生效预算。
+    // 比较前双方均折算为月度金额，消除周期差异。
     if (dScope === 'member' || dScope === 'key') {
       const aggScope: BudgetAggScope = dScope === 'member' ? 'per_member' : 'per_api_key'
-      const globalDefault = globalDefaultAmount(guardrails, aggScope)
+      const globalDef = globalDefaultMonthly(guardrails, aggScope)
       const amt = Number(amount)
+      const monthlyAmt = toMonthlyAmount(amt, budgetPeriodUnit)
       if (dKind === 'regular') {
-        if (globalDefault != null && amt > globalDefault) {
-          return { error: `常规护栏预算不能超过全局默认预算（${currencySymbol}${trimAmountScale(String(globalDefault))} / ${dScope === 'member' ? '每人' : '每 Key'}）` }
+        if (globalDef != null && monthlyAmt > globalDef.monthlyAmount) {
+          const defLabel = globalDef.periodUnit === budgetPeriodUnit
+            ? `${currencySymbol}${trimAmountScale(String(globalDef.amount))}`
+            : `${currencySymbol}${trimAmountScale(String(globalDef.amount))}/${PERIOD_LABEL[globalDef.periodUnit] ?? globalDef.periodUnit}（≈ ¥${trimAmountScale(String(globalDef.monthlyAmount))}/月）`
+          return { error: `按当前周期预计最高可使用 ¥${trimAmountScale(String(monthlyAmt))}/月，超过默认个人预算 ${defLabel}。如需提高额度，请创建个人提额护栏。` }
         }
-      } else if (globalDefault != null && amt <= globalDefault) {
-        return { error: `提额预算必须大于当前生效预算（${currencySymbol}${trimAmountScale(String(globalDefault))}）` }
+      } else if (globalDef != null && monthlyAmt <= globalDef.monthlyAmount) {
+        return { error: `提额预算必须大于当前生效预算（${currencySymbol}${trimAmountScale(String(globalDef.amount))}）` }
       }
     }
     if (budget) {
@@ -699,14 +706,18 @@ export default function GuardrailsPage() {
         return
       }
     }
-    // 需求方#190：创建常规个人/Key 护栏时，预算不得超过全局默认（当前个人/Key）预算。
+    // 需求方#190 + #239：创建常规个人/Key 护栏时，折算月度预算不得超过全局默认月度预算。
     if ((scope === 'member' || scope === 'key') && kind === 'regular') {
       const amt = budgetAmount.trim()
       if (amt && isValidBudgetAmount(amt)) {
         const aggScope: BudgetAggScope = scope === 'member' ? 'per_member' : 'per_api_key'
-        const globalDefault = globalDefaultAmount(guardrails, aggScope)
-        if (globalDefault != null && Number(amt) > globalDefault) {
-          appToast.error(`常规护栏预算不能超过全局默认预算（${currencySymbol}${trimAmountScale(String(globalDefault))} / ${scope === 'member' ? '每人' : '每 Key'}）`)
+        const globalDef = globalDefaultMonthly(guardrails, aggScope)
+        const monthlyAmt = toMonthlyAmount(amt, budgetPeriodUnit)
+        if (globalDef != null && monthlyAmt > globalDef.monthlyAmount) {
+          const defLabel = globalDef.periodUnit === budgetPeriodUnit
+            ? `${currencySymbol}${trimAmountScale(String(globalDef.amount))}`
+            : `${currencySymbol}${trimAmountScale(String(globalDef.amount))}/${PERIOD_LABEL[globalDef.periodUnit] ?? globalDef.periodUnit}（≈ ¥${trimAmountScale(String(globalDef.monthlyAmount))}/月）`
+          appToast.error(`按当前周期预计最高可使用 ¥${trimAmountScale(String(monthlyAmt))}/月，超过默认个人预算 ${defLabel}。如需提高额度，请创建个人提额护栏。`)
           return
         }
       }

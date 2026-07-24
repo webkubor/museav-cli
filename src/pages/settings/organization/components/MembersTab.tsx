@@ -41,6 +41,16 @@ const ROLE_BADGE: Record<TenantRole, 'purple' | 'brand' | 'secondary'> = {
   tenant_admin: 'brand',
   tenant_member: 'secondary',
 }
+// hover title 释义（双语，避免动 locale 文件）：角色/状态徽章补一句权限含义
+const ROLE_DESC: Record<TenantRole, { zh: string; en: string }> = {
+  tenant_owner: { zh: 'Owner：企业所有者，拥有最高权限', en: 'Owner: organization owner with full permissions' },
+  tenant_admin: { zh: 'Admin：管理员，可管理成员与配置', en: 'Admin: administrator, manages members and settings' },
+  tenant_member: { zh: 'Member：普通成员', en: 'Member: regular member' },
+}
+const MEMBER_STATUS_DESC: Record<'active' | 'suspended', { zh: string; en: string }> = {
+  active: { zh: '正常：成员可正常访问与使用', en: 'Active: member can access and use normally' },
+  suspended: { zh: '停用：已停用，无法访问企业资源', en: 'Suspended: disabled, cannot access org resources' },
+}
 
 /**
  * 授权工作空间明细面板（需求方#175）：懒加载——仅在 Popover 打开、本组件挂载时才拉取该成员的 workspaces，
@@ -108,7 +118,8 @@ export function MembersTab({
   isOwner: boolean
   isAdmin: boolean
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const lang = i18n.language.startsWith('zh') ? 'zh' : 'en'
   const qc = useQueryClient()
   const { hasPermission } = usePermissions()
   const canManageMembers = hasPermission(PERMS.ORG_MEMBERS_MANAGE)
@@ -318,7 +329,7 @@ export function MembersTab({
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={ROLE_BADGE[m.role]} size="sm">{ROLE_LABEL[m.role]}</Badge>
+                        <Badge variant={ROLE_BADGE[m.role]} size="sm" title={ROLE_DESC[m.role][lang]} className="cursor-help">{ROLE_LABEL[m.role]}</Badge>
                       </TableCell>
                       <TableCell className="text-xs text-mg-text-2 font-medium">
                         {isPrivileged ? (
@@ -349,7 +360,8 @@ export function MembersTab({
                       </TableCell>
                       <TableCell>
                         <span
-                          className={`inline-flex items-center gap-1 text-xs font-semibold ${
+                          title={MEMBER_STATUS_DESC[status === 'suspended' ? 'suspended' : 'active'][lang]}
+                          className={`inline-flex items-center gap-1 text-xs font-semibold cursor-help ${
                             status === 'suspended' ? 'text-mg-danger' : 'text-mg-success'
                           }`}
                         >
@@ -400,7 +412,7 @@ export function MembersTab({
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={ROLE_BADGE[inv.role]} size="sm">{ROLE_LABEL[inv.role]}</Badge>
+                      <Badge variant={ROLE_BADGE[inv.role]} size="sm" title={ROLE_DESC[inv.role][lang]} className="cursor-help">{ROLE_LABEL[inv.role]}</Badge>
                     </TableCell>
                     <TableCell className="text-xs text-mg-text-3">—</TableCell>
                     <TableCell>

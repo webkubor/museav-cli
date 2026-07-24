@@ -13,7 +13,7 @@ import { usePermissions } from '@/hooks/use-permissions'
 import { isDomestic } from '@/lib/market'
 import { PERMS } from '@/config/permissions'
 import { listIncomeRecords } from '@/services/billing'
-import type { IncomeRecord, IncomeRecordType, IncomeBalanceBucket } from '@/services/billing'
+import type { IncomeRecord, IncomeRecordType, IncomeRecordStatus, IncomeBalanceBucket } from '@/services/billing'
 import { BillingInvoiceTab } from './invoice/BillingInvoiceTab'
 
 const TYPE_FILTERS: Array<{ value: 'all' | IncomeRecordType }> = [
@@ -64,6 +64,17 @@ const TYPE_BADGE: Record<IncomeRecordType, 'brand' | 'info' | 'purple'> = {
   reward: 'purple',
 }
 
+// hover title 释义（双语，避免动 locale 文件）：徽章缩写不直观时补一句人话
+const TYPE_DESC: Record<IncomeRecordType, { zh: string; en: string }> = {
+  recharge: { zh: '充值：用户主动充值入账', en: 'Recharge: credited from a user top-up' },
+  gift: { zh: '赠送入账：平台发放的赠送额度', en: 'Gift credit: complimentary balance from the platform' },
+  reward: { zh: '奖励入账：活动或奖励发放的额度', en: 'Reward credit: balance granted via rewards or activities' },
+}
+const STATUS_DESC: Record<IncomeRecordStatus, { zh: string; en: string }> = {
+  completed: { zh: '已完成：入账成功', en: 'Completed: credited successfully' },
+  processing: { zh: '处理中：入账处理中', en: 'Processing: credit in progress' },
+}
+
 /**
  * 账单页收入账本（qa#433，对齐 PRD BillingPage.billing-ledger-panel）：
  * 单一「入账记录」表 —— 充值 / 赠送 / 奖励三类收入流合成一张表，时间倒序、游标翻页。
@@ -71,7 +82,8 @@ const TYPE_BADGE: Record<IncomeRecordType, 'brand' | 'info' | 'purple'> = {
  * 发票为内嵌 tab（BillingInvoiceTab）。
  */
 export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: string; currencySymbol: string }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const lang = i18n.language.startsWith('zh') ? 'zh' : 'en'
   const { hasPermission } = usePermissions()
   // 发票功能仅国内站有（市场特例，PRD）；叠加 billing.invoice:view 权限
   const canInvoice = isDomestic() && hasPermission(PERMS.BILLING_INVOICE_VIEW)
@@ -207,13 +219,13 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
                     {rec.created_at ? formatDateTime(rec.created_at) : '—'}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    <Badge variant={TYPE_BADGE[rec.type]} size="sm">{t(`billing.income.types.${rec.type}`)}</Badge>
+                    <Badge variant={TYPE_BADGE[rec.type]} size="sm" title={TYPE_DESC[rec.type][lang]} className="cursor-help">{t(`billing.income.types.${rec.type}`)}</Badge>
                   </TableCell>
                   <TableCell className="text-xs text-mg-text-2 max-w-[140px] truncate">{channelLabel(rec.channel)}</TableCell>
                   <TableCell className="text-xs text-mg-text-2 whitespace-nowrap">{bucketLabel(rec.balance_bucket)}</TableCell>
                   <TableCell className="text-xs font-bold font-mono whitespace-nowrap text-mg-success">{renderAmount(rec)}</TableCell>
                   <TableCell className="whitespace-nowrap">
-                    <Badge variant={rec.status === 'completed' ? 'success' : 'warning'} size="sm">
+                    <Badge variant={rec.status === 'completed' ? 'success' : 'warning'} size="sm" title={STATUS_DESC[rec.status][lang]} className="cursor-help">
                       {t(`billing.income.status.${rec.status}`)}
                     </Badge>
                   </TableCell>

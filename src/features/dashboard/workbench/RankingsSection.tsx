@@ -13,14 +13,15 @@ import { ModelIcon, type ModelIconLike } from '@/features/models/components/Mode
 import { abbreviateNumber, rangeForGranularity, type Granularity, type WorkbenchView } from './shared'
 import type { UsageRankingItem } from '@/types'
 
-function RankingRow({ index, name, meta, spend, model }: { index: number; name: string; meta: string; spend?: { amount?: string; currency?: string }; model?: ModelIconLike }) {
+function RankingRow({ index, name, meta, metaTitle, spend, model }: { index: number; name: string; meta: string; metaTitle?: string; spend?: { amount?: string; currency?: string }; model?: ModelIconLike }) {
   return (
     <div className="flex items-center gap-3 py-2.5">
       <span className="w-4 shrink-0 text-center font-mono text-xs font-bold text-mg-text-3">{String(index + 1)}</span>
       {model && <ModelIcon model={model} size={24} className="border border-mg-border/40" />}
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-semibold text-mg-text-1">{name}</div>
-        <div className="mt-0.5 truncate text-xs text-mg-text-3 font-mono">{meta}</div>
+        {/* 缩写数字悬浮显精确值（原生 title，不引入 Tooltip） */}
+        <div className="mt-0.5 truncate text-xs text-mg-text-3 font-mono cursor-help" title={metaTitle}>{meta}</div>
       </div>
       <Money amount={spend?.amount} currency={spend?.currency} className="shrink-0" />
     </div>
@@ -81,6 +82,7 @@ function RankingCard({
                 index={i}
                 name={item.name || item.key || '—'}
                 meta={`${abbreviateNumber(item.tokens ?? 0)} tokens · ${abbreviateNumber(item.requests ?? 0)} calls`}
+                metaTitle={`${(item.tokens ?? 0).toLocaleString()} tokens · ${(item.requests ?? 0).toLocaleString()} calls`}
                 spend={item.spend}
                 model={withModelIcon ? { display_name: item.name || item.key || '—', vendor: item.key || item.name || '' } : undefined}
               />

@@ -199,7 +199,7 @@ export function ApiKeyTable({
                   <TruncatedText text={record.name} maxWidth={200} className="font-semibold text-mg-text-1 text-[13.5px]" />
                   {/* #298：名称下方掩码 + 复制完整明文按钮 */}
                   <div className="mt-1 flex items-center gap-1.5">
-                    <span className="font-mono text-xs text-mg-text-3 tracking-tight">{record.masked}</span>
+                    <span className="font-mono text-xs text-mg-text-3 tracking-tight cursor-help" title="Key 掩码，完整明文需点右侧复制">{record.masked}</span>
                     <button
                       type="button"
                       aria-label={copyDisabledReason ?? t('apiKeys.table.copy')}
@@ -244,14 +244,18 @@ export function ApiKeyTable({
                       {guardrailNames.slice(0, 3).map((name) => (
                         <span
                           key={name}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-500/10 border border-green-500/25 text-green-600"
+                          title={name}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-500/10 border border-green-500/25 text-green-600 cursor-help"
                         >
                           <LuShieldCheck className="w-3 h-3 shrink-0" />
                           {name}
                         </span>
                       ))}
                       {guardrailNames.length > 3 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-mg-fill-0 border border-mg-border text-mg-text-3">
+                        <span
+                          title={guardrailNames.slice(3).join(' / ')}
+                          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-mg-fill-0 border border-mg-border text-mg-text-3 cursor-help"
+                        >
                           +{guardrailNames.length - 3}
                         </span>
                       )}
@@ -271,7 +275,10 @@ export function ApiKeyTable({
                       : <span className="text-mg-text-3">—</span>}
                   </div>
                   {/* #148：限额直接带「限额」前缀，一眼区分于上方本期消费，无需额外 Hint */}
-                  <div className="text-xs text-mg-text-3">{hasLimit ? `限额 ${formatLimit(record)}` : formatLimit(record)}</div>
+                  <div
+                    className={`text-xs text-mg-text-3${hasLimit ? ' cursor-help' : ''}`}
+                    title={hasLimit ? '生效限额=命中的护栏预算闸门（取最严）' : undefined}
+                  >{hasLimit ? `限额 ${formatLimit(record)}` : formatLimit(record)}</div>
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-2">
                   {lastCalled ? formatDateTime(lastCalled) : <span className="text-mg-text-3">尚未调用</span>}

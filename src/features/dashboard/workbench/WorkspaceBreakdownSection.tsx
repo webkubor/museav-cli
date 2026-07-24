@@ -91,7 +91,11 @@ export function WorkspaceBreakdownSection({ granularity, accountId, view = 'ente
             <div key={g.key} className="flex items-center justify-between gap-3 py-3">
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold text-mg-text-1">{nameById.get(g.key) || g.label || g.key}</div>
-                <div className="mt-0.5 text-xs text-mg-text-3 font-mono">
+                {/* 缩写数字悬浮显精确值（原生 title，不引入 Tooltip） */}
+                <div
+                  className="mt-0.5 text-xs text-mg-text-3 font-mono cursor-help"
+                  title={`${g.requests.toLocaleString()} · ${g.tokens.toLocaleString()} tokens`}
+                >
                   {`${abbreviateNumber(g.requests)} · ${abbreviateNumber(g.tokens)} tokens`}
                 </div>
               </div>

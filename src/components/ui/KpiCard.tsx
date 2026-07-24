@@ -16,7 +16,7 @@ export interface KpiCardProps {
   sparkData?: number[] // 迷你 sparkline 数据
   trend?: { value: string; up: boolean; label?: string } // 涨跌 badge；label 为前缀（如「较上期」）
   iconLead?: boolean // true=图标置于标题左侧、涨跌徽章落在卡片底部（总览设计稿版式）
-  rawNumber?: number // 传入原始数值时启用 countUp 动画
+  rawNumber?: number | string // 传入原始数值时启用 countUp 动画（金额等字符串数值内部 Number() 归一）
   formatter?: (n: number) => string // 配合 rawNumber 使用的格式化函数
   action?: { label: string; onClick: () => void } // 卡片内快捷操作按钮（如充值）
   onClick?: () => void // 卡片整体点击（当前仅用于埋点占位，暂无下钻交互）
@@ -93,7 +93,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   ratio,
 }) => {
   const displayTitle = title || label || ''
-  const animated = useCountUp(loading ? 0 : (rawNumber ?? 0))
+  const animated = useCountUp(loading ? 0 : Number(rawNumber ?? 0))
   const displayValue = rawNumber !== undefined && !loading
     ? (formatter ? formatter(animated) : String(Math.round(animated)))
     : value

@@ -201,16 +201,18 @@ export function LogsTable({
                     <span className="block mg-text-caption text-mg-text-3">{t('logs.metrics.noTokens')}</span>
                   </div>
                 ) : row.usage.total_tokens > 0 ? (
-                  // 单行：粗体总数 + 淡色输入/输出内联（原三行过高，需求方要求一行）
-                  <div className="min-w-0 inline-flex items-center gap-1 whitespace-nowrap font-mono tabular-nums">
-                    {/* 绿色「T」= Token 总量标记（与用量页 token=emerald 口径一致，需求方）；hover 加深 + tooltip 释义 */}
-                    <span
-                      className="inline-flex cursor-default items-center justify-center rounded bg-green-500/10 px-1 py-0.5 text-[10px] font-bold leading-none text-green-600 transition-colors hover:bg-green-500/20"
-                      title="总 Token（输入 + 输出）"
-                      aria-label="总 Token"
-                    >T</span>
-                    <strong className="font-bold text-mg-text-1">{formatNumber(row.usage.total_tokens)}</strong>
-                    <span className="mg-text-caption text-mg-text-3">· 输入 {formatNumber(row.usage.input_tokens)} / 输出 {formatNumber(row.usage.output_tokens)}</span>
+                  // 两行：T+总数一行、输入/输出一行（需求方定；比原三行紧凑、比一行清晰）
+                  <div className="min-w-0 whitespace-nowrap font-mono tabular-nums">
+                    <div className="flex items-center gap-1">
+                      {/* 绿色「T」= Token 总量标记（与用量页 token=emerald 口径一致）；hover 加深 + tooltip 释义 */}
+                      <span
+                        className="inline-flex cursor-default items-center justify-center rounded bg-green-500/10 px-1 py-0.5 text-[10px] font-bold leading-none text-green-600 transition-colors hover:bg-green-500/20"
+                        title="总 Token（输入 + 输出）"
+                        aria-label="总 Token"
+                      >T</span>
+                      <strong className="font-bold text-mg-text-1">{formatNumber(row.usage.total_tokens)}</strong>
+                    </div>
+                    <div className="mt-0.5 mg-text-caption text-mg-text-3">输入 {formatNumber(row.usage.input_tokens)} / 输出 {formatNumber(row.usage.output_tokens)}</div>
                   </div>
                 ) : (
                   <div className="min-w-0">

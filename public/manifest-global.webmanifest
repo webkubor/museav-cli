@@ -9,13 +9,13 @@
   "scope": "/",
   "icons": [
     {
-      "src": "/brand/modelgo-pwa-icon.png",
+      "src": "/brand/modelgo-pwa-icon-global.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/brand/modelgo-pwa-icon.png",
+      "src": "/brand/modelgo-pwa-icon-global.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

@@ -20,6 +20,9 @@
           l.href = '/brand/modelgo-global-logo.svg'
           l.removeAttribute('media') // 国际标自带配色,明暗主题共用一份
         })
+        // apple-touch-icon 也随市场:国内靛紫(默认),国际翠绿
+        var at = document.querySelector('link[rel="apple-touch-icon"]')
+        if (at) at.href = '/brand/apple-touch-icon-global.png'
         // PWA 安装图标/名称同样随市场:构建注入的 manifest link 在本脚本之后,
         // DOMContentLoaded 后把它切到国际版 manifest(浏览器按需拉取,不早于此)
         window.addEventListener('DOMContentLoaded', function () {

@@ -308,7 +308,8 @@ export default function WorkspacesPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          // 限高 + 内部滚动：空间多时列表不再无限撑高页面（需求方）；pr-1 给滚动条留位
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[600px] overflow-y-auto pr-1">
             {filteredData.map((ws) => {
               const isSelected = validSelectedId === ws.workspace_id
               return (

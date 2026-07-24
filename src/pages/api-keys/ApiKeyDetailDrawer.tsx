@@ -96,7 +96,7 @@ const AUDIT_ACTION_LABEL: Record<string, string> = {
   'api_key.disabled': '停用 API Key',
   'api_key.rotated': '轮转 API Key',
   'api_key.revoked': '删除 API Key',
-  'api_key.revealed': '查看完整 Key',
+  'api_key.revealed': '复制完整 Key',
 }
 
 function auditActionLabel(action: string): string {
@@ -493,8 +493,8 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
         {/* 操作审计 */}
         <Section title="操作审计">
           {auditRows.length > 0 ? (
-            <div className="space-y-3">
-              {auditRows.slice(0, 8).map((a) => (
+            <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+              {auditRows.slice(0, 50).map((a) => (
                 <div key={a.id} className="border-l-2 border-brand-base/35 pl-4">
                   <div className="text-sm font-bold text-mg-text-1">{auditActionLabel(a.action)}</div>
                   <div className="mt-1 text-xs text-mg-text-2">

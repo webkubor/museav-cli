@@ -170,6 +170,26 @@ export function activeDefaultGuardrail(list: GuardrailDetail[]): GuardrailDetail
   return list.find((g) => g.is_default && g.status === 'active')
 }
 
+/** 护栏是否绑定某成员：assignments.account_id 为准，兼容旧数据 metadata.members（对齐原型 guardrailIncludesMember） */
+export function guardrailIncludesMember(g: GuardrailDetail, accountId: string): boolean {
+  if (!accountId) return false
+  const members = (g.metadata as Record<string, unknown> | undefined)?.members
+  if (Array.isArray(members) && members.some((id) => id === accountId)) return true
+  return assignmentsOf(g).some((a) => a.subject_type === 'member' && a.account_id === accountId)
+}
+
+/**
+ * 某成员生效的个人预算护栏（对齐 PRD 原型 getActiveMemberBudgetGuardrail）：
+ * 该成员绑定、状态 active 的个人护栏中，提额(boost)优先、其次常规(regular)；无则 null。
+ * 与提示词注入无关——个人护栏是「人」的预算策略，Key 详情按 Key 责任人匹配展示（需求方#234/#241）。
+ */
+export function activeMemberBudgetGuardrail(list: GuardrailDetail[], accountId: string): GuardrailDetail | null {
+  const matched = list.filter(
+    (g) => deriveScope(g) === 'member' && g.status === 'active' && guardrailIncludesMember(g, accountId),
+  )
+  return matched.find((g) => deriveKind(g) === 'boost') ?? matched.find((g) => deriveKind(g) === 'regular') ?? null
+}
+
 export function memberCount(g: GuardrailDetail): number {
   return assignmentsOf(g).filter((a) => a.subject_type === 'member' && a.account_id).length
 }

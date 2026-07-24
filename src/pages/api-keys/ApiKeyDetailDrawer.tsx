@@ -32,9 +32,7 @@ import {
 import {
   resolveKeyPromptInjection,
   activeGlobalGuardrail,
-  deriveScope,
-  deriveKind,
-  rawPromptInjectionMode,
+  activeMemberBudgetGuardrail,
   PROMPT_INJECTION_LABEL,
 } from '../guardrails/derive'
 
@@ -434,32 +432,29 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                 )
               })()}
 
-              {/* 个人护栏（#234：展示绑定的个人护栏或「个人预算不适用」） */}
+              {/* 个人护栏（#234/#241：按 Key 责任人匹配生效个人护栏，对齐 PRD 原型 resolveApiKeyGuardrailPreview 的 member 层）
+                  - service Key 不参与个人预算 → 「个人预算不适用」
+                  - 否则取责任人绑定的 active 个人护栏（提额优先/其次常规），无则回退「全局默认个人预算」
+                  与提示词注入无关（旧实现误用 prompt_injection_mode 过滤，致纯预算个人护栏永不显示） */}
               {guardrails && (() => {
-                const keyType = deriveKeyType(view)
-                const isServiceKey = keyType === 'service'
-                if (isServiceKey) {
-                  return (
-                    <div className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
-                      <div className="text-xs text-mg-text-3">个人护栏</div>
-                      <div className="mt-1 text-sm text-mg-text-3">个人预算不适用</div>
-                    </div>
-                  )
-                }
-                const memberGuardrails = guardrails.filter((g) => deriveScope(g) === 'member' && deriveKind(g) === 'regular' && rawPromptInjectionMode(g) !== undefined)
-                if (memberGuardrails.length > 0) {
-                  return (
-                    <div className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
-                      <div className="text-xs text-mg-text-3">个人护栏</div>
-                      <div className="mt-1 space-y-0.5">
-                        {memberGuardrails.map((g) => (
-                          <div key={g.id} className="text-sm font-bold text-mg-text-1">{g.name}</div>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                }
-                return null
+                const isServiceKey = deriveKeyType(view) === 'service'
+                const memberGuardrail = isServiceKey
+                  ? null
+                  : activeMemberBudgetGuardrail(guardrails, responsibleOf(view).account_id)
+                const label = isServiceKey
+                  ? '个人预算不适用'
+                  : memberGuardrail?.name ?? '全局默认个人预算'
+                const valueClass = isServiceKey
+                  ? 'text-mg-text-3'
+                  : memberGuardrail
+                    ? 'font-bold text-mg-text-1'
+                    : 'text-mg-text-2'
+                return (
+                  <div className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
+                    <div className="text-xs text-mg-text-3">个人护栏</div>
+                    <div className={`mt-1 text-sm ${valueClass}`}>{label}</div>
+                  </div>
+                )
               })()}
 
               {effective.effective.budgets.length === 0 &&

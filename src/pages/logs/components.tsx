@@ -203,6 +203,7 @@ export function LogsTable({
                 ) : row.usage.total_tokens > 0 ? (
                   // 单行：粗体总数 + 淡色输入/输出内联（原三行过高，需求方要求一行）
                   <div className="min-w-0 whitespace-nowrap font-mono tabular-nums">
+                    <span className="mg-text-caption text-mg-text-3">总 </span>
                     <strong className="font-bold text-mg-text-1">{formatNumber(row.usage.total_tokens)}</strong>
                     <span className="mg-text-caption text-mg-text-3"> · 输入 {formatNumber(row.usage.input_tokens)} / 输出 {formatNumber(row.usage.output_tokens)}</span>
                   </div>

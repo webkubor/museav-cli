@@ -70,7 +70,7 @@ const TableRow = React.forwardRef<
 ))
 TableRow.displayName = "TableRow"
 
-/** 列水平对齐。默认 left；表头与单元格各自传相同 align 即可整列对齐统一。 */
+/** 列水平对齐。默认 center（整列居中，表头+单元格一致）；金额/操作等列显式传 align="right" 覆盖。 */
 type CellAlign = "left" | "center" | "right"
 const ALIGN_CLASS: Record<CellAlign, string> = {
   left: "text-left",
@@ -81,7 +81,7 @@ const ALIGN_CLASS: Record<CellAlign, string> = {
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement> & { align?: CellAlign }
->(({ className, align = "left", ...props }, ref) => (
+>(({ className, align = "center", ...props }, ref) => (
   <th
     ref={ref}
     className={cn(
@@ -97,7 +97,7 @@ TableHead.displayName = "TableHead"
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement> & { align?: CellAlign }
->(({ className, align = "left", ...props }, ref) => (
+>(({ className, align = "center", ...props }, ref) => (
   <td
     ref={ref}
     className={cn(

@@ -72,9 +72,13 @@ const PERIOD_UNIT_LABEL: Record<string, string> = {
   week: '周',
   month: '月',
 }
-// 周期文案对齐护栏预算展示（formatBudget 的「/ 月」口径）：period_length 恒为 1，只取单位，
-// 避免出现「1月」这类既像日期又冗余的文案（需求方#146）。
-const periodLabel = (unit: string) => PERIOD_UNIT_LABEL[unit] ?? unit
+
+/** 生效预算周期文案：保留后端 period_length，避免「每 5 小时」被错误显示为「每小时」。 */
+const periodLabel = (unit: string, length: number) => {
+  const normalizedLength = Number.isInteger(length) && length > 0 ? length : 1
+  const label = PERIOD_UNIT_LABEL[unit] ?? unit
+  return normalizedLength === 1 ? `每${label}` : `每 ${normalizedLength} ${label}`
+}
 
 const AUDIT_ACTION_LABEL: Record<string, string> = {
   'api_key.issued': '创建 API Key',
@@ -370,7 +374,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                         <div key={i} className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
                           <div className="text-xs text-mg-text-3">{GATE_LABEL[b.aggregation_scope] ?? b.aggregation_scope}</div>
                           <div className="mt-1 text-sm font-bold text-mg-text-1">
-                            {money({ amount: b.spend_limit_amount, currency: b.currency })} / {periodLabel(b.period_unit)}
+                            {money({ amount: b.spend_limit_amount, currency: b.currency })} / {periodLabel(b.period_unit, b.period_length)}
                           </div>
                           {source && <div className="mt-0.5 truncate text-xs text-mg-text-3">{source}</div>}
                         </div>

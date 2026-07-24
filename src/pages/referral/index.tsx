@@ -265,6 +265,8 @@ export default function ReferralPage() {
         <KpiCard
           title={text.kpiTotalCommission}
           value={formatMoney(stats.totalCommission)}
+          rawNumber={stats.totalCommission}
+          formatter={(n) => formatMoney(n)}
           icon={<LuCoins size={16} />}
           color="var(--brand-base)"
           glowColor="var(--brand-glow)"
@@ -272,6 +274,8 @@ export default function ReferralPage() {
         <KpiCard
           title={text.kpiMonthCommission}
           value={formatMoney(stats.monthCommission)}
+          rawNumber={stats.monthCommission}
+          formatter={(n) => formatMoney(n)}
           icon={<LuTrendingUp size={16} />}
           color="var(--brand-base)"
           glowColor="var(--brand-glow)"
@@ -279,6 +283,9 @@ export default function ReferralPage() {
         <KpiCard
           title={text.kpiActive}
           value={`${stats.activeInvited} / ${stats.invitedTotal}`}
+          rawNumber={stats.activeInvited}
+          formatter={(n) => `${Math.round(n)} / ${stats.invitedTotal}`}
+          ratio={{ current: stats.activeInvited, total: stats.invitedTotal }}
           icon={<LuUsers size={16} />}
           color="var(--brand-base)"
           glowColor="var(--brand-glow)"
@@ -287,6 +294,8 @@ export default function ReferralPage() {
         <KpiCard
           title={text.kpiRewardBalance}
           value={formatMoney(rewardBalance)}
+          rawNumber={rewardBalance}
+          formatter={(n) => formatMoney(n)}
           icon={<LuWallet size={16} />}
           color="var(--brand-base)"
           glowColor="var(--brand-glow)"

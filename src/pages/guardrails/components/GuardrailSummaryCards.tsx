@@ -24,6 +24,7 @@ export function GuardrailSummaryCards({ summary, showMember, loading }: Props) {
         iconLead
         title={t('guardrails.summary.global')}
         value={String(summary.global)}
+        rawNumber={summary.global}
         icon={<LuShieldCheck size={18} />}
         color="var(--brand-base)"
         glowColor="var(--brand-glow)"
@@ -34,6 +35,7 @@ export function GuardrailSummaryCards({ summary, showMember, loading }: Props) {
           iconLead
           title={t('guardrails.summary.member')}
           value={String(summary.member)}
+          rawNumber={summary.member}
           icon={<LuUserRound size={18} />}
           color="var(--mg-success)"
           glowColor="color-mix(in srgb, var(--mg-success) 14%, transparent)"
@@ -45,6 +47,7 @@ export function GuardrailSummaryCards({ summary, showMember, loading }: Props) {
         iconLead
         title={t('guardrails.summary.key')}
         value={String(summary.key)}
+        rawNumber={summary.key}
         icon={<LuKeyRound size={18} />}
         color="var(--mg-primary)"
         glowColor="color-mix(in srgb, var(--mg-primary) 14%, transparent)"
@@ -54,6 +57,7 @@ export function GuardrailSummaryCards({ summary, showMember, loading }: Props) {
         iconLead
         title={t('guardrails.summary.boost')}
         value={String(summary.boost)}
+        rawNumber={summary.boost}
         icon={<LuGauge size={18} />}
         color="var(--mg-warning)"
         glowColor="color-mix(in srgb, var(--mg-warning) 14%, transparent)"

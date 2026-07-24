@@ -121,7 +121,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       {/* 专属高精密几何光环与微弱环境底色 (线与光的结合) */}
       <div className="absolute right-[-20px] bottom-[-20px] w-32 h-32 pointer-events-none z-0 opacity-25 group-hover:opacity-75 transition-all duration-700">
         <svg 
-          className="w-full h-full animate-[spin_25s_linear_infinite] group-hover:animate-[spin_12s_linear_infinite] transition-all duration-700" 
+          className="w-full h-full transition-all duration-700" 
           viewBox="0 0 100 100"
         >
           {/* 外环刻度虚线 (线) */}

@@ -201,16 +201,10 @@ export function LogsTable({
                     <span className="block mg-text-caption text-mg-text-3">{t('logs.metrics.noTokens')}</span>
                   </div>
                 ) : row.usage.total_tokens > 0 ? (
-                  <div className="min-w-0">
-                    <strong className="block font-mono font-bold tabular-nums text-mg-text-1">
-                      总 Token {formatNumber(row.usage.total_tokens)}
-                    </strong>
-                    <span className="block font-mono tabular-nums mg-text-caption text-mg-text-3">
-                      输入 {formatNumber(row.usage.input_tokens)}
-                    </span>
-                    <span className="block font-mono tabular-nums mg-text-caption text-mg-text-3">
-                      输出 {formatNumber(row.usage.output_tokens)}
-                    </span>
+                  // 单行：粗体总数 + 淡色输入/输出内联（原三行过高，需求方要求一行）
+                  <div className="min-w-0 whitespace-nowrap font-mono tabular-nums">
+                    <strong className="font-bold text-mg-text-1">{formatNumber(row.usage.total_tokens)}</strong>
+                    <span className="mg-text-caption text-mg-text-3"> · 输入 {formatNumber(row.usage.input_tokens)} / 输出 {formatNumber(row.usage.output_tokens)}</span>
                   </div>
                 ) : (
                   <div className="min-w-0">

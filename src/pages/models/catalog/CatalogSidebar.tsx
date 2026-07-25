@@ -1,23 +1,33 @@
 /**
- * 左侧筛选栏（对齐设计稿）：
- * 模型系列(family，竖向列表，单选) / 功能标签(tags，chip，多选) /
- * 上下文长度(单选) / 价格类型(单选)。分组标题可折叠，超长分组「展开更多」。
+ * 左侧筛选栏：
+ * 模型系列(family，单选) / 能力标签(多选) / 上下文长度(单选) / 价格(单选) /
+ * API 协议(单选) / 折扣开关。分组标题可折叠，超长分组「展开更多」。
  * 选中态全部写在父级的 selected: string[]，key 形如 "dim:code"。
+ *
+ * 所有筛选都由服务端执行，选项计数来自 facets 接口；每个维度的计数已排除该维度
+ * 自身的条件，所以选中一个选项不会让同组其它选项归零。
  */
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LuBoxes, LuTag, LuRuler, LuCircleDollarSign, LuChevronDown } from 'react-icons/lu'
+import { LuBoxes, LuTag, LuRuler, LuCircleDollarSign, LuChevronDown, LuPlug, LuBadgePercent } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { resolveVendorBrand } from '@/features/models/components/vendor-icons'
-import type { CatalogModelTag } from '@/types'
+import type { CatalogModelTag, CatalogFacets, CatalogFacetBucket } from '@/types'
 import type { CatalogModelFamily } from '@/interfaces/catalog'
 
-const CTX_CHIPS = [
-  { code: '8k', label: '>8K' }, { code: '32k', label: '>32K' }, { code: '128k', label: '>128K' },
-  { code: '256k', label: '>256K' }, { code: '1m', label: '>1M' },
-]
+// 上下文阈值桶不再硬编码：由 facets 接口下发（服务端定义），否则 console 与官网
+// 会对「≥128K」的口径产生分歧。
 const PRICE_CHIPS = [{ code: 'free' }, { code: 'paid' }] as const
+const PROTOCOL_CHIPS = [{ code: 'openai' }, { code: 'anthropic' }, { code: 'other' }] as const
+
+/** token 数 → 展示标签（1048576 → >1M） */
+function contextBucketLabel(tokens: string): string {
+  const n = Number(tokens)
+  if (!Number.isFinite(n) || n <= 0) return tokens
+  if (n >= 1_000_000) return `>${Math.round(n / 1_048_576)}M`
+  return `>${Math.round(n / 1000)}K`
+}
 const FAMILY_PREVIEW = 7
 const TAG_PREVIEW = 8
 
@@ -27,9 +37,14 @@ interface Props {
   selected: string[]
   setSelected: React.Dispatch<React.SetStateAction<string[]>>
   isZh: boolean
+  /**
+   * 服务端筛选计数。每个维度的计数已排除该维度自身的条件，所以选中一个选项不会
+   * 让同组其它选项归零。undefined = 尚在加载，此时不显示计数（而不是显示 0）。
+   */
+  facets?: CatalogFacets
 }
 
-export function CatalogSidebar({ families, tags, selected, setSelected, isZh }: Props) {
+export function CatalogSidebar({ families, tags, selected, setSelected, isZh, facets }: Props) {
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [showAllFamilies, setShowAllFamilies] = useState(false)
@@ -43,7 +58,12 @@ export function CatalogSidebar({ families, tags, selected, setSelected, isZh }: 
   const toggle = (key: string) =>
     setSelected((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
 
+  const countOf = (buckets: CatalogFacetBucket[] | undefined, value: string): number | undefined =>
+    buckets?.find((b) => b.value === value)?.count
+
   const familyActive = selected.find((k) => k.startsWith('family:'))?.split(':')[1]
+  const protocolActive = selected.find((k) => k.startsWith('protocol:'))?.split(':')[1]
+  const promoActive = selected.includes('promo:1')
   const ctxActive = selected.find((k) => k.startsWith('ctx:'))?.split(':')[1]
   const priceActive = selected.find((k) => k.startsWith('price:'))?.split(':')[1]
 
@@ -91,6 +111,7 @@ export function CatalogSidebar({ families, tags, selected, setSelected, isZh }: 
             {shownTags.map((tg) => (
               <Chip key={tg.code} active={has(`tag:${tg.code}`)} onClick={() => toggle(`tag:${tg.code}`)}>
                 {isZh ? tg.name_zh : tg.name_en}
+                <Count n={countOf(facets?.capabilities, tg.code)} />
               </Chip>
             ))}
             {tags.length > TAG_PREVIEW && (
@@ -106,9 +127,10 @@ export function CatalogSidebar({ families, tags, selected, setSelected, isZh }: 
       <Group id="ctx" icon={LuRuler} title={t('modelsCatalog.sidebar.context')} collapsed={collapsed} onToggle={toggleCollapse}>
         <div className="mg-side-chips">
           <Chip active={!ctxActive} onClick={() => pickOne('ctx', null)}>{t('modelsCatalog.sidebar.all')}</Chip>
-          {CTX_CHIPS.map((c) => (
-            <Chip key={c.code} active={ctxActive === c.code} onClick={() => pickOne('ctx', ctxActive === c.code ? null : c.code)}>
-              {c.label}
+          {(facets?.contexts ?? []).map((b) => (
+            <Chip key={b.value} active={ctxActive === b.value} onClick={() => pickOne('ctx', ctxActive === b.value ? null : b.value)}>
+              {contextBucketLabel(b.value)}
+              <Count n={b.count} />
             </Chip>
           ))}
         </div>
@@ -120,8 +142,32 @@ export function CatalogSidebar({ families, tags, selected, setSelected, isZh }: 
           {PRICE_CHIPS.map((c) => (
             <Chip key={c.code} active={priceActive === c.code} onClick={() => pickOne('price', priceActive === c.code ? null : c.code)}>
               {t(`modelsCatalog.sidebar.${c.code}`)}
+              <Count n={countOf(facets?.prices, c.code)} />
             </Chip>
           ))}
+        </div>
+      </Group>
+
+      {/* API 协议：新增维度。双协议模型在任一值下都命中。 */}
+      <Group id="protocol" icon={LuPlug} title={isZh ? 'API 协议' : 'API protocol'} collapsed={collapsed} onToggle={toggleCollapse}>
+        <div className="mg-side-chips">
+          <Chip active={!protocolActive} onClick={() => pickOne('protocol', null)}>{t('modelsCatalog.sidebar.all')}</Chip>
+          {PROTOCOL_CHIPS.map((c) => (
+            <Chip key={c.code} active={protocolActive === c.code} onClick={() => pickOne('protocol', protocolActive === c.code ? null : c.code)}>
+              {c.code === 'other' ? (isZh ? '其他协议' : 'Other') : c.code === 'openai' ? 'OpenAI' : 'Anthropic'}
+              <Count n={countOf(facets?.protocols, c.code)} />
+            </Chip>
+          ))}
+        </div>
+      </Group>
+
+      {/* 折扣开关：只看有生效促销的模型 */}
+      <Group id="promo" icon={LuBadgePercent} title={isZh ? '优惠' : 'Offers'} collapsed={collapsed} onToggle={toggleCollapse}>
+        <div className="mg-side-chips">
+          <Chip active={promoActive} onClick={() => toggle('promo:1')}>
+            {isZh ? '限时优惠' : 'On offer'}
+            <Count n={facets?.promo_count} />
+          </Chip>
         </div>
       </Group>
     </aside>
@@ -150,4 +196,13 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
       {children}
     </button>
   )
+}
+
+/**
+ * 选项计数。undefined（facets 未加载）时不渲染 —— 显示 0 会让用户以为该选项
+ * 无结果。
+ */
+function Count({ n }: { n?: number }) {
+  if (n === undefined) return null
+  return <i className="mg-side-count">{n}</i>
 }

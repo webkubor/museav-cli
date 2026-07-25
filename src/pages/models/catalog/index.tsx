@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers } from 'react-icons/lu'
-import { listModels, listModelTags, listModelFamilies } from '@/services/catalog'
+import { listModels, listModelTags, listModelFamilies, listModelFacets } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import type { CatalogModelItem } from '@/types'
@@ -19,9 +19,7 @@ import { ModelsCompareModal } from '../components/ModelsCompareModal'
 import './catalog.css'
 
 type SortKey = 'default' | 'popular' | 'newest' | 'cheapest'
-const CTX_THRESHOLDS: Record<string, number> = {
-  '8k': 8000, '32k': 32000, '128k': 128000, '256k': 256000, '1m': 1000000,
-}
+// 上下文阈值改由服务端 facets 下发，前端不再硬编码（原 CTX_THRESHOLDS 已删除）。
 
 function isComparableModel(model: CatalogModelItem) {
   return !(model.modalities ?? []).some((m) => m === 'image' || m === 'audio' || m === 'video')
@@ -54,15 +52,57 @@ export default function ModelsCatalogPage() {
   const selectedCtx = selected.find((k) => k.startsWith('ctx:'))?.split(':')[1]
   const selectedPrice = selected.find((k) => k.startsWith('price:'))?.split(':')[1]
 
+  const selectedProtocol = selected.find((k) => k.startsWith('protocol:'))?.split(':')[1] as
+    | 'openai' | 'anthropic' | 'other' | undefined
+  const promoOnly = selected.includes('promo:1')
+
+  /**
+   * 筛选交给服务端。此前是 page_size:100 一次拉全量再本地 filter —— 随模型数
+   * 增长必然退化，且计数无法反映真实结果集。
+   * 上下文阈值不再由前端硬编码：把用户选中的桶原样作为 context_min 传下去，
+   * 桶的取值来自 facets 接口（服务端定义）。
+   */
+  const listParams = useMemo(() => ({
+    page_size: 100,
+    family: selectedFamily || undefined,
+    q: search.trim() || undefined,
+    protocol: selectedProtocol,
+    capability_tag: selectedTags.length ? selectedTags : undefined,
+    context_min: selectedCtx ? Number(selectedCtx) : undefined,
+    price: (selectedPrice as 'free' | 'paid' | undefined) || undefined,
+    promo: promoOnly || undefined,
+    sort: sort === 'default' ? undefined : sort,
+  }), [selectedFamily, search, selectedProtocol, selectedTags, selectedCtx, selectedPrice, promoOnly, sort])
+
   const modelsQuery = useQuery({
-    queryKey: ['catalog-models', { family: selectedFamily }],
-    queryFn: () => listModels({ page_size: 100, family: selectedFamily || undefined }),
+    queryKey: ['catalog-models', listParams],
+    queryFn: () => listModels(listParams),
     staleTime: 5 * 60_000,
   })
+
+  /**
+   * 侧栏计数。与列表并发发起、共用同一份 listParams —— 两者若发送不同筛选，
+   * 计数描述的就是与旁边列表不同的结果集。
+   */
+  const facetsQuery = useQuery({
+    queryKey: ['catalog-model-facets', listParams],
+    queryFn: () => listModelFacets(listParams),
+    staleTime: 5 * 60_000,
+  })
+  const facets = facetsQuery.data
   const tagsQuery = useQuery({ queryKey: ['catalog-model-tags'], queryFn: () => listModelTags(true), staleTime: 5 * 60_000 })
   const familiesQuery = useQuery({ queryKey: ['catalog-model-families'], queryFn: () => listModelFamilies(true), staleTime: 5 * 60_000 })
 
-  // 过滤后端测试数据（pytest-* 不该出现在公开广场）
+  /**
+   * 过滤后端测试数据。
+   *
+   * ⚠️ 这行**暂时还不能删**。方向是由后端 hidden 兜住（前端不该维护这类名单），
+   * 但截至改造时 test 库里 189 个可见模型中有 147 个是 pytest-* 测试模型且
+   * hidden=false —— 真实目录只有 42 个。删掉这行会让它们直接出现在公开广场。
+   * 待 db/schema/upgrades/2026-07-25_marketplace_data_backfill.sql 的第 (1) 段
+   * 在各环境执行、把测试模型标 hidden 之后，再删这行以及下面 isComparableModel
+   * 之外的本地兜底。
+   */
   const allModels = useMemo(
     () => (modelsQuery.data?.items ?? []).filter((m) => !/^pytest/i.test(m.model_id)),
     [modelsQuery.data?.items],
@@ -82,36 +122,22 @@ export default function ModelsCatalogPage() {
     return () => document.removeEventListener('mousedown', close)
   }, [])
 
+  /**
+   * 搜索、能力标签、上下文、价格、协议、折扣与 recommended/newest/cheapest 排序
+   * 全部由服务端执行（见 listParams），这里不再重复过滤 —— 重复过滤会让侧栏计数
+   * 与实际列表对不上。
+   *
+   * 只有 popular 仍是本地排序：服务端热度排序（平台级调用量物化表）尚未上线，
+   * 按既定决策该选项保持现状、不隐藏，待后端就绪后原地替换。
+   */
   const visibleModels = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    let list = allModels.filter((m) => {
-      if (q && !(
-        m.display_name.toLowerCase().includes(q) ||
-        m.model_id.toLowerCase().includes(q) ||
-        (m.provider ?? '').toLowerCase().includes(q)
-      )) return false
-      if (selectedTags.length && !selectedTags.every((tag) => m.tags?.includes(tag))) return false
-      if (selectedCtx && CTX_THRESHOLDS[selectedCtx] && (m.context_length ?? 0) < CTX_THRESHOLDS[selectedCtx]) return false
-      if (selectedPrice) {
-        const free = Number(m.pricing?.input_per_1m ?? 0) === 0 && Number(m.pricing?.output_per_1m ?? 0) === 0
-        if (selectedPrice === 'free' && !free) return false
-        if (selectedPrice === 'paid' && free) return false
-      }
-      return true
-    })
-    switch (sort) {
-      case 'cheapest':
-        list = [...list].sort((a, b) => Number(a.pricing?.input_per_1m ?? 0) - Number(b.pricing?.input_per_1m ?? 0))
-        break
-      case 'newest':
-        list = [...list].sort((a, b) => (b.released_at ?? '').localeCompare(a.released_at ?? ''))
-        break
-      case 'popular':
-        list = [...list].sort((a, b) => (b.providers_count ?? 0) + (b.tags?.length ?? 0) - ((a.providers_count ?? 0) + (a.tags?.length ?? 0)))
-        break
-    }
-    return list
-  }, [allModels, search, selectedTags, selectedCtx, selectedPrice, sort])
+    if (sort !== 'popular') return allModels
+    return [...allModels].sort(
+      (a, b) =>
+        (b.providers_count ?? 0) + (b.tags?.length ?? 0) -
+        ((a.providers_count ?? 0) + (a.tags?.length ?? 0)),
+    )
+  }, [allModels, sort])
 
   const reset = () => { setSelected([]); setSearch(''); setSort('default') }
 
@@ -139,7 +165,7 @@ export default function ModelsCatalogPage() {
       {/* 主体：左 sidebar + 右内容 */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[260px_1fr] lg:items-start">
         <div className={`models-sticky ${filtersOpen ? 'block rounded-lg border p-4 lg:border-0 lg:p-0' : 'hidden lg:block'}`} style={filtersOpen ? { background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' } : undefined}>
-          <CatalogSidebar families={families} tags={tags} selected={selected} setSelected={setSelected} isZh={isZh} />
+          <CatalogSidebar families={families} tags={tags} selected={selected} setSelected={setSelected} isZh={isZh} facets={facets} />
         </div>
 
         <div>

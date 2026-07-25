@@ -70,7 +70,6 @@ export default function ModelsPage() {
     setSelectedId,
     modelsQuery,
     detailQuery,
-    providersQuery,
     filteredModels,
   } = useModels({ modality: 'text' })
 
@@ -85,7 +84,6 @@ export default function ModelsPage() {
     [category, filteredModels],
   )
   const selectedModel = allModels.find((model) => model.id === selectedId) ?? visibleModels[0] ?? allModels[0]
-  const provider = providersQuery.data?.items?.[0]
   const detail = detailQuery.data
   useEffect(() => {
     const state = location.state as { selectedModelId?: string } | null
@@ -226,7 +224,7 @@ export default function ModelsPage() {
               <div className="models-experience-featured-content">
                 <div className="flex items-center gap-2">
                   {vendorNode(selectedModel)}
-                  <span>{selectedModel.vendor || provider?.provider_name || 'ModelGo'}</span>
+                  <span>{selectedModel.vendor || 'ModelGo'}</span>
                 </div>
                 <h2>{selectedModel.display_name}</h2>
                 <div className="models-experience-featured-metrics">
@@ -279,7 +277,7 @@ export default function ModelsPage() {
                 <div className="min-w-0">
                   <div className="models-experience-modelbar-title">{selectedModel.display_name}</div>
                   <div className="models-experience-modelbar-sub">
-                    {provider?.provider_name || selectedModel.vendor || 'ModelGo'} · {detail?.description || selectedModel.model_id}
+                    {selectedModel.vendor || 'ModelGo'} · {detail?.description || selectedModel.model_id}
                   </div>
                 </div>
               </div>

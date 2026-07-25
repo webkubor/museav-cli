@@ -8,7 +8,13 @@ import { formatContextLength, formatModelPrice, formatNumber, prettyModelName } 
 
 interface ModelDetailPanelProps {
   detail: CatalogModelDetail
-  providers: ProviderForModel[]
+  /**
+   * 推理供应商列表。**公开模型广场不再传** —— 公开目录不得暴露内部实例/区域/
+   * 在线率，对应的 API 已从公开面下线（web-api 的 /catalog/*providers）。
+   * 留空或不传时整个「供应商」Tab 不渲染。若将来把该接口挂到登录后的 authed
+   * 组，把数据传进来即可恢复。
+   */
+  providers?: ProviderForModel[]
   vendorHint?: string
 }
 
@@ -32,6 +38,8 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
   const { t, i18n } = useTranslation()
   const isZh = i18n.language.startsWith('zh')
   const vendor = detail.vendor || vendorHint || ''
+  const providerList = providers ?? []
+  const showProviders = providerList.length > 0
   return (
     <div className="flex flex-col gap-5">
       {/* 头部面板 */}
@@ -73,7 +81,9 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
       <Tabs defaultValue="overview" className="mt-0">
         <TabsList>
           <TabsTrigger value="overview">{t('models.detail.tabOverview')}</TabsTrigger>
-          <TabsTrigger value="providers">{t('models.detail.tabProviders')}</TabsTrigger>
+          {showProviders && (
+            <TabsTrigger value="providers">{t('models.detail.tabProviders')}</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="overview">
@@ -187,12 +197,12 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
 
         <TabsContent value="providers">
           <div className="pt-5 flex flex-col gap-3.5">
-            {providers.length === 0 ? (
+            {providerList.length === 0 ? (
               <div className="text-center min-h-[var(--mg-empty-min-h)] flex items-center justify-center text-[var(--mg-text-3)] mg-text-body">
                 {t('models.detail.noProviders')}
               </div>
             ) : (
-              providers.map((p) => {
+              providerList.map((p) => {
                 const isEnabled = p.status === 'enabled'
                 return (
                   <div key={p.provider_id} className="bg-card-bg border border-[var(--mg-border)] rounded-md mg-panel flex flex-col gap-3.5">

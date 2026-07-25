@@ -17,6 +17,9 @@ import type {
   CursorPage,
   PricingPlansResult,
   ProviderForModel,
+  CatalogFacets,
+  CatalogFeaturedSlide,
+  CatalogRelatedResult,
 } from '@/types'
 
 // ─── 模型列表 ─────────────────────────────────────
@@ -41,6 +44,24 @@ export function listModelProviders(modelId: string) {
 /** 获取模型标签目录（用于模型筛选和分类入口） */
 export function listModelTags(enabled = true) {
   return get<CatalogModelTagsResponse>('catalog/model-tags', { enabled })
+}
+
+/**
+ * 模型广场侧栏筛选计数。参数与 listModels 完全一致 —— 两者必须发送同一份筛选
+ * 状态，否则侧栏计数描述的是与旁边列表不同的结果集。
+ */
+export function listModelFacets(params?: CatalogModelListParams) {
+  return get<CatalogFacets>('catalog/model-facets', params)
+}
+
+/** 精选轮播（内容由后台配置，前端不得写死 model_id） */
+export function listFeatured() {
+  return get<{ items: CatalogFeaturedSlide[]; total: number }>('catalog/featured')
+}
+
+/** 模型详情的相关模型（运营配置优先，未配置回退同厂商/相近价位算法） */
+export function listRelatedModels(modelId: string) {
+  return get<CatalogRelatedResult>(`catalog/models/${encodeURIComponent(modelId)}/related`)
 }
 
 /** 获取模型族（模型组）目录，用于「模型组」官方筛选 */

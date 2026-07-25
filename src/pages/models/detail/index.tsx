@@ -1,13 +1,14 @@
 /**
  * 模型详情页（公开，/models/:modelId）
- * 数据：GET /api/v1/catalog/models/:id（公开）+ /providers
+ * 数据：GET /api/v1/catalog/models/:id（公开）
+ * 推理供应商区块已按 PRD 删除，对应公开 API 也已下线，故不再拉取。
  * 复用 features/models 的 ModelDetailPanel；匿名可看，「去体验」需登录。
  */
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { LuChevronLeft, LuChevronRight } from 'react-icons/lu'
-import { getModel, listModelProviders } from '@/services/catalog'
+import { getModel } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import { Button } from '@/components/ui/Button'
@@ -27,14 +28,7 @@ export default function ModelDetailPage() {
     enabled: !!modelId,
     staleTime: 5 * 60_000,
   })
-  const providersQuery = useQuery({
-    queryKey: ['catalog-model-providers', modelId],
-    queryFn: () => listModelProviders(modelId),
-    enabled: !!modelId,
-    staleTime: 5 * 60_000,
-  })
   const detail = detailQuery.data
-  const providers = providersQuery.data?.items ?? []
 
   const goTry = () => {
     if (!isAuthenticated) { navigate(toLoginWithRedirect()); return }
@@ -65,7 +59,7 @@ export default function ModelDetailPage() {
         </div>
       ) : (
         <div className="rounded-lg border p-6" style={{ background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' }}>
-          <ModelDetailPanel detail={detail} providers={providers} />
+          <ModelDetailPanel detail={detail} />
           <div className="mt-6 flex items-center gap-3 border-t pt-5" style={{ borderColor: 'var(--mg-border)' }}>
             <Button variant="brand" onClick={goTry}>
               {t('modelsCatalog.button.try')}

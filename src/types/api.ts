@@ -52,4 +52,11 @@ export interface ApiError {
 export type PaginatedData<T> = CursorPage<T>
 
 /** GET 查询参数；null / undefined 会在请求前被过滤掉。 */
-export type QueryParams = Record<string, string | number | boolean | null | undefined>
+/**
+ * 查询参数。数组值会被序列化成重复参数（`?a=1&a=2`），对齐后端 gin 的
+ * `c.QueryArray` 读法。
+ */
+export type QueryParams = Record<
+  string,
+  string | number | boolean | null | undefined | (string | number)[]
+>

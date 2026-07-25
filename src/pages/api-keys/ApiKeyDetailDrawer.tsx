@@ -160,6 +160,22 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
     }
   }
 
+  // 复制轮转后新 Token 完整值
+  const [newRevealCopying, setNewRevealCopying] = useState(false)
+  async function copyNewKey(current: ApiKeyItem) {
+    if (newRevealCopying) return
+    setNewRevealCopying(true)
+    try {
+      const res = await revealApiKey(workspaceId, current.api_key_id)
+      await copy(res.key)
+      appToast.success('新 Token 已复制')
+    } catch (err) {
+      appToast.requestError(err, '复制新 Token 失败')
+    } finally {
+      setNewRevealCopying(false)
+    }
+  }
+
   function jumpLogs(path: string) {
     trackEvent('api_keys:jump_logs', commonTrack)
     navigate(path)
@@ -281,19 +297,31 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
           <div className="flex items-start gap-2.5 rounded-md border border-mg-warning/30 bg-mg-warning/10 px-3 py-2.5">
             <div className="min-w-0 flex-1">
               <div className="text-sm font-bold text-mg-warning">新 Token 已生效，旧 Token 暂不失效</div>
-              <p className="mt-1 text-xs leading-5 text-mg-text-2">请复制新 Token 并替换到调用方配置中。验证通过后点击“已轮转”，旧 Token 将立即失效。</p>
-              {canReveal && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  disabled={prevRevealCopying}
-                  onClick={() => copyPreviousKey(view)}
-                >
-                  {prevRevealCopying ? <LuLoaderCircle className="mr-1 h-3.5 w-3.5 animate-spin" /> : <LuCopy className="mr-1 h-3.5 w-3.5" />}
-                  复制旧 Token
-                </Button>
-              )}
+              <p className="mt-1 text-xs leading-5 text-mg-text-2">请复制新 Token 并替换到调用方配置中。验证通过后点击"已轮转"，旧 Token 将立即失效。</p>
+              <div className="mt-2 flex gap-2">
+                {canReveal && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={newRevealCopying}
+                    onClick={() => copyNewKey(view)}
+                  >
+                    {newRevealCopying ? <LuLoaderCircle className="mr-1 h-3.5 w-3.5 animate-spin" /> : <LuCopy className="mr-1 h-3.5 w-3.5" />}
+                    复制新 Token
+                  </Button>
+                )}
+                {canReveal && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={prevRevealCopying}
+                    onClick={() => copyPreviousKey(view)}
+                  >
+                    {prevRevealCopying ? <LuLoaderCircle className="mr-1 h-3.5 w-3.5 animate-spin" /> : <LuCopy className="mr-1 h-3.5 w-3.5" />}
+                    复制旧 Token
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         )}

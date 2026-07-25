@@ -263,7 +263,7 @@ export default function ModelsCatalogPage() {
               </button>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="models-catalog-grid">
               {visibleModels.map((model) => (
                 <CatalogCard
                   key={model.id}

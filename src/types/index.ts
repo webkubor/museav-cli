@@ -128,6 +128,12 @@ export type {
 export type {
   ModelPricing,
   CatalogModelItem,
+  CatalogPromotion,
+  CatalogFacetBucket,
+  CatalogFacets,
+  CatalogFeaturedSlide,
+  CatalogRelatedModel,
+  CatalogRelatedResult,
   ModelVariant,
   CatalogModelDetail,
   ProviderForModel,

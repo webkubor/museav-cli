@@ -8,20 +8,19 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers } from 'react-icons/lu'
-import { listModels, listModelTags, listModelFamilies } from '@/services/catalog'
+import { listModels, listModelTags, listModelFamilies, listModelFacets, listFeatured } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import type { CatalogModelItem } from '@/types'
 import { CatalogCard } from './CatalogCard'
+import { CatalogFeatured } from './CatalogFeatured'
 import { CatalogHero } from './CatalogHero'
 import { CatalogSidebar } from './CatalogSidebar'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
 import './catalog.css'
 
 type SortKey = 'default' | 'popular' | 'newest' | 'cheapest'
-const CTX_THRESHOLDS: Record<string, number> = {
-  '8k': 8000, '32k': 32000, '128k': 128000, '256k': 256000, '1m': 1000000,
-}
+// 上下文阈值改由服务端 facets 下发，前端不再硬编码（原 CTX_THRESHOLDS 已删除）。
 
 function isComparableModel(model: CatalogModelItem) {
   return !(model.modalities ?? []).some((m) => m === 'image' || m === 'audio' || m === 'video')
@@ -54,15 +53,67 @@ export default function ModelsCatalogPage() {
   const selectedCtx = selected.find((k) => k.startsWith('ctx:'))?.split(':')[1]
   const selectedPrice = selected.find((k) => k.startsWith('price:'))?.split(':')[1]
 
+  const selectedProtocol = selected.find((k) => k.startsWith('protocol:'))?.split(':')[1] as
+    | 'openai' | 'anthropic' | 'other' | undefined
+  const promoOnly = selected.includes('promo:1')
+
+  /**
+   * 筛选交给服务端。此前是 page_size:100 一次拉全量再本地 filter —— 随模型数
+   * 增长必然退化，且计数无法反映真实结果集。
+   * 上下文阈值不再由前端硬编码：把用户选中的桶原样作为 context_min 传下去，
+   * 桶的取值来自 facets 接口（服务端定义）。
+   */
+  const listParams = useMemo(() => ({
+    page_size: 100,
+    family: selectedFamily || undefined,
+    q: search.trim() || undefined,
+    protocol: selectedProtocol,
+    capability_tag: selectedTags.length ? selectedTags : undefined,
+    context_min: selectedCtx ? Number(selectedCtx) : undefined,
+    price: (selectedPrice as 'free' | 'paid' | undefined) || undefined,
+    promo: promoOnly || undefined,
+    sort: sort === 'default' ? undefined : sort,
+  }), [selectedFamily, search, selectedProtocol, selectedTags, selectedCtx, selectedPrice, promoOnly, sort])
+
   const modelsQuery = useQuery({
-    queryKey: ['catalog-models', { family: selectedFamily }],
-    queryFn: () => listModels({ page_size: 100, family: selectedFamily || undefined }),
+    queryKey: ['catalog-models', listParams],
+    queryFn: () => listModels(listParams),
+    staleTime: 5 * 60_000,
+  })
+
+  /**
+   * 侧栏计数。与列表并发发起、共用同一份 listParams —— 两者若发送不同筛选，
+   * 计数描述的就是与旁边列表不同的结果集。
+   */
+  const facetsQuery = useQuery({
+    queryKey: ['catalog-model-facets', listParams],
+    queryFn: () => listModelFacets(listParams),
+    staleTime: 5 * 60_000,
+  })
+  const facets = facetsQuery.data
+
+  /**
+   * 精选轮播。不随筛选变化（它是运营发布的固定推荐位），所以 queryKey 不带
+   * listParams；0 项时组件自身不渲染。
+   */
+  const featuredQuery = useQuery({
+    queryKey: ['catalog-featured'],
+    queryFn: () => listFeatured(),
     staleTime: 5 * 60_000,
   })
   const tagsQuery = useQuery({ queryKey: ['catalog-model-tags'], queryFn: () => listModelTags(true), staleTime: 5 * 60_000 })
   const familiesQuery = useQuery({ queryKey: ['catalog-model-families'], queryFn: () => listModelFamilies(true), staleTime: 5 * 60_000 })
 
-  // 过滤后端测试数据（pytest-* 不该出现在公开广场）
+  /**
+   * 过滤后端测试数据。
+   *
+   * ⚠️ 这行**暂时还不能删**。方向是由后端 hidden 兜住（前端不该维护这类名单），
+   * 但截至改造时 test 库里 189 个可见模型中有 147 个是 pytest-* 测试模型且
+   * hidden=false —— 真实目录只有 42 个。删掉这行会让它们直接出现在公开广场。
+   * 待 db/schema/upgrades/2026-07-25_marketplace_data_backfill.sql 的第 (1) 段
+   * 在各环境执行、把测试模型标 hidden 之后，再删这行以及下面 isComparableModel
+   * 之外的本地兜底。
+   */
   const allModels = useMemo(
     () => (modelsQuery.data?.items ?? []).filter((m) => !/^pytest/i.test(m.model_id)),
     [modelsQuery.data?.items],
@@ -82,36 +133,22 @@ export default function ModelsCatalogPage() {
     return () => document.removeEventListener('mousedown', close)
   }, [])
 
+  /**
+   * 搜索、能力标签、上下文、价格、协议、折扣与 recommended/newest/cheapest 排序
+   * 全部由服务端执行（见 listParams），这里不再重复过滤 —— 重复过滤会让侧栏计数
+   * 与实际列表对不上。
+   *
+   * 只有 popular 仍是本地排序：服务端热度排序（平台级调用量物化表）尚未上线，
+   * 按既定决策该选项保持现状、不隐藏，待后端就绪后原地替换。
+   */
   const visibleModels = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    let list = allModels.filter((m) => {
-      if (q && !(
-        m.display_name.toLowerCase().includes(q) ||
-        m.model_id.toLowerCase().includes(q) ||
-        (m.provider ?? '').toLowerCase().includes(q)
-      )) return false
-      if (selectedTags.length && !selectedTags.every((tag) => m.tags?.includes(tag))) return false
-      if (selectedCtx && CTX_THRESHOLDS[selectedCtx] && (m.context_length ?? 0) < CTX_THRESHOLDS[selectedCtx]) return false
-      if (selectedPrice) {
-        const free = Number(m.pricing?.input_per_1m ?? 0) === 0 && Number(m.pricing?.output_per_1m ?? 0) === 0
-        if (selectedPrice === 'free' && !free) return false
-        if (selectedPrice === 'paid' && free) return false
-      }
-      return true
-    })
-    switch (sort) {
-      case 'cheapest':
-        list = [...list].sort((a, b) => Number(a.pricing?.input_per_1m ?? 0) - Number(b.pricing?.input_per_1m ?? 0))
-        break
-      case 'newest':
-        list = [...list].sort((a, b) => (b.released_at ?? '').localeCompare(a.released_at ?? ''))
-        break
-      case 'popular':
-        list = [...list].sort((a, b) => (b.providers_count ?? 0) + (b.tags?.length ?? 0) - ((a.providers_count ?? 0) + (a.tags?.length ?? 0)))
-        break
-    }
-    return list
-  }, [allModels, search, selectedTags, selectedCtx, selectedPrice, sort])
+    if (sort !== 'popular') return allModels
+    return [...allModels].sort(
+      (a, b) =>
+        (b.providers_count ?? 0) + (b.tags?.length ?? 0) -
+        ((a.providers_count ?? 0) + (a.tags?.length ?? 0)),
+    )
+  }, [allModels, sort])
 
   const reset = () => { setSelected([]); setSearch(''); setSort('default') }
 
@@ -129,8 +166,9 @@ export default function ModelsCatalogPage() {
         type="button"
         onClick={() => { const n = !filtersOpen; if (n) window.scrollTo(0, 0); setFiltersOpen(n) }}
         aria-expanded={filtersOpen}
-        className="fixed bottom-6 right-5 z-40 inline-flex h-11 items-center gap-2 rounded-full border px-6 text-[14px] font-medium shadow-lg backdrop-blur lg:hidden"
-        style={{ background: 'var(--mg-bg-0)', borderColor: filtersOpen ? 'var(--brand-base)' : 'var(--mg-border)', color: filtersOpen ? 'var(--brand-base)' : 'var(--mg-text-2)' }}
+        className={`bg-mg-bg-0 fixed bottom-6 right-5 z-40 inline-flex h-11 items-center gap-2 rounded-full border px-6 text-[14px] font-medium shadow-lg backdrop-blur lg:hidden ${
+          filtersOpen ? 'border-brand-base text-brand-base' : 'border-mg-border text-mg-text-2'
+        }`}
       >
         <LuSlidersHorizontal size={15} />
         {t('modelsCatalog.filtersButton')}
@@ -138,17 +176,17 @@ export default function ModelsCatalogPage() {
 
       {/* 主体：左 sidebar + 右内容 */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[260px_1fr] lg:items-start">
-        <div className={`models-sticky ${filtersOpen ? 'block rounded-lg border p-4 lg:border-0 lg:p-0' : 'hidden lg:block'}`} style={filtersOpen ? { background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' } : undefined}>
-          <CatalogSidebar families={families} tags={tags} selected={selected} setSelected={setSelected} isZh={isZh} />
+        <div className={`models-sticky ${filtersOpen ? 'bg-mg-bg-0 border-mg-border block rounded-lg border p-4 lg:border-0 lg:p-0' : 'hidden lg:block'}`}>
+          <CatalogSidebar families={families} tags={tags} selected={selected} setSelected={setSelected} isZh={isZh} facets={facets} />
         </div>
 
         <div>
           {/* 标题 */}
           <div className="mb-6">
-            <h1 className="catalog-title text-[34px] font-bold tracking-tight" style={{ color: 'var(--mg-text-1)' }}>
+            <h1 className="text-mg-text-1 catalog-title text-[34px] font-bold tracking-tight">
               {t('modelsCatalog.page.title')}
             </h1>
-            <p className="mt-1.5 text-[14px]" style={{ color: 'var(--mg-text-3)' }}>
+            <p className="text-mg-text-3 mt-1.5 text-[14px]">
               {t('modelsCatalog.page.subtitle')}
             </p>
           </div>
@@ -157,6 +195,11 @@ export default function ModelsCatalogPage() {
           {!modelsQuery.isLoading && !modelsQuery.isError && allModels.length > 0 && (
             <div className="mb-6">
               <CatalogHero models={allModels} onPickHot={setSearch} />
+              <CatalogFeatured
+                slides={featuredQuery.data?.items ?? []}
+                isZh={isZh}
+                onTry={handleGoPlayground}
+              />
             </div>
           )}
 
@@ -178,14 +221,15 @@ export default function ModelsCatalogPage() {
                 <LuChevronDown size={13} className={sortOpen ? 'rotate-180' : ''} />
               </button>
               {sortOpen && (
-                <div className="absolute right-0 top-full z-20 mt-1.5 min-w-[140px] overflow-hidden rounded-md border py-1 shadow-lg" style={{ background: 'var(--mg-bg-2)', borderColor: 'var(--mg-border)' }}>
+                <div className="bg-mg-bg-2 border-mg-border absolute right-0 top-full z-20 mt-1.5 min-w-[140px] overflow-hidden rounded-md border py-1 shadow-lg">
                   {(['default', 'popular', 'newest', 'cheapest'] as SortKey[]).map((key) => (
                     <button
                       key={key}
                       type="button"
                       onClick={() => { setSort(key); setSortOpen(false) }}
-                      className="flex w-full items-center gap-2 px-4 py-2 text-left text-[12.5px] transition-colors hover:bg-[color:var(--mg-fill-1)]"
-                      style={sort === key ? { color: 'var(--brand-base)' } : { color: 'var(--mg-text-2)' }}
+                      className={`hover:bg-mg-fill-1 flex w-full items-center gap-2 px-4 py-2 text-left text-[12.5px] transition-colors ${
+                        sort === key ? 'text-brand-base' : 'text-mg-text-2'
+                      }`}
                     >
                       {sort === key ? <LuCheck size={11} /> : <span className="w-[11px]" />}
                       {sortLabels[key]}
@@ -201,20 +245,20 @@ export default function ModelsCatalogPage() {
 
           {/* 列表状态 */}
           {modelsQuery.isLoading ? (
-            <div className="flex flex-col gap-3">
+            <div className="models-catalog-grid">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-[150px] animate-pulse rounded-md border" style={{ background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' }} />
+                <div key={i} className="bg-mg-bg-0 border-mg-border  h-[150px] animate-pulse rounded-md border"/>
               ))}
             </div>
           ) : modelsQuery.isError ? (
-            <div className="rounded-md border p-6 text-center text-[13px]" style={{ borderColor: 'var(--mg-border)', color: 'var(--mg-text-3)' }}>
+            <div className="border-mg-border text-mg-text-3 rounded-md border p-6 text-center text-[13px]">
               {t('modelsCatalog.error.load')}
             </div>
           ) : visibleModels.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-md border py-20 text-center" style={{ background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' }}>
-              <LuLayers size={28} className="mb-3" style={{ color: 'var(--mg-text-4)' }} />
-              <p className="text-[13px]" style={{ color: 'var(--mg-text-3)' }}>{t('modelsCatalog.emptyFiltered')}</p>
-              <button type="button" onClick={reset} className="mt-3 text-[12px] underline-offset-2 hover:underline" style={{ color: 'var(--mg-text-3)' }}>
+            <div className="bg-mg-bg-0 border-mg-border flex flex-col items-center justify-center rounded-md border py-20 text-center">
+              <LuLayers size={28} className="text-mg-text-4 mb-3" />
+              <p className="text-mg-text-3 text-[13px]">{t('modelsCatalog.emptyFiltered')}</p>
+              <button type="button" onClick={reset} className="text-mg-text-3 mt-3 text-[12px] underline-offset-2 hover:underline">
                 {t('modelsCatalog.clearFilters')}
               </button>
             </div>
@@ -228,6 +272,14 @@ export default function ModelsCatalogPage() {
                   onTry={handleGoPlayground}
                   canCompare={isComparableModel(model)}
                   onCompare={(e) => { e.stopPropagation(); openCompare([model.id]) }}
+                  onPickProtocol={(p) =>
+                    setSelected((prev) => [...prev.filter((k) => !k.startsWith('protocol:')), `protocol:${p}`])
+                  }
+                  onPickCapability={(tag) =>
+                    setSelected((prev) =>
+                      prev.includes(`tag:${tag}`) ? prev : [...prev, `tag:${tag}`],
+                    )
+                  }
                 />
               ))}
             </div>

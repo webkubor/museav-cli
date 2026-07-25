@@ -24,10 +24,25 @@ export interface CatalogModelListParams extends QueryParams {
   in_region_routing?: boolean
   /** 能力标签筛选，如 reasoning | vision | code */
   capability?: string
-  /** 排序：newest | cheapest | popular（默认 popular） */
-  sort?: 'newest' | 'cheapest' | 'popular'
+  /**
+   * 排序。默认 recommended（精选轮播位 → sort_order → 发布时间），
+   * 由服务端决定；popular 目前仍是前端本地排序，待服务端热度排序上线后替换。
+   */
+  sort?: 'recommended' | 'newest' | 'cheapest' | 'longest_context' | 'popular'
   cursor?: string
   page_size?: number
+
+  // ─── 模型广场服务端筛选 ───
+  /** 公开协议；双协议模型在任一值下都命中 */
+  protocol?: 'openai' | 'anthropic' | 'other'
+  /** 能力标签，可重复；多个为 AND 语义 */
+  capability_tag?: string[]
+  /** free = 存在生效的显式限免促销，不是「价格为 0」 */
+  price?: 'free' | 'paid'
+  /** 折扣开关：只看有生效促销的模型 */
+  promo?: boolean
+  experience_type?: string
+  compare_only?: boolean
 }
 
 /** 供应商列表查询参数 */

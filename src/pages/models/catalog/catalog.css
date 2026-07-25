@@ -973,3 +973,190 @@ body[theme-mode='dark'] .catalog-insight-panel {
     transform: none;
   }
 }
+
+/* ── 模型广场等高网格卡 ──────────────────────────────────────
+   容器已由 .mg-tile / .mg-tile-hover 提供边框、阴影、圆角（--radius-md）与
+   hover 抬升，这里只排内部布局，不重复定义卡片外观。
+   等高靠 height:100% + flex column；.mg-mcard-specs 的 margin-top:auto 把价格
+   行压到底部，简介长短不会让各卡的价格行高低不齐。 */
+.mg-mcard {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px 14px;
+  cursor: pointer;
+  overflow: hidden;
+}
+.mg-mcard-fav {
+  position: absolute; top: 12px; right: 14px; z-index: 2;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: var(--radius-full);
+  color: var(--mg-text-4); background: transparent; cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.mg-mcard-fav:hover { color: #f43f5e; background: var(--mg-fill-0); }
+.mg-mcard-fav.is-on { color: #f43f5e; }
+
+/* 顶行：图标在左，角标右对齐并让出收藏按钮的位置 */
+.mg-mcard-top {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 10px; padding-right: 30px;
+}
+.mg-mcard-avatar { border: 1px solid var(--mg-border); background: var(--mg-bg-1); flex-shrink: 0; }
+.mg-mcard-badges { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; }
+
+.mg-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 7px; border-radius: var(--radius-sm);
+  font-size: 11px; font-style: normal; font-weight: 600; line-height: 1.5;
+  white-space: nowrap;
+}
+.mg-badge.is-new {
+  color: var(--brand-base);
+  background: color-mix(in oklab, var(--brand-base) 12%, transparent);
+}
+.mg-badge.is-free {
+  color: var(--mg-success);
+  background: color-mix(in oklab, var(--mg-success) 14%, transparent);
+}
+.mg-badge.is-discount {
+  color: var(--mg-warning);
+  background: color-mix(in oklab, var(--mg-warning) 15%, transparent);
+}
+
+.mg-mcard-id { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.mg-mcard-name {
+  font-size: 15px; font-weight: 700; line-height: 1.35; color: var(--mg-text-1);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mg-mcard-meta {
+  display: flex; align-items: center; gap: 5px; min-width: 0;
+  font-size: 12px; color: var(--mg-text-3);
+}
+.mg-mcard-verified { color: var(--brand-base); flex-shrink: 0; }
+.mg-mcard-api {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 11.5px; color: var(--mg-text-4);
+}
+
+/* 简介：固定两行截断，保证各卡此段高度一致 */
+.mg-mcard-desc {
+  margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--mg-text-3);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 输入 → 输出模态图标流 */
+.mg-mcard-flow { display: flex; align-items: center; gap: 6px; color: var(--mg-text-3); }
+.mg-mcard-flow-group { display: inline-flex; align-items: center; gap: 4px; }
+.mg-mcard-flow-arrow { color: var(--mg-text-4); flex-shrink: 0; }
+
+/* API 协议标签：分层描边（DESIGN.md 不给彩色实底，用描边区分） */
+.mg-mcard-protocols { display: flex; flex-wrap: wrap; gap: 5px; }
+.mg-proto {
+  padding: 1px 7px; border-radius: var(--radius-sm);
+  border: 1px solid var(--mg-border); background: transparent;
+  font-size: 11px; line-height: 1.6; color: var(--mg-text-3);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.mg-proto:not(:disabled) { cursor: pointer; }
+.mg-proto:not(:disabled):hover { color: var(--mg-text-1); }
+.mg-proto.is-openai {
+  color: var(--brand-base);
+  border-color: color-mix(in oklab, var(--brand-base) 40%, var(--mg-border));
+}
+.mg-proto.is-anthropic {
+  color: var(--mg-text-2);
+  border-color: color-mix(in oklab, var(--mg-text-2) 30%, var(--mg-border));
+}
+
+.mg-mcard-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.mg-mcard-tag {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 1px 7px; border-radius: var(--radius-sm);
+  background: var(--mg-fill-0); border: none;
+  font-size: 11px; line-height: 1.6; color: var(--mg-text-3);
+}
+.mg-mcard-tag:not(:disabled) { cursor: pointer; }
+.mg-mcard-tag:not(:disabled):hover { color: var(--mg-text-1); }
+
+/* 价格规格：贴底 */
+.mg-mcard-specs {
+  margin-top: auto; padding-top: 10px;
+  border-top: 1px solid var(--mg-border);
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+}
+.mg-metric-value.is-accent { color: var(--brand-base); }
+/* 划线原价：装饰，不是真实扣费价 */
+.mg-metric-strike { font-size: 11px; color: var(--mg-text-4); text-decoration: line-through; }
+
+/* 操作条：静止不占位、不可见；hover 或键盘聚焦时覆盖最底的规格行浮出，
+   因此卡片高度不变（原型口径）。触屏设备常驻可见 —— 没有 hover 就无从触发。 */
+.mg-mcard-actions {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 18px 14px;
+  background: var(--mg-bg-0);
+  border-top: 1px solid var(--mg-border);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+.mg-mcard:hover .mg-mcard-actions,
+.mg-mcard:focus-within .mg-mcard-actions { opacity: 1; pointer-events: auto; }
+@media (hover: none) {
+  .mg-mcard-actions { position: static; opacity: 1; pointer-events: auto; padding: 10px 0 0; background: transparent; }
+}
+.mg-mcard-icon-btn { flex-shrink: 0; width: 36px; padding-left: 0; padding-right: 0; }
+
+/* ── 精选轮播 ────────────────────────────────────────────────
+   内容来自后台配置（GET /catalog/featured）。五套背景对应 background_key，
+   为空时前端按 model_id 稳定映射，保证同一模型底色恒定。
+   底色用品牌色的低透混色而非渐变大图 —— 控制台是工具而非营销页。 */
+.mg-featured {
+  position: relative; overflow: hidden;
+  border: 1px solid var(--mg-card-border); border-radius: var(--radius-lg);
+  box-shadow: var(--mg-card-shadow);
+  margin-bottom: 18px; min-height: 132px;
+}
+.mg-featured-body { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; }
+.mg-featured-head { display: flex; align-items: center; gap: 10px; }
+.mg-featured-title { display: flex; flex-direction: column; min-width: 0; }
+.mg-featured-title strong { font-size: 15px; font-weight: 700; color: var(--mg-text-1); }
+.mg-featured-title span { font-size: 12px; color: var(--mg-text-3); }
+.mg-featured-badges { margin-left: auto; display: flex; gap: 5px; }
+.mg-featured-pitch {
+  margin: 0; max-width: 60ch; font-size: 13px; line-height: 1.6; color: var(--mg-text-2);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.mg-featured-actions { display: flex; align-items: center; gap: 8px; }
+.mg-featured-deco {
+  position: absolute; right: 0; bottom: 0; z-index: 0;
+  max-height: 100%; max-width: 42%; object-fit: contain; opacity: 0.9; pointer-events: none;
+}
+.mg-featured-dots { position: absolute; right: 14px; top: 14px; z-index: 2; display: flex; gap: 6px; }
+.mg-featured-dot {
+  width: 6px; height: 6px; border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--mg-text-3) 45%, transparent);
+  border: none; cursor: pointer; transition: background 0.15s ease, width 0.15s ease;
+}
+.mg-featured-dot.is-on { width: 16px; background: var(--brand-base); }
+
+.mg-featured-bg-default_01 { background: color-mix(in oklab, var(--brand-base) 7%, var(--mg-bg-0)); }
+.mg-featured-bg-default_02 { background: color-mix(in oklab, var(--brand-deep) 7%, var(--mg-bg-0)); }
+.mg-featured-bg-default_03 { background: color-mix(in oklab, var(--mg-success) 6%, var(--mg-bg-0)); }
+.mg-featured-bg-default_04 { background: color-mix(in oklab, var(--mg-warning) 6%, var(--mg-bg-0)); }
+.mg-featured-bg-default_05 { background: var(--mg-fill-0); }
+
+/* ── 详情页相关模型 ─────────────────────────────────────────── */
+.mg-related-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;
+}
+.mg-related-card {
+  display: flex; flex-direction: column; gap: 3px; align-items: flex-start;
+  padding: 12px 14px; text-align: left; cursor: pointer;
+}
+.mg-related-name { font-size: 13.5px; font-weight: 600; color: var(--mg-text-1); }
+.mg-related-meta { font-size: 12px; color: var(--mg-text-3); }
+.mg-related-price { font-size: 12px; color: var(--brand-base); }

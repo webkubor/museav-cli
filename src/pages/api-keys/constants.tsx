@@ -205,6 +205,49 @@ export function buildMgcCommand(args: {
   return `${MGC_NPX} -k ${args.apiKey} -r ${args.region} --only ${only}`
 }
 
+/**
+ * 从目录模型 id 里挑「接入」时要钉的默认模型。
+ * Claude Code / CC Switch 若不指定模型会用官方默认 slug，ModelGo 目录里没有 → 网关 403 无法使用，
+ * 所以要从当前目录里挑真实存在的 Claude / Codex 模型钉进接入参数。
+ */
+export function pickConnectModels(modelIds: string[]): { claudeModel?: string; codexModel?: string } {
+  const ids = modelIds.filter((id) => typeof id === 'string' && id.length > 0)
+  const versionKey = (id: string) => {
+    const m = id.toLowerCase().match(/(\d+(?:[.-]\d+)*)/)
+    return m ? m[1].split(/[.-]/).map(Number) : [0]
+  }
+  const cmpVer = (a: number[], b: number[]) => {
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+      if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) - (b[i] || 0)
+    }
+    return 0
+  }
+  const claudeTier = (id: string) => {
+    const n = id.toLowerCase()
+    if (n.includes('opus')) return 3
+    if (n.includes('sonnet')) return 2
+    if (n.includes('haiku')) return 1
+    return 0
+  }
+
+  const claudeAll = ids.filter((id) => /claude/i.test(id))
+  const claudeNonHaiku = claudeAll.filter((id) => claudeTier(id) !== 1)
+  const claudePool = claudeNonHaiku.length ? claudeNonHaiku : claudeAll
+  const claudeModel = claudePool
+    .slice()
+    .sort((a, b) => claudeTier(b) - claudeTier(a) || cmpVer(versionKey(b), versionKey(a)) || a.localeCompare(b))[0]
+
+  const isSmall = (id: string) => /(^|[-_.])(mini|nano|small|lite|tiny)([-_.]|$)/i.test(id)
+  const gptAll = ids.filter((id) => /gpt|codex/i.test(id))
+  const gptPool = gptAll.filter((id) => !isSmall(id)).length ? gptAll.filter((id) => !isSmall(id)) : gptAll
+  const codexModel =
+    gptPool.slice().sort((a, b) => cmpVer(versionKey(b), versionKey(a)) || a.localeCompare(b))[0] ??
+    claudeModel ??
+    ids[0]
+
+  return { claudeModel, codexModel }
+}
+
 export function formatEndpointDisplay(baseUrl: string) {
   try {
     const url = new URL(baseUrl)
@@ -232,11 +275,17 @@ export function buildConnectSnippets(args: {
   anthropicBaseUrl: string
   createdKeyText: string
   docsUrl: string
+  /** 目录里真实存在的 Claude 模型 id；不传则不钉模型（Claude Code 会用默认 slug，可能 403 无法使用） */
+  claudeModel?: string
+  /** 目录里真实存在的 Codex/OpenAI 模型 id */
+  codexModel?: string
 }): ConnectSnippet[] {
-  const { openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl } = args
+  const { openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl, claudeModel, codexModel } = args
   const keyForSnippet = createdKeyText || '<YOUR_MODELGO_API_KEY>'
 
-  const buildCcSwitchProviderLink = (app: 'claude' | 'codex', endpoint: string) => {
+  // CC Switch 导入的 Provider 需要带默认模型，否则 Claude Code 用官方默认 slug 请求
+  // → ModelGo 目录里没有 → 网关 403 model_not_in_catalog → 替换后无法使用 agent。
+  const buildCcSwitchProviderLink = (app: 'claude' | 'codex', endpoint: string, model?: string) => {
     const params = new URLSearchParams({
       resource: 'provider',
       app,
@@ -245,6 +294,9 @@ export function buildConnectSnippets(args: {
     })
     if (createdKeyText) {
       params.set('apiKey', createdKeyText)
+    }
+    if (model) {
+      params.set('model', model)
     }
     return `ccswitch://v1/import?${params.toString()}`
   }
@@ -256,6 +308,7 @@ export function buildConnectSnippets(args: {
       '使用下面的 Anthropic 协议地址，只写入本机环境或本地忽略配置，不要提交密钥：',
       `ANTHROPIC_BASE_URL=${anthropicBaseUrl}`,
       `ANTHROPIC_API_KEY=${keyForSnippet}`,
+      ...(claudeModel ? [`ANTHROPIC_MODEL=${claudeModel}`] : []),
     ].join('\n')
     return `claude-cli://open?q=${encodeURIComponent(prompt)}`
   }
@@ -266,19 +319,21 @@ export function buildConnectSnippets(args: {
       title: 'CC Switch 导入 Provider',
       desc: '拉起 CC Switch，直接导入 Claude Provider。',
       launchLabel: '拉起 CC Switch',
-      launchHref: buildCcSwitchProviderLink('claude', anthropicBaseUrl),
+      launchHref: buildCcSwitchProviderLink('claude', anthropicBaseUrl, claudeModel),
       copyLabel: '复制参数',
       params: [
         { label: 'Provider Name', value: 'ModelGo' },
         { label: 'App', value: 'Claude' },
         { label: 'Endpoint', value: anthropicBaseUrl },
         { label: 'API Key', value: keyForSnippet },
+        ...(claudeModel ? [{ label: 'Model', value: claudeModel }] : []),
       ],
       copyText: [
         'Provider Name: ModelGo',
         'App: Claude',
         `Endpoint: ${anthropicBaseUrl}`,
         `API Key: ${keyForSnippet}`,
+        ...(claudeModel ? [`Model: ${claudeModel}`] : []),
       ].join('\n'),
     },
     {
@@ -291,15 +346,18 @@ export function buildConnectSnippets(args: {
       params: [
         { label: 'ANTHROPIC_BASE_URL', value: anthropicBaseUrl },
         { label: 'ANTHROPIC_API_KEY', value: keyForSnippet },
+        ...(claudeModel ? [{ label: 'ANTHROPIC_MODEL', value: claudeModel }] : []),
       ],
       copyText: [
         `export ANTHROPIC_BASE_URL="${anthropicBaseUrl}"`,
         `export ANTHROPIC_API_KEY="${keyForSnippet}"`,
+        ...(claudeModel ? [`export ANTHROPIC_MODEL="${claudeModel}"`] : []),
         'claude',
       ].join('\n'),
       command: [
         `export ANTHROPIC_BASE_URL="${anthropicBaseUrl}"`,
         `export ANTHROPIC_API_KEY="${keyForSnippet}"`,
+        ...(claudeModel ? [`export ANTHROPIC_MODEL="${claudeModel}"`] : []),
         'claude',
       ].join('\n'),
     },
@@ -308,19 +366,21 @@ export function buildConnectSnippets(args: {
       title: 'Codex Provider 导入',
       desc: '通过 CC Switch 导入 Codex Provider。',
       launchLabel: '导入 Codex 配置',
-      launchHref: buildCcSwitchProviderLink('codex', openAIBaseUrl),
+      launchHref: buildCcSwitchProviderLink('codex', openAIBaseUrl, codexModel),
       copyLabel: '复制参数',
       params: [
         { label: 'Provider Name', value: 'ModelGo' },
         { label: 'App', value: 'Codex' },
         { label: 'Base URL', value: openAIBaseUrl },
         { label: 'API Key', value: keyForSnippet },
+        ...(codexModel ? [{ label: 'Model', value: codexModel }] : []),
       ],
       copyText: [
         'Provider Name: ModelGo',
         'App: Codex',
         `Base URL: ${openAIBaseUrl}`,
         `API Key: ${keyForSnippet}`,
+        ...(codexModel ? [`Model: ${codexModel}`] : []),
       ].join('\n'),
     },
     {

@@ -11,7 +11,9 @@ import { LuZap, LuChevronRight, LuExternalLink, LuKey } from 'react-icons/lu'
 import { appendThemeParam } from '@/lib/theme'
 import { trackEvent } from '@/lib/track'
 import { useTrackContext } from '@/hooks/use-track-context'
-import { CONNECT_ACTIONS, buildConnectSnippets, getConnectAction, MGC_CLIENT_OPTIONS, deriveRegionFromBaseUrl, buildMgcCommand } from './constants'
+import { CONNECT_ACTIONS, buildConnectSnippets, getConnectAction, MGC_CLIENT_OPTIONS, deriveRegionFromBaseUrl, buildMgcCommand, pickConnectModels } from './constants'
+import { useQuery } from '@tanstack/react-query'
+import { listModels } from '@/services/catalog'
 
 type Props = {
   open: boolean
@@ -37,7 +39,19 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
     setMgcSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   const mgcCommand = buildMgcCommand({ apiKey: keyForCmd, region, selected: mgcSelected, all: mgcAll })
 
-  const connectSnippets = buildConnectSnippets({ openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl: appendThemeParam(docsUrl) })
+  // 从目录挑真实存在的模型钉进接入参数，避免 Claude Code 用默认 slug 触发网关 403（需求方 #257）
+  // 仅在弹窗打开时拉取，避免全局 Header 每页都打一次目录请求
+  const modelsQuery = useQuery({
+    queryKey: ['catalog-models', 'connect-modal'],
+    queryFn: () => listModels({ page_size: 100 }),
+    enabled: open,
+    staleTime: 5 * 60_000,
+  })
+  const { claudeModel, codexModel } = pickConnectModels(
+    (modelsQuery.data?.items ?? []).map((m) => m.model_id),
+  )
+
+  const connectSnippets = buildConnectSnippets({ openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl: appendThemeParam(docsUrl), claudeModel, codexModel })
 
   return (
     <Modal

@@ -15,8 +15,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LuChevronDown } from 'react-icons/lu'
-import { ModelIcon } from '@/features/models/components/ModelIcon'
-import { resolveVendorBrand } from '@/features/models/components/vendor-icons'
 import type { CatalogModelTag, CatalogFacets, CatalogFacetBucket } from '@/types'
 
 const VENDOR_PREVIEW = 6
@@ -110,20 +108,16 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets }: Pr
       <Group id="vendor" title={isZh ? '模型厂商' : 'Provider'} collapsed={collapsed} onToggle={toggleCollapse}>
         <div className="mg-side-list">
           <Row active={!vendorActive} label={t('modelsCatalog.sidebar.all')} count={total} onClick={() => pickOne('vendor', null)} />
-          {shownVendors.map((v) => {
-            const label = vendorLabel(v.value)
-            const hasBrand = Boolean(resolveVendorBrand(v.value))
-            return (
-              <Row
-                key={v.value}
-                active={vendorActive === v.value}
-                label={label}
-                count={v.count}
-                icon={hasBrand ? <ModelIcon model={{ display_name: label, vendor: v.value }} size={16} rounded="rounded-sm" /> : undefined}
-                onClick={() => pickOne('vendor', vendorActive === v.value ? null : v.value)}
-              />
-            )
-          })}
+          {/* 原型的厂商行是纯文本，不带品牌图标 */}
+          {shownVendors.map((v) => (
+            <Row
+              key={v.value}
+              active={vendorActive === v.value}
+              label={vendorLabel(v.value)}
+              count={v.count}
+              onClick={() => pickOne('vendor', vendorActive === v.value ? null : v.value)}
+            />
+          ))}
           {vendors.length > VENDOR_PREVIEW && (
             <button type="button" className="mg-side-more" onClick={() => setShowAllVendors((x) => !x)}>
               {showAllVendors ? t('modelsCatalog.sidebar.less') : t('modelsCatalog.sidebar.more')}
@@ -211,11 +205,10 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets }: Pr
 
 /** 竖向列表行：名称在左、计数右对齐（原型口径）。 */
 function Row({
-  active, label, count, icon, onClick,
-}: { active: boolean; label: string; count?: number; icon?: React.ReactNode; onClick: () => void }) {
+  active, label, count, onClick,
+}: { active: boolean; label: string; count?: number; onClick: () => void }) {
   return (
     <button type="button" className={`mg-side-row ${active ? 'is-active' : ''}`} onClick={onClick}>
-      {icon}
       <span className="truncate">{label}</span>
       {count !== undefined && <i className="mg-side-row-count">{count}</i>}
     </button>

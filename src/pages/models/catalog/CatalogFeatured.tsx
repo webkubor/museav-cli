@@ -104,6 +104,9 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
 
               <div className="mg-featured-copy">
                 <div className="mg-featured-badges">
+                  {slide.is_new && (
+                    <em className="mg-badge is-new">{isZh ? '最新发布' : 'New release'}</em>
+                  )}
                   {promo?.free ? (
                     <em className="mg-badge is-free">{isZh ? '限时免费' : 'Free'}</em>
                   ) : discountLabel ? (

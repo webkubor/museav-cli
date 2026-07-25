@@ -172,13 +172,10 @@ export default function ModelsCatalogPage() {
         {t('modelsCatalog.filtersButton')}
       </button>
 
-      {/* 主体：左 sidebar + 右内容 */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[260px_1fr] lg:items-start">
-        <div className={`models-sticky ${filtersOpen ? 'bg-mg-bg-0 border-mg-border block rounded-lg border p-4 lg:border-0 lg:p-0' : 'hidden lg:block'}`}>
-          <CatalogSidebar tags={tags} selected={selected} setSelected={setSelected} isZh={isZh} facets={facets} />
-        </div>
-
-        <div>
+      {/* 原型的页面结构：标题 / 轮播 / 搜索排序 三块**全宽**，只有最后的
+          「筛选栏 + 卡片网格」才是两列。此前把全部内容塞进右列，导致轮播被侧栏
+          挤窄（1244 vs 原型 1426）、标题也不与页面左边缘对齐。 */}
+      <div className="mg-plaza">
           {/* 标题 */}
           <div className="mb-6">
             <h1 className="text-mg-text-1 catalog-title text-[34px] font-bold tracking-tight">
@@ -242,6 +239,15 @@ export default function ModelsCatalogPage() {
               )}
             </div>
           </div>
+      </div>
+
+      {/* 两列：筛选栏（卡片）+ 卡片网格 */}
+      <div className="mg-plaza-layout">
+        <div className={`models-sticky mg-side-card ${filtersOpen ? 'block' : 'hidden lg:block'}`}>
+          <CatalogSidebar tags={tags} selected={selected} setSelected={setSelected} isZh={isZh} facets={facets} />
+        </div>
+
+        <div>
           {!modelsQuery.isLoading && !modelsQuery.isError && (
             <p className="mg-count">{t('modelsCatalog.count', { n: visibleModels.length })}</p>
           )}

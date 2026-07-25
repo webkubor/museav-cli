@@ -118,6 +118,8 @@ export interface CatalogFeaturedSlide {
   input_price: string
   output_price: string
   currency: string
+  /** 「最新发布」角标由服务端判定（released_at 30 天窗口），前端不得自行计算 */
+  is_new?: boolean
   promotion?: CatalogPromotion
 }
 

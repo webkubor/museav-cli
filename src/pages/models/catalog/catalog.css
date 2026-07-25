@@ -1087,3 +1087,23 @@ body[theme-mode='dark'] .catalog-insight-panel {
 }
 .mg-trust > span { display: inline-flex; align-items: center; gap: 5px; }
 .mg-trust svg { color: var(--brand-base); flex-shrink: 0; }
+
+/* ── 模型广场页面骨架（对齐原型）──────────────────────────────
+   原型是 head → 轮播 → controls 三块全宽，最后才是「216px 侧栏 + 网格」两列。
+   之前把所有内容塞进右列，轮播被侧栏挤窄、标题不与页面左缘对齐。 */
+.mg-plaza { display: flex; flex-direction: column; }
+.mg-plaza-layout {
+  display: grid; gap: 18px; align-items: start;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 1024px) {
+  .mg-plaza-layout { grid-template-columns: 240px minmax(0, 1fr); }
+}
+/* 侧栏是带边框的卡片（原型 .marketplace-filters），不再是裸列 */
+.mg-side-card {
+  background: var(--mg-bg-0);
+  border: 1px solid var(--mg-card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--mg-card-shadow);
+  padding: 14px 12px;
+}

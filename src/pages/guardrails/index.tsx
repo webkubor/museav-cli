@@ -796,7 +796,7 @@ export default function GuardrailsPage() {
         isLoading={isLoading}
         canEdit={canEditScope}
         canDelete={canDeleteScope}
-        canCreate={canCreate}
+        canCreate={canCreateScope}
         showMember={showMember}
         currencySymbol={currencySymbol}
         search={scopeSearch}

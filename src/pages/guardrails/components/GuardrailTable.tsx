@@ -249,7 +249,8 @@ export interface GuardrailSectionsProps {
   /** 分类 × 动作细粒度（需求方#57）：各分区行内动作按自己分类的码控 */
   canEdit: Record<GuardrailScope, boolean>
   canDelete: Record<GuardrailScope, boolean>
-  canCreate: boolean
+  /** 空状态创建按钮按分区权限控（需求方#262）：member 只授 key:create 时，全局/个人分区不显示创建入口 */
+  canCreate: Record<GuardrailScope, boolean>
   showMember: boolean
   currencySymbol: string
   search: Record<GuardrailScope, string>
@@ -299,7 +300,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
         hasSearch={search.global.trim().length > 0}
         search={search.global}
         onSearch={(v) => onSearchChange('global', v)}
-        canCreate={canCreate}
+        canCreate={canCreate.global}
         onCreate={() => onCreate('global')}
       >
         <TableHeader>
@@ -344,7 +345,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
           hasSearch={search.member.trim().length > 0}
           search={search.member}
           onSearch={(v) => onSearchChange('member', v)}
-          canCreate={canCreate}
+          canCreate={canCreate.member}
           onCreate={() => onCreate('member')}
         >
           <TableHeader>
@@ -385,7 +386,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
         hasSearch={search.key.trim().length > 0}
         search={search.key}
         onSearch={(v) => onSearchChange('key', v)}
-        canCreate={canCreate}
+        canCreate={canCreate.key}
         onCreate={() => onCreate('key')}
       >
         <TableHeader>

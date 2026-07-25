@@ -24,7 +24,7 @@ import { useTranslation } from 'react-i18next'
 import {
   LuFileText, LuImage, LuMic, LuVideo, LuArrowRight,
   LuBrain, LuMapPin, LuGlobe, LuZap, LuWrench, LuTag,
-  LuGitCompareArrows, LuBadgeCheck, LuHeart, LuSparkles,
+  LuGitCompareArrows, LuHeart, LuSparkles,
 } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
@@ -179,12 +179,9 @@ export function CatalogCard({
       <div className="mg-mcard-id">
         <h3 className="mg-mcard-name" title={name}>{name}</h3>
         <div className="mg-mcard-meta" onClick={(e) => e.stopPropagation()}>
-          {provider && (
-            <>
-              <span className="truncate">{provider}</span>
-              <LuBadgeCheck size={12} className="mg-mcard-verified" />
-            </>
-          )}
+          {/* 原型卡片只有「厂商 + API ID + 复制」，没有认证图标 —— 它在所有模型上都
+              相同、无区分度，四列窄卡下却会挤掉厂商名与 API ID 的显示空间。 */}
+          {provider && <span className="mg-mcard-vendor">{provider}</span>}
           <code className="mg-mcard-api font-mono">{model.model_id}</code>
           <CopyButton
             value={model.model_id}

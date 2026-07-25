@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { SocialLogin } from '@/components/auth/SocialLogin'
-import { VerificationCodeButton } from '@/components/auth/VerificationCodeButton'
+import { VerificationCodeButton, type VerificationCodeButtonHandle } from '@/components/auth/VerificationCodeButton'
 import { sendSmsCode, phoneLoginRegister, getSession } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import {
@@ -48,6 +48,10 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
   const [gateParam, setGateParam] = useState<string | null>(null)
   const [gateActive, setGateActive] = useState(false)
   const gateRef = useRef<CaptchaGateHandle | null>(null)
+  // 发码按钮命令式句柄：人机验证通过后自动触发发码（须走按钮 handleClick 才会启动倒计时）
+  const codeBtnRef = useRef<VerificationCodeButtonHandle | null>(null)
+  // onVerified 透传的四元组暂存：同 tick gateParam state 尚未刷新，handleSendCode 直接读它（需求方 #248）
+  const autoSendParamRef = useRef<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const {
@@ -78,13 +82,17 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
       throw new Error(decision.message ?? '操作过于频繁，请稍后再试')
     }
     setServerError('')
-    // 验证条生效但未完成 → 调起挑战；完成后用户再点发送
-    if (gateActive && !gateParam) {
+    // 人机验证通过后由 CaptchaGate onVerified 自动触发本函数，透传的四元组暂存在 autoSendParamRef
+    // （同 tick gateParam state 尚未刷新，必须直接读 ref，消费即清）
+    const pendingParam = autoSendParamRef.current
+    autoSendParamRef.current = null
+    // 验证条生效但未完成 → 调起挑战；通过后 onVerified 会自动重试发码，无需用户再点（需求方 #248）
+    if (gateActive && !gateParam && !pendingParam) {
       gateRef.current?.open()
       throw new Error('请先完成安全验证')
     }
     // 验证条已通过用其四元组；否则弹窗流（未启用/降级 → null 照常发码，后端 fail-open）
-    const captchaParam = gateParam ?? (await getCaptchaParam())
+    const captchaParam = pendingParam ?? gateParam ?? (await getCaptchaParam())
     try {
       const result = await sendSmsCode(phone, captchaParam)
       clearAuthGuard({ action: 'phone-code', subject: phone })
@@ -173,12 +181,12 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
             maxLength={6}
             placeholder="6 位短信验证码"
             autoComplete="one-time-code"
-            suffix={<VerificationCodeButton onSend={handleSendCode} disabled={!isPhoneValid} />}
+            suffix={<VerificationCodeButton ref={codeBtnRef} onSend={handleSendCode} disabled={!isPhoneValid} />}
           />
           {errors.code && <p className="auth-error-message">{errors.code.message}</p>}
         </div>
 
-        <CaptchaGate onChange={setGateParam} onAvailability={setGateActive} handleRef={(h) => { gateRef.current = h }} />
+        <CaptchaGate onChange={setGateParam} onVerified={(param) => { autoSendParamRef.current = param; codeBtnRef.current?.trigger() }} onAvailability={setGateActive} handleRef={(h) => { gateRef.current = h }} />
 
         {serverError && <p className="auth-error-message">{serverError}</p>}
 

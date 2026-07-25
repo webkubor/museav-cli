@@ -123,6 +123,8 @@ export function MembersTab({
   const qc = useQueryClient()
   const { hasPermission } = usePermissions()
   const canManageMembers = hasPermission(PERMS.ORG_MEMBERS_MANAGE)
+  // 重发邀请属邀请管理动作：与发邀请/重置邀请链接一致用 org.invite:manage，不复用 members:manage（#262 举一反三）
+  const canManageInvite = hasPermission(PERMS.ORG_INVITE_MANAGE)
   const [editTarget, setEditTarget] = useState<TenantMember | null>(null)
   const [roleFilter, setRoleFilter] = useState<'all' | TenantRole>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'pending'>('all')
@@ -425,7 +427,7 @@ export function MembersTab({
                       {inv.expires_at ? t('enterprise.members.expiresAt', { date: formatDate(inv.expires_at) }) : '—'}
                     </TableCell>
                     <TableCell align="center">
-                      {canManageMembers ? (
+                      {canManageInvite ? (
                         <div className="flex items-center justify-center whitespace-nowrap">
                           <button
                             type="button"

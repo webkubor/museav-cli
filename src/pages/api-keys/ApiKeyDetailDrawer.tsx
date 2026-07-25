@@ -219,6 +219,8 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
   const canToggle = isDisabled ? cap(view.capabilities?.can_enable, canAction(keyType, 'disable')) : cap(view.capabilities?.can_disable, canAction(keyType, 'disable'))
   // 按后端 capability 正常渲染；rotate 路由未就绪（40401）时点击走 requestError → 「服务暂不可用」，不做死按钮/硬隐藏（qa#384/#385）
   const rotateEnabled = canAction(keyType, 'rotate') && view.capabilities?.can_rotate === true
+  // 完成轮转（「已轮转」→ 立即销毁旧 token）与「开始轮转」同权限：否则只要能打开抽屉就能替他人 finalize，属审计缺口
+  const canCompleteRotation = canAction(keyType, 'rotate')
   const canDelete = cap(view.capabilities?.can_delete, canAction(keyType, 'revoke')) && view.status !== 'revoked'
 
   return (
@@ -255,7 +257,9 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
           )}
           <div className="flex flex-wrap gap-2">
             {view.status === 'rotation_required' ? (
-              <Button variant="outline" size="sm" onClick={() => onCompleteRotation(view)}>已轮转</Button>
+              canCompleteRotation ? (
+                <Button variant="outline" size="sm" onClick={() => onCompleteRotation(view)}>已轮转</Button>
+              ) : null
             ) : rotateEnabled ? (
               <Button variant="outline" size="sm" onClick={() => onRotate(view)}>轮转</Button>
             ) : null}

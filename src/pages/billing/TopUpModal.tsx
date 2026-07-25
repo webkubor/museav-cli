@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { createRecharge } from '@/services/billing'
 import { useCurrency, useEnabledChannels } from '@/hooks/use-platform-config'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 import { Button } from '@/components/ui/Button'
 import { appToast } from '@/lib/app-toast'
 import { cn } from '@/lib/utils'
@@ -49,6 +51,10 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
 
   const { currency, symbol: currencySymbol } = useCurrency()
   const enabledChannels = useEnabledChannels()
+  // 提交处兜底权限（弹窗是全局单挂载点，多入口共用它）：无 billing.recharge:create 不得下单，
+  // 补齐副入口（如 FirstChargeLockGate「去充值」）漏 gate 的口子
+  const { hasPermission } = usePermissions()
+  const canRecharge = hasPermission(PERMS.BILLING_RECHARGE_CREATE)
 
   const CHANNELS = enabledChannels.length
     ? RECHARGE_PAYMENT_CHANNELS.filter((c) => enabledChannels.includes(c.value))
@@ -73,6 +79,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   })
 
   const handleSubmit = () => {
+    if (!canRecharge) return
     const paymentWindow = window.open('about:blank', '_blank')
     if (paymentWindow) paymentWindow.opener = null
 
@@ -209,7 +216,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
           {/* 提交 */}
           <Button
             variant="brand"
-            disabled={numAmount <= 0 || recharge.isPending}
+            disabled={numAmount <= 0 || recharge.isPending || !canRecharge}
             onClick={handleSubmit}
             className="w-full h-11 text-sm font-bold rounded-md"
           >

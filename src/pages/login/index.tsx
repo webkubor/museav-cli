@@ -110,6 +110,8 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
   const [gateParam, setGateParam] = useState<string | null>(null)
   const [gateActive, setGateActive] = useState(false)
   const gateRef = useRef<CaptchaGateHandle | null>(null)
+  // 验证通过后自动提交的标志
+  const autoSubmitRef = useRef(false)
 
   const emailForm = useForm<EmailFields>({
     resolver: zodResolver(emailSchema),
@@ -152,20 +154,13 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
     }
   }
 
-  const onPasswordSubmit = async (data: PasswordFields) => {
+  const doLogin = async (password: string, captchaParam: string | null) => {
     if (!canSubmitAuth('login-password', email)) return
-    // 验证条生效但未完成 → 调起挑战，等 onChange 回填后用户再次提交
-    if (gateActive && !gateParam) {
-      gateRef.current?.open()
-      return
-    }
-    // 验证条已通过用其四元组；否则走弹窗流（未启用/降级 → null 照常登录，后端 fail-open）
-    const captchaParam = gateParam ?? (await getCaptchaParam())
     setLoading(true)
     setServerError('')
     let loginOk = false
     try {
-      await login({ email, password: data.password }, captchaParam)
+      await login({ email, password }, captchaParam)
       loginOk = true
       const session = await getSession()
       clearAuthGuard({ action: 'login-password', subject: email })
@@ -194,6 +189,30 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
       if (!loginOk) gateRef.current?.reset()
     } finally {
       setLoading(false)
+    }
+  }
+
+  const onPasswordSubmit = async (data: PasswordFields) => {
+    // 验证条生效但未完成 → 调起挑战，等验证通过后自动提交
+    if (gateActive && !gateParam) {
+      autoSubmitRef.current = true
+      gateRef.current?.open()
+      return
+    }
+    // 验证条已通过用其四元组；否则走弹窗流（未启用/降级 → null 照常登录，后端 fail-open）
+    const captchaParam = gateParam ?? (await getCaptchaParam())
+    await doLogin(data.password, captchaParam)
+  }
+
+  // CaptchaGate 验证通过后的回调：自动提交表单
+  const handleCaptchaVerified = () => {
+    if (autoSubmitRef.current) {
+      autoSubmitRef.current = false
+      // 获取当前密码值并提交
+      const password = passwordForm.getValues('password')
+      if (password) {
+        void doLogin(password, gateParam)
+      }
     }
   }
 
@@ -326,7 +345,7 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
             </label>
           </div>
           
-          <CaptchaGate onChange={setGateParam} onAvailability={setGateActive} handleRef={(h) => { gateRef.current = h }} />
+          <CaptchaGate onChange={setGateParam} onVerified={handleCaptchaVerified} onAvailability={setGateActive} handleRef={(h) => { gateRef.current = h }} />
 
           {serverError && <p className="auth-error-message">{serverError}</p>}
 

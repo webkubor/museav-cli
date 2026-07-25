@@ -68,6 +68,8 @@ function EmailSignupPage() {
   const [gateParam, setGateParam] = useState<string | null>(null)
   const [gateActive, setGateActive] = useState(false)
   const gateRef = useRef<CaptchaGateHandle | null>(null)
+  // 验证通过后自动提交的标志
+  const autoSubmitRef = useRef(false)
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -126,24 +128,7 @@ function EmailSignupPage() {
     }
   }
 
-  const onSubmit = async (data: Fields) => {
-    const decision = checkAuthGuard({
-      action: 'signup',
-      subject: data.email,
-    })
-    if (!decision.allowed) {
-      setServerError(decision.message ?? '操作过于频繁，请稍后再试')
-      return
-    }
-
-    // 验证条生效但未完成 → 调起挑战，等回填后再提交
-    if (gateActive && !gateParam) {
-      gateRef.current?.open()
-      return
-    }
-    // 验证条已通过用其四元组；否则弹窗流（未启用/降级 → null 照常注册，后端 fail-open）
-    const captchaParam = gateParam ?? (await getCaptchaParam())
-
+  const doRegister = async (data: Fields, captchaParam: string | null) => {
     setLoading(true)
     setServerError('')
     try {
@@ -155,7 +140,6 @@ function EmailSignupPage() {
         display_name: displayName,
         email_code: data.email_code,
         invitation_token: invitationToken,
-        // 推荐计划邀请码：?aff= 预填或用户手填，注册时做返佣归属
         referral_code: data.referral_code?.trim() || undefined,
       }, captchaParam)
       setAuth(
@@ -175,6 +159,35 @@ function EmailSignupPage() {
       toast.error(msg)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const onSubmit = async (data: Fields) => {
+    const decision = checkAuthGuard({
+      action: 'signup',
+      subject: data.email,
+    })
+    if (!decision.allowed) {
+      setServerError(decision.message ?? '操作过于频繁，请稍后再试')
+      return
+    }
+
+    // 验证条生效但未完成 → 调起挑战，等验证通过后自动提交
+    if (gateActive && !gateParam) {
+      autoSubmitRef.current = true
+      gateRef.current?.open()
+      return
+    }
+    // 验证条已通过用其四元组；否则弹窗流（未启用/降级 → null 照常注册，后端 fail-open）
+    const captchaParam = gateParam ?? (await getCaptchaParam())
+    await doRegister(data, captchaParam)
+  }
+
+  // CaptchaGate 验证通过后的回调：自动提交表单
+  const handleCaptchaVerified = () => {
+    if (autoSubmitRef.current) {
+      autoSubmitRef.current = false
+      void handleSubmit(onSubmit)()
     }
   }
 
@@ -295,7 +308,7 @@ function EmailSignupPage() {
           )}
         </div>
 
-        <CaptchaGate onChange={setGateParam} onAvailability={setGateActive} handleRef={(h) => { gateRef.current = h }} />
+        <CaptchaGate onChange={setGateParam} onVerified={handleCaptchaVerified} onAvailability={setGateActive} handleRef={(h) => { gateRef.current = h }} />
 
         {serverError && <p className="auth-error-message">{serverError}</p>}
 

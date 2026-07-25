@@ -22,13 +22,15 @@ export interface CaptchaGateHandle {
 interface CaptchaGateProps {
   /** 验证通过 → 四元组 JSON；重置/不可用 → null。 */
   onChange: (param: string | null) => void
+  /** 验证通过后立即触发（用于自动提交表单）。 */
+  onVerified?: () => void
   /** 验证条是否生效（生效=提交前必须先通过；不生效=按未启用放行）。 */
   onAvailability?: (active: boolean) => void
   /** 由父组件持有以便在提交路径上调起/重置。 */
   handleRef?: (handle: CaptchaGateHandle | null) => void
 }
 
-export function CaptchaGate({ onChange, onAvailability, handleRef }: CaptchaGateProps) {
+export function CaptchaGate({ onChange, onVerified, onAvailability, handleRef }: CaptchaGateProps) {
   const market = useLangStore((s) => s.market)
   const [state, setState] = useState<'hidden' | 'idle' | 'verified'>('hidden')
   const sessionRef = useRef<AlicaptchaSession | null>(null)
@@ -41,6 +43,7 @@ export function CaptchaGate({ onChange, onAvailability, handleRef }: CaptchaGate
         if (disposed) return
         setState('verified')
         onChange(param)
+        onVerified?.()
       },
       onUnavailable: () => {
         if (disposed) return

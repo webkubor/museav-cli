@@ -249,6 +249,9 @@ export interface GuardrailSectionsProps {
   /** 分类 × 动作细粒度（需求方#57）：各分区行内动作按自己分类的码控 */
   canEdit: Record<GuardrailScope, boolean>
   canDelete: Record<GuardrailScope, boolean>
+  /** 逐行编辑归属（需求方#261）：分区码 × 本行归属——管理者管全部、成员只管自己创建的。
+   *  gate 编辑/查看 label、删除按钮、启停开关，避免「按钮可编辑但保存 40301」。 */
+  canManageRow: (row: GuardrailDetail) => boolean
   /** 空状态创建按钮按分区权限控（需求方#262）：member 只授 key:create 时，全局/个人分区不显示创建入口 */
   canCreate: Record<GuardrailScope, boolean>
   showMember: boolean
@@ -264,7 +267,7 @@ export interface GuardrailSectionsProps {
 
 export function GuardrailSections(props: GuardrailSectionsProps) {
   const {
-    guardrails, isLoading, canEdit, canDelete, canCreate, showMember, currencySymbol,
+    guardrails, isLoading, canEdit, canDelete, canManageRow, canCreate, showMember, currencySymbol,
     search, onSearchChange, onOpenDetail, onToggle, onDelete, onCreate,
   } = props
 
@@ -330,8 +333,8 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
               <TableCell><InjectionCell label={PROMPT_INJECTION_LABEL[guardrailPromptInjectionMode(row)]} /></TableCell>
               <TableCell><CreatorCell row={row} /></TableCell>
               <TableCell><UpdatedCell row={row} /></TableCell>
-              <TableCell><StatusCell row={row} canEdit={canEdit.global} onToggle={onToggle} lockOffReason={activeGlobalCount <= 1 ? '需至少保留一条启用的全局护栏' : undefined} /></TableCell>
-              <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.global} canDelete={canDelete.global} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
+              <TableCell><StatusCell row={row} canEdit={canEdit.global && canManageRow(row)} onToggle={onToggle} lockOffReason={activeGlobalCount <= 1 ? '需至少保留一条启用的全局护栏' : undefined} /></TableCell>
+              <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.global && canManageRow(row)} canDelete={canDelete.global && canManageRow(row)} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -371,8 +374,8 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                 <TableCell><BoostExpiryCell row={row} /></TableCell>
                 <TableCell><CreatorCell row={row} /></TableCell>
                 <TableCell><UpdatedCell row={row} /></TableCell>
-                <TableCell><StatusCell row={row} canEdit={canEdit.member} onToggle={onToggle} /></TableCell>
-                <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.member} canDelete={canDelete.member} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
+                <TableCell><StatusCell row={row} canEdit={canEdit.member && canManageRow(row)} onToggle={onToggle} /></TableCell>
+                <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.member && canManageRow(row)} canDelete={canDelete.member && canManageRow(row)} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -422,8 +425,8 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                 <TableCell><InjectionCell label={injectionLabel} /></TableCell>
                 <TableCell><CreatorCell row={row} /></TableCell>
                 <TableCell><UpdatedCell row={row} /></TableCell>
-                <TableCell><StatusCell row={row} canEdit={canEdit.key} onToggle={onToggle} /></TableCell>
-                <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.key} canDelete={canDelete.key} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
+                <TableCell><StatusCell row={row} canEdit={canEdit.key && canManageRow(row)} onToggle={onToggle} /></TableCell>
+                <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.key && canManageRow(row)} canDelete={canDelete.key && canManageRow(row)} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
               </TableRow>
             )
           })}

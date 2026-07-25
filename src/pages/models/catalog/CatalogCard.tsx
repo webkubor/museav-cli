@@ -30,7 +30,7 @@ import type { IconType } from 'react-icons'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { Button } from '@/components/ui/Button'
-import { formatContextLength, formatNumber, prettyModelName } from '@/lib/utils'
+import { formatContextLength, formatNumber, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 
 const MODALITY_ICON: Record<string, IconType> = { text: LuFileText, image: LuImage, audio: LuMic, video: LuVideo }
@@ -81,7 +81,7 @@ function priceText(
   if (amount == null || amount === '' || Number.isNaN(n) || (n ?? 0) <= 0) {
     return { value: freeLabel, unit: '' }
   }
-  return { value: `${symbol} ${amount}`, unit: unitSuffix }
+  return { value: `${symbol} ${trimPriceZeros(amount)}`, unit: unitSuffix }
 }
 
 /** 协议标签文案照原型：带「兼容」后缀，明确这是入站协议兼容性而非厂商归属。 */
@@ -270,7 +270,7 @@ export function CatalogCard({
           label={t('modelsCatalog.card.input')}
           value={input.value}
           unit={input.unit}
-          strike={promo?.original_price ? `${symbol}${promo.original_price}` : undefined}
+          strike={promo?.original_price ? `${symbol}${trimPriceZeros(promo.original_price)}` : undefined}
           accent
         />
         <Metric label={t('modelsCatalog.card.output')} value={output.value} unit={output.unit} accent />

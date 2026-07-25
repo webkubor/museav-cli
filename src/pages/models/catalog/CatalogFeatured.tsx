@@ -17,6 +17,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { trimPriceZeros } from '@/lib/utils'
 import type { CatalogFeaturedSlide } from '@/types'
 
 /** 五张内置背景，对应后端 background_key 的 default_01..default_05。 */
@@ -114,7 +115,7 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
                   {slide.vendor}
                   {promo?.free
                     ? ` · ${isZh ? '限时免费' : 'free'}`
-                    : ` · ${isZh ? '输入' : 'in'} ${symbol}${slide.input_price}/M / ${isZh ? '输出' : 'out'} ${symbol}${slide.output_price}/M`}
+                    : ` · ${isZh ? '输入' : 'in'} ${symbol}${trimPriceZeros(slide.input_price)}/M / ${isZh ? '输出' : 'out'} ${symbol}${trimPriceZeros(slide.output_price)}/M`}
                 </span>
                 {pitch && <p>{pitch}</p>}
               </div>

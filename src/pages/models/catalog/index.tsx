@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers } from 'react-icons/lu'
-import { listModels, listModelTags, listModelFamilies, listModelFacets, listFeatured } from '@/services/catalog'
+import { listModels, listModelTags, listModelFacets, listFeatured } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import type { CatalogModelItem } from '@/types'
@@ -48,7 +48,10 @@ export default function ModelsCatalogPage() {
     cheapest: t('modelsCatalog.sort.cheapest'),
   }
 
-  const selectedFamily = selected.find((k) => k.startsWith('family:'))?.split(':')[1]
+  // 原型的第一组筛选是「模型厂商」(vendor)，不是模型系列(family)。
+  const selectedVendor = selected.find((k) => k.startsWith('vendor:'))?.split(':')[1]
+  const selectedModality = selected.find((k) => k.startsWith('modality:'))?.split(':')[1] as
+    | 'text' | 'image' | 'audio' | 'video' | 'embedding' | undefined
   const selectedTags = selected.filter((k) => k.startsWith('tag:')).map((k) => k.split(':')[1])
   const selectedCtx = selected.find((k) => k.startsWith('ctx:'))?.split(':')[1]
   const selectedPrice = selected.find((k) => k.startsWith('price:'))?.split(':')[1]
@@ -65,7 +68,8 @@ export default function ModelsCatalogPage() {
    */
   const listParams = useMemo(() => ({
     page_size: 100,
-    family: selectedFamily || undefined,
+    provider: selectedVendor || undefined,
+    modality: selectedModality || undefined,
     q: search.trim() || undefined,
     protocol: selectedProtocol,
     capability_tag: selectedTags.length ? selectedTags : undefined,
@@ -73,7 +77,7 @@ export default function ModelsCatalogPage() {
     price: (selectedPrice as 'free' | 'paid' | undefined) || undefined,
     promo: promoOnly || undefined,
     sort: sort === 'default' ? undefined : sort,
-  }), [selectedFamily, search, selectedProtocol, selectedTags, selectedCtx, selectedPrice, promoOnly, sort])
+  }), [selectedVendor, selectedModality, search, selectedProtocol, selectedTags, selectedCtx, selectedPrice, promoOnly, sort])
 
   const modelsQuery = useQuery({
     queryKey: ['catalog-models', listParams],
@@ -102,7 +106,6 @@ export default function ModelsCatalogPage() {
     staleTime: 5 * 60_000,
   })
   const tagsQuery = useQuery({ queryKey: ['catalog-model-tags'], queryFn: () => listModelTags(true), staleTime: 5 * 60_000 })
-  const familiesQuery = useQuery({ queryKey: ['catalog-model-families'], queryFn: () => listModelFamilies(true), staleTime: 5 * 60_000 })
 
   /**
    * 过滤后端测试数据。
@@ -117,10 +120,6 @@ export default function ModelsCatalogPage() {
   const allModels = useMemo(
     () => (modelsQuery.data?.items ?? []).filter((m) => !/^pytest/i.test(m.model_id)),
     [modelsQuery.data?.items],
-  )
-  const families = useMemo(
-    () => (familiesQuery.data?.items ?? []).filter((f) => f.enabled).sort((a, b) => a.sort_order - b.sort_order),
-    [familiesQuery.data?.items],
   )
   const tags = useMemo(() => (tagsQuery.data?.items ?? []).filter((tg) => tg.enabled !== false), [tagsQuery.data?.items])
   const comparableModels = useMemo(() => allModels.filter(isComparableModel), [allModels])
@@ -177,7 +176,7 @@ export default function ModelsCatalogPage() {
       {/* 主体：左 sidebar + 右内容 */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[260px_1fr] lg:items-start">
         <div className={`models-sticky ${filtersOpen ? 'bg-mg-bg-0 border-mg-border block rounded-lg border p-4 lg:border-0 lg:p-0' : 'hidden lg:block'}`}>
-          <CatalogSidebar families={families} tags={tags} selected={selected} setSelected={setSelected} isZh={isZh} facets={facets} />
+          <CatalogSidebar tags={tags} selected={selected} setSelected={setSelected} isZh={isZh} facets={facets} />
         </div>
 
         <div>

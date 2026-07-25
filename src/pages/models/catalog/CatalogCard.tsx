@@ -30,7 +30,7 @@ import type { IconType } from 'react-icons'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { Button } from '@/components/ui/Button'
-import { formatContextLength, prettyModelName } from '@/lib/utils'
+import { formatContextLength, formatNumber, prettyModelName } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 
 const MODALITY_ICON: Record<string, IconType> = { text: LuFileText, image: LuImage, audio: LuMic, video: LuVideo }
@@ -84,7 +84,13 @@ function priceText(
   return { value: `${symbol} ${amount}`, unit: unitSuffix }
 }
 
-const PROTOCOL_LABEL: Record<string, string> = { openai: 'OpenAI', anthropic: 'Anthropic', other: 'Other' }
+/** 协议标签文案照原型：带「兼容」后缀，明确这是入站协议兼容性而非厂商归属。 */
+const PROTOCOL_LABEL_ZH: Record<string, string> = {
+  openai: 'OpenAI 兼容', anthropic: 'Anthropic 兼容', other: '其他协议',
+}
+const PROTOCOL_LABEL_EN: Record<string, string> = {
+  openai: 'OpenAI compatible', anthropic: 'Anthropic compatible', other: 'Other',
+}
 
 interface Props {
   model: CatalogModelItem
@@ -226,11 +232,11 @@ export function CatalogCard({
               key={p}
               type="button"
               className={`mg-proto is-${p}`}
-              title={isZh ? `筛选：${PROTOCOL_LABEL[p] ?? p}` : `Filter: ${PROTOCOL_LABEL[p] ?? p}`}
+              title={`${isZh ? '筛选：' : 'Filter: '}${(isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN)[p] ?? p}`}
               onClick={(e) => { e.stopPropagation(); onPickProtocol?.(p) }}
               disabled={!onPickProtocol}
             >
-              {p === 'other' ? (isZh ? '其他协议' : 'Other') : PROTOCOL_LABEL[p] ?? p}
+              {(isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN)[p] ?? p}
             </button>
           ))}
         </div>
@@ -257,17 +263,22 @@ export function CatalogCard({
         </div>
       )}
 
-      {/* 贴底：价格规格 */}
+      {/* 贴底：价格规格。原型口径 2 行 × 2 列 —— 第一行输入/输出价，第二行
+          上下文/最大输出。划线原价内联在现价右侧，不另起一行。 */}
       <div className="mg-mcard-specs">
-        <Metric label={t('modelsCatalog.card.context')} value={ctxValue} />
         <Metric
           label={t('modelsCatalog.card.input')}
           value={input.value}
           unit={input.unit}
-          strike={promo?.original_price ? `${symbol} ${promo.original_price}` : undefined}
+          strike={promo?.original_price ? `${symbol}${promo.original_price}` : undefined}
           accent
         />
         <Metric label={t('modelsCatalog.card.output')} value={output.value} unit={output.unit} accent />
+        <Metric label={t('modelsCatalog.card.context')} value={ctxValue} />
+        <Metric
+          label={isZh ? '最大输出' : 'Max output'}
+          value={model.max_output_tokens ? formatNumber(model.max_output_tokens) : '—'}
+        />
       </div>
 
       {/* 操作：hover / 键盘聚焦时浮出，覆盖最底一行，不改变卡片高度 */}
@@ -308,9 +319,9 @@ function Metric({
       <span className={`mg-metric-value ${accent ? 'is-accent' : ''}`}>
         {value}
         {unit && <small className="mg-metric-unit">{unit}</small>}
+        {/* 划线原价内联在现价右侧（原型口径）；仅有促销时渲染，是装饰而非真实价格 */}
+        {strike && <s className="mg-metric-strike">{strike}</s>}
       </span>
-      {/* 划线原价：仅在有促销时渲染，是装饰而非真实价格 */}
-      {strike && <s className="mg-metric-strike">{strike}</s>}
     </div>
   )
 }

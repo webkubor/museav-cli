@@ -10,8 +10,6 @@ import type { BalanceTab } from './BalanceCard'
 import { BillingOrdersPanel } from './BillingOrdersPanel'
 import { BillingLedgerPanel } from './BillingLedgerPanel'
 
-export { OrderReceiptDrawer } from './OrderReceiptDrawer'
-
 export default function BillingPage() {
   const { t } = useTranslation()
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''

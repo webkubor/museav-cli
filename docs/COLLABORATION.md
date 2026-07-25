@@ -237,6 +237,21 @@ PRD 原型 > 飞书文档 > 现状控制台代码
 - 前端对后端有要求 → **必须落 API 单**，代码注释挂单号
 - 开关单**只认真源实测，不认看板标签**
 
+### 部署流程
+
+| 场景 | 分支 | 流程 |
+|:---|:---|:---|
+| 日常开发 | test | test 分支部署测试环境 |
+| 测试通过上线 | main | 合并到 main → 部署线上 |
+| 线上 hotfix | main | main 分支修复 → 部署线上 → 同步到 test |
+
+**线上 hotfix 流程：**
+1. 在 main 分支修复问题
+2. 提交并推送 main
+3. 触发线上部署（`prod/modelgo-console-web`）
+4. 同步到 test 分支：`git checkout test && git merge main && git push origin test`
+5. 触发测试环境部署（`test/modelgo-console-web`）
+
 ## 5. UI 测试账户管理
 
 ### 获取测试账号

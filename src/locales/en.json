@@ -1561,18 +1561,6 @@
       "more": "More",
       "less": "Less"
     },
-    "heroStats": {
-      "models": "Models",
-      "modelsSub": "Leading models covered",
-      "providers": "Providers",
-      "providersSub": "Top-tier partners",
-      "uptime": "API uptime",
-      "uptimeSub": "Enterprise-grade SLA",
-      "sla": "SLA",
-      "failover": "Failover",
-      "multiRegion": "Multi-region",
-      "trending": "Trending"
-    },
     "card": {
       "favorite": "Favorite",
       "free": "Free",

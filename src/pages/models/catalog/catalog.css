@@ -12,155 +12,27 @@
 }
 
 /* ── 顶部数据卡 + 热门模型 ─────────────────────────────────── */
-.catalog-hero {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
 
-.catalog-hero-grid {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
-  gap: 14px;
-}
 
-.catalog-hero-stat {
-  position: relative;
-  overflow: hidden;
-  min-height: 168px;
-  /* 主题色边框：跟随 brand token，深浅双主题同一套规则 */
-  border: 1px solid color-mix(in oklab, var(--brand-base) 30%, var(--mg-border));
-  border-radius: 16px;
-  background-color: var(--mg-bg-0);
-  background-repeat: no-repeat;
-  background-position: right center;
-  background-size: cover;
-  /* 背景图只画在边框内侧，杜绝图片亮边渗到圆角边框上 */
-  background-clip: padding-box;
-  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
-}
 
-.catalog-hero-stat:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(in oklab, var(--brand-base) 32%, var(--mg-border));
-  box-shadow: 0 16px 40px -20px color-mix(in oklab, var(--brand-base) 40%, transparent);
-}
 
 /* 背景图按主题出，由 CSS 控制（不写内联），避免两张图时序闪烁 */
-.catalog-hero-stat--models { background-image: url(/modelgo/plaza-stat-models.webp); }
-.catalog-hero-stat--providers { background-image: url(/modelgo/plaza-stat-providers.webp); }
-.catalog-hero-stat--uptime { background-image: url(/modelgo/plaza-stat-uptime.webp); }
 
 /* 深色：用你给的深色专用图 */
-[theme-mode='dark'] .catalog-hero-stat--models { background-image: url(/modelgo/plaza-stat-models-dark.webp); }
-[theme-mode='dark'] .catalog-hero-stat--providers { background-image: url(/modelgo/plaza-stat-providers-dark.webp); }
-[theme-mode='dark'] .catalog-hero-stat--uptime { background-image: url(/modelgo/plaza-stat-uptime-dark.webp); }
 
 /* 左侧渐隐遮罩：保证文字区可读，背景图自然过渡到右侧 */
-.catalog-hero-stat-mask {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    100deg,
-    var(--mg-bg-0) 0%,
-    color-mix(in oklab, var(--mg-bg-0) 86%, transparent) 36%,
-    color-mix(in oklab, var(--mg-bg-0) 30%, transparent) 64%,
-    transparent 100%
-  );
-  pointer-events: none;
-}
 
 /* 深色图自带深底，遮罩只做左侧文字渐隐保证可读 */
-[theme-mode='dark'] .catalog-hero-stat-mask {
-  background: linear-gradient(
-    100deg,
-    var(--mg-bg-0) 0%,
-    color-mix(in oklab, var(--mg-bg-0) 78%, transparent) 38%,
-    color-mix(in oklab, var(--mg-bg-0) 32%, transparent) 66%,
-    transparent 100%
-  );
-}
 
-.catalog-hero-stat-body {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 18px 20px;
-}
 
-.catalog-hero-value {
-  font-size: 34px;
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-  color: var(--mg-text-1);
-}
 
-.catalog-hero-stat-label {
-  margin-top: 2px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--mg-text-1);
-}
 
-.catalog-hero-stat-sub {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--mg-text-3);
-}
 
-.catalog-hero-stat-foot {
-  margin-top: 10px;
-}
 
-.catalog-hero-icons {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 
-.catalog-hero-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--mg-border);
-  border-radius: 8px;
-  background: var(--mg-bg-0);
-}
 
-.catalog-hero-icon-more {
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-end;
-  padding-bottom: 4px;
-  color: var(--mg-text-4);
-  font-weight: 800;
-  letter-spacing: 1px;
-}
 
-.catalog-hero-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
 
-.catalog-hero-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 9px;
-  border: 1px solid var(--mg-border);
-  border-radius: 999px;
-  background: color-mix(in oklab, var(--mg-bg-0) 70%, transparent);
-  color: var(--mg-text-2);
-  font-size: 11px;
-  font-weight: 600;
-}
-.catalog-hero-tag svg { color: var(--brand-base); }
 
 /* 热门模型横排 */
 .catalog-hot-row {
@@ -205,18 +77,8 @@
 }
 
 /* 卡片1 供应商名片 chip（图标+名称） */
-.catalog-hero-pills { display: flex; flex-wrap: wrap; gap: 6px; }
-.catalog-hero-pill {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 3px 9px 3px 6px;
-  border: 1px solid var(--mg-border); border-radius: 999px;
-  background: color-mix(in oklab, var(--mg-bg-0) 72%, transparent);
-  color: var(--mg-text-2); font-size: 11.5px; font-weight: 600;
-}
-.catalog-hero-pill--more { padding: 3px 9px; color: var(--mg-text-4); font-weight: 800; letter-spacing: 1px; }
 
 @media (max-width: 900px) {
-  .catalog-hero-grid { grid-template-columns: 1fr; }
 }
 
 /* ── 工具条：搜索 + 排序 ─────────────────────────────────── */
@@ -1217,3 +1079,11 @@ body[theme-mode='dark'] .catalog-insight-panel {
 .mg-related-name { font-size: 13.5px; font-weight: 600; color: var(--mg-text-1); }
 .mg-related-meta { font-size: 12px; color: var(--mg-text-3); }
 .mg-related-price { font-size: 12px; color: var(--brand-base); }
+
+/* ── 顶部信任 chips（原型口径，取代原三张数据卡）───────────────── */
+.mg-trust {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 18px;
+  margin-top: 10px; font-size: 12.5px; color: var(--mg-text-3);
+}
+.mg-trust > span { display: inline-flex; align-items: center; gap: 5px; }
+.mg-trust svg { color: var(--brand-base); flex-shrink: 0; }

@@ -5,6 +5,7 @@
  */
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { useAuthStore } from '@/store/auth'
+import { switchActiveWorkspace } from '@/lib/auth/refresh-session'
 import { useTranslation } from 'react-i18next'
 import {
   LuSearch,
@@ -602,6 +603,13 @@ interface WorkspaceDashboardProps {
 function WorkspaceDashboard({ workspaceId, onDeleted }: WorkspaceDashboardProps) {
   const { t } = useTranslation()
   const [tab, setTab] = useState<'overview' | 'members' | 'logs' | 'settings'>('overview')
+  // Option B：进入某空间管理详情即把它设为活跃空间，并按它重解析权限——
+  // 使 4 个 tab 显隐 + tab 内成员/设置/日志按钮 gating 都按「所看空间」的角色（如空间负责人）解析（需求方#255）。
+  useEffect(() => {
+    if (workspaceId && workspaceId !== useAuthStore.getState().activeWorkspaceId) {
+      void switchActiveWorkspace(workspaceId)
+    }
+  }, [workspaceId])
   // 个人租户没有企业成员，空间管理不该有「成员」tab（无人可邀请/管理）；仅企业租户显示。
   const { isEnterprise } = useTenantRole()
   const { hasPermission } = usePermissions()

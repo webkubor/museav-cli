@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { getTenant, listTenants, listTenantMembers, updateTenant, uploadTenantLogo, dissolveTenant, transferOwnership } from '@/services/tenants'
-import { getSession } from '@/services/auth'
+import { getSessionForActiveWorkspace } from '@/lib/auth/refresh-session'
 import { useAuthStore } from '@/store/auth'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -100,7 +100,7 @@ export function OrgInfoTab({
       qc.removeQueries({ queryKey: ['tenant-members', tenantId] })
       await qc.invalidateQueries({ queryKey: ['tenants'] })
       try {
-        const session = await getSession()
+        const session = await getSessionForActiveWorkspace()
         setAuth(
           session.account,
           session.active_tenant_id,
@@ -127,7 +127,7 @@ export function OrgInfoTab({
       await qc.invalidateQueries({ queryKey: ['tenant', tenantId] })
       // 所有权变更影响当前用户角色/权限，刷新会话让 UI 立即降级为管理员视图
       try {
-        const session = await getSession()
+        const session = await getSessionForActiveWorkspace()
         setAuth(
           session.account,
           session.active_tenant_id,

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { LuFolderOpen, LuChevronsUpDown, LuCheck, LuSearch } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
+import { switchActiveWorkspace } from '@/lib/auth/refresh-session'
 import { useTrackContext } from '@/hooks/use-track-context'
 import { trackEvent } from '@/lib/track'
 import { listWorkspaces } from '@/services/workspaces'
@@ -28,7 +29,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
-  const { activeTenantId, activeWorkspaceId, setActiveWorkspaceId } = useAuthStore()
+  const { activeTenantId, activeWorkspaceId } = useAuthStore()
   const trackCtx = useTrackContext()
   const [query, setQuery] = useState('')
 
@@ -59,7 +60,8 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
       from_workspace_id: activeWorkspaceId ?? '',
       to_workspace_id: workspaceId,
     })
-    setActiveWorkspaceId(workspaceId)
+    // 切空间同时按新空间重拉会话权限（tab/侧栏/按钮 gating 随之更新，需求方#255/#216）
+    void switchActiveWorkspace(workspaceId)
     queryClient.removeQueries({ queryKey: ['api-keys'] })
     queryClient.removeQueries({ queryKey: ['guardrails'] })
     queryClient.removeQueries({ queryKey: ['observability'] })

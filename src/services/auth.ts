@@ -72,9 +72,13 @@ export function logout() {
   return post<null>('auth/logout', {})
 }
 
-/** 获取当前会话信息（未登录返回 40101） */
-export function getSession() {
-  return get<SessionResult>('auth/session')
+/**
+ * 获取当前会话信息（未登录返回 40101）。
+ * 传 workspaceId → 后端按该空间解析权限（granted/workspace_role）；不传按租户默认空间解析。
+ * 传了当前用户不属于的空间 id 后端安全回落默认空间（不越权、不报错）。
+ */
+export function getSession(workspaceId?: string) {
+  return get<SessionResult>(`auth/session${workspaceId ? `?workspace_id=${encodeURIComponent(workspaceId)}` : ''}`)
 }
 
 /**

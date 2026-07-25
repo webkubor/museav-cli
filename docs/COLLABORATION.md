@@ -245,6 +245,17 @@ PRD 原型 > 飞书文档 > 现状控制台代码
 | 测试通过上线 | main | 合并到 main → 部署线上 |
 | 线上 hotfix | main | main 分支修复 → 部署线上 → 同步到 test |
 
+**日常开发流程：**
+1. 切到 test 分支：`git checkout test && git pull`
+2. 开发代码
+3. 提交并推送 test：`git push origin test`
+4. 触发测试环境部署：`test/modelgo-console-web`
+
+**线上发布流程：**
+1. 测试验证通过
+2. 合并到 main：`git checkout main && git merge test && git push origin main`
+3. 触发线上部署：`prod/modelgo-console-web`
+
 **线上 hotfix 流程：**
 1. 在 main 分支修复问题
 2. 提交并推送 main

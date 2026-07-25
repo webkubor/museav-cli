@@ -8,11 +8,12 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers } from 'react-icons/lu'
-import { listModels, listModelTags, listModelFamilies, listModelFacets } from '@/services/catalog'
+import { listModels, listModelTags, listModelFamilies, listModelFacets, listFeatured } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import type { CatalogModelItem } from '@/types'
 import { CatalogCard } from './CatalogCard'
+import { CatalogFeatured } from './CatalogFeatured'
 import { CatalogHero } from './CatalogHero'
 import { CatalogSidebar } from './CatalogSidebar'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
@@ -90,6 +91,16 @@ export default function ModelsCatalogPage() {
     staleTime: 5 * 60_000,
   })
   const facets = facetsQuery.data
+
+  /**
+   * 精选轮播。不随筛选变化（它是运营发布的固定推荐位），所以 queryKey 不带
+   * listParams；0 项时组件自身不渲染。
+   */
+  const featuredQuery = useQuery({
+    queryKey: ['catalog-featured'],
+    queryFn: () => listFeatured(),
+    staleTime: 5 * 60_000,
+  })
   const tagsQuery = useQuery({ queryKey: ['catalog-model-tags'], queryFn: () => listModelTags(true), staleTime: 5 * 60_000 })
   const familiesQuery = useQuery({ queryKey: ['catalog-model-families'], queryFn: () => listModelFamilies(true), staleTime: 5 * 60_000 })
 
@@ -155,8 +166,9 @@ export default function ModelsCatalogPage() {
         type="button"
         onClick={() => { const n = !filtersOpen; if (n) window.scrollTo(0, 0); setFiltersOpen(n) }}
         aria-expanded={filtersOpen}
-        className="fixed bottom-6 right-5 z-40 inline-flex h-11 items-center gap-2 rounded-full border px-6 text-[14px] font-medium shadow-lg backdrop-blur lg:hidden"
-        style={{ background: 'var(--mg-bg-0)', borderColor: filtersOpen ? 'var(--brand-base)' : 'var(--mg-border)', color: filtersOpen ? 'var(--brand-base)' : 'var(--mg-text-2)' }}
+        className={`bg-mg-bg-0 fixed bottom-6 right-5 z-40 inline-flex h-11 items-center gap-2 rounded-full border px-6 text-[14px] font-medium shadow-lg backdrop-blur lg:hidden ${
+          filtersOpen ? 'border-brand-base text-brand-base' : 'border-mg-border text-mg-text-2'
+        }`}
       >
         <LuSlidersHorizontal size={15} />
         {t('modelsCatalog.filtersButton')}
@@ -164,17 +176,17 @@ export default function ModelsCatalogPage() {
 
       {/* 主体：左 sidebar + 右内容 */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[260px_1fr] lg:items-start">
-        <div className={`models-sticky ${filtersOpen ? 'block rounded-lg border p-4 lg:border-0 lg:p-0' : 'hidden lg:block'}`} style={filtersOpen ? { background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' } : undefined}>
+        <div className={`models-sticky ${filtersOpen ? 'bg-mg-bg-0 border-mg-border block rounded-lg border p-4 lg:border-0 lg:p-0' : 'hidden lg:block'}`}>
           <CatalogSidebar families={families} tags={tags} selected={selected} setSelected={setSelected} isZh={isZh} facets={facets} />
         </div>
 
         <div>
           {/* 标题 */}
           <div className="mb-6">
-            <h1 className="catalog-title text-[34px] font-bold tracking-tight" style={{ color: 'var(--mg-text-1)' }}>
+            <h1 className="text-mg-text-1 catalog-title text-[34px] font-bold tracking-tight">
               {t('modelsCatalog.page.title')}
             </h1>
-            <p className="mt-1.5 text-[14px]" style={{ color: 'var(--mg-text-3)' }}>
+            <p className="text-mg-text-3 mt-1.5 text-[14px]">
               {t('modelsCatalog.page.subtitle')}
             </p>
           </div>
@@ -183,6 +195,11 @@ export default function ModelsCatalogPage() {
           {!modelsQuery.isLoading && !modelsQuery.isError && allModels.length > 0 && (
             <div className="mb-6">
               <CatalogHero models={allModels} onPickHot={setSearch} />
+              <CatalogFeatured
+                slides={featuredQuery.data?.items ?? []}
+                isZh={isZh}
+                onTry={handleGoPlayground}
+              />
             </div>
           )}
 
@@ -204,14 +221,15 @@ export default function ModelsCatalogPage() {
                 <LuChevronDown size={13} className={sortOpen ? 'rotate-180' : ''} />
               </button>
               {sortOpen && (
-                <div className="absolute right-0 top-full z-20 mt-1.5 min-w-[140px] overflow-hidden rounded-md border py-1 shadow-lg" style={{ background: 'var(--mg-bg-2)', borderColor: 'var(--mg-border)' }}>
+                <div className="bg-mg-bg-2 border-mg-border absolute right-0 top-full z-20 mt-1.5 min-w-[140px] overflow-hidden rounded-md border py-1 shadow-lg">
                   {(['default', 'popular', 'newest', 'cheapest'] as SortKey[]).map((key) => (
                     <button
                       key={key}
                       type="button"
                       onClick={() => { setSort(key); setSortOpen(false) }}
-                      className="flex w-full items-center gap-2 px-4 py-2 text-left text-[12.5px] transition-colors hover:bg-[color:var(--mg-fill-1)]"
-                      style={sort === key ? { color: 'var(--brand-base)' } : { color: 'var(--mg-text-2)' }}
+                      className={`hover:bg-mg-fill-1 flex w-full items-center gap-2 px-4 py-2 text-left text-[12.5px] transition-colors ${
+                        sort === key ? 'text-brand-base' : 'text-mg-text-2'
+                      }`}
                     >
                       {sort === key ? <LuCheck size={11} /> : <span className="w-[11px]" />}
                       {sortLabels[key]}
@@ -227,20 +245,20 @@ export default function ModelsCatalogPage() {
 
           {/* 列表状态 */}
           {modelsQuery.isLoading ? (
-            <div className="flex flex-col gap-3">
+            <div className="models-catalog-grid">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-[150px] animate-pulse rounded-md border" style={{ background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' }} />
+                <div key={i} className="bg-mg-bg-0 border-mg-border  h-[150px] animate-pulse rounded-md border"/>
               ))}
             </div>
           ) : modelsQuery.isError ? (
-            <div className="rounded-md border p-6 text-center text-[13px]" style={{ borderColor: 'var(--mg-border)', color: 'var(--mg-text-3)' }}>
+            <div className="border-mg-border text-mg-text-3 rounded-md border p-6 text-center text-[13px]">
               {t('modelsCatalog.error.load')}
             </div>
           ) : visibleModels.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-md border py-20 text-center" style={{ background: 'var(--mg-bg-0)', borderColor: 'var(--mg-border)' }}>
-              <LuLayers size={28} className="mb-3" style={{ color: 'var(--mg-text-4)' }} />
-              <p className="text-[13px]" style={{ color: 'var(--mg-text-3)' }}>{t('modelsCatalog.emptyFiltered')}</p>
-              <button type="button" onClick={reset} className="mt-3 text-[12px] underline-offset-2 hover:underline" style={{ color: 'var(--mg-text-3)' }}>
+            <div className="bg-mg-bg-0 border-mg-border flex flex-col items-center justify-center rounded-md border py-20 text-center">
+              <LuLayers size={28} className="text-mg-text-4 mb-3" />
+              <p className="text-mg-text-3 text-[13px]">{t('modelsCatalog.emptyFiltered')}</p>
+              <button type="button" onClick={reset} className="text-mg-text-3 mt-3 text-[12px] underline-offset-2 hover:underline">
                 {t('modelsCatalog.clearFilters')}
               </button>
             </div>
@@ -254,6 +272,14 @@ export default function ModelsCatalogPage() {
                   onTry={handleGoPlayground}
                   canCompare={isComparableModel(model)}
                   onCompare={(e) => { e.stopPropagation(); openCompare([model.id]) }}
+                  onPickProtocol={(p) =>
+                    setSelected((prev) => [...prev.filter((k) => !k.startsWith('protocol:')), `protocol:${p}`])
+                  }
+                  onPickCapability={(tag) =>
+                    setSelected((prev) =>
+                      prev.includes(`tag:${tag}`) ? prev : [...prev, `tag:${tag}`],
+                    )
+                  }
                 />
               ))}
             </div>

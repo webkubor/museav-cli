@@ -27,7 +27,8 @@ function autoSummary(detail: CatalogModelDetail, isZh: boolean): string {
   const mods = (detail.modalities ?? []).filter((m) => m in MOD_LABEL)
   const modText = mods.length ? mods.map((m) => (isZh ? MOD_LABEL[m] : MOD_LABEL_EN[m])).join(isZh ? '/' : ', ') : (isZh ? '通用' : 'general')
   const ctx = detail.context_length ? formatContextLength(detail.context_length) : ''
-  const free = Number(detail.pricing?.input_per_1m ?? 0) === 0 && Number(detail.pricing?.output_per_1m ?? 0) === 0
+  // 限免只认服务端的显式标记；「价格为 0」也会命中尚未配价的模型。
+  const free = Boolean(detail.promotion?.free)
   if (isZh) {
     return `${v ? v + ' 出品的' : ''}${modText}模型${ctx ? `，${ctx} 上下文窗口` : ''}${free ? '，当前免费可用' : ''}。详细简介待补充。`
   }
@@ -119,6 +120,29 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
                     <div className="mg-text-caption text-[var(--mg-text-3)] mb-1">{t('models.detail.pricingCacheRead')}</div>
                     <div className="mg-text-value font-bold text-[var(--mg-text-1)]">
                       {formatModelPrice(detail.pricing.cache_read_per_1m, detail.pricing.currency)}
+                    </div>
+                  </div>
+                )}
+                {/* 缓存写入（5min / 1h）。此前 catalog 读侧根本没取这两个字段，详情页
+                    只能渲染破折号；现在后端下发了就补上。为 0/缺省时不渲染该格，
+                    而不是显示 0 —— 未配置与真的免费是两件事。 */}
+                {detail.cache_write_5m_per_1m && parseFloat(detail.cache_write_5m_per_1m) > 0 && (
+                  <div className="bg-card-bg border border-[var(--mg-border)] rounded-sm mg-panel-tight">
+                    <div className="mg-text-caption text-[var(--mg-text-3)] mb-1">
+                      {isZh ? '缓存写入 5min' : 'Cache write 5min'}
+                    </div>
+                    <div className="mg-text-value font-bold text-[var(--mg-text-1)]">
+                      {formatModelPrice(detail.cache_write_5m_per_1m, detail.pricing?.currency)}
+                    </div>
+                  </div>
+                )}
+                {detail.cache_write_1h_per_1m && parseFloat(detail.cache_write_1h_per_1m) > 0 && (
+                  <div className="bg-card-bg border border-[var(--mg-border)] rounded-sm mg-panel-tight">
+                    <div className="mg-text-caption text-[var(--mg-text-3)] mb-1">
+                      {isZh ? '缓存写入 1h' : 'Cache write 1h'}
+                    </div>
+                    <div className="mg-text-value font-bold text-[var(--mg-text-1)]">
+                      {formatModelPrice(detail.cache_write_1h_per_1m, detail.pricing?.currency)}
                     </div>
                   </div>
                 )}

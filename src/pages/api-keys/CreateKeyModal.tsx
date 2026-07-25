@@ -42,8 +42,6 @@ import {
   PERIOD_LABEL,
   resolveKeyPromptInjection,
   metadataList,
-  primaryBudget,
-  formatBudget,
 } from "@/pages/guardrails/derive";
 import { groupThousands, trimAmountScale } from "@/pages/guardrails/budget";
 import type { ApiKeyCreated, ApiKeyType } from "@/types";
@@ -292,26 +290,6 @@ export function CreateKeyModal({
     .filter((g): g is GuardrailDetail => !!g)
     .filter((g, i, arr) => arr.findIndex((x) => x.id === g.id) === i);
 
-  // 预算闸门展示：真接口按 aggregation_scope 取最严；兜底按护栏名叠加
-  const AGG_LABEL: Record<string, string> = {
-    guardrail_total: "总额",
-    per_member: "每人",
-    per_api_key: "每 Key",
-  };
-  const budgetDisplay: string[] = eff
-    ? (eff.budgets ?? [])
-        .filter((b) => Number(b.spend_limit_amount) > 0)
-        .map(
-          (b) =>
-            `${symbol}${groupThousands(trimAmountScale(b.spend_limit_amount))} / ${PERIOD_LABEL[b.period_unit] ?? b.period_unit}（${AGG_LABEL[b.aggregation_scope] ?? b.aggregation_scope}）`,
-        )
-    : previewGuardrails
-        .map((g) => ({
-          name: g.name,
-          text: formatBudget(symbol, primaryBudget(g)),
-        }))
-        .filter((b) => b.text !== "不限额")
-        .map((b) => `${b.text}（${b.name}）`);
   const modelBlacklist = eff
     ? eff.model_blacklist
     : [
@@ -604,19 +582,6 @@ export function CreateKeyModal({
                   ).length === 0 && (
                     <p className="text-sm text-mg-text-2">暂无 Key 护栏</p>
                   )}
-                </div>
-                <div className="mg-tile px-4 py-3">
-                  <span className="block text-sm text-mg-text-2">
-                    {selectedGuardrail ? "已选 Key 护栏" : "当前策略"}
-                  </span>
-                  <strong className="mt-1 block text-base text-mg-text-1">
-                    {selectedGuardrail?.name ?? "不使用 Key 护栏"}
-                  </strong>
-                  <em className="mt-1.5 block text-sm not-italic text-mg-text-2">
-                    {selectedGuardrail
-                      ? budgetDisplay.join("，") || "未配置预算"
-                      : "未绑定 Key 护栏"}
-                  </em>
                 </div>
                 <div className="mg-tile grid gap-2.5 p-3">
                   <div className="flex items-center gap-1.5">

@@ -22,8 +22,8 @@ export interface CaptchaGateHandle {
 interface CaptchaGateProps {
   /** 验证通过 → 四元组 JSON；重置/不可用 → null。 */
   onChange: (param: string | null) => void
-  /** 验证通过后立即触发（用于自动提交表单）。 */
-  onVerified?: () => void
+  /** 验证通过后立即触发（用于自动提交表单）。param=刚验证的四元组，必须直接使用，勿回读 onChange 设的 state（同 tick 未生效）。 */
+  onVerified?: (param: string) => void
   /** 验证条是否生效（生效=提交前必须先通过；不生效=按未启用放行）。 */
   onAvailability?: (active: boolean) => void
   /** 由父组件持有以便在提交路径上调起/重置。 */
@@ -43,7 +43,7 @@ export function CaptchaGate({ onChange, onVerified, onAvailability, handleRef }:
         if (disposed) return
         setState('verified')
         onChange(param)
-        onVerified?.()
+        onVerified?.(param)
       },
       onUnavailable: () => {
         if (disposed) return

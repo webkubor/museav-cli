@@ -204,14 +204,15 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
     await doLogin(data.password, captchaParam)
   }
 
-  // CaptchaGate 验证通过后的回调：自动提交表单
-  const handleCaptchaVerified = () => {
+  // CaptchaGate 验证通过后的回调：自动提交表单。
+  // 必须用回调透传的 param（刚验证的四元组），不能读 gateParam：onChange/onVerified 同 tick 连调，此刻 gateParam 仍是旧值 null。
+  const handleCaptchaVerified = (param: string) => {
     if (autoSubmitRef.current) {
       autoSubmitRef.current = false
       // 获取当前密码值并提交
       const password = passwordForm.getValues('password')
       if (password) {
-        void doLogin(password, gateParam)
+        void doLogin(password, param)
       }
     }
   }

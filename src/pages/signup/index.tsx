@@ -183,11 +183,14 @@ function EmailSignupPage() {
     await doRegister(data, captchaParam)
   }
 
-  // CaptchaGate 验证通过后的回调：自动提交表单
-  const handleCaptchaVerified = () => {
+  // CaptchaGate 验证通过后的回调：自动提交表单。
+  // 用回调透传的 param（刚验证的四元组）直接注册，不能重跑 onSubmit：onChange/onVerified 同 tick 连调，
+  // 此刻 gateParam 仍是旧值 null，会误判 gateActive && !gateParam 而重开验证条 / 掉进 getCaptchaParam 弹窗。
+  // 仍走 handleSubmit 以复用 RHF 字段校验；rate-limit guard 已在首次 onSubmit（开验证条前）校验过。
+  const handleCaptchaVerified = (param: string) => {
     if (autoSubmitRef.current) {
       autoSubmitRef.current = false
-      void handleSubmit(onSubmit)()
+      void handleSubmit((data) => doRegister(data, param))()
     }
   }
 

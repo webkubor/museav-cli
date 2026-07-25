@@ -12,6 +12,7 @@ import { getModel, listRelatedModels } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import { Button } from '@/components/ui/Button'
+import { trimPriceZeros } from '@/lib/utils'
 import { ModelDetailPanel } from '@/features/models/components/ModelDetailPanel'
 import '../catalog/catalog.css'
 
@@ -98,7 +99,7 @@ export default function ModelDetailPage() {
                     <span className="mg-related-price">
                       {item.is_free
                         ? (isZh ? '限时免费' : 'Free')
-                        : `${item.currency === 'CNY' ? '¥' : '$'} ${item.input_price} / ${item.output_price}`}
+                        : `${item.currency === 'CNY' ? '¥' : '$'} ${trimPriceZeros(item.input_price)} / ${trimPriceZeros(item.output_price)}`}
                     </span>
                   </button>
                 ))}

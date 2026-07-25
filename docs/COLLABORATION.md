@@ -239,17 +239,20 @@ PRD 原型 > 飞书文档 > 现状控制台代码
 
 ### 部署流程
 
-| 场景 | 分支 | 流程 |
-|:---|:---|:---|
-| 日常开发 | test | test 分支部署测试环境 |
-| 测试通过上线 | main | 合并到 main → 部署线上 |
-| 线上 hotfix | main | main 分支修复 → 部署线上 → 同步到 test |
+| 场景 | 开发分支 | 部署来源分支 | 流程 |
+|:---|:---|:---|:---|
+| 日常开发 | worktree（`fix/`·`feat/`） | test | worktree 里开发 → 合并进 test → test 分支部署测试环境 |
+| 测试通过上线 | — | main | 合并 test → main → 部署线上 |
+| 线上 hotfix | main | main | main 分支修复 → 部署线上 → 同步到 test |
+
+> ⚠️ **`test` 是集成/部署来源分支，不是开发地**。别 `git checkout test` 直接在上面写代码——多个 session 共用同一工作树 + 同分支会互相踩（未提交改动串台、被迫 autostash rebase）。开发一律在隔离 worktree（见第 1 节），`test` 只接受**合并**。这与顶部「代码隔离 > 任务互斥」原则一致。
 
 **日常开发流程：**
-1. 切到 test 分支：`git checkout test && git pull`
-2. 开发代码
-3. 提交并推送 test：`git push origin test`
+1. 开隔离 worktree + 分支：`cs wt fix/<名>`（或 `git worktree add -b fix/<名> ../wt-<名> origin/test`）
+2. 在 worktree 里开发、提交（与其他 session 物理隔离，互不看见对方未提交改动）
+3. 合并进 test：`git checkout test && git pull && git merge fix/<名> && git push origin test`
 4. 触发测试环境部署：`test/modelgo-console-web`
+5. 清理 worktree：`git worktree remove ../wt-<名>`
 
 **线上发布流程：**
 1. 测试验证通过

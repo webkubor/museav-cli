@@ -252,6 +252,11 @@ PRD 原型 > 飞书文档 > 现状控制台代码
 4. 同步到 test 分支：`git checkout test && git merge main && git push origin test`
 5. 触发测试环境部署（`test/modelgo-console-web`）
 
+**分支清理：**
+- 功能分支合并上线后，删除本地和远端的旧分支
+- 本地删除：`git branch -d <branch>`
+- 远端删除：`git push origin --delete <branch>`
+
 ## 5. UI 测试账户管理
 
 ### 获取测试账号

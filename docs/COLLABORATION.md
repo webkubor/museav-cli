@@ -282,6 +282,43 @@ await window.__mg_login('email@test.com', 'Password01')
 
 实现位于 `src/lib/dev-auth.ts`，仅 DEV 模式挂载，生产构建 tree-shake。
 
+### UI 自动化测试
+
+**工具：** ego-lite（Chromium 浏览器，AI Agent 友好）
+
+**账户配置：** 本地 `.env.local` 存储测试账户（不提交到 git）
+
+```bash
+# 获取测试账户
+cs secrets get secret://modelgo/accounts
+```
+
+**账户格式：**
+```json
+[
+  {
+    "env": "test",
+    "email": "owner@test.com",
+    "password": "xxx",
+    "role": "owner",
+    "note": "租户管理员"
+  },
+  {
+    "env": "test",
+    "email": "member@test.com",
+    "password": "xxx",
+    "role": "member",
+    "note": "普通成员"
+  }
+]
+```
+
+**自动化流程：**
+1. 使用 ego-lite 打开浏览器
+2. 注入登录 cookie 或调用 `window.__mg_login`
+3. 执行自动化操作
+4. 截图验证
+
 ### Agent 自动化测试
 
 ```js

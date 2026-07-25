@@ -7,14 +7,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers } from 'react-icons/lu'
+import { LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers, LuZap, LuBuilding2, LuShieldCheck } from 'react-icons/lu'
 import { listModels, listModelTags, listModelFacets, listFeatured } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import type { CatalogModelItem } from '@/types'
 import { CatalogCard } from './CatalogCard'
 import { CatalogFeatured } from './CatalogFeatured'
-import { CatalogHero } from './CatalogHero'
 import { CatalogSidebar } from './CatalogSidebar'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
 import './catalog.css'
@@ -188,18 +187,23 @@ export default function ModelsCatalogPage() {
             <p className="text-mg-text-3 mt-1.5 text-[14px]">
               {t('modelsCatalog.page.subtitle')}
             </p>
+            {/* 信任 chips（原型口径）：协议兼容 / 供应商直连 / SLA。取代原先三张数据卡。 */}
+            <div className="mg-trust">
+              <span><LuZap size={12} />{isZh ? 'OpenAI / Anthropic 兼容协议' : 'OpenAI / Anthropic compatible'}</span>
+              <span><LuBuilding2 size={12} />{isZh ? '官方供应商直连' : 'Direct official providers'}</span>
+              <span><LuShieldCheck size={12} />{isZh ? '99.95% SLA 稳定保障' : '99.95% SLA'}</span>
+            </div>
           </div>
 
-          {/* 顶部数据卡 + 热门模型 */}
-          {!modelsQuery.isLoading && !modelsQuery.isError && allModels.length > 0 && (
-            <div className="mb-6">
-              <CatalogHero models={allModels} onPickHot={setSearch} />
-              <CatalogFeatured
-                slides={featuredQuery.data?.items ?? []}
-                isZh={isZh}
-                onTry={handleGoPlayground}
-              />
-            </div>
+          {/* 精选轮播。原型顶部只有「标题 + 副标题 + 信任 chips + 轮播」，没有数据卡
+              （已接入模型 / 官方供应商 / API 可用率）也没有热门模型横排 —— 按需求方
+              要求与原型对齐，二者已移除（CatalogHero 组件同时删除）。 */}
+          {!modelsQuery.isLoading && !modelsQuery.isError && (
+            <CatalogFeatured
+              slides={featuredQuery.data?.items ?? []}
+              isZh={isZh}
+              onTry={handleGoPlayground}
+            />
           )}
 
           {/* 搜索 + 排序（吸顶） */}

@@ -1560,18 +1560,6 @@
       "more": "展开更多",
       "less": "收起"
     },
-    "heroStats": {
-      "models": "已接入模型",
-      "modelsSub": "覆盖主流大模型",
-      "providers": "官方供应商",
-      "providersSub": "与全球顶级厂商合作",
-      "uptime": "API 可用率",
-      "uptimeSub": "企业级稳定保障",
-      "sla": "SLA 保障",
-      "failover": "智能容灾",
-      "multiRegion": "多地域部署",
-      "trending": "热门模型"
-    },
     "card": {
       "favorite": "收藏",
       "free": "免费",

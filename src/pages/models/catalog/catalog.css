@@ -564,9 +564,13 @@
 
 .models-catalog-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 14px;
+  gap: 12px;
   align-items: stretch;
+  /* 原型是 minmax(280px, 1fr) + 页面 max-width:1480px 兜住「最多四列」。本仓内容区
+     更宽（约 1278px 起，大屏更宽），单纯用 280px 会排到 5 列以上，所以把最小轨道
+     钉在 max(280px, 四列均分宽)：能排几列排几列、但永不超过 4 列。
+     四列均分 = (100% - 3 个 gap) / 4。 */
+  grid-template-columns: repeat(auto-fit, minmax(max(280px, (100% - 3 * 12px) / 4), 1fr));
 }
 
 .catalog-insight-panel {

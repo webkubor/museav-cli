@@ -5,7 +5,7 @@
  * 覆盖：会话 CRUD、历史消息恢复、发送消息（对话组走 SSE，媒体任务走同步/异步 JSON，
  * 本文件先实现对话组 SSE——单模型体验页当前只用得到这部分）。
  */
-import { apiBaseUrl, get, post, patch, del } from '@/lib/request'
+import { apiBaseUrl, get, post, patch, put, del } from '@/lib/request'
 import { injectHeaders } from '@/lib/request-headers'
 
 export type ExperienceCategory = 'dialogue' | 'image' | 'audio' | 'video'
@@ -118,6 +118,83 @@ export async function deleteExperienceSession(sessionId: string): Promise<{ stat
 
 export async function getExperienceSessionMessages(sessionId: string): Promise<{ items: ExperienceMessageView[] }> {
   return get(`experience/sessions/${sessionId}/messages`)
+}
+
+/** 逐模型累计统计（§3.7 + Swagger GET .../stats），设置弹窗「本会话累计」用 */
+export interface ExperienceModelStats {
+  model_id: string
+  requests: number
+  input_tokens: number
+  output_tokens: number
+  total_tokens: number
+  estimated_spend: string
+  actual_spend?: string
+}
+
+export async function getExperienceSessionStats(sessionId: string): Promise<{ items: ExperienceModelStats[] }> {
+  return get(`experience/sessions/${sessionId}/stats`)
+}
+
+/**
+ * 会话新增模型列（真实端点，取自 Swagger `POST /experience/sessions/{sessionId}/conversations`，
+ * 不是 PRD 接口文档 §3.8 那张读不到的内嵌表格）。最多 3 列，同会话模型不重复。
+ */
+export async function addExperienceConversation(sessionId: string, modelId: string): Promise<ExperienceConversation> {
+  return post(`experience/sessions/${sessionId}/conversations`, { model_id: modelId })
+}
+
+/** 移除模型列（删除该列聊天记录），真实端点见 Swagger DELETE .../conversations/{conversationId} */
+export async function removeExperienceConversation(sessionId: string, conversationId: string): Promise<void> {
+  await del(`experience/sessions/${sessionId}/conversations/${conversationId}`)
+}
+
+/** 模型列换模型（保留列内历史），真实端点见 Swagger PATCH .../conversations/{conversationId} */
+export async function switchExperienceConversationModel(
+  sessionId: string,
+  conversationId: string,
+  modelId: string,
+): Promise<ExperienceConversation> {
+  return patch(`experience/sessions/${sessionId}/conversations/${conversationId}`, { model_id: modelId })
+}
+
+/** 逐模型设置持久化（§7.6），真实端点见 Swagger GET/PUT/DELETE .../configs(/{modelId}) */
+export interface ExperienceModelConfig {
+  model_id: string
+  config: Record<string, unknown>
+  updated_at: string
+}
+
+export async function listExperienceModelConfigs(sessionId: string): Promise<{ items: ExperienceModelConfig[] }> {
+  return get(`experience/sessions/${sessionId}/configs`)
+}
+
+/**
+ * 比较配置行的 model_id 和目录 model_id 是否是同一个模型。
+ * 实测后端 PUT/GET .../configs 把路径参数原样存回 model_id 字段，不做 URL 解码——
+ * 存的是 "anthropic%2Fclaude-sonnet-4.6" 这种编码后的字面量，不是 "anthropic/claude-sonnet-4.6"。
+ * 直接 === 比较会永远匹配不上（存了配置却读不回来），这里做容错解码后再比。
+ */
+export function matchesModelConfigId(configModelId: string, catalogModelId: string): boolean {
+  if (configModelId === catalogModelId) return true
+  try {
+    return decodeURIComponent(configModelId) === catalogModelId
+  } catch {
+    return false
+  }
+}
+
+export async function saveExperienceModelConfig(
+  sessionId: string,
+  modelId: string,
+  config: Record<string, unknown>,
+): Promise<ExperienceModelConfig> {
+  // model_id 形如 "anthropic/claude-sonnet-4.6" 带斜杠，直接拼进路径会被路由拆成多段
+  // 返回 40401 资源不存在（实测踩到）——modelId 段必须 encodeURIComponent
+  return put(`experience/sessions/${sessionId}/configs/${encodeURIComponent(modelId)}`, { config })
+}
+
+export async function resetExperienceModelConfig(sessionId: string, modelId: string): Promise<void> {
+  await del(`experience/sessions/${sessionId}/configs/${encodeURIComponent(modelId)}`)
 }
 
 /** 解析单行 SSE：区分 `event:` 与 `data:`，供 streamExperienceMessage 逐行喂入 */

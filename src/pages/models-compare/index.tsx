@@ -1,16 +1,14 @@
 /**
  * 模型对比工作台（PRD 1.0.4 模型体验 §7.3/7.4/8.1-8.3）。
  * 真源：飞书《ModelGo Console 重构 PRD：模型体验页面（v0.1）》+ 后端
- * 《模型体验(Playground V1)前端接口文档》2026-07-27。
+ * 《模型体验(Playground V1)前端接口文档》2026-07-27 + Swagger（modelgo-web-api）核实到的
+ * 真实列级端点（PRD 接口文档 §3.8 对应的表格在飞书内嵌 sheet 里，工具权限读不到，
+ * 是从 https://modelgo-web-api.test.modelgo.com/swagger/doc.json 里查到 POST/PATCH/DELETE
+ * .../conversations 和 .../configs 的真实路径与请求体形状，不是瞎猜）。
  *
  * 入口：只接受从单模型页「模型对比」确认后的 navigate state（selectedIds，2-3 个
  * 目录 model.id）。刷新本页或直接输入 URL 没有历史恢复（§7.8 的会话恢复目前只覆盖
- * 单模型页，对比会话的 URL/会话 ID 级恢复不在本轮范围，见收尾说明）。
- *
- * 已知简化（接口文档 §3.8"加列/换模型/删列"的具体端点在飞书内嵌表格里，权限访问
- * 不到，拿不到真实路径）：加模型/换模型/删模型不调用单独的列级接口，而是用已验证
- * 可用的 POST /experience/sessions 整体重建一个新会话覆盖模型组——代价是这几个操作
- * 会重置各列的对话历史，不是理想的产品行为，但比瞎猜一个未经验证的端点更安全。
+ * 单模型页，对比会话的 URL/会话 ID 级恢复不在本轮范围）。
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -28,6 +26,14 @@ import type { CatalogModelItem } from '@/types'
 import {
   createExperienceSession,
   streamExperienceMessage,
+  addExperienceConversation,
+  removeExperienceConversation,
+  switchExperienceConversationModel,
+  listExperienceModelConfigs,
+  saveExperienceModelConfig,
+  resetExperienceModelConfig,
+  getExperienceSessionStats,
+  matchesModelConfigId,
   type ExperienceStatsEvent,
 } from '@/services/experience-sessions'
 import { useSidebarCollapseStore } from '@/store/use-sidebar-collapse-store'
@@ -73,8 +79,10 @@ export default function ModelsComparePage() {
     [modelsQuery.data?.items],
   )
 
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [columns, setColumns] = useState<ColumnState[] | null>(null)
   const [syncInput, setSyncInput] = useState(true)
+  const [sessionStats, setSessionStats] = useState({ requestCount: 0, tokens: 0, cost: 0 })
   const [sharedDraft, setSharedDraft] = useState('')
   const [lastFocusedIndex, setLastFocusedIndex] = useState(0)
   const [bootError, setBootError] = useState<string | null>(null)
@@ -135,6 +143,7 @@ export default function ModelsComparePage() {
         chatParams: {},
       }))
       abortRefs.current = nextColumns.map(() => null)
+      setSessionId(session.id)
       setColumns(nextColumns)
       setBootError(null)
     } catch (err) {
@@ -311,18 +320,28 @@ export default function ModelsComparePage() {
     setSyncConfirm(null)
   }
 
-  function handleRemoveConfirmed() {
-    if (removeConfirmIndex === null || !columns) return
-    const remaining = columns.filter((_, i) => i !== removeConfirmIndex)
-    if (remaining.length <= 1) {
+  async function handleRemoveConfirmed() {
+    if (removeConfirmIndex === null || !columns || !sessionId) return
+    const target = columns[removeConfirmIndex]
+    if (columns.length <= 2) {
       // §7.3：移除至单模型按退出对比同样规则处理——保留最左侧主模型，恢复侧栏
-      const keep = columns[0].model
+      const keep = columns[0].model.model_id === target.model.model_id ? columns[1].model : columns[0].model
+      try {
+        await removeExperienceConversation(sessionId, target.conversationId)
+      } catch {
+        // 真实删列失败也不阻塞回退到单模型页——用户的主要诉求是离开对比
+      }
       restoreSavedPreference()
       navigate('/models/playground', { state: { selectedModelId: keep.model_id } })
       return
     }
-    void bootSession(remaining.map((c) => c.model))
-    setRemoveConfirmIndex(null)
+    try {
+      await removeExperienceConversation(sessionId, target.conversationId)
+      setColumns((prev) => (prev ? prev.filter((_, i) => i !== removeConfirmIndex) : prev))
+      setRemoveConfirmIndex(null)
+    } catch (err) {
+      setBootError(`移除模型失败：${(err as Error).message || '请稍后重试'}`)
+    }
   }
 
   function handleExitConfirmed() {
@@ -331,15 +350,78 @@ export default function ModelsComparePage() {
     navigate('/models/playground', { state: { selectedModelId: columns[0].model.model_id } })
   }
 
-  function handleAddConfirm(added: CatalogModelItem[]) {
-    if (!columns || added.length === 0) return
-    void bootSession([...columns.map((c) => c.model), ...added].slice(0, MAX_COMPARE))
+  /** §7.3：加模型——调真实加列端点，只追加新列，不影响已有列的对话历史 */
+  async function handleAddConfirm(added: CatalogModelItem[]) {
+    if (!columns || !sessionId || added.length === 0) return
+    try {
+      const toAdd = added.slice(0, MAX_COMPARE - columns.length)
+      const newConversations = await Promise.all(toAdd.map((model) => addExperienceConversation(sessionId, model.model_id)))
+      setColumns((prev) => {
+        if (!prev) return prev
+        const newColumns: ColumnState[] = toAdd.map((model, i) => ({
+          model,
+          conversationId: newConversations[i].id,
+          history: [],
+          streaming: false,
+          draft: '',
+          chatParams: {},
+        }))
+        abortRefs.current = [...abortRefs.current, ...newColumns.map(() => null)]
+        return [...prev, ...newColumns]
+      })
+    } catch (err) {
+      setBootError(`添加模型失败：${(err as Error).message || '请稍后重试'}`)
+    }
   }
 
-  function handleSwitchConfirm(model: CatalogModelItem) {
-    if (switchPickerIndex === null || !columns) return
-    const next = columns.map((c, i) => (i === switchPickerIndex ? model : c.model))
-    void bootSession(next)
+  /** §7.1：对比列内切换模型——调真实换模型端点，保留该列聊天记录（接口原文"保留列内历史"） */
+  async function handleSwitchConfirm(model: CatalogModelItem) {
+    if (switchPickerIndex === null || !columns || !sessionId) return
+    const target = columns[switchPickerIndex]
+    try {
+      await switchExperienceConversationModel(sessionId, target.conversationId, model.model_id)
+      updateColumn(switchPickerIndex, { model, chatParams: {} })
+    } catch (err) {
+      setBootError(`切换模型失败：${(err as Error).message || '请稍后重试'}`)
+    }
+  }
+
+  /** 打开设置弹窗：拉取该列模型已持久化的配置 + 本会话累计统计（真实端点见 Swagger） */
+  async function openColumnSettings(idx: number) {
+    setSettingsIndex(idx)
+    if (!sessionId || !columns) return
+    const model = columns[idx].model
+    try {
+      const [{ items: configs }, { items: stats }] = await Promise.all([
+        listExperienceModelConfigs(sessionId),
+        getExperienceSessionStats(sessionId),
+      ])
+      const savedConfig = configs.find((c) => matchesModelConfigId(c.model_id, model.model_id))
+      if (savedConfig) updateColumn(idx, { chatParams: savedConfig.config })
+      const modelStats = stats.find((s) => s.model_id === model.model_id)
+      if (modelStats) {
+        setSessionStats({
+          requestCount: modelStats.requests,
+          tokens: modelStats.total_tokens,
+          cost: Number(modelStats.actual_spend ?? modelStats.estimated_spend ?? 0),
+        })
+      }
+    } catch {
+      // 拉取失败不阻塞设置弹窗使用
+    }
+  }
+
+  function handleColumnParamChange(idx: number, key: string, value: unknown) {
+    if (!columns) return
+    const next = { ...columns[idx].chatParams, [key]: value }
+    updateColumn(idx, { chatParams: next })
+    if (sessionId) void saveExperienceModelConfig(sessionId, columns[idx].model.model_id, next)
+  }
+
+  function handleColumnParamReset(idx: number) {
+    if (!columns) return
+    updateColumn(idx, { chatParams: {} })
+    if (sessionId) void resetExperienceModelConfig(sessionId, columns[idx].model.model_id)
   }
 
   if (bootError) {
@@ -409,7 +491,7 @@ export default function ModelsComparePage() {
                 <button type="button" className="models-experience-icon-btn" aria-label="打开 API 调用" title="打开 API 调用" onClick={() => setApiIndex(idx)}>
                   <LuCode size={13} />
                 </button>
-                <button type="button" className="models-experience-icon-btn" aria-label="打开模型设置" title="打开模型设置" onClick={() => setSettingsIndex(idx)}>
+                <button type="button" className="models-experience-icon-btn" aria-label="打开模型设置" title="打开模型设置" onClick={() => void openColumnSettings(idx)}>
                   <LuSettings2 size={13} />
                 </button>
                 <button type="button" className="models-experience-icon-btn" aria-label="移除模型" title="移除模型" onClick={() => setRemoveConfirmIndex(idx)}>
@@ -471,7 +553,7 @@ export default function ModelsComparePage() {
         currentCategory="dialogue"
         currentTask="text_to_text"
         onSelect={(model) => {
-          handleSwitchConfirm(model)
+          void handleSwitchConfirm(model)
           setSwitchPickerIndex(null)
         }}
       />
@@ -497,9 +579,9 @@ export default function ModelsComparePage() {
           maxOutputTokens={Math.max(256, columns[settingsIndex].model.max_output_tokens || 4096)}
           task="text_to_text"
           values={columns[settingsIndex].chatParams}
-          onChange={(key, value) => updateColumn(settingsIndex, { chatParams: { ...columns[settingsIndex].chatParams, [key]: value } })}
-          onReset={() => updateColumn(settingsIndex, { chatParams: {} })}
-          sessionStats={{ requestCount: 0, tokens: 0, cost: 0 }}
+          onChange={(key, value) => handleColumnParamChange(settingsIndex, key, value)}
+          onReset={() => handleColumnParamReset(settingsIndex)}
+          sessionStats={sessionStats}
         />
       )}
 

@@ -5,6 +5,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
+import { useSidebarCollapseStore } from '@/store/use-sidebar-collapse-store'
 import {
   LuHouse,
   LuTrendingUp,
@@ -81,7 +82,8 @@ export function DashboardLayout() {
   const location = useLocation()
   const routeWorkspaceId = location.pathname.match(/^\/workspace\/([^/]+)(?:\/|$)/)?.[1]
   usePlatformConfig()
-  const [collapsed, setCollapsed] = useState(false)
+  const collapsed = useSidebarCollapseStore((s) => s.collapsed)
+  const setCollapsed = useSidebarCollapseStore((s) => s.setCollapsed)
   const [navigating, setNavigating] = useState(false)
   // 窄屏（<md）侧栏抽屉开合；桌面（≥md）不使用（侧栏常驻）
   const [mobileOpen, setMobileOpen] = useState(false)

@@ -100,3 +100,72 @@
   font-weight: 600;
   padding: 3px 9px;
 }
+
+/* ── compareAdd 多选：分组标题/已选固定行/复选框/参数对照面板 ── */
+.model-picker-dialog__group-label {
+  padding: 6px 10px 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mg-text-3);
+}
+
+.model-picker-dialog__row.is-fixed-selected {
+  cursor: default;
+  background: color-mix(in srgb, var(--mg-fill-1) 60%, transparent);
+}
+
+.model-picker-dialog__fixed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mg-text-3);
+  white-space: nowrap;
+}
+
+.model-picker-dialog__checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--mg-border);
+  color: #fff;
+}
+
+.model-picker-dialog__checkbox.is-checked {
+  background: var(--brand-base);
+  border-color: var(--brand-base);
+}
+
+.model-picker-dialog__compare-pane {
+  overflow-x: auto;
+}
+
+.model-picker-dialog__compare-table {
+  display: flex;
+  flex-direction: column;
+  min-width: 480px;
+}
+
+.model-picker-dialog__compare-row {
+  display: grid;
+  gap: 12px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--mg-border);
+  align-items: center;
+}
+
+.model-picker-dialog__compare-row:last-child {
+  border-bottom: none;
+}
+
+.model-picker-dialog__compare-head {
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--mg-border);
+}

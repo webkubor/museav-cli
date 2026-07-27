@@ -1,13 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Markdown from 'react-markdown'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   LuSettings2,
   LuCode,
   LuColumns2,
   LuChevronDown,
-  LuCheck,
-  LuCopy,
   LuZap,
 } from 'react-icons/lu'
 import {
@@ -21,13 +18,13 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Composer } from '@/components/ui/Composer'
 import { useModels } from '@/features/models/hooks/useModels'
-import { cn, prettyModelName, trimPriceZeros } from '@/lib/utils'
+import { prettyModelName } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import {
   isChatModel,
   estimateTokens,
   formatPlaygroundLatency,
-  formatPlaygroundSpend,
+  dualPriceText,
   EXPERIENCE_TASK_LABEL,
   PLAYGROUND_SAMPLE_PROMPTS,
   type ExperienceMessage,
@@ -36,6 +33,7 @@ import { ModelPickerDialog } from './components/ModelPickerDialog'
 import { HistorySessionSidebar, type HistorySessionItem } from './components/HistorySessionSidebar'
 import { ModelSettingsModal } from './components/ModelSettingsModal'
 import { ApiQuickCallModal } from './components/ApiQuickCallModal'
+import { ExperienceMessageList } from './components/ExperienceMessageList'
 import './styles/model-experience-layout.css'
 import './styles/model-picker.css'
 import './styles/model-featured-card.css'
@@ -44,34 +42,9 @@ import './styles/model-chat.css'
 import './styles/model-composer.css'
 import './styles/model-params.css'
 import './styles/model-experience-responsive.css'
-import { ModelsCompareModal } from './components/ModelsCompareModal'
 
 const INITIAL_MESSAGES: ExperienceMessage[] = []
 
-/** 复制回复内容按钮，逐字对齐原型 App.tsx:20475-20481/20504-20508（复制态 1.6s 后复位） */
-function MessageCopyButton({ content }: { content: string }) {
-  const [copied, setCopied] = useState(false)
-  return (
-    <button
-      type="button"
-      className="models-experience-icon-btn"
-      aria-label="复制回复内容"
-      title="复制回复内容"
-      onClick={() => {
-        void navigator.clipboard?.writeText(content)
-        setCopied(true)
-        window.setTimeout(() => setCopied(false), 1600)
-      }}
-    >
-      {copied ? <LuCheck size={12} /> : <LuCopy size={12} />}
-    </button>
-  )
-}
-
-/**
- * 价格 chip 文案：与原型 App.tsx `playgroundPriceText()` 逐字对齐——
- * 免费模型「限时免费」；否则「¥输入价 / ¥输出价 每M」，只有输出价时省去输入价那半。
- */
 /**
  * 历史消息里 status="failed" 行的 error 字段，实测后端存的是上游原始错误信封整个
  * JSON.stringify 之后的字符串（例如护栏拦截会把 {"error":{"code":403,"message":"..."}}
@@ -91,15 +64,6 @@ function cleanErrorMessage(raw: string | undefined): string {
   }
 }
 
-function dualPriceText(model: CatalogModelItem): string {
-  const currency = model.pricing?.currency === 'USD' ? '$' : '¥'
-  const input = model.pricing?.input_per_1m
-  const output = model.pricing?.output_per_1m
-  if (!input && !output) return '限时免费'
-  if (!input) return `${currency}${trimPriceZeros(output ?? '0')} 每M`
-  return `${currency}${trimPriceZeros(input)} / ${currency}${trimPriceZeros(output ?? input)} 每M`
-}
-
 export default function ModelsPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -108,7 +72,7 @@ export default function ModelsPage() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [apiCallOpen, setApiCallOpen] = useState(false)
-  const [isCompareOpen, setIsCompareOpen] = useState(false)
+  const [compareAddOpen, setCompareAddOpen] = useState(false)
   const [historyCollapsed, setHistoryCollapsed] = useState(true)
   const [chatParams, setChatParams] = useState<Record<string, unknown>>({})
 
@@ -427,14 +391,16 @@ export default function ModelsPage() {
                   >
                     <LuSettings2 size={14} />
                   </button>
-                  <Button variant="outline" size="sm" className="rounded-md" onClick={() => setIsCompareOpen(true)}>
+                  <Button variant="outline" size="sm" className="rounded-md" onClick={() => setCompareAddOpen(true)}>
                     <LuColumns2 size={13} /> 模型对比
                   </Button>
                 </div>
               </div>
 
-              <div className="models-experience-messages">
-                {messages.length === 0 && (
+              <ExperienceMessageList
+                messages={messages}
+                isStreaming={isStreaming}
+                emptyState={
                   <div className="models-experience-empty">
                     <LuZap size={20} />
                     <strong>发送第一条消息，验证模型输出与成本</strong>
@@ -454,45 +420,8 @@ export default function ModelsPage() {
                       ))}
                     </div>
                   </div>
-                )}
-                {messages.map((message, index) => {
-                  const isThinking =
-                    message.role === 'assistant' &&
-                    message.content === '' &&
-                    isStreaming &&
-                    index === messages.length - 1
-                  return (
-                    <div key={`${message.role}-${index}`} className={cn('models-experience-message', message.role === 'user' && 'is-user')}>
-                      <span className="models-experience-message-avatar">
-                        {message.role === 'user' ? 'J' : (message.metrics?.model ?? 'AI').slice(0, 1).toUpperCase()}
-                      </span>
-                      <div className="models-experience-message-bubble">
-                        {message.error ? (
-                          <span className="models-experience-message-error" role="alert">{message.error}</span>
-                        ) : isThinking ? (
-                          <span className="models-experience-thinking" aria-label="模型思考中">
-                            <i /><i /><i />
-                          </span>
-                        ) : message.role === 'assistant' ? (
-                          <div className="cs-markdown"><Markdown>{message.content}</Markdown></div>
-                        ) : (
-                          message.content.split('\n').map((line, lineIndex) => <p key={`${index}-${lineIndex}`}>{line}</p>)
-                        )}
-                        {message.metrics && (
-                          <div className="models-experience-message-meta">
-                            <strong>{message.metrics.model}</strong>
-                            <span>{message.metrics.inputTokens} → {message.metrics.outputTokens} Tokens</span>
-                            <span>首Token {message.metrics.firstTokenLatency}</span>
-                            <span>总耗时 {message.metrics.totalLatency}</span>
-                            <span>{formatPlaygroundSpend(message.metrics)}</span>
-                            <MessageCopyButton content={message.content} />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+                }
+              />
 
               {/* PRD §7.2：单模型状态不展示"同步输入"开关、不展示"清空结果"按钮、不重复展示模型ID复制入口。
                   底部动作行左侧是预估费用（原型 App.tsx:18523 playground-composer-hint 逐字对齐），不是模型名 chip——
@@ -551,16 +480,24 @@ export default function ModelsPage() {
         />
       )}
 
-      <ModelsCompareModal
-        isOpen={isCompareOpen}
-        onClose={() => setIsCompareOpen(false)}
-        allModels={allModels}
-        onConfirmCompare={(ids) => {
-          if (ids.length > 0) {
-            navigate('/models/compare', { state: { selectedIds: ids } })
-          }
-        }}
-      />
+      {/* PRD §7.3：单模型点「模型对比」打开统一候选弹窗，可勾选第 2/3 个模型；
+          当前模型固定展示为「已选模型」不可取消；确认后一次性带着完整模型组进入对比页 */}
+      {selectedModel && (
+        <ModelPickerDialog
+          open={compareAddOpen}
+          onClose={() => setCompareAddOpen(false)}
+          mode="compareAdd"
+          models={allModels}
+          currentCategory="dialogue"
+          currentTask="text_to_text"
+          alreadySelectedIds={[selectedModel.id]}
+          maxAdditional={2}
+          onConfirmAdd={(added) => {
+            if (added.length === 0) return
+            navigate('/models/compare', { state: { selectedIds: [selectedModel.id, ...added.map((m) => m.id)] } })
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -1,0 +1,191 @@
+/* ── 历史会话侧栏（PRD 1.0.4 §7.8） ──────────────────────────────────────
+   收起态：窄图标轨；展开态：248px 内联侧栏。宽度变化用 transition 做平滑过渡，
+   由父容器（工作台）负责把侧栏放进 flex/grid 布局并让主区域重新占满剩余空间。 */
+
+.history-sidebar-rail,
+.history-sidebar-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid var(--mg-border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--mg-bg-0) 88%, transparent);
+  overflow: hidden;
+  transition: width 0.2s ease;
+}
+
+/* ── 收起态：窄图标轨 ─────────────────────────────────────────────── */
+.history-sidebar-rail {
+  width: 44px;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+}
+
+.history-sidebar-rail-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--mg-text-2);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.history-sidebar-rail-btn:hover,
+.history-sidebar-rail-btn:focus-visible {
+  background: var(--mg-fill-1);
+  color: var(--mg-text-1);
+}
+
+.history-sidebar-rail-btn:focus-visible {
+  outline: 2px solid var(--brand-base);
+  outline-offset: 1px;
+}
+
+/* ── 展开态：248px 内联侧栏 ───────────────────────────────────────── */
+.history-sidebar-panel {
+  width: 248px;
+  padding: 10px;
+  gap: 10px;
+}
+
+.history-sidebar-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+.history-sidebar-panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--mg-text-1);
+}
+
+.history-sidebar-new-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.history-sidebar-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.history-sidebar-empty {
+  padding: 24px 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--mg-text-3);
+}
+
+.history-sidebar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.history-sidebar-group-label {
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mg-text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.history-sidebar-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.history-sidebar-item:hover {
+  background: var(--mg-fill-0);
+}
+
+.history-sidebar-item-active {
+  background: color-mix(in srgb, var(--brand-base) 8%, transparent);
+  border-color: color-mix(in srgb, var(--brand-base) 30%, transparent);
+}
+
+.history-sidebar-item-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.history-sidebar-item-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mg-text-1);
+}
+
+.history-sidebar-item-time {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--mg-text-3);
+}
+
+.history-sidebar-item-tags {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.history-sidebar-item-models {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.history-sidebar-model-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--mg-fill-0);
+  font-size: 11px;
+  color: var(--mg-text-2);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-sidebar-model-chip-offline {
+  background: color-mix(in srgb, var(--mg-warning) 10%, transparent);
+  color: var(--mg-warning);
+}
+
+.history-sidebar-offline-flag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mg-warning);
+}

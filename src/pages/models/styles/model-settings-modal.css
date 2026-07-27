@@ -1,0 +1,106 @@
+/* ── 逐模型设置弹窗（PRD §7.6 / §7.9） ───────────────────────────────────── */
+.model-settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.model-settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.model-settings-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--mg-text-1);
+}
+
+.model-settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.model-settings-field-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.model-settings-field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.model-settings-field-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mg-text-2);
+}
+
+.model-settings-field-value {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--mg-text-3);
+}
+
+.model-settings-hint {
+  font-size: 11.5px;
+  color: var(--mg-text-3);
+}
+
+.model-settings-slider {
+  width: 100%;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--mg-fill-2);
+  accent-color: var(--brand-base);
+  cursor: pointer;
+}
+
+.model-settings-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  border: 1px dashed var(--mg-border);
+  border-radius: var(--radius-md);
+  color: var(--mg-text-3);
+  font-size: 13px;
+}
+
+.model-settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.model-settings-stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.model-settings-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.model-settings-stat-label {
+  font-size: 11px;
+  color: var(--mg-text-3);
+}
+
+.model-settings-stat-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--mg-text-1);
+  font-variant-numeric: tabular-nums;
+}

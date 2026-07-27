@@ -1,0 +1,62 @@
+/* ── 对比工具栏 ─────────────────────────────────────────────────────── */
+.compare-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--mg-border);
+  background: var(--mg-bg-0);
+}
+
+.compare-toolbar__left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.compare-toolbar__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: var(--mg-fill-1);
+  color: var(--mg-text-1);
+  flex-shrink: 0;
+}
+
+.compare-toolbar__title {
+  color: var(--mg-text-1);
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.compare-toolbar__task {
+  color: var(--mg-text-3);
+  font-size: 12px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compare-toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.compare-toolbar__sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--mg-text-2);
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}

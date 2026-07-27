@@ -1,0 +1,59 @@
+/* ── 对比列头 ────────────────────────────────────────────────────────── */
+.compare-column-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--mg-border);
+  background: var(--mg-bg-0);
+  min-width: 0;
+}
+
+.compare-column-header__model {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 4px 6px;
+  border: none;
+  background: transparent;
+  color: var(--mg-text-1);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.compare-column-header__model:hover {
+  background: var(--mg-fill-0);
+}
+
+.compare-column-header__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.compare-column-header__name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--mg-text-1);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compare-column-header__price {
+  font-size: 12px;
+  color: var(--mg-text-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.compare-column-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}

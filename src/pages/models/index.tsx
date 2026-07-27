@@ -12,6 +12,11 @@ import {
   streamExperienceMessage,
   listExperienceSessions,
   getExperienceSessionMessages,
+  getExperienceSessionStats,
+  listExperienceModelConfigs,
+  saveExperienceModelConfig,
+  resetExperienceModelConfig,
+  matchesModelConfigId,
   type ExperienceStatsEvent,
 } from '@/services/experience-sessions'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -75,6 +80,7 @@ export default function ModelsPage() {
   const [compareAddOpen, setCompareAddOpen] = useState(false)
   const [historyCollapsed, setHistoryCollapsed] = useState(true)
   const [chatParams, setChatParams] = useState<Record<string, unknown>>({})
+  const [sessionStats, setSessionStats] = useState({ requestCount: 0, tokens: 0, cost: 0 })
 
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<ExperienceMessage[]>(INITIAL_MESSAGES)
@@ -167,6 +173,8 @@ export default function ModelsPage() {
     setConversationId(null)
     setMessages(INITIAL_MESSAGES)
     setInput('')
+    setChatParams({})
+    setSessionStats({ requestCount: 0, tokens: 0, cost: 0 })
   }
 
   function handlePick(model: CatalogModelItem) {
@@ -191,6 +199,8 @@ export default function ModelsPage() {
       setConversationId(conv)
       setMessages(restored)
       setInput('')
+      setChatParams({})
+      setSessionStats({ requestCount: 0, tokens: 0, cost: 0 })
     } catch (err) {
       applyGlobalError(`加载历史会话失败：${(err as Error).message || '请稍后重试'}`)
     }
@@ -198,6 +208,45 @@ export default function ModelsPage() {
 
   function applyGlobalError(message: string) {
     setMessages((prev) => [...prev, { role: 'assistant', content: '', error: message }])
+  }
+
+  /** 打开设置弹窗：有真实会话时拉取该模型已持久化的配置 + 本会话累计统计（§7.6/§3.7），
+   *  真实端点见 Swagger GET .../configs、GET .../stats（PRD 接口文档 §3.8 那张表读不到，
+   *  这两个是从 Swagger 核实到的） */
+  async function openSettings() {
+    setSettingsOpen(true)
+    if (!sessionId || !selectedModel) return
+    try {
+      const [{ items: configs }, { items: stats }] = await Promise.all([
+        listExperienceModelConfigs(sessionId),
+        getExperienceSessionStats(sessionId),
+      ])
+      const savedConfig = configs.find((c) => matchesModelConfigId(c.model_id, selectedModel.model_id))
+      if (savedConfig) setChatParams(savedConfig.config)
+      const modelStats = stats.find((s) => s.model_id === selectedModel.model_id)
+      if (modelStats) {
+        setSessionStats({
+          requestCount: modelStats.requests,
+          tokens: modelStats.total_tokens,
+          cost: Number(modelStats.actual_spend ?? modelStats.estimated_spend ?? 0),
+        })
+      }
+    } catch {
+      // 拉取失败不阻塞设置弹窗使用，保留当前本地值
+    }
+  }
+
+  function handleChatParamChange(key: string, value: unknown) {
+    setChatParams((prev) => {
+      const next = { ...prev, [key]: value }
+      if (sessionId && selectedModel) void saveExperienceModelConfig(sessionId, selectedModel.model_id, next)
+      return next
+    })
+  }
+
+  function handleResetChatParams() {
+    setChatParams({})
+    if (sessionId && selectedModel) void resetExperienceModelConfig(sessionId, selectedModel.model_id)
   }
 
   async function sendPrompt() {
@@ -387,7 +436,7 @@ export default function ModelsPage() {
                     className="models-experience-icon-btn"
                     aria-label="打开模型设置"
                     title={selectedModel ? `配置 ${prettyModelName(selectedModel.display_name, selectedModel.model_id)}` : '打开模型设置'}
-                    onClick={() => setSettingsOpen(true)}
+                    onClick={() => void openSettings()}
                   >
                     <LuSettings2 size={14} />
                   </button>
@@ -464,9 +513,9 @@ export default function ModelsPage() {
           maxOutputTokens={Math.max(256, selectedModel.max_output_tokens || 4096)}
           task="text_to_text"
           values={chatParams}
-          onChange={(key, value) => setChatParams((prev) => ({ ...prev, [key]: value }))}
-          onReset={() => setChatParams({})}
-          sessionStats={{ requestCount: 0, tokens: 0, cost: 0 }}
+          onChange={handleChatParamChange}
+          onReset={handleResetChatParams}
+          sessionStats={sessionStats}
         />
       )}
 

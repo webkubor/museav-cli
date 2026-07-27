@@ -1,25 +1,30 @@
 /**
- * 模型选择器弹层（PRD 1.0.4 模型体验 §模型选择）。
+ * 模型选择器弹层（PRD 1.0.4 模型体验 §7.1/7.3）。
  *
- * 两种用途，同一份列表 + 详情面板：
- * - mode="single"：首列 / 单模型选择器，带 对话/图像/音频/视频 类别 Tab。
- * - mode="compareAdd"：对比列切换模型，不展示类别 Tab，只列「当前会话同类别、
- *   同任务」的可替换模型（currentCategory/currentTask 收窄候选）。
+ * 三种用途：
+ * - mode="single"：首列 / 单模型选择器，带 对话/图像/音频/视频 类别 Tab，单击立即切换。
+ * - mode="compareSwitch"：对比列内「切换模型」，不展示类别 Tab，只列「当前会话同类别、
+ *   同任务」的可替换模型，单击立即切换（原文 §7.1："对比列内切换模型时复用相同的列表 +
+ *   详情面板，但不展示类别 Tab，只列出当前会话同类别、同任务的可替换模型"）。
+ * - mode="compareAdd"：单模型点「模型对比」或对比中点「添加模型」——多选，已选模型固定
+ *   展示不可取消，右侧实时参数对照，确认后一次性批量加入（原文 §7.3）。
  *
  * 硬约束（原文逐条落地）：
  * 1) 类别 Tab 只改变候选列表，不自动选中、不清空当前会话——纯 UI 状态，不触发 onSelect。
- * 2) 只有点击具体模型条目才调用 onSelect；禁用行（余额不足/已下线）点击只更新详情面板，不切换。
- * 3) 付费模型零余额时仍展示，禁用 + 标记「余额不足」；已下线模型仅展示 disabled 徽标（历史
- *    恢复场景不在本次范围，这里只提供状态位）。
- * 4) 条目只展示 图标/名称/厂商/输入→输出模态/价格/状态——不展示推理供应商。
+ * 2) single/compareSwitch：只有点击具体模型条目才切换；禁用行（余额不足/已下线）点击只
+ *    更新详情面板，不切换。
+ * 3) compareAdd：已选模型固定展示且不可重复选择，只能在剩余名额内勾选候选，确认后才批量加入。
+ * 4) 付费模型零余额时仍展示，禁用 + 标记「余额不足」；已下线模型仅展示 disabled 徽标。
+ * 5) 条目只展示 图标/名称/厂商/输入→输出模态/价格/状态——不展示推理供应商。
  */
 import { useMemo, useState } from 'react'
 import {
-  LuSearch, LuFileText, LuImage, LuMic, LuVideo, LuArrowRight, LuCircleAlert, LuWifiOff,
+  LuSearch, LuFileText, LuImage, LuMic, LuVideo, LuArrowRight, LuCircleAlert, LuWifiOff, LuCheck,
 } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -30,6 +35,8 @@ import '../styles/model-picker-dialog.css'
 
 /** 一级类别，PRD 1.0.4 原文四类 */
 export type ModelPickerCategory = 'dialogue' | 'image' | 'audio' | 'video'
+
+export type ModelPickerMode = 'single' | 'compareSwitch' | 'compareAdd'
 
 /** 类别 → 任务枚举（仅用于分类推断/展示，任务级交互本次不实现） */
 // 九类体验任务枚举，取自后端 2026-07-27 已合入 test 的《模型体验(Playground V1)前端接口文档》
@@ -106,6 +113,13 @@ function priceLabel(model: CatalogModelItem): string {
   return `${currency}${trimPriceZeros(input)}${unit}`
 }
 
+function cachePriceLabel(model: CatalogModelItem): string {
+  const currency = model.pricing?.currency === 'USD' ? '$' : '¥'
+  const cache = model.pricing?.cache_read_per_1m
+  if (!cache) return '—'
+  return `${currency}${trimPriceZeros(cache)}/1M`
+}
+
 function ModalityFlow({ model }: { model: CatalogModelItem }) {
   const inputMods = (model.input_modalities ?? model.modalities ?? []).filter((m) => MODALITY_CODES.includes(m))
   const outputMods = (model.output_modalities ?? model.modalities ?? []).filter((m) => MODALITY_CODES.includes(m))
@@ -127,17 +141,48 @@ function ModalityFlow({ model }: { model: CatalogModelItem }) {
 export interface ModelPickerDialogProps {
   open: boolean
   onClose: () => void
-  /** single=首列/单模型选择器(带类别Tab)；compareAdd=对比列切换(不带类别Tab，只列同类别同任务模型) */
-  mode: 'single' | 'compareAdd'
+  mode: ModelPickerMode
   models: CatalogModelItem[]
-  /** mode='compareAdd' 时需要，用于过滤候选 */
+  /** compareSwitch/compareAdd 时需要，用于过滤候选到同类别 */
   currentCategory?: ModelPickerCategory
-  /** mode='compareAdd' 时需要，用于过滤候选 */
+  /** compareSwitch/compareAdd 时需要，用于过滤候选到同任务 */
   currentTask?: string
-  onSelect: (model: CatalogModelItem) => void
+  /** single/compareSwitch：单击立即切换 */
+  onSelect?: (model: CatalogModelItem) => void
+  /** compareAdd：已在对比会话中的模型，固定展示在候选列表最前，不可取消选中 */
+  alreadySelectedIds?: string[]
+  /** compareAdd：还能加入几个（3 - 已选数量），勾选数达到上限后其余候选禁用 */
+  maxAdditional?: number
+  /** compareAdd：确认后一次性把本轮勾选的模型交给调用方 */
+  onConfirmAdd?: (models: CatalogModelItem[]) => void
   /** 余额是否为零，控制付费模型的禁用 + 「余额不足」标记 */
   isBalanceZero?: boolean
 }
+
+const COMPARE_ROWS: Array<{ label: string; render: (m: CatalogModelItem) => React.ReactNode }> = [
+  { label: '厂商', render: (m) => m.provider || m.vendor || 'ModelGo' },
+  { label: '上下文窗口', render: (m) => formatContextLength(m.context_length) },
+  { label: '输入价格', render: (m) => priceLabel(m) },
+  { label: '输出价格', render: (m) => {
+    const currency = m.pricing?.currency === 'USD' ? '$' : '¥'
+    const output = m.pricing?.output_per_1m
+    if (!isPaidModel(m)) return '免费'
+    return output ? `${currency}${trimPriceZeros(output)}/1M` : '—'
+  } },
+  { label: '缓存价格', render: (m) => cachePriceLabel(m) },
+  { label: '输入→输出模态', render: (m) => <ModalityFlow model={m} /> },
+  { label: '兼容协议', render: (m) => (m.protocols && m.protocols.length > 0 ? m.protocols.join(' / ') : 'openai') },
+  {
+    label: '能力标签',
+    render: (m) => (
+      <div className="flex flex-wrap gap-1">
+        {(m.tags ?? []).slice(0, 4).map((tag) => (
+          <span key={tag} className="model-picker-dialog__detail-chip">{tag}</span>
+        ))}
+      </div>
+    ),
+  },
+]
 
 export function ModelPickerDialog({
   open,
@@ -147,11 +192,15 @@ export function ModelPickerDialog({
   currentCategory,
   currentTask,
   onSelect,
+  alreadySelectedIds = [],
+  maxAdditional = 2,
+  onConfirmAdd,
   isBalanceZero = false,
 }: ModelPickerDialogProps) {
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState<ModelPickerCategory>(currentCategory ?? 'dialogue')
   const [detailId, setDetailId] = useState<string | null>(null)
+  const [checkedIds, setCheckedIds] = useState<string[]>([])
 
   // 弹层重新打开时重置为初始状态（渲染期同步，非交互副作用，避免残留上一次的搜索/详情）
   const [prevOpen, setPrevOpen] = useState(open)
@@ -161,6 +210,7 @@ export function ModelPickerDialog({
       setSearch('')
       setActiveCategory(currentCategory ?? 'dialogue')
       setDetailId(null)
+      setCheckedIds([])
     }
   }
 
@@ -182,14 +232,41 @@ export function ModelPickerDialog({
     })
   }, [models, mode, activeCategory, currentCategory, currentTask, search])
 
+  // compareAdd：候选列表 = 已选模型（固定在前，不可交互）+ 其余可勾选候选
+  const alreadySelectedModels = useMemo(
+    () => alreadySelectedIds.map((id) => models.find((m) => m.id === id)).filter((m): m is CatalogModelItem => !!m),
+    [alreadySelectedIds, models],
+  )
+  const addableCandidates = useMemo(
+    () => candidates.filter((m) => !alreadySelectedIds.includes(m.id)),
+    [candidates, alreadySelectedIds],
+  )
+  const checkedModels = useMemo(
+    () => checkedIds.map((id) => models.find((m) => m.id === id)).filter((m): m is CatalogModelItem => !!m),
+    [checkedIds, models],
+  )
+  const compareModels = mode === 'compareAdd' ? [...alreadySelectedModels, ...checkedModels] : []
+
   const detailModel = candidates.find((m) => m.id === detailId) ?? null
 
   function handleRowClick(model: CatalogModelItem) {
+    if (mode === 'compareAdd') {
+      setDetailId(model.id)
+      if (disableReasonOf(model, isBalanceZero) !== null) return
+      setCheckedIds((prev) => {
+        if (prev.includes(model.id)) return prev.filter((id) => id !== model.id)
+        if (prev.length >= maxAdditional) return prev
+        return [...prev, model.id]
+      })
+      return
+    }
     setDetailId(model.id)
     if (disableReasonOf(model, isBalanceZero) === null) {
-      onSelect(model)
+      onSelect?.(model)
     }
   }
+
+  const title = mode === 'single' ? '选择模型' : mode === 'compareSwitch' ? '切换模型' : '添加对比模型'
 
   return (
     <Modal
@@ -197,7 +274,30 @@ export function ModelPickerDialog({
       onClose={onClose}
       size="lg"
       className="sm:max-w-[880px]"
-      title={mode === 'single' ? '选择模型' : '切换模型'}
+      title={title}
+      footer={
+        mode === 'compareAdd' ? (
+          <div className="flex items-center justify-between w-full">
+            <span className="text-xs text-mg-text-3">
+              已选 <strong className="text-mg-text-1">{alreadySelectedModels.length + checkedModels.length}</strong> / 3 个模型
+            </span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={onClose}>取消</Button>
+              <Button
+                variant="brand"
+                size="sm"
+                disabled={checkedModels.length === 0}
+                onClick={() => {
+                  onConfirmAdd?.(checkedModels)
+                  onClose()
+                }}
+              >
+                确认加入（{checkedModels.length}）
+              </Button>
+            </div>
+          </div>
+        ) : undefined
+      }
     >
       <div className="model-picker-dialog__body">
         <div className="model-picker-dialog__list-pane">
@@ -224,12 +324,35 @@ export function ModelPickerDialog({
           )}
 
           <div className="model-picker-dialog__list">
-            {candidates.length === 0 && (
+            {mode === 'compareAdd' && alreadySelectedModels.length > 0 && (
+              <>
+                <div className="model-picker-dialog__group-label">已选模型</div>
+                {alreadySelectedModels.map((model) => (
+                  <div key={model.id} className="model-picker-dialog__row is-fixed-selected" aria-disabled>
+                    <ModelIcon model={model} size={30} rounded="rounded-md" className="bg-mg-bg-0" />
+                    <div className="model-picker-dialog__row-main">
+                      <span className="mg-text-body font-semibold text-mg-text-1 truncate">
+                        {prettyModelName(model.display_name, model.model_id)}
+                      </span>
+                      <span className="flex items-center gap-2 text-xs text-mg-text-3">
+                        <span className="truncate">{model.provider || model.vendor || 'ModelGo'}</span>
+                      </span>
+                    </div>
+                    <span className="model-picker-dialog__fixed-badge"><LuCheck size={12} /> 已在对比中</span>
+                  </div>
+                ))}
+                <div className="model-picker-dialog__group-label">可加入候选</div>
+              </>
+            )}
+
+            {(mode === 'compareAdd' ? addableCandidates : candidates).length === 0 && (
               <EmptyState title="没有匹配的模型" className="py-10" />
             )}
-            {candidates.map((model) => {
+            {(mode === 'compareAdd' ? addableCandidates : candidates).map((model) => {
               const reason = disableReasonOf(model, isBalanceZero)
-              const disabled = reason !== null
+              const checked = mode === 'compareAdd' && checkedIds.includes(model.id)
+              const atCap = mode === 'compareAdd' && !checked && checkedIds.length >= maxAdditional
+              const disabled = reason !== null || atCap
               return (
                 <button
                   key={model.id}
@@ -237,11 +360,16 @@ export function ModelPickerDialog({
                   onClick={() => handleRowClick(model)}
                   className={cn(
                     'model-picker-dialog__row',
-                    detailId === model.id && 'is-active',
+                    (detailId === model.id || checked) && 'is-active',
                     disabled && 'is-disabled',
                   )}
                   aria-disabled={disabled}
                 >
+                  {mode === 'compareAdd' && (
+                    <span className={cn('model-picker-dialog__checkbox', checked && 'is-checked')}>
+                      {checked && <LuCheck size={11} />}
+                    </span>
+                  )}
                   <ModelIcon model={model} size={30} rounded="rounded-md" className="bg-mg-bg-0" />
                   <div className="model-picker-dialog__row-main">
                     <span className="mg-text-body font-semibold text-mg-text-1 truncate">
@@ -271,56 +399,93 @@ export function ModelPickerDialog({
           </div>
         </div>
 
-        <div className="model-picker-dialog__detail-pane">
-          {!detailModel ? (
-            <EmptyState title="选择左侧模型查看详情" className="h-full justify-center" />
-          ) : (
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-3">
-                <ModelIcon model={detailModel} size={40} rounded="rounded-lg" className="bg-mg-bg-0" />
-                <div className="min-w-0">
-                  <div className="mg-text-title-sm font-bold text-mg-text-1 truncate">
-                    {prettyModelName(detailModel.display_name, detailModel.model_id)}
-                  </div>
-                  <div className="text-xs text-mg-text-3">{detailModel.provider || detailModel.vendor || 'ModelGo'}</div>
-                </div>
-              </div>
-
-              <p className="text-sm text-mg-text-2 leading-relaxed">
-                {detailModel.tagline || '暂无模型简介。'}
-              </p>
-
-              {detailModel.tags && detailModel.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {detailModel.tags.slice(0, 6).map((tag) => (
-                    <span key={tag} className="model-picker-dialog__detail-chip">{tag}</span>
+        {mode === 'compareAdd' ? (
+          <div className="model-picker-dialog__detail-pane model-picker-dialog__compare-pane">
+            {compareModels.length === 0 ? (
+              <EmptyState title="勾选候选模型查看参数对照" className="h-full justify-center" />
+            ) : (
+              <div className="model-picker-dialog__compare-table">
+                <div
+                  className="model-picker-dialog__compare-row model-picker-dialog__compare-head"
+                  style={{ gridTemplateColumns: `88px repeat(${compareModels.length}, 1fr)` }}
+                >
+                  <div />
+                  {compareModels.map((m) => (
+                    <div key={m.id} className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <ModelIcon model={m} size={18} rounded="rounded-sm" />
+                        <span className="text-xs font-bold text-mg-text-1 truncate">{prettyModelName(m.display_name, m.model_id)}</span>
+                      </div>
+                    </div>
                   ))}
                 </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3 pt-3 border-t border-mg-border">
-                <div>
-                  <div className="text-xs text-mg-text-3 font-semibold">上下文窗口</div>
-                  <div className="text-sm font-semibold text-mg-text-1 mt-0.5">
-                    {formatContextLength(detailModel.context_length)}
+                {COMPARE_ROWS.map((row) => (
+                  <div
+                    key={row.label}
+                    className="model-picker-dialog__compare-row"
+                    style={{ gridTemplateColumns: `88px repeat(${compareModels.length}, 1fr)` }}
+                  >
+                    <div className="text-xs font-semibold text-mg-text-3">{row.label}</div>
+                    {compareModels.map((m) => (
+                      <div key={m.id} className="text-xs text-mg-text-1 min-w-0 truncate">{row.render(m)}</div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="model-picker-dialog__detail-pane">
+            {!detailModel ? (
+              <EmptyState title="选择左侧模型查看详情" className="h-full justify-center" />
+            ) : (
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-3">
+                  <ModelIcon model={detailModel} size={40} rounded="rounded-lg" className="bg-mg-bg-0" />
+                  <div className="min-w-0">
+                    <div className="mg-text-title-sm font-bold text-mg-text-1 truncate">
+                      {prettyModelName(detailModel.display_name, detailModel.model_id)}
+                    </div>
+                    <div className="text-xs text-mg-text-3">{detailModel.provider || detailModel.vendor || 'ModelGo'}</div>
                   </div>
                 </div>
-                <div>
-                  <div className="text-xs text-mg-text-3 font-semibold">价格</div>
-                  <div className="text-sm font-semibold text-mg-text-1 mt-0.5">{priceLabel(detailModel)}</div>
-                </div>
-                <div className="col-span-2">
-                  <div className="text-xs text-mg-text-3 font-semibold">兼容协议</div>
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {(detailModel.protocols && detailModel.protocols.length > 0 ? detailModel.protocols : ['openai']).map((p) => (
-                      <span key={p} className="model-picker-dialog__detail-chip capitalize">{p}</span>
+
+                <p className="text-sm text-mg-text-2 leading-relaxed">
+                  {detailModel.tagline || '暂无模型简介。'}
+                </p>
+
+                {detailModel.tags && detailModel.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {detailModel.tags.slice(0, 6).map((tag) => (
+                      <span key={tag} className="model-picker-dialog__detail-chip">{tag}</span>
                     ))}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-mg-border">
+                  <div>
+                    <div className="text-xs text-mg-text-3 font-semibold">上下文窗口</div>
+                    <div className="text-sm font-semibold text-mg-text-1 mt-0.5">
+                      {formatContextLength(detailModel.context_length)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-mg-text-3 font-semibold">价格</div>
+                    <div className="text-sm font-semibold text-mg-text-1 mt-0.5">{priceLabel(detailModel)}</div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="text-xs text-mg-text-3 font-semibold">兼容协议</div>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {(detailModel.protocols && detailModel.protocols.length > 0 ? detailModel.protocols : ['openai']).map((p) => (
+                        <span key={p} className="model-picker-dialog__detail-chip capitalize">{p}</span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </Modal>
   )

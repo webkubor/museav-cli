@@ -1,4 +1,5 @@
 import { ModalityBadge } from '@/features/models/components/ModalityBadge'
+import { trimPriceZeros } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 
 export type ChatRole = 'user' | 'assistant'
@@ -12,6 +13,11 @@ export interface ExperienceMessageMetrics {
   totalLatency: string
   spend: number
   free: boolean
+  /** 总耗时的原始毫秒数（totalLatency 是格式化后的展示字符串），对比页用它比较哪列最快 */
+  totalMs?: number
+  /** 对比模式同一轮里最快/成本最低标记（§7.10），单模型页恒为 false */
+  fastest?: boolean
+  cheapest?: boolean
 }
 
 export interface ExperienceMessage {
@@ -21,6 +27,8 @@ export interface ExperienceMessage {
   metrics?: ExperienceMessageMetrics
   modelName?: string
   modelLogo?: React.ReactNode
+  /** 同步发送时同一轮的组标识，对比页用它来跨列计算最快/成本最低（§7.10/§11.1） */
+  dispatchId?: string
 }
 
 /** 延迟格式化：<1000ms 显示整数 ms，否则显示 x.xx s（App.tsx:17044 formatPlaygroundLatency 逐字对齐） */
@@ -76,6 +84,20 @@ export const PLAYGROUND_SAMPLE_PROMPTS: Array<{ label: string; prompt: string }>
   { label: '概念解释', prompt: '用一段话向非技术同事解释什么是模型网关，说明它解决了什么问题。' },
   { label: '正式翻译', prompt: '把这句话翻译成英文并保持正式语气：我们下周三上午十点召开产品评审会，请准时参加。' },
 ]
+
+/**
+ * 价格 chip 文案：与原型 App.tsx `playgroundPriceText()` 逐字对齐——
+ * 免费模型「限时免费」；否则「¥输入价 / ¥输出价 每M」，只有输出价时省去输入价那半。
+ * 单模型页与对比页共用（对比页每列头部也要展示同样的价格 chip）。
+ */
+export function dualPriceText(model: CatalogModelItem): string {
+  const currency = model.pricing?.currency === 'USD' ? '$' : '¥'
+  const input = model.pricing?.input_per_1m
+  const output = model.pricing?.output_per_1m
+  if (!input && !output) return '限时免费'
+  if (!input) return `${currency}${trimPriceZeros(output ?? '0')} 每M`
+  return `${currency}${trimPriceZeros(input)} / ${currency}${trimPriceZeros(output ?? input)} 每M`
+}
 
 export function isChatModel(model: CatalogModelItem): boolean {
   const modalities = model.modalities ?? []

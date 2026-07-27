@@ -1,0 +1,86 @@
+/* ── 模型对比工作台（PRD 1.0.4 §7.3/7.4）───────────────────────────────── */
+
+.models-compare-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  border: 1px solid var(--mg-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--mg-bg-0) 88%, transparent);
+}
+
+.models-compare-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mg-text-1);
+  font-size: 13px;
+}
+
+.models-compare-toolbar-meta {
+  color: var(--mg-text-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.models-compare-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.models-compare-columns {
+  display: grid;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+}
+
+.models-compare-column {
+  border: 1px solid var(--mg-border);
+  background: color-mix(in srgb, var(--mg-bg-0) 88%, transparent);
+  border-radius: 8px;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.models-compare-composer {
+  margin: 0 12px 12px;
+}
+
+.models-compare-shared-composer {
+  margin-top: 14px;
+}
+
+/* 对比结果标记（最快/成本最低），逐字对齐原型 playground-winner-chip */
+.models-experience-winner-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.models-experience-winner-chip.is-fast {
+  background: color-mix(in srgb, var(--mg-info, #3b82f6) 14%, transparent);
+  color: var(--mg-info, #3b82f6);
+}
+
+.models-experience-winner-chip.is-cheap {
+  background: color-mix(in srgb, var(--mg-success, #16a34a) 14%, transparent);
+  color: var(--mg-success, #16a34a);
+}
+
+@media (max-width: 980px) {
+  .models-compare-columns {
+    grid-template-columns: 1fr !important;
+  }
+}

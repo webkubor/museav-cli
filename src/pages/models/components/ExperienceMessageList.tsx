@@ -58,22 +58,29 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                 <span className="models-experience-thinking" aria-label="模型思考中">
                   <i /><i /><i />
                 </span>
-              ) : message.media && message.media.length > 0 ? (
-                <div className="models-experience-media-result">
-                  {message.media.map((m, mIdx) =>
-                    m.kind === 'image' ? (
-                      <img key={mIdx} src={m.url} alt="生成结果" className="models-experience-media-image" />
-                    ) : m.kind === 'audio' ? (
-                      <audio key={mIdx} controls preload="metadata" src={m.url} className="models-experience-media-audio" />
-                    ) : m.kind === 'video' ? (
-                      <video key={mIdx} controls preload="metadata" src={m.url} className="models-experience-media-video" />
-                    ) : null,
-                  )}
-                </div>
-              ) : message.role === 'assistant' ? (
-                <div className="cs-markdown"><Markdown>{message.content}</Markdown></div>
               ) : (
-                message.content.split('\n').map((line, lineIndex) => <p key={`${index}-${lineIndex}`}>{line}</p>)
+                <>
+                  {/* 用户消息附件预览（§7.5）与助手媒体结果（§7.10）都走这个渲染，
+                      用户消息附带文本时两者一起展示，不是二选一 */}
+                  {message.media && message.media.length > 0 && (
+                    <div className="models-experience-media-result">
+                      {message.media.map((m, mIdx) =>
+                        m.kind === 'image' ? (
+                          <img key={mIdx} src={m.url} alt={message.role === 'user' ? '附件预览' : '生成结果'} className="models-experience-media-image" />
+                        ) : m.kind === 'audio' ? (
+                          <audio key={mIdx} controls preload="metadata" src={m.url} className="models-experience-media-audio" />
+                        ) : m.kind === 'video' ? (
+                          <video key={mIdx} controls preload="metadata" src={m.url} className="models-experience-media-video" />
+                        ) : null,
+                      )}
+                    </div>
+                  )}
+                  {message.role === 'assistant' && !message.media ? (
+                    <div className="cs-markdown"><Markdown>{message.content}</Markdown></div>
+                  ) : message.content ? (
+                    message.content.split('\n').map((line, lineIndex) => <p key={`${index}-${lineIndex}`}>{line}</p>)
+                  ) : null}
+                </>
               )}
               {message.metrics && message.media ? (
                 // 媒体结果卡（§7.10）：只展示运行状态/费用/下载，不展示对话专属的 Token/首Token

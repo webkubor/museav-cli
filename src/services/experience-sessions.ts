@@ -5,7 +5,7 @@
  * 覆盖：会话 CRUD、历史消息恢复、发送消息（对话组走 SSE，媒体任务走同步/异步 JSON，
  * 本文件先实现对话组 SSE——单模型体验页当前只用得到这部分）。
  */
-import { apiBaseUrl, get, post, patch, put, del } from '@/lib/request'
+import { apiBaseUrl, get, post, patch, put, del, upload } from '@/lib/request'
 import { injectHeaders } from '@/lib/request-headers'
 
 export type ExperienceCategory = 'dialogue' | 'image' | 'audio' | 'video'
@@ -195,6 +195,24 @@ export async function saveExperienceModelConfig(
 
 export async function resetExperienceModelConfig(sessionId: string, modelId: string): Promise<void> {
   await del(`experience/sessions/${sessionId}/configs/${encodeURIComponent(modelId)}`)
+}
+
+/** 附件（§7.5），真实端点见 Swagger POST/GET .../attachments(/url) */
+export interface ExperienceAttachment {
+  resource_id: string
+  kind: 'image' | 'audio' | 'video'
+  mime: string
+  size: number
+}
+
+export async function uploadExperienceAttachment(file: File): Promise<ExperienceAttachment> {
+  const formData = new FormData()
+  formData.append('file', file)
+  return upload('post', 'experience/attachments', formData)
+}
+
+export async function getExperienceAttachmentUrl(resourceId: string): Promise<{ url: string; expires_at: string }> {
+  return get('experience/attachments/url', { resource_id: resourceId })
 }
 
 /** 解析单行 SSE：区分 `event:` 与 `data:`，供 streamExperienceMessage 逐行喂入 */

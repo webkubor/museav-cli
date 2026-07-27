@@ -54,3 +54,66 @@
   font-size: 11px;
   font-weight: 620;
 }
+
+/* composer 左侧：附件按钮 + 预估费用提示（§7.5 附件入口） */
+.models-experience-composer-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.models-experience-composer-left .models-experience-icon-btn {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+/* 附件预览/错误行，位于消息区和 composer 之间 */
+.models-experience-attachment-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 18px 8px;
+}
+
+.models-experience-attachment-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--mg-border);
+  border-radius: var(--radius-md);
+  background: var(--mg-fill-0);
+}
+
+.models-experience-attachment-chip img {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.models-experience-attachment-name {
+  font-size: 12px;
+  color: var(--mg-text-2);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.models-experience-attachment-chip button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mg-text-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.models-experience-attachment-error {
+  font-size: 12px;
+  color: var(--mg-danger);
+}

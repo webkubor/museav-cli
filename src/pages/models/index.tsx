@@ -9,6 +9,8 @@ import {
   LuImage,
   LuAudioLines,
   LuVideo,
+  LuPaperclip,
+  LuX,
 } from 'react-icons/lu'
 import {
   createExperienceSession,
@@ -22,7 +24,9 @@ import {
   saveExperienceModelConfig,
   resetExperienceModelConfig,
   matchesModelConfigId,
+  uploadExperienceAttachment,
   type ExperienceStatsEvent,
+  type ExperienceAttachment,
 } from '@/services/experience-sessions'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
@@ -35,11 +39,11 @@ import {
   formatPlaygroundLatency,
   dualPriceText,
   EXPERIENCE_TASK_LABEL,
-  EXPERIENCE_CATEGORY_DEFAULT_TASK,
   resolveModelCategory,
   PLAYGROUND_SAMPLE_PROMPTS,
   type ExperienceMessage,
   type ExperienceCategoryKey,
+  type ExperienceTaskType,
 } from './model-experience-data'
 import { ModelPickerDialog } from './components/ModelPickerDialog'
 import { HistorySessionSidebar, type HistorySessionItem } from './components/HistorySessionSidebar'
@@ -106,6 +110,35 @@ const CATEGORY_PLACEHOLDER: Record<ExperienceCategoryKey, string> = {
   video: '描述镜头、主体运动、运镜与氛围…',
 }
 
+/** 附件类型/大小上限（PRD §7.5），accept 给 <input type="file"> 用 */
+const ATTACHMENT_LIMITS = {
+  image: { maxBytes: 10 * 1024 * 1024, accept: '.png,.jpg,.jpeg,.webp', label: '图片（PNG/JPEG/WebP，≤10MB）' },
+  audio: { maxBytes: 25 * 1024 * 1024, accept: '.mp3,.wav,.m4a,.ogg,.webm', label: '音频（MP3/WAV/M4A/OGG/WebM，≤25MB）' },
+  video: { maxBytes: 100 * 1024 * 1024, accept: '.mp4,.webm,.mov', label: '视频（MP4/WebM/MOV，≤100MB）' },
+} as const
+
+function attachmentKindFromMime(mime: string): keyof typeof ATTACHMENT_LIMITS | null {
+  if (mime.startsWith('image/')) return 'image'
+  if (mime.startsWith('audio/')) return 'audio'
+  if (mime.startsWith('video/')) return 'video'
+  return null
+}
+
+/**
+ * 有附件时任务在同一类别内的两个子任务间切换（§二 task 值域）：对话类多模态输入、
+ * 图像/音频/视频类"以图/音生成或识别"。会话固定后 task 不会再变，只在懒创建时算一次。
+ */
+function resolveEffectiveTask(category: ExperienceCategoryKey, attachmentKind: string | null): ExperienceTaskType {
+  if (category === 'dialogue') {
+    if (attachmentKind === 'image') return 'image_to_text'
+    if (attachmentKind === 'video') return 'video_to_text'
+    return 'text_to_text'
+  }
+  if (category === 'image') return attachmentKind ? 'image_to_image' : 'text_to_image'
+  if (category === 'audio') return attachmentKind ? 'audio_to_text' : 'text_to_audio'
+  return attachmentKind ? 'image_to_video' : 'text_to_video'
+}
+
 export default function ModelsPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -129,6 +162,12 @@ export default function ModelsPage() {
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [historySessions, setHistorySessions] = useState<HistorySessionItem[]>([])
 
+  // 每轮最多一个附件（§7.5），上传成功后才拿到 resource_id，发送后清空
+  const [attachment, setAttachment] = useState<{ file: File; previewUrl: string; uploaded: ExperienceAttachment } | null>(null)
+  const [attachmentUploading, setAttachmentUploading] = useState(false)
+  const [attachmentError, setAttachmentError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => () => abortRef.current?.abort(), [])
 
   // 接口文档§九说 GET /catalog/models 支持 ?experience_type= 按可体验任务筛选，但 test 环境
@@ -141,8 +180,14 @@ export default function ModelsPage() {
   const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
   const selectedModel = allModels.find((model) => model.id === selectedId) ?? allModels[0]
   const selectedCategory = selectedModel ? resolveModelCategory(selectedModel) : 'dialogue'
-  const selectedTask = EXPERIENCE_CATEGORY_DEFAULT_TASK[selectedCategory]
   const isDialogue = selectedCategory === 'dialogue'
+  const effectiveTask = resolveEffectiveTask(selectedCategory, attachment ? attachmentKindFromMime(attachment.uploaded.mime) : null)
+  /** 每个类别允许附哪种附件（§7.5）。对话类的音频附件在真实 task 枚举里没有对应的子任务
+   *  （image_to_text/video_to_text 之外没有 audio 版本），先不开放，只开放能对应到真实
+   *  任务枚举的图片/视频；图像类只收图片（图生图参考图）、音频类只收音频（转写）、
+   *  视频类只收图片（图生视频首帧）。 */
+  const allowedAttachmentKinds: Array<keyof typeof ATTACHMENT_LIMITS> =
+    selectedCategory === 'dialogue' ? ['image', 'video'] : selectedCategory === 'audio' ? ['audio'] : ['image']
 
   /** composer 底部预估费用：与原型 estimatePlaygroundTaskSpend 对齐——按当前草稿估算 input token，
    *  输出 token 取 min(400, max_tokens) 上限估算（App.tsx:16967-16990） */
@@ -287,6 +332,45 @@ export default function ModelsPage() {
     if (sessionId && selectedModel) void resetExperienceModelConfig(sessionId, selectedModel.model_id)
   }
 
+  function clearAttachment() {
+    setAttachment((prev) => {
+      if (prev) URL.revokeObjectURL(prev.previewUrl)
+      return null
+    })
+    setAttachmentError(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  /** 上传附件（§7.5）：先按类型/大小校验，通过了才真的上传；会话已建好后不能再换类别的附件类型
+   *  （task 已经固定），这里只按当前 selectedCategory 的允许类型校验 */
+  async function handleFileSelect(file: File | null | undefined) {
+    if (!file) return
+    setAttachmentError(null)
+    const kind = attachmentKindFromMime(file.type)
+    if (!kind || !allowedAttachmentKinds.includes(kind)) {
+      setAttachmentError(`当前模型不支持该附件类型，仅支持：${allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].label).join('、')}`)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    if (file.size > ATTACHMENT_LIMITS[kind].maxBytes) {
+      setAttachmentError(`文件超出大小限制（${ATTACHMENT_LIMITS[kind].label}）`)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    const previewUrl = URL.createObjectURL(file)
+    setAttachmentUploading(true)
+    try {
+      const uploaded = await uploadExperienceAttachment(file)
+      setAttachment({ file, previewUrl, uploaded })
+    } catch (err) {
+      URL.revokeObjectURL(previewUrl)
+      setAttachmentError(extractApiErrorMessage(err))
+    } finally {
+      setAttachmentUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   /** 懒创建会话：按当前模型分类/任务建（对话/媒体走的是同一个会话创建接口，只是 category/task 不同） */
   async function ensureConversation(): Promise<string> {
     if (conversationId) return conversationId
@@ -294,7 +378,7 @@ export default function ModelsPage() {
     const session = await createExperienceSession({
       name: '未命名会话',
       category: selectedCategory,
-      task: selectedTask,
+      task: effectiveTask,
       // 单模型体验没有"多列同步"概念，用 independent（真实枚举见 experience-sessions.ts 注释）
       input_mode: 'independent',
       models: [selectedModel.model_id],
@@ -315,7 +399,11 @@ export default function ModelsPage() {
 
   async function sendDialoguePrompt(prompt: string) {
     if (!selectedModel) return
-    setMessages((prev) => [...prev, { role: 'user', content: prompt }, { role: 'assistant', content: '' }])
+    const attachedKind = attachment ? attachmentKindFromMime(attachment.uploaded.mime) : null
+    const userMedia = attachment ? [{ kind: attachedKind ?? 'image', url: attachment.previewUrl }] : undefined
+    const resourceIds = attachment ? [attachment.uploaded.resource_id] : []
+    clearAttachment()
+    setMessages((prev) => [...prev, { role: 'user', content: prompt, media: userMedia }, { role: 'assistant', content: '' }])
     setInput('')
     setIsStreaming(true)
     abortRef.current?.abort()
@@ -342,6 +430,7 @@ export default function ModelsPage() {
         conversationId: convId,
         dispatchId: crypto.randomUUID(),
         content: prompt,
+        attachments: resourceIds,
         signal: controller.signal,
         onDelta: (delta) => {
           firstDeltaAt ??= Date.now()
@@ -422,12 +511,17 @@ export default function ModelsPage() {
     }
   }
 
-  /** 媒体任务发送（§5.2 同步 JSON / §5.3-5.4 视频异步轮询），无附件版——图生图/语音识别等
-   *  "必须携带附件"的任务在没有附件上传功能前会被后端校验拒绝，报错走下面统一的 catch */
+  /** 媒体任务发送（§5.2 同步 JSON / §5.3-5.4 视频异步轮询）。图生图/语音识别/图生视频这类
+   *  "必须携带附件"的任务，没附件时会被后端校验拒绝（PLAYGROUND_ATTACHMENT_REQUIRED），
+   *  报错走下面统一的 catch，不在前端预先拦截——真源是后端校验，不重复造一遍。 */
   async function sendMediaPrompt(prompt: string) {
     if (!selectedModel) return
     const modelLabel = prettyModelName(selectedModel.display_name, selectedModel.model_id)
-    setMessages((prev) => [...prev, { role: 'user', content: prompt }, { role: 'assistant', content: '' }])
+    const attachedKind = attachment ? attachmentKindFromMime(attachment.uploaded.mime) : null
+    const userMedia = attachment ? [{ kind: attachedKind ?? 'image', url: attachment.previewUrl }] : undefined
+    const resourceIds = attachment ? [attachment.uploaded.resource_id] : []
+    clearAttachment()
+    setMessages((prev) => [...prev, { role: 'user', content: prompt, media: userMedia }, { role: 'assistant', content: '' }])
     setInput('')
     setIsStreaming(true)
     const startedAt = Date.now()
@@ -447,6 +541,7 @@ export default function ModelsPage() {
         conversationId: convId,
         dispatchId: crypto.randomUUID(),
         content: prompt,
+        attachments: resourceIds,
       })
 
       if (message.status === 'running' && message.async_task_id) {
@@ -555,7 +650,7 @@ export default function ModelsPage() {
                       <div className="min-w-0">
                         <div className="models-experience-modelbar-title">{prettyModelName(selectedModel.display_name, selectedModel.model_id)}</div>
                         <div className="models-experience-modelbar-sub">
-                          {selectedModel.vendor || selectedModel.provider || 'ModelGo'} · {EXPERIENCE_TASK_LABEL[selectedTask]}
+                          {selectedModel.vendor || selectedModel.provider || 'ModelGo'} · {EXPERIENCE_TASK_LABEL[effectiveTask]}
                         </div>
                       </div>
                       <span className="models-experience-price-chip">
@@ -624,9 +719,35 @@ export default function ModelsPage() {
                 }
               />
 
+              {/* 附件预览/错误（§7.5）：每轮最多一个附件，发送后清空 */}
+              {(attachment || attachmentError) && (
+                <div className="models-experience-attachment-row">
+                  {attachment && (
+                    <div className="models-experience-attachment-chip">
+                      {attachmentKindFromMime(attachment.uploaded.mime) === 'image' ? (
+                        <img src={attachment.previewUrl} alt="附件预览" />
+                      ) : (
+                        <span className="models-experience-attachment-name">{attachment.file.name}</span>
+                      )}
+                      <button type="button" aria-label="移除附件" onClick={clearAttachment}>
+                        <LuX size={12} />
+                      </button>
+                    </div>
+                  )}
+                  {attachmentError && <span className="models-experience-attachment-error">{attachmentError}</span>}
+                </div>
+              )}
+
               {/* PRD §7.2：单模型状态不展示"同步输入"开关、不展示"清空结果"按钮、不重复展示模型ID复制入口。
-                  底部动作行左侧是预估费用（原型 App.tsx:18523 playground-composer-hint 逐字对齐），不是模型名 chip——
-                  模型身份已在头部展示，composer 里再放一遍是我之前自己发挥加的，删掉。 */}
+                  底部动作行左侧是预估费用（原型 App.tsx:18523 playground-composer-hint 逐字对齐）+ 附件入口
+                  （§7.5，纯文本模型不显示附件入口——对话类允许图片/视频，图像/音频/视频类各自只收一种）。 */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].accept).join(',')}
+                className="hidden"
+                onChange={(e) => void handleFileSelect(e.target.files?.[0])}
+              />
               <Composer
                 ref={inputRef}
                 value={input}
@@ -638,9 +759,23 @@ export default function ModelsPage() {
                 sendLabel="发送"
                 className="models-experience-composer-wrap"
                 activeChip={
-                  <span className="models-experience-composer-hint">
-                    本次预估费用 <strong>{composerEstimatedSpend}</strong>
-                  </span>
+                  <div className="models-experience-composer-left">
+                    <button
+                      type="button"
+                      className="models-experience-icon-btn"
+                      aria-label="添加附件"
+                      title={`支持：${allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].label).join('、')}`}
+                      disabled={attachmentUploading || !!attachment}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <LuPaperclip size={14} />
+                    </button>
+                    <span className="models-experience-composer-hint">
+                      {attachmentUploading ? '附件上传中…' : (
+                        <>本次预估费用 <strong>{composerEstimatedSpend}</strong></>
+                      )}
+                    </span>
+                  </div>
                 }
               />
             </section>
@@ -663,7 +798,7 @@ export default function ModelsPage() {
           modelName={prettyModelName(selectedModel.display_name, selectedModel.model_id)}
           vendor={selectedModel.vendor || selectedModel.provider || 'ModelGo'}
           maxOutputTokens={Math.max(256, selectedModel.max_output_tokens || 4096)}
-          task={selectedTask}
+          task={effectiveTask}
           values={chatParams}
           onChange={handleChatParamChange}
           onReset={handleResetChatParams}

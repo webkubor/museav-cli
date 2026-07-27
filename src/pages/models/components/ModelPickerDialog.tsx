@@ -33,6 +33,7 @@ import { cn, formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/
 import type { CatalogModelItem } from '@/types'
 import {
   resolveModelCategory,
+  isPaidModel,
   EXPERIENCE_CATEGORY_ORDER,
   EXPERIENCE_CATEGORY_LABEL,
   type ExperienceCategoryKey,
@@ -55,14 +56,6 @@ const MODALITY_ICON: Record<string, IconType> = {
   video: LuVideo,
 }
 const MODALITY_CODES = ['text', 'image', 'audio', 'video']
-
-/** 是否付费模型：只认服务端显式限免标记 + 价格字段，不做其它推断 */
-function isPaidModel(model: CatalogModelItem): boolean {
-  if (model.promotion?.free) return false
-  const input = parseFloat(model.pricing?.input_per_1m ?? '0')
-  const output = parseFloat(model.pricing?.output_per_1m ?? '0')
-  return (Number.isFinite(input) && input > 0) || (Number.isFinite(output) && output > 0)
-}
 
 type DisableReason = 'offline' | 'balance' | null
 

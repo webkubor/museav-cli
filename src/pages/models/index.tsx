@@ -11,6 +11,7 @@ import {
   LuVideo,
   LuPaperclip,
   LuX,
+  LuTriangleAlert,
 } from 'react-icons/lu'
 import {
   createExperienceSession,
@@ -33,11 +34,15 @@ import { Button } from '@/components/ui/Button'
 import { Composer } from '@/components/ui/Composer'
 import { useModels } from '@/features/models/hooks/useModels'
 import { prettyModelName } from '@/lib/utils'
+import { useAuthStore } from '@/store/auth'
+import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
+import { calculateSpendableBalance } from '@/pages/billing/formatBalance'
 import type { CatalogModelItem } from '@/types'
 import {
   estimateTokens,
   formatPlaygroundLatency,
   dualPriceText,
+  isPaidModel,
   EXPERIENCE_TASK_LABEL,
   resolveModelCategory,
   PLAYGROUND_SAMPLE_PROMPTS,
@@ -181,6 +186,18 @@ export default function ModelsPage() {
   const selectedModel = allModels.find((model) => model.id === selectedId) ?? allModels[0]
   const selectedCategory = selectedModel ? resolveModelCategory(selectedModel) : 'dialogue'
   const isDialogue = selectedCategory === 'dialogue'
+
+  // §9.1 余额资格状态机：可消费合计（主+赠送+奖励）为 0 时，付费模型禁止发送，只能体验限免模型。
+  const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
+  const { data: balance } = useBalance(tenantId)
+  const { data: balanceBreakdown } = useBalanceBreakdown(tenantId)
+  const spendableBalance = calculateSpendableBalance(
+    balance?.available?.amount,
+    balanceBreakdown?.gift?.amount,
+    balanceBreakdown?.reward?.amount,
+  )
+  const isBalanceZero = spendableBalance !== undefined && spendableBalance <= 0
+  const isBlockedByBalance = isBalanceZero && !!selectedModel && isPaidModel(selectedModel)
   const effectiveTask = resolveEffectiveTask(selectedCategory, attachment ? attachmentKindFromMime(attachment.uploaded.mime) : null)
   /** 每个类别允许附哪种附件（§7.5）。对话类的音频附件在真实 task 枚举里没有对应的子任务
    *  （image_to_text/video_to_text 之外没有 audio 版本），先不开放，只开放能对应到真实
@@ -392,7 +409,7 @@ export default function ModelsPage() {
 
   async function sendPrompt() {
     const prompt = input.trim()
-    if (!prompt || !selectedModel || isStreaming) return
+    if (!prompt || !selectedModel || isStreaming || isBlockedByBalance) return
     if (isDialogue) await sendDialoguePrompt(prompt)
     else await sendMediaPrompt(prompt)
   }
@@ -719,6 +736,19 @@ export default function ModelsPage() {
                 }
               />
 
+              {/* §9.1 余额资格状态机：可消费合计为 0 且当前模型付费时，锁定发送并引导充值
+                  （原型 App.tsx playground-balance-notice 逐字对齐） */}
+              {isBlockedByBalance && (
+                <div className="playground-balance-notice" role="alert">
+                  <LuTriangleAlert size={15} />
+                  <span>
+                    <strong>余额不足，仅可体验免费模型</strong>
+                    当前模型与输入已为你保留，充值后即可继续运行。
+                  </span>
+                  <button type="button" onClick={() => navigate('/billing')}>去充值</button>
+                </div>
+              )}
+
               {/* 附件预览/错误（§7.5）：每轮最多一个附件，发送后清空 */}
               {(attachment || attachmentError) && (
                 <div className="models-experience-attachment-row">
@@ -754,6 +784,7 @@ export default function ModelsPage() {
                 onChange={setInput}
                 onSend={sendPrompt}
                 isStreaming={isStreaming}
+                disabled={isBlockedByBalance}
                 onStop={() => abortRef.current?.abort()}
                 placeholder={CATEGORY_PLACEHOLDER[selectedCategory]}
                 sendLabel="发送"
@@ -788,6 +819,7 @@ export default function ModelsPage() {
         onClose={() => setPickerOpen(false)}
         mode="single"
         models={allModels}
+        isBalanceZero={isBalanceZero}
         onSelect={handlePick}
       />
 
@@ -824,6 +856,7 @@ export default function ModelsPage() {
           onClose={() => setCompareAddOpen(false)}
           mode="compareAdd"
           models={allModels}
+          isBalanceZero={isBalanceZero}
           currentCategory="dialogue"
           currentTask="text_to_text"
           alreadySelectedIds={[selectedModel.id]}

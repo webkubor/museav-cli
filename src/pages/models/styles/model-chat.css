@@ -106,11 +106,28 @@
 
 .models-experience-message {
   display: flex;
+  align-items: flex-start;
+  gap: 10px;
   justify-content: flex-start;
 }
 
 .models-experience-message.is-user {
-  justify-content: flex-end;
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
+.models-experience-message-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--mg-fill-1);
+  color: var(--mg-text-2);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .models-experience-message-bubble {
@@ -143,6 +160,35 @@
   color: var(--mg-text-3);
   font-size: 11px;
   font-weight: 700;
+}
+
+.models-experience-message-bubble > span.models-experience-message-error {
+  color: var(--mg-danger);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* 消息统计条：模型名 + Token 数 + 首Token/总耗时 + 费用 + 复制（App.tsx:20493-20504 逐字对齐） */
+.models-experience-message-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  color: var(--mg-text-3);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.models-experience-message-meta strong {
+  color: var(--mg-text-2);
+  font-weight: 800;
+}
+
+.models-experience-message-meta .models-experience-icon-btn {
+  width: 22px;
+  height: 22px;
+  margin-left: auto;
 }
 
 /* ── 思考态：模型响应前的 typing 指示（三点跳动） ── */

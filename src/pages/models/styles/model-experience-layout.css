@@ -136,9 +136,46 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
   text-align: center;
   padding: 24px;
+}
+
+.models-experience-empty strong {
+  color: var(--mg-text-1);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.models-experience-empty span {
+  font-size: 12px;
+}
+
+/* 空态示例 Prompt 行（PRD §7.2 + 原型 App.tsx:19319-19327 playground-sample-row，仅首次进入时展示） */
+.models-experience-sample-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  max-width: 640px;
+}
+
+.models-experience-sample-row button {
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--mg-border);
+  background: var(--mg-bg-0);
+  color: var(--mg-text-2);
+  font-size: 12px;
+  font-weight: 520;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.models-experience-sample-row button:hover {
+  border-color: var(--brand-base);
+  color: var(--mg-text-1);
 }
 
 @media (max-width: 980px) {

@@ -31,14 +31,20 @@
   border-top: 1px solid var(--mg-border);
 }
 
-.models-experience-active-chip {
+/* composer 底部预估费用提示，原型 playground-composer-hint 逐字对齐（App.tsx:18523） */
+.models-experience-composer-hint {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
   font-size: 12px;
-  font-weight: 760;
+  font-weight: 520;
+}
+
+.models-experience-composer-hint strong {
+  color: var(--mg-text-2);
+  font-weight: 700;
 }
 
 .models-experience-composer p {

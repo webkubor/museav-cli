@@ -204,7 +204,7 @@ export function ModelPickerDialog({
           <Input
             variant="search"
             prefix={<LuSearch size={14} className="text-mg-text-3" />}
-            placeholder="搜索模型、厂商..."
+            placeholder="搜索模型、厂商…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-8 text-xs"

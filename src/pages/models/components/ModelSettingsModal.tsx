@@ -39,7 +39,11 @@ export interface ModelSettingsModalProps {
   open: boolean
   onClose: () => void
   modelName: string
+  /** 弹窗副标题「厂商 · 任务」，逐字对齐原型 App.tsx:20223（playground-settings-modal-head） */
+  vendor?: string
   task: ModelTaskType
+  /** 模型真实 max_output_tokens，用于 max_tokens 输入上限（原型 effectiveMaxOutput = max(256, model.maxOutput||4096)，App.tsx:20232） */
+  maxOutputTokens?: number
   /** 当前参数值（外部管理状态，本组件是受控组件） */
   values: Record<string, unknown>
   onChange: (key: string, value: unknown) => void
@@ -48,8 +52,26 @@ export interface ModelSettingsModalProps {
   sessionStats: ModelSettingsSessionStats
 }
 
-// 对话任务默认参数上限，仅作为输入约束提示；真实模型上限以外部数据为准（此处先用固定值占位）
-const CHAT_MAX_TOKENS_CAP = 32000
+const TASK_LABEL: Record<ModelTaskType, string> = {
+  text_to_text: '对话',
+  image_to_text: '对话',
+  video_to_text: '对话',
+  text_to_image: '文生图',
+  image_to_image: '图生图',
+  text_to_audio: '语音合成',
+  audio_to_text: '语音识别',
+  text_to_video: '文生视频',
+  image_to_video: '图生视频',
+}
+
+function formatNumber(value: number): string {
+  return Intl.NumberFormat('zh-CN', { maximumFractionDigits: 1 }).format(value)
+}
+
+/** 费用格式：≥0.01 或恰好为 0 显示 2 位小数，否则 4 位（原型 App.tsx:20440 逐字对齐） */
+function formatSessionSpend(spend: number): string {
+  return spend >= 0.01 || spend === 0 ? `¥${spend.toFixed(2)}` : `¥${spend.toFixed(4)}`
+}
 
 function asNumber(v: unknown, fallback: number): number {
   return typeof v === 'number' && !Number.isNaN(v) ? v : fallback
@@ -63,112 +85,113 @@ function asBool(v: unknown, fallback: boolean): boolean {
   return typeof v === 'boolean' ? v : fallback
 }
 
-/** 对话任务参数表单：temperature、top_p、max_tokens、流式输出、System Prompt */
+/**
+ * 对话任务参数表单：temperature、top_p、max_tokens、流式输出、System Prompt。
+ * 逐字对齐原型 App.tsx:20280-20309 PlaygroundTaskConfigPanel 的 chat 分支——
+ * 是一个扁平字段列表，不分「基础参数/System Prompt」两个子分组（那是我之前自己发挥加的）。
+ */
 function ChatParamsForm({
   values,
   onChange,
+  maxOutputTokens,
 }: {
   values: Record<string, unknown>
   onChange: (key: string, value: unknown) => void
+  maxOutputTokens: number
 }) {
   const temperature = asNumber(values.temperature, 1)
   const topP = asNumber(values.top_p, 1)
-  const maxTokens = asNumber(values.max_tokens, 4096)
+  const maxTokens = asNumber(values.max_tokens, Math.min(4096, maxOutputTokens))
   const stream = asBool(values.stream, true)
   const systemPrompt = asString(values.systemPrompt)
 
   return (
     <div className="model-settings-form">
-      <section className="model-settings-section">
-        <h4 className="model-settings-section-title">基础参数</h4>
-
-        <div className="model-settings-field">
-          <div className="model-settings-field-label-row">
-            <label htmlFor="ms-temperature" className="model-settings-field-label">
-              Temperature
-            </label>
-            <span className="model-settings-field-value">{temperature.toFixed(2)}</span>
-          </div>
-          <input
-            id="ms-temperature"
-            type="range"
-            min={0}
-            max={2}
-            step={0.01}
-            value={temperature}
-            onChange={(e) => onChange('temperature', Number(e.target.value))}
-            className="model-settings-slider"
-          />
+      <div className="model-settings-field">
+        <div className="model-settings-field-label-row">
+          <label htmlFor="ms-temperature" className="model-settings-field-label">
+            temperature
+          </label>
+          <span className="model-settings-field-value">{temperature.toFixed(1)}</span>
         </div>
+        <input
+          id="ms-temperature"
+          type="range"
+          min={0}
+          max={2}
+          step={0.1}
+          value={temperature}
+          onChange={(e) => onChange('temperature', Number(e.target.value))}
+          className="model-settings-slider"
+        />
+      </div>
 
-        <div className="model-settings-field">
-          <div className="model-settings-field-label-row">
-            <label htmlFor="ms-top-p" className="model-settings-field-label">
-              Top P
-            </label>
-            <span className="model-settings-field-value">{topP.toFixed(2)}</span>
-          </div>
-          <input
-            id="ms-top-p"
-            type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={topP}
-            onChange={(e) => onChange('top_p', Number(e.target.value))}
-            className="model-settings-slider"
-          />
+      <div className="model-settings-field">
+        <div className="model-settings-field-label-row">
+          <label htmlFor="ms-top-p" className="model-settings-field-label">
+            top_p
+          </label>
+          <span className="model-settings-field-value">{topP.toFixed(2)}</span>
         </div>
+        <input
+          id="ms-top-p"
+          type="range"
+          min={0}
+          max={1}
+          step={0.05}
+          value={topP}
+          onChange={(e) => onChange('top_p', Number(e.target.value))}
+          className="model-settings-slider"
+        />
+      </div>
 
-        <div className="model-settings-field">
+      <div className="model-settings-field">
+        <div className="model-settings-field-label-row">
           <label htmlFor="ms-max-tokens" className="model-settings-field-label">
-            Max Tokens
+            max_tokens
           </label>
-          <Input
-            id="ms-max-tokens"
-            type="number"
-            min={1}
-            max={CHAT_MAX_TOKENS_CAP}
-            value={maxTokens}
-            onChange={(e) => onChange('max_tokens', Number(e.target.value))}
-          />
-          <p className="model-settings-hint">max_tokens 不得超过模型上限（{CHAT_MAX_TOKENS_CAP}）</p>
+          <span className="model-settings-field-value">上限 {formatNumber(maxOutputTokens)}</span>
         </div>
+        <Input
+          id="ms-max-tokens"
+          type="number"
+          min={256}
+          max={maxOutputTokens}
+          step={256}
+          value={maxTokens}
+          onChange={(e) => {
+            const value = Number(e.target.value)
+            if (Number.isNaN(value)) return
+            onChange('max_tokens', Math.max(256, Math.min(maxOutputTokens, Math.round(value))))
+          }}
+        />
+      </div>
 
-        <div className="model-settings-field model-settings-field-row">
-          <label htmlFor="ms-stream" className="model-settings-field-label">
-            流式输出
-          </label>
-          <Switch id="ms-stream" checked={stream} onChange={(checked) => onChange('stream', checked)} />
-        </div>
-      </section>
+      <div className="model-settings-field model-settings-field-row">
+        <label htmlFor="ms-stream" className="model-settings-field-label">
+          流式输出
+        </label>
+        <Switch id="ms-stream" checked={stream} onChange={(checked) => onChange('stream', checked)} />
+      </div>
 
-      <section className="model-settings-section">
-        <h4 className="model-settings-section-title">System Prompt</h4>
+      <div className="model-settings-field">
+        <label htmlFor="ms-system-prompt" className="model-settings-field-label">
+          System Prompt
+        </label>
         <Textarea
-          rows={5}
-          placeholder="可选，为当前模型设置系统提示词"
+          id="ms-system-prompt"
+          rows={3}
+          placeholder="可选：设定角色、语气与边界"
           value={systemPrompt}
           onChange={(e) => onChange('systemPrompt', e.target.value)}
         />
-      </section>
+      </div>
     </div>
   )
 }
 
 /** 任务参数表单占位：文生图/图生图、语音合成、语音识别、文生视频/图生视频（TODO 待补充） */
 function PlaceholderParamsForm({ task }: { task: ModelTaskType }) {
-  const TASK_LABEL: Record<ModelTaskType, string> = {
-    text_to_text: '对话',
-    image_to_text: '对话',
-    video_to_text: '对话',
-    text_to_image: '文生图',
-    image_to_image: '图生图',
-    text_to_audio: '语音合成',
-    audio_to_text: '语音识别',
-    text_to_video: '文生视频',
-    image_to_video: '图生视频',
-  }
   // TODO(PRD §7.9)：按任务类型补充真实参数表单，参见 PRD 任务参数表：
   // 文生图/图生图 -> 比例/分辨率/质量/数量 + 格式/透明背景/负面提示词/Seed
   // 语音合成 -> 音色/语速/格式 + 风格指令
@@ -182,11 +205,15 @@ export function ModelSettingsModal({
   onClose,
   modelName,
   task,
+  vendor,
+  maxOutputTokens = 4096,
   values,
   onChange,
   onReset,
   sessionStats,
 }: ModelSettingsModalProps) {
+  const isDialogue = DIALOGUE_TASKS.includes(task)
+
   const footer = (
     <div className="model-settings-footer">
       <div className="model-settings-stats">
@@ -194,13 +221,15 @@ export function ModelSettingsModal({
           <span className="model-settings-stat-label">请求数</span>
           <span className="model-settings-stat-value">{sessionStats.requestCount}</span>
         </div>
+        {isDialogue && (
+          <div className="model-settings-stat">
+            <span className="model-settings-stat-label">Tokens</span>
+            <span className="model-settings-stat-value">{formatNumber(sessionStats.tokens)}</span>
+          </div>
+        )}
         <div className="model-settings-stat">
-          <span className="model-settings-stat-label">Tokens</span>
-          <span className="model-settings-stat-value">{sessionStats.tokens}</span>
-        </div>
-        <div className="model-settings-stat">
-          <span className="model-settings-stat-label">预估费用</span>
-          <span className="model-settings-stat-value">¥{sessionStats.cost.toFixed(4)}</span>
+          <span className="model-settings-stat-label">费用</span>
+          <span className="model-settings-stat-value">{formatSessionSpend(sessionStats.cost)}</span>
         </div>
       </div>
       <Button variant="outline" size="sm" icon={<LuRotateCcw size={14} />} onClick={onReset}>
@@ -217,13 +246,16 @@ export function ModelSettingsModal({
       title={
         <span className="flex items-center gap-2">
           <LuSettings2 size={18} className="text-brand-base" />
-          {modelName} 的设置
+          <span className="flex flex-col">
+            <span>{modelName} 设置</span>
+            <span className="text-xs font-normal text-mg-text-3">{vendor ?? 'ModelGo'} · {TASK_LABEL[task]}</span>
+          </span>
         </span>
       }
       footer={footer}
     >
-      {DIALOGUE_TASKS.includes(task) ? (
-        <ChatParamsForm values={values} onChange={onChange} />
+      {isDialogue ? (
+        <ChatParamsForm values={values} onChange={onChange} maxOutputTokens={maxOutputTokens} />
       ) : (
         <PlaceholderParamsForm task={task} />
       )}

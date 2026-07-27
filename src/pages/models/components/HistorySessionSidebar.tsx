@@ -80,7 +80,7 @@ function groupByDate(sessions: HistorySessionItem[]) {
   const today = startOfDay(new Date())
   const groups: { key: string; label: string; items: HistorySessionItem[] }[] = [
     { key: 'today', label: '今天', items: [] },
-    { key: 'recent7', label: '最近 7 天', items: [] },
+    { key: 'recent7', label: '7 天内', items: [] },
     { key: 'earlier', label: '更早', items: [] },
   ]
   const sorted = [...sessions].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
@@ -118,8 +118,8 @@ export function HistorySessionSidebar({
         </button>
         <button
           type="button"
-          title="新建会话"
-          aria-label="新建会话"
+          title="新会话"
+          aria-label="新会话"
           className="history-sidebar-rail-btn"
           onClick={onNewSession}
         >

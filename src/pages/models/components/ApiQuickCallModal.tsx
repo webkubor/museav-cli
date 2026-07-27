@@ -42,9 +42,10 @@ const LANGUAGE_ORDER: ApiCodeLanguage[] = ['curl', 'nodejs', 'python']
 
 /** 固定代码示例模板：不读取当前草稿、附件和模型参数，只做格式展示 */
 function buildCodeSample(protocol: ApiProtocol, language: ApiCodeLanguage, modelId: string): string {
+  // 网关真实 base：OpenAI 兼容协议带 /v1，Anthropic 兼容协议不带 /v1（见 modelgo-env-urls 记忆）
   const endpoint =
     protocol === 'anthropic'
-      ? 'https://api.modelgo.com/v1/messages'
+      ? 'https://api.modelgo.com/messages'
       : protocol === 'native'
         ? 'https://api.modelgo.com/v1/native/generate'
         : 'https://api.modelgo.com/v1/chat/completions'

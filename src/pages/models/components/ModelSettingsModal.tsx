@@ -11,20 +11,10 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Switch } from '@/components/ui/Switch'
+import { EXPERIENCE_TASK_LABEL, type ExperienceTaskType } from '../model-experience-data'
 import '../styles/model-settings-modal.css'
 
-// 九类体验任务枚举，取自后端 2026-07-27 已合入 test 的《模型体验(Playground V1)前端接口文档》
-// §二 task 值域，字面值以文档为准（不是 PRD 文字里的猜测名）
-export type ModelTaskType =
-  | 'text_to_text'
-  | 'image_to_text'
-  | 'video_to_text'
-  | 'text_to_image'
-  | 'image_to_image'
-  | 'text_to_audio'
-  | 'audio_to_text'
-  | 'text_to_video'
-  | 'image_to_video'
+export type ModelTaskType = ExperienceTaskType
 
 /** 对话组三个任务（PRD §7.9「对话」参数集适用于三者，接口都走 SSE） */
 const DIALOGUE_TASKS: readonly ModelTaskType[] = ['text_to_text', 'image_to_text', 'video_to_text']
@@ -52,17 +42,7 @@ export interface ModelSettingsModalProps {
   sessionStats: ModelSettingsSessionStats
 }
 
-const TASK_LABEL: Record<ModelTaskType, string> = {
-  text_to_text: '对话',
-  image_to_text: '对话',
-  video_to_text: '对话',
-  text_to_image: '文生图',
-  image_to_image: '图生图',
-  text_to_audio: '语音合成',
-  audio_to_text: '语音识别',
-  text_to_video: '文生视频',
-  image_to_video: '图生视频',
-}
+const TASK_LABEL = EXPERIENCE_TASK_LABEL
 
 function formatNumber(value: number): string {
   return Intl.NumberFormat('zh-CN', { maximumFractionDigits: 1 }).format(value)

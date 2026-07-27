@@ -10,7 +10,13 @@ import {
   LuCopy,
   LuZap,
 } from 'react-icons/lu'
-import { streamExperienceChat } from '@/services/experience'
+import {
+  createExperienceSession,
+  streamExperienceMessage,
+  listExperienceSessions,
+  getExperienceSessionMessages,
+  type ExperienceStatsEvent,
+} from '@/services/experience-sessions'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Composer } from '@/components/ui/Composer'
@@ -22,11 +28,12 @@ import {
   estimateTokens,
   formatPlaygroundLatency,
   formatPlaygroundSpend,
+  EXPERIENCE_TASK_LABEL,
   PLAYGROUND_SAMPLE_PROMPTS,
   type ExperienceMessage,
 } from './model-experience-data'
 import { ModelPickerDialog } from './components/ModelPickerDialog'
-import { HistorySessionSidebar } from './components/HistorySessionSidebar'
+import { HistorySessionSidebar, type HistorySessionItem } from './components/HistorySessionSidebar'
 import { ModelSettingsModal } from './components/ModelSettingsModal'
 import { ApiQuickCallModal } from './components/ApiQuickCallModal'
 import './styles/model-experience-layout.css'
@@ -65,6 +72,25 @@ function MessageCopyButton({ content }: { content: string }) {
  * 价格 chip 文案：与原型 App.tsx `playgroundPriceText()` 逐字对齐——
  * 免费模型「限时免费」；否则「¥输入价 / ¥输出价 每M」，只有输出价时省去输入价那半。
  */
+/**
+ * 历史消息里 status="failed" 行的 error 字段，实测后端存的是上游原始错误信封整个
+ * JSON.stringify 之后的字符串（例如护栏拦截会把 {"error":{"code":403,"message":"..."}}
+ * 整个当字符串塞进去），不是一句人话——这里做前端兜底清洗，解析不出来才展示原始字符串。
+ */
+function cleanErrorMessage(raw: string | undefined): string {
+  if (!raw) return '该消息发送失败'
+  try {
+    const parsed = JSON.parse(raw) as {
+      error?: { message?: string }
+      msg?: string
+      data?: { details?: Array<{ message?: string }> }
+    }
+    return parsed.data?.details?.[0]?.message ?? parsed.msg ?? parsed.error?.message ?? raw
+  } catch {
+    return raw
+  }
+}
+
 function dualPriceText(model: CatalogModelItem): string {
   const currency = model.pricing?.currency === 'USD' ? '$' : '¥'
   const input = model.pricing?.input_per_1m
@@ -91,8 +117,17 @@ export default function ModelsPage() {
   const [isStreaming, setIsStreaming] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
 
+  // 当前会话/列（POST /experience/sessions 懒创建：第一次发送时才建，避免每次进页面都建空会话）
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [historySessions, setHistorySessions] = useState<HistorySessionItem[]>([])
+
   useEffect(() => () => abortRef.current?.abort(), [])
 
+  // 接口文档§九说 GET /catalog/models 支持 ?experience_type= 按可体验任务筛选，但 test 环境
+  // 目录里全部 40 个模型的 experience_types 字段都是空数组（后端数据未回填，见 #533）——
+  // 真按文档筛选会导致模型选择器完全空白，页面彻底不可用，所以先退回只按 modality 筛选，
+  // 会话创建失败时给出针对性提示（见 sendPrompt 的错误处理），不是我自己要弱化校验
   const { selectedId, setSelectedId, modelsQuery } = useModels({ modality: 'text' })
 
   const allModels = useMemo(
@@ -127,16 +162,83 @@ export default function ModelsPage() {
     }
   }, [allModels, selectedId, setSelectedId, location.state, navigate])
 
+  /** 拉取真实历史会话列表（供侧栏展示）；仅用当前分类可解析的会话，映射不到目录里的模型时用 model_id 兜底展示 */
+  async function refreshHistorySessions() {
+    try {
+      const { items } = await listExperienceSessions({ limit: 20, offset: 0 })
+      setHistorySessions(
+        items.map((session) => ({
+          id: session.id,
+          name: session.name,
+          updatedAt: session.updated_at,
+          category: (session.category as HistorySessionItem['category']) ?? 'dialogue',
+          task: EXPERIENCE_TASK_LABEL[session.task as keyof typeof EXPERIENCE_TASK_LABEL] ?? session.task,
+          // GET /experience/sessions 列表响应实测不带 conversations（只有创建/详情响应带），
+          // 拿不到本会话用了哪些模型——不为了凑 UI 去多打 N 次详情接口，老实留空
+          models: (session.conversations ?? [])
+            .slice()
+            .sort((a, b) => a.position - b.position)
+            .map((conv) => {
+              const catalogModel = allModels.find((m) => m.model_id === conv.model_id)
+              return {
+                id: conv.model_id,
+                name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id) : conv.model_id,
+                offline: !catalogModel,
+              }
+            }),
+        })),
+      )
+    } catch {
+      // 历史列表拉取失败不阻塞主流程，侧栏保持空态
+    }
+  }
+
+  useEffect(() => {
+    if (!historyCollapsed) void refreshHistorySessions()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyCollapsed])
+
+  function startNewSession() {
+    setSessionId(null)
+    setConversationId(null)
+    setMessages(INITIAL_MESSAGES)
+    setInput('')
+  }
+
   function handlePick(model: CatalogModelItem) {
     setSelectedId(model.id)
     setPickerOpen(false)
+    // 换模型 = 当前列绑定的模型变了，旧会话的列已经对不上——开新会话，而不是复用旧 conversationId
+    startNewSession()
     window.setTimeout(() => inputRef.current?.focus(), 80)
+  }
+
+  async function openHistorySession(id: string) {
+    if (!id) return
+    try {
+      const { items } = await getExperienceSessionMessages(id)
+      const restored: ExperienceMessage[] = items.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+        error: msg.status === 'failed' ? cleanErrorMessage(msg.error) : undefined,
+      }))
+      setSessionId(id)
+      const conv = items.find((m) => m.conversation_id)?.conversation_id ?? null
+      setConversationId(conv)
+      setMessages(restored)
+      setInput('')
+    } catch (err) {
+      applyGlobalError(`加载历史会话失败：${(err as Error).message || '请稍后重试'}`)
+    }
+  }
+
+  function applyGlobalError(message: string) {
+    setMessages((prev) => [...prev, { role: 'assistant', content: '', error: message }])
   }
 
   async function sendPrompt() {
     const prompt = input.trim()
     if (!prompt || !selectedModel || isStreaming) return
-    const history = [...messages, { role: 'user' as const, content: prompt }]
     setMessages((prev) => [...prev, { role: 'user', content: prompt }, { role: 'assistant', content: '' }])
     setInput('')
     setIsStreaming(true)
@@ -145,6 +247,7 @@ export default function ModelsPage() {
     abortRef.current = controller
     const startedAt = Date.now()
     let firstDeltaAt: number | null = null
+    let stats: ExperienceStatsEvent | null = null
 
     const applyAssistant = (updater: (content: string) => string) => {
       setMessages((prev) => {
@@ -158,41 +261,91 @@ export default function ModelsPage() {
     }
 
     try {
-      const reply = await streamExperienceChat({
-        model: selectedModel.model_id,
-        messages: history.map(({ role, content }) => ({ role, content })),
+      // 懒创建会话：单模型页只有一个对话组任务，会话在第一次真正发送时才建
+      let convId = conversationId
+      if (!convId) {
+        const session = await createExperienceSession({
+          name: '未命名会话',
+          category: 'dialogue',
+          task: 'text_to_text',
+          // 单模型体验没有"多列同步"概念，用 independent（真实枚举见 experience-sessions.ts 注释）
+          input_mode: 'independent',
+          models: [selectedModel.model_id],
+        })
+        setSessionId(session.id)
+        convId = session.conversations?.[0]?.id ?? null
+        setConversationId(convId)
+      }
+      if (!convId) throw new Error('会话创建异常：未返回对话列 id')
+
+      const reply = await streamExperienceMessage({
+        conversationId: convId,
+        dispatchId: crypto.randomUUID(),
+        content: prompt,
         signal: controller.signal,
         onDelta: (delta) => {
           firstDeltaAt ??= Date.now()
           applyAssistant((content) => content + delta)
         },
+        onStats: (event) => {
+          stats = event
+        },
       })
-      const totalMs = Date.now() - startedAt
-      const inputTokens = estimateTokens(history.map((m) => m.content).join('\n'))
-      const outputTokens = estimateTokens(reply)
-      const inputPrice = Number(selectedModel.pricing?.input_per_1m ?? 0)
-      const outputPrice = Number(selectedModel.pricing?.output_per_1m ?? 0)
-      const free = !inputPrice && !outputPrice
-      const spend = free ? 0 : (inputTokens * inputPrice + outputTokens * outputPrice) / 1_000_000
-      setMessages((prev) => {
-        const next = [...prev]
-        const last = next[next.length - 1]
-        if (last?.role === 'assistant') {
-          next[next.length - 1] = {
-            ...last,
-            metrics: {
-              model: prettyModelName(selectedModel.display_name, selectedModel.model_id),
-              inputTokens,
-              outputTokens,
-              firstTokenLatency: formatPlaygroundLatency((firstDeltaAt ?? Date.now()) - startedAt),
-              totalLatency: formatPlaygroundLatency(totalMs),
-              spend,
-              free,
-            },
+
+      const modelLabel = prettyModelName(selectedModel.display_name, selectedModel.model_id)
+      if (stats) {
+        const s: ExperienceStatsEvent = stats
+        const spend = Number(s.actual_spend ?? s.estimated_spend ?? 0)
+        setMessages((prev) => {
+          const next = [...prev]
+          const last = next[next.length - 1]
+          if (last?.role === 'assistant') {
+            next[next.length - 1] = {
+              ...last,
+              error: s.status === 'failed' ? (last.content ? undefined : '该模型本轮响应失败') : undefined,
+              metrics: {
+                model: modelLabel,
+                inputTokens: s.input_tokens,
+                outputTokens: s.output_tokens,
+                firstTokenLatency: formatPlaygroundLatency(s.first_token_ms),
+                totalLatency: formatPlaygroundLatency(s.total_ms),
+                spend,
+                free: s.free,
+              },
+            }
           }
-        }
-        return next
-      })
+          return next
+        })
+      } else {
+        // 统计帧异常缺失时的兜底：本地估算，避免消息区完全没有统计信息
+        const totalMs = Date.now() - startedAt
+        const inputTokens = estimateTokens(prompt)
+        const outputTokens = estimateTokens(reply)
+        const inputPrice = Number(selectedModel.pricing?.input_per_1m ?? 0)
+        const outputPrice = Number(selectedModel.pricing?.output_per_1m ?? 0)
+        const free = !inputPrice && !outputPrice
+        const spend = free ? 0 : (inputTokens * inputPrice + outputTokens * outputPrice) / 1_000_000
+        setMessages((prev) => {
+          const next = [...prev]
+          const last = next[next.length - 1]
+          if (last?.role === 'assistant') {
+            next[next.length - 1] = {
+              ...last,
+              metrics: {
+                model: modelLabel,
+                inputTokens,
+                outputTokens,
+                firstTokenLatency: formatPlaygroundLatency((firstDeltaAt ?? Date.now()) - startedAt),
+                totalLatency: formatPlaygroundLatency(totalMs),
+                spend,
+                free,
+              },
+            }
+          }
+          return next
+        })
+      }
+      void refreshHistorySessions()
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
       applyAssistant(() => '')
@@ -213,18 +366,15 @@ export default function ModelsPage() {
     <div className="models-experience-page">
       <PageHeader title="模型体验" description="通过文本与附件连续对话，验证回复、Token、延迟与费用。" className="mb-4" />
       <div className="models-experience-shell">
-        {/* 历史会话固定侧栏（PRD §7.8）：收起态窄图标轨，展开 248px；会话数据待接 /experience/sessions 后端。
-            显式传空数组——组件内置的 MOCK_HISTORY_SESSIONS 只是给开发自测用的默认值，
-            真实页面不接就该显示"暂无历史会话"空态，不能把假会话名当真数据展示给用户看。 */}
+        {/* 历史会话固定侧栏（PRD §7.8）：收起态窄图标轨，展开 248px；接真实 GET /experience/sessions，
+            展开时拉取列表，点击会话用 GET messages 恢复消息到当前视图 */}
         <HistorySessionSidebar
           collapsed={historyCollapsed}
           onToggleCollapsed={setHistoryCollapsed}
-          sessions={[]}
-          onSelectSession={() => { /* TODO: 接 GET /experience/sessions/{id} 后恢复会话内容 */ }}
-          onNewSession={() => {
-            setMessages(INITIAL_MESSAGES)
-            setInput('')
-          }}
+          sessions={historySessions}
+          activeSessionId={sessionId ?? undefined}
+          onSelectSession={(id) => void openHistorySession(id)}
+          onNewSession={startNewSession}
         />
 
         <div className="models-experience-main">

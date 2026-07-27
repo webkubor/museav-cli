@@ -34,9 +34,34 @@ export function formatPlaygroundSpend(metrics: Pick<ExperienceMessageMetrics, 's
   return metrics.spend >= 0.01 ? `¥${metrics.spend.toFixed(2)}` : `¥${metrics.spend.toFixed(4)}`
 }
 
-/** Token 数粗估（无 tokenizer，按字符数/4 估算），仅用于本地显示，真实数字待接会话 API 后端 usage 字段 */
+/** Token 数粗估（无 tokenizer，按字符数/4 估算）——仅作 SSE 统计帧到达前的占位，
+ *  真实 Token 数以后端 `modelgo.stats` 帧的 input_tokens/output_tokens 为准 */
 export function estimateTokens(text: string): number {
   return Math.max(1, Math.round(text.length / 4))
+}
+
+/** 九类体验任务枚举 → 展示文案，取自后端接口文档 §二 task 值域（字面值以文档为准） */
+export type ExperienceTaskType =
+  | 'text_to_text'
+  | 'image_to_text'
+  | 'video_to_text'
+  | 'text_to_image'
+  | 'image_to_image'
+  | 'text_to_audio'
+  | 'audio_to_text'
+  | 'text_to_video'
+  | 'image_to_video'
+
+export const EXPERIENCE_TASK_LABEL: Record<ExperienceTaskType, string> = {
+  text_to_text: '对话',
+  image_to_text: '对话',
+  video_to_text: '对话',
+  text_to_image: '文生图',
+  image_to_image: '图生图',
+  text_to_audio: '语音合成',
+  audio_to_text: '语音识别',
+  text_to_video: '文生视频',
+  image_to_video: '图生视频',
 }
 
 /**

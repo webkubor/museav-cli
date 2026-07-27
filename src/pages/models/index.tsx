@@ -6,10 +6,15 @@ import {
   LuColumns2,
   LuChevronDown,
   LuZap,
+  LuImage,
+  LuAudioLines,
+  LuVideo,
 } from 'react-icons/lu'
 import {
   createExperienceSession,
   streamExperienceMessage,
+  sendExperienceMediaMessage,
+  getExperienceMessage,
   listExperienceSessions,
   getExperienceSessionMessages,
   getExperienceSessionStats,
@@ -26,13 +31,15 @@ import { useModels } from '@/features/models/hooks/useModels'
 import { prettyModelName } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import {
-  isChatModel,
   estimateTokens,
   formatPlaygroundLatency,
   dualPriceText,
   EXPERIENCE_TASK_LABEL,
+  EXPERIENCE_CATEGORY_DEFAULT_TASK,
+  resolveModelCategory,
   PLAYGROUND_SAMPLE_PROMPTS,
   type ExperienceMessage,
+  type ExperienceCategoryKey,
 } from './model-experience-data'
 import { ModelPickerDialog } from './components/ModelPickerDialog'
 import { HistorySessionSidebar, type HistorySessionItem } from './components/HistorySessionSidebar'
@@ -69,6 +76,36 @@ function cleanErrorMessage(raw: string | undefined): string {
   }
 }
 
+/**
+ * 从抛出的请求错误里挖出人话消息。媒体任务失败走 §5.2 的
+ * data.field_errors[].code=PLAYGROUND_MEDIA_FAILED、message=上游原始错误摘要——
+ * 实测这个 message 本身又是一层 JSON.stringify 过的原始信封（同 cleanErrorMessage
+ * 处理的历史消息 error 字段一个毛病），要再解一层，否则只会显示信封外层的
+ * "参数校验失败" 泛用文案。
+ */
+function extractApiErrorMessage(err: unknown): string {
+  const data = (err as { data?: { field_errors?: Array<{ message?: string }>; details?: Array<{ message?: string }> } } | undefined)?.data
+  const raw = data?.field_errors?.[0]?.message ?? data?.details?.[0]?.message
+  if (raw) return cleanErrorMessage(raw)
+  return (err as Error).message || '请稍后重试'
+}
+
+/** 空态图标/文案按类别区分（PRD §7.9 各任务空态，原型 App.tsx:19317-19322 逐字对齐） */
+const CATEGORY_EMPTY_COPY: Record<ExperienceCategoryKey, { icon: typeof LuZap; title: string; hint: string }> = {
+  dialogue: { icon: LuZap, title: '发送第一条消息，验证模型输出与成本', hint: '支持的图片、音频或视频可以作为消息附件发送。' },
+  image: { icon: LuImage, title: '配置输入后开始生成图片', hint: '结果会在当前模型列中展示预估费用与实际费用。' },
+  audio: { icon: LuAudioLines, title: '配置输入后开始生成音频', hint: '结果会在当前模型列中展示预估费用与实际费用。' },
+  video: { icon: LuVideo, title: '配置输入后开始生成视频', hint: '结果会在当前模型列中展示预估费用与实际费用。' },
+}
+
+/** composer 占位符按类别区分（原型 App.tsx:18475-18485 逐字对齐） */
+const CATEGORY_PLACEHOLDER: Record<ExperienceCategoryKey, string> = {
+  dialogue: '输入 Prompt，Enter 发送，Shift + Enter 换行…',
+  image: '描述主体、场景、光线与画面风格…',
+  audio: '输入要合成语音的文本…',
+  video: '描述镜头、主体运动、运镜与氛围…',
+}
+
 export default function ModelsPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -96,15 +133,16 @@ export default function ModelsPage() {
 
   // 接口文档§九说 GET /catalog/models 支持 ?experience_type= 按可体验任务筛选，但 test 环境
   // 目录里全部 40 个模型的 experience_types 字段都是空数组（后端数据未回填，见 #533）——
-  // 真按文档筛选会导致模型选择器完全空白，页面彻底不可用，所以先退回只按 modality 筛选，
-  // 会话创建失败时给出针对性提示（见 sendPrompt 的错误处理），不是我自己要弱化校验
-  const { selectedId, setSelectedId, modelsQuery } = useModels({ modality: 'text' })
+  // 真按文档筛选会导致模型选择器完全空白，页面彻底不可用，所以不传 modality，取全量目录，
+  // 用 resolveModelCategory 按输出模态自己分桶到对话/图像/音频/视频四个类别（ModelPickerDialog
+  // 的类别 Tab 用的是同一份逻辑，两边口径一致）
+  const { selectedId, setSelectedId, modelsQuery } = useModels()
 
-  const allModels = useMemo(
-    () => (modelsQuery.data?.items ?? []).filter(isChatModel),
-    [modelsQuery.data?.items],
-  )
+  const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
   const selectedModel = allModels.find((model) => model.id === selectedId) ?? allModels[0]
+  const selectedCategory = selectedModel ? resolveModelCategory(selectedModel) : 'dialogue'
+  const selectedTask = EXPERIENCE_CATEGORY_DEFAULT_TASK[selectedCategory]
+  const isDialogue = selectedCategory === 'dialogue'
 
   /** composer 底部预估费用：与原型 estimatePlaygroundTaskSpend 对齐——按当前草稿估算 input token，
    *  输出 token 取 min(400, max_tokens) 上限估算（App.tsx:16967-16990） */
@@ -249,9 +287,34 @@ export default function ModelsPage() {
     if (sessionId && selectedModel) void resetExperienceModelConfig(sessionId, selectedModel.model_id)
   }
 
+  /** 懒创建会话：按当前模型分类/任务建（对话/媒体走的是同一个会话创建接口，只是 category/task 不同） */
+  async function ensureConversation(): Promise<string> {
+    if (conversationId) return conversationId
+    if (!selectedModel) throw new Error('未选择模型')
+    const session = await createExperienceSession({
+      name: '未命名会话',
+      category: selectedCategory,
+      task: selectedTask,
+      // 单模型体验没有"多列同步"概念，用 independent（真实枚举见 experience-sessions.ts 注释）
+      input_mode: 'independent',
+      models: [selectedModel.model_id],
+    })
+    setSessionId(session.id)
+    const convId = session.conversations?.[0]?.id ?? null
+    setConversationId(convId)
+    if (!convId) throw new Error('会话创建异常：未返回对话列 id')
+    return convId
+  }
+
   async function sendPrompt() {
     const prompt = input.trim()
     if (!prompt || !selectedModel || isStreaming) return
+    if (isDialogue) await sendDialoguePrompt(prompt)
+    else await sendMediaPrompt(prompt)
+  }
+
+  async function sendDialoguePrompt(prompt: string) {
+    if (!selectedModel) return
     setMessages((prev) => [...prev, { role: 'user', content: prompt }, { role: 'assistant', content: '' }])
     setInput('')
     setIsStreaming(true)
@@ -274,23 +337,7 @@ export default function ModelsPage() {
     }
 
     try {
-      // 懒创建会话：单模型页只有一个对话组任务，会话在第一次真正发送时才建
-      let convId = conversationId
-      if (!convId) {
-        const session = await createExperienceSession({
-          name: '未命名会话',
-          category: 'dialogue',
-          task: 'text_to_text',
-          // 单模型体验没有"多列同步"概念，用 independent（真实枚举见 experience-sessions.ts 注释）
-          input_mode: 'independent',
-          models: [selectedModel.model_id],
-        })
-        setSessionId(session.id)
-        convId = session.conversations?.[0]?.id ?? null
-        setConversationId(convId)
-      }
-      if (!convId) throw new Error('会话创建异常：未返回对话列 id')
-
+      const convId = await ensureConversation()
       const reply = await streamExperienceMessage({
         conversationId: convId,
         dispatchId: crypto.randomUUID(),
@@ -375,6 +422,104 @@ export default function ModelsPage() {
     }
   }
 
+  /** 媒体任务发送（§5.2 同步 JSON / §5.3-5.4 视频异步轮询），无附件版——图生图/语音识别等
+   *  "必须携带附件"的任务在没有附件上传功能前会被后端校验拒绝，报错走下面统一的 catch */
+  async function sendMediaPrompt(prompt: string) {
+    if (!selectedModel) return
+    const modelLabel = prettyModelName(selectedModel.display_name, selectedModel.model_id)
+    setMessages((prev) => [...prev, { role: 'user', content: prompt }, { role: 'assistant', content: '' }])
+    setInput('')
+    setIsStreaming(true)
+    const startedAt = Date.now()
+
+    function applyResult(patch: Partial<ExperienceMessage>) {
+      setMessages((prev) => {
+        const next = [...prev]
+        const last = next[next.length - 1]
+        if (last?.role === 'assistant') next[next.length - 1] = { ...last, ...patch }
+        return next
+      })
+    }
+
+    try {
+      const convId = await ensureConversation()
+      const { message, attachment_urls } = await sendExperienceMediaMessage({
+        conversationId: convId,
+        dispatchId: crypto.randomUUID(),
+        content: prompt,
+      })
+
+      if (message.status === 'running' && message.async_task_id) {
+        // 视频异步任务：建议间隔 5 秒轮询，succeeded/failed 才是终态
+        applyResult({ content: '视频生成中，可稍后在调用日志的异步任务里追踪…' })
+        void pollVideoMessage(convId, message.id, modelLabel)
+        return
+      }
+
+      const media = message.attachments.map((a) => ({ kind: a.kind, url: attachment_urls[a.resource_id] ?? '' }))
+      const spend = Number(message.actual_spend ?? 0)
+      applyResult({
+        content: message.content,
+        media: media.length > 0 ? media : undefined,
+        metrics: {
+          model: modelLabel,
+          inputTokens: 0,
+          outputTokens: 0,
+          firstTokenLatency: '',
+          totalLatency: formatPlaygroundLatency(message.total_ms ?? Date.now() - startedAt),
+          spend,
+          free: spend === 0,
+        },
+      })
+      void refreshHistorySessions()
+    } catch (err) {
+      applyResult({ error: `体验请求失败：${extractApiErrorMessage(err)}` })
+    } finally {
+      setIsStreaming(false)
+    }
+  }
+
+  /** 视频异步任务轮询（§5.4）：running 继续轮询，succeeded/failed 为终态 */
+  async function pollVideoMessage(conversationId: string, messageId: string, modelLabel: string) {
+    for (;;) {
+      await new Promise((resolve) => window.setTimeout(resolve, 5000))
+      try {
+        const { message, attachment_urls } = await getExperienceMessage(conversationId, messageId)
+        if (message.status === 'running') continue
+        setMessages((prev) => {
+          const next = [...prev]
+          const last = next[next.length - 1]
+          if (last?.role !== 'assistant') return prev
+          if (message.status === 'failed') {
+            return [...next.slice(0, -1), { ...last, error: message.error || '视频生成失败', content: '' }]
+          }
+          const media = message.attachments.map((a) => ({ kind: a.kind, url: attachment_urls[a.resource_id] ?? '' }))
+          return [
+            ...next.slice(0, -1),
+            {
+              ...last,
+              content: '',
+              media: media.length > 0 ? media : undefined,
+              metrics: {
+                model: modelLabel,
+                inputTokens: 0,
+                outputTokens: 0,
+                firstTokenLatency: '',
+                totalLatency: formatPlaygroundLatency(message.total_ms ?? 0),
+                spend: Number(message.actual_spend ?? 0),
+                free: false,
+              },
+            },
+          ]
+        })
+        void refreshHistorySessions()
+        return
+      } catch {
+        // 单次轮询失败不放弃，继续等下一轮（§8.3：异步任务刷新失败保留最后已知状态，允许稍后重试）
+      }
+    }
+  }
+
   return (
     <div className="models-experience-page">
       <PageHeader title="模型体验" description="通过文本与附件连续对话，验证回复、Token、延迟与费用。" className="mb-4" />
@@ -410,7 +555,7 @@ export default function ModelsPage() {
                       <div className="min-w-0">
                         <div className="models-experience-modelbar-title">{prettyModelName(selectedModel.display_name, selectedModel.model_id)}</div>
                         <div className="models-experience-modelbar-sub">
-                          {selectedModel.vendor || selectedModel.provider || 'ModelGo'} · 对话
+                          {selectedModel.vendor || selectedModel.provider || 'ModelGo'} · {EXPERIENCE_TASK_LABEL[selectedTask]}
                         </div>
                       </div>
                       <span className="models-experience-price-chip">
@@ -440,9 +585,11 @@ export default function ModelsPage() {
                   >
                     <LuSettings2 size={14} />
                   </button>
-                  <Button variant="outline" size="sm" className="rounded-md" onClick={() => setCompareAddOpen(true)}>
-                    <LuColumns2 size={13} /> 模型对比
-                  </Button>
+                  {isDialogue && (
+                    <Button variant="outline" size="sm" className="rounded-md" onClick={() => setCompareAddOpen(true)}>
+                      <LuColumns2 size={13} /> 模型对比
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -451,23 +598,28 @@ export default function ModelsPage() {
                 isStreaming={isStreaming}
                 emptyState={
                   <div className="models-experience-empty">
-                    <LuZap size={20} />
-                    <strong>发送第一条消息，验证模型输出与成本</strong>
-                    <span>支持的图片、音频或视频可以作为消息附件发送。</span>
-                    <div className="models-experience-sample-row">
-                      {PLAYGROUND_SAMPLE_PROMPTS.map((sample) => (
-                        <button
-                          key={sample.label}
-                          type="button"
-                          onClick={() => {
-                            setInput(sample.prompt)
-                            window.setTimeout(() => inputRef.current?.focus(), 80)
-                          }}
-                        >
-                          {sample.prompt}
-                        </button>
-                      ))}
-                    </div>
+                    {(() => {
+                      const EmptyIcon = CATEGORY_EMPTY_COPY[selectedCategory].icon
+                      return <EmptyIcon size={20} />
+                    })()}
+                    <strong>{CATEGORY_EMPTY_COPY[selectedCategory].title}</strong>
+                    <span>{CATEGORY_EMPTY_COPY[selectedCategory].hint}</span>
+                    {isDialogue && (
+                      <div className="models-experience-sample-row">
+                        {PLAYGROUND_SAMPLE_PROMPTS.map((sample) => (
+                          <button
+                            key={sample.label}
+                            type="button"
+                            onClick={() => {
+                              setInput(sample.prompt)
+                              window.setTimeout(() => inputRef.current?.focus(), 80)
+                            }}
+                          >
+                            {sample.prompt}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 }
               />
@@ -482,7 +634,7 @@ export default function ModelsPage() {
                 onSend={sendPrompt}
                 isStreaming={isStreaming}
                 onStop={() => abortRef.current?.abort()}
-                placeholder="输入 Prompt，Enter 发送，Shift + Enter 换行…"
+                placeholder={CATEGORY_PLACEHOLDER[selectedCategory]}
                 sendLabel="发送"
                 className="models-experience-composer-wrap"
                 activeChip={
@@ -511,7 +663,7 @@ export default function ModelsPage() {
           modelName={prettyModelName(selectedModel.display_name, selectedModel.model_id)}
           vendor={selectedModel.vendor || selectedModel.provider || 'ModelGo'}
           maxOutputTokens={Math.max(256, selectedModel.max_output_tokens || 4096)}
-          task="text_to_text"
+          task={selectedTask}
           values={chatParams}
           onChange={handleChatParamChange}
           onReset={handleResetChatParams}

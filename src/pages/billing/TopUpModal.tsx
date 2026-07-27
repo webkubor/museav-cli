@@ -65,7 +65,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
     CHANNELS.some((c) => c.value === channel) ? channel : (CHANNELS[0]?.value ?? 'alipay')
   ) as RechargePaymentChannel
 
-  const PRESETS = ['10', '50', '100', '200', '500', '1000']
+  const PRESETS = ['100', '500', '1000', '5000']
 
   const recharge = useMutation({
     mutationFn: () =>

@@ -76,8 +76,9 @@ const STATUS_DESC: Record<IncomeRecordStatus, { zh: string; en: string }> = {
 }
 
 /**
- * 账单页收入账本（qa#433，对齐 PRD BillingPage.billing-ledger-panel）：
+ * 账单页收入账本（qa#530，续 #433，对齐飞书 PRD 1.0.4 §8.6.1/§13.3 列顺序与分页）：
  * 单一「入账记录」表 —— 充值 / 赠送 / 奖励三类收入流合成一张表，时间倒序、游标翻页。
+ * 列顺序：编号/时间/余额桶/类型/金额/渠道/状态（无发票列，PRD 1.0.4 已去掉该列）。
  * 数据来自 services/billing.listIncomeRecords（后端 #431 未交付前走充值+赠送前端合成回落）。
  * 发票为内嵌 tab（BillingInvoiceTab）。
  */
@@ -102,7 +103,7 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
         bucket: bucket === 'all' ? undefined : bucket,
         ...timeRange(timeFilter),
         cursor: pager.cursor,
-        page_size: 15,
+        page_size: 10,
       }),
     enabled: !!tenantId && ledgerTab === 'transactions',
     placeholderData: keepPreviousData,
@@ -203,12 +204,11 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
               <TableRow>
                 <TableHead>{t('billing.income.cols.recordRef')}</TableHead>
                 <TableHead>{t('billing.income.cols.time')}</TableHead>
-                <TableHead>{t('billing.income.cols.type')}</TableHead>
-                <TableHead>{t('billing.income.cols.channel')}</TableHead>
                 <TableHead>{t('billing.income.cols.bucket')}</TableHead>
+                <TableHead>{t('billing.income.cols.type')}</TableHead>
                 <TableHead>{t('billing.income.cols.amount')}</TableHead>
+                <TableHead>{t('billing.income.cols.channel')}</TableHead>
                 <TableHead>{t('billing.income.cols.status')}</TableHead>
-                <TableHead>{t('billing.income.cols.invoice')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -218,19 +218,16 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
                   <TableCell className="text-xs text-mg-text-3 font-mono whitespace-nowrap">
                     {rec.created_at ? formatDateTime(rec.created_at) : '—'}
                   </TableCell>
+                  <TableCell className="text-xs text-mg-text-2 whitespace-nowrap">{bucketLabel(rec.balance_bucket)}</TableCell>
                   <TableCell className="whitespace-nowrap">
                     <Badge variant={TYPE_BADGE[rec.type]} size="sm" title={TYPE_DESC[rec.type][lang]} className="cursor-help">{t(`billing.income.types.${rec.type}`)}</Badge>
                   </TableCell>
-                  <TableCell className="text-xs text-mg-text-2 max-w-[140px] truncate">{channelLabel(rec.channel)}</TableCell>
-                  <TableCell className="text-xs text-mg-text-2 whitespace-nowrap">{bucketLabel(rec.balance_bucket)}</TableCell>
                   <TableCell className="text-xs font-bold font-mono whitespace-nowrap text-mg-success">{renderAmount(rec)}</TableCell>
+                  <TableCell className="text-xs text-mg-text-2 max-w-[140px] truncate">{channelLabel(rec.channel)}</TableCell>
                   <TableCell className="whitespace-nowrap">
                     <Badge variant={rec.status === 'completed' ? 'success' : 'warning'} size="sm" title={STATUS_DESC[rec.status][lang]} className="cursor-help">
                       {t(`billing.income.status.${rec.status}`)}
                     </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-mg-text-3 whitespace-nowrap">
-                    {rec.invoice ? t(`billing.income.invoice.${rec.invoice.status}`) : t('billing.income.invoice.none')}
                   </TableCell>
                 </TableRow>
               ))}

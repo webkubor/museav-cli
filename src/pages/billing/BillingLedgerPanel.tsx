@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
+import { LuTicket, LuGift, LuUsers, LuShieldCheck, LuWallet } from 'react-icons/lu'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 import { Pagination } from '@/components/ui/Pagination'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -12,9 +13,23 @@ import { useCursorPager } from '@/hooks/use-cursor-pager'
 import { usePermissions } from '@/hooks/use-permissions'
 import { isDomestic } from '@/lib/market'
 import { PERMS } from '@/config/permissions'
+import { AlipayIcon, WechatIcon } from '@/constants/brand-icons'
 import { listIncomeRecords } from '@/services/billing'
 import type { IncomeRecord, IncomeRecordType, IncomeRecordStatus, IncomeBalanceBucket } from '@/services/billing'
 import { BillingInvoiceTab } from './invoice/BillingInvoiceTab'
+
+/** 渠道图标：支付渠道用品牌 logo，非支付来源用语义图标区分，避免整列都是干巴巴的文字 */
+const CHANNEL_ICON: Record<string, React.ReactNode> = {
+  alipay: <AlipayIcon size={14} />,
+  wechat: <WechatIcon size={14} />,
+  admin: <LuShieldCheck size={14} className="text-mg-text-3 shrink-0" />,
+  promo: <LuTicket size={14} className="text-mg-text-3 shrink-0" />,
+  activity: <LuGift size={14} className="text-mg-text-3 shrink-0" />,
+  referral: <LuUsers size={14} className="text-mg-text-3 shrink-0" />,
+}
+function channelIcon(channel: string) {
+  return CHANNEL_ICON[channel] ?? <LuWallet size={14} className="text-mg-text-3 shrink-0" />
+}
 
 const TYPE_FILTERS: Array<{ value: 'all' | IncomeRecordType }> = [
   { value: 'all' },
@@ -223,7 +238,12 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
                     <Badge variant={TYPE_BADGE[rec.type]} size="sm" title={TYPE_DESC[rec.type][lang]} className="cursor-help">{t(`billing.income.types.${rec.type}`)}</Badge>
                   </TableCell>
                   <TableCell className="text-xs font-bold font-mono whitespace-nowrap text-mg-success">{renderAmount(rec)}</TableCell>
-                  <TableCell className="text-xs text-mg-text-2 max-w-[140px] truncate">{channelLabel(rec.channel)}</TableCell>
+                  <TableCell className="text-xs text-mg-text-2 max-w-[140px]">
+                    <span className="flex items-center gap-1.5">
+                      {channelIcon(rec.channel)}
+                      <span className="truncate">{channelLabel(rec.channel)}</span>
+                    </span>
+                  </TableCell>
                   <TableCell className="whitespace-nowrap">
                     <Badge variant={rec.status === 'completed' ? 'success' : 'warning'} size="sm" title={STATUS_DESC[rec.status][lang]} className="cursor-help">
                       {t(`billing.income.status.${rec.status}`)}

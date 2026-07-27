@@ -52,3 +52,35 @@ export function nowISO(): string {
 export function addFromNowISO(amount: number, unit: TimeUnit): string {
   return dayjs().add(amount, unit).toISOString()
 }
+
+/**
+ * datetime-local 输入值（`YYYY-MM-DDTHH:mm`，无时区）按用户显示时区解释 → UTC ISO。
+ * 空/非法 → ''。用户屏幕上按显示时区读时间，输入也按同一时区解释，避免「填 12:00 却存成浏览器时区 12:00」。
+ */
+export function localInputToISO(v: string, tz: string = userTimeZone()): string {
+  if (!v) return ''
+  const d = dayjs.tz(v, tz)
+  return d.isValid() ? d.toISOString() : ''
+}
+
+/** UTC ISO → 用户显示时区的 datetime-local 值（`YYYY-MM-DDTHH:mm`）；空/非法 → ''。 */
+export function isoToLocalInput(iso: string | null | undefined, tz: string = userTimeZone()): string {
+  if (!iso) return ''
+  const d = dayjs.utc(iso).tz(tz)
+  return d.isValid() ? d.format('YYYY-MM-DDTHH:mm') : ''
+}
+
+/** 「现在」所在月 + offset 个月的月初 00:00，按用户显示时区取边界 → UTC ISO。 */
+export function startOfMonthISO(offset: number, tz: string = userTimeZone()): string {
+  return dayjs().tz(tz).add(offset, 'month').startOf('month').toISOString()
+}
+
+/** 同上取月末 23:59:59.999 → UTC ISO。 */
+export function endOfMonthISO(offset: number, tz: string = userTimeZone()): string {
+  return dayjs().tz(tz).add(offset, 'month').endOf('month').toISOString()
+}
+
+/** 用户显示时区里的「今天」日历日（`YYYY-MM-DD`），供 date input 默认值/下限。 */
+export function todayInputDate(tz: string = userTimeZone()): string {
+  return dayjs().tz(tz).format('YYYY-MM-DD')
+}

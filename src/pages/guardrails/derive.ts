@@ -9,6 +9,7 @@
  * 禁止在组件里散落这套回退逻辑。
  */
 import type { GuardrailBudgetPolicy, GuardrailDetail } from '@/interfaces/guardrails'
+import { isoToLocalInput as dtIsoToLocalInput, localInputToISO as dtLocalInputToISO } from '@/lib/datetime'
 import { trimAmountScale, groupThousands } from './budget'
 
 export type GuardrailScope = 'global' | 'member' | 'key'
@@ -284,22 +285,17 @@ export function summarize(list: GuardrailDetail[]): GuardrailSummary {
 }
 
 // ─── 提额到期时间：ISO ↔ <input type="datetime-local"> 值互转 ───────────────
-// datetime-local 取/给的是「本地无时区」字符串 YYYY-MM-DDTHH:mm；落库统一 ISO。
+// datetime-local 取/给的是「无时区」字符串 YYYY-MM-DDTHH:mm；统一委托 @/lib/datetime
+// 按「用户显示时区」解释/回填（不再用浏览器时区），落库统一 UTC ISO（需求方 #249）。
 
-/** ISO → datetime-local 输入值（本地时区展示）；空/非法 → 空串 */
+/** ISO(UTC) → datetime-local 输入值（用户显示时区）；空/非法 → 空串 */
 export function isoToLocalInput(iso: string | null | undefined): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  return dtIsoToLocalInput(iso)
 }
 
-/** datetime-local 输入值 → ISO；空/非法 → 空串 */
+/** datetime-local 输入值 → UTC ISO（按用户显示时区解释）；空/非法 → 空串 */
 export function localInputToIso(v: string): string {
-  if (!v) return ''
-  const d = new Date(v)
-  return Number.isNaN(d.getTime()) ? '' : d.toISOString()
+  return dtLocalInputToISO(v)
 }
 
 /** 名称模糊匹配（分区搜索用） */

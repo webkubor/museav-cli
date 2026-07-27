@@ -6,7 +6,7 @@
 
 import type { DateRangeValue } from '@/components/ui/DateRangePicker'
 import { densifyDailyBuckets as densifyDaily } from '@/lib/chart-buckets'
-import { addFromNowISO, endOfLocalDayISO, nowISO, startOfLocalDayISO, userTimeZone } from '@/lib/datetime'
+import { addFromNowISO, endOfLocalDayISO, endOfMonthISO, nowISO, startOfLocalDayISO, startOfMonthISO, userTimeZone } from '@/lib/datetime'
 import type { SeriesDataPoint } from '@/types'
 
 /** 用量趋势支持的指标类型。 */
@@ -14,20 +14,6 @@ export type Metric = 'spend' | 'requests' | 'tokens'
 
 /** 用量页快捷时间范围对应天数。 */
 export const USAGE_PRESET_DAYS: Record<string, number> = { '7d': 7, '30d': 30, '90d': 90 }
-
-function startOfMonthISO(offset: number) {
-  const date = new Date()
-  date.setMonth(date.getMonth() + offset, 1)
-  date.setHours(0, 0, 0, 0)
-  return date.toISOString()
-}
-
-function endOfMonthISO(offset: number) {
-  const date = new Date()
-  date.setMonth(date.getMonth() + offset + 1, 0)
-  date.setHours(23, 59, 59, 999)
-  return date.toISOString()
-}
 
 function todayKey() {
   return new Intl.DateTimeFormat('en-CA', {

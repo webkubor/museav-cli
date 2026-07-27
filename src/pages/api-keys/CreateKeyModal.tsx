@@ -32,6 +32,7 @@ import {
 } from "./constants";
 import { KEY_TYPE_LABEL, KEY_TYPE_DESC } from "./derive";
 import { trackEvent } from "@/lib/track";
+import { todayInputDate } from "@/lib/datetime";
 import type { GuardrailDetail } from "@/interfaces/guardrails";
 import {
   activeDefaultGuardrail,
@@ -102,7 +103,7 @@ export function CreateKeyModal({
     isPersonalTenant && scope === "member" ? "workspace" : scope;
   const [memberAccountId, setMemberAccountId] = useState("");
   const [guardrailIds, setGuardrailIds] = useState<string[]>([]);
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = todayInputDate();
   const [expiryRange, setExpiryRange] = useState<DateRangeValue>({
     preset: mustSetExpiry ? "1y" : "all",
     startDate: todayStr,

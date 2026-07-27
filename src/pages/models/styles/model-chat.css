@@ -162,6 +162,35 @@
   font-weight: 700;
 }
 
+/* 媒体结果卡（§7.10）：图片/音频/视频产物 */
+.models-experience-media-result {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.models-experience-media-image {
+  max-width: 100%;
+  max-height: 360px;
+  border-radius: var(--radius-md);
+  display: block;
+}
+
+.models-experience-media-audio,
+.models-experience-media-video {
+  max-width: 100%;
+}
+
+.models-experience-media-download {
+  color: var(--brand-base);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.models-experience-media-download:hover {
+  text-decoration: underline;
+}
+
 .models-experience-message-bubble > span.models-experience-message-error {
   color: var(--mg-danger);
   font-size: 13px;

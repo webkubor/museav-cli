@@ -31,31 +31,22 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { cn, formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
+import {
+  resolveModelCategory,
+  EXPERIENCE_CATEGORY_ORDER,
+  EXPERIENCE_CATEGORY_LABEL,
+  type ExperienceCategoryKey,
+} from '../model-experience-data'
 import '../styles/model-picker-dialog.css'
 
-/** 一级类别，PRD 1.0.4 原文四类 */
-export type ModelPickerCategory = 'dialogue' | 'image' | 'audio' | 'video'
+/** 一级类别，PRD 1.0.4 原文四类——复用 model-experience-data 里的共享定义，单模型页/对比页/弹窗三处口径一致 */
+export type ModelPickerCategory = ExperienceCategoryKey
 
 export type ModelPickerMode = 'single' | 'compareSwitch' | 'compareAdd'
 
-/** 类别 → 任务枚举（仅用于分类推断/展示，任务级交互本次不实现） */
-// 九类体验任务枚举，取自后端 2026-07-27 已合入 test 的《模型体验(Playground V1)前端接口文档》
-// §二 task 值域，字面值以文档为准（不是 PRD 文字里的猜测名）
-const CATEGORY_TASKS: Record<ModelPickerCategory, string[]> = {
-  dialogue: ['text_to_text', 'image_to_text', 'video_to_text'],
-  image: ['text_to_image', 'image_to_image'],
-  audio: ['text_to_audio', 'audio_to_text'],
-  video: ['text_to_video', 'image_to_video'],
-}
-
-const CATEGORY_ORDER: ModelPickerCategory[] = ['dialogue', 'image', 'audio', 'video']
-
-const CATEGORY_LABEL: Record<ModelPickerCategory, string> = {
-  dialogue: '对话',
-  image: '图像',
-  audio: '音频',
-  video: '视频',
-}
+const CATEGORY_ORDER = EXPERIENCE_CATEGORY_ORDER
+const CATEGORY_LABEL = EXPERIENCE_CATEGORY_LABEL
+const resolveCategory = resolveModelCategory
 
 const MODALITY_ICON: Record<string, IconType> = {
   text: LuFileText,
@@ -64,29 +55,6 @@ const MODALITY_ICON: Record<string, IconType> = {
   video: LuVideo,
 }
 const MODALITY_CODES = ['text', 'image', 'audio', 'video']
-
-function taskToCategory(task: string): ModelPickerCategory | undefined {
-  for (const cat of CATEGORY_ORDER) {
-    if (CATEGORY_TASKS[cat].includes(task)) return cat
-  }
-  return undefined
-}
-
-/**
- * 推断模型所属一级类别。优先取 experience_types（服务端下发的可体验任务，直接
- * 对应 PRD 任务枚举）；缺失时按 输出模态 兜底（老数据/字段未下发场景）。
- */
-function resolveCategory(model: CatalogModelItem): ModelPickerCategory {
-  for (const task of model.experience_types ?? []) {
-    const cat = taskToCategory(task)
-    if (cat) return cat
-  }
-  const out = model.output_modalities ?? model.modalities ?? []
-  if (out.includes('video')) return 'video'
-  if (out.includes('audio')) return 'audio'
-  if (out.includes('image') && !out.includes('text')) return 'image'
-  return 'dialogue'
-}
 
 /** 是否付费模型：只认服务端显式限免标记 + 价格字段，不做其它推断 */
 function isPaidModel(model: CatalogModelItem): boolean {

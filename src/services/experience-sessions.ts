@@ -206,6 +206,37 @@ function parseSSELine(line: string): SSELine {
   return null
 }
 
+/**
+ * 同步媒体任务发送（text_to_image / image_to_image / text_to_audio / audio_to_text），
+ * 走普通 JSON（非 SSE），接口文档第五节 5.2。同步等待模型完成，生图/TTS 通常 5-30 秒，
+ * 调用方应设置较长的请求超时（ky 客户端默认 30s，媒体任务用独立 fetch 不复用它）。
+ */
+export interface SendMediaMessageResult {
+  message: ExperienceMessageView
+  attachment_urls: Record<string, string>
+}
+
+export async function sendExperienceMediaMessage(opts: {
+  conversationId: string
+  dispatchId: string
+  content: string
+  attachments?: string[]
+}): Promise<SendMediaMessageResult> {
+  return post(`experience/conversations/${opts.conversationId}/messages`, {
+    dispatch_id: opts.dispatchId,
+    content: opts.content,
+    attachments: opts.attachments ?? [],
+  })
+}
+
+/**
+ * 视频任务轮询单条消息（text_to_video / image_to_video），接口文档 5.3/5.4。
+ * running 状态需继续轮询（建议间隔 5 秒），succeeded/failed 是终态。
+ */
+export async function getExperienceMessage(conversationId: string, messageId: string): Promise<SendMediaMessageResult> {
+  return get(`experience/conversations/${conversationId}/messages/${messageId}`)
+}
+
 export interface StreamExperienceMessageOptions {
   conversationId: string
   dispatchId: string

@@ -58,12 +58,34 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                 <span className="models-experience-thinking" aria-label="模型思考中">
                   <i /><i /><i />
                 </span>
+              ) : message.media && message.media.length > 0 ? (
+                <div className="models-experience-media-result">
+                  {message.media.map((m, mIdx) =>
+                    m.kind === 'image' ? (
+                      <img key={mIdx} src={m.url} alt="生成结果" className="models-experience-media-image" />
+                    ) : m.kind === 'audio' ? (
+                      <audio key={mIdx} controls preload="metadata" src={m.url} className="models-experience-media-audio" />
+                    ) : m.kind === 'video' ? (
+                      <video key={mIdx} controls preload="metadata" src={m.url} className="models-experience-media-video" />
+                    ) : null,
+                  )}
+                </div>
               ) : message.role === 'assistant' ? (
                 <div className="cs-markdown"><Markdown>{message.content}</Markdown></div>
               ) : (
                 message.content.split('\n').map((line, lineIndex) => <p key={`${index}-${lineIndex}`}>{line}</p>)
               )}
-              {message.metrics && (
+              {message.metrics && message.media ? (
+                // 媒体结果卡（§7.10）：只展示运行状态/费用/下载，不展示对话专属的 Token/首Token
+                <div className="models-experience-message-meta">
+                  {showModelNameInMeta && <strong>{message.metrics.model}</strong>}
+                  <span>总耗时 {message.metrics.totalLatency}</span>
+                  <span>{formatPlaygroundSpend(message.metrics)}</span>
+                  {message.media[0] && (
+                    <a href={message.media[0].url} download className="models-experience-media-download">下载产物</a>
+                  )}
+                </div>
+              ) : message.metrics ? (
                 <div className="models-experience-message-meta">
                   {showModelNameInMeta && <strong>{message.metrics.model}</strong>}
                   <span>{message.metrics.inputTokens} → {message.metrics.outputTokens} Tokens</span>
@@ -74,7 +96,7 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                   {message.metrics.cheapest && <em className="models-experience-winner-chip is-cheap">成本最低</em>}
                   <MessageCopyButton content={message.content} />
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         )

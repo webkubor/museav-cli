@@ -216,7 +216,7 @@
   },
   "billing": {
     "title": "Billing",
-    "desc": "Manage account balance and track recharge orders.",
+    "desc": "Tenant balance, income records, and invoices. Recharges and rewards are grouped by balance type into this tenant's account.",
     "income": {
       "tab": "Income Records",
       "invoiceTab": "Invoices",

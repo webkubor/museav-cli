@@ -1,7 +1,7 @@
 /**
- * 发票抬头页（FR-B1）
- * 列表（普票/专票，设默认）↔ 新增抬头表单（专票多注册地址/电话/开户行/账号 4 项）。
- * 与「组织设置 → 开票信息」同源。
+ * 发票抬头页（PRD 1.0.4 §8.7.3.1）
+ * 列表（普票/专票，设默认）↔ 新增抬头表单：票种/抬头名称/税号/接收邮箱 4 项，
+ * 普票专票字段一致（PRD 未区分，续 #531）。
  */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -32,10 +32,6 @@ const EMPTY_FORM: CreateInvoiceTitleRequest = {
   company_name: '',
   tax_id: '',
   email: '',
-  reg_address: '',
-  reg_phone: '',
-  bank_name: '',
-  bank_account: '',
 }
 
 export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
@@ -99,7 +95,6 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
 
   // ─── 新增表单视图 ───────────────────────────────
   if (view === 'form') {
-    const isSpecial = form.type === 'vat_special'
     return (
       <div className="space-y-4">
         <button
@@ -126,23 +121,6 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
         <Field label="接收邮箱">
           <Input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="finance@company.com" />
         </Field>
-
-        {isSpecial && (
-          <>
-            <Field label="注册地址">
-              <Input value={form.reg_address} onChange={(e) => set('reg_address', e.target.value)} placeholder="营业执照注册地址" />
-            </Field>
-            <Field label="注册电话">
-              <Input value={form.reg_phone} onChange={(e) => set('reg_phone', e.target.value)} placeholder="注册电话" />
-            </Field>
-            <Field label="开户银行">
-              <Input value={form.bank_name} onChange={(e) => set('bank_name', e.target.value)} placeholder="开户银行" />
-            </Field>
-            <Field label="银行账号">
-              <Input value={form.bank_account} onChange={(e) => set('bank_account', e.target.value)} placeholder="银行账号" />
-            </Field>
-          </>
-        )}
 
         <div className="flex gap-3 pt-1">
           <Button variant="outline" className="flex-1" onClick={() => setView('list')}>
@@ -195,12 +173,6 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
                 </div>
                 <div className="space-y-0.5 text-xs text-mg-text-3">
                   <div>税号 {t.tax_id}</div>
-                  {t.reg_address && <div>{t.reg_address}</div>}
-                  {t.bank_name && (
-                    <div>
-                      {t.bank_name} {t.bank_account}
-                    </div>
-                  )}
                   <div>{t.email}</div>
                 </div>
               </div>

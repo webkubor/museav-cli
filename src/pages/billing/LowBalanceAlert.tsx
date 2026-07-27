@@ -102,16 +102,16 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
     .map((m) => m.account.display_name)
 
   return (
-    <div className="rounded-lg border border-mg-border bg-card-bg p-6 shadow-sm">
+    <div className="billing-low-balance rounded-lg border border-mg-border bg-card-bg p-6 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="min-w-0 space-y-0.5">
+        <div className="min-w-0 flex-1 space-y-0.5">
           <div className="text-sm font-bold text-mg-text-1">{t('billing.lowBalance.title', { defaultValue: '低余额提醒' })}</div>
           <p className="text-xs text-mg-text-3">
             {t('billing.lowBalance.desc', { defaultValue: '余额低于阈值时接收提醒，避免服务调用受到影响。' })}
           </p>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="billing-low-balance-controls flex items-center gap-3 flex-wrap">
           {isEnterprise && (
             <Popover
               trigger={
@@ -119,7 +119,7 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
                   type="button"
                   disabled={!config.enabled}
                   className={cn(
-                    'flex items-center gap-1.5 h-9 px-3 rounded-md border border-mg-border text-xs font-semibold text-mg-text-2 hover:bg-mg-fill-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed',
+                    'billing-low-balance-recipient flex items-center gap-1.5 h-9 px-3 rounded-md border border-mg-border text-xs font-semibold text-mg-text-2 hover:bg-mg-fill-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed',
                   )}
                 >
                   <span className="text-mg-text-3">{t('billing.lowBalance.recipients', { defaultValue: '通知人' })}</span>
@@ -153,7 +153,7 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
             />
           )}
 
-          <div className="flex items-center gap-1.5 h-9 px-3 rounded-md border border-mg-border">
+          <div className="billing-low-balance-threshold flex items-center gap-1.5 h-9 px-3 rounded-md border border-mg-border">
             <span className="text-xs text-mg-text-3">{t('billing.lowBalance.threshold', { defaultValue: '提醒阈值' })}</span>
             <span className="text-xs text-mg-text-3">¥</span>
             <input

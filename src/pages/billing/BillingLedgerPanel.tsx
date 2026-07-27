@@ -151,8 +151,8 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
   }
 
   return (
-    <div className="rounded-lg border border-mg-border bg-card-bg p-6 space-y-4 shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b border-mg-border pb-3 flex-wrap">
+    <div className="billing-ledger-panel rounded-lg border border-mg-border bg-card-bg p-6 space-y-4 shadow-sm">
+      <div className="billing-ledger-header flex items-center justify-between gap-3 border-b border-mg-border pb-3 flex-wrap">
         <div className="flex gap-6">
           <button
             type="button"
@@ -184,20 +184,20 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
           )}
         </div>
         {ledgerTab === 'transactions' && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <Select value={timeFilter} onChange={onTimeChange} className="h-8 w-28 text-xs rounded-lg">
+          <div className="billing-ledger-filters flex items-center gap-2 flex-wrap">
+            <Select value={timeFilter} onChange={onTimeChange} className="h-8 w-28 text-xs rounded-md">
               {TIME_FILTERS.map((k) => (
                 <Select.Option key={k} value={k}>{t(`billing.income.timeFilters.${k}`)}</Select.Option>
               ))}
             </Select>
-            <Select value={type} onChange={onTypeChange} className="h-8 w-28 text-xs rounded-lg">
+            <Select value={type} onChange={onTypeChange} className="h-8 w-28 text-xs rounded-md">
               {TYPE_FILTERS.map((f) => (
                 <Select.Option key={f.value} value={f.value}>
                   {f.value === 'all' ? t('billing.income.typeAll') : t(`billing.income.types.${f.value}`)}
                 </Select.Option>
               ))}
             </Select>
-            <Select value={bucket} onChange={onBucketChange} className="h-8 w-28 text-xs rounded-lg">
+            <Select value={bucket} onChange={onBucketChange} className="h-8 w-28 text-xs rounded-md">
               {BUCKET_FILTERS.map((f) => (
                 <Select.Option key={f.value} value={f.value}>
                   {f.value === 'all' ? t('billing.income.bucketAll') : t(`billing.income.buckets.${f.value}`)}
@@ -214,45 +214,47 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
         <EmptyState title={t('billing.income.empty')} />
       ) : (
         <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('billing.income.cols.recordRef')}</TableHead>
-                <TableHead>{t('billing.income.cols.time')}</TableHead>
-                <TableHead>{t('billing.income.cols.bucket')}</TableHead>
-                <TableHead>{t('billing.income.cols.type')}</TableHead>
-                <TableHead>{t('billing.income.cols.amount')}</TableHead>
-                <TableHead>{t('billing.income.cols.channel')}</TableHead>
-                <TableHead>{t('billing.income.cols.status')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((rec) => (
-                <TableRow key={rec.id}>
-                  <TableCell className="font-mono text-xs text-mg-text-2 max-w-[160px] truncate">{rec.record_ref}</TableCell>
-                  <TableCell className="text-xs text-mg-text-3 font-mono whitespace-nowrap">
-                    {rec.created_at ? formatDateTime(rec.created_at) : '—'}
-                  </TableCell>
-                  <TableCell className="text-xs text-mg-text-2 whitespace-nowrap">{bucketLabel(rec.balance_bucket)}</TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    <Badge variant={TYPE_BADGE[rec.type]} size="sm" title={TYPE_DESC[rec.type][lang]} className="cursor-help">{t(`billing.income.types.${rec.type}`)}</Badge>
-                  </TableCell>
-                  <TableCell className="text-xs font-bold font-mono whitespace-nowrap text-mg-success">{renderAmount(rec)}</TableCell>
-                  <TableCell className="text-xs text-mg-text-2 max-w-[140px]">
-                    <span className="flex items-center gap-1.5">
-                      {channelIcon(rec.channel)}
-                      <span className="truncate">{channelLabel(rec.channel)}</span>
-                    </span>
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    <Badge variant={rec.status === 'completed' ? 'success' : 'warning'} size="sm" title={STATUS_DESC[rec.status][lang]} className="cursor-help">
-                      {t(`billing.income.status.${rec.status}`)}
-                    </Badge>
-                  </TableCell>
+          <div className="billing-ledger-table-wrap">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('billing.income.cols.recordRef')}</TableHead>
+                  <TableHead>{t('billing.income.cols.time')}</TableHead>
+                  <TableHead>{t('billing.income.cols.bucket')}</TableHead>
+                  <TableHead>{t('billing.income.cols.type')}</TableHead>
+                  <TableHead>{t('billing.income.cols.amount')}</TableHead>
+                  <TableHead>{t('billing.income.cols.channel')}</TableHead>
+                  <TableHead>{t('billing.income.cols.status')}</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {items.map((rec) => (
+                  <TableRow key={rec.id}>
+                    <TableCell className="font-mono text-xs text-mg-text-2 max-w-[160px] truncate">{rec.record_ref}</TableCell>
+                    <TableCell className="text-xs text-mg-text-3 font-mono whitespace-nowrap">
+                      {rec.created_at ? formatDateTime(rec.created_at) : '—'}
+                    </TableCell>
+                    <TableCell className="text-xs text-mg-text-2 whitespace-nowrap">{bucketLabel(rec.balance_bucket)}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <Badge variant={TYPE_BADGE[rec.type]} size="sm" title={TYPE_DESC[rec.type][lang]} className="cursor-help">{t(`billing.income.types.${rec.type}`)}</Badge>
+                    </TableCell>
+                    <TableCell className="text-xs font-bold font-mono whitespace-nowrap text-mg-success tabular-nums">{renderAmount(rec)}</TableCell>
+                    <TableCell className="text-xs text-mg-text-2 max-w-[140px]">
+                      <span className="flex items-center gap-1.5">
+                        {channelIcon(rec.channel)}
+                        <span className="truncate">{channelLabel(rec.channel)}</span>
+                      </span>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <Badge variant={rec.status === 'completed' ? 'success' : 'warning'} size="sm" title={STATUS_DESC[rec.status][lang]} className="cursor-help">
+                        {t(`billing.income.status.${rec.status}`)}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
           <Pagination
             mode="cursor"
             page={pager.page}

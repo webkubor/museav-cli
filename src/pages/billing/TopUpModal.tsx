@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { LuX } from 'react-icons/lu'
 import { createRecharge } from '@/services/billing'
 import { useCurrency, useEnabledChannels } from '@/hooks/use-platform-config'
 import { usePermissions } from '@/hooks/use-permissions'
@@ -126,20 +127,25 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose} />
 
-      <div className="relative bg-card-bg backdrop-blur-xl modal-glow-flow rounded-lg w-full max-w-[480px] shadow-2xl overflow-visible animate-in fade-in zoom-in-95 duration-300">
+      <div className="billing-recharge-dialog relative bg-card-bg modal-glow-flow rounded-lg w-full max-w-[480px] max-h-[calc(100vh-32px)] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
         {/* 头部 */}
         <div className="px-6 pt-5 pb-4 flex justify-between items-center border-b border-mg-border/60">
           <h2 className="text-[15px] font-bold text-mg-text-1">{t('billing.rechargeModal.title')}</h2>
-          <button className="text-mg-text-3 hover:text-mg-text-1 transition-colors outline-none cursor-pointer w-7 h-7 flex items-center justify-center rounded-lg hover:bg-mg-fill-0" onClick={onClose}>
-            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          <button
+            type="button"
+            aria-label={t('common.close', { defaultValue: '关闭' })}
+            className="text-mg-text-3 hover:text-mg-text-1 transition-colors outline-none cursor-pointer w-8 h-8 flex items-center justify-center rounded-md hover:bg-mg-fill-0"
+            onClick={onClose}
+          >
+            <LuX size={16} />
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-5">
+        <div className="billing-recharge-body px-6 py-5 space-y-5 overflow-y-auto">
           {/* 金额选择标签 */}
           <div>
             <div className="text-xs text-mg-text-3 font-bold mb-2.5 tracking-wider">{t('billing.rechargeModal.amount')}</div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="billing-recharge-presets grid grid-cols-3 gap-2">
               {PRESETS.map((p) => {
                 const active = amount === p && !customMode
                 return (
@@ -148,7 +154,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                     type="button"
                     onClick={() => { setAmount(p); setCustomMode(false) }}
                     className={cn(
-                      "rounded-lg border py-2.5 cursor-pointer text-center magnetic-hover",
+                      "rounded-md border py-2.5 cursor-pointer text-center",
                       active
                         ? "border-brand-base bg-brand-glow text-brand-base"
                         : "border-mg-border text-mg-text-2 hover:text-mg-text-1 hover:border-brand-base/40"
@@ -168,7 +174,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                 value={customMode ? amount : ''}
                 onFocus={() => setCustomMode(true)}
                 onChange={(e) => { setAmount(e.target.value); setCustomMode(true) }}
-                className="w-full h-10 pl-7 pr-3 rounded-lg border border-mg-border bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-brand-base/40 focus:border-brand-base transition-all font-semibold font-mono text-mg-text-1"
+                className="w-full h-10 pl-7 pr-3 rounded-md border border-mg-border bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-brand-base/40 focus:border-brand-base transition-all font-semibold font-mono text-mg-text-1"
                 placeholder={t('billing.rechargeModal.customAmount')}
               />
             </div>
@@ -177,7 +183,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
           {/* 支付方式 */}
           <div>
             <div className="text-xs text-mg-text-3 font-bold mb-2.5 tracking-wider">{t('billing.rechargeModal.method')}</div>
-            <div className="flex gap-2.5">
+            <div className="billing-recharge-channels grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {CHANNELS.map((c) => {
                 const active = effectiveChannel === c.value
                 const brandColor: Record<string, string> = { alipay: '#1677FF', wechat: '#07C160', stripe: '#635BFF' }
@@ -193,7 +199,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                     type="button"
                     onClick={() => setChannel(c.value)}
                     className={cn(
-                      "flex-1 rounded-lg border py-2.5 px-3 cursor-pointer magnetic-hover",
+                      "rounded-md border py-2.5 px-3 cursor-pointer",
                       active
                         ? "shadow-sm"
                         : "border-mg-border text-mg-text-3 hover:border-mg-text-3/30"

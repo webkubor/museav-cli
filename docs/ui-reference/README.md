@@ -19,5 +19,6 @@
 |---|---|---|
 | [api-keys.md](./api-keys.md) | API Keys | `src/pages/api-keys/` |
 | [guardrails.md](./guardrails.md) | 安全护栏 | `src/pages/guardrails/` |
+| [billing.md](./billing.md) | 账单管理 | `src/pages/billing/` |
 
 > 新增模块参考时：补一份 `<module>.md`（三段式齐全 + 头部基线标注），更新本清单，并确保入场必读（根 `CLAUDE.md` UI 前置 + `docs/COLLABORATION.md`）已挂钩指向本目录。

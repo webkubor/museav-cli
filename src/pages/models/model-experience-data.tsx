@@ -158,6 +158,14 @@ export function dualPriceText(model: CatalogModelItem): string {
   return `${currency}${trimPriceZeros(input)} / ${currency}${trimPriceZeros(output ?? input)} 每M`
 }
 
+/** 是否付费模型：只认服务端显式限免标记 + 价格字段，不做其它推断（§9.1：价格为 0 但未标 free 的仍按付费处理） */
+export function isPaidModel(model: CatalogModelItem): boolean {
+  if (model.promotion?.free) return false
+  const input = parseFloat(model.pricing?.input_per_1m ?? '0')
+  const output = parseFloat(model.pricing?.output_per_1m ?? '0')
+  return (Number.isFinite(input) && input > 0) || (Number.isFinite(output) && output > 0)
+}
+
 export function isChatModel(model: CatalogModelItem): boolean {
   const modalities = model.modalities ?? []
   if (modalities.length === 0) return true

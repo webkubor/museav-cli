@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
-  LuColumns2, LuChevronDown, LuCode, LuSettings2, LuX, LuPlus, LuLogOut,
+  LuColumns2, LuChevronDown, LuCode, LuSettings2, LuX, LuPlus, LuLogOut, LuTriangleAlert,
 } from 'react-icons/lu'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
@@ -37,8 +37,12 @@ import {
   type ExperienceStatsEvent,
 } from '@/services/experience-sessions'
 import { useSidebarCollapseStore } from '@/store/use-sidebar-collapse-store'
+import { useAuthStore } from '@/store/auth'
+import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
+import { calculateSpendableBalance } from '@/pages/billing/formatBalance'
 import {
   isChatModel,
+  isPaidModel,
   estimateTokens,
   formatPlaygroundLatency,
   dualPriceText,
@@ -78,6 +82,17 @@ export default function ModelsComparePage() {
     () => (modelsQuery.data?.items ?? []).filter(isChatModel),
     [modelsQuery.data?.items],
   )
+
+  // §9.1 余额资格状态机：与单模型页同口径，可消费合计为 0 时锁定付费模型列的发送
+  const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
+  const { data: balance } = useBalance(tenantId)
+  const { data: balanceBreakdown } = useBalanceBreakdown(tenantId)
+  const spendableBalance = calculateSpendableBalance(
+    balance?.available?.amount,
+    balanceBreakdown?.gift?.amount,
+    balanceBreakdown?.reward?.amount,
+  )
+  const isBalanceZero = spendableBalance !== undefined && spendableBalance <= 0
 
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [columns, setColumns] = useState<ColumnState[] | null>(null)
@@ -278,6 +293,7 @@ export default function ModelsComparePage() {
   function handleSyncSend() {
     const prompt = sharedDraft.trim()
     if (!prompt || !columns) return
+    if (isBalanceZero && columns.some((c) => isPaidModel(c.model))) return
     const dispatchId = crypto.randomUUID()
     pendingByDispatch.current.set(dispatchId, columns.length)
     setSharedDraft('')
@@ -288,6 +304,7 @@ export default function ModelsComparePage() {
     if (!columns) return
     const prompt = columns[idx].draft.trim()
     if (!prompt) return
+    if (isBalanceZero && isPaidModel(columns[idx].model)) return
     const dispatchId = crypto.randomUUID()
     pendingByDispatch.current.set(dispatchId, 1)
     updateColumn(idx, { draft: '' })
@@ -511,6 +528,17 @@ export default function ModelsComparePage() {
               }
             />
 
+            {isBalanceZero && isPaidModel(column.model) && (
+              <div className="playground-balance-notice" role="alert">
+                <LuTriangleAlert size={15} />
+                <span>
+                  <strong>余额不足，仅可体验免费模型</strong>
+                  当前模型与输入已为你保留，充值后即可继续运行。
+                </span>
+                <button type="button" onClick={() => navigate('/billing')}>去充值</button>
+              </div>
+            )}
+
             {!syncInput && (
               // onFocusCapture 记录"最后聚焦列"，独立→同步切换时用它当来源列（§7.4）
               <div onFocusCapture={() => setLastFocusedIndex(idx)}>
@@ -519,6 +547,7 @@ export default function ModelsComparePage() {
                   onChange={(v) => updateColumn(idx, { draft: v })}
                   onSend={() => handleIndependentSend(idx)}
                   isStreaming={column.streaming}
+                  disabled={isBalanceZero && isPaidModel(column.model)}
                   onStop={() => abortRefs.current[idx]?.abort()}
                   placeholder={`仅向 ${prettyModelName(column.model.display_name, column.model.model_id)} 提问…`}
                   sendLabel="发送"
@@ -531,12 +560,24 @@ export default function ModelsComparePage() {
         ))}
       </div>
 
+      {syncInput && isBalanceZero && columns.some((c) => isPaidModel(c.model)) && (
+        <div className="playground-balance-notice" role="alert">
+          <LuTriangleAlert size={15} />
+          <span>
+            <strong>余额不足，仅可体验免费模型</strong>
+            当前模型与输入已为你保留，充值后即可继续运行。
+          </span>
+          <button type="button" onClick={() => navigate('/billing')}>去充值</button>
+        </div>
+      )}
+
       {syncInput && (
         <Composer
           value={sharedDraft}
           onChange={setSharedDraft}
           onSend={handleSyncSend}
           isStreaming={columns.some((c) => c.streaming)}
+          disabled={isBalanceZero && columns.some((c) => isPaidModel(c.model))}
           onStop={() => abortRefs.current.forEach((c) => c?.abort())}
           placeholder={`输入 Prompt，同时发送给 ${columns.length} 个模型，Enter 发送…`}
           sendLabel="发送"
@@ -550,6 +591,7 @@ export default function ModelsComparePage() {
         onClose={() => setSwitchPickerIndex(null)}
         mode="compareSwitch"
         models={allModels.filter((m) => switchPickerIndex === null || !excludeIdsFor(switchPickerIndex).includes(m.id))}
+        isBalanceZero={isBalanceZero}
         currentCategory="dialogue"
         currentTask="text_to_text"
         onSelect={(model) => {
@@ -563,6 +605,7 @@ export default function ModelsComparePage() {
         onClose={() => setAddPickerOpen(false)}
         mode="compareAdd"
         models={allModels}
+        isBalanceZero={isBalanceZero}
         currentCategory="dialogue"
         currentTask="text_to_text"
         alreadySelectedIds={columns.map((c) => c.model.id)}

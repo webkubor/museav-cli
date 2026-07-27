@@ -198,65 +198,6 @@ body[theme-mode='dark'] .billing-glow-card .shimmer-light::after {
   transform-origin: left center;
 }
 
-/* ── 列表行指示器与 Hover / Active 状态 ── */
-.billing-table-row {
-  position: relative;
-  transition: all 0.25s ease !important;
-}
-
-.billing-table-row td {
-  border-bottom: 1px solid var(--mg-border) !important;
-}
-
-.billing-table-row::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 22%;
-  bottom: 22%;
-  width: 3px;
-  border-radius: 999px;
-  background-color: var(--brand-base);
-  opacity: 0;
-  transform: scaleY(0.4);
-  transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1) !important;
-  z-index: 10;
-}
-
-.billing-table-row:hover::after,
-.billing-table-row.active::after {
-  opacity: 1;
-  transform: scaleY(1);
-}
-
-.billing-table-row.active {
-  background-color: var(--brand-selected-bg) !important;
-}
-
-/* 状态徽标呼吸弥散光效 */
-.badge-glow-pending {
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.15) !important;
-}
-
-.badge-glow-paid {
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.15) !important;
-}
-
-/* 侧栏仿真发票容器 */
-.receipt-container-mini {
-  border-radius: var(--radius-md);
-  border: 1px solid var(--mg-border);
-  background-color: rgba(var(--mg-bg-0-rgb), 0.4);
-  transition: all 0.3s ease;
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-.receipt-container-mini:hover {
-  border-color: color-mix(in oklch, var(--mg-border) 80%, var(--brand-base));
-  box-shadow: var(--shadow-md);
-}
-
 /* ── 🪙 大额可消费合计与各卡片数字高级光效 ── */
 .spendable-amount-glow {
   background: linear-gradient(135deg, var(--mg-text-1) 30%, var(--brand-base) 100%);

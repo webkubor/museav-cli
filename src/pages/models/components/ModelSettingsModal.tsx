@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Switch } from '@/components/ui/Switch'
+import { Select } from '@/components/ui/Select'
 import { EXPERIENCE_TASK_LABEL, type ExperienceTaskType } from '../model-experience-data'
 import '../styles/model-settings-modal.css'
 
@@ -170,14 +171,194 @@ function ChatParamsForm({
   )
 }
 
-/** 任务参数表单占位：文生图/图生图、语音合成、语音识别、文生视频/图生视频（TODO 待补充） */
-function PlaceholderParamsForm({ task }: { task: ModelTaskType }) {
-  // TODO(PRD §7.9)：按任务类型补充真实参数表单，参见 PRD 任务参数表：
-  // 文生图/图生图 -> 比例/分辨率/质量/数量 + 格式/透明背景/负面提示词/Seed
-  // 语音合成 -> 音色/语速/格式 + 风格指令
-  // 语音识别 -> 语言/时间戳/输出格式 + 专有词汇/上下文提示
-  // 文生视频/图生视频 -> 时长/比例/分辨率/数量 + 负面提示词/Seed/生成音频
-  return <div className="model-settings-placeholder">「{TASK_LABEL[task]}」任务参数表单待补充（TODO）</div>
+/** 数字下拉字段（画面比例/分辨率/时长等），逐字对齐原型 PlaygroundSelect（App.tsx:20456-20470） */
+function SelectField({
+  label,
+  value,
+  options,
+  suffix,
+  onChange,
+}: {
+  label: string
+  value: string
+  options: string[]
+  suffix?: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <div className="model-settings-field">
+      <label className="model-settings-field-label">{label}</label>
+      <Select value={value} onChange={onChange} className="h-9 text-xs rounded-lg">
+        {options.map((opt) => (
+          <Select.Option key={opt} value={opt}>
+            {opt}{suffix ? ` ${suffix}` : ''}
+          </Select.Option>
+        ))}
+      </Select>
+    </div>
+  )
+}
+
+/** 文生图/图生图参数表单：比例/分辨率/质量/数量 + 格式/透明背景/负面提示词/Seed（PRD §7.9 逐字对齐） */
+function ImageParamsForm({ values, onChange }: { values: Record<string, unknown>; onChange: (key: string, value: unknown) => void }) {
+  const aspectRatio = asString(values.aspect_ratio, '1:1')
+  const resolution = asString(values.resolution, '1024')
+  const quality = asString(values.quality, 'standard')
+  const count = asString(values.count, '1')
+  const format = asString(values.format, 'PNG')
+  const transparent = asBool(values.transparent, false)
+  const negativePrompt = asString(values.negative_prompt)
+  const seed = asString(values.seed)
+
+  return (
+    <div className="model-settings-form">
+      <SelectField label="画面比例" value={aspectRatio} options={['1:1', '4:3', '16:9']} onChange={(v) => onChange('aspect_ratio', v)} />
+      <SelectField label="分辨率" value={resolution} options={['1024', '1536', '2048']} onChange={(v) => onChange('resolution', v)} />
+      <SelectField label="质量" value={quality} options={['standard', 'high']} onChange={(v) => onChange('quality', v)} />
+      <SelectField label="生成数量" value={count} options={['1', '2', '3', '4']} onChange={(v) => onChange('count', v)} />
+
+      <details className="model-settings-advanced" open>
+        <summary>高级设置</summary>
+        <SelectField label="输出格式" value={format} options={['PNG', 'JPEG', 'WebP']} onChange={(v) => onChange('format', v)} />
+        <div className="model-settings-field model-settings-field-row">
+          <label className="model-settings-field-label">透明背景</label>
+          <Switch checked={transparent} onChange={(checked) => onChange('transparent', checked)} />
+        </div>
+        <div className="model-settings-field">
+          <label className="model-settings-field-label">负面提示词</label>
+          <Textarea rows={2} value={negativePrompt} onChange={(e) => onChange('negative_prompt', e.target.value)} />
+        </div>
+        <div className="model-settings-field">
+          <label className="model-settings-field-label">Seed</label>
+          <Input type="number" placeholder="随机" value={seed} onChange={(e) => onChange('seed', e.target.value)} />
+        </div>
+      </details>
+    </div>
+  )
+}
+
+/** 语音合成参数表单：音色/语速/格式 + 风格指令（PRD §7.9 逐字对齐） */
+function TTSParamsForm({ values, onChange }: { values: Record<string, unknown>; onChange: (key: string, value: unknown) => void }) {
+  const voice = asString(values.voice, '晓辰')
+  const speed = asNumber(values.speed, 1)
+  const format = asString(values.audio_format, 'MP3')
+  const voiceStyle = asString(values.voice_style)
+
+  return (
+    <div className="model-settings-form">
+      <SelectField label="音色" value={voice} options={['晓辰', '安然', 'Miles']} onChange={(v) => onChange('voice', v)} />
+      <div className="model-settings-field">
+        <div className="model-settings-field-label-row">
+          <label className="model-settings-field-label">语速</label>
+          <span className="model-settings-field-value">{speed.toFixed(1)}x</span>
+        </div>
+        <input
+          type="range"
+          min={0.5}
+          max={2}
+          step={0.1}
+          value={speed}
+          onChange={(e) => onChange('speed', Number(e.target.value))}
+          className="model-settings-slider"
+        />
+      </div>
+      <SelectField label="音频格式" value={format} options={['MP3', 'WAV', 'M4A']} onChange={(v) => onChange('audio_format', v)} />
+
+      <details className="model-settings-advanced" open>
+        <summary>高级设置</summary>
+        <div className="model-settings-field">
+          <label className="model-settings-field-label">风格指令</label>
+          <Textarea
+            rows={3}
+            placeholder="例如：沉稳、温暖、适合产品介绍"
+            value={voiceStyle}
+            onChange={(e) => onChange('voice_style', e.target.value)}
+          />
+        </div>
+      </details>
+    </div>
+  )
+}
+
+/** 语音识别参数表单：语言/时间戳/输出格式 + 专有词汇/上下文提示（PRD §7.9 逐字对齐） */
+function TranscribeParamsForm({ values, onChange }: { values: Record<string, unknown>; onChange: (key: string, value: unknown) => void }) {
+  const language = asString(values.language, '自动识别')
+  const timestamps = asString(values.timestamps, '关闭')
+  const format = asString(values.transcript_format, '纯文本')
+  const terms = asString(values.terms)
+  const contextPrompt = asString(values.context_prompt)
+
+  return (
+    <div className="model-settings-form">
+      <SelectField label="识别语言" value={language} options={['自动识别', '中文', '英文', '日文']} onChange={(v) => onChange('language', v)} />
+      <SelectField label="时间戳" value={timestamps} options={['关闭', '分段', '逐词']} onChange={(v) => onChange('timestamps', v)} />
+      <SelectField label="输出格式" value={format} options={['纯文本', 'JSON', 'SRT']} onChange={(v) => onChange('transcript_format', v)} />
+
+      <details className="model-settings-advanced" open>
+        <summary>高级设置</summary>
+        <div className="model-settings-field">
+          <label className="model-settings-field-label">专有词汇</label>
+          <Textarea rows={2} placeholder="ModelGo、API Gateway" value={terms} onChange={(e) => onChange('terms', e.target.value)} />
+        </div>
+        <div className="model-settings-field">
+          <label className="model-settings-field-label">上下文提示</label>
+          <Textarea rows={2} placeholder="可选：补充音频主题" value={contextPrompt} onChange={(e) => onChange('context_prompt', e.target.value)} />
+        </div>
+      </details>
+    </div>
+  )
+}
+
+/** 文生视频/图生视频参数表单：时长/比例/分辨率/数量 + 负面提示词/Seed/生成音频（PRD §7.9 逐字对齐） */
+function VideoParamsForm({ values, onChange }: { values: Record<string, unknown>; onChange: (key: string, value: unknown) => void }) {
+  const duration = asString(values.duration, '5')
+  const aspectRatio = asString(values.aspect_ratio, '16:9')
+  const resolution = asString(values.resolution, '720p')
+  const count = asString(values.count, '1')
+  const negativePrompt = asString(values.negative_prompt)
+  const seed = asString(values.seed)
+  const generateAudio = asBool(values.generate_audio, false)
+
+  return (
+    <div className="model-settings-form">
+      <SelectField label="视频时长" value={duration} options={['5', '8', '10']} suffix="秒" onChange={(v) => onChange('duration', v)} />
+      <SelectField label="画面比例" value={aspectRatio} options={['16:9', '9:16', '1:1']} onChange={(v) => onChange('aspect_ratio', v)} />
+      <SelectField label="分辨率" value={resolution} options={['720p', '1080p']} onChange={(v) => onChange('resolution', v)} />
+      <SelectField label="生成数量" value={count} options={['1', '2']} onChange={(v) => onChange('count', v)} />
+
+      <details className="model-settings-advanced" open>
+        <summary>高级设置</summary>
+        <div className="model-settings-field">
+          <label className="model-settings-field-label">负面提示词</label>
+          <Textarea rows={2} value={negativePrompt} onChange={(e) => onChange('negative_prompt', e.target.value)} />
+        </div>
+        <div className="model-settings-field">
+          <label className="model-settings-field-label">Seed</label>
+          <Input type="number" placeholder="随机" value={seed} onChange={(e) => onChange('seed', e.target.value)} />
+        </div>
+        <div className="model-settings-field model-settings-field-row">
+          <label className="model-settings-field-label">生成音频</label>
+          <Switch checked={generateAudio} onChange={(checked) => onChange('generate_audio', checked)} />
+        </div>
+      </details>
+    </div>
+  )
+}
+
+/** 按任务类型分发到对应参数表单（PRD §7.9） */
+function TaskParamsForm({
+  task,
+  values,
+  onChange,
+}: {
+  task: ModelTaskType
+  values: Record<string, unknown>
+  onChange: (key: string, value: unknown) => void
+}) {
+  if (task === 'text_to_image' || task === 'image_to_image') return <ImageParamsForm values={values} onChange={onChange} />
+  if (task === 'text_to_audio') return <TTSParamsForm values={values} onChange={onChange} />
+  if (task === 'audio_to_text') return <TranscribeParamsForm values={values} onChange={onChange} />
+  return <VideoParamsForm values={values} onChange={onChange} />
 }
 
 export function ModelSettingsModal({
@@ -237,7 +418,7 @@ export function ModelSettingsModal({
       {isDialogue ? (
         <ChatParamsForm values={values} onChange={onChange} maxOutputTokens={maxOutputTokens} />
       ) : (
-        <PlaceholderParamsForm task={task} />
+        <TaskParamsForm task={task} values={values} onChange={onChange} />
       )}
     </Modal>
   )

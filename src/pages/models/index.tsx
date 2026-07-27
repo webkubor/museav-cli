@@ -1,38 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
 import {
-  LuGitCompareArrows,
   LuMessageSquare,
-  LuSearch,
-  LuSparkles, LuZap,
-  LuGift,
-  LuRefreshCw,
+  LuSettings2,
+  LuCode,
+  LuColumns2,
+  LuChevronDown,
 } from 'react-icons/lu'
-import { useAuthStore } from '@/store/auth'
-import { useBalanceBreakdown } from '@/hooks/use-balance'
 import { streamExperienceChat } from '@/services/experience'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import { Composer } from '@/components/ui/Composer'
-import { CopyButton } from '@/components/ui/CopyButton'
 import { useModels } from '@/features/models/hooks/useModels'
-import { appToast } from '@/lib/app-toast'
-import { cn, formatContextLength, formatModelPrice, formatMoney } from '@/lib/utils'
+import { cn, formatModelPrice, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
-import {
-  categories,
-  initialMessages,
-  isChatModel,
-  matchesCategory,
-
-  modelExperienceCopy,
-  previewImages,
-  vendorNode,
-  type CategoryKey,
-  type ExperienceMessage,
-} from './model-experience-data'
+import { isChatModel, type ExperienceMessage } from './model-experience-data'
+import { ModelPickerDialog } from './components/ModelPickerDialog'
+import { HistorySessionSidebar } from './components/HistorySessionSidebar'
+import { ModelSettingsModal } from './components/ModelSettingsModal'
+import { ApiQuickCallModal } from './components/ApiQuickCallModal'
 import './styles/model-experience-layout.css'
 import './styles/model-picker.css'
 import './styles/model-featured-card.css'
@@ -43,70 +30,68 @@ import './styles/model-params.css'
 import './styles/model-experience-responsive.css'
 import { ModelsCompareModal } from './components/ModelsCompareModal'
 
+const INITIAL_MESSAGES: ExperienceMessage[] = []
+
+/**
+ * 价格 chip 文案：与原型 App.tsx `playgroundPriceText()` 逐字对齐——
+ * 免费模型「限时免费」；否则「¥输入价 / ¥输出价 每M」，只有输出价时省去输入价那半。
+ */
+function dualPriceText(model: CatalogModelItem): string {
+  const currency = model.pricing?.currency === 'USD' ? '$' : '¥'
+  const input = model.pricing?.input_per_1m
+  const output = model.pricing?.output_per_1m
+  if (!input && !output) return '限时免费'
+  if (!input) return `${currency}${trimPriceZeros(output ?? '0')} 每M`
+  return `${currency}${trimPriceZeros(input)} / ${currency}${trimPriceZeros(output ?? input)} 每M`
+}
+
 export default function ModelsPage() {
-  const { i18n } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  const text = i18n.language.startsWith('zh') ? modelExperienceCopy.zh : modelExperienceCopy.en
-  const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
-  // 免费额度 = 当前租户「赠送余额」（grant 桶）：体验计费优先从中扣减，
-  // 与后端多桶账本的真实扣费顺序一致（grant→cash，#97/#93）。
-  const { data: breakdown } = useBalanceBreakdown(tenantId)
-  const giftBalance = Number(breakdown?.gift.amount ?? 0)
-  const [category, setCategory] = useState<CategoryKey>('all')
+
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [apiCallOpen, setApiCallOpen] = useState(false)
   const [isCompareOpen, setIsCompareOpen] = useState(false)
+  const [historyCollapsed, setHistoryCollapsed] = useState(true)
+  const [chatParams, setChatParams] = useState<Record<string, unknown>>({})
+
   const [input, setInput] = useState('')
-  const [messages, setMessages] = useState<ExperienceMessage[]>(initialMessages)
+  const [messages, setMessages] = useState<ExperienceMessage[]>(INITIAL_MESSAGES)
   const [isStreaming, setIsStreaming] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
 
-  // 离开页面时中断在途流式请求，避免后台继续消耗额度。
   useEffect(() => () => abortRef.current?.abort(), [])
-  const {
-    search,
-    setSearch,
-    selectedId,
-    setSelectedId,
-    modelsQuery,
-    detailQuery,
-    filteredModels,
-  } = useModels({ modality: 'text' })
 
-  // 体验页只支持文本对话，列表只展示对话类模型（排除纯图片/视频/音频生成模型）
+  const { selectedId, setSelectedId, modelsQuery } = useModels({ modality: 'text' })
+
   const allModels = useMemo(
     () => (modelsQuery.data?.items ?? []).filter(isChatModel),
     [modelsQuery.data?.items],
   )
+  const selectedModel = allModels.find((model) => model.id === selectedId) ?? allModels[0]
 
-  const visibleModels = useMemo(
-    () => filteredModels.filter((model) => isChatModel(model) && matchesCategory(model, category)),
-    [category, filteredModels],
-  )
-  const selectedModel = allModels.find((model) => model.id === selectedId) ?? visibleModels[0] ?? allModels[0]
-  const detail = detailQuery.data
   useEffect(() => {
     const state = location.state as { selectedModelId?: string } | null
     if (state?.selectedModelId) {
-      const targetModel = allModels.find(m => m.model_id === state.selectedModelId || m.id === state.selectedModelId)
-      if (targetModel) {
-        setSelectedId(targetModel.id)
-      }
+      const targetModel = allModels.find((m) => m.model_id === state.selectedModelId || m.id === state.selectedModelId)
+      if (targetModel) setSelectedId(targetModel.id)
       navigate('/models/playground', { replace: true, state: {} })
     } else if (!selectedId && allModels[0]) {
       setSelectedId(allModels[0].id)
     }
   }, [allModels, selectedId, setSelectedId, location.state, navigate])
 
-  function selectModel(model: CatalogModelItem, focusComposer = false) {
+  function handlePick(model: CatalogModelItem) {
     setSelectedId(model.id)
-    if (focusComposer) window.setTimeout(() => inputRef.current?.focus(), 80)
+    setPickerOpen(false)
+    window.setTimeout(() => inputRef.current?.focus(), 80)
   }
 
   async function sendPrompt() {
     const prompt = input.trim()
     if (!prompt || !selectedModel || isStreaming) return
-    // 取历史对话（不含静态开场白的 meta），加上本次输入，发给体验代理。
     const history = [...messages, { role: 'user' as const, content: prompt }]
     setMessages((prev) => [...prev, { role: 'user', content: prompt }, { role: 'assistant', content: '' }])
     setInput('')
@@ -137,7 +122,7 @@ export default function ModelsPage() {
       const seconds = ((Date.now() - startedAt) / 1000).toFixed(1)
       applyAssistant(
         (content) => content,
-        `模型 ${selectedModel.model_id} · 延迟 ${seconds}s · ${formatModelPrice(selectedModel.pricing?.input_per_1m, selectedModel.pricing?.currency)}`
+        `延迟 ${seconds}s · ${formatModelPrice(selectedModel.pricing?.input_per_1m, selectedModel.pricing?.currency)}`,
       )
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
@@ -149,229 +134,162 @@ export default function ModelsPage() {
 
   return (
     <div className="models-experience-page">
-      <div className="models-experience-header">
-        <div>
-          <h1>{text.title}</h1>
-          <p>{text.desc}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* 免费剩余额度（= 赠送余额 grant 桶），体验计费优先扣减 */}
-          <button
-            type="button"
-            onClick={() => navigate('/billing')}
-            title={text.freeQuotaHint}
-            className="flex items-center gap-2 rounded-full h-9 pl-3 pr-3.5 border border-brand-base/30 bg-[var(--brand-base)]/5 hover:bg-[var(--brand-base)]/10 transition-colors"
-          >
-            <LuGift size={14} className="text-brand-base shrink-0" />
-            <span className="text-xs font-semibold text-mg-text-3 leading-none">{text.freeQuota}</span>
-            <span className="text-sm font-bold text-brand-base tabular-nums leading-none">
-              {formatMoney(giftBalance)}
-            </span>
-          </button>
-          <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-bold" onClick={() => setIsCompareOpen(true)}>
-            <LuGitCompareArrows size={14} />
-            {text.compare}
-          </Button>
-        </div>
-      </div>
+      <PageHeader title="模型体验" description="通过文本与附件连续对话，验证回复、Token、延迟与费用。" className="mb-4" />
+      <div className="models-experience-shell">
+        {/* 历史会话固定侧栏（PRD §7.8）：收起态窄图标轨，展开 248px；暂用本地态，会话数据待接 /experience/sessions 后端 */}
+        <HistorySessionSidebar
+          collapsed={historyCollapsed}
+          onToggleCollapsed={setHistoryCollapsed}
+          onSelectSession={() => { /* TODO: 接 GET /experience/sessions/{id} 后恢复会话内容 */ }}
+          onNewSession={() => {
+            setMessages(INITIAL_MESSAGES)
+            setInput('')
+          }}
+        />
 
-      <div className="models-experience-workbench">
-        <section className="models-experience-picker">
-          <Input
-            prefix={<LuSearch size={15} />}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder={text.search}
-            className="models-experience-search"
-          />
-
-          <div className="models-experience-categories">
-            {categories.map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setCategory(item)}
-                className={cn(category === item && 'is-active')}
-              >
-                {text.categories[item]}
-              </button>
-            ))}
-          </div>
-
-          <div className="models-experience-section-title">
-            <span>{text.featured}</span>
-            <LuSparkles size={14} />
-          </div>
-
-          {selectedModel && (
-            <button
-              type="button"
-              className={cn('models-experience-featured', `cat-${category}`)}
-              onClick={() => selectModel(selectedModel, true)}
-            >
-              {categories.map((cat) => (
-                <img
-                  key={cat}
-                  src={previewImages[cat]}
-                  alt=""
-                  className={cn(
-                    'featured-bg-img',
-                    category === cat ? 'is-active' : 'is-inactive'
-                  )}
-                />
-              ))}
-              <div className="models-experience-featured-shade" />
-              <div className="models-experience-featured-content">
-                <div className="flex items-center gap-2">
-                  {vendorNode(selectedModel)}
-                  <span>{selectedModel.vendor || 'ModelGo'}</span>
-                </div>
-                <h2>{selectedModel.display_name}</h2>
-                <div className="models-experience-featured-metrics">
-                  <span>最大输出 {selectedModel.max_output_tokens ? formatContextLength(selectedModel.max_output_tokens) : '—'} tokens</span>
-                  <span>{formatModelPrice(selectedModel.pricing?.input_per_1m, selectedModel.pricing?.currency)}</span>
-                </div>
-              </div>
-            </button>
-          )}
-
-          <div className="models-experience-section-title">
-            <span>{text.allModels}</span>
-            <span className="models-experience-count">{visibleModels.length}</span>
-          </div>
-
-          <div className="models-experience-list">
-            {modelsQuery.isLoading ? (
-              <div className="models-experience-state">{text.loading}</div>
-            ) : modelsQuery.isError ? (
-              <div className="models-experience-state is-error">{text.error}</div>
-            ) : visibleModels.length === 0 ? (
-              <div className="models-experience-state">{text.empty}</div>
-            ) : (
-              visibleModels.map((model) => (
+        <div className="models-experience-main">
+          <div className="models-experience-workbench">
+            <section className="models-experience-chat is-single">
+              {/* 单模型工作台头部（PRD §7.2 + 原型 App.tsx:19116-19135 逐字对照）：
+                  左侧模型选择器（头像+模型名+厂商·任务+价格chip），右侧纯图标 API调用/模型设置 + 文字版模型对比。
+                  原型头部没有 model_id 明文复制入口——那个入口挪进了 API 调用弹窗（PRD §7.7）。 */}
+              <div className="models-experience-modelbar">
                 <button
                   type="button"
-                  key={model.id}
-                  className={cn('models-experience-row', selectedModel?.id === model.id && 'is-active')}
-                  onClick={() => selectModel(model)}
+                  className="models-experience-model-trigger"
+                  onClick={() => setPickerOpen(true)}
                 >
-                  {vendorNode(model)}
-                  <span className="min-w-0 flex-1">
-                    <span className="models-experience-row-name">{model.display_name}</span>
-                    <span className="models-experience-row-meta">
-                      {model.vendor || 'ModelGo'} · 最大输出 {model.max_output_tokens ? formatContextLength(model.max_output_tokens) : '—'} · {formatModelPrice(model.pricing?.input_per_1m, model.pricing?.currency)}
-                    </span>
-                  </span>
-                  <span className="models-experience-status-dot" />
-                </button>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="models-experience-chat">
-          {selectedModel && (
-            <div className="models-experience-modelbar">
-              <div className="flex items-center gap-3 min-w-0">
-                {vendorNode(selectedModel, 'lg')}
-                <div className="min-w-0">
-                  <div className="models-experience-modelbar-title">{selectedModel.display_name}</div>
-                  <div className="models-experience-modelbar-sub">
-                    {selectedModel.vendor || 'ModelGo'} · {detail?.description || selectedModel.model_id}
-                  </div>
-                </div>
-              </div>
-              <div className="models-experience-chips">
-                <span>
-                  {text.apiId}: {selectedModel.model_id}
-                  <CopyButton
-                    value={selectedModel.model_id}
-                    aria-label={text.apiId}
-                    toast={text.copied}
-                    className="h-5 w-5 -mr-1"
-                  />
-                </span>
-                <span><LuZap size={12} />{formatContextLength(selectedModel.context_length)}</span>
-                <span>{formatModelPrice(selectedModel.pricing?.output_per_1m, selectedModel.pricing?.currency)}</span>
-              </div>
-            </div>
-          )}
-
-          <div className="models-experience-messages">
-            {messages.map((message, index) => {
-              // 思考态：最后一条 assistant 消息内容还为空且正在流式请求中
-              const isThinking =
-                message.role === 'assistant' &&
-                message.content === '' &&
-                isStreaming &&
-                index === messages.length - 1
-              return (
-                <div key={`${message.role}-${index}`} className={cn('models-experience-message', message.role === 'user' && 'is-user')}>
-                  <div className="models-experience-message-bubble">
-                    {isThinking ? (
-                      <span className="models-experience-thinking" aria-label="模型思考中">
-                        <i /><i /><i />
+                  {selectedModel && (
+                    <>
+                      <span className="models-experience-model-avatar">
+                        {prettyModelName(selectedModel.display_name, selectedModel.model_id).slice(0, 1).toUpperCase()}
                       </span>
-                    ) : message.role === 'assistant' ? (
-                      <div className="cs-markdown"><Markdown>{message.content}</Markdown></div>
-                    ) : (
-                      message.content.split('\n').map((line, lineIndex) => <p key={`${index}-${lineIndex}`}>{line}</p>)
-                    )}
-                    {message.meta && <span>{message.meta}</span>}
-                  </div>
+                      <div className="min-w-0">
+                        <div className="models-experience-modelbar-title">{prettyModelName(selectedModel.display_name, selectedModel.model_id)}</div>
+                        <div className="models-experience-modelbar-sub">
+                          {selectedModel.vendor || selectedModel.provider || 'ModelGo'} · 对话
+                        </div>
+                      </div>
+                      <span className="models-experience-price-chip">
+                        {dualPriceText(selectedModel)}
+                      </span>
+                      <LuChevronDown size={15} className="text-mg-text-3 shrink-0" />
+                    </>
+                  )}
+                </button>
+
+                <div className="ml-auto flex items-center gap-1">
+                  <button
+                    type="button"
+                    className="models-experience-icon-btn"
+                    aria-label="打开 API 调用"
+                    title={selectedModel ? `查看 ${prettyModelName(selectedModel.display_name, selectedModel.model_id)} API 调用示例` : '打开 API 调用'}
+                    onClick={() => setApiCallOpen(true)}
+                  >
+                    <LuCode size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="models-experience-icon-btn"
+                    aria-label="打开模型设置"
+                    title={selectedModel ? `配置 ${prettyModelName(selectedModel.display_name, selectedModel.model_id)}` : '打开模型设置'}
+                    onClick={() => setSettingsOpen(true)}
+                  >
+                    <LuSettings2 size={14} />
+                  </button>
+                  <Button variant="outline" size="sm" className="rounded-md" onClick={() => setIsCompareOpen(true)}>
+                    <LuColumns2 size={13} /> 模型对比
+                  </Button>
                 </div>
-              )
-            })}
-          </div>
-
-          <Composer
-            ref={inputRef}
-            value={input}
-            onChange={setInput}
-            onSend={sendPrompt}
-            isStreaming={isStreaming}
-            onStop={() => abortRef.current?.abort()}
-            onClear={() => {
-              setMessages(initialMessages)
-              setInput('')
-            }}
-            placeholder={text.input}
-            note={text.note}
-            clearLabel={text.clear}
-            sendLabel={text.send}
-            className="models-experience-composer-wrap"
-            activeChip={
-              <div className="models-experience-active-chip">
-                <LuMessageSquare size={13} />
-                {selectedModel?.display_name ?? text.current}
               </div>
-            }
-          />
 
-          <div className="flex items-center justify-between px-1 pt-1 pb-0.5">
-            <span className="text-xs text-mg-text-3 font-mono select-none">
-              temperature&nbsp;<b className="text-mg-text-2">0.7</b>
-              <span className="mx-1.5 opacity-30">·</span>
-              max_tokens&nbsp;<b className="text-mg-text-2">{selectedModel?.max_output_tokens || 4096}</b>
-              <span className="mx-1.5 opacity-30">·</span>
-              top_p&nbsp;<b className="text-mg-text-2">0.9</b>
-              <span className="mx-1.5 opacity-30">·</span>
-              stream&nbsp;<b className="text-green-500">on</b>
-            </span>
-            <button
-              type="button"
-              className="flex items-center gap-1 text-xs text-mg-text-3 hover:text-mg-text-1 transition-colors"
-              onClick={() => {
-                setMessages(initialMessages)
-                appToast.success(i18n.language.startsWith('zh') ? '对话历史已重置' : 'Conversation reset')
-              }}
-            >
-              <LuRefreshCw size={11} />
-              <span>{i18n.language.startsWith('zh') ? '重置' : 'Reset'}</span>
-            </button>
+              <div className="models-experience-messages">
+                {messages.length === 0 && (
+                  <div className="models-experience-empty">
+                    <p>发送第一条消息，验证模型输出与成本</p>
+                    <p className="text-xs text-mg-text-3">支持的图片、音频或视频可以作为消息附件发送。</p>
+                  </div>
+                )}
+                {messages.map((message, index) => {
+                  const isThinking =
+                    message.role === 'assistant' &&
+                    message.content === '' &&
+                    isStreaming &&
+                    index === messages.length - 1
+                  return (
+                    <div key={`${message.role}-${index}`} className={cn('models-experience-message', message.role === 'user' && 'is-user')}>
+                      <div className="models-experience-message-bubble">
+                        {isThinking ? (
+                          <span className="models-experience-thinking" aria-label="模型思考中">
+                            <i /><i /><i />
+                          </span>
+                        ) : message.role === 'assistant' ? (
+                          <div className="cs-markdown"><Markdown>{message.content}</Markdown></div>
+                        ) : (
+                          message.content.split('\n').map((line, lineIndex) => <p key={`${index}-${lineIndex}`}>{line}</p>)
+                        )}
+                        {message.meta && <span>{message.meta}</span>}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* PRD §7.2：单模型状态不展示"同步输入"开关、不展示"清空结果"按钮、不重复展示模型ID复制入口 */}
+              <Composer
+                ref={inputRef}
+                value={input}
+                onChange={setInput}
+                onSend={sendPrompt}
+                isStreaming={isStreaming}
+                onStop={() => abortRef.current?.abort()}
+                placeholder="输入 Prompt，Enter 发送，Shift+Enter 换行..."
+                note="本次体验会消耗免费额度，超出后将按实际用量计费。"
+                sendLabel="发送"
+                className="models-experience-composer-wrap"
+                activeChip={
+                  <div className="models-experience-active-chip">
+                    <LuMessageSquare size={13} />
+                    {selectedModel ? prettyModelName(selectedModel.display_name, selectedModel.model_id) : '当前体验模型'}
+                  </div>
+                }
+              />
+            </section>
           </div>
-        </section>
+        </div>
       </div>
+
+      <ModelPickerDialog
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        mode="single"
+        models={allModels}
+        onSelect={handlePick}
+      />
+
+      {selectedModel && (
+        <ModelSettingsModal
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          modelName={prettyModelName(selectedModel.display_name, selectedModel.model_id)}
+          task="text_to_text"
+          values={chatParams}
+          onChange={(key, value) => setChatParams((prev) => ({ ...prev, [key]: value }))}
+          onReset={() => setChatParams({})}
+          sessionStats={{ requestCount: 0, tokens: 0, cost: 0 }}
+        />
+      )}
+
+      {selectedModel && (
+        <ApiQuickCallModal
+          open={apiCallOpen}
+          onClose={() => setApiCallOpen(false)}
+          modelName={prettyModelName(selectedModel.display_name, selectedModel.model_id)}
+          modelId={selectedModel.model_id}
+          supportedProtocols={selectedModel.protocols?.length ? (selectedModel.protocols as never) : ['openai']}
+        />
+      )}
+
       <ModelsCompareModal
         isOpen={isCompareOpen}
         onClose={() => setIsCompareOpen(false)}

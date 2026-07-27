@@ -8,7 +8,8 @@ export interface ComposerProps {
   value: string
   onChange: (val: string) => void
   onSend: () => void
-  onClear: () => void
+  /** 省略时不展示"清空"按钮（如 PRD 要求某些工作台不展示清空入口时留空） */
+  onClear?: () => void
   placeholder?: string
   disabled?: boolean
   loading?: boolean
@@ -78,16 +79,18 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClear}
-              disabled={loading || disabled || isStreaming}
-              className="rounded-lg cursor-pointer"
-            >
-              <LuEraser size={14} />
-              {clearLabel}
-            </Button>
+            {onClear && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClear}
+                disabled={loading || disabled || isStreaming}
+                className="rounded-lg cursor-pointer"
+              >
+                <LuEraser size={14} />
+                {clearLabel}
+              </Button>
+            )}
             {isStreaming && onStop ? (
               <Button
                 variant="destructive"

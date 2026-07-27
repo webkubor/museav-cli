@@ -2,9 +2,24 @@
 .models-experience-page {
   display: flex;
   flex-direction: column;
-  gap: 18px;
   height: calc(100vh - 128px);
   overflow: hidden;
+}
+
+/* 历史侧栏 + 主工作台横向排列（PRD §7.8：侧栏固定在工作台左侧，收起/展开影响主区域宽度） */
+.models-experience-shell {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+.models-experience-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .models-experience-header {
@@ -30,11 +45,10 @@
 }
 
 .models-experience-workbench {
-  display: grid;
-  grid-template-columns: minmax(380px, 520px) minmax(0, 1fr);
-  gap: 16px;
+  display: flex;
   flex: 1;
   min-height: 0;
+  min-width: 0;
 }
 
 .models-experience-picker,
@@ -46,14 +60,95 @@
   overflow: hidden;
 }
 
+/* 单模型工作台占满整个 workbench 宽度（不再是"选择器面板+聊天面板"双栏，
+   模型选择改为弹层，见 ModelPickerDialog） */
+.models-experience-chat.is-single {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.models-experience-model-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.models-experience-model-trigger:hover {
+  background: var(--mg-fill-0);
+}
+
+.models-experience-model-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--mg-fill-1);
+  color: var(--mg-text-2);
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.models-experience-price-chip {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  background: var(--mg-fill-0);
+  color: var(--mg-text-2);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* API 调用 / 模型设置：原型是纯图标 + title tooltip，不带可见文字（App.tsx:19132-19136） */
+.models-experience-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  color: var(--mg-text-3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.models-experience-icon-btn:hover {
+  background: var(--mg-fill-0);
+  color: var(--mg-text-1);
+}
+
+.models-experience-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--mg-text-2);
+  text-align: center;
+  padding: 24px;
+}
+
 @media (max-width: 980px) {
   .models-experience-page {
     height: auto;
     overflow: visible;
   }
 
-  .models-experience-workbench {
-    grid-template-columns: 1fr;
+  .models-experience-shell {
+    flex-direction: column;
   }
 }
 

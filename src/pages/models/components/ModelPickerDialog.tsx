@@ -32,11 +32,13 @@ import '../styles/model-picker-dialog.css'
 export type ModelPickerCategory = 'dialogue' | 'image' | 'audio' | 'video'
 
 /** 类别 → 任务枚举（仅用于分类推断/展示，任务级交互本次不实现） */
+// 九类体验任务枚举，取自后端 2026-07-27 已合入 test 的《模型体验(Playground V1)前端接口文档》
+// §二 task 值域，字面值以文档为准（不是 PRD 文字里的猜测名）
 const CATEGORY_TASKS: Record<ModelPickerCategory, string[]> = {
-  dialogue: ['chat'],
-  image: ['image_generate', 'image_i2i'],
-  audio: ['audio_tts', 'audio_transcribe'],
-  video: ['video_t2v', 'video_i2v'],
+  dialogue: ['text_to_text', 'image_to_text', 'video_to_text'],
+  image: ['text_to_image', 'image_to_image'],
+  audio: ['text_to_audio', 'audio_to_text'],
+  video: ['text_to_video', 'image_to_video'],
 }
 
 const CATEGORY_ORDER: ModelPickerCategory[] = ['dialogue', 'image', 'audio', 'video']

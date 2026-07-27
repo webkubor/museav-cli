@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { trackPageView } from '@/lib/track'
 import { BalanceCard } from './BalanceCard'
 import type { BalanceTab } from './BalanceCard'
+import { LowBalanceAlert } from './LowBalanceAlert'
 import { BillingLedgerPanel } from './BillingLedgerPanel'
 
 export default function BillingPage() {
@@ -30,6 +31,8 @@ export default function BillingPage() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />
+
+      <LowBalanceAlert tenantId={tenantId} />
 
       <BillingLedgerPanel tenantId={tenantId} currencySymbol={currencySymbol} />
     </div>

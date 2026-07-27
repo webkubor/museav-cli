@@ -66,4 +66,7 @@ export const storageKeys = {
 
   // ── 设备指纹（app 全局，跨市场唯一标识） ─────────────────────────────────
   deviceId:         () => buildKey('device_id', 'app'),
+
+  // ── 账单·低余额提醒（按租户隔离；#528 后端接口交付前的前端本地兜底） ──────
+  billingLowBalanceAlert: (tenantId: string) => buildKey(`billing_low_balance_alert:${tenantId}`, 'market'),
 } as const

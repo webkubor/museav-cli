@@ -11,6 +11,7 @@ import { LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers, LuZap,
 import { listModels, listModelTags, listModelFacets, listFeatured } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
+import { resolveModelCategory } from '../model-experience-data'
 import { CatalogCard } from './CatalogCard'
 import { CatalogFeatured } from './CatalogFeatured'
 import { CatalogSidebar } from './CatalogSidebar'
@@ -146,7 +147,16 @@ export default function ModelsCatalogPage() {
 
   const handleGoPlayground = (modelId: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
-    if (!isAuthenticated) { navigate(toLoginWithRedirect()); return }
+    if (!isAuthenticated) {
+      const model = allModels.find((m) => m.model_id === modelId)
+      navigate(toLoginWithRedirect(undefined, {
+        model_id: modelId,
+        model_category: model ? resolveModelCategory(model) : undefined,
+        experience_type: 'try',
+        detail_source: 'catalog',
+      }))
+      return
+    }
     navigate('/models/playground', { state: { selectedModelId: modelId } })
   }
   const openCompare = (modelId: string) => {
@@ -302,7 +312,14 @@ export default function ModelsCatalogPage() {
         currentModelId={compareCurrentModelId}
         onConfirmCompare={(ids) => {
           if (ids.length === 0) return
-          if (!isAuthenticated) { navigate(toLoginWithRedirect()); return }
+          if (!isAuthenticated) {
+            navigate(toLoginWithRedirect(undefined, {
+              compare_with: ids,
+              experience_type: 'compare',
+              detail_source: 'catalog',
+            }))
+            return
+          }
           navigate('/models/compare', { state: { selectedIds: ids } })
         }}
       />

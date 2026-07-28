@@ -23,6 +23,7 @@ import {
   recordAuthGuardFailure,
 } from '@/lib/auth/front-guard'
 import { getRedirectTarget } from '@/lib/redirect'
+import { navigateAfterLogin } from '@/lib/login-intent'
 import { getRequestErrorMessage, errorCodeOf } from '@/lib/request-error-message'
 import { getCaptchaParam } from '@/lib/aliyun-captcha'
 import { CaptchaGate, type CaptchaGateHandle } from '@/components/auth/CaptchaGate'
@@ -66,9 +67,10 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
   const phoneValue = watch('phone')
   const isPhoneValid = /^1[3-9]\d{9}$/.test(phoneValue ?? '')
 
+  // 走 navigateAfterLogin：重新校验保存的模型登录意图（qa#551），过期/失效降级为普通回跳
   useEffect(() => {
     if (!isSessionLoading && isAuthenticated) {
-      navigate(redirectAfterLogin, { replace: true })
+      void navigateAfterLogin(navigate, redirectAfterLogin)
     }
   }, [isAuthenticated, isSessionLoading, navigate, redirectAfterLogin])
 
@@ -124,7 +126,7 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
         session.permissions?.granted ?? null
       )
       trackEvent('login_success', { method: 'phone' }, { result: 'success' })
-      navigate(redirectAfterLogin, { replace: true })
+      // 导航统一交给下面 isAuthenticated 的 effect，避免和它抢跑覆盖目的地
     } catch (error) {
       recordAuthGuardFailure({ action: 'phone-login', subject: data.phone })
       // 展示后端返回的细分中文文案（验证码错误/已失效、账户冻结、发送过频等），

@@ -14,6 +14,7 @@ import { toLoginWithRedirect } from '@/lib/redirect'
 import { Button } from '@/components/ui/Button'
 import { trimPriceZeros } from '@/lib/utils'
 import { ModelDetailPanel } from '@/features/models/components/ModelDetailPanel'
+import { resolveModelCategory } from '../model-experience-data'
 import '../catalog/catalog.css'
 
 export default function ModelDetailPage() {
@@ -43,7 +44,15 @@ export default function ModelDetailPage() {
   const detail = detailQuery.data
 
   const goTry = () => {
-    if (!isAuthenticated) { navigate(toLoginWithRedirect()); return }
+    if (!isAuthenticated) {
+      navigate(toLoginWithRedirect(undefined, {
+        model_id: detail?.model_id,
+        model_category: detail ? resolveModelCategory(detail) : undefined,
+        experience_type: 'try',
+        detail_source: 'detail',
+      }))
+      return
+    }
     navigate('/models/playground', { state: { selectedModelId: detail?.model_id } })
   }
 

@@ -1,12 +1,15 @@
 /**
  * API 快捷调用弹窗（PRD §7.7；模型体验页专用，弹窗形态）
  * 每个模型列顶部 API 图标打开「{模型名称} 的 API 调用」弹窗：
- * 协议 Tab 只展示模型支持的协议；语言 Tab 按协议过滤（见 `../api-code-samples`）；
- * 代码示例固定模板，不读取当前草稿、附件和模型参数。
+ * 协议 Tab 只展示模型支持的协议；语言 Tab 固定为 cURL、Node.js、Python 三个
+ * （PRD §7.7 原文，不随协议增减——跟公开模型广场详情页 §7.6 的六语言协议过滤方案
+ * 是两套不同规范，本组件不能借用那套，否则模型体验页会多出协议自己不该有的
+ * TypeScript/Claude Code Tab）；代码示例固定模板，不读取当前草稿、附件和模型参数。
  *
- * 公开模型广场详情页（/models/:modelId）用的是同一套代码示例生成器，但渲染为内嵌
- * 「API 接入」区块而非弹窗（见飞书《ModelGo首页重构 PRD：模型广场页面》v0.1 §8.3
- * 「API请求渲染后滚动到正确模型的 API 区，不打开新弹窗」），见 `../detail/ApiAccessPanel.tsx`。
+ * 公开模型广场详情页（/models/:modelId）用的是同一套代码示例生成器（含 typescript/
+ * claudeCode 两个额外语言），但渲染为内嵌「API 接入」区块而非弹窗、且按协议过滤语言
+ * Tab（见飞书《ModelGo首页重构 PRD：模型广场页面》v0.1 §7.6/§8.3），见
+ * `../detail/ApiAccessPanel.tsx`，不要跟本组件混用同一套语言集合。
  */
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -17,8 +20,6 @@ import { CopyButton } from '@/components/ui/CopyButton'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import {
   PROTOCOL_LABEL,
-  languagesForProtocol,
-  languageLabel,
   buildCodeSample,
   type ApiProtocol,
   type ApiCodeLanguage,
@@ -26,6 +27,14 @@ import {
 import '../styles/api-quick-call-modal.css'
 
 export type { ApiProtocol, ApiCodeLanguage }
+
+/** 模型体验页 API 弹窗固定语言集合（PRD §7.7），不随协议变化 */
+const PLAYGROUND_LANGUAGES: ApiCodeLanguage[] = ['curl', 'nodejs', 'python']
+const PLAYGROUND_LANGUAGE_LABEL: Record<'curl' | 'nodejs' | 'python', string> = {
+  curl: 'cURL',
+  nodejs: 'Node.js',
+  python: 'Python',
+}
 
 export interface ApiQuickCallModalProps {
   open: boolean
@@ -54,10 +63,8 @@ export function ApiQuickCallModal({
   const [language, setLanguage] = useState<ApiCodeLanguage>('curl')
 
   const activeProtocol = protocols.includes(protocol) ? protocol : protocols[0]
-  // 语言 Tab 按当前协议过滤（PRD §7.6）：openai → cURL/Python/Node.js/TypeScript(fetch)；
-  // anthropic → cURL/Python(Anthropic)/Claude Code。切协议后若旧语言不在新协议的集合里，
-  // 自动回退到该协议下第一个可用语言，避免停留在一个已不存在的 Tab 上。
-  const languages = languagesForProtocol(activeProtocol)
+  // 语言 Tab 固定 cURL/Node.js/Python（PRD §7.7），不随协议变化
+  const languages = PLAYGROUND_LANGUAGES
   const activeLanguage = languages.includes(language) ? language : languages[0]
   const codeSample = buildCodeSample(activeProtocol, activeLanguage, modelId)
 
@@ -131,7 +138,7 @@ export function ApiQuickCallModal({
           <TabsList variant="underline">
             {languages.map((lang) => (
               <TabsTrigger key={lang} value={lang} variant="underline">
-                {languageLabel(activeProtocol, lang)}
+                {PLAYGROUND_LANGUAGE_LABEL[lang as 'curl' | 'nodejs' | 'python']}
               </TabsTrigger>
             ))}
           </TabsList>

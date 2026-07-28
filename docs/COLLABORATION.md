@@ -517,17 +517,17 @@ cs secrets run --env JENKINS_TOKEN=secret://jenkins/modelgo -- \
 
 ## 10. 收工清理
 
+这是**会话结束前的自查清单**，不是另一套独立的清理规则——真正「什么时候删分支」的判断标准只有一个，见 §4「日常开发流程」步骤 5（**合并进 test 就删，不等 main**）。这里只是收工前照着 `git worktree list` 过一遍，确认每个自己开过的 worktree 都已经按 §4 走完三步（删 worktree → 删本地分支 → 删远端分支），别漏。
+
 ```bash
-# ① 确认代码已合入 main
-git checkout main && git pull
+# ① 看自己这次开了哪些 worktree，逐一确认是否已按 §4 清理
+git worktree list
 
-# ② 清理 worktree
-git worktree list                # 查看所有 worktree
-git worktree remove <path>       # 逐一清理
+# ② 还没清理的，按 §4 补做（不是可选项）：
+git worktree remove <path>
+git branch -d <分支名>
+git push origin --delete <分支名>
 
-# ③ 删除本地分支（可选）
-git branch -d feat/<分支名>
-
-# ④ 确认认领锁已释放
+# ③ 确认认领锁已释放
 node $S status | grep <iid>      # 确认不在「进行中」
 ```

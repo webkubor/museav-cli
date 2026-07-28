@@ -14,10 +14,12 @@
  * 项数边界：0 项整块不渲染；1 项静态展示（无圆点、不自动播）。
  * background_key 为空时按 model_id 稳定映射，同一模型底色恒定不闪。
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { trimPriceZeros } from '@/lib/utils'
+import { useAuthStore } from '@/store/auth'
+import { trackEvent } from '@/lib/track'
 import type { CatalogFeaturedSlide } from '@/types'
 
 /** 五张内置背景，对应后端 background_key 的 default_01..default_05。 */
@@ -41,17 +43,61 @@ interface Props {
 export function CatalogFeatured({ slides, isZh, onTry }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [active, setActive] = useState(0)
   const [paused, setPaused] = useState(false)
 
   const count = slides.length
   const safeIndex = count > 0 ? Math.min(active, count - 1) : 0
 
+  // 埋点：切换来源（自动轮播 / 手动点击），供 marketplace_featured_switched 的
+  // switch_source 使用；每次手动切换前先写入，读取后立即清回 'auto'（自动轮播的
+  // 默认来源），避免手动标记残留到下一次自动切换。
+  const switchSourceRef = useRef<'auto' | 'manual'>('auto')
+  const goToSlide = (index: number, source: 'auto' | 'manual') => {
+    switchSourceRef.current = source
+    setActive(index)
+  }
+
   useEffect(() => {
     if (paused || count <= 1) return
-    const timer = window.setInterval(() => setActive((i) => (i + 1) % count), AUTOPLAY_MS)
+    const timer = window.setInterval(() => {
+      switchSourceRef.current = 'auto'
+      setActive((i) => (i + 1) % count)
+    }, AUTOPLAY_MS)
     return () => window.clearInterval(timer)
   }, [paused, count])
+
+  // marketplace_featured_impression：轮播项成为主卡时上报一次（含首次挂载）。
+  // marketplace_featured_switched：非首次时额外上报本次切换（自动/手动 + 前后模型）。
+  const prevIndexRef = useRef(safeIndex)
+  const impressedKeyRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (count === 0) return
+    const current = slides[safeIndex]
+    if (!current) return
+    if (impressedKeyRef.current !== current.carousel_item_id) {
+      const prevSlide = slides[prevIndexRef.current]
+      if (prevSlide && prevSlide.carousel_item_id !== current.carousel_item_id) {
+        trackEvent('marketplace_featured_switched', {
+          from_model_id: prevSlide.model_id,
+          to_model_id: current.model_id,
+          switch_source: switchSourceRef.current,
+          position: safeIndex,
+        })
+      }
+      trackEvent('marketplace_featured_impression', {
+        carousel_item_id: current.carousel_item_id,
+        model_id: current.model_id,
+        position: safeIndex,
+        background_key: current.background_key || fallbackBackgroundKey(current.model_id),
+        has_bottom_image: Boolean(current.bottom_image_url),
+      })
+      impressedKeyRef.current = current.carousel_item_id
+      switchSourceRef.current = 'auto'
+    }
+    prevIndexRef.current = safeIndex
+  }, [safeIndex, slides, count])
 
   const rendered = useMemo(
     () =>
@@ -95,7 +141,20 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
               className={`mg-featured-slide mg-featured-bg-${bgKey}${isActive ? ' is-active' : ''}${hidden ? ' is-hidden' : ''}`}
               style={{ ['--slide-offset' as string]: String(offset) }}
               aria-hidden={hidden}
-              onClick={() => (isActive ? navigate(detailHref) : setActive(index))}
+              onClick={() => {
+                if (isActive) {
+                  trackEvent('marketplace_featured_clicked', {
+                    carousel_item_id: slide.carousel_item_id,
+                    model_id: slide.model_id,
+                    action: 'detail',
+                    auth_state: isAuthenticated ? 'authenticated' : 'anonymous',
+                    position: index,
+                  })
+                  navigate(detailHref, { state: { source: 'catalog_featured' } })
+                } else {
+                  goToSlide(index, 'manual')
+                }
+              }}
             >
               {/* 巨大水印首字母，与原型一致 */}
               <span className="mg-featured-mark" aria-hidden>
@@ -127,13 +186,33 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
                 <button
                   type="button"
                   className="mg-featured-try"
-                  onClick={(e) => { e.stopPropagation(); onTry(slide.model_id, e) }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    trackEvent('marketplace_featured_clicked', {
+                      carousel_item_id: slide.carousel_item_id,
+                      model_id: slide.model_id,
+                      action: 'try',
+                      auth_state: isAuthenticated ? 'authenticated' : 'anonymous',
+                      position: index,
+                    })
+                    onTry(slide.model_id, e)
+                  }}
                 >
                   {t('modelsCatalog.button.try')}
                 </button>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); navigate(detailHref) }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    trackEvent('marketplace_featured_clicked', {
+                      carousel_item_id: slide.carousel_item_id,
+                      model_id: slide.model_id,
+                      action: 'detail',
+                      auth_state: isAuthenticated ? 'authenticated' : 'anonymous',
+                      position: index,
+                    })
+                    navigate(detailHref, { state: { source: 'catalog_featured' } })
+                  }}
                 >
                   {isZh ? '查看详情' : 'Details'}
                 </button>
@@ -157,7 +236,7 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
               aria-selected={i === safeIndex}
               aria-label={s.name}
               className={`mg-featured-dot${i === safeIndex ? ' is-on' : ''}`}
-              onClick={() => setActive(i)}
+              onClick={() => goToSlide(i, 'manual')}
             />
           ))}
         </div>

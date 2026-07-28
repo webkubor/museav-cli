@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   LuSettings2,
@@ -33,6 +33,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Composer } from '@/components/ui/Composer'
 import { useModels } from '@/features/models/hooks/useModels'
+import { useExperienceWorkbenchStore } from '@/store/use-experience-workbench-store'
 import { prettyModelName } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
@@ -159,17 +160,33 @@ export default function ModelsPage() {
   const [apiCallOpen, setApiCallOpen] = useState(false)
   const [compareAddOpen, setCompareAddOpen] = useState(false)
   const [historyCollapsed, setHistoryCollapsed] = useState(true)
-  const [chatParams, setChatParams] = useState<Record<string, unknown>>({})
-  const [sessionStats, setSessionStats] = useState({ requestCount: 0, tokens: 0, cost: 0 })
+
+  // 模型列/会话/消息跨路由持久化（qa#544）：改走模块级 zustand store，SPA 内路由切走
+  // 再切回不再清空；变量名保持不变，文件里后续几十处引用几乎不用改。
+  const single = useExperienceWorkbenchStore((s) => s.single)
+  const setSingle = useExperienceWorkbenchStore((s) => s.setSingle)
+  const selectedId = single.selectedId
+  // useCallback：这个 setter 进了下面某个 useEffect 的依赖数组，保持引用稳定避免每次渲染都重跑
+  const setSelectedId = useCallback((id: string | null) => setSingle({ selectedId: id }), [setSingle])
+  const messages = single.messages
+  const setMessages = (updater: ExperienceMessage[] | ((prev: ExperienceMessage[]) => ExperienceMessage[])) =>
+    setSingle((s) => ({ messages: typeof updater === 'function' ? updater(s.messages) : updater }))
+  const sessionId = single.sessionId
+  const setSessionId = (id: string | null) => setSingle({ sessionId: id })
+  const conversationId = single.conversationId
+  const setConversationId = (id: string | null) => setSingle({ conversationId: id })
+  const chatParams = single.chatParams
+  const setChatParams = (params: Record<string, unknown> | ((prev: Record<string, unknown>) => Record<string, unknown>)) =>
+    setSingle((s) => ({ chatParams: typeof params === 'function' ? params(s.chatParams) : params }))
+  const sessionStats = single.sessionStats
+  const setSessionStats = (
+    stats: typeof single.sessionStats | ((prev: typeof single.sessionStats) => typeof single.sessionStats),
+  ) => setSingle((s) => ({ sessionStats: typeof stats === 'function' ? stats(s.sessionStats) : stats }))
 
   const [input, setInput] = useState('')
-  const [messages, setMessages] = useState<ExperienceMessage[]>(INITIAL_MESSAGES)
   const [isStreaming, setIsStreaming] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
 
-  // 当前会话/列（POST /experience/sessions 懒创建：第一次发送时才建，避免每次进页面都建空会话）
-  const [sessionId, setSessionId] = useState<string | null>(null)
-  const [conversationId, setConversationId] = useState<string | null>(null)
   const [historySessions, setHistorySessions] = useState<HistorySessionItem[]>([])
 
   // 每轮最多一个附件（§7.5），上传成功后才拿到 resource_id，发送后清空
@@ -188,7 +205,7 @@ export default function ModelsPage() {
   // 真按文档筛选会导致模型选择器完全空白，页面彻底不可用，所以不传 modality，取全量目录，
   // 用 resolveModelCategory 按输出模态自己分桶到对话/图像/音频/视频四个类别（ModelPickerDialog
   // 的类别 Tab 用的是同一份逻辑，两边口径一致）
-  const { selectedId, setSelectedId, modelsQuery } = useModels()
+  const { modelsQuery } = useModels()
 
   const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
   const selectedModel = allModels.find((model) => model.id === selectedId) ?? allModels[0]

@@ -128,8 +128,8 @@ export function getTransactionInvoice(tenantId: string, transactionId: string) {
 /** 入账类型：充值 / 赠送 / 奖励 */
 export type IncomeRecordType = 'recharge' | 'gift' | 'reward'
 
-/** 入账状态：已完成 / 处理中 */
-export type IncomeRecordStatus = 'completed' | 'processing'
+/** 入账状态：已完成 / 处理中 / 失败（PRD 1.0.4 §8.6.1 三态） */
+export type IncomeRecordStatus = 'completed' | 'processing' | 'failed'
 
 /** 归属余额桶（canonical code，UI 侧翻译；真接口若返回任意字符串则原样透传） */
 export type IncomeBalanceBucket = 'main' | 'gift' | 'reward' | (string & {})
@@ -195,9 +195,14 @@ function giftChannelCode(source: string | undefined, type: IncomeRecordType): st
   return source || (type === 'reward' ? 'referral' : 'activity')
 }
 
-/** 充值订单 → 入账记录（仅纳入 paid/pending 这类实际入账流，失败/取消/退款不算收入） */
+/**
+ * 充值订单 → 入账记录。paid/pending/failed 三态纳入（PRD 1.0.4 §8.6.1 状态枚举含 failed，
+ * 失败的充值尝试也需要在账本里可见）；取消/退款不是"入账"事件本身，仍然排除。
+ */
 function rechargeToIncome(o: RechargeOrder): IncomeRecord | null {
-  if (o.status !== 'paid' && o.status !== 'pending') return null
+  if (o.status === 'cancelled' || o.status === 'refunded') return null
+  const status: IncomeRecordStatus =
+    o.status === 'paid' ? 'completed' : o.status === 'failed' ? 'failed' : 'processing'
   return {
     id: o.order_no,
     type: 'recharge',
@@ -205,7 +210,7 @@ function rechargeToIncome(o: RechargeOrder): IncomeRecord | null {
     record_ref: o.order_no,
     balance_bucket: 'main',
     amount: { amount: o.credited_amount || o.amount, currency: o.currency },
-    status: o.status === 'paid' ? 'completed' : 'processing',
+    status,
     created_at: o.paid_at || '',
     invoice: o.invoice_url ? { status: 'available', url: o.invoice_url } : undefined,
   }

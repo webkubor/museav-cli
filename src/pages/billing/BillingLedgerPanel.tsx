@@ -90,6 +90,12 @@ const TYPE_DESC: Record<IncomeRecordType, { zh: string; en: string }> = {
 const STATUS_DESC: Record<IncomeRecordStatus, { zh: string; en: string }> = {
   completed: { zh: '已完成：入账成功', en: 'Completed: credited successfully' },
   processing: { zh: '处理中：入账处理中', en: 'Processing: credit in progress' },
+  failed: { zh: '失败：本次入账尝试未成功，余额未变化', en: 'Failed: this attempt did not go through, balance unchanged' },
+}
+const STATUS_BADGE: Record<IncomeRecordStatus, 'success' | 'warning' | 'danger'> = {
+  completed: 'success',
+  processing: 'warning',
+  failed: 'danger',
 }
 
 /**
@@ -268,7 +274,7 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
                       </span>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      <Badge variant={rec.status === 'completed' ? 'success' : 'warning'} size="sm" title={STATUS_DESC[rec.status][lang]} className="cursor-help">
+                      <Badge variant={STATUS_BADGE[rec.status]} size="sm" title={STATUS_DESC[rec.status][lang]} className="cursor-help">
                         {t(`billing.income.status.${rec.status}`)}
                       </Badge>
                     </TableCell>

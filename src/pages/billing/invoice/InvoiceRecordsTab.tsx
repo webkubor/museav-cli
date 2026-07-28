@@ -3,7 +3,7 @@
  * 状态筛选 + 发票号/抬头搜索 + 列表（下载）+ 加载更多。客户端无红冲/开票执行入口（D-INV15）。
  */
 import { useEffect, useState } from 'react'
-import { LuDownload } from 'react-icons/lu'
+import { LuDownload, LuCircleAlert } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
@@ -138,6 +138,12 @@ export function InvoiceRecordsTab({
                     </span>
                     {r.tax_serial && <span>发票号 {r.tax_serial}</span>}
                   </div>
+                  {r.status === 'failed' && r.error_msg && (
+                    <div className="flex items-start gap-1 text-xs text-mg-danger">
+                      <LuCircleAlert size={13} className="mt-0.5 shrink-0" />
+                      <span>{r.error_msg}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="shrink-0">
                   {r.status === 'invoiced' && canDownload && (

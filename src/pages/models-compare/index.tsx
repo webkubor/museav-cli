@@ -40,12 +40,16 @@ import { useSidebarCollapseStore } from '@/store/use-sidebar-collapse-store'
 import { useAuthStore } from '@/store/auth'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
 import { calculateSpendableBalance } from '@/pages/billing/formatBalance'
+import { trackEvent } from '@/lib/track'
 import {
   isChatModel,
   isPaidModel,
   estimateTokens,
   formatPlaygroundLatency,
   dualPriceText,
+  hashId,
+  latencyBucket,
+  tokenBucket,
   type ExperienceMessage,
 } from '../models/model-experience-data'
 import { ModelPickerDialog } from '../models/components/ModelPickerDialog'
@@ -243,8 +247,16 @@ export default function ModelsComparePage() {
             })
           : prev,
       )
+      trackEvent('playground_model_run_result', {
+        model_id: column.model.model_id,
+        status: 'succeeded',
+        latency_bucket: latencyBucket(totalMs),
+        token_bucket: tokenBucket(inputTokens + outputTokens),
+        billing_status: free ? 'free' : 'billed',
+      }, { result: 'success' })
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
+      const errorCode = (err as { data?: { code?: string } } | undefined)?.data?.code
       setColumns((prev) =>
         prev
           ? prev.map((c, i) => {
@@ -256,6 +268,13 @@ export default function ModelsComparePage() {
             })
           : prev,
       )
+      trackEvent('playground_model_run_result', {
+        model_id: column.model.model_id,
+        status: 'failed',
+        latency_bucket: latencyBucket(Date.now() - startedAt),
+        token_bucket: tokenBucket(0),
+        billing_status: 'unbilled',
+      }, { result: 'fail', error_code: errorCode })
     } finally {
       updateColumn(idx, { streaming: false })
       settleDispatch(dispatchId)
@@ -296,6 +315,12 @@ export default function ModelsComparePage() {
     if (isBalanceZero && columns.some((c) => isPaidModel(c.model))) return
     const dispatchId = crypto.randomUUID()
     pendingByDispatch.current.set(dispatchId, columns.length)
+    trackEvent('playground_send', {
+      dispatch_id_hash: hashId(dispatchId),
+      attachment_kind_set: 'none',
+      eligible_column_count: columns.length,
+      attachment_recipient_count: 0,
+    })
     setSharedDraft('')
     columns.forEach((_, idx) => void sendOne(idx, prompt, dispatchId))
   }
@@ -307,6 +332,12 @@ export default function ModelsComparePage() {
     if (isBalanceZero && isPaidModel(columns[idx].model)) return
     const dispatchId = crypto.randomUUID()
     pendingByDispatch.current.set(dispatchId, 1)
+    trackEvent('playground_send', {
+      dispatch_id_hash: hashId(dispatchId),
+      attachment_kind_set: 'none',
+      eligible_column_count: 1,
+      attachment_recipient_count: 0,
+    })
     updateColumn(idx, { draft: '' })
     void sendOne(idx, prompt, dispatchId)
   }
@@ -317,17 +348,30 @@ export default function ModelsComparePage() {
     if (next) {
       const source = columns[lastFocusedIndex] ?? columns[0]
       const allSame = columns.every((c) => c.draft === source.draft)
+      const sourceHasAttachment = false // 对比列暂不支持附件，恒为 false
       if (allSame) {
         setSharedDraft(source.draft)
         setSyncInput(true)
+        trackEvent('playground_input_mode_change', {
+          from_mode: 'independent', to_mode: 'sync', requires_confirmation: false,
+          source_has_attachment: sourceHasAttachment, attachment_recipient_count: 0,
+        }, { result: 'success' })
         return
       }
       setSyncConfirm({ sourceIndex: lastFocusedIndex, sourceText: source.draft })
+      trackEvent('playground_input_mode_change', {
+        from_mode: 'independent', to_mode: 'sync', requires_confirmation: true,
+        source_has_attachment: sourceHasAttachment, attachment_recipient_count: 0,
+      })
       return
     }
     // 同步→独立：无需确认，共享文本复制到每列草稿
     setColumns((prev) => (prev ? prev.map((c) => ({ ...c, draft: sharedDraft })) : prev))
     setSyncInput(false)
+    trackEvent('playground_input_mode_change', {
+      from_mode: 'sync', to_mode: 'independent', requires_confirmation: false,
+      source_has_attachment: false, attachment_recipient_count: 0,
+    }, { result: 'success' })
   }
 
   function confirmSyncSwitch() {
@@ -335,11 +379,16 @@ export default function ModelsComparePage() {
     setSharedDraft(syncConfirm.sourceText)
     setSyncInput(true)
     setSyncConfirm(null)
+    trackEvent('playground_input_mode_change', {
+      from_mode: 'independent', to_mode: 'sync', requires_confirmation: true,
+      source_has_attachment: false, attachment_recipient_count: 0,
+    }, { result: 'success' })
   }
 
   async function handleRemoveConfirmed() {
     if (removeConfirmIndex === null || !columns || !sessionId) return
     const target = columns[removeConfirmIndex]
+    trackEvent('playground_model_remove', { model_id: target.model.model_id, action: 'confirm' })
     if (columns.length <= 2) {
       // §7.3：移除至单模型按退出对比同样规则处理——保留最左侧主模型，恢复侧栏
       const keep = columns[0].model.model_id === target.model.model_id ? columns[1].model : columns[0].model
@@ -372,6 +421,7 @@ export default function ModelsComparePage() {
     if (!columns || !sessionId || added.length === 0) return
     try {
       const toAdd = added.slice(0, MAX_COMPARE - columns.length)
+      const baseCount = columns.length
       const newConversations = await Promise.all(toAdd.map((model) => addExperienceConversation(sessionId, model.model_id)))
       setColumns((prev) => {
         if (!prev) return prev
@@ -386,6 +436,9 @@ export default function ModelsComparePage() {
         abortRefs.current = [...abortRefs.current, ...newColumns.map(() => null)]
         return [...prev, ...newColumns]
       })
+      toAdd.forEach((model, i) => {
+        trackEvent('playground_model_add', { model_id: model.model_id, next_count: baseCount + i + 1 })
+      })
     } catch (err) {
       setBootError(`添加模型失败：${(err as Error).message || '请稍后重试'}`)
     }
@@ -398,13 +451,16 @@ export default function ModelsComparePage() {
     try {
       await switchExperienceConversationModel(sessionId, target.conversationId, model.model_id)
       updateColumn(switchPickerIndex, { model, chatParams: {} })
+      trackEvent('playground_model_select', { from_model_id: target.model.model_id, to_model_id: model.model_id }, { result: 'success' })
     } catch (err) {
       setBootError(`切换模型失败：${(err as Error).message || '请稍后重试'}`)
+      trackEvent('playground_model_select', { from_model_id: target.model.model_id, to_model_id: model.model_id }, { result: 'fail' })
     }
   }
 
   /** 打开设置弹窗：拉取该列模型已持久化的配置 + 本会话累计统计（真实端点见 Swagger） */
   async function openColumnSettings(idx: number) {
+    trackEvent('playground_settings_action', { action: 'open' })
     setSettingsIndex(idx)
     if (!sessionId || !columns) return
     const model = columns[idx].model
@@ -430,6 +486,7 @@ export default function ModelsComparePage() {
 
   function handleColumnParamChange(idx: number, key: string, value: unknown) {
     if (!columns) return
+    trackEvent('playground_settings_action', { action: 'modify', parameter_name: key })
     const next = { ...columns[idx].chatParams, [key]: value }
     updateColumn(idx, { chatParams: next })
     if (sessionId) void saveExperienceModelConfig(sessionId, columns[idx].model.model_id, next)
@@ -437,6 +494,7 @@ export default function ModelsComparePage() {
 
   function handleColumnParamReset(idx: number) {
     if (!columns) return
+    trackEvent('playground_settings_action', { action: 'reset' })
     updateColumn(idx, { chatParams: {} })
     if (sessionId) void resetExperienceModelConfig(sessionId, columns[idx].model.model_id)
   }
@@ -479,7 +537,10 @@ export default function ModelsComparePage() {
             variant="outline"
             size="sm"
             disabled={columns.length >= MAX_COMPARE}
-            onClick={() => setAddPickerOpen(true)}
+            onClick={() => {
+              trackEvent('playground_model_picker_open', { picker_type: 'compareAdd', browse_category: 'dialogue' })
+              setAddPickerOpen(true)
+            }}
           >
             <LuPlus size={13} /> 添加模型
           </Button>
@@ -493,7 +554,14 @@ export default function ModelsComparePage() {
         {columns.map((column, idx) => (
           <section key={column.conversationId || idx} className="models-experience-chat models-compare-column">
             <div className="models-experience-modelbar">
-              <button type="button" className="models-experience-model-trigger" onClick={() => setSwitchPickerIndex(idx)}>
+              <button
+                type="button"
+                className="models-experience-model-trigger"
+                onClick={() => {
+                  trackEvent('playground_model_picker_open', { picker_type: 'compareSwitch', browse_category: 'dialogue' })
+                  setSwitchPickerIndex(idx)
+                }}
+              >
                 <span className="models-experience-model-avatar">
                   {prettyModelName(column.model.display_name, column.model.model_id).slice(0, 1).toUpperCase()}
                 </span>
@@ -505,7 +573,16 @@ export default function ModelsComparePage() {
                 <LuChevronDown size={13} className="text-mg-text-3 shrink-0" />
               </button>
               <div className="ml-auto flex items-center gap-1">
-                <button type="button" className="models-experience-icon-btn" aria-label="打开 API 调用" title="打开 API 调用" onClick={() => setApiIndex(idx)}>
+                <button
+                  type="button"
+                  className="models-experience-icon-btn"
+                  aria-label="打开 API 调用"
+                  title="打开 API 调用"
+                  onClick={() => {
+                    trackEvent('playground_api_modal_action', { action: 'open', protocol: '', language: '', model_id: column.model.model_id })
+                    setApiIndex(idx)
+                  }}
+                >
                   <LuCode size={13} />
                 </button>
                 <button type="button" className="models-experience-icon-btn" aria-label="打开模型设置" title="打开模型设置" onClick={() => void openColumnSettings(idx)}>
@@ -535,7 +612,15 @@ export default function ModelsComparePage() {
                   <strong>余额不足，仅可体验免费模型</strong>
                   当前模型与输入已为你保留，充值后即可继续运行。
                 </span>
-                <button type="button" onClick={() => navigate('/billing')}>去充值</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    trackEvent('playground_recharge_click', { locked_model_count: 1 })
+                    navigate('/billing')
+                  }}
+                >
+                  去充值
+                </button>
               </div>
             )}
 
@@ -567,7 +652,15 @@ export default function ModelsComparePage() {
             <strong>余额不足，仅可体验免费模型</strong>
             当前模型与输入已为你保留，充值后即可继续运行。
           </span>
-          <button type="button" onClick={() => navigate('/billing')}>去充值</button>
+          <button
+            type="button"
+            onClick={() => {
+              trackEvent('playground_recharge_click', { locked_model_count: columns.filter((c) => isPaidModel(c.model)).length })
+              navigate('/billing')
+            }}
+          >
+            去充值
+          </button>
         </div>
       )}
 
@@ -635,12 +728,18 @@ export default function ModelsComparePage() {
           modelName={prettyModelName(columns[apiIndex].model.display_name, columns[apiIndex].model.model_id)}
           modelId={columns[apiIndex].model.model_id}
           supportedProtocols={columns[apiIndex].model.protocols?.length ? (columns[apiIndex].model.protocols as never) : ['openai']}
+          onAction={(action, protocol, language) => trackEvent('playground_api_modal_action', { action, protocol, language, model_id: columns[apiIndex].model.model_id })}
         />
       )}
 
       <ConfirmModal
         open={removeConfirmIndex !== null}
-        onClose={() => setRemoveConfirmIndex(null)}
+        onClose={() => {
+          if (removeConfirmIndex !== null && columns[removeConfirmIndex]) {
+            trackEvent('playground_model_remove', { model_id: columns[removeConfirmIndex].model.model_id, action: 'cancel' })
+          }
+          setRemoveConfirmIndex(null)
+        }}
         onConfirm={handleRemoveConfirmed}
         title="移除该模型？"
         description="确认后将删除该列的聊天记录，无法恢复。"

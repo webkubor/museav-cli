@@ -12,6 +12,7 @@ import { listInvoiceRecords, getInvoiceDownloadUrl } from '@/services/invoice'
 import type { InvoiceRecord, InvoiceTitleType } from '@/types'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
+import { trackEvent } from '@/lib/track'
 
 const STATUS_MAP: Record<InvoiceRecord['status'], { label: string; cls: string }> = {
   pending: { label: '待开票', cls: 'bg-mg-fill-0 text-mg-text-2' },
@@ -73,9 +74,14 @@ export function InvoiceRecordsTab({
       .catch(() => setHasMore(false))
   }
 
-  const download = async (invoiceNo: string) => {
-    const { url } = await getInvoiceDownloadUrl(tenantId, invoiceNo)
-    window.open(url, '_blank')
+  const download = async (invoiceNo: string, invoiceStatus: InvoiceRecord['status']) => {
+    try {
+      const { url } = await getInvoiceDownloadUrl(tenantId, invoiceNo)
+      window.open(url, '_blank')
+      trackEvent('billing_invoice_download_click', { invoice_status: invoiceStatus, result: 'success' })
+    } catch {
+      trackEvent('billing_invoice_download_click', { invoice_status: invoiceStatus, result: 'fail' })
+    }
   }
 
   return (
@@ -147,7 +153,7 @@ export function InvoiceRecordsTab({
                 </div>
                 <div className="shrink-0">
                   {r.status === 'invoiced' && canDownload && (
-                    <Button variant="outline" size="sm" onClick={() => download(r.invoice_no)}>
+                    <Button variant="outline" size="sm" onClick={() => download(r.invoice_no, r.status)}>
                       <LuDownload size={13} className="mr-1" /> 下载
                     </Button>
                   )}

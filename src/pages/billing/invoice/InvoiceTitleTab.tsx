@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { appToast } from '@/lib/app-toast'
+import { trackEvent } from '@/lib/track'
 import {
   listInvoiceTitles,
   createInvoiceTitle,
@@ -75,11 +76,16 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
     mutationFn: () => createInvoiceTitle(tenantId, form),
     onSuccess: () => {
       appToast.success('抬头已保存')
+      // §11.2 billing_invoice_title_add
+      trackEvent('billing_invoice_title_add', { invoice_title_kind: form.type, result: 'success' })
       qc.invalidateQueries({ queryKey: ['invoice', 'titles', tenantId] })
       setForm(EMPTY_FORM)
       setView('list')
     },
-    onError: () => appToast.error('保存失败，请重试'),
+    onError: () => {
+      appToast.error('保存失败，请重试')
+      trackEvent('billing_invoice_title_add', { invoice_title_kind: form.type, result: 'fail' })
+    },
   })
 
   const set = (k: keyof CreateInvoiceTitleRequest, v: string) => setForm((f) => ({ ...f, [k]: v }))

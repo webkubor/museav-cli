@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { InfoTip } from '@/components/ui/InfoTip'
 import { cn } from '@/lib/utils'
-import { trackAction } from '@/lib/track'
+import { trackAction, trackEvent } from '@/lib/track'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
@@ -14,6 +14,7 @@ import { useMouseGlow } from '@/hooks/use-mouse-glow'
 import { TopUpModal } from './TopUpModal'
 import { PromoRedeemForm } from './PromoRedeemForm'
 import { calculateSpendableBalance, formatBalance } from './formatBalance'
+import { amountBand } from './billing-tracking'
 
 export type BalanceTab = 'main' | 'gift' | 'reward'
 
@@ -107,7 +108,11 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             {canRedeem && (
               <Button
                 variant="outline"
-                onClick={() => { trackAction(PERMS.BILLING_PROMO_REDEEM); setRedeemVisible(true) }}
+                onClick={() => {
+                  trackAction(PERMS.BILLING_PROMO_REDEEM)
+                  trackEvent('billing_redeem_open', { entry_position: 'balance_card' })
+                  setRedeemVisible(true)
+                }}
                 className="rounded-md h-9 px-4 gap-1.5"
               >
                 <LuTicket size={14} />
@@ -117,7 +122,14 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             {canRecharge && (
               <Button
                 variant="brand"
-                onClick={() => { trackAction(PERMS.BILLING_RECHARGE_CREATE); setTopUpVisible(true) }}
+                onClick={() => {
+                  trackAction(PERMS.BILLING_RECHARGE_CREATE)
+                  trackEvent('billing_recharge_open', {
+                    entry_position: 'balance_card',
+                    balance_total_band: amountBand(spendableBalance),
+                  })
+                  setTopUpVisible(true)
+                }}
                 className="rounded-md h-9 px-5 gap-1.5"
               >
                 <LuPlus size={14} />

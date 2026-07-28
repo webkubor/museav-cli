@@ -8,6 +8,8 @@ import { useBalance } from '@/hooks/use-balance'
 import { listTenantMembers } from '@/services/tenants'
 import { storageKeys } from '@/lib/storage'
 import { cn } from '@/lib/utils'
+import { trackEvent } from '@/lib/track'
+import { amountBand } from './billing-tracking'
 
 /**
  * 低余额提醒（PRD 1.0.4 §8.5，续 #530）。
@@ -90,10 +92,15 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
     const has = config.recipientIds.includes(accountId)
     // 企业租户开启提醒时至少保留 1 个通知人，不允许移除最后一个
     if (has && config.enabled && config.recipientIds.length <= 1) return
-    update({
-      recipientIds: has
-        ? config.recipientIds.filter((id) => id !== accountId)
-        : [...config.recipientIds, accountId],
+    const nextRecipientIds = has
+      ? config.recipientIds.filter((id) => id !== accountId)
+      : [...config.recipientIds, accountId]
+    update({ recipientIds: nextRecipientIds })
+    // §11.2 billing_low_balance_recipients_update：接口未交付（qa#528），仅前端本地保存；
+    // recipient_role_set 依赖后端审计字段，先不上报，避免上传姓名/邮箱等明文（PRD 硬性要求）
+    trackEvent('billing_low_balance_recipients_update', {
+      recipient_count: nextRecipientIds.length,
+      result: 'success',
     })
   }
 
@@ -162,13 +169,29 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
               disabled={!config.enabled}
               value={config.threshold}
               onChange={(e) => update({ threshold: e.target.value })}
+              onBlur={(e) => {
+                // §11.2 billing_low_balance_threshold_update：只在失焦（提交完整值）时上报，避免逐键触发
+                trackEvent('billing_low_balance_threshold_update', {
+                  threshold_band: amountBand(e.target.value),
+                  result: 'success',
+                })
+              }}
               className="w-16 bg-transparent text-xs font-semibold text-mg-text-1 outline-none disabled:opacity-50"
             />
           </div>
 
           <Switch
             checked={config.enabled}
-            onCheckedChange={(enabled) => update({ enabled })}
+            onCheckedChange={(enabled) => {
+              update({ enabled })
+              // §11.2 billing_low_balance_toggle：low_balance_recipient_role_set 依赖后端审计字段
+              // （qa#528 未交付），先跳过，只报前端能拿到的开关/阈值/人数
+              trackEvent('billing_low_balance_toggle', {
+                enabled,
+                threshold_band: amountBand(config.threshold),
+                low_balance_recipient_count: config.recipientIds.length,
+              })
+            }}
             aria-label={t('billing.lowBalance.toggle', { defaultValue: '低余额提醒开关' })}
           />
         </div>

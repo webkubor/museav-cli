@@ -899,7 +899,7 @@ export default function ModelsPage() {
                     type="button"
                     onClick={() => {
                       trackEvent('playground_recharge_click', { locked_model_count: 1 })
-                      navigate('/billing')
+                      navigate('/billing', { state: { entrySource: 'recharge_cta' } })
                     }}
                   >
                     去充值

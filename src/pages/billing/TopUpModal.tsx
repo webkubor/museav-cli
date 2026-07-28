@@ -9,11 +9,13 @@ import { PERMS } from '@/config/permissions'
 import { Button } from '@/components/ui/Button'
 import { appToast } from '@/lib/app-toast'
 import { cn } from '@/lib/utils'
+import { trackEvent } from '@/lib/track'
 import {
   RECHARGE_PAYMENT_CHANNELS,
   type RechargePaymentChannel,
 } from '@/constants/recharge-channels'
 import { AlipayIcon, WechatIcon, StripeIcon } from '@/constants/brand-icons'
+import { amountBand } from './billing-tracking'
 
 const WECHAT_PAYEE_NAME = '杭州词元共生科技有限公司'
 
@@ -84,6 +86,13 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
     const paymentWindow = window.open('about:blank', '_blank')
     if (paymentWindow) paymentWindow.opener = null
 
+    // §11.2 billing_recharge_submit：提交充值金额那一刻上报，amount_type 区分预设面额/自定义金额
+    trackEvent('billing_recharge_submit', {
+      amount_band: amountBand(numAmount),
+      amount_type: customMode ? 'custom' : 'preset',
+      pay_channel: effectiveChannel,
+    })
+
     recharge.mutate(undefined, {
       onSuccess: (data) => {
         queryClient.invalidateQueries({ queryKey: ['balance', tenantId] })
@@ -102,6 +111,8 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
           : data.payment.redirect_url || data.payment.qr_code_url
         if (!redirectURL) {
           paymentWindow?.close()
+          // 下单成功但拿不到支付跳转地址：视为提交侧失败，结果尚未同步到支付渠道
+          trackEvent('billing_recharge_result', { result: 'fail', failure_reason: 'missing_redirect_url', pay_channel: effectiveChannel })
           appToast.error(t('billing.rechargeModal.error'))
           return
         }
@@ -113,8 +124,11 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
         }
         window.location.assign(redirectURL)
       },
-      onError: () => {
+      onError: (err: Error) => {
         paymentWindow?.close()
+        // §11.2 billing_recharge_result：下单请求本身失败（跳支付渠道前），alipay/stripe 的渠道侧
+        // 支付结果目前无回跳页可读取（现状缺口，非本单埋点范围），只有此处 + 微信收银台轮询能拿到结果
+        trackEvent('billing_recharge_result', { result: 'fail', failure_reason: err.message || 'create_recharge_failed', pay_channel: effectiveChannel })
       },
     })
   }

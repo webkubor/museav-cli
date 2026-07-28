@@ -278,7 +278,11 @@ PRD 原型 > 飞书文档 > 现状控制台代码
 2. 在 worktree 里开发、提交（与其他 session 物理隔离，互不看见对方未提交改动）
 3. 合并进 test：`git checkout test && git pull && git merge fix/<名> && git push origin test`
 4. 触发测试环境部署：`test/modelgo-console-web`
-5. 清理 worktree：`git worktree remove ../wt-<名>`
+5. **合并确认成功后立刻清理，别拖到「合并上线」才做**（治「分支只增不减，几十个 worktree 残留没人清」——2026-07-28 一次清理攒了 60+ 个已合并分支）：
+   - 删 worktree：`git worktree remove ../wt-<名>`（worktree 还占着分支，删分支前必须先删它，否则 git 会拒绝）
+   - 删本地分支：`git branch -d <名>`
+   - 删远端分支：`git push origin --delete <名>`
+   - 这三步是「合并进 test 就做」的日常收尾，不是「合并进 main 才做」的发布收尾——功能分支的生命周期到「进了 test」就结束了，没有理由在合并 main 前一直留着
 
 **线上发布流程：**
 1. 测试验证通过
@@ -292,10 +296,7 @@ PRD 原型 > 飞书文档 > 现状控制台代码
 4. 同步到 test 分支：`git checkout test && git merge main && git push origin test`
 5. 触发测试环境部署（`test/modelgo-console-web`）
 
-**分支清理：**
-- 功能分支合并上线后，删除本地和远端的旧分支
-- 本地删除：`git branch -d <branch>`
-- 远端删除：`git push origin --delete <branch>`
+**分支清理：** 见上面「日常开发流程」步骤 5——分支合并进 test 就应清理，不用等到合并上线。
 
 ## 5. UI 测试账户管理
 

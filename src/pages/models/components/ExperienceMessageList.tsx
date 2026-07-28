@@ -4,9 +4,27 @@
  */
 import { useState } from 'react'
 import Markdown from 'react-markdown'
+import { useNavigate } from 'react-router-dom'
 import { LuCheck, LuCopy } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
 import { formatPlaygroundSpend, type ExperienceMessage } from '../model-experience-data'
+
+/** 消息内容里的站内链接（如视频异步任务跳转调用日志）走 SPA 导航，外链原样新标签打开 */
+function MessageLink({ href, children }: { href?: string; children?: React.ReactNode }) {
+  const navigate = useNavigate()
+  if (href?.startsWith('/')) {
+    return (
+      <a href={href} onClick={(e) => { e.preventDefault(); navigate(href) }}>
+        {children}
+      </a>
+    )
+  }
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  )
+}
 
 /** 复制回复内容按钮，逐字对齐原型 App.tsx:20475-20481/20504-20508（复制态 1.6s 后复位） */
 function MessageCopyButton({ content }: { content: string }) {
@@ -76,7 +94,7 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                     </div>
                   )}
                   {message.role === 'assistant' && !message.media ? (
-                    <div className="cs-markdown"><Markdown>{message.content}</Markdown></div>
+                    <div className="cs-markdown"><Markdown components={{ a: MessageLink }}>{message.content}</Markdown></div>
                   ) : message.content ? (
                     message.content.split('\n').map((line, lineIndex) => <p key={`${index}-${lineIndex}`}>{line}</p>)
                   ) : null}

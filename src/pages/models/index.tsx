@@ -652,7 +652,8 @@ export default function ModelsPage() {
 
       if (message.status === 'running' && message.async_task_id) {
         // 视频异步任务：建议间隔 5 秒轮询，succeeded/failed 才是终态；run_result 留给轮询终态上报，这里不重复
-        applyResult({ content: '视频生成中，可稍后在调用日志的异步任务里追踪…' })
+        // 跳转链接携带 task_id，命中 /logs 页 AsyncTasksPanel 的 gateway_request_id 精确匹配自动展开详情（同 qa#14 逻辑）
+        applyResult({ content: `视频生成中，可点击[在调用日志的异步任务里追踪](/logs?task_id=${encodeURIComponent(message.async_task_id)})…` })
         void pollVideoMessage(convId, message.id, modelLabel, selectedModel.model_id)
         return
       }

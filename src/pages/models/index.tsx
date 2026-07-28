@@ -30,7 +30,7 @@ import { Button } from '@/components/ui/Button'
 import { Composer } from '@/components/ui/Composer'
 import { useModels } from '@/features/models/hooks/useModels'
 import { useExperienceWorkbenchStore } from '@/store/use-experience-workbench-store'
-import { prettyModelName } from '@/lib/utils'
+import { prettyModelName, cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
 import { calculateSpendableBalance } from '@/pages/billing/formatBalance'
@@ -55,6 +55,8 @@ import {
   ATTACHMENT_LIMITS,
   attachmentKindFromMime,
   resolveEffectiveTask,
+  offlineModelPlaceholder,
+  isOfflineModel,
   type ExperienceMessage,
 } from './model-experience-data'
 import { ModelPickerDialog } from './components/ModelPickerDialog'
@@ -90,7 +92,9 @@ export default function ModelsPage() {
   const setSingle = useExperienceWorkbenchStore((s) => s.setSingle)
   const selectedId = single.selectedId
   // useCallback：这个 setter 进了下面某个 useEffect 的依赖数组，保持引用稳定避免每次渲染都重跑
-  const setSelectedId = useCallback((id: string | null) => setSingle({ selectedId: id }), [setSingle])
+  const setSelectedId = useCallback((id: string | null) => setSingle({ selectedId: id, offlineModel: null }), [setSingle])
+  // 历史会话引用的模型已不在目录（下线/删除）时的占位（PRD §AC-18），非空时优先于 selectedId
+  const offlineModel = single.offlineModel
   const messages = single.messages
   const setMessages = (updater: ExperienceMessage[] | ((prev: ExperienceMessage[]) => ExperienceMessage[])) =>
     setSingle((s) => ({ messages: typeof updater === 'function' ? updater(s.messages) : updater }))
@@ -123,15 +127,16 @@ export default function ModelsPage() {
 
   useEffect(() => () => abortRef.current?.abort(), [])
 
-  // 接口文档§九说 GET /catalog/models 支持 ?experience_type= 按可体验任务筛选，但 test 环境
-  // 目录里全部 40 个模型的 experience_types 字段都是空数组（后端数据未回填，见 #533）——
-  // 真按文档筛选会导致模型选择器完全空白，页面彻底不可用，所以不传 modality，取全量目录，
-  // 用 resolveModelCategory 按输出模态自己分桶到对话/图像/音频/视频四个类别（ModelPickerDialog
-  // 的类别 Tab 用的是同一份逻辑，两边口径一致）
+  // 接口文档§九说 GET /catalog/models 支持 ?experience_type= 按可体验任务筛选；#533 的
+  // 数据缺口（experience_types 全空）已由后端回填修复（2026-07-28 实测 test 环境 40 个
+  // 模型均非空），但 query 参数本身筛选行为未重新验证过，暂不改成服务端筛选，仍取全量目录，
+  // 用 resolveModelCategory 按 experience_types/输出模态自己分桶到对话/图像/音频/视频四个
+  // 类别（ModelPickerDialog 的类别 Tab 用的是同一份逻辑，两边口径一致）
   const { modelsQuery } = useModels()
 
   const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
-  const selectedModel = allModels.find((model) => model.id === selectedId) ?? allModels[0]
+  const selectedModel = offlineModel ?? allModels.find((model) => model.id === selectedId) ?? allModels[0]
+  const isSelectedModelOffline = Boolean(selectedModel && isOfflineModel(selectedModel))
   const selectedCategory = selectedModel ? resolveModelCategory(selectedModel) : 'dialogue'
   const isDialogue = selectedCategory === 'dialogue'
 
@@ -277,6 +282,16 @@ export default function ModelsPage() {
       const conv = items.find((m) => m.conversation_id)?.conversation_id ?? null
       setConversationId(conv)
       setMessages(restored)
+      // 模型条要切到这次会话真正用的模型（PRD §AC-18）：还在目录里就正常选中，
+      // 已下线/删除就落到占位态——此前这里完全没处理，恢复历史后模型条会停在
+      // 切历史前选中的模型上，跟消息区实际内容对不上。
+      const restoredModelId = items.find((m) => m.model_id)?.model_id
+      const catalogModel = restoredModelId ? allModels.find((m) => m.model_id === restoredModelId) : undefined
+      if (catalogModel) {
+        setSingle({ selectedId: catalogModel.id, offlineModel: null })
+      } else if (restoredModelId) {
+        setSingle({ selectedId: null, offlineModel: offlineModelPlaceholder(restoredModelId) })
+      }
       setInput('')
       setChatParams({})
       setSessionStats({ requestCount: 0, tokens: 0, cost: 0 })
@@ -417,7 +432,7 @@ export default function ModelsPage() {
 
   async function sendPrompt() {
     const prompt = input.trim()
-    if (!prompt || !selectedModel || isStreaming || isBlockedByBalance) return
+    if (!prompt || !selectedModel || isStreaming || isBlockedByBalance || isOfflineModel(selectedModel)) return
     const dispatchId = crypto.randomUUID()
     const attachedKindAtSend = attachment ? attachmentKindFromMime(attachment.uploaded.mime) : null
     trackEvent('playground_send', {
@@ -569,14 +584,22 @@ export default function ModelsPage() {
   /** 媒体任务发送（§5.2 同步 JSON / §5.3-5.4 视频异步轮询）。图生图/语音识别/图生视频这类
    *  "必须携带附件"的任务，没附件时会被后端校验拒绝（PLAYGROUND_ATTACHMENT_REQUIRED），
    *  报错走下面统一的 catch，不在前端预先拦截——真源是后端校验，不重复造一遍。 */
-  async function sendMediaPrompt(prompt: string, dispatchId: string) {
+  async function sendMediaPrompt(
+    prompt: string,
+    dispatchId: string,
+    retry?: { resourceIds: string[]; media?: ExperienceMessage['media'] },
+  ) {
     if (!selectedModel) return
     const modelLabel = prettyModelName(selectedModel.display_name, selectedModel.model_id)
     const attachedKind = attachment ? attachmentKindFromMime(attachment.uploaded.mime) : null
-    const userMedia = attachment ? [{ kind: attachedKind ?? 'image', url: attachment.previewUrl }] : undefined
-    const resourceIds = attachment ? [attachment.uploaded.resource_id] : []
-    clearAttachment()
-    setMessages((prev) => [...prev, { role: 'user', content: prompt, media: userMedia }, { role: 'assistant', content: '' }])
+    const userMedia = retry ? retry.media : attachment ? [{ kind: attachedKind ?? 'image', url: attachment.previewUrl }] : undefined
+    const resourceIds = retry ? retry.resourceIds : attachment ? [attachment.uploaded.resource_id] : []
+    if (!retry) clearAttachment()
+    setMessages((prev) => [
+      ...prev,
+      { role: 'user', content: prompt, media: userMedia, attachmentResourceIds: resourceIds.length ? resourceIds : undefined },
+      { role: 'assistant', content: '' },
+    ])
     setInput('')
     setIsStreaming(true)
     const startedAt = Date.now()
@@ -644,6 +667,17 @@ export default function ModelsPage() {
     } finally {
       setIsStreaming(false)
     }
+  }
+
+  /** 媒体结果失败重试（PRD §AC-13）：原样复用失败那条用户消息的文本与附件 resource_id，
+   *  不要求用户重新输入/重新上传一遍 */
+  function retryMediaMessage(userMessage: ExperienceMessage) {
+    if (!userMessage.content || isStreaming || isBlockedByBalance || !selectedModel) return
+    const dispatchId = crypto.randomUUID()
+    void sendMediaPrompt(userMessage.content, dispatchId, {
+      resourceIds: userMessage.attachmentResourceIds ?? [],
+      media: userMessage.media,
+    })
   }
 
   /** 视频异步任务轮询（§5.4）：running 继续轮询，succeeded/failed 为终态 */
@@ -732,18 +766,24 @@ export default function ModelsPage() {
                 >
                   {selectedModel && (
                     <>
-                      <span className="models-experience-model-avatar">
-                        {prettyModelName(selectedModel.display_name, selectedModel.model_id).slice(0, 1).toUpperCase()}
+                      <span className={cn('models-experience-model-avatar', isOfflineModel(selectedModel) && 'is-offline')}>
+                        {isOfflineModel(selectedModel) ? '!' : prettyModelName(selectedModel.display_name, selectedModel.model_id).slice(0, 1).toUpperCase()}
                       </span>
                       <div className="min-w-0">
-                        <div className="models-experience-modelbar-title">{prettyModelName(selectedModel.display_name, selectedModel.model_id)}</div>
+                        <div className="models-experience-modelbar-title">
+                          {isOfflineModel(selectedModel) ? '模型已下线' : prettyModelName(selectedModel.display_name, selectedModel.model_id)}
+                        </div>
                         <div className="models-experience-modelbar-sub">
                           {selectedModel.vendor || selectedModel.provider || 'ModelGo'} · {EXPERIENCE_TASK_LABEL[effectiveTask]}
                         </div>
                       </div>
-                      <span className="models-experience-price-chip">
-                        {dualPriceText(selectedModel)}
-                      </span>
+                      {isOfflineModel(selectedModel) ? (
+                        <span className="models-experience-price-chip is-offline">模型已下线</span>
+                      ) : (
+                        <span className="models-experience-price-chip">
+                          {dualPriceText(selectedModel)}
+                        </span>
+                      )}
                       <LuChevronDown size={15} className="text-mg-text-3 shrink-0" />
                     </>
                   )}
@@ -754,7 +794,8 @@ export default function ModelsPage() {
                     type="button"
                     className="models-experience-icon-btn"
                     aria-label="打开 API 调用"
-                    title={selectedModel ? `查看 ${prettyModelName(selectedModel.display_name, selectedModel.model_id)} API 调用示例` : '打开 API 调用'}
+                    disabled={!selectedModel || isOfflineModel(selectedModel)}
+                    title={selectedModel ? (isOfflineModel(selectedModel) ? '模型已下线' : `查看 ${prettyModelName(selectedModel.display_name, selectedModel.model_id)} API 调用示例`) : '打开 API 调用'}
                     onClick={() => {
                       trackEvent('playground_api_modal_action', { action: 'open', protocol: '', language: '', model_id: selectedModel?.model_id ?? '' })
                       setApiCallOpen(true)
@@ -766,7 +807,8 @@ export default function ModelsPage() {
                     type="button"
                     className="models-experience-icon-btn"
                     aria-label="打开模型设置"
-                    title={selectedModel ? `配置 ${prettyModelName(selectedModel.display_name, selectedModel.model_id)}` : '打开模型设置'}
+                    disabled={!selectedModel || isOfflineModel(selectedModel)}
+                    title={selectedModel ? (isOfflineModel(selectedModel) ? '模型已下线' : `配置 ${prettyModelName(selectedModel.display_name, selectedModel.model_id)}`) : '打开模型设置'}
                     onClick={() => void openSettings()}
                   >
                     <LuSettings2 size={14} />
@@ -789,6 +831,8 @@ export default function ModelsPage() {
               <ExperienceMessageList
                 messages={messages}
                 isStreaming={isStreaming}
+                isMediaTask={!isDialogue}
+                onRetry={retryMediaMessage}
                 emptyState={
                   <div className="models-experience-empty">
                     {(() => {
@@ -838,8 +882,20 @@ export default function ModelsPage() {
                 </div>
               )}
 
+              {/* 下线模型（PRD §AC-18，对齐原型 App.tsx:18634-18641）：composer 整体替换为
+                  提示，禁止发送，用户需从上方模型条更换同任务在线模型后继续。 */}
+              {selectedModel && isOfflineModel(selectedModel) && (
+                <div className="playground-balance-notice" role="status">
+                  <LuTriangleAlert size={15} />
+                  <span>
+                    <strong>模型已下线</strong>
+                    历史结果仍可查看，请从上方更换同任务模型后继续。
+                  </span>
+                </div>
+              )}
+
               {/* 附件预览/错误（§7.5）：每轮最多一个附件，发送后清空 */}
-              {(attachment || attachmentError) && (
+              {!isSelectedModelOffline && (attachment || attachmentError) && (
                 <div className="models-experience-attachment-row">
                   {attachment && (
                     <div className="models-experience-attachment-chip">
@@ -859,45 +915,50 @@ export default function ModelsPage() {
 
               {/* PRD §7.2：单模型状态不展示"同步输入"开关、不展示"清空结果"按钮、不重复展示模型ID复制入口。
                   底部动作行左侧是预估费用（原型 App.tsx:18523 playground-composer-hint 逐字对齐）+ 附件入口
-                  （§7.5，纯文本模型不显示附件入口——对话类允许图片/视频，图像/音频/视频类各自只收一种）。 */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].accept).join(',')}
-                className="hidden"
-                onChange={(e) => void handleFileSelect(e.target.files?.[0])}
-              />
-              <Composer
-                ref={inputRef}
-                value={input}
-                onChange={setInput}
-                onSend={sendPrompt}
-                isStreaming={isStreaming}
-                disabled={isBlockedByBalance}
-                onStop={() => abortRef.current?.abort()}
-                placeholder={CATEGORY_PLACEHOLDER[selectedCategory]}
-                sendLabel="发送"
-                className="models-experience-composer-wrap"
-                activeChip={
-                  <div className="models-experience-composer-left">
-                    <button
-                      type="button"
-                      className="models-experience-icon-btn"
-                      aria-label="添加附件"
-                      title={`支持：${allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].label).join('、')}`}
-                      disabled={attachmentUploading || !!attachment}
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <LuPaperclip size={14} />
-                    </button>
-                    <span className="models-experience-composer-hint">
-                      {attachmentUploading ? '附件上传中…' : (
-                        <>本次预估费用 <strong>{composerEstimatedSpend}</strong></>
-                      )}
-                    </span>
-                  </div>
-                }
-              />
+                  （§7.5，纯文本模型不显示附件入口——对话类允许图片/视频，图像/音频/视频类各自只收一种）。
+                  下线模型不渲染这一套，composer 区域整体换成上面的下线提示（PRD §AC-18）。 */}
+              {!isSelectedModelOffline && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].accept).join(',')}
+                    className="hidden"
+                    onChange={(e) => void handleFileSelect(e.target.files?.[0])}
+                  />
+                  <Composer
+                    ref={inputRef}
+                    value={input}
+                    onChange={setInput}
+                    onSend={sendPrompt}
+                    isStreaming={isStreaming}
+                    disabled={isBlockedByBalance}
+                    onStop={() => abortRef.current?.abort()}
+                    placeholder={CATEGORY_PLACEHOLDER[selectedCategory]}
+                    sendLabel="发送"
+                    className="models-experience-composer-wrap"
+                    activeChip={
+                      <div className="models-experience-composer-left">
+                        <button
+                          type="button"
+                          className="models-experience-icon-btn"
+                          aria-label="添加附件"
+                          title={`支持：${allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].label).join('、')}`}
+                          disabled={attachmentUploading || !!attachment}
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <LuPaperclip size={14} />
+                        </button>
+                        <span className="models-experience-composer-hint">
+                          {attachmentUploading ? '附件上传中…' : (
+                            <>本次预估费用 <strong>{composerEstimatedSpend}</strong></>
+                          )}
+                        </span>
+                      </div>
+                    }
+                  />
+                </>
+              )}
             </section>
           </div>
         </div>

@@ -31,6 +31,7 @@ import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { Button } from '@/components/ui/Button'
 import { formatContextLength, formatNumber, prettyModelName, trimPriceZeros } from '@/lib/utils'
+import { hasPlaygroundExperience } from '../model-experience-data'
 import type { CatalogModelItem } from '@/types'
 
 const MODALITY_ICON: Record<string, IconType> = { text: LuFileText, image: LuImage, audio: LuMic, video: LuVideo }
@@ -146,6 +147,9 @@ export function CatalogCard({
 
   const discountLabel = isZh ? promo?.discount_label : (promo?.discount_label_en || promo?.discount_label)
   const summary = model.tagline || ''
+  // PRD §模型广场 AC-13「暂未开放」：模型本身可浏览详情/API，但没配置任何可体验任务时
+  // 「去体验」按钮禁用并说明原因（原型 App.tsx:4619-4620/5076-5081 逐字对齐）。
+  const hasExperience = hasPlaygroundExperience(model)
 
   const toggleFav = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -296,8 +300,14 @@ export function CatalogCard({
 
       {/* 操作：hover / 键盘聚焦时浮出，覆盖最底一行，不改变卡片高度 */}
       <div className="mg-mcard-actions">
-        <Button variant="brand" size="sm" onClick={(e) => onTry(model.model_id, e)}>
-          {t('modelsCatalog.button.try')}
+        <Button
+          variant="brand"
+          size="sm"
+          disabled={!hasExperience}
+          title={!hasExperience ? t('modelsCatalog.button.comingSoonHint') : undefined}
+          onClick={(e) => onTry(model.model_id, e)}
+        >
+          {hasExperience ? t('modelsCatalog.button.try') : t('modelsCatalog.button.comingSoon')}
         </Button>
         <Button
           variant="outline"

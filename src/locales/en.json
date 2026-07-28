@@ -1507,7 +1507,9 @@
       "compareShort": "Compare",
       "compareUnavailable": "Not comparable",
       "docs": "Integration Docs",
-      "try": "Try"
+      "try": "Try",
+      "comingSoon": "Coming soon",
+      "comingSoonHint": "Online experience for this model is not yet available"
     },
     "labels": {
       "apiId": "API ID",

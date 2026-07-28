@@ -46,6 +46,9 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [active, setActive] = useState(0)
   const [paused, setPaused] = useState(false)
+  // 底部图片加载失败/为空时隐藏图片、回退水印字母兜底（PRD §模型广场 AC-24：
+  // 缺失或加载失败时仅隐藏该图片，继续展示默认背景图和文本内容，不显示破图）。
+  const [bottomImageFailed, setBottomImageFailed] = useState<Record<string, boolean>>({})
 
   const count = slides.length
   const safeIndex = count > 0 ? Math.min(active, count - 1) : 0
@@ -156,10 +159,22 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
                 }
               }}
             >
-              {/* 巨大水印首字母，与原型一致 */}
-              <span className="mg-featured-mark" aria-hidden>
-                {slide.name.slice(0, 1).toUpperCase()}
-              </span>
+              {/* 底部图片（PRD §模型广场 AC-24，后台可为单模型配置）：图片不遮挡名称/
+                  文案/价格/CTA——放在水印字母同一视觉层级（z-index 低于 copy/actions），
+                  配置了且未加载失败才展示；否则回退巨大水印首字母（与原型一致）。 */}
+              {slide.bottom_image_url && !bottomImageFailed[slide.carousel_item_id] ? (
+                <img
+                  className="mg-featured-bottom-image"
+                  src={slide.bottom_image_url}
+                  alt=""
+                  aria-hidden
+                  onError={() => setBottomImageFailed((prev) => ({ ...prev, [slide.carousel_item_id]: true }))}
+                />
+              ) : (
+                <span className="mg-featured-mark" aria-hidden>
+                  {slide.name.slice(0, 1).toUpperCase()}
+                </span>
+              )}
 
               <div className="mg-featured-copy">
                 <div className="mg-featured-badges">

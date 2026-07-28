@@ -19,7 +19,7 @@ import { trackEvent, trackPageView } from '@/lib/track'
 import { Button } from '@/components/ui/Button'
 import { trimPriceZeros } from '@/lib/utils'
 import { ModelDetailPanel } from '@/features/models/components/ModelDetailPanel'
-import { resolveModelCategory } from '../model-experience-data'
+import { resolveModelCategory, hasPlaygroundExperience } from '../model-experience-data'
 import { mapApiProtocols } from '../api-code-samples'
 import { ApiAccessPanel } from './ApiAccessPanel'
 import '../catalog/catalog.css'
@@ -155,10 +155,17 @@ export default function ModelDetailPage() {
             detail={detail}
             onModelIdCopied={() => trackEvent('marketplace_model_id_copied', { model_id: detail.model_id, source: 'detail' })}
           />
-          {/* Hero 操作行（PRD §7.6）：去体验 + 查看API接入手册（新标签页打开公开文档） */}
+          {/* Hero 操作行（PRD §7.6）：去体验 + 查看API接入手册（新标签页打开公开文档）。
+              AC-13「暂未开放」：没配置任何可体验任务时禁用并把文案换成「暂未开放」
+              （原型 App.tsx:5074-5082 逐字对齐，不只是禁用，按钮文字本身也要变）。 */}
           <div className="border-mg-border mt-6 flex flex-wrap items-center gap-3 border-t pt-5">
-            <Button variant="brand" onClick={goTry}>
-              {t('modelsCatalog.button.try')}
+            <Button
+              variant="brand"
+              disabled={!hasPlaygroundExperience(detail)}
+              title={!hasPlaygroundExperience(detail) ? t('modelsCatalog.button.comingSoonHint') : undefined}
+              onClick={goTry}
+            >
+              {hasPlaygroundExperience(detail) ? t('modelsCatalog.button.try') : t('modelsCatalog.button.comingSoon')}
               <LuChevronRight size={14} />
             </Button>
             <a

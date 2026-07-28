@@ -16,6 +16,9 @@ import type { ExperienceMessage } from '@/pages/models/model-experience-data'
 
 export interface SingleWorkbenchState {
   selectedId: string | null
+  /** 历史会话引用的模型已不在目录里（下线/删除）时的占位展示（PRD §AC-18）。
+   *  非空时 selectedId 无意义——渲染层优先读这个字段。 */
+  offlineModel: CatalogModelItem | null
   sessionId: string | null
   conversationId: string | null
   messages: ExperienceMessage[]
@@ -40,6 +43,7 @@ export interface CompareWorkbenchState {
 
 const INITIAL_SINGLE: SingleWorkbenchState = {
   selectedId: null,
+  offlineModel: null,
   sessionId: null,
   conversationId: null,
   messages: [],

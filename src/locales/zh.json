@@ -1506,7 +1506,9 @@
       "compareShort": "对比",
       "compareUnavailable": "不可对比",
       "docs": "接入文档",
-      "try": "去体验"
+      "try": "去体验",
+      "comingSoon": "暂未开放",
+      "comingSoonHint": "该模型的在线体验任务暂未开放"
     },
     "labels": {
       "apiId": "API ID",

@@ -109,6 +109,14 @@
   white-space: nowrap;
 }
 
+/* 下线模型（PRD §AC-18，对齐原型 App.tsx:19426/19701-19705）：头像用感叹号替代首字母，
+   价格 chip 换成「模型已下线」文案，均用语义警示色区分于正常态。 */
+.models-experience-model-avatar.is-offline,
+.models-experience-price-chip.is-offline {
+  background: color-mix(in srgb, var(--mg-warning) 10%, transparent);
+  color: var(--mg-warning);
+}
+
 /* API 调用 / 模型设置：原型是纯图标 + title tooltip，不带可见文字（App.tsx:19132-19136） */
 .models-experience-icon-btn {
   display: flex;

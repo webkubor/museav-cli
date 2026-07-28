@@ -39,6 +39,8 @@ export interface ExperienceMessage {
   dispatchId?: string
   /** 媒体任务（文生图等）的产物，dialogue 任务恒为空 */
   media?: ExperienceMediaResult[]
+  /** 用户消息发送时携带的附件 resource_id（媒体任务重试用，PRD §AC-13），dialogue 消息不使用 */
+  attachmentResourceIds?: string[]
 }
 
 /** 延迟格式化：<1000ms 显示整数 ms，否则显示 x.xx s（App.tsx:17044 formatPlaygroundLatency 逐字对齐） */
@@ -212,6 +214,39 @@ export function resolveModelCategory(model: CatalogModelItem): ExperienceCategor
   if (out.includes('audio')) return 'audio'
   if (out.includes('image') && !out.includes('text')) return 'image'
   return 'dialogue'
+}
+
+/** 模型是否配置了任意可体验任务（PRD 模型广场 §AC-13「暂未开放」判定依据，
+ *  原型 App.tsx:4619 `getPlaygroundTasks(model).length === 0` 逐字对齐） */
+export function hasPlaygroundExperience(model: CatalogModelItem): boolean {
+  return (model.experience_types ?? []).length > 0
+}
+
+/**
+ * 会话里引用的模型已不在当前目录（下线/删除）时的占位展示（PRD §AC-18 下线模型）。
+ * 单模型页/对比页共用——只用于渲染模型条（名称/头像/状态），不可用于真实发送，
+ * 该列/该会话后续操作前必须先换成目录里的真实模型。
+ */
+export function offlineModelPlaceholder(modelId: string): CatalogModelItem {
+  return {
+    id: modelId,
+    model_id: modelId,
+    display_name: modelId,
+    modalities: [],
+    tags: [],
+    context_length: 0,
+    max_output_tokens: 0,
+    pricing: { input_per_1m: '0', output_per_1m: '0', cache_read_per_1m: '0', currency: 'CNY' },
+    released_at: '',
+    knowledge_cutoff: '',
+    status: 'unavailable',
+    logo_url: '',
+  }
+}
+
+/** 模型是否已下线（PRD §AC-18 判定依据），modelbar/composer 据此切到只读态 */
+export function isOfflineModel(model: CatalogModelItem): boolean {
+  return model.status === 'unavailable'
 }
 
 /**

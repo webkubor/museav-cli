@@ -1035,6 +1035,18 @@ body[theme-mode='dark'] .catalog-insight-panel {
   color: rgba(255,255,255,0.07); user-select: none; pointer-events: none;
 }
 
+/* 底部图片（PRD §模型广场 AC-24）：同一视觉层级替代水印字母，右下角装饰，
+   不设 z-index（与 mark 一样低于 .mg-featured-copy/.mg-featured-actions 的 z-index:1），
+   不遮挡文字与操作区。 */
+.mg-featured-bottom-image {
+  position: absolute; right: 0; bottom: 0;
+  height: 100%; width: auto; max-width: 46%;
+  object-fit: cover; object-position: bottom right;
+  opacity: 0.55; pointer-events: none; user-select: none;
+  -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 40%, transparent 100%);
+  mask-image: linear-gradient(to left, rgba(0,0,0,1) 40%, transparent 100%);
+}
+
 .mg-featured-copy { position: relative; z-index: 1; display: grid; gap: 6px; justify-items: start; align-content: center; min-width: 0; }
 .mg-featured-badges { display: flex; gap: 6px; }
 .mg-featured-copy strong { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }

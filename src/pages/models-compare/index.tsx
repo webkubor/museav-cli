@@ -69,6 +69,8 @@ import {
   CATEGORY_PLACEHOLDER,
   ATTACHMENT_LIMITS,
   attachmentKindFromMime,
+  offlineModelPlaceholder,
+  isOfflineModel,
   type ExperienceMessage,
   type ExperienceCategoryKey,
 } from '../models/model-experience-data'
@@ -156,13 +158,21 @@ export default function ModelsComparePage() {
   // §8.5 窄屏一次展示一个模型列，顶部 Tab 切换；宽屏 CSS 直接把 tab 隐藏，不影响并排布局
   const [activeColumnIndex, setActiveColumnIndex] = useState(0)
 
-  // §7.4/7.5 共享附件入口（qa#545）：只挂在同步共享 composer 上（独立输入模式每列各自
-  // 打字，PRD 原文的"共享附件入口"是同步态概念，不为每列单独做附件入口）。每轮最多一个
-  // 附件，纯页面内临时态，不需要跨路由持久化。
+  // §7.4/7.5 共享附件入口（qa#545）：同步态用这一份，独立态每列各自一份（见下方
+  // columnAttachments，qa#553 补齐 AC-07/AC-08 缺口）。每轮最多一个附件，纯页面内
+  // 临时态，不需要跨路由持久化。
   const [attachment, setAttachment] = useState<{ file: File; previewUrl: string; uploaded: ExperienceAttachment } | null>(null)
   const [attachmentUploading, setAttachmentUploading] = useState(false)
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 独立输入模式每列各自的附件（PRD §AC-07「每列有独立输入区和当前模型可用的附件入口」）。
+  // 按 conversationId 而非数组下标存——加/删列时下标会重排，conversationId 在列的生命周期内稳定。
+  const [columnAttachments, setColumnAttachments] = useState<Record<string, { file: File; previewUrl: string; uploaded: ExperienceAttachment }>>({})
+  const [columnAttachmentUploading, setColumnAttachmentUploading] = useState<Record<string, boolean>>({})
+  const [columnAttachmentErrors, setColumnAttachmentErrors] = useState<Record<string, string>>({})
+  const columnFileInputRef = useRef<HTMLInputElement>(null)
+  const pendingAttachmentColumnRef = useRef<number | null>(null)
 
   const abortRefs = useRef<Array<AbortController | null>>([])
   const pendingByDispatch = useRef<Map<string, number>>(new Map())
@@ -202,29 +212,6 @@ export default function ModelsComparePage() {
     if (!historyCollapsed) void refreshHistorySessions()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [historyCollapsed])
-
-  /**
-   * 会话里引用的模型已不在当前目录（下线/删除）时的占位展示（§7.8 恢复态降级）。
-   * 只用于渲染列头（名称/头像），不可用于真实发送——该列后续切换模型前操作会照常失败，
-   * 这跟单模型页历史侧栏"部分模型已下线"角标是同一降级思路，只是这里要落到一个真实
-   * CatalogModelItem 形状上才能喂给现有的列渲染逻辑。
-   */
-  function offlineModelPlaceholder(modelId: string): CatalogModelItem {
-    return {
-      id: modelId,
-      model_id: modelId,
-      display_name: modelId,
-      modalities: [],
-      tags: [],
-      context_length: 0,
-      max_output_tokens: 0,
-      pricing: { input_per_1m: '0', output_per_1m: '0', cache_read_per_1m: '0', currency: 'CNY' },
-      released_at: '',
-      knowledge_cutoff: '',
-      status: 'unavailable',
-      logo_url: '',
-    }
-  }
 
   /** 拉取真实历史会话列表供侧栏展示，映射逻辑与单模型页一致（qa#546）。
    *  GET /experience/sessions 列表响应改用轻量 models 字段，不带 conversations（qa#535 已修复）。 */
@@ -486,7 +473,11 @@ export default function ModelsComparePage() {
     const modelLabel = prettyModelName(column.model.display_name, column.model.model_id)
     updateColumn(idx, {
       streaming: true,
-      history: [...column.history, { role: 'user', content: prompt, dispatchId, media: attachment?.media }, { role: 'assistant', content: '', dispatchId }],
+      history: [
+        ...column.history,
+        { role: 'user', content: prompt, dispatchId, media: attachment?.media, attachmentResourceIds: attachment?.resourceIds },
+        { role: 'assistant', content: '', dispatchId },
+      ],
     })
     const startedAt = Date.now()
     let isAsyncVideo = false
@@ -649,9 +640,15 @@ export default function ModelsComparePage() {
   function handleSyncSend() {
     const prompt = sharedDraft.trim()
     if (!prompt || !columns) return
-    if (isBalanceZero && columns.some((c) => isPaidModel(c.model))) return
+    // 下线模型不参与共享发送（PRD §AC-18：无发送按钮/不可发送），只统计在线列
+    const onlineIndexes = columns.reduce<number[]>((acc, c, idx) => {
+      if (!isOfflineModel(c.model)) acc.push(idx)
+      return acc
+    }, [])
+    if (onlineIndexes.length === 0) return
+    if (isBalanceZero && columns.some((c, idx) => onlineIndexes.includes(idx) && isPaidModel(c.model))) return
     const dispatchId = crypto.randomUUID()
-    pendingByDispatch.current.set(dispatchId, columns.length)
+    pendingByDispatch.current.set(dispatchId, onlineIndexes.length)
     const currentAttachment = attachment
     const attachedKind = currentAttachment ? attachmentKindFromMime(currentAttachment.uploaded.mime) : null
     const supportingCount = currentAttachment && attachedKind
@@ -660,12 +657,13 @@ export default function ModelsComparePage() {
     trackEvent('playground_send', {
       dispatch_id_hash: hashId(dispatchId),
       attachment_kind_set: attachedKind ?? 'none',
-      eligible_column_count: columns.length,
+      eligible_column_count: onlineIndexes.length,
       attachment_recipient_count: supportingCount,
     })
     setSharedDraft('')
     clearAttachment()
-    columns.forEach((c, idx) => {
+    onlineIndexes.forEach((idx) => {
+      const c = columns[idx]
       const supports = currentAttachment && attachedKind ? modelSupportsAttachment(c.model, attachedKind) : false
       const dispatchAttachment: DispatchAttachment | undefined = supports && currentAttachment
         ? {
@@ -682,25 +680,46 @@ export default function ModelsComparePage() {
     const prompt = columns[idx].draft.trim()
     if (!prompt) return
     if (isBalanceZero && isPaidModel(columns[idx].model)) return
+    const conversationId = columns[idx].conversationId
+    const colAttachment = columnAttachments[conversationId]
+    const attachedKind = colAttachment ? attachmentKindFromMime(colAttachment.uploaded.mime) : null
     const dispatchId = crypto.randomUUID()
     pendingByDispatch.current.set(dispatchId, 1)
     trackEvent('playground_send', {
       dispatch_id_hash: hashId(dispatchId),
-      attachment_kind_set: 'none',
+      attachment_kind_set: attachedKind ?? 'none',
       eligible_column_count: 1,
-      attachment_recipient_count: 0,
+      attachment_recipient_count: colAttachment ? 1 : 0,
     })
     updateColumn(idx, { draft: '' })
-    void sendOne(idx, prompt, dispatchId)
+    const dispatchAttachment: DispatchAttachment | undefined = colAttachment
+      ? { resourceIds: [colAttachment.uploaded.resource_id], media: [{ kind: attachedKind ?? 'image', url: colAttachment.previewUrl }] }
+      : undefined
+    clearColumnAttachment(conversationId)
+    void sendOne(idx, prompt, dispatchId, dispatchAttachment)
   }
 
-  /** §7.4：独立→同步，若各列草稿不一致需要确认；一致则直接切换不打扰用户 */
+  /** 媒体结果失败重试（PRD §AC-13）：原样复用失败那条用户消息的文本与附件 resource_id */
+  function retryMediaMessage(idx: number, userMessage: ExperienceMessage) {
+    if (!columns || !userMessage.content || columns[idx]?.streaming) return
+    if (isBalanceZero && isPaidModel(columns[idx].model)) return
+    const dispatchId = crypto.randomUUID()
+    void sendOne(idx, userMessage.content, dispatchId, {
+      resourceIds: userMessage.attachmentResourceIds ?? [],
+      media: userMessage.media,
+    })
+  }
+
+  /** §7.4：独立→同步，若各列草稿不一致需要确认；一致则直接切换不打扰用户。
+   *  切到同步后各列独立附件没有对应的"合并成一个共享附件"语义，清空（用户需要的话
+   *  在共享入口重新上传）；切回独立时反过来——共享附件按兼容性下放到各列（AC-07）。 */
   function handleToggleSync(next: boolean) {
     if (!columns) return
     if (next) {
       const source = columns[lastFocusedIndex] ?? columns[0]
       const allSame = columns.every((c) => c.draft === source.draft)
-      const sourceHasAttachment = false // 对比列暂不支持附件，恒为 false
+      const sourceHasAttachment = Boolean(columnAttachments[source.conversationId])
+      Object.keys(columnAttachments).forEach((conversationId) => clearColumnAttachment(conversationId))
       if (allSame) {
         setSharedDraft(source.draft)
         setSyncInput(true)
@@ -717,12 +736,30 @@ export default function ModelsComparePage() {
       })
       return
     }
-    // 同步→独立：无需确认，共享文本复制到每列草稿
+    // 同步→独立：文本复制到每列草稿；共享附件按兼容性下放到支持的列（AC-07「保留兼容附件」）
     setColumns((prev) => (prev ? prev.map((c) => ({ ...c, draft: sharedDraft })) : prev))
+    let recipientCount = 0
+    if (attachment && columns) {
+      const kind = attachmentKindFromMime(attachment.uploaded.mime)
+      if (kind) {
+        const seeded = attachment
+        setColumnAttachments((prevMap) => {
+          const next = { ...prevMap }
+          columns.forEach((c) => {
+            if (modelSupportsAttachment(c.model, kind)) {
+              next[c.conversationId] = seeded
+              recipientCount += 1
+            }
+          })
+          return next
+        })
+      }
+      clearAttachment()
+    }
     setSyncInput(false)
     trackEvent('playground_input_mode_change', {
       from_mode: 'sync', to_mode: 'independent', requires_confirmation: false,
-      source_has_attachment: false, attachment_recipient_count: 0,
+      source_has_attachment: Boolean(attachment), attachment_recipient_count: recipientCount,
     }, { result: 'success' })
   }
 
@@ -934,6 +971,72 @@ export default function ModelsComparePage() {
     }
   }
 
+  function clearColumnAttachment(conversationId: string) {
+    setColumnAttachments((prev) => {
+      const existing = prev[conversationId]
+      if (!existing) return prev
+      URL.revokeObjectURL(existing.previewUrl)
+      const next = { ...prev }
+      delete next[conversationId]
+      return next
+    })
+    setColumnAttachmentErrors((prev) => {
+      if (!(conversationId in prev)) return prev
+      const next = { ...prev }
+      delete next[conversationId]
+      return next
+    })
+  }
+
+  /** 独立输入模式每列各自的附件上传（PRD §AC-07/§AC-08）：校验/大小按当前列模型实际
+   *  支持的附件类型判断（比 allowedAttachmentKinds 更准——同类别里未必所有模型都收
+   *  同一种输入模态），跟共享附件入口的上传/校验逻辑同构，只是作用域缩到单列。 */
+  async function handleColumnFileSelect(idx: number, file: File | null | undefined) {
+    if (!file || !columns) return
+    const column = columns[idx]
+    const conversationId = column.conversationId
+    setColumnAttachmentErrors((prev) => {
+      if (!(conversationId in prev)) return prev
+      const next = { ...prev }
+      delete next[conversationId]
+      return next
+    })
+    const kind = attachmentKindFromMime(file.type)
+    if (!kind || !allowedAttachmentKinds.includes(kind) || !modelSupportsAttachment(column.model, kind)) {
+      setColumnAttachmentErrors((prev) => ({
+        ...prev,
+        [conversationId]: `当前模型不支持该附件类型，仅支持：${allowedAttachmentKinds.filter((k) => modelSupportsAttachment(column.model, k)).map((k) => ATTACHMENT_LIMITS[k].label).join('、') || '无'}`,
+      }))
+      if (columnFileInputRef.current) columnFileInputRef.current.value = ''
+      return
+    }
+    if (file.size > ATTACHMENT_LIMITS[kind].maxBytes) {
+      setColumnAttachmentErrors((prev) => ({ ...prev, [conversationId]: `文件超出大小限制（${ATTACHMENT_LIMITS[kind].label}）` }))
+      if (columnFileInputRef.current) columnFileInputRef.current.value = ''
+      return
+    }
+    const previewUrl = URL.createObjectURL(file)
+    setColumnAttachmentUploading((prev) => ({ ...prev, [conversationId]: true }))
+    try {
+      const uploaded = await uploadExperienceAttachment(file)
+      setColumnAttachments((prev) => ({ ...prev, [conversationId]: { file, previewUrl, uploaded } }))
+      trackEvent('playground_attachment_result', {
+        kind, size_bucket: sizeBucket(file.size), result: 'success',
+        supporting_model_count: 1, unsupported_model_count: 0, distribution_mode: 'single',
+      })
+    } catch (err) {
+      URL.revokeObjectURL(previewUrl)
+      setColumnAttachmentErrors((prev) => ({ ...prev, [conversationId]: extractApiErrorMessage(err) }))
+      trackEvent('playground_attachment_result', {
+        kind, size_bucket: sizeBucket(file.size), result: 'fail',
+        supporting_model_count: 0, unsupported_model_count: 1, distribution_mode: 'single',
+      })
+    } finally {
+      setColumnAttachmentUploading((prev) => ({ ...prev, [conversationId]: false }))
+      if (columnFileInputRef.current) columnFileInputRef.current.value = ''
+    }
+  }
+
   const excludeIdsFor = (idx: number) => columns.filter((_, i) => i !== idx).map((c) => c.model.id)
 
   /** 窄屏 Tab 状态点（§8.5：显示运行中/完成/失败） */
@@ -1040,14 +1143,20 @@ export default function ModelsComparePage() {
                   setSwitchPickerIndex(idx)
                 }}
               >
-                <span className="models-experience-model-avatar">
-                  {prettyModelName(column.model.display_name, column.model.model_id).slice(0, 1).toUpperCase()}
+                <span className={cn('models-experience-model-avatar', isOfflineModel(column.model) && 'is-offline')}>
+                  {isOfflineModel(column.model) ? '!' : prettyModelName(column.model.display_name, column.model.model_id).slice(0, 1).toUpperCase()}
                 </span>
                 <div className="min-w-0">
-                  <div className="models-experience-modelbar-title">{prettyModelName(column.model.display_name, column.model.model_id)}</div>
+                  <div className="models-experience-modelbar-title">
+                    {isOfflineModel(column.model) ? '模型已下线' : prettyModelName(column.model.display_name, column.model.model_id)}
+                  </div>
                   <div className="models-experience-modelbar-sub">{column.model.vendor || column.model.provider || 'ModelGo'} · {EXPERIENCE_CATEGORY_LABEL[compareCategory]}</div>
                 </div>
-                <span className="models-experience-price-chip">{dualPriceText(column.model)}</span>
+                {isOfflineModel(column.model) ? (
+                  <span className="models-experience-price-chip is-offline">模型已下线</span>
+                ) : (
+                  <span className="models-experience-price-chip">{dualPriceText(column.model)}</span>
+                )}
                 <LuChevronDown size={13} className="text-mg-text-3 shrink-0" />
               </button>
               <div className="ml-auto flex items-center gap-1">
@@ -1055,7 +1164,8 @@ export default function ModelsComparePage() {
                   type="button"
                   className="models-experience-icon-btn"
                   aria-label="打开 API 调用"
-                  title="打开 API 调用"
+                  title={isOfflineModel(column.model) ? '模型已下线' : '打开 API 调用'}
+                  disabled={isOfflineModel(column.model)}
                   onClick={() => {
                     trackEvent('playground_api_modal_action', { action: 'open', protocol: '', language: '', model_id: column.model.model_id })
                     setApiIndex(idx)
@@ -1063,7 +1173,14 @@ export default function ModelsComparePage() {
                 >
                   <LuCode size={13} />
                 </button>
-                <button type="button" className="models-experience-icon-btn" aria-label="打开模型设置" title="打开模型设置" onClick={() => void openColumnSettings(idx)}>
+                <button
+                  type="button"
+                  className="models-experience-icon-btn"
+                  aria-label="打开模型设置"
+                  title={isOfflineModel(column.model) ? '模型已下线' : '打开模型设置'}
+                  disabled={isOfflineModel(column.model)}
+                  onClick={() => void openColumnSettings(idx)}
+                >
                   <LuSettings2 size={13} />
                 </button>
                 <button type="button" className="models-experience-icon-btn" aria-label="移除模型" title="移除模型" onClick={() => setRemoveConfirmIndex(idx)}>
@@ -1076,6 +1193,8 @@ export default function ModelsComparePage() {
               messages={column.history}
               isStreaming={column.streaming}
               showModelNameInMeta={false}
+              isMediaTask={compareCategory !== 'dialogue'}
+              onRetry={(userMessage) => retryMediaMessage(idx, userMessage)}
               emptyState={
                 <div className="models-experience-empty">
                   {(() => {
@@ -1106,26 +1225,95 @@ export default function ModelsComparePage() {
               </div>
             )}
 
-            {!syncInput && (
-              // onFocusCapture 记录"最后聚焦列"，独立→同步切换时用它当来源列（§7.4）
-              <div onFocusCapture={() => setLastFocusedIndex(idx)}>
-                <Composer
-                  value={column.draft}
-                  onChange={(v) => updateColumn(idx, { draft: v })}
-                  onSend={() => handleIndependentSend(idx)}
-                  isStreaming={column.streaming}
-                  disabled={isBalanceZero && isPaidModel(column.model)}
-                  onStop={() => abortRefs.current[idx]?.abort()}
-                  placeholder={`仅向 ${prettyModelName(column.model.display_name, column.model.model_id)}：${CATEGORY_PLACEHOLDER[compareCategory]}`}
-                  sendLabel="发送"
-                  className="models-experience-composer-wrap models-compare-composer"
-                  activeChip={<span />}
-                />
+            {!syncInput && isOfflineModel(column.model) ? (
+              // 下线模型：composer 整体替换为提示，禁止发送（PRD §AC-18，对齐原型
+              // App.tsx:18634-18641，用户需从上方模型条换成同类同任务的在线模型）
+              <div className="playground-balance-notice" role="status">
+                <LuTriangleAlert size={15} />
+                <span>
+                  <strong>模型已下线</strong>
+                  历史结果仍可查看，请从上方更换同任务模型后继续。
+                </span>
               </div>
-            )}
+            ) : !syncInput && (() => {
+              // 独立输入模式的列内附件入口（PRD §AC-07/§AC-08，qa#553 补齐）：只按
+              // 当前列模型实际支持的附件类型开放，纯文本模型不显示入口。
+              const columnKinds = allowedAttachmentKinds.filter((k) => modelSupportsAttachment(column.model, k))
+              const colAttachment = columnAttachments[column.conversationId]
+              const colUploading = columnAttachmentUploading[column.conversationId]
+              const colError = columnAttachmentErrors[column.conversationId]
+              return (
+                // onFocusCapture 记录"最后聚焦列"，独立→同步切换时用它当来源列（§7.4）
+                <div onFocusCapture={() => setLastFocusedIndex(idx)}>
+                  {(colAttachment || colError) && (
+                    <div className="models-experience-attachment-row">
+                      {colAttachment && (
+                        <div className="models-experience-attachment-chip">
+                          {attachmentKindFromMime(colAttachment.uploaded.mime) === 'image' ? (
+                            <img src={colAttachment.previewUrl} alt="附件预览" />
+                          ) : (
+                            <span className="models-experience-attachment-name">{colAttachment.file.name}</span>
+                          )}
+                          <button type="button" aria-label="移除附件" onClick={() => clearColumnAttachment(column.conversationId)}>
+                            <LuX size={12} />
+                          </button>
+                        </div>
+                      )}
+                      {colError && <span className="models-experience-attachment-error">{colError}</span>}
+                    </div>
+                  )}
+                  <Composer
+                    value={column.draft}
+                    onChange={(v) => updateColumn(idx, { draft: v })}
+                    onSend={() => handleIndependentSend(idx)}
+                    isStreaming={column.streaming}
+                    disabled={isBalanceZero && isPaidModel(column.model)}
+                    onStop={() => abortRefs.current[idx]?.abort()}
+                    placeholder={`仅向 ${prettyModelName(column.model.display_name, column.model.model_id)}：${CATEGORY_PLACEHOLDER[compareCategory]}`}
+                    sendLabel="发送"
+                    className="models-experience-composer-wrap models-compare-composer"
+                    activeChip={
+                      columnKinds.length > 0 ? (
+                        <button
+                          type="button"
+                          className="models-experience-icon-btn"
+                          aria-label="添加附件"
+                          title={`支持：${columnKinds.map((k) => ATTACHMENT_LIMITS[k].label).join('、')}`}
+                          disabled={colUploading || !!colAttachment}
+                          onClick={() => {
+                            pendingAttachmentColumnRef.current = idx
+                            columnFileInputRef.current?.click()
+                          }}
+                        >
+                          <LuPaperclip size={14} />
+                        </button>
+                      ) : (
+                        <span />
+                      )
+                    }
+                  />
+                </div>
+              )
+            })()}
           </section>
         ))}
       </div>
+
+      {/* 独立输入模式各列共用一个隐藏 file input，点哪列的附件按钮就把目标列存进 ref
+         （PRD §AC-07/§AC-08，qa#553）；accept 取全部类别允许类型的并集，实际类型/大小
+         校验在 handleColumnFileSelect 里按该列模型精确判断。 */}
+      {!syncInput && (
+        <input
+          ref={columnFileInputRef}
+          type="file"
+          accept={allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].accept).join(',')}
+          className="hidden"
+          onChange={(e) => {
+            const idx = pendingAttachmentColumnRef.current
+            if (idx !== null) void handleColumnFileSelect(idx, e.target.files?.[0])
+          }}
+        />
+      )}
 
       {syncInput && isBalanceZero && columns.some((c) => isPaidModel(c.model)) && (
         <div className="playground-balance-notice" role="alert">

@@ -51,10 +51,15 @@ export interface ExperienceMessageListProps {
   isStreaming: boolean
   /** 对比列内不重复展示模型名称（列头已表达身份），单模型页展示（§7.10） */
   showModelNameInMeta?: boolean
+  /** 当前任务是否媒体类（图像/音频/视频）——只有媒体结果失败才展示计费状态+重试（PRD §AC-13，
+   *  对话结果失败无此要求，见 AC-12） */
+  isMediaTask?: boolean
+  /** 重试：传回失败结果对应的用户消息（含原始文本与附件 resource_id），由调用方重新发起同一请求 */
+  onRetry?: (userMessage: ExperienceMessage) => void
   emptyState: React.ReactNode
 }
 
-export function ExperienceMessageList({ messages, isStreaming, showModelNameInMeta = true, emptyState }: ExperienceMessageListProps) {
+export function ExperienceMessageList({ messages, isStreaming, showModelNameInMeta = true, isMediaTask = false, onRetry, emptyState }: ExperienceMessageListProps) {
   return (
     <div className="models-experience-messages">
       {messages.length === 0 && emptyState}
@@ -71,7 +76,22 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
             </span>
             <div className="models-experience-message-bubble">
               {message.error ? (
-                <span className="models-experience-message-error" role="alert">{message.error}</span>
+                isMediaTask ? (
+                  // 媒体结果失败（PRD §AC-13）：保留输入设置、展示计费状态（本次未计费）与重试
+                  <div className="models-experience-media-error" role="alert">
+                    <span className="models-experience-message-error">{message.error}</span>
+                    <div className="models-experience-media-error-meta">
+                      <em>计费：未计费</em>
+                      {onRetry && messages[index - 1]?.role === 'user' && (
+                        <button type="button" onClick={() => onRetry(messages[index - 1])}>
+                          调整后重试
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <span className="models-experience-message-error" role="alert">{message.error}</span>
+                )
               ) : isThinking ? (
                 <span className="models-experience-thinking" aria-label="模型思考中">
                   <i /><i /><i />

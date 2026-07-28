@@ -201,19 +201,28 @@ export default function ModelsPage() {
           updatedAt: session.updated_at,
           category: (session.category as HistorySessionItem['category']) ?? 'dialogue',
           task: EXPERIENCE_TASK_LABEL[session.task as keyof typeof EXPERIENCE_TASK_LABEL] ?? session.task,
-          // GET /experience/sessions 列表响应实测不带 conversations（只有创建/详情响应带），
-          // 拿不到本会话用了哪些模型——不为了凑 UI 去多打 N 次详情接口，老实留空
-          models: (session.conversations ?? [])
-            .slice()
-            .sort((a, b) => a.position - b.position)
-            .map((conv) => {
-              const catalogModel = allModels.find((m) => m.model_id === conv.model_id)
-              return {
-                id: conv.model_id,
-                name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id) : conv.model_id,
-                offline: !catalogModel,
-              }
-            }),
+          // GET /experience/sessions 列表响应不带 conversations，改用轻量 models 字段（qa#535 已修复）；
+          // conversations 只在创建/详情响应里出现，两边都兼容一下，session.models 优先
+          models: session.models
+            ? session.models.map((modelId) => {
+                const catalogModel = allModels.find((m) => m.model_id === modelId)
+                return {
+                  id: modelId,
+                  name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id) : modelId,
+                  offline: !catalogModel,
+                }
+              })
+            : (session.conversations ?? [])
+                .slice()
+                .sort((a, b) => a.position - b.position)
+                .map((conv) => {
+                  const catalogModel = allModels.find((m) => m.model_id === conv.model_id)
+                  return {
+                    id: conv.model_id,
+                    name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id) : conv.model_id,
+                    offline: !catalogModel,
+                  }
+                }),
         })),
       )
     } catch {

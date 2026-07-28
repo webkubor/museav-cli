@@ -227,8 +227,7 @@ export default function ModelsComparePage() {
   }
 
   /** 拉取真实历史会话列表供侧栏展示，映射逻辑与单模型页一致（qa#546）。
-   *  同单模型页注释：GET /experience/sessions 列表响应实测不带 conversations，
-   *  这里模型 chip 老实留空，点开会话后走 getExperienceSession 详情接口才能拿到真实组合。 */
+   *  GET /experience/sessions 列表响应改用轻量 models 字段，不带 conversations（qa#535 已修复）。 */
   async function refreshHistorySessions() {
     try {
       const { items } = await listExperienceSessions({ limit: 20, offset: 0 })
@@ -239,17 +238,26 @@ export default function ModelsComparePage() {
           updatedAt: session.updated_at,
           category: (session.category as HistorySessionItem['category']) ?? 'dialogue',
           task: EXPERIENCE_TASK_LABEL[session.task as keyof typeof EXPERIENCE_TASK_LABEL] ?? session.task,
-          models: (session.conversations ?? [])
-            .slice()
-            .sort((a, b) => a.position - b.position)
-            .map((conv) => {
-              const catalogModel = allModels.find((m) => m.model_id === conv.model_id)
-              return {
-                id: conv.model_id,
-                name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id) : conv.model_id,
-                offline: !catalogModel,
-              }
-            }),
+          models: session.models
+            ? session.models.map((modelId) => {
+                const catalogModel = allModels.find((m) => m.model_id === modelId)
+                return {
+                  id: modelId,
+                  name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id) : modelId,
+                  offline: !catalogModel,
+                }
+              })
+            : (session.conversations ?? [])
+                .slice()
+                .sort((a, b) => a.position - b.position)
+                .map((conv) => {
+                  const catalogModel = allModels.find((m) => m.model_id === conv.model_id)
+                  return {
+                    id: conv.model_id,
+                    name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id) : conv.model_id,
+                    offline: !catalogModel,
+                  }
+                }),
         })),
       )
     } catch {

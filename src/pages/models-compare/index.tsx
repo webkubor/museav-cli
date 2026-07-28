@@ -26,6 +26,8 @@ import type { CatalogModelItem } from '@/types'
 import {
   createExperienceSession,
   streamExperienceMessage,
+  sendExperienceMediaMessage,
+  getExperienceMessage,
   addExperienceConversation,
   removeExperienceConversation,
   switchExperienceConversationModel,
@@ -47,7 +49,6 @@ import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
 import { calculateSpendableBalance } from '@/pages/billing/formatBalance'
 import { trackEvent } from '@/lib/track'
 import {
-  isChatModel,
   isPaidModel,
   estimateTokens,
   formatPlaygroundLatency,
@@ -56,8 +57,15 @@ import {
   latencyBucket,
   tokenBucket,
   cleanErrorMessage,
+  extractApiErrorMessage,
   EXPERIENCE_TASK_LABEL,
+  resolveModelCategory,
+  EXPERIENCE_CATEGORY_LABEL,
+  EXPERIENCE_CATEGORY_DEFAULT_TASK,
+  CATEGORY_EMPTY_COPY,
+  CATEGORY_PLACEHOLDER,
   type ExperienceMessage,
+  type ExperienceCategoryKey,
 } from '../models/model-experience-data'
 import { ModelPickerDialog } from '../models/components/ModelPickerDialog'
 import { ModelSettingsModal } from '../models/components/ModelSettingsModal'
@@ -84,11 +92,10 @@ export default function ModelsComparePage() {
   const collapseForCompare = useSidebarCollapseStore((s) => s.collapseForCompare)
   const restoreSavedPreference = useSidebarCollapseStore((s) => s.restoreSavedPreference)
 
-  const { modelsQuery } = useModels({ modality: 'text' })
-  const allModels = useMemo(
-    () => (modelsQuery.data?.items ?? []).filter(isChatModel),
-    [modelsQuery.data?.items],
-  )
+  // qa#543：不再只筛对话类——同 models/index.tsx 的口径，取全量目录，候选资格判断交给
+  // ModelPickerDialog 内部按 resolveModelCategory 过滤（同一级类别才能进同一组对比）。
+  const { modelsQuery } = useModels()
+  const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
 
   // §9.1 余额资格状态机：与单模型页同口径，可消费合计为 0 时锁定付费模型列的发送
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
@@ -291,10 +298,14 @@ export default function ModelsComparePage() {
 
   async function bootSession(models: CatalogModelItem[]) {
     try {
+      // qa#543：按首个模型推断一级类别（同组模型类别一致，picker 已保证），媒体类无附件
+      // 场景下用该类别默认任务；对话类维持原 text_to_text
+      const category = resolveModelCategory(models[0])
+      const task = EXPERIENCE_CATEGORY_DEFAULT_TASK[category]
       const session = await createExperienceSession({
         name: '未命名会话',
-        category: 'dialogue',
-        task: 'text_to_text',
+        category,
+        task,
         input_mode: syncInput ? 'sync' : 'independent',
         models: models.map((m) => m.model_id),
       })
@@ -334,12 +345,23 @@ export default function ModelsComparePage() {
     )
   }
 
-  /** 单列发送；sync 模式下多列共用同一个 dispatchId，用于事后计算最快/成本最低 */
+  /** 单列发送——按该列模型的一级类别分叉（§6.2/§7.3/§7.9）：对话类走 SSE 流式，
+   *  图像/音频类走同步媒体调用，视频类同步下发后转异步轮询。sync 模式下多列共用同一个
+   *  dispatchId，用于事后计算最快/成本最低。 */
   async function sendOne(idx: number, prompt: string, dispatchId: string) {
     if (!columns) return
     const column = columns[idx]
     if (!column || column.streaming || !prompt) return
+    const category = resolveModelCategory(column.model)
+    if (category === 'dialogue') {
+      await sendDialogueOne(idx, prompt, dispatchId)
+    } else {
+      await sendMediaOne(idx, prompt, dispatchId)
+    }
+  }
 
+  async function sendDialogueOne(idx: number, prompt: string, dispatchId: string) {
+    const column = columns![idx]
     updateColumn(idx, {
       streaming: true,
       history: [...column.history, { role: 'user', content: prompt, dispatchId }, { role: 'assistant', content: '', dispatchId }],
@@ -424,6 +446,142 @@ export default function ModelsComparePage() {
     } finally {
       updateColumn(idx, { streaming: false })
       settleDispatch(dispatchId)
+    }
+  }
+
+  /** 图像/音频/视频类列发送（§5.2 同步 JSON / §5.3-5.4 视频异步轮询），qa#543。
+   *  当前范围内不带附件（差异分发是 qa#545 的范围），走各类别默认任务：
+   *  text_to_image / text_to_audio / text_to_video——三者都不要求附件即可运行。 */
+  async function sendMediaOne(idx: number, prompt: string, dispatchId: string) {
+    const column = columns![idx]
+    const modelLabel = prettyModelName(column.model.display_name, column.model.model_id)
+    updateColumn(idx, {
+      streaming: true,
+      history: [...column.history, { role: 'user', content: prompt, dispatchId }, { role: 'assistant', content: '', dispatchId }],
+    })
+    const startedAt = Date.now()
+    let isAsyncVideo = false
+
+    try {
+      const { message, attachment_urls } = await sendExperienceMediaMessage({
+        conversationId: column.conversationId,
+        dispatchId,
+        content: prompt,
+      })
+
+      if (message.status === 'running' && message.async_task_id) {
+        isAsyncVideo = true
+        applyAssistant(idx, () => `视频生成中，可点击[在调用日志的异步任务里追踪](/logs?task_id=${encodeURIComponent(message.async_task_id!)})…`)
+        void pollVideoColumn(idx, column.conversationId, message.id, modelLabel, dispatchId)
+        return
+      }
+
+      const media = message.attachments.map((a) => ({ kind: a.kind, url: attachment_urls[a.resource_id] ?? '' }))
+      const spend = Number(message.actual_spend ?? 0)
+      const totalMs = message.total_ms ?? Date.now() - startedAt
+      setColumns((prev) =>
+        prev
+          ? prev.map((c, i) => {
+              if (i !== idx) return c
+              const next = [...c.history]
+              const last = next[next.length - 1]
+              if (last?.role === 'assistant') {
+                next[next.length - 1] = {
+                  ...last,
+                  content: message.content,
+                  media: media.length > 0 ? media : undefined,
+                  error: message.status === 'failed' ? (message.content ? undefined : '该模型本轮响应失败') : undefined,
+                  metrics: {
+                    model: modelLabel, inputTokens: 0, outputTokens: 0, firstTokenLatency: '',
+                    totalLatency: formatPlaygroundLatency(totalMs), spend, free: spend === 0, totalMs,
+                  },
+                }
+              }
+              return { ...c, history: next }
+            })
+          : prev,
+      )
+      trackEvent('playground_model_run_result', {
+        model_id: column.model.model_id,
+        status: message.status === 'failed' ? 'failed' : 'succeeded',
+        latency_bucket: latencyBucket(totalMs),
+        token_bucket: tokenBucket(0),
+        billing_status: spend === 0 ? 'free' : 'billed',
+      }, { result: message.status === 'failed' ? 'fail' : 'success' })
+    } catch (err) {
+      const message = `体验请求失败：${extractApiErrorMessage(err)}`
+      setColumns((prev) =>
+        prev
+          ? prev.map((c, i) => {
+              if (i !== idx) return c
+              const next = [...c.history]
+              const last = next[next.length - 1]
+              if (last?.role === 'assistant') next[next.length - 1] = { ...last, error: message }
+              return { ...c, history: next }
+            })
+          : prev,
+      )
+      const errorCode = (err as { data?: { field_errors?: Array<{ code?: string }> } } | undefined)?.data?.field_errors?.[0]?.code
+      trackEvent('playground_model_run_result', {
+        model_id: column.model.model_id,
+        status: 'failed',
+        latency_bucket: latencyBucket(Date.now() - startedAt),
+        token_bucket: tokenBucket(0),
+        billing_status: 'unbilled',
+      }, { result: 'fail', error_code: errorCode })
+    } finally {
+      updateColumn(idx, { streaming: false })
+      // 视频异步分支的 dispatch 结算延后到 pollVideoColumn 轮询终态，这里不提前计入
+      if (!isAsyncVideo) settleDispatch(dispatchId)
+    }
+  }
+
+  /** 视频列异步轮询（§5.4）：running 继续轮询，succeeded/failed 为终态。每列各自独立的
+   *  轮询循环，互不阻塞——多列视频任务同时进行时各自按自己的节奏完成。 */
+  async function pollVideoColumn(idx: number, conversationId: string, messageId: string, modelLabel: string, dispatchId: string) {
+    for (;;) {
+      await new Promise((resolve) => window.setTimeout(resolve, 5000))
+      try {
+        const { message, attachment_urls } = await getExperienceMessage(conversationId, messageId)
+        if (message.status === 'running') continue
+        setColumns((prev) => {
+          if (!prev) return prev
+          return prev.map((c, i) => {
+            if (i !== idx) return c
+            const next = [...c.history]
+            const last = next[next.length - 1]
+            if (last?.role !== 'assistant') return c
+            if (message.status === 'failed') {
+              next[next.length - 1] = { ...last, error: message.error || '视频生成失败', content: '' }
+              return { ...c, history: next }
+            }
+            const media = message.attachments.map((a) => ({ kind: a.kind, url: attachment_urls[a.resource_id] ?? '' }))
+            next[next.length - 1] = {
+              ...last,
+              content: '',
+              media: media.length > 0 ? media : undefined,
+              metrics: {
+                model: modelLabel, inputTokens: 0, outputTokens: 0, firstTokenLatency: '',
+                totalLatency: formatPlaygroundLatency(message.total_ms ?? 0),
+                spend: Number(message.actual_spend ?? 0), free: Number(message.actual_spend ?? 0) === 0,
+                totalMs: message.total_ms,
+              },
+            }
+            return { ...c, history: next }
+          })
+        })
+        trackEvent('playground_model_run_result', {
+          model_id: columns?.[idx]?.model.model_id ?? '',
+          status: message.status === 'failed' ? 'failed' : 'succeeded',
+          latency_bucket: latencyBucket(message.total_ms ?? 0),
+          token_bucket: tokenBucket(0),
+          billing_status: Number(message.actual_spend ?? 0) === 0 ? 'free' : 'billed',
+        }, { result: message.status === 'failed' ? 'fail' : 'success' })
+        settleDispatch(dispatchId)
+        return
+      } catch {
+        // 单次轮询失败不放弃，继续等下一轮（同单模型页 §8.3：保留最后已知状态，允许稍后重试）
+      }
     }
   }
 
@@ -662,6 +820,11 @@ export default function ModelsComparePage() {
     )
   }
 
+  // qa#543：对比会话的一级类别以首列模型为准（同一组内模型类别一致，选模型/建组时已保证）；
+  // task 用该类别的默认任务（无附件场景，附件差异分发是 qa#545 的范围）。
+  const compareCategory: ExperienceCategoryKey = resolveModelCategory(columns[0].model)
+  const compareTask = EXPERIENCE_CATEGORY_DEFAULT_TASK[compareCategory]
+
   const excludeIdsFor = (idx: number) => columns.filter((_, i) => i !== idx).map((c) => c.model.id)
 
   /** 窄屏 Tab 状态点（§8.5：显示运行中/完成/失败） */
@@ -703,7 +866,7 @@ export default function ModelsComparePage() {
         <div className="models-compare-toolbar-left">
           <LuColumns2 size={15} className="text-brand-base" />
           <strong>模型对比</strong>
-          <span className="models-compare-toolbar-meta">对话 · {columns.length} / {MAX_COMPARE} 个模型</span>
+          <span className="models-compare-toolbar-meta">{EXPERIENCE_CATEGORY_LABEL[compareCategory]} · {columns.length} / {MAX_COMPARE} 个模型</span>
         </div>
         <div className="models-compare-toolbar-right">
           <label className="flex items-center gap-2 select-none cursor-pointer">
@@ -715,7 +878,7 @@ export default function ModelsComparePage() {
             size="sm"
             disabled={columns.length >= MAX_COMPARE}
             onClick={() => {
-              trackEvent('playground_model_picker_open', { picker_type: 'compareAdd', browse_category: 'dialogue' })
+              trackEvent('playground_model_picker_open', { picker_type: 'compareAdd', browse_category: compareCategory })
               setAddPickerOpen(true)
             }}
           >
@@ -764,7 +927,7 @@ export default function ModelsComparePage() {
                 type="button"
                 className="models-experience-model-trigger"
                 onClick={() => {
-                  trackEvent('playground_model_picker_open', { picker_type: 'compareSwitch', browse_category: 'dialogue' })
+                  trackEvent('playground_model_picker_open', { picker_type: 'compareSwitch', browse_category: compareCategory })
                   setSwitchPickerIndex(idx)
                 }}
               >
@@ -773,7 +936,7 @@ export default function ModelsComparePage() {
                 </span>
                 <div className="min-w-0">
                   <div className="models-experience-modelbar-title">{prettyModelName(column.model.display_name, column.model.model_id)}</div>
-                  <div className="models-experience-modelbar-sub">{column.model.vendor || column.model.provider || 'ModelGo'} · 对话</div>
+                  <div className="models-experience-modelbar-sub">{column.model.vendor || column.model.provider || 'ModelGo'} · {EXPERIENCE_CATEGORY_LABEL[compareCategory]}</div>
                 </div>
                 <span className="models-experience-price-chip">{dualPriceText(column.model)}</span>
                 <LuChevronDown size={13} className="text-mg-text-3 shrink-0" />
@@ -806,7 +969,11 @@ export default function ModelsComparePage() {
               showModelNameInMeta={false}
               emptyState={
                 <div className="models-experience-empty">
-                  <span>发送 Prompt 后，各模型输出与成本将在此并排对比。</span>
+                  {(() => {
+                    const EmptyIcon = CATEGORY_EMPTY_COPY[compareCategory].icon
+                    return <EmptyIcon size={18} />
+                  })()}
+                  <span>{CATEGORY_EMPTY_COPY[compareCategory].hint}</span>
                 </div>
               }
             />
@@ -840,7 +1007,7 @@ export default function ModelsComparePage() {
                   isStreaming={column.streaming}
                   disabled={isBalanceZero && isPaidModel(column.model)}
                   onStop={() => abortRefs.current[idx]?.abort()}
-                  placeholder={`仅向 ${prettyModelName(column.model.display_name, column.model.model_id)} 提问…`}
+                  placeholder={`仅向 ${prettyModelName(column.model.display_name, column.model.model_id)}：${CATEGORY_PLACEHOLDER[compareCategory]}`}
                   sendLabel="发送"
                   className="models-experience-composer-wrap models-compare-composer"
                   activeChip={<span />}
@@ -878,7 +1045,7 @@ export default function ModelsComparePage() {
           isStreaming={columns.some((c) => c.streaming)}
           disabled={isBalanceZero && columns.some((c) => isPaidModel(c.model))}
           onStop={() => abortRefs.current.forEach((c) => c?.abort())}
-          placeholder={`输入 Prompt，同时发送给 ${columns.length} 个模型，Enter 发送…`}
+          placeholder={`${CATEGORY_PLACEHOLDER[compareCategory]}（同时发送给 ${columns.length} 个模型）`}
           sendLabel="发送"
           className="models-experience-composer-wrap models-compare-shared-composer"
           activeChip={<span className="models-experience-composer-hint">同步发送给全部已选模型</span>}
@@ -901,8 +1068,8 @@ export default function ModelsComparePage() {
         mode="compareSwitch"
         models={allModels.filter((m) => switchPickerIndex === null || !excludeIdsFor(switchPickerIndex).includes(m.id))}
         isBalanceZero={isBalanceZero}
-        currentCategory="dialogue"
-        currentTask="text_to_text"
+        currentCategory={compareCategory}
+        currentTask={compareTask}
         onSelect={(model) => {
           void handleSwitchConfirm(model)
           setSwitchPickerIndex(null)
@@ -915,8 +1082,8 @@ export default function ModelsComparePage() {
         mode="compareAdd"
         models={allModels}
         isBalanceZero={isBalanceZero}
-        currentCategory="dialogue"
-        currentTask="text_to_text"
+        currentCategory={compareCategory}
+        currentTask={compareTask}
         alreadySelectedIds={columns.map((c) => c.model.id)}
         maxAdditional={MAX_COMPARE - columns.length}
         onConfirmAdd={handleAddConfirm}
@@ -929,7 +1096,7 @@ export default function ModelsComparePage() {
           modelName={prettyModelName(columns[settingsIndex].model.display_name, columns[settingsIndex].model.model_id)}
           vendor={columns[settingsIndex].model.vendor || columns[settingsIndex].model.provider || 'ModelGo'}
           maxOutputTokens={Math.max(256, columns[settingsIndex].model.max_output_tokens || 4096)}
-          task="text_to_text"
+          task={EXPERIENCE_CATEGORY_DEFAULT_TASK[resolveModelCategory(columns[settingsIndex].model)]}
           values={columns[settingsIndex].chatParams}
           onChange={(key, value) => handleColumnParamChange(settingsIndex, key, value)}
           onReset={() => handleColumnParamReset(settingsIndex)}

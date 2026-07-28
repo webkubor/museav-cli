@@ -27,8 +27,10 @@ export interface ExperienceSessionDetail {
   input_mode: string
   created_at: string
   updated_at: string
-  /** 只有创建（§3.1）/详情（§3.3）响应带这个字段；列表（§3.2）响应实测不带，取列表项时按空数组兜底 */
+  /** 只有创建（§3.1）/详情（§3.3）响应带这个字段；列表（§3.2）响应不带，改用轻量 `models`（qa#535 已修复） */
   conversations?: ExperienceConversation[]
+  /** 列表（§3.2）响应专属：轻量 model_id 数组，不含 position/conversation id，仅供历史侧栏展示模型名 */
+  models?: string[]
 }
 
 export interface ExperienceMessageAttachment {

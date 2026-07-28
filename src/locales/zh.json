@@ -1857,7 +1857,6 @@
   "models": {
     "detail": {
       "tabOverview": "基本参数",
-      "tabProviders": "提供商与可用性",
       "pricing": "计费规格",
       "pricingInput": "输入计费",
       "pricingOutput": "输出计费",
@@ -1870,13 +1869,7 @@
       "notSupported": "不支持",
       "inRegionRouting": "区域内路由",
       "releasedAt": "发布时间",
-      "knowledgeCutoff": "知识库截止",
-      "noProviders": "当前无可用提供商",
-      "providerEnabled": "已启用",
-      "providerDisabled": "已停用",
-      "uptime30d": "30天在线率",
-      "latencyP50": "P50 延迟",
-      "throughput": "吞量"
+      "knowledgeCutoff": "知识库截止"
     },
     "card": {
       "context": "上下文",

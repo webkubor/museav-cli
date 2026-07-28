@@ -156,20 +156,6 @@ export interface CatalogModelDetail extends CatalogModelItem {
   benchmarks_summary?: Record<string, unknown>
 }
 
-export interface ProviderForModel {
-  provider_id: string
-  provider_name: string
-  provider_type: string
-  region?: string
-  upstream_model?: string
-  context_length?: number
-  pricing?: ModelPricing
-  uptime_30d_pct?: string
-  latency_p50_ms?: number
-  throughput_tps?: number
-  status: 'enabled' | 'disabled' | string
-}
-
 export interface CatalogModelTag {
   id: string
   code: string

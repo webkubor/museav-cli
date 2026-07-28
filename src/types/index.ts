@@ -136,7 +136,6 @@ export type {
   CatalogRelatedResult,
   ModelVariant,
   CatalogModelDetail,
-  ProviderForModel,
   CatalogModelTag,
   CatalogProviderItem,
   PlanFeatures,

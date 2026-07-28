@@ -1,7 +1,10 @@
 /**
  * 公共目录 - 模型/供应商/定价（§十四）
  * 路由：/models、/models/:id、/providers、/pricing
- * API：GET /catalog/models、GET /catalog/models/:id、GET /catalog/models/:id/providers、GET /catalog/providers、GET /catalog/pricing/plans
+ * API：GET /catalog/models、GET /catalog/models/:id、GET /catalog/providers、GET /catalog/pricing/plans
+ *
+ * 单模型 Provider 明细（/catalog/models/:id/providers）不再对公开目录下发（PRD §9.2 禁止暴露
+ * 内部实例/区域/在线率），对应前端 Providers Tab 已下线，见 qa#552。
  */
 import { get } from '@/lib/request'
 import type {
@@ -16,7 +19,6 @@ import type {
   CatalogProviderItem,
   CursorPage,
   PricingPlansResult,
-  ProviderForModel,
   CatalogFacets,
   CatalogFeaturedSlide,
   CatalogRelatedResult,
@@ -32,13 +34,6 @@ export function listModels(params?: CatalogModelListParams) {
 /** 获取模型详情（含 description / tags / variants / benchmarks_summary） */
 export function getModel(modelId: string) {
   return get<CatalogModelDetail>(`catalog/models/${encodeURIComponent(modelId)}`)
-}
-
-/** 获取模型的 Provider 可用性列表（Providers tab） */
-export function listModelProviders(modelId: string) {
-  return get<CursorPage<ProviderForModel>>(
-    `catalog/models/${encodeURIComponent(modelId)}/providers`
-  )
 }
 
 /** 获取模型标签目录（用于模型筛选和分类入口） */

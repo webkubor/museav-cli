@@ -1845,7 +1845,6 @@
   "models": {
     "detail": {
       "tabOverview": "Overview",
-      "tabProviders": "Providers & Availability",
       "pricing": "Pricing",
       "pricingInput": "Input",
       "pricingOutput": "Output",
@@ -1858,13 +1857,7 @@
       "notSupported": "Not Supported",
       "inRegionRouting": "In-Region Routing",
       "releasedAt": "Released At",
-      "knowledgeCutoff": "Knowledge Cutoff",
-      "noProviders": "No providers available",
-      "providerEnabled": "Enabled",
-      "providerDisabled": "Disabled",
-      "uptime30d": "30-day Uptime",
-      "latencyP50": "P50 Latency",
-      "throughput": "Throughput"
+      "knowledgeCutoff": "Knowledge Cutoff"
     },
     "card": {
       "context": "Context",

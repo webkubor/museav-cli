@@ -1,20 +1,13 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
-import { LuCoins, LuWorkflow, LuZap, LuShieldCheck, LuActivity, LuClock, LuGlobe } from 'react-icons/lu'
+import { LuCoins, LuWorkflow, LuZap, LuShieldCheck, LuActivity, LuClock } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
-import type { CatalogModelDetail, ProviderForModel } from '@/types'
+import type { CatalogModelDetail } from '@/types'
 import { ModalityBadge } from './ModalityBadge'
 import { ModelIcon } from './ModelIcon'
 import { formatContextLength, formatModelPrice, formatNumber, prettyModelName } from '@/lib/utils'
 
 interface ModelDetailPanelProps {
   detail: CatalogModelDetail
-  /**
-   * 推理供应商列表。**公开模型广场不再传** —— 公开目录不得暴露内部实例/区域/
-   * 在线率，对应的 API 已从公开面下线（web-api 的 /catalog/*providers）。
-   * 留空或不传时整个「供应商」Tab 不渲染。若将来把该接口挂到登录后的 authed
-   * 组，把数据传进来即可恢复。
-   */
-  providers?: ProviderForModel[]
   vendorHint?: string
 }
 
@@ -35,12 +28,10 @@ function autoSummary(detail: CatalogModelDetail, isZh: boolean): string {
   return `${v ? v + ' ' : ''}${modText} model${ctx ? `, ${ctx} context window` : ''}${free ? ', currently free' : ''}. Full description coming soon.`
 }
 
-export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailPanelProps) {
+export function ModelDetailPanel({ detail, vendorHint }: ModelDetailPanelProps) {
   const { t, i18n } = useTranslation()
   const isZh = i18n.language.startsWith('zh')
   const vendor = detail.vendor || vendorHint || ''
-  const providerList = providers ?? []
-  const showProviders = providerList.length > 0
   return (
     <div className="flex flex-col gap-5">
       {/* 头部面板 */}
@@ -78,13 +69,10 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
         </div>
       </div>
 
-      {/* Tabs 分栏 */}
+      {/* Tabs 分栏（公开模型广场不下发供应商信息，见 PRD §9.2，故只有一个 Tab） */}
       <Tabs defaultValue="overview" className="mt-0">
         <TabsList>
           <TabsTrigger value="overview">{t('models.detail.tabOverview')}</TabsTrigger>
-          {showProviders && (
-            <TabsTrigger value="providers">{t('models.detail.tabProviders')}</TabsTrigger>
-          )}
         </TabsList>
 
         <TabsContent value="overview">
@@ -219,70 +207,6 @@ export function ModelDetailPanel({ detail, providers, vendorHint }: ModelDetailP
           </div>
         </TabsContent>
 
-        <TabsContent value="providers">
-          <div className="pt-5 flex flex-col gap-3.5">
-            {providerList.length === 0 ? (
-              <div className="text-center min-h-[var(--mg-empty-min-h)] flex items-center justify-center text-[var(--mg-text-3)] mg-text-body">
-                {t('models.detail.noProviders')}
-              </div>
-            ) : (
-              providerList.map((p) => {
-                const isEnabled = p.status === 'enabled'
-                return (
-                  <div key={p.provider_id} className="bg-card-bg border border-[var(--mg-border)] rounded-md mg-panel flex flex-col gap-3.5">
-                    {/* 提供商头部：名称 + 状态点 */}
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <span className="mg-text-body font-bold text-[var(--mg-text-1)]">
-                          {p.provider_name}
-                        </span>
-                        {p.region && (
-                          <span className="mg-text-caption text-[var(--mg-text-3)] bg-[var(--mg-fill-0)] px-1.5 py-0.5 rounded-sm">
-                            {p.region}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="rounded-full bg-mg-success shadow-[0_0_8px_var(--mg-success)]" style={{ width: '6px', height: '6px' }} />
-                        <span className={`mg-compact-badge ${isEnabled ? 'text-mg-success' : 'text-mg-danger'}`}>
-                          {isEnabled ? t('models.detail.providerEnabled') : t('models.detail.providerDisabled')}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* 提供商性能指标 */}
-                    <div className="grid grid-cols-3 gap-3 border-t border-[var(--mg-border)] pt-3">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="mg-text-caption text-[var(--mg-text-3)] flex items-center gap-0.5">
-                          <LuGlobe size={11} /> {t('models.detail.uptime30d')}
-                        </span>
-                        <span className="mg-text-body font-semibold text-[var(--mg-text-2)]">
-                          {p.uptime_30d_pct ? `${p.uptime_30d_pct}` : '—'}
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="mg-text-caption text-[var(--mg-text-3)] flex items-center gap-0.5">
-                          <LuClock size={11} /> {t('models.detail.latencyP50')}
-                        </span>
-                        <span className="mg-text-body font-semibold text-[var(--mg-text-2)]">
-                          {p.latency_p50_ms ? `${p.latency_p50_ms}ms` : '—'}
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="mg-text-caption text-[var(--mg-text-3)] flex items-center gap-0.5">
-                          <LuZap size={11} /> {t('models.detail.throughput')}
-                        </span>
-                        <span className="mg-text-body font-semibold text-[var(--mg-text-2)]">
-                          {p.throughput_tps ? `${p.throughput_tps} TPS` : '—'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })
-            )}
-          </div>
-        </TabsContent>
       </Tabs>
     </div>
   )

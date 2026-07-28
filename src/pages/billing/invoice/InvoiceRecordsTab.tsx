@@ -13,6 +13,7 @@ import type { InvoiceRecord, InvoiceTitleType } from '@/types'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { trackEvent } from '@/lib/track'
+import { formatDateTimeWithSeconds } from '@/lib/format-date'
 
 const STATUS_MAP: Record<InvoiceRecord['status'], { label: string; cls: string }> = {
   pending: { label: '待开票', cls: 'bg-mg-fill-0 text-mg-text-2' },
@@ -134,6 +135,7 @@ export function InvoiceRecordsTab({
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-mg-text-3">
+                    <span>{formatDateTimeWithSeconds(r.created_at)}</span>
                     <span>{r.company_name}</span>
                     <span>
                       价税合计{' '}
@@ -142,6 +144,7 @@ export function InvoiceRecordsTab({
                         {r.total_amount}
                       </span>
                     </span>
+                    <span>充值单 {r.recharge_count}</span>
                     {r.tax_serial && <span>发票号 {r.tax_serial}</span>}
                   </div>
                   {r.status === 'failed' && r.error_msg && (

@@ -47,6 +47,10 @@ export interface InvoiceRecord {
   tax_serial?: string
   error_msg?: string
   download_url?: string
+  /** 申请时间（UTC RFC3339），列表默认按它倒序（PRD 1.0.4 §8.7.1.1，qa#541） */
+  created_at: string
+  /** 该发票覆盖的充值单数量（PRD 1.0.4 §8.7.1.1，qa#541） */
+  recharge_count: number
 }
 
 /** 新增抬头请求体 */

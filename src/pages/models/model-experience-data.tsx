@@ -182,3 +182,36 @@ export function quotaPercent(model: CatalogModelItem) {
   if (model.zero_data_retention) return 100
   return model.providers_count ? Math.min(100, 64 + model.providers_count * 7) : 86
 }
+
+/** 埋点用非加密短哈希（§10.2 dispatch_id_hash 等字段）：只为脱敏，非安全用途 */
+export function hashId(input: string): string {
+  let h = 0
+  for (let i = 0; i < input.length; i++) h = (Math.imul(31, h) + input.charCodeAt(i)) | 0
+  return (h >>> 0).toString(36)
+}
+
+/** 埋点耗时分桶（§10.3 playground_model_run_result.latency_bucket），边界为工程经验值 */
+export function latencyBucket(ms: number): string {
+  if (ms < 1000) return '<1s'
+  if (ms < 3000) return '1-3s'
+  if (ms < 10000) return '3-10s'
+  if (ms < 30000) return '10-30s'
+  return '>30s'
+}
+
+/** 埋点 Token 分桶（§10.3 playground_model_run_result.token_bucket） */
+export function tokenBucket(tokens: number): string {
+  if (tokens < 500) return '<500'
+  if (tokens < 2000) return '500-2k'
+  if (tokens < 8000) return '2k-8k'
+  if (tokens < 32000) return '8k-32k'
+  return '>32k'
+}
+
+/** 埋点附件大小分桶（§10.3 playground_attachment_result.size_bucket） */
+export function sizeBucket(bytes: number): string {
+  if (bytes < 1024 * 1024) return '<1MB'
+  if (bytes < 10 * 1024 * 1024) return '1-10MB'
+  if (bytes < 50 * 1024 * 1024) return '10-50MB'
+  return '>50MB'
+}

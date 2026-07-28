@@ -23,6 +23,8 @@ export interface ApiQuickCallModalProps {
   modelId: string
   /** 该模型支持哪些协议，决定协议 Tab 展示哪些 */
   supportedProtocols: ApiProtocol[]
+  /** 埋点用（§10.3 playground_api_modal_action）：切协议/切语言/复制代码/复制模型 ID/获取 Key */
+  onAction?: (action: 'switch_protocol' | 'switch_language' | 'copy_code' | 'copy_model_id' | 'get_key', protocol: ApiProtocol, language: ApiCodeLanguage) => void
 }
 
 const PROTOCOL_LABEL: Record<ApiProtocol, string> = {
@@ -99,6 +101,7 @@ export function ApiQuickCallModal({
   modelName,
   modelId,
   supportedProtocols,
+  onAction,
 }: ApiQuickCallModalProps) {
   const protocols = useMemo(
     () => (supportedProtocols.length > 0 ? supportedProtocols : (['openai'] as ApiProtocol[])),
@@ -118,6 +121,7 @@ export function ApiQuickCallModal({
         label="复制代码"
         copiedLabel="已复制"
         buttonVariant="brand"
+        onCopied={() => onAction?.('copy_code', activeProtocol, language)}
       />
     </div>
   )
@@ -130,7 +134,7 @@ export function ApiQuickCallModal({
       title={
         <div className="api-quick-call-header">
           <span>{modelName} 的 API 调用</span>
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" asChild onClick={() => onAction?.('get_key', activeProtocol, language)}>
             <Link to="/api-keys">
               <LuKey size={14} className="mr-1.5" />
               获取 API Key
@@ -145,10 +149,21 @@ export function ApiQuickCallModal({
         <div className="api-quick-call-model-id">
           <span className="api-quick-call-model-id-label">模型 ID</span>
           <span className="api-quick-call-model-id-value">{modelId}</span>
-          <CopyButton value={modelId} aria-label="复制模型 ID" toast="已复制模型 ID" />
+          <CopyButton
+            value={modelId}
+            aria-label="复制模型 ID"
+            toast="已复制模型 ID"
+            onCopied={() => onAction?.('copy_model_id', activeProtocol, language)}
+          />
         </div>
 
-        <Tabs value={activeProtocol} onValueChange={(v) => setProtocol(v as ApiProtocol)}>
+        <Tabs
+          value={activeProtocol}
+          onValueChange={(v) => {
+            onAction?.('switch_protocol', v as ApiProtocol, language)
+            setProtocol(v as ApiProtocol)
+          }}
+        >
           <TabsList variant="pills">
             {protocols.map((p) => (
               <TabsTrigger key={p} value={p} variant="pills">
@@ -158,7 +173,13 @@ export function ApiQuickCallModal({
           </TabsList>
         </Tabs>
 
-        <Tabs value={language} onValueChange={(v) => setLanguage(v as ApiCodeLanguage)}>
+        <Tabs
+          value={language}
+          onValueChange={(v) => {
+            onAction?.('switch_language', activeProtocol, v as ApiCodeLanguage)
+            setLanguage(v as ApiCodeLanguage)
+          }}
+        >
           <TabsList variant="underline">
             {LANGUAGE_ORDER.map((lang) => (
               <TabsTrigger key={lang} value={lang} variant="underline">
@@ -174,6 +195,7 @@ export function ApiQuickCallModal({
                   aria-label="复制代码"
                   toast="已复制代码示例"
                   className="api-quick-call-code-copy"
+                  onCopied={() => onAction?.('copy_code', activeProtocol, lang)}
                 />
                 <pre className="api-quick-call-code-pre">
                   <code>{buildCodeSample(activeProtocol, lang, modelId)}</code>

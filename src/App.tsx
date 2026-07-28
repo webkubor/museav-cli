@@ -34,7 +34,11 @@ const ModelsPage = lazy(() => import('@/pages/models'))
 const ModelsCatalogPage = lazy(() => import('@/pages/models/catalog'))
 const ModelDetailPage = lazy(() => import('@/pages/models/detail'))
 const ModelsComparePage = lazy(() => import('@/pages/models-compare'))
-const PlatformConfigPage = lazy(() => import('@/pages/platform-config'))
+// DEV 专属页面必须放在可静态消除的条件分支内，确保生产构建既不生成对应 chunk，
+// 也不注册路由——否则 /dev-config 在生产环境仍可被直接访问到。
+const PlatformConfigPage = import.meta.env.DEV
+  ? lazy(() => import('@/pages/platform-config'))
+  : null
 const NotFoundPage = lazy(() => import('@/pages/not-found'))
 
 // 菜单驱动页面：key → 页面元素（路由/scope/权限见 config/console-routes 单一真源）
@@ -240,8 +244,9 @@ export default function App() {
             {/* 任务历史已并入调用日志（#361）：旧路由重定向到「异步任务」记录类型 */}
             <Route path="tasks" element={<Navigate to="/logs?record_type=async" replace />} />
 
-            {/* 开发者菜单（DEV 调试页）——挂在后台壳内（带侧栏/头部），不再独立整页 */}
-            <Route path="dev-config" element={<PlatformConfigPage />} />
+            {/* 开发者菜单（DEV 调试页）——挂在后台壳内（带侧栏/头部），不再独立整页。
+                编译期 DEV 专属：生产构建时页面 import 与整条路由均被静态消除。 */}
+            {PlatformConfigPage && <Route path="dev-config" element={<PlatformConfigPage />} />}
 
             {/* 企业管理/空间管理是主入口顶层页（nav.ts main 组），不是「设置」子页——
                 路径保持扁平（/organization、/workspaces），与 usage/logs/billing 同级。

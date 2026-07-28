@@ -52,6 +52,8 @@ import {
   EXPERIENCE_TASK_LABEL,
   resolveModelCategory,
   PLAYGROUND_SAMPLE_PROMPTS,
+  cleanErrorMessage,
+  extractApiErrorMessage,
   type ExperienceMessage,
   type ExperienceCategoryKey,
   type ExperienceTaskType,
@@ -71,39 +73,6 @@ import './styles/model-params.css'
 import './styles/model-experience-responsive.css'
 
 const INITIAL_MESSAGES: ExperienceMessage[] = []
-
-/**
- * 历史消息里 status="failed" 行的 error 字段，实测后端存的是上游原始错误信封整个
- * JSON.stringify 之后的字符串（例如护栏拦截会把 {"error":{"code":403,"message":"..."}}
- * 整个当字符串塞进去），不是一句人话——这里做前端兜底清洗，解析不出来才展示原始字符串。
- */
-function cleanErrorMessage(raw: string | undefined): string {
-  if (!raw) return '该消息发送失败'
-  try {
-    const parsed = JSON.parse(raw) as {
-      error?: { message?: string }
-      msg?: string
-      data?: { details?: Array<{ message?: string }> }
-    }
-    return parsed.data?.details?.[0]?.message ?? parsed.msg ?? parsed.error?.message ?? raw
-  } catch {
-    return raw
-  }
-}
-
-/**
- * 从抛出的请求错误里挖出人话消息。媒体任务失败走 §5.2 的
- * data.field_errors[].code=PLAYGROUND_MEDIA_FAILED、message=上游原始错误摘要——
- * 实测这个 message 本身又是一层 JSON.stringify 过的原始信封（同 cleanErrorMessage
- * 处理的历史消息 error 字段一个毛病），要再解一层，否则只会显示信封外层的
- * "参数校验失败" 泛用文案。
- */
-function extractApiErrorMessage(err: unknown): string {
-  const data = (err as { data?: { field_errors?: Array<{ message?: string }>; details?: Array<{ message?: string }> } } | undefined)?.data
-  const raw = data?.field_errors?.[0]?.message ?? data?.details?.[0]?.message
-  if (raw) return cleanErrorMessage(raw)
-  return (err as Error).message || '请稍后重试'
-}
 
 /** 空态图标/文案按类别区分（PRD §7.9 各任务空态，原型 App.tsx:19317-19322 逐字对齐） */
 const CATEGORY_EMPTY_COPY: Record<ExperienceCategoryKey, { icon: typeof LuZap; title: string; hint: string }> = {

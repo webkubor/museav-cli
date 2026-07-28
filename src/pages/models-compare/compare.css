@@ -54,6 +54,25 @@
   margin: 0 12px 12px;
 }
 
+/* 历史会话恢复/新建失败的行内提示（§7.8），不阻塞页面，仅提醒 */
+.models-experience-inline-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--mg-danger) 32%, var(--mg-border));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--mg-danger) 8%, var(--mg-bg-0));
+  color: var(--mg-text-2);
+  font-size: 12px;
+}
+
+.models-experience-inline-error > svg {
+  flex-shrink: 0;
+  color: var(--mg-danger);
+}
+
 .models-compare-shared-composer {
   margin-top: 14px;
 }

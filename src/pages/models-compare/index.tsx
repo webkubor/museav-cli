@@ -34,7 +34,11 @@ import {
   resetExperienceModelConfig,
   getExperienceSessionStats,
   matchesModelConfigId,
+  listExperienceSessions,
+  getExperienceSession,
+  getExperienceSessionMessages,
   type ExperienceStatsEvent,
+  type ExperienceMessageView,
 } from '@/services/experience-sessions'
 import { useSidebarCollapseStore } from '@/store/use-sidebar-collapse-store'
 import { useExperienceWorkbenchStore, type CompareColumnState } from '@/store/use-experience-workbench-store'
@@ -51,12 +55,15 @@ import {
   hashId,
   latencyBucket,
   tokenBucket,
+  cleanErrorMessage,
+  EXPERIENCE_TASK_LABEL,
   type ExperienceMessage,
 } from '../models/model-experience-data'
 import { ModelPickerDialog } from '../models/components/ModelPickerDialog'
 import { ModelSettingsModal } from '../models/components/ModelSettingsModal'
 import { ApiQuickCallModal } from '../models/components/ApiQuickCallModal'
 import { ExperienceMessageList } from '../models/components/ExperienceMessageList'
+import { HistorySessionSidebar, type HistorySessionItem } from '../models/components/HistorySessionSidebar'
 import '../models/styles/model-experience-layout.css'
 import '../models/styles/model-chat.css'
 import '../models/styles/model-composer.css'
@@ -114,6 +121,12 @@ export default function ModelsComparePage() {
   const [lastFocusedIndex, setLastFocusedIndex] = useState(0)
   const [bootError, setBootError] = useState<string | null>(null)
 
+  // §7.8 历史会话侧栏（qa#546）：与单模型页一样是纯页面内 UI 状态，不需要跨路由持久化，
+  // 收起态是初始态（对比页地产更紧张，默认收起，用户需要时自己展开）。
+  const [historyCollapsed, setHistoryCollapsed] = useState(true)
+  const [historySessions, setHistorySessions] = useState<HistorySessionItem[]>([])
+  const [historyActionError, setHistoryActionError] = useState<string | null>(null)
+
   const [removeConfirmIndex, setRemoveConfirmIndex] = useState<number | null>(null)
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false)
   const [switchPickerIndex, setSwitchPickerIndex] = useState<number | null>(null)
@@ -157,6 +170,124 @@ export default function ModelsComparePage() {
   useEffect(() => {
     if (columns && activeColumnIndex >= columns.length) setActiveColumnIndex(0)
   }, [columns, activeColumnIndex])
+
+  useEffect(() => {
+    if (!historyCollapsed) void refreshHistorySessions()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyCollapsed])
+
+  /**
+   * 会话里引用的模型已不在当前目录（下线/删除）时的占位展示（§7.8 恢复态降级）。
+   * 只用于渲染列头（名称/头像），不可用于真实发送——该列后续切换模型前操作会照常失败，
+   * 这跟单模型页历史侧栏"部分模型已下线"角标是同一降级思路，只是这里要落到一个真实
+   * CatalogModelItem 形状上才能喂给现有的列渲染逻辑。
+   */
+  function offlineModelPlaceholder(modelId: string): CatalogModelItem {
+    return {
+      id: modelId,
+      model_id: modelId,
+      display_name: modelId,
+      modalities: [],
+      tags: [],
+      context_length: 0,
+      max_output_tokens: 0,
+      pricing: { input_per_1m: '0', output_per_1m: '0', cache_read_per_1m: '0', currency: 'CNY' },
+      released_at: '',
+      knowledge_cutoff: '',
+      status: 'unavailable',
+      logo_url: '',
+    }
+  }
+
+  /** 拉取真实历史会话列表供侧栏展示，映射逻辑与单模型页一致（qa#546）。
+   *  同单模型页注释：GET /experience/sessions 列表响应实测不带 conversations，
+   *  这里模型 chip 老实留空，点开会话后走 getExperienceSession 详情接口才能拿到真实组合。 */
+  async function refreshHistorySessions() {
+    try {
+      const { items } = await listExperienceSessions({ limit: 20, offset: 0 })
+      setHistorySessions(
+        items.map((session) => ({
+          id: session.id,
+          name: session.name,
+          updatedAt: session.updated_at,
+          category: (session.category as HistorySessionItem['category']) ?? 'dialogue',
+          task: EXPERIENCE_TASK_LABEL[session.task as keyof typeof EXPERIENCE_TASK_LABEL] ?? session.task,
+          models: (session.conversations ?? [])
+            .slice()
+            .sort((a, b) => a.position - b.position)
+            .map((conv) => {
+              const catalogModel = allModels.find((m) => m.model_id === conv.model_id)
+              return {
+                id: conv.model_id,
+                name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id) : conv.model_id,
+                offline: !catalogModel,
+              }
+            }),
+        })),
+      )
+    } catch {
+      // 历史列表拉取失败不阻塞主流程，侧栏保持空态
+    }
+  }
+
+  /**
+   * §7.8 对比页历史恢复：GET .../messages 是 session 粒度，单条消息自带 conversation_id，
+   * 按它分组即可还原成每列各自的 history，不需要逐 conversation 再分别调接口。
+   * conversations 组合要拿真实模型 id，走 GET 详情接口（列表响应不带 conversations）。
+   */
+  async function openHistorySession(id: string) {
+    if (!id) return
+    try {
+      const [detail, { items: msgItems }] = await Promise.all([
+        getExperienceSession(id),
+        getExperienceSessionMessages(id),
+      ])
+      const convs = (detail.conversations ?? []).slice().sort((a, b) => a.position - b.position)
+      if (convs.length === 0) throw new Error('该会话没有可恢复的模型列')
+      const byConv = new Map<string, ExperienceMessageView[]>()
+      for (const msg of msgItems) {
+        const list = byConv.get(msg.conversation_id) ?? []
+        list.push(msg)
+        byConv.set(msg.conversation_id, list)
+      }
+      const nextColumns: ColumnState[] = convs.map((conv) => {
+        const model = allModels.find((m) => m.model_id === conv.model_id) ?? offlineModelPlaceholder(conv.model_id)
+        const convMessages = (byConv.get(conv.id) ?? []).slice().sort((a, b) => a.seq - b.seq)
+        const history: ExperienceMessage[] = convMessages.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+          error: msg.status === 'failed' ? cleanErrorMessage(msg.error) : undefined,
+        }))
+        return { model, conversationId: conv.id, history, streaming: false, draft: '', chatParams: {} }
+      })
+      bootedRef.current = true
+      abortRefs.current = nextColumns.map(() => null)
+      setActiveColumnIndex(0)
+      setLastFocusedIndex(0)
+      setSharedDraft('')
+      setSessionId(id)
+      setColumns(nextColumns)
+      setSessionStats({ requestCount: 0, tokens: 0, cost: 0 })
+      setBootError(null)
+      setHistoryActionError(null)
+      trackEvent('playground_history_action', { action: 'restore' }, { result: 'success' })
+    } catch (err) {
+      trackEvent('playground_history_action', { action: 'restore' }, { result: 'fail' })
+      setHistoryActionError(`加载历史会话失败：${(err as Error).message || '请稍后重试'}`)
+    }
+  }
+
+  /** §7.8 新建会话：对比页本身没有内嵌的"选模型"态（一直要求带 selectedIds 进场），
+   *  退回单模型页重新走"选模型 → 模型对比"的标准入口，跟移除至单模型/退出对比同一归宿。 */
+  function startNewSession() {
+    bootedRef.current = false
+    setSessionId(null)
+    setColumns(null)
+    setSessionStats({ requestCount: 0, tokens: 0, cost: 0 })
+    setHistoryActionError(null)
+    restoreSavedPreference()
+    navigate('/models/playground')
+  }
 
   async function bootSession(models: CatalogModelItem[]) {
     try {
@@ -547,6 +678,27 @@ export default function ModelsComparePage() {
     <div className="models-experience-page">
       <PageHeader title="模型体验" description="同类别、同任务的最多 3 个模型并排对比，逐列独立设置与费用。" className="mb-4" />
 
+      <div className="models-experience-shell">
+        {/* §7.8 历史会话侧栏（qa#546）：与单模型页同款受控组件，展开时拉取列表；选中会话
+            按 conversation_id 分组还原成多列（见 openHistorySession），新建会话退回单模型页
+            重新走"选模型 → 模型对比"入口（对比页本身没有内嵌选模型态）。 */}
+        <HistorySessionSidebar
+          collapsed={historyCollapsed}
+          onToggleCollapsed={(collapsed) => {
+            if (!collapsed) trackEvent('playground_history_action', { action: 'open' })
+            setHistoryCollapsed(collapsed)
+          }}
+          sessions={historySessions}
+          activeSessionId={sessionId ?? undefined}
+          onSelectSession={(id) => void openHistorySession(id)}
+          onNewSession={() => {
+            trackEvent('playground_history_action', { action: 'new' })
+            startNewSession()
+          }}
+        />
+
+        <div className="models-experience-main">
+
       <div className="models-compare-toolbar">
         <div className="models-compare-toolbar-left">
           <LuColumns2 size={15} className="text-brand-base" />
@@ -732,6 +884,16 @@ export default function ModelsComparePage() {
           activeChip={<span className="models-experience-composer-hint">同步发送给全部已选模型</span>}
         />
       )}
+
+      {historyActionError && (
+        <div className="models-experience-inline-error" role="alert">
+          <LuTriangleAlert size={14} />
+          <span>{historyActionError}</span>
+        </div>
+      )}
+
+        </div>
+      </div>
 
       <ModelPickerDialog
         open={switchPickerIndex !== null}

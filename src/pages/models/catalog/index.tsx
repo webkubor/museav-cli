@@ -11,7 +11,6 @@ import { LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers, LuZap,
 import { listModels, listModelTags, listModelFacets, listFeatured } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
-import type { CatalogModelItem } from '@/types'
 import { CatalogCard } from './CatalogCard'
 import { CatalogFeatured } from './CatalogFeatured'
 import { CatalogSidebar } from './CatalogSidebar'
@@ -20,10 +19,6 @@ import './catalog.css'
 
 type SortKey = 'default' | 'popular' | 'newest' | 'cheapest'
 // 上下文阈值改由服务端 facets 下发，前端不再硬编码（原 CTX_THRESHOLDS 已删除）。
-
-function isComparableModel(model: CatalogModelItem) {
-  return !(model.modalities ?? []).some((m) => m === 'image' || m === 'audio' || m === 'video')
-}
 
 export default function ModelsCatalogPage() {
   const { t, i18n } = useTranslation()
@@ -38,6 +33,7 @@ export default function ModelsCatalogPage() {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [isCompareOpen, setIsCompareOpen] = useState(false)
   const [compareInitialIds, setCompareInitialIds] = useState<string[]>([])
+  const [compareCurrentModelId, setCompareCurrentModelId] = useState<string | undefined>(undefined)
   const sortRef = useRef<HTMLDivElement>(null)
 
   const sortLabels: Record<SortKey, string> = {
@@ -113,15 +109,13 @@ export default function ModelsCatalogPage() {
    * 但截至改造时 test 库里 189 个可见模型中有 147 个是 pytest-* 测试模型且
    * hidden=false —— 真实目录只有 42 个。删掉这行会让它们直接出现在公开广场。
    * 待 db/schema/upgrades/2026-07-25_marketplace_data_backfill.sql 的第 (1) 段
-   * 在各环境执行、把测试模型标 hidden 之后，再删这行以及下面 isComparableModel
-   * 之外的本地兜底。
+   * 在各环境执行、把测试模型标 hidden 之后，再删这行本地兜底。
    */
   const allModels = useMemo(
     () => (modelsQuery.data?.items ?? []).filter((m) => !/^pytest/i.test(m.model_id)),
     [modelsQuery.data?.items],
   )
   const tags = useMemo(() => (tagsQuery.data?.items ?? []).filter((tg) => tg.enabled !== false), [tagsQuery.data?.items])
-  const comparableModels = useMemo(() => allModels.filter(isComparableModel), [allModels])
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -155,7 +149,11 @@ export default function ModelsCatalogPage() {
     if (!isAuthenticated) { navigate(toLoginWithRedirect()); return }
     navigate('/models/playground', { state: { selectedModelId: modelId } })
   }
-  const openCompare = (initialIds: string[] = []) => { setCompareInitialIds(initialIds); setIsCompareOpen(true) }
+  const openCompare = (modelId: string) => {
+    setCompareCurrentModelId(modelId)
+    setCompareInitialIds([modelId])
+    setIsCompareOpen(true)
+  }
 
   return (
     <div className="models-catalog-page">
@@ -279,8 +277,8 @@ export default function ModelsCatalogPage() {
                   model={model}
                   isZh={isZh}
                   onTry={handleGoPlayground}
-                  canCompare={isComparableModel(model)}
-                  onCompare={(e) => { e.stopPropagation(); openCompare([model.id]) }}
+                  canCompare={model.compare_enabled === true}
+                  onCompare={(e) => { e.stopPropagation(); openCompare(model.id) }}
                   onPickProtocol={(p) =>
                     setSelected((prev) => [...prev.filter((k) => !k.startsWith('protocol:')), `protocol:${p}`])
                   }
@@ -299,8 +297,9 @@ export default function ModelsCatalogPage() {
       <ModelsCompareModal
         isOpen={isCompareOpen}
         onClose={() => setIsCompareOpen(false)}
-        allModels={comparableModels}
+        allModels={allModels}
         initialSelectedIds={compareInitialIds}
+        currentModelId={compareCurrentModelId}
         onConfirmCompare={(ids) => {
           if (ids.length === 0) return
           if (!isAuthenticated) { navigate(toLoginWithRedirect()); return }

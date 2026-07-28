@@ -1385,6 +1385,8 @@
       "contextLength": "上下文长度",
       "maxOutput": "最大输出",
       "modalities": "模态支持",
+      "modalityFlow": "输入→输出模态",
+      "protocols": "兼容协议",
       "releasedAt": "发布时间",
       "knowledgeCutoff": "知识截止",
       "inputPrice": "输入价格 (百万)",
@@ -1395,6 +1397,8 @@
       "inRegionRouting": "区域内路由",
       "tags": "标签"
     },
+    "currentModel": "当前模型",
+    "candidates": "可选候选",
     "empty": {
       "hint": "在左侧选择模型后开始对比",
       "noMatch": "未找到匹配的模型"

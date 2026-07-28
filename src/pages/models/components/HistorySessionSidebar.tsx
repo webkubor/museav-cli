@@ -130,7 +130,10 @@ export function HistorySessionSidebar({
   }
 
   return (
-    <div className="history-sidebar-panel" role="navigation" aria-label="历史会话">
+    <>
+      {/* 窄屏展开态覆盖内容区（§8.5），宽屏这个背板 CSS 直接不渲染；点击背板等同收起 */}
+      <div className="history-sidebar-backdrop" onClick={() => onToggleCollapsed(true)} aria-hidden="true" />
+      <div className="history-sidebar-panel" role="navigation" aria-label="历史会话">
       <div className="history-sidebar-panel-header">
         <button
           type="button"
@@ -199,6 +202,7 @@ export function HistorySessionSidebar({
           ))
         )}
       </div>
-    </div>
+      </div>
+    </>
   )
 }

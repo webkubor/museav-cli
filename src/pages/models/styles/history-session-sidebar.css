@@ -189,3 +189,26 @@
   font-weight: 600;
   color: var(--mg-warning);
 }
+
+/* 宽屏不需要背板，展开侧栏走正常内联布局 */
+.history-sidebar-backdrop {
+  display: none;
+}
+
+/* 窄屏展开态覆盖内容区，而不是把工作台挤到下面（§8.5） */
+@media (max-width: 768px) {
+  .history-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    background: rgba(0, 0, 0, 0.32);
+  }
+
+  .history-sidebar-panel {
+    position: fixed;
+    inset: 12px;
+    z-index: 40;
+    width: auto;
+  }
+}

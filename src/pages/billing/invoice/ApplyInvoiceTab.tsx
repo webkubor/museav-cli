@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
 import { cn } from '@/lib/utils'
 import { appToast } from '@/lib/app-toast'
+import { trackEvent } from '@/lib/track'
 import {
   listInvoiceableRecharges,
   listInvoiceTitles,
@@ -16,6 +17,7 @@ import {
 import type { InvoiceTitleType, RechargeInvoiceStatus } from '@/types'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
+import { amountBand, countBand } from '../billing-tracking'
 
 const TITLE_TYPE_LABEL: Record<InvoiceTitleType, string> = {
   vat_normal: '增值税普票',
@@ -97,11 +99,26 @@ export function ApplyInvoiceTab({
       }),
     onSuccess: () => {
       appToast.success('已提交开票申请，系统正在自动开票')
+      // §11.2 billing_invoice_apply_submit
+      trackEvent('billing_invoice_apply_submit', {
+        order_count_band: countBand(selected.length),
+        amount_band: amountBand(selectedTotal),
+        invoice_title_kind: activeTitle?.type ?? 'unknown',
+        result: 'success',
+      })
       qc.invalidateQueries({ queryKey: ['invoice'] })
       setSelected([])
       onInvoiced()
     },
-    onError: () => appToast.error('开票提交失败，请重试'),
+    onError: () => {
+      appToast.error('开票提交失败，请重试')
+      trackEvent('billing_invoice_apply_submit', {
+        order_count_band: countBand(selected.length),
+        amount_band: amountBand(selectedTotal),
+        invoice_title_kind: activeTitle?.type ?? 'unknown',
+        result: 'fail',
+      })
+    },
   })
 
   return (

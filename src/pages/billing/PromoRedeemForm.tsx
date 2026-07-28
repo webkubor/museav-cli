@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { redeemPromoCode } from '@/services/billing'
 import { Button } from '@/components/ui/Button'
 import { appToast } from '@/lib/app-toast'
+import { trackEvent } from '@/lib/track'
 import { getPromoRedeemErrorMessage } from './promo-errors'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
@@ -25,11 +26,15 @@ export function PromoRedeemForm({ tenantId, onSuccess }: { tenantId: string; onS
       queryClient.invalidateQueries({ queryKey: ['balance', tenantId] })
       queryClient.invalidateQueries({ queryKey: ['balance', 'breakdown', tenantId] })
       appToast.success(t('billing.promo.success', { amount: data.credited.amount, currency: data.credited.currency }))
+      // §11.2 billing_redeem_result：reward_type 后端未区分兑换码类型（credits.PromoRedeemResponse
+      // 无对应字段），本表单只服务优惠码兑换单一渠道，固定为 promo_code，非臆造分类
+      trackEvent('billing_redeem_result', { result: 'success', reward_type: 'promo_code' })
       setCode('')
       onSuccess?.()
     },
     onError: (err: Error) => {
       appToast.error(getPromoRedeemErrorMessage(err, t))
+      trackEvent('billing_redeem_result', { result: 'fail', failure_reason: err.message || 'unknown', reward_type: 'promo_code' })
     }
   })
 

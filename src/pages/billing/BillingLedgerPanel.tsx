@@ -16,6 +16,7 @@ import { usePermissions } from '@/hooks/use-permissions'
 import { isDomestic } from '@/lib/market'
 import { PERMS } from '@/config/permissions'
 import { AlipayIcon, WechatIcon } from '@/constants/brand-icons'
+import { trackEvent } from '@/lib/track'
 import { listIncomeRecords } from '@/services/billing'
 import type { IncomeRecord, IncomeRecordType, IncomeRecordStatus, IncomeBalanceBucket } from '@/services/billing'
 import { BillingInvoiceTab } from './invoice/BillingInvoiceTab'
@@ -135,17 +136,31 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
   const items = data?.items ?? []
   const hasMore = Boolean(data?.has_more && data?.next_cursor)
 
+  // §11.2 billing_income_filter_change：三个筛选维度共用一个上报点，每次都带完整当前筛选组合
+  const trackFilterChange = (next: { time?: TimeFilterKey; type?: 'all' | IncomeRecordType; bucket?: 'all' | IncomeBalanceBucket }) => {
+    trackEvent('billing_income_filter_change', {
+      time_filter: next.time ?? timeFilter,
+      type_filter: next.type ?? type,
+      bucket_filter: next.bucket ?? bucket,
+    })
+  }
   const onTypeChange = (v: string) => {
-    setType(v as 'all' | IncomeRecordType)
+    const next = v as 'all' | IncomeRecordType
+    setType(next)
     pager.reset()
+    trackFilterChange({ type: next })
   }
   const onBucketChange = (v: string) => {
-    setBucket(v as 'all' | IncomeBalanceBucket)
+    const next = v as 'all' | IncomeBalanceBucket
+    setBucket(next)
     pager.reset()
+    trackFilterChange({ bucket: next })
   }
   const onTimeChange = (v: string) => {
-    setTimeFilter(v as TimeFilterKey)
+    const next = v as TimeFilterKey
+    setTimeFilter(next)
     pager.reset()
+    trackFilterChange({ time: next })
   }
 
   const hasActiveFilter = type !== 'all' || bucket !== 'all' || timeFilter !== 'all'

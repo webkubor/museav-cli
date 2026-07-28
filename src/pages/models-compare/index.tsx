@@ -662,7 +662,7 @@ export default function ModelsComparePage() {
                   type="button"
                   onClick={() => {
                     trackEvent('playground_recharge_click', { locked_model_count: 1 })
-                    navigate('/billing')
+                    navigate('/billing', { state: { entrySource: 'recharge_cta' } })
                   }}
                 >
                   去充值
@@ -702,7 +702,7 @@ export default function ModelsComparePage() {
             type="button"
             onClick={() => {
               trackEvent('playground_recharge_click', { locked_model_count: columns.filter((c) => isPaidModel(c.model)).length })
-              navigate('/billing')
+              navigate('/billing', { state: { entrySource: 'recharge_cta' } })
             }}
           >
             去充值

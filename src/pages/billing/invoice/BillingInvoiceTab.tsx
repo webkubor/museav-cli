@@ -3,15 +3,17 @@
  * 工具栏：可开票充值单 N 笔 · 合计 X + 发票抬头 / 申请开票（各拉起独立弹窗）；
  * 主体复用 InvoiceRecordsTab（状态筛选 + 搜索 + 列表）。
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
-import { listInvoiceableRecharges } from '@/services/invoice'
+import { listInvoiceableRecharges, listInvoiceTitles } from '@/services/invoice'
 import { InvoiceRecordsTab } from './InvoiceRecordsTab'
 import { ApplyInvoiceModal } from './ApplyInvoiceModal'
 import { InvoiceTitleModal } from './InvoiceTitleModal'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
+import { trackEvent } from '@/lib/track'
+import { countBand } from '../billing-tracking'
 
 export function BillingInvoiceTab({
   tenantId,
@@ -32,8 +34,26 @@ export function BillingInvoiceTab({
     queryFn: () => listInvoiceableRecharges(tenantId),
     enabled: Boolean(tenantId),
   })
+  // 与 ApplyInvoiceTab/InvoiceTitleTab 共用同一个 queryKey，不重复请求，只为埋点读 has_invoice_title
+  const { data: titleData } = useQuery({
+    queryKey: ['invoice', 'titles', tenantId],
+    queryFn: () => listInvoiceTitles(tenantId),
+    enabled: Boolean(tenantId),
+  })
   const invoiceable = (data?.items ?? []).filter((r) => r.invoice_status === 'billable')
   const invoiceableAmount = invoiceable.reduce((sum, r) => sum + Number(r.amount || 0), 0)
+  const hasInvoiceTitle = (titleData?.items ?? []).length > 0
+
+  // §11.2 billing_invoice_tab_view：切到「发票」tab（本组件按 ledgerTab === 'invoices' 条件挂载）
+  useEffect(() => {
+    if (!tenantId) return
+    trackEvent('billing_invoice_tab_view', {
+      invoiceable_order_count_band: countBand(invoiceable.length),
+      has_invoice_title: hasInvoiceTitle,
+    })
+    // 只在挂载（即切到发票 tab）那一刻上报一次，数据轮询变化不重复触发
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId])
 
   const refreshRecords = () => {
     qc.invalidateQueries({ queryKey: ['invoice', 'recharges', tenantId] })
@@ -58,7 +78,13 @@ export function BillingInvoiceTab({
               size="sm"
               disabled={invoiceable.length === 0}
               title={invoiceable.length === 0 ? '暂无可开票的充值单，新充值到账后即可申请' : '勾选充值单合并开票'}
-              onClick={() => setApplyOpen(true)}
+              onClick={() => {
+                trackEvent('billing_invoice_apply_open', {
+                  invoiceable_order_count_band: countBand(invoiceable.length),
+                  has_invoice_title: hasInvoiceTitle,
+                })
+                setApplyOpen(true)
+              }}
             >
               申请开票
             </Button>

@@ -1386,6 +1386,8 @@
       "contextLength": "Context Length",
       "maxOutput": "Max Output",
       "modalities": "Modalities",
+      "modalityFlow": "Input → Output",
+      "protocols": "Compatible Protocols",
       "releasedAt": "Released",
       "knowledgeCutoff": "Knowledge Cutoff",
       "inputPrice": "Input Price (1M)",
@@ -1396,6 +1398,8 @@
       "inRegionRouting": "In-Region Routing",
       "tags": "Tags"
     },
+    "currentModel": "Current Model",
+    "candidates": "Candidates",
     "empty": {
       "hint": "Select models from the left to start comparing",
       "noMatch": "No matching models"

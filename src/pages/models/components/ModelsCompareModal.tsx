@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LuSearch, LuX, LuGitCompareArrows } from 'react-icons/lu'
+import { LuSearch, LuX, LuGitCompareArrows, LuFileText, LuImage, LuMic, LuVideo, LuArrowRight } from 'react-icons/lu'
+import type { IconType } from 'react-icons'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { cn } from '@/lib/utils'
+import { cn, formatContextLength, trimPriceZeros } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
+import { resolveModelCategory } from '../model-experience-data'
 
 interface ModelsCompareModalProps {
   isOpen: boolean
@@ -14,34 +16,66 @@ interface ModelsCompareModalProps {
   allModels: CatalogModelItem[]
   onConfirmCompare?: (ids: string[]) => void
   initialSelectedIds?: string[]
+  /**
+   * 对比基准（发起对比的「当前模型」，PRD §7.7 模型广场对比以当前模型为基准）。
+   * 候选资格判断（一级类别 + 共同支持的 default_experience_type）都以它为准；
+   * 缺省时回退取 initialSelectedIds[0]（现有调用方始终把当前模型作为首个选中项传入）。
+   */
+  currentModelId?: string
 }
 
 const MAX_COMPARE = 3
+const MODALITY_ICON: Record<string, IconType> = { text: LuFileText, image: LuImage, audio: LuMic, video: LuVideo }
+const MODALITY_CODES = ['text', 'image', 'audio', 'video']
 
-// 格式化展示单价，若无则显示横线
-function formatPrice(val: string | undefined) {
+// 格式化展示单价，若无则显示横线；货币符号按模型自身 pricing.currency 解析，不写死 $
+function formatPrice(val: string | undefined, currency: string | undefined) {
   if (!val) return '—'
   const n = parseFloat(val)
   if (isNaN(n)) return val
-  return `$${n.toFixed(4)}`
+  const symbol = currency === 'USD' ? '$' : '¥'
+  return `${symbol}${trimPriceZeros(n)}`
 }
 
-// 格式化上下文长度与输出限制
-function formatContext(n: number | undefined) {
-  if (n == null) return '—'
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(0)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`
-  return String(n)
+/**
+ * 模型是否「公开在线」。status 真实取值见 Swagger catalog.ModelListItem：
+ * available | unavailable | degraded（并非部分旧代码里误用的 disabled/enabled）。
+ * 只有显式 unavailable 才算离线；缺省（老数据未下发该字段）按在线处理。
+ */
+function isOnline(model: CatalogModelItem): boolean {
+  return model.status !== 'unavailable'
 }
 
-export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({ 
-  isOpen, 
-  onClose, 
+/** 输入 → 输出模态流：与 ModelPickerDialog 的 ModalityFlow 同口径，方向用箭头分隔 */
+function ModalityFlow({ model }: { model: CatalogModelItem }) {
+  const inputMods = (model.input_modalities ?? model.modalities ?? []).filter((m) => MODALITY_CODES.includes(m))
+  const outputMods = (model.output_modalities ?? model.modalities ?? []).filter((m) => MODALITY_CODES.includes(m))
+  if (inputMods.length === 0 && outputMods.length === 0) return <span>—</span>
+  return (
+    <span className="inline-flex items-center gap-1">
+      {inputMods.map((m) => {
+        const Icon = MODALITY_ICON[m]
+        return Icon ? <Icon key={`i-${m}`} size={12} /> : null
+      })}
+      <LuArrowRight size={11} className="text-mg-text-3" />
+      {outputMods.map((m) => {
+        const Icon = MODALITY_ICON[m]
+        return Icon ? <Icon key={`o-${m}`} size={12} /> : null
+      })}
+    </span>
+  )
+}
+
+export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
+  isOpen,
+  onClose,
   allModels,
   onConfirmCompare,
-  initialSelectedIds = []
+  initialSelectedIds = [],
+  currentModelId,
 }) => {
   const { t } = useTranslation()
+  const anchorId = currentModelId ?? initialSelectedIds[0]
   const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds)
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -64,19 +98,42 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
+  const anchorModel = useMemo(() => allModels.find((m) => m.id === anchorId), [allModels, anchorId])
+  const anchorCategory = anchorModel ? resolveModelCategory(anchorModel) : undefined
+  const anchorExperienceType = anchorModel?.default_experience_type
+
+  /**
+   * 候选资格判断（PRD §7.7 模型广场页面）：compare_enabled=true、公开在线、一级类别
+   * 与基准模型相同、且与基准模型共同支持 default_experience_type 的候选，最多再选 2 个。
+   * 一级类别不同 / 不共享可体验类型的模型直接不出现在候选列表里（过滤掉，非禁用置灰）。
+   * 无基准模型时（防御性兜底，理论上不会发生——现有调用方都会带上当前模型）不做限制。
+   */
+  const eligibleModels = useMemo(() => {
+    return allModels.filter((m) => {
+      if (m.id === anchorId) return false
+      if (m.compare_enabled !== true) return false
+      if (!isOnline(m)) return false
+      if (!anchorModel) return true
+      if (resolveModelCategory(m) !== anchorCategory) return false
+      if (anchorExperienceType && !(m.experience_types ?? []).includes(anchorExperienceType)) return false
+      return true
+    })
+  }, [allModels, anchorId, anchorModel, anchorCategory, anchorExperienceType])
+
   if (!isOpen) return null
 
-  // 过滤出当前选择的模型列表
+  // 已选模型（基准 + 已勾选候选），保留用户选择顺序
   const selectedModels = selectedIds
     .map((id) => allModels.find((m) => m.id === id))
     .filter((m): m is CatalogModelItem => !!m)
 
-  // 过滤左侧模型列表，支持中文、ID 和厂商的模糊查询
-  const filteredModels = allModels.filter((m) =>
+  // 左侧候选列表：仅在资格候选内搜索，支持中文、ID 和厂商的模糊查询
+  const filteredModels = eligibleModels.filter((m) =>
     (m.display_name + m.model_id + (m.vendor ?? '')).toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const handleToggleModel = (modelId: string) => {
+    if (modelId === anchorId) return // 基准模型固定参与对比，不可取消
     setSelectedIds((prev) => {
       if (prev.includes(modelId)) {
         return prev.filter((id) => id !== modelId)
@@ -87,7 +144,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
   }
 
   const handleClearSelected = () => {
-    setSelectedIds([])
+    setSelectedIds(anchorId ? [anchorId] : [])
   }
 
   // 厂商 Logo 渲染，提供精美后备
@@ -95,27 +152,24 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
     <ModelIcon model={m} size={24} rounded="rounded-sm" className="bg-white border border-mg-border/40" />
   )
 
-  // 属性对比定义，在 t() 中增加中文默认后备以解决 key 缺失带来的重叠灾难
+  // 参数明细行（PRD §7.7：厂商、上下文窗口、输入/输出价格、缓存价格、输入→输出模态、
+  // 兼容协议、能力标签——厂商已在卡片头部展示，这里不重复渲染）
   const ROWS: Array<{ label: string; render: (m: CatalogModelItem) => React.ReactNode }> = [
-    { label: t('modelsCompare.row.contextLength', '上下文长度'), render: (m) => formatContext(m.context_length) },
-    { label: t('modelsCompare.row.maxOutput', '最大输出'), render: (m) => formatContext(m.max_output_tokens) },
+    { label: t('modelsCompare.row.contextLength', '上下文长度'), render: (m) => formatContextLength(m.context_length) },
+    { label: t('modelsCompare.row.maxOutput', '最大输出'), render: (m) => formatContextLength(m.max_output_tokens) },
+    { label: t('modelsCompare.row.modalityFlow', '输入→输出模态'), render: (m) => <ModalityFlow model={m} /> },
+    { label: t('modelsCompare.row.inputPrice', '输入价格 (百万)'), render: (m) => formatPrice(m.pricing?.input_per_1m, m.pricing?.currency) },
+    { label: t('modelsCompare.row.outputPrice', '输出价格 (百万)'), render: (m) => formatPrice(m.pricing?.output_per_1m, m.pricing?.currency) },
+    { label: t('modelsCompare.row.cachePrice', '缓存读取 (百万)'), render: (m) => formatPrice(m.pricing?.cache_read_per_1m, m.pricing?.currency) },
     {
-      label: t('modelsCompare.row.modalities', '模态支持'),
-      render: (m) => (
-        <div className="flex gap-1 flex-wrap">
-          {(m.modalities ?? []).map((mod) => (
-            <Badge key={mod} variant="info" size="sm">{mod}</Badge>
-          ))}
-        </div>
-      ),
+      label: t('modelsCompare.row.protocols', '兼容协议'),
+      render: (m) => (m.protocols && m.protocols.length > 0 ? m.protocols.join(' / ') : 'openai'),
     },
-    { label: t('modelsCompare.row.inputPrice', '输入价格 (百万)'), render: (m) => formatPrice(m.pricing?.input_per_1m) },
-    { label: t('modelsCompare.row.outputPrice', '输出价格 (百万)'), render: (m) => formatPrice(m.pricing?.output_per_1m) },
     {
       label: t('modelsCompare.row.tags', '标签'),
       render: (m) => (
         <div className="flex gap-0.5 flex-wrap">
-          {(m.tags ?? []).slice(0, 2).map((tag) => (
+          {(m.tags ?? []).slice(0, 4).map((tag) => (
             <Badge key={tag} variant="secondary" size="xs">{tag}</Badge>
           ))}
         </div>
@@ -171,8 +225,33 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
               />
             </div>
 
-            {/* 滚动模型列表 */}
+            {/* 滚动模型列表：基准模型固定置顶（不可取消）+ 同一级类别 / 同可体验类型的候选 */}
             <div className="flex-1 overflow-y-auto no-scrollbar p-2 space-y-1">
+              {anchorModel && (
+                <>
+                  <div className="px-2.5 pt-1 pb-1 text-[11px] font-bold uppercase tracking-wide text-mg-text-4">
+                    {t('modelsCompare.currentModel', '当前模型')}
+                  </div>
+                  <div
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-default select-none border border-brand-mid/15 border-l-2 border-l-brand-base bg-brand-selected-bg text-mg-text-1 font-bold"
+                    aria-current="true"
+                  >
+                    {renderLogo(anchorModel)}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[12px] font-bold text-mg-text-1 truncate leading-tight">
+                        {anchorModel.display_name}
+                      </div>
+                      <div className="text-xs text-mg-text-3 truncate font-mono mt-0.5">
+                        {anchorModel.vendor || 'ModelGo'} · {anchorModel.model_id}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="px-2.5 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wide text-mg-text-4">
+                    {t('modelsCompare.candidates', '可选候选')}
+                  </div>
+                </>
+              )}
+
               {filteredModels.map((m) => {
                 const isSelected = selectedIds.includes(m.id)
                 const isDisabled = !isSelected && selectedIds.length >= MAX_COMPARE
@@ -203,7 +282,9 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
               })}
 
               {filteredModels.length === 0 && (
-                <EmptyState title="未匹配到相关模型" />
+                <EmptyState
+                  title={anchorModel && !searchQuery ? '暂无同类可对比模型' : '未匹配到相关模型'}
+                />
               )}
             </div>
           </div>
@@ -227,25 +308,32 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                             <span className="text-xs text-brand-base font-semibold px-2 py-0.5 rounded-full bg-brand-selected-bg border border-brand-mid/10">
                               {m.vendor || 'ModelGo'}
                             </span>
+                            {m.id === anchorId && (
+                              <span className="text-xs text-mg-text-3 font-semibold px-2 py-0.5 rounded-full bg-mg-fill-1 border border-mg-border/40">
+                                {t('modelsCompare.currentModel', '当前模型')}
+                              </span>
+                            )}
                           </div>
                           <div className="text-xs text-mg-text-3 font-mono mt-1.5">
                             ID: <span className="select-all text-mg-text-2 font-medium">{m.model_id}</span>
                           </div>
                         </div>
                       </div>
-                      
-                      {/* 取消对比按钮 */}
-                      <button
-                        onClick={() => handleToggleModel(m.id)}
-                        className="w-5.5 h-5.5 rounded-full bg-mg-fill-0 hover:bg-mg-fill-2 text-mg-text-3 hover:text-mg-text-1 flex items-center justify-center transition-colors cursor-pointer"
-                        title="取消对比"
-                      >
-                        <LuX size={12} />
-                      </button>
+
+                      {/* 取消对比按钮（基准模型固定参与对比，不可取消） */}
+                      {m.id !== anchorId && (
+                        <button
+                          onClick={() => handleToggleModel(m.id)}
+                          className="w-5.5 h-5.5 rounded-full bg-mg-fill-0 hover:bg-mg-fill-2 text-mg-text-3 hover:text-mg-text-1 flex items-center justify-center transition-colors cursor-pointer"
+                          title="取消对比"
+                        >
+                          <LuX size={12} />
+                        </button>
+                      )}
                     </div>
 
-                    {/* 卡片属性网格 (6列自适应) */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5 mt-3.5 pt-3.5 border-t border-mg-border">
+                    {/* 卡片属性网格 */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mt-3.5 pt-3.5 border-t border-mg-border">
                       {ROWS.map((row, idx) => (
                         <div key={idx} className="flex flex-col gap-1 min-w-0">
                           <span className="text-xs font-bold text-mg-text-3 tracking-wide">
@@ -271,7 +359,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
 
             {/* 底部操作工具栏 */}
             <div className="mt-5 pt-4.5 border-t border-mg-border/50 flex items-center justify-between shrink-0 bg-transparent">
-              {selectedModels.length > 0 ? (
+              {selectedIds.length > (anchorId ? 1 : 0) ? (
                 <button
                   onClick={handleClearSelected}
                   className="text-xs text-mg-text-3 hover:text-brand-base font-semibold transition-colors bg-none border-none cursor-pointer active:scale-95"
@@ -281,7 +369,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
               ) : (
                 <div />
               )}
-              
+
               <div className="flex items-center gap-3">
                 <button
                   onClick={onClose}

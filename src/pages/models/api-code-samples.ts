@@ -58,6 +58,11 @@ export function languageLabel(protocol: ApiProtocol, language: ApiCodeLanguage):
   return LANGUAGE_LABEL[language]
 }
 
+/** CatalogModelItem/Detail 的 protocols 用 'other'，本模块内部用 'native'——统一在此映射，避免各处各写一份。 */
+export function mapApiProtocols(protocols: ('openai' | 'anthropic' | 'other')[] | undefined): ApiProtocol[] {
+  return (protocols ?? []).map((p) => (p === 'other' ? 'native' : p))
+}
+
 /** 固定代码示例模板：不读取当前草稿、附件和模型参数，只做格式展示 */
 export function buildCodeSample(protocol: ApiProtocol, language: ApiCodeLanguage, modelId: string): string {
   // 网关真实 base：OpenAI 兼容协议带 /v1，Anthropic 兼容协议不带 /v1（见 modelgo-env-urls 记忆）

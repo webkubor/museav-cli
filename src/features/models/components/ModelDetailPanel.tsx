@@ -4,11 +4,14 @@ import { useTranslation } from 'react-i18next'
 import type { CatalogModelDetail } from '@/types'
 import { ModalityBadge } from './ModalityBadge'
 import { ModelIcon } from './ModelIcon'
+import { CopyButton } from '@/components/ui/CopyButton'
 import { formatContextLength, formatModelPrice, formatNumber, prettyModelName } from '@/lib/utils'
 
 interface ModelDetailPanelProps {
   detail: CatalogModelDetail
   vendorHint?: string
+  /** 埋点：marketplace_model_id_copied（复制 Hero 里的 API ID 时触发） */
+  onModelIdCopied?: () => void
 }
 
 const MOD_LABEL: Record<string, string> = { text: '文本', image: '图像', audio: '音频', video: '视频' }
@@ -28,7 +31,7 @@ function autoSummary(detail: CatalogModelDetail, isZh: boolean): string {
   return `${v ? v + ' ' : ''}${modText} model${ctx ? `, ${ctx} context window` : ''}${free ? ', currently free' : ''}. Full description coming soon.`
 }
 
-export function ModelDetailPanel({ detail, vendorHint }: ModelDetailPanelProps) {
+export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied }: ModelDetailPanelProps) {
   const { t, i18n } = useTranslation()
   const isZh = i18n.language.startsWith('zh')
   const vendor = detail.vendor || vendorHint || ''
@@ -47,9 +50,17 @@ export function ModelDetailPanel({ detail, vendorHint }: ModelDetailPanelProps) 
             {prettyModelName(detail.display_name, detail.model_id)}
           </h2>
           {detail.model_id && (
-            <code className="mg-text-code text-[var(--mg-text-3)] bg-[var(--mg-fill-0)] px-1.5 py-0.5 rounded-sm mb-1 inline-block">
-              {detail.model_id}
-            </code>
+            <span className="mb-1 inline-flex items-center gap-1">
+              <code className="mg-text-code text-[var(--mg-text-3)] bg-[var(--mg-fill-0)] px-1.5 py-0.5 rounded-sm inline-block">
+                {detail.model_id}
+              </code>
+              <CopyButton
+                value={detail.model_id}
+                aria-label={isZh ? '复制 API ID' : 'Copy API ID'}
+                toast={isZh ? 'API ID 已复制' : 'API ID copied'}
+                onCopied={onModelIdCopied}
+              />
+            </span>
           )}
           <div className="flex items-center gap-2 flex-wrap">
             {vendor && (

@@ -77,6 +77,13 @@
   margin-top: 14px;
 }
 
+/* 共享附件"N个模型支持"提示（qa#545 §7.4/7.5），与附件预览行同一行展示 */
+.models-compare-attachment-support {
+  font-size: 12px;
+  color: var(--mg-text-3);
+  white-space: nowrap;
+}
+
 /* 对比结果标记（最快/成本最低），逐字对齐原型 playground-winner-chip */
 .models-experience-winner-chip {
   display: inline-flex;

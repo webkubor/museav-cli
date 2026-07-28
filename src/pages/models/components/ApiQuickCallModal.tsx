@@ -1,8 +1,12 @@
 /**
- * API 快捷调用弹窗（PRD §7.7）
+ * API 快捷调用弹窗（PRD §7.7；模型体验页专用，弹窗形态）
  * 每个模型列顶部 API 图标打开「{模型名称} 的 API 调用」弹窗：
- * 协议 Tab 只展示模型支持的协议；语言 Tab 为 cURL/Node.js/Python；
+ * 协议 Tab 只展示模型支持的协议；语言 Tab 按协议过滤（见 `../api-code-samples`）；
  * 代码示例固定模板，不读取当前草稿、附件和模型参数。
+ *
+ * 公开模型广场详情页（/models/:modelId）用的是同一套代码示例生成器，但渲染为内嵌
+ * 「API 接入」区块而非弹窗（见飞书《ModelGo首页重构 PRD：模型广场页面》v0.1 §8.3
+ * 「API请求渲染后滚动到正确模型的 API 区，不打开新弹窗」），见 `../detail/ApiAccessPanel.tsx`。
  */
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -11,10 +15,17 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
+import {
+  PROTOCOL_LABEL,
+  languagesForProtocol,
+  languageLabel,
+  buildCodeSample,
+  type ApiProtocol,
+  type ApiCodeLanguage,
+} from '../api-code-samples'
 import '../styles/api-quick-call-modal.css'
 
-export type ApiProtocol = 'openai' | 'anthropic' | 'native'
-export type ApiCodeLanguage = 'curl' | 'nodejs' | 'python'
+export type { ApiProtocol, ApiCodeLanguage }
 
 export interface ApiQuickCallModalProps {
   open: boolean
@@ -25,74 +36,6 @@ export interface ApiQuickCallModalProps {
   supportedProtocols: ApiProtocol[]
   /** 埋点用（§10.3 playground_api_modal_action）：切协议/切语言/复制代码/复制模型 ID/获取 Key */
   onAction?: (action: 'switch_protocol' | 'switch_language' | 'copy_code' | 'copy_model_id' | 'get_key', protocol: ApiProtocol, language: ApiCodeLanguage) => void
-}
-
-const PROTOCOL_LABEL: Record<ApiProtocol, string> = {
-  openai: 'OpenAI',
-  anthropic: 'Anthropic',
-  // 原生协议不展示推理供应商名称
-  native: '原生 API',
-}
-
-const LANGUAGE_LABEL: Record<ApiCodeLanguage, string> = {
-  curl: 'cURL',
-  nodejs: 'Node.js',
-  python: 'Python',
-}
-
-const LANGUAGE_ORDER: ApiCodeLanguage[] = ['curl', 'nodejs', 'python']
-
-/** 固定代码示例模板：不读取当前草稿、附件和模型参数，只做格式展示 */
-function buildCodeSample(protocol: ApiProtocol, language: ApiCodeLanguage, modelId: string): string {
-  // 网关真实 base：OpenAI 兼容协议带 /v1，Anthropic 兼容协议不带 /v1（见 modelgo-env-urls 记忆）
-  const endpoint =
-    protocol === 'anthropic'
-      ? 'https://api.modelgo.com/messages'
-      : protocol === 'native'
-        ? 'https://api.modelgo.com/v1/native/generate'
-        : 'https://api.modelgo.com/v1/chat/completions'
-
-  const bodyKeys =
-    protocol === 'anthropic'
-      ? `{"model":"${modelId}","max_tokens":1024,"messages":[{"role":"user","content":"Hello"}]}`
-      : `{"model":"${modelId}","messages":[{"role":"user","content":"Hello"}]}`
-
-  switch (language) {
-    case 'curl':
-      return [
-        `curl ${endpoint} \\`,
-        `  -H "Authorization: Bearer $MODELGO_API_KEY" \\`,
-        `  -H "Content-Type: application/json" \\`,
-        `  -d '${bodyKeys}'`,
-      ].join('\n')
-    case 'nodejs':
-      return [
-        `import fetch from "node-fetch";`,
-        ``,
-        `const res = await fetch("${endpoint}", {`,
-        `  method: "POST",`,
-        `  headers: {`,
-        `    Authorization: \`Bearer \${process.env.MODELGO_API_KEY}\`,`,
-        `    "Content-Type": "application/json",`,
-        `  },`,
-        `  body: JSON.stringify(${bodyKeys}),`,
-        `});`,
-        `console.log(await res.json());`,
-      ].join('\n')
-    case 'python':
-      return [
-        `import os, requests`,
-        ``,
-        `res = requests.post(`,
-        `    "${endpoint}",`,
-        `    headers={"Authorization": f"Bearer {os.environ['MODELGO_API_KEY']}"},`,
-        `    json=${bodyKeys},`,
-        `)`,
-        `print(res.json())`,
-      ].join('\n')
-    default:
-      return ''
-  }
 }
 
 export function ApiQuickCallModal({
@@ -111,7 +54,12 @@ export function ApiQuickCallModal({
   const [language, setLanguage] = useState<ApiCodeLanguage>('curl')
 
   const activeProtocol = protocols.includes(protocol) ? protocol : protocols[0]
-  const codeSample = buildCodeSample(activeProtocol, language, modelId)
+  // 语言 Tab 按当前协议过滤（PRD §7.6）：openai → cURL/Python/Node.js/TypeScript(fetch)；
+  // anthropic → cURL/Python(Anthropic)/Claude Code。切协议后若旧语言不在新协议的集合里，
+  // 自动回退到该协议下第一个可用语言，避免停留在一个已不存在的 Tab 上。
+  const languages = languagesForProtocol(activeProtocol)
+  const activeLanguage = languages.includes(language) ? language : languages[0]
+  const codeSample = buildCodeSample(activeProtocol, activeLanguage, modelId)
 
   const footer = (
     <div className="api-quick-call-footer">
@@ -121,7 +69,7 @@ export function ApiQuickCallModal({
         label="复制代码"
         copiedLabel="已复制"
         buttonVariant="brand"
-        onCopied={() => onAction?.('copy_code', activeProtocol, language)}
+        onCopied={() => onAction?.('copy_code', activeProtocol, activeLanguage)}
       />
     </div>
   )
@@ -134,7 +82,7 @@ export function ApiQuickCallModal({
       title={
         <div className="api-quick-call-header">
           <span>{modelName} 的 API 调用</span>
-          <Button variant="outline" size="sm" asChild onClick={() => onAction?.('get_key', activeProtocol, language)}>
+          <Button variant="outline" size="sm" asChild onClick={() => onAction?.('get_key', activeProtocol, activeLanguage)}>
             <Link to="/api-keys">
               <LuKey size={14} className="mr-1.5" />
               获取 API Key
@@ -153,14 +101,14 @@ export function ApiQuickCallModal({
             value={modelId}
             aria-label="复制模型 ID"
             toast="已复制模型 ID"
-            onCopied={() => onAction?.('copy_model_id', activeProtocol, language)}
+            onCopied={() => onAction?.('copy_model_id', activeProtocol, activeLanguage)}
           />
         </div>
 
         <Tabs
           value={activeProtocol}
           onValueChange={(v) => {
-            onAction?.('switch_protocol', v as ApiProtocol, language)
+            onAction?.('switch_protocol', v as ApiProtocol, activeLanguage)
             setProtocol(v as ApiProtocol)
           }}
         >
@@ -174,20 +122,20 @@ export function ApiQuickCallModal({
         </Tabs>
 
         <Tabs
-          value={language}
+          value={activeLanguage}
           onValueChange={(v) => {
             onAction?.('switch_language', activeProtocol, v as ApiCodeLanguage)
             setLanguage(v as ApiCodeLanguage)
           }}
         >
           <TabsList variant="underline">
-            {LANGUAGE_ORDER.map((lang) => (
+            {languages.map((lang) => (
               <TabsTrigger key={lang} value={lang} variant="underline">
-                {LANGUAGE_LABEL[lang]}
+                {languageLabel(activeProtocol, lang)}
               </TabsTrigger>
             ))}
           </TabsList>
-          {LANGUAGE_ORDER.map((lang) => (
+          {languages.map((lang) => (
             <TabsContent key={lang} value={lang}>
               <div className="api-quick-call-code">
                 <CopyButton

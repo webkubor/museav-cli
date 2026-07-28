@@ -71,7 +71,10 @@ export default function ModelDetailPage() {
   useEffect(() => {
     if (viewTrackedRef.current || !detail) return
     viewTrackedRef.current = true
-    trackPageView('marketplace_detail', { model_id: detail.model_id })
+    // 注意：trackPageView(key) 内部会自动生成 event_name = `${key}_view`，如果这里传
+    // 'marketplace_detail' 会与下面 PRD 明确要求的 marketplace_detail_view 撞名、两种
+    // 不同 payload 形状混在同一个 event_name 下。用 'marketplace_model_detail' 错开。
+    trackPageView('marketplace_model_detail', { model_id: detail.model_id })
     trackEvent('marketplace_detail_view', {
       intent: navState?.scrollTo === 'api-access' ? 'api' : 'browse',
       source: detailSource,

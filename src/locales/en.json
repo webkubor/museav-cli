@@ -220,7 +220,9 @@
     "income": {
       "tab": "Income Records",
       "invoiceTab": "Invoices",
-      "empty": "No income records match the current filters",
+      "empty": "No income records yet",
+      "emptyFiltered": "No income records match the current filters",
+      "clearFilters": "Clear filters",
       "typeAll": "All Types",
       "bucketAll": "All Buckets",
       "cols": {

@@ -103,7 +103,14 @@ export function InvoiceRecordsTab({
       {loading && records.length === 0 ? (
         <EmptyState title="加载中…" />
       ) : records.length === 0 ? (
-        <EmptyState title="暂无发票记录" />
+        <EmptyState
+          title={status !== 'all' || keyword ? '当前筛选条件下没有发票记录' : '暂无发票记录'}
+          action={status !== 'all' || keyword ? (
+            <Button variant="outline" size="sm" onClick={() => { setStatus('all'); setKeyword('') }}>
+              清除筛选
+            </Button>
+          ) : undefined}
+        />
       ) : (
         records.map((r) => {
           const st = STATUS_MAP[r.status]

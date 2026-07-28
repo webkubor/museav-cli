@@ -5,7 +5,9 @@ import { LuTicket, LuGift, LuUsers, LuShieldCheck, LuWallet } from 'react-icons/
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 import { Pagination } from '@/components/ui/Pagination'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { CopyButton } from '@/components/ui/CopyButton'
 import Select from '@/components/ui/Select'
 import { cn } from '@/lib/utils'
 import { formatDateTime } from '@/lib/format-date'
@@ -140,6 +142,14 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
     pager.reset()
   }
 
+  const hasActiveFilter = type !== 'all' || bucket !== 'all' || timeFilter !== 'all'
+  const clearFilters = () => {
+    setType('all')
+    setBucket('all')
+    setTimeFilter('all')
+    pager.reset()
+  }
+
   const channelLabel = (c: string) => t(`billing.income.channels.${c}`, { defaultValue: c })
   const bucketLabel = (b: string) => t(`billing.income.buckets.${b}`, { defaultValue: b })
 
@@ -211,7 +221,14 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
       {ledgerTab === 'invoices' ? (
         <BillingInvoiceTab tenantId={tenantId} currencySymbol={currencySymbol} />
       ) : items.length === 0 && !isFetching ? (
-        <EmptyState title={t('billing.income.empty')} />
+        <EmptyState
+          title={hasActiveFilter ? t('billing.income.emptyFiltered') : t('billing.income.empty')}
+          action={hasActiveFilter ? (
+            <Button variant="outline" size="sm" onClick={clearFilters}>
+              {t('billing.income.clearFilters')}
+            </Button>
+          ) : undefined}
+        />
       ) : (
         <>
           <div className="billing-ledger-table-wrap">
@@ -230,7 +247,12 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
               <TableBody>
                 {items.map((rec) => (
                   <TableRow key={rec.id}>
-                    <TableCell className="font-mono text-xs text-mg-text-2 max-w-[160px] truncate">{rec.record_ref}</TableCell>
+                    <TableCell className="font-mono text-xs text-mg-text-2 max-w-[160px]">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <span className="truncate">{rec.record_ref}</span>
+                        <CopyButton value={rec.record_ref} size="sm" className="h-5 w-5" />
+                      </div>
+                    </TableCell>
                     <TableCell className="text-xs text-mg-text-3 font-mono whitespace-nowrap">
                       {rec.created_at ? formatDateTime(rec.created_at) : '—'}
                     </TableCell>

@@ -5,10 +5,6 @@ import {
   LuCode,
   LuColumns2,
   LuChevronDown,
-  LuZap,
-  LuImage,
-  LuAudioLines,
-  LuVideo,
   LuPaperclip,
   LuX,
   LuTriangleAlert,
@@ -52,9 +48,14 @@ import {
   EXPERIENCE_TASK_LABEL,
   resolveModelCategory,
   PLAYGROUND_SAMPLE_PROMPTS,
+  cleanErrorMessage,
+  extractApiErrorMessage,
+  CATEGORY_EMPTY_COPY,
+  CATEGORY_PLACEHOLDER,
+  ATTACHMENT_LIMITS,
+  attachmentKindFromMime,
+  resolveEffectiveTask,
   type ExperienceMessage,
-  type ExperienceCategoryKey,
-  type ExperienceTaskType,
 } from './model-experience-data'
 import { ModelPickerDialog } from './components/ModelPickerDialog'
 import { HistorySessionSidebar, type HistorySessionItem } from './components/HistorySessionSidebar'
@@ -71,84 +72,6 @@ import './styles/model-params.css'
 import './styles/model-experience-responsive.css'
 
 const INITIAL_MESSAGES: ExperienceMessage[] = []
-
-/**
- * 历史消息里 status="failed" 行的 error 字段，实测后端存的是上游原始错误信封整个
- * JSON.stringify 之后的字符串（例如护栏拦截会把 {"error":{"code":403,"message":"..."}}
- * 整个当字符串塞进去），不是一句人话——这里做前端兜底清洗，解析不出来才展示原始字符串。
- */
-function cleanErrorMessage(raw: string | undefined): string {
-  if (!raw) return '该消息发送失败'
-  try {
-    const parsed = JSON.parse(raw) as {
-      error?: { message?: string }
-      msg?: string
-      data?: { details?: Array<{ message?: string }> }
-    }
-    return parsed.data?.details?.[0]?.message ?? parsed.msg ?? parsed.error?.message ?? raw
-  } catch {
-    return raw
-  }
-}
-
-/**
- * 从抛出的请求错误里挖出人话消息。媒体任务失败走 §5.2 的
- * data.field_errors[].code=PLAYGROUND_MEDIA_FAILED、message=上游原始错误摘要——
- * 实测这个 message 本身又是一层 JSON.stringify 过的原始信封（同 cleanErrorMessage
- * 处理的历史消息 error 字段一个毛病），要再解一层，否则只会显示信封外层的
- * "参数校验失败" 泛用文案。
- */
-function extractApiErrorMessage(err: unknown): string {
-  const data = (err as { data?: { field_errors?: Array<{ message?: string }>; details?: Array<{ message?: string }> } } | undefined)?.data
-  const raw = data?.field_errors?.[0]?.message ?? data?.details?.[0]?.message
-  if (raw) return cleanErrorMessage(raw)
-  return (err as Error).message || '请稍后重试'
-}
-
-/** 空态图标/文案按类别区分（PRD §7.9 各任务空态，原型 App.tsx:19317-19322 逐字对齐） */
-const CATEGORY_EMPTY_COPY: Record<ExperienceCategoryKey, { icon: typeof LuZap; title: string; hint: string }> = {
-  dialogue: { icon: LuZap, title: '发送第一条消息，验证模型输出与成本', hint: '支持的图片、音频或视频可以作为消息附件发送。' },
-  image: { icon: LuImage, title: '配置输入后开始生成图片', hint: '结果会在当前模型列中展示预估费用与实际费用。' },
-  audio: { icon: LuAudioLines, title: '配置输入后开始生成音频', hint: '结果会在当前模型列中展示预估费用与实际费用。' },
-  video: { icon: LuVideo, title: '配置输入后开始生成视频', hint: '结果会在当前模型列中展示预估费用与实际费用。' },
-}
-
-/** composer 占位符按类别区分（原型 App.tsx:18475-18485 逐字对齐） */
-const CATEGORY_PLACEHOLDER: Record<ExperienceCategoryKey, string> = {
-  dialogue: '输入 Prompt，Enter 发送，Shift + Enter 换行…',
-  image: '描述主体、场景、光线与画面风格…',
-  audio: '输入要合成语音的文本…',
-  video: '描述镜头、主体运动、运镜与氛围…',
-}
-
-/** 附件类型/大小上限（PRD §7.5），accept 给 <input type="file"> 用 */
-const ATTACHMENT_LIMITS = {
-  image: { maxBytes: 10 * 1024 * 1024, accept: '.png,.jpg,.jpeg,.webp', label: '图片（PNG/JPEG/WebP，≤10MB）' },
-  audio: { maxBytes: 25 * 1024 * 1024, accept: '.mp3,.wav,.m4a,.ogg,.webm', label: '音频（MP3/WAV/M4A/OGG/WebM，≤25MB）' },
-  video: { maxBytes: 100 * 1024 * 1024, accept: '.mp4,.webm,.mov', label: '视频（MP4/WebM/MOV，≤100MB）' },
-} as const
-
-function attachmentKindFromMime(mime: string): keyof typeof ATTACHMENT_LIMITS | null {
-  if (mime.startsWith('image/')) return 'image'
-  if (mime.startsWith('audio/')) return 'audio'
-  if (mime.startsWith('video/')) return 'video'
-  return null
-}
-
-/**
- * 有附件时任务在同一类别内的两个子任务间切换（§二 task 值域）：对话类多模态输入、
- * 图像/音频/视频类"以图/音生成或识别"。会话固定后 task 不会再变，只在懒创建时算一次。
- */
-function resolveEffectiveTask(category: ExperienceCategoryKey, attachmentKind: string | null): ExperienceTaskType {
-  if (category === 'dialogue') {
-    if (attachmentKind === 'image') return 'image_to_text'
-    if (attachmentKind === 'video') return 'video_to_text'
-    return 'text_to_text'
-  }
-  if (category === 'image') return attachmentKind ? 'image_to_image' : 'text_to_image'
-  if (category === 'audio') return attachmentKind ? 'audio_to_text' : 'text_to_audio'
-  return attachmentKind ? 'image_to_video' : 'text_to_video'
-}
 
 export default function ModelsPage() {
   const navigate = useNavigate()
@@ -839,19 +762,18 @@ export default function ModelsPage() {
                   >
                     <LuSettings2 size={14} />
                   </button>
-                  {isDialogue && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-md"
-                      onClick={() => {
-                        trackEvent('playground_model_picker_open', { picker_type: 'compareAdd', browse_category: selectedCategory })
-                        setCompareAddOpen(true)
-                      }}
-                    >
-                      <LuColumns2 size={13} /> 模型对比
-                    </Button>
-                  )}
+                  {/* qa#543：对比入口不再限对话类——PRD §6.2/§7.3 要求图像/音频/视频也能进入对比 */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-md"
+                    onClick={() => {
+                      trackEvent('playground_model_picker_open', { picker_type: 'compareAdd', browse_category: selectedCategory })
+                      setCompareAddOpen(true)
+                    }}
+                  >
+                    <LuColumns2 size={13} /> 模型对比
+                  </Button>
                 </div>
               </div>
 
@@ -1016,8 +938,8 @@ export default function ModelsPage() {
           mode="compareAdd"
           models={allModels}
           isBalanceZero={isBalanceZero}
-          currentCategory="dialogue"
-          currentTask="text_to_text"
+          currentCategory={selectedCategory}
+          currentTask={effectiveTask}
           alreadySelectedIds={[selectedModel.id]}
           maxAdditional={2}
           onConfirmAdd={(added) => {

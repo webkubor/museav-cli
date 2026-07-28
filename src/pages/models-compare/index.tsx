@@ -37,6 +37,7 @@ import {
   type ExperienceStatsEvent,
 } from '@/services/experience-sessions'
 import { useSidebarCollapseStore } from '@/store/use-sidebar-collapse-store'
+import { useExperienceWorkbenchStore, type CompareColumnState } from '@/store/use-experience-workbench-store'
 import { useAuthStore } from '@/store/auth'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
 import { calculateSpendableBalance } from '@/pages/billing/formatBalance'
@@ -66,14 +67,9 @@ import './compare.css'
 
 const MAX_COMPARE = 3
 
-interface ColumnState {
-  model: CatalogModelItem
-  conversationId: string
-  history: ExperienceMessage[]
-  streaming: boolean
-  draft: string
-  chatParams: Record<string, unknown>
-}
+// 列状态类型跟着 store 里的 CompareColumnState 走（字段一致，别在这重复定义），
+// 本地仍叫 ColumnState 是为了不用改文件里几十处已有引用。
+type ColumnState = CompareColumnState
 
 export default function ModelsComparePage() {
   const location = useLocation()
@@ -98,10 +94,22 @@ export default function ModelsComparePage() {
   )
   const isBalanceZero = spendableBalance !== undefined && spendableBalance <= 0
 
-  const [sessionId, setSessionId] = useState<string | null>(null)
-  const [columns, setColumns] = useState<ColumnState[] | null>(null)
+  // 会话/列/统计跨路由持久化（qa#544）：改走模块级 zustand store，SPA 内路由切走（比如
+  // 切去看账单）再切回不再清空；变量名保持不变，文件里后续几十处引用几乎不用改。
+  const compare = useExperienceWorkbenchStore((s) => s.compare)
+  const setCompare = useExperienceWorkbenchStore((s) => s.setCompare)
+  const sessionId = compare.sessionId
+  const setSessionId = (id: string | null) => setCompare({ sessionId: id })
+  const columns = compare.columns
+  const setColumns = (
+    updater: ColumnState[] | null | ((prev: ColumnState[] | null) => ColumnState[] | null),
+  ) => setCompare((s) => ({ columns: typeof updater === 'function' ? updater(s.columns) : updater }))
+  const sessionStats = compare.sessionStats
+  const setSessionStats = (
+    stats: typeof compare.sessionStats | ((prev: typeof compare.sessionStats) => typeof compare.sessionStats),
+  ) => setCompare((s) => ({ sessionStats: typeof stats === 'function' ? stats(s.sessionStats) : stats }))
+
   const [syncInput, setSyncInput] = useState(true)
-  const [sessionStats, setSessionStats] = useState({ requestCount: 0, tokens: 0, cost: 0 })
   const [sharedDraft, setSharedDraft] = useState('')
   const [lastFocusedIndex, setLastFocusedIndex] = useState(0)
   const [bootError, setBootError] = useState<string | null>(null)

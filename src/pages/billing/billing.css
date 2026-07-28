@@ -25,12 +25,12 @@
 }
 
 .spendable-amount-glow {
-  color: var(--mg-text-0);
+  color: var(--mg-text-1);
   text-shadow: 0 1px 10px var(--brand-glow);
 }
 
 body[theme-mode='dark'] .spendable-amount-glow {
-  color: var(--mg-text-0);
+  color: var(--mg-text-1);
   text-shadow: 0 1px 14px var(--brand-glow);
 }
 

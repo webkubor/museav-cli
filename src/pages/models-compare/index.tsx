@@ -21,7 +21,7 @@ import { Switch } from '@/components/ui/Switch'
 import { Composer } from '@/components/ui/Composer'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useModels } from '@/features/models/hooks/useModels'
-import { prettyModelName } from '@/lib/utils'
+import { prettyModelName, cn } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import {
   createExperienceSession,
@@ -113,6 +113,8 @@ export default function ModelsComparePage() {
   const [syncConfirm, setSyncConfirm] = useState<{ sourceIndex: number; sourceText: string } | null>(null)
   const [settingsIndex, setSettingsIndex] = useState<number | null>(null)
   const [apiIndex, setApiIndex] = useState<number | null>(null)
+  // §8.5 窄屏一次展示一个模型列，顶部 Tab 切换；宽屏 CSS 直接把 tab 隐藏，不影响并排布局
+  const [activeColumnIndex, setActiveColumnIndex] = useState(0)
 
   const abortRefs = useRef<Array<AbortController | null>>([])
   const pendingByDispatch = useRef<Map<string, number>>(new Map())
@@ -142,6 +144,11 @@ export default function ModelsComparePage() {
   }, [allModels])
 
   useEffect(() => () => abortRefs.current.forEach((c) => c?.abort()), [])
+
+  // 列数变化（加/移除模型）后夹紧窄屏 Tab 的激活列，避免越界指向已不存在的列
+  useEffect(() => {
+    if (columns && activeColumnIndex >= columns.length) setActiveColumnIndex(0)
+  }, [columns, activeColumnIndex])
 
   async function bootSession(models: CatalogModelItem[]) {
     try {
@@ -518,6 +525,16 @@ export default function ModelsComparePage() {
 
   const excludeIdsFor = (idx: number) => columns.filter((_, i) => i !== idx).map((c) => c.model.id)
 
+  /** 窄屏 Tab 状态点（§8.5：显示运行中/完成/失败） */
+  function columnStatus(column: ColumnState): 'running' | 'failed' | 'succeeded' | 'idle' {
+    if (column.streaming) return 'running'
+    const last = column.history[column.history.length - 1]
+    if (!last) return 'idle'
+    if (last.error) return 'failed'
+    if (last.role === 'assistant' && last.metrics) return 'succeeded'
+    return 'idle'
+  }
+
   return (
     <div className="models-experience-page">
       <PageHeader title="模型体验" description="同类别、同任务的最多 3 个模型并排对比，逐列独立设置与费用。" className="mb-4" />
@@ -550,9 +567,38 @@ export default function ModelsComparePage() {
         </div>
       </div>
 
+      {/* §8.5 窄屏一次展示一个模型列，顶部 Tab 切换；宽屏由 CSS 隐藏，不影响并排布局 */}
+      <div className="models-compare-mobile-tabs" role="tablist" aria-label="切换对比模型列">
+        {columns.map((column, idx) => {
+          const status = columnStatus(column)
+          return (
+            <button
+              key={column.conversationId || idx}
+              type="button"
+              role="tab"
+              aria-selected={idx === activeColumnIndex}
+              className={cn('models-compare-mobile-tab', idx === activeColumnIndex && 'is-active')}
+              onClick={() => setActiveColumnIndex(idx)}
+            >
+              <span
+                className={cn('models-compare-mobile-tab-dot', `is-${status}`)}
+                aria-hidden="true"
+              />
+              {prettyModelName(column.model.display_name, column.model.model_id)}
+            </button>
+          )
+        })}
+      </div>
+
       <div className="models-compare-columns" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}>
         {columns.map((column, idx) => (
-          <section key={column.conversationId || idx} className="models-experience-chat models-compare-column">
+          <section
+            key={column.conversationId || idx}
+            className={cn(
+              'models-experience-chat models-compare-column',
+              idx === activeColumnIndex && 'is-active-mobile',
+            )}
+          >
             <div className="models-experience-modelbar">
               <button
                 type="button"

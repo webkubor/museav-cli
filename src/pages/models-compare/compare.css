@@ -79,8 +79,92 @@
   color: var(--mg-success, #16a34a);
 }
 
-@media (max-width: 980px) {
+/* 窄屏 Tab 切换条（§8.5）：宽屏隐藏，默认不占布局空间 */
+.models-compare-mobile-tabs {
+  display: none;
+}
+
+.models-compare-mobile-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--mg-border);
+  border-radius: var(--radius-full);
+  background: var(--mg-bg-0);
+  color: var(--mg-text-2);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.models-compare-mobile-tab.is-active {
+  border-color: var(--brand-base);
+  color: var(--mg-text-1);
+  background: color-mix(in srgb, var(--brand-base) 10%, var(--mg-bg-0));
+}
+
+.models-compare-mobile-tab-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mg-text-3);
+  flex-shrink: 0;
+}
+
+.models-compare-mobile-tab-dot.is-running {
+  background: var(--mg-info, #3b82f6);
+  animation: models-compare-tab-pulse 1.2s ease-in-out infinite;
+}
+
+.models-compare-mobile-tab-dot.is-succeeded {
+  background: var(--mg-success, #16a34a);
+}
+
+.models-compare-mobile-tab-dot.is-failed {
+  background: var(--mg-danger);
+}
+
+@keyframes models-compare-tab-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* 中等宽度：保持模型列最小可读宽度，横向滚动 + 吸附查看被裁切的列（§8.5），不挤压列宽 */
+@media (max-width: 1180px) and (min-width: 769px) {
   .models-compare-columns {
-    grid-template-columns: 1fr !important;
+    display: flex !important;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 6px;
+  }
+
+  .models-compare-column {
+    flex: 0 0 360px;
+    min-width: 360px;
+    scroll-snap-align: start;
+  }
+}
+
+/* 窄屏：一次只展示一个模型列，顶部 Tab 切换；非激活列保留在 DOM（不销毁流式状态），只是隐藏 */
+@media (max-width: 768px) {
+  .models-compare-mobile-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    margin-bottom: 12px;
+  }
+
+  .models-compare-columns {
+    display: block !important;
+  }
+
+  .models-compare-column {
+    display: none !important;
+  }
+
+  .models-compare-column.is-active-mobile {
+    display: flex !important;
   }
 }

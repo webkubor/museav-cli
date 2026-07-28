@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
-  LuColumns2, LuChevronDown, LuCode, LuSettings2, LuX, LuPlus, LuLogOut, LuTriangleAlert,
+  LuColumns2, LuChevronDown, LuCode, LuSettings2, LuX, LuPlus, LuLogOut, LuTriangleAlert, LuPaperclip,
 } from 'react-icons/lu'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
@@ -39,8 +39,10 @@ import {
   listExperienceSessions,
   getExperienceSession,
   getExperienceSessionMessages,
+  uploadExperienceAttachment,
   type ExperienceStatsEvent,
   type ExperienceMessageView,
+  type ExperienceAttachment,
 } from '@/services/experience-sessions'
 import { useSidebarCollapseStore } from '@/store/use-sidebar-collapse-store'
 import { useExperienceWorkbenchStore, type CompareColumnState } from '@/store/use-experience-workbench-store'
@@ -56,6 +58,7 @@ import {
   hashId,
   latencyBucket,
   tokenBucket,
+  sizeBucket,
   cleanErrorMessage,
   extractApiErrorMessage,
   EXPERIENCE_TASK_LABEL,
@@ -64,6 +67,8 @@ import {
   EXPERIENCE_CATEGORY_DEFAULT_TASK,
   CATEGORY_EMPTY_COPY,
   CATEGORY_PLACEHOLDER,
+  ATTACHMENT_LIMITS,
+  attachmentKindFromMime,
   type ExperienceMessage,
   type ExperienceCategoryKey,
 } from '../models/model-experience-data'
@@ -85,6 +90,13 @@ const MAX_COMPARE = 3
 // 列状态类型跟着 store 里的 CompareColumnState 走（字段一致，别在这重复定义），
 // 本地仍叫 ColumnState 是为了不用改文件里几十处已有引用。
 type ColumnState = CompareColumnState
+
+/** 单列发送时可选携带的附件（qa#545）：只有该列模型支持时调用方才会传入非空值，
+ *  resourceIds 喂给后端接口，media 只用于用户消息气泡的预览渲染。 */
+interface DispatchAttachment {
+  resourceIds: string[]
+  media?: Array<{ kind: string; url: string }>
+}
 
 export default function ModelsComparePage() {
   const location = useLocation()
@@ -143,6 +155,14 @@ export default function ModelsComparePage() {
   const [apiIndex, setApiIndex] = useState<number | null>(null)
   // §8.5 窄屏一次展示一个模型列，顶部 Tab 切换；宽屏 CSS 直接把 tab 隐藏，不影响并排布局
   const [activeColumnIndex, setActiveColumnIndex] = useState(0)
+
+  // §7.4/7.5 共享附件入口（qa#545）：只挂在同步共享 composer 上（独立输入模式每列各自
+  // 打字，PRD 原文的"共享附件入口"是同步态概念，不为每列单独做附件入口）。每轮最多一个
+  // 附件，纯页面内临时态，不需要跨路由持久化。
+  const [attachment, setAttachment] = useState<{ file: File; previewUrl: string; uploaded: ExperienceAttachment } | null>(null)
+  const [attachmentUploading, setAttachmentUploading] = useState(false)
+  const [attachmentError, setAttachmentError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const abortRefs = useRef<Array<AbortController | null>>([])
   const pendingByDispatch = useRef<Map<string, number>>(new Map())
@@ -348,23 +368,23 @@ export default function ModelsComparePage() {
   /** 单列发送——按该列模型的一级类别分叉（§6.2/§7.3/§7.9）：对话类走 SSE 流式，
    *  图像/音频类走同步媒体调用，视频类同步下发后转异步轮询。sync 模式下多列共用同一个
    *  dispatchId，用于事后计算最快/成本最低。 */
-  async function sendOne(idx: number, prompt: string, dispatchId: string) {
+  async function sendOne(idx: number, prompt: string, dispatchId: string, attachment?: DispatchAttachment) {
     if (!columns) return
     const column = columns[idx]
     if (!column || column.streaming || !prompt) return
     const category = resolveModelCategory(column.model)
     if (category === 'dialogue') {
-      await sendDialogueOne(idx, prompt, dispatchId)
+      await sendDialogueOne(idx, prompt, dispatchId, attachment)
     } else {
-      await sendMediaOne(idx, prompt, dispatchId)
+      await sendMediaOne(idx, prompt, dispatchId, attachment)
     }
   }
 
-  async function sendDialogueOne(idx: number, prompt: string, dispatchId: string) {
+  async function sendDialogueOne(idx: number, prompt: string, dispatchId: string, attachment?: DispatchAttachment) {
     const column = columns![idx]
     updateColumn(idx, {
       streaming: true,
-      history: [...column.history, { role: 'user', content: prompt, dispatchId }, { role: 'assistant', content: '', dispatchId }],
+      history: [...column.history, { role: 'user', content: prompt, dispatchId, media: attachment?.media }, { role: 'assistant', content: '', dispatchId }],
     })
     abortRefs.current[idx]?.abort()
     const controller = new AbortController()
@@ -377,6 +397,7 @@ export default function ModelsComparePage() {
         conversationId: column.conversationId,
         dispatchId,
         content: prompt,
+        attachments: attachment?.resourceIds ?? [],
         signal: controller.signal,
         onDelta: (delta) => applyAssistant(idx, (content) => content + delta),
         onStats: (event) => { stats = event },
@@ -449,15 +470,15 @@ export default function ModelsComparePage() {
     }
   }
 
-  /** 图像/音频/视频类列发送（§5.2 同步 JSON / §5.3-5.4 视频异步轮询），qa#543。
-   *  当前范围内不带附件（差异分发是 qa#545 的范围），走各类别默认任务：
-   *  text_to_image / text_to_audio / text_to_video——三者都不要求附件即可运行。 */
-  async function sendMediaOne(idx: number, prompt: string, dispatchId: string) {
+  /** 图像/音频/视频类列发送（§5.2 同步 JSON / §5.3-5.4 视频异步轮询），qa#543/qa#545。
+   *  不带附件时走各类别默认任务（text_to_image/text_to_audio/text_to_video）；带附件时
+   *  仍然只传 attachments，task 在会话创建时已固定，后端按实际是否带附件处理。 */
+  async function sendMediaOne(idx: number, prompt: string, dispatchId: string, attachment?: DispatchAttachment) {
     const column = columns![idx]
     const modelLabel = prettyModelName(column.model.display_name, column.model.model_id)
     updateColumn(idx, {
       streaming: true,
-      history: [...column.history, { role: 'user', content: prompt, dispatchId }, { role: 'assistant', content: '', dispatchId }],
+      history: [...column.history, { role: 'user', content: prompt, dispatchId, media: attachment?.media }, { role: 'assistant', content: '', dispatchId }],
     })
     const startedAt = Date.now()
     let isAsyncVideo = false
@@ -467,6 +488,7 @@ export default function ModelsComparePage() {
         conversationId: column.conversationId,
         dispatchId,
         content: prompt,
+        attachments: attachment?.resourceIds ?? [],
       })
 
       if (message.status === 'running' && message.async_task_id) {
@@ -613,20 +635,38 @@ export default function ModelsComparePage() {
     })
   }
 
+  /** §7.4/7.5 差异分发（qa#545）：附件只发给该列模型支持该附件类型的列，不支持的列仍然
+   *  发送纯文本 prompt（不带附件、不整列跳过）——PRD 原型 playground-attachment-compatibility
+   *  弹窗的文案"发送时仍会同时调用全部模型"逐字对应这个默认行为。 */
   function handleSyncSend() {
     const prompt = sharedDraft.trim()
     if (!prompt || !columns) return
     if (isBalanceZero && columns.some((c) => isPaidModel(c.model))) return
     const dispatchId = crypto.randomUUID()
     pendingByDispatch.current.set(dispatchId, columns.length)
+    const currentAttachment = attachment
+    const attachedKind = currentAttachment ? attachmentKindFromMime(currentAttachment.uploaded.mime) : null
+    const supportingCount = currentAttachment && attachedKind
+      ? columns.filter((c) => modelSupportsAttachment(c.model, attachedKind)).length
+      : 0
     trackEvent('playground_send', {
       dispatch_id_hash: hashId(dispatchId),
-      attachment_kind_set: 'none',
+      attachment_kind_set: attachedKind ?? 'none',
       eligible_column_count: columns.length,
-      attachment_recipient_count: 0,
+      attachment_recipient_count: supportingCount,
     })
     setSharedDraft('')
-    columns.forEach((_, idx) => void sendOne(idx, prompt, dispatchId))
+    clearAttachment()
+    columns.forEach((c, idx) => {
+      const supports = currentAttachment && attachedKind ? modelSupportsAttachment(c.model, attachedKind) : false
+      const dispatchAttachment: DispatchAttachment | undefined = supports && currentAttachment
+        ? {
+            resourceIds: [currentAttachment.uploaded.resource_id],
+            media: [{ kind: attachedKind ?? 'image', url: currentAttachment.previewUrl }],
+          }
+        : undefined
+      void sendOne(idx, prompt, dispatchId, dispatchAttachment)
+    })
   }
 
   function handleIndependentSend(idx: number) {
@@ -821,9 +861,70 @@ export default function ModelsComparePage() {
   }
 
   // qa#543：对比会话的一级类别以首列模型为准（同一组内模型类别一致，选模型/建组时已保证）；
-  // task 用该类别的默认任务（无附件场景，附件差异分发是 qa#545 的范围）。
+  // task 用该类别的默认任务。
   const compareCategory: ExperienceCategoryKey = resolveModelCategory(columns[0].model)
   const compareTask = EXPERIENCE_CATEGORY_DEFAULT_TASK[compareCategory]
+
+  /** 模型是否真的接受该附件类型：看 input_modalities（比类别粗粒度的 allowedAttachmentKinds
+   *  更准——同类别里未必所有模型都收同一种输入模态，例如对话类里有的模型不收图片附件）。 */
+  function modelSupportsAttachment(model: CatalogModelItem, kind: string): boolean {
+    const inputMods = model.input_modalities ?? model.modalities ?? []
+    return inputMods.includes(kind)
+  }
+
+  /** 每个类别允许附哪种附件（§7.5），与单模型页同口径 */
+  const allowedAttachmentKinds: Array<keyof typeof ATTACHMENT_LIMITS> =
+    compareCategory === 'dialogue' ? ['image', 'video'] : compareCategory === 'audio' ? ['audio'] : ['image']
+
+  function clearAttachment() {
+    setAttachment((prev) => {
+      if (prev) URL.revokeObjectURL(prev.previewUrl)
+      return null
+    })
+    setAttachmentError(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  /** 共享附件上传（qa#545，§7.4/7.5）：只做类型/大小校验和上传，不因"部分模型不支持"而拦截
+   *  上传——支持哪些列由发送时逐列判断（modelSupportsAttachment），差异分发在 handleSyncSend。 */
+  async function handleFileSelect(file: File | null | undefined) {
+    if (!file || !columns) return
+    const cols = columns
+    setAttachmentError(null)
+    const kind = attachmentKindFromMime(file.type)
+    if (!kind || !allowedAttachmentKinds.includes(kind)) {
+      setAttachmentError(`当前对比类别不支持该附件类型，仅支持：${allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].label).join('、')}`)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    if (file.size > ATTACHMENT_LIMITS[kind].maxBytes) {
+      setAttachmentError(`文件超出大小限制（${ATTACHMENT_LIMITS[kind].label}）`)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    const previewUrl = URL.createObjectURL(file)
+    setAttachmentUploading(true)
+    try {
+      const uploaded = await uploadExperienceAttachment(file)
+      setAttachment({ file, previewUrl, uploaded })
+      const supportingCount = cols.filter((c) => modelSupportsAttachment(c.model, kind)).length
+      trackEvent('playground_attachment_result', {
+        kind, size_bucket: sizeBucket(file.size), result: 'success',
+        supporting_model_count: supportingCount, unsupported_model_count: cols.length - supportingCount,
+        distribution_mode: 'compare',
+      })
+    } catch (err) {
+      URL.revokeObjectURL(previewUrl)
+      setAttachmentError(extractApiErrorMessage(err))
+      trackEvent('playground_attachment_result', {
+        kind, size_bucket: sizeBucket(file.size), result: 'fail',
+        supporting_model_count: 0, unsupported_model_count: cols.length, distribution_mode: 'compare',
+      })
+    } finally {
+      setAttachmentUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   const excludeIdsFor = (idx: number) => columns.filter((_, i) => i !== idx).map((c) => c.model.id)
 
@@ -1037,19 +1138,73 @@ export default function ModelsComparePage() {
         </div>
       )}
 
+      {/* 共享附件预览/校验错误（qa#545 §7.4/7.5）：只在同步输入态展示——独立输入模式
+          每列各自打字，附件是同步态的共享概念。 */}
+      {syncInput && (attachment || attachmentError) && (
+        <div className="models-experience-attachment-row">
+          {attachment && (
+            <div className="models-experience-attachment-chip">
+              {attachmentKindFromMime(attachment.uploaded.mime) === 'image' ? (
+                <img src={attachment.previewUrl} alt="附件预览" />
+              ) : (
+                <span className="models-experience-attachment-name">{attachment.file.name}</span>
+              )}
+              <button type="button" aria-label="移除附件" onClick={clearAttachment}>
+                <LuX size={12} />
+              </button>
+            </div>
+          )}
+          {attachment && (() => {
+            const kind = attachmentKindFromMime(attachment.uploaded.mime)
+            const supportingCount = kind ? columns.filter((c) => modelSupportsAttachment(c.model, kind)).length : 0
+            return (
+              <span className="models-compare-attachment-support">
+                {supportingCount} / {columns.length} 个模型支持该附件；其余模型本轮仅收到文本
+              </span>
+            )
+          })()}
+          {attachmentError && <span className="models-experience-attachment-error">{attachmentError}</span>}
+        </div>
+      )}
+
       {syncInput && (
-        <Composer
-          value={sharedDraft}
-          onChange={setSharedDraft}
-          onSend={handleSyncSend}
-          isStreaming={columns.some((c) => c.streaming)}
-          disabled={isBalanceZero && columns.some((c) => isPaidModel(c.model))}
-          onStop={() => abortRefs.current.forEach((c) => c?.abort())}
-          placeholder={`${CATEGORY_PLACEHOLDER[compareCategory]}（同时发送给 ${columns.length} 个模型）`}
-          sendLabel="发送"
-          className="models-experience-composer-wrap models-compare-shared-composer"
-          activeChip={<span className="models-experience-composer-hint">同步发送给全部已选模型</span>}
-        />
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].accept).join(',')}
+            className="hidden"
+            onChange={(e) => void handleFileSelect(e.target.files?.[0])}
+          />
+          <Composer
+            value={sharedDraft}
+            onChange={setSharedDraft}
+            onSend={handleSyncSend}
+            isStreaming={columns.some((c) => c.streaming)}
+            disabled={isBalanceZero && columns.some((c) => isPaidModel(c.model))}
+            onStop={() => abortRefs.current.forEach((c) => c?.abort())}
+            placeholder={`${CATEGORY_PLACEHOLDER[compareCategory]}（同时发送给 ${columns.length} 个模型）`}
+            sendLabel="发送"
+            className="models-experience-composer-wrap models-compare-shared-composer"
+            activeChip={
+              <div className="models-experience-composer-left">
+                <button
+                  type="button"
+                  className="models-experience-icon-btn"
+                  aria-label="添加附件"
+                  title={`支持：${allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].label).join('、')}`}
+                  disabled={attachmentUploading || !!attachment}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <LuPaperclip size={14} />
+                </button>
+                <span className="models-experience-composer-hint">
+                  {attachmentUploading ? '附件上传中…' : '同步发送给全部已选模型'}
+                </span>
+              </div>
+            }
+          />
+        </>
       )}
 
       {historyActionError && (

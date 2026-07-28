@@ -102,10 +102,19 @@ interface Props {
   onPickProtocol?: (protocol: string) => void
   /** 点击能力标签反查筛选。 */
   onPickCapability?: (tag: string) => void
+  /** 卡片在当前列表中的位置（埋点 marketplace_card_opened 的 list_position） */
+  listPosition: number
+  /** 埋点：marketplace_card_opened（点击卡片主体进入详情，非 API请求/去体验/对比按钮） */
+  onCardOpened?: (model: CatalogModelItem, listPosition: number) => void
+  /** 埋点：marketplace_model_id_copied（source='card'） */
+  onModelIdCopied?: (model: CatalogModelItem) => void
+  /** 埋点：marketplace_api_request_clicked（点击「API 文档」按钮，进入详情并滚动到 API 接入区） */
+  onApiRequest?: (model: CatalogModelItem) => void
 }
 
 export function CatalogCard({
   model, isZh, onTry, onCompare, canCompare, onPickProtocol, onPickCapability,
+  listPosition, onCardOpened, onModelIdCopied, onApiRequest,
 }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -146,7 +155,13 @@ export function CatalogCard({
   }
 
   return (
-    <article className="mg-tile mg-tile-hover mg-mcard" onClick={() => navigate(detailHref)}>
+    <article
+      className="mg-tile mg-tile-hover mg-mcard"
+      onClick={() => {
+        onCardOpened?.(model, listPosition)
+        navigate(detailHref, { state: { source: 'catalog_list' } })
+      }}
+    >
       <button
         type="button"
         onClick={toggleFav}
@@ -188,6 +203,7 @@ export function CatalogCard({
             aria-label={t('modelsCatalog.card.copyApiId')}
             toast={false}
             className="h-5 w-5 shrink-0"
+            onCopied={() => onModelIdCopied?.(model)}
           />
         </div>
       </div>
@@ -286,7 +302,12 @@ export function CatalogCard({
         <Button
           variant="outline"
           size="sm"
-          onClick={(e) => { e.stopPropagation(); navigate(detailHref) }}
+          onClick={(e) => {
+            e.stopPropagation()
+            onApiRequest?.(model)
+            // 「API请求」进入详情后自动滚动到 API 接入区，不打开新弹窗（PRD §7.5/§8.3）
+            navigate(detailHref, { state: { source: 'catalog_list', scrollTo: 'api-access' } })
+          }}
         >
           {t('modelsCatalog.card.apiDocs')}
         </Button>

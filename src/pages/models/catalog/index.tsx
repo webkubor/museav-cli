@@ -4,18 +4,21 @@
  * 数据：GET /api/v1/catalog/models | catalog/model-tags | catalog/model-families（均公开）
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers, LuZap, LuBuilding2, LuShieldCheck } from 'react-icons/lu'
 import { listModels, listModelTags, listModelFacets, listFeatured } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
+import { trackEvent, trackPageView } from '@/lib/track'
 import { resolveModelCategory } from '../model-experience-data'
 import { CatalogCard } from './CatalogCard'
 import { CatalogFeatured } from './CatalogFeatured'
 import { CatalogSidebar } from './CatalogSidebar'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
+import { queryLengthBucket, diffFilterChange, buildFilterSummary } from './catalog-tracking'
+import type { CatalogModelItem } from '@/types'
 import './catalog.css'
 
 type SortKey = 'default' | 'popular' | 'newest' | 'cheapest'
@@ -24,6 +27,7 @@ type SortKey = 'default' | 'popular' | 'newest' | 'cheapest'
 export default function ModelsCatalogPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
   const isZh = i18n.language.startsWith('zh')
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
@@ -143,12 +147,97 @@ export default function ModelsCatalogPage() {
     )
   }, [allModels, sort])
 
-  const reset = () => { setSelected([]); setSearch(''); setSort('default') }
+  // ── 埋点（PRD §10.2，qa#550）──────────────────────────────────────────────
+  // visibleModelsRef：始终指向最新一次渲染的结果集，供下面的防抖/延迟回调在
+  // 触发时刻读取「结果最终落定后」的 result_count，而不是回调排定那一刻的旧值。
+  const visibleModelsRef = useRef(visibleModels)
+  useEffect(() => { visibleModelsRef.current = visibleModels }, [visibleModels])
 
-  const handleGoPlayground = (modelId: string, e?: React.MouseEvent) => {
+  // marketplace_view：目录首次有效展示（模型列表到位）后上报一次。
+  const viewTrackedRef = useRef(false)
+  useEffect(() => {
+    if (viewTrackedRef.current || modelsQuery.isLoading || modelsQuery.isError) return
+    viewTrackedRef.current = true
+    trackPageView('marketplace_catalog')
+    trackEvent('marketplace_view', {
+      auth_state: isAuthenticated ? 'authenticated' : 'anonymous',
+      entry_source: (location.state as { entrySource?: string } | null)?.entrySource ?? 'direct',
+      catalog_count: facets?.total ?? allModels.length,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modelsQuery.isLoading, modelsQuery.isError])
+
+  /** marketplace_empty_shown：只在「从有结果变为无结果」时报一次，避免同一空态重复上报 */
+  const wasEmptyRef = useRef(false)
+  const reportEmptyIfNeeded = () => {
+    if (visibleModelsRef.current.length === 0) {
+      if (!wasEmptyRef.current) {
+        wasEmptyRef.current = true
+        trackEvent('marketplace_empty_shown', { filter_summary: buildFilterSummary(selected) })
+      }
+    } else {
+      wasEmptyRef.current = false
+    }
+  }
+
+  // marketplace_search：搜索防抖后上报（500ms 内无新输入才算「确认」）。
+  const searchTimerRef = useRef<number | undefined>(undefined)
+  useEffect(() => {
+    window.clearTimeout(searchTimerRef.current)
+    if (!search.trim()) return
+    searchTimerRef.current = window.setTimeout(() => {
+      trackEvent('marketplace_search', {
+        query_length_bucket: queryLengthBucket(search),
+        result_count: visibleModelsRef.current.length,
+      })
+      reportEmptyIfNeeded()
+    }, 500)
+    return () => window.clearTimeout(searchTimerRef.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search])
+
+  // marketplace_filter_changed：任一筛选 chip 变化时上报一次（diff 出维度/值/动作）。
+  // 小延迟等结果集落定后再读 result_count，写法与上面搜索防抖一致。
+  const prevSelectedRef = useRef(selected)
+  const filterTimerRef = useRef<number | undefined>(undefined)
+  useEffect(() => {
+    const prev = prevSelectedRef.current
+    prevSelectedRef.current = selected
+    if (prev === selected) return
+    const change = diffFilterChange(prev, selected)
+    if (!change) return
+    window.clearTimeout(filterTimerRef.current)
+    filterTimerRef.current = window.setTimeout(() => {
+      trackEvent('marketplace_filter_changed', { ...change, result_count: visibleModelsRef.current.length })
+      reportEmptyIfNeeded()
+    }, 400)
+    return () => window.clearTimeout(filterTimerRef.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected])
+
+  const reset = () => {
+    trackEvent('marketplace_filters_cleared', { active_filter_count_before: selected.length })
+    setSelected([]); setSearch(''); setSort('default')
+  }
+
+  const handleSortChange = (next: SortKey) => {
+    if (next !== sort) trackEvent('marketplace_sort_changed', { from_sort: sort, to_sort: next })
+    setSort(next)
+    setSortOpen(false)
+  }
+
+  const handleGoPlayground = (modelId: string, e?: React.MouseEvent, source: 'card' | 'featured' = 'card') => {
     e?.stopPropagation()
+    const model = allModels.find((m) => m.model_id === modelId)
+    trackEvent('marketplace_try_clicked', {
+      auth_state: isAuthenticated ? 'authenticated' : 'anonymous',
+      // 模型广场不接收余额态（PRD §11「余额边界」），experience_status 只记录本次
+      // 点击的实际去向：直达体验页，还是先过登录门。
+      experience_status: isAuthenticated ? 'enter_playground' : 'redirect_login',
+      experience_type: 'try',
+      source,
+    })
     if (!isAuthenticated) {
-      const model = allModels.find((m) => m.model_id === modelId)
       navigate(toLoginWithRedirect(undefined, {
         model_id: modelId,
         model_category: model ? resolveModelCategory(model) : undefined,
@@ -207,7 +296,7 @@ export default function ModelsCatalogPage() {
             <CatalogFeatured
               slides={featuredQuery.data?.items ?? []}
               isZh={isZh}
-              onTry={handleGoPlayground}
+              onTry={(id, e) => handleGoPlayground(id, e, 'featured')}
             />
           )}
 
@@ -234,7 +323,7 @@ export default function ModelsCatalogPage() {
                     <button
                       key={key}
                       type="button"
-                      onClick={() => { setSort(key); setSortOpen(false) }}
+                      onClick={() => handleSortChange(key)}
                       className={`hover:bg-mg-fill-1 flex w-full items-center gap-2 px-4 py-2 text-left text-[12.5px] transition-colors ${
                         sort === key ? 'text-brand-base' : 'text-mg-text-2'
                       }`}
@@ -281,7 +370,7 @@ export default function ModelsCatalogPage() {
             </div>
           ) : (
             <div className="models-catalog-grid">
-              {visibleModels.map((model) => (
+              {visibleModels.map((model, index) => (
                 <CatalogCard
                   key={model.id}
                   model={model}
@@ -297,6 +386,10 @@ export default function ModelsCatalogPage() {
                       prev.includes(`tag:${tag}`) ? prev : [...prev, `tag:${tag}`],
                     )
                   }
+                  listPosition={index}
+                  onCardOpened={(m, pos) => trackEvent('marketplace_card_opened', { model_id: m.model_id, list_position: pos })}
+                  onModelIdCopied={(m) => trackEvent('marketplace_model_id_copied', { model_id: m.model_id, source: 'card' })}
+                  onApiRequest={(m: CatalogModelItem) => trackEvent('marketplace_api_request_clicked', { model_id: m.model_id })}
                 />
               ))}
             </div>

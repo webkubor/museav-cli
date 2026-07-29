@@ -9,6 +9,7 @@ use_count: 0
 > ## ⚠️ 入场先读（比下面所有规则都优先）
 > 1. `PROJECT-BRIEF.md` — 冷启动快照（8 个有效命令、真源优先级、PRD V1.0.3 限制）
 > 2. `docs/COLLABORATION.md` — 协同 SOP（worktree/认领锁/提单格式/UI 测试/验证闭环）
+> 3. **worktree 默认开、不是「确认有并发才开」**：本仓常年有多 agent/session 并发（巡检/supervisor 每 30 分钟把单派给 Codex、人和其他 session 随时可能在同一目录动手），等你发现冲突（重复 dev server、别人未提交的改动）时可能已经晚了。**任何代码改动落地前先 `cs wt fix/<名>` 或 `git worktree add -b feat/<名> ../wt-<名> origin/test` 开隔离 worktree，别直接在主检出的 `test` 分支上写代码/提交**——这一条不因为"这次只是小改"或"我一个人在做"而跳过，详见 `docs/COLLABORATION.md` §1/§4（2026-07-29 教训：直接在主检出改+提交，事后才发现另一个 session 同时在编辑别的文件，这次没冲突纯属运气）。
 
 > ## 🚦 UI 改动开工前置（硬性 · 先做再动手）
 > 治「不读规范就动手」——本仓 UI/组件/样式任何改动，先按序做：

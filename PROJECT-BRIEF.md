@@ -27,7 +27,7 @@
 | `cs flow <type>` | 任务路由 → 该读哪些规则 | 不确定该走哪个流程时 |
 | `cs rule <规则>` | 读具体规范 | 需要查编码/工程/安全规则时 |
 | `cs check test` | 类型 + lint + 构建三项检查 | 提交前必跑 |
-| `cs wt <branch>` | 一键开隔离 worktree + 装依赖 | 多个 agent 并行改代码时 |
+| `cs wt <branch>` | 一键开隔离 worktree + 装依赖 | **任何代码改动前默认开**，不等确认有并发才开（本仓常年有巡检/其他 session 并发，等发现冲突就晚了） |
 | `cs dev` | 启动 dev server + 日志 | 本地调试 |
 | `cs secrets get` | 取 modelgo 测试账号 | 需要登录测试环境时 |
 | `cs retro` | 记录踩坑 | 发现新坑时 |
@@ -58,6 +58,8 @@
 **看板操作**：加载 `gitlab-board` skill，走 `agent-claim.mjs` 认领/释放。
 
 ## 5. 多 Agent 协同 → `docs/COLLABORATION.md`
+
+**默认永远有并发，不是「确认了才隔离」**：巡检/supervisor 会把单派给 Codex、人和其他 session 随时可能在同一目录动手。别在主检出的 `test` 分支上直接写代码/提交，一律先 `cs wt fix/<名>` 开隔离 worktree，完成后按 `docs/COLLABORATION.md` §4 合并+清理。
 
 ## 6. 当前目标 PRD 版本
 

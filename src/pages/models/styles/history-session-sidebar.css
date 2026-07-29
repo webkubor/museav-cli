@@ -8,14 +8,14 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  border: 1px solid var(--mg-border);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--mg-bg-0) 88%, transparent);
   overflow: hidden;
   transition: width 0.2s ease;
 }
 
-/* ── 收起态：窄图标轨 ─────────────────────────────────────────────── */
+/* ── 收起态：窄图标轨 ──────────────────────────────────────────────
+   只放两个图标按钮，没有其他内容；不套卡片边框/背景，否则收起后是一整条
+   立着的空卡片（比展开态更显眼的"这里应该有内容但没有"）。图标直接落在
+   页面背景上，跟展开态的卡片感区分开。 */
 .history-sidebar-rail {
   width: 44px;
   align-items: center;
@@ -53,6 +53,9 @@
   width: 248px;
   padding: 10px;
   gap: 10px;
+  border: 1px solid var(--mg-border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--mg-bg-0) 88%, transparent);
 }
 
 .history-sidebar-panel-header {

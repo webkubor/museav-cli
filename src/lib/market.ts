@@ -1,16 +1,26 @@
 import { storageKeys } from '@/lib/storage'
-import { marketFromHostname, type Market } from '@/lib/market-domain'
+import {
+  marketFromLocation,
+  marketLockedByDomain,
+  marketOverrideFromSearch,
+  type Market,
+} from '@/lib/market-domain'
 
 export type { Market } from '@/lib/market-domain'
 
 /**
- * 当前市场 = 域名的纯函数（唯一真源见 market-domain.ts）。
- * 不读构建期变量、无兜底链——生产靠 modelgo.com / modelgo.ai 域名自然区分；
- * dev/test 单域名下预览另一市场，走 store 运行时切换，不经过这里。
+ * 生产市场由域名锁定；共享测试域名允许外部链接用 ?market= 显式指定市场。
+ * URL 覆盖只对非生产锁定域名有效，确保测试国际站从首屏就使用正确的语言和主题默认值。
  */
+export function getMarketQueryOverride(): Market | null {
+  if (typeof window === 'undefined') return null
+  if (marketLockedByDomain(window.location.hostname)) return null
+  return marketOverrideFromSearch(window.location.search)
+}
+
 export function getMarket(): Market {
   if (typeof window === 'undefined') return 'china'
-  return marketFromHostname(window.location.hostname)
+  return marketFromLocation(window.location.hostname, window.location.search)
 }
 
 export function isDomestic(): boolean {
@@ -32,6 +42,10 @@ export function getMarketDefaultLang(market: Market): Lang {
  */
 export function getInitialLang(): Lang {
   if (typeof window !== 'undefined') {
+    // 测试国际站入口显式指定 market 时，不能被同域国内站遗留语言偏好覆盖。
+    const marketOverride = getMarketQueryOverride()
+    if (marketOverride) return getMarketDefaultLang(marketOverride)
+
     // 优先读取持久化语言偏好（统一 key），兼容旧 i18next key
     const saved = localStorage.getItem(storageKeys.lang()) || localStorage.getItem('i18nextLng')
     if (saved === 'zh' || saved === 'en') return saved

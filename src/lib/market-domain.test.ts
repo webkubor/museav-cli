@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { marketFromHostname, marketLockedByDomain, marketOverrideFromSearch } from '@/lib/market-domain'
+import { marketFromHostname, marketFromLocation, marketLockedByDomain, marketOverrideFromSearch } from '@/lib/market-domain'
 
 describe('marketFromHostname — 域名→市场唯一真源', () => {
   it('modelgo.ai 系域名 = 海外', () => {
@@ -38,5 +38,17 @@ describe('marketOverrideFromSearch — 共享测试域名的显式市场', () =>
     expect(marketOverrideFromSearch('?market=china')).toBe('china')
     expect(marketOverrideFromSearch('?market=invalid')).toBeNull()
     expect(marketOverrideFromSearch('')).toBeNull()
+  })
+})
+
+describe('marketFromLocation — 测试 query 与生产域名锁定', () => {
+  it('测试共享域名接受明确市场', () => {
+    expect(marketFromLocation('console.test.modelgo.com', '?market=global')).toBe('global')
+    expect(marketFromLocation('console.test.modelgo.com', '')).toBe('china')
+  })
+
+  it('生产域名不允许 query 改写市场', () => {
+    expect(marketFromLocation('console.modelgo.ai', '?market=china')).toBe('global')
+    expect(marketFromLocation('console.modelgo.com', '?market=global')).toBe('china')
   })
 })

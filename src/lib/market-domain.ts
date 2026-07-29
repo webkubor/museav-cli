@@ -42,3 +42,12 @@ export function marketOverrideFromSearch(search: string): Market | null {
   const market = new URLSearchParams(search).get('market')
   return market === 'china' || market === 'global' ? market : null
 }
+
+/**
+ * 页面入口市场：生产域名锁定优先；共享测试域名才允许 query 显式指定。
+ * 保持为纯函数，供首屏市场、语言、主题和 market-scoped storage 使用同一判定。
+ */
+export function marketFromLocation(hostname: string, search: string): Market {
+  const locked = marketLockedByDomain(hostname)
+  return locked ?? marketOverrideFromSearch(search) ?? marketFromHostname(hostname)
+}

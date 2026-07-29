@@ -8,11 +8,12 @@
  * 所有业务代码只能通过 storageKeys 访问 localStorage，禁止硬编码字符串 key。
  */
 
-import { marketFromHostname } from '@/lib/market-domain'
+import { marketFromLocation } from '@/lib/market-domain'
 
 // 域名→市场唯一真源（market-domain 是零依赖叶子，引它不成环）
 function detectMarket(): string {
-  return typeof window === 'undefined' ? 'china' : marketFromHostname(window.location.hostname)
+  if (typeof window === 'undefined') return 'china'
+  return marketFromLocation(window.location.hostname, window.location.search)
 }
 
 // 一次性归一：市场词汇 domestic→china（#479）。旧 key 前缀 mg:domestic:* 迁到

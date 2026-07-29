@@ -1,5 +1,5 @@
 import { storageKeys } from '@/lib/storage'
-import { getMarket } from '@/lib/market'
+import { getMarket, getMarketQueryOverride } from '@/lib/market'
 
 export type Theme = 'dark' | 'light' | 'system'
 
@@ -23,9 +23,11 @@ function isValidHexColor(value: string | undefined): value is string {
   return Boolean(value && /^#[0-9a-fA-F]{6}$/.test(value))
 }
 
-/** 初始加载时读匿名 key（userId 尚未就绪），无偏好默认浅色 */
+/** 初始加载时读匿名 key（userId 尚未就绪）；市场默认主题由 getMarketDefaultTheme 决定。 */
 export function getSavedTheme(): Theme {
   if (typeof window === 'undefined') return 'system'
+  // 共享测试域名从国际站带 market=global 进入时，不能沿用国内站留下的浅色偏好。
+  if (getMarketQueryOverride()) return getMarketDefaultTheme()
   const saved = localStorage.getItem(storageKeys.theme())
   if (isValidTheme(saved)) return saved
   return getMarketDefaultTheme()

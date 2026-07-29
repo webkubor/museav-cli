@@ -155,7 +155,11 @@ export default defineConfig(({ mode }) => {
       // agentProxy 自带：proxy.log（header 真相）+ 本地 cookie 修复（去 Domain/剥 Secure/SameSite=None→Lax）。
       // proxyReq 钩子：把浏览器发出的 Origin: http://localhost:5175 改写为后端允许的白名单 Origin，
       // 避免 CORS 策略在 POST /auth/login 等写请求上返回 403（GET 请求不带 Origin，不受影响）。
-      '/api': (() => {
+      // 前缀必须带尾斜杠：vite proxy 是**前缀匹配**，写 '/api' 会把 `/api-keys`
+      // 这类以 api 开头的 SPA 路由一并代理到后端（前端拿到的是后端 40401 JSON 而
+      // 不是页面）。真实接口一律是 `/api/v1/...`，带斜杠不影响任何请求。
+      // 线上 nginx 走的是 `/api/` 精确前缀，本地此前与线上行为不一致。
+      '/api/': (() => {
         const p = agentProxy('https://modelgo-web-api.test.modelgo.com')
         const orig = p.configure
         p.configure = (proxy, opts) => {

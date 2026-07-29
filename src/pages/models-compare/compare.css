@@ -73,8 +73,21 @@
   color: var(--mg-danger);
 }
 
-.models-compare-shared-composer {
-  margin-top: 14px;
+/* 共享输入框需与上方三栏网格等宽对齐；.models-experience-composer-wrap 默认左右各
+   留 18px（单栏体验页用），这里覆盖清零，仅保留上间距。 */
+.models-compare-shared-composer.models-experience-composer-wrap {
+  margin: 14px 0 0;
+}
+
+/* 彩虹流光边框是单栏体验页的装饰效果，在对比页与上方三栏纯色边框并排时显得边框
+   忽明忽暗、风格不统一（用户反馈"浅色边框不明显不好看"）。改用与
+   .models-compare-column 一致的实色描边，视觉上与三栏对齐、观感统一。 */
+.models-compare-shared-composer.composer-rainbow-flow {
+  animation: none !important;
+  background-image: none !important;
+  background-color: color-mix(in srgb, var(--mg-bg-0) 88%, transparent) !important;
+  border: 1px solid var(--mg-border) !important;
+  box-shadow: none !important;
 }
 
 /* 共享附件"N个模型支持"提示（qa#545 §7.4/7.5），与附件预览行同一行展示 */

@@ -375,25 +375,25 @@ export default function ReferralPage() {
             <div className="flex gap-2.5 items-start">
               <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">01</span>
               <div>
-                被邀请人每次实际付费消费<span className="text-[var(--brand-base)] font-bold">实时计返佣</span>（退款冲回、赠送/兑换码额度消费不计），按当前档位比例结算至奖励余额。
+                被邀请人每次实际付费消费<span className="text-[var(--brand-base)] font-bold">实时计返佣</span>（退款冲回、赠送/兑换码额度消费不计），奖励按其累计消费对应的档位比例计算。
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
               <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">02</span>
               <div>
-                奖励余额<span className="text-[var(--brand-base)] font-bold">满 ¥100</span> 可<span className="text-[var(--brand-base)] font-bold">转入主余额</span>继续消费。
+                奖励直接计入<span className="text-[var(--brand-base)] font-bold">奖励余额</span>，无需转入主余额；模型调用时在<span className="text-[var(--brand-base)] font-bold">主余额前自动抵扣</span>，暂不支持提现。
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
               <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">03</span>
               <div>
-                返佣<span className="text-[var(--brand-base)] font-bold">上不封顶</span>；返佣档位、比例、门槛由平台统一配置。
+                返佣<span className="text-[var(--brand-base)] font-bold">上不封顶</span>；返佣档位、比例与门槛由平台统一设置，以推荐计划页面实际展示为准。
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
               <span className="mt-0.5 p-1 rounded-md bg-mg-danger/10 text-mg-danger text-xs font-bold shrink-0">04</span>
               <div>
-                平台对同主体 / 同 IP·设备 / 异常刷量保留核查与冻结权，保障返佣生态公平合规。
+                同主体、同设备、同 IP 或异常消费将进入核查；确认违规后，相关奖励可被冻结或取消。
               </div>
             </div>
           </div>
@@ -402,25 +402,25 @@ export default function ReferralPage() {
             <div className="flex gap-2.5 items-start">
               <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">01</span>
               <div>
-                Commission accrues in <span className="text-[var(--brand-base)] font-bold">real time</span> on actual paid spend (refunds clawed back; gifted/promo codes excluded), settled at your tier rate.
+                Commission accrues in <span className="text-[var(--brand-base)] font-bold">real time</span> on actual paid spend (refunds clawed back; gifted/promo codes excluded), calculated by the tier matching total spend.
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
               <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">02</span>
               <div>
-                Reward balance <span className="text-[var(--brand-base)] font-bold">reaches ¥100</span> can be <span className="text-[var(--brand-base)] font-bold">transferred to main balance</span>.
+                Rewards go straight into your <span className="text-[var(--brand-base)] font-bold">reward balance</span> — no transfer needed; they <span className="text-[var(--brand-base)] font-bold">auto-deduct before your main balance</span> on model calls. Withdrawal isn't supported yet.
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
               <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">03</span>
               <div>
-                Commission has <span className="text-[var(--brand-base)] font-bold">no upper limit</span>. Tiers, rates, and thresholds are configured by the platform.
+                Commission has <span className="text-[var(--brand-base)] font-bold">no upper limit</span>. Tiers, rates, and thresholds are configured by the platform and shown on this page.
               </div>
             </div>
             <div className="flex gap-2.5 items-start">
               <span className="mt-0.5 p-1 rounded-md bg-mg-danger/10 text-mg-danger text-xs font-bold shrink-0">04</span>
               <div>
-                The platform reserves the right to audit and freeze same-entity / same-IP / abnormal farming activities.
+                Same-entity, same-device, same-IP, or abnormal spend gets reviewed; confirmed violations may have rewards frozen or revoked.
               </div>
             </div>
           </div>

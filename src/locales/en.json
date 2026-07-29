@@ -2225,7 +2225,9 @@
       "requestCount": "Requests",
       "cost": "Cost",
       "reset": "Reset",
-      "modalTitle": "{{name}} settings"
+      "modalTitle": "{{name}} settings",
+      "saveFailed": "Failed to save parameters",
+      "resetFailed": "Failed to reset parameters"
     },
     "picker": {
       "free": "Free",

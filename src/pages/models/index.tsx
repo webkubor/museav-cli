@@ -362,7 +362,13 @@ export default function ModelsPage() {
     trackEvent('playground_settings_action', { action: 'modify', parameter_name: key })
     setChatParams((prev) => {
       const next = { ...prev, [key]: value }
-      if (sessionId && selectedModel) void saveExperienceModelConfig(sessionId, selectedModel.model_id, next)
+      // 会话未建好前（懒创建，见 ensureConversation）没有 sessionId 可挂载配置，
+      // 本地 chatParams 已经生效（会用于下一次请求），这里静默跳过持久化即可，不算失败
+      if (sessionId && selectedModel) {
+        saveExperienceModelConfig(sessionId, selectedModel.model_id, next).catch((err) => {
+          appToast.requestError(err, t('modelsExperience.settings.saveFailed'))
+        })
+      }
       return next
     })
   }
@@ -370,7 +376,11 @@ export default function ModelsPage() {
   function handleResetChatParams() {
     trackEvent('playground_settings_action', { action: 'reset' })
     setChatParams({})
-    if (sessionId && selectedModel) void resetExperienceModelConfig(sessionId, selectedModel.model_id)
+    if (sessionId && selectedModel) {
+      resetExperienceModelConfig(sessionId, selectedModel.model_id).catch((err) => {
+        appToast.requestError(err, t('modelsExperience.settings.resetFailed'))
+      })
+    }
   }
 
   function clearAttachment() {

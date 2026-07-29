@@ -35,6 +35,7 @@ import {
   MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities,
 } from '@/features/models/model-format'
 import { hasPlaygroundExperience } from '../model-experience-data'
+import { trackEvent } from '@/lib/track'
 import type { CatalogModelItem } from '@/types'
 
 const MODALITY_ICON: Record<string, IconType> = { text: LuFileText, image: LuImage, audio: LuMic, video: LuVideo }
@@ -121,6 +122,7 @@ export function CatalogCard({
     const next = !fav
     setFav(next)
     writeFav(model.id, next)
+    trackEvent('marketplace_favorite_toggled', { model_id: model.model_id, favorited: next })
   }
 
   return (

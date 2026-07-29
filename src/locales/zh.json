@@ -2237,7 +2237,9 @@
       "requestCount": "请求数",
       "cost": "费用",
       "reset": "重置",
-      "modalTitle": "{{name}} 设置"
+      "modalTitle": "{{name}} 设置",
+      "saveFailed": "参数保存失败",
+      "resetFailed": "参数重置失败"
     },
     "picker": {
       "free": "免费",

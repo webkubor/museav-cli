@@ -61,9 +61,9 @@ export async function login(opts: { baseUrl?: string }): Promise<void> {
     if (poll.status === 'expired') {
       throw new Error('授权已过期，请重新运行 studio-image login')
     }
-    if (poll.status === 'denied') {
-      throw new Error('你在浏览器拒绝了此次授权，如需登录请重新运行 studio-image login')
-    }
+    // 服务端目前只有 pending → approved 或过期两条路，没有"拒绝"这个动作
+    // （浏览器审批页没有拒绝按钮，不批准就是不动，最终走 expired）。
+    // 这里仍保留未知状态的兜底，万一以后服务端加了新状态，报错文案不会文不对题。
     if (poll.status !== 'pending') {
       throw new Error(`授权失败: ${poll.error || poll.status || '未知错误'}`)
     }

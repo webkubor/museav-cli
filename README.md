@@ -146,12 +146,12 @@ studio-image balance     # 各上游余额
 
 ### 查自己名下的工作流 `jobs`
 
-租户额外多一项能力：能查到**自己业务下**的全部出图工作流，不止是刚提交的那一个任务：
+租户额外多一项能力：能查到**自己业务下**的出图工作流，不止是刚提交的那一个任务：
 
 ```bash
 studio-image jobs                    # 最近 20 条
-studio-image jobs --limit 50         # 最近 50 条
-studio-image jobs --status failed    # 只看失败的
+studio-image jobs --limit 50         # 最近 50 条（服务端上限就是 50，--limit 只能在这以内截取，查不到更早的历史）
+studio-image jobs --status failed    # 只看失败的（本地过滤，不是服务端查询）
 ```
 
 范围自动跟着你用的凭证走，不用额外传租户/用户 id：个人 login 只看到自己出的图；租户 apiKey 看到的是这个租户名下的全部记录（不管是谁、哪个服务调用生成的）。stdout 输出完整 JSON 数组，方便接自己的后台统计。

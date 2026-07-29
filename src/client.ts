@@ -112,14 +112,18 @@ export class StudioClient {
   /**
    * 列出当前身份名下的出图工作流（不传 id，走同一个 jobs 端点的集合语义）。
    * 范围由鉴权凭证决定：个人 token 只看得到自己出的图；租户 apiKey 看得到自己业务下的全部记录。
+   *
+   * 服务端 GET /api/jobs 目前只认 id / all 两个 query 参数，固定按 created_at
+   * 倒序返回最近 50 条，不支持 limit/status 这类过滤——传了也会被忽略。
+   * 所以 limit/status 在这里做客户端过滤：先拿到这最多 50 条，再本地按 status
+   * 筛、按 limit 截断。这意味着 --limit 只能在这 50 条以内选，选不到更早的历史。
    */
   async listJobs(opts: { limit?: number; status?: Job['status'] } = {}): Promise<Job[]> {
-    const params = new URLSearchParams()
-    if (opts.limit) params.set('limit', String(opts.limit))
-    if (opts.status) params.set('status', opts.status)
-    const qs = params.toString()
-    const r = await this.request(`jobs${qs ? `?${qs}` : ''}`)
-    return Array.isArray(r) ? r : r.jobs || []
+    const r = await this.request('jobs')
+    let list: Job[] = Array.isArray(r) ? r : r.jobs || []
+    if (opts.status) list = list.filter((j) => j.status === opts.status)
+    if (opts.limit) list = list.slice(0, opts.limit)
+    return list
   }
 
   /**

@@ -77,9 +77,9 @@ program
 
 program
   .command('jobs')
-  .description('查自己名下的出图工作流（个人 login 看自己的；租户 apiKey 看业务下全部）')
-  .option('--limit <n>', '最多返回几条，默认 20', '20')
-  .option('--status <status>', '按状态过滤: pending / processing / done / failed')
+  .description('查自己名下的出图工作流（个人 login 看自己的；租户 apiKey 看业务下全部）——服务端固定返回最近 50 条，limit/status 是本地过滤')
+  .option('--limit <n>', '最多显示几条（在最近 50 条以内截取），默认 20', '20')
+  .option('--status <status>', '按状态过滤: pending / processing / done / failed（本地过滤，不是服务端查询）')
   .action(withClient((client: StudioClient, opts: any) => jobs(client, opts)))
 
 program

@@ -239,7 +239,9 @@ export function ModelPickerDialog({
       open={open}
       onClose={onClose}
       size="lg"
-      className="sm:max-w-[880px]"
+      // compareAdd 右侧是最多 3 列的参数对比表格（88px 固定列 + N 等分列），880px 在选满
+      // 3 个模型时明显局促——模型名/价格/模态全被截断；这个模式单独放宽，其余模式不动
+      className={mode === 'compareAdd' ? 'sm:max-w-[1120px]' : 'sm:max-w-[880px]'}
       title={title}
       footer={
         mode === 'compareAdd' ? (

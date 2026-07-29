@@ -36,10 +36,16 @@ const ModelsPage = lazy(() => import('@/pages/models'))
 const ModelsCatalogPage = lazy(() => import('@/pages/models/catalog'))
 const ModelDetailPage = lazy(() => import('@/pages/models/detail'))
 const ModelsComparePage = lazy(() => import('@/pages/models-compare'))
-// DEV 专属页面必须放在可静态消除的条件分支内，确保生产构建既不生成对应 chunk，
+// DEV 专属页面/工具必须放在可静态消除的条件分支内，确保生产构建既不生成对应 chunk，
 // 也不注册路由——否则 /dev-config 在生产环境仍可被直接访问到。
 const PlatformConfigPage = import.meta.env.DEV
   ? lazy(() => import('@/pages/platform-config'))
+  : null
+const NavLogger = import.meta.env.DEV
+  ? lazy(() => import('@/components/dev/NavLogger').then((m) => ({ default: m.NavLogger })))
+  : null
+const DevToolbar = import.meta.env.DEV
+  ? lazy(() => import('@/components/dev-toolbar').then((m) => ({ default: m.DevToolbar })))
   : null
 const NotFoundPage = lazy(() => import('@/pages/not-found'))
 
@@ -74,8 +80,6 @@ import { marketLockedByDomain } from '@/lib/market-domain'
 import { applyBrandTheme, applyTheme, getSavedBrandTheme, getSavedTheme, readThemeFromUrl, saveTheme } from '@/lib/theme'
 import { getPlatformConfig } from '@/services/platform'
 import { useLangStore } from '@/store/use-brand-store'
-import { NavLogger } from '@/components/dev/NavLogger'
-import { DevToolbar } from '@/components/dev-toolbar'
 import { ServerErrorDialog } from '@/components/server-error/ServerErrorDialog'
 import { AppUpdatePrompt } from '@/components/app-update/AppUpdatePrompt'
 import { PwaInstallPrompt } from '@/components/app-update/PwaInstallPrompt'
@@ -187,7 +191,7 @@ export default function App() {
       <AppUpdatePrompt />
       <PwaInstallPrompt />
       <BrowserRouter>
-        {import.meta.env.DEV && <NavLogger />}
+        {NavLogger && <Suspense fallback={null}><NavLogger /></Suspense>}
         <PlatformLoader onReady={() => setPlatformReady(true)} />
         {!platformReady && (
           <div style={{
@@ -205,7 +209,7 @@ export default function App() {
             }} />
           </div>
         )}
-        {import.meta.env.DEV && <DevToolbar />}
+        {DevToolbar && <Suspense fallback={null}><DevToolbar /></Suspense>}
         <AuthProvider>
         <Suspense fallback={<RouteFallback />}>
         <Routes>

@@ -1,0 +1,165 @@
+/**
+ * StudioClient —— studio 中台 API 客户端
+ *
+ * 所有出图/逆向/上传能力都封装在这里。CLI commands 和编程调用共用这一个 class。
+ *
+ * 用法：
+ *   const studio = new StudioClient({ baseUrl, apiKey })
+ *   const job = await studio.generateAndWait({ prompt: '一只猫' })
+ *   console.log(job.cdn_url)
+ */
+import { readFileSync } from 'node:fs'
+
+export interface GenerateOptions {
+  prompt: string
+  ratio?: string
+  model?: string
+  reference_image?: string
+  quality?: 'low' | 'medium' | 'high'
+}
+
+export interface Job {
+  id: string
+  status: 'pending' | 'processing' | 'done' | 'failed'
+  cdn_url: string | null
+  error: string | null
+  trace_id?: string
+  model?: string
+  elapsed_ms?: number
+  created_at?: string
+}
+
+export interface ReverseResult {
+  ok: boolean
+  sculpt: Record<string, string>
+  prompt: string
+  prompt_cn: string
+  style_tags: string[]
+  aspect_ratio: string
+  zh_name?: string
+  description?: string
+}
+
+export interface ModelOption {
+  value: string
+  label: string
+  description?: string
+}
+
+export interface Balance {
+  balance_usd: number
+  providers_ok: number
+  providers?: Array<{ name: string; label: string; ok: boolean; balance_usd: number }>
+}
+
+export class StudioClient {
+  private baseUrl: string
+  private apiKey: string
+
+  constructor(opts: { baseUrl: string; apiKey: string }) {
+    this.baseUrl = opts.baseUrl.replace(/\/+$/, '')
+    this.apiKey = opts.apiKey
+  }
+
+  private headers(extra: Record<string, string> = {}): Record<string, string> {
+    return { 'X-API-Key': this.apiKey, ...extra }
+  }
+
+  private async request(path: string, init: RequestInit = {}): Promise<any> {
+    const url = `${this.baseUrl}/api/${path}`
+    const resp = await fetch(url, {
+      ...init,
+      headers: { ...this.headers(), ...(init.headers as Record<string, string>) },
+    })
+    const text = await resp.text()
+    let body: any
+    try { body = JSON.parse(text) } catch { body = { raw: text } }
+    if (!resp.ok) {
+      const msg = body.error || body.raw || `HTTP ${resp.status}`
+      throw new Error(`studio API ${path} 失败: ${msg}`)
+    }
+    return body
+  }
+
+  /** 提交出图任务，立即返回 jobId */
+  async generate(opts: GenerateOptions): Promise<{ jobId: string; trace_id?: string }> {
+    const body: Record<string, unknown> = { prompt: opts.prompt }
+    if (opts.ratio) body.ratio = opts.ratio
+    if (opts.model) body.model = opts.model
+    if (opts.reference_image) body.reference_image = opts.reference_image
+    if (opts.quality) body.quality = opts.quality
+    const r = await this.request('generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    return { jobId: r.jobId, trace_id: r.trace_id }
+  }
+
+  /** 查单个任务状态 */
+  async getJob(id: string): Promise<Job> {
+    const r = await this.request(`jobs?id=${encodeURIComponent(id)}`)
+    return r
+  }
+
+  /**
+   * 提交出图 + 自动轮询直到完成/失败。
+   * onProgress 可选，每次轮询回调一次（用于 CLI 显示进度）。
+   */
+  async generateAndWait(
+    opts: GenerateOptions,
+    onProgress?: (status: string) => void,
+    intervalMs = 3000,
+    maxAttempts = 100,
+  ): Promise<Job> {
+    const { jobId } = await this.generate(opts)
+    for (let i = 0; i < maxAttempts; i++) {
+      await sleep(intervalMs)
+      const job = await this.getJob(jobId)
+      onProgress?.(job.status)
+      if (job.status === 'done') return job
+      if (job.status === 'failed') {
+        throw new Error(`出图失败: ${job.error || '未知原因'}（jobId: ${jobId}）`)
+      }
+    }
+    throw new Error(`出图超时（${(maxAttempts * intervalMs) / 1000}s 未返回，jobId: ${jobId}）`)
+  }
+
+  /** 图片逆向：传文件路径或图片 URL */
+  async reverse(input: { file?: string; imageUrl?: string }): Promise<ReverseResult> {
+    if (input.file) {
+      const buf = readFileSync(input.file)
+      const fd = new FormData()
+      fd.append('file', new Blob([buf]))
+      return this.request('reverse', { method: 'POST', body: fd })
+    }
+    return this.request('reverse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_url: input.imageUrl }),
+    })
+  }
+
+  /** 上传垫图，返回可用的 URL */
+  async uploadRef(filePath: string): Promise<{ url: string }> {
+    const buf = readFileSync(filePath)
+    const fd = new FormData()
+    fd.append('file', new Blob([buf]))
+    const r = await this.request('upload-ref', { method: 'POST', body: fd })
+    return { url: r.url }
+  }
+
+  /** 查可用模型列表 */
+  async models(): Promise<ModelOption[]> {
+    return this.request('available-models')
+  }
+
+  /** 查上游余额 */
+  async balance(): Promise<Balance> {
+    return this.request('balance')
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms))
+}

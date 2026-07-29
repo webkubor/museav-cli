@@ -110,6 +110,19 @@ export class StudioClient {
   }
 
   /**
+   * 列出当前身份名下的出图工作流（不传 id，走同一个 jobs 端点的集合语义）。
+   * 范围由鉴权凭证决定：个人 token 只看得到自己出的图；租户 apiKey 看得到自己业务下的全部记录。
+   */
+  async listJobs(opts: { limit?: number; status?: Job['status'] } = {}): Promise<Job[]> {
+    const params = new URLSearchParams()
+    if (opts.limit) params.set('limit', String(opts.limit))
+    if (opts.status) params.set('status', opts.status)
+    const qs = params.toString()
+    const r = await this.request(`jobs${qs ? `?${qs}` : ''}`)
+    return Array.isArray(r) ? r : r.jobs || []
+  }
+
+  /**
    * 提交出图 + 自动轮询直到完成/失败。
    * onProgress 可选，每次轮询回调一次（用于 CLI 显示进度）。
    */

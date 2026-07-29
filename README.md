@@ -144,6 +144,18 @@ studio-image models      # 中台当前可用的模型
 studio-image balance     # 各上游余额
 ```
 
+### 查自己名下的工作流 `jobs`
+
+租户额外多一项能力：能查到**自己业务下**的全部出图工作流，不止是刚提交的那一个任务：
+
+```bash
+studio-image jobs                    # 最近 20 条
+studio-image jobs --limit 50         # 最近 50 条
+studio-image jobs --status failed    # 只看失败的
+```
+
+范围自动跟着你用的凭证走，不用额外传租户/用户 id：个人 login 只看到自己出的图；租户 apiKey 看到的是这个租户名下的全部记录（不管是谁、哪个服务调用生成的）。stdout 输出完整 JSON 数组，方便接自己的后台统计。
+
 ---
 
 ## 编程调用
@@ -188,6 +200,7 @@ console.log(r.sculpt.light)  // 光影分析
 | `upload <file>` | 上传垫图 | 图片 URL |
 | `models` | 可用模型 | 模型名列表 |
 | `balance` | 上游余额 | JSON |
+| `jobs` | 查自己（租户则是自己业务下）的工作流 | JSON 数组 |
 | `config` | 配置中台（B 端 apikey） | — |
 
 **stdout 只输出最终结果**，进度信息走 stderr——方便脚本和管道集成。
@@ -211,7 +224,7 @@ console.log(r.sculpt.light)  // 光影分析
 **适合谁用**（对应本文最开始那张鉴权对照表）：
 
 - **平台用户**：自己写自动化脚本/agent 需要命令行出图、个人多个项目想统一收口到一个能力服务——`studio-image login` 就够，不需要申请 apiKey
-- **租户**：做 AI 产品的开发者，要把出图能力接进自己对外提供的产品/服务，不想碰上游细节——申请 apiKey，走服务端集成
+- **租户**：做 AI 产品的开发者，要把出图能力接进自己对外提供的产品/服务，不想碰上游细节——申请 apiKey，走服务端集成。租户还多一项平台用户没有的能力：`studio-image jobs` 能查到自己业务下全部的出图工作流（不止是当前这一个任务），方便对账/统计/排查
 
 **接入方式**：平台用户直接 `studio-image login`；租户到中台「租户管理」注册拿 apiKey，装上这个 CLI（或直接调 API）用 `config --apiKey` / `STUDIO_API_KEY` 配置。具体配额和计费见中台后台。
 

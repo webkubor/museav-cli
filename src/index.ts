@@ -13,13 +13,14 @@ import { reverse } from './commands/reverse.js'
 import { upload } from './commands/upload.js'
 import { models } from './commands/models.js'
 import { balance } from './commands/balance.js'
+import { jobs } from './commands/jobs.js'
 
 const program = new Command()
 
 program
   .name('studio-image')
   .description('studio 中台出图 CLI —— login 登录后即可命令行出图、逆向、图生图')
-  .version('0.2.0')
+  .version('0.3.0')
 
 // 工厂：加载配置 + 构造 client，把 commander 透传的参数转给命令
 function withClient<T extends (...args: any[]) => Promise<any>>(fn: T) {
@@ -27,8 +28,16 @@ function withClient<T extends (...args: any[]) => Promise<any>>(fn: T) {
     try {
       const cfg = loadConfig()
       const client = new StudioClient(cfg)
-      // commander action 的最后两个参数是 options 和 command 对象，命令函数只需 (client, ...业务参数)
-      await fn(client, ...args.slice(0, -2))
+      // commander action 参数固定形如 (...positionalArgs, options, command)。
+      // 之前直接 args.slice(0, -2) 想留下 positionalArgs、丢掉 options+command，
+      // 但纯 --flag、没有 <positional> 的命令（如 gen）总共只有 2 个参数
+      // (options, command)，slice(0, -2) 会把 options 也一起丢掉——gen(client, opts)
+      // 里的 opts 变成 undefined，读 opts.prompt 直接崩。这里显式取出 options，
+      // 拼在 positional 之后转发，对没声明 options 的命令（reverse/upload/models
+      // 等）只是多传一个不会被用到的参数，无影响。
+      const opts = args[args.length - 2]
+      const positional = args.slice(0, -2)
+      await fn(client, ...positional, opts)
     } catch (e) {
       process.stderr.write(`❌ ${(e as Error).message}\n`)
       process.exit(1)
@@ -65,6 +74,13 @@ program
   .command('balance')
   .description('查上游余额')
   .action(withClient((client: StudioClient) => balance(client)))
+
+program
+  .command('jobs')
+  .description('查自己名下的出图工作流（个人 login 看自己的；租户 apiKey 看业务下全部）')
+  .option('--limit <n>', '最多返回几条，默认 20', '20')
+  .option('--status <status>', '按状态过滤: pending / processing / done / failed')
+  .action(withClient((client: StudioClient, opts: any) => jobs(client, opts)))
 
 program
   .command('config')

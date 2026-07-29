@@ -125,12 +125,15 @@ function StatusCell({
   canEdit,
   onToggle,
   lockOffReason,
+  pending,
 }: {
   row: GuardrailDetail
   canEdit: boolean
   onToggle: (args: { id: string; status: 'active' | 'inactive' }) => void
   /** 非空 = 该 active 行不允许关闭（如「至少保留一条启用的全局护栏」），置灰开关并提示原因 */
   lockOffReason?: string
+  /** 该行启停请求进行中：置灰开关，避免重复点击/请求未回时误判已切换（4-way 审计发现的唯一零反馈护栏动作） */
+  pending?: boolean
 }) {
   const active = row.status === 'active'
   const lockedOff = active && !!lockOffReason
@@ -140,7 +143,7 @@ function StatusCell({
     <div className="flex items-center" title={lockedOff ? lockOffReason : active ? '启用' : '停用'}>
       <Switch
         checked={active}
-        disabled={!canEdit || lockedOff}
+        disabled={!canEdit || lockedOff || pending}
         aria-label={active ? '启用' : '停用'}
         onChange={(checked) => onToggle({ id: row.id, status: checked ? 'active' : 'inactive' })}
       />
@@ -256,6 +259,8 @@ export interface GuardrailSectionsProps {
   onSearchChange: (scope: GuardrailScope, value: string) => void
   onOpenDetail: (id: string) => void
   onToggle: (args: { id: string; status: 'active' | 'inactive' }) => void
+  /** 该行启停请求是否进行中，供 StatusCell 置灰即时反馈（qa 4-way 审计：启停开关曾零 pending 反馈） */
+  isRowToggling: (id: string) => boolean
   onDelete: (target: { id: string; name: string }) => void
   /** scope：从某分区入口创建时带上该分区分类，默认选中对应作用范围（需求方#202） */
   onCreate: (scope?: GuardrailScope) => void
@@ -264,7 +269,7 @@ export interface GuardrailSectionsProps {
 export function GuardrailSections(props: GuardrailSectionsProps) {
   const {
     guardrails, isLoading, canEdit, canDelete, canCreate, showMember, currencySymbol,
-    search, onSearchChange, onOpenDetail, onToggle, onDelete, onCreate,
+    search, onSearchChange, onOpenDetail, onToggle, isRowToggling, onDelete, onCreate,
   } = props
 
   if (isLoading) {
@@ -329,7 +334,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
               <TableCell><InjectionCell label={PROMPT_INJECTION_LABEL[guardrailPromptInjectionMode(row)]} /></TableCell>
               <TableCell><CreatorCell row={row} /></TableCell>
               <TableCell><UpdatedCell row={row} /></TableCell>
-              <TableCell><StatusCell row={row} canEdit={canEdit.global} onToggle={onToggle} lockOffReason={activeGlobalCount <= 1 ? '需至少保留一条启用的全局护栏' : undefined} /></TableCell>
+              <TableCell><StatusCell row={row} canEdit={canEdit.global} onToggle={onToggle} lockOffReason={activeGlobalCount <= 1 ? '需至少保留一条启用的全局护栏' : undefined} pending={isRowToggling(row.id)} /></TableCell>
               <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.global} canDelete={canDelete.global} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
             </TableRow>
           ))}
@@ -370,7 +375,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                 <TableCell><BoostExpiryCell row={row} /></TableCell>
                 <TableCell><CreatorCell row={row} /></TableCell>
                 <TableCell><UpdatedCell row={row} /></TableCell>
-                <TableCell><StatusCell row={row} canEdit={canEdit.member} onToggle={onToggle} /></TableCell>
+                <TableCell><StatusCell row={row} canEdit={canEdit.member} onToggle={onToggle} pending={isRowToggling(row.id)} /></TableCell>
                 <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.member} canDelete={canDelete.member} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
               </TableRow>
             ))}
@@ -421,7 +426,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
                 <TableCell><InjectionCell label={injectionLabel} /></TableCell>
                 <TableCell><CreatorCell row={row} /></TableCell>
                 <TableCell><UpdatedCell row={row} /></TableCell>
-                <TableCell><StatusCell row={row} canEdit={canEdit.key} onToggle={onToggle} /></TableCell>
+                <TableCell><StatusCell row={row} canEdit={canEdit.key} onToggle={onToggle} pending={isRowToggling(row.id)} /></TableCell>
                 <TableCell className="text-right"><RowActions row={row} canEdit={canEdit.key} canDelete={canDelete.key} onOpenDetail={onOpenDetail} onDelete={onDelete} /></TableCell>
               </TableRow>
             )

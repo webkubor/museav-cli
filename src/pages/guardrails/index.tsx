@@ -436,6 +436,12 @@ export default function GuardrailsPage() {
   // 之前只对 is_default 级联，非默认全局启用不级联 → 累积多条 active 全局 → #108 置灰失效 → 逐条停用时撞后端「至少保留一条」报错（需求方#162）。
   function handleToggle({ id, status }: { id: string; status: 'active' | 'inactive' }) {
     const row = guardrails.find((g) => g.id === id)
+    // 4-way 审计发现启停开关是唯一零埋点的护栏动作（创建/编辑/删除均已上报），补齐 trackEvent
+    trackEvent(
+      'guardrails:toggle',
+      { id, name: row?.name ?? '', scope: row ? deriveScope(row) : 'unknown', enabled: status === 'active' },
+      { is_space_owner: isActiveWorkspaceOwner },
+    )
     if (row && deriveScope(row) === 'global' && status === 'active') {
       const deactivateIds = guardrails
         .filter((g) => deriveScope(g) === 'global' && g.status === 'active' && g.id !== id)
@@ -444,6 +450,17 @@ export default function GuardrailsPage() {
     } else {
       toggleMutation.mutate({ id, status })
     }
+  }
+
+  // 该行是否正处于启停请求中（供 Switch 置灰即时反馈）：普通切换看 toggleMutation，
+  // 全局级联切换（启用一条+连带停用多条）看 cascadeGlobalMutation 的目标 id 集合。
+  function isRowToggling(id: string): boolean {
+    if (toggleMutation.isPending && toggleMutation.variables?.id === id) return true
+    if (cascadeGlobalMutation.isPending) {
+      const vars = cascadeGlobalMutation.variables
+      if (vars && (vars.activateId === id || vars.deactivateIds.includes(id))) return true
+    }
+    return false
   }
 
   // ── 辅助函数 ────────────────────────────────────────────────────────────
@@ -803,6 +820,7 @@ export default function GuardrailsPage() {
         onSearchChange={(s, value) => setScopeSearch((prev) => ({ ...prev, [s]: value }))}
         onOpenDetail={openDetail}
         onToggle={handleToggle}
+        isRowToggling={isRowToggling}
         onDelete={(target) => {
           // 全局启用中护栏删除需二次提醒（文档：删除启用中全局按无全局处理）
           const row = guardrails.find((g) => g.id === target.id)

@@ -40,7 +40,7 @@ Full flag reference: `studio-image <command> --help`. Full command table and aut
 ## Programmatic use (no shell-out)
 
 ```ts
-import { StudioClient } from '@webkubor/studio-image'
+import { StudioClient } from 'studio-image'
 
 const studio = new StudioClient({ baseUrl: 'https://studio.webkubor.online', apiKey: process.env.STUDIO_API_KEY! })
 const job = await studio.generateAndWait({ prompt: 'a cat on the moon', ratio: '3:4' })

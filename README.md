@@ -44,7 +44,7 @@
 
 ```bash
 # 从 npm 安装（推荐）
-npm install -g @webkubor/studio-image
+npm install -g studio-image
 
 # 或从 GitHub 全局安装
 npm install -g github:webkubor/studio-image

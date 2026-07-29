@@ -7,6 +7,7 @@
  * 之后所有命令用 Bearer JWT 调 API，权限/额度与网页端一致。
  */
 import { saveConfig, DEFAULT_BASE_URL } from '../config.js'
+import { StudioClient } from '../client.js'
 
 export async function login(opts: { baseUrl?: string }): Promise<void> {
   const baseUrl = (opts.baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, '')
@@ -55,6 +56,7 @@ export async function login(opts: { baseUrl?: string }): Promise<void> {
     if (poll.status === 'approved' && poll.token) {
       saveConfig({ baseUrl, token: poll.token })
       process.stderr.write('\n✅ 登录成功！token 已保存到 ~/.studio-image.json\n')
+      await printAffiliation(baseUrl, poll.token)
       process.stderr.write('现在可以出图了：studio-image gen --prompt "一只猫"\n')
       return
     }
@@ -75,4 +77,18 @@ export async function login(opts: { baseUrl?: string }): Promise<void> {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms))
+}
+
+/** 登录后告诉用户账户归属——纯提示，查询失败不影响登录本身 */
+async function printAffiliation(baseUrl: string, token: string): Promise<void> {
+  try {
+    const me = await new StudioClient({ baseUrl, token }).me()
+    if (me.brand) {
+      process.stderr.write(`账户归属: ${me.brand.name}（该账户由此租户的邀请码注册）\n`)
+    } else {
+      process.stderr.write('账户归属: 平台用户（不属于任何租户）\n')
+    }
+  } catch {
+    // 查询归属失败不影响登录，静默跳过
+  }
 }

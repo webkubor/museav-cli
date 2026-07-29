@@ -27,6 +27,10 @@ studio-image gen --prompt "$(studio-image reverse ./photo.png)"
 
 # List your own (or, if using a tenant apiKey, your tenant's) recent jobs as JSON
 studio-image jobs --limit 10 --status failed
+
+# Check who you're logged in as and whether the account is affiliated with a tenant
+# (personal login only — apiKey callers get an error, they're already acting as the tenant)
+studio-image whoami
 ```
 
 Full flag reference: `studio-image <command> --help`. Full command table and auth details: see [README.md](./README.md).

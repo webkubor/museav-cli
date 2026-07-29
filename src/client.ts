@@ -52,6 +52,21 @@ export interface Balance {
   providers?: Array<{ name: string; label: string; ok: boolean; balance_usd: number }>
 }
 
+export interface MeInfo {
+  id: string
+  email: string
+  nickname?: string
+  role: string
+  /** 邀请码注册的账户，若该邀请码归属某个租户，这里带出该租户的白标品牌；平台用户（无归属）为 null */
+  brand: { name: string; logo: string | null } | null
+  gen_total: number
+  gen_done: number
+  skill_count: number
+  generation_used: number | null
+  generation_remaining: number | null
+  creation_credits: number
+}
+
 export class StudioClient {
   private baseUrl: string
   private authHeader: Record<string, string>
@@ -171,6 +186,11 @@ export class StudioClient {
     fd.append('file', new Blob([buf]))
     const r = await this.request('upload-ref', { method: 'POST', body: fd })
     return { url: r.url }
+  }
+
+  /** 查当前登录账户信息（含租户归属品牌）。仅个人 token 鉴权可用，apiKey 调用会 401。 */
+  async me(): Promise<MeInfo> {
+    return this.request('me')
   }
 
   /** 查可用模型列表 */

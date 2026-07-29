@@ -1,6 +1,6 @@
 {
   "name": "studio-image",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "studio 中台出图 CLI —— 命令行调中台 API 出图、逆向、图生图",
   "type": "module",
   "bin": {
@@ -23,10 +23,19 @@
   "engines": {
     "node": ">=18"
   },
-  "keywords": ["studio", "image", "cli", "ai", "generate", "reverse", "出图"],
+  "keywords": [
+    "studio",
+    "image",
+    "cli",
+    "ai",
+    "generate",
+    "reverse",
+    "出图"
+  ],
   "license": "MIT",
   "dependencies": {
-    "commander": "^12.0.0"
+    "commander": "^12.0.0",
+    "update-notifier": "^7.3.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

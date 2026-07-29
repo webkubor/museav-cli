@@ -4,7 +4,9 @@
  *
  * 用法见 README。注册中台：studio-image config --baseUrl ... --apiKey ...
  */
+import { readFileSync } from 'node:fs'
 import { Command } from 'commander'
+import updateNotifier from 'update-notifier'
 import { StudioClient } from './client.js'
 import { loadConfig, saveConfig, clearToken } from './config.js'
 import { login } from './commands/login.js'
@@ -14,13 +16,18 @@ import { upload } from './commands/upload.js'
 import { models } from './commands/models.js'
 import { balance } from './commands/balance.js'
 import { jobs } from './commands/jobs.js'
+import { whoami } from './commands/whoami.js'
+
+const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as { name: string; version: string }
+// 每 12 小时最多查一次 npm registry，过期才提示，不拖慢日常调用
+updateNotifier({ pkg, updateCheckInterval: 1000 * 60 * 60 * 12 }).notify({ defer: false })
 
 const program = new Command()
 
 program
   .name('studio-image')
   .description('studio 中台出图 CLI —— login 登录后即可命令行出图、逆向、图生图')
-  .version('0.3.0')
+  .version(pkg.version)
 
 // 工厂：加载配置 + 构造 client，把 commander 透传的参数转给命令
 function withClient<T extends (...args: any[]) => Promise<any>>(fn: T) {
@@ -81,6 +88,11 @@ program
   .option('--limit <n>', '最多显示几条（在最近 50 条以内截取），默认 20', '20')
   .option('--status <status>', '按状态过滤: pending / processing / done / failed（本地过滤，不是服务端查询）')
   .action(withClient((client: StudioClient, opts: any) => jobs(client, opts)))
+
+program
+  .command('whoami')
+  .description('查当前登录账户 + 租户归属（仅个人 login 可用，apiKey 调用会报错）')
+  .action(withClient((client: StudioClient) => whoami(client)))
 
 program
   .command('config')

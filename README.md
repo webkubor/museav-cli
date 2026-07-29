@@ -231,6 +231,7 @@ console.log(r.sculpt.light)  // 光影分析
 |------|------|------------|
 | `login` | 登录（设备授权） | — |
 | `logout` | 退出登录 | — |
+| `whoami` | 查当前账户 + 租户归属（仅个人 login） | JSON |
 | `gen` | 出图 | 图片 URL |
 | `reverse <file\|url>` | 图片逆向 | 英文 prompt |
 | `upload <file>` | 上传垫图 | 图片 URL |

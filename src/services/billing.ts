@@ -5,7 +5,7 @@
  * GET /tenants/:tenantId/recharges/:orderNo、POST /tenants/:tenantId/recharges/:orderNo/cancel、
  * POST /tenants/:tenantId/promo-codes/redeem
  */
-import { get, post } from '@/lib/request'
+import { get, post, patch } from '@/lib/request'
 import { pageItems } from '@/lib/utils'
 import type {
   RechargeListParams,
@@ -43,6 +43,40 @@ export interface BalanceBreakdown {
 /** GET /tenants/:tenantId/balance/breakdown — 余额细分（cash/grant/rebate 三桶，#93） */
 export function getBalanceBreakdown(tenantId: string): Promise<BalanceBreakdown> {
   return get<BalanceBreakdown>(`tenants/${tenantId}/balance/breakdown`)
+}
+
+// ─── 低余额提醒（PRD 1.0.4 §8.5，qa#528 后端已交付） ─────────────────────────
+
+/** 通知人（带后端算好的当前资格，本单暂只用 account_id，其余字段随后端扩展） */
+export interface LowBalanceRecipient {
+  account_id: string
+  [key: string]: unknown
+}
+
+export interface LowBalanceAlertConfig {
+  enabled: boolean
+  /** 生效阈值：per-tenant 覆盖优先，否则回落平台默认 */
+  threshold: Money
+  recipient_account_ids: string[]
+  recipients: LowBalanceRecipient[]
+}
+
+/**
+ * 三态更新：字段缺省=不动那部分配置，出现=整体替换（recipient_account_ids 传 [] 即清空）。
+ * threshold 传 "0"/非正数=清除 per-tenant 覆盖、回落平台默认，不是"设为 0"。
+ */
+export interface SetLowBalanceAlertRequest {
+  enabled?: boolean
+  threshold?: string
+  recipient_account_ids?: string[]
+}
+
+export function getLowBalanceAlert(tenantId: string) {
+  return get<LowBalanceAlertConfig>(`tenants/${tenantId}/billing/low-balance-alert`)
+}
+
+export function updateLowBalanceAlert(tenantId: string, body: SetLowBalanceAlertRequest) {
+  return patch<LowBalanceAlertConfig>(`tenants/${tenantId}/billing/low-balance-alert`, body)
 }
 
 // ─── 赠送明细 ─────────────────────────────────────

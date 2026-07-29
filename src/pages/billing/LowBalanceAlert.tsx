@@ -1,48 +1,42 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Switch } from '@/components/ui/Switch'
 import { Popover } from '@/components/ui/Popover'
 import { useTenantRole } from '@/hooks/use-tenant-role'
-import { useBalance } from '@/hooks/use-balance'
 import { listTenantMembers } from '@/services/tenants'
-import { storageKeys } from '@/lib/storage'
+import { getLowBalanceAlert, updateLowBalanceAlert, type SetLowBalanceAlertRequest } from '@/services/billing'
+import { appToast } from '@/lib/app-toast'
 import { cn } from '@/lib/utils'
 import { trackEvent } from '@/lib/track'
 import { amountBand } from './billing-tracking'
 
 /**
  * 低余额提醒（PRD 1.0.4 §8.5，续 #530）。
- * TODO(#528): 后端写接口 PATCH /tenants/{id}/billing/low-balance-alert 交付前，
- * 配置只落 localStorage（按租户隔离），UI 先按 PRD/原型对齐；接口交付后
- * 把 loadConfig/saveConfig 换成真实请求即可，组件本身不用改。
+ * 后端接口已交付（qa#528）：GET/PATCH /tenants/:id/billing/low-balance-alert，
+ * 三态更新——字段缺省=不动那部分配置，出现=整体替换。之前这里只落 localStorage
+ * （当时后端未交付），2026-07-29 实测接口已上线，改回真实请求。
  */
-interface StoredConfig {
-  enabled: boolean
-  threshold: string
-  recipientIds: string[]
-}
-
-function loadConfig(tenantId: string, defaultThreshold: string): StoredConfig {
-  try {
-    const raw = localStorage.getItem(storageKeys.billingLowBalanceAlert(tenantId))
-    if (raw) return JSON.parse(raw) as StoredConfig
-  } catch {
-    // 忽略损坏的本地存储，回退默认值
-  }
-  return { enabled: true, threshold: defaultThreshold, recipientIds: [] }
-}
-
-function saveConfig(tenantId: string, config: StoredConfig) {
-  localStorage.setItem(storageKeys.billingLowBalanceAlert(tenantId), JSON.stringify(config))
-}
-
 export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation()
   const { isEnterprise } = useTenantRole()
-  const { data: balance } = useBalance(tenantId)
+  const queryClient = useQueryClient()
 
-  const [config, setConfig] = useState<StoredConfig | null>(null)
+  const alertQueryKey = ['billing', 'low-balance-alert', tenantId]
+  const { data: alert, isLoading } = useQuery({
+    queryKey: alertQueryKey,
+    queryFn: () => getLowBalanceAlert(tenantId),
+    enabled: Boolean(tenantId),
+  })
+
+  // 阈值输入框草稿：编辑中不能被 refetch/轮询打断，仅在阈值来源变化（切租户/首次加载/
+  // 保存成功后端回填）时才同步，用户正在打字时不会被覆盖。
+  const [thresholdDraft, setThresholdDraft] = useState('')
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (alert) setThresholdDraft(alert.threshold?.amount ?? '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [alert?.threshold?.amount, tenantId])
 
   // 候选通知人：仅企业租户需要，成员里筛 tenant_owner/tenant_admin（PRD §8.5）
   const { data: membersPage } = useQuery({
@@ -56,48 +50,26 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
     [membersPage],
   )
 
-  useEffect(() => {
-    if (!tenantId) return
-    const defaultThreshold = balance?.low_balance_threshold?.amount ?? '1000'
-    // 仅首次挂载/切租户时从 localStorage/余额接口取初始值，避免余额轮询把用户正在编辑的阈值覆盖
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setConfig((prev) => prev ?? loadConfig(tenantId, defaultThreshold))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenantId])
+  const mutation = useMutation({
+    mutationFn: (body: SetLowBalanceAlertRequest) => updateLowBalanceAlert(tenantId, body),
+    onSuccess: (data) => {
+      queryClient.setQueryData(alertQueryKey, data)
+    },
+    onError: () => {
+      appToast.error(t('billing.lowBalance.saveFailed', { defaultValue: '保存失败，请稍后重试' }))
+    },
+  })
 
-  // 企业租户：开启时至少保留 1 个有效通知人，且只能是当前候选里的 Owner/Admin（角色变化后自动剔除失效项）
-  useEffect(() => {
-    if (!config || !isEnterprise || candidates.length === 0) return
-    const validIds = new Set(candidates.map((m) => m.account.account_id))
-    const stillValid = config.recipientIds.filter((id) => validIds.has(id))
-    if (stillValid.length !== config.recipientIds.length) {
-      const next = { ...config, recipientIds: stillValid.length > 0 ? stillValid : [candidates[0].account.account_id] }
-      // 候选人列表变化（成员离职/降级）后回退失效通知人，属于外部数据同步，非用户交互触发
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setConfig(next)
-      saveConfig(tenantId, next)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [candidates])
-
-  if (!config) return null
-
-  const update = (patch: Partial<StoredConfig>) => {
-    const next = { ...config, ...patch }
-    setConfig(next)
-    saveConfig(tenantId, next)
-  }
+  if (isLoading || !alert) return null
 
   const toggleRecipient = (accountId: string) => {
-    const has = config.recipientIds.includes(accountId)
+    const has = alert.recipient_account_ids.includes(accountId)
     // 企业租户开启提醒时至少保留 1 个通知人，不允许移除最后一个
-    if (has && config.enabled && config.recipientIds.length <= 1) return
+    if (has && alert.enabled && alert.recipient_account_ids.length <= 1) return
     const nextRecipientIds = has
-      ? config.recipientIds.filter((id) => id !== accountId)
-      : [...config.recipientIds, accountId]
-    update({ recipientIds: nextRecipientIds })
-    // §11.2 billing_low_balance_recipients_update：接口未交付（qa#528），仅前端本地保存；
-    // recipient_role_set 依赖后端审计字段，先不上报，避免上传姓名/邮箱等明文（PRD 硬性要求）
+      ? alert.recipient_account_ids.filter((id) => id !== accountId)
+      : [...alert.recipient_account_ids, accountId]
+    mutation.mutate({ recipient_account_ids: nextRecipientIds })
     trackEvent('billing_low_balance_recipients_update', {
       recipient_count: nextRecipientIds.length,
       result: 'success',
@@ -105,7 +77,7 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
   }
 
   const selectedNames = candidates
-    .filter((m) => config.recipientIds.includes(m.account.account_id))
+    .filter((m) => alert.recipient_account_ids.includes(m.account.account_id))
     .map((m) => m.account.display_name)
 
   return (
@@ -124,7 +96,7 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
               trigger={
                 <button
                   type="button"
-                  disabled={!config.enabled}
+                  disabled={!alert.enabled}
                   className={cn(
                     'billing-low-balance-recipient flex items-center gap-1.5 h-9 px-3 rounded-md border border-mg-border text-xs font-semibold text-mg-text-2 hover:bg-mg-fill-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed',
                   )}
@@ -144,7 +116,7 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
                     >
                       <input
                         type="checkbox"
-                        checked={config.recipientIds.includes(m.account.account_id)}
+                        checked={alert.recipient_account_ids.includes(m.account.account_id)}
                         onChange={() => toggleRecipient(m.account.account_id)}
                         className="h-4 w-4 rounded-sm border-mg-border accent-brand-base"
                       />
@@ -166,13 +138,15 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
             <input
               type="number"
               min="0"
-              disabled={!config.enabled}
-              value={config.threshold}
-              onChange={(e) => update({ threshold: e.target.value })}
-              onBlur={(e) => {
+              disabled={!alert.enabled}
+              value={thresholdDraft}
+              onChange={(e) => setThresholdDraft(e.target.value)}
+              onBlur={() => {
+                if (!thresholdDraft.trim() || thresholdDraft === alert.threshold?.amount) return
+                mutation.mutate({ threshold: thresholdDraft })
                 // §11.2 billing_low_balance_threshold_update：只在失焦（提交完整值）时上报，避免逐键触发
                 trackEvent('billing_low_balance_threshold_update', {
-                  threshold_band: amountBand(e.target.value),
+                  threshold_band: amountBand(thresholdDraft),
                   result: 'success',
                 })
               }}
@@ -181,15 +155,16 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
           </div>
 
           <Switch
-            checked={config.enabled}
+            checked={alert.enabled}
+            disabled={mutation.isPending}
             onCheckedChange={(enabled) => {
-              update({ enabled })
-              // §11.2 billing_low_balance_toggle：low_balance_recipient_role_set 依赖后端审计字段
-              // （qa#528 未交付），先跳过，只报前端能拿到的开关/阈值/人数
+              mutation.mutate({ enabled })
+              // §11.2 billing_low_balance_toggle：low_balance_recipient_role_set 依赖后端审计字段，
+              // 目前只报前端能拿到的开关/阈值/人数
               trackEvent('billing_low_balance_toggle', {
                 enabled,
-                threshold_band: amountBand(config.threshold),
-                low_balance_recipient_count: config.recipientIds.length,
+                threshold_band: amountBand(thresholdDraft),
+                low_balance_recipient_count: alert.recipient_account_ids.length,
               })
             }}
             aria-label={t('billing.lowBalance.toggle', { defaultValue: '低余额提醒开关' })}

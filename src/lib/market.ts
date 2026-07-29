@@ -1,4 +1,4 @@
-import { storageKeys } from '@/lib/storage'
+import { MARKET_OVERRIDE_SESSION_KEY, storageKeys } from '@/lib/storage'
 import {
   marketFromLocation,
   marketLockedByDomain,
@@ -15,7 +15,23 @@ export type { Market } from '@/lib/market-domain'
 export function getMarketQueryOverride(): Market | null {
   if (typeof window === 'undefined') return null
   if (marketLockedByDomain(window.location.hostname)) return null
-  return marketOverrideFromSearch(window.location.search)
+
+  const fromQuery = marketOverrideFromSearch(window.location.search)
+  if (fromQuery) {
+    // 登录/注册后路由通常会移除 query；在同一标签页内保留市场上下文，
+    // 才不会回到 dashboard 后又被 test 平台配置翻回国内。
+    try {
+      sessionStorage.setItem(MARKET_OVERRIDE_SESSION_KEY, fromQuery)
+    } catch {}
+    return fromQuery
+  }
+
+  try {
+    const fromSession = sessionStorage.getItem(MARKET_OVERRIDE_SESSION_KEY)
+    return fromSession === 'china' || fromSession === 'global' ? fromSession : null
+  } catch {
+    return null
+  }
 }
 
 export function getMarket(): Market {

@@ -8,11 +8,22 @@
  * 所有业务代码只能通过 storageKeys 访问 localStorage，禁止硬编码字符串 key。
  */
 
-import { marketFromLocation } from '@/lib/market-domain'
+import { marketFromLocation, marketLockedByDomain, marketOverrideFromSearch } from '@/lib/market-domain'
+
+/** 共享测试域名内，从外部链接带入的市场上下文；仅 session 级，关闭标签即失效。 */
+export const MARKET_OVERRIDE_SESSION_KEY = 'mg:market_override'
 
 // 域名→市场唯一真源（market-domain 是零依赖叶子，引它不成环）
 function detectMarket(): string {
   if (typeof window === 'undefined') return 'china'
+  const locked = marketLockedByDomain(window.location.hostname)
+  if (locked) return locked
+  const fromQuery = marketOverrideFromSearch(window.location.search)
+  if (fromQuery) return fromQuery
+  try {
+    const fromSession = sessionStorage.getItem(MARKET_OVERRIDE_SESSION_KEY)
+    if (fromSession === 'china' || fromSession === 'global') return fromSession
+  } catch {}
   return marketFromLocation(window.location.hostname, window.location.search)
 }
 

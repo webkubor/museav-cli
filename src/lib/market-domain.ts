@@ -33,3 +33,12 @@ export function marketLockedByDomain(hostname: string): Market | null {
   if (h.endsWith('modelgo.com')) return 'china'
   return null
 }
+
+/**
+ * 共享测试域名上的显式市场覆盖。调用方必须先确认当前不是生产锁定域名，
+ * 以避免 URL 参数改变生产域名的市场归属。
+ */
+export function marketOverrideFromSearch(search: string): Market | null {
+  const market = new URLSearchParams(search).get('market')
+  return market === 'china' || market === 'global' ? market : null
+}

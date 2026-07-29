@@ -141,22 +141,38 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
         : 'text-mg-text-2 hover:text-brand-base',
     )
 
-  const [scrolled, setScrolled] = useState(false)
+  // 顶栏三段式毛玻璃：贴顶=实地（不透明，强调品牌/导航基准态）；滚动中（离开顶部但未触底）=
+  // 磨砂毛玻璃（半透明+模糊，兼顾可读性与轻盈感）；贴底=透明（内容看完，顶栏视觉上让位）。
+  // 内容不够一屏（无法有效滚动）时按贴顶处理，不做"悬浮透明"这种脱离滚动语境的观感。
+  const [scrollZone, setScrollZone] = useState<'top' | 'scrolling' | 'bottom'>('top')
+  const TOP_THRESHOLD = 15
+  const BOTTOM_THRESHOLD = 24
 
   useEffect(() => {
     let mainEl = document.querySelector('main')
     const handleScroll = () => {
-      if (mainEl) {
-        setScrolled(mainEl.scrollTop > 15)
+      if (!mainEl) return
+      const { scrollTop, scrollHeight, clientHeight } = mainEl
+      const scrollable = scrollHeight - clientHeight
+      if (scrollable <= TOP_THRESHOLD + BOTTOM_THRESHOLD) {
+        setScrollZone('top')
+      } else if (scrollTop <= TOP_THRESHOLD) {
+        setScrollZone('top')
+      } else if (scrollHeight - scrollTop - clientHeight <= BOTTOM_THRESHOLD) {
+        setScrollZone('bottom')
+      } else {
+        setScrollZone('scrolling')
       }
     }
-    
+
     if (mainEl) {
+      handleScroll()
       mainEl.addEventListener('scroll', handleScroll)
     } else {
       const timer = setTimeout(() => {
         mainEl = document.querySelector('main')
         if (mainEl) {
+          handleScroll()
           mainEl.addEventListener('scroll', handleScroll)
         }
       }, 100)
@@ -455,8 +471,12 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
   return (
     <header className={cn(
       "h-[60px] border-b px-6 flex items-center justify-between z-40 relative select-none transition-all duration-300 ease-out",
-      "bg-[rgba(var(--mg-bg-0-rgb),0.45)] border-mg-border/30 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]",
-      scrolled && "bg-[rgba(var(--mg-bg-0-rgb),0.85)] border-mg-border/80 shadow-md shadow-black/5"
+      scrollZone === 'top' &&
+        "bg-[rgba(var(--mg-bg-0-rgb),0.92)] border-mg-border/80 backdrop-blur-md shadow-md shadow-black/5",
+      scrollZone === 'scrolling' &&
+        "bg-[rgba(var(--mg-bg-0-rgb),0.45)] border-mg-border/30 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]",
+      scrollZone === 'bottom' &&
+        "bg-transparent border-transparent backdrop-blur-none shadow-none"
     )}>
       {/* 左侧：Logo & 工作区选择器 */}
       <div className="flex items-center gap-6">

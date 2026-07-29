@@ -31,17 +31,13 @@ import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { Button } from '@/components/ui/Button'
 import { formatContextLength, formatNumber, prettyModelName, trimPriceZeros } from '@/lib/utils'
+import {
+  MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities,
+} from '@/features/models/model-format'
 import { hasPlaygroundExperience } from '../model-experience-data'
 import type { CatalogModelItem } from '@/types'
 
 const MODALITY_ICON: Record<string, IconType> = { text: LuFileText, image: LuImage, audio: LuMic, video: LuVideo }
-const MODALITY_CODES = ['text', 'image', 'audio', 'video']
-/**
- * 内部标签黑名单。**目标是删掉它** —— 能力标签应由后端 model_tags 的 capability
- * 分组决定（facets 已按该分组下发）。等各环境能力字典 seed 完成、tags 里不再混入
- * 这些值之后即可移除。
- */
-const TAG_DENYLIST = new Set(['modelgo_tool', 'test', 'free', 'internal', 'tool'])
 
 function tagIcon(tag: string): IconType {
   const t = tag.toLowerCase()
@@ -62,35 +58,6 @@ function writeFav(id: string, on: boolean) {
   const s = readFavs()
   if (on) s.add(id); else s.delete(id)
   try { localStorage.setItem(FAV_KEY, JSON.stringify([...s])) } catch { /* 忽略隐私模式写入失败 */ }
-}
-
-// 货币代码 → 符号（后端给的是 CNY/USD 这类代码）
-const CCY_SYMBOL: Record<string, string> = { CNY: '¥', RMB: '¥', USD: '$', EUR: '€', '¥': '¥', $: '$' }
-
-/** 计价单位后缀。price_unit 为空表示按每 1M token 计价（对话模型）。 */
-function priceUnitSuffix(priceUnit: string | undefined): string {
-  return priceUnit ? `/${priceUnit}` : '/1M tokens'
-}
-
-function priceText(
-  amount: number | string | null | undefined,
-  symbol: string,
-  freeLabel: string,
-  unitSuffix: string,
-) {
-  const n = typeof amount === 'string' ? parseFloat(amount) : amount
-  if (amount == null || amount === '' || Number.isNaN(n) || (n ?? 0) <= 0) {
-    return { value: freeLabel, unit: '' }
-  }
-  return { value: `${symbol} ${trimPriceZeros(amount)}`, unit: unitSuffix }
-}
-
-/** 协议标签文案照原型：带「兼容」后缀，明确这是入站协议兼容性而非厂商归属。 */
-const PROTOCOL_LABEL_ZH: Record<string, string> = {
-  openai: 'OpenAI 兼容', anthropic: 'Anthropic 兼容', other: '其他协议',
-}
-const PROTOCOL_LABEL_EN: Record<string, string> = {
-  openai: 'OpenAI compatible', anthropic: 'Anthropic compatible', other: 'Other',
 }
 
 interface Props {
@@ -122,7 +89,7 @@ export function CatalogCard({
   const [fav, setFav] = useState(() => readFavs().has(model.id))
 
   const detailHref = `/models/${model.slug || model.id}`
-  const symbol = CCY_SYMBOL[(model.pricing?.currency || '').toUpperCase()] || model.pricing?.currency || (isZh ? '¥' : '$')
+  const symbol = currencySymbol(model.pricing?.currency, isZh)
   const ctxValue = (model.context_length ?? 0) > 0 ? formatContextLength(model.context_length) : '—'
   const name = prettyModelName(model.display_name, model.model_id)
   const provider = model.provider || model.vendor
@@ -132,18 +99,16 @@ export function CatalogCard({
 
   const unitSuffix = priceUnitSuffix(model.price_unit)
   const freeLabel = t('modelsCatalog.card.free')
-  const input = priceText(model.pricing?.input_per_1m, symbol, freeLabel, unitSuffix)
-  const output = priceText(model.pricing?.output_per_1m, symbol, freeLabel, unitSuffix)
+  // isFree 优先于金额：限免标记与 pricing 打架时（test 上确有这种数据）以标记为准，
+  // 否则卡片会「角标写限时免费、价格写 ¥10」自相矛盾。
+  const input = priceText(model.pricing?.input_per_1m, symbol, freeLabel, unitSuffix, isFree)
+  const output = priceText(model.pricing?.output_per_1m, symbol, freeLabel, unitSuffix, isFree)
 
   // 输入 → 输出模态流。后端拆分下发；老数据只有合并 modalities 时退回并集。
   const inputMods = (model.input_modalities ?? model.modalities ?? []).filter((m) => MODALITY_CODES.includes(m))
   const outputMods = (model.output_modalities ?? model.modalities ?? []).filter((m) => MODALITY_CODES.includes(m))
 
-  const vendorish = new Set([model.provider, model.vendor].filter(Boolean).map((s) => String(s).toLowerCase()))
-  const capabilities = (model.tags ?? [])
-    .filter((tg) => !MODALITY_CODES.includes(tg))
-    .filter((tg) => !TAG_DENYLIST.has(tg.toLowerCase()) && !vendorish.has(tg.toLowerCase()))
-    .slice(0, 3)
+  const capabilities = pickCapabilities(model.tags, [model.provider, model.vendor], 3)
 
   const discountLabel = isZh ? promo?.discount_label : (promo?.discount_label_en || promo?.discount_label)
   const summary = model.tagline || ''
@@ -249,11 +214,11 @@ export function CatalogCard({
               key={p}
               type="button"
               className={`mg-proto is-${p}`}
-              title={`${isZh ? '筛选：' : 'Filter: '}${(isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN)[p] ?? p}`}
+              title={`${isZh ? '筛选：' : 'Filter: '}${protocolLabel(p, isZh)}`}
               onClick={(e) => { e.stopPropagation(); onPickProtocol?.(p) }}
               disabled={!onPickProtocol}
             >
-              {(isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN)[p] ?? p}
+              {protocolLabel(p, isZh)}
             </button>
           ))}
         </div>

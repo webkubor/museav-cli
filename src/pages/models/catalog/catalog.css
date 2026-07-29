@@ -1085,6 +1085,71 @@ body[theme-mode='dark'] .catalog-insight-panel {
 .mg-featured-bg-default_04 { background: linear-gradient(112deg, #1b2133 0%, #364a78 62%, #4a5f96 100%); }
 .mg-featured-bg-default_05 { background: linear-gradient(112deg, #102a40 0%, #23608f 62%, #2f7fb5 100%); }
 
+/* ── 详情页 Hero / 规格条（信息结构照原型 App.tsx:5041-5168）───────── */
+/* 每个区块自成一张卡（原型也是 hero / 规格 / API / 相关模型 四块），页面纵向
+   节奏由 .models-catalog-page 的 gap 给，卡内不再拿分隔线切段。 */
+.mg-detail-card { padding: 20px 24px; }
+
+/* Hero 三栏：图标 | 主信息 | 操作区。窄屏下操作区落到主信息下方而不是被挤扁。 */
+.mg-detail-hero {
+  display: flex; align-items: flex-start; gap: 16px;
+  padding: 20px 24px;
+}
+.mg-detail-avatar { border: 1px solid var(--mg-border); background: var(--mg-bg-1); flex-shrink: 0; }
+.mg-detail-hero-main { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1; }
+.mg-detail-title { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.mg-detail-meta {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  font-size: 12px; color: var(--mg-text-3);
+}
+.mg-detail-vendor { flex-shrink: 0; white-space: nowrap; }
+.mg-detail-api {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 1px 6px; border-radius: var(--radius-sm);
+  background: var(--mg-fill-0); font-size: 11.5px; color: var(--mg-text-4);
+}
+.mg-detail-desc {
+  margin: 2px 0 0; max-width: 76ch;
+  font-size: 12.5px; line-height: 1.6; color: var(--mg-text-3);
+}
+.mg-detail-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+/* 详情页的协议标签不可点（广场卡片上才是反查筛选入口），用 span 渲染 → 补对齐 */
+.mg-detail-tags .mg-proto { display: inline-flex; align-items: center; }
+
+/* 操作区：主 CTA 在上，次级动作与外链依次向下（原型右栏竖排） */
+.mg-detail-hero-actions {
+  display: flex; flex-direction: column; align-items: stretch; gap: 8px;
+  flex-shrink: 0; min-width: 132px;
+}
+.mg-detail-hero-actions > a { justify-content: center; }
+
+/* 规格条：一行 6 格铺满，窄屏按 minmax 自动折行 */
+.mg-detail-specs {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 16px 18px;
+  padding: 18px 24px;
+}
+.mg-detail-specs .mg-metric-value { font-size: 15px; }
+/* 次行价（媒体模型的文本分项价 / 缓存写入 1h） */
+.mg-metric-sub { font-size: 11.5px; color: var(--mg-text-4); }
+/* 划线原价独占一行（同行会被 nowrap 的现价挤出格外） */
+.mg-detail-specs .mg-metric-strike { margin-left: 0; }
+/* TTL / 计价口径小标签：5min·1h·文本·图片 */
+.mg-metric-ttl {
+  margin-left: 4px; padding: 0 4px; border-radius: var(--radius-sm);
+  background: var(--mg-fill-1); font-size: 10px; font-style: normal;
+  font-weight: 600; color: var(--mg-text-3); vertical-align: middle;
+}
+
+/* 技术规格（控制台比原型多下发的字段） */
+.mg-detail-extra {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .mg-detail-hero { flex-wrap: wrap; }
+  .mg-detail-hero-actions { flex-direction: row; flex-wrap: wrap; width: 100%; }
+}
+
 /* ── 详情页相关模型 ─────────────────────────────────────────── */
 .mg-related-grid {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;
@@ -1093,7 +1158,12 @@ body[theme-mode='dark'] .catalog-insight-panel {
   display: flex; flex-direction: column; gap: 3px; align-items: flex-start;
   padding: 12px 14px; text-align: left; cursor: pointer;
 }
-.mg-related-name { font-size: 13.5px; font-weight: 600; color: var(--mg-text-1); }
+.mg-related-head { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.mg-related-avatar { border: 1px solid var(--mg-border); background: var(--mg-bg-1); flex-shrink: 0; }
+.mg-related-name {
+  font-size: 13.5px; font-weight: 600; color: var(--mg-text-1);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .mg-related-meta { font-size: 12px; color: var(--mg-text-3); }
 .mg-related-price { font-size: 12px; color: var(--brand-base); }
 

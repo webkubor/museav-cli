@@ -4,12 +4,12 @@
  * 推理供应商区块已按 PRD 删除，对应公开 API 也已下线，故不再拉取。
  * 复用 features/models 的 ModelDetailPanel；匿名可看，「去体验」需登录。
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { LuChevronLeft, LuChevronRight, LuExternalLink } from 'react-icons/lu'
-import { getModel, listRelatedModels } from '@/services/catalog'
+import { LuChevronLeft, LuChevronRight, LuExternalLink, LuGitCompareArrows } from 'react-icons/lu'
+import { getModel, listModels, listRelatedModels } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { useLangStore } from '@/store/use-brand-store'
 import { getMarketConfig } from '@/config/market'
@@ -17,10 +17,13 @@ import { appendThemeParam } from '@/lib/theme'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import { trackEvent, trackPageView } from '@/lib/track'
 import { Button } from '@/components/ui/Button'
-import { trimPriceZeros } from '@/lib/utils'
+import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import { ModelDetailPanel } from '@/features/models/components/ModelDetailPanel'
+import { ModelIcon } from '@/features/models/components/ModelIcon'
+import { currencySymbol } from '@/features/models/model-format'
 import { resolveModelCategory, hasPlaygroundExperience } from '../model-experience-data'
 import { mapApiProtocols } from '../api-code-samples'
+import { ModelsCompareModal } from '../components/ModelsCompareModal'
 import { ApiAccessPanel } from './ApiAccessPanel'
 import '../catalog/catalog.css'
 
@@ -45,6 +48,7 @@ export default function ModelDetailPage() {
 
   const apiSectionRef = useRef<HTMLDivElement>(null)
   const viewTrackedRef = useRef(false)
+  const [isCompareOpen, setIsCompareOpen] = useState(false)
 
   const detailQuery = useQuery({
     queryKey: ['catalog-model-detail', modelId],
@@ -65,6 +69,25 @@ export default function ModelDetailPage() {
   const related = relatedQuery.data?.items ?? []
   const detail = detailQuery.data
 
+  /**
+   * 对比候选池。只在弹窗真的打开后才拉 —— 详情页首屏不需要全量目录，
+   * 那是一条 page_size:100 的请求，不该为一个未点开的入口付代价。
+   * pytest-* 过滤与广场列表页同一处理（test 库里测试模型仍 hidden=false）。
+   */
+  const compareCandidatesQuery = useQuery({
+    queryKey: ['catalog-models', 'compare-candidates'],
+    queryFn: () => listModels({ page_size: 100 }),
+    enabled: isCompareOpen,
+    staleTime: 5 * 60_000,
+  })
+  const compareCandidates = (compareCandidatesQuery.data?.items ?? [])
+    .filter((m) => !/^pytest/i.test(m.model_id))
+
+  const openCompare = () => {
+    trackEvent('marketplace_compare_clicked', { model_id: detail?.model_id ?? modelId, source: 'detail' })
+    setIsCompareOpen(true)
+  }
+
   // marketplace_detail_view（PRD §10.2）：详情数据到位才算「有效展示」，只上报一次。
   // intent 目前只有 browse/api 两类：从卡片「API请求」跳转（携带 scrollTo=api-access）
   // 记为 api，其余（列表卡片/轮播/相关模型/直接访问）记为 browse。
@@ -82,7 +105,14 @@ export default function ModelDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detail])
 
-  // 卡片「API请求」进入时自动滚动到 API 接入区，不打开新弹窗（PRD §8.3）
+  /**
+   * 卡片「API请求」进入时自动滚动到 API 接入区，不打开新弹窗（PRD §8.3）。
+   *
+   * ⚠️ 已知未修复：实测（本次改造前的 test 代码同样如此）落地后 scrollY 恒为 0 ——
+   * scrollIntoView 确实被调用，但那一刻页面还没撑开（scrollHeight 898 / 视口 620），
+   * 算出的目标到不了 API 区。rAF 延后一帧、瞬时滚动、依赖 related.length 重试都试过，
+   * 均未生效，需要单独排查（与本次「详情页对齐原型」无关，故不在本次改动里带）。
+   */
   useEffect(() => {
     if (navState?.scrollTo === 'api-access' && detail && apiSectionRef.current) {
       apiSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -128,8 +158,14 @@ export default function ModelDetailPage() {
     trackEvent('marketplace_docs_clicked', { model_id: detail?.model_id ?? modelId })
   }
 
+  /**
+   * 页面宽度与分区块都对齐现状广场列表页 + 原型：列表页 `.models-catalog-page`
+   * 没有 max-width（跟随外层 layout），详情页此前独自锁 1080px 居中，从列表点进来
+   * 内容区会突然收窄；原型也是 hero / 规格 / API / 相关模型 四块独立卡，而不是
+   * 一张大卡里拿分隔线切段。
+   */
   return (
-    <div className="models-catalog-page mx-auto w-full max-w-[1080px]">
+    <div className="models-catalog-page">
       <button
         type="button"
         onClick={() => navigate('/models')}
@@ -150,52 +186,68 @@ export default function ModelDetailPage() {
           {isZh ? '模型不存在或加载失败' : 'Model not found or failed to load'}
         </div>
       ) : (
-        <div className="bg-mg-bg-0 border-mg-border rounded-lg border p-6">
+        <>
+          {/* Hero 操作区（PRD §7.6 / 原型 App.tsx:5073-5097）：去体验 + 模型对比 +
+              查看API接入手册，挂在 Hero 右侧而不是规格区下面 —— 原型把主 CTA 与
+              模型身份同屏对齐，滚动前就能点。
+              AC-13「暂未开放」：没配置任何可体验任务时禁用并把文案换成「暂未开放」
+              （原型 App.tsx:5074-5082 逐字对齐，不只是禁用，按钮文字本身也要变）。 */}
           <ModelDetailPanel
             detail={detail}
             onModelIdCopied={() => trackEvent('marketplace_model_id_copied', { model_id: detail.model_id, source: 'detail' })}
+            actions={
+              <>
+                <Button
+                  variant="brand"
+                  disabled={!hasPlaygroundExperience(detail)}
+                  title={!hasPlaygroundExperience(detail) ? t('modelsCatalog.button.comingSoonHint') : undefined}
+                  onClick={goTry}
+                >
+                  {hasPlaygroundExperience(detail) ? t('modelsCatalog.button.try') : t('modelsCatalog.button.comingSoon')}
+                  <LuChevronRight size={14} />
+                </Button>
+                {detail.compare_enabled === true && (
+                  <Button variant="outline" onClick={openCompare}>
+                    <LuGitCompareArrows size={14} />
+                    {t('modelsCatalog.button.compare')}
+                  </Button>
+                )}
+                <a
+                  href={docsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleDocsClick}
+                  className="inline-flex items-center gap-1 text-[13px] text-mg-text-3 transition-colors hover:text-brand-base"
+                >
+                  {isZh ? '查看API接入手册' : 'View API integration guide'}
+                  <LuExternalLink size={13} />
+                </a>
+              </>
+            }
           />
-          {/* Hero 操作行（PRD §7.6）：去体验 + 查看API接入手册（新标签页打开公开文档）。
-              AC-13「暂未开放」：没配置任何可体验任务时禁用并把文案换成「暂未开放」
-              （原型 App.tsx:5074-5082 逐字对齐，不只是禁用，按钮文字本身也要变）。 */}
-          <div className="border-mg-border mt-6 flex flex-wrap items-center gap-3 border-t pt-5">
-            <Button
-              variant="brand"
-              disabled={!hasPlaygroundExperience(detail)}
-              title={!hasPlaygroundExperience(detail) ? t('modelsCatalog.button.comingSoonHint') : undefined}
-              onClick={goTry}
-            >
-              {hasPlaygroundExperience(detail) ? t('modelsCatalog.button.try') : t('modelsCatalog.button.comingSoon')}
-              <LuChevronRight size={14} />
-            </Button>
-            <a
-              href={docsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={handleDocsClick}
-              className="inline-flex items-center gap-1 text-[13px] text-mg-text-3 transition-colors hover:text-brand-base"
-            >
-              {isZh ? '查看API接入手册' : 'View API integration guide'}
-              <LuExternalLink size={13} />
-            </a>
-          </div>
 
           {/* API 接入区（PRD §7.6）：标题右侧只保留「获取API Key」；代码 Tab 按协议过滤 */}
-          <ApiAccessPanel
-            ref={apiSectionRef}
-            modelId={detail.model_id}
-            protocols={mapApiProtocols(detail.protocols)}
-            isZh={isZh}
-            onGetKeyClick={handleGetKey}
-            onTabChange={(codeTab, protocol) => trackEvent('marketplace_api_tab_changed', { code_tab: codeTab, protocol })}
-            onCodeCopied={(codeTab) => trackEvent('marketplace_api_code_copied', { model_id: detail.model_id, code_tab: codeTab })}
-          />
+          <div className="mg-tile mg-detail-card">
+            <ApiAccessPanel
+              ref={apiSectionRef}
+              modelId={detail.model_id}
+              protocols={mapApiProtocols(detail.protocols)}
+              isZh={isZh}
+              onGetKeyClick={handleGetKey}
+              onTabChange={(codeTab, protocol) => trackEvent('marketplace_api_tab_changed', { code_tab: codeTab, protocol })}
+              onCodeCopied={(codeTab) => trackEvent('marketplace_api_code_copied', { model_id: detail.model_id, code_tab: codeTab })}
+            />
+          </div>
 
           {related.length > 0 && (
-            <section className="border-mg-border mt-6 border-t pt-5">
+            <section className="mg-tile mg-detail-card">
               <h3 className="text-mg-text-1 mb-3 text-[14px] font-semibold">
                 {isZh ? '相关模型' : 'Related models'}
               </h3>
+              {/* 卡片信息照原型 App.tsx:5205-5222：厂商图标 + 名称 / 「厂商 · 1M 上下文」/
+                  「¥x / ¥y 每M」。上下文走 formatContextLength（原本裸 /1000 会把
+                  1048576 显示成 1049K），名称走 prettyModelName（原本直接吐
+                  `anthropic/claude-sonnet-4.6` 这类原始 ID）。 */}
               <div className="mg-related-grid">
                 {related.map((item) => (
                   <button
@@ -204,23 +256,54 @@ export default function ModelDetailPage() {
                     className="mg-tile mg-tile-hover mg-related-card"
                     onClick={() => navigate(`/models/${item.slug || item.id}`, { state: { source: 'related' } })}
                   >
-                    <span className="mg-related-name">{item.name}</span>
+                    <span className="mg-related-head">
+                      <ModelIcon
+                        model={{ logo_url: item.logo_url, vendor: item.vendor, display_name: item.name }}
+                        size={22}
+                        rounded="rounded-full"
+                        className="mg-related-avatar"
+                      />
+                      <span className="mg-related-name">{prettyModelName(item.name, item.model_id)}</span>
+                    </span>
                     <span className="mg-related-meta">
                       {item.vendor}
-                      {item.context_length > 0 && ` · ${Math.round(item.context_length / 1000)}K`}
+                      {item.context_length > 0
+                        && ` · ${formatContextLength(item.context_length)} ${t('modelsCatalog.labels.context')}`}
                     </span>
                     <span className="mg-related-price">
                       {item.is_free
                         ? (isZh ? '限时免费' : 'Free')
-                        : `${item.currency === 'CNY' ? '¥' : '$'} ${trimPriceZeros(item.input_price)} / ${trimPriceZeros(item.output_price)}`}
+                        : `${currencySymbol(item.currency, isZh)} ${trimPriceZeros(item.input_price)} / ${trimPriceZeros(item.output_price)} ${isZh ? '每M' : 'per M'}`}
                     </span>
                   </button>
                 ))}
               </div>
             </section>
           )}
-        </div>
+        </>
       )}
+
+      {/* 模型对比（原型 App.tsx:5083-5087：仅对比开关打开的模型给入口）。
+          以当前模型为基准，候选资格由弹窗按一级类别 + 共同体验类型判定。 */}
+      <ModelsCompareModal
+        isOpen={isCompareOpen}
+        onClose={() => setIsCompareOpen(false)}
+        allModels={compareCandidates}
+        initialSelectedIds={detail ? [detail.id] : []}
+        currentModelId={detail?.id}
+        onConfirmCompare={(ids) => {
+          if (ids.length === 0) return
+          if (!isAuthenticated) {
+            navigate(toLoginWithRedirect(undefined, {
+              compare_with: ids,
+              experience_type: 'compare',
+              detail_source: 'detail',
+            }))
+            return
+          }
+          navigate('/models/compare', { state: { selectedIds: ids } })
+        }}
+      />
     </div>
   )
 }

@@ -116,7 +116,8 @@ export function InvoiceRecordsTab({
         <EmptyState title="加载中…" />
       ) : records.length === 0 ? (
         <EmptyState
-          title={status !== 'all' || keyword ? '当前筛选条件下没有发票记录' : '暂无发票记录'}
+          title={status !== 'all' || keyword ? '当前筛选条件下没有发票记录' : '暂无开票记录'}
+          description={status !== 'all' || keyword ? undefined : '累计充值均可开具增值税发票。'}
           action={status !== 'all' || keyword ? (
             <Button variant="outline" size="sm" onClick={() => { setStatus('all'); setKeyword('') }}>
               清除筛选
@@ -182,8 +183,9 @@ export function InvoiceRecordsTab({
         </button>
       )}
 
+      {/* qa#281：内部单号（D-INV15）不应出现在用户可见文案里，只留说明本身 */}
       <p className="pt-1 text-xs leading-relaxed text-mg-text-3">
-        红冲为不可逆财税操作，仅运营端可发起；如需作废重开，请联系客服 / 由运营处理（D-INV15）。
+        红冲为不可逆财税操作，仅运营端可发起；如需作废重开，请联系客服 / 由运营处理。
       </p>
     </div>
   )

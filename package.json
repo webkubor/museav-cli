@@ -14,6 +14,7 @@
     "lint:css": "stylelint \"src/**/*.css\"",
     "lint:css:diff": "node scripts/stylelint-diff.mjs",
     "check:css-tokens:diff": "node scripts/check-css-tokens.mjs",
+    "check:css-tokens:full": "node scripts/check-css-tokens.mjs --full",
     "lint:style:diff": "node scripts/eslint-style-diff.mjs",
     "preview": "vite preview",
     "login": "node scripts/login.mjs",

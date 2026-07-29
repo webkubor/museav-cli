@@ -127,6 +127,7 @@
   --mg-bg-0:  var(--mg-surface);     /* 主卡片 */
   --mg-bg-0-rgb: 255, 255, 255;      /* surface 的 RGB（共享无 rgb，浅色=#ffffff，供玻璃态 rgba()） */
   --mg-bg-1:  var(--mg-bg);          /* 页面背景 */
+  --mg-bg-1-rgb: 255, 255, 255;      /* bg 的 RGB（浅色=#ffffff，供玻璃态 rgba()，同 --mg-bg-0-rgb 手动同步模式） */
   --mg-bg-2:  var(--mg-surface-2);   /* 悬浮卡片 / Dropdown */
   --mg-bg-3:  var(--mg-surface-3);   /* Modal / Tooltip 顶层 */
 
@@ -186,6 +187,7 @@ body[theme-mode='dark'] {
   /* bg-0/1/2/3、fill-*、success/warning/info、danger 交共享 [data-theme='dark']（theme.ts 已同步设 data-theme=dark）。
      文字层也直接用共享 --mg-text-1/2/3/4（共享 [data-theme=dark] 已定义 zinc-100/300/400/600），不再本地覆盖。*/
   --mg-bg-0-rgb: 35, 35, 41;  /* surface 暗值的 RGB，供玻璃态 rgba() */
+  --mg-bg-1-rgb: 24, 24, 28;  /* bg 暗值的 RGB（对应共享 [data-theme=dark] 的 --mg-bg #18181c），供玻璃态 rgba() */
 
   /* 代码块面（payload 查看器）：清透极黑 */
   --mg-code-bg:   #131316;

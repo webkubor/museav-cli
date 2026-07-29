@@ -2302,6 +2302,9 @@
       "exitConfirmDesc": "将保留最左侧主模型及其内容，其余模型列的对话记录会被丢弃。",
       "syncConfirmTitle": "同步各列输入？",
       "syncConfirmDesc": "将使用「{{name}}」当前输入同步到全部模型列，其他列文本将被替换。",
+      "syncConfirmBlankDraft": "（空白文本）",
+      "syncConfirmAttachmentPresent": "附件：{{name}}",
+      "syncConfirmAttachmentCleared": "当前列没有附件，其他列附件将被清空",
       "confirmSync": "确认同步"
     }
   }

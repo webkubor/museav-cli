@@ -2290,6 +2290,9 @@
       "exitConfirmDesc": "The leftmost primary model and its content will be kept; other columns' conversations will be discarded.",
       "syncConfirmTitle": "Sync input across columns?",
       "syncConfirmDesc": "This will replace every column's text with the current input from \"{{name}}\".",
+      "syncConfirmBlankDraft": "(blank text)",
+      "syncConfirmAttachmentPresent": "Attachment: {{name}}",
+      "syncConfirmAttachmentCleared": "The current column has no attachment — other columns' attachments will be cleared",
       "confirmSync": "Confirm sync"
     }
   }

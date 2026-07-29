@@ -14,7 +14,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  LuColumns2, LuChevronDown, LuCode, LuSettings2, LuX, LuPlus, LuLogOut, LuTriangleAlert, LuPaperclip,
+  LuColumns2, LuChevronDown, LuCode, LuSettings2, LuX, LuPlus, LuLogOut, LuTriangleAlert, LuPaperclip, LuInfo,
 } from 'react-icons/lu'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
@@ -158,7 +158,7 @@ export default function ModelsComparePage() {
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false)
   const [switchPickerIndex, setSwitchPickerIndex] = useState<number | null>(null)
   const [addPickerOpen, setAddPickerOpen] = useState(false)
-  const [syncConfirm, setSyncConfirm] = useState<{ sourceIndex: number; sourceText: string } | null>(null)
+  const [syncConfirm, setSyncConfirm] = useState<{ sourceIndex: number; sourceText: string; sourceAttachmentName: string | null } | null>(null)
   const [settingsIndex, setSettingsIndex] = useState<number | null>(null)
   const [apiIndex, setApiIndex] = useState<number | null>(null)
   // §8.5 窄屏一次展示一个模型列，顶部 Tab 切换；宽屏 CSS 直接把 tab 隐藏，不影响并排布局
@@ -749,7 +749,8 @@ export default function ModelsComparePage() {
     if (next) {
       const source = columns[lastFocusedIndex] ?? columns[0]
       const allSame = columns.every((c) => c.draft === source.draft)
-      const sourceHasAttachment = Boolean(columnAttachments[source.conversationId])
+      const sourceAttachmentName = columnAttachments[source.conversationId]?.file.name ?? null
+      const sourceHasAttachment = Boolean(sourceAttachmentName)
       Object.keys(columnAttachments).forEach((conversationId) => clearColumnAttachment(conversationId))
       if (allSame) {
         setSharedDraft(source.draft)
@@ -760,7 +761,7 @@ export default function ModelsComparePage() {
         }, { result: 'success' })
         return
       }
-      setSyncConfirm({ sourceIndex: lastFocusedIndex, sourceText: source.draft })
+      setSyncConfirm({ sourceIndex: lastFocusedIndex, sourceText: source.draft, sourceAttachmentName })
       trackEvent('playground_input_mode_change', {
         from_mode: 'independent', to_mode: 'sync', requires_confirmation: true,
         source_has_attachment: sourceHasAttachment, attachment_recipient_count: 0,
@@ -1559,7 +1560,24 @@ export default function ModelsComparePage() {
         title={t('modelsExperience.compare.syncConfirmTitle')}
         description={t('modelsExperience.compare.syncConfirmDesc', { name: syncConfirm ? prettyModelName(columns[syncConfirm.sourceIndex]?.model.display_name, columns[syncConfirm.sourceIndex]?.model.model_id) : '' })}
         confirmLabel={t('modelsExperience.compare.confirmSync')}
-      />
+      >
+        {syncConfirm && (
+          <>
+            {/* 同步前预览将要覆盖到其他列的文本，避免用户误按确认后才发现同步的内容不对（原型逐字对齐） */}
+            <pre className="mt-3 whitespace-pre-wrap rounded-md border border-mg-border bg-mg-fill-0/40 p-3 text-xs text-mg-text-2 max-h-40 overflow-y-auto">
+              {syncConfirm.sourceText || t('modelsExperience.compare.syncConfirmBlankDraft')}
+            </pre>
+            <div className="mt-2 flex items-start gap-1.5 text-xs text-mg-text-3">
+              <LuInfo size={14} className="mt-0.5 shrink-0" />
+              <span>
+                {syncConfirm.sourceAttachmentName
+                  ? t('modelsExperience.compare.syncConfirmAttachmentPresent', { name: syncConfirm.sourceAttachmentName })
+                  : t('modelsExperience.compare.syncConfirmAttachmentCleared')}
+              </span>
+            </div>
+          </>
+        )}
+      </ConfirmModal>
     </div>
   )
 }

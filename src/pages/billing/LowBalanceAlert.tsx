@@ -90,7 +90,11 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
           </p>
         </div>
 
-        <div className="billing-low-balance-controls flex items-center gap-3 flex-wrap">
+        {/* qa#278：内部两个 chip（通知人/提醒阈值）不能拆散换行——原型是同排展示；
+            之前 flex-wrap 会在通知人 chip 较长（如测试账号全名）时把两个 chip 拆成
+            两行。真的放不下就让整个 controls 块换到标题下方（外层 flex-wrap 管），
+            内部这里改 nowrap + shrink-0 保证两个 chip 始终同排。 */}
+        <div className="billing-low-balance-controls flex items-center gap-3 flex-nowrap shrink-0">
           {isEnterprise && (
             <Popover
               trigger={

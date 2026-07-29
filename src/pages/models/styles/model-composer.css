@@ -160,3 +160,118 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+/* 「可体验任务」显式切换（PRD App.tsx:19488-19507 playground-capability-switch 逐字对齐），
+   image_to_image/audio_to_text/image_to_video 等需要文件的任务和其对应的 text_to_* 任务
+   在这里二选一，选中项决定下方是否出现 TaskFileDropZone */
+.models-task-switch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 18px 10px;
+}
+
+.models-task-switch button {
+  padding: 5px 12px;
+  border: 1px solid var(--mg-border);
+  border-radius: var(--radius-full);
+  background: var(--mg-bg-0);
+  color: var(--mg-text-3);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.models-task-switch button.active {
+  border-color: color-mix(in srgb, var(--brand-base) 60%, var(--mg-border));
+  background: color-mix(in srgb, var(--brand-base) 12%, var(--mg-bg-0));
+  color: var(--brand-base);
+}
+
+/* needs-file 任务的专门上传区（TaskFileDropZone），位于文本框上方 */
+.models-task-drop-field {
+  margin: 0 18px 8px;
+}
+
+.models-task-drop-zone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px dashed var(--mg-border);
+  border-radius: var(--radius-md);
+  background: var(--mg-fill-0);
+  cursor: pointer;
+}
+
+.models-task-drop-zone.has-file {
+  border-style: solid;
+  background: var(--mg-bg-0);
+}
+
+.models-task-drop-zone input[type='file'] {
+  display: none;
+}
+
+.models-task-drop-zone > svg {
+  flex-shrink: 0;
+  color: var(--mg-text-3);
+}
+
+.models-task-drop-zone img {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.models-task-drop-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.models-task-drop-meta strong {
+  font-size: 13px;
+  color: var(--mg-text-1);
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.models-task-drop-meta span {
+  font-size: 11px;
+  color: var(--mg-text-3);
+}
+
+.models-task-drop-zone > button {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: none;
+  color: var(--mg-text-3);
+  cursor: pointer;
+}
+
+.models-task-drop-error {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--mg-danger);
+}
+
+/* 语音识别任务没有文本框，占位提示（PRD App.tsx:18498-18499 逐字对齐） */
+.models-task-transcribe-ready {
+  padding: 8px 2px;
+  color: var(--mg-text-3);
+  font-size: 12px;
+  text-align: center;
+}

@@ -69,6 +69,9 @@ import {
   resolveModelCategory,
   experienceCategoryLabel,
   EXPERIENCE_CATEGORY_DEFAULT_TASK,
+  modelCategoryTasks,
+  taskNeedsFile,
+  taskAttachmentKind,
   categoryEmptyCopy,
   categoryPlaceholder,
   ATTACHMENT_LIMITS,
@@ -79,12 +82,14 @@ import {
   isOfflineModel,
   type ExperienceMessage,
   type ExperienceCategoryKey,
+  type ExperienceTaskType,
 } from '../models/model-experience-data'
 import { ModelPickerDialog } from '../models/components/ModelPickerDialog'
 import { ModelSettingsModal } from '../models/components/ModelSettingsModal'
 import { ApiQuickCallModal } from '../models/components/ApiQuickCallModal'
 import { ExperienceMessageList } from '../models/components/ExperienceMessageList'
 import { HistorySessionSidebar, type HistorySessionItem } from '../models/components/HistorySessionSidebar'
+import { TaskFileDropZone } from '../models/components/TaskFileDropZone'
 import '../models/styles/model-experience-layout.css'
 import '../models/styles/model-chat.css'
 import '../models/styles/model-composer.css'
@@ -195,7 +200,8 @@ export default function ModelsComparePage() {
   // 建会话：只在首次拿到 selectedIds + 目录加载完成时建一次
   useEffect(() => {
     if (bootedRef.current) return
-    const ids = (location.state as { selectedIds?: string[] } | null)?.selectedIds
+    const navState = location.state as { selectedIds?: string[]; compareTask?: ExperienceTaskType } | null
+    const ids = navState?.selectedIds
     // 刷新本页/直接输入 URL 时 location.state 会丢（本来就没有历史恢复，见文件头注释）——
     // 这种情况不会等到 ids，之前会让"正在准备对比会话…"占位无限期挂着，改成直接报错退出；
     // 但用户可能是在一个真实会话里刷新的（不是真的没模型），报错态也把历史侧栏带出来
@@ -214,7 +220,7 @@ export default function ModelsComparePage() {
       setHistoryCollapsed(false)
       return
     }
-    void bootSession(resolved)
+    void bootSession(resolved, navState?.compareTask)
     navigate(location.pathname, { replace: true, state: {} })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allModels])
@@ -319,6 +325,8 @@ export default function ModelsComparePage() {
       setSharedDraft('')
       setSessionId(id)
       setColumns(nextColumns)
+      // 详情响应带真实 task（跟列表不一样，列表轻量响应没有），恢复历史时用它，不用猜
+      setCompare({ task: detail.task as ExperienceTaskType })
       setSessionStats({ requestCount: 0, tokens: 0, cost: 0 })
       setBootError(null)
       setHistoryActionError(null)
@@ -335,18 +343,21 @@ export default function ModelsComparePage() {
     bootedRef.current = false
     setSessionId(null)
     setColumns(null)
+    setCompare({ task: null })
     setSessionStats({ requestCount: 0, tokens: 0, cost: 0 })
     setHistoryActionError(null)
     restoreSavedPreference()
     navigate('/models/playground')
   }
 
-  async function bootSession(models: CatalogModelItem[]) {
+  async function bootSession(models: CatalogModelItem[], requestedTask?: ExperienceTaskType) {
     try {
-      // qa#543：按首个模型推断一级类别（同组模型类别一致，picker 已保证），媒体类无附件
-      // 场景下用该类别默认任务；对话类维持原 text_to_text
+      // qa#543：按首个模型推断一级类别（同组模型类别一致，picker 已保证）。task 优先用
+      // 单模型页「模型对比」带过来的显式选定任务（PRD §7.1 selectModelTask，同组模型已经
+      // 按 currentTask 过滤过，兼容）；没带（比如历史场景）就退化到该类别默认任务。
       const category = resolveModelCategory(models[0])
-      const task = EXPERIENCE_CATEGORY_DEFAULT_TASK[category]
+      const categoryTasks = modelCategoryTasks(models[0], category)
+      const task = requestedTask && categoryTasks.includes(requestedTask) ? requestedTask : EXPERIENCE_CATEGORY_DEFAULT_TASK[category]
       const session = await createExperienceSession({
         // name 传空串：后端会在首条用户提问落库时用其前 15 字自动生成标题，
         // 传非空值会被判定为「已显式命名」，反而挡住自动标题
@@ -368,6 +379,7 @@ export default function ModelsComparePage() {
       abortRefs.current = nextColumns.map(() => null)
       setSessionId(session.id)
       setColumns(nextColumns)
+      setCompare({ task })
       setBootError(null)
     } catch (err) {
       setBootError(`${t('modelsExperience.compare.createSessionFailed')}${(err as Error).message || t('modelsExperience.retryLater')}`)
@@ -671,7 +683,12 @@ export default function ModelsComparePage() {
    *  弹窗的文案"发送时仍会同时调用全部模型"逐字对应这个默认行为。 */
   function handleSyncSend() {
     const prompt = sharedDraft.trim()
-    if (!prompt || !columns) return
+    if (!columns) return
+    if (compareTask !== 'audio_to_text' && !prompt) return
+    if (compareNeedsFileTask && !attachment) {
+      setAttachmentError(compareTask === 'audio_to_text' ? t('modelsExperience.attachmentRequiredAudio') : t('modelsExperience.attachmentRequiredImage'))
+      return
+    }
     // 下线模型不参与共享发送（PRD §AC-18：无发送按钮/不可发送），只统计在线列
     const onlineIndexes = columns.reduce<number[]>((acc, c, idx) => {
       if (!isOfflineModel(c.model)) acc.push(idx)
@@ -710,10 +727,17 @@ export default function ModelsComparePage() {
   function handleIndependentSend(idx: number) {
     if (!columns) return
     const prompt = columns[idx].draft.trim()
-    if (!prompt) return
+    if (compareTask !== 'audio_to_text' && !prompt) return
     if (isBalanceZero && isPaidModel(columns[idx].model)) return
     const conversationId = columns[idx].conversationId
     const colAttachment = columnAttachments[conversationId]
+    if (compareNeedsFileTask && !colAttachment) {
+      setColumnAttachmentErrors((prev) => ({
+        ...prev,
+        [conversationId]: compareTask === 'audio_to_text' ? t('modelsExperience.attachmentRequiredAudio') : t('modelsExperience.attachmentRequiredImage'),
+      }))
+      return
+    }
     const attachedKind = colAttachment ? attachmentKindFromMime(colAttachment.uploaded.mime) : null
     const dispatchId = crypto.randomUUID()
     pendingByDispatch.current.set(dispatchId, 1)
@@ -965,14 +989,19 @@ export default function ModelsComparePage() {
     )
   }
 
-  // qa#543：对比会话的一级类别以首列模型为准（同一组内模型类别一致，选模型/建组时已保证）；
-  // task 用该类别的默认任务。
+  // qa#543：对比会话的一级类别以首列模型为准（同一组内模型类别一致，选模型/建组时已保证）。
+  // task 是会话级显式选定值（PRD §7.1 selectModelTask，bootSession/openHistorySession 里写入
+  // compare.task），不兼容当前列（比如历史恢复的模型已经变了）就退化到该类别默认任务。
   const compareCategory: ExperienceCategoryKey = resolveModelCategory(columns[0].model)
-  const compareTask = EXPERIENCE_CATEGORY_DEFAULT_TASK[compareCategory]
+  const compareCategoryTasks = modelCategoryTasks(columns[0].model, compareCategory)
+  const compareTask: ExperienceTaskType = compare.task && compareCategoryTasks.includes(compare.task)
+    ? compare.task
+    : EXPERIENCE_CATEGORY_DEFAULT_TASK[compareCategory]
+  const compareNeedsFileTask = compareCategory !== 'dialogue' && taskNeedsFile(compareTask)
 
-  /** 每个类别允许附哪种附件（§7.5），与单模型页同口径 */
-  const allowedAttachmentKinds: Array<keyof typeof ATTACHMENT_LIMITS> =
-    compareCategory === 'dialogue' ? ['image', 'video'] : compareCategory === 'audio' ? ['audio'] : ['image']
+  /** dialogue 类允许附哪种附件（§7.5），与单模型页同口径；image/audio/video 类不走这条
+   *  通用回形针路径，改用 needs-file 时的 TaskFileDropZone（taskAttachmentKind(compareTask)） */
+  const allowedAttachmentKinds: Array<keyof typeof ATTACHMENT_LIMITS> = ['image', 'video']
 
   function clearAttachment() {
     setAttachment((prev) => {
@@ -984,14 +1013,17 @@ export default function ModelsComparePage() {
   }
 
   /** 共享附件上传（qa#545，§7.4/7.5）：只做类型/大小校验和上传，不因"部分模型不支持"而拦截
-   *  上传——支持哪些列由发送时逐列判断（modelSupportsAttachment），差异分发在 handleSyncSend。 */
+   *  上传——支持哪些列由发送时逐列判断（modelSupportsAttachment），差异分发在 handleSyncSend。
+   *  dialogue 类走通用回形针（allowedAttachmentKinds），needs-file 任务改走 TaskFileDropZone，
+   *  两条入口共用这同一份上传状态与后端调用。 */
   async function handleFileSelect(file: File | null | undefined) {
     if (!file || !columns) return
     const cols = columns
     setAttachmentError(null)
     const kind = attachmentKindFromMime(file.type)
-    if (!kind || !allowedAttachmentKinds.includes(kind)) {
-      setAttachmentError(`${t('modelsExperience.compare.categoryAttachmentUnsupported')}${allowedAttachmentKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`)
+    const permittedKinds = compareCategory === 'dialogue' ? allowedAttachmentKinds : ([taskAttachmentKind(compareTask)].filter(Boolean) as Array<keyof typeof ATTACHMENT_LIMITS>)
+    if (!kind || !permittedKinds.includes(kind)) {
+      setAttachmentError(`${t('modelsExperience.compare.categoryAttachmentUnsupported')}${permittedKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`)
       if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
@@ -1055,10 +1087,11 @@ export default function ModelsComparePage() {
       return next
     })
     const kind = attachmentKindFromMime(file.type)
-    if (!kind || !allowedAttachmentKinds.includes(kind) || !modelSupportsAttachment(column.model, kind)) {
+    const permittedKinds = compareCategory === 'dialogue' ? allowedAttachmentKinds : ([taskAttachmentKind(compareTask)].filter(Boolean) as Array<keyof typeof ATTACHMENT_LIMITS>)
+    if (!kind || !permittedKinds.includes(kind) || !modelSupportsAttachment(column.model, kind)) {
       setColumnAttachmentErrors((prev) => ({
         ...prev,
-        [conversationId]: `${t('modelsExperience.attachmentUnsupported')}${allowedAttachmentKinds.filter((k) => modelSupportsAttachment(column.model, k)).map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator')) || t('modelsExperience.compare.none')}`,
+        [conversationId]: `${t('modelsExperience.attachmentUnsupported')}${permittedKinds.filter((k) => modelSupportsAttachment(column.model, k)).map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator')) || t('modelsExperience.compare.none')}`,
       }))
       if (columnFileInputRef.current) columnFileInputRef.current.value = ''
       return
@@ -1206,7 +1239,7 @@ export default function ModelsComparePage() {
                   <div className="models-experience-modelbar-title">
                     {isOfflineModel(column.model) ? t('modelsExperience.modelOffline') : prettyModelName(column.model.display_name, column.model.model_id)}
                   </div>
-                  <div className="models-experience-modelbar-sub">{column.model.vendor || column.model.provider || 'ModelGo'} · {experienceCategoryLabel(compareCategory)}</div>
+                  <div className="models-experience-modelbar-sub">{column.model.vendor || column.model.provider || 'ModelGo'} · {experienceTaskLabel(compareTask)}</div>
                 </div>
                 {isOfflineModel(column.model) ? (
                   <span className="models-experience-price-chip is-offline">{t('modelsExperience.modelOffline')}</span>
@@ -1293,16 +1326,17 @@ export default function ModelsComparePage() {
                 </span>
               </div>
             ) : !syncInput && (() => {
-              // 独立输入模式的列内附件入口（PRD §AC-07/§AC-08，qa#553 补齐）：只按
-              // 当前列模型实际支持的附件类型开放，纯文本模型不显示入口。
-              const columnKinds = allowedAttachmentKinds.filter((k) => modelSupportsAttachment(column.model, k))
+              // 独立输入模式的列内附件入口（PRD §AC-07/§AC-08，qa#553 补齐）：dialogue 类
+              // 按当前列模型实际支持的附件类型开放通用回形针；needs-file 任务改用下面的
+              // TaskFileDropZone（跟单模型页同款），纯文本任务不显示任何附件入口。
+              const columnKinds = compareCategory === 'dialogue' ? allowedAttachmentKinds.filter((k) => modelSupportsAttachment(column.model, k)) : []
               const colAttachment = columnAttachments[column.conversationId]
               const colUploading = columnAttachmentUploading[column.conversationId]
               const colError = columnAttachmentErrors[column.conversationId]
               return (
                 // onFocusCapture 记录"最后聚焦列"，独立→同步切换时用它当来源列（§7.4）
                 <div onFocusCapture={() => setLastFocusedIndex(idx)}>
-                  {(colAttachment || colError) && (
+                  {compareCategory === 'dialogue' && (colAttachment || colError) && (
                     <div className="models-experience-attachment-row">
                       {colAttachment && (
                         <div className="models-experience-attachment-chip">
@@ -1319,6 +1353,16 @@ export default function ModelsComparePage() {
                       {colError && <span className="models-experience-attachment-error">{colError}</span>}
                     </div>
                   )}
+                  {compareNeedsFileTask && (
+                    <TaskFileDropZone
+                      task={compareTask}
+                      file={colAttachment ? { name: colAttachment.file.name, sizeBytes: colAttachment.file.size, previewUrl: colAttachment.previewUrl } : null}
+                      error={colError}
+                      uploading={colUploading}
+                      onFileChange={(file) => void handleColumnFileSelect(idx, file)}
+                      onRemove={() => clearColumnAttachment(column.conversationId)}
+                    />
+                  )}
                   <Composer
                     value={column.draft}
                     onChange={(v) => updateColumn(idx, { draft: v })}
@@ -1326,9 +1370,15 @@ export default function ModelsComparePage() {
                     isStreaming={column.streaming}
                     disabled={isBalanceZero && isPaidModel(column.model)}
                     onStop={() => abortRefs.current[idx]?.abort()}
-                    placeholder={t('modelsExperience.compare.columnPlaceholder', { name: prettyModelName(column.model.display_name, column.model.model_id), placeholder: categoryPlaceholder(compareCategory) })}
+                    placeholder={compareTask === 'image_to_image'
+                      ? t('modelsExperience.taskPlaceholder.image_to_image')
+                      : t('modelsExperience.compare.columnPlaceholder', { name: prettyModelName(column.model.display_name, column.model.model_id), placeholder: categoryPlaceholder(compareCategory) })}
                     sendLabel={t('modelsExperience.send')}
                     className="models-experience-composer-wrap models-compare-composer"
+                    sendEnabled={compareTask === 'audio_to_text' ? !!colAttachment : undefined}
+                    textareaSlot={compareTask === 'audio_to_text' ? (
+                      <div className="models-task-transcribe-ready">{t('modelsExperience.transcribeReady')}</div>
+                    ) : undefined}
                     activeChip={
                       columnKinds.length > 0 ? (
                         <button
@@ -1391,9 +1441,9 @@ export default function ModelsComparePage() {
         </div>
       )}
 
-      {/* 共享附件预览/校验错误（qa#545 §7.4/7.5）：只在同步输入态展示——独立输入模式
-          每列各自打字，附件是同步态的共享概念。 */}
-      {syncInput && (attachment || attachmentError) && (
+      {/* 共享附件预览/校验错误（qa#545 §7.4/7.5，仅 dialogue 类走通用回形针）：只在同步
+          输入态展示——独立输入模式每列各自打字，附件是同步态的共享概念。 */}
+      {syncInput && compareCategory === 'dialogue' && (attachment || attachmentError) && (
         <div className="models-experience-attachment-row">
           {attachment && (
             <div className="models-experience-attachment-chip">
@@ -1420,15 +1470,30 @@ export default function ModelsComparePage() {
         </div>
       )}
 
+      {/* needs-file 任务(image_to_image/audio_to_text/image_to_video)的专门上传区，同步态下
+          全列共用一份（跟单模型页同款组件，PRD PlaygroundTaskInput 逐字对齐） */}
+      {syncInput && compareNeedsFileTask && (
+        <TaskFileDropZone
+          task={compareTask}
+          file={attachment ? { name: attachment.file.name, sizeBytes: attachment.file.size, previewUrl: attachment.previewUrl } : null}
+          error={attachmentError}
+          uploading={attachmentUploading}
+          onFileChange={(file) => void handleFileSelect(file)}
+          onRemove={clearAttachment}
+        />
+      )}
+
       {syncInput && (
         <>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].accept).join(',')}
-            className="hidden"
-            onChange={(e) => void handleFileSelect(e.target.files?.[0])}
-          />
+          {compareCategory === 'dialogue' && (
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].accept).join(',')}
+              className="hidden"
+              onChange={(e) => void handleFileSelect(e.target.files?.[0])}
+            />
+          )}
           <Composer
             value={sharedDraft}
             onChange={setSharedDraft}
@@ -1436,25 +1501,35 @@ export default function ModelsComparePage() {
             isStreaming={columns.some((c) => c.streaming)}
             disabled={isBalanceZero && columns.some((c) => isPaidModel(c.model))}
             onStop={() => abortRefs.current.forEach((c) => c?.abort())}
-            placeholder={t('modelsExperience.compare.sharedPlaceholder', { placeholder: categoryPlaceholder(compareCategory), count: columns.length })}
+            placeholder={compareTask === 'image_to_image'
+              ? t('modelsExperience.taskPlaceholder.image_to_image')
+              : t('modelsExperience.compare.sharedPlaceholder', { placeholder: categoryPlaceholder(compareCategory), count: columns.length })}
             sendLabel={t('modelsExperience.send')}
             className="models-experience-composer-wrap models-compare-shared-composer"
+            sendEnabled={compareTask === 'audio_to_text' ? !!attachment : undefined}
+            textareaSlot={compareTask === 'audio_to_text' ? (
+              <div className="models-task-transcribe-ready">{t('modelsExperience.transcribeReady')}</div>
+            ) : undefined}
             activeChip={
-              <div className="models-experience-composer-left">
-                <button
-                  type="button"
-                  className="models-experience-icon-btn"
-                  aria-label={t('modelsExperience.addAttachment')}
-                  title={`${t('modelsExperience.attachmentSupports')}${allowedAttachmentKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`}
-                  disabled={attachmentUploading || !!attachment}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <LuPaperclip size={14} />
-                </button>
-                <span className="models-experience-composer-hint">
-                  {attachmentUploading ? t('modelsExperience.attachmentUploading') : t('modelsExperience.compare.syncSendHint')}
-                </span>
-              </div>
+              compareCategory === 'dialogue' ? (
+                <div className="models-experience-composer-left">
+                  <button
+                    type="button"
+                    className="models-experience-icon-btn"
+                    aria-label={t('modelsExperience.addAttachment')}
+                    title={`${t('modelsExperience.attachmentSupports')}${allowedAttachmentKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`}
+                    disabled={attachmentUploading || !!attachment}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <LuPaperclip size={14} />
+                  </button>
+                  <span className="models-experience-composer-hint">
+                    {attachmentUploading ? t('modelsExperience.attachmentUploading') : t('modelsExperience.compare.syncSendHint')}
+                  </span>
+                </div>
+              ) : (
+                <span className="models-experience-composer-hint">{t('modelsExperience.compare.syncSendHint')}</span>
+              )
             }
           />
         </>
@@ -1511,7 +1586,7 @@ export default function ModelsComparePage() {
           modelName={prettyModelName(columns[settingsIndex].model.display_name, columns[settingsIndex].model.model_id)}
           vendor={columns[settingsIndex].model.vendor || columns[settingsIndex].model.provider || 'ModelGo'}
           maxOutputTokens={Math.max(256, columns[settingsIndex].model.max_output_tokens || 4096)}
-          task={EXPERIENCE_CATEGORY_DEFAULT_TASK[resolveModelCategory(columns[settingsIndex].model)]}
+          task={compareTask}
           values={columns[settingsIndex].chatParams}
           onChange={(key, value) => handleColumnParamChange(settingsIndex, key, value)}
           onReset={() => handleColumnParamReset(settingsIndex)}

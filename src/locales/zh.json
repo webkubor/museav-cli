@@ -1873,15 +1873,8 @@
       "pricingOutput": "输出价格",
       "pricingCacheRead": "缓存读取",
       "pricingCacheWrite": "缓存写入",
-      "specs": "技术规格",
       "contextLength": "上下文窗口",
-      "maxOutputTokens": "最大输出",
-      "zeroDataRetention": "零数据保留",
-      "supported": "支持",
-      "notSupported": "不支持",
-      "inRegionRouting": "区域内路由",
-      "releasedAt": "发布时间",
-      "knowledgeCutoff": "知识库截止"
+      "maxOutputTokens": "最大输出"
     },
     "card": {
       "context": "上下文",
@@ -2167,6 +2160,19 @@
       "audio": "音频（MP3/WAV/M4A/OGG/WebM，≤25MB）",
       "video": "视频（MP4/WebM/MOV，≤100MB）"
     },
+    "taskSwitchLabel": "可体验任务",
+    "taskUpload": {
+      "clickToReplace": "点击替换",
+      "image_to_image": "上传参考图片",
+      "image_to_video": "上传视频首帧",
+      "audio_to_text": "上传音频文件"
+    },
+    "transcribeReady": "上传完成后，将按该模型的当前配置开始转写。",
+    "taskPlaceholder": {
+      "image_to_image": "描述希望保留和改变的内容…"
+    },
+    "attachmentRequiredImage": "请先上传一张图片。",
+    "attachmentRequiredAudio": "请先上传要转写的音频。",
     "samplePrompts": {
       "compare": {
         "label": "对比选型",

@@ -187,19 +187,47 @@ export function modelSupportsAttachment(model: CatalogModelItem, kind: string): 
 }
 
 /**
- * 有附件时任务在同一类别内的两个子任务间切换（§二 task 值域）：对话类多模态输入、
- * 图像/音频/视频类"以图/音生成或识别"。会话固定后 task 不会再变，只在懒创建时算一次。
- * 单模型页/对比页共用。
+ * dialogue 类多模态子任务：image_to_text/video_to_text 没有「先选后传」的产品形态，
+ * 附件在场与否直接决定 task——这点 PRD 原型与现状一致。image/audio/video 三类改用
+ * 显式选定的 task（见 ModelPickerDialog 的「可体验任务」按钮组），不再靠附件反推——
+ * 此前把这三类也塞进同一个函数是对 PRD 的误读：PRD 原型里这三类 task 由用户在模型
+ * 选择器里主动选定并写入 session，不因附件出现与否变化（App.tsx:17800
+ * selectModelTask / 19781-19797「可体验任务」按钮组，2026-07-29 本地起 PRD 原型用
+ * ego-lite 实测过，GPT-5 Image 切「文生图/图生图」瞬间提交+关弹层，不是等附件出现
+ * 再反推）。
  */
-export function resolveEffectiveTask(category: ExperienceCategoryKey, attachmentKind: string | null): ExperienceTaskType {
-  if (category === 'dialogue') {
-    if (attachmentKind === 'image') return 'image_to_text'
-    if (attachmentKind === 'video') return 'video_to_text'
-    return 'text_to_text'
-  }
-  if (category === 'image') return attachmentKind ? 'image_to_image' : 'text_to_image'
-  if (category === 'audio') return attachmentKind ? 'audio_to_text' : 'text_to_audio'
-  return attachmentKind ? 'image_to_video' : 'text_to_video'
+export function resolveDialogueTask(attachmentKind: string | null): ExperienceTaskType {
+  if (attachmentKind === 'image') return 'image_to_text'
+  if (attachmentKind === 'video') return 'video_to_text'
+  return 'text_to_text'
+}
+
+/** 需要「先传文件才能发」的三个任务（PRD §7.5 必须携带附件列表 / App.tsx:16951
+ *  isPlaygroundTaskNeedsFile 逐字对齐）。这三个任务的 composer 用专门上传区替换
+ *  掉通用回形针，其余任务(text_to_image/text_to_audio/text_to_video/对话类)不显示。 */
+const TASK_NEEDS_FILE = new Set<ExperienceTaskType>(['image_to_image', 'audio_to_text', 'image_to_video'])
+
+export function taskNeedsFile(task: ExperienceTaskType): boolean {
+  return TASK_NEEDS_FILE.has(task)
+}
+
+/** needs-file 任务对应的附件类型，供上传区 accept/校验复用 ATTACHMENT_LIMITS */
+export function taskAttachmentKind(task: ExperienceTaskType): keyof typeof ATTACHMENT_LIMITS | null {
+  if (task === 'image_to_image' || task === 'image_to_video') return 'image'
+  if (task === 'audio_to_text') return 'audio'
+  return null
+}
+
+/** 某个模型在给定一级类别下，实际可体验的任务子集（按 experience_types 过滤；
+ *  该字段缺失/为空时退化为该类别全部任务——与 hasPlaygroundExperience/
+ *  resolveModelCategory 同一套兜底口径，避免同一份数据两种解读）。用于渲染
+ *  「可体验任务」按钮组：>=2 个才需要显式切换，1 个时任务已定、不显示按钮组。 */
+export function modelCategoryTasks(model: CatalogModelItem, category: ExperienceCategoryKey): ExperienceTaskType[] {
+  const all = EXPERIENCE_CATEGORY_TASKS[category]
+  const declared = model.experience_types ?? []
+  if (declared.length === 0) return all
+  const filtered = all.filter((task) => declared.includes(task))
+  return filtered.length > 0 ? filtered : all
 }
 
 function taskToCategory(task: string): ExperienceCategoryKey | undefined {

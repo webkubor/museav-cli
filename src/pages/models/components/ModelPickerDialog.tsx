@@ -37,10 +37,14 @@ import {
   resolveModelCategory,
   isPaidModel,
   modelSupportsAttachment,
+  modelCategoryTasks,
   EXPERIENCE_CATEGORY_ORDER,
+  EXPERIENCE_CATEGORY_DEFAULT_TASK,
   experienceCategoryLabel,
   type ExperienceCategoryKey,
+  type ExperienceTaskType,
 } from '../model-experience-data'
+import { TaskSwitch } from './TaskSwitch'
 import '../styles/model-picker-dialog.css'
 
 /** 一级类别，PRD 1.0.4 原文四类——复用 model-experience-data 里的共享定义，单模型页/对比页/弹窗三处口径一致 */
@@ -111,8 +115,8 @@ export interface ModelPickerDialogProps {
   currentCategory?: ModelPickerCategory
   /** compareSwitch/compareAdd 时需要，用于过滤候选到同任务 */
   currentTask?: string
-  /** single/compareSwitch：单击立即切换 */
-  onSelect?: (model: CatalogModelItem) => void
+  /** single/compareSwitch：单击立即切换；显式点了「可体验任务」按钮组里的某个任务时带上 task */
+  onSelect?: (model: CatalogModelItem, task?: ExperienceTaskType) => void
   /** compareAdd：已在对比会话中的模型，固定展示在候选列表最前，不可取消选中 */
   alreadySelectedIds?: string[]
   /** compareAdd：还能加入几个（3 - 已选数量），勾选数达到上限后其余候选禁用 */
@@ -231,6 +235,15 @@ export function ModelPickerDialog({
         if (prev.length >= maxAdditional) return prev
         return [...prev, model.id]
       })
+      return
+    }
+    // single 模式下，一个类别声明了 >=2 个可体验任务的模型，第一次点行只预览（带出「可体验
+    // 任务」按钮组），不立即提交——不然任务按钮组永远来不及被点到（点行的同一下就已经
+    // onSelect+关弹层了）。已经预览过的行（detailId 已经是它）再点一次才按默认任务提交，
+    // 跟点某个具体任务按钮（走 TaskSwitch onChange，不经过这个函数）二选一。
+    const tasks = mode === 'single' ? modelCategoryTasks(model, resolveCategory(model)) : []
+    if (tasks.length >= 2 && detailId !== model.id) {
+      setDetailId(model.id)
       return
     }
     setDetailId(model.id)
@@ -441,6 +454,30 @@ export function ModelPickerDialog({
                     ))}
                   </div>
                 )}
+
+                {/* 只在 single 模式显示：compareSwitch 的 task 是整个对比会话共用的，
+                    换某一列的模型顺带改任务会让其余列的模型/任务对不上，不在这个入口开放。 */}
+                {mode === 'single' && (() => {
+                  const detailCategory = resolveCategory(detailModel)
+                  const detailTasks = modelCategoryTasks(detailModel, detailCategory)
+                  if (detailTasks.length < 2) return null
+                  const fallback = EXPERIENCE_CATEGORY_DEFAULT_TASK[detailCategory]
+                  const previewTask = (currentTask && detailTasks.includes(currentTask as ExperienceTaskType))
+                    ? (currentTask as ExperienceTaskType)
+                    : (detailTasks.includes(fallback) ? fallback : detailTasks[0])
+                  return (
+                    <div className="pt-1">
+                      <div className="text-xs text-mg-text-3 font-semibold mb-1.5">{t('modelsExperience.taskSwitchLabel')}</div>
+                      <TaskSwitch
+                        tasks={detailTasks}
+                        value={previewTask}
+                        onChange={(task) => {
+                          if (disableReasonOf(detailModel, isBalanceZero, requiredAttachmentKind) === null) onSelect?.(detailModel, task)
+                        }}
+                      />
+                    </div>
+                  )
+                })()}
 
                 <div className="grid grid-cols-2 gap-3 pt-3 border-t border-mg-border">
                   <div>

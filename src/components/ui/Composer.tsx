@@ -21,6 +21,11 @@ export interface ComposerProps {
   clearLabel?: string
   sendLabel?: string
   stopLabel?: string
+  /** 语音识别任务没有文本框（PRD §7.1，内容改看是否已上传音频），发送是否可用不能再靠
+   *  `value.trim()` 判断——传了这个就用它覆盖默认的"有文本才能发"判断 */
+  sendEnabled?: boolean
+  /** 语音识别任务用一句静态提示替换掉文本框（PRD App.tsx:18498 逐字对齐） */
+  textareaSlot?: React.ReactNode
 }
 
 const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
@@ -41,13 +46,16 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
       clearLabel = '清空',
       sendLabel = '发送',
       stopLabel = '停止',
+      sendEnabled,
+      textareaSlot,
     },
     ref
   ) => {
+    const canSend = sendEnabled ?? Boolean(value.trim())
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault()
-        if (value.trim() && !loading && !disabled && !isStreaming) {
+        if (canSend && !loading && !disabled && !isStreaming) {
           onSend()
         }
       }
@@ -55,16 +63,18 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
 
     return (
       <div className={cn('composer-rainbow-flow rounded-md mg-panel-tight flex flex-col gap-3 relative transition-all duration-300', className)}>
-        {/* 输入域 */}
-        <Textarea
-          ref={ref}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          disabled={disabled || isStreaming}
-          className="min-h-[var(--mg-textarea-min-h)] max-h-[168px] resize-none border-0 bg-transparent p-[var(--mg-space-1)] shadow-none focus:ring-0 focus-visible:ring-0 hover:border-transparent focus:border-transparent mg-text-body w-full outline-none"
-        />
+        {/* 输入域：语音识别任务没有文本框，textareaSlot 传了就整个替换掉 */}
+        {textareaSlot ?? (
+          <Textarea
+            ref={ref}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            disabled={disabled || isStreaming}
+            className="min-h-[var(--mg-textarea-min-h)] max-h-[168px] resize-none border-0 bg-transparent p-[var(--mg-space-1)] shadow-none focus:ring-0 focus-visible:ring-0 hover:border-transparent focus:border-transparent mg-text-body w-full outline-none"
+          />
+        )}
 
         {/* 底部动作栏 */}
         <div className="flex items-center justify-between gap-3 pt-2.5 border-t border-mg-border/50">
@@ -106,7 +116,7 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
                 size="sm"
                 onClick={onSend}
                 loading={loading}
-                disabled={!value.trim() || disabled}
+                disabled={!canSend || disabled}
                 className="rounded-lg cursor-pointer"
               >
                 {!loading && <LuSend size={14} className="mr-1" />}

@@ -59,16 +59,23 @@ import {
   ATTACHMENT_LIMITS,
   attachmentLimitLabel,
   attachmentKindFromMime,
-  resolveEffectiveTask,
+  resolveDialogueTask,
+  modelCategoryTasks,
+  taskNeedsFile,
+  taskAttachmentKind,
+  EXPERIENCE_CATEGORY_TASKS,
+  EXPERIENCE_CATEGORY_DEFAULT_TASK,
   offlineModelPlaceholder,
   isOfflineModel,
   type ExperienceMessage,
+  type ExperienceTaskType,
 } from './model-experience-data'
 import { ModelPickerDialog } from './components/ModelPickerDialog'
 import { HistorySessionSidebar, type HistorySessionItem } from './components/HistorySessionSidebar'
 import { ModelSettingsModal } from './components/ModelSettingsModal'
 import { ApiQuickCallModal } from './components/ApiQuickCallModal'
 import { ExperienceMessageList } from './components/ExperienceMessageList'
+import { TaskFileDropZone } from './components/TaskFileDropZone'
 import './styles/model-experience-layout.css'
 import './styles/model-picker.css'
 import './styles/model-featured-card.css'
@@ -146,6 +153,22 @@ export default function ModelsPage() {
   const selectedCategory = selectedModel ? resolveModelCategory(selectedModel) : 'dialogue'
   const isDialogue = selectedCategory === 'dialogue'
 
+  /** image/audio/video 类的可体验任务是用户在模型选择器「可体验任务」按钮组里显式选定的
+   *  （PRD §7.1 selectModelTask），存 single.task；不兼容当前模型（比如换了个只支持其中
+   *  一个任务的模型）就退化到该类别默认任务。dialogue 类两个子任务仍按有没有附件反推
+   *  （resolveDialogueTask 上有说明为什么这俩不用改）。 */
+  const categoryTasks = selectedModel ? modelCategoryTasks(selectedModel, selectedCategory) : EXPERIENCE_CATEGORY_TASKS[selectedCategory]
+  const categoryDefaultTask = EXPERIENCE_CATEGORY_DEFAULT_TASK[selectedCategory]
+  const storedTask = single.task
+  const effectiveTask: ExperienceTaskType = isDialogue
+    ? resolveDialogueTask(attachment ? attachmentKindFromMime(attachment.uploaded.mime) : null)
+    : storedTask && categoryTasks.includes(storedTask)
+      ? storedTask
+      : categoryTasks.includes(categoryDefaultTask)
+        ? categoryDefaultTask
+        : categoryTasks[0]
+  const needsFileTask = !isDialogue && taskNeedsFile(effectiveTask)
+
   // §9.1 余额资格状态机：可消费合计（主+赠送+奖励）为 0 时，付费模型禁止发送，只能体验限免模型。
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
   const { data: balance } = useBalance(tenantId)
@@ -157,13 +180,11 @@ export default function ModelsPage() {
   )
   const isBalanceZero = spendableBalance !== undefined && spendableBalance <= 0
   const isBlockedByBalance = isBalanceZero && !!selectedModel && isPaidModel(selectedModel)
-  const effectiveTask = resolveEffectiveTask(selectedCategory, attachment ? attachmentKindFromMime(attachment.uploaded.mime) : null)
-  /** 每个类别允许附哪种附件（§7.5）。对话类的音频附件在真实 task 枚举里没有对应的子任务
+  /** dialogue 类允许附哪种附件（§7.5）。对话类的音频附件在真实 task 枚举里没有对应的子任务
    *  （image_to_text/video_to_text 之外没有 audio 版本），先不开放，只开放能对应到真实
-   *  任务枚举的图片/视频；图像类只收图片（图生图参考图）、音频类只收音频（转写）、
-   *  视频类只收图片（图生视频首帧）。 */
-  const allowedAttachmentKinds: Array<keyof typeof ATTACHMENT_LIMITS> =
-    selectedCategory === 'dialogue' ? ['image', 'video'] : selectedCategory === 'audio' ? ['audio'] : ['image']
+   *  任务枚举的图片/视频。image/audio/video 类不走这条通用回形针路径，改用 needsFileTask
+   *  时的 TaskFileDropZone（taskAttachmentKind(effectiveTask) 决定收哪种）。 */
+  const allowedAttachmentKinds: Array<keyof typeof ATTACHMENT_LIMITS> = ['image', 'video']
 
   /** composer 底部预估费用：与原型 estimatePlaygroundTaskSpend 对齐——按当前草稿估算 input token，
    *  输出 token 取 min(400, max_tokens) 上限估算（App.tsx:16967-16990） */
@@ -277,9 +298,19 @@ export default function ModelsPage() {
     return '>30d'
   }
 
-  function handlePick(model: CatalogModelItem) {
+  /** 选模型（+ 可选显式选定的任务，来自 ModelPickerDialog「可体验任务」按钮组）。
+   *  没传 task 时（直接点模型行）沿用 PRD selectModelTask 的默认规则：新模型如果还支持
+   *  当前任务就沿用，否则退化到新模型所在类别的第一个任务。 */
+  function handlePick(model: CatalogModelItem, task?: ExperienceTaskType) {
     trackEvent('playground_model_select', { from_model_id: selectedModel?.model_id ?? '', to_model_id: model.model_id }, { result: 'success' })
-    setSelectedId(model.id)
+    const nextCategory = resolveModelCategory(model)
+    const nextTasks = modelCategoryTasks(model, nextCategory)
+    const nextTask = task && nextTasks.includes(task)
+      ? task
+      : nextTasks.includes(effectiveTask)
+        ? effectiveTask
+        : nextTasks[0]
+    setSingle({ selectedId: model.id, offlineModel: null, task: nextTask })
     setPickerOpen(false)
     // 换模型 = 当前列绑定的模型变了，旧会话的列已经对不上——开新会话，而不是复用旧 conversationId
     startNewSession()
@@ -305,10 +336,13 @@ export default function ModelsPage() {
       // 切历史前选中的模型上，跟消息区实际内容对不上。
       const restoredModelId = items.find((m) => m.model_id)?.model_id
       const catalogModel = restoredModelId ? allModels.find((m) => m.model_id === restoredModelId) : undefined
+      // task 清回 null 退化到类别默认——恢复的历史会话真实用的哪个子任务不好从消息列表反推，
+      // 这里不猜；反正 conversationId 已经从历史带出来了，composer 只影响新一轮怎么发，
+      // 不影响已发生的历史内容展示
       if (catalogModel) {
-        setSingle({ selectedId: catalogModel.id, offlineModel: null })
+        setSingle({ selectedId: catalogModel.id, offlineModel: null, task: null })
       } else if (restoredModelId) {
-        setSingle({ selectedId: null, offlineModel: offlineModelPlaceholder(restoredModelId) })
+        setSingle({ selectedId: null, offlineModel: offlineModelPlaceholder(restoredModelId), task: null })
       }
       setInput('')
       setChatParams({})
@@ -393,14 +427,16 @@ export default function ModelsPage() {
   }
 
   /** 上传附件（§7.5）：先按类型/大小校验，通过了才真的上传；会话已建好后不能再换类别的附件类型
-   *  （task 已经固定），这里只按当前 selectedCategory 的允许类型校验 */
+   *  （task 已经固定），这里按当前入口（dialogue 通用回形针 or needs-file 任务专门上传区）
+   *  各自的允许类型校验——两条入口共用同一个上传状态与后端调用，不重复造一遍 */
   async function handleFileSelect(file: File | null | undefined) {
     if (!file) return
     setAttachmentError(null)
     const kind = attachmentKindFromMime(file.type)
+    const permittedKinds = isDialogue ? allowedAttachmentKinds : ([taskAttachmentKind(effectiveTask)].filter(Boolean) as Array<keyof typeof ATTACHMENT_LIMITS>)
     // 单模型页只服务当前一个模型列，§10.3 的 supporting/unsupported_model_count 在这里恒为 1/0
-    if (!kind || !allowedAttachmentKinds.includes(kind)) {
-      setAttachmentError(`${t('modelsExperience.attachmentUnsupported')}${allowedAttachmentKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`)
+    if (!kind || !permittedKinds.includes(kind)) {
+      setAttachmentError(`${t('modelsExperience.attachmentUnsupported')}${permittedKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`)
       if (fileInputRef.current) fileInputRef.current.value = ''
       trackEvent('playground_attachment_result', {
         kind: kind ?? 'unknown', size_bucket: sizeBucket(file.size), result: 'fail',
@@ -462,7 +498,15 @@ export default function ModelsPage() {
 
   async function sendPrompt() {
     const prompt = input.trim()
-    if (!prompt || !selectedModel || isStreaming || isBlockedByBalance || isOfflineModel(selectedModel)) return
+    // 语音识别没有文本框（内容看有没有上传音频），其余任务必须有文本才能发
+    if (!selectedModel || isStreaming || isBlockedByBalance || isOfflineModel(selectedModel)) return
+    if (effectiveTask !== 'audio_to_text' && !prompt) return
+    // needs-file 任务前端预检（PRD App.tsx:18407-18410 逐字对齐）：没附件直接拦，不用等
+    // 后端 PLAYGROUND_ATTACHMENT_REQUIRED 才提示，下面 catch 里的兜底仍保留
+    if (needsFileTask && !attachment) {
+      setAttachmentError(effectiveTask === 'audio_to_text' ? t('modelsExperience.attachmentRequiredAudio') : t('modelsExperience.attachmentRequiredImage'))
+      return
+    }
     const dispatchId = crypto.randomUUID()
     const attachedKindAtSend = attachment ? attachmentKindFromMime(attachment.uploaded.mime) : null
     trackEvent('playground_send', {
@@ -612,8 +656,9 @@ export default function ModelsPage() {
   }
 
   /** 媒体任务发送（§5.2 同步 JSON / §5.3-5.4 视频异步轮询）。图生图/语音识别/图生视频这类
-   *  "必须携带附件"的任务，没附件时会被后端校验拒绝（PLAYGROUND_ATTACHMENT_REQUIRED），
-   *  报错走下面统一的 catch，不在前端预先拦截——真源是后端校验，不重复造一遍。 */
+   *  "必须携带附件"的任务，sendPrompt 里已经前端预检过一遍（对齐 PRD App.tsx:18407-18410），
+   *  这里走到时按理已经有附件；万一漏网（比如并发清空），后端仍会拒绝
+   *  （PLAYGROUND_ATTACHMENT_REQUIRED），报错走下面统一的 catch 兜底。 */
   async function sendMediaPrompt(
     prompt: string,
     dispatchId: string,
@@ -928,8 +973,8 @@ export default function ModelsPage() {
                 </div>
               )}
 
-              {/* 附件预览/错误（§7.5）：每轮最多一个附件，发送后清空 */}
-              {!isSelectedModelOffline && (attachment || attachmentError) && (
+              {/* 附件预览/错误（§7.5，仅 dialogue 类走通用回形针）：每轮最多一个附件，发送后清空 */}
+              {!isSelectedModelOffline && isDialogue && (attachment || attachmentError) && (
                 <div className="models-experience-attachment-row">
                   {attachment && (
                     <div className="models-experience-attachment-chip">
@@ -947,19 +992,36 @@ export default function ModelsPage() {
                 </div>
               )}
 
+              {/* needs-file 任务(image_to_image/audio_to_text/image_to_video) 的专门上传区，
+                  替换掉回形针（PRD PlaygroundTaskInput App.tsx:19877-19929 逐字对齐，
+                  2026-07-29 本地起 PRD 原型用 ego-lite 实测过） */}
+              {!isSelectedModelOffline && needsFileTask && (
+                <TaskFileDropZone
+                  task={effectiveTask}
+                  file={attachment ? { name: attachment.file.name, sizeBytes: attachment.file.size, previewUrl: attachment.previewUrl } : null}
+                  error={attachmentError}
+                  uploading={attachmentUploading}
+                  onFileChange={(file) => void handleFileSelect(file)}
+                  onRemove={clearAttachment}
+                />
+              )}
+
               {/* PRD §7.2：单模型状态不展示"同步输入"开关、不展示"清空结果"按钮、不重复展示模型ID复制入口。
                   底部动作行左侧是预估费用（原型 App.tsx:18523 playground-composer-hint 逐字对齐）+ 附件入口
-                  （§7.5，纯文本模型不显示附件入口——对话类允许图片/视频，图像/音频/视频类各自只收一种）。
+                  （§7.5，纯文本任务不显示附件入口——对话类允许图片/视频回形针，needs-file 任务改用上面的
+                  专门上传区，text_to_image/text_to_audio/text_to_video 都没有附件入口）。
                   下线模型不渲染这一套，composer 区域整体换成上面的下线提示（PRD §AC-18）。 */}
               {!isSelectedModelOffline && (
                 <>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept={allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].accept).join(',')}
-                    className="hidden"
-                    onChange={(e) => void handleFileSelect(e.target.files?.[0])}
-                  />
+                  {isDialogue && (
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept={allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].accept).join(',')}
+                      className="hidden"
+                      onChange={(e) => void handleFileSelect(e.target.files?.[0])}
+                    />
+                  )}
                   <Composer
                     ref={inputRef}
                     value={input}
@@ -968,27 +1030,37 @@ export default function ModelsPage() {
                     isStreaming={isStreaming}
                     disabled={isBlockedByBalance}
                     onStop={() => abortRef.current?.abort()}
-                    placeholder={categoryPlaceholder(selectedCategory)}
+                    placeholder={effectiveTask === 'image_to_image' ? t('modelsExperience.taskPlaceholder.image_to_image') : categoryPlaceholder(selectedCategory)}
                     sendLabel={t('modelsExperience.send')}
                     className="models-experience-composer-wrap"
+                    sendEnabled={effectiveTask === 'audio_to_text' ? !!attachment : undefined}
+                    textareaSlot={effectiveTask === 'audio_to_text' ? (
+                      <div className="models-task-transcribe-ready">{t('modelsExperience.transcribeReady')}</div>
+                    ) : undefined}
                     activeChip={
-                      <div className="models-experience-composer-left">
-                        <button
-                          type="button"
-                          className="models-experience-icon-btn"
-                          aria-label={t('modelsExperience.addAttachment')}
-                          title={`${t('modelsExperience.attachmentSupports')}${allowedAttachmentKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`}
-                          disabled={attachmentUploading || !!attachment}
-                          onClick={() => fileInputRef.current?.click()}
-                        >
-                          <LuPaperclip size={14} />
-                        </button>
+                      isDialogue ? (
+                        <div className="models-experience-composer-left">
+                          <button
+                            type="button"
+                            className="models-experience-icon-btn"
+                            aria-label={t('modelsExperience.addAttachment')}
+                            title={`${t('modelsExperience.attachmentSupports')}${allowedAttachmentKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`}
+                            disabled={attachmentUploading || !!attachment}
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            <LuPaperclip size={14} />
+                          </button>
+                          <span className="models-experience-composer-hint">
+                            {attachmentUploading ? t('modelsExperience.attachmentUploading') : (
+                              <>{t('modelsExperience.estimatedSpend')} <strong>{composerEstimatedSpend}</strong></>
+                            )}
+                          </span>
+                        </div>
+                      ) : (
                         <span className="models-experience-composer-hint">
-                          {attachmentUploading ? t('modelsExperience.attachmentUploading') : (
-                            <>{t('modelsExperience.estimatedSpend')} <strong>{composerEstimatedSpend}</strong></>
-                          )}
+                          {t('modelsExperience.estimatedSpend')} <strong>{composerEstimatedSpend}</strong>
                         </span>
-                      </div>
+                      )
                     }
                   />
                 </>
@@ -1005,6 +1077,7 @@ export default function ModelsPage() {
         models={allModels}
         isBalanceZero={isBalanceZero}
         onSelect={handlePick}
+        currentTask={effectiveTask}
         requiredAttachmentKind={attachment ? attachmentKindFromMime(attachment.uploaded.mime) : null}
       />
 
@@ -1050,7 +1123,7 @@ export default function ModelsPage() {
           onConfirmAdd={(added) => {
             if (added.length === 0) return
             trackEvent('playground_compare_enter', { sidebar_was_collapsed: historyCollapsed })
-            navigate('/models/compare', { state: { selectedIds: [selectedModel.id, ...added.map((m) => m.id)] } })
+            navigate('/models/compare', { state: { selectedIds: [selectedModel.id, ...added.map((m) => m.id)], compareTask: effectiveTask } })
           }}
         />
       )}

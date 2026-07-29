@@ -12,13 +12,18 @@
  */
 import { create } from 'zustand'
 import type { CatalogModelItem } from '@/types'
-import type { ExperienceMessage } from '@/pages/models/model-experience-data'
+import type { ExperienceMessage, ExperienceTaskType } from '@/pages/models/model-experience-data'
 
 export interface SingleWorkbenchState {
   selectedId: string | null
   /** 历史会话引用的模型已不在目录里（下线/删除）时的占位展示（PRD §AC-18）。
    *  非空时 selectedId 无意义——渲染层优先读这个字段。 */
   offlineModel: CatalogModelItem | null
+  /** 用户在模型选择器「可体验任务」按钮组里显式选定的任务（image/audio/video 类，
+   *  PRD §7.1 selectModelTask）。null 表示未显式选过，渲染层退化到该类别默认任务。
+   *  会话建好（有 conversationId）后不再跟着这个字段变——与原型「task 固定不变」
+   *  的约束一致，见 model-experience-data.tsx resolveDialogueTask 上的说明。 */
+  task: ExperienceTaskType | null
   sessionId: string | null
   conversationId: string | null
   messages: ExperienceMessage[]
@@ -38,12 +43,17 @@ export interface CompareColumnState {
 export interface CompareWorkbenchState {
   sessionId: string | null
   columns: CompareColumnState[] | null
+  /** 显式选定的任务（image/audio/video 类），对比会话全列共用同一个 task——
+   *  PRD 原文"对比列内切换模型时…只列出当前会话同类别、同任务的可替换模型"，
+   *  task 是会话级属性不是列级属性。语义同 SingleWorkbenchState.task。 */
+  task: ExperienceTaskType | null
   sessionStats: { requestCount: number; tokens: number; cost: number }
 }
 
 const INITIAL_SINGLE: SingleWorkbenchState = {
   selectedId: null,
   offlineModel: null,
+  task: null,
   sessionId: null,
   conversationId: null,
   messages: [],
@@ -54,6 +64,7 @@ const INITIAL_SINGLE: SingleWorkbenchState = {
 const INITIAL_COMPARE: CompareWorkbenchState = {
   sessionId: null,
   columns: null,
+  task: null,
   sessionStats: { requestCount: 0, tokens: 0, cost: 0 },
 }
 

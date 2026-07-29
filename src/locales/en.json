@@ -1861,15 +1861,8 @@
       "pricingOutput": "Output price",
       "pricingCacheRead": "Cache read",
       "pricingCacheWrite": "Cache write",
-      "specs": "Specs",
       "contextLength": "Context Window",
-      "maxOutputTokens": "Max output",
-      "zeroDataRetention": "Zero Data Retention",
-      "supported": "Supported",
-      "notSupported": "Not Supported",
-      "inRegionRouting": "In-Region Routing",
-      "releasedAt": "Released At",
-      "knowledgeCutoff": "Knowledge Cutoff"
+      "maxOutputTokens": "Max output"
     },
     "card": {
       "context": "Context",
@@ -2150,6 +2143,19 @@
       "audio": "Enter the text to synthesize as speech…",
       "video": "Describe the shot, motion, camera work, and mood…"
     },
+    "taskSwitchLabel": "Available tasks",
+    "taskUpload": {
+      "clickToReplace": "Click to replace",
+      "image_to_image": "Upload a reference image",
+      "image_to_video": "Upload the first frame",
+      "audio_to_text": "Upload an audio file"
+    },
+    "transcribeReady": "Transcription will start with this model's current settings once uploaded.",
+    "taskPlaceholder": {
+      "image_to_image": "Describe what to keep and what to change…"
+    },
+    "attachmentRequiredImage": "Please upload an image first.",
+    "attachmentRequiredAudio": "Please upload the audio to transcribe first.",
     "attachmentLimitLabel": {
       "image": "Image (PNG/JPEG/WebP, ≤10MB)",
       "audio": "Audio (MP3/WAV/M4A/OGG/WebM, ≤25MB)",

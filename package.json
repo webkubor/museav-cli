@@ -51,7 +51,7 @@
     "jsencrypt": "^3.5.4",
     "ky": "^2.0.2",
     "lottie-react": "^2.4.1",
-    "modelgo-design-tokens": "^0.6.0",
+    "modelgo-design-tokens": "^0.6.1",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

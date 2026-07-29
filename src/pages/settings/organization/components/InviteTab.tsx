@@ -15,6 +15,8 @@ import { TagInput } from '@/components/ui/TagInput'
 import { Modal } from '@/components/ui/Modal'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { appToast } from '@/lib/app-toast'
+import { trackAction } from '@/lib/track'
+import { errorCodeOf } from '@/lib/request-error-message'
 
 export function InviteTab({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation()
@@ -86,11 +88,16 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
     mutationFn: (vars: { role: 'tenant_admin' | 'tenant_member'; silent?: boolean }) =>
       resetTenantInviteLink(tenantId, { role: vars.role, expires_in_hours: expiresInHours }),
     onSuccess: (_data, vars) => {
+      // 仅用户手动点击「重置邀请链接」确认弹窗时埋点；角色切换触发的静默刷新（silent）不计入
+      if (!vars.silent) trackAction(PERMS.ORG_INVITE_MANAGE, undefined, { result: 'success' })
       appToast.success(vars.silent ? t('enterprise.invite.linkRefreshedByRole') : t('enterprise.invite.linkReset'))
       qc.invalidateQueries({ queryKey: ['tenant-invite-link', tenantId] })
       setShowResetConfirm(false)
     },
-    onError: (err: Error) => appToast.requestError(err, '重置失败'),
+    onError: (err: Error, vars) => {
+      if (!vars.silent) trackAction(PERMS.ORG_INVITE_MANAGE, undefined, { result: 'fail', error_code: errorCodeOf(err) })
+      appToast.requestError(err, '重置失败')
+    },
   })
 
   const addMembers = useMutation({
@@ -101,6 +108,8 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
       target_workspace_id: targetWorkspaceId === NONE_WORKSPACE ? undefined : targetWorkspaceId,
     }),
     onSuccess: () => {
+      // 邮箱邀请「发送邀请」提交埋点，event key = 权限体系 org.invite:manage（对齐按钮 data-track="invitations:send"）
+      trackAction(PERMS.ORG_INVITE_MANAGE, { email_count: inviteEmails.length, role: inviteRole }, { result: 'success' })
       appToast.success('邀请已发出')
       setInviteEmails([])
       setExpiresInHours(72)
@@ -108,6 +117,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
       qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
     },
     onError: (err: Error) => {
+      trackAction(PERMS.ORG_INVITE_MANAGE, { email_count: inviteEmails.length, role: inviteRole }, { result: 'fail', error_code: errorCodeOf(err) })
       // 40901=重复邀请。后端批量非原子：撞重前的邮箱其实已发出（已实测）——必须刷新列表并说清，
       // 否则用户以为全失败去重发。语义修正案已挂 #116 由后端跟进。
       if (err instanceof ModelGoApiError && err.code === 40901) {

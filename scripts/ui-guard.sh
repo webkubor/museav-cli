@@ -118,6 +118,17 @@ while IFS= read -r f; do
     printf '%s\n' "$hits" | sed 's/^/      /'
     warn=$((warn + 1))
   fi
+
+  # WARN 5：疑似手写模型首字母头像（拿 model 相关变量 slice(0,1)/charAt(0) 当图标）。
+  #    模型身份统一走 <ModelIcon>（四层兜底：logo → lobehub 供应商图标 → 名称推断 → 首字母），
+  #    这是反复出现的问题（模型体验单页/对比工作台都各自手写过），别再手搓文字色块替代。
+  #    文件已 import ModelIcon 时放行（假定作者知情，这行只是极端兜底分支）。
+  hits="$(printf '%s' "$added" | grep -niE 'model.*\.(slice\(0,[[:space:]]*1\)|charAt\(0\))\.toUpperCase\(\)' || true)"
+  if [ -n "$hits" ] && ! printf '%s' "$content" | grep -q 'ModelIcon'; then
+    echo "⚠ [疑似手写模型头像] $f — 模型身份统一用 <ModelIcon>（@/features/models/components/ModelIcon），别拿模型名首字母拼色块（DESIGN.md · Components）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    warn=$((warn + 1))
+  fi
 done <<EOF
 $file_list
 EOF

@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { trackAction } from '@/lib/track'
+import { errorCodeOf } from '@/lib/request-error-message'
 import { useTenantRole } from '@/hooks/use-tenant-role'
 import {
   addWorkspaceMember,
@@ -403,22 +404,32 @@ export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted:
   const renameMutation = useMutation({
     mutationFn: () => updateWorkspace(ws.workspace_id, { name: name.trim(), description: description.trim() }),
     onSuccess: () => {
+      // 空间设置「保存」提交埋点（重命名/描述），event key = 权限体系 workspace:rename
+      trackAction(PERMS.WORKSPACE_RENAME, { workspace_id: ws.workspace_id }, { result: 'success' })
       appToast.success(t('workspaces.detail.settings.renameSuccess'))
       qc.invalidateQueries({ queryKey: ['workspace-detail', ws.workspace_id] })
       qc.invalidateQueries({ queryKey: ['workspaces'] })
     },
-    onError: (err: unknown) => appToast.requestError(err, t('workspaces.detail.settings.renameError')),
+    onError: (err: unknown) => {
+      trackAction(PERMS.WORKSPACE_RENAME, { workspace_id: ws.workspace_id }, { result: 'fail', error_code: errorCodeOf(err) })
+      appToast.requestError(err, t('workspaces.detail.settings.renameError'))
+    },
   })
 
   const deleteMutation = useMutation({
     mutationFn: () => deleteWorkspace(ws.workspace_id, { confirm_name: ws.name }),
     onSuccess: () => {
+      // 删除空间确认提交埋点，event key = 权限体系 workspace:delete
+      trackAction(PERMS.WORKSPACE_DELETE, { workspace_id: ws.workspace_id }, { result: 'success' })
       appToast.success(t('workspaces.detail.settings.deleteSuccess'))
       setDeleteOpen(false)
       qc.invalidateQueries({ queryKey: ['workspaces'] })
       onDeleted()
     },
-    onError: (err: unknown) => appToast.requestError(err, t('workspaces.detail.settings.deleteError')),
+    onError: (err: unknown) => {
+      trackAction(PERMS.WORKSPACE_DELETE, { workspace_id: ws.workspace_id }, { result: 'fail', error_code: errorCodeOf(err) })
+      appToast.requestError(err, t('workspaces.detail.settings.deleteError'))
+    },
   })
 
   return (

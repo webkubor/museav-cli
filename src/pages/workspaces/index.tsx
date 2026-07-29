@@ -38,6 +38,7 @@ import { TagInput, type TagOption } from '@/components/ui/TagInput'
 import { cn, formatMoney as fmtMoney } from '@/lib/utils'
 import { formatRelativeTime } from '@/lib/format-date'
 import { trackAction, trackPageView, trackEvent } from '@/lib/track'
+import { errorCodeOf } from '@/lib/request-error-message'
 import { PERMS } from '@/config/permissions'
 import { usePermissions } from '@/hooks/use-permissions'
 import { useNavigate } from 'react-router-dom'
@@ -156,6 +157,8 @@ export default function WorkspacesPage() {
       })
     },
     onSuccess: (newWorkspace) => {
+      // 「新建空间」弹窗的实际提交动作埋点（对齐按钮 data-track="workspaces:create_submit"）
+      trackEvent('workspaces:create_submit', undefined, { result: 'success' })
       toast.success(t('workspaces.toast.createSuccess', { name: newWorkspace.name }))
       setModalVisible(false)
       setName('')
@@ -167,6 +170,7 @@ export default function WorkspacesPage() {
       queryClient.invalidateQueries({ queryKey: ['workspaces', activeTenantId] })
     },
     onError: (err: unknown) => {
+      trackEvent('workspaces:create_submit', undefined, { result: 'fail', error_code: errorCodeOf(err) })
       const message = err instanceof Error
         ? err.message
         : (typeof err === 'object' && err !== null && 'message' in err

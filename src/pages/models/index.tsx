@@ -30,8 +30,9 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Composer } from '@/components/ui/Composer'
 import { useModels } from '@/features/models/hooks/useModels'
+import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { useExperienceWorkbenchStore } from '@/store/use-experience-workbench-store'
-import { prettyModelName, cn } from '@/lib/utils'
+import { prettyModelName } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
 import { calculateSpendableBalance } from '@/pages/billing/formatBalance'
@@ -769,9 +770,11 @@ export default function ModelsPage() {
                 >
                   {selectedModel && (
                     <>
-                      <span className={cn('models-experience-model-avatar', isOfflineModel(selectedModel) && 'is-offline')}>
-                        {isOfflineModel(selectedModel) ? '!' : prettyModelName(selectedModel.display_name, selectedModel.model_id).slice(0, 1).toUpperCase()}
-                      </span>
+                      {isOfflineModel(selectedModel) ? (
+                        <span className="models-experience-model-avatar is-offline">!</span>
+                      ) : (
+                        <ModelIcon model={selectedModel} size={32} rounded="rounded-md" />
+                      )}
                       <div className="min-w-0">
                         <div className="models-experience-modelbar-title">
                           {isOfflineModel(selectedModel) ? t('modelsExperience.modelOffline') : prettyModelName(selectedModel.display_name, selectedModel.model_id)}
@@ -836,6 +839,7 @@ export default function ModelsPage() {
                 isStreaming={isStreaming}
                 isMediaTask={!isDialogue}
                 onRetry={retryMediaMessage}
+                assistantModel={selectedModel}
                 emptyState={
                   <div className="models-experience-empty">
                     {(() => {

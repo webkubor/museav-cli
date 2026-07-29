@@ -22,6 +22,7 @@ import { Switch } from '@/components/ui/Switch'
 import { Composer } from '@/components/ui/Composer'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useModels } from '@/features/models/hooks/useModels'
+import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { prettyModelName, cn } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import {
@@ -1146,9 +1147,11 @@ export default function ModelsComparePage() {
                   setSwitchPickerIndex(idx)
                 }}
               >
-                <span className={cn('models-experience-model-avatar', isOfflineModel(column.model) && 'is-offline')}>
-                  {isOfflineModel(column.model) ? '!' : prettyModelName(column.model.display_name, column.model.model_id).slice(0, 1).toUpperCase()}
-                </span>
+                {isOfflineModel(column.model) ? (
+                  <span className="models-experience-model-avatar is-offline">!</span>
+                ) : (
+                  <ModelIcon model={column.model} size={32} rounded="rounded-md" />
+                )}
                 <div className="min-w-0">
                   <div className="models-experience-modelbar-title">
                     {isOfflineModel(column.model) ? t('modelsExperience.modelOffline') : prettyModelName(column.model.display_name, column.model.model_id)}
@@ -1198,6 +1201,7 @@ export default function ModelsComparePage() {
               showModelNameInMeta={false}
               isMediaTask={compareCategory !== 'dialogue'}
               onRetry={(userMessage) => retryMediaMessage(idx, userMessage)}
+              assistantModel={column.model}
               emptyState={
                 <div className="models-experience-empty">
                   {(() => {

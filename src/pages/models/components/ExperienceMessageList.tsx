@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { LuCheck, LuCopy } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
+import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
 import { formatPlaygroundSpend, type ExperienceMessage } from '../model-experience-data'
 
 /** 消息内容里的站内链接（如视频异步任务跳转调用日志）走 SPA 导航，外链原样新标签打开 */
@@ -59,9 +60,11 @@ export interface ExperienceMessageListProps {
   /** 重试：传回失败结果对应的用户消息（含原始文本与附件 resource_id），由调用方重新发起同一请求 */
   onRetry?: (userMessage: ExperienceMessage) => void
   emptyState: React.ReactNode
+  /** 助手消息头像用该模型的真实图标（ModelIcon 统一组件），不传时退回模型名首字母 */
+  assistantModel?: ModelIconLike
 }
 
-export function ExperienceMessageList({ messages, isStreaming, showModelNameInMeta = true, isMediaTask = false, onRetry, emptyState }: ExperienceMessageListProps) {
+export function ExperienceMessageList({ messages, isStreaming, showModelNameInMeta = true, isMediaTask = false, onRetry, emptyState, assistantModel }: ExperienceMessageListProps) {
   const { t } = useTranslation()
   return (
     <div className="models-experience-messages">
@@ -74,9 +77,13 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
           index === messages.length - 1
         return (
           <div key={`${message.role}-${index}`} className={cn('models-experience-message', message.role === 'user' && 'is-user')}>
-            <span className="models-experience-message-avatar">
-              {message.role === 'user' ? 'J' : (message.metrics?.model ?? 'AI').slice(0, 1).toUpperCase()}
-            </span>
+            {message.role === 'assistant' && assistantModel ? (
+              <ModelIcon model={assistantModel} size={28} rounded="rounded-full" className="models-experience-message-avatar" />
+            ) : (
+              <span className="models-experience-message-avatar">
+                {message.role === 'user' ? 'J' : (message.metrics?.model ?? 'AI').slice(0, 1).toUpperCase()}
+              </span>
+            )}
             <div className="models-experience-message-bubble">
               {message.error ? (
                 isMediaTask ? (

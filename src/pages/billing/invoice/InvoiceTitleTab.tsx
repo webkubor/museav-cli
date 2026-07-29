@@ -10,7 +10,9 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { appToast } from '@/lib/app-toast'
+import { trackEvent } from '@/lib/track'
 import {
   listInvoiceTitles,
   createInvoiceTitle,
@@ -44,6 +46,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
   const canManageTitles = hasPermission(PERMS.BILLING_INVOICE_TITLE_MANAGE)
   const [view, setView] = useState<'list' | 'form'>('list')
   const [form, setForm] = useState<CreateInvoiceTitleRequest>(EMPTY_FORM)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['invoice', 'titles', tenantId],
@@ -56,7 +59,12 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
     mutationFn: (id: string) => setDefaultInvoiceTitle(tenantId, id),
     onSuccess: () => {
       appToast.success('已设为默认抬头')
+      trackEvent('billing.invoice_title:set_default', undefined, { result: 'success' })
       qc.invalidateQueries({ queryKey: ['invoice', 'titles', tenantId] })
+    },
+    onError: (err: Error) => {
+      appToast.requestError(err, '设置默认抬头失败，请重试')
+      trackEvent('billing.invoice_title:set_default', undefined, { result: 'fail' })
     },
   })
 
@@ -71,6 +79,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
         await setDefaultInvoiceTitle(tenantId, rest[0].id).catch(() => {})
       }
       qc.invalidateQueries({ queryKey: ['invoice', 'titles', tenantId] })
+      setDeleteTarget(null)
     },
     onError: (err: Error) => appToast.requestError(err, '删除失败，请重试'),
   })
@@ -219,8 +228,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
                   variant="ghost"
                   size="sm"
                   className="text-mg-danger hover:bg-mg-danger/5"
-                  loading={removeTitle.isPending && removeTitle.variables === t.id}
-                  onClick={() => removeTitle.mutate(t.id)}
+                  onClick={() => setDeleteTarget({ id: t.id, name: t.company_name })}
                 >
                   <LuTrash2 size={13} />
                 </Button>}
@@ -229,6 +237,18 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
           </div>
         ))
       )}
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && removeTitle.mutate(deleteTarget.id)}
+        title="删除发票抬头"
+        description={deleteTarget ? `确定删除抬头「${deleteTarget.name}」？删除后不可恢复。` : undefined}
+        confirmLabel="删除"
+        cancelLabel="取消"
+        variant="destructive"
+        loading={removeTitle.isPending}
+      />
     </div>
   )
 }

@@ -12,6 +12,8 @@ import { CONSOLE_ROUTES, type ConsoleRouteMeta } from '@/config/console-routes'
 // 页面路由懒加载：各页面拆为独立 chunk，按需加载，缩小首屏体积
 const DashboardPage = lazy(() => import('@/pages/dashboard'))
 const ApiKeysPage = lazy(() => import('@/pages/api-keys'))
+// `/api-keys`（不带 workspaceId）的中转：解析默认工作空间后重定向到真实路由
+const ApiKeysRedirectPage = lazy(() => import('@/pages/api-keys/redirect'))
 const WorkspacesPage = lazy(() => import('@/pages/workspaces'))
 const LoginPage = lazy(() => import('@/pages/login'))
 const SignupPage = lazy(() => import('@/pages/signup'))
@@ -243,6 +245,12 @@ export default function App() {
             </Route>
             {/* 任务历史已并入调用日志（#361）：旧路由重定向到「异步任务」记录类型 */}
             <Route path="tasks" element={<Navigate to="/logs?record_type=async" replace />} />
+
+            {/* API Keys 是工作区级页面（真实路由在下面的 workspace/:workspaceId 组里）。
+                但模型详情页「获取 API Key」、模型体验的 API 弹窗、以及未登录时的
+                `redirect=/api-keys` 回跳手上都没有 workspaceId —— 给它们一个稳定的
+                无参入口，由中转页解析默认工作空间后再跳。此前这些入口直接落 404。 */}
+            <Route path="api-keys" element={<ApiKeysRedirectPage />} />
 
             {/* 开发者菜单（DEV 调试页）——挂在后台壳内（带侧栏/头部），不再独立整页。
                 编译期 DEV 专属：生产构建时页面 import 与整条路由均被静态消除。 */}

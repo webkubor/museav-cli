@@ -179,8 +179,8 @@ export function HistorySessionSidebar({
                     onClick={() => onSelectSession(session.id)}
                   >
                     <div className="history-sidebar-item-top">
-                      <span className="history-sidebar-item-name" title={session.name}>
-                        {session.name}
+                      <span className="history-sidebar-item-name" title={session.name || t('modelsExperience.unnamedSession')}>
+                        {session.name || t('modelsExperience.unnamedSession')}
                       </span>
                       <span className="history-sidebar-item-time">{formatRelativeTime(session.updatedAt)}</span>
                     </div>

@@ -420,7 +420,9 @@ export default function ModelsPage() {
     if (conversationId) return conversationId
     if (!selectedModel) throw new Error(t('modelsExperience.noModelSelected'))
     const session = await createExperienceSession({
-      name: t('modelsExperience.unnamedSession'),
+      // name 传空串：后端会在首条用户提问落库时用其前 15 字自动生成标题，
+      // 传非空值会被判定为「已显式命名」，反而挡住自动标题
+      name: '',
       category: selectedCategory,
       task: effectiveTask,
       // 单模型体验没有"多列同步"概念，用 independent（真实枚举见 experience-sessions.ts 注释）

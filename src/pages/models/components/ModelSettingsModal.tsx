@@ -5,6 +5,7 @@
  * 配置以会话内 modelId 为键保存 —— 由外部（父组件）管理 values/onChange/onReset，
  * 本组件是纯受控组件，不持有任何参数状态。
  */
+import { useTranslation } from 'react-i18next'
 import { LuRotateCcw, LuSettings2 } from 'react-icons/lu'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -12,7 +13,7 @@ import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Switch } from '@/components/ui/Switch'
 import { Select } from '@/components/ui/Select'
-import { EXPERIENCE_TASK_LABEL, type ExperienceTaskType } from '../model-experience-data'
+import { experienceTaskLabel, type ExperienceTaskType } from '../model-experience-data'
 import '../styles/model-settings-modal.css'
 
 export type ModelTaskType = ExperienceTaskType
@@ -42,8 +43,6 @@ export interface ModelSettingsModalProps {
   /** 本会话累计（只包含该模型在本会话中的成功/计费结果，mock 数据由外部传入） */
   sessionStats: ModelSettingsSessionStats
 }
-
-const TASK_LABEL = EXPERIENCE_TASK_LABEL
 
 function formatNumber(value: number): string {
   return Intl.NumberFormat('zh-CN', { maximumFractionDigits: 1 }).format(value)
@@ -80,6 +79,7 @@ function ChatParamsForm({
   onChange: (key: string, value: unknown) => void
   maxOutputTokens: number
 }) {
+  const { t } = useTranslation()
   const temperature = asNumber(values.temperature, 1)
   const topP = asNumber(values.top_p, 1)
   const maxTokens = asNumber(values.max_tokens, Math.min(4096, maxOutputTokens))
@@ -131,7 +131,7 @@ function ChatParamsForm({
           <label htmlFor="ms-max-tokens" className="model-settings-field-label">
             max_tokens
           </label>
-          <span className="model-settings-field-value">上限 {formatNumber(maxOutputTokens)}</span>
+          <span className="model-settings-field-value">{t('modelsExperience.settings.maxLimit')} {formatNumber(maxOutputTokens)}</span>
         </div>
         <Input
           id="ms-max-tokens"
@@ -150,7 +150,7 @@ function ChatParamsForm({
 
       <div className="model-settings-field model-settings-field-row">
         <label htmlFor="ms-stream" className="model-settings-field-label">
-          流式输出
+          {t('modelsExperience.settings.stream')}
         </label>
         <Switch id="ms-stream" checked={stream} onChange={(checked) => onChange('stream', checked)} />
       </div>
@@ -162,7 +162,7 @@ function ChatParamsForm({
         <Textarea
           id="ms-system-prompt"
           rows={3}
-          placeholder="可选：设定角色、语气与边界"
+          placeholder={t('modelsExperience.settings.systemPromptPlaceholder')}
           value={systemPrompt}
           onChange={(e) => onChange('systemPrompt', e.target.value)}
         />
@@ -199,8 +199,13 @@ function SelectField({
   )
 }
 
-/** 文生图/图生图参数表单：比例/分辨率/质量/数量 + 格式/透明背景/负面提示词/Seed（PRD §7.9 逐字对齐） */
+/**
+ * 文生图/图生图参数表单：比例/分辨率/质量/数量 + 格式/透明背景/负面提示词/Seed（PRD §7.9 逐字对齐）
+ * 注意：SelectField 的 options 是发给后端的参数值（非纯展示文案），只翻译 label，不翻译 options
+ * 里的选项值——那些是接口约定的枚举，翻译了会改变实际传给后端的值。
+ */
 function ImageParamsForm({ values, onChange }: { values: Record<string, unknown>; onChange: (key: string, value: unknown) => void }) {
+  const { t } = useTranslation()
   const aspectRatio = asString(values.aspect_ratio, '1:1')
   const resolution = asString(values.resolution, '1024')
   const quality = asString(values.quality, 'standard')
@@ -212,25 +217,25 @@ function ImageParamsForm({ values, onChange }: { values: Record<string, unknown>
 
   return (
     <div className="model-settings-form">
-      <SelectField label="画面比例" value={aspectRatio} options={['1:1', '4:3', '16:9']} onChange={(v) => onChange('aspect_ratio', v)} />
-      <SelectField label="分辨率" value={resolution} options={['1024', '1536', '2048']} onChange={(v) => onChange('resolution', v)} />
-      <SelectField label="质量" value={quality} options={['standard', 'high']} onChange={(v) => onChange('quality', v)} />
-      <SelectField label="生成数量" value={count} options={['1', '2', '3', '4']} onChange={(v) => onChange('count', v)} />
+      <SelectField label={t('modelsExperience.settings.aspectRatio')} value={aspectRatio} options={['1:1', '4:3', '16:9']} onChange={(v) => onChange('aspect_ratio', v)} />
+      <SelectField label={t('modelsExperience.settings.resolution')} value={resolution} options={['1024', '1536', '2048']} onChange={(v) => onChange('resolution', v)} />
+      <SelectField label={t('modelsExperience.settings.quality')} value={quality} options={['standard', 'high']} onChange={(v) => onChange('quality', v)} />
+      <SelectField label={t('modelsExperience.settings.count')} value={count} options={['1', '2', '3', '4']} onChange={(v) => onChange('count', v)} />
 
       <details className="model-settings-advanced" open>
-        <summary>高级设置</summary>
-        <SelectField label="输出格式" value={format} options={['PNG', 'JPEG', 'WebP']} onChange={(v) => onChange('format', v)} />
+        <summary>{t('modelsExperience.settings.advanced')}</summary>
+        <SelectField label={t('modelsExperience.settings.outputFormat')} value={format} options={['PNG', 'JPEG', 'WebP']} onChange={(v) => onChange('format', v)} />
         <div className="model-settings-field model-settings-field-row">
-          <label className="model-settings-field-label">透明背景</label>
+          <label className="model-settings-field-label">{t('modelsExperience.settings.transparentBg')}</label>
           <Switch checked={transparent} onChange={(checked) => onChange('transparent', checked)} />
         </div>
         <div className="model-settings-field">
-          <label className="model-settings-field-label">负面提示词</label>
+          <label className="model-settings-field-label">{t('modelsExperience.settings.negativePrompt')}</label>
           <Textarea rows={2} value={negativePrompt} onChange={(e) => onChange('negative_prompt', e.target.value)} />
         </div>
         <div className="model-settings-field">
           <label className="model-settings-field-label">Seed</label>
-          <Input type="number" placeholder="随机" value={seed} onChange={(e) => onChange('seed', e.target.value)} />
+          <Input type="number" placeholder={t('modelsExperience.settings.random')} value={seed} onChange={(e) => onChange('seed', e.target.value)} />
         </div>
       </details>
     </div>
@@ -239,6 +244,7 @@ function ImageParamsForm({ values, onChange }: { values: Record<string, unknown>
 
 /** 语音合成参数表单：音色/语速/格式 + 风格指令（PRD §7.9 逐字对齐） */
 function TTSParamsForm({ values, onChange }: { values: Record<string, unknown>; onChange: (key: string, value: unknown) => void }) {
+  const { t } = useTranslation()
   const voice = asString(values.voice, '晓辰')
   const speed = asNumber(values.speed, 1)
   const format = asString(values.audio_format, 'MP3')
@@ -246,10 +252,10 @@ function TTSParamsForm({ values, onChange }: { values: Record<string, unknown>; 
 
   return (
     <div className="model-settings-form">
-      <SelectField label="音色" value={voice} options={['晓辰', '安然', 'Miles']} onChange={(v) => onChange('voice', v)} />
+      <SelectField label={t('modelsExperience.settings.voice')} value={voice} options={['晓辰', '安然', 'Miles']} onChange={(v) => onChange('voice', v)} />
       <div className="model-settings-field">
         <div className="model-settings-field-label-row">
-          <label className="model-settings-field-label">语速</label>
+          <label className="model-settings-field-label">{t('modelsExperience.settings.speed')}</label>
           <span className="model-settings-field-value">{speed.toFixed(1)}x</span>
         </div>
         <input
@@ -262,15 +268,15 @@ function TTSParamsForm({ values, onChange }: { values: Record<string, unknown>; 
           className="model-settings-slider"
         />
       </div>
-      <SelectField label="音频格式" value={format} options={['MP3', 'WAV', 'M4A']} onChange={(v) => onChange('audio_format', v)} />
+      <SelectField label={t('modelsExperience.settings.audioFormat')} value={format} options={['MP3', 'WAV', 'M4A']} onChange={(v) => onChange('audio_format', v)} />
 
       <details className="model-settings-advanced" open>
-        <summary>高级设置</summary>
+        <summary>{t('modelsExperience.settings.advanced')}</summary>
         <div className="model-settings-field">
-          <label className="model-settings-field-label">风格指令</label>
+          <label className="model-settings-field-label">{t('modelsExperience.settings.voiceStyle')}</label>
           <Textarea
             rows={3}
-            placeholder="例如：沉稳、温暖、适合产品介绍"
+            placeholder={t('modelsExperience.settings.voiceStylePlaceholder')}
             value={voiceStyle}
             onChange={(e) => onChange('voice_style', e.target.value)}
           />
@@ -282,6 +288,7 @@ function TTSParamsForm({ values, onChange }: { values: Record<string, unknown>; 
 
 /** 语音识别参数表单：语言/时间戳/输出格式 + 专有词汇/上下文提示（PRD §7.9 逐字对齐） */
 function TranscribeParamsForm({ values, onChange }: { values: Record<string, unknown>; onChange: (key: string, value: unknown) => void }) {
+  const { t } = useTranslation()
   const language = asString(values.language, '自动识别')
   const timestamps = asString(values.timestamps, '关闭')
   const format = asString(values.transcript_format, '纯文本')
@@ -290,19 +297,19 @@ function TranscribeParamsForm({ values, onChange }: { values: Record<string, unk
 
   return (
     <div className="model-settings-form">
-      <SelectField label="识别语言" value={language} options={['自动识别', '中文', '英文', '日文']} onChange={(v) => onChange('language', v)} />
-      <SelectField label="时间戳" value={timestamps} options={['关闭', '分段', '逐词']} onChange={(v) => onChange('timestamps', v)} />
-      <SelectField label="输出格式" value={format} options={['纯文本', 'JSON', 'SRT']} onChange={(v) => onChange('transcript_format', v)} />
+      <SelectField label={t('modelsExperience.settings.recognitionLanguage')} value={language} options={['自动识别', '中文', '英文', '日文']} onChange={(v) => onChange('language', v)} />
+      <SelectField label={t('modelsExperience.settings.timestamps')} value={timestamps} options={['关闭', '分段', '逐词']} onChange={(v) => onChange('timestamps', v)} />
+      <SelectField label={t('modelsExperience.settings.outputFormat')} value={format} options={['纯文本', 'JSON', 'SRT']} onChange={(v) => onChange('transcript_format', v)} />
 
       <details className="model-settings-advanced" open>
-        <summary>高级设置</summary>
+        <summary>{t('modelsExperience.settings.advanced')}</summary>
         <div className="model-settings-field">
-          <label className="model-settings-field-label">专有词汇</label>
+          <label className="model-settings-field-label">{t('modelsExperience.settings.terms')}</label>
           <Textarea rows={2} placeholder="ModelGo、API Gateway" value={terms} onChange={(e) => onChange('terms', e.target.value)} />
         </div>
         <div className="model-settings-field">
-          <label className="model-settings-field-label">上下文提示</label>
-          <Textarea rows={2} placeholder="可选：补充音频主题" value={contextPrompt} onChange={(e) => onChange('context_prompt', e.target.value)} />
+          <label className="model-settings-field-label">{t('modelsExperience.settings.contextPrompt')}</label>
+          <Textarea rows={2} placeholder={t('modelsExperience.settings.contextPromptPlaceholder')} value={contextPrompt} onChange={(e) => onChange('context_prompt', e.target.value)} />
         </div>
       </details>
     </div>
@@ -311,6 +318,7 @@ function TranscribeParamsForm({ values, onChange }: { values: Record<string, unk
 
 /** 文生视频/图生视频参数表单：时长/比例/分辨率/数量 + 负面提示词/Seed/生成音频（PRD §7.9 逐字对齐） */
 function VideoParamsForm({ values, onChange }: { values: Record<string, unknown>; onChange: (key: string, value: unknown) => void }) {
+  const { t } = useTranslation()
   const duration = asString(values.duration, '5')
   const aspectRatio = asString(values.aspect_ratio, '16:9')
   const resolution = asString(values.resolution, '720p')
@@ -321,23 +329,23 @@ function VideoParamsForm({ values, onChange }: { values: Record<string, unknown>
 
   return (
     <div className="model-settings-form">
-      <SelectField label="视频时长" value={duration} options={['5', '8', '10']} suffix="秒" onChange={(v) => onChange('duration', v)} />
-      <SelectField label="画面比例" value={aspectRatio} options={['16:9', '9:16', '1:1']} onChange={(v) => onChange('aspect_ratio', v)} />
-      <SelectField label="分辨率" value={resolution} options={['720p', '1080p']} onChange={(v) => onChange('resolution', v)} />
-      <SelectField label="生成数量" value={count} options={['1', '2']} onChange={(v) => onChange('count', v)} />
+      <SelectField label={t('modelsExperience.settings.videoDuration')} value={duration} options={['5', '8', '10']} suffix={t('modelsExperience.settings.seconds')} onChange={(v) => onChange('duration', v)} />
+      <SelectField label={t('modelsExperience.settings.aspectRatio')} value={aspectRatio} options={['16:9', '9:16', '1:1']} onChange={(v) => onChange('aspect_ratio', v)} />
+      <SelectField label={t('modelsExperience.settings.resolution')} value={resolution} options={['720p', '1080p']} onChange={(v) => onChange('resolution', v)} />
+      <SelectField label={t('modelsExperience.settings.count')} value={count} options={['1', '2']} onChange={(v) => onChange('count', v)} />
 
       <details className="model-settings-advanced" open>
-        <summary>高级设置</summary>
+        <summary>{t('modelsExperience.settings.advanced')}</summary>
         <div className="model-settings-field">
-          <label className="model-settings-field-label">负面提示词</label>
+          <label className="model-settings-field-label">{t('modelsExperience.settings.negativePrompt')}</label>
           <Textarea rows={2} value={negativePrompt} onChange={(e) => onChange('negative_prompt', e.target.value)} />
         </div>
         <div className="model-settings-field">
           <label className="model-settings-field-label">Seed</label>
-          <Input type="number" placeholder="随机" value={seed} onChange={(e) => onChange('seed', e.target.value)} />
+          <Input type="number" placeholder={t('modelsExperience.settings.random')} value={seed} onChange={(e) => onChange('seed', e.target.value)} />
         </div>
         <div className="model-settings-field model-settings-field-row">
-          <label className="model-settings-field-label">生成音频</label>
+          <label className="model-settings-field-label">{t('modelsExperience.settings.generateAudio')}</label>
           <Switch checked={generateAudio} onChange={(checked) => onChange('generate_audio', checked)} />
         </div>
       </details>
@@ -373,13 +381,14 @@ export function ModelSettingsModal({
   onReset,
   sessionStats,
 }: ModelSettingsModalProps) {
+  const { t } = useTranslation()
   const isDialogue = DIALOGUE_TASKS.includes(task)
 
   const footer = (
     <div className="model-settings-footer">
       <div className="model-settings-stats">
         <div className="model-settings-stat">
-          <span className="model-settings-stat-label">请求数</span>
+          <span className="model-settings-stat-label">{t('modelsExperience.settings.requestCount')}</span>
           <span className="model-settings-stat-value">{sessionStats.requestCount}</span>
         </div>
         {isDialogue && (
@@ -389,12 +398,12 @@ export function ModelSettingsModal({
           </div>
         )}
         <div className="model-settings-stat">
-          <span className="model-settings-stat-label">费用</span>
+          <span className="model-settings-stat-label">{t('modelsExperience.settings.cost')}</span>
           <span className="model-settings-stat-value">{formatSessionSpend(sessionStats.cost)}</span>
         </div>
       </div>
       <Button variant="outline" size="sm" icon={<LuRotateCcw size={14} />} onClick={onReset}>
-        重置
+        {t('modelsExperience.settings.reset')}
       </Button>
     </div>
   )
@@ -408,8 +417,8 @@ export function ModelSettingsModal({
         <span className="flex items-center gap-2">
           <LuSettings2 size={18} className="text-brand-base" />
           <span className="flex flex-col">
-            <span>{modelName} 设置</span>
-            <span className="text-xs font-normal text-mg-text-3">{vendor ?? 'ModelGo'} · {TASK_LABEL[task]}</span>
+            <span>{t('modelsExperience.settings.modalTitle', { name: modelName })}</span>
+            <span className="text-xs font-normal text-mg-text-3">{vendor ?? 'ModelGo'} · {experienceTaskLabel(task)}</span>
           </span>
         </span>
       }

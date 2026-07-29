@@ -12,6 +12,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   LuColumns2, LuChevronDown, LuCode, LuSettings2, LuX, LuPlus, LuLogOut, LuTriangleAlert, LuPaperclip,
 } from 'react-icons/lu'
@@ -61,13 +62,14 @@ import {
   sizeBucket,
   cleanErrorMessage,
   extractApiErrorMessage,
-  EXPERIENCE_TASK_LABEL,
+  experienceTaskLabel,
   resolveModelCategory,
-  EXPERIENCE_CATEGORY_LABEL,
+  experienceCategoryLabel,
   EXPERIENCE_CATEGORY_DEFAULT_TASK,
-  CATEGORY_EMPTY_COPY,
-  CATEGORY_PLACEHOLDER,
+  categoryEmptyCopy,
+  categoryPlaceholder,
   ATTACHMENT_LIMITS,
+  attachmentLimitLabel,
   attachmentKindFromMime,
   offlineModelPlaceholder,
   isOfflineModel,
@@ -101,6 +103,7 @@ interface DispatchAttachment {
 }
 
 export default function ModelsComparePage() {
+  const { t } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
   const collapseForCompare = useSidebarCollapseStore((s) => s.collapseForCompare)
@@ -193,7 +196,7 @@ export default function ModelsComparePage() {
     bootedRef.current = true
     const resolved = ids.slice(0, MAX_COMPARE).map((id) => allModels.find((m) => m.id === id)).filter((m): m is CatalogModelItem => !!m)
     if (resolved.length < 2) {
-      setBootError('传入的模型未找到或数量不足，无法进入对比')
+      setBootError(t('modelsExperience.compare.modelsNotFound'))
       return
     }
     void bootSession(resolved)
@@ -224,7 +227,7 @@ export default function ModelsComparePage() {
           name: session.name,
           updatedAt: session.updated_at,
           category: (session.category as HistorySessionItem['category']) ?? 'dialogue',
-          task: EXPERIENCE_TASK_LABEL[session.task as keyof typeof EXPERIENCE_TASK_LABEL] ?? session.task,
+          task: experienceTaskLabel(session.task as Parameters<typeof experienceTaskLabel>[0]) ?? session.task,
           models: session.models
             ? session.models.map((modelId) => {
                 const catalogModel = allModels.find((m) => m.model_id === modelId)
@@ -265,7 +268,7 @@ export default function ModelsComparePage() {
         getExperienceSessionMessages(id),
       ])
       const convs = (detail.conversations ?? []).slice().sort((a, b) => a.position - b.position)
-      if (convs.length === 0) throw new Error('该会话没有可恢复的模型列')
+      if (convs.length === 0) throw new Error(t('modelsExperience.compare.noRestorableColumns'))
       const byConv = new Map<string, ExperienceMessageView[]>()
       for (const msg of msgItems) {
         const list = byConv.get(msg.conversation_id) ?? []
@@ -295,7 +298,7 @@ export default function ModelsComparePage() {
       trackEvent('playground_history_action', { action: 'restore' }, { result: 'success' })
     } catch (err) {
       trackEvent('playground_history_action', { action: 'restore' }, { result: 'fail' })
-      setHistoryActionError(`加载历史会话失败：${(err as Error).message || '请稍后重试'}`)
+      setHistoryActionError(`${t('modelsExperience.historyLoadFailed')}${(err as Error).message || t('modelsExperience.retryLater')}`)
     }
   }
 
@@ -318,7 +321,7 @@ export default function ModelsComparePage() {
       const category = resolveModelCategory(models[0])
       const task = EXPERIENCE_CATEGORY_DEFAULT_TASK[category]
       const session = await createExperienceSession({
-        name: '未命名会话',
+        name: t('modelsExperience.unnamedSession'),
         category,
         task,
         input_mode: syncInput ? 'sync' : 'independent',
@@ -338,7 +341,7 @@ export default function ModelsComparePage() {
       setColumns(nextColumns)
       setBootError(null)
     } catch (err) {
-      setBootError(`创建对比会话失败：${(err as Error).message || '请稍后重试'}`)
+      setBootError(`${t('modelsExperience.compare.createSessionFailed')}${(err as Error).message || t('modelsExperience.retryLater')}`)
     }
   }
 
@@ -447,7 +450,7 @@ export default function ModelsComparePage() {
               if (i !== idx) return c
               const next = [...c.history]
               const last = next[next.length - 1]
-              if (last?.role === 'assistant') next[next.length - 1] = { ...last, error: `体验请求失败：${(err as Error).message || '请稍后重试'}` }
+              if (last?.role === 'assistant') next[next.length - 1] = { ...last, error: `${t('modelsExperience.requestFailed')}${(err as Error).message || t('modelsExperience.retryLater')}` }
               return { ...c, history: next }
             })
           : prev,
@@ -492,7 +495,7 @@ export default function ModelsComparePage() {
 
       if (message.status === 'running' && message.async_task_id) {
         isAsyncVideo = true
-        applyAssistant(idx, () => `视频生成中，可点击[在调用日志的异步任务里追踪](/logs?task_id=${encodeURIComponent(message.async_task_id!)})…`)
+        applyAssistant(idx, () => `${t('modelsExperience.videoGenerating')}[${t('modelsExperience.videoGeneratingLink')}](/logs?task_id=${encodeURIComponent(message.async_task_id!)})…`)
         void pollVideoColumn(idx, column.conversationId, message.id, modelLabel, dispatchId)
         return
       }
@@ -511,7 +514,7 @@ export default function ModelsComparePage() {
                   ...last,
                   content: message.content,
                   media: media.length > 0 ? media : undefined,
-                  error: message.status === 'failed' ? (message.content ? undefined : '该模型本轮响应失败') : undefined,
+                  error: message.status === 'failed' ? (message.content ? undefined : t('modelsExperience.modelRunFailed')) : undefined,
                   metrics: {
                     model: modelLabel, inputTokens: 0, outputTokens: 0, firstTokenLatency: '',
                     totalLatency: formatPlaygroundLatency(totalMs), spend, free: spend === 0, totalMs,
@@ -530,7 +533,7 @@ export default function ModelsComparePage() {
         billing_status: spend === 0 ? 'free' : 'billed',
       }, { result: message.status === 'failed' ? 'fail' : 'success' })
     } catch (err) {
-      const message = `体验请求失败：${extractApiErrorMessage(err)}`
+      const message = `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}`
       setColumns((prev) =>
         prev
           ? prev.map((c, i) => {
@@ -573,7 +576,7 @@ export default function ModelsComparePage() {
             const last = next[next.length - 1]
             if (last?.role !== 'assistant') return c
             if (message.status === 'failed') {
-              next[next.length - 1] = { ...last, error: message.error || '视频生成失败', content: '' }
+              next[next.length - 1] = { ...last, error: message.error || t('modelsExperience.videoGenerateFailed'), content: '' }
               return { ...c, history: next }
             }
             const media = message.attachments.map((a) => ({ kind: a.kind, url: attachment_urls[a.resource_id] ?? '' }))
@@ -795,7 +798,7 @@ export default function ModelsComparePage() {
       setColumns((prev) => (prev ? prev.filter((_, i) => i !== removeConfirmIndex) : prev))
       setRemoveConfirmIndex(null)
     } catch (err) {
-      setBootError(`移除模型失败：${(err as Error).message || '请稍后重试'}`)
+      setBootError(`${t('modelsExperience.compare.removeModelFailed')}${(err as Error).message || t('modelsExperience.retryLater')}`)
     }
   }
 
@@ -829,7 +832,7 @@ export default function ModelsComparePage() {
         trackEvent('playground_model_add', { model_id: model.model_id, next_count: baseCount + i + 1 })
       })
     } catch (err) {
-      setBootError(`添加模型失败：${(err as Error).message || '请稍后重试'}`)
+      setBootError(`${t('modelsExperience.compare.addModelFailed')}${(err as Error).message || t('modelsExperience.retryLater')}`)
     }
   }
 
@@ -842,7 +845,7 @@ export default function ModelsComparePage() {
       updateColumn(switchPickerIndex, { model, chatParams: {} })
       trackEvent('playground_model_select', { from_model_id: target.model.model_id, to_model_id: model.model_id }, { result: 'success' })
     } catch (err) {
-      setBootError(`切换模型失败：${(err as Error).message || '请稍后重试'}`)
+      setBootError(`${t('modelsExperience.compare.switchModelFailed')}${(err as Error).message || t('modelsExperience.retryLater')}`)
       trackEvent('playground_model_select', { from_model_id: target.model.model_id, to_model_id: model.model_id }, { result: 'fail' })
     }
   }
@@ -891,8 +894,8 @@ export default function ModelsComparePage() {
   if (bootError) {
     return (
       <div className="models-experience-page">
-        <PageHeader title="模型对比" description={bootError} className="mb-4" />
-        <Button variant="brand" onClick={() => navigate('/models/playground')}>返回模型体验</Button>
+        <PageHeader title={t('modelsExperience.compare.pageTitle')} description={bootError} className="mb-4" />
+        <Button variant="brand" onClick={() => navigate('/models/playground')}>{t('modelsExperience.compare.backToExperience')}</Button>
       </div>
     )
   }
@@ -900,7 +903,7 @@ export default function ModelsComparePage() {
   if (!columns) {
     return (
       <div className="models-experience-page">
-        <PageHeader title="模型对比" description="正在准备对比会话…" className="mb-4" />
+        <PageHeader title={t('modelsExperience.compare.pageTitle')} description={t('modelsExperience.compare.preparing')} className="mb-4" />
       </div>
     )
   }
@@ -938,12 +941,12 @@ export default function ModelsComparePage() {
     setAttachmentError(null)
     const kind = attachmentKindFromMime(file.type)
     if (!kind || !allowedAttachmentKinds.includes(kind)) {
-      setAttachmentError(`当前对比类别不支持该附件类型，仅支持：${allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].label).join('、')}`)
+      setAttachmentError(`${t('modelsExperience.compare.categoryAttachmentUnsupported')}${allowedAttachmentKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`)
       if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
     if (file.size > ATTACHMENT_LIMITS[kind].maxBytes) {
-      setAttachmentError(`文件超出大小限制（${ATTACHMENT_LIMITS[kind].label}）`)
+      setAttachmentError(t('modelsExperience.attachmentTooLarge', { limit: attachmentLimitLabel(kind) }))
       if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
@@ -1005,13 +1008,13 @@ export default function ModelsComparePage() {
     if (!kind || !allowedAttachmentKinds.includes(kind) || !modelSupportsAttachment(column.model, kind)) {
       setColumnAttachmentErrors((prev) => ({
         ...prev,
-        [conversationId]: `当前模型不支持该附件类型，仅支持：${allowedAttachmentKinds.filter((k) => modelSupportsAttachment(column.model, k)).map((k) => ATTACHMENT_LIMITS[k].label).join('、') || '无'}`,
+        [conversationId]: `${t('modelsExperience.attachmentUnsupported')}${allowedAttachmentKinds.filter((k) => modelSupportsAttachment(column.model, k)).map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator')) || t('modelsExperience.compare.none')}`,
       }))
       if (columnFileInputRef.current) columnFileInputRef.current.value = ''
       return
     }
     if (file.size > ATTACHMENT_LIMITS[kind].maxBytes) {
-      setColumnAttachmentErrors((prev) => ({ ...prev, [conversationId]: `文件超出大小限制（${ATTACHMENT_LIMITS[kind].label}）` }))
+      setColumnAttachmentErrors((prev) => ({ ...prev, [conversationId]: t('modelsExperience.attachmentTooLarge', { limit: attachmentLimitLabel(kind) }) }))
       if (columnFileInputRef.current) columnFileInputRef.current.value = ''
       return
     }
@@ -1051,7 +1054,7 @@ export default function ModelsComparePage() {
 
   return (
     <div className="models-experience-page">
-      <PageHeader title="模型体验" description="同类别、同任务的最多 3 个模型并排对比，逐列独立设置与费用。" className="mb-4" />
+      <PageHeader title={t('modelsExperience.page.title')} description={t('modelsExperience.compare.description')} className="mb-4" />
 
       <div className="models-experience-shell">
         {/* §7.8 历史会话侧栏（qa#546）：与单模型页同款受控组件，展开时拉取列表；选中会话
@@ -1077,12 +1080,12 @@ export default function ModelsComparePage() {
       <div className="models-compare-toolbar">
         <div className="models-compare-toolbar-left">
           <LuColumns2 size={15} className="text-brand-base" />
-          <strong>模型对比</strong>
-          <span className="models-compare-toolbar-meta">{EXPERIENCE_CATEGORY_LABEL[compareCategory]} · {columns.length} / {MAX_COMPARE} 个模型</span>
+          <strong>{t('modelsExperience.compare.toolbarTitle')}</strong>
+          <span className="models-compare-toolbar-meta">{experienceCategoryLabel(compareCategory)} · {t('modelsExperience.compare.modelCount', { count: columns.length, max: MAX_COMPARE })}</span>
         </div>
         <div className="models-compare-toolbar-right">
           <label className="flex items-center gap-2 select-none cursor-pointer">
-            <span className="text-xs font-semibold text-mg-text-3">同步输入</span>
+            <span className="text-xs font-semibold text-mg-text-3">{t('modelsExperience.compare.syncInput')}</span>
             <Switch checked={syncInput} onChange={handleToggleSync} />
           </label>
           <Button
@@ -1094,16 +1097,16 @@ export default function ModelsComparePage() {
               setAddPickerOpen(true)
             }}
           >
-            <LuPlus size={13} /> 添加模型
+            <LuPlus size={13} /> {t('modelsExperience.compare.addModel')}
           </Button>
           <Button variant="outline" size="sm" onClick={() => setExitConfirmOpen(true)}>
-            <LuLogOut size={13} /> 退出对比
+            <LuLogOut size={13} /> {t('modelsExperience.compare.exitCompare')}
           </Button>
         </div>
       </div>
 
       {/* §8.5 窄屏一次展示一个模型列，顶部 Tab 切换；宽屏由 CSS 隐藏，不影响并排布局 */}
-      <div className="models-compare-mobile-tabs" role="tablist" aria-label="切换对比模型列">
+      <div className="models-compare-mobile-tabs" role="tablist" aria-label={t('modelsExperience.compare.switchColumnTabs')}>
         {columns.map((column, idx) => {
           const status = columnStatus(column)
           return (
@@ -1148,12 +1151,12 @@ export default function ModelsComparePage() {
                 </span>
                 <div className="min-w-0">
                   <div className="models-experience-modelbar-title">
-                    {isOfflineModel(column.model) ? '模型已下线' : prettyModelName(column.model.display_name, column.model.model_id)}
+                    {isOfflineModel(column.model) ? t('modelsExperience.modelOffline') : prettyModelName(column.model.display_name, column.model.model_id)}
                   </div>
-                  <div className="models-experience-modelbar-sub">{column.model.vendor || column.model.provider || 'ModelGo'} · {EXPERIENCE_CATEGORY_LABEL[compareCategory]}</div>
+                  <div className="models-experience-modelbar-sub">{column.model.vendor || column.model.provider || 'ModelGo'} · {experienceCategoryLabel(compareCategory)}</div>
                 </div>
                 {isOfflineModel(column.model) ? (
-                  <span className="models-experience-price-chip is-offline">模型已下线</span>
+                  <span className="models-experience-price-chip is-offline">{t('modelsExperience.modelOffline')}</span>
                 ) : (
                   <span className="models-experience-price-chip">{dualPriceText(column.model)}</span>
                 )}
@@ -1163,8 +1166,8 @@ export default function ModelsComparePage() {
                 <button
                   type="button"
                   className="models-experience-icon-btn"
-                  aria-label="打开 API 调用"
-                  title={isOfflineModel(column.model) ? '模型已下线' : '打开 API 调用'}
+                  aria-label={t('modelsExperience.openApiCall')}
+                  title={isOfflineModel(column.model) ? t('modelsExperience.modelOffline') : t('modelsExperience.openApiCall')}
                   disabled={isOfflineModel(column.model)}
                   onClick={() => {
                     trackEvent('playground_api_modal_action', { action: 'open', protocol: '', language: '', model_id: column.model.model_id })
@@ -1176,14 +1179,14 @@ export default function ModelsComparePage() {
                 <button
                   type="button"
                   className="models-experience-icon-btn"
-                  aria-label="打开模型设置"
-                  title={isOfflineModel(column.model) ? '模型已下线' : '打开模型设置'}
+                  aria-label={t('modelsExperience.openModelSettings')}
+                  title={isOfflineModel(column.model) ? t('modelsExperience.modelOffline') : t('modelsExperience.openModelSettings')}
                   disabled={isOfflineModel(column.model)}
                   onClick={() => void openColumnSettings(idx)}
                 >
                   <LuSettings2 size={13} />
                 </button>
-                <button type="button" className="models-experience-icon-btn" aria-label="移除模型" title="移除模型" onClick={() => setRemoveConfirmIndex(idx)}>
+                <button type="button" className="models-experience-icon-btn" aria-label={t('modelsExperience.compare.removeModel')} title={t('modelsExperience.compare.removeModel')} onClick={() => setRemoveConfirmIndex(idx)}>
                   <LuX size={13} />
                 </button>
               </div>
@@ -1198,10 +1201,10 @@ export default function ModelsComparePage() {
               emptyState={
                 <div className="models-experience-empty">
                   {(() => {
-                    const EmptyIcon = CATEGORY_EMPTY_COPY[compareCategory].icon
+                    const EmptyIcon = categoryEmptyCopy(compareCategory).icon
                     return <EmptyIcon size={18} />
                   })()}
-                  <span>{CATEGORY_EMPTY_COPY[compareCategory].hint}</span>
+                  <span>{categoryEmptyCopy(compareCategory).hint}</span>
                 </div>
               }
             />
@@ -1210,8 +1213,8 @@ export default function ModelsComparePage() {
               <div className="playground-balance-notice" role="alert">
                 <LuTriangleAlert size={15} />
                 <span>
-                  <strong>余额不足，仅可体验免费模型</strong>
-                  当前模型与输入已为你保留，充值后即可继续运行。
+                  <strong>{t('modelsExperience.balanceInsufficientTitle')}</strong>
+                  {t('modelsExperience.balanceInsufficientHint')}
                 </span>
                 <button
                   type="button"
@@ -1220,7 +1223,7 @@ export default function ModelsComparePage() {
                     navigate('/billing', { state: { entrySource: 'recharge_cta' } })
                   }}
                 >
-                  去充值
+                  {t('modelsExperience.recharge')}
                 </button>
               </div>
             )}
@@ -1231,8 +1234,8 @@ export default function ModelsComparePage() {
               <div className="playground-balance-notice" role="status">
                 <LuTriangleAlert size={15} />
                 <span>
-                  <strong>模型已下线</strong>
-                  历史结果仍可查看，请从上方更换同任务模型后继续。
+                  <strong>{t('modelsExperience.modelOffline')}</strong>
+                  {t('modelsExperience.modelOfflineHint')}
                 </span>
               </div>
             ) : !syncInput && (() => {
@@ -1250,11 +1253,11 @@ export default function ModelsComparePage() {
                       {colAttachment && (
                         <div className="models-experience-attachment-chip">
                           {attachmentKindFromMime(colAttachment.uploaded.mime) === 'image' ? (
-                            <img src={colAttachment.previewUrl} alt="附件预览" />
+                            <img src={colAttachment.previewUrl} alt={t('modelsExperience.attachmentPreview')} />
                           ) : (
                             <span className="models-experience-attachment-name">{colAttachment.file.name}</span>
                           )}
-                          <button type="button" aria-label="移除附件" onClick={() => clearColumnAttachment(column.conversationId)}>
+                          <button type="button" aria-label={t('modelsExperience.removeAttachment')} onClick={() => clearColumnAttachment(column.conversationId)}>
                             <LuX size={12} />
                           </button>
                         </div>
@@ -1269,16 +1272,16 @@ export default function ModelsComparePage() {
                     isStreaming={column.streaming}
                     disabled={isBalanceZero && isPaidModel(column.model)}
                     onStop={() => abortRefs.current[idx]?.abort()}
-                    placeholder={`仅向 ${prettyModelName(column.model.display_name, column.model.model_id)}：${CATEGORY_PLACEHOLDER[compareCategory]}`}
-                    sendLabel="发送"
+                    placeholder={t('modelsExperience.compare.columnPlaceholder', { name: prettyModelName(column.model.display_name, column.model.model_id), placeholder: categoryPlaceholder(compareCategory) })}
+                    sendLabel={t('modelsExperience.send')}
                     className="models-experience-composer-wrap models-compare-composer"
                     activeChip={
                       columnKinds.length > 0 ? (
                         <button
                           type="button"
                           className="models-experience-icon-btn"
-                          aria-label="添加附件"
-                          title={`支持：${columnKinds.map((k) => ATTACHMENT_LIMITS[k].label).join('、')}`}
+                          aria-label={t('modelsExperience.addAttachment')}
+                          title={`${t('modelsExperience.attachmentSupports')}${columnKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`}
                           disabled={colUploading || !!colAttachment}
                           onClick={() => {
                             pendingAttachmentColumnRef.current = idx
@@ -1319,8 +1322,8 @@ export default function ModelsComparePage() {
         <div className="playground-balance-notice" role="alert">
           <LuTriangleAlert size={15} />
           <span>
-            <strong>余额不足，仅可体验免费模型</strong>
-            当前模型与输入已为你保留，充值后即可继续运行。
+            <strong>{t('modelsExperience.balanceInsufficientTitle')}</strong>
+            {t('modelsExperience.balanceInsufficientHint')}
           </span>
           <button
             type="button"
@@ -1329,7 +1332,7 @@ export default function ModelsComparePage() {
               navigate('/billing', { state: { entrySource: 'recharge_cta' } })
             }}
           >
-            去充值
+            {t('modelsExperience.recharge')}
           </button>
         </div>
       )}
@@ -1341,11 +1344,11 @@ export default function ModelsComparePage() {
           {attachment && (
             <div className="models-experience-attachment-chip">
               {attachmentKindFromMime(attachment.uploaded.mime) === 'image' ? (
-                <img src={attachment.previewUrl} alt="附件预览" />
+                <img src={attachment.previewUrl} alt={t('modelsExperience.attachmentPreview')} />
               ) : (
                 <span className="models-experience-attachment-name">{attachment.file.name}</span>
               )}
-              <button type="button" aria-label="移除附件" onClick={clearAttachment}>
+              <button type="button" aria-label={t('modelsExperience.removeAttachment')} onClick={clearAttachment}>
                 <LuX size={12} />
               </button>
             </div>
@@ -1355,7 +1358,7 @@ export default function ModelsComparePage() {
             const supportingCount = kind ? columns.filter((c) => modelSupportsAttachment(c.model, kind)).length : 0
             return (
               <span className="models-compare-attachment-support">
-                {supportingCount} / {columns.length} 个模型支持该附件；其余模型本轮仅收到文本
+                {t('modelsExperience.compare.attachmentSupportCount', { supporting: supportingCount, total: columns.length })}
               </span>
             )
           })()}
@@ -1379,23 +1382,23 @@ export default function ModelsComparePage() {
             isStreaming={columns.some((c) => c.streaming)}
             disabled={isBalanceZero && columns.some((c) => isPaidModel(c.model))}
             onStop={() => abortRefs.current.forEach((c) => c?.abort())}
-            placeholder={`${CATEGORY_PLACEHOLDER[compareCategory]}（同时发送给 ${columns.length} 个模型）`}
-            sendLabel="发送"
+            placeholder={t('modelsExperience.compare.sharedPlaceholder', { placeholder: categoryPlaceholder(compareCategory), count: columns.length })}
+            sendLabel={t('modelsExperience.send')}
             className="models-experience-composer-wrap models-compare-shared-composer"
             activeChip={
               <div className="models-experience-composer-left">
                 <button
                   type="button"
                   className="models-experience-icon-btn"
-                  aria-label="添加附件"
-                  title={`支持：${allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].label).join('、')}`}
+                  aria-label={t('modelsExperience.addAttachment')}
+                  title={`${t('modelsExperience.attachmentSupports')}${allowedAttachmentKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`}
                   disabled={attachmentUploading || !!attachment}
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <LuPaperclip size={14} />
                 </button>
                 <span className="models-experience-composer-hint">
-                  {attachmentUploading ? '附件上传中…' : '同步发送给全部已选模型'}
+                  {attachmentUploading ? t('modelsExperience.attachmentUploading') : t('modelsExperience.compare.syncSendHint')}
                 </span>
               </div>
             }
@@ -1475,28 +1478,28 @@ export default function ModelsComparePage() {
           setRemoveConfirmIndex(null)
         }}
         onConfirm={handleRemoveConfirmed}
-        title="移除该模型？"
-        description="确认后将删除该列的聊天记录，无法恢复。"
+        title={t('modelsExperience.compare.removeModelConfirmTitle')}
+        description={t('modelsExperience.compare.removeModelConfirmDesc')}
         variant="destructive"
-        confirmLabel="移除"
+        confirmLabel={t('modelsExperience.compare.removeModel')}
       />
 
       <ConfirmModal
         open={exitConfirmOpen}
         onClose={() => setExitConfirmOpen(false)}
         onConfirm={handleExitConfirmed}
-        title="退出模型对比？"
-        description="将保留最左侧主模型及其内容，其余模型列的对话记录会被丢弃。"
-        confirmLabel="退出对比"
+        title={t('modelsExperience.compare.exitConfirmTitle')}
+        description={t('modelsExperience.compare.exitConfirmDesc')}
+        confirmLabel={t('modelsExperience.compare.exitCompare')}
       />
 
       <ConfirmModal
         open={syncConfirm !== null}
         onClose={() => setSyncConfirm(null)}
         onConfirm={confirmSyncSwitch}
-        title="同步各列输入？"
-        description={`将使用「${syncConfirm ? prettyModelName(columns[syncConfirm.sourceIndex]?.model.display_name, columns[syncConfirm.sourceIndex]?.model.model_id) : ''}」当前输入同步到全部模型列，其他列文本将被替换。`}
-        confirmLabel="确认同步"
+        title={t('modelsExperience.compare.syncConfirmTitle')}
+        description={t('modelsExperience.compare.syncConfirmDesc', { name: syncConfirm ? prettyModelName(columns[syncConfirm.sourceIndex]?.model.display_name, columns[syncConfirm.sourceIndex]?.model.model_id) : '' })}
+        confirmLabel={t('modelsExperience.compare.confirmSync')}
       />
     </div>
   )

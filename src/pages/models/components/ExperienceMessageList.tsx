@@ -5,6 +5,7 @@
 import { useState } from 'react'
 import Markdown from 'react-markdown'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { LuCheck, LuCopy } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
 import { formatPlaygroundSpend, type ExperienceMessage } from '../model-experience-data'
@@ -28,13 +29,14 @@ function MessageLink({ href, children }: { href?: string; children?: React.React
 
 /** 复制回复内容按钮，逐字对齐原型 App.tsx:20475-20481/20504-20508（复制态 1.6s 后复位） */
 function MessageCopyButton({ content }: { content: string }) {
+  const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
   return (
     <button
       type="button"
       className="models-experience-icon-btn"
-      aria-label="复制回复内容"
-      title="复制回复内容"
+      aria-label={t('modelsExperience.copyReply')}
+      title={t('modelsExperience.copyReply')}
       onClick={() => {
         void navigator.clipboard?.writeText(content)
         setCopied(true)
@@ -60,6 +62,7 @@ export interface ExperienceMessageListProps {
 }
 
 export function ExperienceMessageList({ messages, isStreaming, showModelNameInMeta = true, isMediaTask = false, onRetry, emptyState }: ExperienceMessageListProps) {
+  const { t } = useTranslation()
   return (
     <div className="models-experience-messages">
       {messages.length === 0 && emptyState}
@@ -81,10 +84,10 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                   <div className="models-experience-media-error" role="alert">
                     <span className="models-experience-message-error">{message.error}</span>
                     <div className="models-experience-media-error-meta">
-                      <em>计费：未计费</em>
+                      <em>{t('modelsExperience.notBilled')}</em>
                       {onRetry && messages[index - 1]?.role === 'user' && (
                         <button type="button" onClick={() => onRetry(messages[index - 1])}>
-                          调整后重试
+                          {t('modelsExperience.retryAfterAdjust')}
                         </button>
                       )}
                     </div>
@@ -93,7 +96,7 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                   <span className="models-experience-message-error" role="alert">{message.error}</span>
                 )
               ) : isThinking ? (
-                <span className="models-experience-thinking" aria-label="模型思考中">
+                <span className="models-experience-thinking" aria-label={t('modelsExperience.modelThinking')}>
                   <i /><i /><i />
                 </span>
               ) : (
@@ -104,7 +107,7 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                     <div className="models-experience-media-result">
                       {message.media.map((m, mIdx) =>
                         m.kind === 'image' ? (
-                          <img key={mIdx} src={m.url} alt={message.role === 'user' ? '附件预览' : '生成结果'} className="models-experience-media-image" />
+                          <img key={mIdx} src={m.url} alt={message.role === 'user' ? t('modelsExperience.attachmentPreview') : t('modelsExperience.generatedResult')} className="models-experience-media-image" />
                         ) : m.kind === 'audio' ? (
                           <audio key={mIdx} controls preload="metadata" src={m.url} className="models-experience-media-audio" />
                         ) : m.kind === 'video' ? (
@@ -124,21 +127,21 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                 // 媒体结果卡（§7.10）：只展示运行状态/费用/下载，不展示对话专属的 Token/首Token
                 <div className="models-experience-message-meta">
                   {showModelNameInMeta && <strong>{message.metrics.model}</strong>}
-                  <span>总耗时 {message.metrics.totalLatency}</span>
+                  <span>{t('modelsExperience.totalLatency')} {message.metrics.totalLatency}</span>
                   <span>{formatPlaygroundSpend(message.metrics)}</span>
                   {message.media[0] && (
-                    <a href={message.media[0].url} download className="models-experience-media-download">下载产物</a>
+                    <a href={message.media[0].url} download className="models-experience-media-download">{t('modelsExperience.downloadResult')}</a>
                   )}
                 </div>
               ) : message.metrics ? (
                 <div className="models-experience-message-meta">
                   {showModelNameInMeta && <strong>{message.metrics.model}</strong>}
                   <span>{message.metrics.inputTokens} → {message.metrics.outputTokens} Tokens</span>
-                  <span>首Token {message.metrics.firstTokenLatency}</span>
-                  <span>总耗时 {message.metrics.totalLatency}</span>
+                  <span>{t('modelsExperience.firstToken')} {message.metrics.firstTokenLatency}</span>
+                  <span>{t('modelsExperience.totalLatency')} {message.metrics.totalLatency}</span>
                   <span>{formatPlaygroundSpend(message.metrics)}</span>
-                  {message.metrics.fastest && <em className="models-experience-winner-chip is-fast">最快</em>}
-                  {message.metrics.cheapest && <em className="models-experience-winner-chip is-cheap">成本最低</em>}
+                  {message.metrics.fastest && <em className="models-experience-winner-chip is-fast">{t('modelsExperience.fastest')}</em>}
+                  {message.metrics.cheapest && <em className="models-experience-winner-chip is-cheap">{t('modelsExperience.cheapest')}</em>}
                   <MessageCopyButton content={message.content} />
                 </div>
               ) : null}

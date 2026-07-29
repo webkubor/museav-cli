@@ -5,6 +5,7 @@
  * 受控组件：collapsed/sessions/activeSessionId 均由外部传入，本组件不拉取数据。
  */
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { LuHistory, LuPanelLeftOpen, LuPlus, LuCircleOff } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
@@ -31,11 +32,11 @@ interface HistorySessionSidebarProps {
   onNewSession: () => void
 }
 
-const CATEGORY_META: Record<HistorySessionItem['category'], { label: string; variant: BadgeVariant }> = {
-  dialogue: { label: '对话', variant: 'info' },
-  image: { label: '图像', variant: 'purple' },
-  audio: { label: '音频', variant: 'success' },
-  video: { label: '视频', variant: 'warning' },
+const CATEGORY_META: Record<HistorySessionItem['category'], { labelKey: string; variant: BadgeVariant }> = {
+  dialogue: { labelKey: 'modelsExperience.historySidebar.categoryDialogue', variant: 'info' },
+  image: { labelKey: 'modelsExperience.historySidebar.categoryImage', variant: 'purple' },
+  audio: { labelKey: 'modelsExperience.historySidebar.categoryAudio', variant: 'success' },
+  video: { labelKey: 'modelsExperience.historySidebar.categoryVideo', variant: 'warning' },
 }
 
 // 开发自测用内置 mock（组件本身仍是受控的：仅供本文件外的调用方在开发期传入 sessions 参考，不在组件内部使用）
@@ -74,14 +75,21 @@ const MOCK_HISTORY_SESSIONS: HistorySessionItem[] = [
   },
 ]
 
+/** 分组标签 key，渲染时按 t() 解析——放在这里而不是 groupByDate 里，因为 groupByDate 是纯函数不接 t */
+const GROUP_LABEL_KEYS: Record<string, string> = {
+  today: 'modelsExperience.historySidebar.groupToday',
+  recent7: 'modelsExperience.historySidebar.groupRecent7',
+  earlier: 'modelsExperience.historySidebar.groupEarlier',
+}
+
 /** 日期分组：今天 / 最近7天（含昨天，不含今天）/ 更早——按本地日历日比较，非 24h 滑动窗口 */
 function groupByDate(sessions: HistorySessionItem[]) {
   const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
   const today = startOfDay(new Date())
-  const groups: { key: string; label: string; items: HistorySessionItem[] }[] = [
-    { key: 'today', label: '今天', items: [] },
-    { key: 'recent7', label: '7 天内', items: [] },
-    { key: 'earlier', label: '更早', items: [] },
+  const groups: { key: string; items: HistorySessionItem[] }[] = [
+    { key: 'today', items: [] },
+    { key: 'recent7', items: [] },
+    { key: 'earlier', items: [] },
   ]
   const sorted = [...sessions].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
   for (const session of sorted) {
@@ -102,15 +110,16 @@ export function HistorySessionSidebar({
   onSelectSession,
   onNewSession,
 }: HistorySessionSidebarProps) {
+  const { t } = useTranslation()
   const groups = useMemo(() => groupByDate(sessions), [sessions])
 
   if (collapsed) {
     return (
-      <div className="history-sidebar-rail" role="navigation" aria-label="历史会话（收起）">
+      <div className="history-sidebar-rail" role="navigation" aria-label={t('modelsExperience.historySidebar.ariaCollapsed')}>
         <button
           type="button"
-          title="展开历史会话"
-          aria-label="展开历史会话"
+          title={t('modelsExperience.historySidebar.railExpandLabel')}
+          aria-label={t('modelsExperience.historySidebar.railExpandLabel')}
           className="history-sidebar-rail-btn"
           onClick={() => onToggleCollapsed(false)}
         >
@@ -118,8 +127,8 @@ export function HistorySessionSidebar({
         </button>
         <button
           type="button"
-          title="新会话"
-          aria-label="新会话"
+          title={t('modelsExperience.historySidebar.railNewLabel')}
+          aria-label={t('modelsExperience.historySidebar.railNewLabel')}
           className="history-sidebar-rail-btn"
           onClick={onNewSession}
         >
@@ -133,31 +142,31 @@ export function HistorySessionSidebar({
     <>
       {/* 窄屏展开态覆盖内容区（§8.5），宽屏这个背板 CSS 直接不渲染；点击背板等同收起 */}
       <div className="history-sidebar-backdrop" onClick={() => onToggleCollapsed(true)} aria-hidden="true" />
-      <div className="history-sidebar-panel" role="navigation" aria-label="历史会话">
+      <div className="history-sidebar-panel" role="navigation" aria-label={t('modelsExperience.historySidebar.ariaExpanded')}>
       <div className="history-sidebar-panel-header">
         <button
           type="button"
-          title="收起历史会话"
-          aria-label="收起历史会话"
+          title={t('modelsExperience.historySidebar.collapseLabel')}
+          aria-label={t('modelsExperience.historySidebar.collapseLabel')}
           className="history-sidebar-rail-btn"
           onClick={() => onToggleCollapsed(true)}
         >
           <LuHistory size={16} />
         </button>
-        <span className="history-sidebar-panel-title">历史会话</span>
+        <span className="history-sidebar-panel-title">{t('modelsExperience.historySidebar.title')}</span>
       </div>
 
       <Button variant="brand" size="sm" className="history-sidebar-new-btn" onClick={onNewSession}>
-        <LuPlus size={14} className="mr-1" /> 新建会话
+        <LuPlus size={14} className="mr-1" /> {t('modelsExperience.historySidebar.newSession')}
       </Button>
 
       <div className="history-sidebar-list">
         {groups.length === 0 ? (
-          <div className="history-sidebar-empty">暂无历史会话</div>
+          <div className="history-sidebar-empty">{t('modelsExperience.historySidebar.empty')}</div>
         ) : (
           groups.map((group) => (
             <div key={group.key} className="history-sidebar-group">
-              <div className="history-sidebar-group-label">{group.label}</div>
+              <div className="history-sidebar-group-label">{t(GROUP_LABEL_KEYS[group.key])}</div>
               {group.items.map((session) => {
                 const hasOffline = session.models.some((m) => m.offline)
                 const categoryMeta = CATEGORY_META[session.category]
@@ -177,7 +186,7 @@ export function HistorySessionSidebar({
                     </div>
                     <div className="history-sidebar-item-tags">
                       <Badge variant={categoryMeta.variant} size="xs">
-                        {categoryMeta.label}
+                        {t(categoryMeta.labelKey)}
                       </Badge>
                       <Badge variant="secondary" size="xs">
                         {session.task}
@@ -194,7 +203,7 @@ export function HistorySessionSidebar({
                         </span>
                       ))}
                     </div>
-                    {hasOffline && <div className="history-sidebar-offline-flag">部分模型已下线</div>}
+                    {hasOffline && <div className="history-sidebar-offline-flag">{t('modelsExperience.historySidebar.offlineFlag')}</div>}
                   </button>
                 )
               })}

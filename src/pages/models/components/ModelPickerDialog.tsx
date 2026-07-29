@@ -18,10 +18,12 @@
  * 5) 条目只展示 图标/名称/厂商/输入→输出模态/价格/状态——不展示推理供应商。
  */
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   LuSearch, LuFileText, LuImage, LuMic, LuVideo, LuArrowRight, LuCircleAlert, LuWifiOff, LuCheck,
 } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
+import i18n from '@/i18n'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -35,7 +37,7 @@ import {
   resolveModelCategory,
   isPaidModel,
   EXPERIENCE_CATEGORY_ORDER,
-  EXPERIENCE_CATEGORY_LABEL,
+  experienceCategoryLabel,
   type ExperienceCategoryKey,
 } from '../model-experience-data'
 import '../styles/model-picker-dialog.css'
@@ -46,7 +48,6 @@ export type ModelPickerCategory = ExperienceCategoryKey
 export type ModelPickerMode = 'single' | 'compareSwitch' | 'compareAdd'
 
 const CATEGORY_ORDER = EXPERIENCE_CATEGORY_ORDER
-const CATEGORY_LABEL = EXPERIENCE_CATEGORY_LABEL
 const resolveCategory = resolveModelCategory
 
 const MODALITY_ICON: Record<string, IconType> = {
@@ -68,7 +69,7 @@ function disableReasonOf(model: CatalogModelItem, isBalanceZero: boolean): Disab
 function priceLabel(model: CatalogModelItem): string {
   const currency = model.pricing?.currency === 'USD' ? '$' : '¥'
   const unit = model.price_unit ? `/${model.price_unit}` : '/1M tokens'
-  if (!isPaidModel(model)) return '免费'
+  if (!isPaidModel(model)) return i18n.t('modelsExperience.picker.free')
   const input = model.pricing?.input_per_1m
   if (!input) return '—'
   return `${currency}${trimPriceZeros(input)}${unit}`
@@ -120,30 +121,33 @@ export interface ModelPickerDialogProps {
   isBalanceZero?: boolean
 }
 
-const COMPARE_ROWS: Array<{ label: string; render: (m: CatalogModelItem) => React.ReactNode }> = [
-  { label: '厂商', render: (m) => m.provider || m.vendor || 'ModelGo' },
-  { label: '上下文窗口', render: (m) => formatContextLength(m.context_length) },
-  { label: '输入价格', render: (m) => priceLabel(m) },
-  { label: '输出价格', render: (m) => {
-    const currency = m.pricing?.currency === 'USD' ? '$' : '¥'
-    const output = m.pricing?.output_per_1m
-    if (!isPaidModel(m)) return '免费'
-    return output ? `${currency}${trimPriceZeros(output)}/1M` : '—'
-  } },
-  { label: '缓存价格', render: (m) => cachePriceLabel(m) },
-  { label: '输入→输出模态', render: (m) => <ModalityFlow model={m} /> },
-  { label: '兼容协议', render: (m) => (m.protocols && m.protocols.length > 0 ? m.protocols.join(' / ') : 'openai') },
-  {
-    label: '能力标签',
-    render: (m) => (
-      <div className="flex flex-wrap gap-1">
-        {(m.tags ?? []).slice(0, 4).map((tag) => (
-          <span key={tag} className="model-picker-dialog__detail-chip">{tag}</span>
-        ))}
-      </div>
-    ),
-  },
-]
+/** 对比表行定义；用函数而非模块级常量是因为 label 要按当前语言取值（渲染时调用，随语言切换更新） */
+function compareRows(): Array<{ label: string; render: (m: CatalogModelItem) => React.ReactNode }> {
+  return [
+    { label: i18n.t('modelsExperience.picker.vendor'), render: (m) => m.provider || m.vendor || 'ModelGo' },
+    { label: i18n.t('modelsExperience.picker.contextWindow'), render: (m) => formatContextLength(m.context_length) },
+    { label: i18n.t('modelsExperience.picker.inputPrice'), render: (m) => priceLabel(m) },
+    { label: i18n.t('modelsExperience.picker.outputPrice'), render: (m) => {
+      const currency = m.pricing?.currency === 'USD' ? '$' : '¥'
+      const output = m.pricing?.output_per_1m
+      if (!isPaidModel(m)) return i18n.t('modelsExperience.picker.free')
+      return output ? `${currency}${trimPriceZeros(output)}/1M` : '—'
+    } },
+    { label: i18n.t('modelsExperience.picker.cachePrice'), render: (m) => cachePriceLabel(m) },
+    { label: i18n.t('modelsExperience.picker.modalityFlow'), render: (m) => <ModalityFlow model={m} /> },
+    { label: i18n.t('modelsExperience.picker.compatibleProtocols'), render: (m) => (m.protocols && m.protocols.length > 0 ? m.protocols.join(' / ') : 'openai') },
+    {
+      label: i18n.t('modelsExperience.picker.capabilityTags'),
+      render: (m) => (
+        <div className="flex flex-wrap gap-1">
+          {(m.tags ?? []).slice(0, 4).map((tag) => (
+            <span key={tag} className="model-picker-dialog__detail-chip">{tag}</span>
+          ))}
+        </div>
+      ),
+    },
+  ]
+}
 
 export function ModelPickerDialog({
   open,
@@ -158,6 +162,7 @@ export function ModelPickerDialog({
   onConfirmAdd,
   isBalanceZero = false,
 }: ModelPickerDialogProps) {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState<ModelPickerCategory>(currentCategory ?? 'dialogue')
   const [detailId, setDetailId] = useState<string | null>(null)
@@ -227,7 +232,7 @@ export function ModelPickerDialog({
     }
   }
 
-  const title = mode === 'single' ? '选择模型' : mode === 'compareSwitch' ? '切换模型' : '添加对比模型'
+  const title = mode === 'single' ? t('modelsExperience.picker.selectModel') : mode === 'compareSwitch' ? t('modelsExperience.picker.switchModel') : t('modelsExperience.picker.addCompareModel')
 
   return (
     <Modal
@@ -240,10 +245,10 @@ export function ModelPickerDialog({
         mode === 'compareAdd' ? (
           <div className="flex items-center justify-between w-full">
             <span className="text-xs text-mg-text-3">
-              已选 <strong className="text-mg-text-1">{alreadySelectedModels.length + checkedModels.length}</strong> / 3 个模型
+              {t('modelsExperience.picker.selectedCount', { count: alreadySelectedModels.length + checkedModels.length })}
             </span>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={onClose}>取消</Button>
+              <Button variant="outline" size="sm" onClick={onClose}>{t('modelsExperience.picker.cancel')}</Button>
               <Button
                 variant="brand"
                 size="sm"
@@ -253,7 +258,7 @@ export function ModelPickerDialog({
                   onClose()
                 }}
               >
-                确认加入（{checkedModels.length}）
+                {t('modelsExperience.picker.confirmAdd', { count: checkedModels.length })}
               </Button>
             </div>
           </div>
@@ -265,7 +270,7 @@ export function ModelPickerDialog({
           <Input
             variant="search"
             prefix={<LuSearch size={14} className="text-mg-text-3" />}
-            placeholder="搜索模型、厂商…"
+            placeholder={t('modelsExperience.picker.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-8 text-xs"
@@ -277,7 +282,7 @@ export function ModelPickerDialog({
               <TabsList variant="pills" className="w-full">
                 {CATEGORY_ORDER.map((cat) => (
                   <TabsTrigger key={cat} value={cat} variant="pills" className="flex-1">
-                    {CATEGORY_LABEL[cat]}
+                    {experienceCategoryLabel(cat)}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -287,7 +292,7 @@ export function ModelPickerDialog({
           <div className="model-picker-dialog__list">
             {mode === 'compareAdd' && alreadySelectedModels.length > 0 && (
               <>
-                <div className="model-picker-dialog__group-label">已选模型</div>
+                <div className="model-picker-dialog__group-label">{t('modelsExperience.picker.selectedModels')}</div>
                 {alreadySelectedModels.map((model) => (
                   <div key={model.id} className="model-picker-dialog__row is-fixed-selected" aria-disabled>
                     <ModelIcon model={model} size={30} rounded="rounded-md" className="bg-mg-bg-0" />
@@ -299,15 +304,15 @@ export function ModelPickerDialog({
                         <span className="truncate">{model.provider || model.vendor || 'ModelGo'}</span>
                       </span>
                     </div>
-                    <span className="model-picker-dialog__fixed-badge"><LuCheck size={12} /> 已在对比中</span>
+                    <span className="model-picker-dialog__fixed-badge"><LuCheck size={12} /> {t('modelsExperience.picker.alreadyInCompare')}</span>
                   </div>
                 ))}
-                <div className="model-picker-dialog__group-label">可加入候选</div>
+                <div className="model-picker-dialog__group-label">{t('modelsExperience.picker.addableCandidates')}</div>
               </>
             )}
 
             {(mode === 'compareAdd' ? addableCandidates : candidates).length === 0 && (
-              <EmptyState title="没有匹配的模型" className="py-10" />
+              <EmptyState title={t('modelsExperience.picker.noMatch')} className="py-10" />
             )}
             {(mode === 'compareAdd' ? addableCandidates : candidates).map((model) => {
               const reason = disableReasonOf(model, isBalanceZero)
@@ -345,12 +350,12 @@ export function ModelPickerDialog({
                     <span className="model-picker-dialog__price">{priceLabel(model)}</span>
                     {reason === 'balance' && (
                       <Badge variant="danger" size="xs" className="gap-1">
-                        <LuCircleAlert size={10} /> 余额不足
+                        <LuCircleAlert size={10} /> {t('modelsExperience.picker.balanceInsufficient')}
                       </Badge>
                     )}
                     {reason === 'offline' && (
                       <Badge variant="secondary" size="xs" className="gap-1">
-                        <LuWifiOff size={10} /> 已下线
+                        <LuWifiOff size={10} /> {t('modelsExperience.modelOffline')}
                       </Badge>
                     )}
                   </div>
@@ -363,7 +368,7 @@ export function ModelPickerDialog({
         {mode === 'compareAdd' ? (
           <div className="model-picker-dialog__detail-pane model-picker-dialog__compare-pane">
             {compareModels.length === 0 ? (
-              <EmptyState title="勾选候选模型查看参数对照" className="h-full justify-center" />
+              <EmptyState title={t('modelsExperience.picker.checkToCompare')} className="h-full justify-center" />
             ) : (
               <div className="model-picker-dialog__compare-table">
                 <div
@@ -380,7 +385,7 @@ export function ModelPickerDialog({
                     </div>
                   ))}
                 </div>
-                {COMPARE_ROWS.map((row) => (
+                {compareRows().map((row) => (
                   <div
                     key={row.label}
                     className="model-picker-dialog__compare-row"
@@ -398,7 +403,7 @@ export function ModelPickerDialog({
         ) : (
           <div className="model-picker-dialog__detail-pane">
             {!detailModel ? (
-              <EmptyState title="选择左侧模型查看详情" className="h-full justify-center" />
+              <EmptyState title={t('modelsExperience.picker.selectToViewDetail')} className="h-full justify-center" />
             ) : (
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
@@ -412,7 +417,7 @@ export function ModelPickerDialog({
                 </div>
 
                 <p className="text-sm text-mg-text-2 leading-relaxed">
-                  {detailModel.tagline || '暂无模型简介。'}
+                  {detailModel.tagline || t('modelsExperience.picker.noTagline')}
                 </p>
 
                 {detailModel.tags && detailModel.tags.length > 0 && (
@@ -425,17 +430,17 @@ export function ModelPickerDialog({
 
                 <div className="grid grid-cols-2 gap-3 pt-3 border-t border-mg-border">
                   <div>
-                    <div className="text-xs text-mg-text-3 font-semibold">上下文窗口</div>
+                    <div className="text-xs text-mg-text-3 font-semibold">{t('modelsExperience.picker.contextWindow')}</div>
                     <div className="text-sm font-semibold text-mg-text-1 mt-0.5">
                       {formatContextLength(detailModel.context_length)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-mg-text-3 font-semibold">价格</div>
+                    <div className="text-xs text-mg-text-3 font-semibold">{t('modelsExperience.picker.price')}</div>
                     <div className="text-sm font-semibold text-mg-text-1 mt-0.5">{priceLabel(detailModel)}</div>
                   </div>
                   <div className="col-span-2">
-                    <div className="text-xs text-mg-text-3 font-semibold">兼容协议</div>
+                    <div className="text-xs text-mg-text-3 font-semibold">{t('modelsExperience.picker.compatibleProtocols')}</div>
                     <div className="flex flex-wrap gap-1.5 mt-1">
                       {(detailModel.protocols && detailModel.protocols.length > 0 ? detailModel.protocols : ['openai']).map((p) => (
                         <span key={p} className="model-picker-dialog__detail-chip capitalize">{p}</span>

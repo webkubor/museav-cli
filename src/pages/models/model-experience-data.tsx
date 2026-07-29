@@ -1,5 +1,6 @@
 import { LuZap, LuImage, LuAudioLines, LuVideo } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
+import i18n from '@/i18n'
 import { ModalityBadge } from '@/features/models/components/ModalityBadge'
 import { trimPriceZeros } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
@@ -50,7 +51,7 @@ export function formatPlaygroundLatency(ms: number): string {
 
 /** 消耗文案：免费模型显示「免费额度」，否则 ≥0.01 显示 2 位小数，否则 4 位（App.tsx:17054 formatPlaygroundSpend 逐字对齐） */
 export function formatPlaygroundSpend(metrics: Pick<ExperienceMessageMetrics, 'spend' | 'free'>): string {
-  if (metrics.free) return '免费额度'
+  if (metrics.free) return i18n.t('modelsExperience.freeQuota')
   return metrics.spend >= 0.01 ? `¥${metrics.spend.toFixed(2)}` : `¥${metrics.spend.toFixed(4)}`
 }
 
@@ -67,7 +68,7 @@ export function estimateTokens(text: string): number {
  * 单模型页/对比页共用（qa#546 对比页历史恢复需要同样的清洗）。
  */
 export function cleanErrorMessage(raw: string | undefined): string {
-  if (!raw) return '该消息发送失败'
+  if (!raw) return i18n.t('modelsExperience.sendFailed')
   try {
     const parsed = JSON.parse(raw) as {
       error?: { message?: string }
@@ -91,7 +92,7 @@ export function extractApiErrorMessage(err: unknown): string {
   const data = (err as { data?: { field_errors?: Array<{ message?: string }>; details?: Array<{ message?: string }> } } | undefined)?.data
   const raw = data?.field_errors?.[0]?.message ?? data?.details?.[0]?.message
   if (raw) return cleanErrorMessage(raw)
-  return (err as Error).message || '请稍后重试'
+  return (err as Error).message || i18n.t('modelsExperience.retryLater')
 }
 
 /** 九类体验任务枚举 → 展示文案，取自后端接口文档 §二 task 值域（字面值以文档为准） */
@@ -106,16 +107,9 @@ export type ExperienceTaskType =
   | 'text_to_video'
   | 'image_to_video'
 
-export const EXPERIENCE_TASK_LABEL: Record<ExperienceTaskType, string> = {
-  text_to_text: '对话',
-  image_to_text: '对话',
-  video_to_text: '对话',
-  text_to_image: '文生图',
-  image_to_image: '图生图',
-  text_to_audio: '语音合成',
-  audio_to_text: '语音识别',
-  text_to_video: '文生视频',
-  image_to_video: '图生视频',
+/** 任务类型 → 展示文案；用函数而非常量表是因为要在每次调用时按当前语言取值（模块加载时算一次会在切语言后过期） */
+export function experienceTaskLabel(task: ExperienceTaskType): string {
+  return i18n.t(`modelsExperience.taskLabel.${task}`)
 }
 
 /** 一级类别，PRD 1.0.4 原文四类。单模型页/对比页/ModelPickerDialog 共用同一份分类推断逻辑。 */
@@ -130,11 +124,8 @@ export const EXPERIENCE_CATEGORY_TASKS: Record<ExperienceCategoryKey, Experience
 
 export const EXPERIENCE_CATEGORY_ORDER: ExperienceCategoryKey[] = ['dialogue', 'image', 'audio', 'video']
 
-export const EXPERIENCE_CATEGORY_LABEL: Record<ExperienceCategoryKey, string> = {
-  dialogue: '对话',
-  image: '图像',
-  audio: '音频',
-  video: '视频',
+export function experienceCategoryLabel(category: ExperienceCategoryKey): string {
+  return i18n.t(`modelsExperience.categoryLabel.${category}`)
 }
 
 /** 每个类别的默认任务——没有参考附件时用这个（image_to_image/image_to_video 等"需要附件"的
@@ -148,27 +139,36 @@ export const EXPERIENCE_CATEGORY_DEFAULT_TASK: Record<ExperienceCategoryKey, Exp
 
 /** 空态图标/文案按类别区分（PRD §7.9 各任务空态，原型 App.tsx:19317-19322 逐字对齐）。
  *  单模型页/对比页共用（qa#543 对比页接入多模态后需要同一份文案）。 */
-export const CATEGORY_EMPTY_COPY: Record<ExperienceCategoryKey, { icon: IconType; title: string; hint: string }> = {
-  dialogue: { icon: LuZap, title: '发送第一条消息，验证模型输出与成本', hint: '支持的图片、音频或视频可以作为消息附件发送。' },
-  image: { icon: LuImage, title: '配置输入后开始生成图片', hint: '结果会在当前模型列中展示预估费用与实际费用。' },
-  audio: { icon: LuAudioLines, title: '配置输入后开始生成音频', hint: '结果会在当前模型列中展示预估费用与实际费用。' },
-  video: { icon: LuVideo, title: '配置输入后开始生成视频', hint: '结果会在当前模型列中展示预估费用与实际费用。' },
+const CATEGORY_EMPTY_ICON: Record<ExperienceCategoryKey, IconType> = {
+  dialogue: LuZap,
+  image: LuImage,
+  audio: LuAudioLines,
+  video: LuVideo,
+}
+
+export function categoryEmptyCopy(category: ExperienceCategoryKey): { icon: IconType; title: string; hint: string } {
+  return {
+    icon: CATEGORY_EMPTY_ICON[category],
+    title: i18n.t(`modelsExperience.categoryEmpty.${category}.title`),
+    hint: i18n.t(`modelsExperience.categoryEmpty.${category}.hint`),
+  }
 }
 
 /** composer 占位符按类别区分（原型 App.tsx:18475-18485 逐字对齐）。单模型页/对比页共用。 */
-export const CATEGORY_PLACEHOLDER: Record<ExperienceCategoryKey, string> = {
-  dialogue: '输入 Prompt，Enter 发送，Shift + Enter 换行…',
-  image: '描述主体、场景、光线与画面风格…',
-  audio: '输入要合成语音的文本…',
-  video: '描述镜头、主体运动、运镜与氛围…',
+export function categoryPlaceholder(category: ExperienceCategoryKey): string {
+  return i18n.t(`modelsExperience.categoryPlaceholder.${category}`)
 }
 
 /** 附件类型/大小上限（PRD §7.5），accept 给 <input type="file"> 用。单模型页/对比页共用（qa#545）。 */
 export const ATTACHMENT_LIMITS = {
-  image: { maxBytes: 10 * 1024 * 1024, accept: '.png,.jpg,.jpeg,.webp', label: '图片（PNG/JPEG/WebP，≤10MB）' },
-  audio: { maxBytes: 25 * 1024 * 1024, accept: '.mp3,.wav,.m4a,.ogg,.webm', label: '音频（MP3/WAV/M4A/OGG/WebM，≤25MB）' },
-  video: { maxBytes: 100 * 1024 * 1024, accept: '.mp4,.webm,.mov', label: '视频（MP4/WebM/MOV，≤100MB）' },
+  image: { maxBytes: 10 * 1024 * 1024, accept: '.png,.jpg,.jpeg,.webp' },
+  audio: { maxBytes: 25 * 1024 * 1024, accept: '.mp3,.wav,.m4a,.ogg,.webm' },
+  video: { maxBytes: 100 * 1024 * 1024, accept: '.mp4,.webm,.mov' },
 } as const
+
+export function attachmentLimitLabel(kind: keyof typeof ATTACHMENT_LIMITS): string {
+  return i18n.t(`modelsExperience.attachmentLimitLabel.${kind}`)
+}
 
 export function attachmentKindFromMime(mime: string): keyof typeof ATTACHMENT_LIMITS | null {
   if (mime.startsWith('image/')) return 'image'
@@ -256,11 +256,13 @@ export function isOfflineModel(model: CatalogModelItem): boolean {
  * 含 image 模态（多模态视觉 LLM）仍保留，它们能正常走文本对话。
  */
 /** 空态示例 Prompt（逐字取自原型 App.tsx:17000-17023 playgroundSamplePrompts 的 label/prompt，回复由后端真实生成，不搬运原型的 mock replies） */
-export const PLAYGROUND_SAMPLE_PROMPTS: Array<{ label: string; prompt: string }> = [
-  { label: '对比选型', prompt: '帮我比较三个适合企业知识库问答的模型，重点看成本、上下文长度和稳定性。' },
-  { label: '概念解释', prompt: '用一段话向非技术同事解释什么是模型网关，说明它解决了什么问题。' },
-  { label: '正式翻译', prompt: '把这句话翻译成英文并保持正式语气：我们下周三上午十点召开产品评审会，请准时参加。' },
-]
+export function playgroundSamplePrompts(): Array<{ label: string; prompt: string }> {
+  return [
+    { label: i18n.t('modelsExperience.samplePrompts.compare.label'), prompt: i18n.t('modelsExperience.samplePrompts.compare.prompt') },
+    { label: i18n.t('modelsExperience.samplePrompts.explain.label'), prompt: i18n.t('modelsExperience.samplePrompts.explain.prompt') },
+    { label: i18n.t('modelsExperience.samplePrompts.translate.label'), prompt: i18n.t('modelsExperience.samplePrompts.translate.prompt') },
+  ]
+}
 
 /**
  * 价格 chip 文案：与原型 App.tsx `playgroundPriceText()` 逐字对齐——
@@ -271,9 +273,10 @@ export function dualPriceText(model: CatalogModelItem): string {
   const currency = model.pricing?.currency === 'USD' ? '$' : '¥'
   const input = model.pricing?.input_per_1m
   const output = model.pricing?.output_per_1m
-  if (!input && !output) return '限时免费'
-  if (!input) return `${currency}${trimPriceZeros(output ?? '0')} 每M`
-  return `${currency}${trimPriceZeros(input)} / ${currency}${trimPriceZeros(output ?? input)} 每M`
+  const perM = i18n.t('modelsExperience.perM')
+  if (!input && !output) return i18n.t('modelsExperience.freeQuota')
+  if (!input) return `${currency}${trimPriceZeros(output ?? '0')} ${perM}`
+  return `${currency}${trimPriceZeros(input)} / ${currency}${trimPriceZeros(output ?? input)} ${perM}`
 }
 
 /** 是否付费模型：只认服务端显式限免标记 + 价格字段，不做其它推断（§9.1：价格为 0 但未标 free 的仍按付费处理） */

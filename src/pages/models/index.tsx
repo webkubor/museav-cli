@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   LuSettings2,
   LuCode,
@@ -45,14 +46,15 @@ import {
   latencyBucket,
   tokenBucket,
   sizeBucket,
-  EXPERIENCE_TASK_LABEL,
+  experienceTaskLabel,
   resolveModelCategory,
-  PLAYGROUND_SAMPLE_PROMPTS,
+  playgroundSamplePrompts,
   cleanErrorMessage,
   extractApiErrorMessage,
-  CATEGORY_EMPTY_COPY,
-  CATEGORY_PLACEHOLDER,
+  categoryEmptyCopy,
+  categoryPlaceholder,
   ATTACHMENT_LIMITS,
+  attachmentLimitLabel,
   attachmentKindFromMime,
   resolveEffectiveTask,
   offlineModelPlaceholder,
@@ -76,6 +78,7 @@ import './styles/model-experience-responsive.css'
 const INITIAL_MESSAGES: ExperienceMessage[] = []
 
 export default function ModelsPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -205,7 +208,7 @@ export default function ModelsPage() {
           name: session.name,
           updatedAt: session.updated_at,
           category: (session.category as HistorySessionItem['category']) ?? 'dialogue',
-          task: EXPERIENCE_TASK_LABEL[session.task as keyof typeof EXPERIENCE_TASK_LABEL] ?? session.task,
+          task: experienceTaskLabel(session.task as Parameters<typeof experienceTaskLabel>[0]) ?? session.task,
           // GET /experience/sessions 列表响应不带 conversations，改用轻量 models 字段（qa#535 已修复）；
           // conversations 只在创建/详情响应里出现，两边都兼容一下，session.models 优先
           models: session.models
@@ -300,7 +303,7 @@ export default function ModelsPage() {
         history_age_bucket: session ? historyAgeBucket(session.updatedAt) : 'unknown',
       }, { result: 'success' })
     } catch (err) {
-      applyGlobalError(`加载历史会话失败：${(err as Error).message || '请稍后重试'}`)
+      applyGlobalError(`${t('modelsExperience.historyLoadFailed')}${(err as Error).message || t('modelsExperience.retryLater')}`)
       trackEvent('playground_history_action', {
         action: 'restore',
         history_age_bucket: session ? historyAgeBucket(session.updatedAt) : 'unknown',
@@ -372,7 +375,7 @@ export default function ModelsPage() {
     const kind = attachmentKindFromMime(file.type)
     // 单模型页只服务当前一个模型列，§10.3 的 supporting/unsupported_model_count 在这里恒为 1/0
     if (!kind || !allowedAttachmentKinds.includes(kind)) {
-      setAttachmentError(`当前模型不支持该附件类型，仅支持：${allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].label).join('、')}`)
+      setAttachmentError(`${t('modelsExperience.attachmentUnsupported')}${allowedAttachmentKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`)
       if (fileInputRef.current) fileInputRef.current.value = ''
       trackEvent('playground_attachment_result', {
         kind: kind ?? 'unknown', size_bucket: sizeBucket(file.size), result: 'fail',
@@ -381,7 +384,7 @@ export default function ModelsPage() {
       return
     }
     if (file.size > ATTACHMENT_LIMITS[kind].maxBytes) {
-      setAttachmentError(`文件超出大小限制（${ATTACHMENT_LIMITS[kind].label}）`)
+      setAttachmentError(t('modelsExperience.attachmentTooLarge', { limit: attachmentLimitLabel(kind) }))
       if (fileInputRef.current) fileInputRef.current.value = ''
       trackEvent('playground_attachment_result', {
         kind, size_bucket: sizeBucket(file.size), result: 'fail',
@@ -414,9 +417,9 @@ export default function ModelsPage() {
   /** 懒创建会话：按当前模型分类/任务建（对话/媒体走的是同一个会话创建接口，只是 category/task 不同） */
   async function ensureConversation(): Promise<string> {
     if (conversationId) return conversationId
-    if (!selectedModel) throw new Error('未选择模型')
+    if (!selectedModel) throw new Error(t('modelsExperience.noModelSelected'))
     const session = await createExperienceSession({
-      name: '未命名会话',
+      name: t('modelsExperience.unnamedSession'),
       category: selectedCategory,
       task: effectiveTask,
       // 单模型体验没有"多列同步"概念，用 independent（真实枚举见 experience-sessions.ts 注释）
@@ -426,7 +429,7 @@ export default function ModelsPage() {
     setSessionId(session.id)
     const convId = session.conversations?.[0]?.id ?? null
     setConversationId(convId)
-    if (!convId) throw new Error('会话创建异常：未返回对话列 id')
+    if (!convId) throw new Error(t('modelsExperience.sessionCreateError'))
     return convId
   }
 
@@ -499,7 +502,7 @@ export default function ModelsPage() {
           if (last?.role === 'assistant') {
             next[next.length - 1] = {
               ...last,
-              error: s.status === 'failed' ? (last.content ? undefined : '该模型本轮响应失败') : undefined,
+              error: s.status === 'failed' ? (last.content ? undefined : t('modelsExperience.modelRunFailed')) : undefined,
               metrics: {
                 model: modelLabel,
                 inputTokens: s.input_tokens,
@@ -565,7 +568,7 @@ export default function ModelsPage() {
         const next = [...prev]
         const last = next[next.length - 1]
         if (last?.role === 'assistant') {
-          next[next.length - 1] = { ...last, error: `体验请求失败：${(err as Error).message || '请稍后重试'}` }
+          next[next.length - 1] = { ...last, error: `${t('modelsExperience.requestFailed')}${(err as Error).message || t('modelsExperience.retryLater')}` }
         }
         return next
       })
@@ -625,7 +628,7 @@ export default function ModelsPage() {
       if (message.status === 'running' && message.async_task_id) {
         // 视频异步任务：建议间隔 5 秒轮询，succeeded/failed 才是终态；run_result 留给轮询终态上报，这里不重复
         // 跳转链接携带 task_id，命中 /logs 页 AsyncTasksPanel 的 gateway_request_id 精确匹配自动展开详情（同 qa#14 逻辑）
-        applyResult({ content: `视频生成中，可点击[在调用日志的异步任务里追踪](/logs?task_id=${encodeURIComponent(message.async_task_id)})…` })
+        applyResult({ content: `${t('modelsExperience.videoGenerating')}[${t('modelsExperience.videoGeneratingLink')}](/logs?task_id=${encodeURIComponent(message.async_task_id)})…` })
         void pollVideoMessage(convId, message.id, modelLabel, selectedModel.model_id)
         return
       }
@@ -655,7 +658,7 @@ export default function ModelsPage() {
       }, { result: message.status === 'failed' ? 'fail' : 'success' })
       void refreshHistorySessions()
     } catch (err) {
-      applyResult({ error: `体验请求失败：${extractApiErrorMessage(err)}` })
+      applyResult({ error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` })
       const errorCode = (err as { data?: { field_errors?: Array<{ code?: string }> } } | undefined)?.data?.field_errors?.[0]?.code
       trackEvent('playground_model_run_result', {
         model_id: selectedModel.model_id,
@@ -692,7 +695,7 @@ export default function ModelsPage() {
           const last = next[next.length - 1]
           if (last?.role !== 'assistant') return prev
           if (message.status === 'failed') {
-            return [...next.slice(0, -1), { ...last, error: message.error || '视频生成失败', content: '' }]
+            return [...next.slice(0, -1), { ...last, error: message.error || t('modelsExperience.videoGenerateFailed'), content: '' }]
           }
           const media = message.attachments.map((a) => ({ kind: a.kind, url: attachment_urls[a.resource_id] ?? '' }))
           return [
@@ -730,7 +733,7 @@ export default function ModelsPage() {
 
   return (
     <div className="models-experience-page">
-      <PageHeader title="模型体验" description="通过文本与附件连续对话，验证回复、Token、延迟与费用。" className="mb-4" />
+      <PageHeader title={t('modelsExperience.page.title')} description={t('modelsExperience.page.description')} className="mb-4" />
       <div className="models-experience-shell">
         {/* 历史会话固定侧栏（PRD §7.8）：收起态窄图标轨，展开 248px；接真实 GET /experience/sessions，
             展开时拉取列表，点击会话用 GET messages 恢复消息到当前视图 */}
@@ -771,14 +774,14 @@ export default function ModelsPage() {
                       </span>
                       <div className="min-w-0">
                         <div className="models-experience-modelbar-title">
-                          {isOfflineModel(selectedModel) ? '模型已下线' : prettyModelName(selectedModel.display_name, selectedModel.model_id)}
+                          {isOfflineModel(selectedModel) ? t('modelsExperience.modelOffline') : prettyModelName(selectedModel.display_name, selectedModel.model_id)}
                         </div>
                         <div className="models-experience-modelbar-sub">
-                          {selectedModel.vendor || selectedModel.provider || 'ModelGo'} · {EXPERIENCE_TASK_LABEL[effectiveTask]}
+                          {selectedModel.vendor || selectedModel.provider || 'ModelGo'} · {experienceTaskLabel(effectiveTask)}
                         </div>
                       </div>
                       {isOfflineModel(selectedModel) ? (
-                        <span className="models-experience-price-chip is-offline">模型已下线</span>
+                        <span className="models-experience-price-chip is-offline">{t('modelsExperience.modelOffline')}</span>
                       ) : (
                         <span className="models-experience-price-chip">
                           {dualPriceText(selectedModel)}
@@ -793,9 +796,9 @@ export default function ModelsPage() {
                   <button
                     type="button"
                     className="models-experience-icon-btn"
-                    aria-label="打开 API 调用"
+                    aria-label={t('modelsExperience.openApiCall')}
                     disabled={!selectedModel || isOfflineModel(selectedModel)}
-                    title={selectedModel ? (isOfflineModel(selectedModel) ? '模型已下线' : `查看 ${prettyModelName(selectedModel.display_name, selectedModel.model_id)} API 调用示例`) : '打开 API 调用'}
+                    title={selectedModel ? (isOfflineModel(selectedModel) ? t('modelsExperience.modelOffline') : t('modelsExperience.viewApiExample', { name: prettyModelName(selectedModel.display_name, selectedModel.model_id) })) : t('modelsExperience.openApiCall')}
                     onClick={() => {
                       trackEvent('playground_api_modal_action', { action: 'open', protocol: '', language: '', model_id: selectedModel?.model_id ?? '' })
                       setApiCallOpen(true)
@@ -806,9 +809,9 @@ export default function ModelsPage() {
                   <button
                     type="button"
                     className="models-experience-icon-btn"
-                    aria-label="打开模型设置"
+                    aria-label={t('modelsExperience.openModelSettings')}
                     disabled={!selectedModel || isOfflineModel(selectedModel)}
-                    title={selectedModel ? (isOfflineModel(selectedModel) ? '模型已下线' : `配置 ${prettyModelName(selectedModel.display_name, selectedModel.model_id)}`) : '打开模型设置'}
+                    title={selectedModel ? (isOfflineModel(selectedModel) ? t('modelsExperience.modelOffline') : t('modelsExperience.configureModel', { name: prettyModelName(selectedModel.display_name, selectedModel.model_id) })) : t('modelsExperience.openModelSettings')}
                     onClick={() => void openSettings()}
                   >
                     <LuSettings2 size={14} />
@@ -823,7 +826,7 @@ export default function ModelsPage() {
                       setCompareAddOpen(true)
                     }}
                   >
-                    <LuColumns2 size={13} /> 模型对比
+                    <LuColumns2 size={13} /> {t('modelsExperience.modelCompare')}
                   </Button>
                 </div>
               </div>
@@ -836,14 +839,14 @@ export default function ModelsPage() {
                 emptyState={
                   <div className="models-experience-empty">
                     {(() => {
-                      const EmptyIcon = CATEGORY_EMPTY_COPY[selectedCategory].icon
+                      const EmptyIcon = categoryEmptyCopy(selectedCategory).icon
                       return <EmptyIcon size={20} />
                     })()}
-                    <strong>{CATEGORY_EMPTY_COPY[selectedCategory].title}</strong>
-                    <span>{CATEGORY_EMPTY_COPY[selectedCategory].hint}</span>
+                    <strong>{categoryEmptyCopy(selectedCategory).title}</strong>
+                    <span>{categoryEmptyCopy(selectedCategory).hint}</span>
                     {isDialogue && (
                       <div className="models-experience-sample-row">
-                        {PLAYGROUND_SAMPLE_PROMPTS.map((sample) => (
+                        {playgroundSamplePrompts().map((sample) => (
                           <button
                             key={sample.label}
                             type="button"
@@ -867,8 +870,8 @@ export default function ModelsPage() {
                 <div className="playground-balance-notice" role="alert">
                   <LuTriangleAlert size={15} />
                   <span>
-                    <strong>余额不足，仅可体验免费模型</strong>
-                    当前模型与输入已为你保留，充值后即可继续运行。
+                    <strong>{t('modelsExperience.balanceInsufficientTitle')}</strong>
+                    {t('modelsExperience.balanceInsufficientHint')}
                   </span>
                   <button
                     type="button"
@@ -877,7 +880,7 @@ export default function ModelsPage() {
                       navigate('/billing', { state: { entrySource: 'recharge_cta' } })
                     }}
                   >
-                    去充值
+                    {t('modelsExperience.recharge')}
                   </button>
                 </div>
               )}
@@ -888,8 +891,8 @@ export default function ModelsPage() {
                 <div className="playground-balance-notice" role="status">
                   <LuTriangleAlert size={15} />
                   <span>
-                    <strong>模型已下线</strong>
-                    历史结果仍可查看，请从上方更换同任务模型后继续。
+                    <strong>{t('modelsExperience.modelOffline')}</strong>
+                    {t('modelsExperience.modelOfflineHint')}
                   </span>
                 </div>
               )}
@@ -900,11 +903,11 @@ export default function ModelsPage() {
                   {attachment && (
                     <div className="models-experience-attachment-chip">
                       {attachmentKindFromMime(attachment.uploaded.mime) === 'image' ? (
-                        <img src={attachment.previewUrl} alt="附件预览" />
+                        <img src={attachment.previewUrl} alt={t('modelsExperience.attachmentPreview')} />
                       ) : (
                         <span className="models-experience-attachment-name">{attachment.file.name}</span>
                       )}
-                      <button type="button" aria-label="移除附件" onClick={clearAttachment}>
+                      <button type="button" aria-label={t('modelsExperience.removeAttachment')} onClick={clearAttachment}>
                         <LuX size={12} />
                       </button>
                     </div>
@@ -934,24 +937,24 @@ export default function ModelsPage() {
                     isStreaming={isStreaming}
                     disabled={isBlockedByBalance}
                     onStop={() => abortRef.current?.abort()}
-                    placeholder={CATEGORY_PLACEHOLDER[selectedCategory]}
-                    sendLabel="发送"
+                    placeholder={categoryPlaceholder(selectedCategory)}
+                    sendLabel={t('modelsExperience.send')}
                     className="models-experience-composer-wrap"
                     activeChip={
                       <div className="models-experience-composer-left">
                         <button
                           type="button"
                           className="models-experience-icon-btn"
-                          aria-label="添加附件"
-                          title={`支持：${allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].label).join('、')}`}
+                          aria-label={t('modelsExperience.addAttachment')}
+                          title={`${t('modelsExperience.attachmentSupports')}${allowedAttachmentKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`}
                           disabled={attachmentUploading || !!attachment}
                           onClick={() => fileInputRef.current?.click()}
                         >
                           <LuPaperclip size={14} />
                         </button>
                         <span className="models-experience-composer-hint">
-                          {attachmentUploading ? '附件上传中…' : (
-                            <>本次预估费用 <strong>{composerEstimatedSpend}</strong></>
+                          {attachmentUploading ? t('modelsExperience.attachmentUploading') : (
+                            <>{t('modelsExperience.estimatedSpend')} <strong>{composerEstimatedSpend}</strong></>
                           )}
                         </span>
                       </div>

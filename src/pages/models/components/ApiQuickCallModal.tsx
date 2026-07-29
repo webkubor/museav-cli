@@ -13,6 +13,7 @@
  */
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { LuKey, LuExternalLink } from 'react-icons/lu'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -20,6 +21,7 @@ import { CopyButton } from '@/components/ui/CopyButton'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import {
   PROTOCOL_LABEL,
+  PROTOCOL_LABEL_EN,
   buildCodeSample,
   type ApiProtocol,
   type ApiCodeLanguage,
@@ -55,6 +57,9 @@ export function ApiQuickCallModal({
   supportedProtocols,
   onAction,
 }: ApiQuickCallModalProps) {
+  const { t, i18n } = useTranslation()
+  const isZh = i18n.language.startsWith('zh')
+  const protocolLabel = isZh ? PROTOCOL_LABEL : PROTOCOL_LABEL_EN
   const protocols = useMemo(
     () => (supportedProtocols.length > 0 ? supportedProtocols : (['openai'] as ApiProtocol[])),
     [supportedProtocols]
@@ -73,8 +78,8 @@ export function ApiQuickCallModal({
       <CopyButton
         value={codeSample}
         variant="labeled"
-        label="复制代码"
-        copiedLabel="已复制"
+        label={t('modelsExperience.apiModal.copyCode')}
+        copiedLabel={t('modelsExperience.apiModal.copied')}
         buttonVariant="brand"
         onCopied={() => onAction?.('copy_code', activeProtocol, activeLanguage)}
       />
@@ -88,11 +93,11 @@ export function ApiQuickCallModal({
       size="lg"
       title={
         <div className="api-quick-call-header">
-          <span>{modelName} 的 API 调用</span>
+          <span>{t('modelsExperience.apiModal.title', { name: modelName })}</span>
           <Button variant="outline" size="sm" asChild onClick={() => onAction?.('get_key', activeProtocol, activeLanguage)}>
             <Link to="/api-keys">
               <LuKey size={14} className="mr-1.5" />
-              获取 API Key
+              {t('modelsExperience.apiModal.getApiKey')}
               <LuExternalLink size={12} className="ml-1" />
             </Link>
           </Button>
@@ -102,12 +107,12 @@ export function ApiQuickCallModal({
     >
       <div className="api-quick-call-body">
         <div className="api-quick-call-model-id">
-          <span className="api-quick-call-model-id-label">模型 ID</span>
+          <span className="api-quick-call-model-id-label">{t('modelsExperience.apiModal.modelId')}</span>
           <span className="api-quick-call-model-id-value">{modelId}</span>
           <CopyButton
             value={modelId}
-            aria-label="复制模型 ID"
-            toast="已复制模型 ID"
+            aria-label={t('modelsExperience.apiModal.copyModelId')}
+            toast={t('modelsExperience.apiModal.modelIdCopied')}
             onCopied={() => onAction?.('copy_model_id', activeProtocol, activeLanguage)}
           />
         </div>
@@ -122,7 +127,7 @@ export function ApiQuickCallModal({
           <TabsList variant="pills">
             {protocols.map((p) => (
               <TabsTrigger key={p} value={p} variant="pills">
-                {PROTOCOL_LABEL[p]}
+                {protocolLabel[p]}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -147,8 +152,8 @@ export function ApiQuickCallModal({
               <div className="api-quick-call-code">
                 <CopyButton
                   value={buildCodeSample(activeProtocol, lang, modelId)}
-                  aria-label="复制代码"
-                  toast="已复制代码示例"
+                  aria-label={t('modelsExperience.apiModal.copyCode')}
+                  toast={t('modelsExperience.apiModal.codeCopied')}
                   className="api-quick-call-code-copy"
                   onCopied={() => onAction?.('copy_code', activeProtocol, lang)}
                 />

@@ -184,7 +184,7 @@
   padding: 4px 4px 12px; border-bottom: 1px solid var(--mg-border);
 }
 .mg-side-discount > span { font-size: 14px; font-weight: 700; color: var(--mg-text-1); }
-.mg-side-discount > span > i { font-style: normal; font-weight: 600; color: var(--mg-text-3); }
+.mg-side-discount > span > i { font-style: normal; font-weight: 600; color: var(--mg-warning); }
 .mg-side-switch {
   position: relative; width: 38px; height: 21px; flex-shrink: 0;
   border-radius: var(--radius-full); border: none; cursor: pointer;

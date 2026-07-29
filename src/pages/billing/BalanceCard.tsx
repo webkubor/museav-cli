@@ -100,20 +100,6 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             >
               <LuRefreshCw size={14} className={cn(refreshing && 'animate-spin')} />
             </Button>
-            {canRedeem && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  trackAction(PERMS.BILLING_PROMO_REDEEM)
-                  trackEvent('billing_redeem_open', { entry_position: 'balance_card' })
-                  setRedeemVisible(true)
-                }}
-                className="rounded-md h-9 px-4 gap-1.5"
-              >
-                <LuTicket size={14} />
-                {t('billing.promo.title')}
-              </Button>
-            )}
             {canRecharge && (
               <Button
                 variant="brand"
@@ -129,6 +115,20 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
               >
                 <LuPlus size={14} />
                 {t('billing.balance.recharge')}
+              </Button>
+            )}
+            {canRedeem && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  trackAction(PERMS.BILLING_PROMO_REDEEM)
+                  trackEvent('billing_redeem_open', { entry_position: 'balance_card' })
+                  setRedeemVisible(true)
+                }}
+                className="rounded-md h-9 px-4 gap-1.5"
+              >
+                <LuTicket size={14} />
+                {t('billing.promo.title')}
               </Button>
             )}
           </div>

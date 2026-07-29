@@ -31,6 +31,8 @@ import '../catalog/catalog.css'
 interface DetailNavState {
   source?: 'catalog_list' | 'catalog_featured' | 'related' | string
   scrollTo?: 'api-access'
+  /** qa#292：从广场带过来的筛选 query（含 `?`），返回时原样带回去还原筛选 */
+  fromSearch?: string
 }
 
 export default function ModelDetailPage() {
@@ -168,7 +170,7 @@ export default function ModelDetailPage() {
     <div className="models-catalog-page">
       <button
         type="button"
-        onClick={() => navigate('/models')}
+        onClick={() => navigate(`/models${navState?.fromSearch ?? ''}`)}
         className="inline-flex w-fit items-center gap-1 text-[13px] text-mg-text-3 transition-colors hover:text-brand-base"
       >
         <LuChevronLeft size={15} />

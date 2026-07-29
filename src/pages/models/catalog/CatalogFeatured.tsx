@@ -15,7 +15,7 @@
  * background_key 为空时按 model_id 稳定映射，同一模型底色恒定不闪。
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { trimPriceZeros } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
@@ -43,6 +43,7 @@ interface Props {
 export function CatalogFeatured({ slides, isZh, onTry }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [active, setActive] = useState(0)
   const [paused, setPaused] = useState(false)
@@ -153,7 +154,7 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
                     auth_state: isAuthenticated ? 'authenticated' : 'anonymous',
                     position: index,
                   })
-                  navigate(detailHref, { state: { source: 'catalog_featured' } })
+                  navigate(detailHref, { state: { source: 'catalog_featured', fromSearch: location.search } })
                 } else {
                   goToSlide(index, 'manual')
                 }
@@ -226,7 +227,7 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
                       auth_state: isAuthenticated ? 'authenticated' : 'anonymous',
                       position: index,
                     })
-                    navigate(detailHref, { state: { source: 'catalog_featured' } })
+                    navigate(detailHref, { state: { source: 'catalog_featured', fromSearch: location.search } })
                   }}
                 >
                   {isZh ? '查看详情' : 'Details'}

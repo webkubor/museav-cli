@@ -19,7 +19,7 @@
  * <Button variant="brand">。
  */
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   LuImage, LuMic, LuVideo, LuArrowRight,
@@ -95,6 +95,7 @@ export function CatalogCard({
 }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
   const [fav, setFav] = useState(() => readFavs().has(model.id))
 
   const detailHref = `/models/${model.slug || model.id}`
@@ -140,7 +141,7 @@ export function CatalogCard({
       className="mg-tile mg-tile-hover mg-mcard"
       onClick={() => {
         onCardOpened?.(model, listPosition)
-        navigate(detailHref, { state: { source: 'catalog_list' } })
+        navigate(detailHref, { state: { source: 'catalog_list', fromSearch: location.search } })
       }}
     >
       <button
@@ -293,7 +294,7 @@ export function CatalogCard({
             e.stopPropagation()
             onApiRequest?.(model)
             // 「API请求」进入详情后自动滚动到 API 接入区，不打开新弹窗（PRD §7.5/§8.3）
-            navigate(detailHref, { state: { source: 'catalog_list', scrollTo: 'api-access' } })
+            navigate(detailHref, { state: { source: 'catalog_list', scrollTo: 'api-access', fromSearch: location.search } })
           }}
         >
           {t('modelsCatalog.card.apiDocs')}

@@ -4,7 +4,7 @@
  * 数据：GET /api/v1/catalog/models | catalog/model-tags | catalog/model-families（均公开）
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers, LuZap, LuBuilding2, LuShieldCheck } from 'react-icons/lu'
@@ -31,9 +31,21 @@ export default function ModelsCatalogPage() {
   const isZh = i18n.language.startsWith('zh')
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
-  const [search, setSearch] = useState('')
-  const [selected, setSelected] = useState<string[]>([])
-  const [sort, setSort] = useState<SortKey>('default')
+  // qa#292：筛选条件同步进 URL query，详情页「返回模型广场」带着这段 query 回来
+  // 才能还原筛选；否则组件重新挂载时 useState 只会回到初始空值。
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [search, setSearch] = useState(() => searchParams.get('q') ?? '')
+  const [selected, setSelected] = useState<string[]>(() => searchParams.get('f')?.split(',').filter(Boolean) ?? [])
+  const [sort, setSort] = useState<SortKey>(() => (searchParams.get('sort') as SortKey) || 'default')
+
+  useEffect(() => {
+    const next = new URLSearchParams()
+    if (search.trim()) next.set('q', search.trim())
+    if (selected.length) next.set('f', selected.join(','))
+    if (sort !== 'default') next.set('sort', sort)
+    setSearchParams(next, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, selected, sort])
   const [sortOpen, setSortOpen] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [isCompareOpen, setIsCompareOpen] = useState(false)

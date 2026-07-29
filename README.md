@@ -43,7 +43,10 @@
 ### 1. 安装
 
 ```bash
-# 从 GitHub 全局安装
+# 从 npm 安装（推荐）
+npm install -g @webkubor/studio-image
+
+# 或从 GitHub 全局安装
 npm install -g github:webkubor/studio-image
 
 # 或克隆后本地构建

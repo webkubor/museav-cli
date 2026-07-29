@@ -1,5 +1,5 @@
 {
-  "name": "studio-image",
+  "name": "@webkubor/studio-image",
   "version": "0.3.0",
   "description": "studio 中台出图 CLI —— 命令行调中台 API 出图、逆向、图生图",
   "type": "module",
@@ -10,6 +10,14 @@
   "exports": {
     ".": "./dist/client.js"
   },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/webkubor/studio-image.git"
+  },
+  "homepage": "https://studio.webkubor.online",
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",

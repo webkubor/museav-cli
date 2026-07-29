@@ -17,6 +17,7 @@ import { formatDateTime } from '@/lib/format-date'
 import { formatMoney } from '@/lib/utils'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
+import { errorCodeOf } from '@/lib/request-error-message'
 import { getApiKeyAudit, getApiKeyDetail, getEffectiveGuardrails, revealApiKey } from '@/services/api-keys'
 import { listGuardrails } from '@/services/guardrails'
 import type { ApiKeyItem, ApiKeyType } from '@/types'
@@ -119,9 +120,13 @@ interface Props {
   /** 埋点 row_scope（workspace_all|self）——limit_save/jump_logs 带上 */
   rowScope?: string
   rotationTransition?: { keyId: string; oldMasked: string; newMasked: string; graceUntil?: string }
+  /** 启用无二次确认、直达 mutation：抽屉按钮需 loading 反馈（停用走确认弹窗，弹窗自带 loading，此处无需重复） */
+  enablePending?: boolean
+  /** 轮转无二次确认、直达 mutation：抽屉按钮需 loading 反馈，防重复点击 */
+  rotatePending?: boolean
 }
 
-export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction, canReveal, onToggleStatus, onRotate, onCompleteRotation, onRevoke, rowScope, rotationTransition }: Props) {
+export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction, canReveal, onToggleStatus, onRotate, onCompleteRotation, onRevoke, rowScope, rotationTransition, enablePending, rotatePending }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const keyId = item?.api_key_id
@@ -137,8 +142,10 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
       const res = await revealApiKey(workspaceId, current.api_key_id)
       await copy(res.key)
       appToast.success('完整 Key 已复制')
+      trackEvent('api_keys:reveal', commonTrack, { source: 'detail_drawer', result: 'success' })
     } catch (err) {
       appToast.requestError(err, '复制完整 Key 失败')
+      trackEvent('api_keys:reveal', commonTrack, { source: 'detail_drawer', result: 'fail', error_code: errorCodeOf(err) })
     } finally {
       setRevealCopying(false)
     }
@@ -261,10 +268,10 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                 <Button variant="outline" size="sm" onClick={() => onCompleteRotation(view)}>已轮转</Button>
               ) : null
             ) : rotateEnabled ? (
-              <Button variant="outline" size="sm" onClick={() => onRotate(view)}>轮转</Button>
+              <Button variant="outline" size="sm" loading={rotatePending} onClick={() => onRotate(view)}>轮转</Button>
             ) : null}
             {view.status !== 'revoked' && canToggle && (
-              <Button variant="outline" size="sm" onClick={() => onToggleStatus(view)}>
+              <Button variant="outline" size="sm" loading={isDisabled && enablePending} onClick={() => onToggleStatus(view)}>
                 {isDisabled ? '启用' : '停用'}
               </Button>
             )}

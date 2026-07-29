@@ -64,6 +64,8 @@ type Props = {
   onCopyKey: (item: ApiKeyItem) => void
   /** 正在 reveal 的 key id（行内 loading） */
   copyingKeyId: string | null
+  /** 正在启用的 key id（行内 loading/disabled 反馈；停用走确认弹窗，弹窗自带 loading，此处无需重复） */
+  enablePendingId: string | null
   /** 空态分型（PRD §7.4）：当前空间是否有任意 Key（用于区分「无 Key」vs「筛选无结果」） */
   hasKeys: boolean
   /** 是否处于筛选/搜索态 */
@@ -87,6 +89,7 @@ export function ApiKeyTable({
   onToggleStatus,
   onCopyKey,
   copyingKeyId,
+  enablePendingId,
   hasKeys,
   isFiltered,
   canCreate,
@@ -307,14 +310,24 @@ export function ApiKeyTable({
                     >
                       详情
                     </button>
-                    {record.status !== 'revoked' && canToggle && (
-                      <button
-                        onClick={() => onToggleStatus(record)}
-                        className="text-mg-text-2 hover:text-mg-text-1 transition-colors cursor-pointer"
-                      >
-                        {isDisabled ? '启用' : '停用'}
-                      </button>
-                    )}
+                    {record.status !== 'revoked' && canToggle && (() => {
+                      // 启用无二次确认，直达 mutation：需行内 loading/disabled 反馈，防重复点击（停用走确认弹窗，弹窗自带 loading）
+                      const enabling = isDisabled && enablePendingId === record.api_key_id
+                      return (
+                        <button
+                          onClick={() => onToggleStatus(record)}
+                          disabled={enabling}
+                          className="text-mg-text-2 hover:text-mg-text-1 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {enabling ? (
+                            <span className="inline-flex items-center gap-1">
+                              <LuLoaderCircle className="w-3 h-3 animate-spin" />
+                              启用中
+                            </span>
+                          ) : isDisabled ? '启用' : '停用'}
+                        </button>
+                      )
+                    })()}
                   </div>
                 </TableCell>
               </TableRow>

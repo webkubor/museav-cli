@@ -16,6 +16,7 @@ import {
   sendExperienceMediaMessage,
   getExperienceMessage,
   listExperienceSessions,
+  renameExperienceSession,
   getExperienceSessionMessages,
   getExperienceSessionStats,
   listExperienceModelConfigs,
@@ -37,6 +38,7 @@ import { useAuthStore } from '@/store/auth'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
 import { calculateSpendableBalance } from '@/pages/billing/formatBalance'
 import { trackEvent, trackPageView } from '@/lib/track'
+import { appToast } from '@/lib/app-toast'
 import type { CatalogModelItem } from '@/types'
 import {
   estimateTokens,
@@ -236,6 +238,18 @@ export default function ModelsPage() {
       )
     } catch {
       // 历史列表拉取失败不阻塞主流程，侧栏保持空态
+    }
+  }
+
+  /** 双击重命名（HistorySessionSidebar）：乐观更新 + 失败回滚，name 传空串会清空标题交回自动命名 */
+  async function renameHistorySession(id: string, name: string) {
+    const prev = historySessions
+    setHistorySessions((cur) => cur.map((s) => (s.id === id ? { ...s, name } : s)))
+    try {
+      await renameExperienceSession(id, name)
+    } catch {
+      setHistorySessions(prev)
+      appToast.error(t('modelsExperience.historySidebar.renameError'))
     }
   }
 
@@ -753,6 +767,7 @@ export default function ModelsPage() {
             trackEvent('playground_history_action', { action: 'new' })
             startNewSession()
           }}
+          onRenameSession={(id, name) => void renameHistorySession(id, name)}
         />
 
         <div className="models-experience-main">

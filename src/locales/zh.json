@@ -2205,7 +2205,8 @@
       "categoryImage": "图像",
       "categoryAudio": "音频",
       "categoryVideo": "视频",
-      "offlineFlag": "部分模型已下线"
+      "offlineFlag": "部分模型已下线",
+      "renameError": "重命名失败，请稍后重试"
     },
     "settings": {
       "maxLimit": "上限",

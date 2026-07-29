@@ -2193,7 +2193,8 @@
       "categoryImage": "Image",
       "categoryAudio": "Audio",
       "categoryVideo": "Video",
-      "offlineFlag": "Some models offline"
+      "offlineFlag": "Some models offline",
+      "renameError": "Rename failed, please try again"
     },
     "settings": {
       "maxLimit": "Max",

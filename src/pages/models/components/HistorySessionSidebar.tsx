@@ -4,7 +4,7 @@
  * 展开态：248px 内联侧栏，顶部新建会话按钮 + 按日期分组（今天/最近7天/更早）的会话列表。
  * 受控组件：collapsed/sessions/activeSessionId 均由外部传入，本组件不拉取数据。
  */
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LuHistory, LuPanelLeftOpen, LuPlus, LuCircleOff } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
@@ -30,6 +30,8 @@ interface HistorySessionSidebarProps {
   activeSessionId?: string
   onSelectSession: (id: string) => void
   onNewSession: () => void
+  /** 双击会话标题重命名；传空串会清空标题，交回后端下次提问自动命名（省略则不启用双击重命名） */
+  onRenameSession?: (id: string, name: string) => void
 }
 
 const CATEGORY_META: Record<HistorySessionItem['category'], { labelKey: string; variant: BadgeVariant }> = {
@@ -109,9 +111,24 @@ export function HistorySessionSidebar({
   activeSessionId,
   onSelectSession,
   onNewSession,
+  onRenameSession,
 }: HistorySessionSidebarProps) {
   const { t } = useTranslation()
   const groups = useMemo(() => groupByDate(sessions), [sessions])
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState('')
+
+  function startEditing(session: HistorySessionItem) {
+    if (!onRenameSession) return
+    setEditingId(session.id)
+    setEditValue(session.name)
+  }
+
+  function commitEditing(session: HistorySessionItem) {
+    const next = editValue.trim()
+    setEditingId(null)
+    if (next !== session.name) onRenameSession?.(session.id, next)
+  }
 
   if (collapsed) {
     return (
@@ -171,17 +188,43 @@ export function HistorySessionSidebar({
                 const hasOffline = session.models.some((m) => m.offline)
                 const categoryMeta = CATEGORY_META[session.category]
                 const isActive = session.id === activeSessionId
+                const isEditing = editingId === session.id
                 return (
-                  <button
+                  <div
                     key={session.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     className={cn('history-sidebar-item', isActive && 'history-sidebar-item-active')}
-                    onClick={() => onSelectSession(session.id)}
+                    onClick={() => { if (!isEditing) onSelectSession(session.id) }}
+                    onKeyDown={(e) => {
+                      if (isEditing) return
+                      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectSession(session.id) }
+                    }}
                   >
                     <div className="history-sidebar-item-top">
-                      <span className="history-sidebar-item-name" title={session.name || t('modelsExperience.unnamedSession')}>
-                        {session.name || t('modelsExperience.unnamedSession')}
-                      </span>
+                      {isEditing ? (
+                        <input
+                          className="history-sidebar-item-name-input"
+                          value={editValue}
+                          autoFocus
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          onBlur={() => commitEditing(session)}
+                          onKeyDown={(e) => {
+                            e.stopPropagation()
+                            if (e.key === 'Enter') { e.preventDefault(); commitEditing(session) }
+                            else if (e.key === 'Escape') { e.preventDefault(); setEditingId(null) }
+                          }}
+                        />
+                      ) : (
+                        <span
+                          className="history-sidebar-item-name"
+                          title={session.name || t('modelsExperience.unnamedSession')}
+                          onDoubleClick={(e) => { e.stopPropagation(); startEditing(session) }}
+                        >
+                          {session.name || t('modelsExperience.unnamedSession')}
+                        </span>
+                      )}
                       <span className="history-sidebar-item-time">{formatRelativeTime(session.updatedAt)}</span>
                     </div>
                     <div className="history-sidebar-item-tags">
@@ -204,7 +247,7 @@ export function HistorySessionSidebar({
                       ))}
                     </div>
                     {hasOffline && <div className="history-sidebar-offline-flag">{t('modelsExperience.historySidebar.offlineFlag')}</div>}
-                  </button>
+                  </div>
                 )
               })}
             </div>

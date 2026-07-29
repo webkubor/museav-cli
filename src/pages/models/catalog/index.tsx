@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers, LuZap, LuBuilding2, LuShieldCheck } from 'react-icons/lu'
 import { listModels, listModelTags, listModelFacets, listFeatured } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
@@ -95,6 +95,10 @@ export default function ModelsCatalogPage() {
     queryKey: ['catalog-models', listParams],
     queryFn: () => listModels(listParams),
     staleTime: 5 * 60_000,
+    // qa#284：排序/搜索/筛选变化时 listParams 变了 queryKey，若不保留旧数据会先
+    // 整页切回 loading 骨架屏再切回列表，视觉上就是"闪一下"。切筛选时结果集
+    // 不会突变，保留旧数据直到新数据到位更符合直觉。
+    placeholderData: keepPreviousData,
   })
 
   /**
@@ -105,6 +109,7 @@ export default function ModelsCatalogPage() {
     queryKey: ['catalog-model-facets', listParams],
     queryFn: () => listModelFacets(listParams),
     staleTime: 5 * 60_000,
+    placeholderData: keepPreviousData,
   })
   const facets = facetsQuery.data
 

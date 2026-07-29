@@ -976,6 +976,8 @@ body[theme-mode='dark'] .catalog-insight-panel {
 .mg-mcard-flow { display: flex; align-items: center; gap: 6px; color: var(--mg-text-3); }
 .mg-mcard-flow-group { display: inline-flex; align-items: center; gap: 4px; }
 .mg-mcard-flow-arrow { color: var(--mg-text-4); flex-shrink: 0; }
+/* qa#286：文本模态用字母「T」而非图标，跟 12px 图标同高、字重加粗以保持可辨识度 */
+.mg-mcard-flow-text { font-size: 11px; font-weight: 700; line-height: 12px; }
 
 /* API 协议标签：分层描边（DESIGN.md 不给彩色实底，用描边区分） */
 .mg-mcard-protocols { display: flex; flex-wrap: wrap; gap: 5px; }

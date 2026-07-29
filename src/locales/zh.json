@@ -1575,11 +1575,12 @@
       "favorite": "收藏",
       "free": "免费",
       "copyApiId": "复制 API ID",
-      "apiDocs": "API 文档",
+      "try": "立即体验",
+      "apiDocs": "API 请求",
       "compare": "对比模型",
       "context": "上下文长度",
-      "input": "输入价格",
-      "output": "输出价格"
+      "input": "输入",
+      "output": "输出"
     },
     "modality": {
       "text": "文本",

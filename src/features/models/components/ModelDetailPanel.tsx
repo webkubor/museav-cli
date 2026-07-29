@@ -18,7 +18,7 @@ import { ModalityBadge } from './ModalityBadge'
 import { ModelIcon } from './ModelIcon'
 import { CopyButton } from '@/components/ui/CopyButton'
 import {
-  currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId,
+  currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, autoSummary,
 } from '../model-format'
 import { formatContextLength, formatNumber, prettyModelName, trimPriceZeros } from '@/lib/utils'
 
@@ -32,22 +32,6 @@ interface ModelDetailPanelProps {
    * 自己渲染 —— 这些动作牵扯路由、登录跳转与埋点，面板保持纯展示。
    */
   actions?: ReactNode
-}
-
-const MOD_LABEL: Record<string, string> = { text: '文本', image: '图像', audio: '音频', video: '视频' }
-const MOD_LABEL_EN: Record<string, string> = { text: 'text', image: 'image', audio: 'audio', video: 'video' }
-
-/** description/tagline 都为空时，用真实字段拼一句事实性简介（不杜撰能力） */
-function autoSummary(detail: CatalogModelDetail, vendor: string, isZh: boolean): string {
-  const mods = (detail.modalities ?? []).filter((m) => m in MOD_LABEL)
-  const modText = mods.length ? mods.map((m) => (isZh ? MOD_LABEL[m] : MOD_LABEL_EN[m])).join(isZh ? '/' : ', ') : (isZh ? '通用' : 'general')
-  const ctx = detail.context_length ? formatContextLength(detail.context_length) : ''
-  // 限免只认服务端的显式标记；「价格为 0」也会命中尚未配价的模型。
-  const free = Boolean(detail.promotion?.free)
-  if (isZh) {
-    return `${vendor ? vendor + ' 出品的' : ''}${modText}模型${ctx ? `，${ctx} 上下文窗口` : ''}${free ? '，当前免费可用' : ''}。详细简介待补充。`
-  }
-  return `${vendor ? vendor + ' ' : ''}${modText} model${ctx ? `, ${ctx} context window` : ''}${free ? ', currently free' : ''}. Full description coming soon.`
 }
 
 /**

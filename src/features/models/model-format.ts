@@ -10,7 +10,7 @@
  * 时钟判定，接口刻意不下发时间窗口），前端不得按时间自行推算；`original_price` 只是
  * 划线装饰，真实扣费价永远取 `pricing.*`。
  */
-import { trimPriceZeros } from '@/lib/utils'
+import { formatContextLength, trimPriceZeros } from '@/lib/utils'
 
 /** 货币代码 → 符号（后端给的是 CNY/USD 这类代码） */
 const CCY_SYMBOL: Record<string, string> = { CNY: '¥', RMB: '¥', USD: '$', EUR: '€', '¥': '¥', $: '$' }
@@ -19,9 +19,10 @@ export function currencySymbol(currency: string | undefined, isZh: boolean): str
   return CCY_SYMBOL[(currency || '').toUpperCase()] || currency || (isZh ? '¥' : '$')
 }
 
-/** 计价单位后缀。price_unit 为空表示按每 1M token 计价（对话模型）。 */
+/** 计价单位后缀。price_unit 为空表示按每 1M token 计价（对话模型）。
+ *  qa#286：原型卡片/详情页都是紧凑的「/1M」，不带「tokens」字样。 */
 export function priceUnitSuffix(priceUnit: string | undefined): string {
-  return priceUnit ? `/${priceUnit}` : '/1M tokens'
+  return priceUnit ? `/${priceUnit}` : '/1M'
 }
 
 /**
@@ -83,6 +84,30 @@ export function pickCapabilities(
     .filter((tg) => !MODALITY_CODES.includes(tg))
     .filter((tg) => !TAG_DENYLIST.has(tg.toLowerCase()) && !deny.has(tg.toLowerCase()))
   return limit ? list.slice(0, limit) : list
+}
+
+const MOD_LABEL: Record<string, string> = { text: '文本', image: '图像', audio: '音频', video: '视频' }
+const MOD_LABEL_EN: Record<string, string> = { text: 'text', image: 'image', audio: 'audio', video: 'video' }
+
+/**
+ * description/tagline 都为空时，用真实字段拼一句事实性简介（不杜撰能力）。
+ * 卡片（CatalogModelItem）与详情页（CatalogModelDetail）共用同一份口径
+ * （qa#286：部分模型卡片因为 tagline 为空，简介行直接不渲染，跟其他卡片比矮一截；
+ * 详情页早就有这层兜底，卡片列表漏了，这里补齐让两边一致）。
+ */
+export function autoSummary(
+  model: { modalities?: string[]; context_length?: number; promotion?: { free?: boolean } },
+  vendor: string,
+  isZh: boolean,
+): string {
+  const mods = (model.modalities ?? []).filter((m) => m in MOD_LABEL)
+  const modText = mods.length ? mods.map((m) => (isZh ? MOD_LABEL[m] : MOD_LABEL_EN[m])).join(isZh ? '/' : ', ') : (isZh ? '通用' : 'general')
+  const ctx = model.context_length ? formatContextLength(model.context_length) : ''
+  const free = Boolean(model.promotion?.free)
+  if (isZh) {
+    return `${vendor ? vendor + ' 出品的' : ''}${modText}模型${ctx ? `，${ctx} 上下文窗口` : ''}${free ? '，当前免费可用' : ''}。详细简介待补充。`
+  }
+  return `${vendor ? vendor + ' ' : ''}${modText} model${ctx ? `, ${ctx} context window` : ''}${free ? ', currently free' : ''}. Full description coming soon.`
 }
 
 /**

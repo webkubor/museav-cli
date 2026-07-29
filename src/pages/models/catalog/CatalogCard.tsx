@@ -22,7 +22,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  LuFileText, LuImage, LuMic, LuVideo, LuArrowRight,
+  LuImage, LuMic, LuVideo, LuArrowRight,
   LuBrain, LuMapPin, LuGlobe, LuZap, LuWrench, LuTag,
   LuGitCompareArrows, LuHeart, LuSparkles,
 } from 'react-icons/lu'
@@ -32,13 +32,21 @@ import { CopyButton } from '@/components/ui/CopyButton'
 import { Button } from '@/components/ui/Button'
 import { formatContextLength, formatNumber, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import {
-  MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities,
+  MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, autoSummary,
 } from '@/features/models/model-format'
 import { hasPlaygroundExperience } from '../model-experience-data'
 import { trackEvent } from '@/lib/track'
 import type { CatalogModelItem } from '@/types'
 
-const MODALITY_ICON: Record<string, IconType> = { text: LuFileText, image: LuImage, audio: LuMic, video: LuVideo }
+const MODALITY_ICON: Record<string, IconType> = { image: LuImage, audio: LuMic, video: LuVideo }
+
+/** 输入→输出模态流的单个标记。原型文本模态用字母「T」，不是图标（qa#286）；
+ *  其余模态（图像/音频/视频）仍用图标区分。 */
+function ModalityMark({ m, title }: { m: string; title: string }) {
+  if (m === 'text') return <span className="mg-mcard-flow-text" title={title}>T</span>
+  const Icon = MODALITY_ICON[m]
+  return Icon ? <Icon size={12} title={title} /> : null
+}
 
 function tagIcon(tag: string): IconType {
   const t = tag.toLowerCase()
@@ -112,7 +120,9 @@ export function CatalogCard({
   const capabilities = pickCapabilities(model.tags, [model.provider, model.vendor], 3)
 
   const discountLabel = isZh ? promo?.discount_label : (promo?.discount_label_en || promo?.discount_label)
-  const summary = model.tagline || ''
+  // qa#286：tagline 为空的模型此前简介行直接不渲染，卡片比同排矮一截；跟详情页
+  // 同款兜底（真实字段拼一句事实性简介，不杜撰能力），两处口径一致。
+  const summary = model.tagline?.trim() || autoSummary(model, provider ?? '', isZh)
   // PRD §模型广场 AC-13「暂未开放」：模型本身可浏览详情/API，但没配置任何可体验任务时
   // 「去体验」按钮禁用并说明原因（原型 App.tsx:4619-4620/5076-5081 逐字对齐）。
   const hasExperience = hasPlaygroundExperience(model)
@@ -166,9 +176,9 @@ export function CatalogCard({
         <h3 className="mg-mcard-name" title={name}>{name}</h3>
         <div className="mg-mcard-meta" onClick={(e) => e.stopPropagation()}>
           {/* 原型卡片只有「厂商 + API ID + 复制」，没有认证图标 —— 它在所有模型上都
-              相同、无区分度，四列窄卡下却会挤掉厂商名与 API ID 的显示空间。 */}
+              相同、无区分度，四列窄卡下却会挤掉厂商名与 API ID 的显示空间。
+              复制按钮在 API ID 前面（原型顺序，qa#286），不是后面。 */}
           {provider && <span className="mg-mcard-vendor">{provider}</span>}
-          <code className="mg-mcard-api font-mono">{model.model_id}</code>
           <CopyButton
             value={model.model_id}
             aria-label={t('modelsCatalog.card.copyApiId')}
@@ -176,6 +186,7 @@ export function CatalogCard({
             className="h-5 w-5 shrink-0"
             onCopied={() => onModelIdCopied?.(model)}
           />
+          <code className="mg-mcard-api font-mono">{model.model_id}</code>
         </div>
       </div>
 
@@ -193,17 +204,11 @@ export function CatalogCard({
           }
         >
           <span className="mg-mcard-flow-group">
-            {inputMods.map((m) => {
-              const Icon = MODALITY_ICON[m]
-              return <Icon key={`i-${m}`} size={12} title={t(`modelsCatalog.modality.${m}`)} />
-            })}
+            {inputMods.map((m) => <ModalityMark key={`i-${m}`} m={m} title={t(`modelsCatalog.modality.${m}`)} />)}
           </span>
           <LuArrowRight size={13} className="mg-mcard-flow-arrow" aria-hidden />
           <span className="mg-mcard-flow-group">
-            {outputMods.map((m) => {
-              const Icon = MODALITY_ICON[m]
-              return <Icon key={`o-${m}`} size={12} title={t(`modelsCatalog.modality.${m}`)} />
-            })}
+            {outputMods.map((m) => <ModalityMark key={`o-${m}`} m={m} title={t(`modelsCatalog.modality.${m}`)} />)}
           </span>
         </div>
       )}
@@ -278,7 +283,7 @@ export function CatalogCard({
           title={!hasExperience ? t('modelsCatalog.button.comingSoonHint') : undefined}
           onClick={(e) => onTry(model.model_id, e)}
         >
-          {hasExperience ? t('modelsCatalog.button.try') : t('modelsCatalog.button.comingSoon')}
+          {hasExperience ? t('modelsCatalog.card.try') : t('modelsCatalog.button.comingSoon')}
         </Button>
         <Button
           variant="outline"

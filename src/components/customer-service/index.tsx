@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/Button'
 import { useState, useEffect, useRef } from 'react'
+import { cn } from '@/lib/utils'
 
 import Markdown from 'react-markdown'
 import { LuX, LuSendHorizontal, LuRefreshCw, LuSquare } from 'react-icons/lu'
@@ -26,13 +27,13 @@ function formatCsTimestamp(timestamp: number) {
 }
 
 function StatusDot({ status }: { status: ConnectionStatus }) {
-  const color = status === 'online' ? '#10b981' : status === 'connecting' ? '#f59e0b' : '#ef4444'
   return (
-    <span style={{
-      display: 'inline-block', width: 7, height: 7, borderRadius: '50%',
-      backgroundColor: color, marginRight: 5, verticalAlign: 'middle',
-      boxShadow: status === 'online' ? '0 0 6px #10b981' : 'none',
-    }} />
+    <span
+      className={cn(
+        'inline-block w-[7px] h-[7px] rounded-full mr-[5px] align-middle',
+        status === 'online' ? 'bg-mg-success shadow-[0_0_6px_var(--mg-success)]' : status === 'connecting' ? 'bg-mg-warning' : 'bg-mg-danger',
+      )}
+    />
   )
 }
 
@@ -204,12 +205,12 @@ export function CustomerService() {
           : (
             <div style={{ position: 'relative' }}>
               <img src={logoSrc} alt="CS" style={{ width: 28, height: 28, objectFit: 'contain' }} />
-              <span style={{
-                position: 'absolute', right: -2, bottom: -2,
-                width: 10, height: 10, borderRadius: '50%',
-                backgroundColor: status === 'online' ? '#10b981' : status === 'connecting' ? '#f59e0b' : '#ef4444',
-                border: '2px solid var(--mg-bg-0)',
-              }} />
+              <span
+                className={cn(
+                  'absolute -right-0.5 -bottom-0.5 w-2.5 h-2.5 rounded-full border-2 border-mg-bg-0',
+                  status === 'online' ? 'bg-mg-success' : status === 'connecting' ? 'bg-mg-warning' : 'bg-mg-danger',
+                )}
+              />
             </div>
           )
         }

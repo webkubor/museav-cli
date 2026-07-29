@@ -120,6 +120,7 @@ export default function GuardrailsPage() {
   const qc = useQueryClient()
   const tenants = useAuthStore((s) => s.tenants)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
+  const currentAccountId = useAuthStore((s) => s.account?.account_id) ?? ''
   const { symbol: currencySymbol } = useCurrency()
   // 个人组织隐藏「个人护栏」分区/摘要卡，与 PRD 一致；企业组织显示。
   const showMember = tenants.find((tt) => tt.tenant_id === activeTenantId)?.type !== 'personal'
@@ -150,8 +151,14 @@ export default function GuardrailsPage() {
   // 页头创建入口：任一分类可建才显示（全无码时不再打开一个必然 403 的表单）
   const canCreate = canCreateScope.global || canCreateScope.member || canCreateScope.key
   // 埋点顶层字段 is_space_owner：当前用户对本页作用域工作空间的 my_role 是否为 ws_owner
-  const { ownedWorkspaceIds } = useTenantRole()
+  const { ownedWorkspaceIds, canManage } = useTenantRole()
   const isActiveWorkspaceOwner = ownedWorkspaceIds.includes(workspaceId)
+  // 逐行编辑归属（需求方#261）：管理者（租户 owner/admin 或本空间负责人）可编辑全部护栏；
+  // 普通成员只能编辑自己创建的。后端对非管理者改他人护栏返 40301（qa#513/prd#261），前端
+  // 同口径提前拦截——避免「按钮显示可编辑 → 进抽屉改 → 保存才报错」的空转。
+  const managesWorkspace = canManage || isActiveWorkspaceOwner
+  const canManageRow = (row: GuardrailDetail) =>
+    managesWorkspace || (!!currentAccountId && row.created_by?.account_id === currentAccountId)
 
   useEffect(() => {
     trackPageView('guardrails', undefined, { is_space_owner: isActiveWorkspaceOwner })
@@ -436,6 +443,12 @@ export default function GuardrailsPage() {
   // 之前只对 is_default 级联，非默认全局启用不级联 → 累积多条 active 全局 → #108 置灰失效 → 逐条停用时撞后端「至少保留一条」报错（需求方#162）。
   function handleToggle({ id, status }: { id: string; status: 'active' | 'inactive' }) {
     const row = guardrails.find((g) => g.id === id)
+    // 4-way 审计发现启停开关是唯一零埋点的护栏动作（创建/编辑/删除均已上报），补齐 trackEvent
+    trackEvent(
+      'guardrails:toggle',
+      { id, name: row?.name ?? '', scope: row ? deriveScope(row) : 'unknown', enabled: status === 'active' },
+      { is_space_owner: isActiveWorkspaceOwner },
+    )
     if (row && deriveScope(row) === 'global' && status === 'active') {
       const deactivateIds = guardrails
         .filter((g) => deriveScope(g) === 'global' && g.status === 'active' && g.id !== id)
@@ -444,6 +457,17 @@ export default function GuardrailsPage() {
     } else {
       toggleMutation.mutate({ id, status })
     }
+  }
+
+  // 该行是否正处于启停请求中（供 Switch 置灰即时反馈）：普通切换看 toggleMutation，
+  // 全局级联切换（启用一条+连带停用多条）看 cascadeGlobalMutation 的目标 id 集合。
+  function isRowToggling(id: string): boolean {
+    if (toggleMutation.isPending && toggleMutation.variables?.id === id) return true
+    if (cascadeGlobalMutation.isPending) {
+      const vars = cascadeGlobalMutation.variables
+      if (vars && (vars.activateId === id || vars.deactivateIds.includes(id))) return true
+    }
+    return false
   }
 
   // ── 辅助函数 ────────────────────────────────────────────────────────────
@@ -751,8 +775,10 @@ export default function GuardrailsPage() {
   }))
 
   const detailRow = guardrails.find(g => g.id === detailId)
-  // 编辑态基本信息写权限（按当前护栏派生分类取细粒度码）
-  const canEdit = detail ? canEditScope[deriveScope(detail)] : false
+  // 编辑态基本信息写权限（按当前护栏派生分类取细粒度码 × 逐行归属；创建态 detail 为空恒 true，
+  // 由 GuardrailFormFields 的 isCreating 分支放行）。非本人且非管理者 → 抽屉整体只读、无保存按钮。
+  const canManageDetail = detail ? canManageRow(detail) : true
+  const canEdit = detail ? canEditScope[deriveScope(detail)] && canManageDetail : false
 
   // ── JSX ─────────────────────────────────────────────────────────────────
   if (forbidden) {
@@ -796,13 +822,15 @@ export default function GuardrailsPage() {
         isLoading={isLoading}
         canEdit={canEditScope}
         canDelete={canDeleteScope}
-        canCreate={canCreate}
+        canManageRow={canManageRow}
+        canCreate={canCreateScope}
         showMember={showMember}
         currencySymbol={currencySymbol}
         search={scopeSearch}
         onSearchChange={(s, value) => setScopeSearch((prev) => ({ ...prev, [s]: value }))}
         onOpenDetail={openDetail}
         onToggle={handleToggle}
+        isRowToggling={isRowToggling}
         onDelete={(target) => {
           // 全局启用中护栏删除需二次提醒（文档：删除启用中全局按无全局处理）
           const row = guardrails.find((g) => g.id === target.id)
@@ -840,14 +868,14 @@ export default function GuardrailsPage() {
         budgetAmount={budgetAmount} onBudgetAmountChange={setBudgetAmount}
         budgetPeriodUnit={budgetPeriodUnit} onBudgetPeriodUnitChange={setBudgetPeriodUnit}
         budgetLimited={budgetLimited} onBudgetLimitedChange={setBudgetLimited}
-        canEditBudget={canEditBudget}
+        canEditBudget={canEditBudget && canManageDetail}
         showMember={showMember}
         globalBudgets={globalBudgets}
         onGlobalBudgetChange={handleGlobalBudgetChange}
         auditRows={auditRows}
         auditLoading={auditQuery.isLoading}
         canEdit={canEdit}
-        canEditAssignment={canEditAssignment}
+        canEditAssignment={canEditAssignment && canManageDetail}
         submitting={createMutation.isPending || saveGuardrailMutation.isPending}
         onSubmit={handleSubmit}
       />

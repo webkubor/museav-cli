@@ -29,6 +29,7 @@ import {
   type AuthGuardAction,
 } from '@/lib/auth/front-guard'
 import { getRedirectTarget } from '@/lib/redirect'
+import { navigateAfterLogin } from '@/lib/login-intent'
 import { storageKeys } from '@/lib/storage'
 import { trackEvent } from '@/lib/track'
 
@@ -120,9 +121,10 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
   const passwordForm = useForm<PasswordFields>({ resolver: zodResolver(passwordSchema) })
 
   // 已登录即离开登录页；无组织的账号到受保护路由由 ProtectedRoute 渲染 403（不回弹登录，无循环）
+  // 走 navigateAfterLogin：重新校验保存的模型登录意图（qa#551），过期/失效降级为普通回跳
   useEffect(() => {
     if (!isSessionLoading && isAuthenticated) {
-      navigate(redirectAfterLogin, { replace: true })
+      void navigateAfterLogin(navigate, redirectAfterLogin)
     }
   }, [isAuthenticated, isSessionLoading, navigate, redirectAfterLogin])
 
@@ -177,7 +179,8 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
         session.permissions?.granted ?? null
       )
       trackEvent('login_success', { method: 'password' }, { result: 'success' })
-      navigate(redirectAfterLogin, { replace: true })
+      // 导航统一交给下面 isAuthenticated 的 effect（navigateAfterLogin 是异步的模型
+      // 意图重新校验，这里若再调一次会跟 effect 触发的那次抢跑，导致目的地被互相覆盖）
     } catch {
       if (!loginOk) {
         recordAuthGuardFailure({ action: 'login-password', subject: email })

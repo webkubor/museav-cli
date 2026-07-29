@@ -31,14 +31,20 @@
   border-top: 1px solid var(--mg-border);
 }
 
-.models-experience-active-chip {
+/* composer 底部预估费用提示，原型 playground-composer-hint 逐字对齐（App.tsx:18523） */
+.models-experience-composer-hint {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
-  color: var(--mg-text-2);
+  color: var(--mg-text-3);
   font-size: 12px;
-  font-weight: 760;
+  font-weight: 520;
+}
+
+.models-experience-composer-hint strong {
+  color: var(--mg-text-2);
+  font-weight: 700;
 }
 
 .models-experience-composer p {
@@ -47,4 +53,110 @@
   text-align: center;
   font-size: 11px;
   font-weight: 620;
+}
+
+/* composer 左侧：附件按钮 + 预估费用提示（§7.5 附件入口） */
+.models-experience-composer-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.models-experience-composer-left .models-experience-icon-btn {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+/* 附件预览/错误行，位于消息区和 composer 之间 */
+.models-experience-attachment-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 18px 8px;
+}
+
+.models-experience-attachment-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--mg-border);
+  border-radius: var(--radius-md);
+  background: var(--mg-fill-0);
+}
+
+.models-experience-attachment-chip img {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.models-experience-attachment-name {
+  font-size: 12px;
+  color: var(--mg-text-2);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.models-experience-attachment-chip button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mg-text-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.models-experience-attachment-error {
+  font-size: 12px;
+  color: var(--mg-danger);
+}
+
+/* 余额资格状态机锁定提示（§9.1），位于消息区与附件行之间 */
+.playground-balance-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 18px 8px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--mg-warning) 32%, var(--mg-border));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--mg-warning) 8%, var(--mg-bg-0));
+  color: var(--mg-text-2);
+  font-size: 12px;
+}
+
+.playground-balance-notice > svg {
+  flex-shrink: 0;
+  color: var(--mg-warning);
+}
+
+.playground-balance-notice > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.playground-balance-notice > span strong {
+  display: block;
+  color: var(--mg-text-1);
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.playground-balance-notice > button {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border: 1px solid color-mix(in srgb, var(--mg-warning) 42%, var(--mg-border));
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--mg-text-1);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
 }

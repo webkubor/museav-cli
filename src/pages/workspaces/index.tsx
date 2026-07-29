@@ -5,6 +5,7 @@
  */
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { useAuthStore } from '@/store/auth'
+import { switchActiveWorkspace } from '@/lib/auth/refresh-session'
 import { useTranslation } from 'react-i18next'
 import {
   LuSearch,
@@ -38,6 +39,7 @@ import { TagInput, type TagOption } from '@/components/ui/TagInput'
 import { cn, formatMoney as fmtMoney } from '@/lib/utils'
 import { formatRelativeTime } from '@/lib/format-date'
 import { trackAction, trackPageView, trackEvent } from '@/lib/track'
+import { errorCodeOf } from '@/lib/request-error-message'
 import { PERMS } from '@/config/permissions'
 import { usePermissions } from '@/hooks/use-permissions'
 import { useNavigate } from 'react-router-dom'
@@ -156,6 +158,8 @@ export default function WorkspacesPage() {
       })
     },
     onSuccess: (newWorkspace) => {
+      // 「新建空间」弹窗的实际提交动作埋点（对齐按钮 data-track="workspaces:create_submit"）
+      trackEvent('workspaces:create_submit', undefined, { result: 'success' })
       toast.success(t('workspaces.toast.createSuccess', { name: newWorkspace.name }))
       setModalVisible(false)
       setName('')
@@ -167,6 +171,7 @@ export default function WorkspacesPage() {
       queryClient.invalidateQueries({ queryKey: ['workspaces', activeTenantId] })
     },
     onError: (err: unknown) => {
+      trackEvent('workspaces:create_submit', undefined, { result: 'fail', error_code: errorCodeOf(err) })
       const message = err instanceof Error
         ? err.message
         : (typeof err === 'object' && err !== null && 'message' in err
@@ -602,6 +607,13 @@ interface WorkspaceDashboardProps {
 function WorkspaceDashboard({ workspaceId, onDeleted }: WorkspaceDashboardProps) {
   const { t } = useTranslation()
   const [tab, setTab] = useState<'overview' | 'members' | 'logs' | 'settings'>('overview')
+  // Option B：进入某空间管理详情即把它设为活跃空间，并按它重解析权限——
+  // 使 4 个 tab 显隐 + tab 内成员/设置/日志按钮 gating 都按「所看空间」的角色（如空间负责人）解析（需求方#255）。
+  useEffect(() => {
+    if (workspaceId && workspaceId !== useAuthStore.getState().activeWorkspaceId) {
+      void switchActiveWorkspace(workspaceId)
+    }
+  }, [workspaceId])
   // 个人租户没有企业成员，空间管理不该有「成员」tab（无人可邀请/管理）；仅企业租户显示。
   const { isEnterprise } = useTenantRole()
   const { hasPermission } = usePermissions()

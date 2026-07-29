@@ -1,7 +1,10 @@
 /**
  * 公共目录 - 模型/供应商/定价（§十四）
  * 路由：/models、/models/:id、/providers、/pricing
- * API：GET /catalog/models、GET /catalog/models/:id、GET /catalog/models/:id/providers、GET /catalog/providers、GET /catalog/pricing/plans
+ * API：GET /catalog/models、GET /catalog/models/:id、GET /catalog/providers、GET /catalog/pricing/plans
+ *
+ * 单模型 Provider 明细（/catalog/models/:id/providers）不再对公开目录下发（PRD §9.2 禁止暴露
+ * 内部实例/区域/在线率），对应前端 Providers Tab 已下线，见 qa#552。
  */
 import { get } from '@/lib/request'
 import type {
@@ -16,7 +19,9 @@ import type {
   CatalogProviderItem,
   CursorPage,
   PricingPlansResult,
-  ProviderForModel,
+  CatalogFacets,
+  CatalogFeaturedSlide,
+  CatalogRelatedResult,
 } from '@/types'
 
 // ─── 模型列表 ─────────────────────────────────────
@@ -31,16 +36,27 @@ export function getModel(modelId: string) {
   return get<CatalogModelDetail>(`catalog/models/${encodeURIComponent(modelId)}`)
 }
 
-/** 获取模型的 Provider 可用性列表（Providers tab） */
-export function listModelProviders(modelId: string) {
-  return get<CursorPage<ProviderForModel>>(
-    `catalog/models/${encodeURIComponent(modelId)}/providers`
-  )
-}
-
 /** 获取模型标签目录（用于模型筛选和分类入口） */
 export function listModelTags(enabled = true) {
   return get<CatalogModelTagsResponse>('catalog/model-tags', { enabled })
+}
+
+/**
+ * 模型广场侧栏筛选计数。参数与 listModels 完全一致 —— 两者必须发送同一份筛选
+ * 状态，否则侧栏计数描述的是与旁边列表不同的结果集。
+ */
+export function listModelFacets(params?: CatalogModelListParams) {
+  return get<CatalogFacets>('catalog/model-facets', params)
+}
+
+/** 精选轮播（内容由后台配置，前端不得写死 model_id） */
+export function listFeatured() {
+  return get<{ items: CatalogFeaturedSlide[]; total: number }>('catalog/featured')
+}
+
+/** 模型详情的相关模型（运营配置优先，未配置回退同厂商/相近价位算法） */
+export function listRelatedModels(modelId: string) {
+  return get<CatalogRelatedResult>(`catalog/models/${encodeURIComponent(modelId)}/related`)
 }
 
 /** 获取模型族（模型组）目录，用于「模型组」官方筛选 */

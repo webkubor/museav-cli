@@ -1,7 +1,7 @@
 /**
- * 发票抬头页（FR-B1）
- * 列表（普票/专票，设默认）↔ 新增抬头表单（专票多注册地址/电话/开户行/账号 4 项）。
- * 与「组织设置 → 开票信息」同源。
+ * 发票抬头页（PRD 1.0.4 §8.7.3.1）
+ * 列表（普票/专票，设默认）↔ 新增抬头表单：票种/抬头名称/税号/接收邮箱 4 项，
+ * 普票专票字段一致（PRD 未区分，续 #531）。
  */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -10,7 +10,9 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { appToast } from '@/lib/app-toast'
+import { trackEvent } from '@/lib/track'
 import {
   listInvoiceTitles,
   createInvoiceTitle,
@@ -32,10 +34,6 @@ const EMPTY_FORM: CreateInvoiceTitleRequest = {
   company_name: '',
   tax_id: '',
   email: '',
-  reg_address: '',
-  reg_phone: '',
-  bank_name: '',
-  bank_account: '',
 }
 
 export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
@@ -44,6 +42,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
   const canManageTitles = hasPermission(PERMS.BILLING_INVOICE_TITLE_MANAGE)
   const [view, setView] = useState<'list' | 'form'>('list')
   const [form, setForm] = useState<CreateInvoiceTitleRequest>(EMPTY_FORM)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['invoice', 'titles', tenantId],
@@ -56,7 +55,12 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
     mutationFn: (id: string) => setDefaultInvoiceTitle(tenantId, id),
     onSuccess: () => {
       appToast.success('已设为默认抬头')
+      trackEvent('billing.invoice_title:set_default', undefined, { result: 'success' })
       qc.invalidateQueries({ queryKey: ['invoice', 'titles', tenantId] })
+    },
+    onError: (err: Error) => {
+      appToast.requestError(err, '设置默认抬头失败，请重试')
+      trackEvent('billing.invoice_title:set_default', undefined, { result: 'fail' })
     },
   })
 
@@ -71,6 +75,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
         await setDefaultInvoiceTitle(tenantId, rest[0].id).catch(() => {})
       }
       qc.invalidateQueries({ queryKey: ['invoice', 'titles', tenantId] })
+      setDeleteTarget(null)
     },
     onError: (err: Error) => appToast.requestError(err, '删除失败，请重试'),
   })
@@ -79,11 +84,16 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
     mutationFn: () => createInvoiceTitle(tenantId, form),
     onSuccess: () => {
       appToast.success('抬头已保存')
+      // §11.2 billing_invoice_title_add
+      trackEvent('billing_invoice_title_add', { invoice_title_kind: form.type, result: 'success' })
       qc.invalidateQueries({ queryKey: ['invoice', 'titles', tenantId] })
       setForm(EMPTY_FORM)
       setView('list')
     },
-    onError: () => appToast.error('保存失败，请重试'),
+    onError: () => {
+      appToast.error('保存失败，请重试')
+      trackEvent('billing_invoice_title_add', { invoice_title_kind: form.type, result: 'fail' })
+    },
   })
 
   const set = (k: keyof CreateInvoiceTitleRequest, v: string) => setForm((f) => ({ ...f, [k]: v }))
@@ -99,7 +109,6 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
 
   // ─── 新增表单视图 ───────────────────────────────
   if (view === 'form') {
-    const isSpecial = form.type === 'vat_special'
     return (
       <div className="space-y-4">
         <button
@@ -126,23 +135,6 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
         <Field label="接收邮箱">
           <Input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="finance@company.com" />
         </Field>
-
-        {isSpecial && (
-          <>
-            <Field label="注册地址">
-              <Input value={form.reg_address} onChange={(e) => set('reg_address', e.target.value)} placeholder="营业执照注册地址" />
-            </Field>
-            <Field label="注册电话">
-              <Input value={form.reg_phone} onChange={(e) => set('reg_phone', e.target.value)} placeholder="注册电话" />
-            </Field>
-            <Field label="开户银行">
-              <Input value={form.bank_name} onChange={(e) => set('bank_name', e.target.value)} placeholder="开户银行" />
-            </Field>
-            <Field label="银行账号">
-              <Input value={form.bank_account} onChange={(e) => set('bank_account', e.target.value)} placeholder="银行账号" />
-            </Field>
-          </>
-        )}
 
         <div className="flex gap-3 pt-1">
           <Button variant="outline" className="flex-1" onClick={() => setView('list')}>
@@ -195,12 +187,6 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
                 </div>
                 <div className="space-y-0.5 text-xs text-mg-text-3">
                   <div>税号 {t.tax_id}</div>
-                  {t.reg_address && <div>{t.reg_address}</div>}
-                  {t.bank_name && (
-                    <div>
-                      {t.bank_name} {t.bank_account}
-                    </div>
-                  )}
                   <div>{t.email}</div>
                 </div>
               </div>
@@ -219,8 +205,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
                   variant="ghost"
                   size="sm"
                   className="text-mg-danger hover:bg-mg-danger/5"
-                  loading={removeTitle.isPending && removeTitle.variables === t.id}
-                  onClick={() => removeTitle.mutate(t.id)}
+                  onClick={() => setDeleteTarget({ id: t.id, name: t.company_name })}
                 >
                   <LuTrash2 size={13} />
                 </Button>}
@@ -229,6 +214,18 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
           </div>
         ))
       )}
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && removeTitle.mutate(deleteTarget.id)}
+        title="删除发票抬头"
+        description={deleteTarget ? `确定删除抬头「${deleteTarget.name}」？删除后不可恢复。` : undefined}
+        confirmLabel="删除"
+        cancelLabel="取消"
+        variant="destructive"
+        loading={removeTitle.isPending}
+      />
     </div>
   )
 }

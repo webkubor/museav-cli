@@ -116,6 +116,32 @@ node $S claim 100 --project 46  # PRD 看板
 
 **前端对后端有要求 → 必须落 API 单**。代码注释挂单号，按模块指对 owner。
 
+### 后端/API 单子边界（硬性 · 前端 agent 不代管，2026-07-28）
+
+治「agent 自作主张替用户分单/转派后端单」——出过真实事故：2026-07-24 某 session 以 `webkubor` 身份把一张纯后端问题单（qa/ai-quality-platform#519，observer SelectDB 查询延迟，后端 duanlingxiao 建的）**从 webkubor 转派给了后端负责人**，还以 webkubor 名义发了路由评论，用户本人从未过目这个决策，事后困惑「这单不是我前端的，你为啥去动」。
+
+**铁律**：issue 明显不属于前端职责（纯后端 API / 性能 / 基础设施 / 数据库问题），且当前指派状态不是「前端 agent 自己卡住需要接力」而是别人建的/别人负责的单——**一律不碰**：
+
+- 不改 `assignee_id`/`assignee_ids`
+- 不以用户身份发评论做路由/转派决策
+- 只在会话里告知用户「看到一张不属于前端范围的单，需要处理吗」，等用户明确指示再动
+
+**唯一例外**：仍保留本文件已有的「看板认领锁」和 `~/.claude/CLAUDE.md` 的「看板任务接力」机制——前端 agent 自己因额度/工具/认证/能力卡在**自己名下**的单时，用 `patrol/enqueue.sh` 求助（这是求助，不是主动帮别人分单）。
+
+### 缺陷处理决策流程（triage：判断先于操作，别一上来就改代码）
+
+治「凭印象推、跳过取证、乱判归属」——处理任一需求方 bug/需求，**先按序决策再动手**：
+
+1. **点透镜定方向**：`cs think --for "<这个决策>"` 先点第一性原理透镜（cs 是脑的真源，别自造框架）。判断先于操作——尤其"归前端还是后端""怎么改最小正确"这类分叉，不点透镜就下手＝返工。
+2. **日志取证，别手搓**：装了 `vite-plugin-agent-eyes` 的项目，**所有接口数据都落 `log/`**（`api-calls.log` 全量请求+响应体、`errors.log`、`proxy.log`）——这是接口真源。排查先读日志，别凭页面表象或记忆猜。需要跑角色态用 `console-automation`（ego-lite 注入登录态）复现，产生的接口数据同样进 `log/`。
+3. **按 ssot 判归属**：定位到「事实的单一真源」在哪，归属就在哪——
+   - UI 显隐/gate 用错码、聚合当细粒度 → **前端**
+   - 权限码没同步到后端 → 跑 `pnpm sync:permissions:check`/`--dry-run`（catalog SSOT）
+   - 角色矩阵没授码、权限没按"所看空间"解析 → **后端契约**（RBAC/`/auth/session`）
+   - ⚠️ 别停在第一层表象：#255「空间负责人少 tab」表面像前端 gate，实为 `/auth/session` 只按租户默认空间解析权限（后端契约缺口）——透镜（ssot）一点就现形。
+4. **带证据 SCQA 转对人**（见下「提单/评论格式」），指对模块 owner（团队指派表）。
+5. **闭环回单**：修复→test 部署→带 commit+构建号回评→挪「待验证」。
+
 ### 提单格式（SCQA 结构，说人话别抽象）
 
 ```bash
@@ -239,17 +265,24 @@ PRD 原型 > 飞书文档 > 现状控制台代码
 
 ### 部署流程
 
-| 场景 | 分支 | 流程 |
-|:---|:---|:---|
-| 日常开发 | test | test 分支部署测试环境 |
-| 测试通过上线 | main | 合并到 main → 部署线上 |
-| 线上 hotfix | main | main 分支修复 → 部署线上 → 同步到 test |
+| 场景 | 开发分支 | 部署来源分支 | 流程 |
+|:---|:---|:---|:---|
+| 日常开发 | worktree（`fix/`·`feat/`） | test | worktree 里开发 → 合并进 test → test 分支部署测试环境 |
+| 测试通过上线 | — | main | 合并 test → main → 部署线上 |
+| 线上 hotfix | main | main | main 分支修复 → 部署线上 → 同步到 test |
+
+> ⚠️ **`test` 是集成/部署来源分支，不是开发地**。别 `git checkout test` 直接在上面写代码——多个 session 共用同一工作树 + 同分支会互相踩（未提交改动串台、被迫 autostash rebase）。开发一律在隔离 worktree（见第 1 节），`test` 只接受**合并**。这与顶部「代码隔离 > 任务互斥」原则一致。
 
 **日常开发流程：**
-1. 切到 test 分支：`git checkout test && git pull`
-2. 开发代码
-3. 提交并推送 test：`git push origin test`
+1. 开隔离 worktree + 分支：`cs wt fix/<名>`（或 `git worktree add -b fix/<名> ../wt-<名> origin/test`）
+2. 在 worktree 里开发、提交（与其他 session 物理隔离，互不看见对方未提交改动）
+3. 合并进 test：`git checkout test && git pull && git merge fix/<名> && git push origin test`
 4. 触发测试环境部署：`test/modelgo-console-web`
+5. **合并确认成功后立刻清理，别拖到「合并上线」才做**（治「分支只增不减，几十个 worktree 残留没人清」——2026-07-28 一次清理攒了 60+ 个已合并分支）：
+   - 删 worktree：`git worktree remove ../wt-<名>`（worktree 还占着分支，删分支前必须先删它，否则 git 会拒绝）
+   - 删本地分支：`git branch -d <名>`
+   - 删远端分支：`git push origin --delete <名>`
+   - 这三步是「合并进 test 就做」的日常收尾，不是「合并进 main 才做」的发布收尾——功能分支的生命周期到「进了 test」就结束了，没有理由在合并 main 前一直留着
 
 **线上发布流程：**
 1. 测试验证通过
@@ -263,10 +296,7 @@ PRD 原型 > 飞书文档 > 现状控制台代码
 4. 同步到 test 分支：`git checkout test && git merge main && git push origin test`
 5. 触发测试环境部署（`test/modelgo-console-web`）
 
-**分支清理：**
-- 功能分支合并上线后，删除本地和远端的旧分支
-- 本地删除：`git branch -d <branch>`
-- 远端删除：`git push origin --delete <branch>`
+**分支清理：** 见上面「日常开发流程」步骤 5——分支合并进 test 就应清理，不用等到合并上线。
 
 ## 5. UI 测试账户管理
 
@@ -349,6 +379,19 @@ await page.evaluate(() => window.__mg_nav.menus())  // 列出所有菜单
 2. **Jenkins 双发布线**：国内 `prod/modelgo-console-web` + 国外 `prod-global/`，两条都要触发
 3. **React Query key 碰撞**：同一 queryKey 在不同页面存不同形状会崩溃 → 新查询前 grep 该 key 的既有消费方
 4. **测试 mock 竞态**：`useTenantRole→listTenants` 若没 mock 会发真请求 → 40101 → `clearAuth()` 异步洗掉下个用例的 store → 单跑过连跑挂
+5. **「照 PRD 还原页面」类任务，别边问边改**（2026-07-27 账单管理页教训）：这类任务真正的耗时不是代码量，是"先问答式排查、改完才发现漏了"来回绕。正确顺序是下面 §6.1 的一次性流程，不是每发现一处就单独走一轮问答-改码-验证。
+
+### 6.1 「PRD 还原」标准流程（一次做完，不要分批问答）
+
+1. **原型跑起来 + 通读全文本，不是逐项提问排查**：`pnpm --dir <prd仓库路径> dev` 启动原型，`get_page_text` 拿页面全部可见文字（弹窗也要点开逐个拿），和现状代码的同一页面全文本**并排比对**，一次性列出所有差异——包括标题、副标题、hint 文案这类容易被"只查功能字段、不查装饰文案"漏掉的点。逐条回答"这个功能对不对"永远会漏，通读全文本对比才不会漏。
+2. **每条差异当场判三类，不是默认全改**：
+   - PRD 明确要求且现状违反 → 改
+   - 现状比 PRD 新/精细（大概率是 PRD 之后的真实需求演进）→ **不改**，`git log -S` 挖一下改动是哪个 commit/单号引入的，记录依据
+   - 现状比 PRD 多、但背后接的是**真实后端能力/平台配置**（不是纯装饰性 UI）→ **不改**，判断方法不是查 git log 找演进依据，是查这段渲染逻辑是不是读 config/API 动态生成的（例如支付渠道列表来自 `useEnabledChannels()` 而非硬编码数组）——砍掉等于删掉一个已经接线的真实功能，和"删旧 UI 摆设"完全是两件事，别混为一谈自己拍板砍
+   - PRD 没写、真源也没答案的产品范围问题（如"海外要不要有这个功能"）→ 问需求方，不要自己拍板，也不要用"PRD没提所以…"自己找补理由
+3. **一次性把改的和不改的都列成清单**（结构：改动/位置/动作/依据），再动手，不要列一半就开始改一半。
+4. **一口气把清单里"要改"的项全部写完，再统一跑一次 typecheck/lint/test + 浏览器验证**，不要改一项就验证部署一项——部署/构建这类有外部依赖的步骤本身就慢且可能失败（Jenkins 认证、node 版本等），拆成多次只会把这些摩擦成本乘倍。
+5. **"完成"只有在推送到远端分支 + CI 构建成功 + commit hash 对上号之后才能说**，本地 worktree 或本地 dev server 验证过 ≠ 完成，只是"改对了但还没交付"，两者要在汇报里分清楚，不要用"完成"覆盖"改对了"。
 
 ## 7. 快速参考卡
 
@@ -474,17 +517,17 @@ cs secrets run --env JENKINS_TOKEN=secret://jenkins/modelgo -- \
 
 ## 10. 收工清理
 
+这是**会话结束前的自查清单**，不是另一套独立的清理规则——真正「什么时候删分支」的判断标准只有一个，见 §4「日常开发流程」步骤 5（**合并进 test 就删，不等 main**）。这里只是收工前照着 `git worktree list` 过一遍，确认每个自己开过的 worktree 都已经按 §4 走完三步（删 worktree → 删本地分支 → 删远端分支），别漏。
+
 ```bash
-# ① 确认代码已合入 main
-git checkout main && git pull
+# ① 看自己这次开了哪些 worktree，逐一确认是否已按 §4 清理
+git worktree list
 
-# ② 清理 worktree
-git worktree list                # 查看所有 worktree
-git worktree remove <path>       # 逐一清理
+# ② 还没清理的，按 §4 补做（不是可选项）：
+git worktree remove <path>
+git branch -d <分支名>
+git push origin --delete <分支名>
 
-# ③ 删除本地分支（可选）
-git branch -d feat/<分支名>
-
-# ④ 确认认领锁已释放
+# ③ 确认认领锁已释放
 node $S status | grep <iid>      # 确认不在「进行中」
 ```

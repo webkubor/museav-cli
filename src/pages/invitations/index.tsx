@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams, useParams, Link } from 'react-router-dom'
 
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { previewInvitation, acceptInvitation } from '@/services/invitations'
-import { getSession } from '@/services/auth'
+import { getSessionForActiveWorkspace } from '@/lib/auth/refresh-session'
 import { useAuthStore } from '@/store/auth'
 import { storageKeys } from '@/lib/storage'
 import { toLoginWithRedirect } from '@/lib/redirect'
@@ -48,7 +48,7 @@ export default function InvitationsPage() {
     try {
       const result = await acceptInvitation(token)
       try {
-        const session = await getSession()
+        const session = await getSessionForActiveWorkspace()
         const persistedWs = localStorage.getItem(storageKeys.activeWorkspaceId(session.active_tenant_id))
         setAuth(
           session.account,

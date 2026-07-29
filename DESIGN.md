@@ -185,6 +185,7 @@ YAML front matter 里的值是 **「国内 + 浅色」** 默认态；其余三�
   - 行内 / 字段行 / ID / 链接旁的紧凑复制 → `variant="icon"`（默认，一个图标搞定，别上大按钮）
   - 独立强调的复制 CTA（如新建 Key 横幅、收银台付款信息）→ `variant="labeled"`
   - 唯一例外：API Key 明文的「惰性 reveal + 手势栈内 ClipboardItem 写入」（`api-keys/index.tsx`），因剪贴板需在用户手势栈同步发起，不走 CopyButton。
+- **ModelIcon（模型身份唯一真源，2026-07-29 定）**：任何展示"这是哪个模型/供应商"的地方（模型选择条、聊天消息头像、列表行、对比列头等）一律用 `@/features/models/components/ModelIcon`（四层兜底：真实 logo → `@lobehub/icons` 供应商图标 → 模型名前缀推断供应商 → 首字母色块）。**禁止**自己拿模型名/供应商名首字母 `.slice(0,1).toUpperCase()` 拼一个文字色块替代——这是反复出现的问题（模型体验单页/对比工作台的模型条与消息头像都各自手写过一次，均已改回 `ModelIcon`），新写模型相关 UI 前先确认有没有复用它。
 - **状态优先**：交互注册第一——路由/Tab 切换立即给反馈（骨架 + loading），不让用户干等请求。
 
 ## Do's and Don'ts

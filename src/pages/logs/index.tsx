@@ -675,6 +675,7 @@ export default function LogsPage() {
       <LogDetailSheet
         requestPayloadText={requestPayloadText}
         responsePayloadText={responsePayloadText}
+        responseSSE={payloadView === 'parsed' ? responseSSE : null}
         payloadView={payloadView}
         onPayloadViewChange={setPayloadView}
         payloadLoading={payloadLoading}

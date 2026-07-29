@@ -26,6 +26,8 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { MemberAvatar } from '@/components/MemberAvatar'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
+import { trackAction } from '@/lib/track'
+import { errorCodeOf } from '@/lib/request-error-message'
 
 type TenantRole = 'tenant_owner' | 'tenant_admin' | 'tenant_member'
 type EditableRole = 'tenant_admin' | 'tenant_member'
@@ -123,6 +125,8 @@ export function MembersTab({
   const qc = useQueryClient()
   const { hasPermission } = usePermissions()
   const canManageMembers = hasPermission(PERMS.ORG_MEMBERS_MANAGE)
+  // 重发邀请属邀请管理动作：与发邀请/重置邀请链接一致用 org.invite:manage，不复用 members:manage（#262 举一反三）
+  const canManageInvite = hasPermission(PERMS.ORG_INVITE_MANAGE)
   const [editTarget, setEditTarget] = useState<TenantMember | null>(null)
   const [roleFilter, setRoleFilter] = useState<'all' | TenantRole>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'pending'>('all')
@@ -177,13 +181,16 @@ export function MembersTab({
       if (draftStatus !== editTarget.status) {
         await changeStatus.mutateAsync({ accountId, status: draftStatus })
       }
+      // 成员编辑弹窗「保存」提交埋点，event key = 权限体系 org.members:manage（对齐按钮 data-track="members:edit_submit"）
+      trackAction(PERMS.ORG_MEMBERS_MANAGE, { role: draftRole, status: draftStatus }, { result: 'success' })
       appToast.success(t('enterprise.members.saveSuccess'))
       qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
       // 角色/状态变更改变权限面：热刷新会话，菜单/tab 即时随新权限变化（免手动刷新）
       void refreshSession()
       setEditTarget(null)
-    } catch {
+    } catch (err) {
       // 具体错误已由各 mutation 的 onError 提示，这里仅阻止弹窗关闭，方便用户重试
+      trackAction(PERMS.ORG_MEMBERS_MANAGE, { role: draftRole, status: draftStatus }, { result: 'fail', error_code: errorCodeOf(err) })
     }
   }
 
@@ -191,10 +198,15 @@ export function MembersTab({
   const resendInvite = useMutation({
     mutationFn: (invitationId: string) => resendTenantInvite(tenantId, invitationId),
     onSuccess: () => {
+      // 重发邀请提交埋点，event key = 权限体系 org.members:manage（按钮实际权限 gate canManageMembers；对齐 data-track="members:resend_invite"）
+      trackAction(PERMS.ORG_MEMBERS_MANAGE, undefined, { result: 'success' })
       appToast.success(t('enterprise.members.resendSuccess'))
       qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
     },
-    onError: (err: Error) => appToast.requestError(err, t('enterprise.members.resendError')),
+    onError: (err: Error) => {
+      trackAction(PERMS.ORG_MEMBERS_MANAGE, undefined, { result: 'fail', error_code: errorCodeOf(err) })
+      appToast.requestError(err, t('enterprise.members.resendError'))
+    },
   })
 
   const members = useMemo(() => membersQuery.data?.items ?? [], [membersQuery.data])
@@ -425,7 +437,7 @@ export function MembersTab({
                       {inv.expires_at ? t('enterprise.members.expiresAt', { date: formatDate(inv.expires_at) }) : '—'}
                     </TableCell>
                     <TableCell align="center">
-                      {canManageMembers ? (
+                      {canManageInvite ? (
                         <div className="flex items-center justify-center whitespace-nowrap">
                           <button
                             type="button"

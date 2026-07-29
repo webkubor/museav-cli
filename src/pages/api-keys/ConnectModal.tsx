@@ -12,6 +12,9 @@ import { appendThemeParam } from '@/lib/theme'
 import { trackEvent } from '@/lib/track'
 import { useTrackContext } from '@/hooks/use-track-context'
 import { CONNECT_ACTIONS, buildConnectSnippets, getConnectAction, MGC_CLIENT_OPTIONS, deriveRegionFromBaseUrl, buildMgcCommand } from './constants'
+import { pickConnectModels } from './connect-models'
+import { useQuery } from '@tanstack/react-query'
+import { listModels } from '@/services/catalog'
 
 type Props = {
   open: boolean
@@ -37,7 +40,24 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
     setMgcSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   const mgcCommand = buildMgcCommand({ apiKey: keyForCmd, region, selected: mgcSelected, all: mgcAll })
 
-  const connectSnippets = buildConnectSnippets({ openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl: appendThemeParam(docsUrl) })
+  // 从目录挑真实存在的模型钉进接入参数，避免 Claude Code 用默认 slug 触发网关 403（需求方 #257）
+  // 用 q 关键词精确取 claude/gpt 两族（默认列表可能被大量其它模型淹没，取不到旗舰款）；
+  // 仅在弹窗打开时拉取，避免全局 Header 每页都打一次目录请求。
+  const connectModelsQuery = useQuery({
+    queryKey: ['catalog-models', 'connect-modal'],
+    queryFn: async () => {
+      const [claude, gpt] = await Promise.all([
+        listModels({ q: 'claude', page_size: 20 }),
+        listModels({ q: 'gpt', page_size: 20 }),
+      ])
+      return [...(claude.items ?? []), ...(gpt.items ?? [])].map((m) => m.model_id)
+    },
+    enabled: open,
+    staleTime: 5 * 60_000,
+  })
+  const { claudeModel, codexModel } = pickConnectModels(connectModelsQuery.data ?? [])
+
+  const connectSnippets = buildConnectSnippets({ openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl: appendThemeParam(docsUrl), claudeModel, codexModel })
 
   return (
     <Modal

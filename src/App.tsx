@@ -12,6 +12,8 @@ import { CONSOLE_ROUTES, type ConsoleRouteMeta } from '@/config/console-routes'
 // 页面路由懒加载：各页面拆为独立 chunk，按需加载，缩小首屏体积
 const DashboardPage = lazy(() => import('@/pages/dashboard'))
 const ApiKeysPage = lazy(() => import('@/pages/api-keys'))
+// `/api-keys`（不带 workspaceId）的中转：解析默认工作空间后重定向到真实路由
+const ApiKeysRedirectPage = lazy(() => import('@/pages/api-keys/redirect'))
 const WorkspacesPage = lazy(() => import('@/pages/workspaces'))
 const LoginPage = lazy(() => import('@/pages/login'))
 const SignupPage = lazy(() => import('@/pages/signup'))
@@ -34,7 +36,17 @@ const ModelsPage = lazy(() => import('@/pages/models'))
 const ModelsCatalogPage = lazy(() => import('@/pages/models/catalog'))
 const ModelDetailPage = lazy(() => import('@/pages/models/detail'))
 const ModelsComparePage = lazy(() => import('@/pages/models-compare'))
-const PlatformConfigPage = lazy(() => import('@/pages/platform-config'))
+// DEV 专属页面/工具必须放在可静态消除的条件分支内，确保生产构建既不生成对应 chunk，
+// 也不注册路由——否则 /dev-config 在生产环境仍可被直接访问到。
+const PlatformConfigPage = import.meta.env.DEV
+  ? lazy(() => import('@/pages/platform-config'))
+  : null
+const NavLogger = import.meta.env.DEV
+  ? lazy(() => import('@/components/dev/NavLogger').then((m) => ({ default: m.NavLogger })))
+  : null
+const DevToolbar = import.meta.env.DEV
+  ? lazy(() => import('@/components/dev-toolbar').then((m) => ({ default: m.DevToolbar })))
+  : null
 const NotFoundPage = lazy(() => import('@/pages/not-found'))
 
 // 菜单驱动页面：key → 页面元素（路由/scope/权限见 config/console-routes 单一真源）
@@ -68,8 +80,6 @@ import { marketLockedByDomain } from '@/lib/market-domain'
 import { applyBrandTheme, applyTheme, getSavedBrandTheme, getSavedTheme, readThemeFromUrl, saveTheme } from '@/lib/theme'
 import { getPlatformConfig } from '@/services/platform'
 import { useLangStore } from '@/store/use-brand-store'
-import { NavLogger } from '@/components/dev/NavLogger'
-import { DevToolbar } from '@/components/dev-toolbar'
 import { ServerErrorDialog } from '@/components/server-error/ServerErrorDialog'
 import { AppUpdatePrompt } from '@/components/app-update/AppUpdatePrompt'
 import { PwaInstallPrompt } from '@/components/app-update/PwaInstallPrompt'
@@ -181,7 +191,7 @@ export default function App() {
       <AppUpdatePrompt />
       <PwaInstallPrompt />
       <BrowserRouter>
-        {import.meta.env.DEV && <NavLogger />}
+        {NavLogger && <Suspense fallback={null}><NavLogger /></Suspense>}
         <PlatformLoader onReady={() => setPlatformReady(true)} />
         {!platformReady && (
           <div style={{
@@ -199,7 +209,7 @@ export default function App() {
             }} />
           </div>
         )}
-        {import.meta.env.DEV && <DevToolbar />}
+        {DevToolbar && <Suspense fallback={null}><DevToolbar /></Suspense>}
         <AuthProvider>
         <Suspense fallback={<RouteFallback />}>
         <Routes>
@@ -240,8 +250,15 @@ export default function App() {
             {/* 任务历史已并入调用日志（#361）：旧路由重定向到「异步任务」记录类型 */}
             <Route path="tasks" element={<Navigate to="/logs?record_type=async" replace />} />
 
-            {/* 开发者菜单（DEV 调试页）——挂在后台壳内（带侧栏/头部），不再独立整页 */}
-            <Route path="dev-config" element={<PlatformConfigPage />} />
+            {/* API Keys 是工作区级页面（真实路由在下面的 workspace/:workspaceId 组里）。
+                但模型详情页「获取 API Key」、模型体验的 API 弹窗、以及未登录时的
+                `redirect=/api-keys` 回跳手上都没有 workspaceId —— 给它们一个稳定的
+                无参入口，由中转页解析默认工作空间后再跳。此前这些入口直接落 404。 */}
+            <Route path="api-keys" element={<ApiKeysRedirectPage />} />
+
+            {/* 开发者菜单（DEV 调试页）——挂在后台壳内（带侧栏/头部），不再独立整页。
+                编译期 DEV 专属：生产构建时页面 import 与整条路由均被静态消除。 */}
+            {PlatformConfigPage && <Route path="dev-config" element={<PlatformConfigPage />} />}
 
             {/* 企业管理/空间管理是主入口顶层页（nav.ts main 组），不是「设置」子页——
                 路径保持扁平（/organization、/workspaces），与 usage/logs/billing 同级。

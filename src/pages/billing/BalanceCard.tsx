@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { InfoTip } from '@/components/ui/InfoTip'
 import { cn } from '@/lib/utils'
-import { trackAction } from '@/lib/track'
+import { trackAction, trackEvent } from '@/lib/track'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
@@ -14,6 +14,7 @@ import { useMouseGlow } from '@/hooks/use-mouse-glow'
 import { TopUpModal } from './TopUpModal'
 import { PromoRedeemForm } from './PromoRedeemForm'
 import { calculateSpendableBalance, formatBalance } from './formatBalance'
+import { amountBand } from './billing-tracking'
 
 export type BalanceTab = 'main' | 'gift' | 'reward'
 
@@ -52,7 +53,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
 
   const cardCls = (active: boolean) =>
     cn(
-      'billing-glow-card p-4 space-y-1.5 text-left w-full cursor-pointer outline-none select-none mouse-glow-card magnetic-hover',
+      'billing-balance-bucket p-4 space-y-2 text-left w-full cursor-pointer outline-none select-none',
       active ? 'active' : ''
     )
 
@@ -89,23 +90,29 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
 
       <div className="rounded-lg border border-mg-border bg-card-bg p-6 space-y-5 shadow-sm">
         {/* 顶部标题 + 操作按钮 */}
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-bold text-mg-text-1">{t('billing.balance.title')}</span>
-          <div className="flex items-center gap-2">
-            <button
+        <div className="billing-balance-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <span className="billing-balance-title text-sm font-bold text-mg-text-1">{t('billing.balance.title')}</span>
+          <div className="billing-balance-actions flex items-center gap-2">
+            <Button
               type="button"
+              variant="outline"
+              size="icon"
               onClick={handleRefresh}
               disabled={refreshing}
               aria-label={t('common.refresh', { defaultValue: '刷新' })}
               title={t('billing.balance.refreshHint', { defaultValue: '刷新余额与列表' })}
-              className="flex items-center justify-center h-9 w-9 rounded-md border border-mg-border text-mg-text-3 hover:text-mg-text-1 hover:bg-mg-fill-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              className="h-9 w-9 rounded-md text-mg-text-3 hover:text-mg-text-1 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <LuRefreshCw size={14} className={cn(refreshing && 'animate-spin')} />
-            </button>
+            </Button>
             {canRedeem && (
               <Button
                 variant="outline"
-                onClick={() => { trackAction(PERMS.BILLING_PROMO_REDEEM); setRedeemVisible(true) }}
+                onClick={() => {
+                  trackAction(PERMS.BILLING_PROMO_REDEEM)
+                  trackEvent('billing_redeem_open', { entry_position: 'balance_card' })
+                  setRedeemVisible(true)
+                }}
                 className="rounded-md h-9 px-4 gap-1.5"
               >
                 <LuTicket size={14} />
@@ -115,7 +122,14 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             {canRecharge && (
               <Button
                 variant="brand"
-                onClick={() => { trackAction(PERMS.BILLING_RECHARGE_CREATE); setTopUpVisible(true) }}
+                onClick={() => {
+                  trackAction(PERMS.BILLING_RECHARGE_CREATE)
+                  trackEvent('billing_recharge_open', {
+                    entry_position: 'balance_card',
+                    balance_total_band: amountBand(spendableBalance),
+                  })
+                  setTopUpVisible(true)
+                }}
                 className="rounded-md h-9 px-5 gap-1.5"
               >
                 <LuPlus size={14} />
@@ -132,9 +146,9 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             <InfoTip text="调用消费时按 赠送 → 奖励 → 主余额 的顺序扣减。" />
           </p>
           <div className="flex items-baseline gap-3 flex-wrap">
-            <div className="flex items-baseline gap-1">
+            <div className="billing-spendable-line flex items-baseline gap-1">
               <span className="text-lg font-medium text-mg-text-2">{currencySymbol}</span>
-              <span className="text-4xl font-bold tracking-tight tabular-nums leading-none spendable-amount-glow">
+              <span className="billing-spendable-amount text-4xl font-bold tabular-nums leading-none spendable-amount-glow">
                 {balanceLoading || breakdownLoading ? '...' : spendableTotal}
               </span>
             </div>
@@ -149,7 +163,6 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             onClick={() => onTabChange('main')}
             className={cn(cardCls(activeTab === 'main'), activeTab === 'main' && 'active-main')}
           >
-            <div className="shimmer-light" />
             <div className={cn('text-xs transition-colors duration-300', activeTab === 'main' ? 'text-brand-base font-semibold' : 'text-mg-text-3')}>
               {t('billing.balance.mainBalance')}
             </div>
@@ -159,7 +172,6 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
                 {formatBalance(breakdown?.main.amount).main}
               </span>
             </div>
-            <div className="text-xs text-mg-text-3 leading-snug">{t('billing.balance.mainHint')}</div>
           </button>
 
           <button
@@ -168,8 +180,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             onClick={() => onTabChange('gift')}
             className={cn(cardCls(activeTab === 'gift'), activeTab === 'gift' && 'active-gift')}
           >
-            <div className="shimmer-light" />
-            <div className={cn('flex items-center gap-1 text-xs transition-colors duration-300', activeTab === 'gift' ? 'text-sky-600 font-semibold' : 'text-mg-text-3')}>
+            <div className={cn('flex items-center gap-1 text-xs transition-colors duration-300', activeTab === 'gift' ? 'text-brand-base font-semibold' : 'text-mg-text-3')}>
               {t('billing.balance.giftBalance')}
               <InfoTip text="活动、兑换码等赠送额度，调用消费时优先扣减。" />
             </div>
@@ -179,7 +190,6 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
                 {formatBalance(breakdown?.gift.amount).main}
               </span>
             </div>
-            <div className="text-xs text-mg-text-3 leading-snug">{t('billing.balance.giftHint')}</div>
           </button>
 
           <button
@@ -188,8 +198,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             onClick={() => onTabChange('reward')}
             className={cn(cardCls(activeTab === 'reward'), activeTab === 'reward' && 'active-reward')}
           >
-            <div className="shimmer-light" />
-            <div className={cn('flex items-center gap-1 text-xs transition-colors duration-300', activeTab === 'reward' ? 'text-amber-500 font-semibold' : 'text-mg-text-3')}>
+            <div className={cn('flex items-center gap-1 text-xs transition-colors duration-300', activeTab === 'reward' ? 'text-brand-base font-semibold' : 'text-mg-text-3')}>
               {t('billing.balance.rewardBalance')}
               <InfoTip text="推荐返佣等产生的奖励，调用消费时在主余额前扣减。" />
             </div>
@@ -199,7 +208,6 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
                 {formatBalance(breakdown?.reward.amount).main}
               </span>
             </div>
-            <div className="text-xs text-mg-text-3 leading-snug">{t('billing.balance.rewardHint')}</div>
           </button>
         </div>
       </div>

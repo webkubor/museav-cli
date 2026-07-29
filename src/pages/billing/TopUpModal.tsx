@@ -1,16 +1,21 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { LuX } from 'react-icons/lu'
 import { createRecharge } from '@/services/billing'
 import { useCurrency, useEnabledChannels } from '@/hooks/use-platform-config'
+import { usePermissions } from '@/hooks/use-permissions'
+import { PERMS } from '@/config/permissions'
 import { Button } from '@/components/ui/Button'
 import { appToast } from '@/lib/app-toast'
 import { cn } from '@/lib/utils'
+import { trackEvent } from '@/lib/track'
 import {
   RECHARGE_PAYMENT_CHANNELS,
   type RechargePaymentChannel,
 } from '@/constants/recharge-channels'
 import { AlipayIcon, WechatIcon, StripeIcon } from '@/constants/brand-icons'
+import { amountBand } from './billing-tracking'
 
 const WECHAT_PAYEE_NAME = '杭州词元共生科技有限公司'
 
@@ -49,6 +54,10 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
 
   const { currency, symbol: currencySymbol } = useCurrency()
   const enabledChannels = useEnabledChannels()
+  // 提交处兜底权限（弹窗是全局单挂载点，多入口共用它）：无 billing.recharge:create 不得下单，
+  // 补齐副入口（如 FirstChargeLockGate「去充值」）漏 gate 的口子
+  const { hasPermission } = usePermissions()
+  const canRecharge = hasPermission(PERMS.BILLING_RECHARGE_CREATE)
 
   const CHANNELS = enabledChannels.length
     ? RECHARGE_PAYMENT_CHANNELS.filter((c) => enabledChannels.includes(c.value))
@@ -59,7 +68,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
     CHANNELS.some((c) => c.value === channel) ? channel : (CHANNELS[0]?.value ?? 'alipay')
   ) as RechargePaymentChannel
 
-  const PRESETS = ['10', '50', '100', '200', '500', '1000']
+  const PRESETS = ['100', '500', '1000', '5000']
 
   const recharge = useMutation({
     mutationFn: () =>
@@ -73,8 +82,16 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   })
 
   const handleSubmit = () => {
+    if (!canRecharge) return
     const paymentWindow = window.open('about:blank', '_blank')
     if (paymentWindow) paymentWindow.opener = null
+
+    // §11.2 billing_recharge_submit：提交充值金额那一刻上报，amount_type 区分预设面额/自定义金额
+    trackEvent('billing_recharge_submit', {
+      amount_band: amountBand(numAmount),
+      amount_type: customMode ? 'custom' : 'preset',
+      pay_channel: effectiveChannel,
+    })
 
     recharge.mutate(undefined, {
       onSuccess: (data) => {
@@ -94,6 +111,8 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
           : data.payment.redirect_url || data.payment.qr_code_url
         if (!redirectURL) {
           paymentWindow?.close()
+          // 下单成功但拿不到支付跳转地址：视为提交侧失败，结果尚未同步到支付渠道
+          trackEvent('billing_recharge_result', { result: 'fail', failure_reason: 'missing_redirect_url', pay_channel: effectiveChannel })
           appToast.error(t('billing.rechargeModal.error'))
           return
         }
@@ -105,8 +124,11 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
         }
         window.location.assign(redirectURL)
       },
-      onError: () => {
+      onError: (err: Error) => {
         paymentWindow?.close()
+        // §11.2 billing_recharge_result：下单请求本身失败（跳支付渠道前），alipay/stripe 的渠道侧
+        // 支付结果目前无回跳页可读取（现状缺口，非本单埋点范围），只有此处 + 微信收银台轮询能拿到结果
+        trackEvent('billing_recharge_result', { result: 'fail', failure_reason: err.message || 'create_recharge_failed', pay_channel: effectiveChannel })
       },
     })
   }
@@ -119,20 +141,25 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose} />
 
-      <div className="relative bg-card-bg backdrop-blur-xl modal-glow-flow rounded-lg w-full max-w-[480px] shadow-2xl overflow-visible animate-in fade-in zoom-in-95 duration-300">
+      <div className="billing-recharge-dialog relative bg-card-bg modal-glow-flow rounded-lg w-full max-w-[480px] max-h-[calc(100vh-32px)] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
         {/* 头部 */}
         <div className="px-6 pt-5 pb-4 flex justify-between items-center border-b border-mg-border/60">
           <h2 className="text-[15px] font-bold text-mg-text-1">{t('billing.rechargeModal.title')}</h2>
-          <button className="text-mg-text-3 hover:text-mg-text-1 transition-colors outline-none cursor-pointer w-7 h-7 flex items-center justify-center rounded-lg hover:bg-mg-fill-0" onClick={onClose}>
-            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          <button
+            type="button"
+            aria-label={t('common.close', { defaultValue: '关闭' })}
+            className="text-mg-text-3 hover:text-mg-text-1 transition-colors outline-none cursor-pointer w-8 h-8 flex items-center justify-center rounded-md hover:bg-mg-fill-0"
+            onClick={onClose}
+          >
+            <LuX size={16} />
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-5">
+        <div className="billing-recharge-body px-6 py-5 space-y-5 overflow-y-auto">
           {/* 金额选择标签 */}
           <div>
             <div className="text-xs text-mg-text-3 font-bold mb-2.5 tracking-wider">{t('billing.rechargeModal.amount')}</div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="billing-recharge-presets grid grid-cols-3 gap-2">
               {PRESETS.map((p) => {
                 const active = amount === p && !customMode
                 return (
@@ -141,7 +168,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                     type="button"
                     onClick={() => { setAmount(p); setCustomMode(false) }}
                     className={cn(
-                      "rounded-lg border py-2.5 cursor-pointer text-center magnetic-hover",
+                      "rounded-md border py-2.5 cursor-pointer text-center",
                       active
                         ? "border-brand-base bg-brand-glow text-brand-base"
                         : "border-mg-border text-mg-text-2 hover:text-mg-text-1 hover:border-brand-base/40"
@@ -161,7 +188,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                 value={customMode ? amount : ''}
                 onFocus={() => setCustomMode(true)}
                 onChange={(e) => { setAmount(e.target.value); setCustomMode(true) }}
-                className="w-full h-10 pl-7 pr-3 rounded-lg border border-mg-border bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-brand-base/40 focus:border-brand-base transition-all font-semibold font-mono text-mg-text-1"
+                className="w-full h-10 pl-7 pr-3 rounded-md border border-mg-border bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-brand-base/40 focus:border-brand-base transition-all font-semibold font-mono text-mg-text-1"
                 placeholder={t('billing.rechargeModal.customAmount')}
               />
             </div>
@@ -170,7 +197,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
           {/* 支付方式 */}
           <div>
             <div className="text-xs text-mg-text-3 font-bold mb-2.5 tracking-wider">{t('billing.rechargeModal.method')}</div>
-            <div className="flex gap-2.5">
+            <div className="billing-recharge-channels grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {CHANNELS.map((c) => {
                 const active = effectiveChannel === c.value
                 const brandColor: Record<string, string> = { alipay: '#1677FF', wechat: '#07C160', stripe: '#635BFF' }
@@ -186,7 +213,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                     type="button"
                     onClick={() => setChannel(c.value)}
                     className={cn(
-                      "flex-1 rounded-lg border py-2.5 px-3 cursor-pointer magnetic-hover",
+                      "rounded-md border py-2.5 px-3 cursor-pointer",
                       active
                         ? "shadow-sm"
                         : "border-mg-border text-mg-text-3 hover:border-mg-text-3/30"
@@ -209,7 +236,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
           {/* 提交 */}
           <Button
             variant="brand"
-            disabled={numAmount <= 0 || recharge.isPending}
+            disabled={numAmount <= 0 || recharge.isPending || !canRecharge}
             onClick={handleSubmit}
             className="w-full h-11 text-sm font-bold rounded-md"
           >

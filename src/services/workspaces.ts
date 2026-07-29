@@ -85,7 +85,8 @@ export function removeWorkspaceMemberWithStrategy(
 
 /**
  * 设置空间负责人（对齐原型「设为负责人」按钮）。
- * 后端约定接口 PUT /workspaces/:id/owner（#327 待实现，前端先按约定接）。
+ * 后端接口已交付（qa#327 已完成）：PUT /workspaces/:id/owner，body { account_id }，
+ * 仅当前 ws_owner 可调用，目标需已是该空间成员，原 owner 自动降级 ws_admin。
  * 与 updateWorkspaceMemberRole 不同——后者只改 ws_admin/ws_member，不含 owner。
  */
 export function setWorkspaceOwner(workspaceId: string, accountId: string) {

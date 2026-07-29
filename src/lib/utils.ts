@@ -58,6 +58,20 @@ export function prettyModelName(displayName?: string | null, modelId?: string | 
 }
 
 /** 格式化计费价格，若零额或空则返回 "免费"，带货币符号及自适应后缀 */
+/**
+ * 裁掉后端 NUMERIC 的尾随零，保留有效小数。
+ *
+ * 后端下发的是全精度字符串（"30.000000000000"、"7.200000000000"），直接拼进 UI
+ * 会显示成「¥30.000000000000/M」。这里只做**显示层**裁剪，不做四舍五入 —— 价格
+ * 不能被前端改写，只能去掉不携带信息的尾零。
+ */
+export function trimPriceZeros(amount: number | string): string {
+  const raw = String(amount)
+  if (!raw.includes('.')) return raw
+  const trimmed = raw.replace(/0+$/, '').replace(/\.$/, '')
+  return trimmed === '' || trimmed === '-' ? '0' : trimmed
+}
+
 export function formatModelPrice(
   amount: number | string | null | undefined,
   currency = '$',
@@ -66,8 +80,8 @@ export function formatModelPrice(
   if (amount == null || amount === '') return '免费'
   const parsed = typeof amount === 'string' ? parseFloat(amount) : amount
   if (isNaN(parsed) || parsed <= 0) return '免费'
-  // 原样显示后端价格，不舍入；仅用 parsed 判断免费/有效
-  return `${currency}${amount}${suffix}`
+  // 不舍入，只裁尾零；parsed 仅用于判断免费/有效
+  return `${currency}${trimPriceZeros(amount)}${suffix}`
 }
 
 /** 提取名称首字母并大写做为备选头像文字 */

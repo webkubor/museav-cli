@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { getSession } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import { getRedirectTarget } from '@/lib/redirect'
+import { navigateAfterLogin } from '@/lib/login-intent'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
 
@@ -34,7 +35,7 @@ export default function AuthCallbackPage() {
           result.permissions?.granted ?? null
         )
         trackEvent('login_success', { method: 'oauth' }, { result: 'success' })
-        navigate(redirect, { replace: true })
+        void navigateAfterLogin(navigate, redirect)
       })
       .catch(async () => {
         try {
@@ -47,7 +48,7 @@ export default function AuthCallbackPage() {
             result.permissions?.granted ?? null
           )
           trackEvent('login_success', { method: 'oauth' }, { result: 'success' })
-          navigate(redirect, { replace: true })
+          void navigateAfterLogin(navigate, redirect)
         } catch {
           // 回调换取与会话兜底都失败 = 登录确实没成：先提示再跳登录，不静默
           trackEvent('login_fail', { method: 'oauth' }, { result: 'fail', error_code: 'callback_failed' })

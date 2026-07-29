@@ -18,6 +18,12 @@ vi.mock('@/hooks/use-platform-config', () => ({
   useEnabledChannels: () => ['wechat'],
 }))
 
+vi.mock('@/hooks/use-permissions', () => ({
+  usePermissions: () => ({
+    hasPermission: () => true,
+  }),
+}))
+
 vi.mock('@/lib/app-toast', () => ({
   appToast: {
     success: (...args: unknown[]) => toastSuccess(...args),

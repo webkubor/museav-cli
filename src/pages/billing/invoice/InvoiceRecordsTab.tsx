@@ -3,15 +3,18 @@
  * 状态筛选 + 发票号/抬头搜索 + 列表（下载）+ 加载更多。客户端无红冲/开票执行入口（D-INV15）。
  */
 import { useEffect, useState } from 'react'
-import { LuDownload } from 'react-icons/lu'
+import { LuDownload, LuCircleAlert } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { appToast } from '@/lib/app-toast'
 import { listInvoiceRecords, getInvoiceDownloadUrl } from '@/services/invoice'
 import type { InvoiceRecord, InvoiceTitleType } from '@/types'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
+import { trackEvent } from '@/lib/track'
+import { formatDateTimeWithSeconds } from '@/lib/format-date'
 
 const STATUS_MAP: Record<InvoiceRecord['status'], { label: string; cls: string }> = {
   pending: { label: '待开票', cls: 'bg-mg-fill-0 text-mg-text-2' },
@@ -70,12 +73,21 @@ export function InvoiceRecordsTab({
         setRecords((prev) => [...prev, ...res.items])
         setHasMore(res.has_more)
       })
-      .catch(() => setHasMore(false))
+      .catch(() => {
+        appToast.error('加载更多失败，请重试')
+        setHasMore(false)
+      })
   }
 
-  const download = async (invoiceNo: string) => {
-    const { url } = await getInvoiceDownloadUrl(tenantId, invoiceNo)
-    window.open(url, '_blank')
+  const download = async (invoiceNo: string, invoiceStatus: InvoiceRecord['status']) => {
+    try {
+      const { url } = await getInvoiceDownloadUrl(tenantId, invoiceNo)
+      window.open(url, '_blank')
+      trackEvent('billing_invoice_download_click', { invoice_status: invoiceStatus, result: 'success' })
+    } catch {
+      appToast.error('下载失败，请重试')
+      trackEvent('billing_invoice_download_click', { invoice_status: invoiceStatus, result: 'fail' })
+    }
   }
 
   return (
@@ -103,7 +115,14 @@ export function InvoiceRecordsTab({
       {loading && records.length === 0 ? (
         <EmptyState title="加载中…" />
       ) : records.length === 0 ? (
-        <EmptyState title="暂无发票记录" />
+        <EmptyState
+          title={status !== 'all' || keyword ? '当前筛选条件下没有发票记录' : '暂无发票记录'}
+          action={status !== 'all' || keyword ? (
+            <Button variant="outline" size="sm" onClick={() => { setStatus('all'); setKeyword('') }}>
+              清除筛选
+            </Button>
+          ) : undefined}
+        />
       ) : (
         records.map((r) => {
           const st = STATUS_MAP[r.status]
@@ -121,6 +140,7 @@ export function InvoiceRecordsTab({
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-mg-text-3">
+                    <span>{formatDateTimeWithSeconds(r.created_at)}</span>
                     <span>{r.company_name}</span>
                     <span>
                       价税合计{' '}
@@ -129,12 +149,19 @@ export function InvoiceRecordsTab({
                         {r.total_amount}
                       </span>
                     </span>
+                    <span>充值单 {r.recharge_count}</span>
                     {r.tax_serial && <span>发票号 {r.tax_serial}</span>}
                   </div>
+                  {r.status === 'failed' && r.error_msg && (
+                    <div className="flex items-start gap-1 text-xs text-mg-danger">
+                      <LuCircleAlert size={13} className="mt-0.5 shrink-0" />
+                      <span>{r.error_msg}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="shrink-0">
                   {r.status === 'invoiced' && canDownload && (
-                    <Button variant="outline" size="sm" onClick={() => download(r.invoice_no)}>
+                    <Button variant="outline" size="sm" onClick={() => download(r.invoice_no, r.status)}>
                       <LuDownload size={13} className="mr-1" /> 下载
                     </Button>
                   )}

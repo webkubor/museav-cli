@@ -23,10 +23,21 @@ export type TenantRole = 'tenant_owner' | 'tenant_admin' | 'tenant_member'
 
 export function useTenantRole() {
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
+  /**
+   * 未登录不发这条请求。公开页（模型广场 / 模型详情）也会挂到用它的组件上，
+   * 匿名态下 GET /tenants 必然回 40101 → 命中 request.ts 的全局会话过期分支 →
+   * 弹「登录已过期，请重新登录」。游客从没登录过，这条提示是纯噪音。
+   * （/auth/session 早已在那里白名单豁免，同理。）
+   *
+   * 条件带上 activeTenantId：有活跃租户即已登录，isAuthenticated 尚未回填的
+   * 中间态（以及只 mock 了租户的测试）不该被误判成匿名而拿不到角色。
+   */
   const { data, isLoading } = useQuery<TenantListResponse>({
     queryKey: ['tenants'],
     queryFn: listTenants,
+    enabled: isAuthenticated || Boolean(activeTenantId),
     staleTime: 60_000,
   })
 

@@ -106,11 +106,28 @@
 
 .models-experience-message {
   display: flex;
+  align-items: flex-start;
+  gap: 10px;
   justify-content: flex-start;
 }
 
 .models-experience-message.is-user {
-  justify-content: flex-end;
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
+.models-experience-message-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--mg-fill-1);
+  color: var(--mg-text-2);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .models-experience-message-bubble {
@@ -143,6 +160,105 @@
   color: var(--mg-text-3);
   font-size: 11px;
   font-weight: 700;
+}
+
+/* 媒体结果卡（§7.10）：图片/音频/视频产物 */
+.models-experience-media-result {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.models-experience-media-image {
+  max-width: 100%;
+  max-height: 360px;
+  border-radius: var(--radius-md);
+  display: block;
+}
+
+.models-experience-media-audio,
+.models-experience-media-video {
+  max-width: 100%;
+}
+
+.models-experience-media-download {
+  color: var(--brand-base);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.models-experience-media-download:hover {
+  text-decoration: underline;
+}
+
+.models-experience-message-bubble > span.models-experience-message-error {
+  color: var(--mg-danger);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* 媒体结果失败卡（PRD §AC-13，对齐原型 App.tsx:20421 playground-artifact-error）：
+   保留计费状态与重试入口，仅媒体任务（图像/音频/视频）失败时使用 */
+.models-experience-media-error {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.models-experience-media-error > .models-experience-message-error {
+  color: var(--mg-danger);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.models-experience-media-error-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.models-experience-media-error-meta em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--mg-text-3);
+}
+
+.models-experience-media-error-meta button {
+  padding: 4px 10px;
+  border: 1px solid var(--mg-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--mg-text-1);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.models-experience-media-error-meta button:hover {
+  background: var(--mg-fill-0);
+}
+
+/* 消息统计条：模型名 + Token 数 + 首Token/总耗时 + 费用 + 复制（App.tsx:20493-20504 逐字对齐） */
+.models-experience-message-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  color: var(--mg-text-3);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.models-experience-message-meta strong {
+  color: var(--mg-text-2);
+  font-weight: 800;
+}
+
+.models-experience-message-meta .models-experience-icon-btn {
+  width: 22px;
+  height: 22px;
+  margin-left: auto;
 }
 
 /* ── 思考态：模型响应前的 typing 指示（三点跳动） ── */

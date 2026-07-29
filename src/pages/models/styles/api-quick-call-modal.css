@@ -1,0 +1,72 @@
+/* ── API 快捷调用弹窗（PRD §7.7） ────────────────────────────────────────── */
+.api-quick-call-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding-right: 28px;
+}
+
+.api-quick-call-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.api-quick-call-model-id {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--mg-border);
+  border-radius: var(--radius-md);
+  background: var(--mg-fill-0);
+}
+
+.api-quick-call-model-id-label {
+  font-size: 12px;
+  color: var(--mg-text-3);
+  flex-shrink: 0;
+}
+
+.api-quick-call-model-id-value {
+  font-size: 12.5px;
+  font-family: var(--mg-font-mono, monospace);
+  color: var(--mg-text-1);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.api-quick-call-code {
+  position: relative;
+}
+
+.api-quick-call-code-copy {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--mg-bg-0);
+}
+
+.api-quick-call-code-pre {
+  margin: 0;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--mg-fill-1);
+  border: 1px solid var(--mg-border);
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--mg-text-1);
+  white-space: pre;
+}
+
+.api-quick-call-footer {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}

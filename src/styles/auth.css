@@ -401,7 +401,7 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 
 .social-btn:hover {
   background-color: var(--mg-fill-0) !important;
-  border-color: var(--mg-border-2) !important;
+  border-color: var(--mg-border-hover) !important;
   color: var(--mg-text-1);
 }
 
@@ -518,19 +518,19 @@ body[theme-mode='dark'] .auth-form-container .modern-input-wrapper.is-error {
 /* 4. 输入成功 (Success) 状态 */
 .auth-form-container .modern-input-field.is-success,
 .auth-form-container .modern-input-wrapper.is-success {
-  border-color: rgba(16, 185, 129, 0.55) !important;
+  border-color: color-mix(in oklab, var(--mg-success) 55%, transparent) !important;
 }
 
 .auth-form-container .modern-input-wrapper.is-success::before {
   opacity: 1 !important;
-  background: #10b981 !important;
+  background: var(--mg-success) !important;
   animation: none !important;
 }
 
 .auth-form-container .modern-input-field.is-success:focus,
 .auth-form-container .modern-input-wrapper.is-success:focus-within {
-  border-color: #10b981 !important;
-  box-shadow: 0 0 0 1px #10b981, 0 0 0 4px rgba(16, 185, 129, 0.14) !important;
+  border-color: var(--mg-success) !important;
+  box-shadow: 0 0 0 1px var(--mg-success), 0 0 0 4px color-mix(in oklab, var(--mg-success) 14%, transparent) !important;
 }
 
 
@@ -547,7 +547,7 @@ body[theme-mode='dark'] .auth-form-container .modern-input-wrapper.is-error {
 
 .auth-captcha-gate:hover {
   color: var(--mg-text-1);
-  border-color: var(--mg-border-2);
+  border-color: var(--mg-border-hover);
 }
 
 .auth-captcha-gate.is-verified {

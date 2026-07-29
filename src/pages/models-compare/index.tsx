@@ -1,619 +1,1527 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+/**
+ * 模型对比工作台（PRD 1.0.4 模型体验 §7.3/7.4/8.1-8.3）。
+ * 真源：飞书《ModelGo Console 重构 PRD：模型体验页面（v0.1）》+ 后端
+ * 《模型体验(Playground V1)前端接口文档》2026-07-27 + Swagger（modelgo-web-api）核实到的
+ * 真实列级端点（PRD 接口文档 §3.8 对应的表格在飞书内嵌 sheet 里，工具权限读不到，
+ * 是从 https://modelgo-web-api.test.modelgo.com/swagger/doc.json 里查到 POST/PATCH/DELETE
+ * .../conversations 和 .../configs 的真实路径与请求体形状，不是瞎猜）。
+ *
+ * 入口：只接受从单模型页「模型对比」确认后的 navigate state（selectedIds，2-3 个
+ * 目录 model.id）。刷新本页或直接输入 URL 没有历史恢复（§7.8 的会话恢复目前只覆盖
+ * 单模型页，对比会话的 URL/会话 ID 级恢复不在本轮范围）。
+ */
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Badge } from '@/components/ui/Badge'
-import { Input } from '@/components/ui/Input'
+import {
+  LuColumns2, LuChevronDown, LuCode, LuSettings2, LuX, LuPlus, LuLogOut, LuTriangleAlert, LuPaperclip,
+} from 'react-icons/lu'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Button } from '@/components/ui/Button'
 import { Switch } from '@/components/ui/Switch'
-import { LuSearch, LuPlus, LuX, LuMessageSquare, LuTrash2, LuSparkles } from 'react-icons/lu'
-import { listModels } from '@/services/catalog'
-import { streamExperienceChat } from '@/services/experience'
-import type { CatalogModelItem } from '@/types'
-import { cn } from '@/lib/utils'
+import { Composer } from '@/components/ui/Composer'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { useModels } from '@/features/models/hooks/useModels'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
+import { prettyModelName, cn } from '@/lib/utils'
+import type { CatalogModelItem } from '@/types'
+import {
+  createExperienceSession,
+  streamExperienceMessage,
+  sendExperienceMediaMessage,
+  getExperienceMessage,
+  addExperienceConversation,
+  removeExperienceConversation,
+  switchExperienceConversationModel,
+  listExperienceModelConfigs,
+  saveExperienceModelConfig,
+  resetExperienceModelConfig,
+  getExperienceSessionStats,
+  matchesModelConfigId,
+  listExperienceSessions,
+  renameExperienceSession,
+  getExperienceSession,
+  getExperienceSessionMessages,
+  uploadExperienceAttachment,
+  type ExperienceStatsEvent,
+  type ExperienceMessageView,
+  type ExperienceAttachment,
+} from '@/services/experience-sessions'
+import { useSidebarCollapseStore } from '@/store/use-sidebar-collapse-store'
+import { useExperienceWorkbenchStore, type CompareColumnState } from '@/store/use-experience-workbench-store'
+import { useAuthStore } from '@/store/auth'
+import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
+import { calculateSpendableBalance } from '@/pages/billing/formatBalance'
+import { trackEvent } from '@/lib/track'
+import { appToast } from '@/lib/app-toast'
+import {
+  isPaidModel,
+  estimateTokens,
+  formatPlaygroundLatency,
+  dualPriceText,
+  hashId,
+  latencyBucket,
+  tokenBucket,
+  sizeBucket,
+  cleanErrorMessage,
+  extractApiErrorMessage,
+  experienceTaskLabel,
+  resolveModelCategory,
+  experienceCategoryLabel,
+  EXPERIENCE_CATEGORY_DEFAULT_TASK,
+  categoryEmptyCopy,
+  categoryPlaceholder,
+  ATTACHMENT_LIMITS,
+  attachmentLimitLabel,
+  attachmentKindFromMime,
+  offlineModelPlaceholder,
+  isOfflineModel,
+  type ExperienceMessage,
+  type ExperienceCategoryKey,
+} from '../models/model-experience-data'
+import { ModelPickerDialog } from '../models/components/ModelPickerDialog'
+import { ModelSettingsModal } from '../models/components/ModelSettingsModal'
+import { ApiQuickCallModal } from '../models/components/ApiQuickCallModal'
+import { ExperienceMessageList } from '../models/components/ExperienceMessageList'
+import { HistorySessionSidebar, type HistorySessionItem } from '../models/components/HistorySessionSidebar'
+import '../models/styles/model-experience-layout.css'
+import '../models/styles/model-chat.css'
+import '../models/styles/model-composer.css'
+import '../models/styles/model-picker-dialog.css'
+import '../models/styles/model-settings-modal.css'
+import '../models/styles/api-quick-call-modal.css'
+import './compare.css'
 
 const MAX_COMPARE = 3
 
-function formatPrice(val: string | undefined) {
-  if (!val) return '—'
-  const n = parseFloat(val)
-  if (isNaN(n)) return val
-  return `$${n.toFixed(4)}`
+// 列状态类型跟着 store 里的 CompareColumnState 走（字段一致，别在这重复定义），
+// 本地仍叫 ColumnState 是为了不用改文件里几十处已有引用。
+type ColumnState = CompareColumnState
+
+/** 单列发送时可选携带的附件（qa#545）：只有该列模型支持时调用方才会传入非空值，
+ *  resourceIds 喂给后端接口，media 只用于用户消息气泡的预览渲染。 */
+interface DispatchAttachment {
+  resourceIds: string[]
+  media?: Array<{ kind: string; url: string }>
 }
-
-function formatContext(n: number) {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(0)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`
-  return String(n)
-}
-
-function formatDate(val: string | undefined) {
-  if (!val) return '—'
-  const d = new Date(val)
-  if (isNaN(d.getTime())) return val
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-}
-
-/** 从 modalities 派生模型类型，用于同类对比限制 */
-function getModelType(modalities: string[]): string {
-  if (modalities.includes('audio')) return 'Audio'
-  if (modalities.includes('image')) return 'VLM'
-  if (modalities.includes('video')) return 'Video'
-  return 'LLM'
-}
-
-const MODEL_TYPE_STYLE: Record<string, string> = {
-  LLM:   'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
-  VLM:   'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  Audio: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-  Video: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
-}
-
-function ModelTypeBadge({ modalities, className }: { modalities: string[]; className?: string }) {
-  const type = getModelType(modalities)
-  return (
-    <span className={cn(
-      'text-xs font-bold font-mono px-1.5 py-0.5 rounded-sm border',
-      MODEL_TYPE_STYLE[type] ?? MODEL_TYPE_STYLE.LLM,
-      className
-    )}>
-      {type}
-    </span>
-  )
-}
-
-interface ModelPickerProps {
-  models: CatalogModelItem[]
-  selected: CatalogModelItem | null
-  onSelect: (m: CatalogModelItem) => void
-  onClear: () => void
-  search: string
-  onSearch: (v: string) => void
-}
-
-function ModelPicker({ models, selected, onSelect, onClear, search, onSearch }: ModelPickerProps) {
-  const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-
-  const filtered = models.filter((m) =>
-    (m.display_name + m.model_id + (m.vendor ?? '')).toLowerCase().includes(search.toLowerCase())
-  )
-
-  if (selected) {
-    return (
-      <div className="border border-[var(--mg-border)] rounded-md p-4 bg-card-bg min-h-[120px] relative">
-        <button
-          onClick={onClear}
-          className="absolute top-2.5 right-2.5 bg-none border-none cursor-pointer text-[var(--mg-text-3)] hover:text-[var(--mg-text-2)] p-0.5 flex items-center transition-colors"
-        >
-          <LuX size={14} />
-        </button>
-        <div className="flex items-center gap-2 mb-2">
-          <ModelIcon model={selected} size={28} rounded="rounded-md" />
-          <ModelTypeBadge modalities={selected.modalities} />
-        </div>
-        <div className="font-semibold text-sm text-[var(--mg-text-1)] mb-1">
-          {selected.display_name}
-        </div>
-        <div className="text-xs text-[var(--mg-text-3)] font-mono mb-1.5 truncate">
-          {selected.model_id}
-        </div>
-        <div className="flex gap-1 flex-wrap">
-          {selected.modalities.map((m) => (
-            <Badge key={m} variant="info" size="sm">{m}</Badge>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full border-2 border-dashed border-[var(--mg-border)] rounded-md p-6 bg-transparent cursor-pointer flex flex-col items-center gap-2 text-[var(--mg-text-3)] hover:border-[var(--brand-base)] hover:text-[var(--brand-base)] hover:bg-[var(--mg-fill-0)]/50 transition-all duration-150"
-      >
-        <LuPlus size={20} />
-        <span className="text-[13px]">{t('modelsCompare.button.select')}</span>
-      </button>
-
-      {open && (
-        <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-card-bg border border-[var(--mg-border)] rounded-lg shadow-lg z-50 max-h-[280px] overflow-hidden flex flex-col animate-[fadeIn_0.15s_ease-out]">
-          <div className="p-2 border-b border-[var(--mg-border)] bg-[var(--mg-fill-0)]">
-            <Input
-              prefix={<LuSearch className="w-3.5 h-3.5" />}
-              placeholder={t('modelsCompare.placeholder.search')}
-              className="h-8 text-xs rounded-md"
-              value={search}
-              onChange={(e) => onSearch(e.target.value)}
-              autoFocus
-            />
-          </div>
-          <div className="overflow-y-auto flex-1 py-1">
-            {filtered.slice(0, 30).map((m) => (
-              <div
-                key={m.model_id}
-                onClick={() => { onSelect(m); setOpen(false); onSearch('') }}
-                className="px-3 py-2 cursor-pointer flex items-center gap-2 hover:bg-[var(--mg-fill-0)] transition-colors"
-              >
-                <ModelIcon model={m} size={20} rounded="rounded-sm" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-medium text-[var(--mg-text-1)] truncate">
-                    {m.display_name}
-                  </div>
-                  <div className="text-xs text-[var(--mg-text-3)] truncate font-mono">
-                    {m.model_id}
-                  </div>
-                </div>
-              </div>
-            ))}
-            {filtered.length === 0 && (
-              <div className="p-4 text-center text-[13px] text-[var(--mg-text-3)]">
-                {t('modelsCompare.empty.noMatch')}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function renderCell(model: CatalogModelItem, key: string) {
-  if (key === 'pricing_input') return formatPrice(model.pricing?.input_per_1m)
-  if (key === 'pricing_output') return formatPrice(model.pricing?.output_per_1m)
-  if (key === 'pricing_cache') return formatPrice(model.pricing?.cache_read_per_1m)
-  if (key === 'context_length') return formatContext(model.context_length)
-  if (key === 'max_output_tokens') return formatContext(model.max_output_tokens)
-  if (key === 'knowledge_cutoff') return formatDate(model.knowledge_cutoff)
-  if (key === 'released_at') return formatDate(model.released_at)
-  if (key === 'providers_count') return model.providers_count != null ? String(model.providers_count) : '—'
-  if (key === 'zero_data_retention') {
-    return model.zero_data_retention
-      ? <Badge variant="success" size="sm">支持</Badge>
-      : <span className="text-[var(--mg-text-3)]">—</span>
-  }
-  if (key === 'in_region_routing') {
-    return model.in_region_routing
-      ? <Badge variant="success" size="sm">支持</Badge>
-      : <span className="text-[var(--mg-text-3)]">—</span>
-  }
-  if (key === 'modalities') {
-    return (
-      <div className="flex gap-1 flex-wrap">
-        {(model.modalities ?? []).map((m) => <Badge key={m} variant="info" size="sm">{m}</Badge>)}
-      </div>
-    )
-  }
-  if (key === 'tags') {
-    return (
-      <div className="flex gap-1 flex-wrap">
-        {(model.tags ?? []).slice(0, 4).map((t) => <Badge key={t} variant="secondary" size="sm">{t}</Badge>)}
-      </div>
-    )
-  }
-  const val = (model as unknown as Record<string, unknown>)[key]
-  return val != null ? String(val) : '—'
-}
-
-const Spinner = () => (
-  <svg className="animate-spin text-current h-6 w-6 text-[var(--brand-base)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-  </svg>
-)
 
 export default function ModelsComparePage() {
   const { t } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
-  const [slots, setSlots] = useState<Array<CatalogModelItem | null>>([null, null, null])
-  const [searches, setSearches] = useState(['', '', ''])
+  const collapseForCompare = useSidebarCollapseStore((s) => s.collapseForCompare)
+  const restoreSavedPreference = useSidebarCollapseStore((s) => s.restoreSavedPreference)
 
-  const modelsQuery = useQuery({
-    queryKey: ['catalog-models'],
-    queryFn: () => listModels({ page_size: 100 }),
-  })
+  // qa#543：不再只筛对话类——同 models/index.tsx 的口径，取全量目录，候选资格判断交给
+  // ModelPickerDialog 内部按 resolveModelCategory 过滤（同一级类别才能进同一组对比）。
+  const { modelsQuery } = useModels()
+  const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
 
-  // 对比只支持文本模型（LLM），过滤掉 VLM / Audio / Video
-  const models = useMemo(
-    () => (modelsQuery.data?.items ?? []).filter((m) => getModelType(m.modalities) === 'LLM'),
-    [modelsQuery.data]
+  // §9.1 余额资格状态机：与单模型页同口径，可消费合计为 0 时锁定付费模型列的发送
+  const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
+  const { data: balance } = useBalance(tenantId)
+  const { data: balanceBreakdown } = useBalanceBreakdown(tenantId)
+  const spendableBalance = calculateSpendableBalance(
+    balance?.available?.amount,
+    balanceBreakdown?.gift?.amount,
+    balanceBreakdown?.reward?.amount,
   )
+  const isBalanceZero = spendableBalance !== undefined && spendableBalance <= 0
 
-  // 接收来自其他页面的对比数据跳转
-  useEffect(() => {
-    if (models.length > 0 && location.state?.selectedIds) {
-      const ids = location.state.selectedIds as string[]
-      const newSlots: Array<CatalogModelItem | null> = [null, null, null]
-      ids.slice(0, 3).forEach((id, idx) => {
-        const found = models.find((m) => m.id === id)
-        if (found) {
-          newSlots[idx] = found
-        }
-      })
-      setSlots(newSlots)
-      
-      // 清空路由 state，防止后续刷新再次覆盖 slots
-      navigate(location.pathname, { replace: true, state: {} })
-    }
-  }, [models, location.state, navigate, location.pathname])
+  // 会话/列/统计跨路由持久化（qa#544）：改走模块级 zustand store，SPA 内路由切走（比如
+  // 切去看账单）再切回不再清空；变量名保持不变，文件里后续几十处引用几乎不用改。
+  const compare = useExperienceWorkbenchStore((s) => s.compare)
+  const setCompare = useExperienceWorkbenchStore((s) => s.setCompare)
+  const sessionId = compare.sessionId
+  const setSessionId = (id: string | null) => setCompare({ sessionId: id })
+  const columns = compare.columns
+  const setColumns = (
+    updater: ColumnState[] | null | ((prev: ColumnState[] | null) => ColumnState[] | null),
+  ) => setCompare((s) => ({ columns: typeof updater === 'function' ? updater(s.columns) : updater }))
+  const sessionStats = compare.sessionStats
+  const setSessionStats = (
+    stats: typeof compare.sessionStats | ((prev: typeof compare.sessionStats) => typeof compare.sessionStats),
+  ) => setCompare((s) => ({ sessionStats: typeof stats === 'function' ? stats(s.sessionStats) : stats }))
 
-  // 每个模型槽位各自的输入框；同步开关打开时一处输入镜像到全部
-  const [chatInputs, setChatInputs] = useState<string[]>(['', '', ''])
   const [syncInput, setSyncInput] = useState(true)
-  const [histories, setHistories] = useState<Array<Array<{ role: 'user' | 'assistant'; content: string; meta?: string }>>>([
-    [],
-    [],
-    []
-  ])
-  // 每个槽位独立的流式状态与 AbortController（并行对话互不阻塞）
-  const [streaming, setStreaming] = useState<boolean[]>([false, false, false])
-  const abortRefs = useRef<Array<AbortController | null>>([null, null, null])
+  const [sharedDraft, setSharedDraft] = useState('')
+  const [lastFocusedIndex, setLastFocusedIndex] = useState(0)
+  const [bootError, setBootError] = useState<string | null>(null)
 
-  // 监听槽位变动，若槽位被置空，则自动清空对应槽位的历史对话
-  useEffect(() => {
-    setHistories((prev) => prev.map((history, idx) => {
-      return slots[idx] ? history : []
-    }))
-  }, [slots])
+  // §7.8 历史会话侧栏（qa#546）：与单模型页一样是纯页面内 UI 状态，不需要跨路由持久化，
+  // 收起态是初始态（对比页地产更紧张，默认收起，用户需要时自己展开）。
+  const [historyCollapsed, setHistoryCollapsed] = useState(true)
+  const [historySessions, setHistorySessions] = useState<HistorySessionItem[]>([])
+  const [historyActionError, setHistoryActionError] = useState<string | null>(null)
 
-  // 卸载时中止所有进行中的流，避免 setState-after-unmount
+  const [removeConfirmIndex, setRemoveConfirmIndex] = useState<number | null>(null)
+  const [exitConfirmOpen, setExitConfirmOpen] = useState(false)
+  const [switchPickerIndex, setSwitchPickerIndex] = useState<number | null>(null)
+  const [addPickerOpen, setAddPickerOpen] = useState(false)
+  const [syncConfirm, setSyncConfirm] = useState<{ sourceIndex: number; sourceText: string } | null>(null)
+  const [settingsIndex, setSettingsIndex] = useState<number | null>(null)
+  const [apiIndex, setApiIndex] = useState<number | null>(null)
+  // §8.5 窄屏一次展示一个模型列，顶部 Tab 切换；宽屏 CSS 直接把 tab 隐藏，不影响并排布局
+  const [activeColumnIndex, setActiveColumnIndex] = useState(0)
+
+  // §7.4/7.5 共享附件入口（qa#545）：同步态用这一份，独立态每列各自一份（见下方
+  // columnAttachments，qa#553 补齐 AC-07/AC-08 缺口）。每轮最多一个附件，纯页面内
+  // 临时态，不需要跨路由持久化。
+  const [attachment, setAttachment] = useState<{ file: File; previewUrl: string; uploaded: ExperienceAttachment } | null>(null)
+  const [attachmentUploading, setAttachmentUploading] = useState(false)
+  const [attachmentError, setAttachmentError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 独立输入模式每列各自的附件（PRD §AC-07「每列有独立输入区和当前模型可用的附件入口」）。
+  // 按 conversationId 而非数组下标存——加/删列时下标会重排，conversationId 在列的生命周期内稳定。
+  const [columnAttachments, setColumnAttachments] = useState<Record<string, { file: File; previewUrl: string; uploaded: ExperienceAttachment }>>({})
+  const [columnAttachmentUploading, setColumnAttachmentUploading] = useState<Record<string, boolean>>({})
+  const [columnAttachmentErrors, setColumnAttachmentErrors] = useState<Record<string, string>>({})
+  const columnFileInputRef = useRef<HTMLInputElement>(null)
+  const pendingAttachmentColumnRef = useRef<number | null>(null)
+
+  const abortRefs = useRef<Array<AbortController | null>>([])
+  const pendingByDispatch = useRef<Map<string, number>>(new Map())
+  const bootedRef = useRef(false)
+
+  // 进入对比页即代表已经从 1→N 模型；自动收起一次 Console 侧栏（幂等，重复调用不覆盖已记录的偏好）
   useEffect(() => {
-    const controllers = abortRefs.current
-    return () => controllers.forEach((c) => c?.abort())
+    collapseForCompare()
+    return () => restoreSavedPreference()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // 输入变化：同步开启时镜像到全部槽位，否则只改当前槽位
-  const handleInputChange = (idx: number, value: string) => {
-    setChatInputs((prev) => (syncInput ? prev.map(() => value) : prev.map((v, i) => (i === idx ? value : v))))
-  }
+  // 建会话：只在首次拿到 selectedIds + 目录加载完成时建一次
+  useEffect(() => {
+    if (bootedRef.current) return
+    const ids = (location.state as { selectedIds?: string[] } | null)?.selectedIds
+    if (!ids || ids.length < 2 || allModels.length === 0) return
+    bootedRef.current = true
+    const resolved = ids.slice(0, MAX_COMPARE).map((id) => allModels.find((m) => m.id === id)).filter((m): m is CatalogModelItem => !!m)
+    if (resolved.length < 2) {
+      setBootError(t('modelsExperience.compare.modelsNotFound'))
+      return
+    }
+    void bootSession(resolved)
+    navigate(location.pathname, { replace: true, state: {} })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allModels])
 
-  const setSlotStreaming = (idx: number, value: boolean) =>
-    setStreaming((prev) => prev.map((s, i) => (i === idx ? value : s)))
+  useEffect(() => () => abortRefs.current.forEach((c) => c?.abort()), [])
 
-  // 更新某槽位最后一条 assistant 消息（流式增量 / 元信息 / 错误文案）
-  const applyAssistant = (idx: number, updater: (content: string) => string, meta?: string) => {
-    setHistories((prev) =>
-      prev.map((history, i) => {
-        if (i !== idx) return history
-        const next = [...history]
-        const last = next[next.length - 1]
-        if (last?.role === 'assistant') {
-          next[next.length - 1] = { ...last, content: updater(last.content), ...(meta ? { meta } : {}) }
-        }
-        return next
-      })
-    )
-  }
+  // 列数变化（加/移除模型）后夹紧窄屏 Tab 的激活列，避免越界指向已不存在的列
+  useEffect(() => {
+    if (columns && activeColumnIndex >= columns.length) setActiveColumnIndex(0)
+  }, [columns, activeColumnIndex])
 
-  // 向单个槽位发起真实体验对话流（POST /api/v1/experience/chat/completions）
-  const streamOne = async (idx: number, prompt: string) => {
-    const model = slots[idx]
-    if (!model || streaming[idx]) return
+  useEffect(() => {
+    if (!historyCollapsed) void refreshHistorySessions()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyCollapsed])
 
-    // 该槽位既有历史（仅 role/content）+ 本次输入 → 上游对话上下文
-    const requestMessages = [
-      ...histories[idx].map(({ role, content }) => ({ role, content })),
-      { role: 'user' as const, content: prompt },
-    ]
-
-    setHistories((prev) =>
-      prev.map((history, i) =>
-        i === idx ? [...history, { role: 'user', content: prompt }, { role: 'assistant', content: '' }] : history
+  /** 拉取真实历史会话列表供侧栏展示，映射逻辑与单模型页一致（qa#546）。
+   *  GET /experience/sessions 列表响应改用轻量 models 字段，不带 conversations（qa#535 已修复）。 */
+  async function refreshHistorySessions() {
+    try {
+      const { items } = await listExperienceSessions({ limit: 20, offset: 0 })
+      setHistorySessions(
+        items.map((session) => ({
+          id: session.id,
+          name: session.name,
+          updatedAt: session.updated_at,
+          category: (session.category as HistorySessionItem['category']) ?? 'dialogue',
+          task: experienceTaskLabel(session.task as Parameters<typeof experienceTaskLabel>[0]) ?? session.task,
+          models: session.models
+            ? session.models.map((modelId) => {
+                const catalogModel = allModels.find((m) => m.model_id === modelId)
+                return {
+                  id: modelId,
+                  name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id) : modelId,
+                  offline: !catalogModel,
+                }
+              })
+            : (session.conversations ?? [])
+                .slice()
+                .sort((a, b) => a.position - b.position)
+                .map((conv) => {
+                  const catalogModel = allModels.find((m) => m.model_id === conv.model_id)
+                  return {
+                    id: conv.model_id,
+                    name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id) : conv.model_id,
+                    offline: !catalogModel,
+                  }
+                }),
+        })),
       )
+    } catch {
+      // 历史列表拉取失败不阻塞主流程，侧栏保持空态
+    }
+  }
+
+  /** 双击重命名（HistorySessionSidebar）：乐观更新 + 失败回滚，name 传空串会清空标题交回自动命名 */
+  async function renameHistorySession(id: string, name: string) {
+    const prev = historySessions
+    setHistorySessions((cur) => cur.map((s) => (s.id === id ? { ...s, name } : s)))
+    try {
+      await renameExperienceSession(id, name)
+    } catch {
+      setHistorySessions(prev)
+      appToast.error(t('modelsExperience.historySidebar.renameError'))
+    }
+  }
+
+  /**
+   * §7.8 对比页历史恢复：GET .../messages 是 session 粒度，单条消息自带 conversation_id，
+   * 按它分组即可还原成每列各自的 history，不需要逐 conversation 再分别调接口。
+   * conversations 组合要拿真实模型 id，走 GET 详情接口（列表响应不带 conversations）。
+   */
+  async function openHistorySession(id: string) {
+    if (!id) return
+    try {
+      const [detail, { items: msgItems }] = await Promise.all([
+        getExperienceSession(id),
+        getExperienceSessionMessages(id),
+      ])
+      const convs = (detail.conversations ?? []).slice().sort((a, b) => a.position - b.position)
+      if (convs.length === 0) throw new Error(t('modelsExperience.compare.noRestorableColumns'))
+      const byConv = new Map<string, ExperienceMessageView[]>()
+      for (const msg of msgItems) {
+        const list = byConv.get(msg.conversation_id) ?? []
+        list.push(msg)
+        byConv.set(msg.conversation_id, list)
+      }
+      const nextColumns: ColumnState[] = convs.map((conv) => {
+        const model = allModels.find((m) => m.model_id === conv.model_id) ?? offlineModelPlaceholder(conv.model_id)
+        const convMessages = (byConv.get(conv.id) ?? []).slice().sort((a, b) => a.seq - b.seq)
+        const history: ExperienceMessage[] = convMessages.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+          error: msg.status === 'failed' ? cleanErrorMessage(msg.error) : undefined,
+        }))
+        return { model, conversationId: conv.id, history, streaming: false, draft: '', chatParams: {} }
+      })
+      bootedRef.current = true
+      abortRefs.current = nextColumns.map(() => null)
+      setActiveColumnIndex(0)
+      setLastFocusedIndex(0)
+      setSharedDraft('')
+      setSessionId(id)
+      setColumns(nextColumns)
+      setSessionStats({ requestCount: 0, tokens: 0, cost: 0 })
+      setBootError(null)
+      setHistoryActionError(null)
+      trackEvent('playground_history_action', { action: 'restore' }, { result: 'success' })
+    } catch (err) {
+      trackEvent('playground_history_action', { action: 'restore' }, { result: 'fail' })
+      setHistoryActionError(`${t('modelsExperience.historyLoadFailed')}${(err as Error).message || t('modelsExperience.retryLater')}`)
+    }
+  }
+
+  /** §7.8 新建会话：对比页本身没有内嵌的"选模型"态（一直要求带 selectedIds 进场），
+   *  退回单模型页重新走"选模型 → 模型对比"的标准入口，跟移除至单模型/退出对比同一归宿。 */
+  function startNewSession() {
+    bootedRef.current = false
+    setSessionId(null)
+    setColumns(null)
+    setSessionStats({ requestCount: 0, tokens: 0, cost: 0 })
+    setHistoryActionError(null)
+    restoreSavedPreference()
+    navigate('/models/playground')
+  }
+
+  async function bootSession(models: CatalogModelItem[]) {
+    try {
+      // qa#543：按首个模型推断一级类别（同组模型类别一致，picker 已保证），媒体类无附件
+      // 场景下用该类别默认任务；对话类维持原 text_to_text
+      const category = resolveModelCategory(models[0])
+      const task = EXPERIENCE_CATEGORY_DEFAULT_TASK[category]
+      const session = await createExperienceSession({
+        // name 传空串：后端会在首条用户提问落库时用其前 15 字自动生成标题，
+        // 传非空值会被判定为「已显式命名」，反而挡住自动标题
+        name: '',
+        category,
+        task,
+        input_mode: syncInput ? 'sync' : 'independent',
+        models: models.map((m) => m.model_id),
+      })
+      const convs = (session.conversations ?? []).slice().sort((a, b) => a.position - b.position)
+      const nextColumns: ColumnState[] = models.map((model, idx) => ({
+        model,
+        conversationId: convs[idx]?.id ?? '',
+        history: [],
+        streaming: false,
+        draft: '',
+        chatParams: {},
+      }))
+      abortRefs.current = nextColumns.map(() => null)
+      setSessionId(session.id)
+      setColumns(nextColumns)
+      setBootError(null)
+    } catch (err) {
+      setBootError(`${t('modelsExperience.compare.createSessionFailed')}${(err as Error).message || t('modelsExperience.retryLater')}`)
+    }
+  }
+
+  function updateColumn(idx: number, patch: Partial<ColumnState>) {
+    setColumns((prev) => (prev ? prev.map((c, i) => (i === idx ? { ...c, ...patch } : c)) : prev))
+  }
+
+  function applyAssistant(idx: number, updater: (content: string) => string) {
+    setColumns((prev) =>
+      prev
+        ? prev.map((c, i) => {
+            if (i !== idx) return c
+            const next = [...c.history]
+            const last = next[next.length - 1]
+            if (last?.role === 'assistant') next[next.length - 1] = { ...last, content: updater(last.content) }
+            return { ...c, history: next }
+          })
+        : prev,
     )
-    setSlotStreaming(idx, true)
+  }
+
+  /** 单列发送——按该列模型的一级类别分叉（§6.2/§7.3/§7.9）：对话类走 SSE 流式，
+   *  图像/音频类走同步媒体调用，视频类同步下发后转异步轮询。sync 模式下多列共用同一个
+   *  dispatchId，用于事后计算最快/成本最低。 */
+  async function sendOne(idx: number, prompt: string, dispatchId: string, attachment?: DispatchAttachment) {
+    if (!columns) return
+    const column = columns[idx]
+    if (!column || column.streaming || !prompt) return
+    const category = resolveModelCategory(column.model)
+    if (category === 'dialogue') {
+      await sendDialogueOne(idx, prompt, dispatchId, attachment)
+    } else {
+      await sendMediaOne(idx, prompt, dispatchId, attachment)
+    }
+  }
+
+  async function sendDialogueOne(idx: number, prompt: string, dispatchId: string, attachment?: DispatchAttachment) {
+    const column = columns![idx]
+    updateColumn(idx, {
+      streaming: true,
+      history: [...column.history, { role: 'user', content: prompt, dispatchId, media: attachment?.media }, { role: 'assistant', content: '', dispatchId }],
+    })
     abortRefs.current[idx]?.abort()
     const controller = new AbortController()
     abortRefs.current[idx] = controller
     const startedAt = Date.now()
+    let stats: ExperienceStatsEvent | null = null
 
     try {
-      await streamExperienceChat({
-        model: model.model_id,
-        messages: requestMessages,
+      const reply = await streamExperienceMessage({
+        conversationId: column.conversationId,
+        dispatchId,
+        content: prompt,
+        attachments: attachment?.resourceIds ?? [],
         signal: controller.signal,
         onDelta: (delta) => applyAssistant(idx, (content) => content + delta),
+        onStats: (event) => { stats = event },
       })
-      const seconds = ((Date.now() - startedAt) / 1000).toFixed(1)
-      applyAssistant(idx, (content) => content, `延迟 ${seconds}s · 预估成本 ${formatPrice(model.pricing?.output_per_1m)} / 1M`)
+      const modelLabel = prettyModelName(column.model.display_name, column.model.model_id)
+      const hasStats = stats !== null
+      const s = stats as ExperienceStatsEvent | null
+      const totalMs = hasStats ? s!.total_ms : Date.now() - startedAt
+      const inputTokens = hasStats ? s!.input_tokens : estimateTokens(prompt)
+      const outputTokens = hasStats ? s!.output_tokens : estimateTokens(reply)
+      const spend = hasStats ? Number(s!.actual_spend ?? s!.estimated_spend ?? 0) : 0
+      const free = hasStats ? s!.free : (!Number(column.model.pricing?.input_per_1m ?? 0) && !Number(column.model.pricing?.output_per_1m ?? 0))
+      const firstTokenMs = hasStats ? s!.first_token_ms : totalMs
+      setColumns((prev) =>
+        prev
+          ? prev.map((c, i) => {
+              if (i !== idx) return c
+              const next = [...c.history]
+              const last = next[next.length - 1]
+              if (last?.role === 'assistant') {
+                next[next.length - 1] = {
+                  ...last,
+                  metrics: {
+                    model: modelLabel,
+                    inputTokens,
+                    outputTokens,
+                    firstTokenLatency: formatPlaygroundLatency(firstTokenMs),
+                    totalLatency: formatPlaygroundLatency(totalMs),
+                    spend,
+                    free,
+                    totalMs,
+                  },
+                }
+              }
+              return { ...c, history: next }
+            })
+          : prev,
+      )
+      trackEvent('playground_model_run_result', {
+        model_id: column.model.model_id,
+        status: 'succeeded',
+        latency_bucket: latencyBucket(totalMs),
+        token_bucket: tokenBucket(inputTokens + outputTokens),
+        billing_status: free ? 'free' : 'billed',
+      }, { result: 'success' })
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
-      applyAssistant(idx, (content) => content || `体验请求失败：${(err as Error).message || '请稍后重试'}`)
+      const errorCode = (err as { data?: { code?: string } } | undefined)?.data?.code
+      setColumns((prev) =>
+        prev
+          ? prev.map((c, i) => {
+              if (i !== idx) return c
+              const next = [...c.history]
+              const last = next[next.length - 1]
+              if (last?.role === 'assistant') next[next.length - 1] = { ...last, error: `${t('modelsExperience.requestFailed')}${(err as Error).message || t('modelsExperience.retryLater')}` }
+              return { ...c, history: next }
+            })
+          : prev,
+      )
+      trackEvent('playground_model_run_result', {
+        model_id: column.model.model_id,
+        status: 'failed',
+        latency_bucket: latencyBucket(Date.now() - startedAt),
+        token_bucket: tokenBucket(0),
+        billing_status: 'unbilled',
+      }, { result: 'fail', error_code: errorCode })
     } finally {
-      setSlotStreaming(idx, false)
+      updateColumn(idx, { streaming: false })
+      settleDispatch(dispatchId)
     }
   }
 
-  // 从某个槽位发送：同步开启 → 同一 prompt 并行分发给所有已选模型；否则只发该模型
-  const handleSendFrom = (idx: number) => {
-    const prompt = chatInputs[idx].trim()
-    if (!prompt) return
+  /** 图像/音频/视频类列发送（§5.2 同步 JSON / §5.3-5.4 视频异步轮询），qa#543/qa#545。
+   *  不带附件时走各类别默认任务（text_to_image/text_to_audio/text_to_video）；带附件时
+   *  仍然只传 attachments，task 在会话创建时已固定，后端按实际是否带附件处理。 */
+  async function sendMediaOne(idx: number, prompt: string, dispatchId: string, attachment?: DispatchAttachment) {
+    const column = columns![idx]
+    const modelLabel = prettyModelName(column.model.display_name, column.model.model_id)
+    updateColumn(idx, {
+      streaming: true,
+      history: [
+        ...column.history,
+        { role: 'user', content: prompt, dispatchId, media: attachment?.media, attachmentResourceIds: attachment?.resourceIds },
+        { role: 'assistant', content: '', dispatchId },
+      ],
+    })
+    const startedAt = Date.now()
+    let isAsyncVideo = false
 
-    if (syncInput) {
-      slots.forEach((model, i) => {
-        if (model) void streamOne(i, prompt)
+    try {
+      const { message, attachment_urls } = await sendExperienceMediaMessage({
+        conversationId: column.conversationId,
+        dispatchId,
+        content: prompt,
+        attachments: attachment?.resourceIds ?? [],
       })
-      setChatInputs(['', '', ''])
-    } else {
-      if (!slots[idx]) return
-      void streamOne(idx, prompt)
-      setChatInputs((prev) => prev.map((v, i) => (i === idx ? '' : v)))
+
+      if (message.status === 'running' && message.async_task_id) {
+        isAsyncVideo = true
+        applyAssistant(idx, () => `${t('modelsExperience.videoGenerating')}[${t('modelsExperience.videoGeneratingLink')}](/logs?task_id=${encodeURIComponent(message.async_task_id!)})…`)
+        void pollVideoColumn(idx, column.conversationId, message.id, modelLabel, dispatchId)
+        return
+      }
+
+      const media = message.attachments.map((a) => ({ kind: a.kind, url: attachment_urls[a.resource_id] ?? '' }))
+      const spend = Number(message.actual_spend ?? 0)
+      const totalMs = message.total_ms ?? Date.now() - startedAt
+      setColumns((prev) =>
+        prev
+          ? prev.map((c, i) => {
+              if (i !== idx) return c
+              const next = [...c.history]
+              const last = next[next.length - 1]
+              if (last?.role === 'assistant') {
+                next[next.length - 1] = {
+                  ...last,
+                  content: message.content,
+                  media: media.length > 0 ? media : undefined,
+                  error: message.status === 'failed' ? (message.content ? undefined : t('modelsExperience.modelRunFailed')) : undefined,
+                  metrics: {
+                    model: modelLabel, inputTokens: 0, outputTokens: 0, firstTokenLatency: '',
+                    totalLatency: formatPlaygroundLatency(totalMs), spend, free: spend === 0, totalMs,
+                  },
+                }
+              }
+              return { ...c, history: next }
+            })
+          : prev,
+      )
+      trackEvent('playground_model_run_result', {
+        model_id: column.model.model_id,
+        status: message.status === 'failed' ? 'failed' : 'succeeded',
+        latency_bucket: latencyBucket(totalMs),
+        token_bucket: tokenBucket(0),
+        billing_status: spend === 0 ? 'free' : 'billed',
+      }, { result: message.status === 'failed' ? 'fail' : 'success' })
+    } catch (err) {
+      const message = `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}`
+      setColumns((prev) =>
+        prev
+          ? prev.map((c, i) => {
+              if (i !== idx) return c
+              const next = [...c.history]
+              const last = next[next.length - 1]
+              if (last?.role === 'assistant') next[next.length - 1] = { ...last, error: message }
+              return { ...c, history: next }
+            })
+          : prev,
+      )
+      const errorCode = (err as { data?: { field_errors?: Array<{ code?: string }> } } | undefined)?.data?.field_errors?.[0]?.code
+      trackEvent('playground_model_run_result', {
+        model_id: column.model.model_id,
+        status: 'failed',
+        latency_bucket: latencyBucket(Date.now() - startedAt),
+        token_bucket: tokenBucket(0),
+        billing_status: 'unbilled',
+      }, { result: 'fail', error_code: errorCode })
+    } finally {
+      updateColumn(idx, { streaming: false })
+      // 视频异步分支的 dispatch 结算延后到 pollVideoColumn 轮询终态，这里不提前计入
+      if (!isAsyncVideo) settleDispatch(dispatchId)
     }
   }
 
-  const handleClearChat = () => {
-    abortRefs.current.forEach((c) => c?.abort())
-    setStreaming([false, false, false])
-    setHistories([[], [], []])
+  /** 视频列异步轮询（§5.4）：running 继续轮询，succeeded/failed 为终态。每列各自独立的
+   *  轮询循环，互不阻塞——多列视频任务同时进行时各自按自己的节奏完成。 */
+  async function pollVideoColumn(idx: number, conversationId: string, messageId: string, modelLabel: string, dispatchId: string) {
+    for (;;) {
+      await new Promise((resolve) => window.setTimeout(resolve, 5000))
+      try {
+        const { message, attachment_urls } = await getExperienceMessage(conversationId, messageId)
+        if (message.status === 'running') continue
+        setColumns((prev) => {
+          if (!prev) return prev
+          return prev.map((c, i) => {
+            if (i !== idx) return c
+            const next = [...c.history]
+            const last = next[next.length - 1]
+            if (last?.role !== 'assistant') return c
+            if (message.status === 'failed') {
+              next[next.length - 1] = { ...last, error: message.error || t('modelsExperience.videoGenerateFailed'), content: '' }
+              return { ...c, history: next }
+            }
+            const media = message.attachments.map((a) => ({ kind: a.kind, url: attachment_urls[a.resource_id] ?? '' }))
+            next[next.length - 1] = {
+              ...last,
+              content: '',
+              media: media.length > 0 ? media : undefined,
+              metrics: {
+                model: modelLabel, inputTokens: 0, outputTokens: 0, firstTokenLatency: '',
+                totalLatency: formatPlaygroundLatency(message.total_ms ?? 0),
+                spend: Number(message.actual_spend ?? 0), free: Number(message.actual_spend ?? 0) === 0,
+                totalMs: message.total_ms,
+              },
+            }
+            return { ...c, history: next }
+          })
+        })
+        trackEvent('playground_model_run_result', {
+          model_id: columns?.[idx]?.model.model_id ?? '',
+          status: message.status === 'failed' ? 'failed' : 'succeeded',
+          latency_bucket: latencyBucket(message.total_ms ?? 0),
+          token_bucket: tokenBucket(0),
+          billing_status: Number(message.actual_spend ?? 0) === 0 ? 'free' : 'billed',
+        }, { result: message.status === 'failed' ? 'fail' : 'success' })
+        settleDispatch(dispatchId)
+        return
+      } catch {
+        // 单次轮询失败不放弃，继续等下一轮（同单模型页 §8.3：保留最后已知状态，允许稍后重试）
+      }
+    }
   }
 
-  const setSlot = (idx: number, m: CatalogModelItem | null) => {
-    setSlots((prev) => prev.map((s, i) => (i === idx ? m : s)))
+  /** dispatch 组内所有列都完成后，计算最快/成本最低标记（§7.10） */
+  function settleDispatch(dispatchId: string) {
+    const remaining = (pendingByDispatch.current.get(dispatchId) ?? 1) - 1
+    pendingByDispatch.current.set(dispatchId, remaining)
+    if (remaining > 0) return
+    setColumns((prev) => {
+      if (!prev) return prev
+      const rounds = prev
+        .map((c, i) => ({ i, msg: c.history.find((m) => m.dispatchId === dispatchId && m.role === 'assistant' && m.metrics) }))
+        .filter((r): r is { i: number; msg: ExperienceMessage } => !!r.msg)
+      if (rounds.length < 2) return prev
+      const fastestIdx = rounds.reduce((best, r) => ((r.msg.metrics!.totalMs ?? Infinity) < (rounds[best].msg.metrics!.totalMs ?? Infinity) ? rounds.indexOf(r) : best), 0)
+      const cheapestIdx = rounds.reduce((best, r) => (r.msg.metrics!.spend < rounds[best].msg.metrics!.spend ? rounds.indexOf(r) : best), 0)
+      return prev.map((c, i) => {
+        const round = rounds.find((r) => r.i === i)
+        if (!round) return c
+        const isFastest = rounds.indexOf(round) === fastestIdx
+        const isCheapest = rounds.indexOf(round) === cheapestIdx
+        return {
+          ...c,
+          history: c.history.map((m) =>
+            m === round.msg ? { ...m, metrics: { ...m.metrics!, fastest: isFastest, cheapest: isCheapest } } : m,
+          ),
+        }
+      })
+    })
   }
 
-  const setSearch = (idx: number, v: string) => {
-    setSearches((prev) => prev.map((s, i) => (i === idx ? v : s)))
+  /** §7.4/7.5 差异分发（qa#545）：附件只发给该列模型支持该附件类型的列，不支持的列仍然
+   *  发送纯文本 prompt（不带附件、不整列跳过）——PRD 原型 playground-attachment-compatibility
+   *  弹窗的文案"发送时仍会同时调用全部模型"逐字对应这个默认行为。 */
+  function handleSyncSend() {
+    const prompt = sharedDraft.trim()
+    if (!prompt || !columns) return
+    // 下线模型不参与共享发送（PRD §AC-18：无发送按钮/不可发送），只统计在线列
+    const onlineIndexes = columns.reduce<number[]>((acc, c, idx) => {
+      if (!isOfflineModel(c.model)) acc.push(idx)
+      return acc
+    }, [])
+    if (onlineIndexes.length === 0) return
+    if (isBalanceZero && columns.some((c, idx) => onlineIndexes.includes(idx) && isPaidModel(c.model))) return
+    const dispatchId = crypto.randomUUID()
+    pendingByDispatch.current.set(dispatchId, onlineIndexes.length)
+    const currentAttachment = attachment
+    const attachedKind = currentAttachment ? attachmentKindFromMime(currentAttachment.uploaded.mime) : null
+    const supportingCount = currentAttachment && attachedKind
+      ? columns.filter((c) => modelSupportsAttachment(c.model, attachedKind)).length
+      : 0
+    trackEvent('playground_send', {
+      dispatch_id_hash: hashId(dispatchId),
+      attachment_kind_set: attachedKind ?? 'none',
+      eligible_column_count: onlineIndexes.length,
+      attachment_recipient_count: supportingCount,
+    })
+    setSharedDraft('')
+    clearAttachment()
+    onlineIndexes.forEach((idx) => {
+      const c = columns[idx]
+      const supports = currentAttachment && attachedKind ? modelSupportsAttachment(c.model, attachedKind) : false
+      const dispatchAttachment: DispatchAttachment | undefined = supports && currentAttachment
+        ? {
+            resourceIds: [currentAttachment.uploaded.resource_id],
+            media: [{ kind: attachedKind ?? 'image', url: currentAttachment.previewUrl }],
+          }
+        : undefined
+      void sendOne(idx, prompt, dispatchId, dispatchAttachment)
+    })
   }
 
-  const selectedModels = slots.filter((s): s is CatalogModelItem => s !== null)
-  const hasAny = selectedModels.length > 0
+  function handleIndependentSend(idx: number) {
+    if (!columns) return
+    const prompt = columns[idx].draft.trim()
+    if (!prompt) return
+    if (isBalanceZero && isPaidModel(columns[idx].model)) return
+    const conversationId = columns[idx].conversationId
+    const colAttachment = columnAttachments[conversationId]
+    const attachedKind = colAttachment ? attachmentKindFromMime(colAttachment.uploaded.mime) : null
+    const dispatchId = crypto.randomUUID()
+    pendingByDispatch.current.set(dispatchId, 1)
+    trackEvent('playground_send', {
+      dispatch_id_hash: hashId(dispatchId),
+      attachment_kind_set: attachedKind ?? 'none',
+      eligible_column_count: 1,
+      attachment_recipient_count: colAttachment ? 1 : 0,
+    })
+    updateColumn(idx, { draft: '' })
+    const dispatchAttachment: DispatchAttachment | undefined = colAttachment
+      ? { resourceIds: [colAttachment.uploaded.resource_id], media: [{ kind: attachedKind ?? 'image', url: colAttachment.previewUrl }] }
+      : undefined
+    clearColumnAttachment(conversationId)
+    void sendOne(idx, prompt, dispatchId, dispatchAttachment)
+  }
 
+  /** 媒体结果失败重试（PRD §AC-13）：原样复用失败那条用户消息的文本与附件 resource_id */
+  function retryMediaMessage(idx: number, userMessage: ExperienceMessage) {
+    if (!columns || !userMessage.content || columns[idx]?.streaming) return
+    if (isBalanceZero && isPaidModel(columns[idx].model)) return
+    const dispatchId = crypto.randomUUID()
+    void sendOne(idx, userMessage.content, dispatchId, {
+      resourceIds: userMessage.attachmentResourceIds ?? [],
+      media: userMessage.media,
+    })
+  }
 
-  const ROWS: Array<{ labelKey: string; key: keyof CatalogModelItem | 'pricing_input' | 'pricing_output' | 'pricing_cache' }> = [
-    { labelKey: 'modelsCompare.row.contextLength', key: 'context_length' },
-    { labelKey: 'modelsCompare.row.maxOutput', key: 'max_output_tokens' },
-    { labelKey: 'modelsCompare.row.modalities', key: 'modalities' },
-    { labelKey: 'modelsCompare.row.releasedAt', key: 'released_at' },
-    { labelKey: 'modelsCompare.row.knowledgeCutoff', key: 'knowledge_cutoff' },
-    { labelKey: 'modelsCompare.row.inputPrice', key: 'pricing_input' },
-    { labelKey: 'modelsCompare.row.outputPrice', key: 'pricing_output' },
-    { labelKey: 'modelsCompare.row.cachePrice', key: 'pricing_cache' },
-    { labelKey: 'modelsCompare.row.providersCount', key: 'providers_count' },
-    { labelKey: 'modelsCompare.row.zeroDataRetention', key: 'zero_data_retention' },
-    { labelKey: 'modelsCompare.row.inRegionRouting', key: 'in_region_routing' },
-    { labelKey: 'modelsCompare.row.tags', key: 'tags' },
-  ]
+  /** §7.4：独立→同步，若各列草稿不一致需要确认；一致则直接切换不打扰用户。
+   *  切到同步后各列独立附件没有对应的"合并成一个共享附件"语义，清空（用户需要的话
+   *  在共享入口重新上传）；切回独立时反过来——共享附件按兼容性下放到各列（AC-07）。 */
+  function handleToggleSync(next: boolean) {
+    if (!columns) return
+    if (next) {
+      const source = columns[lastFocusedIndex] ?? columns[0]
+      const allSame = columns.every((c) => c.draft === source.draft)
+      const sourceHasAttachment = Boolean(columnAttachments[source.conversationId])
+      Object.keys(columnAttachments).forEach((conversationId) => clearColumnAttachment(conversationId))
+      if (allSame) {
+        setSharedDraft(source.draft)
+        setSyncInput(true)
+        trackEvent('playground_input_mode_change', {
+          from_mode: 'independent', to_mode: 'sync', requires_confirmation: false,
+          source_has_attachment: sourceHasAttachment, attachment_recipient_count: 0,
+        }, { result: 'success' })
+        return
+      }
+      setSyncConfirm({ sourceIndex: lastFocusedIndex, sourceText: source.draft })
+      trackEvent('playground_input_mode_change', {
+        from_mode: 'independent', to_mode: 'sync', requires_confirmation: true,
+        source_has_attachment: sourceHasAttachment, attachment_recipient_count: 0,
+      })
+      return
+    }
+    // 同步→独立：文本复制到每列草稿；共享附件按兼容性下放到支持的列（AC-07「保留兼容附件」）
+    setColumns((prev) => (prev ? prev.map((c) => ({ ...c, draft: sharedDraft })) : prev))
+    let recipientCount = 0
+    if (attachment && columns) {
+      const kind = attachmentKindFromMime(attachment.uploaded.mime)
+      if (kind) {
+        const seeded = attachment
+        setColumnAttachments((prevMap) => {
+          const next = { ...prevMap }
+          columns.forEach((c) => {
+            if (modelSupportsAttachment(c.model, kind)) {
+              next[c.conversationId] = seeded
+              recipientCount += 1
+            }
+          })
+          return next
+        })
+      }
+      clearAttachment()
+    }
+    setSyncInput(false)
+    trackEvent('playground_input_mode_change', {
+      from_mode: 'sync', to_mode: 'independent', requires_confirmation: false,
+      source_has_attachment: Boolean(attachment), attachment_recipient_count: recipientCount,
+    }, { result: 'success' })
+  }
+
+  function confirmSyncSwitch() {
+    if (!syncConfirm) return
+    setSharedDraft(syncConfirm.sourceText)
+    setSyncInput(true)
+    setSyncConfirm(null)
+    trackEvent('playground_input_mode_change', {
+      from_mode: 'independent', to_mode: 'sync', requires_confirmation: true,
+      source_has_attachment: false, attachment_recipient_count: 0,
+    }, { result: 'success' })
+  }
+
+  async function handleRemoveConfirmed() {
+    if (removeConfirmIndex === null || !columns || !sessionId) return
+    const target = columns[removeConfirmIndex]
+    trackEvent('playground_model_remove', { model_id: target.model.model_id, action: 'confirm' })
+    if (columns.length <= 2) {
+      // §7.3：移除至单模型按退出对比同样规则处理——保留最左侧主模型，恢复侧栏
+      const keep = columns[0].model.model_id === target.model.model_id ? columns[1].model : columns[0].model
+      try {
+        await removeExperienceConversation(sessionId, target.conversationId)
+      } catch {
+        // 真实删列失败也不阻塞回退到单模型页——用户的主要诉求是离开对比
+      }
+      restoreSavedPreference()
+      navigate('/models/playground', { state: { selectedModelId: keep.model_id } })
+      return
+    }
+    try {
+      await removeExperienceConversation(sessionId, target.conversationId)
+      setColumns((prev) => (prev ? prev.filter((_, i) => i !== removeConfirmIndex) : prev))
+      setRemoveConfirmIndex(null)
+    } catch (err) {
+      setBootError(`${t('modelsExperience.compare.removeModelFailed')}${(err as Error).message || t('modelsExperience.retryLater')}`)
+    }
+  }
+
+  function handleExitConfirmed() {
+    if (!columns) return
+    restoreSavedPreference()
+    navigate('/models/playground', { state: { selectedModelId: columns[0].model.model_id } })
+  }
+
+  /** §7.3：加模型——调真实加列端点，只追加新列，不影响已有列的对话历史 */
+  async function handleAddConfirm(added: CatalogModelItem[]) {
+    if (!columns || !sessionId || added.length === 0) return
+    try {
+      const toAdd = added.slice(0, MAX_COMPARE - columns.length)
+      const baseCount = columns.length
+      const newConversations = await Promise.all(toAdd.map((model) => addExperienceConversation(sessionId, model.model_id)))
+      setColumns((prev) => {
+        if (!prev) return prev
+        const newColumns: ColumnState[] = toAdd.map((model, i) => ({
+          model,
+          conversationId: newConversations[i].id,
+          history: [],
+          streaming: false,
+          draft: '',
+          chatParams: {},
+        }))
+        abortRefs.current = [...abortRefs.current, ...newColumns.map(() => null)]
+        return [...prev, ...newColumns]
+      })
+      toAdd.forEach((model, i) => {
+        trackEvent('playground_model_add', { model_id: model.model_id, next_count: baseCount + i + 1 })
+      })
+    } catch (err) {
+      setBootError(`${t('modelsExperience.compare.addModelFailed')}${(err as Error).message || t('modelsExperience.retryLater')}`)
+    }
+  }
+
+  /** §7.1：对比列内切换模型——调真实换模型端点，保留该列聊天记录（接口原文"保留列内历史"） */
+  async function handleSwitchConfirm(model: CatalogModelItem) {
+    if (switchPickerIndex === null || !columns || !sessionId) return
+    const target = columns[switchPickerIndex]
+    try {
+      await switchExperienceConversationModel(sessionId, target.conversationId, model.model_id)
+      updateColumn(switchPickerIndex, { model, chatParams: {} })
+      trackEvent('playground_model_select', { from_model_id: target.model.model_id, to_model_id: model.model_id }, { result: 'success' })
+    } catch (err) {
+      setBootError(`${t('modelsExperience.compare.switchModelFailed')}${(err as Error).message || t('modelsExperience.retryLater')}`)
+      trackEvent('playground_model_select', { from_model_id: target.model.model_id, to_model_id: model.model_id }, { result: 'fail' })
+    }
+  }
+
+  /** 打开设置弹窗：拉取该列模型已持久化的配置 + 本会话累计统计（真实端点见 Swagger） */
+  async function openColumnSettings(idx: number) {
+    trackEvent('playground_settings_action', { action: 'open' })
+    setSettingsIndex(idx)
+    if (!sessionId || !columns) return
+    const model = columns[idx].model
+    try {
+      const [{ items: configs }, { items: stats }] = await Promise.all([
+        listExperienceModelConfigs(sessionId),
+        getExperienceSessionStats(sessionId),
+      ])
+      const savedConfig = configs.find((c) => matchesModelConfigId(c.model_id, model.model_id))
+      if (savedConfig) updateColumn(idx, { chatParams: savedConfig.config })
+      const modelStats = stats.find((s) => s.model_id === model.model_id)
+      if (modelStats) {
+        setSessionStats({
+          requestCount: modelStats.requests,
+          tokens: modelStats.total_tokens,
+          cost: Number(modelStats.actual_spend ?? modelStats.estimated_spend ?? 0),
+        })
+      }
+    } catch {
+      // 拉取失败不阻塞设置弹窗使用
+    }
+  }
+
+  function handleColumnParamChange(idx: number, key: string, value: unknown) {
+    if (!columns) return
+    trackEvent('playground_settings_action', { action: 'modify', parameter_name: key })
+    const next = { ...columns[idx].chatParams, [key]: value }
+    updateColumn(idx, { chatParams: next })
+    if (sessionId) void saveExperienceModelConfig(sessionId, columns[idx].model.model_id, next)
+  }
+
+  function handleColumnParamReset(idx: number) {
+    if (!columns) return
+    trackEvent('playground_settings_action', { action: 'reset' })
+    updateColumn(idx, { chatParams: {} })
+    if (sessionId) void resetExperienceModelConfig(sessionId, columns[idx].model.model_id)
+  }
+
+  if (bootError) {
+    return (
+      <div className="models-experience-page">
+        <PageHeader title={t('modelsExperience.compare.pageTitle')} description={bootError} className="mb-4" />
+        <Button variant="brand" onClick={() => navigate('/models/playground')}>{t('modelsExperience.compare.backToExperience')}</Button>
+      </div>
+    )
+  }
+
+  if (!columns) {
+    return (
+      <div className="models-experience-page">
+        <PageHeader title={t('modelsExperience.compare.pageTitle')} description={t('modelsExperience.compare.preparing')} className="mb-4" />
+      </div>
+    )
+  }
+
+  // qa#543：对比会话的一级类别以首列模型为准（同一组内模型类别一致，选模型/建组时已保证）；
+  // task 用该类别的默认任务。
+  const compareCategory: ExperienceCategoryKey = resolveModelCategory(columns[0].model)
+  const compareTask = EXPERIENCE_CATEGORY_DEFAULT_TASK[compareCategory]
+
+  /** 模型是否真的接受该附件类型：看 input_modalities（比类别粗粒度的 allowedAttachmentKinds
+   *  更准——同类别里未必所有模型都收同一种输入模态，例如对话类里有的模型不收图片附件）。 */
+  function modelSupportsAttachment(model: CatalogModelItem, kind: string): boolean {
+    const inputMods = model.input_modalities ?? model.modalities ?? []
+    return inputMods.includes(kind)
+  }
+
+  /** 每个类别允许附哪种附件（§7.5），与单模型页同口径 */
+  const allowedAttachmentKinds: Array<keyof typeof ATTACHMENT_LIMITS> =
+    compareCategory === 'dialogue' ? ['image', 'video'] : compareCategory === 'audio' ? ['audio'] : ['image']
+
+  function clearAttachment() {
+    setAttachment((prev) => {
+      if (prev) URL.revokeObjectURL(prev.previewUrl)
+      return null
+    })
+    setAttachmentError(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  /** 共享附件上传（qa#545，§7.4/7.5）：只做类型/大小校验和上传，不因"部分模型不支持"而拦截
+   *  上传——支持哪些列由发送时逐列判断（modelSupportsAttachment），差异分发在 handleSyncSend。 */
+  async function handleFileSelect(file: File | null | undefined) {
+    if (!file || !columns) return
+    const cols = columns
+    setAttachmentError(null)
+    const kind = attachmentKindFromMime(file.type)
+    if (!kind || !allowedAttachmentKinds.includes(kind)) {
+      setAttachmentError(`${t('modelsExperience.compare.categoryAttachmentUnsupported')}${allowedAttachmentKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    if (file.size > ATTACHMENT_LIMITS[kind].maxBytes) {
+      setAttachmentError(t('modelsExperience.attachmentTooLarge', { limit: attachmentLimitLabel(kind) }))
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    const previewUrl = URL.createObjectURL(file)
+    setAttachmentUploading(true)
+    try {
+      const uploaded = await uploadExperienceAttachment(file)
+      setAttachment({ file, previewUrl, uploaded })
+      const supportingCount = cols.filter((c) => modelSupportsAttachment(c.model, kind)).length
+      trackEvent('playground_attachment_result', {
+        kind, size_bucket: sizeBucket(file.size), result: 'success',
+        supporting_model_count: supportingCount, unsupported_model_count: cols.length - supportingCount,
+        distribution_mode: 'compare',
+      })
+    } catch (err) {
+      URL.revokeObjectURL(previewUrl)
+      setAttachmentError(extractApiErrorMessage(err))
+      trackEvent('playground_attachment_result', {
+        kind, size_bucket: sizeBucket(file.size), result: 'fail',
+        supporting_model_count: 0, unsupported_model_count: cols.length, distribution_mode: 'compare',
+      })
+    } finally {
+      setAttachmentUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  function clearColumnAttachment(conversationId: string) {
+    setColumnAttachments((prev) => {
+      const existing = prev[conversationId]
+      if (!existing) return prev
+      URL.revokeObjectURL(existing.previewUrl)
+      const next = { ...prev }
+      delete next[conversationId]
+      return next
+    })
+    setColumnAttachmentErrors((prev) => {
+      if (!(conversationId in prev)) return prev
+      const next = { ...prev }
+      delete next[conversationId]
+      return next
+    })
+  }
+
+  /** 独立输入模式每列各自的附件上传（PRD §AC-07/§AC-08）：校验/大小按当前列模型实际
+   *  支持的附件类型判断（比 allowedAttachmentKinds 更准——同类别里未必所有模型都收
+   *  同一种输入模态），跟共享附件入口的上传/校验逻辑同构，只是作用域缩到单列。 */
+  async function handleColumnFileSelect(idx: number, file: File | null | undefined) {
+    if (!file || !columns) return
+    const column = columns[idx]
+    const conversationId = column.conversationId
+    setColumnAttachmentErrors((prev) => {
+      if (!(conversationId in prev)) return prev
+      const next = { ...prev }
+      delete next[conversationId]
+      return next
+    })
+    const kind = attachmentKindFromMime(file.type)
+    if (!kind || !allowedAttachmentKinds.includes(kind) || !modelSupportsAttachment(column.model, kind)) {
+      setColumnAttachmentErrors((prev) => ({
+        ...prev,
+        [conversationId]: `${t('modelsExperience.attachmentUnsupported')}${allowedAttachmentKinds.filter((k) => modelSupportsAttachment(column.model, k)).map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator')) || t('modelsExperience.compare.none')}`,
+      }))
+      if (columnFileInputRef.current) columnFileInputRef.current.value = ''
+      return
+    }
+    if (file.size > ATTACHMENT_LIMITS[kind].maxBytes) {
+      setColumnAttachmentErrors((prev) => ({ ...prev, [conversationId]: t('modelsExperience.attachmentTooLarge', { limit: attachmentLimitLabel(kind) }) }))
+      if (columnFileInputRef.current) columnFileInputRef.current.value = ''
+      return
+    }
+    const previewUrl = URL.createObjectURL(file)
+    setColumnAttachmentUploading((prev) => ({ ...prev, [conversationId]: true }))
+    try {
+      const uploaded = await uploadExperienceAttachment(file)
+      setColumnAttachments((prev) => ({ ...prev, [conversationId]: { file, previewUrl, uploaded } }))
+      trackEvent('playground_attachment_result', {
+        kind, size_bucket: sizeBucket(file.size), result: 'success',
+        supporting_model_count: 1, unsupported_model_count: 0, distribution_mode: 'single',
+      })
+    } catch (err) {
+      URL.revokeObjectURL(previewUrl)
+      setColumnAttachmentErrors((prev) => ({ ...prev, [conversationId]: extractApiErrorMessage(err) }))
+      trackEvent('playground_attachment_result', {
+        kind, size_bucket: sizeBucket(file.size), result: 'fail',
+        supporting_model_count: 0, unsupported_model_count: 1, distribution_mode: 'single',
+      })
+    } finally {
+      setColumnAttachmentUploading((prev) => ({ ...prev, [conversationId]: false }))
+      if (columnFileInputRef.current) columnFileInputRef.current.value = ''
+    }
+  }
+
+  const excludeIdsFor = (idx: number) => columns.filter((_, i) => i !== idx).map((c) => c.model.id)
+
+  /** 窄屏 Tab 状态点（§8.5：显示运行中/完成/失败） */
+  function columnStatus(column: ColumnState): 'running' | 'failed' | 'succeeded' | 'idle' {
+    if (column.streaming) return 'running'
+    const last = column.history[column.history.length - 1]
+    if (!last) return 'idle'
+    if (last.error) return 'failed'
+    if (last.role === 'assistant' && last.metrics) return 'succeeded'
+    return 'idle'
+  }
 
   return (
-    <div>
-      <div className="mb-7">
-        <h1 className="text-2xl font-bold text-[var(--mg-text-1)] m-0 mb-1.5 tracking-tight">
-          {t('modelsCompare.title')}
-        </h1>
-        <p className="text-[13px] text-[var(--mg-text-2)] m-0">
-          {t('modelsCompare.desc', { max: MAX_COMPARE })}
-        </p>
+    <div className="models-experience-page">
+      <PageHeader title={t('modelsExperience.page.title')} description={t('modelsExperience.compare.description')} className="mb-4" />
+
+      <div className="models-experience-shell">
+        {/* §7.8 历史会话侧栏（qa#546）：与单模型页同款受控组件，展开时拉取列表；选中会话
+            按 conversation_id 分组还原成多列（见 openHistorySession），新建会话退回单模型页
+            重新走"选模型 → 模型对比"入口（对比页本身没有内嵌选模型态）。 */}
+        <HistorySessionSidebar
+          collapsed={historyCollapsed}
+          onToggleCollapsed={(collapsed) => {
+            if (!collapsed) trackEvent('playground_history_action', { action: 'open' })
+            setHistoryCollapsed(collapsed)
+          }}
+          sessions={historySessions}
+          activeSessionId={sessionId ?? undefined}
+          onSelectSession={(id) => void openHistorySession(id)}
+          onNewSession={() => {
+            trackEvent('playground_history_action', { action: 'new' })
+            startNewSession()
+          }}
+          onRenameSession={(id, name) => void renameHistorySession(id, name)}
+        />
+
+        <div className="models-experience-main">
+
+      <div className="models-compare-toolbar">
+        <div className="models-compare-toolbar-left">
+          <LuColumns2 size={15} className="text-brand-base" />
+          <strong>{t('modelsExperience.compare.toolbarTitle')}</strong>
+          <span className="models-compare-toolbar-meta">{experienceCategoryLabel(compareCategory)} · {t('modelsExperience.compare.modelCount', { count: columns.length, max: MAX_COMPARE })}</span>
+        </div>
+        <div className="models-compare-toolbar-right">
+          <label className="flex items-center gap-2 select-none cursor-pointer">
+            <span className="text-xs font-semibold text-mg-text-3">{t('modelsExperience.compare.syncInput')}</span>
+            <Switch checked={syncInput} onChange={handleToggleSync} />
+          </label>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={columns.length >= MAX_COMPARE}
+            onClick={() => {
+              trackEvent('playground_model_picker_open', { picker_type: 'compareAdd', browse_category: compareCategory })
+              setAddPickerOpen(true)
+            }}
+          >
+            <LuPlus size={13} /> {t('modelsExperience.compare.addModel')}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setExitConfirmOpen(true)}>
+            <LuLogOut size={13} /> {t('modelsExperience.compare.exitCompare')}
+          </Button>
+        </div>
       </div>
 
-      {modelsQuery.isLoading ? (
-        <div className="flex justify-center items-center h-[200px]">
-          <Spinner />
-        </div>
-      ) : modelsQuery.isError ? (
-        <div className="text-[var(--mg-danger)] text-[13px] py-6">{t('modelsCompare.error.load')}</div>
-      ) : (
-        <div>
-          {/* Picker row */}
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            {Array.from({ length: MAX_COMPARE }).map((_, idx) => (
-              <ModelPicker
-                key={idx}
-                models={models.filter((m) => !slots.some((s, si) => si !== idx && s?.model_id === m.model_id))}
-                selected={slots[idx]}
-                onSelect={(m) => setSlot(idx, m)}
-                onClear={() => setSlot(idx, null)}
-                search={searches[idx]}
-                onSearch={(v) => setSearch(idx, v)}
+      {/* §8.5 窄屏一次展示一个模型列，顶部 Tab 切换；宽屏由 CSS 隐藏，不影响并排布局 */}
+      <div className="models-compare-mobile-tabs" role="tablist" aria-label={t('modelsExperience.compare.switchColumnTabs')}>
+        {columns.map((column, idx) => {
+          const status = columnStatus(column)
+          return (
+            <button
+              key={column.conversationId || idx}
+              type="button"
+              role="tab"
+              aria-selected={idx === activeColumnIndex}
+              className={cn('models-compare-mobile-tab', idx === activeColumnIndex && 'is-active')}
+              onClick={() => setActiveColumnIndex(idx)}
+            >
+              <span
+                className={cn('models-compare-mobile-tab-dot', `is-${status}`)}
+                aria-hidden="true"
               />
-            ))}
-          </div>
+              {prettyModelName(column.model.display_name, column.model.model_id)}
+            </button>
+          )
+        })}
+      </div>
 
-          {/* Comparison table */}
-          {hasAny && (
-            <div className="border border-[var(--mg-border)] rounded-md overflow-hidden shadow-sm bg-card-bg">
-              {/* Header */}
-              <div
-                className="grid items-center border-b border-[var(--mg-border)] bg-[var(--mg-fill-0)]"
-                style={{
-                  gridTemplateColumns: `180px repeat(${selectedModels.length}, 1fr)`,
+      <div className="models-compare-columns" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}>
+        {columns.map((column, idx) => (
+          <section
+            key={column.conversationId || idx}
+            className={cn(
+              'models-experience-chat models-compare-column',
+              idx === activeColumnIndex && 'is-active-mobile',
+            )}
+          >
+            <div className="models-experience-modelbar">
+              <button
+                type="button"
+                className="models-experience-model-trigger"
+                onClick={() => {
+                  trackEvent('playground_model_picker_open', { picker_type: 'compareSwitch', browse_category: compareCategory })
+                  setSwitchPickerIndex(idx)
                 }}
               >
-                <div className="p-3.5 px-4 text-xs font-semibold text-[var(--mg-text-3)]">
-                  {t('modelsCompare.table.attr')}
-                </div>
-                {selectedModels.map((m) => (
-                  <div key={m.model_id} className="p-3.5 px-4 border-l border-[var(--mg-border)]">
-                    <div className="flex items-center gap-2">
-                      <ModelIcon model={m} size={22} rounded="rounded-sm" />
-                      <div className="min-w-0">
-                        <div className="font-bold text-[13px] text-[var(--mg-text-1)] truncate">{m.display_name}</div>
-                        <div className="text-xs text-[var(--mg-text-3)] font-mono truncate">{m.vendor}</div>
-                      </div>
-                    </div>
+                {isOfflineModel(column.model) ? (
+                  <span className="models-experience-model-avatar is-offline">!</span>
+                ) : (
+                  <ModelIcon model={column.model} size={32} rounded="rounded-md" />
+                )}
+                <div className="min-w-0">
+                  <div className="models-experience-modelbar-title">
+                    {isOfflineModel(column.model) ? t('modelsExperience.modelOffline') : prettyModelName(column.model.display_name, column.model.model_id)}
                   </div>
-                ))}
-              </div>
-
-              {/* Rows */}
-              {ROWS.map((row, rowIdx) => (
-                <div
-                  key={row.key}
-                  className={cn(
-                    "grid items-center border-b border-[var(--mg-border)]",
-                    rowIdx === ROWS.length - 1 && "border-none",
-                    rowIdx % 2 === 0 ? "bg-transparent" : "bg-[var(--mg-fill-0)]/50"
-                  )}
-                  style={{
-                    gridTemplateColumns: `180px repeat(${selectedModels.length}, 1fr)`,
+                  <div className="models-experience-modelbar-sub">{column.model.vendor || column.model.provider || 'ModelGo'} · {experienceCategoryLabel(compareCategory)}</div>
+                </div>
+                {isOfflineModel(column.model) ? (
+                  <span className="models-experience-price-chip is-offline">{t('modelsExperience.modelOffline')}</span>
+                ) : (
+                  <span className="models-experience-price-chip">{dualPriceText(column.model)}</span>
+                )}
+                <LuChevronDown size={13} className="text-mg-text-3 shrink-0" />
+              </button>
+              <div className="ml-auto flex items-center gap-1">
+                <button
+                  type="button"
+                  className="models-experience-icon-btn"
+                  aria-label={t('modelsExperience.openApiCall')}
+                  title={isOfflineModel(column.model) ? t('modelsExperience.modelOffline') : t('modelsExperience.openApiCall')}
+                  disabled={isOfflineModel(column.model)}
+                  onClick={() => {
+                    trackEvent('playground_api_modal_action', { action: 'open', protocol: '', language: '', model_id: column.model.model_id })
+                    setApiIndex(idx)
                   }}
                 >
-                  <div className="p-3.5 px-4 text-xs font-semibold text-[var(--mg-text-2)]">
-                    {t(row.labelKey)}
-                  </div>
-                  {selectedModels.map((m) => (
-                    <div key={m.model_id} className="p-3.5 px-4 border-l border-[var(--mg-border)] text-[13px] text-[var(--mg-text-1)] flex items-center">
-                      {renderCell(m, row.key)}
-                    </div>
-                  ))}
-                </div>
-              ))}
+                  <LuCode size={13} />
+                </button>
+                <button
+                  type="button"
+                  className="models-experience-icon-btn"
+                  aria-label={t('modelsExperience.openModelSettings')}
+                  title={isOfflineModel(column.model) ? t('modelsExperience.modelOffline') : t('modelsExperience.openModelSettings')}
+                  disabled={isOfflineModel(column.model)}
+                  onClick={() => void openColumnSettings(idx)}
+                >
+                  <LuSettings2 size={13} />
+                </button>
+                <button type="button" className="models-experience-icon-btn" aria-label={t('modelsExperience.compare.removeModel')} title={t('modelsExperience.compare.removeModel')} onClick={() => setRemoveConfirmIndex(idx)}>
+                  <LuX size={13} />
+                </button>
+              </div>
             </div>
-          )}
 
-          {/* 对话对比 Playground */}
-          {hasAny && (
-            <div className="mt-8 pt-8 border-t border-[var(--mg-border)]">
-              <div className="mb-5 flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                  <h2 className="text-sm font-bold text-[var(--mg-text-1)] m-0 flex items-center gap-2">
-                    <LuMessageSquare size={15} className="text-[var(--brand-base)]" />
-                    实时对话对比 (Chat Arena)
-                  </h2>
-                  <p className="text-xs text-[var(--mg-text-3)] m-0 mt-1">
-                    每个模型卡片底部独立输入框；开启「同步输入」则一处输入分发给所有已选模型，分栏并行对比。
-                  </p>
+            <ExperienceMessageList
+              messages={column.history}
+              isStreaming={column.streaming}
+              showModelNameInMeta={false}
+              isMediaTask={compareCategory !== 'dialogue'}
+              onRetry={(userMessage) => retryMediaMessage(idx, userMessage)}
+              assistantModel={column.model}
+              emptyState={
+                <div className="models-experience-empty">
+                  {(() => {
+                    const EmptyIcon = categoryEmptyCopy(compareCategory).icon
+                    return <EmptyIcon size={18} />
+                  })()}
+                  <span>{categoryEmptyCopy(compareCategory).hint}</span>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  {histories.some((h) => h.length > 0) && (
-                    <button
-                      onClick={handleClearChat}
-                      title="清空对话历史"
-                      className="h-8 px-3 rounded-lg cursor-pointer text-[var(--mg-text-3)] hover:text-[var(--mg-danger)] hover:bg-[var(--mg-fill-0)] transition-all flex items-center gap-1.5 border border-[var(--mg-border)] bg-transparent text-xs font-semibold"
-                    >
-                      <LuTrash2 size={14} />
-                      清空
-                    </button>
+              }
+            />
+
+            {isBalanceZero && isPaidModel(column.model) && (
+              <div className="playground-balance-notice" role="alert">
+                <LuTriangleAlert size={15} />
+                <span>
+                  <strong>{t('modelsExperience.balanceInsufficientTitle')}</strong>
+                  {t('modelsExperience.balanceInsufficientHint')}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    trackEvent('playground_recharge_click', { locked_model_count: 1 })
+                    navigate('/billing', { state: { entrySource: 'recharge_cta' } })
+                  }}
+                >
+                  {t('modelsExperience.recharge')}
+                </button>
+              </div>
+            )}
+
+            {!syncInput && isOfflineModel(column.model) ? (
+              // 下线模型：composer 整体替换为提示，禁止发送（PRD §AC-18，对齐原型
+              // App.tsx:18634-18641，用户需从上方模型条换成同类同任务的在线模型）
+              <div className="playground-balance-notice" role="status">
+                <LuTriangleAlert size={15} />
+                <span>
+                  <strong>{t('modelsExperience.modelOffline')}</strong>
+                  {t('modelsExperience.modelOfflineHint')}
+                </span>
+              </div>
+            ) : !syncInput && (() => {
+              // 独立输入模式的列内附件入口（PRD §AC-07/§AC-08，qa#553 补齐）：只按
+              // 当前列模型实际支持的附件类型开放，纯文本模型不显示入口。
+              const columnKinds = allowedAttachmentKinds.filter((k) => modelSupportsAttachment(column.model, k))
+              const colAttachment = columnAttachments[column.conversationId]
+              const colUploading = columnAttachmentUploading[column.conversationId]
+              const colError = columnAttachmentErrors[column.conversationId]
+              return (
+                // onFocusCapture 记录"最后聚焦列"，独立→同步切换时用它当来源列（§7.4）
+                <div onFocusCapture={() => setLastFocusedIndex(idx)}>
+                  {(colAttachment || colError) && (
+                    <div className="models-experience-attachment-row">
+                      {colAttachment && (
+                        <div className="models-experience-attachment-chip">
+                          {attachmentKindFromMime(colAttachment.uploaded.mime) === 'image' ? (
+                            <img src={colAttachment.previewUrl} alt={t('modelsExperience.attachmentPreview')} />
+                          ) : (
+                            <span className="models-experience-attachment-name">{colAttachment.file.name}</span>
+                          )}
+                          <button type="button" aria-label={t('modelsExperience.removeAttachment')} onClick={() => clearColumnAttachment(column.conversationId)}>
+                            <LuX size={12} />
+                          </button>
+                        </div>
+                      )}
+                      {colError && <span className="models-experience-attachment-error">{colError}</span>}
+                    </div>
                   )}
-                  <label className="flex items-center gap-2 select-none cursor-pointer">
-                    <span className="text-xs font-semibold text-[var(--mg-text-3)]">同步输入</span>
-                    <Switch checked={syncInput} onChange={setSyncInput} />
-                  </label>
+                  <Composer
+                    value={column.draft}
+                    onChange={(v) => updateColumn(idx, { draft: v })}
+                    onSend={() => handleIndependentSend(idx)}
+                    isStreaming={column.streaming}
+                    disabled={isBalanceZero && isPaidModel(column.model)}
+                    onStop={() => abortRefs.current[idx]?.abort()}
+                    placeholder={t('modelsExperience.compare.columnPlaceholder', { name: prettyModelName(column.model.display_name, column.model.model_id), placeholder: categoryPlaceholder(compareCategory) })}
+                    sendLabel={t('modelsExperience.send')}
+                    className="models-experience-composer-wrap models-compare-composer"
+                    activeChip={
+                      columnKinds.length > 0 ? (
+                        <button
+                          type="button"
+                          className="models-experience-icon-btn"
+                          aria-label={t('modelsExperience.addAttachment')}
+                          title={`${t('modelsExperience.attachmentSupports')}${columnKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`}
+                          disabled={colUploading || !!colAttachment}
+                          onClick={() => {
+                            pendingAttachmentColumnRef.current = idx
+                            columnFileInputRef.current?.click()
+                          }}
+                        >
+                          <LuPaperclip size={14} />
+                        </button>
+                      ) : (
+                        <span />
+                      )
+                    }
+                  />
                 </div>
-              </div>
+              )
+            })()}
+          </section>
+        ))}
+      </div>
 
-              {/* 多栏并排对话 */}
-              <div
-                className="grid gap-4 mb-5"
-                style={{
-                  gridTemplateColumns: `repeat(${selectedModels.length}, minmax(0, 1fr))`,
-                }}
-              >
-                {slots.map((m, idx) => {
-                  if (!m) return null
-                  const history = histories[idx]
-                  
-                  return (
-                    <div 
-                      key={`${m.id}-${idx}`} 
-                      className="glass-card-glow flex flex-col h-[440px] overflow-hidden rounded-md border border-[var(--mg-border)]"
-                    >
-                      {/* 栏头部 */}
-                      <div className="p-3 bg-[var(--mg-fill-0)]/40 border-b border-[var(--mg-border)]/65 flex items-center gap-2 shrink-0 select-none">
-                        <ModelIcon model={m} size={20} rounded="rounded-sm" />
-                        <div className="min-w-0 flex-1">
-                          <div className="text-xs font-bold text-[var(--mg-text-1)] truncate">{m.display_name}</div>
-                          <div className="text-xs text-[var(--mg-text-3)] font-mono truncate">{m.model_id}</div>
-                        </div>
-                      </div>
+      {/* 独立输入模式各列共用一个隐藏 file input，点哪列的附件按钮就把目标列存进 ref
+         （PRD §AC-07/§AC-08，qa#553）；accept 取全部类别允许类型的并集，实际类型/大小
+         校验在 handleColumnFileSelect 里按该列模型精确判断。 */}
+      {!syncInput && (
+        <input
+          ref={columnFileInputRef}
+          type="file"
+          accept={allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].accept).join(',')}
+          className="hidden"
+          onChange={(e) => {
+            const idx = pendingAttachmentColumnRef.current
+            if (idx !== null) void handleColumnFileSelect(idx, e.target.files?.[0])
+          }}
+        />
+      )}
 
-                      {/* 消息历史滚动 */}
-                      <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 no-scrollbar bg-[var(--mg-bg-0)]/20">
-                        {history.map((msg, msgIdx) => (
-                          <div 
-                            key={msgIdx} 
-                            className={cn(
-                              "flex flex-col gap-1 max-w-[85%]",
-                              msg.role === 'user' ? "ml-auto items-end" : "mr-auto items-start"
-                            )}
-                          >
-                            <div 
-                              className={cn(
-                                "p-2.5 rounded-md text-xs leading-relaxed shadow-sm",
-                                msg.role === 'user'
-                                  ? "bg-[var(--brand-selected-bg)] border border-[var(--brand-mid)]/10 text-[var(--mg-text-1)]"
-                                  : "bg-[var(--mg-bg-0)] border border-[var(--mg-border)] text-[var(--mg-text-2)] border-l-[3px] border-l-[var(--brand-base)]"
-                              )}
-                            >
-                              {msg.role === 'assistant' && msg.content === '' && streaming[idx] ? (
-                                <span className="inline-flex gap-1 py-1 items-center" aria-label="生成中">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--mg-text-3)] animate-bounce [animation-delay:-0.3s]" />
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--mg-text-3)] animate-bounce [animation-delay:-0.15s]" />
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--mg-text-3)] animate-bounce" />
-                                </span>
-                              ) : (
-                                msg.content.split('\n').map((line, lIdx) => (
-                                  <p key={lIdx} className="m-0 select-text break-words">{line}</p>
-                                ))
-                              )}
-                              {msg.meta && (
-                                <span className="block text-xs text-[var(--mg-text-3)] mt-1.5 font-bold tracking-wide">
-                                  {msg.meta}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-
-                        {history.length === 0 && (
-                          <div className="h-full flex flex-col items-center justify-center text-center p-4 select-none opacity-40">
-                            <LuMessageSquare size={20} className="text-mg-text-3 mb-2" />
-                            <span className="text-xs text-[var(--mg-text-3)]">等待发送提问</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* 卡片底部输入框（复用渐变流光样式，紧凑版） */}
-                      <div className="shrink-0 p-2 border-t border-[var(--mg-border)]/65 bg-[var(--mg-bg-0)]/30">
-                        <div className="rounded-md p-[1.5px] bg-gradient-to-r from-[#4285f4] via-[#9b72cb] to-[#d96570] transition-all focus-within:shadow-[0_0_14px_rgba(155,114,203,0.12)]">
-                          <div className="rounded-sm bg-[var(--mg-bg-0)] p-2 flex items-end gap-2">
-                            <textarea
-                              value={chatInputs[idx]}
-                              onChange={(e) => handleInputChange(idx, e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                  e.preventDefault()
-                                  handleSendFrom(idx)
-                                }
-                              }}
-                              placeholder={syncInput ? '输入分发给全部模型…' : `仅向 ${m.display_name} 提问…`}
-                              rows={1}
-                              className="flex-1 w-full bg-transparent border-none outline-none resize-none text-[12.5px] text-[var(--mg-text-1)] placeholder-[var(--mg-text-3)] focus:ring-0 leading-relaxed max-h-20"
-                            />
-                            <button
-                              onClick={() => handleSendFrom(idx)}
-                              disabled={!chatInputs[idx].trim() || streaming[idx]}
-                              title={syncInput ? '分发给全部模型' : '发送'}
-                              className={cn(
-                                "h-7 w-7 shrink-0 rounded-full flex items-center justify-center border-none transition-all",
-                                chatInputs[idx].trim() && !streaming[idx]
-                                  ? "bg-gradient-to-r from-[#9b72cb] to-[#d96570] text-white hover:opacity-90 active:scale-95 cursor-pointer"
-                                  : "bg-[var(--mg-fill-0)] text-[var(--mg-text-3)]/50 cursor-not-allowed"
-                              )}
-                            >
-                              <LuSparkles size={13} className={streaming[idx] ? 'animate-pulse' : ''} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-            </div>
-          )}
-
-          {!hasAny && (
-            <div className="text-center py-12">
-              <span className="text-[var(--mg-text-3)] text-[13px]">
-                {t('modelsCompare.empty.hint')}
-              </span>
-            </div>
-          )}
+      {syncInput && isBalanceZero && columns.some((c) => isPaidModel(c.model)) && (
+        <div className="playground-balance-notice" role="alert">
+          <LuTriangleAlert size={15} />
+          <span>
+            <strong>{t('modelsExperience.balanceInsufficientTitle')}</strong>
+            {t('modelsExperience.balanceInsufficientHint')}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              trackEvent('playground_recharge_click', { locked_model_count: columns.filter((c) => isPaidModel(c.model)).length })
+              navigate('/billing', { state: { entrySource: 'recharge_cta' } })
+            }}
+          >
+            {t('modelsExperience.recharge')}
+          </button>
         </div>
       )}
+
+      {/* 共享附件预览/校验错误（qa#545 §7.4/7.5）：只在同步输入态展示——独立输入模式
+          每列各自打字，附件是同步态的共享概念。 */}
+      {syncInput && (attachment || attachmentError) && (
+        <div className="models-experience-attachment-row">
+          {attachment && (
+            <div className="models-experience-attachment-chip">
+              {attachmentKindFromMime(attachment.uploaded.mime) === 'image' ? (
+                <img src={attachment.previewUrl} alt={t('modelsExperience.attachmentPreview')} />
+              ) : (
+                <span className="models-experience-attachment-name">{attachment.file.name}</span>
+              )}
+              <button type="button" aria-label={t('modelsExperience.removeAttachment')} onClick={clearAttachment}>
+                <LuX size={12} />
+              </button>
+            </div>
+          )}
+          {attachment && (() => {
+            const kind = attachmentKindFromMime(attachment.uploaded.mime)
+            const supportingCount = kind ? columns.filter((c) => modelSupportsAttachment(c.model, kind)).length : 0
+            return (
+              <span className="models-compare-attachment-support">
+                {t('modelsExperience.compare.attachmentSupportCount', { supporting: supportingCount, total: columns.length })}
+              </span>
+            )
+          })()}
+          {attachmentError && <span className="models-experience-attachment-error">{attachmentError}</span>}
+        </div>
+      )}
+
+      {syncInput && (
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={allowedAttachmentKinds.map((k) => ATTACHMENT_LIMITS[k].accept).join(',')}
+            className="hidden"
+            onChange={(e) => void handleFileSelect(e.target.files?.[0])}
+          />
+          <Composer
+            value={sharedDraft}
+            onChange={setSharedDraft}
+            onSend={handleSyncSend}
+            isStreaming={columns.some((c) => c.streaming)}
+            disabled={isBalanceZero && columns.some((c) => isPaidModel(c.model))}
+            onStop={() => abortRefs.current.forEach((c) => c?.abort())}
+            placeholder={t('modelsExperience.compare.sharedPlaceholder', { placeholder: categoryPlaceholder(compareCategory), count: columns.length })}
+            sendLabel={t('modelsExperience.send')}
+            className="models-experience-composer-wrap models-compare-shared-composer"
+            activeChip={
+              <div className="models-experience-composer-left">
+                <button
+                  type="button"
+                  className="models-experience-icon-btn"
+                  aria-label={t('modelsExperience.addAttachment')}
+                  title={`${t('modelsExperience.attachmentSupports')}${allowedAttachmentKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`}
+                  disabled={attachmentUploading || !!attachment}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <LuPaperclip size={14} />
+                </button>
+                <span className="models-experience-composer-hint">
+                  {attachmentUploading ? t('modelsExperience.attachmentUploading') : t('modelsExperience.compare.syncSendHint')}
+                </span>
+              </div>
+            }
+          />
+        </>
+      )}
+
+      {historyActionError && (
+        <div className="models-experience-inline-error" role="alert">
+          <LuTriangleAlert size={14} />
+          <span>{historyActionError}</span>
+        </div>
+      )}
+
+        </div>
+      </div>
+
+      <ModelPickerDialog
+        open={switchPickerIndex !== null}
+        onClose={() => setSwitchPickerIndex(null)}
+        mode="compareSwitch"
+        models={allModels.filter((m) => switchPickerIndex === null || !excludeIdsFor(switchPickerIndex).includes(m.id))}
+        isBalanceZero={isBalanceZero}
+        currentCategory={compareCategory}
+        currentTask={compareTask}
+        onSelect={(model) => {
+          void handleSwitchConfirm(model)
+          setSwitchPickerIndex(null)
+        }}
+      />
+
+      <ModelPickerDialog
+        open={addPickerOpen}
+        onClose={() => setAddPickerOpen(false)}
+        mode="compareAdd"
+        models={allModels}
+        isBalanceZero={isBalanceZero}
+        currentCategory={compareCategory}
+        currentTask={compareTask}
+        alreadySelectedIds={columns.map((c) => c.model.id)}
+        maxAdditional={MAX_COMPARE - columns.length}
+        onConfirmAdd={handleAddConfirm}
+      />
+
+      {settingsIndex !== null && columns[settingsIndex] && (
+        <ModelSettingsModal
+          open
+          onClose={() => setSettingsIndex(null)}
+          modelName={prettyModelName(columns[settingsIndex].model.display_name, columns[settingsIndex].model.model_id)}
+          vendor={columns[settingsIndex].model.vendor || columns[settingsIndex].model.provider || 'ModelGo'}
+          maxOutputTokens={Math.max(256, columns[settingsIndex].model.max_output_tokens || 4096)}
+          task={EXPERIENCE_CATEGORY_DEFAULT_TASK[resolveModelCategory(columns[settingsIndex].model)]}
+          values={columns[settingsIndex].chatParams}
+          onChange={(key, value) => handleColumnParamChange(settingsIndex, key, value)}
+          onReset={() => handleColumnParamReset(settingsIndex)}
+          sessionStats={sessionStats}
+        />
+      )}
+
+      {apiIndex !== null && columns[apiIndex] && (
+        <ApiQuickCallModal
+          open
+          onClose={() => setApiIndex(null)}
+          modelName={prettyModelName(columns[apiIndex].model.display_name, columns[apiIndex].model.model_id)}
+          modelId={columns[apiIndex].model.model_id}
+          supportedProtocols={columns[apiIndex].model.protocols?.length ? (columns[apiIndex].model.protocols as never) : ['openai']}
+          onAction={(action, protocol, language) => trackEvent('playground_api_modal_action', { action, protocol, language, model_id: columns[apiIndex].model.model_id })}
+        />
+      )}
+
+      <ConfirmModal
+        open={removeConfirmIndex !== null}
+        onClose={() => {
+          if (removeConfirmIndex !== null && columns[removeConfirmIndex]) {
+            trackEvent('playground_model_remove', { model_id: columns[removeConfirmIndex].model.model_id, action: 'cancel' })
+          }
+          setRemoveConfirmIndex(null)
+        }}
+        onConfirm={handleRemoveConfirmed}
+        title={t('modelsExperience.compare.removeModelConfirmTitle')}
+        description={t('modelsExperience.compare.removeModelConfirmDesc')}
+        variant="destructive"
+        confirmLabel={t('modelsExperience.compare.removeModel')}
+      />
+
+      <ConfirmModal
+        open={exitConfirmOpen}
+        onClose={() => setExitConfirmOpen(false)}
+        onConfirm={handleExitConfirmed}
+        title={t('modelsExperience.compare.exitConfirmTitle')}
+        description={t('modelsExperience.compare.exitConfirmDesc')}
+        confirmLabel={t('modelsExperience.compare.exitCompare')}
+      />
+
+      <ConfirmModal
+        open={syncConfirm !== null}
+        onClose={() => setSyncConfirm(null)}
+        onConfirm={confirmSyncSwitch}
+        title={t('modelsExperience.compare.syncConfirmTitle')}
+        description={t('modelsExperience.compare.syncConfirmDesc', { name: syncConfirm ? prettyModelName(columns[syncConfirm.sourceIndex]?.model.display_name, columns[syncConfirm.sourceIndex]?.model.model_id) : '' })}
+        confirmLabel={t('modelsExperience.compare.confirmSync')}
+      />
     </div>
   )
 }

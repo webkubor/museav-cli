@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { getTenant, listTenants, listTenantMembers, updateTenant, uploadTenantLogo, dissolveTenant, transferOwnership } from '@/services/tenants'
-import { getSession } from '@/services/auth'
+import { getSessionForActiveWorkspace } from '@/lib/auth/refresh-session'
 import { useAuthStore } from '@/store/auth'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -13,6 +13,8 @@ import { Select } from '@/components/ui/Select'
 import { AvatarUpload } from '@/components/ui/AvatarUpload'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar'
 import { appToast } from '@/lib/app-toast'
+import { trackAction } from '@/lib/track'
+import { errorCodeOf } from '@/lib/request-error-message'
 
 export function OrgInfoTab({
   tenantId,
@@ -72,27 +74,39 @@ export function OrgInfoTab({
   const update = useMutation({
     mutationFn: () => updateTenant(tenantId, { name }),
     onSuccess: () => {
+      // 企业更名保存埋点，event key = 权限体系 org:rename
+      trackAction(PERMS.ORG_RENAME, undefined, { result: 'success' })
       appToast.success('组织名称已更新')
       qc.invalidateQueries({ queryKey: ['tenant', tenantId] })
       qc.invalidateQueries({ queryKey: ['tenants'] })
       setEditing(false)
     },
-    onError: (err: Error) => appToast.requestError(err, '更新失败'),
+    onError: (err: Error) => {
+      trackAction(PERMS.ORG_RENAME, undefined, { result: 'fail', error_code: errorCodeOf(err) })
+      appToast.requestError(err, '更新失败')
+    },
   })
 
   const logoMutation = useMutation({
     mutationFn: (file: File) => uploadTenantLogo(tenantId, file),
     onSuccess: () => {
+      // 企业 Logo 上传埋点，event key = 权限体系 org.settings:edit（与 Logo 上传入口的权限 gate canEditOrg 同源）
+      trackAction(PERMS.ORG_SETTINGS_EDIT, undefined, { result: 'success' })
       appToast.success('企业头像已更新')
       qc.invalidateQueries({ queryKey: ['tenant', tenantId] })
       qc.invalidateQueries({ queryKey: ['tenants'] })
     },
-    onError: (err: Error) => appToast.requestError(err, '上传失败，请重试'),
+    onError: (err: Error) => {
+      trackAction(PERMS.ORG_SETTINGS_EDIT, undefined, { result: 'fail', error_code: errorCodeOf(err) })
+      appToast.requestError(err, '上传失败，请重试')
+    },
   })
 
   const dissolve = useMutation({
     mutationFn: () => dissolveTenant(tenantId),
     onSuccess: async () => {
+      // 解散组织确认提交埋点，event key = 权限体系 org:delete
+      trackAction(PERMS.ORG_DELETE, undefined, { result: 'success' })
       appToast.success('组织已解散')
       setDissolveOpen(false)
       setConfirmName('')
@@ -100,7 +114,7 @@ export function OrgInfoTab({
       qc.removeQueries({ queryKey: ['tenant-members', tenantId] })
       await qc.invalidateQueries({ queryKey: ['tenants'] })
       try {
-        const session = await getSession()
+        const session = await getSessionForActiveWorkspace()
         setAuth(
           session.account,
           session.active_tenant_id,
@@ -114,12 +128,17 @@ export function OrgInfoTab({
       }
       await onDissolved?.()
     },
-    onError: (err: Error) => appToast.requestError(err, '解散组织失败'),
+    onError: (err: Error) => {
+      trackAction(PERMS.ORG_DELETE, undefined, { result: 'fail', error_code: errorCodeOf(err) })
+      appToast.requestError(err, '解散组织失败')
+    },
   })
 
   const transfer = useMutation({
     mutationFn: () => transferOwnership(tenantId, transferTarget),
     onSuccess: async () => {
+      // 转移企业所有权确认提交埋点，event key = 权限体系 org.ownership:transfer
+      trackAction(PERMS.ORG_OWNERSHIP_TRANSFER, undefined, { result: 'success' })
       appToast.success(t('enterprise.info.transferSuccess'))
       setTransferOpen(false)
       setTransferTarget('')
@@ -127,7 +146,7 @@ export function OrgInfoTab({
       await qc.invalidateQueries({ queryKey: ['tenant', tenantId] })
       // 所有权变更影响当前用户角色/权限，刷新会话让 UI 立即降级为管理员视图
       try {
-        const session = await getSession()
+        const session = await getSessionForActiveWorkspace()
         setAuth(
           session.account,
           session.active_tenant_id,
@@ -140,7 +159,10 @@ export function OrgInfoTab({
         await qc.invalidateQueries({ queryKey: ['auth-session'] })
       }
     },
-    onError: (err: Error) => appToast.requestError(err, '转移所有权失败'),
+    onError: (err: Error) => {
+      trackAction(PERMS.ORG_OWNERSHIP_TRANSFER, undefined, { result: 'fail', error_code: errorCodeOf(err) })
+      appToast.requestError(err, '转移所有权失败')
+    },
   })
 
   if (tenantQuery.isLoading) {

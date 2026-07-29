@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react'
+import Markdown from 'react-markdown'
 import {
   LuClock3,
   LuDatabase,
@@ -40,6 +41,7 @@ import {
   REDACTION_PLACEHOLDER,
   type DerivedLogStatus,
 } from './guardrail'
+import type { SSEReassembled } from './reassemble-sse'
 
 export type PayloadKind = 'request' | 'response'
 export type PayloadView = 'parsed' | 'raw'
@@ -76,6 +78,7 @@ function tpmLabel(row: CallLogItem) {
 export function LogDetailSheet({
   requestPayloadText,
   responsePayloadText,
+  responseSSE,
   payloadView,
   onPayloadViewChange,
   payloadLoading,
@@ -88,6 +91,7 @@ export function LogDetailSheet({
 }: {
   requestPayloadText: string
   responsePayloadText: string
+  responseSSE?: SSEReassembled | null
   payloadView: PayloadView
   onPayloadViewChange: (view: PayloadView) => void
   payloadLoading: boolean
@@ -219,6 +223,7 @@ export function LogDetailSheet({
               row={row}
               requestPayloadText={requestPayloadText}
               responsePayloadText={responsePayloadText}
+              responseSSE={responseSSE}
               payloadView={payloadView}
               onPayloadViewChange={onPayloadViewChange}
               payloadLoading={payloadLoading}
@@ -384,8 +389,57 @@ function MessageBubble({ content, role }: { content: string; role: string }) {
   )
 }
 
-function TranscriptCard({ pretty, text, title }: { pretty: boolean; text: string; title: string }) {
+/** 还原出的助手回答用 Markdown 渲染（标题/列表/代码块等），复用客服聊天 / 模型体验同款 cs-markdown 样式。 */
+function MarkdownBubble({ label, content, tone }: { label: string; content: string; tone: 'success' | 'brand' }) {
+  return (
+    <div className="rounded-md border border-mg-border/60 bg-mg-fill-0/30 p-3">
+      <div className={cn('mb-1 mg-text-caption font-bold', tone === 'success' ? 'text-mg-success' : 'text-brand-base')}>{label}</div>
+      {content ? (
+        <div className="cs-markdown text-mg-text-1"><Markdown>{content}</Markdown></div>
+      ) : (
+        <p className="mg-text-caption text-mg-text-1">（空）</p>
+      )}
+    </div>
+  )
+}
+
+/** SSE 合并信息（chunk 数 / finish_reason / usage）改走 pill 徽标，别再拼进纯文本里跟正文糊一块。 */
+function SSEMetaBadges({ sse }: { sse: SSEReassembled }) {
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-mg-border/60 pt-3">
+      <span className="inline-flex items-center rounded-full bg-mg-fill-1 px-2.5 py-0.5 mg-text-caption font-semibold text-mg-text-2">
+        合并 {sse.chunkCount} 个 chunk
+      </span>
+      {sse.finishReason && (
+        <span className="inline-flex items-center rounded-full bg-mg-fill-1 px-2.5 py-0.5 mg-text-caption font-semibold text-mg-text-2">
+          finish_reason: {sse.finishReason}
+        </span>
+      )}
+      {sse.usage != null && (
+        <span className="inline-flex items-center rounded-full bg-mg-fill-1 px-2.5 py-0.5 mg-text-caption font-mono text-mg-text-3">
+          usage: {JSON.stringify(sse.usage)}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function TranscriptCard({ pretty, text, title, sse }: { pretty: boolean; text: string; title: string; sse?: SSEReassembled | null }) {
   const messages = pretty ? parseMessages(text) : null
+  // 流式回答还原出的 Pretty 视图：内容多为 Markdown（标题/列表/代码），走小卡片 + Markdown 渲染，
+  // 而不是把合并信息拼成一段纯文本丢进 CodeBlock（此前唯一路径，parseMessages 认不出这段合并摘要）。
+  if (pretty && sse) {
+    return (
+      <div className="rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
+        <div className="mb-2 mg-text-caption font-bold text-mg-text-2">{title}</div>
+        <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
+          {sse.reasoning && <MarkdownBubble label="推理 reasoning_content" content={sse.reasoning} tone="brand" />}
+          <MarkdownBubble label="回答 content" content={sse.content} tone="success" />
+        </div>
+        <SSEMetaBadges sse={sse} />
+      </div>
+    )
+  }
   return (
     <div className="rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
       <div className="mb-2 mg-text-caption font-bold text-mg-text-2">{title}</div>
@@ -418,13 +472,14 @@ function ViewToggle({ onChange, value }: { onChange: (view: PayloadView) => void
   )
 }
 
-function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, payloadView, requestPayloadText, responsePayloadText, row, onOpenLogSettings }: {
+function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, payloadView, requestPayloadText, responsePayloadText, responseSSE, row, onOpenLogSettings }: {
   onDownload: () => void
   onPayloadViewChange: (view: PayloadView) => void
   payloadLoading: boolean
   payloadView: PayloadView
   requestPayloadText: string
   responsePayloadText: string
+  responseSSE?: SSEReassembled | null
   row: CallLogItem
   onOpenLogSettings?: (workspaceId: string) => void
 }) {
@@ -503,7 +558,7 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
       {/* 输出侧对齐 PRD：模型产出响应→展示 Response 转写；未产出（护栏拦截/调用失败）→「响应未生成 + 原因」，
           而不是像原先那样 responsePayloadText 为空就整段消失（只做了输入没做输出）。 */}
       {responseGenerated ? (
-        <TranscriptCard title={`Response (${formatNumber(row.usage.output_tokens)} tokens)`} text={responsePayloadText} pretty={pretty} />
+        <TranscriptCard title={`Response (${formatNumber(row.usage.output_tokens)} tokens)`} text={responsePayloadText} pretty={pretty} sse={responseSSE} />
       ) : (
         <div className="flex gap-2 rounded-md border border-mg-warning/20 bg-mg-warning/5 p-[var(--mg-panel-padding-md)]">
           <LuShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-mg-warning" />

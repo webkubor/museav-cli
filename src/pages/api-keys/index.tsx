@@ -199,8 +199,12 @@ export default function ApiKeysPage() {
       setRevokeTarget(null)
       setDetailKey(null)
       queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
+      trackEvent('api_keys:revoke', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
-    onError: (err: unknown) => appToast.requestError(err, t('apiKeys.toast.revokeError')),
+    onError: (err: unknown) => {
+      appToast.requestError(err, t('apiKeys.toast.revokeError'))
+      trackEvent('api_keys:revoke', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
+    },
   })
 
   const enableMutation = useMutation({
@@ -274,9 +278,18 @@ export default function ApiKeysPage() {
       queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
       queryClient.invalidateQueries({ queryKey: ['api-key-detail', workspaceId, keyId] })
       appToast.success('旧 Token 已失效')
+      trackEvent('api_keys:rotate_confirm', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
-    onError: (err: unknown) => appToast.requestError(err, '确认轮转失败'),
+    onError: (err: unknown) => {
+      appToast.requestError(err, '确认轮转失败')
+      trackEvent('api_keys:rotate_confirm', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
+    },
   })
+
+  // 启用/轮转均无二次确认、直达 mutation：行内/抽屉按钮需按 key 维度反馈 loading，防重复点击
+  // （停用走确认弹窗，弹窗自带 loading，见下方 disableMutation 的使用处，此处不重复）
+  const enablePendingId = enableMutation.isPending ? (enableMutation.variables ?? null) : null
+  const rotatePendingId = rotateMutation.isPending ? (rotateMutation.variables?.api_key_id ?? null) : null
 
   const { copy } = useCopy()
   const [copyingKeyId, setCopyingKeyId] = useState<string | null>(null)
@@ -299,20 +312,27 @@ export default function ApiKeysPage() {
           if (!ok) throw new DOMException('clipboard write failed', 'NotAllowedError')
         }
         appToast.success(t('apiKeys.toast.copyKeySuccess'))
+        trackEvent('api_keys:reveal', commonEventProps, { source: 'table_row', result: 'success', is_space_owner: isActiveWorkspaceOwner })
       } catch {
         const requestError = await plaintextPromise.then(() => null, (e: unknown) => e ?? new Error('reveal failed'))
         if (requestError) {
           appToast.error(getRequestErrorMessage(requestError, t('apiKeys.toast.copyKeyError')))
+          trackEvent('api_keys:reveal', commonEventProps, { source: 'table_row', result: 'fail', error_code: errorCodeOf(requestError), is_space_owner: isActiveWorkspaceOwner })
         } else {
           const ok = await copy(await plaintextPromise)
-          if (ok) appToast.success(t('apiKeys.toast.copyKeySuccess'))
-          else appToast.error(t('apiKeys.toast.copyKeyClipboardError'))
+          if (ok) {
+            appToast.success(t('apiKeys.toast.copyKeySuccess'))
+            trackEvent('api_keys:reveal', commonEventProps, { source: 'table_row', result: 'success', is_space_owner: isActiveWorkspaceOwner })
+          } else {
+            appToast.error(t('apiKeys.toast.copyKeyClipboardError'))
+            trackEvent('api_keys:reveal', commonEventProps, { source: 'table_row', result: 'fail', error_code: 'clipboard_write_failed', is_space_owner: isActiveWorkspaceOwner })
+          }
         }
       } finally {
         setCopyingKeyId(null)
       }
     },
-    [workspaceId, canReveal, copy, copyingKeyId, t]
+    [workspaceId, canReveal, copy, copyingKeyId, t, commonEventProps, isActiveWorkspaceOwner]
   )
 
   // 搜索/类型/负责人已下推服务端（见 listParams）；status 后端无筛选参数，仅在当前页客户端过滤
@@ -476,6 +496,7 @@ export default function ApiKeysPage() {
         onToggleStatus={handleToggleStatus}
         onCopyKey={handleCopyKey}
         copyingKeyId={copyingKeyId}
+        enablePendingId={enablePendingId}
       />
 
       {/* #60 游标翻页：首页且无更多时隐藏（同 AuditTab）；status 页内过滤可能使当前页显示少于 PAGE_SIZE 条 */}
@@ -503,6 +524,8 @@ export default function ApiKeysPage() {
         onRotate={(item) => rotateMutation.mutate(item)}
         onCompleteRotation={setRotationConfirmTarget}
         onRevoke={setRevokeTarget}
+        enablePending={!!detailKey && enablePendingId === detailKey.api_key_id}
+        rotatePending={!!detailKey && rotatePendingId === detailKey.api_key_id}
       />
 
       {/* 创建成功：完整密钥只展示一次（PRD 原型无「接入中心」，接入入口收进此处） */}

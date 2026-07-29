@@ -1,12 +1,17 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { toast } from '@/lib/toast'
+
+export interface VerificationCodeButtonHandle {
+  /** 以编程方式触发发送（等价于用户点击），用于人机验证通过后自动发码；disabled/倒计时/发送中时空操作。 */
+  trigger: () => void
+}
 
 interface Props {
   onSend: () => Promise<number | void>
   disabled?: boolean
 }
 
-export function VerificationCodeButton({ onSend, disabled }: Props) {
+export const VerificationCodeButton = forwardRef<VerificationCodeButtonHandle, Props>(function VerificationCodeButton({ onSend, disabled }, ref) {
   const [countdown, setCountdown] = useState(0)
   const [loading, setLoading] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -44,6 +49,10 @@ export function VerificationCodeButton({ onSend, disabled }: Props) {
     }
   }
 
+  useImperativeHandle(ref, () => ({
+    trigger: () => { if (disabled) return; void handleClick() },
+  }))
+
   const isCounting = countdown > 0
 
   return (
@@ -62,5 +71,5 @@ export function VerificationCodeButton({ onSend, disabled }: Props) {
       <span>{loading ? '发送中' : isCounting ? `已发送 (${countdown}s)` : '发送验证码'}</span>
     </button>
   )
-}
+})
 

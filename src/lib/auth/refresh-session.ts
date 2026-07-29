@@ -27,10 +27,34 @@ export function applySessionToStore(result: SessionResult): void {
 }
 
 /** 重拉会话刷新权限码/菜单。失败静默（下次整页刷新自然纠正），不打断业务操作的成功反馈。 */
+/** 从 localStorage 读当前活跃空间 id（key 按租户隔离，需先有活跃租户）。 */
+function activeWorkspaceIdFromStorage(): string | undefined {
+  const tenantId = localStorage.getItem(storageKeys.activeTenantId())
+  if (!tenantId) return undefined
+  return localStorage.getItem(storageKeys.activeWorkspaceId(tenantId)) || undefined
+}
+
+/**
+ * 按「当前活跃空间」解析会话（带 workspace_id）。首拉与热刷新共用。
+ * session 默认按租户默认空间解析权限——活跃的是非默认空间时不带 id 会拿错权限（少 tab/按钮，需求方#255）。
+ */
+export function getSessionForActiveWorkspace(): Promise<SessionResult> {
+  return getSession(activeWorkspaceIdFromStorage())
+}
+
 export async function refreshSession(): Promise<void> {
   try {
-    applySessionToStore(await getSession())
+    applySessionToStore(await getSessionForActiveWorkspace())
   } catch {
     /* 权限热刷新失败不阻断业务；旧权限顶多保守（fail-closed 由各 gate 兜底） */
   }
+}
+
+/**
+ * 切换活跃空间：先持久化选择，再按新空间重拉会话权限，
+ * 使 tab / 侧栏 / 按钮 gating 随所在空间即时更新（需求方#255、#216）。
+ */
+export async function switchActiveWorkspace(workspaceId: string): Promise<void> {
+  useAuthStore.getState().setActiveWorkspaceId(workspaceId)
+  await refreshSession()
 }

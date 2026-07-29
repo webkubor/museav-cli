@@ -131,13 +131,29 @@ function devLogApiCall(entry: ApiLogEntry) {
   }).catch(() => {})
 }
 
+/**
+ * 序列化查询参数。
+ *
+ * 数组值发成**重复参数**（`?a=1&a=2`）而不是逗号串 —— 后端用 gin 的
+ * `c.QueryArray` 读取（如模型广场的 capability_tag），逗号串会被当成单个值。
+ * 因此这里返回 URLSearchParams 而不是普通对象；对标量值两者生成的 query string
+ * 完全一致，其余接口行为不变。空值过滤语义保持原样。
+ */
 function searchParams(params?: QueryParams) {
   if (!params) return undefined
-  return Object.fromEntries(
-    Object.entries(params)
-      .filter(([, value]) => value !== undefined && value !== null && value !== '')
-      .map(([key, value]) => [key, String(value)])
-  )
+  const usp = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === '') continue
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item === undefined || item === null || item === '') continue
+        usp.append(key, String(item))
+      }
+      continue
+    }
+    usp.append(key, String(value))
+  }
+  return usp
 }
 
 export class ModelGoApiError extends Error {

@@ -1,311 +1,171 @@
-/* ── 💎 账单管理：余额卡片高级流光与呼吸发光 ── */
-.billing-glow-card {
-  position: relative;
-  isolation: isolate;
-  border-radius: var(--radius-md) !important;
-  border: 1px solid var(--mg-border) !important;
-  background-color: var(--mg-fill-0) !important;
-  /* 只过渡廉价属性；box-shadow 辉光/conic 渐变改瞬时，避免切 tab 时 0.35s 重绘爆发致卡顿 */
-  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1),
-              border-color 0.35s cubic-bezier(0.25, 1, 0.5, 1),
-              background-color 0.35s cubic-bezier(0.25, 1, 0.5, 1) !important;
+/* 账单页视觉精修：保留原模块结构，只收紧层级、数字与小屏约束。 */
+.billing-balance-header {
+  min-width: 0;
 }
 
-.billing-glow-card:hover {
-  transform: translateY(-2px) scale(1.008);
-  border-color: color-mix(in oklch, var(--mg-border) 80%, var(--brand-base)) !important;
-  background-color: var(--mg-fill-1) !important;
+.billing-balance-title {
+  line-height: 1.35;
 }
 
-.billing-glow-card:active {
-  transform: translateY(-1px) scale(0.985);
-  transition-duration: 0.1s !important;
+.billing-balance-actions {
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
-/* 激活状态下通用属性 */
-.billing-glow-card.active {
-  border-color: transparent !important;
-  transform: translateY(-2px) !important;
+.billing-spendable-line {
+  min-width: 0;
+  max-width: 100%;
 }
 
-/* 主余额卡片激活 (.active-main) */
-.billing-glow-card.active.active-main {
-  background: radial-gradient(circle at 85% 15%, var(--brand-glow) 0%, transparent 65%), var(--card-bg) !important;
-  box-shadow: 
-    0 12px 28px -6px rgba(0, 0, 0, 0.08),
-    0 0 18px -2px var(--brand-glow),
-    0 0 1px 1px var(--brand-glow) !important;
+.billing-spendable-amount {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
 }
 
-body[theme-mode='dark'] .billing-glow-card.active.active-main {
-  box-shadow: 
-    0 16px 36px rgba(0, 0, 0, 0.35),
-    0 0 20px -2px var(--brand-glow),
-    0 0 1px 1px var(--brand-glow) !important;
-}
-
-/* 赠送余额卡片激活 (.active-gift) */
-.billing-glow-card.active.active-gift {
-  background: radial-gradient(circle at 85% 15%, rgba(14, 165, 233, 0.12) 0%, transparent 65%), var(--card-bg) !important;
-  box-shadow: 
-    0 12px 28px -6px rgba(0, 0, 0, 0.08),
-    0 0 18px -2px rgba(14, 165, 233, 0.25),
-    0 0 1px 1px rgba(14, 165, 233, 0.3) !important;
-}
-
-body[theme-mode='dark'] .billing-glow-card.active.active-gift {
-  box-shadow: 
-    0 16px 36px rgba(0, 0, 0, 0.35),
-    0 0 20px -2px rgba(14, 165, 233, 0.35),
-    0 0 1px 1px rgba(14, 165, 233, 0.4) !important;
-}
-
-/* 奖励余额卡片激活 (.active-reward) */
-.billing-glow-card.active.active-reward {
-  background: radial-gradient(circle at 85% 15%, rgba(245, 158, 11, 0.12) 0%, transparent 65%), var(--card-bg) !important;
-  box-shadow: 
-    0 12px 28px -6px rgba(0, 0, 0, 0.08),
-    0 0 18px -2px rgba(245, 158, 11, 0.25),
-    0 0 1px 1px rgba(245, 158, 11, 0.3) !important;
-}
-
-body[theme-mode='dark'] .billing-glow-card.active.active-reward {
-  box-shadow: 
-    0 16px 36px rgba(0, 0, 0, 0.35),
-    0 0 20px -2px rgba(245, 158, 11, 0.35),
-    0 0 1px 1px rgba(245, 158, 11, 0.4) !important;
-}
-
-/* 激活状态下的 1px 流光环绕边框 */
-.billing-glow-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: var(--radius-md);
-  padding: 1px;
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: destination-out;
-  mask-composite: exclude;
-  animation: liquid-border 8s linear infinite;
-  pointer-events: none;
-  z-index: 2;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-}
-
-/* 主余额专属流光 */
-.billing-glow-card.active.active-main::before {
-  background: conic-gradient(
-    from var(--border-angle),
-    transparent 15%,
-    color-mix(in oklch, var(--brand-base) 25%, transparent) 38%,
-    var(--brand-base) 50%,
-    color-mix(in oklch, var(--brand-base) 25%, transparent) 62%,
-    transparent 85%
-  );
-  opacity: 1;
-}
-
-/* 赠送余额专属流光 */
-.billing-glow-card.active.active-gift::before {
-  background: conic-gradient(
-    from var(--border-angle),
-    transparent 15%,
-    rgba(14, 165, 233, 0.25) 38%,
-    rgba(14, 165, 233, 1) 50%,
-    rgba(14, 165, 233, 0.25) 62%,
-    transparent 85%
-  );
-  opacity: 1;
-}
-
-/* 奖励余额专属流光 */
-.billing-glow-card.active.active-reward::before {
-  background: conic-gradient(
-    from var(--border-angle),
-    transparent 15%,
-    rgba(245, 158, 11, 0.25) 38%,
-    rgba(245, 158, 11, 1) 50%,
-    rgba(245, 158, 11, 0.25) 62%,
-    transparent 85%
-  );
-  opacity: 1;
-}
-
-/* 扫光容器 */
-.billing-glow-card .shimmer-light {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-  border-radius: var(--radius-md);
-  z-index: 1;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-}
-
-.billing-glow-card.active .shimmer-light {
-  opacity: 1;
-}
-
-/* 扫光斜切滑过动画 */
-.billing-glow-card .shimmer-light::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 60%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.12),
-    transparent
-  );
-  transform: translateX(-100%) skewX(-15deg);
-}
-
-body[theme-mode='dark'] .billing-glow-card .shimmer-light::after {
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.06),
-    transparent
-  );
-}
-
-/* 仅在激活时 Hover 触发扫光，且扫光是有节制的 2s */
-.billing-glow-card.active:hover .shimmer-light::after {
-  animation: shimmer-sweep 2s ease-in-out infinite;
-}
-
-@keyframes shimmer-sweep {
-  0% { transform: translateX(-120%) skewX(-15deg); }
-  100% { transform: translateX(220%) skewX(-15deg); }
-}
-
-/* 金额与货币符号打磨 */
-.billing-glow-card .balance-amount {
-  font-family: var(--font-sans);
-  transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
-  letter-spacing: -0.02em;
-}
-
-.billing-glow-card.active .balance-amount {
-  transform: scale(1.03);
-  transform-origin: left center;
-}
-
-/* ── 列表行指示器与 Hover / Active 状态 ── */
-.billing-table-row {
-  position: relative;
-  transition: all 0.25s ease !important;
-}
-
-.billing-table-row td {
-  border-bottom: 1px solid var(--mg-border) !important;
-}
-
-.billing-table-row::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 22%;
-  bottom: 22%;
-  width: 3px;
-  border-radius: 999px;
-  background-color: var(--brand-base);
-  opacity: 0;
-  transform: scaleY(0.4);
-  transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1) !important;
-  z-index: 10;
-}
-
-.billing-table-row:hover::after,
-.billing-table-row.active::after {
-  opacity: 1;
-  transform: scaleY(1);
-}
-
-.billing-table-row.active {
-  background-color: var(--brand-selected-bg) !important;
-}
-
-/* 状态徽标呼吸弥散光效 */
-.badge-glow-pending {
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.15) !important;
-}
-
-.badge-glow-paid {
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.15) !important;
-}
-
-/* 侧栏仿真发票容器 */
-.receipt-container-mini {
-  border-radius: var(--radius-md);
-  border: 1px solid var(--mg-border);
-  background-color: rgba(var(--mg-bg-0-rgb), 0.4);
-  transition: all 0.3s ease;
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-.receipt-container-mini:hover {
-  border-color: color-mix(in oklch, var(--mg-border) 80%, var(--brand-base));
-  box-shadow: var(--shadow-md);
-}
-
-/* ── 🪙 大额可消费合计与各卡片数字高级光效 ── */
 .spendable-amount-glow {
-  background: linear-gradient(135deg, var(--mg-text-1) 30%, var(--brand-base) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 10px rgba(var(--brand-base-rgb), 0.1));
-  transition: all 0.4s ease;
+  color: var(--mg-text-1);
+  text-shadow: 0 1px 10px var(--brand-glow);
 }
 
 body[theme-mode='dark'] .spendable-amount-glow {
-  background: linear-gradient(135deg, var(--mg-text-1) 40%, var(--brand-base) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 14px var(--brand-glow));
+  color: var(--mg-text-1);
+  text-shadow: 0 1px 14px var(--brand-glow);
 }
 
-/* 1. 主余额数字（激活态 - 品牌科技发光） */
-.amount-main-active {
-  color: var(--brand-base) !important;
-  text-shadow: 0 0 14px var(--brand-glow) !important;
+.billing-balance-bucket {
+  position: relative;
+  min-width: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--mg-border);
+  background-color: var(--mg-fill-0);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-body[theme-mode='dark'] .amount-main-active {
-  color: var(--brand-base) !important;
-  text-shadow: 0 0 18px var(--brand-glow) !important;
+.billing-balance-bucket:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in oklch, var(--brand-base) 28%, var(--mg-border));
+  background-color: var(--mg-fill-1);
 }
 
-/* 2. 赠送余额数字（激活态 - 湖蓝微发光） */
-.amount-gift-active {
-  color: #0284c7 !important; /* sky-600 */
-  text-shadow: 0 0 14px rgba(14, 165, 233, 0.3) !important;
+.billing-balance-bucket:focus-visible {
+  box-shadow: var(--shadow-focus);
 }
 
-body[theme-mode='dark'] .amount-gift-active {
-  color: #38bdf8 !important; /* sky-400 */
-  text-shadow: 0 0 18px rgba(56, 189, 248, 0.4) !important;
+.billing-balance-bucket.active {
+  border-color: var(--brand-base);
+  background-color: var(--brand-selected-bg);
+  box-shadow: 0 0 0 1px var(--brand-glow);
 }
 
-/* 3. 奖励余额数字（激活态 - 极奢黄金渐变与发光，成就感拉满） */
+.billing-balance-bucket .balance-amount {
+  max-width: 100%;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.billing-balance-bucket.active .balance-amount,
+.amount-main-active,
+.amount-gift-active,
 .amount-reward-active {
-  background: linear-gradient(135deg, #f59e0b 0%, #eab308 50%, #fef08a 100%) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  filter: drop-shadow(0 2px 8px rgba(234, 179, 8, 0.4)) !important;
+  color: var(--brand-base) !important;
+  text-shadow: none !important;
+  filter: none !important;
+  background: none !important;
+  -webkit-text-fill-color: currentColor !important;
 }
 
-body[theme-mode='dark'] .amount-reward-active {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 60%, #fffbeb 100%) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  filter: drop-shadow(0 2px 10px rgba(245, 158, 11, 0.5)) !important;
+.billing-low-balance-controls {
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.billing-low-balance-recipient,
+.billing-low-balance-threshold {
+  min-width: 0;
+}
+
+.billing-ledger-panel {
+  min-width: 0;
+}
+
+.billing-ledger-header {
+  min-width: 0;
+}
+
+.billing-ledger-filters {
+  justify-content: flex-end;
+}
+
+.billing-ledger-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.billing-ledger-table-wrap table {
+  min-width: 760px;
+}
+
+.billing-recharge-dialog {
+  display: flex;
+  flex-direction: column;
+}
+
+.billing-recharge-body {
+  min-height: 0;
+}
+
+@media (max-width: 639px) {
+  .billing-balance-actions {
+    width: 100%;
+  }
+
+  .billing-balance-actions > button {
+    flex: 1 1 auto;
+  }
+
+  .billing-balance-actions > button:first-child {
+    flex: 0 0 2.25rem;
+  }
+
+  .billing-spendable-amount {
+    font-size: clamp(1.625rem, 7.5vw, 2.25rem);
+    line-height: 1.08;
+  }
+
+  .billing-low-balance-controls {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .billing-low-balance-recipient,
+  .billing-low-balance-threshold {
+    flex: 1 1 100%;
+  }
+
+  .billing-ledger-header {
+    align-items: flex-start;
+  }
+
+  .billing-ledger-filters {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .billing-ledger-filters [data-slot='select-trigger'],
+  .billing-ledger-filters button {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-width: 8.25rem;
+  }
+
+  .billing-recharge-presets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

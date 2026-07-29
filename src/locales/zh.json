@@ -216,11 +216,13 @@
   },
   "billing": {
     "title": "账单管理",
-    "desc": "管理账户余额并追踪充值订单状态。",
+    "desc": "租户余额、入账记录与发票。充值与奖励按余额类型归集到本租户账户。",
     "income": {
       "tab": "入账记录",
       "invoiceTab": "发票",
-      "empty": "当前筛选条件下没有入账记录",
+      "empty": "暂无入账记录",
+      "emptyFiltered": "当前筛选条件下没有入账记录",
+      "clearFilters": "清除筛选",
       "typeAll": "全部类型",
       "bucketAll": "全部余额桶",
       "cols": {
@@ -252,7 +254,8 @@
       },
       "status": {
         "completed": "已完成",
-        "processing": "处理中"
+        "processing": "处理中",
+        "failed": "失败"
       },
       "invoice": {
         "none": "—",
@@ -1382,6 +1385,8 @@
       "contextLength": "上下文长度",
       "maxOutput": "最大输出",
       "modalities": "模态支持",
+      "modalityFlow": "输入→输出模态",
+      "protocols": "兼容协议",
       "releasedAt": "发布时间",
       "knowledgeCutoff": "知识截止",
       "inputPrice": "输入价格 (百万)",
@@ -1392,6 +1397,8 @@
       "inRegionRouting": "区域内路由",
       "tags": "标签"
     },
+    "currentModel": "当前模型",
+    "candidates": "可选候选",
     "empty": {
       "hint": "在左侧选择模型后开始对比",
       "noMatch": "未找到匹配的模型"
@@ -1499,7 +1506,9 @@
       "compareShort": "对比",
       "compareUnavailable": "不可对比",
       "docs": "接入文档",
-      "try": "去体验"
+      "try": "去体验",
+      "comingSoon": "暂未开放",
+      "comingSoonHint": "该模型的在线体验任务暂未开放"
     },
     "labels": {
       "apiId": "API ID",
@@ -1559,18 +1568,6 @@
       "paid": "付费",
       "more": "展开更多",
       "less": "收起"
-    },
-    "heroStats": {
-      "models": "已接入模型",
-      "modelsSub": "覆盖主流大模型",
-      "providers": "官方供应商",
-      "providersSub": "与全球顶级厂商合作",
-      "uptime": "API 可用率",
-      "uptimeSub": "企业级稳定保障",
-      "sla": "SLA 保障",
-      "failover": "智能容灾",
-      "multiRegion": "多地域部署",
-      "trending": "热门模型"
     },
     "card": {
       "favorite": "收藏",
@@ -1869,26 +1866,20 @@
   "models": {
     "detail": {
       "tabOverview": "基本参数",
-      "tabProviders": "提供商与可用性",
       "pricing": "计费规格",
-      "pricingInput": "输入计费",
-      "pricingOutput": "输出计费",
-      "pricingCacheRead": "缓存读取计费",
+      "pricingInput": "输入价格",
+      "pricingOutput": "输出价格",
+      "pricingCacheRead": "缓存读取",
+      "pricingCacheWrite": "缓存写入",
       "specs": "技术规格",
       "contextLength": "上下文窗口",
-      "maxOutputTokens": "最大输出 Token",
+      "maxOutputTokens": "最大输出",
       "zeroDataRetention": "零数据保留",
       "supported": "支持",
       "notSupported": "不支持",
       "inRegionRouting": "区域内路由",
       "releasedAt": "发布时间",
-      "knowledgeCutoff": "知识库截止",
-      "noProviders": "当前无可用提供商",
-      "providerEnabled": "已启用",
-      "providerDisabled": "已停用",
-      "uptime30d": "30天在线率",
-      "latencyP50": "P50 延迟",
-      "throughput": "吞量"
+      "knowledgeCutoff": "知识库截止"
     },
     "card": {
       "context": "上下文",
@@ -1900,6 +1891,7 @@
       "image": "图像",
       "audio": "音频",
       "video": "视频",
+      "file": "文件",
       "embedding": "向量",
       "reranker": "重排"
     }
@@ -2077,6 +2069,234 @@
       "emailAlreadyPending": "{{email}} 已有待接受邀请",
       "emailAlreadyMember": "{{email}} 已是成员",
       "duplicatePending": "有邮箱已存在待接受邀请（资源冲突）。注意：同批其他邮箱可能已发出，请以成员列表为准"
+    }
+  },
+  "modelsExperience": {
+    "page": {
+      "title": "模型体验",
+      "description": "通过文本与附件连续对话，验证回复、Token、延迟与费用。"
+    },
+    "send": "发送",
+    "modelCompare": "模型对比",
+    "modelOffline": "模型已下线",
+    "modelOfflineHint": "历史结果仍可查看，请从上方更换同任务模型后继续。",
+    "modelRunFailed": "该模型本轮响应失败",
+    "modelThinking": "模型思考中",
+    "noModelSelected": "未选择模型",
+    "unnamedSession": "未命名会话",
+    "sessionCreateError": "会话创建异常：未返回对话列 id",
+    "historyLoadFailed": "加载历史会话失败：",
+    "retryLater": "请稍后重试",
+    "requestFailed": "体验请求失败：",
+    "sendFailed": "该消息发送失败",
+    "videoGenerating": "视频生成中，可点击",
+    "videoGeneratingLink": "在调用日志的异步任务里追踪",
+    "videoGenerateFailed": "视频生成失败",
+    "freeQuota": "免费额度",
+    "perM": "每M",
+    "balanceInsufficientTitle": "余额不足，仅可体验免费模型",
+    "balanceInsufficientHint": "当前模型与输入已为你保留，充值后即可继续运行。",
+    "recharge": "去充值",
+    "openApiCall": "打开 API 调用",
+    "openModelSettings": "打开模型设置",
+    "viewApiExample": "查看 {{name}} API 调用示例",
+    "configureModel": "配置 {{name}}",
+    "attachmentUnsupported": "当前模型不支持该附件类型，仅支持：",
+    "attachmentTooLarge": "文件超出大小限制（{{limit}}）",
+    "attachmentSupports": "支持：",
+    "attachmentPreview": "附件预览",
+    "generatedResult": "生成结果",
+    "removeAttachment": "移除附件",
+    "addAttachment": "添加附件",
+    "attachmentUploading": "附件上传中…",
+    "estimatedSpend": "本次预估费用",
+    "listSeparator": "、",
+    "copyReply": "复制回复内容",
+    "notBilled": "计费：未计费",
+    "retryAfterAdjust": "调整后重试",
+    "totalLatency": "总耗时",
+    "firstToken": "首Token",
+    "downloadResult": "下载产物",
+    "fastest": "最快",
+    "cheapest": "成本最低",
+    "taskLabel": {
+      "text_to_text": "对话",
+      "image_to_text": "对话",
+      "video_to_text": "对话",
+      "text_to_image": "文生图",
+      "image_to_image": "图生图",
+      "text_to_audio": "语音合成",
+      "audio_to_text": "语音识别",
+      "text_to_video": "文生视频",
+      "image_to_video": "图生视频"
+    },
+    "categoryLabel": {
+      "dialogue": "对话",
+      "image": "图像",
+      "audio": "音频",
+      "video": "视频"
+    },
+    "categoryEmpty": {
+      "dialogue": {
+        "title": "发送第一条消息，验证模型输出与成本",
+        "hint": "支持的图片、音频或视频可以作为消息附件发送。"
+      },
+      "image": {
+        "title": "配置输入后开始生成图片",
+        "hint": "结果会在当前模型列中展示预估费用与实际费用。"
+      },
+      "audio": {
+        "title": "配置输入后开始生成音频",
+        "hint": "结果会在当前模型列中展示预估费用与实际费用。"
+      },
+      "video": {
+        "title": "配置输入后开始生成视频",
+        "hint": "结果会在当前模型列中展示预估费用与实际费用。"
+      }
+    },
+    "categoryPlaceholder": {
+      "dialogue": "输入 Prompt，Enter 发送，Shift + Enter 换行…",
+      "image": "描述主体、场景、光线与画面风格…",
+      "audio": "输入要合成语音的文本…",
+      "video": "描述镜头、主体运动、运镜与氛围…"
+    },
+    "attachmentLimitLabel": {
+      "image": "图片（PNG/JPEG/WebP，≤10MB）",
+      "audio": "音频（MP3/WAV/M4A/OGG/WebM，≤25MB）",
+      "video": "视频（MP4/WebM/MOV，≤100MB）"
+    },
+    "samplePrompts": {
+      "compare": {
+        "label": "对比选型",
+        "prompt": "帮我比较三个适合企业知识库问答的模型，重点看成本、上下文长度和稳定性。"
+      },
+      "explain": {
+        "label": "概念解释",
+        "prompt": "用一段话向非技术同事解释什么是模型网关，说明它解决了什么问题。"
+      },
+      "translate": {
+        "label": "正式翻译",
+        "prompt": "把这句话翻译成英文并保持正式语气：我们下周三上午十点召开产品评审会，请准时参加。"
+      }
+    },
+    "apiModal": {
+      "title": "{{name}} 的 API 调用",
+      "getApiKey": "获取 API Key",
+      "copyCode": "复制代码",
+      "copied": "已复制",
+      "modelId": "模型 ID",
+      "copyModelId": "复制模型 ID",
+      "modelIdCopied": "已复制模型 ID",
+      "codeCopied": "已复制代码示例"
+    },
+    "historySidebar": {
+      "ariaCollapsed": "历史会话（收起）",
+      "ariaExpanded": "历史会话",
+      "railExpandLabel": "展开历史会话",
+      "railNewLabel": "新会话",
+      "collapseLabel": "收起历史会话",
+      "title": "历史会话",
+      "newSession": "新建会话",
+      "empty": "暂无历史会话",
+      "groupToday": "今天",
+      "groupRecent7": "7 天内",
+      "groupEarlier": "更早",
+      "categoryDialogue": "对话",
+      "categoryImage": "图像",
+      "categoryAudio": "音频",
+      "categoryVideo": "视频",
+      "offlineFlag": "部分模型已下线",
+      "renameError": "重命名失败，请稍后重试"
+    },
+    "settings": {
+      "maxLimit": "上限",
+      "stream": "流式输出",
+      "systemPromptPlaceholder": "可选：设定角色、语气与边界",
+      "advanced": "高级设置",
+      "aspectRatio": "画面比例",
+      "resolution": "分辨率",
+      "quality": "质量",
+      "count": "生成数量",
+      "outputFormat": "输出格式",
+      "transparentBg": "透明背景",
+      "negativePrompt": "负面提示词",
+      "random": "随机",
+      "voice": "音色",
+      "speed": "语速",
+      "audioFormat": "音频格式",
+      "voiceStyle": "风格指令",
+      "voiceStylePlaceholder": "例如：沉稳、温暖、适合产品介绍",
+      "recognitionLanguage": "识别语言",
+      "timestamps": "时间戳",
+      "terms": "专有词汇",
+      "contextPrompt": "上下文提示",
+      "contextPromptPlaceholder": "可选：补充音频主题",
+      "videoDuration": "视频时长",
+      "seconds": "秒",
+      "generateAudio": "生成音频",
+      "requestCount": "请求数",
+      "cost": "费用",
+      "reset": "重置",
+      "modalTitle": "{{name}} 设置"
+    },
+    "picker": {
+      "free": "免费",
+      "vendor": "厂商",
+      "contextWindow": "上下文窗口",
+      "inputPrice": "输入价格",
+      "outputPrice": "输出价格",
+      "cachePrice": "缓存价格",
+      "modalityFlow": "输入→输出模态",
+      "compatibleProtocols": "兼容协议",
+      "capabilityTags": "能力标签",
+      "selectModel": "选择模型",
+      "switchModel": "切换模型",
+      "addCompareModel": "添加对比模型",
+      "selectedCount": "已选 {{count}} / 3 个模型",
+      "cancel": "取消",
+      "confirmAdd": "确认加入（{{count}}）",
+      "searchPlaceholder": "搜索模型、厂商…",
+      "selectedModels": "已选模型",
+      "addableCandidates": "可加入候选",
+      "alreadyInCompare": "已在对比中",
+      "noMatch": "没有匹配的模型",
+      "balanceInsufficient": "余额不足",
+      "checkToCompare": "勾选候选模型查看参数对照",
+      "selectToViewDetail": "选择左侧模型查看详情",
+      "noTagline": "暂无模型简介。",
+      "price": "价格"
+    },
+    "compare": {
+      "pageTitle": "模型对比",
+      "backToExperience": "返回模型体验",
+      "preparing": "正在准备对比会话…",
+      "description": "同类别、同任务的最多 3 个模型并排对比，逐列独立设置与费用。",
+      "modelsNotFound": "传入的模型未找到或数量不足，无法进入对比",
+      "noRestorableColumns": "该会话没有可恢复的模型列",
+      "createSessionFailed": "创建对比会话失败：",
+      "removeModelFailed": "移除模型失败：",
+      "addModelFailed": "添加模型失败：",
+      "switchModelFailed": "切换模型失败：",
+      "toolbarTitle": "模型对比",
+      "modelCount": "{{count}} / {{max}} 个模型",
+      "syncInput": "同步输入",
+      "addModel": "添加模型",
+      "exitCompare": "退出对比",
+      "switchColumnTabs": "切换对比模型列",
+      "removeModel": "移除模型",
+      "columnPlaceholder": "仅向 {{name}}：{{placeholder}}",
+      "sharedPlaceholder": "{{placeholder}}（同时发送给 {{count}} 个模型）",
+      "syncSendHint": "同步发送给全部已选模型",
+      "attachmentSupportCount": "{{supporting}} / {{total}} 个模型支持该附件；其余模型本轮仅收到文本",
+      "categoryAttachmentUnsupported": "当前对比类别不支持该附件类型，仅支持：",
+      "none": "无",
+      "removeModelConfirmTitle": "移除该模型？",
+      "removeModelConfirmDesc": "确认后将删除该列的聊天记录，无法恢复。",
+      "exitConfirmTitle": "退出模型对比？",
+      "exitConfirmDesc": "将保留最左侧主模型及其内容，其余模型列的对话记录会被丢弃。",
+      "syncConfirmTitle": "同步各列输入？",
+      "syncConfirmDesc": "将使用「{{name}}」当前输入同步到全部模型列，其他列文本将被替换。",
+      "confirmSync": "确认同步"
     }
   }
 }

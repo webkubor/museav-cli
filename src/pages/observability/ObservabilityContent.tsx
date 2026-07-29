@@ -166,7 +166,7 @@ export function ObservabilityContent({
                 meta={t('observability.broadcast.meta')}
                 checked={broadcastEnabled}
                 loading={saveMutation.isPending}
-                disabled={!canEditLogging || !loggingEnabled}
+                disabled={!canManageForward || !loggingEnabled}
                 onChange={handleBroadcastChange}
               />
             )}

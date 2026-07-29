@@ -23,11 +23,12 @@ import { exportTenantAuditLogs, getTenantAuditLog, listTenantAuditLogs } from '@
 import { auditActionLabel } from '../audit-labels'
 import { listWorkspaces } from '@/services/workspaces'
 import type { TenantAuditLog } from '@/types'
+import { todayInputDate } from '@/lib/datetime'
 
 const PAGE_SIZE = 20
 
 function todayStamp() {
-  return new Date().toISOString().slice(0, 10)
+  return todayInputDate()
 }
 
 function triggerCsvDownload(blob: Blob, filename: string) {

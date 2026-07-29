@@ -1,97 +1,252 @@
+import { LuZap, LuImage, LuAudioLines, LuVideo } from 'react-icons/lu'
+import type { IconType } from 'react-icons'
+import i18n from '@/i18n'
 import { ModalityBadge } from '@/features/models/components/ModalityBadge'
-import { ModelIcon } from '@/features/models/components/ModelIcon'
+import { trimPriceZeros } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 
-export type CategoryKey = 'all' | 'standard' | 'high' | 'ultra'
 export type ChatRole = 'user' | 'assistant'
+
+/** 消息统计条字段，逐字对齐原型 App.tsx:20493-20504 的 playground-msg-meta 结构 */
+export interface ExperienceMessageMetrics {
+  model: string
+  inputTokens: number
+  outputTokens: number
+  firstTokenLatency: string
+  totalLatency: string
+  spend: number
+  free: boolean
+  /** 总耗时的原始毫秒数（totalLatency 是格式化后的展示字符串），对比页用它比较哪列最快 */
+  totalMs?: number
+  /** 对比模式同一轮里最快/成本最低标记（§7.10），单模型页恒为 false */
+  fastest?: boolean
+  cheapest?: boolean
+}
+
+/** 媒体任务结果（§7.10 媒体结果卡）：图片/音频/视频产物的展示地址 */
+export interface ExperienceMediaResult {
+  kind: string
+  url: string
+}
 
 export interface ExperienceMessage {
   role: ChatRole
   content: string
-  meta?: string
+  error?: string
+  metrics?: ExperienceMessageMetrics
   modelName?: string
   modelLogo?: React.ReactNode
+  /** 同步发送时同一轮的组标识，对比页用它来跨列计算最快/成本最低（§7.10/§11.1） */
+  dispatchId?: string
+  /** 媒体任务（文生图等）的产物，dialogue 任务恒为空 */
+  media?: ExperienceMediaResult[]
+  /** 用户消息发送时携带的附件 resource_id（媒体任务重试用，PRD §AC-13），dialogue 消息不使用 */
+  attachmentResourceIds?: string[]
 }
 
-export const previewImages: Record<CategoryKey, string> = {
-  all: '/modelgo/model-experience-all.webp',
-  standard: '/modelgo/model-experience-text.webp',
-  high: '/modelgo/model-experience-code.webp',
-  ultra: '/modelgo/model-experience-reasoning.webp',
+/** 延迟格式化：<1000ms 显示整数 ms，否则显示 x.xx s（App.tsx:17044 formatPlaygroundLatency 逐字对齐） */
+export function formatPlaygroundLatency(ms: number): string {
+  return ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000).toFixed(2)}s`
 }
 
-export const modelExperienceCopy = {
-  zh: {
-    title: '模型体验',
-    desc: '选择模型，立即测试输出效果、成本与接口参数',
-    compare: '模型对比',
-    freeQuota: '免费剩余额度',
-    freeQuotaHint: '即赠送余额，体验计费优先从中扣减，超出部分按主余额计费',
-    search: '搜索模型、厂商、能力...',
-    featured: '精选模型',
-    allModels: '全部模型',
-    current: '当前体验模型',
-    apiId: 'API ID',
-    context: '上下文',
-    quota: '免费额度',
-    input: '输入 Prompt，Enter 发送，Shift+Enter 换行...',
-    send: '发送',
-    clear: '清空',
-    params: '参数',
-    note: '本次体验会消耗免费额度，超出后将按实际用量计费。',
-    empty: '没有匹配的模型',
-    loading: '正在加载模型...',
-    error: '模型列表加载失败，请稍后重试',
-    copied: '模型 ID 已复制',
-    categories: { all: '全部', standard: '上下文 ≤32K', high: '上下文 ≤128K', ultra: '上下文 128K+' },
-  },
-  en: {
-    title: 'Model Experience',
-    desc: 'Select a model and test output quality, cost, and API parameters.',
-    compare: 'Compare Models',
-    freeQuota: 'Free Quota Left',
-    freeQuotaHint: 'Your gift balance; experience usage draws from it first, then your main balance',
-    search: 'Search models, providers, capabilities...',
-    featured: 'Featured',
-    allModels: 'All models',
-    current: 'Active model',
-    apiId: 'API ID',
-    context: 'Context',
-    quota: 'Free quota',
-    input: 'Enter a prompt. Enter to send, Shift+Enter for new line...',
-    send: 'Send',
-    clear: 'Clear',
-    params: 'Parameters',
-    note: 'This experience consumes free quota. Overage is billed based on usage.',
-    empty: 'No matching models',
-    loading: 'Loading models...',
-    error: 'Failed to load models. Please try again later.',
-    copied: 'Model ID copied',
-    categories: { all: 'All', standard: 'Context ≤32K', high: 'Context ≤128K', ultra: 'Context 128K+' },
-  },
+/** 消耗文案：免费模型显示「免费额度」，否则 ≥0.01 显示 2 位小数，否则 4 位（App.tsx:17054 formatPlaygroundSpend 逐字对齐） */
+export function formatPlaygroundSpend(metrics: Pick<ExperienceMessageMetrics, 'spend' | 'free'>): string {
+  if (metrics.free) return i18n.t('modelsExperience.freeQuota')
+  return metrics.spend >= 0.01 ? `¥${metrics.spend.toFixed(2)}` : `¥${metrics.spend.toFixed(4)}`
+}
+
+/** Token 数粗估（无 tokenizer，按字符数/4 估算）——仅作 SSE 统计帧到达前的占位，
+ *  真实 Token 数以后端 `modelgo.stats` 帧的 input_tokens/output_tokens 为准 */
+export function estimateTokens(text: string): number {
+  return Math.max(1, Math.round(text.length / 4))
+}
+
+/**
+ * 历史消息里 status="failed" 行的 error 字段，实测后端存的是上游原始错误信封整个
+ * JSON.stringify 之后的字符串（例如护栏拦截会把 {"error":{"code":403,"message":"..."}}
+ * 整个当字符串塞进去），不是一句人话——这里做前端兜底清洗，解析不出来才展示原始字符串。
+ * 单模型页/对比页共用（qa#546 对比页历史恢复需要同样的清洗）。
+ */
+export function cleanErrorMessage(raw: string | undefined): string {
+  if (!raw) return i18n.t('modelsExperience.sendFailed')
+  try {
+    const parsed = JSON.parse(raw) as {
+      error?: { message?: string }
+      msg?: string
+      data?: { details?: Array<{ message?: string }> }
+    }
+    return parsed.data?.details?.[0]?.message ?? parsed.msg ?? parsed.error?.message ?? raw
+  } catch {
+    return raw
+  }
+}
+
+/**
+ * 从抛出的请求错误里挖出人话消息。媒体任务失败走 §5.2 的
+ * data.field_errors[].code=PLAYGROUND_MEDIA_FAILED、message=上游原始错误摘要——
+ * 实测这个 message 本身又是一层 JSON.stringify 过的原始信封（同 cleanErrorMessage
+ * 处理的历史消息 error 字段一个毛病），要再解一层，否则只会显示信封外层的
+ * "参数校验失败" 泛用文案。
+ */
+export function extractApiErrorMessage(err: unknown): string {
+  const data = (err as { data?: { field_errors?: Array<{ message?: string }>; details?: Array<{ message?: string }> } } | undefined)?.data
+  const raw = data?.field_errors?.[0]?.message ?? data?.details?.[0]?.message
+  if (raw) return cleanErrorMessage(raw)
+  return (err as Error).message || i18n.t('modelsExperience.retryLater')
+}
+
+/** 九类体验任务枚举 → 展示文案，取自后端接口文档 §二 task 值域（字面值以文档为准） */
+export type ExperienceTaskType =
+  | 'text_to_text'
+  | 'image_to_text'
+  | 'video_to_text'
+  | 'text_to_image'
+  | 'image_to_image'
+  | 'text_to_audio'
+  | 'audio_to_text'
+  | 'text_to_video'
+  | 'image_to_video'
+
+/** 任务类型 → 展示文案；用函数而非常量表是因为要在每次调用时按当前语言取值（模块加载时算一次会在切语言后过期） */
+export function experienceTaskLabel(task: ExperienceTaskType): string {
+  return i18n.t(`modelsExperience.taskLabel.${task}`)
+}
+
+/** 一级类别，PRD 1.0.4 原文四类。单模型页/对比页/ModelPickerDialog 共用同一份分类推断逻辑。 */
+export type ExperienceCategoryKey = 'dialogue' | 'image' | 'audio' | 'video'
+
+export const EXPERIENCE_CATEGORY_TASKS: Record<ExperienceCategoryKey, ExperienceTaskType[]> = {
+  dialogue: ['text_to_text', 'image_to_text', 'video_to_text'],
+  image: ['text_to_image', 'image_to_image'],
+  audio: ['text_to_audio', 'audio_to_text'],
+  video: ['text_to_video', 'image_to_video'],
+}
+
+export const EXPERIENCE_CATEGORY_ORDER: ExperienceCategoryKey[] = ['dialogue', 'image', 'audio', 'video']
+
+export function experienceCategoryLabel(category: ExperienceCategoryKey): string {
+  return i18n.t(`modelsExperience.categoryLabel.${category}`)
+}
+
+/** 每个类别的默认任务——没有参考附件时用这个（image_to_image/image_to_video 等"需要附件"的
+ *  任务由发送时是否带附件决定，不在这里判断，见 §7.5「必须携带」列表） */
+export const EXPERIENCE_CATEGORY_DEFAULT_TASK: Record<ExperienceCategoryKey, ExperienceTaskType> = {
+  dialogue: 'text_to_text',
+  image: 'text_to_image',
+  audio: 'text_to_audio',
+  video: 'text_to_video',
+}
+
+/** 空态图标/文案按类别区分（PRD §7.9 各任务空态，原型 App.tsx:19317-19322 逐字对齐）。
+ *  单模型页/对比页共用（qa#543 对比页接入多模态后需要同一份文案）。 */
+const CATEGORY_EMPTY_ICON: Record<ExperienceCategoryKey, IconType> = {
+  dialogue: LuZap,
+  image: LuImage,
+  audio: LuAudioLines,
+  video: LuVideo,
+}
+
+export function categoryEmptyCopy(category: ExperienceCategoryKey): { icon: IconType; title: string; hint: string } {
+  return {
+    icon: CATEGORY_EMPTY_ICON[category],
+    title: i18n.t(`modelsExperience.categoryEmpty.${category}.title`),
+    hint: i18n.t(`modelsExperience.categoryEmpty.${category}.hint`),
+  }
+}
+
+/** composer 占位符按类别区分（原型 App.tsx:18475-18485 逐字对齐）。单模型页/对比页共用。 */
+export function categoryPlaceholder(category: ExperienceCategoryKey): string {
+  return i18n.t(`modelsExperience.categoryPlaceholder.${category}`)
+}
+
+/** 附件类型/大小上限（PRD §7.5），accept 给 <input type="file"> 用。单模型页/对比页共用（qa#545）。 */
+export const ATTACHMENT_LIMITS = {
+  image: { maxBytes: 10 * 1024 * 1024, accept: '.png,.jpg,.jpeg,.webp' },
+  audio: { maxBytes: 25 * 1024 * 1024, accept: '.mp3,.wav,.m4a,.ogg,.webm' },
+  video: { maxBytes: 100 * 1024 * 1024, accept: '.mp4,.webm,.mov' },
 } as const
 
-export const categories: CategoryKey[] = ['all', 'standard', 'high', 'ultra']
+export function attachmentLimitLabel(kind: keyof typeof ATTACHMENT_LIMITS): string {
+  return i18n.t(`modelsExperience.attachmentLimitLabel.${kind}`)
+}
 
-export const initialMessages: ExperienceMessage[] = [
-  { role: 'user', content: '帮我比较三个适合企业知识库问答的模型，重点看成本、上下文长度和稳定性。' },
-  {
-    role: 'assistant',
-    content:
-      '建议优先看三类组合：\n\n1. 长上下文主力模型：适合企业知识库检索增强后的复杂问答。\n2. 高性价比轻量模型：适合 FAQ、摘要、分类等高频低成本任务。\n3. 推理模型：适合复杂决策、代码分析和多步骤规划。\n\n如果你的流量主要来自客服和运营场景，可以先用轻量模型承接 70% 请求，再把复杂问题路由到推理模型。',
-    meta: '延迟 824ms · 预估 ¥0.0021',
-  },
-]
+export function attachmentKindFromMime(mime: string): keyof typeof ATTACHMENT_LIMITS | null {
+  if (mime.startsWith('image/')) return 'image'
+  if (mime.startsWith('audio/')) return 'audio'
+  if (mime.startsWith('video/')) return 'video'
+  return null
+}
 
-const CTX_TIERS = { standard: 32_768, high: 131_072 } as const
+/**
+ * 有附件时任务在同一类别内的两个子任务间切换（§二 task 值域）：对话类多模态输入、
+ * 图像/音频/视频类"以图/音生成或识别"。会话固定后 task 不会再变，只在懒创建时算一次。
+ * 单模型页/对比页共用。
+ */
+export function resolveEffectiveTask(category: ExperienceCategoryKey, attachmentKind: string | null): ExperienceTaskType {
+  if (category === 'dialogue') {
+    if (attachmentKind === 'image') return 'image_to_text'
+    if (attachmentKind === 'video') return 'video_to_text'
+    return 'text_to_text'
+  }
+  if (category === 'image') return attachmentKind ? 'image_to_image' : 'text_to_image'
+  if (category === 'audio') return attachmentKind ? 'audio_to_text' : 'text_to_audio'
+  return attachmentKind ? 'image_to_video' : 'text_to_video'
+}
 
-export function matchesCategory(model: CatalogModelItem, category: CategoryKey) {
-  if (category === 'all') return true
-  const ctx = model.context_length ?? 0
-  if (category === 'standard') return ctx <= CTX_TIERS.standard
-  if (category === 'high') return ctx > CTX_TIERS.standard && ctx <= CTX_TIERS.high
-  if (category === 'ultra') return ctx > CTX_TIERS.high
-  return true
+function taskToCategory(task: string): ExperienceCategoryKey | undefined {
+  for (const cat of EXPERIENCE_CATEGORY_ORDER) {
+    if (EXPERIENCE_CATEGORY_TASKS[cat].includes(task as ExperienceTaskType)) return cat
+  }
+  return undefined
+}
+
+/**
+ * 推断模型所属一级类别。优先取 experience_types（服务端下发的可体验任务，直接
+ * 对应 PRD 任务枚举）；缺失时按输出模态兜底（老数据/字段未下发场景）。
+ */
+export function resolveModelCategory(model: CatalogModelItem): ExperienceCategoryKey {
+  for (const task of model.experience_types ?? []) {
+    const cat = taskToCategory(task)
+    if (cat) return cat
+  }
+  const out = model.output_modalities ?? model.modalities ?? []
+  if (out.includes('video')) return 'video'
+  if (out.includes('audio')) return 'audio'
+  if (out.includes('image') && !out.includes('text')) return 'image'
+  return 'dialogue'
+}
+
+/** 模型是否配置了任意可体验任务（PRD 模型广场 §AC-13「暂未开放」判定依据，
+ *  原型 App.tsx:4619 `getPlaygroundTasks(model).length === 0` 逐字对齐） */
+export function hasPlaygroundExperience(model: CatalogModelItem): boolean {
+  return (model.experience_types ?? []).length > 0
+}
+
+/**
+ * 会话里引用的模型已不在当前目录（下线/删除）时的占位展示（PRD §AC-18 下线模型）。
+ * 单模型页/对比页共用——只用于渲染模型条（名称/头像/状态），不可用于真实发送，
+ * 该列/该会话后续操作前必须先换成目录里的真实模型。
+ */
+export function offlineModelPlaceholder(modelId: string): CatalogModelItem {
+  return {
+    id: modelId,
+    model_id: modelId,
+    display_name: modelId,
+    modalities: [],
+    tags: [],
+    context_length: 0,
+    max_output_tokens: 0,
+    pricing: { input_per_1m: '0', output_per_1m: '0', cache_read_per_1m: '0', currency: 'CNY' },
+    released_at: '',
+    knowledge_cutoff: '',
+    status: 'unavailable',
+    logo_url: '',
+  }
+}
+
+/** 模型是否已下线（PRD §AC-18 判定依据），modelbar/composer 据此切到只读态 */
+export function isOfflineModel(model: CatalogModelItem): boolean {
+  return model.status === 'unavailable'
 }
 
 /**
@@ -100,22 +255,43 @@ export function matchesCategory(model: CatalogModelItem, category: CategoryKey) 
  * 无模态信息默认按文本对待（避免数据缺失误伤 LLM）。
  * 含 image 模态（多模态视觉 LLM）仍保留，它们能正常走文本对话。
  */
+/** 空态示例 Prompt（逐字取自原型 App.tsx:17000-17023 playgroundSamplePrompts 的 label/prompt，回复由后端真实生成，不搬运原型的 mock replies） */
+export function playgroundSamplePrompts(): Array<{ label: string; prompt: string }> {
+  return [
+    { label: i18n.t('modelsExperience.samplePrompts.compare.label'), prompt: i18n.t('modelsExperience.samplePrompts.compare.prompt') },
+    { label: i18n.t('modelsExperience.samplePrompts.explain.label'), prompt: i18n.t('modelsExperience.samplePrompts.explain.prompt') },
+    { label: i18n.t('modelsExperience.samplePrompts.translate.label'), prompt: i18n.t('modelsExperience.samplePrompts.translate.prompt') },
+  ]
+}
+
+/**
+ * 价格 chip 文案：与原型 App.tsx `playgroundPriceText()` 逐字对齐——
+ * 免费模型「限时免费」；否则「¥输入价 / ¥输出价 每M」，只有输出价时省去输入价那半。
+ * 单模型页与对比页共用（对比页每列头部也要展示同样的价格 chip）。
+ */
+export function dualPriceText(model: CatalogModelItem): string {
+  const currency = model.pricing?.currency === 'USD' ? '$' : '¥'
+  const input = model.pricing?.input_per_1m
+  const output = model.pricing?.output_per_1m
+  const perM = i18n.t('modelsExperience.perM')
+  if (!input && !output) return i18n.t('modelsExperience.freeQuota')
+  if (!input) return `${currency}${trimPriceZeros(output ?? '0')} ${perM}`
+  return `${currency}${trimPriceZeros(input)} / ${currency}${trimPriceZeros(output ?? input)} ${perM}`
+}
+
+/** 是否付费模型：只认服务端显式限免标记 + 价格字段，不做其它推断（§9.1：价格为 0 但未标 free 的仍按付费处理） */
+export function isPaidModel(model: CatalogModelItem): boolean {
+  if (model.promotion?.free) return false
+  const input = parseFloat(model.pricing?.input_per_1m ?? '0')
+  const output = parseFloat(model.pricing?.output_per_1m ?? '0')
+  return (Number.isFinite(input) && input > 0) || (Number.isFinite(output) && output > 0)
+}
+
 export function isChatModel(model: CatalogModelItem): boolean {
   const modalities = model.modalities ?? []
   if (modalities.length === 0) return true
   if (modalities.includes('video') || modalities.includes('audio')) return false
   return modalities.includes('text')
-}
-
-export function vendorNode(model: CatalogModelItem, size: 'sm' | 'lg' = 'sm') {
-  return (
-    <ModelIcon
-      model={model}
-      size={size === 'lg' ? 44 : 32}
-      rounded={size === 'lg' ? 'rounded-md' : 'rounded-lg'}
-      className="bg-mg-bg-0"
-    />
-  )
 }
 
 export function modalityBadges(model: CatalogModelItem) {
@@ -126,4 +302,37 @@ export function quotaPercent(model: CatalogModelItem) {
   if (model.status === 'disabled') return 0
   if (model.zero_data_retention) return 100
   return model.providers_count ? Math.min(100, 64 + model.providers_count * 7) : 86
+}
+
+/** 埋点用非加密短哈希（§10.2 dispatch_id_hash 等字段）：只为脱敏，非安全用途 */
+export function hashId(input: string): string {
+  let h = 0
+  for (let i = 0; i < input.length; i++) h = (Math.imul(31, h) + input.charCodeAt(i)) | 0
+  return (h >>> 0).toString(36)
+}
+
+/** 埋点耗时分桶（§10.3 playground_model_run_result.latency_bucket），边界为工程经验值 */
+export function latencyBucket(ms: number): string {
+  if (ms < 1000) return '<1s'
+  if (ms < 3000) return '1-3s'
+  if (ms < 10000) return '3-10s'
+  if (ms < 30000) return '10-30s'
+  return '>30s'
+}
+
+/** 埋点 Token 分桶（§10.3 playground_model_run_result.token_bucket） */
+export function tokenBucket(tokens: number): string {
+  if (tokens < 500) return '<500'
+  if (tokens < 2000) return '500-2k'
+  if (tokens < 8000) return '2k-8k'
+  if (tokens < 32000) return '8k-32k'
+  return '>32k'
+}
+
+/** 埋点附件大小分桶（§10.3 playground_attachment_result.size_bucket） */
+export function sizeBucket(bytes: number): string {
+  if (bytes < 1024 * 1024) return '<1MB'
+  if (bytes < 10 * 1024 * 1024) return '1-10MB'
+  if (bytes < 50 * 1024 * 1024) return '10-50MB'
+  return '>50MB'
 }

@@ -1,0 +1,209 @@
+/* ── 模型对比工作台（PRD 1.0.4 §7.3/7.4）───────────────────────────────── */
+
+.models-compare-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  border: 1px solid var(--mg-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--mg-bg-0) 88%, transparent);
+}
+
+.models-compare-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mg-text-1);
+  font-size: 13px;
+}
+
+.models-compare-toolbar-meta {
+  color: var(--mg-text-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.models-compare-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.models-compare-columns {
+  display: grid;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+}
+
+.models-compare-column {
+  border: 1px solid var(--mg-border);
+  background: color-mix(in srgb, var(--mg-bg-0) 88%, transparent);
+  border-radius: 8px;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.models-compare-composer {
+  margin: 0 12px 12px;
+}
+
+/* 历史会话恢复/新建失败的行内提示（§7.8），不阻塞页面，仅提醒 */
+.models-experience-inline-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--mg-danger) 32%, var(--mg-border));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--mg-danger) 8%, var(--mg-bg-0));
+  color: var(--mg-text-2);
+  font-size: 12px;
+}
+
+.models-experience-inline-error > svg {
+  flex-shrink: 0;
+  color: var(--mg-danger);
+}
+
+/* 共享输入框需与上方三栏网格等宽对齐；.models-experience-composer-wrap 默认左右各
+   留 18px（单栏体验页用），这里覆盖清零，仅保留上间距。 */
+.models-compare-shared-composer.models-experience-composer-wrap {
+  margin: 14px 0 0;
+}
+
+/* 彩虹流光边框是单栏体验页的装饰效果，在对比页与上方三栏纯色边框并排时显得边框
+   忽明忽暗、风格不统一（用户反馈"浅色边框不明显不好看"）。改用与
+   .models-compare-column 一致的实色描边，视觉上与三栏对齐、观感统一。 */
+.models-compare-shared-composer.composer-rainbow-flow {
+  animation: none !important;
+  background-image: none !important;
+  background-color: color-mix(in srgb, var(--mg-bg-0) 88%, transparent) !important;
+  border: 1px solid var(--mg-border) !important;
+  box-shadow: none !important;
+}
+
+/* 共享附件"N个模型支持"提示（qa#545 §7.4/7.5），与附件预览行同一行展示 */
+.models-compare-attachment-support {
+  font-size: 12px;
+  color: var(--mg-text-3);
+  white-space: nowrap;
+}
+
+/* 对比结果标记（最快/成本最低），逐字对齐原型 playground-winner-chip */
+.models-experience-winner-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.models-experience-winner-chip.is-fast {
+  background: color-mix(in srgb, var(--mg-info, #3b82f6) 14%, transparent);
+  color: var(--mg-info, #3b82f6);
+}
+
+.models-experience-winner-chip.is-cheap {
+  background: color-mix(in srgb, var(--mg-success, #16a34a) 14%, transparent);
+  color: var(--mg-success, #16a34a);
+}
+
+/* 窄屏 Tab 切换条（§8.5）：宽屏隐藏，默认不占布局空间 */
+.models-compare-mobile-tabs {
+  display: none;
+}
+
+.models-compare-mobile-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--mg-border);
+  border-radius: var(--radius-full);
+  background: var(--mg-bg-0);
+  color: var(--mg-text-2);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.models-compare-mobile-tab.is-active {
+  border-color: var(--brand-base);
+  color: var(--mg-text-1);
+  background: color-mix(in srgb, var(--brand-base) 10%, var(--mg-bg-0));
+}
+
+.models-compare-mobile-tab-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mg-text-3);
+  flex-shrink: 0;
+}
+
+.models-compare-mobile-tab-dot.is-running {
+  background: var(--mg-info, #3b82f6);
+  animation: models-compare-tab-pulse 1.2s ease-in-out infinite;
+}
+
+.models-compare-mobile-tab-dot.is-succeeded {
+  background: var(--mg-success, #16a34a);
+}
+
+.models-compare-mobile-tab-dot.is-failed {
+  background: var(--mg-danger);
+}
+
+@keyframes models-compare-tab-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* 中等宽度：保持模型列最小可读宽度，横向滚动 + 吸附查看被裁切的列（§8.5），不挤压列宽 */
+@media (max-width: 1180px) and (min-width: 769px) {
+  .models-compare-columns {
+    display: flex !important;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 6px;
+  }
+
+  .models-compare-column {
+    flex: 0 0 360px;
+    min-width: 360px;
+    scroll-snap-align: start;
+  }
+}
+
+/* 窄屏：一次只展示一个模型列，顶部 Tab 切换；非激活列保留在 DOM（不销毁流式状态），只是隐藏 */
+@media (max-width: 768px) {
+  .models-compare-mobile-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    margin-bottom: 12px;
+  }
+
+  .models-compare-columns {
+    display: block !important;
+  }
+
+  .models-compare-column {
+    display: none !important;
+  }
+
+  .models-compare-column.is-active-mobile {
+    display: flex !important;
+  }
+}

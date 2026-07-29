@@ -263,11 +263,15 @@ export function CatalogCard({
         />
       </div>
 
-      {/* 操作：hover / 键盘聚焦时浮出，覆盖最底一行，不改变卡片高度 */}
+      {/* 操作：hover / 键盘聚焦时浮出，覆盖最底一行，不改变卡片高度。
+          主/次操作 flex-1 满行等分（原型 .marketplace-try/.marketplace-compare
+          均 flex:1），对比图标按钮固定 36px——之前两个主按钮不设 flex-1，
+          挤在左侧留一大截空白，位置对不上原型。 */}
       <div className="mg-mcard-actions">
         <Button
           variant="brand"
           size="sm"
+          className="flex-1"
           disabled={!hasExperience}
           title={!hasExperience ? t('modelsCatalog.button.comingSoonHint') : undefined}
           onClick={(e) => onTry(model.model_id, e)}
@@ -277,6 +281,7 @@ export function CatalogCard({
         <Button
           variant="outline"
           size="sm"
+          className="flex-1"
           onClick={(e) => {
             e.stopPropagation()
             onApiRequest?.(model)

@@ -1047,7 +1047,11 @@ body[theme-mode='dark'] .catalog-insight-panel {
   mask-image: linear-gradient(to left, rgba(0,0,0,1) 40%, transparent 100%);
 }
 
-.mg-featured-copy { position: relative; z-index: 1; display: grid; gap: 6px; justify-items: start; align-content: center; min-width: 0; }
+/* 原型口径：文案顶对齐、操作按钮底对齐（.marketplace-featured-copy 默认
+   align-content:start、.marketplace-featured-actions align-self:flex-end）——
+   之前这里 copy 加了 align-content:center、actions 没设 align-self，导致
+   继承 slide 的 stretch 后按钮整体被居中，位置对不上原型的「上文案下按钮」。 */
+.mg-featured-copy { position: relative; z-index: 1; display: grid; gap: 6px; justify-items: start; min-width: 0; }
 .mg-featured-badges { display: flex; gap: 6px; }
 .mg-featured-copy strong { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
 .mg-featured-meta { font-size: 12.5px; color: rgba(255,255,255,0.78); }
@@ -1057,7 +1061,7 @@ body[theme-mode='dark'] .catalog-insight-panel {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 
-.mg-featured-actions { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.mg-featured-actions { position: relative; z-index: 1; display: flex; align-items: flex-end; align-self: flex-end; gap: 10px; flex-shrink: 0; }
 /* 深色底上不用 Button variant：品牌实底按钮在深色卡上对比度不足，改用
    反白/描边两档，与原型一致。 */
 .mg-featured-actions button {

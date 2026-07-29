@@ -9,12 +9,9 @@
  *
  * 视觉走现状控制台：`.mg-badge` / `.mg-proto` / `.mg-metric` 等类与卡片同源
  * （catalog.css），不照抄原型的观感。
- *
- * 零数据保留 / 区域内路由 / 发布时间 / 知识库截止 是本控制台比原型多的字段，
- * 原型 6 格里放不下，另起「技术规格」一块保留，不丢信息。
  */
 import type { ReactNode } from 'react'
-import { LuWorkflow, LuShieldCheck, LuActivity, LuClock, LuSparkles } from 'react-icons/lu'
+import { LuSparkles } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 import type { CatalogModelDetail } from '@/types'
 import { ModalityBadge } from './ModalityBadge'
@@ -236,67 +233,10 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
         />
       </section>
 
-      {/* 技术规格：本控制台比原型多下发的字段，单独一块（有值才渲染整块）。
-          注意条件是 `!== undefined` 而不是真假值 —— 详情接口目前**不下发**
-          zero_data_retention / in_region_routing，此前按真假值渲染会把「未下发」
-          显示成「不支持」，那是编出来的结论。 */}
-      {(detail.zero_data_retention !== undefined
-        || detail.in_region_routing !== undefined
-        || detail.released_at
-        || detail.knowledge_cutoff) && (
-        <section className="mg-tile mg-detail-card">
-          <div className="mg-text-label text-[var(--mg-text-3)] mb-2.5 flex items-center gap-1.5">
-            <LuWorkflow size={14} className="text-[var(--mg-text-3)]" />
-            <span>{t('models.detail.specs')}</span>
-          </div>
-          <div className="mg-detail-extra">
-            {detail.zero_data_retention !== undefined && (
-              <div className="flex flex-col gap-1">
-                <span className="mg-text-caption text-[var(--mg-text-3)] flex items-center gap-1">
-                  <LuShieldCheck size={12} /> {t('models.detail.zeroDataRetention')}
-                </span>
-                <div>
-                  {detail.zero_data_retention ? (
-                    <span className="mg-compact-badge px-2 py-0.5 rounded-sm bg-mg-success/10 text-mg-success border border-mg-success/20">{t('models.detail.supported')}</span>
-                  ) : (
-                    <span className="mg-compact-badge px-2 py-0.5 rounded-sm bg-[var(--mg-fill-0)] text-[var(--mg-text-3)] border border-[var(--mg-border)]">{t('models.detail.notSupported')}</span>
-                  )}
-                </div>
-              </div>
-            )}
-            {detail.in_region_routing !== undefined && (
-              <div className="flex flex-col gap-1">
-                <span className="mg-text-caption text-[var(--mg-text-3)] flex items-center gap-1">
-                  <LuActivity size={12} /> {t('models.detail.inRegionRouting')}
-                </span>
-                <div>
-                  {detail.in_region_routing ? (
-                    <span className="mg-compact-badge px-2 py-0.5 rounded-sm bg-brand-pale text-brand-base border border-brand-light">{t('models.detail.supported')}</span>
-                  ) : (
-                    <span className="mg-compact-badge px-2 py-0.5 rounded-sm bg-[var(--mg-fill-0)] text-[var(--mg-text-3)] border border-[var(--mg-border)]">{t('models.detail.notSupported')}</span>
-                  )}
-                </div>
-              </div>
-            )}
-            {detail.released_at && (
-              <div className="flex flex-col gap-1">
-                <span className="mg-text-caption text-[var(--mg-text-3)] flex items-center gap-1">
-                  <LuClock size={12} /> {t('models.detail.releasedAt')}
-                </span>
-                <span className="mg-text-body text-[var(--mg-text-2)]">{detail.released_at}</span>
-              </div>
-            )}
-            {detail.knowledge_cutoff && (
-              <div className="flex flex-col gap-1">
-                <span className="mg-text-caption text-[var(--mg-text-3)] flex items-center gap-1">
-                  <LuClock size={12} /> {t('models.detail.knowledgeCutoff')}
-                </span>
-                <span className="mg-text-body text-[var(--mg-text-2)]">{detail.knowledge_cutoff}</span>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
+      {/* qa#290：详情页原型没有单独的"技术规格"板块（zero_data_retention/
+          in_region_routing/released_at/knowledge_cutoff 之前被塞进这里），
+          按原型对齐去掉——这几个字段展示价值不高（当前实测全是「不支持」），
+          原型 6 格规格条已经够用，不需要额外板块。 */}
     </>
   )
 }

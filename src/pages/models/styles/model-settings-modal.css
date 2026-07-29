@@ -93,6 +93,20 @@
 
 .model-settings-stats {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.model-settings-stats-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--mg-text-2);
+}
+
+.model-settings-stats-row {
+  display: flex;
   align-items: center;
   gap: 16px;
 }

@@ -2236,6 +2236,8 @@
       "videoDuration": "视频时长",
       "seconds": "秒",
       "generateAudio": "生成音频",
+      "generationMode": "生成方式",
+      "sessionSummary": "本会话累计",
       "requestCount": "请求数",
       "cost": "费用",
       "reset": "重置",

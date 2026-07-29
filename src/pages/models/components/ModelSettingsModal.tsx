@@ -316,8 +316,8 @@ function TranscribeParamsForm({ values, onChange }: { values: Record<string, unk
   )
 }
 
-/** 文生视频/图生视频参数表单：时长/比例/分辨率/数量 + 负面提示词/Seed/生成音频（PRD §7.9 逐字对齐） */
-function VideoParamsForm({ values, onChange }: { values: Record<string, unknown>; onChange: (key: string, value: unknown) => void }) {
+/** 文生视频/图生视频参数表单：生成方式(只读)+时长/比例/分辨率/数量 + 负面提示词/Seed/生成音频（PRD §7.9 逐字对齐） */
+function VideoParamsForm({ task, values, onChange }: { task: ModelTaskType; values: Record<string, unknown>; onChange: (key: string, value: unknown) => void }) {
   const { t } = useTranslation()
   const duration = asString(values.duration, '5')
   const aspectRatio = asString(values.aspect_ratio, '16:9')
@@ -329,6 +329,10 @@ function VideoParamsForm({ values, onChange }: { values: Record<string, unknown>
 
   return (
     <div className="model-settings-form">
+      <div className="model-settings-field model-settings-field-row">
+        <label className="model-settings-field-label">{t('modelsExperience.settings.generationMode')}</label>
+        <span className="text-xs font-semibold text-mg-text-1">{experienceTaskLabel(task)}</span>
+      </div>
       <SelectField label={t('modelsExperience.settings.videoDuration')} value={duration} options={['5', '8', '10']} suffix={t('modelsExperience.settings.seconds')} onChange={(v) => onChange('duration', v)} />
       <SelectField label={t('modelsExperience.settings.aspectRatio')} value={aspectRatio} options={['16:9', '9:16', '1:1']} onChange={(v) => onChange('aspect_ratio', v)} />
       <SelectField label={t('modelsExperience.settings.resolution')} value={resolution} options={['720p', '1080p']} onChange={(v) => onChange('resolution', v)} />
@@ -366,7 +370,7 @@ function TaskParamsForm({
   if (task === 'text_to_image' || task === 'image_to_image') return <ImageParamsForm values={values} onChange={onChange} />
   if (task === 'text_to_audio') return <TTSParamsForm values={values} onChange={onChange} />
   if (task === 'audio_to_text') return <TranscribeParamsForm values={values} onChange={onChange} />
-  return <VideoParamsForm values={values} onChange={onChange} />
+  return <VideoParamsForm task={task} values={values} onChange={onChange} />
 }
 
 export function ModelSettingsModal({
@@ -387,19 +391,22 @@ export function ModelSettingsModal({
   const footer = (
     <div className="model-settings-footer">
       <div className="model-settings-stats">
-        <div className="model-settings-stat">
-          <span className="model-settings-stat-label">{t('modelsExperience.settings.requestCount')}</span>
-          <span className="model-settings-stat-value">{sessionStats.requestCount}</span>
-        </div>
-        {isDialogue && (
+        <h4 className="model-settings-stats-title">{t('modelsExperience.settings.sessionSummary')}</h4>
+        <div className="model-settings-stats-row">
           <div className="model-settings-stat">
-            <span className="model-settings-stat-label">Tokens</span>
-            <span className="model-settings-stat-value">{formatNumber(sessionStats.tokens)}</span>
+            <span className="model-settings-stat-label">{t('modelsExperience.settings.requestCount')}</span>
+            <span className="model-settings-stat-value">{sessionStats.requestCount}</span>
           </div>
-        )}
-        <div className="model-settings-stat">
-          <span className="model-settings-stat-label">{t('modelsExperience.settings.cost')}</span>
-          <span className="model-settings-stat-value">{formatSessionSpend(sessionStats.cost)}</span>
+          {isDialogue && (
+            <div className="model-settings-stat">
+              <span className="model-settings-stat-label">Tokens</span>
+              <span className="model-settings-stat-value">{formatNumber(sessionStats.tokens)}</span>
+            </div>
+          )}
+          <div className="model-settings-stat">
+            <span className="model-settings-stat-label">{t('modelsExperience.settings.cost')}</span>
+            <span className="model-settings-stat-value">{formatSessionSpend(sessionStats.cost)}</span>
+          </div>
         </div>
       </div>
       <Button variant="outline" size="sm" icon={<LuRotateCcw size={14} />} onClick={onReset}>

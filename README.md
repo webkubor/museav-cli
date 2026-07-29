@@ -24,6 +24,21 @@
 
 ---
 
+## 我该用这个吗？（先看这段，别猜）
+
+**适合你，如果**：
+- 你想在终端里随手出一张图，不想开浏览器
+- 你在写脚本/自动化任务，需要程序化出图（比如批量生成、定时任务）
+- 你是个 Agent（Claude Code / Codex / Hermes 等），被要求帮用户出图
+
+**不适合你，如果你在做一个真正的产品/网站**：这个 CLI 是给终端用的，**不是** SDK 或后端集成方案。举个真实例子——好易美的 `hym-admin`（一个跑在 Cloudflare Pages Functions 上的业务后台）需要出图能力时，走的是两条路，都跟这个 CLI 无关：
+1. 人要用完整界面 → 用 SSO 直接内嵌 [studio 中台网页版](https://studio.webkubor.online)（iframe，登录态自动同步）
+2. 后端要程序化调用 → 直接 `fetch('https://studio.webkubor.online/api/generate', { headers: { 'X-API-Key': ... } })`，或者 `import { StudioClient } from 'studio-image'` 当库用
+
+**这不是随便选的**：Cloudflare Pages Functions/Workers 这类边缘运行时压根不能起子进程，`studio-image` 这个 CLI 二进制在那种环境里根本跑不起来。做产品集成，永远是调 HTTP API 或者拿 `StudioClient` 当库导入；CLI 是给"人在终端里"或"agent 跑 shell 命令"这两个场景用的，别的地方用不上也不该用。
+
+---
+
 ## 这是什么？为什么要用它？
 
 如果你做过 AI 出图，一定踩过这些坑：

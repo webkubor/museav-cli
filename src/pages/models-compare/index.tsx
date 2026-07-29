@@ -821,6 +821,7 @@ export default function ModelsComparePage() {
 
   function handleExitConfirmed() {
     if (!columns) return
+    trackEvent('playground_compare_exit', { action: 'confirm' })
     restoreSavedPreference()
     navigate('/models/playground', { state: { selectedModelId: columns[0].model.model_id } })
   }
@@ -898,14 +899,23 @@ export default function ModelsComparePage() {
     trackEvent('playground_settings_action', { action: 'modify', parameter_name: key })
     const next = { ...columns[idx].chatParams, [key]: value }
     updateColumn(idx, { chatParams: next })
-    if (sessionId) void saveExperienceModelConfig(sessionId, columns[idx].model.model_id, next)
+    // sessionId 在会话建好前为空，本地 chatParams 已生效，静默跳过持久化即可
+    if (sessionId) {
+      saveExperienceModelConfig(sessionId, columns[idx].model.model_id, next).catch((err) => {
+        appToast.requestError(err, t('modelsExperience.settings.saveFailed'))
+      })
+    }
   }
 
   function handleColumnParamReset(idx: number) {
     if (!columns) return
     trackEvent('playground_settings_action', { action: 'reset' })
     updateColumn(idx, { chatParams: {} })
-    if (sessionId) void resetExperienceModelConfig(sessionId, columns[idx].model.model_id)
+    if (sessionId) {
+      resetExperienceModelConfig(sessionId, columns[idx].model.model_id).catch((err) => {
+        appToast.requestError(err, t('modelsExperience.settings.resetFailed'))
+      })
+    }
   }
 
   if (bootError) {

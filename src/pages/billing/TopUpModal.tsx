@@ -185,9 +185,15 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
               <input
                 type="number"
                 min="1"
+                step="0.01"
                 value={customMode ? amount : ''}
                 onFocus={() => setCustomMode(true)}
-                onChange={(e) => { setAmount(e.target.value); setCustomMode(true) }}
+                onChange={(e) => {
+                  // qa#282：金额最多两位小数（法币最小单位是分），禁止 0.001 这类超精度输入
+                  const sanitized = e.target.value.match(/^\d*\.?\d{0,2}/)?.[0] ?? e.target.value
+                  setAmount(sanitized)
+                  setCustomMode(true)
+                }}
                 className="w-full h-10 pl-7 pr-3 rounded-md border border-mg-border bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-brand-base/40 focus:border-brand-base transition-all font-semibold font-mono text-mg-text-1"
                 placeholder={t('billing.rechargeModal.customAmount')}
               />

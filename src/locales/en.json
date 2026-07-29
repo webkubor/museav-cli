@@ -1554,8 +1554,8 @@
     "sort": {
       "default": "Recommended",
       "popular": "Popular",
-      "newest": "Newest",
-      "cheapest": "Cheapest"
+      "newest": "Newest release",
+      "cheapest": "Price: low to high"
     },
     "count": "{{n}} models",
     "emptyFiltered": "No models match your filters",

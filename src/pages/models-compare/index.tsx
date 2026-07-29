@@ -196,10 +196,13 @@ export default function ModelsComparePage() {
     if (bootedRef.current) return
     const ids = (location.state as { selectedIds?: string[] } | null)?.selectedIds
     // 刷新本页/直接输入 URL 时 location.state 会丢（本来就没有历史恢复，见文件头注释）——
-    // 这种情况不会等到 ids，之前会让"正在准备对比会话…"占位无限期挂着，改成直接报错退出
+    // 这种情况不会等到 ids，之前会让"正在准备对比会话…"占位无限期挂着，改成直接报错退出；
+    // 但用户可能是在一个真实会话里刷新的（不是真的没模型），报错态也把历史侧栏带出来
+    // 展开显示，能从里面点回刚才的会话，不是只有"返回重新选模型"一条死路。
     if (!ids || ids.length < 2) {
       bootedRef.current = true
       setBootError(t('modelsExperience.compare.modelsNotFound'))
+      setHistoryCollapsed(false)
       return
     }
     if (allModels.length === 0) return
@@ -207,6 +210,7 @@ export default function ModelsComparePage() {
     const resolved = ids.slice(0, MAX_COMPARE).map((id) => allModels.find((m) => m.id === id)).filter((m): m is CatalogModelItem => !!m)
     if (resolved.length < 2) {
       setBootError(t('modelsExperience.compare.modelsNotFound'))
+      setHistoryCollapsed(false)
       return
     }
     void bootSession(resolved)
@@ -929,7 +933,24 @@ export default function ModelsComparePage() {
     return (
       <div className="models-experience-page">
         <PageHeader title={t('modelsExperience.compare.pageTitle')} description={bootError} className="mb-4" />
-        <Button variant="brand" onClick={() => navigate('/models/playground')}>{t('modelsExperience.compare.backToExperience')}</Button>
+        <div className="models-experience-shell">
+          {/* 没有 selectedIds（刷新/直接开 URL）不代表用户没有正在进行的会话——历史侧栏照样带出来，
+              能从里面点回刚才的对比会话，不是只有"返回重新选模型"一条路（见上面 boot 的 useEffect）。 */}
+          <HistorySessionSidebar
+            collapsed={historyCollapsed}
+            onToggleCollapsed={(collapsed) => {
+              if (!collapsed) trackEvent('playground_history_action', { action: 'open' })
+              setHistoryCollapsed(collapsed)
+            }}
+            sessions={historySessions}
+            onSelectSession={(id) => void openHistorySession(id)}
+            onNewSession={() => navigate('/models/playground')}
+            onRenameSession={(id, name) => void renameHistorySession(id, name)}
+          />
+          <div className="models-experience-main">
+            <Button variant="brand" onClick={() => navigate('/models/playground')}>{t('modelsExperience.compare.backToExperience')}</Button>
+          </div>
+        </div>
       </div>
     )
   }

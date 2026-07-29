@@ -335,9 +335,11 @@
     "promo": {
       "title": "兑换优惠码",
       "subtitle": "线下收款 / 促销码自助到账",
-      "placeholder": "输入 Promo Code",
+      "codeLabel": "优惠码",
+      "placeholder": "输入线下收款或促销活动获得的优惠码",
+      "hint": "兑换金额将进入赠送余额，消费时优先扣减。",
       "submit": "立即兑换",
-      "emptyWarning": "请输入 Promo Code",
+      "emptyWarning": "请输入优惠码",
       "success": "兑换成功，到账 {{amount}} {{currency}}",
       "error": "兑换失败，请检查 Promo Code 是否有效",
       "errorInvalid": "兑换码无效，请检查后重试",

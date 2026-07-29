@@ -195,13 +195,20 @@ export function ApplyInvoiceTab({
             </button>
           </p>
         ) : (
-          <Select value={titleId} onChange={setTitleId} className="w-full" placeholder="选择发票抬头">
-            {titles.map((t) => (
-              <Select.Option key={t.id} value={t.id}>
-                {t.company_name}（{TITLE_TYPE_LABEL[t.type]}）
-              </Select.Option>
-            ))}
-          </Select>
+          <>
+            <Select value={titleId} onChange={setTitleId} className="w-full" placeholder="选择发票抬头">
+              {titles.map((t) => (
+                <Select.Option key={t.id} value={t.id}>
+                  {t.company_name}（{TITLE_TYPE_LABEL[t.type]}）
+                </Select.Option>
+              ))}
+            </Select>
+            {activeTitle && (
+              <p className="mt-1.5 text-xs text-mg-text-3">
+                税号 {activeTitle.tax_id} · 发票发送至 {activeTitle.email}
+              </p>
+            )}
+          </>
         )}
       </div>
 

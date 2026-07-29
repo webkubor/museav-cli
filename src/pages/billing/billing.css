@@ -24,22 +24,12 @@
   font-variant-numeric: tabular-nums;
 }
 
-.spendable-amount-glow {
-  color: var(--mg-text-1);
-  text-shadow: 0 1px 10px var(--brand-glow);
-}
-
-body[theme-mode='dark'] .spendable-amount-glow {
-  color: var(--mg-text-1);
-  text-shadow: 0 1px 14px var(--brand-glow);
-}
-
 .billing-balance-bucket {
   position: relative;
   min-width: 0;
   border-radius: var(--radius-md);
   border: 1px solid var(--mg-border);
-  background-color: var(--mg-fill-0);
+  background-color: var(--card-bg);
   transition:
     transform 0.2s ease,
     border-color 0.2s ease,

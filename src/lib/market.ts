@@ -22,7 +22,7 @@ export function getMarketQueryOverride(): Market | null {
     // 才不会回到 dashboard 后又被 test 平台配置翻回国内。
     try {
       sessionStorage.setItem(MARKET_OVERRIDE_SESSION_KEY, fromQuery)
-    } catch {}
+    } catch { /* 隐私模式写入失败，忽略——市场值仍以当次 query 为准 */ }
     return fromQuery
   }
 

@@ -23,7 +23,7 @@ function detectMarket(): string {
   try {
     const fromSession = sessionStorage.getItem(MARKET_OVERRIDE_SESSION_KEY)
     if (fromSession === 'china' || fromSession === 'global') return fromSession
-  } catch {}
+  } catch { /* 隐私模式读取失败，忽略——回落域名判定 */ }
   return marketFromLocation(window.location.hostname, window.location.search)
 }
 

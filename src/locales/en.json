@@ -335,9 +335,11 @@
     "promo": {
       "title": "Redeem Promo Code",
       "subtitle": "Offline payment / self-service promo redemption",
-      "placeholder": "Enter Promo Code",
+      "codeLabel": "Promo code",
+      "placeholder": "Enter the promo code from an offline payment or promotion",
+      "hint": "The redeemed amount goes to your gift balance and is used first.",
       "submit": "Redeem Now",
-      "emptyWarning": "Please enter a Promo Code",
+      "emptyWarning": "Please enter a promo code",
       "success": "Redeemed! Credited {{amount}} {{currency}}",
       "error": "Redemption failed, please check the Promo Code",
       "errorInvalid": "Invalid promo code. Check the code and try again.",

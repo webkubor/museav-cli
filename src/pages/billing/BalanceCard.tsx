@@ -10,13 +10,12 @@ import { trackAction, trackEvent } from '@/lib/track'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
-import { useMouseGlow } from '@/hooks/use-mouse-glow'
 import { TopUpModal } from './TopUpModal'
 import { PromoRedeemForm } from './PromoRedeemForm'
 import { calculateSpendableBalance, formatBalance } from './formatBalance'
 import { amountBand } from './billing-tracking'
 
-export type BalanceTab = 'main' | 'gift' | 'reward'
+export type BalanceTab = 'all' | 'main' | 'gift' | 'reward'
 
 interface BalanceCardProps {
   tenantId: string
@@ -46,10 +45,6 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
   const { main: spendableTotal } = formatBalance(
     spendableBalance === undefined ? undefined : String(spendableBalance),
   )
-
-  const mainRef = useMouseGlow<HTMLButtonElement>()
-  const giftRef = useMouseGlow<HTMLButtonElement>()
-  const rewardRef = useMouseGlow<HTMLButtonElement>()
 
   const cardCls = (active: boolean) =>
     cn(
@@ -148,7 +143,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
           <div className="flex items-baseline gap-3 flex-wrap">
             <div className="billing-spendable-line flex items-baseline gap-1">
               <span className="text-lg font-medium text-mg-text-2">{currencySymbol}</span>
-              <span className="billing-spendable-amount text-4xl font-bold tabular-nums leading-none spendable-amount-glow">
+              <span className="billing-spendable-amount text-4xl font-bold tabular-nums leading-none">
                 {balanceLoading || breakdownLoading ? '...' : spendableTotal}
               </span>
             </div>
@@ -158,7 +153,6 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
         {/* 余额细分：赠送→奖励→主依次自动扣减，不再需要手动转入主余额（PRD 已移除该操作） */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <button
-            ref={mainRef}
             type="button"
             onClick={() => onTabChange('main')}
             className={cn(cardCls(activeTab === 'main'), activeTab === 'main' && 'active-main')}
@@ -175,7 +169,6 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
           </button>
 
           <button
-            ref={giftRef}
             type="button"
             onClick={() => onTabChange('gift')}
             className={cn(cardCls(activeTab === 'gift'), activeTab === 'gift' && 'active-gift')}
@@ -193,7 +186,6 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
           </button>
 
           <button
-            ref={rewardRef}
             type="button"
             onClick={() => onTabChange('reward')}
             className={cn(cardCls(activeTab === 'reward'), activeTab === 'reward' && 'active-reward')}

@@ -50,7 +50,8 @@ export function PromoRedeemForm({ tenantId, onSuccess }: { tenantId: string; onS
   if (!canRedeem) return null
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-1.5">
+      <label className="block text-xs font-semibold text-mg-text-2">{t('billing.promo.codeLabel')}</label>
       <input
         type="text"
         value={code}
@@ -60,6 +61,7 @@ export function PromoRedeemForm({ tenantId, onSuccess }: { tenantId: string; onS
         autoFocus
         className="w-full h-11 px-3.5 rounded-md border border-mg-border bg-mg-fill-0/30 hover:bg-mg-fill-0 focus:bg-mg-fill-0 text-sm focus:outline-none focus:ring-1 focus:ring-brand-glow focus:border-brand-base transition-all font-medium text-mg-text-1"
       />
+      <p className="!mt-1 pb-2.5 text-xs text-mg-text-3">{t('billing.promo.hint')}</p>
       <Button
         type="submit"
         variant="brand"

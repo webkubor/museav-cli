@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { LuTicket, LuGift, LuUsers, LuShieldCheck, LuWallet } from 'react-icons/lu'
@@ -20,6 +20,7 @@ import { trackEvent } from '@/lib/track'
 import { listIncomeRecords } from '@/services/billing'
 import type { IncomeRecord, IncomeRecordType, IncomeRecordStatus, IncomeBalanceBucket } from '@/services/billing'
 import { BillingInvoiceTab } from './invoice/BillingInvoiceTab'
+import type { BalanceTab } from './BalanceCard'
 
 /** 渠道图标：支付渠道用品牌 logo，非支付来源用语义图标区分，避免整列都是干巴巴的文字 */
 const CHANNEL_ICON: Record<string, React.ReactNode> = {
@@ -106,7 +107,15 @@ const STATUS_BADGE: Record<IncomeRecordStatus, 'success' | 'warning' | 'danger'>
  * 数据来自 services/billing.listIncomeRecords（后端 #431 未交付前走充值+赠送前端合成回落）。
  * 发票为内嵌 tab（BillingInvoiceTab）。
  */
-export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: string; currencySymbol: string }) {
+export function BillingLedgerPanel({
+  tenantId, currencySymbol, bucketFilter, onBucketFilterChange,
+}: {
+  tenantId: string
+  currencySymbol: string
+  /** 余额桶筛选：与 BalanceCard 的三桶点击共用同一份状态（qa 4-way 审计：曾各自为政，点桶无效果） */
+  bucketFilter: BalanceTab
+  onBucketFilterChange: (next: BalanceTab) => void
+}) {
   const { t, i18n } = useTranslation()
   const lang = i18n.language.startsWith('zh') ? 'zh' : 'en'
   const { hasPermission } = usePermissions()
@@ -115,16 +124,25 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
 
   const [ledgerTab, setLedgerTab] = useState<'transactions' | 'invoices'>('transactions')
   const [type, setType] = useState<'all' | IncomeRecordType>('all')
-  const [bucket, setBucket] = useState<'all' | IncomeBalanceBucket>('all')
   const [timeFilter, setTimeFilter] = useState<TimeFilterKey>('all')
   const pager = useCursorPager()
 
+  // bucketFilter 由父级（可能来自 BalanceCard 点桶，也可能来自下面的筛选 Select）驱动；
+  // 无论来源，变化时都要重置分页 + 上报，跳过首渲染避免误报。
+  const bucketMountedRef = useRef(false)
+  useEffect(() => {
+    if (!bucketMountedRef.current) { bucketMountedRef.current = true; return }
+    pager.reset()
+    trackEvent('billing_income_filter_change', { time_filter: timeFilter, type_filter: type, bucket_filter: bucketFilter })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bucketFilter])
+
   const { data, isFetching } = useQuery({
-    queryKey: ['billing', 'income-records', tenantId, type, bucket, timeFilter, pager.page, pager.cursor],
+    queryKey: ['billing', 'income-records', tenantId, type, bucketFilter, timeFilter, pager.page, pager.cursor],
     queryFn: () =>
       listIncomeRecords(tenantId, {
         type: type === 'all' ? undefined : type,
-        bucket: bucket === 'all' ? undefined : bucket,
+        bucket: bucketFilter === 'all' ? undefined : bucketFilter,
         ...timeRange(timeFilter),
         cursor: pager.cursor,
         page_size: 10,
@@ -136,12 +154,13 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
   const items = data?.items ?? []
   const hasMore = Boolean(data?.has_more && data?.next_cursor)
 
-  // §11.2 billing_income_filter_change：三个筛选维度共用一个上报点，每次都带完整当前筛选组合
-  const trackFilterChange = (next: { time?: TimeFilterKey; type?: 'all' | IncomeRecordType; bucket?: 'all' | IncomeBalanceBucket }) => {
+  // §11.2 billing_income_filter_change：type/time 两维度共用这个上报点；bucket 维度的上报
+  // 已改由上面那个 effect 统一处理（无论触发源是这里的 Select 还是 BalanceCard 点桶）。
+  const trackFilterChange = (next: { time?: TimeFilterKey; type?: 'all' | IncomeRecordType }) => {
     trackEvent('billing_income_filter_change', {
       time_filter: next.time ?? timeFilter,
       type_filter: next.type ?? type,
-      bucket_filter: next.bucket ?? bucket,
+      bucket_filter: bucketFilter,
     })
   }
   const onTypeChange = (v: string) => {
@@ -151,10 +170,7 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
     trackFilterChange({ type: next })
   }
   const onBucketChange = (v: string) => {
-    const next = v as 'all' | IncomeBalanceBucket
-    setBucket(next)
-    pager.reset()
-    trackFilterChange({ bucket: next })
+    onBucketFilterChange(v as BalanceTab)
   }
   const onTimeChange = (v: string) => {
     const next = v as TimeFilterKey
@@ -163,10 +179,10 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
     trackFilterChange({ time: next })
   }
 
-  const hasActiveFilter = type !== 'all' || bucket !== 'all' || timeFilter !== 'all'
+  const hasActiveFilter = type !== 'all' || bucketFilter !== 'all' || timeFilter !== 'all'
   const clearFilters = () => {
     setType('all')
-    setBucket('all')
+    onBucketFilterChange('all')
     setTimeFilter('all')
     pager.reset()
   }
@@ -228,7 +244,7 @@ export function BillingLedgerPanel({ tenantId, currencySymbol }: { tenantId: str
                 </Select.Option>
               ))}
             </Select>
-            <Select value={bucket} onChange={onBucketChange} className="h-8 w-28 text-xs rounded-md">
+            <Select value={bucketFilter} onChange={onBucketChange} className="h-8 w-32 text-xs rounded-md">
               {BUCKET_FILTERS.map((f) => (
                 <Select.Option key={f.value} value={f.value}>
                   {f.value === 'all' ? t('billing.income.bucketAll') : t(`billing.income.buckets.${f.value}`)}

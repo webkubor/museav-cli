@@ -19,7 +19,12 @@ export default function BillingPage() {
   const { symbol: currencySymbol } = useCurrency()
   const { tenant, role } = useTenantRole()
 
-  const [activeTab, setActiveTab] = useState<BalanceTab>('main')
+  // 余额桶点击=台账表的余额桶筛选（同一份状态，非各自为政的假交互）；再点一次已选中的桶
+  // 回到「全部」，因为三个桶按钮没有第四个「全部」选项可点。
+  const [bucketFilter, setBucketFilter] = useState<BalanceTab>('all')
+  const handleBucketTabChange = (tab: BalanceTab) => {
+    setBucketFilter((prev) => (prev === tab ? 'all' : tab))
+  }
 
   useEffect(() => {
     trackPageView('billing')
@@ -45,13 +50,18 @@ export default function BillingPage() {
       <BalanceCard
         tenantId={tenantId}
         currencySymbol={currencySymbol}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
+        activeTab={bucketFilter}
+        onTabChange={handleBucketTabChange}
       />
 
       <LowBalanceAlert tenantId={tenantId} />
 
-      <BillingLedgerPanel tenantId={tenantId} currencySymbol={currencySymbol} />
+      <BillingLedgerPanel
+        tenantId={tenantId}
+        currencySymbol={currencySymbol}
+        bucketFilter={bucketFilter}
+        onBucketFilterChange={setBucketFilter}
+      />
     </div>
   )
 }

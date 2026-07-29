@@ -14,11 +14,10 @@
  */
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LuChevronDown } from 'react-icons/lu'
+import { LuChevronDown, LuX } from 'react-icons/lu'
 import type { CatalogModelTag, CatalogFacets, CatalogFacetBucket } from '@/types'
 
 const VENDOR_PREVIEW = 6
-const TAG_PREVIEW = 8
 
 /** 厂商展示名。后端下发小写标识，原型展示品牌写法。 */
 const VENDOR_LABEL: Record<string, string> = {
@@ -55,9 +54,7 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets }: Pr
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [showAllVendors, setShowAllVendors] = useState(false)
-  const [showAllTags, setShowAllTags] = useState(false)
 
-  const has = (k: string) => selected.includes(k)
   const pickOne = (dim: string, code: string | null) =>
     setSelected((prev) => [...prev.filter((k) => !k.startsWith(`${dim}:`)), ...(code ? [`${dim}:${code}`] : [])])
   const toggle = (key: string) =>
@@ -75,7 +72,6 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets }: Pr
 
   const vendors = facets?.vendors ?? []
   const shownVendors = showAllVendors ? vendors : vendors.slice(0, VENDOR_PREVIEW)
-  const shownTags = showAllTags ? tags : tags.slice(0, TAG_PREVIEW)
   const total = facets?.total
 
   const toggleCollapse = (key: string) =>
@@ -159,20 +155,14 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets }: Pr
 
       {tags.length > 0 && (
         <Group id="capability" title={isZh ? '能力标签' : 'Capabilities'} collapsed={collapsed} onToggle={toggleCollapse}>
-          <div className="mg-side-chips">
-            {shownTags.map((tg) => (
-              <Chip key={tg.code} active={has(`tag:${tg.code}`)} onClick={() => toggle(`tag:${tg.code}`)}>
-                {isZh ? tg.name_zh : tg.name_en}
-                <Count n={countOf(facets?.capabilities, tg.code)} />
-              </Chip>
-            ))}
-            {tags.length > TAG_PREVIEW && (
-              <button type="button" className="mg-side-more" onClick={() => setShowAllTags((x) => !x)}>
-                {showAllTags ? t('modelsCatalog.sidebar.less') : t('modelsCatalog.sidebar.more')}
-                <LuChevronDown size={13} className={showAllTags ? 'rotate-180' : ''} />
-              </button>
-            )}
-          </div>
+          <TagDropdown
+            tags={tags}
+            selected={selected}
+            isZh={isZh}
+            onToggle={(code) => toggle(`tag:${code}`)}
+            placeholder={isZh ? '选择标签' : 'Select tags'}
+            emptyLabel={isZh ? '标签已全部选中' : 'All tags selected'}
+          />
         </Group>
       )}
 
@@ -242,4 +232,61 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
 function Count({ n }: { n?: number }) {
   if (n === undefined) return null
   return <i className="mg-side-count">{n}</i>
+}
+
+/**
+ * 能力标签筛选（对齐原型 marketplace-tag-select）：下拉多选组合框，非常驻展开的
+ * chip 网格——已选标签以可移除 chip 显示在收起态的 summary 里，点开菜单选剩余项。
+ * 用原生 <details>/<summary>，天然有点外自动收起，不用另写 outside-click 监听。
+ */
+function TagDropdown({
+  tags, selected, isZh, onToggle, placeholder, emptyLabel,
+}: {
+  tags: CatalogModelTag[]
+  selected: string[]
+  isZh: boolean
+  onToggle: (code: string) => void
+  placeholder: string
+  emptyLabel: string
+}) {
+  const selectedTags = tags.filter((tg) => selected.includes(`tag:${tg.code}`))
+  const remainingTags = tags.filter((tg) => !selected.includes(`tag:${tg.code}`))
+  const label = (tg: CatalogModelTag) => (isZh ? tg.name_zh : tg.name_en)
+
+  return (
+    <details className="mg-side-tag-select">
+      <summary>
+        <span className="mg-side-tag-chips">
+          {selectedTags.length === 0 ? (
+            <em className="mg-side-tag-placeholder">{placeholder}</em>
+          ) : (
+            selectedTags.map((tg) => (
+              <span className="mg-side-tag-chip" key={tg.code}>
+                {label(tg)}
+                <button
+                  type="button"
+                  aria-label={isZh ? `移除标签 ${tg.name_zh}` : `Remove tag ${tg.name_en}`}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggle(tg.code) }}
+                >
+                  <LuX size={11} />
+                </button>
+              </span>
+            ))
+          )}
+        </span>
+        <LuChevronDown size={13} />
+      </summary>
+      <div className="mg-side-tag-menu" aria-label={isZh ? '能力标签' : 'Capabilities'}>
+        {remainingTags.length === 0 ? (
+          <span className="mg-side-tag-menu-empty">{emptyLabel}</span>
+        ) : (
+          remainingTags.map((tg) => (
+            <button type="button" key={tg.code} className="mg-side-tag-option" onClick={() => onToggle(tg.code)}>
+              <span>{label(tg)}</span>
+            </button>
+          ))
+        )}
+      </div>
+    </details>
+  )
 }

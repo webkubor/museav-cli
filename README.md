@@ -1,8 +1,26 @@
+<div align="center">
+
+<img src="https://studio.webkubor.online/logo.svg" alt="studio" width="72" />
+
 # studio-image
+
+[![npm version](https://img.shields.io/npm/v/studio-image)](https://www.npmjs.com/package/studio-image)
+[![license](https://img.shields.io/npm/l/studio-image)](./LICENSE)
+[![node](https://img.shields.io/node/v/studio-image)](package.json)
+[![CI](https://github.com/webkubor/studio-image/actions/workflows/ci.yml/badge.svg)](https://github.com/webkubor/studio-image/actions/workflows/ci.yml)
+
+**Agent-ready** — designed to be shelled out to directly, not just used by humans
+
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-6366f1)](https://github.com/webkubor/studio-image/blob/main/AGENTS.md)
+[![Codex](https://img.shields.io/badge/Codex-compatible-10a37f)](https://github.com/webkubor/studio-image/blob/main/AGENTS.md)
+[![Hermes](https://img.shields.io/badge/Hermes-compatible-f2a65a)](https://github.com/webkubor/studio-image/blob/main/AGENTS.md)
+[![Antigravity](https://img.shields.io/badge/Antigravity-compatible-8b5cf6)](https://github.com/webkubor/studio-image/blob/main/AGENTS.md)
+
+</div>
 
 > 命令行出图，一行配置就能用。背后的 [studio 中台](https://studio.webkubor.online) 帮你搞定模型、密钥、路由、记账——你只管 prompt。
 
-`studio-image` 是 [studio 出图中台](https://studio.webkubor.online) 的命令行客户端。装上它，登录（或配一个 apiKey），就能在终端里出图、逆向、图生图。
+`studio-image` 是 [studio 出图中台](https://studio.webkubor.online) 的命令行客户端。装上它，登录（或配一个 apiKey），就能在终端里出图、逆向、图生图。给 Agent 用的详细说明见 [AGENTS.md](./AGENTS.md)。
 
 ---
 

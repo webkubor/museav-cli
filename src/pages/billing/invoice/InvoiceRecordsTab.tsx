@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { appToast } from '@/lib/app-toast'
 import { listInvoiceRecords, getInvoiceDownloadUrl } from '@/services/invoice'
 import type { InvoiceRecord, InvoiceTitleType } from '@/types'
 import { usePermissions } from '@/hooks/use-permissions'
@@ -72,7 +73,10 @@ export function InvoiceRecordsTab({
         setRecords((prev) => [...prev, ...res.items])
         setHasMore(res.has_more)
       })
-      .catch(() => setHasMore(false))
+      .catch(() => {
+        appToast.error('加载更多失败，请重试')
+        setHasMore(false)
+      })
   }
 
   const download = async (invoiceNo: string, invoiceStatus: InvoiceRecord['status']) => {
@@ -81,6 +85,7 @@ export function InvoiceRecordsTab({
       window.open(url, '_blank')
       trackEvent('billing_invoice_download_click', { invoice_status: invoiceStatus, result: 'success' })
     } catch {
+      appToast.error('下载失败，请重试')
       trackEvent('billing_invoice_download_click', { invoice_status: invoiceStatus, result: 'fail' })
     }
   }

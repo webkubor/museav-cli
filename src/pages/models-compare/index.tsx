@@ -74,6 +74,7 @@ import {
   ATTACHMENT_LIMITS,
   attachmentLimitLabel,
   attachmentKindFromMime,
+  modelSupportsAttachment,
   offlineModelPlaceholder,
   isOfflineModel,
   type ExperienceMessage,
@@ -969,13 +970,6 @@ export default function ModelsComparePage() {
   const compareCategory: ExperienceCategoryKey = resolveModelCategory(columns[0].model)
   const compareTask = EXPERIENCE_CATEGORY_DEFAULT_TASK[compareCategory]
 
-  /** 模型是否真的接受该附件类型：看 input_modalities（比类别粗粒度的 allowedAttachmentKinds
-   *  更准——同类别里未必所有模型都收同一种输入模态，例如对话类里有的模型不收图片附件）。 */
-  function modelSupportsAttachment(model: CatalogModelItem, kind: string): boolean {
-    const inputMods = model.input_modalities ?? model.modalities ?? []
-    return inputMods.includes(kind)
-  }
-
   /** 每个类别允许附哪种附件（§7.5），与单模型页同口径 */
   const allowedAttachmentKinds: Array<keyof typeof ATTACHMENT_LIMITS> =
     compareCategory === 'dialogue' ? ['image', 'video'] : compareCategory === 'audio' ? ['audio'] : ['image']
@@ -1488,6 +1482,13 @@ export default function ModelsComparePage() {
           void handleSwitchConfirm(model)
           setSwitchPickerIndex(null)
         }}
+        requiredAttachmentKind={(() => {
+          if (switchPickerIndex === null || !columns) return null
+          const targetColumn = columns[switchPickerIndex]
+          if (!targetColumn) return null
+          const staged = syncInput ? attachment : columnAttachments[targetColumn.conversationId]
+          return staged ? attachmentKindFromMime(staged.uploaded.mime) : null
+        })()}
       />
 
       <ModelPickerDialog

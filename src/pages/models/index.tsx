@@ -1005,6 +1005,7 @@ export default function ModelsPage() {
         models={allModels}
         isBalanceZero={isBalanceZero}
         onSelect={handlePick}
+        requiredAttachmentKind={attachment ? attachmentKindFromMime(attachment.uploaded.mime) : null}
       />
 
       {selectedModel && (

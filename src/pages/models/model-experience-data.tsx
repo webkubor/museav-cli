@@ -177,6 +177,15 @@ export function attachmentKindFromMime(mime: string): keyof typeof ATTACHMENT_LI
   return null
 }
 
+/** 模型是否真的接受该附件类型：看 input_modalities（比类别粗粒度的 ATTACHMENT_LIMITS 更准——
+ *  同类别里未必所有模型都收同一种输入模态）。单模型页/对比页/模型选择器三处共用（原为
+ *  models-compare 页内部函数，PRD 原型里选模型时也要用同一判断来禁用不支持当前附件的模型，
+ *  故提到这个共享文件）。 */
+export function modelSupportsAttachment(model: CatalogModelItem, kind: string): boolean {
+  const inputMods = model.input_modalities ?? model.modalities ?? []
+  return inputMods.includes(kind)
+}
+
 /**
  * 有附件时任务在同一类别内的两个子任务间切换（§二 task 值域）：对话类多模态输入、
  * 图像/音频/视频类"以图/音生成或识别"。会话固定后 task 不会再变，只在懒创建时算一次。

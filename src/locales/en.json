@@ -2255,6 +2255,7 @@
       "alreadyInCompare": "Already comparing",
       "noMatch": "No matching models",
       "balanceInsufficient": "Insufficient balance",
+      "attachmentUnsupported": "Doesn't support this attachment",
       "checkToCompare": "Check candidate models to compare parameters",
       "selectToViewDetail": "Select a model on the left to view details",
       "noTagline": "No model description yet.",

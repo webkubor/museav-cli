@@ -2267,6 +2267,7 @@
       "alreadyInCompare": "已在对比中",
       "noMatch": "没有匹配的模型",
       "balanceInsufficient": "余额不足",
+      "attachmentUnsupported": "不支持当前附件",
       "checkToCompare": "勾选候选模型查看参数对照",
       "selectToViewDetail": "选择左侧模型查看详情",
       "noTagline": "暂无模型简介。",

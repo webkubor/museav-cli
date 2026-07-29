@@ -20,7 +20,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  LuSearch, LuFileText, LuImage, LuMic, LuVideo, LuArrowRight, LuCircleAlert, LuWifiOff, LuCheck,
+  LuSearch, LuFileText, LuImage, LuMic, LuVideo, LuArrowRight, LuCircleAlert, LuWifiOff, LuCheck, LuFileX,
 } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
 import i18n from '@/i18n'
@@ -36,6 +36,7 @@ import type { CatalogModelItem } from '@/types'
 import {
   resolveModelCategory,
   isPaidModel,
+  modelSupportsAttachment,
   EXPERIENCE_CATEGORY_ORDER,
   experienceCategoryLabel,
   type ExperienceCategoryKey,
@@ -58,11 +59,12 @@ const MODALITY_ICON: Record<string, IconType> = {
 }
 const MODALITY_CODES = ['text', 'image', 'audio', 'video']
 
-type DisableReason = 'offline' | 'balance' | null
+type DisableReason = 'offline' | 'balance' | 'attachment' | null
 
-function disableReasonOf(model: CatalogModelItem, isBalanceZero: boolean): DisableReason {
+function disableReasonOf(model: CatalogModelItem, isBalanceZero: boolean, requiredAttachmentKind?: string | null): DisableReason {
   if (model.status === 'disabled') return 'offline'
   if (isBalanceZero && isPaidModel(model)) return 'balance'
+  if (requiredAttachmentKind && !modelSupportsAttachment(model, requiredAttachmentKind)) return 'attachment'
   return null
 }
 
@@ -119,6 +121,10 @@ export interface ModelPickerDialogProps {
   onConfirmAdd?: (models: CatalogModelItem[]) => void
   /** 余额是否为零，控制付费模型的禁用 + 「余额不足」标记 */
   isBalanceZero?: boolean
+  /** single/compareSwitch：当前会话已暂存的附件类型（image/audio/video）。传入后，不支持
+   *  该附件的候选模型会被禁用并标「不支持当前附件」（PRD 原型 MultimodalPlaygroundModelPicker
+   *  的 disabledReason 逻辑，此前选择器完全没做这个判断）。 */
+  requiredAttachmentKind?: string | null
 }
 
 /** 对比表行定义；用函数而非模块级常量是因为 label 要按当前语言取值（渲染时调用，随语言切换更新） */
@@ -161,6 +167,7 @@ export function ModelPickerDialog({
   maxAdditional = 2,
   onConfirmAdd,
   isBalanceZero = false,
+  requiredAttachmentKind = null,
 }: ModelPickerDialogProps) {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
@@ -227,7 +234,7 @@ export function ModelPickerDialog({
       return
     }
     setDetailId(model.id)
-    if (disableReasonOf(model, isBalanceZero) === null) {
+    if (disableReasonOf(model, isBalanceZero, requiredAttachmentKind) === null) {
       onSelect?.(model)
     }
   }
@@ -317,7 +324,7 @@ export function ModelPickerDialog({
               <EmptyState title={t('modelsExperience.picker.noMatch')} className="py-10" />
             )}
             {(mode === 'compareAdd' ? addableCandidates : candidates).map((model) => {
-              const reason = disableReasonOf(model, isBalanceZero)
+              const reason = disableReasonOf(model, isBalanceZero, requiredAttachmentKind)
               const checked = mode === 'compareAdd' && checkedIds.includes(model.id)
               const atCap = mode === 'compareAdd' && !checked && checkedIds.length >= maxAdditional
               const disabled = reason !== null || atCap
@@ -358,6 +365,11 @@ export function ModelPickerDialog({
                     {reason === 'offline' && (
                       <Badge variant="secondary" size="xs" className="gap-1">
                         <LuWifiOff size={10} /> {t('modelsExperience.modelOffline')}
+                      </Badge>
+                    )}
+                    {reason === 'attachment' && (
+                      <Badge variant="secondary" size="xs" className="gap-1">
+                        <LuFileX size={10} /> {t('modelsExperience.picker.attachmentUnsupported')}
                       </Badge>
                     )}
                   </div>

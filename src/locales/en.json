@@ -1855,12 +1855,13 @@
     "detail": {
       "tabOverview": "Overview",
       "pricing": "Pricing",
-      "pricingInput": "Input",
-      "pricingOutput": "Output",
-      "pricingCacheRead": "Cache Read",
+      "pricingInput": "Input price",
+      "pricingOutput": "Output price",
+      "pricingCacheRead": "Cache read",
+      "pricingCacheWrite": "Cache write",
       "specs": "Specs",
       "contextLength": "Context Window",
-      "maxOutputTokens": "Max Output Tokens",
+      "maxOutputTokens": "Max output",
       "zeroDataRetention": "Zero Data Retention",
       "supported": "Supported",
       "notSupported": "Not Supported",
@@ -1878,6 +1879,7 @@
       "image": "Image",
       "audio": "Audio",
       "video": "Video",
+      "file": "File",
       "embedding": "Embedding",
       "reranker": "Reranker"
     }

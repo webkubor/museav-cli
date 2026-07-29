@@ -52,7 +52,9 @@ const ApiAccessPanel = forwardRef<HTMLDivElement, ApiAccessPanelProps>(function 
   const protocolLabel = isZh ? PROTOCOL_LABEL : PROTOCOL_LABEL_EN
 
   return (
-    <section ref={ref} id="api-access" className="border-mg-border mt-6 border-t pt-5 scroll-mt-20">
+    // 分隔靠外层区块卡（详情页已按原型拆成 hero / 规格 / API / 相关模型 四块卡），
+    // 这里不再自带上分隔线，否则卡内会多出一条悬空横线。
+    <section ref={ref} id="api-access" className="scroll-mt-20">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-mg-text-1 text-[14px] font-semibold">
           {isZh ? 'API 接入' : 'API Access'}

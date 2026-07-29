@@ -46,20 +46,15 @@ cd studio-image && npm install && npm run build && npm link
 
 要求 Node.js >= 18。
 
-### 2. 注册中台（填地址 + apiKey）
-
-apiKey 从 [studio 中台](https://studio.webkubor.online) 的「租户管理」获取（格式 `sk-studio-<name>-<hex>`）。拿到后：
+### 2. 登录
 
 ```bash
-studio-image config --baseUrl https://studio.webkubor.online --apiKey sk-studio-xxx
+studio-image login
 ```
 
-配置存到 `~/.studio-image.json`。也支持环境变量（优先级更高，适合 CI / agent）：
+终端会显示一个验证码和链接，在浏览器打开链接、登录你的 [studio 中台](https://studio.webkubor.online) 账号、点批准，CLI 自动完成登录。登录态存到 `~/.studio-image.json`，7 天有效，过期重新 login 即可。
 
-```bash
-export STUDIO_API_KEY=sk-studio-xxx
-# baseUrl 有默认值，通常不用设
-```
+> **没有账号？** 先到 [studio.webkubor.online](https://studio.webkubor.online) 注册一个，再回来 login。
 
 ### 3. 出图
 
@@ -69,6 +64,22 @@ studio-image gen --prompt '演唱会海报，霓虹灯，赛博朋克'
 ```
 
 就这么简单。第一张图就这么出来了。
+
+---
+
+### B 端 / CI 场景：用 apikey 代替登录
+
+如果你是租户/B 端程序化调用（不需要个人登录态），或 CI 环境（无法浏览器授权），用 apikey：
+
+```bash
+# 方式一：config 命令存到本地
+studio-image config --apiKey sk-studio-xxx
+
+# 方式二：环境变量（CI 友好，优先级最高）
+export STUDIO_API_KEY=sk-studio-xxx
+```
+
+apikey（`sk-studio-<name>-<hex>`）从中台「租户管理」获取，适合脚本/服务长期使用。
 
 ---
 
@@ -135,7 +146,14 @@ CLI 背后是一个干净的 `StudioClient` class，也可以当库用：
 ```ts
 import { StudioClient } from 'studio-image'
 
+// 方式一：用 login 拿到的 token（个人用户）
 const studio = new StudioClient({
+  baseUrl: 'https://studio.webkubor.online',
+  token: process.env.STUDIO_TOKEN!,  // 或从 ~/.studio-image.json 读
+})
+
+// 方式二：用 apikey（租户/B 端）
+const studio2 = new StudioClient({
   baseUrl: 'https://studio.webkubor.online',
   apiKey: process.env.STUDIO_API_KEY!,
 })
@@ -156,12 +174,14 @@ console.log(r.sculpt.light)  // 光影分析
 
 | 命令 | 用途 | stdout 输出 |
 |------|------|------------|
+| `login` | 登录（设备授权） | — |
+| `logout` | 退出登录 | — |
 | `gen` | 出图 | 图片 URL |
 | `reverse <file\|url>` | 图片逆向 | 英文 prompt |
 | `upload <file>` | 上传垫图 | 图片 URL |
 | `models` | 可用模型 | 模型名列表 |
 | `balance` | 上游余额 | JSON |
-| `config` | 配置中台 | — |
+| `config` | 配置中台（B 端 apikey） | — |
 
 **stdout 只输出最终结果**，进度信息走 stderr——方便脚本和管道集成。
 

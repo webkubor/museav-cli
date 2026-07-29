@@ -54,15 +54,22 @@ export interface Balance {
 
 export class StudioClient {
   private baseUrl: string
-  private apiKey: string
+  private authHeader: Record<string, string>
 
-  constructor(opts: { baseUrl: string; apiKey: string }) {
+  constructor(opts: { baseUrl: string; apiKey?: string; token?: string }) {
     this.baseUrl = opts.baseUrl.replace(/\/+$/, '')
-    this.apiKey = opts.apiKey
+    // 个人用户 JWT 走 Bearer；租户 apikey 走 X-API-Key
+    if (opts.token) {
+      this.authHeader = { Authorization: `Bearer ${opts.token}` }
+    } else if (opts.apiKey) {
+      this.authHeader = { 'X-API-Key': opts.apiKey }
+    } else {
+      throw new Error('需要 token 或 apiKey')
+    }
   }
 
   private headers(extra: Record<string, string> = {}): Record<string, string> {
-    return { 'X-API-Key': this.apiKey, ...extra }
+    return { ...this.authHeader, ...extra }
   }
 
   private async request(path: string, init: RequestInit = {}): Promise<any> {

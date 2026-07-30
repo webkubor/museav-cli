@@ -1553,7 +1553,6 @@
     },
     "sort": {
       "default": "Recommended",
-      "popular": "Popular",
       "newest": "Newest release",
       "cheapest": "Price: low to high"
     },

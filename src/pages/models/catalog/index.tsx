@@ -21,7 +21,7 @@ import { queryLengthBucket, diffFilterChange, buildFilterSummary } from './catal
 import type { CatalogModelItem } from '@/types'
 import './catalog.css'
 
-type SortKey = 'default' | 'popular' | 'newest' | 'cheapest'
+type SortKey = 'default' | 'newest' | 'cheapest'
 // 上下文阈值改由服务端 facets 下发，前端不再硬编码（原 CTX_THRESHOLDS 已删除）。
 
 export default function ModelsCatalogPage() {
@@ -55,7 +55,6 @@ export default function ModelsCatalogPage() {
 
   const sortLabels: Record<SortKey, string> = {
     default: t('modelsCatalog.sort.default'),
-    popular: t('modelsCatalog.sort.popular'),
     newest: t('modelsCatalog.sort.newest'),
     cheapest: t('modelsCatalog.sort.cheapest'),
   }
@@ -152,17 +151,11 @@ export default function ModelsCatalogPage() {
    * 全部由服务端执行（见 listParams），这里不再重复过滤 —— 重复过滤会让侧栏计数
    * 与实际列表对不上。
    *
-   * 只有 popular 仍是本地排序：服务端热度排序（平台级调用量物化表）尚未上线，
-   * 按既定决策该选项保持现状、不隐藏，待后端就绪后原地替换。
+   * qa#291 二轮反馈：「热门」排序已删除——原型 App.tsx 只有 推荐排序/最新发布
+   * 两个选项，没有热门；服务端热度排序也确实没上线，需求方确认可以直接删掉，
+   * 不必等后端就绪再"原地替换"（之前的决策）。
    */
-  const visibleModels = useMemo(() => {
-    if (sort !== 'popular') return allModels
-    return [...allModels].sort(
-      (a, b) =>
-        (b.providers_count ?? 0) + (b.tags?.length ?? 0) -
-        ((a.providers_count ?? 0) + (a.tags?.length ?? 0)),
-    )
-  }, [allModels, sort])
+  const visibleModels = allModels
 
   // ── 埋点（PRD §10.2，qa#550）──────────────────────────────────────────────
   // visibleModelsRef：始终指向最新一次渲染的结果集，供下面的防抖/延迟回调在
@@ -336,7 +329,7 @@ export default function ModelsCatalogPage() {
               </button>
               {sortOpen && (
                 <div className="bg-mg-bg-2 border-mg-border absolute right-0 top-full z-20 mt-1.5 min-w-[140px] overflow-hidden rounded-md border py-1 shadow-lg">
-                  {(['default', 'popular', 'newest', 'cheapest'] as SortKey[]).map((key) => (
+                  {(['default', 'newest', 'cheapest'] as SortKey[]).map((key) => (
                     <button
                       key={key}
                       type="button"

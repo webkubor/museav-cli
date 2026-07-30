@@ -1552,7 +1552,6 @@
     },
     "sort": {
       "default": "推荐排序",
-      "popular": "热门",
       "newest": "最新发布",
       "cheapest": "价格从低到高"
     },

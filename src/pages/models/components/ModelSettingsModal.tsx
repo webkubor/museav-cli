@@ -42,6 +42,10 @@ export interface ModelSettingsModalProps {
   onReset: () => void
   /** 本会话累计（只包含该模型在本会话中的成功/计费结果，mock 数据由外部传入） */
   sessionStats: ModelSettingsSessionStats
+  /** 是否处于多模型对比会话（原型 App.tsx:19468 session.columns.length > 1）。
+   *  true 时图像/视频的「生成数量」锁定为 1 并显示说明文案（App.tsx:20321-20322/20363-20364：
+   *  多模型会话里每个模型固定生成 1 份，不允许再叠乘）。 */
+  multipleModels?: boolean
 }
 
 function formatNumber(value: number): string {
@@ -177,18 +181,20 @@ function SelectField({
   value,
   options,
   suffix,
+  disabled,
   onChange,
 }: {
   label: string
   value: string
   options: string[]
   suffix?: string
+  disabled?: boolean
   onChange: (value: string) => void
 }) {
   return (
     <div className="model-settings-field">
       <label className="model-settings-field-label">{label}</label>
-      <Select value={value} onChange={onChange} className="h-9 text-xs rounded-lg">
+      <Select value={value} onChange={onChange} disabled={disabled} className="h-9 text-xs rounded-lg">
         {options.map((opt) => (
           <Select.Option key={opt} value={opt}>
             {opt}{suffix ? ` ${suffix}` : ''}
@@ -204,12 +210,12 @@ function SelectField({
  * 注意：SelectField 的 options 是发给后端的参数值（非纯展示文案），只翻译 label，不翻译 options
  * 里的选项值——那些是接口约定的枚举，翻译了会改变实际传给后端的值。
  */
-function ImageParamsForm({ values, onChange }: { values: Record<string, unknown>; onChange: (key: string, value: unknown) => void }) {
+function ImageParamsForm({ values, onChange, multipleModels = false }: { values: Record<string, unknown>; onChange: (key: string, value: unknown) => void; multipleModels?: boolean }) {
   const { t } = useTranslation()
   const aspectRatio = asString(values.aspect_ratio, '1:1')
   const resolution = asString(values.resolution, '1024')
   const quality = asString(values.quality, 'standard')
-  const count = asString(values.count, '1')
+  const count = multipleModels ? '1' : asString(values.count, '1')
   const format = asString(values.format, 'PNG')
   const transparent = asBool(values.transparent, false)
   const negativePrompt = asString(values.negative_prompt)
@@ -220,7 +226,8 @@ function ImageParamsForm({ values, onChange }: { values: Record<string, unknown>
       <SelectField label={t('modelsExperience.settings.aspectRatio')} value={aspectRatio} options={['1:1', '4:3', '16:9']} onChange={(v) => onChange('aspect_ratio', v)} />
       <SelectField label={t('modelsExperience.settings.resolution')} value={resolution} options={['1024', '1536', '2048']} onChange={(v) => onChange('resolution', v)} />
       <SelectField label={t('modelsExperience.settings.quality')} value={quality} options={['standard', 'high']} onChange={(v) => onChange('quality', v)} />
-      <SelectField label={t('modelsExperience.settings.count')} value={count} options={['1', '2', '3', '4']} onChange={(v) => onChange('count', v)} />
+      <SelectField disabled={multipleModels} label={t('modelsExperience.settings.count')} value={count} options={multipleModels ? ['1'] : ['1', '2', '3', '4']} onChange={(v) => onChange('count', v)} />
+      {multipleModels && <p className="model-settings-inline-note">{t('modelsExperience.settings.multiModelCountNoteImage')}</p>}
 
       <details className="model-settings-advanced" open>
         <summary>{t('modelsExperience.settings.advanced')}</summary>
@@ -317,12 +324,12 @@ function TranscribeParamsForm({ values, onChange }: { values: Record<string, unk
 }
 
 /** 文生视频/图生视频参数表单：生成方式(只读)+时长/比例/分辨率/数量 + 负面提示词/Seed/生成音频（PRD §7.9 逐字对齐） */
-function VideoParamsForm({ task, values, onChange }: { task: ModelTaskType; values: Record<string, unknown>; onChange: (key: string, value: unknown) => void }) {
+function VideoParamsForm({ task, values, onChange, multipleModels = false }: { task: ModelTaskType; values: Record<string, unknown>; onChange: (key: string, value: unknown) => void; multipleModels?: boolean }) {
   const { t } = useTranslation()
   const duration = asString(values.duration, '5')
   const aspectRatio = asString(values.aspect_ratio, '16:9')
   const resolution = asString(values.resolution, '720p')
-  const count = asString(values.count, '1')
+  const count = multipleModels ? '1' : asString(values.count, '1')
   const negativePrompt = asString(values.negative_prompt)
   const seed = asString(values.seed)
   const generateAudio = asBool(values.generate_audio, false)
@@ -336,7 +343,8 @@ function VideoParamsForm({ task, values, onChange }: { task: ModelTaskType; valu
       <SelectField label={t('modelsExperience.settings.videoDuration')} value={duration} options={['5', '8', '10']} suffix={t('modelsExperience.settings.seconds')} onChange={(v) => onChange('duration', v)} />
       <SelectField label={t('modelsExperience.settings.aspectRatio')} value={aspectRatio} options={['16:9', '9:16', '1:1']} onChange={(v) => onChange('aspect_ratio', v)} />
       <SelectField label={t('modelsExperience.settings.resolution')} value={resolution} options={['720p', '1080p']} onChange={(v) => onChange('resolution', v)} />
-      <SelectField label={t('modelsExperience.settings.count')} value={count} options={['1', '2']} onChange={(v) => onChange('count', v)} />
+      <SelectField disabled={multipleModels} label={t('modelsExperience.settings.count')} value={count} options={multipleModels ? ['1'] : ['1', '2']} onChange={(v) => onChange('count', v)} />
+      {multipleModels && <p className="model-settings-inline-note">{t('modelsExperience.settings.multiModelCountNoteVideo')}</p>}
 
       <details className="model-settings-advanced" open>
         <summary>{t('modelsExperience.settings.advanced')}</summary>
@@ -362,15 +370,17 @@ function TaskParamsForm({
   task,
   values,
   onChange,
+  multipleModels,
 }: {
   task: ModelTaskType
   values: Record<string, unknown>
   onChange: (key: string, value: unknown) => void
+  multipleModels: boolean
 }) {
-  if (task === 'text_to_image' || task === 'image_to_image') return <ImageParamsForm values={values} onChange={onChange} />
+  if (task === 'text_to_image' || task === 'image_to_image') return <ImageParamsForm values={values} onChange={onChange} multipleModels={multipleModels} />
   if (task === 'text_to_audio') return <TTSParamsForm values={values} onChange={onChange} />
   if (task === 'audio_to_text') return <TranscribeParamsForm values={values} onChange={onChange} />
-  return <VideoParamsForm task={task} values={values} onChange={onChange} />
+  return <VideoParamsForm task={task} values={values} onChange={onChange} multipleModels={multipleModels} />
 }
 
 export function ModelSettingsModal({
@@ -384,6 +394,7 @@ export function ModelSettingsModal({
   onChange,
   onReset,
   sessionStats,
+  multipleModels = false,
 }: ModelSettingsModalProps) {
   const { t } = useTranslation()
   const isDialogue = DIALOGUE_TASKS.includes(task)
@@ -434,7 +445,7 @@ export function ModelSettingsModal({
       {isDialogue ? (
         <ChatParamsForm values={values} onChange={onChange} maxOutputTokens={maxOutputTokens} />
       ) : (
-        <TaskParamsForm task={task} values={values} onChange={onChange} />
+        <TaskParamsForm task={task} values={values} onChange={onChange} multipleModels={multipleModels} />
       )}
     </Modal>
   )

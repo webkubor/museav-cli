@@ -2122,16 +2122,14 @@
         "title": "Send your first message to check output and cost",
         "hint": "Supported images, audio, or video can be sent as message attachments."
       },
+      "taskTitle": "Configure the input to start {{task}}",
       "image": {
-        "title": "Configure the input to start generating images",
         "hint": "Estimated and actual cost will show in this model column."
       },
       "audio": {
-        "title": "Configure the input to start generating audio",
         "hint": "Estimated and actual cost will show in this model column."
       },
       "video": {
-        "title": "Configure the input to start generating video",
         "hint": "Estimated and actual cost will show in this model column."
       }
     },
@@ -2229,6 +2227,8 @@
       "seconds": "sec",
       "generateAudio": "Generate audio",
       "generationMode": "Generation mode",
+      "multiModelCountNoteImage": "In a multi-model session, each model generates exactly 1 image.",
+      "multiModelCountNoteVideo": "In a multi-model session, each model generates exactly 1 video.",
       "sessionSummary": "This session",
       "requestCount": "Requests",
       "cost": "Cost",

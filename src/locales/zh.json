@@ -2134,16 +2134,14 @@
         "title": "发送第一条消息，验证模型输出与成本",
         "hint": "支持的图片、音频或视频可以作为消息附件发送。"
       },
+      "taskTitle": "配置输入后开始{{task}}",
       "image": {
-        "title": "配置输入后开始生成图片",
         "hint": "结果会在当前模型列中展示预估费用与实际费用。"
       },
       "audio": {
-        "title": "配置输入后开始生成音频",
         "hint": "结果会在当前模型列中展示预估费用与实际费用。"
       },
       "video": {
-        "title": "配置输入后开始生成视频",
         "hint": "结果会在当前模型列中展示预估费用与实际费用。"
       }
     },
@@ -2241,6 +2239,8 @@
       "seconds": "秒",
       "generateAudio": "生成音频",
       "generationMode": "生成方式",
+      "multiModelCountNoteImage": "多模型会话中，每个模型固定生成 1 张图片。",
+      "multiModelCountNoteVideo": "多模型会话中，每个模型固定生成 1 个视频。",
       "sessionSummary": "本会话累计",
       "requestCount": "请求数",
       "cost": "费用",

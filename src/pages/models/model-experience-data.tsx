@@ -146,10 +146,16 @@ const CATEGORY_EMPTY_ICON: Record<ExperienceCategoryKey, IconType> = {
   video: LuVideo,
 }
 
-export function categoryEmptyCopy(category: ExperienceCategoryKey): { icon: IconType; title: string; hint: string } {
+/** 标题按任务、不按类别区分（原型 App.tsx:19327 `配置输入后开始${taskDefinition.shortLabel}`）——
+ *  同一类别下 text_to_image/image_to_image 等任务的 shortLabel 不同（文生图/图生图），
+ *  之前按 category 取值会让整类共用一句泛化文案，丢失任务差异。 */
+export function categoryEmptyCopy(task: ExperienceTaskType): { icon: IconType; title: string; hint: string } {
+  const category = taskToCategory(task) ?? 'dialogue'
   return {
     icon: CATEGORY_EMPTY_ICON[category],
-    title: i18n.t(`modelsExperience.categoryEmpty.${category}.title`),
+    title: category === 'dialogue'
+      ? i18n.t('modelsExperience.categoryEmpty.dialogue.title')
+      : i18n.t('modelsExperience.categoryEmpty.taskTitle', { task: experienceTaskLabel(task) }),
     hint: i18n.t(`modelsExperience.categoryEmpty.${category}.hint`),
   }
 }

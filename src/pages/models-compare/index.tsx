@@ -1292,10 +1292,11 @@ export default function ModelsComparePage() {
               emptyState={
                 <div className="models-experience-empty">
                   {(() => {
-                    const EmptyIcon = categoryEmptyCopy(compareCategory).icon
+                    const EmptyIcon = categoryEmptyCopy(compareTask).icon
                     return <EmptyIcon size={18} />
                   })()}
-                  <span>{categoryEmptyCopy(compareCategory).hint}</span>
+                  <strong>{categoryEmptyCopy(compareTask).title}</strong>
+                  <span>{categoryEmptyCopy(compareTask).hint}</span>
                 </div>
               }
             />
@@ -1597,6 +1598,7 @@ export default function ModelsComparePage() {
           onChange={(key, value) => handleColumnParamChange(settingsIndex, key, value)}
           onReset={() => handleColumnParamReset(settingsIndex)}
           sessionStats={sessionStats}
+          multipleModels={columns.length > 1}
         />
       )}
 

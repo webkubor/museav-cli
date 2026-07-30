@@ -919,11 +919,11 @@ export default function ModelsPage() {
                 emptyState={
                   <div className="models-experience-empty">
                     {(() => {
-                      const EmptyIcon = categoryEmptyCopy(selectedCategory).icon
+                      const EmptyIcon = categoryEmptyCopy(effectiveTask).icon
                       return <EmptyIcon size={20} />
                     })()}
-                    <strong>{categoryEmptyCopy(selectedCategory).title}</strong>
-                    <span>{categoryEmptyCopy(selectedCategory).hint}</span>
+                    <strong>{categoryEmptyCopy(effectiveTask).title}</strong>
+                    <span>{categoryEmptyCopy(effectiveTask).hint}</span>
                     {isDialogue && (
                       <div className="models-experience-sample-row">
                         {playgroundSamplePrompts().map((sample) => (

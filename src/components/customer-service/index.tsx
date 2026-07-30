@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/Button'
 import { useState, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 
-import Markdown from 'react-markdown'
+import { MarkdownContent } from '@/components/ui/MarkdownContent'
 import { LuX, LuSendHorizontal, LuRefreshCw, LuSquare } from 'react-icons/lu'
 import { useSiteLogo } from '@/config/brand-assets'
 import { storageKeys } from '@/lib/storage'
@@ -57,7 +57,7 @@ function MessageBubble({ msg }: { msg: Message }) {
         {msg.content
           ? (isUser
             ? msg.content
-            : <div className="cs-markdown"><Markdown>{msg.content}</Markdown></div>
+            : <MarkdownContent>{msg.content}</MarkdownContent>
           )
           : (msg.role === 'agent' ? <span style={{ color: 'var(--mg-text-3)', fontStyle: 'italic' }}>思考中…</span> : '')
         }

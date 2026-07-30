@@ -3,7 +3,7 @@
  * 逐字对齐原型 App.tsx:20470-20510 的 playground-message 结构。
  */
 import { useState } from 'react'
-import Markdown from 'react-markdown'
+import { MarkdownContent } from '@/components/ui/MarkdownContent'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { LuCheck, LuCopy } from 'react-icons/lu'
@@ -124,7 +124,7 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                     </div>
                   )}
                   {message.role === 'assistant' && !message.media ? (
-                    <div className="cs-markdown"><Markdown components={{ a: MessageLink }}>{message.content}</Markdown></div>
+                    <MarkdownContent components={{ a: MessageLink }}>{message.content}</MarkdownContent>
                   ) : message.content ? (
                     message.content.split('\n').map((line, lineIndex) => <p key={`${index}-${lineIndex}`}>{line}</p>)
                   ) : null}

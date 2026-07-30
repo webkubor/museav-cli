@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react'
-import Markdown from 'react-markdown'
+import { MarkdownContent } from '@/components/ui/MarkdownContent'
 import {
   LuClock3,
   LuDatabase,
@@ -395,7 +395,7 @@ function MarkdownBubble({ label, content, tone }: { label: string; content: stri
     <div className="rounded-md border border-mg-border/60 bg-mg-fill-0/30 p-3">
       <div className={cn('mb-1 mg-text-caption font-bold', tone === 'success' ? 'text-mg-success' : 'text-brand-base')}>{label}</div>
       {content ? (
-        <div className="cs-markdown text-mg-text-1"><Markdown>{content}</Markdown></div>
+        <MarkdownContent className="text-mg-text-1">{content}</MarkdownContent>
       ) : (
         <p className="mg-text-caption text-mg-text-1">（空）</p>
       )}

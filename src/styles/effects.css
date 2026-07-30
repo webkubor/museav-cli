@@ -166,6 +166,13 @@ body[theme-mode='dark'] .sidebar-flow-line::after {
 .cs-markdown h1, .cs-markdown h2, .cs-markdown h3 { font-size: 13px; font-weight: 700; margin: 8px 0 4px; }
 .cs-markdown blockquote { margin: 4px 0; padding-left: 10px; border-left: 3px solid var(--mg-border); color: var(--mg-text-3); }
 .cs-markdown hr { border: none; border-top: 1px solid var(--mg-border); margin: 8px 0; }
+/* GFM 表格（需配合 remark-gfm 插件，否则 | 会被当普通段落）。
+   模型回复里的宽表格必须能自己横向滚动，不能把消息气泡撑破 —— 外层给 overflow-x。 */
+.cs-markdown-table-wrap { margin: 8px 0; overflow-x: auto; }
+.cs-markdown table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.cs-markdown th, .cs-markdown td { padding: 6px 10px; border: 1px solid var(--mg-border); text-align: left; vertical-align: top; }
+.cs-markdown th { background: var(--mg-fill-1); font-weight: 700; white-space: nowrap; }
+.cs-markdown tbody tr:nth-child(even) { background: var(--mg-fill-0); }
 
 .shimmer-line {
   height: 0;

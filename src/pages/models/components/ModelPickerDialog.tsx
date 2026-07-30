@@ -47,6 +47,7 @@ import {
   EXPERIENCE_CATEGORY_ORDER,
   EXPERIENCE_CATEGORY_DEFAULT_TASK,
   experienceCategoryLabel,
+  experienceTaskLabel,
   type ExperienceCategoryKey,
   type ExperienceTaskType,
 } from '../model-experience-data'
@@ -287,6 +288,41 @@ export function ModelPickerDialog({
     () => checkedIds.map((id) => models.find((m) => m.id === id)).filter((m): m is CatalogModelItem => !!m),
     [checkedIds, models],
   )
+
+  /** single 模式的候选分三组（原型 App.tsx:19562-19575 / 19729-19733）：
+   *  当前任务 · X（experience_types 含当前任务）→ 其他可体验任务（有任务但不含当前任务）
+   *  → 暂不支持在线体验（experience_types 为空，不可选）。
+   *  改前是平铺一个列表，且把后两组直接过滤掉了——用户在类别页签下看不到那些
+   *  只支持同类别其他子任务的模型，白少一批可选项。 */
+  const singleGroupedRows = useMemo(() => {
+    if (mode !== 'single') return []
+    const withTasks = candidates.filter((m) => (m.experience_types?.length ?? 0) > 0)
+    const currentTaskModels = currentTask
+      ? withTasks.filter((m) => m.experience_types?.includes(currentTask))
+      : withTasks
+    const otherTaskModels = currentTask
+      ? withTasks.filter((m) => !m.experience_types?.includes(currentTask))
+      : []
+    const unsupportedModels = candidates.filter((m) => (m.experience_types?.length ?? 0) === 0)
+
+    const rows: Array<{ groupLabel: string } | { model: CatalogModelItem; unsupported: boolean }> = []
+    if (currentTaskModels.length > 0) {
+      // currentTask 是后端任务枚举字面值，转成展示文案再插值
+      if (currentTask) {
+        rows.push({ groupLabel: t('modelsExperience.picker.groupCurrentTask', { task: experienceTaskLabel(currentTask as ExperienceTaskType) }) })
+      }
+      currentTaskModels.forEach((model) => rows.push({ model, unsupported: false }))
+    }
+    if (otherTaskModels.length > 0) {
+      rows.push({ groupLabel: t('modelsExperience.picker.groupOtherTasks') })
+      otherTaskModels.forEach((model) => rows.push({ model, unsupported: false }))
+    }
+    if (unsupportedModels.length > 0) {
+      rows.push({ groupLabel: t('modelsExperience.picker.groupUnsupported') })
+      unsupportedModels.forEach((model) => rows.push({ model, unsupported: true }))
+    }
+    return rows
+  }, [mode, candidates, currentTask, t])
   const compareModels = mode === 'compareAdd' ? [...alreadySelectedModels, ...checkedModels] : []
 
   const detailModel = candidates.find((m) => m.id === detailId) ?? null
@@ -389,16 +425,26 @@ export function ModelPickerDialog({
             {(mode === 'compareAdd' ? addableCandidates : candidates).length === 0 && (
               <EmptyState title={t('modelsExperience.picker.noMatch')} className="py-10" />
             )}
-            {(mode === 'compareAdd' ? addableCandidates : candidates).map((model) => {
+            {(mode === 'compareAdd' ? addableCandidates : singleGroupedRows).map((entry) => {
+              // single 模式按原型三组渲染，组标题作为列表项混在同一个流里
+              if ('groupLabel' in entry) {
+                return (
+                  <div key={`group-${entry.groupLabel}`} className="model-picker-dialog__group-label">
+                    {entry.groupLabel}
+                  </div>
+                )
+              }
+              const model = 'model' in entry ? entry.model : entry
+              const unsupported = 'model' in entry ? entry.unsupported : false
               const reason = disableReasonOf(model, isBalanceZero, requiredAttachmentKind)
               const checked = mode === 'compareAdd' && checkedIds.includes(model.id)
               const atCap = mode === 'compareAdd' && !checked && checkedIds.length >= maxAdditional
-              const disabled = reason !== null || atCap
+              const disabled = unsupported || reason !== null || atCap
               return (
                 <button
                   key={model.id}
                   type="button"
-                  onClick={() => handleRowClick(model)}
+                  onClick={() => { if (!unsupported) handleRowClick(model) }}
                   className={cn(
                     'model-picker-dialog__row',
                     (detailId === model.id || checked) && 'is-active',
@@ -436,6 +482,11 @@ export function ModelPickerDialog({
                     {reason === 'attachment' && (
                       <Badge variant="secondary" size="xs" className="gap-1">
                         <LuFileX size={10} /> {t('modelsExperience.picker.attachmentUnsupported')}
+                      </Badge>
+                    )}
+                    {unsupported && (
+                      <Badge variant="secondary" size="xs" className="gap-1">
+                        <LuWifiOff size={10} /> {t('modelsExperience.picker.groupUnsupported')}
                       </Badge>
                     )}
                   </div>

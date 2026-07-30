@@ -49,7 +49,7 @@ git worktree remove ../wt-my-branch
 
 | 看板 | 完成流程 | 说明 |
 |:---|:---|:---|
-| QA 任务看板 | 进行中 → 已完成 | 开发/BUG单，代码完成即可标记已完成 |
+| QA 任务看板 | Open → 已认领 → 进行中 → 待验证 → 已完成 → Closed | BUG 必须带目标环境回归证据才可进入待验证；验收通过后再完成/关闭 |
 | PRD 派单 | 进行中 → 待验证 → 已完成 | PM需求单，必须先待验证，PM验收后才能标记已完成 |
 
 业务标签：`TASK`（需求）、`BUG`（缺陷）、`Feature`（功能）、`前端就绪`（前端完成待后端/QA）
@@ -57,22 +57,22 @@ git worktree remove ../wt-my-branch
 ### 操作流程
 
 ```bash
-S=~/.claude/skills/gitlab-board/agent-claim.mjs
+REPO=gitlab.ops.modelgo.com/qa/ai-quality-platform
 
-# ① 开工：看谁在做什么
-node $S status
+# ① 开工：先看状态与负责人，已在进行中的单不并行接手
+glab issue view 293 -R "$REPO" -c
 
-# ② 认领（发现空闲单）
-node $S claim 293 --mode execute --branch feat/my-branch
+# ② 认领并进入执行；一个单同一时间只能有一个状态标签
+glab issue update 293 -R "$REPO" -l 已认领
+glab issue update 293 -R "$REPO" -l 进行中 -u 已认领
 
-# 被锁住时会拒绝：
-# ❌ #293 已被认领中，别动：session=xxx branch=xxx mode=execute at=xxx
+# ③ 只有目标环境回归证据齐全，才能进入待验证
+glab issue note 293 -R "$REPO" -m "<回归结论 + 截图 + 脱敏接口数据>"
+glab issue update 293 -R "$REPO" -l 待验证 -u 进行中
 
-# ③ 完成 → 移到「待验证」
-node $S release 293 --to 待验证
-
-# 或移到「已完成」并关闭
-node $S release 293 --to 已完成
+# ④ QA 确认后完成并关闭
+glab issue update 293 -R "$REPO" -l 已完成 -u 待验证
+glab issue close 293 -R "$REPO"
 ```
 
 ### 认领锁规则
@@ -139,102 +139,164 @@ node $S claim 100 --project 46  # PRD 看板
    - 权限码没同步到后端 → 跑 `pnpm sync:permissions:check`/`--dry-run`（catalog SSOT）
    - 角色矩阵没授码、权限没按"所看空间"解析 → **后端契约**（RBAC/`/auth/session`）
    - ⚠️ 别停在第一层表象：#255「空间负责人少 tab」表面像前端 gate，实为 `/auth/session` 只按租户默认空间解析权限（后端契约缺口）——透镜（ssot）一点就现形。
-4. **带证据 SCQA 转对人**（见下「提单/评论格式」），指对模块 owner（团队指派表）。
-5. **闭环回单**：修复→test 部署→带 commit+构建号回评→挪「待验证」。
+4. **带证据 SCQA 转对人**（见下「生产验收 → QA → 回归 Loop」），指对模块 owner（团队指派表）。
+5. **闭环回单**：修复→目标环境部署→带 commit、构建号、截图与接口结果回评→挪「待验证」。
 
-### 提单格式（SCQA 结构，说人话别抽象）
+### 生产验收 → QA → 回归 Loop（唯一执行路径）
 
-```bash
-H=gitlab.ops.modelgo.com
+线上或测试环境发现问题时，不允许只在对话里报结论、只写 retro，或先改代码后补单。必须按下面顺序闭环：
 
-glab api -X POST "projects/1/issues" --hostname $H \
-  -f title="[Console] 调用日志-空间视图缺 scope 参数" \
-  -f description="$(cat <<'EOF'
+```text
+目标环境验收
+  → 结构化取证（截图 + 请求/响应）
+  → 按 SSOT 判定前端 / API / 混合归属
+  → 查重并创建 QA BUG（Open）
+  → 修复单关联 BUG、提交与部署
+  → 同一环境按原步骤回归
+  → 证据回评（待验证）
+  → QA 通过后已完成 / Closed
+```
+
+#### 1. 先给验收结论，再给证据
+
+每次验收回复固定使用下面格式；没有截图、接口数据或目标环境，不能写“已验证”。
+
+````md
+## 验收结论
+
+**状态：** 通过 / 失败 / 阻塞
+**环境：** <test / production URL>
+**范围：** <页面 + 用户操作 + 角色/模型/工作空间>
+**QA 单：** <链接；未建则写“正在按下方证据创建”>
+
+## 证据
+
+### 界面
+![成功态或失败态截图](<GitLab 上传后生成的 URL>)
+
+### 接口
+`<METHOD> <PATH>` → HTTP `<status>`，业务 `code=<code>`
+
+```json
+{
+  "只保留定位所需字段": "禁止放 token、cookie、手机号、完整密钥或整段二进制 URL"
+}
+```
+
+## 下一步
+
+<建单 / 修复 / 等待依赖 / 回归；必须有明确责任边界>
+````
+
+截图必须取“用户真实看到的状态”，至少一张成功基线和一张失败态；先在 GitLab issue 编辑器上传图片，再使用编辑器生成的 Markdown 链接。接口 JSON 只摘录能证明问题的字段，凭证和签名 URL 一律脱敏。
+
+#### 2. 判定归属，避免一单混根因
+
+| 证据 | 归属 | 动作 |
+|---|---|---|
+| 接口字段/状态正确，页面漏渲染、状态错误或刷新后丢失 | 前端 | 建/认领前端 BUG，QA 单写清期望 UI 与回归步骤 |
+| 请求路由、HTTP 状态或业务 code/字段违反契约 | API/后端 | 建 API BUG；前端不代替后端转派 |
+| 前端展示与 API 契约都异常 | 混合 | 分成互相链接的两张单；每张只写一个根因与验收标准 |
+
+HTTP 200 不等于业务成功：必须同时记录 HTTP 状态和响应体 `code`/错误字段。前端历史恢复类问题还要证明“消息接口是否有附件字段”和“前端是否实际请求附件展示 URL”。
+
+#### 3. QA BUG 的 SCQA 模板
+
+先用 `glab issue list` 在 `qa/ai-quality-platform` 查重；普通 BUG 只加 `BUG` 标签，保持 Open，不要创建即标“待验证”。一张单只对应一个可验证根因。
+
+````md
 ## SCQA
 
-**S 现状：** 调用日志页 `/logs` 的空间视图，负责人需要看到所管空间全员记录。
+**S 现状：** <环境、页面、角色、已确认的正常基线。>
 
-**C 问题：** `GET /api/v1/model-logs` 只有 `workspace_id`（单空间）和 `account_id`（单人）两个筛选维度，表达不了「我负责的多个空间的全部人」。
+**C 问题：** <用户看到什么；哪个接口返回什么；截图和 JSON 分别证明什么。>
 
-**Q 做什么：** 新增 `scope` 参数，`scope=owned` 表示当前用户负责的所有空间的记录。
+**Q 做什么：** <只写这张单要消除的根因，不把相邻问题捆进来。>
 
 **A 期望：**
-- 接口：`GET /api/v1/model-logs`
-- 新增参数：`scope`（string，枚举 `owned`）
-- 返回：`scope=owned` 时返回 `account_id` 归属空间负责人管理的全部空间记录
-- 权限：非空间负责人传 `scope=owned` → 403
+- 接口：`<METHOD> <PATH>`
+- 字段：`<request/response 字段名>`
+- 行为：`<页面在成功、失败、刷新后各应显示什么>`
+- 状态：HTTP `<status>` 且业务 `code=<value>`
+
+## 复现步骤
+
+1. <可从空会话开始的确定步骤>
+2. <操作>
+3. <刷新、恢复、切换或重试等关键状态转换>
+
+## 证据
+
+### 截图
+![成功基线](<url>)
+![失败态](<url>)
+
+### 请求与响应（已脱敏）
+```json
+{
+  "request": { "method": "<METHOD>", "path": "<PATH>" },
+  "response": { "http_status": 200, "code": 0, "data": {} }
+}
+```
 
 ## 验收标准
 
-- [ ] `GET /api/v1/model-logs?scope=owned` 空间负责人调用返回所管空间全部记录
-- [ ] 普通成员调用 `scope=owned` 返回 403
-- [ ] 不传 `scope` 行为不变（向后兼容）
+- [ ] <原复现步骤在目标环境通过>
+- [ ] <成功态截图与预期一致>
+- [ ] <失败态有可理解反馈，不留空白 UI>
+- [ ] <关键接口的 HTTP 状态、业务 code、字段符合 A>
+- [ ] <刷新/历史恢复/重试等状态转换不回归>
 
 ## 不做什么
 
-- 不需要连带改审计导出格式（那是另一个单）
-EOF
-)" \
-  -f labels="TASK,优先级：中,待处理" \
-  -f assignee_id=6
+- <明确不属于该根因的相邻范围>
+````
+
+#### 4. 状态与回评固定格式
+
+| 时机 | QA 单状态 | 必须写回的内容 |
+|---|---|---|
+| 发现并证据齐全 | Open | SCQA、截图、脱敏接口数据、影响范围 |
+| 开始处理 | 已认领 → 进行中 | 分支/责任边界；不得把别人的后端单擅自转派 |
+| 已部署到目标环境且原步骤回归通过 | 待验证 | commit、构建号、环境 URL、截图、接口结果 |
+| QA 确认通过 | 已完成 → Closed | 最终验收时间和结论 |
+| 复验失败 | 回到进行中 | 新证据、失败步骤、与旧证据的差异 |
+
+回评必须用同一种格式，不能只写“已修复”：
+
+```md
+## 回归结论
+
+**状态：** 通过 / 失败
+**环境：** <URL>
+**修复关联：** commit `<sha>` / 构建 `<build>`
+**复现步骤：** <沿用原 BUG 的第 1–N 步>
+
+## 证据
+- 界面：<截图链接>
+- 接口：`<METHOD> <PATH>` → HTTP `<status>`，`code=<code>`
+- 关键字段：<字段和值，已脱敏>
+
+## 状态动作
+<移待验证 / 退回进行中；原因>
 ```
 
-**格式铁律**：
-- SCQA 四段必须完整，结论先行（A 先说期望再给接口细节）
-- 每条要求 = **一个接口** + **具体字段名** + **期望返回值和状态码**
-- 多个接口 → 分别列 SCQA，互不重叠（MECE）
-- 验收标准写成 `- [ ]` checkbox，每条能独立验证
-- 别引用文件路径/行号（工单可能躺几天，代码位置会变）
-
-### 评论格式（转单/待澄清/闭环）—— SCQA 结构
-
-**转后端时，每条要求必须落到具体接口+字段+期望值。**
+#### 5. GitLab 原生命令（禁止 `glab api`）
 
 ```bash
-glab api -X POST "projects/1/issues/{iid}/notes" --hostname gitlab.ops.modelgo.com \
-  -f body="$(cat <<'EOF'
-## SCQA
+REPO=gitlab.ops.modelgo.com/qa/ai-quality-platform
 
-**S 现状：** 调用日志页 `/logs` 的空间视图，负责人需要看到所管空间全员记录。
+# 创建 BUG：Open 泳道，只加 BUG 标签
+glab issue create -R "$REPO" \
+  -t "[生产][模块] 问题摘要" \
+  -l BUG \
+  -d "<按上方 SCQA 模板填写的 Markdown>"
 
-**C 问题：** `GET /api/v1/model-logs` 只有 `workspace_id`（单空间）和 `account_id`（单人）两个筛选维度，表达不了「我负责的多个空间的全部人」。
-
-**Q 做什么：** 新增 `scope` 参数，`scope=owned` 表示当前用户负责的所有空间的记录。
-
-**A 期望：**
-- 接口：`GET /api/v1/model-logs`
-- 新增参数：`scope`（string，枚举 `owned`）
-- 返回：`scope=owned` 时返回 `account_id` 归属空间负责人管理的全部空间记录
-- 权限：非空间负责人传 `scope=owned` → 403
-
-## 验收标准
-
-- [ ] `GET /api/v1/model-logs?scope=owned` 空间负责人调用返回其一览空间的全部记录
-- [ ] 普通成员调用 `scope=owned` 返回 403
-- [ ] 不传 `scope` 行为不变（向后兼容）
-
-## 不做什么
-
-- 不需要连带改审计导出格式（那是 #15）
-EOF
-)"
-
-glab api -X PUT "projects/1/issues/{iid}" --hostname gitlab.ops.modelgo.com \
-  -f labels="TASK,待澄清"
-```
-
-**格式铁律**：
-- 每条要求 = **一个接口** + **具体字段** + **期望行为**，不混在一起
-- 多个接口 → 分别列 SCQA，互不重叠（MECE）
-- 对方不需要推理就能直接动手
-
-**修复完成 → 闭环：**
-
-```bash
-glab api -X POST "projects/1/issues/{iid}/notes" --hostname gitlab.ops.modelgo.com \
-  -f body="修复 commit: <sha> | 构建号: #<n> | 测试地址: https://console.test.modelgo.com"
-glab api -X PUT "projects/1/issues/{iid}" --hostname gitlab.ops.modelgo.com \
-  -f labels="TASK,待验证"
+# 回评与状态推进
+glab issue note <iid> -R "$REPO" -m "<按上方回归结论模板填写>"
+glab issue update <iid> -R "$REPO" -l 待验证 -u 进行中
+glab issue update <iid> -R "$REPO" -l 已完成 -u 待验证
+glab issue close <iid> -R "$REPO"
 ```
 
 ## 3. 冲突处理
@@ -244,7 +306,7 @@ glab api -X PUT "projects/1/issues/{iid}" --hostname gitlab.ops.modelgo.com \
 | 场景 | 处理 |
 |:---|:---|
 | 两个 agent 同时改同一个文件 | 先认领的改，后认领的等 release 再改 |
-| 看板同一个单被两个 agent 抢 | `agent-claim` 锁拒绝后到者 |
+| 看板同一个单被两个 agent 抢 | 以 issue 的 assignee、状态标签和最新评论为准；已在进行中的单不并行接手 |
 | PRD 原型 vs 现状代码 打架 | UI 方向对标现状代码，功能对标 PRD 原型 |
 | 需求方新要求 vs 已定稿 PRD | 贴证据回需求方，不自行选边 |
 
@@ -397,21 +459,22 @@ await page.evaluate(() => window.__mg_nav.menus())  // 列出所有菜单
 
 ```bash
 # 冷启动三板斧
-cat PROJECT-BRIEF.md              # 项目快照
-S=~/.claude/skills/gitlab-board/agent-claim.mjs
-node $S status                       # 看谁在做什么
+cat PROJECT-BRIEF.md                 # 项目快照
+glab issue list -R gitlab.ops.modelgo.com/qa/ai-quality-platform
+cs wt feature/<分支名>               # 创建隔离 worktree
 
-# 领任务 → 隔离 → 干活
-node $S claim <iid>                  # 认领
-cs wt feat/<分支名>                   # 创建隔离 worktree
+# 认领 → 隔离 → 干活
+glab issue update <iid> -R gitlab.ops.modelgo.com/qa/ai-quality-platform -l 已认领
+glab issue update <iid> -R gitlab.ops.modelgo.com/qa/ai-quality-platform -l 进行中 -u 已认领
 # ... 写代码 ...
 
 # 提交前
 cs check test                        # 类型 + lint + 构建
 cs search <关键词>                    # 查项目文档和规则
 
-# 收工
-node $S release <iid> --to 待验证    # 释放锁
+# 收工：只有目标环境回归证据齐全才可移待验证
+glab issue note <iid> -R gitlab.ops.modelgo.com/qa/ai-quality-platform -m "<回归结论 + 截图 + 接口证据>"
+glab issue update <iid> -R gitlab.ops.modelgo.com/qa/ai-quality-platform -l 待验证 -u 进行中
 ```
 
 ## 8. 真源阅读指南

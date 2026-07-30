@@ -2293,7 +2293,7 @@
       "addModelFailed": "添加模型失败：",
       "switchModelFailed": "切换模型失败：",
       "toolbarTitle": "模型对比",
-      "modelCount": "{{count}} / {{max}} 个模型",
+      "modelCount": "同一输入发送给 {{count}} 个模型 · 最多 {{max}} 个",
       "syncInput": "同步输入",
       "addModel": "添加模型",
       "exitCompare": "退出对比",

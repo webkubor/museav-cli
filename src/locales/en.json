@@ -2281,7 +2281,7 @@
       "addModelFailed": "Failed to add model: ",
       "switchModelFailed": "Failed to switch model: ",
       "toolbarTitle": "Model Comparison",
-      "modelCount": "{{count}} / {{max}} models",
+      "modelCount": "same input to {{count}} models · up to {{max}}",
       "syncInput": "Sync input",
       "addModel": "Add model",
       "exitCompare": "Exit comparison",

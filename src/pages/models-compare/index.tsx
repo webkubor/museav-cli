@@ -67,7 +67,6 @@ import {
   extractApiErrorMessage,
   experienceTaskLabel,
   resolveModelCategory,
-  experienceCategoryLabel,
   EXPERIENCE_CATEGORY_DEFAULT_TASK,
   modelCategoryTasks,
   taskNeedsFile,
@@ -1167,7 +1166,9 @@ export default function ModelsComparePage() {
         <div className="models-compare-toolbar-left">
           <LuColumns2 size={15} className="text-brand-base" />
           <strong>{t('modelsExperience.compare.toolbarTitle')}</strong>
-          <span className="models-compare-toolbar-meta">{experienceCategoryLabel(compareCategory)} · {t('modelsExperience.compare.modelCount', { count: columns.length, max: MAX_COMPARE })}</span>
+          {/* 原型 App.tsx:19104 用的是「任务」标签(文生视频)不是类别(视频)，且措辞是
+              「同一输入发送给 N 个模型 · 最多 M 个」，不是简写的「N / M 个模型」 */}
+          <span className="models-compare-toolbar-meta">{experienceTaskLabel(compareTask)} · {t('modelsExperience.compare.modelCount', { count: columns.length, max: MAX_COMPARE })}</span>
         </div>
         <div className="models-compare-toolbar-right">
           <label className="flex items-center gap-2 select-none cursor-pointer">

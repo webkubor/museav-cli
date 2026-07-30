@@ -200,19 +200,15 @@ export default function ModelsComparePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // 建会话：只在首次拿到 selectedIds + 目录加载完成时建一次
+  // 建会话：入口带模型时创建新会话；刷新/直达时默认恢复最新历史会话。
   useEffect(() => {
     if (bootedRef.current) return
     const navState = location.state as { selectedIds?: string[]; compareTask?: ExperienceTaskType } | null
     const ids = navState?.selectedIds
-    // 刷新本页/直接输入 URL 时 location.state 会丢（本来就没有历史恢复，见文件头注释）——
-    // 这种情况不会等到 ids，之前会让"正在准备对比会话…"占位无限期挂着，改成直接报错退出；
-    // 但用户可能是在一个真实会话里刷新的（不是真的没模型），报错态也把历史侧栏带出来
-    // 展开显示，能从里面点回刚才的会话，不是只有"返回重新选模型"一条死路。
     if (!ids || ids.length < 2) {
+      if (!modelsQuery.isSuccess) return
       bootedRef.current = true
-      setBootError(t('modelsExperience.compare.modelsNotFound'))
-      setHistoryCollapsed(false)
+      void restoreFirstHistorySession()
       return
     }
     if (allModels.length === 0) return
@@ -226,7 +222,7 @@ export default function ModelsComparePage() {
     void bootSession(resolved, navState?.compareTask)
     navigate(location.pathname, { replace: true, state: {} })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allModels])
+  }, [allModels, modelsQuery.isSuccess])
 
   useEffect(() => () => {
     abortRefs.current.forEach((controller) => controller?.abort())
@@ -261,8 +257,7 @@ export default function ModelsComparePage() {
   async function refreshHistorySessions() {
     try {
       const { items } = await listExperienceSessions({ limit: 20, offset: 0 })
-      setHistorySessions(
-        items.map((session) => ({
+      const sessions = items.map((session) => ({
           id: session.id,
           name: session.name,
           updatedAt: session.updated_at,
@@ -285,14 +280,28 @@ export default function ModelsComparePage() {
                   return {
                     id: conv.model_id,
                     name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, catalogModel.vendor ?? catalogModel.provider) : conv.model_id,
-                    offline: !catalogModel,
-                  }
-                }),
-        })),
-      )
+                  offline: !catalogModel,
+                }
+              }),
+        }))
+      setHistorySessions(sessions)
+      return sessions
     } catch {
       // 历史列表拉取失败不阻塞主流程，侧栏保持空态
+      return []
     }
+  }
+
+  /** 刷新或直达对比页时优先恢复列表第一条（接口按更新时间倒序），无记录才展示入口错误态。 */
+  async function restoreFirstHistorySession() {
+    const sessions = await refreshHistorySessions()
+    const firstSession = sessions[0]
+    if (firstSession && await openHistorySession(firstSession.id)) {
+      setHistoryCollapsed(false)
+      return
+    }
+    setBootError(t('modelsExperience.compare.modelsNotFound'))
+    setHistoryCollapsed(false)
   }
 
   /** 双击重命名（HistorySessionSidebar）：乐观更新 + 失败回滚，name 传空串会清空标题交回自动命名 */
@@ -312,8 +321,8 @@ export default function ModelsComparePage() {
    * 按它分组即可还原成每列各自的 history，不需要逐 conversation 再分别调接口。
    * conversations 组合要拿真实模型 id，走 GET 详情接口（列表响应不带 conversations）。
    */
-  async function openHistorySession(id: string) {
-    if (!id) return
+  async function openHistorySession(id: string): Promise<boolean> {
+    if (!id) return false
     try {
       const [detail, { items: msgItems }] = await Promise.all([
         getExperienceSession(id),
@@ -359,9 +368,11 @@ export default function ModelsComparePage() {
       setBootError(null)
       setHistoryActionError(null)
       trackEvent('playground_history_action', { action: 'restore' }, { result: 'success' })
+      return true
     } catch (err) {
       trackEvent('playground_history_action', { action: 'restore' }, { result: 'fail' })
       setHistoryActionError(`${t('modelsExperience.historyLoadFailed')}${(err as Error).message || t('modelsExperience.retryLater')}`)
+      return false
     }
   }
 
